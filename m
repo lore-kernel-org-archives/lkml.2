@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751391Ab1AWRHv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 12:07:51 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62982 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095Ab1AWRHu convert rfc822-to-8bit (ORCPT
+	id S1751452Ab1AWRI4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 12:08:56 -0500
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:56242 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751095Ab1AWRIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 12:07:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=dw9fUPZggeM2IVaV92wKQCeA2LvGmeC4Dpid6U2cOChXbyPQrRR0cuFH59/sgOUtPk
-         dg+jy7P02resrKQlHAFM2GCcYtvKcX9t1jmmdAivHVnzf0CD8q10Bkm+68DBW2O4xavY
-         gdqqvdjgYlIo3yVOOUFjHb8oMnU+St1ib7G9E=
+	Sun, 23 Jan 2011 12:08:55 -0500
+Date: Sun, 23 Jan 2011 18:08:54 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Greg KH <gregkh@suse.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: unbreak billionton CF card (was Re: [000/152] 2.6.36.3-stable
+	review)
+Message-ID: <20110123170854.GA25287@atrey.karlin.mff.cuni.cz>
+References: <20110106002500.GA3172@kroah.com> <20110106134254.68fa27ac@lxorguk.ukuu.org.uk> <20110106215705.GA30799@suse.de> <20110107150724.GA29082@atrey.karlin.mff.cuni.cz> <20110107183716.GA14895@suse.de> <20110123130611.GA2713@ucw.cz> <20110123163154.GA1071@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <20110123143836.940494132@linutronix.de>
-References: <20110123143631.392446736@linutronix.de> <20110123143836.940494132@linutronix.de>
-From: Matt Turner <mattst88@gmail.com>
-Date: Sun, 23 Jan 2011 17:07:28 +0000
-Message-ID: <AANLkTin1ct3NfBP8kiaEweA6ZEPTvKfCqgN-nVdJ0n0g@mail.gmail.com>
-Subject: Re: [patch 1/9] alpha: Replace deprecated spinlock initialization
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110123163154.GA1071@suse.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 23, 2011 at 3:16 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> SPIN_LOCK_UNLOCK is deprecated. Use the lockdep capable variant
-> instead.
->
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Richard Henderson <rth@twiddle.net>
-> Cc: linux-alpha@vger.kernel.org
-> ---
->  arch/alpha/include/asm/rwsem.h |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> Index: linux-2.6/arch/alpha/include/asm/rwsem.h
-> ===================================================================
-> --- linux-2.6.orig/arch/alpha/include/asm/rwsem.h
-> +++ linux-2.6/arch/alpha/include/asm/rwsem.h
-> @@ -39,7 +39,7 @@ struct rw_semaphore {
->  };
->
->  #define __RWSEM_INITIALIZER(name) \
-> -       { RWSEM_UNLOCKED_VALUE, SPIN_LOCK_UNLOCKED, \
-> +       { RWSEM_UNLOCKED_VALUE, __SPIN_LOCK_UNLOCKED((name).wait_lock), \
->        LIST_HEAD_INIT((name).wait_list) }
->
->  #define DECLARE_RWSEM(name) \
->
->
-> --
+> On Sun, Jan 23, 2011 at 02:06:11PM +0100, Pavel Machek wrote:
+> > Unbreak Billionton CF bluetooth card. This actually fixes a regression
+> > on zaurus.
+> > 
+> > Signed-off-by: Pavel Machek <pavel@ucw.cz>
+> > 
+> > ---
+> > 
+> > (now fixed typo)
+> 
+> So you mean the version that I just accepted into my tree is wrong?
+> What's wrong with it?  Care to provide the diff between the two?
 
-Thanks! I'll apply this.
+Sorry about that. Typo is in comment -> not really important. Someone
+spotted it, so... feel free to keep old version.
 
-Matt
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
