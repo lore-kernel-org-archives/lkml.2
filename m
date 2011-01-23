@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751245Ab1AWINO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 03:13:14 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41980 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069Ab1AWINO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 03:13:14 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=ly0jonkkDmJ08xerlehYtrX9CufsVuEBuW3kGpMw9ulUrxPKlMCzqgMYxLfMv2Fxh9
-         6yGrZhipZvPRLThU8bC+oU0b0H6oKxWdPX9oaz0b7C4KeuSeLdXV7fjw3T0HvDhTA76Y
-         EQc248ULclVu/SFAgO++zm4zO3Q9tvEGrsQcQ=
-Message-ID: <4D3BE314.3090500@gmail.com>
-Date: Sun, 23 Jan 2011 10:13:08 +0200
-From: =?ISO-8859-1?Q?T=F6r=F6k_Edwin?= <edwintorok@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Icedove/3.1.7
+	id S1751299Ab1AWITn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 03:19:43 -0500
+Received: from kroah.org ([198.145.64.141]:46918 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751146Ab1AWITm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 03:19:42 -0500
+Date: Sat, 22 Jan 2011 19:46:53 -0800
+From: Greg KH <greg@kroah.com>
+To: Robert Morell <rmorell@nvidia.com>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Benoit Goby <benoit@android.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
+        Oliver Neukum <oliver@neukum.org>, Olof Johansson <olof@lixom.net>,
+        Erik Gilling <konkers@android.com>, Colin Cross <ccross@android.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH 1/2] USB: HCD: Add driver hooks for (un)?map_urb_for_dma
+Message-ID: <20110123034653.GA20186@kroah.com>
+References: <1294356045-1018-1-git-send-email-rmorell@nvidia.com>
+ <1295559715-14264-2-git-send-email-rmorell@nvidia.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.38-rc1
-References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com> <AANLkTimp0UcWi68N5Jv_hUww9PhGVgCzY0qYLETc8Dj_@mail.gmail.com>
-In-Reply-To: <AANLkTimp0UcWi68N5Jv_hUww9PhGVgCzY0qYLETc8Dj_@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295559715-14264-2-git-send-email-rmorell@nvidia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-01-19 04:07, Linus Torvalds wrote:
-> On Tue, Jan 18, 2011 at 3:54 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> It's been two weeks, and the merge window for 2.6.38 is thus closed.
+On Thu, Jan 20, 2011 at 01:41:54PM -0800, Robert Morell wrote:
+> Provide optional hooks for the host controller driver to override the
+> default DMA mapping and unmapping routines.  In general, these shouldn't
+> be necessary unless the host controller has special DMA requirements,
+> such as alignment contraints.  If these are not specified, the
+> general usb_hcd_(un)?map_urb_for_dma functions will be used instead.
+> Also, pass the status to unmap_urb_for_dma so it can know whether the
+> DMA buffer has been overwritten.
 > 
-> Oh, and it looks like mirroring from master.kernel.org is being very
-> slow
+> Finally, add a flag to be used by these implementations if they
+> allocated a temporary buffer so it can be freed properly when unmapping.
+> 
+> Signed-off-by: Robert Morell <rmorell@nvidia.com>
 
-I think that pulling from kernel.org became slower too. (not sure
-exactly when but probably since about a year).
+I'd like to get an ACK from Alan before applying this one, and ideally
+also from David and Sarah as they know the HCD code also.
 
-When I run git pull, it just sits there for a long time, with no visible
-network/disk I/O, and only after that it starts the "remote: Counting
-objects" phase.
-I just tried to measure that time and it is ~12s now, which is not that
-bad, but I remember that I even had to wait minutes to see the "Counting
-objects" phase in December.
+Anyone?
 
-Is it because git on the server side needs to figure out which objects I
-already have and which I don't? But I thought thats part of the
-"Counting objects" phase, so what happens before that, and why are there
-no progress messages about it?
+thanks,
 
-Best regards,
---Edwin
+greg k-h
