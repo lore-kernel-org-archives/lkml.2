@@ -1,105 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721Ab1AWWg0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 17:36:26 -0500
-Received: from core.signal11.us ([64.251.29.136]:56481 "EHLO core.signal11.us"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752132Ab1AWWgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 17:36:05 -0500
-From: Alan Ott <alan@signal11.us>
-To: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, greg@kroah.com,
-        stern@rowland.harvard.edu, libusb-devel@lists.sourceforge.net
-Cc: Alan Ott <alan@signal11.us>
-Subject: [PATCH v2 1/1] hid: Add HID Report Descriptor to sysfs.
-Date: Sun, 23 Jan 2011 17:35:07 -0500
-Message-Id: <1295822107-6820-2-git-send-email-alan@signal11.us>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <20110122135516.GA4893@kroah.com>
-References: <20110122135516.GA4893@kroah.com>
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Sun Jan 23 17:36:03 2011
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 4d3cad5320491000111097
+	id S1752548Ab1AWWxs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 17:53:48 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52506 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010Ab1AWWxr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 17:53:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=cXzo5tlPNfGOHPy5JNd1440wD/toYN4tP1ngnqacZcfVslZ/IdUDv1Qtcr+9NT4ewl
+         PbBM704JqhHMCcERBltdB+flUGzcI4UU4q9y+p8Fk8L56rz3l5Xf9AOfOKev9EspugCO
+         VKyxVL1JaRLctfXKLLxqwbxUFau5lplNmri5A=
+Date: Sun, 23 Jan 2011 17:53:42 -0500
+From: Tracey Dent <tdent48227@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] Kernel: gcov: Makefile: Use proper ccflag flag in Makefile
+Message-ID: <20110123225339.GA1435@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+QahgC5+KEYLbs62"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new binary sysfs entry called report_descriptor which contains
-the HID report descriptor.
 
-Signed-off-by: Alan Ott <alan@signal11.us>
+--+QahgC5+KEYLbs62
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Use the ccflags-y flag instead of EXTRA_CFLAGS because EXTRA_CFLAGS is
+deprecated and should now be switched.  According to
+(documentation/kbuild/makefiles.txt)
+
+Signed-off-by: Tracey Dent <tdent48227@gmail.com>
 ---
- drivers/hid/hid-core.c |   33 +++++++++++++++++++++++++++++++++
- 1 files changed, 33 insertions(+), 0 deletions(-)
+ kernel/gcov/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index d678cf3..32bbd5d 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1159,6 +1159,32 @@ static bool hid_hiddev(struct hid_device *hdev)
- 	return !!hid_match_id(hdev, hid_hiddev_list);
- }
- 
-+
-+static ssize_t
-+read_report_descriptor(struct file *filp, struct kobject *kobj,
-+		struct bin_attribute *attr,
-+		char *buf, loff_t off, size_t count)
-+{
-+	struct device *dev = container_of(kobj, struct device, kobj);
-+	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
-+
-+	if (off >= hdev->rsize)
-+		return 0;
-+
-+	if (off + count > hdev->rsize)
-+		count = hdev->rsize - off;
-+
-+	memcpy(buf, hdev->rdesc + off, count);
-+
-+	return count;
-+}
-+
-+static struct bin_attribute dev_bin_attr_report_desc = {
-+	.attr = { .name = "report_descriptor", .mode = 0444 },
-+	.read = read_report_descriptor,
-+	.size = HID_MAX_DESCRIPTOR_SIZE,
-+};
-+
- int hid_connect(struct hid_device *hdev, unsigned int connect_mask)
- {
- 	static const char *types[] = { "Device", "Pointer", "Mouse", "Device",
-@@ -1169,6 +1195,7 @@ int hid_connect(struct hid_device *hdev, unsigned int connect_mask)
- 	char buf[64];
- 	unsigned int i;
- 	int len;
-+	int ret;
- 
- 	if (hdev->quirks & HID_QUIRK_HIDDEV_FORCE)
- 		connect_mask |= (HID_CONNECT_HIDDEV_FORCE | HID_CONNECT_HIDDEV);
-@@ -1230,6 +1257,11 @@ int hid_connect(struct hid_device *hdev, unsigned int connect_mask)
- 		bus = "<UNKNOWN>";
- 	}
- 
-+	ret = device_create_bin_file(&hdev->dev, &dev_bin_attr_report_desc);
-+	if (ret)
-+		hid_warn(hdev,
-+			 "can't create sysfs report descriptor attribute err: %d\n", ret);
-+
- 	hid_info(hdev, "%s: %s HID v%x.%02x %s [%s] on %s\n",
- 		 buf, bus, hdev->version >> 8, hdev->version & 0xff,
- 		 type, hdev->name, hdev->phys);
-@@ -1240,6 +1272,7 @@ EXPORT_SYMBOL_GPL(hid_connect);
- 
- void hid_disconnect(struct hid_device *hdev)
- {
-+	device_remove_bin_file(&hdev->dev, &dev_bin_attr_report_desc);
- 	if (hdev->claimed & HID_CLAIMED_INPUT)
- 		hidinput_disconnect(hdev);
- 	if (hdev->claimed & HID_CLAIMED_HIDDEV)
--- 
-1.7.0.4
+diff --git a/kernel/gcov/Makefile b/kernel/gcov/Makefile
+index 3f76100..e97ca59 100644
+--- a/kernel/gcov/Makefile
++++ b/kernel/gcov/Makefile
+@@ -1,3 +1,3 @@
+-EXTRA_CFLAGS :=3D -DSRCTREE=3D'"$(srctree)"' -DOBJTREE=3D'"$(objtree)"'
++ccflags-y :=3D -DSRCTREE=3D'"$(srctree)"' -DOBJTREE=3D'"$(objtree)"'
+=20
+ obj-$(CONFIG_GCOV_KERNEL) :=3D base.o fs.o gcc_3_4.o
+--=20
+1.7.4.rc2
 
 
+--+QahgC5+KEYLbs62
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNPLFyAAoJECZLfNMSiLYCDa8H/Rynqy+0LRfKuycjy7VLFN+c
+jEM4Ri69ayS1U2U8X3Dsy03DJjC/mI8LCwC9+NoAq34lXh9OzWLC8eSmyXd1bOoo
+pwuSK43Sv8FpW2SxQe6iTKZ9gP3rIFjX4HD0XnQRC8FLHdrE+g2Bbw5+CvLgo+l8
++k0FJELIBxHGjZHZPJOpxrhn9Xjs1Bkp3EwPTeSIBjkkFaK74kvSwNGoakuO5sJ/
+3HWT36/ZNDgtfAmT6yYQ+lHyr5N+m9DLB6pHkXpJaRm2JkefsNpN0tHsQMciDiyh
+WpY8eVgHpglgjpecTaFHXQq6nbwLThwQ+OxSN5L3ZBS2SYIHydgPWVH+GhYcrFI=
+=P8cf
+-----END PGP SIGNATURE-----
+
+--+QahgC5+KEYLbs62--
