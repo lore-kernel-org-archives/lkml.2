@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947Ab1AWPRb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 10:17:31 -0500
-Received: from www.tglx.de ([62.245.132.106]:58667 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751054Ab1AWPR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 10:17:28 -0500
-Message-Id: <20110123143836.940494132@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Sun, 23 Jan 2011 15:16:52 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
-Subject: [patch 1/9] alpha: Replace deprecated spinlock initialization
-References: <20110123143631.392446736@linutronix.de>
-Content-Disposition: inline;
-	filename=alpha-replace-deprecated-spinlock-initialization.patch
+	id S1751351Ab1AWPbI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 10:31:08 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:35179 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab1AWPbH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 10:31:07 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sun, 23 Jan 2011 16:30:35 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: "Henrik Rydberg" <rydberg@euromail.se>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.38-rc1/-2: applesmc lockdep warning
+Message-ID: <20110123163035.3d692745@stein>
+In-Reply-To: <20110123133857.GA2641@polaris.bitmath.org>
+References: <20110122134513.1e1d512a@stein>
+	<20110122200002.GA1677@polaris.bitmath.org>
+	<20110122204050.GB22252@ericsson.com>
+	<20110122205254.GA2854@polaris.bitmath.org>
+	<20110123000016.387cde2c@stein>
+	<20110123133857.GA2641@polaris.bitmath.org>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SPIN_LOCK_UNLOCK is deprecated. Use the lockdep capable variant
-instead.
+On Jan 23 Henrik Rydberg wrote:
+> On Sun, Jan 23, 2011 at 12:00:16AM +0100, Stefan Richter wrote:
+> > With this patch, there is no lockdep warning anymore.  Thanks.
+> 
+> Thank you Stefan. How about a Tested-by, now that I forgot to add a
+> Reported-by to the patch?
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: linux-alpha@vger.kernel.org
----
- arch/alpha/include/asm/rwsem.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux-2.6/arch/alpha/include/asm/rwsem.h
-===================================================================
---- linux-2.6.orig/arch/alpha/include/asm/rwsem.h
-+++ linux-2.6/arch/alpha/include/asm/rwsem.h
-@@ -39,7 +39,7 @@ struct rw_semaphore {
- };
- 
- #define __RWSEM_INITIALIZER(name) \
--	{ RWSEM_UNLOCKED_VALUE, SPIN_LOCK_UNLOCKED, \
-+	{ RWSEM_UNLOCKED_VALUE, __SPIN_LOCK_UNLOCKED((name).wait_lock),	\
- 	LIST_HEAD_INIT((name).wait_list) }
- 
- #define DECLARE_RWSEM(name) \
-
-
+If it hasn't been committed yet,
+Reported-and-tested-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+-- 
+Stefan Richter
+-=====-==-== ---= =-===
+http://arcgraph.de/sr/
