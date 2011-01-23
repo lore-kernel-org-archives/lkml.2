@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548Ab1AWWxs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 17:53:48 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52506 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010Ab1AWWxr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 17:53:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=cXzo5tlPNfGOHPy5JNd1440wD/toYN4tP1ngnqacZcfVslZ/IdUDv1Qtcr+9NT4ewl
-         PbBM704JqhHMCcERBltdB+flUGzcI4UU4q9y+p8Fk8L56rz3l5Xf9AOfOKev9EspugCO
-         VKyxVL1JaRLctfXKLLxqwbxUFau5lplNmri5A=
-Date: Sun, 23 Jan 2011 17:53:42 -0500
-From: Tracey Dent <tdent48227@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] Kernel: gcov: Makefile: Use proper ccflag flag in Makefile
-Message-ID: <20110123225339.GA1435@gmail.com>
+	id S1752614Ab1AWWzi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 17:55:38 -0500
+Received: from solo.fdn.fr ([80.67.169.19]:47262 "EHLO solo.fdn.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752010Ab1AWWzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 17:55:37 -0500
+Date: Sun, 23 Jan 2011 23:55:33 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Arnaud Patard <arnaud.patard@rtp-net.org>
+Cc: rpurdie@rpsys.net, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/1] leds: add keyboard num/caps lock trigger
+Message-ID: <20110123225533.GB9863@const.famille.thibault.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Arnaud Patard <arnaud.patard@rtp-net.org>, rpurdie@rpsys.net,
+	akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+References: <20110113125921.818344418@rtp-net.org> <20110113131323.GJ5995@const.bordeaux.inria.fr> <87aaj01k2q.fsf@lechat.rtp-net.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+QahgC5+KEYLbs62"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <87aaj01k2q.fsf@lechat.rtp-net.org>
+User-Agent: Mutt/1.5.12-2006-07-14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
---+QahgC5+KEYLbs62
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Arnaud Patard, le Mon 17 Jan 2011 00:54:05 +0100, a écrit :
+> > This is already being implemented in a more generic and useful way,
+> > also permitting to use the keyboard leds for other triggers, see the
+> > leds-route-kbd-leds-through-the-generic-leds-layer.patch in the mm tree,
+> > and the “route kbd LEDs through the generic LEDs layer” thread here.
+> 
+> I've download the patch at [1] and after a quick runtime test, got no
+> success. When booting with the LEDS_INPUT set to y, the machine is
+> hanging. I didn't have a serial console at hand so no log for now. I've
+> then tried it as module, and it didn't work too. No freeze, but led
+> state did not change.
 
-Use the ccflags-y flag instead of EXTRA_CFLAGS because EXTRA_CFLAGS is
-deprecated and should now be switched.  According to
-(documentation/kbuild/makefiles.txt)
+Odd, in my memory it was working for me.
 
-Signed-off-by: Tracey Dent <tdent48227@gmail.com>
----
- kernel/gcov/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> Moreover, I found a bug. The kbd_update_leds_helper() change is
+> wrong. It should use !!(leds & (1<<VC_*)) and not !!(leds & VC_*).
 
-diff --git a/kernel/gcov/Makefile b/kernel/gcov/Makefile
-index 3f76100..e97ca59 100644
---- a/kernel/gcov/Makefile
-+++ b/kernel/gcov/Makefile
-@@ -1,3 +1,3 @@
--EXTRA_CFLAGS :=3D -DSRCTREE=3D'"$(srctree)"' -DOBJTREE=3D'"$(objtree)"'
-+ccflags-y :=3D -DSRCTREE=3D'"$(srctree)"' -DOBJTREE=3D'"$(objtree)"'
-=20
- obj-$(CONFIG_GCOV_KERNEL) :=3D base.o fs.o gcc_3_4.o
---=20
-1.7.4.rc2
+Indeed. This has actually disappeared in the version I'm working on from
+the feedback provided by Dmitry.
 
+> btw, my use case/problem is different than yours.
 
---+QahgC5+KEYLbs62
-Content-Type: application/pgp-signature
+Yes, but my implementation fills both needs.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> I've a arm system where the keyboard is usb hid one and the led I'm
+> trying to control a led connected on a gpio.
 
-iQEcBAEBAgAGBQJNPLFyAAoJECZLfNMSiLYCDa8H/Rynqy+0LRfKuycjy7VLFN+c
-jEM4Ri69ayS1U2U8X3Dsy03DJjC/mI8LCwC9+NoAq34lXh9OzWLC8eSmyXd1bOoo
-pwuSK43Sv8FpW2SxQe6iTKZ9gP3rIFjX4HD0XnQRC8FLHdrE+g2Bbw5+CvLgo+l8
-+k0FJELIBxHGjZHZPJOpxrhn9Xjs1Bkp3EwPTeSIBjkkFaK74kvSwNGoakuO5sJ/
-3HWT36/ZNDgtfAmT6yYQ+lHyr5N+m9DLB6pHkXpJaRm2JkefsNpN0tHsQMciDiyh
-WpY8eVgHpglgjpecTaFHXQq6nbwLThwQ+OxSN5L3ZBS2SYIHydgPWVH+GhYcrFI=
-=P8cf
------END PGP SIGNATURE-----
+Then simply connect it to the new e.g. "input::numl" (or "vt::numl" as
+per new name according to Dmitry's feedback) trigger provided by my
+patch.
 
---+QahgC5+KEYLbs62--
+Samuel
