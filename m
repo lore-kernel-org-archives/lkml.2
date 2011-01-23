@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751147Ab1AVX7o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 18:59:44 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:38158 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750954Ab1AVX7n (ORCPT
+	id S1752240Ab1AWAHc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 19:07:32 -0500
+Received: from 232.Red-88-26-245.staticIP.rima-tde.net ([88.26.245.232]:38999
+	"HELO sysvalve.homelinux.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751002Ab1AWAHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Jan 2011 18:59:43 -0500
-Message-ID: <4D3B6F5A.2020309@metafoo.de>
-Date: Sun, 23 Jan 2011 00:59:22 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+	Sat, 22 Jan 2011 19:07:31 -0500
+From: =?UTF-8?q?L=2E=20Alberto=20Gim=C3=A9nez?= <agimenez@sysvalve.es>
+To: linux-kernel@vger.kernel.org
+Cc: devel@linuxdriverproject.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        trivial@kernel.org,
+        =?UTF-8?q?L=2E=20Alberto=20Gim=C3=A9nez?= <agimenez@sysvalve.es>
+Subject: [trivial][PATCH v2 1/3] Staging: rt2860: rt_linux.c: Fix space after unary '*' operator.
+Date: Sun, 23 Jan 2011 01:07:18 +0100
+Message-Id: <1295741240-11254-2-git-send-email-agimenez@sysvalve.es>
+X-Mailer: git-send-email 1.7.4.rc0.5.gf2665
+In-Reply-To: <1295741240-11254-1-git-send-email-agimenez@sysvalve.es>
+References: <20110121201417.GA22299@kroah.com>
+ <1295741240-11254-1-git-send-email-agimenez@sysvalve.es>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, "for 2.6.37" <stable@kernel.org>
-Subject: Re: [PATCH] ASoC: Fix codec device id format used by some dai_links
-References: <1295735888-25527-1-git-send-email-lars@metafoo.de> <20110122233309.GA22799@opensource.wolfsonmicro.com>
-In-Reply-To: <20110122233309.GA22799@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Fix checkpatch error raised by the use of spaces between the '*' operator and
+the corresponding variable name.
 
-Hi
+Signed-off-by: L. Alberto Giménez <agimenez@sysvalve.es>
+---
+ drivers/staging/rt2860/rt_linux.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-On 01/23/2011 12:33 AM, Mark Brown wrote:
-> > On Sat, Jan 22, 2011 at 11:38:07PM +0100, Lars-Peter Clausen wrote:
-> >
->> >>  sound/soc/imx/wm1133-ev1.c                     |    2 +-
-Ok. I simply assumed that all of them were I2C devices since platform and SPI devices
-use a completely different naming scheme.
+diff --git a/drivers/staging/rt2860/rt_linux.c b/drivers/staging/rt2860/rt_linux.c
+index 728864e..b3f836d 100644
+--- a/drivers/staging/rt2860/rt_linux.c
++++ b/drivers/staging/rt2860/rt_linux.c
+@@ -118,8 +118,7 @@ void RTMP_OS_Mod_Timer(struct timer_list *pTimer,
+ 	mod_timer(pTimer, jiffies + timeout);
+ }
+ 
+-void RTMP_OS_Del_Timer(struct timer_list *pTimer,
+-		       OUT BOOLEAN * pCancelled)
++void RTMP_OS_Del_Timer(struct timer_list *pTimer, OUT BOOLEAN *pCancelled)
+ {
+ 	if (timer_pending(pTimer)) {
+ 		*pCancelled = del_timer_sync(pTimer);
+-- 
+1.7.4.rc0.5.gf2665
 
-I just went through the whole list and the wm8994 codec is a platform driver as well.
-And on the jive board the wm8750 is connected through SPI.
-
-> >
-> > This at least is definitely wrong, the WM835x CODEC here is registered
-> > as a platform device.  Please also check current kernels, a bunch of
-> > these are already fixed.
-The patch is based on your for-next branch.
-
-- - Lars
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk07b1oACgkQBX4mSR26RiN3rQCeKvFG0eyVdxPh68vy3pasiKcv
-iUUAn3lSz8cvKA95QI4Y9iRnyVk/bbWg
-=0HnX
------END PGP SIGNATURE-----
