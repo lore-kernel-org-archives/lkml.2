@@ -1,112 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751426Ab1AWJdG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 04:33:06 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:63501 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751169Ab1AWJdD (ORCPT
+	id S1751518Ab1AWKZf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 05:25:35 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57346 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751447Ab1AWKZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 04:33:03 -0500
+	Sun, 23 Jan 2011 05:25:33 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding
-         :content-disposition:message-id;
-        b=sIjk28IiF73k0PvOi2ai6/QxNObCqMRKzTXYNF4F+ZCNUTEqZucKtmWcjKm4RLNBPT
-         FSLSkqRrfLkdqKMKWeHUkat/EuPuZxcEyB/k11Z5x++yDBTn3YoFKp9R4E4WIN4xN/hs
-         j+biJTtqTLbVL9HWmYHBsbhFlsiwaFe0wTCKo=
-From: Chris Clayton <chris2553@googlemail.com>
-Reply-To: chris2553@googlemail.com
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH] drm/i915: Increase the amount of defense before computing vblank timestamps
-Date: Sun, 23 Jan 2011 09:32:49 +0000
-User-Agent: KMail/1.9.10
-Cc: linux-kernel@vger.kernel.org
-References: <:201101220935.03623.chris2553@googlemail.com> <0d30dc$kr3ing@orsmga001.jf.intel.com> <201101230856.42744.chris2553@googlemail.com>
-In-Reply-To: <201101230856.42744.chris2553@googlemail.com>
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Ixp/VUUJzwVFPvFjsNd6kItyD1OtM8EuUCTRG8cWxDlYoaF98bibjLqRsJUA8aO44x
+         iS6CFei5xyU5+BAdiZk6WoJUNuAfzuCC5XOoJCLF1pS9MFD6V1nS0QqqNlRgKxOijTUE
+         klEpkbyQkK415v37dBtSpha5k1RkFENQNbN4k=
+Date: Sun, 23 Jan 2011 11:25:26 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, tytso@mit.edu, djwong@us.ibm.com, shli@kernel.org,
+        neilb@suse.de, adilger.kernel@dilger.ca, jack@suse.cz,
+        snitzer@redhat.com, linux-kernel@vger.kernel.org, kmannth@us.ibm.com,
+        cmm@us.ibm.com, linux-ext4@vger.kernel.org, rwheeler@redhat.com,
+        hch@lst.de, josef@redhat.com
+Subject: Re: [PATCH 3/3] block: reimplement FLUSH/FUA to support merge
+Message-ID: <20110123102526.GA23121@htj.dyndns.org>
+References: <1295625598-15203-1-git-send-email-tj@kernel.org>
+ <1295625598-15203-4-git-send-email-tj@kernel.org>
+ <20110121185617.GI12072@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201101230932.49998.chris2553@googlemail.com>
+In-Reply-To: <20110121185617.GI12072@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 23 January 2011, Chris Clayton wrote:
-> On Saturday 22 January 2011, Chris Wilson wrote:
-> > On Sat, 22 Jan 2011 11:18:53 +0000, Chris Clayton
-> > <chris2553@googlemail.com>
+Hello,
+
+On Fri, Jan 21, 2011 at 01:56:17PM -0500, Vivek Goyal wrote:
+> > + * Currently, the following conditions are used to determine when to issue
+> > + * flush.
+> > + *
+> > + * C1. At any given time, only one flush shall be in progress.  This makes
+> > + *     double buffering sufficient.
+> > + *
+> > + * C2. Flush is not deferred if any request is executing DATA of its
+> > + *     sequence.  This avoids issuing separate POSTFLUSHes for requests
+> > + *     which shared PREFLUSH.
+> 
+> Tejun, did you mean "Flush is deferred" instead of "Flush is not deferred"
+> above?
+
+Oh yeah, I did.  :-)
+
+> IIUC, C2 might help only if requests which contain data are also going to 
+> issue postflush. Couple of cases come to mind.
+
+That's true.  I didn't want to go too advanced on it.  I wanted
+something which is fairly mechanical (without intricate parameters)
+and effective enough for common cases.
+
+> - If queue supports FUA, I think we will not issue POSTFLUSH. In that
+>   case issuing next PREFLUSH which data is in flight might make sense.
 >
-> wrote:
-> > > On Saturday 22 January 2011, Chris Wilson wrote:
-> > > > Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-> > > > ---
-> > > >
-> > > > Chris, does this help?
-> > >
-> > > Sorry Chris, X still doesn't start with this patch applied. The
-> > > symptoms are slightly different in that the monitor doesn't go into
-> > > power saving mode, but the screen is still black and I have to recycle
-> > > the power to get the machine back.
-> > > The messages in the log file has changed though.We now have:
-> >
-> > Despite appearances to the contrary, it is a step forward. We have the
-> > crash under control, and now need to tackle the underlying problem.
-> >
-> > However, I'm worried by the fact that no CRTCs are attached. Is this not
-> > using KMS?
->
-> No KMS is not configured in. I found that under an earlier version of the
-> kernel it caused my kernel to lock up, so I configured it out. I meant to
-> investigate further and report it, but then forgot. I'll turn KMS on and
-> report the outcome.
->
+> - Even if queue does not support FUA and we are only getting requests
+>   with REQ_FLUSH then also waiting for data requests to finish before
+>   issuing next FLUSH might not help.
+> 
+> - Even if queue does not support FUA and say we have a mix of REQ_FUA
+>   and REQ_FLUSH, then this will help only if in a batch we have more
+>   than 1 request which is going to issue POSTFLUSH and those postflush
+>   will be merged.
 
-Mmmm, I get a lock up when turning KMS on in 2.3.38-rc2+ and it looks like KMS 
-is inducing a crash in X. The Xorg log contains:
+Sure, not applying C2 and 3 if the underlying device supports REQ_FUA
+would probably be the most compelling change of the bunch; however,
+please keep in mind that issuing flush as soon as possible doesn't
+necessarily result in better performance.  It's inherently a balancing
+act between latency and throughput.  Even inducing artificial issue
+latencies is likely to help if done right (as the ioscheds do).
 
-Backtrace:
-0: /usr/X11/bin/X(xorg_backtrace+0x3b) [0x81352db]
-1: /usr/X11/bin/X(xf86SigHandler+0x51) [0x80ba0b1]
-2: [0xb78b5400]
-3: /usr/X11R6/lib/libdrm_intel.so.1(+0x624b) [0xb72d024b]
-4: /usr/X11R6/lib/libdrm_intel.so.1(drm_intel_bo_unreference+0x16) [0xb72cb446]
-5: /usr/X11/lib/xorg/modules/drivers//intel_drv.so(intel_batch_flush+0xb6) 
-[0xb72ec876]
-6: /usr/X11/lib/xorg/modules/drivers//intel_drv.so(+0x4b5d0) [0xb73215d0]
-7: /usr/X11/lib/xorg/modules/drivers//intel_drv.so(uxa_fill_region_tiled+0x264) 
-[0xb7338fc4]
-8: /usr/X11/lib/xorg/modules/drivers//intel_drv.so(+0x6343b) [0xb733943b]
-9: /usr/X11/bin/X() [0x817b8c6]
-10: /usr/X11/bin/X(miPaintWindow+0x1cb) [0x811484b]
-11: /usr/X11/bin/X(miWindowExposures+0xbf) [0x8114bbf]
-12: /usr/X11/bin/X() [0x80b364f]
-13: /usr/X11/bin/X(MapWindow+0x3a8) [0x8072cc8]
-14: /usr/X11/bin/X(InitRootWindow+0x10c) [0x8072dfc]
-15: /usr/X11/bin/X(main+0x40a) [0x806be0a]
-16: /lib/libc.so.6(__libc_start_main+0xe6) [0xb7412b86]
-17: /usr/X11/bin/X() [0x806b2c1]
+So, I think it's better to start with something simple and improve it
+with actual testing.  If the current simple implementation can match
+Darrick's previous numbers, let's first settle the mechanisms.  We can
+tune the latency/throughput balance all we want later.  Other than the
+double buffering contraint (which can be relaxed too but I don't think
+that would be necessary or a good idea) things can be easily adjusted
+in blk_kick_flush().  It's intentionally designed that way.
 
-Fatal server error:
-Caught signal 11.  Server aborting
+> - Ric Wheeler was once mentioning that there are boxes which advertise
+>   writeback cache but are battery backed so they ignore flush internally and
+>   signal completion immediately. I am not sure how prevalent those
+>   cases are but I think waiting for data to finish will delay processing
+>   of new REQ_FLUSH requests in pending queue for such array. There
+>   we will not anyway benefit from merging of FLUSH.
 
-and the kernel log contains:
+I don't really think we should design the whole thing around broken
+devices which incorrectly report writeback cache when it need not.
+The correct place to work around that is during device identification
+not in the flush logic.
 
-Jan 23 09:07:38 upstairs kernel: X[1273]: segfault at 3fe8 ip b72ebc95 sp 
-bfdbf4b0 error 6 in intel_drv.so[b72d6000+76000]
+> Given that C2 is going to benefit primarily only if queue does not support
+> FUA and we have many requets with REQ_FUA set, will it make sense to 
+> put additional checks for C2. Atleast a simple queue support FUA
+> check might help.
+> 
+> In practice does C2 really help or we can get rid of it entirely?
 
-So it looks like there are two problems. I'm happy to help fix both, but would 
-prefer to get the non-KMS setup working first, so that I can run the 
-development kernel to see if I find any other problems. Once the graphics mode 
-has been switched, the text on the screen as the kernel boots is so small, that 
-my old eyes struggle to see it, so normally I will probably run without KMS, as 
-long as that is supported.
+Again, issuing flushes as fast as possible isn't necessarily better.
+It might feel counter-intuitive but it generally makes sense to delay
+flush if there are a lot of concurrent flush activities going on.
+Another related interesting point is that with flush merging,
+depending on workload, there's a likelihood that FUA, even if the
+device supports it, might result in worse performance than merged DATA
++ single POSTFLUSH sequence.
 
-<snip>
+Thanks.
 
-Chris
 -- 
-The more I see, the more I know. The more I know, the less I understand. 
-Changing Man - Paul Weller
+tejun
