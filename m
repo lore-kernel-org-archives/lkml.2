@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338Ab1AWVfl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 16:35:41 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:43833 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751827Ab1AWVfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 16:35:40 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH 1/1] Use cachable mapping for i915 opregion.
-Date: Sun, 23 Jan 2011 22:35:19 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc1+; KDE/4.4.4; x86_64; ; )
-Cc: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>, airlied@linux.ie,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-References: <1295803414-5373-1-git-send-email-kernel@mkarcher.dialup.fu-berlin.de> <201101232152.27970.rjw@sisk.pl> <849307$b97gn8@azsmga001.ch.intel.com>
-In-Reply-To: <849307$b97gn8@azsmga001.ch.intel.com>
+	id S1752576Ab1AWVyC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 16:54:02 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:19604 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344Ab1AWVyA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 16:54:00 -0500
+Date: Sun, 23 Jan 2011 22:40:42 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: David Howells <dhowells@redhat.com>
+cc: David Safford <safford@us.ibm.com>, James Morris <jmorris@namei.org>,
+        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] trusted keys: Fix a memory leak in trusted_update().
+Message-ID: <alpine.LNX.2.00.1101232237020.30955@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101232235.20107.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, January 23, 2011, Chris Wilson wrote:
-> On Sun, 23 Jan 2011 21:52:27 +0100, "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> > On Sunday, January 23, 2011, Chris Wilson wrote:
-> > > On Sun, 23 Jan 2011 18:23:34 +0100, Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de> wrote:
-> > > > The opregion is a shared memory region between ACPI and the graphics
-> > > > driver. As the ACPI mapping has been changed to cachable in commit
-> > > > 6d5bbf00d251cc73223a71422d69e069dc2e0b8d, mapping the intel opregion
-> > > > non-cachable now fails. As no bus-master hardware is involved in the
-> > > > opregion, cachable map should do no harm.
-> > > 
-> > > Satisfied myself that is indeed equivalent to use the newly introduced
-> > > acpi_os_ioremap for this purpose and applied to -fixes.
-> > 
-> > However, it might be better to use acpi_os_ioremap() in case we decide to
-> > go back to ioremap() for some reason.  For now, ioremap_cache() seems fine,
-> > but ...
-> 
-> Great minds think a like, but fools rarely differ...
-> http://git.kernel.org/?p=linux/kernel/git/ickle/drm-intel.git;a=commit;h=94b3eb7a71fe62f19c91c39dd94c83786108d626
+One failure path in security/keys/trusted_defined.c::trusted_update() does 
+not free 'new_p' while the others do. This patch makes sure we also free 
+it in the remaining path (if datablob_parse() returns different from 
+Opt_update).
 
-Cool, thanks!
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ trusted_defined.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/security/keys/trusted_defined.c b/security/keys/trusted_defined.c
+index 2836c6d..bae582b 100644
+--- a/security/keys/trusted_defined.c
++++ b/security/keys/trusted_defined.c
+@@ -1032,6 +1032,7 @@ static int trusted_update(struct key *key, const void *data, size_t datalen)
+ 	ret = datablob_parse(datablob, new_p, new_o);
+ 	if (ret != Opt_update) {
+ 		ret = -EINVAL;
++		kfree(new_p);
+ 		goto out;
+ 	}
+ 	/* copy old key values, and reseal with new pcrs */
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
