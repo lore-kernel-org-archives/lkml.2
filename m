@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872Ab1AWB4v (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Jan 2011 20:56:51 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:59179 "EHLO
+	id S1752433Ab1AWB4q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Jan 2011 20:56:46 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:59175 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252Ab1AWB4d (ORCPT
+	with ESMTP id S1751235Ab1AWB4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 22 Jan 2011 20:56:33 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 3/6] perf tools: Add missing header, fixes build
-Date: Sat, 22 Jan 2011 23:56:15 -0200
-Message-Id: <1295747778-26186-4-git-send-email-acme@infradead.org>
+Subject: [PATCH 4/6] perf tools: Fix build when using gcc 3.4.6
+Date: Sat, 22 Jan 2011 23:56:16 -0200
+Message-Id: <1295747778-26186-5-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1295747778-26186-1-git-send-email-acme@infradead.org>
 References: <1295747778-26186-1-git-send-email-acme@infradead.org>
@@ -30,11 +30,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-We need the definiton for __always_inline in bitops.h to fix the build
-on distros where it isn't available or compiler.h doesn't get included
-indirectly.
+[acme@localhost linux]$ make O=~acme/git/build/perf -C tools/perf
+make: Entering directory `/home/acme/git/linux/tools/perf'
+Makefile:526: No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev
+Makefile:582: newt not found, disables TUI support. Please install newt-devel or libnewt-dev
+    CC /home/acme/git/build/perf/builtin-annotate.o
+In file included from builtin-annotate.c:23:
+util/parse-events.h:26: warning: declaration of 'evsel_list' shadows a global declaration
+util/parse-events.h:12: warning: shadowed declaration is here
+make: *** [/home/acme/git/build/perf/builtin-annotate.o] Error 1
+make: Leaving directory `/home/acme/git/linux/tools/perf'
+[acme@localhost linux]$ gcc --version | head -1
+gcc (GCC) 3.4.6 20060404 (Red Hat 3.4.6-11)
+[acme@localhost linux]$
 
-One of the fixes needed to build perf on RHEL4 systems, for instance.
+Fix it by renaming the parameter to evlist.
 
 Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -47,21 +57,22 @@ Cc: Tom Zanussi <tzanussi@gmail.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/include/linux/bitops.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ tools/perf/util/parse-events.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/include/linux/bitops.h b/tools/perf/util/include/linux/bitops.h
-index 8be0b96..305c848 100644
---- a/tools/perf/util/include/linux/bitops.h
-+++ b/tools/perf/util/include/linux/bitops.h
-@@ -2,6 +2,7 @@
- #define _PERF_LINUX_BITOPS_H_
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index b82cafb..458e3ec 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -23,7 +23,7 @@ struct tracepoint_path {
+ };
  
- #include <linux/kernel.h>
-+#include <linux/compiler.h>
- #include <asm/hweight.h>
+ extern struct tracepoint_path *tracepoint_id_to_path(u64 config);
+-extern bool have_tracepoints(struct list_head *evsel_list);
++extern bool have_tracepoints(struct list_head *evlist);
  
- #define BITS_PER_LONG __WORDSIZE
+ extern int			nr_counters;
+ 
 -- 
 1.6.2.5
 
