@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237Ab1AWTgN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 14:36:13 -0500
-Received: from aa013-1msr.fastwebnet.it ([62.101.93.133]:59835 "EHLO
-	aa013-1msr.fastwebnet.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752025Ab1AWTgL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 14:36:11 -0500
-Message-ID: <14982212.224201295810840592.JavaMail.root@pr003msr>
-Date: Sun, 23 Jan 2011 20:27:20 +0100 (CET)
-From: MONEY GRAM TRANSFER <laura.dorialamba@fastwebnet.it>
-Reply-To: moneygram.transfer@zbavitu.net
-Subject: RE
+	id S1752296Ab1AWTjm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 14:39:42 -0500
+Received: from kroah.org ([198.145.64.141]:60722 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752128Ab1AWTjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 14:39:40 -0500
+Date: Mon, 24 Jan 2011 04:40:48 +0900
+From: Greg KH <greg@kroah.com>
+To: merez@codeaurora.org
+Cc: linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC/PATCH v4] usb: Add streams support to the gadget
+ framework.
+Message-ID: <20110123194048.GA8954@kroah.com>
+References: <1295523914-20056-1-git-send-email-merez@codeaurora.org>
+ <20110120163811.GB30680@kroah.com>
+ <e146c388999f324ac94d72d35d4fa656.squirrel@www.codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 173.245.85.199
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <e146c388999f324ac94d72d35d4fa656.squirrel@www.codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My working partner in relationship with
-HSBC London has concluded that our working
-partner has helped us to send you first payment of US$5,000 to you as
-instructed by Mr. David Cameron and will
-keep sending you $5000 twice a week until
-the payment of (US$820,000 ) is completed
-within six months and here is the information
+On Sun, Jan 23, 2011 at 11:34:19AM -0800, merez@codeaurora.org wrote:
+> > On Thu, January 20, 2011 8:38 am, Greg KH wrote:
+> > Why?  What in-kernel code needs this?
+> > Again, why?
+> Both chnages are required for the UASP device driver
+> (http://marc.info/?t=129559592400001&r=1&w=2).
 
+Then PLEASE say that.  How am I supposed to know this?
 
-MONEY TRANSFER REFRENCE:2116-3297
+Just make this patch part of that series.  We dont add apis to the
+kernel unless there is a user of it, so it will not be accepted until
+those other patches are also accepted.
 
-SENDER'S NAME: Mike Marx
-AMOUNT: US$5000
-To track your funds forward money gram
-Transfer agent Mr Allan Davis
+thanks,
 
-Your Name.___________________________
-Phone .___________________________
-
-E-mail:moneygram.transfer@zbavitu.net 
-Phone:+60163544376
-
-Please direct all enquiring to:
-
-Best Regards,
-Mr Allan Davis
-
+greg k-h
