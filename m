@@ -1,47 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751452Ab1AWRI4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 12:08:56 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:56242 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751095Ab1AWRIz (ORCPT
+	id S1751504Ab1AWRnj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 12:43:39 -0500
+Received: from outpost1.zedat.fu-berlin.de ([130.133.4.66]:50157 "EHLO
+	outpost1.zedat.fu-berlin.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751197Ab1AWRng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 12:08:55 -0500
-Date: Sun, 23 Jan 2011 18:08:54 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Greg KH <gregkh@suse.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: unbreak billionton CF card (was Re: [000/152] 2.6.36.3-stable
-	review)
-Message-ID: <20110123170854.GA25287@atrey.karlin.mff.cuni.cz>
-References: <20110106002500.GA3172@kroah.com> <20110106134254.68fa27ac@lxorguk.ukuu.org.uk> <20110106215705.GA30799@suse.de> <20110107150724.GA29082@atrey.karlin.mff.cuni.cz> <20110107183716.GA14895@suse.de> <20110123130611.GA2713@ucw.cz> <20110123163154.GA1071@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110123163154.GA1071@suse.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sun, 23 Jan 2011 12:43:36 -0500
+X-Greylist: delayed 1256 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 Jan 2011 12:43:36 EST
+From: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+To: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] Probe for output switch method when searching video devices.
+Date: Sun, 23 Jan 2011 18:22:34 +0100
+Message-Id: <1295803354-5298-1-git-send-email-kernel@mkarcher.dialup.fu-berlin.de>
+X-Mailer: git-send-email 1.7.2.3
+X-Originating-IP: 87.123.113.19
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Sun, Jan 23, 2011 at 02:06:11PM +0100, Pavel Machek wrote:
-> > Unbreak Billionton CF bluetooth card. This actually fixes a regression
-> > on zaurus.
-> > 
-> > Signed-off-by: Pavel Machek <pavel@ucw.cz>
-> > 
-> > ---
-> > 
-> > (now fixed typo)
-> 
-> So you mean the version that I just accepted into my tree is wrong?
-> What's wrong with it?  Care to provide the diff between the two?
+This patch reverts one hunk of 677bd810eedce61edf15452491781ff046b92edc
+"ACPI video: remove output switching control", namely the removal of
+probing for _DOS/_DOD when searching for video devices.
 
-Sorry about that. Typo is in comment -> not really important. Someone
-spotted it, so... feel free to keep old version.
+This is needed on some Fujitsu Laptops (at least S7110, P8010) for the
+ACPI backlight interface to work, as an these machines, neither ROM nor
+posting methods are available, and after removal of output switching,
+none of the caps triggers, which prevents the backlight search from
+being entered.
 
+Tested on a Fujitsu Lifebook S7110 and Fujitsu Lifebook P8010.
+This probably fixes https://bugzilla.kernel.org/show_bug.cgi?id=27312
+for the people who have no entry in /sys/class/backlight.
+
+This is the complete list of public (starting with "_") methods implemented
+on the S7110, BIOS rev 1.34:
+
+\_SB_.PCI0.GFX0._ADR
+\_SB_.PCI0.GFX0._DOS
+\_SB_.PCI0.GFX0._DOD
+\_SB_.PCI0.GFX0.CRT._ADR
+\_SB_.PCI0.GFX0.CRT._DCS
+\_SB_.PCI0.GFX0.CRT._DGS
+\_SB_.PCI0.GFX0.CRT._DSS
+\_SB_.PCI0.GFX0.LCD._ADR
+\_SB_.PCI0.GFX0.LCD._BCL
+\_SB_.PCI0.GFX0.LCD._BCM
+\_SB_.PCI0.GFX0.LCD._BQC
+\_SB_.PCI0.GFX0.LCD._DCS
+\_SB_.PCI0.GFX0.LCD._DGS
+\_SB_.PCI0.GFX0.LCD._DSS
+\_SB_.PCI0.GFX0.LCD._PS0
+\_SB_.PCI0.GFX0.LCD._PS3
+\_SB_.PCI0.GFX0.TV._ADR
+\_SB_.PCI0.GFX0.TV._DCS
+\_SB_.PCI0.GFX0.TV._DGS
+\_SB_.PCI0.GFX0.TV._DSS
+\_SB_.PCI0.GFX0.DVI._ADR
+\_SB_.PCI0.GFX0.DVI._DCS
+\_SB_.PCI0.GFX0.DVI._DGS
+\_SB_.PCI0.GFX0.DVI._DSS
+
+Signed-off-by: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+---
+ drivers/acpi/video_detect.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
+index 42d3d72..5af3479 100644
+--- a/drivers/acpi/video_detect.c
++++ b/drivers/acpi/video_detect.c
+@@ -82,6 +82,11 @@ long acpi_is_video_device(struct acpi_device *device)
+ 	if (!device)
+ 		return 0;
+ 
++	/* Is this device able to support video switching ? */
++	if (ACPI_SUCCESS(acpi_get_handle(device->handle, "_DOD", &h_dummy)) ||
++	    ACPI_SUCCESS(acpi_get_handle(device->handle, "_DOS", &h_dummy)))
++		video_caps |= ACPI_VIDEO_OUTPUT_SWITCHING;
++
+ 	/* Is this device able to retrieve a video ROM ? */
+ 	if (ACPI_SUCCESS(acpi_get_handle(device->handle, "_ROM", &h_dummy)))
+ 		video_caps |= ACPI_VIDEO_ROM_AVAILABLE;
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.2.3
+
