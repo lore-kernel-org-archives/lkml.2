@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751678Ab1AWNGT (ORCPT <rfc822;w@1wt.eu>);
+	id S1751490Ab1AWNGT (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 23 Jan 2011 08:06:19 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:41524 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751289Ab1AWNGS (ORCPT
+Received: from server109-228-6-236.live-servers.net ([109.228.6.236]:57244
+	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751273Ab1AWNGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 23 Jan 2011 08:06:18 -0500
-Date: Sun, 23 Jan 2011 14:06:11 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Greg KH <gregkh@suse.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: unbreak billionton CF card (was Re: [000/152] 2.6.36.3-stable
- review)
-Message-ID: <20110123130611.GA2713@ucw.cz>
-References: <20110106002500.GA3172@kroah.com>
- <20110106134254.68fa27ac@lxorguk.ukuu.org.uk>
- <20110106215705.GA30799@suse.de>
- <20110107150724.GA29082@atrey.karlin.mff.cuni.cz>
- <20110107183716.GA14895@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110107183716.GA14895@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Chris Clayton <chris2553@googlemail.com>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [PATCH] drm/i915: Handle the no-interrupts case for UMS by polling
+Date: Sun, 23 Jan 2011 13:06:05 +0000
+Message-Id: <1295787965-6849-1-git-send-email-chris@chris-wilson.co.uk>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <201101231128.22951.chris2553@googlemail.com>
+References: <201101231128.22951.chris2553@googlemail.com>
+X-Originating-IP: 78.156.66.37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unbreak Billionton CF bluetooth card. This actually fixes a regression
-on zaurus.
+If the driver calls into the kernel to wait for a breadcrumb to pass,
+but hasn't enabled interrupts, fallback to polling the breadcrumb value.
 
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
-
+Reported-by: Chris Clayton <chris2553@googlemail.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 ---
+ drivers/gpu/drm/i915/i915_irq.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-(now fixed typo)
-
-> > Flow control flag seems to be responsible.
-> > 
-> > But... it hits me and then... me. So I'd like to see it resolved in
-> > devel tree, but it may not 100% vital for stable.
-> 
-> Ok, care to make up a patch I can apply for Linus's tree first that
-> works for you?
-
-./drivers/serial - ./drivers/serial.ofic
-diff -X /usr/src/linux/.gitignore -ur ./drivers/serial.ofic/8250.c ./drivers/serial/8250.c
---- ./drivers/serial.ofic/8250.c	2011-01-02 21:25:29.000000000 +0100
-+++ ./drivers/serial/8250.c	2011-01-09 08:10:39.000000000 +0100
-@@ -236,7 +236,8 @@
- 		.fifo_size	= 128,
- 		.tx_loadsz	= 128,
- 		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
--		.flags		= UART_CAP_FIFO | UART_CAP_EFR | UART_CAP_SLEEP,
-+		/* UART_CAP_EFR breaks Billionton CF bluetooth card. */
-+		.flags		= UART_CAP_FIFO | UART_CAP_SLEEP,
- 	},
- 	[PORT_16654] = {
- 		.name		= "ST16654",
-
+diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
+index 98106b7..4b5a35c 100644
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -1293,12 +1293,12 @@ static int i915_wait_irq(struct drm_device * dev, int irq_nr)
+ 	if (master_priv->sarea_priv)
+ 		master_priv->sarea_priv->perf_boxes |= I915_BOX_WAIT;
+ 
+-	ret = -ENODEV;
+ 	if (ring->irq_get(ring)) {
+ 		DRM_WAIT_ON(ret, ring->irq_queue, 3 * DRM_HZ,
+ 			    READ_BREADCRUMB(dev_priv) >= irq_nr);
+ 		ring->irq_put(ring);
+-	}
++	} else if (wait_for(READ_BREADCRUMB(dev_priv) >= irq_nr, 3000))
++		ret = -EBUSY;
+ 
+ 	if (ret == -EBUSY) {
+ 		DRM_ERROR("EBUSY -- rec: %d emitted: %d\n",
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.2.3
+
