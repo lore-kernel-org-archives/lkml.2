@@ -1,99 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994Ab1AXVZD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 16:25:03 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:7756 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069Ab1AXVZB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 16:25:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=OLJ+l2fttjRTKUhlPov1xWOenvXk8CuFnd1QhlzgJMti7WbfX4tNrd44aINApoa+la
-         cyh5G+V1/4/bRmrq3VYg==
+	id S1753105Ab1AXVZx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 16:25:53 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:58411 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751554Ab1AXVZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 16:25:52 -0500
+Date: Mon, 24 Jan 2011 22:25:26 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] perf fixes
+Message-ID: <20110124212526.GA13724@elte.hu>
+References: <20110124133400.GA1228@elte.hu>
+ <AANLkTinsVNy9a1bR0AgD7=Vupoujt03RuZ32v39XSknx@mail.gmail.com>
+ <20110124200738.GA10833@elte.hu>
+ <AANLkTi=C0L=21zhH_L+cRPv2ZCRE9L93tKtC9ELrcTBW@mail.gmail.com>
+ <AANLkTi=V61L6vgFZ_4u20dZvv2=tvi-XJMc2HqOnjMo4@mail.gmail.com>
+ <20110124203802.GC29975@ghostprotocols.net>
 MIME-Version: 1.0
-In-Reply-To: <20110124210833.GK29925@opensource.wolfsonmicro.com>
-References: <1295834493-5019-1-git-send-email-ccross@android.com>
-	<1295834493-5019-21-git-send-email-ccross@android.com>
-	<20110124144142.GA16813@sirena.org.uk>
-	<AANLkTikrUdLM8VmW5yCndf927E=drZF1gGBwXq6Dj5mW@mail.gmail.com>
-	<20110124193539.GI29925@opensource.wolfsonmicro.com>
-	<AANLkTikOEm=watbA1G-SFK3PZrntDc+Wun84nGio=YKv@mail.gmail.com>
-	<20110124202610.GJ29925@opensource.wolfsonmicro.com>
-	<AANLkTinY5mJtC2fiV1iBnPbgwH9v3AmQQ7RR3pYJVACL@mail.gmail.com>
-	<20110124210833.GK29925@opensource.wolfsonmicro.com>
-Date: Mon, 24 Jan 2011 13:24:58 -0800
-X-Google-Sender-Auth: ssq0cqouhZ3SHPS4QTkDeiRT-io
-Message-ID: <AANLkTimK7vD6mrPXyRdx331mCnRNLnajCRONT=MzQHwW@mail.gmail.com>
-Subject: Re: [PATCH v2 20/28] ARM: tegra: cpufreq: Disable cpufreq during suspend
-From: Colin Cross <ccross@android.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-tegra@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        konkers@android.com, linux-kernel@vger.kernel.org, olof@lixom.net,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110124203802.GC29975@ghostprotocols.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24, 2011 at 1:08 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Mon, Jan 24, 2011 at 12:52:51PM -0800, Colin Cross wrote:
->> On Mon, Jan 24, 2011 at 12:26 PM, Mark Brown
->
->> > Normally that's handled by the same transition logic - the core PMIC
->> > will usually sequence a bunch of voltage and power status changes when
->> > entering its own low power mode and have a similar transition on resume
->> > which will ensure that the regulators power back up with a sane setup
->> > regardless of the state they were in beforehand.
->
->> I believe Tegra supports this mode, where the Tegra PMC can master the
->> I2C bus to control an external PMIC during resume, but I've never seen
->> it used.
->
-> In almost all cases it's implemented in the PMIC rather than the CPU -
-> it's essentially the same logic as implements the initial power on of
-> the system and the PMIC needs to be capable of starting the system boot
-> without external assistance anyway, including sequencing the power up of
-> the CPU.
->
-> With most PMICs the settings will be hard coded into the silicon so
-> you really need to get a PMIC specifically designed for whatever CPU
-> you're using (this is one of the reasons you always see the same
-> CPU/PMIC combinations, people are terrified of changing a known good
-> pairing in case they build something that won't power on).  Some more
-> modern PMICs make this configurable which gives system designers a lot
-> more flexibility.
 
-I'm seeing the opposite problem - changing CPUs, and keeping the PMIC.
+* Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
 
-> The PMC stuff is newer and in the designs I've seen is more focused on
-> runtime management than this stuff.
->
->> > It sounds like for your systems what's happening is that the resume is
->> > restoring the previously configured voltages for the core rails rather
->> > than going to a known good state.  Is my understanding correct here?
->> > While your fix is good and I don't see any reason not to do it this does
->> > sound like something we should have a solution for in common code as I'd
->> > not be surprised if there were other hardware out there which did a
->> > similar thing.
->
->> Yes - the core can be connected to a dumb I2C regulator, which the
->> core can turn on and off with a request line, but can't control the
->> voltage without a regulator driver controlling the I2C bus.
->
-> AIUI generally they end up working because whatever puts them into
-> suspend actually resets them so when you release reset during resume
-> they just recover whatever the default voltage they have is and normally
-> the boot and resume conditions for the CPU are identical.  I could be
-> off base there, most of the regulator API stuff has been done with
-> integrated PMICs.
+> Em Tue, Jan 25, 2011 at 06:27:31AM +1000, Linus Torvalds escreveu:
+> > On Tue, Jan 25, 2011 at 6:17 AM, Linus Torvalds
+> > <torvalds@linux-foundation.org> wrote:
+> > >
+> > > It only happens for me with "g". With "perf record -af sleep 10" it worked.
+> > 
+> > Actually, it's something subtler than that. It must depend on the
+> > actual data, because now when I tried it again, it worked with 'g'
+> > too. I hadn't saved the old perf.data that caused the lockup (it got
+> > overwritten by the non-g test), and now when I try to re-create it it
+> > doesn't hang on the result.
+> > 
+> > So it's probably some very specific data pattern that causes it.
+> > 
+> > (And I don't know if it's a hard hang - it could just be something
+> > _very_ slow. But we're talking half a minute kind of slow).
+> 
+> Was this on a freshly installed machine? Or on a freshly updated one?
+> 
+> Probably its the build-id collecting at the end of a session, on the
+> first run you had a cold cache and it had to figure out which binaries
+> to cache on ~/.debug, second time it was already cached so it was fast.
 
-Resetting during suspend would be the sane thing to do, but that's not
-what the hardware does.  The regulator also gets turned off during
-idle, so it can't just be reset every time it turns off.
+Hm, it would be nice to not surprise users with an unlimited-timeout, up to half a 
+minute 'frozen' app. Can we possibly display a more finegrained progress indicator?
+
+Thanks,
+
+	Ingo
