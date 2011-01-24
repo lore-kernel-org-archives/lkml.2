@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751871Ab1AXWAx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 17:00:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57437 "EHLO mx1.redhat.com"
+	id S1751915Ab1AXWKv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 17:10:51 -0500
+Received: from www.tglx.de ([62.245.132.106]:36400 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751107Ab1AXWAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 17:00:52 -0500
-Date: Mon, 24 Jan 2011 20:00:32 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] perf fixes
-Message-ID: <20110124220032.GE29975@ghostprotocols.net>
-References: <20110124133400.GA1228@elte.hu> <AANLkTinsVNy9a1bR0AgD7=Vupoujt03RuZ32v39XSknx@mail.gmail.com> <20110124200738.GA10833@elte.hu> <AANLkTi=C0L=21zhH_L+cRPv2ZCRE9L93tKtC9ELrcTBW@mail.gmail.com> <AANLkTi=V61L6vgFZ_4u20dZvv2=tvi-XJMc2HqOnjMo4@mail.gmail.com> <20110124203802.GC29975@ghostprotocols.net> <20110124212526.GA13724@elte.hu>
+	id S1751107Ab1AXWKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 17:10:51 -0500
+Date: Mon, 24 Jan 2011 23:10:18 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: john stultz <johnstul@us.ibm.com>
+cc: Torben Hohn <torbenh@gmx.de>, LKML <linux-kernel@vger.kernel.org>,
+        hch@infradead.org, yong.zhang0@gmail.com,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 01/18] move do_timer() from kernel/timer.c into
+ kernel/time/timekeeping.c
+In-Reply-To: <1295901169.4845.29.camel@work-vm>
+Message-ID: <alpine.LFD.2.00.1101242254420.31804@localhost6.localdomain6>
+References: <1295651224-29823-1-git-send-email-torbenh@gmx.de>  <1295651224-29823-2-git-send-email-torbenh@gmx.de> <1295901169.4845.29.camel@work-vm>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110124212526.GA13724@elte.hu>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jan 24, 2011 at 10:25:26PM +0100, Ingo Molnar escreveu:
-> * Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
-> > Was this on a freshly installed machine? Or on a freshly updated one?
-> > 
-> > Probably its the build-id collecting at the end of a session, on the
-> > first run you had a cold cache and it had to figure out which binaries
-> > to cache on ~/.debug, second time it was already cached so it was fast.
+B1;2401;0cOn Mon, 24 Jan 2011, john stultz wrote:
+> I'm guessing Thomas is thinking to move these bits into timekeeping.c so
+> xtime_lock can be made static there, it just strikes me oddly.
+> Especially since jiffies access is still going to need the xtime_lock,
+> so we'd have to move all the jiffies code into timekeeping.c to do so.
+
+That should go into jiffies.c. We don't need to move everything to
+timekeeping.c.
+ 
+> Splitting the xtime_lock int a static timekeeper.lock and a static
+> jiffies_lock might be the clean way to divide things, but that really
+> just adds extra locking overhead. But maybe that's not much of an issue.
 > 
-> Hm, it would be nice to not surprise users with an unlimited-timeout, up to half a 
-> minute 'frozen' app. Can we possibly display a more finegrained progress indicator?
+> Thomas: I suspect I'm just not seeing where you're going with this.
+> Could you clarify a bit? :)
 
-Definetely, adding this to the todo list.
+We really want to restrict xtime_lock to the core timekeeping
+code. xtime_update() is really meant to take care of the timekeeping
+updates. do_timer() is a horrible misnomer today.
 
-In fact perf_session__process_events already has an ui_progress stuff,
-its just that it works only on report/TUI. Need to make it work with
-some /-|/- spinning text progress indicator after a "collecting
-build-ids:" string, something like that.
+The call to calc_global_load() is there for hysterical raisins and we
+really should get rid of it sooner than later. I'm quite sure that it
+could be run from a timer callback as well. Peter ?
 
-- Arnaldo
+Does that answer your questions ?
+
+Thanks,
+
+	tglx
+
+
