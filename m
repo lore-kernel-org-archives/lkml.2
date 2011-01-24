@@ -1,99 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929Ab1AXSku (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 13:40:50 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:52561 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753562Ab1AXSkt convert rfc822-to-8bit (ORCPT
+	id S1754003Ab1AXSqC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 13:46:02 -0500
+Received: from exprod5og110.obsmtp.com ([64.18.0.20]:36196 "EHLO
+	exprod5og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753562Ab1AXSqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 13:40:49 -0500
-Subject: Re: [PATCH] a patch to fix the cpu-offline-online problem caused
- by pm_idle
-From: Peter Zijlstra <peterz@infradead.org>
-To: Luming Yu <luming.yu@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>
-In-Reply-To: <AANLkTinaOQpuJis5HgK316ANxpDS8eZ8Q0S4a44POrp0@mail.gmail.com>
-References: <AANLkTinaOQpuJis5HgK316ANxpDS8eZ8Q0S4a44POrp0@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 24 Jan 2011 19:41:32 +0100
-Message-ID: <1295894492.28776.470.camel@laptop>
+	Mon, 24 Jan 2011 13:46:00 -0500
+Date: Mon, 24 Jan 2011 12:48:13 -0600
+From: Rich Coe <Richard.Coe@med.ge.com>
+To: Tobias Karnat <tobias.karnat@googlemail.com>
+Cc: Thomas Renninger <trenn@suse.de>, richard.coe@med.ge.com,
+        jslaby@novell.com, linux-acpi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: acpi_button: random oops on boot
+Message-Id: <20110124124813.bb03c6fe.Richard.Coe@med.ge.com>
+In-Reply-To: <1295892786.3265.48.camel@Tobias-Karnat>
+References: <1291477752.5096.27.camel@Tobias-Karnat>
+	<1291679699.6246.11.camel@Tobias-Karnat>
+	<20101207051521.GA16804@helgaas.com>
+	<201101241403.21707.trenn@suse.de>
+	<1295892786.3265.48.camel@Tobias-Karnat>
+Organization: CSE
+X-Mailer: Sylpheed 3.1.0beta3-r2688 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-GEHealthcare-MailScanner: Found to be clean
+X-GEHealthcare-MailScanner-From: richard.coe@med.ge.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-24 at 02:34 -0500, Luming Yu wrote:
-> Hi there,
+On Mon, 24 Jan 2011 19:13:06 +0100
+Tobias Karnat <tobias.karnat@googlemail.com> wrote:
+> Am Montag, den 24.01.2011, 14:03 +0100 schrieb Thomas Renninger:
+> I hope Rich is still interested in a solution as I am. The bad thing is
+> that the latest working version I had been running on that machine was
+> ancient 2.6.23. So this problem is a regression, which I would have
+> noticed earlier, if I had updated that machine more often.
 > 
-> I've seen many problems caused by deep-c-state-capable pm_idle on a
-> NHM-EX system with this test script
-> # for i in `seq 1 1000`; do echo $i; echo 0 >
-> /sys/devices/system/cpu/cpu59/online ; sleep 1; echo 1 >
-> /sys/devices/system/cpu/cpu59/online; done
-> 
-> As the bug " CPU online/offline causes system slowdown"
-> https://bugzilla.redhat.com/show_bug.cgi?id=586551 described.
-> 
-> The simplest and easiest and cleanest way I can think of now is as the
-> patch attached.
-> 
-> Signed-off-by: Yu Luming <luming.yu@intel.com>
-> 
-> diff --git a/kernel/cpu.c b/kernel/cpu.c
-> index c75fcdd..d419eb3 100644
-> --- a/kernel/cpu.c
-> +++ b/kernel/cpu.c
-> @@ -135,6 +135,7 @@ int __ref register_cpu_notifier(struct notifier_block *nb)
-> 
->  #ifdef CONFIG_HOTPLUG_CPU
-> 
-> +static void (*pm_idle_saved) (void) __read_mostly;
->  EXPORT_SYMBOL(register_cpu_notifier);
-> 
->  void __ref unregister_cpu_notifier(struct notifier_block *nb)
-> @@ -145,6 +146,19 @@ void __ref unregister_cpu_notifier(struct
-> notifier_block *nb)
->  }
->  EXPORT_SYMBOL(unregister_cpu_notifier);
-> 
-> +static inline void save_pm_idle(void)
-> +{
-> +	pm_idle_saved = pm_idle;
-> +	pm_idle = default_idle;
-> +	cpu_idle_wait();
-> +}
-> +
-> +static inline void restore_pm_idle(void)
-> +{
-> +	pm_idle = pm_idle_saved;
-> +	cpu_idle_wait();
-> +}
-> +
->  static inline void check_for_tasks(int cpu)
->  {
->  	struct task_struct *p;
-> @@ -278,7 +292,9 @@ int __ref cpu_down(unsigned int cpu)
->  		goto out;
->  	}
-> 
-> +	save_pm_idle();
->  	err = _cpu_down(cpu, 0);
-> +	restore_pm_idle();
-> 
->  out:
->  	cpu_maps_update_done();
-> @@ -376,7 +392,9 @@ int __cpuinit cpu_up(unsigned int cpu)
->  		goto out;
->  	}
-> 
-> +	save_pm_idle();
->  	err = _cpu_up(cpu, 0);
-> +	restore_pm_idle();
-> 
->  out:
->  	cpu_maps_update_done();
+> It is not an hardware problem [...]
 
-Ow god this is ugly.. pm_idle should die asap, not find it way into generic code, so NAK!
+I don't think it's a hardware problem either.  
 
+I reproduced this on later kernels, 2.6.36 (I think). 
+I've been working on a project that's almost finished, then I plan on going
+back to tracking down this issue.
+
+Rich
+-- 
