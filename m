@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751915Ab1AXWKv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 17:10:51 -0500
-Received: from www.tglx.de ([62.245.132.106]:36400 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751107Ab1AXWKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 17:10:51 -0500
-Date: Mon, 24 Jan 2011 23:10:18 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: john stultz <johnstul@us.ibm.com>
-cc: Torben Hohn <torbenh@gmx.de>, LKML <linux-kernel@vger.kernel.org>,
-        hch@infradead.org, yong.zhang0@gmail.com,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 01/18] move do_timer() from kernel/timer.c into
- kernel/time/timekeeping.c
-In-Reply-To: <1295901169.4845.29.camel@work-vm>
-Message-ID: <alpine.LFD.2.00.1101242254420.31804@localhost6.localdomain6>
-References: <1295651224-29823-1-git-send-email-torbenh@gmx.de>  <1295651224-29823-2-git-send-email-torbenh@gmx.de> <1295901169.4845.29.camel@work-vm>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752245Ab1AXWNL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 17:13:11 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:55044 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384Ab1AXWNI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 17:13:08 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6236"; a="71597623"
+From: David Brown <davidb@codeaurora.org>
+To: Daniel Walker <dwalker@codeaurora.org>
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 07/11] msm: Add MSM 8960 cpu_is check
+In-Reply-To: <1295904928.29639.58.camel@c-dwalke-linux.qualcomm.com> (Daniel
+	Walker's message of "Mon, 24 Jan 2011 13:35:28 -0800")
+References: <1292384961-8851-1-git-send-email-stepanm@codeaurora.org>
+	<1295468747-22796-1-git-send-email-davidb@codeaurora.org>
+	<1295468747-22796-8-git-send-email-davidb@codeaurora.org>
+	<1295901976.29639.53.camel@c-dwalke-linux.qualcomm.com>
+	<8yak4hukn00.fsf@huya.qualcomm.com>
+	<1295904928.29639.58.camel@c-dwalke-linux.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+X-Hashcash: 1:20:110124:linux-arm-msm@vger.kernel.org::hACfkPeW5GSqTn63:000000000000000000000000000000000GdH
+X-Hashcash: 1:20:110124:linux-arm-kernel@lists.infradead.org::s50pmklHnblnp1eW:00000000000000000000000001kfi
+X-Hashcash: 1:20:110124:dwalker@codeaurora.org::E5n/yJ5GHH6dhGQc:0000000000000000000000000000000000000004dIm
+X-Hashcash: 1:20:110124:linux-kernel@vger.kernel.org::QAWGO5DP+euJsdCW:000000000000000000000000000000000DDYn
+Date: Mon, 24 Jan 2011 14:13:07 -0800
+Message-ID: <8ya8vyakl1o.fsf@huya.qualcomm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-B1;2401;0cOn Mon, 24 Jan 2011, john stultz wrote:
-> I'm guessing Thomas is thinking to move these bits into timekeeping.c so
-> xtime_lock can be made static there, it just strikes me oddly.
-> Especially since jiffies access is still going to need the xtime_lock,
-> so we'd have to move all the jiffies code into timekeeping.c to do so.
+On Mon, Jan 24 2011, Daniel Walker wrote:
 
-That should go into jiffies.c. We don't need to move everything to
-timekeeping.c.
- 
-> Splitting the xtime_lock int a static timekeeper.lock and a static
-> jiffies_lock might be the clean way to divide things, but that really
-> just adds extra locking overhead. But maybe that's not much of an issue.
-> 
-> Thomas: I suspect I'm just not seeing where you're going with this.
-> Could you clarify a bit? :)
+>> What do you want me to call it?
+>> 
+>>   #define cpu_is_97d0c886-3768-4998-8925-16f36209d0d1()
+>
+> I want you to call it msm8x60 ..
 
-We really want to restrict xtime_lock to the core timekeeping
-code. xtime_update() is really meant to take care of the timekeeping
-updates. do_timer() is a horrible misnomer today.
+msm8960 is not a subset of msm8x60.  It's just a misleading name.  It's
+a very different device, and needs it's own identifier.
 
-The call to calc_global_load() is there for hysterical raisins and we
-really should get rid of it sooner than later. I'm quite sure that it
-could be run from a timer callback as well. Peter ?
+David
 
-Does that answer your questions ?
-
-Thanks,
-
-	tglx
-
-
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
