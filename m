@@ -1,79 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752Ab1AXWou (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 17:44:50 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58944 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752556Ab1AXWot (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 17:44:49 -0500
-Date: Mon, 24 Jan 2011 14:43:53 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Phillip Lougher <phillip@lougher.demon.co.uk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] SquashFS, XZ: Don't use uninitialized variable in
- squashfs_xz_uncompress
-Message-Id: <20110124144353.c04c77b4.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LNX.2.00.1101202140070.11854@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1101202140070.11854@swampdragon.chaosbits.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752763Ab1AXWpW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 17:45:22 -0500
+Received: from www.tglx.de ([62.245.132.106]:36794 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751344Ab1AXWpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 17:45:20 -0500
+Date: Mon, 24 Jan 2011 23:44:38 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: john stultz <johnstul@us.ibm.com>, Torben Hohn <torbenh@gmx.de>,
+        LKML <linux-kernel@vger.kernel.org>, hch@infradead.org,
+        yong.zhang0@gmail.com
+Subject: Re: [PATCH 01/18] move do_timer() from kernel/timer.c into
+ kernel/time/timekeeping.c
+In-Reply-To: <1295907672.2274.44.camel@twins>
+Message-ID: <alpine.LFD.2.00.1101242344090.31804@localhost6.localdomain6>
+References: <1295651224-29823-1-git-send-email-torbenh@gmx.de>  <1295651224-29823-2-git-send-email-torbenh@gmx.de>  <1295901169.4845.29.camel@work-vm>  <alpine.LFD.2.00.1101242254420.31804@localhost6.localdomain6> <1295907672.2274.44.camel@twins>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Jan 2011 21:53:23 +0100 (CET)
-Jesper Juhl <jj@chaosbits.net> wrote:
+On Mon, 24 Jan 2011, Peter Zijlstra wrote:
 
-> In fs/squashfs/xz_wrapper.c::squashfs_xz_uncompress() we have this code:
+> On Mon, 2011-01-24 at 23:10 +0100, Thomas Gleixner wrote:
+> > The call to calc_global_load() is there for hysterical raisins and we
+> > really should get rid of it sooner than later. I'm quite sure that it
+> > could be run from a timer callback as well. Peter ?
 > 
-> 	enum xz_ret xz_err;
-> 	...
-> 	do {
-> 		if (stream->buf.in_pos == stream->buf.in_size && k < b) {
-> 		... [nothing that assigns to 'xz_err'] ...
-> 			if (avail == 0) {
-> 				offset = 0;
-> 				put_bh(bh[k++]);
-> 				continue;
-> 			}
-> 		...
-> 	} while (xz_err == XZ_OK);
-> 
-> If we hit that 'continue' statement the first time through, then the 
-> 'while' condition will be testing an uninitialized 'xz_err' - not what we 
-> want.
-> 
-> This patch should take care of the problem by making sure that 'xz_err' is 
-> initialized to 'XZ_OK' at the start of the function.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  xz_wrapper.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
->   compile tested only.
-> 
-> diff --git a/fs/squashfs/xz_wrapper.c b/fs/squashfs/xz_wrapper.c
-> index 856756c..daf76c3 100644
-> --- a/fs/squashfs/xz_wrapper.c
-> +++ b/fs/squashfs/xz_wrapper.c
-> @@ -74,7 +74,7 @@ static int squashfs_xz_uncompress(struct squashfs_sb_info *msblk, void **buffer,
->  	struct buffer_head **bh, int b, int offset, int length, int srclength,
->  	int pages)
->  {
-> -	enum xz_ret xz_err;
-> +	enum xz_ret xz_err = XZ_OK;
->  	int avail, total = 0, k = 0, page = 0;
->  	struct squashfs_xz *stream = msblk->stream;
->  
+> calc_global_load() wants to be called on just one cpu, do we have a
+> better place for that?
 
-hm, maybe.  The handling of the `avail == 0' case looks odd.  It sits
-there in a loop doing wait_on_buffer() against buffers which it will
-never use and possible reporting -EIO for a buffer which it didn't use,
-which seems bogus.
+Well, we can call it from a timer from a single CPU.
 
-Phillip, please check?
+Thanks,
+
+	tglx
+ 
