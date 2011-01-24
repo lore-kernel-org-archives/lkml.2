@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679Ab1AXWod (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 17:44:33 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:59644 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344Ab1AXWob (ORCPT
+	id S1752752Ab1AXWou (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 17:44:50 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58944 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752556Ab1AXWot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 17:44:31 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6236"; a="71601896"
-From: David Brown <davidb@codeaurora.org>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 02/11] msm: Generalize timer register mappings
-References: <1292384961-8851-1-git-send-email-stepanm@codeaurora.org>
-	<1295468747-22796-1-git-send-email-davidb@codeaurora.org>
-	<1295468747-22796-3-git-send-email-davidb@codeaurora.org>
-	<1295908604.29639.62.camel@c-dwalke-linux.qualcomm.com>
-X-Hashcash: 1:20:110124:linux-arm-msm@vger.kernel.org::7REBpiHT2etYpqjZ:000000000000000000000000000000000aZA
-X-Hashcash: 1:20:110124:dwalker@codeaurora.org::hAoImOWHlqkd4Bkr:0000000000000000000000000000000000000001pt1
-X-Hashcash: 1:20:110124:linux-arm-kernel@lists.infradead.org::ap4hQ/1fDgQeO9/7:00000000000000000000000002svB
-X-Hashcash: 1:20:110124:linux-kernel@vger.kernel.org::wzmR7evenEeYCijq:0000000000000000000000000000000005xRL
-Date: Mon, 24 Jan 2011 14:44:31 -0800
-In-Reply-To: <1295908604.29639.62.camel@c-dwalke-linux.qualcomm.com> (Daniel
-	Walker's message of "Mon, 24 Jan 2011 14:36:44 -0800")
-Message-ID: <8yaei81kjlc.fsf@huya.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 24 Jan 2011 17:44:49 -0500
+Date: Mon, 24 Jan 2011 14:43:53 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Phillip Lougher <phillip@lougher.demon.co.uk>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] SquashFS, XZ: Don't use uninitialized variable in
+ squashfs_xz_uncompress
+Message-Id: <20110124144353.c04c77b4.akpm@linux-foundation.org>
+In-Reply-To: <alpine.LNX.2.00.1101202140070.11854@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1101202140070.11854@swampdragon.chaosbits.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24 2011, Daniel Walker wrote:
+On Thu, 20 Jan 2011 21:53:23 +0100 (CET)
+Jesper Juhl <jj@chaosbits.net> wrote:
 
-> On Wed, 2011-01-19 at 12:25 -0800, David Brown wrote:
->> +       int global_offset = 0;
->> +
->> +       if (cpu_is_msm7x01()) {
->> +               msm_clocks[MSM_CLOCK_GPT].regbase = MSM_CSR_BASE;
->> +               msm_clocks[MSM_CLOCK_DGT].regbase = MSM_CSR_BASE + 0x10;
->> +       } else if (cpu_is_msm7x30()) {
->> +               msm_clocks[MSM_CLOCK_GPT].regbase = MSM_CSR_BASE + 0x04;
->> +               msm_clocks[MSM_CLOCK_DGT].regbase = MSM_CSR_BASE + 0x24;
->> +       } else if (cpu_is_qsd8x50()) {
->> +               msm_clocks[MSM_CLOCK_GPT].regbase = MSM_CSR_BASE;
->> +               msm_clocks[MSM_CLOCK_DGT].regbase = MSM_CSR_BASE + 0x10;
->> +       } else if (cpu_is_msm8x60()) {
->> +               msm_clocks[MSM_CLOCK_GPT].regbase = MSM_TMR_BASE + 0x04;
->> +               msm_clocks[MSM_CLOCK_DGT].regbase = MSM_TMR_BASE + 0x24;
->> +
->> +               /* Use CPU0's timer as the global timer. */
->> +               global_offset = MSM_TMR0_BASE - MSM_TMR_BASE;
->> +       } else
->> +               BUG(); 
->
-> Ifdef's here would be OK I think, your already using the "runtime"
-> checks ..
+> In fs/squashfs/xz_wrapper.c::squashfs_xz_uncompress() we have this code:
+> 
+> 	enum xz_ret xz_err;
+> 	...
+> 	do {
+> 		if (stream->buf.in_pos == stream->buf.in_size && k < b) {
+> 		... [nothing that assigns to 'xz_err'] ...
+> 			if (avail == 0) {
+> 				offset = 0;
+> 				put_bh(bh[k++]);
+> 				continue;
+> 			}
+> 		...
+> 	} while (xz_err == XZ_OK);
+> 
+> If we hit that 'continue' statement the first time through, then the 
+> 'while' condition will be testing an uninitialized 'xz_err' - not what we 
+> want.
+> 
+> This patch should take care of the problem by making sure that 'xz_err' is 
+> initialized to 'XZ_OK' at the start of the function.
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  xz_wrapper.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+>   compile tested only.
+> 
+> diff --git a/fs/squashfs/xz_wrapper.c b/fs/squashfs/xz_wrapper.c
+> index 856756c..daf76c3 100644
+> --- a/fs/squashfs/xz_wrapper.c
+> +++ b/fs/squashfs/xz_wrapper.c
+> @@ -74,7 +74,7 @@ static int squashfs_xz_uncompress(struct squashfs_sb_info *msblk, void **buffer,
+>  	struct buffer_head **bh, int b, int offset, int length, int srclength,
+>  	int pages)
+>  {
+> -	enum xz_ret xz_err;
+> +	enum xz_ret xz_err = XZ_OK;
+>  	int avail, total = 0, k = 0, page = 0;
+>  	struct squashfs_xz *stream = msblk->stream;
+>  
 
-The point of the change is to get rid of the ifdefs so that we can
-dynamically detect which target we are on.  Yes, there are other places
-where it doesn't work, but we'll get there gradually.
+hm, maybe.  The handling of the `avail == 0' case looks odd.  It sits
+there in a loop doing wait_on_buffer() against buffers which it will
+never use and possible reporting -EIO for a buffer which it didn't use,
+which seems bogus.
 
-David
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Phillip, please check?
