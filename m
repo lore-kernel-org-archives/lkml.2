@@ -1,190 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab1AXQIl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 11:08:41 -0500
-Received: from smtp-auth.no-ip.com ([204.16.252.94]:58786 "EHLO
-	smtp-auth.no-ip.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753331Ab1AXQIj (ORCPT
+	id S1753451Ab1AXQJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 11:09:42 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52690 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753332Ab1AXQJk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 11:08:39 -0500
-X-No-IP: mailerx1.ca@noip-smtp
-X-Report-Spam-To: abuse@no-ip.com
-From: "=?utf-8?B?QW5udWFpcmUgZGVzIFN1YnZlbnRpb25zIGF1IFF1w6liZWMgMjAxMQ==?=" 
-	<ann.sub.quebec@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: =?utf-8?B?QW5udWFpcmUgZGVzIFN1YnZlbnRpb25zIGF1IFF1w6liZWMgMjAxMQ==?=
-Date: Mon, 24 Jan 2011 11:08:38 -0500
+	Mon, 24 Jan 2011 11:09:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=Sr+ceBbxylEmIwOQJDQfkLn6XDb2GMe3H9MOeZAVCnhAW1SQoZ7XY6t6N1ej496Eil
+         28XHjWrrdfY20kt9dby6VeOxb/OnBNJ0Zb921QVO3/QaUyuy3n8zirqEm5L9RPc/LPj4
+         tYYWmObU2qzxIB2c4jUJr4wauwBT/F0CI9HG4=
 MIME-Version: 1.0
-Message-ID: <1295861660c71d53d8b4bf163c84f4470b0e4d7294@gmail.com>
-Reply-To: ann.sub.quebec@gmail.com
-Content-Type: text/plain;
-	charset="utf-8"
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1294062595-30097-18-git-send-email-tj@kernel.org>
+References: <1294062595-30097-1-git-send-email-tj@kernel.org> <1294062595-30097-18-git-send-email-tj@kernel.org>
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Mon, 24 Jan 2011 17:09:18 +0100
+X-Google-Sender-Auth: d5BVv9h-V9V82xy5kShgzQiGxSY
+Message-ID: <AANLkTi=Fg8wjf-XfVsq0X4RWx7i8F1V7gC6-8Y5LPbnL@mail.gmail.com>
+Subject: Re: [PATCH 17/32] scsi/ibmvstgt: use system_wq instead of vtgtd workqueue
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        "James E.J. Bottomley" <James.Bottomley@hansenpartnership.com>,
+        linux-scsi@vger.kernel.org, Brian King <brking@linux.vnet.ibm.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ôªø[English message will follow]
+On Mon, Jan 3, 2011 at 2:49 PM, Tejun Heo <tj@kernel.org> wrote:
+>
+> The target driver is not in the memory reclaim path and doesn't need a
+> dedicated workqueue. †Drop vtgtd and use system_wq instead. †The used
+> work item is sync flushed on removal.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> Cc: "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
+> Cc: linux-scsi@vger.kernel.org
+> ---
+> Only compile tested. †Please feel free to take it into the subsystem
+> tree or simply ack - I'll route it through the wq tree.
+>
+> Thanks.
+>
+> †drivers/scsi/ibmvscsi/ibmvstgt.c | † 15 ++++-----------
+> †1 files changed, 4 insertions(+), 11 deletions(-)
+>
+> diff --git a/drivers/scsi/ibmvscsi/ibmvstgt.c b/drivers/scsi/ibmvscsi/ibmvstgt.c
+> index 2256bab..47fc632 100644
+> --- a/drivers/scsi/ibmvscsi/ibmvstgt.c
+> +++ b/drivers/scsi/ibmvscsi/ibmvstgt.c
+> @@ -74,7 +74,6 @@ struct vio_port {
+> † † † †struct srp_rport *rport;
+> †};
+>
+> -static struct workqueue_struct *vtgtd;
+> †static struct scsi_transport_template *ibmvstgt_transport_template;
+>
+> †/*
+> @@ -546,7 +545,7 @@ static irqreturn_t ibmvstgt_interrupt(int dummy, void *data)
+> † † † †struct vio_port *vport = target_to_port(target);
+>
+> † † † †vio_disable_interrupts(vport->dma_dev);
+> - † † † queue_work(vtgtd, &vport->crq_work);
+> + † † † schedule_work(&vport->crq_work);
+>
+> † † † †return IRQ_HANDLED;
+> †}
+> @@ -900,6 +899,7 @@ static int ibmvstgt_remove(struct vio_dev *dev)
+> † † † †crq_queue_destroy(target);
+> † † † †srp_remove_host(shost);
+> † † † †scsi_remove_host(shost);
+> + † † † flush_work_sync(&vport->crq_work);
+> † † † †scsi_tgt_free_queue(shost);
+> † † † †srp_target_free(target);
+> † † † †kfree(vport);
+> @@ -967,21 +967,15 @@ static int __init ibmvstgt_init(void)
+> † † † †if (!ibmvstgt_transport_template)
+> † † † † † † † †return err;
+>
+> - † † † vtgtd = create_workqueue("ibmvtgtd");
+> - † † † if (!vtgtd)
+> - † † † † † † † goto release_transport;
+> -
+> † † † †err = get_system_info();
+> † † † †if (err)
+> - † † † † † † † goto destroy_wq;
+> + † † † † † † † goto release_transport;
+>
+> † † † †err = vio_register_driver(&ibmvstgt_driver);
+> † † † †if (err)
+> - † † † † † † † goto destroy_wq;
+> + † † † † † † † goto release_transport;
+>
+> † † † †return 0;
+> -destroy_wq:
+> - † † † destroy_workqueue(vtgtd);
+> †release_transport:
+> † † † †srp_release_transport(ibmvstgt_transport_template);
+> † † † †return err;
+> @@ -991,7 +985,6 @@ static void __exit ibmvstgt_exit(void)
+> †{
+> † † † †printk("Unregister IBM virtual SCSI driver\n");
+>
+> - † † † destroy_workqueue(vtgtd);
+> † † † †vio_unregister_driver(&ibmvstgt_driver);
+> † † † †srp_release_transport(ibmvstgt_transport_template);
+> †}
 
-Offrez √† vos usagers une nouvelle ressource √©lectronique pour le d√©veloppement communautaire et √©conomique.
+(added Brian King and Robert Jennings in CC)
 
-L'Annuaire Des Subventions en ligne est accessible par fureteur internet et repose sur une plateforme Filemaker utilisant la fonction "instant web publishing".
-Tout en √©tant extr√™mement versatile et puissant l'Annuaire des Subventions au Qu√©bec en ligne est maintenant une solution des plus conviviales pour Windows, 
-Mac et le Web.
+Hello Tejun,
 
-Sous forme d'une base de donn√©es ce nouvel outil permet d√©sormais d'acc√©der directement aux programmes d'aides et de subventions disponibles pour le Qu√©bec.
+Insertion of  flush_work_sync() fixes a race - that's a good catch.
+flush_work_sync() should be invoked a little earlier though because
+the scheduled work may access the queue destroyed by the
+crq_queue_destroy(target) call. And the CRQ interrupt should be
+disabled from before flush_work_sync() is invoked until after the CRQ
+has been destroyed.
 
-Continuellement mise √† jour cette base de donn√©es permet aux utilisateurs de visualiser rapidement les programmes offerts par une multitude de gouvernements et 
-fondations, permettant ainsi de r√©duire consid√©rablement le temps consacr√© √† la recherche.
+Regarding the queue removal: I might have missed something, but why
+would you like to remove the vtgtd work queue ? Since the ibmvstgt
+driver is a storage target driver, processing latency matters. I'm
+afraid that switching from a dedicated queue to the global work queue
+will increase processing latency.
 
-A titre informatif, voici une liste d'organisations offrant ce nouveau service √† leurs usagers:
-
-A.E.L.I.E.S
-AIBACE
-AMERESCO
-ASSOCIATION REGIONALE DE SOCCER DE LAVAL
-ASTRAL M√âDIA AFFICHAGE
-BANQUE DE D√âVELOPPEMENT DU CANADA 
-BETON PRESTIGE
-BEACONSFIELD PUBLIC LIBRARY
-BIBLIOTHEQUE DU PARLEMENT 
-C.A.D.A.
-C.H.U.S.
-C.I.J.A.
-C.P.S. LE FAUBOURG
-C.P.S.S.S.
-CARREFOUR BUREAUTIQUE COTE NORD
-CATHERINE BLANCHET ING.
-CEGEP DE JONQUIERE
-CHAMBRE DE COMMERCE R√âGION DE M√âGANTIC 
-CIT√â DE LA REHABILITATION
-CLD DE LA MRC DE MATANE
-CLD LAC ETCHEMINS
-COAZIMUT CORP.
-COMMISSION DE LA CONSTRUCTION DU QUEBEC
-COMMISSION SCOLAIRE DE JONCQUIERE
-CONSEIL DU LOISIR SCIENTIFIQUE DE L'OUTAOUAIS
-CONSULTANTS AIRE
-COOP FORESTIER DE GIRARDVILLE
-CREE NATION OF WEMENDJI
-D√âPUT√â PASCAL-PIERRE PAILL√â
-DISTRIBUTION SOLIDAIRE
-DOMAINE DES PIONNIERS
-ECO SYSTEM
-ECOLE C.P. LE TREMPLIN
-ECOLE DE MUSIQUE MANON CHENARD
-ECOLE DE TECHNOLOGIE SUPERIEURE / DEPT. DECANAT
-ECOLE STE-MARIE MEDIATRICE
-EDUCAIDE
-ENSEIGNE ACCESS
-FONDATION LEO CORMIER
-FONDATION RESSOURCE JEUNESSE
-G.T.D.S. INC.
-GALLERIE ROCCIA INC.
-GROUPE BERMEX INC.
-GROUPE TVA
-HAVRE DU FJORD
-HEMA QUEBEC
-I.C.E.A.
-I.T.H.Q.
-ICREDESA ORG
-IPP
-JULIEN GEOFFROY ARCHITECT
-KLIMFAX
-LES LAVETTES
-L'HERBO-THEQUE
-L'INSTITUT INTERNATIONAL DE LOGISTIQUE DE MONTR√âAL 
-L'ORGANISME DE BASSIN VERSANT LAC ST-JEAN
-LUC AUDET, CA. INC.
-MAISON FUN√âRAIRE BLAIS INC 
-MERCIER HOME STAGING
-MICRO MENTIS
-MRC DE LA METIS
-MUNICIPALITE DE BERRY
-MUNICIPALITE DU HAVRE ST-PIERRE
-P.E.G.H.B.
-PARC DE LA GORGE DE COATICOOK
-PARENTS SECOURS DU QU√âBEC
-PORTAGE
-PREMTEC
-PRODUCTIONS INTERFACE DESIGN
-R.O.B.V.Q.
-RAYMOND CHABOT GRANT ET THORNTON
-REVES ALCHIMIQUES
-RSSS DES AURORES BOREALES
-S.D.E.I.
-SPEEDWARE
-STATION THERMAL SUTTON INC.
-ST-GEORGE ANGLICAN CHURCH
-TRI-CO GROUP INC.
-U. DE MTL. / CAMPUS DE FACULTEE MEDECINE
-U. DU QC A CHICOUTIMI / DEPT. DE LA PSYCHOLOGIE
-UQUAT
-VILLE DE CHATEAUGUAY
-VILLE DE MATANE
-VILLE DE MONTREAL
-VILLE DE PORT-CARTIER
-VILLE DE ST-AUGUSTIN
-VILLE DE VARENNES
-
-Acces √† la base de donn√©es en ligne / 1 an............................$129.95
-Annuaire des Subventions au Quebec 2011 (Cd-rom,.pdf).................$ 69.95
-Annuaire des Subventions au Quebec 2011 (imprim√© + Cd-rom gratuit)...$ 149.95
-
-Pour de plus amples informations contactez:
-Natasha Robillard au 1-866-322-3376, 450-229-1942
-
-Annuaire des Subventions au Qu√©bec
-1999 Le Skieur
-Sainte-Adele
-Qc
-J8B 2Y9
-450-229-1942
-
-
-
-
-Pour ne plus recevoir de courriel: subventionquebec@gmail.com
-
-.............................................................
-
-New 2011 editions
-
-Canadian Business Publications is offering to the public a revised edition of the Canadian Subsidy Directory, a guide containing more than 3000 direct and indirect financial subsidies, grants and loans offered by government departments and agencies, foundations, associations and organizations.  
-In this new 2011 edition all programs are well described.
-
-The Canadian Subsidy Directory is the most comprehensive tool to start up a business, improve existent activities, set up a business plan, or obtain assistance from experts in fields such as: Industry, transport, agriculture, communications, municipal infrastructure, education, import-export, labor, construction and renovation, the service sector, hi-tech industries, research and development, joint ventures, arts, cinema, theatre, music and recording industry , the self employed, contests, and new talents.
-Assistance from and for foundations and associations, guidance to prepare a business plan, market surveys, computers, and much more!
-
-NEW: The Canadian Subsidy Directory (database) offers continuously updated information for non-profit organizations, businesses, municipalities, individuals and aboriginals.
-This database contains more than 3000 subsidies, grants or loans offered by various Canadian governments agencies and foundations.
-Completely hosted, no database software to download or manage.
-
-Viewable With Your Favorite Browser, Online Anywhere, Anytime. Access from anywhere in the world on any internet connected PC or Mac.
-
-Canadian Subsidy Directory (All Canada, federal + provincial + foundations)
-Available in three different formats:
-. CD-rom (.Acrobat Reader file, .pdf) / $69.95
-. Printed (Free cd included) / $149.95
-. On-line database access (1 year subscription) / $129.95
-
-If you require any additional information, please contact:
-Natasha Robillard, toll free 1-866-322-3376 
-450-229-1942 (local)
-
-
-This commercial email message is broadcasted by Canadian Business Publications
-To remove your email from the distribution list please use: subventionquebec@gmail.com
-
-Ontario:
-4865 Hwy 138, r.r. 1
-St-Andrews west
-On
-K0C 2A0
-
-Quebec:
-1999 Le Skieur
-Ste-Adele
-Qc
-J8B 2Y9
-
+Bart.
