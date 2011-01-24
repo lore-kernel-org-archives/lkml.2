@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069Ab1AXT5W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 14:57:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5126 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751374Ab1AXT5V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 14:57:21 -0500
-Subject: Re: [PATCH 16/16] KVM-GST: adjust scheduler cpu power
-From: Glauber Costa <glommer@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
-        Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Avi Kivity <avi@redhat.com>
-In-Reply-To: <1295898690.28776.472.camel@laptop>
-References: <1295892397-11354-1-git-send-email-glommer@redhat.com>
-	 <1295892397-11354-17-git-send-email-glommer@redhat.com>
-	 <1295893920.28776.468.camel@laptop>
-	 <1295895083.15920.9.camel@mothafucka.localdomain>
-	 <1295898690.28776.472.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat
-Date: Mon, 24 Jan 2011 17:57:11 -0200
-Message-ID: <1295899031.15920.13.camel@mothafucka.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751946Ab1AXT6S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 14:58:18 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46436 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344Ab1AXT6R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 14:58:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:from:date:message-id:subject:to:cc
+         :content-type;
+        b=PALxPLSQcL4s9+cVjei1+zmbBefQ+XPyIbFrjwg1fY9xNlLpcUQwbVWr8bbG3VyKnn
+         EdYDp5Tc4P2aGdNvNyjyXj63h/laDplXFkvHL4gMSU3Fh7O7X+ucCCXEZgjI1I9L65MM
+         OD4QCkHVJAbAJCNAUYuH7M6ilsIAq7WCa/unU=
+MIME-Version: 1.0
+Reply-To: linasvepstas@gmail.com
+From: Linas Vepstas <linasvepstas@gmail.com>
+Date: Mon, 24 Jan 2011 13:57:56 -0600
+Message-ID: <AANLkTikhKHnR+7DskxYqWXduX4=tpfgsfL4sNYq+4QDq@mail.gmail.com>
+Subject: [BUG] Generic syscalls -- chmod vs. fchmodat
+To: Chris Metcalf <cmetcalf@tilera.com>, Arnd Bergmann <arnd@arndb.de>
+Cc: GLIBC Devel <libc-alpha@sourceware.org>, linux-kernel@vger.kernel.org,
+        libc-ports@sourceware.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-24 at 20:51 +0100, Peter Zijlstra wrote:
-> On Mon, 2011-01-24 at 16:51 -0200, Glauber Costa wrote:
-> > > I would really much rather see you change update_rq_clock_task() and
-> > > subtract your ns resolution steal time from our wall-time,
-> > > update_rq_clock_task() already updates the cpu_power relative to the
-> > > remaining time available.
-> > 
-> > But then we get into the problems we already discussed in previous
-> > submissions, which is, we don't really want to alter any notion of
-> > wallclock time. Could you list any more concrete advantages of the
-> > specific way you proposed? 
-> 
-> clock_task is the time spend on the task, by not taking steal time into
-> account all steal time is accounted as service to whatever task was
-> current when the vcpu wasn't running.
-> 
-> It doesn't change wall-time in the sense of gtod, only the service time
-> to tasks.
-Ok, I'll experiment with that and see how it goes.
+Chris, Arnd, all,
 
+Found a bug/incompatibility in the generic syscalls chmod implementation;
+not sure if this is a kernel bug or a glibc bug, or how to correctly resolve it.
+
+The new "generic chmod" implementation for glibc sends chmod to the
+kernel call sys_fchmodat with  AT_FDCWD, instead of using the older
+"deprecated" chmod syscall.  These two behave slightly differently:  with
+the new implementation, the file "" (i.e. string of length zero) gets
+interpreted
+as . and so the syscall succeeds, setting perms on .  The old syscall would
+return an errno=2 No such file or directory for this filename.
+
+My gut instinct is that this is a kernel bug, but am not so sure; perhaps this
+is "working as designed".  I thought of submitting a patch to fs/namei.c to
+fix this, but then got lost in the details: there didn't seem to be
+any particularly
+good place to add this check.  Meanwhile, a glibc test case (posix/tst-chmod.c)
+is failing as a result.
+
+Should we put a check for this funky non-filename into the glibc
+generic code, or into sys_chmodat? Recommendations?
+
+--linas
