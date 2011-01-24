@@ -1,138 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209Ab1AXSvn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 13:51:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29682 "EHLO mx1.redhat.com"
+	id S1754256Ab1AXSvw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 13:51:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14957 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753562Ab1AXSvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 13:51:42 -0500
-Subject: Re: [PATCH 16/16] KVM-GST: adjust scheduler cpu power
-From: Glauber Costa <glommer@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
-        Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Avi Kivity <avi@redhat.com>
-In-Reply-To: <1295893920.28776.468.camel@laptop>
-References: <1295892397-11354-1-git-send-email-glommer@redhat.com>
-	 <1295892397-11354-17-git-send-email-glommer@redhat.com>
-	 <1295893920.28776.468.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat
-Date: Mon, 24 Jan 2011 16:51:23 -0200
-Message-ID: <1295895083.15920.9.camel@mothafucka.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754154Ab1AXSvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 13:51:49 -0500
+Date: Mon, 24 Jan 2011 13:51:33 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Corrado Zoccolo <czoccolo@gmail.com>,
+        Chad Talbott <ctalbott@google.com>, Nauman Rafique <nauman@google.com>,
+        Divyesh Shah <dpshah@google.com>, jmoyer@redhat.com,
+        Shaohua Li <shaohua.li@intel.com>
+Subject: Re: [PATCH 3/6 v3] cfq-iosched: Introduce vdisktime and io weight
+ for CFQ queue
+Message-ID: <20110124185133.GD9420@redhat.com>
+References: <4D180ECE.4000305@cn.fujitsu.com>
+ <4D185374.6090300@cn.fujitsu.com>
+ <20110119225855.GH13887@redhat.com>
+ <4D37B2DA.1060908@cn.fujitsu.com>
+ <20110120110952.GA16184@redhat.com>
+ <4D3D03DE.20604@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D3D03DE.20604@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-24 at 19:32 +0100, Peter Zijlstra wrote:
-> On Mon, 2011-01-24 at 13:06 -0500, Glauber Costa wrote:
-> > This is a first proposal for using steal time information
-> > to influence the scheduler. There are a lot of optimizations
-> > and fine grained adjustments to be done, but it is working reasonably
-> > so far for me (mostly)
+On Mon, Jan 24, 2011 at 12:45:18PM +0800, Gui Jianfeng wrote:
+> Vivek Goyal wrote:
+> > On Thu, Jan 20, 2011 at 11:58:18AM +0800, Gui Jianfeng wrote:
+> >> Vivek Goyal wrote:
+> >>> On Mon, Dec 27, 2010 at 04:51:00PM +0800, Gui Jianfeng wrote:
+> >>>> Introduce vdisktime and io weight for CFQ queue scheduling. Currently, io priority
+> >>>> maps to a range [100,1000]. It also gets rid of cfq_slice_offset() logic and makes
+> >>>> use the same scheduling algorithm as CFQ group does. This helps for CFQ queue and
+> >>>> group scheduling on the same service tree.
+> >>>>
+> >>>> Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+> >>> [..]
+> >>>> @@ -1246,47 +1278,71 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+> >>>>  
+> >>>>  	service_tree = service_tree_for(cfqq->cfqg, cfqq_prio(cfqq),
+> >>>>  						cfqq_type(cfqq));
+> >>>> +	/*
+> >>>> +	 * For the time being, put the newly added CFQ queue at the end of the
+> >>>> +	 * service tree.
+> >>>> +	 */
+> >>>> +	if (RB_EMPTY_NODE(&cfqe->rb_node)) {
+> >>>> +		/*
+> >>>> +		 * If this CFQ queue moves to another group, the original
+> >>>> +		 * vdisktime makes no sense any more, reset the vdisktime
+> >>>> +		 * here.
+> >>>> +		 */
+> >>>> +		parent = rb_last(&service_tree->rb);
+> >>>> +		if (parent) {
+> >>>> +			u64 boost;
+> >>>> +			s64 __vdisktime;
+> >>>> +
+> >>>> +			__cfqe = rb_entry_entity(parent);
+> >>>> +			cfqe->vdisktime = __cfqe->vdisktime + CFQ_IDLE_DELAY;
+> >>>> +
+> >>>> +			/* Give some vdisktime boost according to its weight */
+> >>>> +			boost = cfq_get_boost(cfqd, cfqe);
+> >>>> +			__vdisktime = cfqe->vdisktime - boost;
+> >>>> +			if (__vdisktime > service_tree->min_vdisktime)
+> >>>> +				cfqe->vdisktime = __vdisktime;
+> >>>> +			else
+> >>>> +				cfqe->vdisktime = service_tree->min_vdisktime;
+> >>>> +		} else
+> >>>> +			cfqe->vdisktime = service_tree->min_vdisktime;
+> >>> Hi Gui,
+> >>>
+> >>> Is above logic actually working? I suspect that most of the time all the
+> >>> new queues will end up getting same vdisktime and that is st->min_vdisktime
+> >>> and there will be no service differentiation across various prio.
+> >>>
+> >>> Reason being, on SSD, idle is disabled. So very few/no queue will consume
+> >>> its slice and follow reque path. So every queue will be new. Now you are
+> >>> doing following.
+> >>>
+> >>> 	cfqd->vdisktime = vdisktime_of_parent + IDLE_DELAY - boost
+> >>>
+> >>> assume vdisktime_of_parent=st->min_vdisktime, then (IDLE_DELAY - boost)
+> >>> is always going to be a -ve number and hence cfqd->vdisktime will 
+> >>> default to st->min_vdisktime. (IDLE_DELAY=200 while boost should be a huge
+> >>> value due to SERVICE_SHIFT thing).
+> >> Vivek,
+> >>
+> >> Actually, I tested on rotational disk with idling disabled, I saw service
+> >> differentiation between two tasks with different ioprio.
+> >> I don't have a SSD on hand, But I'll get one and do more tests.
 > > 
-> > With this patch (and some host pinnings to demonstrate the situation),
-> > two vcpus with very different steal time (Say 80 % vs 1 %) will not get
-> > an even distribution of processes. This is a situation that can naturally
-> > arise, specially in overcommited scenarios. Previosly, the guest scheduler
-> > would wrongly think that all cpus have the same ability to run processes,
-> > lowering the overall throughput.
-> > 
-> > Signed-off-by: Glauber Costa <glommer@redhat.com>
-> > CC: Rik van Riel <riel@redhat.com>
-> > CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> > CC: Peter Zijlstra <peterz@infradead.org>
-> > CC: Avi Kivity <avi@redhat.com>
-> > ---
-> >  include/linux/sched.h |    1 +
-> >  kernel/sched.c        |    4 ++++
-> >  kernel/sched_fair.c   |   10 ++++++++++
-> >  3 files changed, 15 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/include/linux/sched.h b/include/linux/sched.h
-> > index d747f94..beab72d 100644
-> > --- a/include/linux/sched.h
-> > +++ b/include/linux/sched.h
-> > @@ -302,6 +302,7 @@ long io_schedule_timeout(long timeout);
-> >  extern void cpu_init (void);
-> >  extern void trap_init(void);
-> >  extern void update_process_times(int user);
-> > +extern cputime_t (*hypervisor_steal_time)(void);
-> >  extern void scheduler_tick(void);
-> >  
-> >  extern void sched_show_task(struct task_struct *p);
-> > diff --git a/kernel/sched.c b/kernel/sched.c
-> > index 3b3e88d..c460f0d 100644
-> > --- a/kernel/sched.c
-> > +++ b/kernel/sched.c
-> > @@ -501,6 +501,8 @@ struct rq {
-> >  	struct sched_domain *sd;
-> >  
-> >  	unsigned long cpu_power;
-> > +	unsigned long real_ticks;
-> > +	unsigned long total_ticks;
-> >  
-> >  	unsigned char idle_at_tick;
-> >  	/* For active balancing */
-> > @@ -3533,10 +3535,12 @@ static int touch_steal_time(int is_idle)
-> >  	if (is_idle)
-> >  		return 0;
-> >  
-> > +	rq->total_ticks++;
-> >  	if (steal) {
-> >  		account_steal_time(steal);
-> >  		return 1;
-> >  	}
-> > +	rq->real_ticks++;
-> >  	return 0;
-> >  }
+> > Ok, I am really not sure how did it work for you because boost will
+> > turn out to be huge number in comparision to IDLE_DELAY or vdisktime
+> > of parent. If you have some blktrace data or if you can explain how
+> > it is working will help in understanding it better.
 > 
-> yuck!! is ticks really the best you can do?
-No, but it is simple enough for a first try. With those variables, we're
-not accounting anything, but rather, getting a rough estimate of the %
-of steal time compared to the useful (non-idle) time.
+> Vivek,
+> 
+> I think there must be something configuration wrong in my previous tests.
+> I tested again with patch applied. I don't see service differentiation
+> this time.
+> But, I do the same test on vanilla kernel, I don't see service differentiation
+> either. I dig into it. It seems when I set slice_idle and group_idle to zero,
+> it means i close idle window by mannual. In this case, IO tasks becomes SYNC NOIDLE
+> workloads, they will preempts each other mutually. And the cfqq will always be put
+> at the front of service tree. So we don't see service differentiation.
+> 
+> Actually, We don't want preemption happening in such case, right? So I think we should
+> refine the preemption logic. 
+> Thoughts?
 
-> I thought kvm had a ns resolution steal-time clock?
-Yes, the one I introduced earlier in this series is nsec. However, user
-and system will be accounted in usec at most, so there is no point in
-using nsec here.
+Gui,
+
+That preemption only happens when we are idling on existing sync-noidle
+queue and a new queue gets backlogged. It makes sense from overall
+throughput perspective. So I think getting rid of this is not a good
+idea.
+
+But agreed that it does not play well with ioprio thing. I would suggest
+that instead of two threads, try more 4-5 threads which are doing IO and
+keep queue depth as 1. That way you should end up in a case where there
+are more than 1 thread backlogged on sync-noidle service tree.
+
+Thanks
+Vivek
 
 > 
-> > diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> > index c62ebae..1364c28 100644
-> > --- a/kernel/sched_fair.c
-> > +++ b/kernel/sched_fair.c
-> > @@ -2509,6 +2509,16 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
-> >  		power >>= SCHED_LOAD_SHIFT;
-> >  	}
-> >  
-> > +	WARN_ON(cpu_rq(cpu)->real_ticks > cpu_rq(cpu)->total_ticks);
-> > +
-> > +	if (cpu_rq(cpu)->total_ticks) {
-> > +		power *= cpu_rq(cpu)->real_ticks;
-> > +		power /= cpu_rq(cpu)->total_ticks;
-> > +	}
-> > +
-> > +	cpu_rq(cpu)->total_ticks = 0;
-> > +	cpu_rq(cpu)->real_ticks = 0;
-> > +
-> >  	sdg->cpu_power_orig = power;
-> >  
-> >  	if (sched_feat(ARCH_POWER))
+> Below is my fio job file:
 > 
-> I would really much rather see you change update_rq_clock_task() and
-> subtract your ns resolution steal time from our wall-time,
-> update_rq_clock_task() already updates the cpu_power relative to the
-> remaining time available.
-
-But then we get into the problems we already discussed in previous
-submissions, which is, we don't really want to alter any notion of
-wallclock time. Could you list any more concrete advantages of the
-specific way you proposed?
-
-I found that updating cpu power directly is pretty simple, and seems
-to work well enough, without disturbing any notion of real time.
-
+> [global]
+> directory=/hdb3
+> ioengine=sync
+> runtime=30
+> time_based=1
+> direct=1
+> bs=128K
+> size=64M
+> numjobs=1
+> exec_prerun='echo 3 > /proc/sys/vm/drop_caches'
+> 
+> [task-prio-0]
+> description=task-prio-0
+> rw=read
+> prio=0
+> filename=file1
+> 
+> [task-prio-7]
+> description=task-prio-7
+> rw=read
+> prio=7
+> filename=file2
+> 
+> Thanks,
+> Gui
