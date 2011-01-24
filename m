@@ -1,99 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753057Ab1AXBuw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 20:50:52 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:65028 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753020Ab1AXBuw (ORCPT
+	id S1753129Ab1AXCCB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 21:02:01 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:57321 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753042Ab1AXCB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 20:50:52 -0500
-From: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-To: linux-kernel@vger.kernel.org
-Cc: damm@opensource.se, Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-Subject: [PATCH 2/2] platform_device: Add early_platform_add_device_one function
-Date: Mon, 24 Jan 2011 10:45:16 +0900
-Message-Id: <1295833516-5868-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
-X-Mailer: git-send-email 1.7.2.3
+	Sun, 23 Jan 2011 21:01:59 -0500
+From: Colin Cross <ccross@android.com>
+To: linux-tegra@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, olof@lixom.net, konkers@android.com,
+        Gary King <gking@nvidia.com>, Colin Cross <ccross@android.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 10/28] ARM: tegra: pinmux: Add missing drive pingroups and fix suspend
+Date: Sun, 23 Jan 2011 18:01:15 -0800
+Message-Id: <1295834493-5019-11-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1295834493-5019-1-git-send-email-ccross@android.com>
+References: <1295834493-5019-1-git-send-email-ccross@android.com>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-early_platform_add_devices supports only array.
-And it is necessary to prepare for array more when user adds one device.
+From: Gary King <gking@nvidia.com>
 
-With this patch, user adds early_platform_add_device_one function, which user
-can add only one device to, and early_platform_add_devices is changed to use
-early_platform_add_device_one.
+Adds missing drive pingroups, saves all drive pingroups in
+suspend, and restores the pinmux registers in the proper order.
 
-Signed-off-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Signed-off-by: Gary King <gking@nvidia.com>
+Signed-off-by: Colin Cross <ccross@android.com>
 ---
- drivers/base/platform.c         |   30 ++++++++++++++++++++----------
- include/linux/platform_device.h |    1 +
- 2 files changed, 21 insertions(+), 10 deletions(-)
+ arch/arm/mach-tegra/include/mach/pinmux-t2.h |   10 ++++++++++
+ arch/arm/mach-tegra/pinmux-t2-tables.c       |   25 +++++++++++++++++++++----
+ 2 files changed, 31 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index f051cff..0bb2e8b2f 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -1108,6 +1108,24 @@ int __init early_platform_driver_register(struct early_platform_driver *epdrv,
- }
+diff --git a/arch/arm/mach-tegra/include/mach/pinmux-t2.h b/arch/arm/mach-tegra/include/mach/pinmux-t2.h
+index e5b9d74..4c26263 100644
+--- a/arch/arm/mach-tegra/include/mach/pinmux-t2.h
++++ b/arch/arm/mach-tegra/include/mach/pinmux-t2.h
+@@ -167,6 +167,16 @@ enum tegra_drive_pingroup {
+ 	TEGRA_DRIVE_PINGROUP_XM2D,
+ 	TEGRA_DRIVE_PINGROUP_XM2CLK,
+ 	TEGRA_DRIVE_PINGROUP_MEMCOMP,
++	TEGRA_DRIVE_PINGROUP_SDIO1,
++	TEGRA_DRIVE_PINGROUP_CRT,
++	TEGRA_DRIVE_PINGROUP_DDC,
++	TEGRA_DRIVE_PINGROUP_GMA,
++	TEGRA_DRIVE_PINGROUP_GMB,
++	TEGRA_DRIVE_PINGROUP_GMC,
++	TEGRA_DRIVE_PINGROUP_GMD,
++	TEGRA_DRIVE_PINGROUP_GME,
++	TEGRA_DRIVE_PINGROUP_OWR,
++	TEGRA_DRIVE_PINGROUP_UAD,
+ 	TEGRA_MAX_DRIVE_PINGROUP,
+ };
  
- /**
-+ * early_platform_add_device_one - adds one of early platform device
-+ * @pdev: struct of early platform device to add
-+ *
-+ * Used by early architecture code to register early platform devices and
-+ * their platform data.
-+ */
-+void __init early_platform_add_device_one(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+
-+	if (!dev->devres_head.next) {
-+		INIT_LIST_HEAD(&dev->devres_head);
-+		list_add_tail(&dev->devres_head,
-+			      &early_platform_device_list);
-+	}
-+}
-+
-+/**
-  * early_platform_add_devices - adds a number of early platform devices
-  * @devs: array of early platform devices to add
-  * @num: number of early platform devices in array
-@@ -1117,19 +1135,11 @@ int __init early_platform_driver_register(struct early_platform_driver *epdrv,
-  */
- void __init early_platform_add_devices(struct platform_device **devs, int num)
+diff --git a/arch/arm/mach-tegra/pinmux-t2-tables.c b/arch/arm/mach-tegra/pinmux-t2-tables.c
+index 4d97d5c..a475367 100644
+--- a/arch/arm/mach-tegra/pinmux-t2-tables.c
++++ b/arch/arm/mach-tegra/pinmux-t2-tables.c
+@@ -66,6 +66,16 @@ const struct tegra_drive_pingroup_desc tegra_soc_drive_pingroups[TEGRA_MAX_DRIVE
+ 	DRIVE_PINGROUP(XM2D,		0x8cc),
+ 	DRIVE_PINGROUP(XM2CLK,		0x8d0),
+ 	DRIVE_PINGROUP(MEMCOMP,		0x8d4),
++	DRIVE_PINGROUP(SDIO1,		0x8e0),
++	DRIVE_PINGROUP(CRT,		0x8ec),
++	DRIVE_PINGROUP(DDC,		0x8f0),
++	DRIVE_PINGROUP(GMA,		0x8f4),
++	DRIVE_PINGROUP(GMB,		0x8f8),
++	DRIVE_PINGROUP(GMC,		0x8fc),
++	DRIVE_PINGROUP(GMD,		0x900),
++	DRIVE_PINGROUP(GME,		0x904),
++	DRIVE_PINGROUP(OWR,		0x908),
++	DRIVE_PINGROUP(UAD,		0x90c),
+ };
+ 
+ #define PINGROUP(pg_name, vdd, f0, f1, f2, f3, f_safe,		\
+@@ -217,7 +227,8 @@ const struct tegra_pingroup_desc tegra_soc_pingroups[TEGRA_MAX_PINGROUP] = {
+ #define PULLUPDOWN_REG_NUM     5
+ 
+ static u32 pinmux_reg[TRISTATE_REG_NUM + PIN_MUX_CTL_REG_NUM +
+-		     PULLUPDOWN_REG_NUM];
++		      PULLUPDOWN_REG_NUM +
++		      ARRAY_SIZE(tegra_soc_drive_pingroups)];
+ 
+ static inline unsigned long pg_readl(unsigned long offset)
  {
--	struct device *dev;
- 	int i;
+@@ -234,14 +245,17 @@ void tegra_pinmux_suspend(void)
+ 	unsigned int i;
+ 	u32 *ctx = pinmux_reg;
  
- 	/* simply add the devices to list */
--	for (i = 0; i < num; i++) {
--		dev = &devs[i]->dev;
+-	for (i = 0; i < TRISTATE_REG_NUM; i++)
+-		*ctx++ = pg_readl(TRISTATE_REG_A + i*4);
 -
--		if (!dev->devres_head.next) {
--			INIT_LIST_HEAD(&dev->devres_head);
--			list_add_tail(&dev->devres_head,
--				      &early_platform_device_list);
--		}
--	}
-+	for (i = 0; i < num; i++)
-+		early_platform_add_device_one(devs[i]);
+ 	for (i = 0; i < PIN_MUX_CTL_REG_NUM; i++)
+ 		*ctx++ = pg_readl(PIN_MUX_CTL_REG_A + i*4);
+ 
+ 	for (i = 0; i < PULLUPDOWN_REG_NUM; i++)
+ 		*ctx++ = pg_readl(PULLUPDOWN_REG_A + i*4);
++
++	for (i = 0; i < TRISTATE_REG_NUM; i++)
++		*ctx++ = pg_readl(TRISTATE_REG_A + i*4);
++
++	for (i = 0; i < ARRAY_SIZE(tegra_soc_drive_pingroups); i++)
++		*ctx++ = pg_readl(tegra_soc_drive_pingroups[i].reg);
  }
  
- /**
-diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
-index 2e700ec..d0f4365 100644
---- a/include/linux/platform_device.h
-+++ b/include/linux/platform_device.h
-@@ -156,6 +156,7 @@ struct early_platform_driver {
+ void tegra_pinmux_resume(void)
+@@ -257,5 +271,8 @@ void tegra_pinmux_resume(void)
  
- extern int early_platform_driver_register(struct early_platform_driver *epdrv,
- 					  char *buf);
-+extern void early_platform_add_device_one(struct platform_device *pdev);
- extern void early_platform_add_devices(struct platform_device **devs, int num);
- 
- static inline int is_early_platform_device(struct platform_device *pdev)
+ 	for (i = 0; i < TRISTATE_REG_NUM; i++)
+ 		pg_writel(*ctx++, TRISTATE_REG_A + i*4);
++
++	for (i = 0; i < ARRAY_SIZE(tegra_soc_drive_pingroups); i++)
++		pg_writel(*ctx++, tegra_soc_drive_pingroups[i].reg);
+ }
+ #endif
 -- 
-1.7.2.3
+1.7.3.1
 
