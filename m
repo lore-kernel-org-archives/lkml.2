@@ -1,63 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788Ab1AXVEY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 16:04:24 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:15636 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505Ab1AXVEX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 16:04:23 -0500
-Date: Mon, 24 Jan 2011 22:05:05 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Chris Ball <cjb@laptop.org>
-cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Vrabel <david.vrabel@csr.com>, Axel Lin <axel.lin@gmail.com>,
-        trivial@kernel.org
-Subject: Re: [PATCH] MMC, USHC: Don't double include usb.h in ushc.c
-In-Reply-To: <20110124210202.GA11110@void.printf.net>
-Message-ID: <alpine.LNX.2.00.1101242204020.10252@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1101242156050.10252@swampdragon.chaosbits.net> <20110124210202.GA11110@void.printf.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752812Ab1AXVFm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 16:05:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17396 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752750Ab1AXVFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 16:05:41 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@redhat.com>
+To: linasvepstas@gmail.com
+X-Fcc: ~/Mail/linus
+Cc: Chris Metcalf <cmetcalf@tilera.com>, Arnd Bergmann <arnd@arndb.de>,
+        GLIBC Devel <libc-alpha@sourceware.org>, linux-kernel@vger.kernel.org,
+        libc-ports@sourceware.org
+Subject: Re: [BUG] Generic syscalls -- chmod vs. fchmodat
+In-Reply-To: Linas Vepstas's message of  Monday, 24 January 2011 13:57:56 -0600 <AANLkTikhKHnR+7DskxYqWXduX4=tpfgsfL4sNYq+4QDq@mail.gmail.com>
+References: <AANLkTikhKHnR+7DskxYqWXduX4=tpfgsfL4sNYq+4QDq@mail.gmail.com>
+X-Windows: sometimes you fill a vacuum and it still sucks.
+Message-Id: <20110124210514.AB18918020B@magilla.sf.frob.com>
+Date: Mon, 24 Jan 2011 13:05:14 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Jan 2011, Chris Ball wrote:
+POSIX says "A null pathname shall not be successfully resolved."  This
+applies to relative pathnames too, and a file name argument to an *at
+function using AT_FDCWD is a relative pathname.  So I think there is no
+situation at all in which the empty string should resolve to anything.
+It's generally in the domain of the kernel to enforce these kinds of rules,
+so I think that having the kernel fail with ENOENT for all empty-string
+cases is the right thing to do.
 
-> Jesper,
-> 
-> On Mon, Jan 24, 2011 at 09:59:25PM +0100, Jesper Juhl wrote:
-> > We include linux/usb.h twice in drivers/mmc/host/ushc.c - once is enough.
-> > 
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > ---
-> >  ushc.c |    1 -
-> >  1 file changed, 1 deletion(-)
-> > 
-> > diff --git a/drivers/mmc/host/ushc.c b/drivers/mmc/host/ushc.c
-> > index f8f65df..f08f944 100644
-> > --- a/drivers/mmc/host/ushc.c
-> > +++ b/drivers/mmc/host/ushc.c
-> > @@ -19,7 +19,6 @@
-> >  #include <linux/module.h>
-> >  #include <linux/usb.h>
-> >  #include <linux/kernel.h>
-> > -#include <linux/usb.h>
-> >  #include <linux/slab.h>
-> >  #include <linux/dma-mapping.h>
-> >  #include <linux/mmc/host.h>
-> > 
-> 
-> I've already replied to you ACKing this patch, and pushed it to mmc-next. 
-> 
-Odd, I don't see that in my mailbox :-( But then I've had a few incidents 
-of being bling in that regard lately, so it's probably my fault. Sorry.
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Thanks,
+Roland
