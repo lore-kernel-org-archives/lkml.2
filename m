@@ -1,106 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751436Ab1AXVvZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 16:51:25 -0500
-Received: from mail.bluewatersys.com ([202.124.120.130]:59688 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751314Ab1AXVvY (ORCPT
+	id S1751724Ab1AXVx5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 16:53:57 -0500
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:47862 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750892Ab1AXVxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 16:51:24 -0500
-Message-ID: <4D3DF46A.1030009@bluewatersys.com>
-Date: Tue, 25 Jan 2011 10:51:38 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+	Mon, 24 Jan 2011 16:53:55 -0500
+From: Kevin Hilman <khilman@ti.com>
+To: Govindraj <govindraj.ti@gmail.com>
+Cc: Thomas Weber <weber@corscience.de>, linux-omap@vger.kernel.org,
+        manjugk@ti.com, gadiyar@ti.com, tony@atomide.com, govindraj@ti.com,
+        gregkh@suse.de, andrei.emeltchenko@nokia.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3] OMAP: Enable Magic SysRq on serial console ttyOx
+Organization: Texas Instruments, Inc.
+References: <1295604084-27761-1-git-send-email-weber@corscience.de>
+	<AANLkTikSznkcNwkVaPswx=zr8FFGQPVMw_AebF9ymZLE@mail.gmail.com>
+Date: Mon, 24 Jan 2011 13:47:21 -0800
+In-Reply-To: <AANLkTikSznkcNwkVaPswx=zr8FFGQPVMw_AebF9ymZLE@mail.gmail.com>
+	(Govindraj's message of "Fri, 21 Jan 2011 15:42:57 +0530")
+Message-ID: <8739oi7z4m.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-To: Julia Lawall <julia@diku.dk>
-CC: Vasiliy Kulikov <segooon@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        kernel-janitors@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] arch/arm/mach-at91/clock.c: Add missing IS_ERR test
-References: <1295898922-18822-1-git-send-email-julia@diku.dk> <1295898922-18822-3-git-send-email-julia@diku.dk> <4D3DD964.9020107@bluewatersys.com> <Pine.LNX.4.64.1101242058430.3167@ask.diku.dk> <20110124200515.GA30963@albatros> <4D3DDD07.1030809@bluewatersys.com> <Pine.LNX.4.64.1101242126570.3167@ask.diku.dk> <4D3DE35B.1030102@bluewatersys.com> <Pine.LNX.4.64.1101242200500.3167@ask.diku.dk> <4D3DE9CD.2040800@bluewatersys.com> <Pine.LNX.4.64.1101242231240.3167@ask.diku.dk>
-In-Reply-To: <Pine.LNX.4.64.1101242231240.3167@ask.diku.dk>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2011 10:31 AM, Julia Lawall wrote:
-> On Tue, 25 Jan 2011, Ryan Mallon wrote:
-> 
->> On 01/25/2011 10:01 AM, Julia Lawall wrote:
->>> On Tue, 25 Jan 2011, Ryan Mallon wrote:
->>>
->>>> On 01/25/2011 09:28 AM, Julia Lawall wrote:
->>>>>> Julia is correct. Some architectures can return NULL from clk_get, but I
->>>>>> didn't check the at91 before posting :-/. If we can't return NULL from
->>>>>> clk_get then we shouldn't bother checking for it. I do think we should
->>>>>> drop the !IS_ERR(clk_get(dev, func)) check though.
->>>>>
->>>>> It seems a bit subtle, because the clk manipulated by clk_get in the call 
->>>>> of clk_get(dev, func) is not necessarily the same as the one in 
->>>>> clock_associate.  But perhaps this is the only possibility in practice?
->>>>
->>>> Not sure I follow. The at91 clk_get does not modify the clk. In
->>>> at91_clock_associate we have:
->>>>
->>>> 	clk->function = func;
->>>> 	clk->dev = dev;
->>>>
->>>> and in clk_get we have:
->>>>
->>>> 	if (clk->function && (dev == clk->dev) &&
->>>> 		strcmp(id, clk->function) == 0)
->>>>             return clk;
->>>>
->>>> So at91_clock_associate sets the function for a clock, and clk_get
->>>> returns clocks based on the function association if the name lookup
->>>> fails. The only caveat to this is that the the clock function name
->>>> (clk->function) is not the same as any others clock's clk->name.
->>>
->>> Right, that was what I was worried about.  That one would find the same 
->>> information already present but somewhere else.  But perhaps it can't 
->>> happen, or it doesn't matter if it does?
+Govindraj <govindraj.ti@gmail.com> writes:
+
+> On Fri, Jan 21, 2011 at 3:31 PM, Thomas Weber <weber@corscience.de> wrote:
+>> Magic SysRq key is not working for OMAP on new serial
+>> console ttyOx because SUPPORT_SYSRQ is not defined
+>> for omap-serial.
 >>
->> I think that users are expected to ensure that clock names and clock
->> function names do not overlap.
-> 
-> One can't have a clock with a different name but the same device and 
-> function?
+>> This patch defines SUPPORT_SYSRQ in omap-serial and
+>> enables handling of Magic SysRq character.
+>>
+>> Further there is an issue of losing first break character.
+>> Removing the reset of the lsr_break_flag fixes this issue.
+>>
+>> Signed-off-by: Thomas Weber <weber@corscience.de>
+>
+>
+> Acked-by: Govindraj.R <govindraj.raja@ti.com>
+> Tested-by: Manjunath G Kondaiah <manjugk@ti.com>
+>
 
-You could, but it would not be helpful. Clock associations are used so
-that _different_ devices can have the same function and map to the
-correct clock. This is used when there are multiple instances of a
-single peripheral. For example, the uart clocks work like this:
+Acked-by: Kevin Hilman <khilman@ti.com>
 
-	at91_clock_associate("usart1_clk", &pdev->dev, "usart");
+Greg, this one should go for .38-rc.   Feel free to merge, or we can
+take it through the OMAP tree with your ack.
 
-so then you can do this in a driver:
-	
-	uart_clk = clk_get(&pdev->dev, "usart");
+Thanks,
 
-Rather than:
+Kevin
 
-	uart_clk = clk_get(NULL, "usart1_clk");
-
-The former will find the correct uart clock for the device. Because each
-uart is a separate device the correct clock will be selected for each uart.
-	
-My point was that there should be no overlap between clk->name and
-clk->function otherwise clk_get will not be able to return the correct
-clock.
-
-~Ryan
-
--- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
-
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
