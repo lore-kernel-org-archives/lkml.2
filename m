@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359Ab1AXPvm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 10:51:42 -0500
+	id S1753402Ab1AXPvu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 10:51:50 -0500
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:51543 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753281Ab1AXPvk (ORCPT
+	with ESMTP id S1753281Ab1AXPvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 10:51:40 -0500
+	Mon, 24 Jan 2011 10:51:47 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=rfTeeTUlmw59rZCd6aGQEbxz/TbDYtesmyZYCv7Sa/X4OQWNKv/yEJ0nqyyVnSwmj4
-         paq4bOYAzvjqBIojr7ndGjcTmCzph12Ei1RTiGG/hHrQ4X8ATA3yyuaus9wd+N5978ge
-         UOxJyEFh4ZUi1Vr6lcb11us7WCwjadsdd1l8w=
-Date: Mon, 24 Jan 2011 16:51:33 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Ryan Wilson <hap9@epoch.ncsc.mil>, Jan Beulich <JBeulich@novell.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH] xen-pcifront: don't use flush_scheduled_work()
-Message-ID: <20110124155133.GA27510@htj.dyndns.org>
-References: <20110124144303.GG11404@htj.dyndns.org>
- <20110124153958.GA1222@dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110124153958.GA1222@dumpdata.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=cFtU+l37KO81UykkdobmtizgcH6qOXclF+GriELbBOp6tbWnTnc623mqz6XDqftJbb
+         l6wdJpc8SZdnIU9Aep7PgKd0t/6+fb+TQelSJF1x18dEc34gG5K+O7wmngJK2iJkSqX7
+         pkFL1kcdi6YzRTB2Eg6Oy5z+1D+K1pXftfIX0=
+From: Jarkko Nikula <jhnikula@gmail.com>
+To: linux-omap@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Tony Lindgren <tony@atomide.com>, Jarkko Nikula <jhnikula@gmail.com>,
+        "Govindraj.R" <govindraj.raja@ti.com>
+Subject: [RFC] serial: omap-serial: Enable the UART wake-up bits always
+Date: Mon, 24 Jan 2011 17:51:22 +0200
+Message-Id: <1295884282-16562-1-git-send-email-jhnikula@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+OMAP can do also dynamic idling so wake-up enable register should be set
+also while system is running. If UART_OMAP_WER is not set, then for instance
+the RX activity cannot wake up the UART port that is sleeping.
 
-On Mon, Jan 24, 2011 at 10:39:58AM -0500, Konrad Rzeszutek Wilk wrote:
-> On Mon, Jan 24, 2011 at 03:43:03PM +0100, Tejun Heo wrote:
-> > flush_scheduled_work() is scheduled for deprecation.  Cancel ->op_work
-> 
-> 2.6.39 or 2.6.40? Not seeing it referenced in
-> feature-removal-schedule.txt file?
+This RX wake-up feature was working when the 8250 driver was used instead
+of omap-serial. Reason for this is that the 8250 doesn't set the
+UART_OMAP_WER and then arch/arm/mach-omap2/pm34xx.c ends up saving and
+restoring the reset default which is the same than value
+OMAP_UART_WER_MOD_WKUP here.
 
-There now are only a handful of users left.  I'm currently sending out
-patches for them.  Once they appear on linux-next, I'll mark
-flush_scheduled_work() deprecated and add it to feature-removal in the
-workqueue tree and push it to linux-next.  So, yeah, it's likely to be
-marked deprecated in 2.6.39.
+Fix this by moving the conditional UART_OMAP_WER write from serial_omap_pm
+into serial_omap_startup where wake-up bits are set unconditionally.
 
-Thanks.
+Signed-off-by: Jarkko Nikula <jhnikula@gmail.com>
+Cc: Govindraj.R <govindraj.raja@ti.com>
+---
+This problem has been here since 2.6.37 when the omap-serial was switched
+into use so this patch is for 2.6.39.
+---
+ drivers/serial/omap-serial.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/serial/omap-serial.c b/drivers/serial/omap-serial.c
+index 7f2f010..d40924a 100644
+--- a/drivers/serial/omap-serial.c
++++ b/drivers/serial/omap-serial.c
+@@ -517,6 +517,9 @@ static int serial_omap_startup(struct uart_port *port)
+ 	up->ier = UART_IER_RLSI | UART_IER_RDI;
+ 	serial_out(up, UART_IER, up->ier);
+ 
++	/* Enable module level wake up */
++	serial_out(up, UART_OMAP_WER, OMAP_UART_WER_MOD_WKUP);
++
+ 	up->port_activity = jiffies;
+ 	return 0;
+ }
+@@ -824,9 +827,6 @@ serial_omap_pm(struct uart_port *port, unsigned int state,
+ 	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_B);
+ 	serial_out(up, UART_EFR, efr);
+ 	serial_out(up, UART_LCR, 0);
+-	/* Enable module level wake up */
+-	serial_out(up, UART_OMAP_WER,
+-		(state != 0) ? OMAP_UART_WER_MOD_WKUP : 0);
+ }
+ 
+ static void serial_omap_release_port(struct uart_port *port)
 -- 
-tejun
+1.7.0.4
+
