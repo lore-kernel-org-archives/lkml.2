@@ -1,112 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666Ab1AXWkh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 17:40:37 -0500
-Received: from fieldses.org ([174.143.236.118]:32836 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751339Ab1AXWkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 17:40:36 -0500
-Date: Mon, 24 Jan 2011 17:40:32 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Chuck Lever <chuck.lever@oracle.com>
-Cc: nbowler@elliptictech.com, trond.myklebust@netapp.com,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NLM: Fix "kernel BUG at fs/lockd/host.c:417!" or
- ".../host.c:283!"
-Message-ID: <20110124224031.GB22575@fieldses.org>
-References: <20110124204332.1878.35846.stgit@matisse.1015granger.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110124204332.1878.35846.stgit@matisse.1015granger.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752675Ab1AXWl0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 17:41:26 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49609
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751342Ab1AXWlZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 17:41:25 -0500
+Date: Mon, 24 Jan 2011 14:42:00 -0800 (PST)
+Message-Id: <20110124.144200.112610203.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: runningdoglackey@yahoo.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, therbert@google.com
+Subject: Re: Problems with /proc/net/tcp6 - possible bug - ipv6
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1295709344.2651.55.camel@edumazet-laptop>
+References: <702550.61465.qm@web63902.mail.re1.yahoo.com>
+	<1295686781.2609.37.camel@edumazet-laptop>
+	<1295709344.2651.55.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24, 2011 at 03:50:26PM -0500, Chuck Lever wrote:
-> Nick Bowler <nbowler@elliptictech.com> reports:
-> 
-> > We were just having some NFS server troubles, and my client machine
-> > running 2.6.38-rc1+ (specifically, commit 2b1caf6ed7b888c95) crashed
-> > hard (syslog output appended to this mail).
-> >
-> > I'm not sure what the exact timeline was or how to reproduce this,
-> > but the server was rebooted during all this.  Since I've never seen
-> > this happen before, it is possibly a regression from previous kernel
-> > releases.  However, I recently updated my nfs-utils (on the client) to
-> > version 1.2.3, so that might be related as well.
-> 
->   [ BUG output redacted ]
-> 
-> When done searching, the for_each_host loop in next_host_state() falls
-> through and returns the final host on the host chain without bumping
-> it's reference count.
-> 
-> Since the host's ref count is only one at that point, releasing the
-> host in nlm_host_rebooted() attempts to destroy the host prematurely,
-> and therefore hits a BUG().
-> 
-> Likely, the original intent of the for_each_host behavior in
-> next_host_state() was to handle the case when the host chain is empty.
-> Searching the chain and finding no suitable host to return needs to be
-> handled as well.
-> 
-> Defensively restructure next_host_state() always to return NULL when
-> the loop falls through.
-> 
-> Introduced by commit b10e30f6 "lockd: reorganize nlm_host_rebooted".
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Sat, 22 Jan 2011 16:15:44 +0100
 
-Whoops, thanks for finding that.  The fix looks right to me.
+> [PATCH] tcp: fix bug in listening_get_next()
+> 
+> commit a8b690f98baf9fb19 (tcp: Fix slowness in read /proc/net/tcp)
+> introduced a bug in handling of SYN_RECV sockets.
+> 
+> st->offset represents number of sockets found since beginning of
+> listening_hash[st->bucket].
+> 
+> We should not reset st->offset when iterating through
+> syn_table[st->sbucket], or else if more than ~25 sockets (if
+> PAGE_SIZE=4096) are in SYN_RECV state, we exit from listening_get_next()
+> with a too small st->offset
+> 
+> Next time we enter tcp_seek_last_pos(), we are not able to seek past
+> already found sockets.
+> 
+> Reported-by: PK <runningdoglackey@yahoo.com>
+> CC: Tom Herbert <therbert@google.com>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 
---b.
-
-> 
-> Cc: J. Bruce Fields <bfields@fieldses.org>
-> Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
-> ---
-> 
-> I was able to reproduce this BUG on my client running 2.6.38-rc2
-> from earlier today.  Here is a proposed fix.  I can't reproduce the
-> BUG with this patch applied.
-> 
-> However, my reproducer hit the BUG in nlmsvc_release_host().  Nick hit
-> roughly the same BUG in nlmclnt_release_host(), which suggests his
-> "client" was also acting as a server.  The symptoms are similar enough
-> that I believe this patch should be sufficient to address both cases.
-> 
-> 
->  fs/lockd/host.c |    9 +++++----
->  1 files changed, 5 insertions(+), 4 deletions(-)
-> 
-> diff --git a/fs/lockd/host.c b/fs/lockd/host.c
-> index 5f1bcb2..b7c99bf 100644
-> --- a/fs/lockd/host.c
-> +++ b/fs/lockd/host.c
-> @@ -520,7 +520,7 @@ static struct nlm_host *next_host_state(struct hlist_head *cache,
->  					struct nsm_handle *nsm,
->  					const struct nlm_reboot *info)
->  {
-> -	struct nlm_host *host = NULL;
-> +	struct nlm_host *host;
->  	struct hlist_head *chain;
->  	struct hlist_node *pos;
->  
-> @@ -532,12 +532,13 @@ static struct nlm_host *next_host_state(struct hlist_head *cache,
->  			host->h_state++;
->  
->  			nlm_get_host(host);
-> -			goto out;
-> +			mutex_unlock(&nlm_host_mutex);
-> +			return host;
->  		}
->  	}
-> -out:
-> +
->  	mutex_unlock(&nlm_host_mutex);
-> -	return host;
-> +	return NULL;
->  }
->  
->  /**
-> 
+Applied and queued up for -stable, thanks Eric.
