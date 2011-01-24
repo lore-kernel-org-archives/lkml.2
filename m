@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab1AXW0j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 17:26:39 -0500
-Received: from mail160.messagelabs.com ([216.82.253.99]:9410 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751878Ab1AXW0i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 17:26:38 -0500
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-6.tower-160.messagelabs.com!1295907989!10064642!15
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [216.166.12.32]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ep93xx: default multiplexed gpio ports to gpio mode
-Date: Mon, 24 Jan 2011 15:25:54 -0700
-User-Agent: KMail/1.9.9
-CC: Ryan Mallon <ryan@bluewatersys.com>
+	id S1751989Ab1AXW3o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 17:29:44 -0500
+Received: from cantor.suse.de ([195.135.220.2]:47626 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751339Ab1AXW3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 17:29:43 -0500
+From: Thomas Renninger <trenn@suse.de>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: Perf ABI versioning
+Date: Mon, 24 Jan 2011 23:30:01 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5-5.99.12.5343e5f-desktop; KDE/4.4.4; x86_64; ; )
+Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        tardyp@gmail.com, jean.pihet@newoldbits.com,
+        linux-perf-users@vger.kernel.org, mathieu.desnoyers@efficios.com,
+        linux-trace-users@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <201101241704.01021.trenn@suse.de> <201101242249.14471.trenn@suse.de> <20110124215755.GE6367@ghostprotocols.net>
+In-Reply-To: <20110124215755.GE6367@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201101241525.55050.hartleys@visionengravers.com>
+Message-Id: <201101242330.03008.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The EP93xx C and D GPIO ports are multiplexed with the Keypad Interface
-peripheral.  At power-up they default into non-GPIO mode with the Key
-Matrix controller enabled so these ports are unusable for GPIO.  Note
-that the Keypad Interface peripheral is only available in the EP9307,
-EP9312, and EP9315 processor variants.
+On Monday 24 January 2011 22:57:55 Arnaldo Carvalho de Melo wrote:
+> Em Mon, Jan 24, 2011 at 10:49:13PM +0100, Thomas Renninger escreveu:
+... 
+> Using the /format file hashed as peterz said is elegant, fine grained
+> content based ABI number :-)
+Ok thanks, I should have had a closer look at the binary format.
 
-The keypad support will clear the DeviceConfig bits appropriately to
-enable the Keypad Interface when the driver is loaded.  And, when the
-driver is unloaded it will set the bits to return the ports to GPIO mode.
+It may make sense at some time to provide a library so that other tools
+can make use of the most convenient functions in tools/perf/utils/*
+as well?
 
-To make these ports available for GPIO after power-up on all EP93xx
-processor variants, set the KEYS and GONK bits in the DeviceConfig
-register.
+I'll have a look at the powertop perf implementations I wanted to
+look at anyway and try to understand the stuff a bit better.
 
-Similarly, the E, G, and H ports are multiplexed with the IDE Interface
-peripheral.  At power-up these also default into non-GPIO mode.  Note
-that the IDE peripheral is only available in the EP9312 and EP9315
-processor variants.
+Thanks,
 
-Since an IDE driver is not even available in mainline, set the EONIDE,
-GONIDE, and HONIDE bits in the DeviceConfig register so that these
-ports will be available for GPIO use after power-up.
-
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ryan Mallon <ryan@bluewatersys.com>
-
----
-
-diff --git a/arch/arm/mach-ep93xx/gpio.c b/arch/arm/mach-ep93xx/gpio.c
-index f3dc76f..bec34b8 100644
---- a/arch/arm/mach-ep93xx/gpio.c
-+++ b/arch/arm/mach-ep93xx/gpio.c
-@@ -427,6 +427,13 @@ void __init ep93xx_gpio_init(void)
- {
- 	int i;
- 
-+	/* Set Ports C, D, E, G, and H for GPIO use */
-+	ep93xx_devcfg_set_bits(EP93XX_SYSCON_DEVCFG_KEYS |
-+				 EP93XX_SYSCON_DEVCFG_GONK |
-+				 EP93XX_SYSCON_DEVCFG_EONIDE |
-+				 EP93XX_SYSCON_DEVCFG_GONIDE |
-+				 EP93XX_SYSCON_DEVCFG_HONIDE);
-+
- 	for (i = 0; i < ARRAY_SIZE(ep93xx_gpio_banks); i++)
- 		gpiochip_add(&ep93xx_gpio_banks[i].chip);
- }
+       Thomas
