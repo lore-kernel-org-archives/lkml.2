@@ -1,88 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043Ab1AXPAQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 10:00:16 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:58259 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752564Ab1AXPAO convert rfc822-to-8bit (ORCPT
+	id S1753139Ab1AXPBO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 10:01:14 -0500
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:57654 "EHLO
+	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752906Ab1AXPBM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 10:00:14 -0500
-Subject: Re: [PATCH 00/21] mm: Preemptibility -v6
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>, Nick Piggin <npiggin@kernel.dk>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Andrea Arcangeli <aarcange@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20110124143407.GA19856@redhat.com>
-References: <20101126143843.801484792@chello.nl>
-	 <alpine.LSU.2.00.1101172301340.2899@sister.anvils>
-	 <1295457039.28776.137.camel@laptop>
-	 <alpine.LSU.2.00.1101201052060.1603@sister.anvils>
-	 <1295624034.28776.303.camel@laptop> <1295871714.28776.406.camel@laptop>
-	 <20110124143407.GA19856@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 24 Jan 2011 16:00:46 +0100
-Message-ID: <1295881246.28776.445.camel@laptop>
+	Mon, 24 Jan 2011 10:01:12 -0500
+X-Spam-ASN: 
+Date: Mon, 24 Jan 2011 18:00:57 +0300
+From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: PPS parport boot lockup: INFO: HARDIRQ-READ-safe ->
+ HARDIRQ-READ-unsafe lock order detected
+Message-ID: <20110124180057.4c0e7b49@desktopvm.lvknet>
+In-Reply-To: <AANLkTi=p3=MkGevrW1YU0v_V5iXLw7iLDuWeb7Rf8Xx_@mail.gmail.com>
+References: <AANLkTimajU0x1v6y3rH2+jr-bZ=tNLs1S_agXdGGAa3S@mail.gmail.com>
+	<20110119083916.GA2166@elte.hu>
+	<20110121174438.7521539f@tornado.gnet>
+	<AANLkTi=p3=MkGevrW1YU0v_V5iXLw7iLDuWeb7Rf8Xx_@mail.gmail.com>
+Organization: LVK
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: multipart/signed; micalg=PGP-SHA256;
+ boundary="Sig_/P_IFKvyjBwb7BLmDhKKdUKQ"; protocol="application/pgp-signature"
+X-AV-Checked: ClamAV using ClamSMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-24 at 15:34 +0100, Oleg Nesterov wrote:
-> On 01/24, Peter Zijlstra wrote:
+--Sig_/P_IFKvyjBwb7BLmDhKKdUKQ
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+=D0=92 Fri, 21 Jan 2011 08:37:34 -0800
+Linus Torvalds <torvalds@linux-foundation.org> =D0=BF=D0=B8=D1=88=D0=B5=D1=
+=82:
+
+> On Fri, Jan 21, 2011 at 6:44 AM, Alexander Gordeev
+> <lasaine@lvk.cs.msu.su> wrote:
 > >
-> > On Fri, 2011-01-21 at 16:33 +0100, Peter Zijlstra wrote:
-> >
-> > > Index: linux-2.6/mm/rmap.c
-> > > ===================================================================
-> > > --- linux-2.6.orig/mm/rmap.c
-> > > +++ linux-2.6/mm/rmap.c
-> > > @@ -1559,9 +1559,20 @@ void __put_anon_vma(struct anon_vma *ano
-> > >  	 * Synchronize against page_lock_anon_vma() such that
-> > >  	 * we can safely hold the lock without the anon_vma getting
-> > >  	 * freed.
-> > > +	 *
-> > > +	 * Relies on the full mb implied by the atomic_dec_and_test() from
-> > > +	 * put_anon_vma() against the full mb implied by mutex_trylock() from
-> > > +	 * page_lock_anon_vma(). This orders:
-> > > +	 *
-> > > +	 * page_lock_anon_vma()		VS	put_anon_vma()
-> > > +	 *   mutex_trylock()			  atomic_dec_and_test()
-> > > +	 *   smp_mb()				  smp_mb()
-> > > +	 *   atomic_read()			  mutex_is_locked()
-> >
-> > Bah!, I thought all mutex_trylock() implementations used an atomic op
-> > with return value (which implies a mb), but it looks like (at least*)
-> > PPC doesn't and only provides a LOCK barrier.
-> 
-> But, mutex_trylock() must imply the one-way barrier, otherwise it
-> is buggy, no?
-
-> If this atomic_read() can leak out of the critical section, then
-> I think mutex_trylock() should be fixed. Or I misunderstood the
-> problem completely...
-
-It implies the LOCK barrier, the one way permeable thing, not a full mb.
-
-But I'm not sure the LOCK is sufficient to make the above scenario work.
-
-> BTW, from https://lkml.org/lkml/2010/11/26/213
-> 
-> 	+ * Similar to page_get_anon_vma() except it locks the anon_vma.
-> 	...
-> 	-	struct anon_vma *anon_vma = page_get_anon_vma(page);
-> 
-> looks like, page_get_anon_vma() becomes unused.
-
-In my current tree there's two left in mm/migrate.c.
+> > But parport_unregister_device should probably never be called while
+> > parport interrupts are enabled (in hardware). So this is a false
+> > positive. Is this right?
+>=20
+> "Enabled in hardware" is immaterial - with shared interrupts, it
+> doesn't matter one whit whether parport interrupts are disabled on the
+> chip, because some other chip may be using the same interrupt line.
+>=20
+> So you'd need to have something that guarantees that there is no
+> concurrent use, like actually unregistering the irq handler itself.
+> Things like that can work.
+>=20
+> HOWEVER, even then I think you should see the lockdep message as a
+> problem. The automated toolchain is great because it shows problems
+> that it thinks might happen - not when they happen, but based on a
+> simpler theoretical model. Ignoring the error because there is some
+> rule in place that is hard to explain to the automated toolchain is
+> the wrong thing to do, because it makes the lockdep automation less
+> reliable.
+>=20
+> Think of it as a compiler warning - maybe the warning doesn't actually
+> imply an actual bug, but you should strive to write code that doesn't
+> warn, because otherwise the noise from the warning you ignored will
+> make it harder for others to see the _real_ bugs.
+>=20
+>                  Linus
 
 
-git://git.kernel.org/pub/scm/linux/kernel/git/peterz/linux-2.6-mmu_preempt.git
+Ok, thank you very much for clarification!
+I'll send the patch as reply to the first e-mail.
 
-HEAD: 7e23542fae47ed3b811583cb925837e3aa7a3f0f
+--=20
+  Alexander
+
+--Sig_/P_IFKvyjBwb7BLmDhKKdUKQ
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBCAAGBQJNPZQqAAoJEElrwznyooJbA48H/1mScxYuFuuvO7XfXvGbGJL/
+8I6IA19XOK8FhcjKcGHp1C3w/DTgMTe+QzarjFFx1dyRaNO2J76RMX+/ZKEmfZk3
+rLZge5yT9VWcp8BY/4ip2KGPr7kBHizYyXWF2ojRNnvChgJsYRuGoVwaIK2GddTb
+GBG+Kq+qtTv6lqsAKvcmA+MpMDxkzi282tHau60+NlcioqIQDR/8xG6ev8Oxha2O
+7Ai2rS5NgtmMHv2zU0x0RmrFNpO8unhUP7U6vrO6YVF8x1Nfnoe41DU7is9fLNeV
+jx4d7ExZAYPQJxuRYXtC50xvcUPf7IRqIT7fqlin6I3IAV4P8cucD6A9RSoud/8=
+=XHWN
+-----END PGP SIGNATURE-----
+
+--Sig_/P_IFKvyjBwb7BLmDhKKdUKQ--
