@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258Ab1AXCCS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 21:02:18 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:42950 "EHLO
+	id S1753414Ab1AXCGt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 21:06:49 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:43108 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753139Ab1AXCCC (ORCPT
+	with ESMTP id S1753213Ab1AXCCR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 21:02:02 -0500
+	Sun, 23 Jan 2011 21:02:17 -0500
 From: Colin Cross <ccross@android.com>
 To: linux-tegra@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, olof@lixom.net, konkers@android.com,
-        Gary King <gking@nvidia.com>, Colin Cross <ccross@android.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 19/28] ARM: tegra: iomap: Add missing devices, fix use of SZ_8, SZ_64
-Date: Sun, 23 Jan 2011 18:01:24 -0800
-Message-Id: <1295834493-5019-20-git-send-email-ccross@android.com>
+        Colin Cross <ccross@android.com>, Gary King <gking@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 02/28] ARM: gic: Add functions to save and restore gic state
+Date: Sun, 23 Jan 2011 18:01:07 -0800
+Message-Id: <1295834493-5019-3-git-send-email-ccross@android.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1295834493-5019-1-git-send-email-ccross@android.com>
 References: <1295834493-5019-1-git-send-email-ccross@android.com>
@@ -23,129 +27,212 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gary King <gking@nvidia.com>
+on systems with idle states which power-gate the logic including
+the gic, such as tegra, the gic distributor needs to be shut down
+and restored on entry and exit from the architecture idle code
 
-Adds gart, hdmi, avp, host1x, and pwm controllers to mach/iomap.h
-There is no SZ_8 or SZ_64, replace them with constants
-
+Original-author: Gary King <gking@nvidia.com>
 Signed-off-by: Gary King <gking@nvidia.com>
 Signed-off-by: Colin Cross <ccross@android.com>
+Acked-by: Linus Walleij <linus.walleij@stericsson.com>
 ---
- arch/arm/mach-tegra/include/mach/iomap.h |   55 ++++++++++++++++++++++++------
- 1 files changed, 44 insertions(+), 11 deletions(-)
+v2: Updated on top of changes to gic initialization
 
-diff --git a/arch/arm/mach-tegra/include/mach/iomap.h b/arch/arm/mach-tegra/include/mach/iomap.h
-index 325eca3..26f2363 100644
---- a/arch/arm/mach-tegra/include/mach/iomap.h
-+++ b/arch/arm/mach-tegra/include/mach/iomap.h
-@@ -26,6 +26,9 @@
- #define TEGRA_IRAM_BASE			0x40000000
- #define TEGRA_IRAM_SIZE			SZ_256K
+This patch depends on patch 1: 
+ARM: tegra: irq: Rename gic pointers to avoid conflicts
+
+ arch/arm/common/gic.c               |  127 +++++++++++++++++++++++++++++++++--
+ arch/arm/include/asm/hardware/gic.h |    3 +
+ 2 files changed, 125 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
+index 2243772..a6f8c58 100644
+--- a/arch/arm/common/gic.c
++++ b/arch/arm/common/gic.c
+@@ -42,6 +42,13 @@ struct gic_chip_data {
+ 	unsigned int irq_offset;
+ 	void __iomem *dist_base;
+ 	void __iomem *cpu_base;
++#ifdef CONFIG_PM
++	u32 saved_enable[DIV_ROUND_UP(1020, 32)];
++	u32 saved_conf[DIV_ROUND_UP(1020, 16)];
++	u32 saved_pri[DIV_ROUND_UP(1020, 4)];
++	u32 saved_target[DIV_ROUND_UP(1020, 4)];
++#endif
++	unsigned int gic_irqs;
+ };
  
-+#define TEGRA_HOST1X_BASE		0x50000000
-+#define TEGRA_HOST1X_SIZE		0x24000
+ #ifndef MAX_GIC_NR
+@@ -216,10 +223,9 @@ void __init gic_cascade_irq(unsigned int gic_nr, unsigned int irq)
+ 	set_irq_chained_handler(irq, gic_handle_cascade_irq);
+ }
+ 
+-static void __init gic_dist_init(struct gic_chip_data *gic,
+-	unsigned int irq_start)
++static unsigned int _gic_dist_init(struct gic_chip_data *gic)
+ {
+-	unsigned int gic_irqs, irq_limit, i;
++	unsigned int gic_irqs, i;
+ 	void __iomem *base = gic->dist_base;
+ 	u32 cpumask = 1 << smp_processor_id();
+ 
+@@ -262,10 +268,25 @@ static void __init gic_dist_init(struct gic_chip_data *gic,
+ 	for (i = 32; i < gic_irqs; i += 32)
+ 		writel(0xffffffff, base + GIC_DIST_ENABLE_CLEAR + i * 4 / 32);
+ 
++	return gic_irqs;
++}
 +
- #define TEGRA_ARM_PERIF_BASE		0x50040000
- #define TEGRA_ARM_PERIF_SIZE		SZ_8K
- 
-@@ -35,38 +38,56 @@
- #define TEGRA_ARM_INT_DIST_BASE		0x50041000
- #define TEGRA_ARM_INT_DIST_SIZE		SZ_4K
- 
-+#define TEGRA_MPE_BASE			0x54040000
-+#define TEGRA_MPE_SIZE			SZ_256K
++static void _gic_dist_exit(unsigned int gic_nr)
++{
++	writel(0, gic_data[gic_nr].dist_base + GIC_DIST_CTRL);
++}
 +
-+#define TEGRA_VI_BASE			0x54080000
-+#define TEGRA_VI_SIZE			SZ_256K
++void __init gic_dist_init(struct gic_chip_data *gic, unsigned int irq_start)
++{
++	unsigned int irq_limit;
++	unsigned int i;
 +
-+#define TEGRA_ISP_BASE			0x54100000
-+#define TEGRA_ISP_SIZE			SZ_256K
++	gic->gic_irqs = _gic_dist_init(gic);
 +
- #define TEGRA_DISPLAY_BASE		0x54200000
- #define TEGRA_DISPLAY_SIZE		SZ_256K
+ 	/*
+ 	 * Limit number of interrupts registered to the platform maximum
+ 	 */
+-	irq_limit = gic->irq_offset + gic_irqs;
++	irq_limit = gic->irq_offset + gic->gic_irqs;
+ 	if (WARN_ON(irq_limit > NR_IRQS))
+ 		irq_limit = NR_IRQS;
  
- #define TEGRA_DISPLAY2_BASE		0x54240000
- #define TEGRA_DISPLAY2_SIZE		SZ_256K
+@@ -279,7 +300,15 @@ static void __init gic_dist_init(struct gic_chip_data *gic,
+ 		set_irq_flags(i, IRQF_VALID | IRQF_PROBE);
+ 	}
  
-+#define TEGRA_HDMI_BASE			0x54280000
-+#define TEGRA_HDMI_SIZE			SZ_256K
+-	writel(1, base + GIC_DIST_CTRL);
++	writel(1, gic->dist_base + GIC_DIST_CTRL);
++}
 +
-+#define TEGRA_GART_BASE			0x58000000
-+#define TEGRA_GART_SIZE			SZ_32M
++void gic_dist_exit(unsigned int gic_nr)
++{
++	if (gic_nr >= MAX_GIC_NR)
++		BUG();
 +
-+#define TEGRA_RES_SEMA_BASE		0x60001000
-+#define TEGRA_RES_SEMA_SIZE		SZ_4K
++	_gic_dist_exit(gic_nr);
+ }
+ 
+ static void __cpuinit gic_cpu_init(struct gic_chip_data *gic)
+@@ -305,6 +334,14 @@ static void __cpuinit gic_cpu_init(struct gic_chip_data *gic)
+ 	writel(1, base + GIC_CPU_CTRL);
+ }
+ 
++void gic_cpu_exit(unsigned int gic_nr)
++{
++	if (gic_nr >= MAX_GIC_NR)
++		BUG();
 +
- #define TEGRA_PRIMARY_ICTLR_BASE	0x60004000
--#define TEGRA_PRIMARY_ICTLR_SIZE	SZ_64
-+#define TEGRA_PRIMARY_ICTLR_SIZE	64
- 
- #define TEGRA_SECONDARY_ICTLR_BASE	0x60004100
--#define TEGRA_SECONDARY_ICTLR_SIZE	SZ_64
-+#define TEGRA_SECONDARY_ICTLR_SIZE	64
- 
- #define TEGRA_TERTIARY_ICTLR_BASE	0x60004200
--#define TEGRA_TERTIARY_ICTLR_SIZE	SZ_64
-+#define TEGRA_TERTIARY_ICTLR_SIZE	64
- 
- #define TEGRA_QUATERNARY_ICTLR_BASE	0x60004300
--#define TEGRA_QUATERNARY_ICTLR_SIZE	SZ_64
-+#define TEGRA_QUATERNARY_ICTLR_SIZE	64
- 
- #define TEGRA_TMR1_BASE			0x60005000
--#define TEGRA_TMR1_SIZE			SZ_8
-+#define TEGRA_TMR1_SIZE			8
- 
- #define TEGRA_TMR2_BASE			0x60005008
--#define TEGRA_TMR2_SIZE			SZ_8
-+#define TEGRA_TMR2_SIZE			8
- 
- #define TEGRA_TMRUS_BASE		0x60005010
--#define TEGRA_TMRUS_SIZE		SZ_64
-+#define TEGRA_TMRUS_SIZE		64
- 
- #define TEGRA_TMR3_BASE			0x60005050
--#define TEGRA_TMR3_SIZE			SZ_8
-+#define TEGRA_TMR3_SIZE			8
- 
- #define TEGRA_TMR4_BASE			0x60005058
--#define TEGRA_TMR4_SIZE			SZ_8
-+#define TEGRA_TMR4_SIZE			8
- 
- #define TEGRA_CLK_RESET_BASE		0x60006000
- #define TEGRA_CLK_RESET_SIZE		SZ_4K
-@@ -114,10 +135,10 @@
- #define TEGRA_I2S2_SIZE			SZ_256
- 
- #define TEGRA_UARTA_BASE		0x70006000
--#define TEGRA_UARTA_SIZE		SZ_64
-+#define TEGRA_UARTA_SIZE		64
- 
- #define TEGRA_UARTB_BASE		0x70006040
--#define TEGRA_UARTB_SIZE		SZ_64
-+#define TEGRA_UARTB_SIZE		64
- 
- #define TEGRA_UARTC_BASE		0x70006200
- #define TEGRA_UARTC_SIZE		SZ_256
-@@ -140,6 +161,18 @@
- #define TEGRA_PWFM_BASE			0x7000A000
- #define TEGRA_PWFM_SIZE			SZ_256
- 
-+#define TEGRA_PWFM0_BASE		0x7000A000
-+#define TEGRA_PWFM0_SIZE		4
++	writel(0, gic_data[gic_nr].cpu_base + GIC_CPU_CTRL);
++}
 +
-+#define TEGRA_PWFM1_BASE		0x7000A010
-+#define TEGRA_PWFM1_SIZE		4
+ void __init gic_init(unsigned int gic_nr, unsigned int irq_start,
+ 	void __iomem *dist_base, void __iomem *cpu_base)
+ {
+@@ -350,3 +387,83 @@ void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+ 	writel(map << 16 | irq, gic_data[0].dist_base + GIC_DIST_SOFTINT);
+ }
+ #endif
 +
-+#define TEGRA_PWFM2_BASE		0x7000A020
-+#define TEGRA_PWFM2_SIZE		4
++#ifdef CONFIG_PM
++/*
++ * Saves the GIC distributor registers during suspend or idle.  Must be called
++ * with interrupts disabled but before powering down the GIC.  After calling
++ * this function, no interrupts will be delivered by the GIC, and another
++ * platform-specific wakeup source must be enabled.
++ */
++void gic_dist_save(unsigned int gic_nr)
++{
++	unsigned int gic_irqs = gic_data[gic_nr].gic_irqs;
++	void __iomem *dist_base = gic_data[gic_nr].dist_base;
++	int i;
 +
-+#define TEGRA_PWFM3_BASE		0x7000A030
-+#define TEGRA_PWFM3_SIZE		4
++	if (gic_nr >= MAX_GIC_NR)
++		BUG();
 +
- #define TEGRA_MIPI_BASE			0x7000B000
- #define TEGRA_MIPI_SIZE			SZ_256
++	_gic_dist_exit(gic_nr);
++
++	for (i = 0; i < DIV_ROUND_UP(gic_irqs, 16); i++)
++		gic_data[gic_nr].saved_conf[i] =
++			readl(dist_base + GIC_DIST_CONFIG + i * 4);
++
++	for (i = 0; i < DIV_ROUND_UP(gic_irqs, 4); i++)
++		gic_data[gic_nr].saved_pri[i] =
++			readl(dist_base + GIC_DIST_PRI + i * 4);
++
++	for (i = 0; i < DIV_ROUND_UP(gic_irqs, 4); i++)
++		gic_data[gic_nr].saved_target[i] =
++			readl(dist_base + GIC_DIST_TARGET + i * 4);
++
++	for (i = 0; i < DIV_ROUND_UP(gic_irqs, 32); i++)
++		gic_data[gic_nr].saved_enable[i] =
++			readl(dist_base + GIC_DIST_ENABLE_SET + i * 4);
++}
++
++/*
++ * Restores the GIC distributor registers during resume or when coming out of
++ * idle.  Must be called before enabling interrupts.  If a level interrupt
++ * that occured while the GIC was suspended is still present, it will be
++ * handled normally, but any edge interrupts that occured will not be seen by
++ * the GIC and need to be handled by the platform-specific wakeup source.
++ */
++void gic_dist_restore(unsigned int gic_nr)
++{
++	unsigned int gic_irqs;
++	unsigned int i;
++	void __iomem *dist_base;
++	void __iomem *cpu_base;
++
++	if (gic_nr >= MAX_GIC_NR)
++		BUG();
++
++	_gic_dist_init(&gic_data[gic_nr]);
++
++	gic_irqs = gic_data[gic_nr].gic_irqs;
++	dist_base = gic_data[gic_nr].dist_base;
++	cpu_base = gic_data[gic_nr].cpu_base;
++
++	for (i = 0; i < DIV_ROUND_UP(gic_irqs, 16); i++)
++		writel(gic_data[gic_nr].saved_conf[i],
++			dist_base + GIC_DIST_CONFIG + i * 4);
++
++	for (i = 0; i < DIV_ROUND_UP(gic_irqs, 4); i++)
++		writel(gic_data[gic_nr].saved_pri[i],
++			dist_base + GIC_DIST_PRI + i * 4);
++
++	for (i = 0; i < DIV_ROUND_UP(gic_irqs, 4); i++)
++		writel(gic_data[gic_nr].saved_target[i],
++			dist_base + GIC_DIST_TARGET + i * 4);
++
++	for (i = 0; i < DIV_ROUND_UP(gic_irqs, 32); i++)
++		writel(gic_data[gic_nr].saved_enable[i],
++			dist_base + GIC_DIST_ENABLE_SET + i * 4);
++
++	writel(1, dist_base + GIC_DIST_CTRL);
++	writel(0xf0, cpu_base + GIC_CPU_PRIMASK);
++	writel(1, cpu_base + GIC_CPU_CTRL);
++}
++#endif
+diff --git a/arch/arm/include/asm/hardware/gic.h b/arch/arm/include/asm/hardware/gic.h
+index 84557d3..d0c2ba9 100644
+--- a/arch/arm/include/asm/hardware/gic.h
++++ b/arch/arm/include/asm/hardware/gic.h
+@@ -37,6 +37,9 @@ extern void __iomem *gic_cpu_base_addr;
  
+ void gic_init(unsigned int, unsigned int, void __iomem *, void __iomem *);
+ void gic_secondary_init(unsigned int);
++void gic_dist_save(unsigned int gic_nr);
++void gic_dist_restore(unsigned int gic_nr);
++void gic_cpu_exit(unsigned int gic_nr);
+ void gic_cascade_irq(unsigned int gic_nr, unsigned int irq);
+ void gic_raise_softirq(const struct cpumask *mask, unsigned int irq);
+ void gic_enable_ppi(unsigned int);
 -- 
 1.7.3.1
 
