@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab1AXXdH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 18:33:07 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:35666 "EHLO ogre.sisk.pl"
+	id S1753289Ab1AXXdK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 18:33:10 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:35667 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752776Ab1AXXdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 18:33:04 -0500
+	id S1753006Ab1AXXdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 18:33:05 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Len Brown <lenb@kernel.org>
-Subject: [PATCH 4/8] ACPI: Avoid walking the list of memory mappings in osl.c twice in a row
-Date: Tue, 25 Jan 2011 00:28:51 +0100
+Subject: [PATCH 5/8] ACPI: Make acpi_os_map_memory() avoid creating unnecessary mappings
+Date: Tue, 25 Jan 2011 00:29:35 +0100
 User-Agent: KMail/1.13.5 (Linux/2.6.38-rc1+; KDE/4.4.4; x86_64; ; )
 Cc: Jeff Chua <jeff.chua.linux@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
         ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
@@ -21,95 +21,83 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201101250028.52136.rjw@sisk.pl>
+Message-Id: <201101250029.35999.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Make acpi_os_unmap_generic_address() use acpi_map_lookup() to find
-the desired iomap and drop the reference to it directly (and
-eventually remove it if necessary) instead of calling
-acpi_os_unmap_memory(), which requires us to walk the list of ACPI
-iomaps twice in a row (first, to get the virtual address associated
-with the iomap and second, to get the iomap itself).
+Modify acpi_os_map_memory() so that it doesn't call acpi_os_ioremap()
+unconditionally every time it is executed (except when
+acpi_gbl_permanent_mmap is unset), which pretty much defeats the
+purpose of maintaining the list of ACPI iomaps in osl.c.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/acpi/osl.c |   33 ++++++++++++++++++++-------------
- 1 file changed, 20 insertions(+), 13 deletions(-)
+ drivers/acpi/osl.c |   28 +++++++++++++++-------------
+ 1 file changed, 15 insertions(+), 13 deletions(-)
 
 Index: linux-2.6/drivers/acpi/osl.c
 ===================================================================
 --- linux-2.6.orig/drivers/acpi/osl.c
 +++ linux-2.6/drivers/acpi/osl.c
-@@ -358,6 +358,13 @@ static void acpi_kref_del_iomap(struct k
- 	list_del_rcu(&map->list);
- }
- 
-+static void acpi_os_remove_map(struct acpi_ioremap *map)
-+{
-+	synchronize_rcu();
-+	iounmap(map->virt);
-+	kfree(map);
-+}
-+
- void __ref acpi_os_unmap_memory(void __iomem *virt, acpi_size size)
+@@ -302,7 +302,7 @@ acpi_map_lookup_virt(void __iomem *virt,
+ void __iomem *__init_refok
+ acpi_os_map_memory(acpi_physical_address phys, acpi_size size)
  {
- 	struct acpi_ioremap *map;
-@@ -372,20 +379,14 @@ void __ref acpi_os_unmap_memory(void __i
- 	map = acpi_map_lookup_virt(virt, size);
- 	if (!map) {
- 		mutex_unlock(&acpi_ioremap_lock);
--		printk(KERN_ERR PREFIX "%s: bad address %p\n", __func__, virt);
--		dump_stack();
-+		WARN(true, PREFIX "%s: bad address %p\n", __func__, virt);
- 		return;
- 	}
--
- 	del = kref_put(&map->ref, acpi_kref_del_iomap);
- 	mutex_unlock(&acpi_ioremap_lock);
- 
--	if (!del)
--		return;
--
--	synchronize_rcu();
--	iounmap(map->virt);
--	kfree(map);
-+	if (del)
-+		acpi_os_remove_map(map);
- }
- EXPORT_SYMBOL_GPL(acpi_os_unmap_memory);
- 
-@@ -414,8 +415,8 @@ static int acpi_os_map_generic_address(s
- 
- static void acpi_os_unmap_generic_address(struct acpi_generic_address *addr)
- {
--	void __iomem *virt;
--	acpi_size size = addr->bit_width / 8;
+-	struct acpi_ioremap *map, *tmp_map;
 +	struct acpi_ioremap *map;
-+	int del;
+ 	void __iomem *virt;
+ 	acpi_physical_address pg_off;
+ 	acpi_size pg_sz;
+@@ -315,14 +315,25 @@ acpi_os_map_memory(acpi_physical_address
+ 	if (!acpi_gbl_permanent_mmap)
+ 		return __acpi_map_table((unsigned long)phys, size);
  
- 	if (addr->space_id != ACPI_ADR_SPACE_SYSTEM_MEMORY)
- 		return;
-@@ -424,10 +425,16 @@ static void acpi_os_unmap_generic_addres
- 		return;
- 
- 	mutex_lock(&acpi_ioremap_lock);
--	virt = acpi_map_vaddr_lookup(addr->address, size);
-+	map = acpi_map_lookup(addr->address, addr->bit_width / 8);
++	mutex_lock(&acpi_ioremap_lock);
++	/* Check if there's a suitable mapping already. */
++	map = acpi_map_lookup(phys, size);
++	if (map) {
++		kref_get(&map->ref);
++		goto out;
++	}
++
+ 	map = kzalloc(sizeof(*map), GFP_KERNEL);
+-	if (!map)
 +	if (!map) {
 +		mutex_unlock(&acpi_ioremap_lock);
-+		return;
+ 		return NULL;
 +	}
-+	del = kref_put(&map->ref, acpi_kref_del_iomap);
- 	mutex_unlock(&acpi_ioremap_lock);
  
--	acpi_os_unmap_memory(virt, size);
-+	if (del)
-+		acpi_os_remove_map(map);
+ 	pg_off = round_down(phys, PAGE_SIZE);
+ 	pg_sz = round_up(phys + size, PAGE_SIZE) - pg_off;
+ 	virt = acpi_os_ioremap(pg_off, pg_sz);
+ 	if (!virt) {
++		mutex_unlock(&acpi_ioremap_lock);
+ 		kfree(map);
+ 		return NULL;
+ 	}
+@@ -333,19 +344,10 @@ acpi_os_map_memory(acpi_physical_address
+ 	map->size = pg_sz;
+ 	kref_init(&map->ref);
+ 
+-	mutex_lock(&acpi_ioremap_lock);
+-	/* Check if page has already been mapped. */
+-	tmp_map = acpi_map_lookup(phys, size);
+-	if (tmp_map) {
+-		kref_get(&tmp_map->ref);
+-		mutex_unlock(&acpi_ioremap_lock);
+-		iounmap(map->virt);
+-		kfree(map);
+-		return tmp_map->virt + (phys - tmp_map->phys);
+-	}
+ 	list_add_tail_rcu(&map->list, &acpi_ioremaps);
+-	mutex_unlock(&acpi_ioremap_lock);
+ 
++ out:
++	mutex_unlock(&acpi_ioremap_lock);
+ 	return map->virt + (phys - map->phys);
  }
- 
- #ifdef ACPI_FUTURE_USAGE
+ EXPORT_SYMBOL_GPL(acpi_os_map_memory);
 
