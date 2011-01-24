@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020Ab1AXE3l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 23:29:41 -0500
-Received: from www.tglx.de ([62.245.132.106]:55559 "EHLO www.tglx.de"
+	id S1752421Ab1AXE31 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 23:29:27 -0500
+Received: from www.tglx.de ([62.245.132.106]:55500 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752519Ab1AXE3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 23:29:31 -0500
+	id S1751773Ab1AXE3Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 23:29:24 -0500
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: linux-kernel@vger.kernel.org
 Cc: sodaville@linutronix.de, x86@kernel.org,
         devicetree-discuss@lists.ozlabs.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH TIP 04/14] x86/dtb: add irq domain abstraction
-Date: Mon, 24 Jan 2011 09:58:52 +0530
-Message-Id: <1295843342-1122-5-git-send-email-bigeasy@linutronix.de>
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: [PATCH TIP 01/14] x86/e820: remove conditional early mapping in parse_e820_ext
+Date: Mon, 24 Jan 2011 09:58:49 +0530
+Message-Id: <1295843342-1122-2-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1295843342-1122-1-git-send-email-bigeasy@linutronix.de>
 References: <1295843342-1122-1-git-send-email-bigeasy@linutronix.de>
@@ -21,127 +22,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The here introduced irq_domain abstraction represents a generic irq
-controller. It is a subset of powerpc's irq_host which is going to be
-renamed to irq_domain and then become generic. This implementation will
-be removed once it is generic.
+This patch ensures that the memory passed from parse_setup_data() is
+large enough to cover the complete data structure. That means that the
+conditional mapping in parse_e820_ext() can go.
 
-The xlate callback is resposible to parse irq informations like irq type
-and number and returns the hardware irq number which is reported by the
-hardware as active.
+While here, I also attempt not to map two pages if the address is not
+aligned to a page boundary.
 
-Cc: devicetree-discuss@lists.ozlabs.org
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Tested-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
 ---
- arch/x86/include/asm/irq_controller.h |   12 ++++++++
- arch/x86/include/asm/prom.h           |    2 +
- arch/x86/kernel/prom.c                |   47 ++++++++++++++++++++++++++++++++-
- 3 files changed, 60 insertions(+), 1 deletions(-)
- create mode 100644 arch/x86/include/asm/irq_controller.h
+ arch/x86/include/asm/e820.h |    2 +-
+ arch/x86/kernel/e820.c      |    8 +-------
+ arch/x86/kernel/setup.c     |   18 +++++++++++++++---
+ 3 files changed, 17 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/include/asm/irq_controller.h b/arch/x86/include/asm/irq_controller.h
-new file mode 100644
-index 0000000..423bbbd
---- /dev/null
-+++ b/arch/x86/include/asm/irq_controller.h
-@@ -0,0 +1,12 @@
-+#ifndef __IRQ_CONTROLLER__
-+#define __IRQ_CONTROLLER__
-+
-+struct irq_domain {
-+	int (*xlate)(struct irq_domain *h, const u32 *intspec, u32 intsize,
-+			u32 *out_hwirq, u32 *out_type);
-+	void *priv;
-+	struct device_node *controller;
-+	struct list_head l;
-+};
-+
-+#endif
-diff --git a/arch/x86/include/asm/prom.h b/arch/x86/include/asm/prom.h
-index b227ba7..ed7bb62 100644
---- a/arch/x86/include/asm/prom.h
-+++ b/arch/x86/include/asm/prom.h
-@@ -19,9 +19,11 @@
- #include <asm/irq.h>
- #include <asm/atomic.h>
- #include <asm/setup.h>
-+#include <asm/irq_controller.h>
+diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
+index e99d55d..908b969 100644
+--- a/arch/x86/include/asm/e820.h
++++ b/arch/x86/include/asm/e820.h
+@@ -96,7 +96,7 @@ extern void e820_setup_gap(void);
+ extern int e820_search_gap(unsigned long *gapstart, unsigned long *gapsize,
+ 			unsigned long start_addr, unsigned long long end_addr);
+ struct setup_data;
+-extern void parse_e820_ext(struct setup_data *data, unsigned long pa_data);
++extern void parse_e820_ext(struct setup_data *data);
  
- #ifdef CONFIG_OF
- extern void add_dtb(u64 data);
-+void add_interrupt_host(struct irq_domain *ih);
- #else
- static inline void add_dtb(u64 data) { }
- #endif
-diff --git a/arch/x86/kernel/prom.c b/arch/x86/kernel/prom.c
-index 4969ffa..95f9551 100644
---- a/arch/x86/kernel/prom.c
-+++ b/arch/x86/kernel/prom.c
-@@ -3,18 +3,63 @@
+ #if defined(CONFIG_X86_64) || \
+ 	(defined(CONFIG_X86_32) && defined(CONFIG_HIBERNATION))
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index 294f26d..5fad626 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -667,21 +667,15 @@ __init void e820_setup_gap(void)
+  * boot_params.e820_map, others are passed via SETUP_E820_EXT node of
+  * linked list of struct setup_data, which is parsed here.
   */
- #include <linux/bootmem.h>
- #include <linux/io.h>
-+#include <linux/interrupt.h>
- #include <linux/list.h>
- #include <linux/of.h>
- #include <linux/of_platform.h>
- #include <linux/slab.h>
- 
-+#include <asm/irq_controller.h>
-+
- char __initdata cmd_line[COMMAND_LINE_SIZE];
-+static LIST_HEAD(irq_domains);
-+static DEFINE_RAW_SPINLOCK(big_irq_lock);
-+
-+void add_interrupt_host(struct irq_domain *ih)
-+{
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&big_irq_lock, flags);
-+	list_add(&ih->l, &irq_domains);
-+	raw_spin_unlock_irqrestore(&big_irq_lock, flags);
-+}
-+
-+static struct irq_domain *get_ih_from_node(struct device_node *controller)
-+{
-+	struct irq_domain *ih, *found = NULL;
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&big_irq_lock, flags);
-+	list_for_each_entry(ih, &irq_domains, l) {
-+		if (ih->controller ==  controller) {
-+			found = ih;
-+			break;
-+		}
-+	}
-+	raw_spin_unlock_irqrestore(&big_irq_lock, flags);
-+	return found;
-+}
- 
- unsigned int irq_create_of_mapping(struct device_node *controller,
- 		const u32 *intspec, unsigned int intsize)
+-void __init parse_e820_ext(struct setup_data *sdata, unsigned long pa_data)
++void __init parse_e820_ext(struct setup_data *sdata)
  {
--	return intspec[0];
-+	struct irq_domain *ih;
-+	u32 virq;
-+	u32 type;
-+	int ret;
+-	u32 map_len;
+ 	int entries;
+ 	struct e820entry *extmap;
  
-+	ih = get_ih_from_node(controller);
-+	if (!ih)
-+		return 0;
-+	ret = ih->xlate(ih, intspec, intsize, &virq, &type);
-+	if (ret)
-+		return ret;
-+	if (type == IRQ_TYPE_NONE)
-+		return virq;
-+	/* set the mask if it is different from current */
-+	if (type == (irq_to_desc(virq)->status & IRQF_TRIGGER_MASK))
-+		set_irq_type(virq, type);
-+	return virq;
+ 	entries = sdata->len / sizeof(struct e820entry);
+-	map_len = sdata->len + sizeof(struct setup_data);
+-	if (map_len > PAGE_SIZE)
+-		sdata = early_ioremap(pa_data, map_len);
+ 	extmap = (struct e820entry *)(sdata->data);
+ 	__append_e820_map(extmap, entries);
+ 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
+-	if (map_len > PAGE_SIZE)
+-		early_iounmap(sdata, map_len);
+ 	printk(KERN_INFO "extended physical RAM map:\n");
+ 	e820_print_map("extended");
  }
- EXPORT_SYMBOL_GPL(irq_create_of_mapping);
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index d3cfe26..f8e7152 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -429,16 +429,28 @@ static void __init parse_setup_data(void)
+ 		return;
+ 	pa_data = boot_params.hdr.setup_data;
+ 	while (pa_data) {
+-		data = early_memremap(pa_data, PAGE_SIZE);
++		u32 data_len;
++		u32 map_len;
++
++		map_len = max(PAGE_SIZE - (pa_data & ~PAGE_MASK),
++				(u64)sizeof(struct setup_data));
++		data = early_memremap(pa_data, map_len);
++		data_len = data->len + sizeof(struct setup_data);
++		if (data_len > map_len) {
++			early_iounmap(data, map_len);
++			data = early_memremap(pa_data, data_len);
++			map_len = data_len;
++		}
++
+ 		switch (data->type) {
+ 		case SETUP_E820_EXT:
+-			parse_e820_ext(data, pa_data);
++			parse_e820_ext(data);
+ 			break;
+ 		default:
+ 			break;
+ 		}
+ 		pa_data = data->next;
+-		early_iounmap(data, PAGE_SIZE);
++		early_iounmap(data, map_len);
+ 	}
+ }
  
 -- 
 1.7.3.2
