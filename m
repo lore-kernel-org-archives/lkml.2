@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab1AXCCb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 21:02:31 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:57378 "EHLO
+	id S1753183Ab1AXCC0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 21:02:26 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:57369 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753152Ab1AXCCF (ORCPT
+	with ESMTP id S1753150Ab1AXCCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 21:02:05 -0500
+	Sun, 23 Jan 2011 21:02:04 -0500
 From: Colin Cross <ccross@android.com>
 To: linux-tegra@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, olof@lixom.net, konkers@android.com,
         Colin Cross <ccross@android.com>,
         Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 14/28] ARM: tegra: irq: Add set_wake and set_type support for suspend
-Date: Sun, 23 Jan 2011 18:01:19 -0800
-Message-Id: <1295834493-5019-15-git-send-email-ccross@android.com>
+Subject: [PATCH v2 23/28] ARM: tegra: add tegra_defconfig
+Date: Sun, 23 Jan 2011 18:01:28 -0800
+Message-Id: <1295834493-5019-24-git-send-email-ccross@android.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1295834493-5019-1-git-send-email-ccross@android.com>
 References: <1295834493-5019-1-git-send-email-ccross@android.com>
@@ -23,187 +23,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Olof Johansson <olof@lixom.net>
+
+Adding one single defconfig for the tegra family of boards, to over time
+cover the superset of supported platform and drivers.
+
+Signed-off-by: Olof Johansson <olof@lixom.net>
 Signed-off-by: Colin Cross <ccross@android.com>
 ---
- arch/arm/mach-tegra/include/mach/legacy_irq.h |    3 +-
- arch/arm/mach-tegra/irq.c                     |  106 +++++++++++++++++++++++++
- arch/arm/mach-tegra/legacy_irq.c              |    4 +-
- 3 files changed, 110 insertions(+), 3 deletions(-)
+ arch/arm/configs/tegra_defconfig |  123 ++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 123 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/configs/tegra_defconfig
 
-diff --git a/arch/arm/mach-tegra/include/mach/legacy_irq.h b/arch/arm/mach-tegra/include/mach/legacy_irq.h
-index d898c0e..3a2bfab 100644
---- a/arch/arm/mach-tegra/include/mach/legacy_irq.h
-+++ b/arch/arm/mach-tegra/include/mach/legacy_irq.h
-@@ -31,5 +31,6 @@ int tegra_legacy_irq_set_wake(int irq, int enable);
- void tegra_legacy_irq_set_lp1_wake_mask(void);
- void tegra_legacy_irq_restore_mask(void);
- void tegra_init_legacy_irq(void);
--
-+void tegra_legacy_irq_suspend(void);
-+void tegra_legacy_irq_resume(void);
- #endif
-diff --git a/arch/arm/mach-tegra/irq.c b/arch/arm/mach-tegra/irq.c
-index 4892394..c292d3b 100644
---- a/arch/arm/mach-tegra/irq.c
-+++ b/arch/arm/mach-tegra/irq.c
-@@ -54,6 +54,51 @@ static void pmc_32kwritel(u32 val, unsigned long offs)
- 	udelay(130);
- }
- 
-+int tegra_set_lp0_wake(int irq, int enable)
-+{
-+	int wake = tegra_irq_to_wake(irq);
-+
-+	if (wake < 0)
-+		return -EINVAL;
-+
-+	if (enable)
-+		tegra_lp0_wake_enb |= 1 << wake;
-+	else
-+		tegra_lp0_wake_enb &= ~(1 << wake);
-+
-+	return 0;
-+}
-+
-+int tegra_set_lp0_wake_type(int irq, int flow_type)
-+{
-+	int wake = tegra_irq_to_wake(irq);
-+
-+	if (wake < 0)
-+		return 0;
-+
-+	switch (flow_type) {
-+	case IRQF_TRIGGER_FALLING:
-+	case IRQF_TRIGGER_LOW:
-+		tegra_lp0_wake_level &= ~(1 << wake);
-+		tegra_lp0_wake_level_any &= ~(1 << wake);
-+		break;
-+	case IRQF_TRIGGER_HIGH:
-+	case IRQF_TRIGGER_RISING:
-+		tegra_lp0_wake_level |= 1 << wake;
-+		tegra_lp0_wake_level_any &= ~(1 << wake);
-+		break;
-+
-+	case IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING:
-+		tegra_lp0_wake_level_any |= 1 << wake;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+
- int tegra_set_lp1_wake(int irq, int enable)
- {
- 	return tegra_legacy_irq_set_wake(irq, enable);
-@@ -97,6 +142,33 @@ void tegra_set_lp0_wake_pads(u32 wake_enb, u32 wake_level, u32 wake_any)
- 	writel(wake_enb, pmc + PMC_WAKE_MASK);
- }
- 
-+static void tegra_irq_handle_wake(void)
-+{
-+	int wake;
-+	int irq;
-+	struct irq_desc *desc;
-+
-+	unsigned long wake_status = readl(pmc + PMC_WAKE_STATUS);
-+	for_each_set_bit(wake, &wake_status, sizeof(wake_status) * 8) {
-+		irq = tegra_wake_to_irq(wake);
-+		if (!irq) {
-+			pr_info("Resume caused by WAKE%d\n", wake);
-+			continue;
-+		}
-+
-+		desc = irq_to_desc(irq);
-+		if (!desc || !desc->action || !desc->action->name) {
-+			pr_info("Resume caused by WAKE%d, irq %d\n", wake, irq);
-+			continue;
-+		}
-+
-+		pr_info("Resume caused by WAKE%d, %s\n", wake,
-+			desc->action->name);
-+
-+		generic_handle_irq(irq);
-+	}
-+}
-+
- static void tegra_mask(struct irq_data *d)
- {
- 	gic_mask_irq(d);
-@@ -109,11 +181,34 @@ static void tegra_unmask(struct irq_data *d)
- 	tegra_legacy_unmask_irq(d->irq);
- }
- 
-+static int tegra_set_wake(struct irq_data *d, unsigned int enable)
-+{
-+	int ret;
-+	ret = tegra_set_lp1_wake(d->irq, enable);
-+	if (ret)
-+		return ret;
-+
-+	if (tegra_get_suspend_mode() == TEGRA_SUSPEND_LP0)
-+		return tegra_set_lp0_wake(d->irq, enable);
-+
-+	return 0;
-+}
-+
-+static int tegra_set_type(struct irq_data *d, unsigned int flow_type)
-+{
-+	if (tegra_get_suspend_mode() == TEGRA_SUSPEND_LP0)
-+		return tegra_set_lp0_wake_type(d->irq, flow_type);
-+
-+	return 0;
-+}
-+
- static struct irq_chip tegra_irq = {
- 	.name			= "PPI",
- 	.irq_ack		= gic_ack_irq,
- 	.irq_mask		= tegra_mask,
- 	.irq_unmask		= tegra_unmask,
-+	.irq_set_wake		= tegra_set_wake,
-+	.irq_set_type		= tegra_set_type,
- #ifdef CONFIG_SMP
- 	.irq_set_affinity	= gic_set_cpu,
- #endif
-@@ -136,3 +231,14 @@ void __init tegra_init_irq(void)
- 		set_irq_flags(irq, IRQF_VALID);
- 	}
- }
-+
-+void tegra_irq_suspend(void)
-+{
-+	tegra_legacy_irq_suspend();
-+}
-+
-+void tegra_irq_resume(void)
-+{
-+	tegra_legacy_irq_resume();
-+	tegra_irq_handle_wake();
-+}
-diff --git a/arch/arm/mach-tegra/legacy_irq.c b/arch/arm/mach-tegra/legacy_irq.c
-index 38eb719..5a6197b 100644
---- a/arch/arm/mach-tegra/legacy_irq.c
-+++ b/arch/arm/mach-tegra/legacy_irq.c
-@@ -179,7 +179,7 @@ static u32 cop_ier[NUM_ICTLRS];
- static u32 cpu_ier[NUM_ICTLRS];
- static u32 cpu_iep[NUM_ICTLRS];
- 
--void tegra_irq_suspend(void)
-+void tegra_legacy_irq_suspend(void)
- {
- 	unsigned long flags;
- 	int i;
-@@ -195,7 +195,7 @@ void tegra_irq_suspend(void)
- 	local_irq_restore(flags);
- }
- 
--void tegra_irq_resume(void)
-+void tegra_legacy_irq_resume(void)
- {
- 	unsigned long flags;
- 	int i;
+diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
+new file mode 100644
+index 0000000..7a9267e
+--- /dev/null
++++ b/arch/arm/configs/tegra_defconfig
+@@ -0,0 +1,123 @@
++CONFIG_EXPERIMENTAL=y
++CONFIG_IKCONFIG=y
++CONFIG_IKCONFIG_PROC=y
++CONFIG_CGROUPS=y
++CONFIG_CGROUP_DEBUG=y
++CONFIG_CGROUP_FREEZER=y
++CONFIG_CGROUP_CPUACCT=y
++CONFIG_RESOURCE_COUNTERS=y
++CONFIG_CGROUP_SCHED=y
++CONFIG_RT_GROUP_SCHED=y
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_EMBEDDED=y
++# CONFIG_SYSCTL_SYSCALL is not set
++# CONFIG_ELF_CORE is not set
++CONFIG_SLAB=y
++CONFIG_MODULES=y
++CONFIG_MODULE_UNLOAD=y
++CONFIG_MODULE_FORCE_UNLOAD=y
++# CONFIG_BLK_DEV_BSG is not set
++# CONFIG_IOSCHED_DEADLINE is not set
++# CONFIG_IOSCHED_CFQ is not set
++CONFIG_ARCH_TEGRA=y
++CONFIG_MACH_HARMONY=y
++CONFIG_TEGRA_DEBUG_UARTD=y
++CONFIG_ARM_ERRATA_742230=y
++CONFIG_NO_HZ=y
++CONFIG_HIGH_RES_TIMERS=y
++CONFIG_SMP=y
++CONFIG_NR_CPUS=2
++CONFIG_PREEMPT=y
++CONFIG_AEABI=y
++# CONFIG_OABI_COMPAT is not set
++CONFIG_HIGHMEM=y
++CONFIG_ZBOOT_ROM_TEXT=0x0
++CONFIG_ZBOOT_ROM_BSS=0x0
++CONFIG_VFP=y
++CONFIG_PM=y
++CONFIG_NET=y
++CONFIG_PACKET=y
++CONFIG_UNIX=y
++CONFIG_NET_KEY=y
++CONFIG_INET=y
++CONFIG_INET_ESP=y
++# CONFIG_INET_XFRM_MODE_TUNNEL is not set
++# CONFIG_INET_XFRM_MODE_BEET is not set
++# CONFIG_INET_LRO is not set
++# CONFIG_INET_DIAG is not set
++CONFIG_IPV6=y
++CONFIG_IPV6_PRIVACY=y
++CONFIG_IPV6_ROUTER_PREF=y
++CONFIG_IPV6_OPTIMISTIC_DAD=y
++CONFIG_INET6_AH=y
++CONFIG_INET6_ESP=y
++CONFIG_INET6_IPCOMP=y
++CONFIG_IPV6_MIP6=y
++CONFIG_IPV6_TUNNEL=y
++CONFIG_IPV6_MULTIPLE_TABLES=y
++# CONFIG_WIRELESS is not set
++# CONFIG_FIRMWARE_IN_KERNEL is not set
++CONFIG_BLK_DEV_LOOP=y
++CONFIG_MISC_DEVICES=y
++CONFIG_AD525X_DPOT=y
++CONFIG_AD525X_DPOT_I2C=y
++CONFIG_ICS932S401=y
++CONFIG_APDS9802ALS=y
++CONFIG_ISL29003=y
++CONFIG_NETDEVICES=y
++CONFIG_DUMMY=y
++# CONFIG_NETDEV_1000 is not set
++# CONFIG_NETDEV_10000 is not set
++# CONFIG_WLAN is not set
++# CONFIG_INPUT is not set
++# CONFIG_SERIO is not set
++# CONFIG_VT is not set
++# CONFIG_DEVKMEM is not set
++CONFIG_SERIAL_8250=y
++CONFIG_SERIAL_8250_CONSOLE=y
++# CONFIG_LEGACY_PTYS is not set
++# CONFIG_HW_RANDOM is not set
++CONFIG_I2C=y
++# CONFIG_HWMON is not set
++# CONFIG_MFD_SUPPORT is not set
++# CONFIG_USB_SUPPORT is not set
++CONFIG_MMC=y
++CONFIG_MMC_SDHCI=y
++CONFIG_MMC_SDHCI_PLTFM=y
++CONFIG_EXT2_FS=y
++CONFIG_EXT2_FS_XATTR=y
++CONFIG_EXT2_FS_POSIX_ACL=y
++CONFIG_EXT2_FS_SECURITY=y
++CONFIG_EXT3_FS=y
++# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
++CONFIG_EXT3_FS_POSIX_ACL=y
++CONFIG_EXT3_FS_SECURITY=y
++# CONFIG_DNOTIFY is not set
++CONFIG_VFAT_FS=y
++CONFIG_TMPFS=y
++CONFIG_NLS_CODEPAGE_437=y
++CONFIG_NLS_ISO8859_1=y
++CONFIG_PRINTK_TIME=y
++CONFIG_MAGIC_SYSRQ=y
++CONFIG_DEBUG_FS=y
++CONFIG_DEBUG_KERNEL=y
++CONFIG_DETECT_HUNG_TASK=y
++CONFIG_SCHEDSTATS=y
++CONFIG_TIMER_STATS=y
++CONFIG_DEBUG_SLAB=y
++# CONFIG_DEBUG_PREEMPT is not set
++CONFIG_DEBUG_MUTEXES=y
++CONFIG_DEBUG_SPINLOCK_SLEEP=y
++CONFIG_DEBUG_INFO=y
++CONFIG_DEBUG_VM=y
++CONFIG_DEBUG_SG=y
++# CONFIG_RCU_CPU_STALL_DETECTOR is not set
++CONFIG_DEBUG_LL=y
++CONFIG_EARLY_PRINTK=y
++CONFIG_CRYPTO_ECB=y
++CONFIG_CRYPTO_AES=y
++CONFIG_CRYPTO_ARC4=y
++CONFIG_CRYPTO_TWOFISH=y
++# CONFIG_CRYPTO_ANSI_CPRNG is not set
++CONFIG_CRC_CCITT=y
++CONFIG_CRC16=y
 -- 
 1.7.3.1
 
