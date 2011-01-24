@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784Ab1AXQpJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 11:45:09 -0500
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:54989 "EHLO
+	id S1753808Ab1AXQpS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 11:45:18 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:53939 "EHLO
 	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753529Ab1AXQpH (ORCPT
+	by vger.kernel.org with ESMTP id S1753794Ab1AXQpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 11:45:07 -0500
-X-Sasl-enc: iqyC5UYUCBftrOKLofMwVfMaiaphEW3EDOLdA5jQHVty 1295887506
+	Mon, 24 Jan 2011 11:45:14 -0500
+X-Sasl-enc: fUUA4eP0CwOknam8b8E1RKgBD3sZVVtA4vLba6cMTKjE 1295887513
 From: Roberto Sassu <roberto.sassu@polito.it>
 To: linux-security-module@vger.kernel.org
 Cc: keyrings@linux-nfs.org, linux-fsdevel@vger.kernel.org,
@@ -15,61 +15,50 @@ Cc: keyrings@linux-nfs.org, linux-fsdevel@vger.kernel.org,
         zohar@linux.vnet.ibm.com, safford@watson.ibm.com, ramunno@polito.it,
         tyhicks@linux.vnet.ibm.com, kirkland@canonical.com,
         Roberto Sassu <roberto.sassu@polito.it>
-Subject: [RFC][PATCH v3 0/6] eCryptfs: added support for the encrypted key type
-Date: Mon, 24 Jan 2011 17:44:48 +0100
-Message-Id: <1295887497-20198-1-git-send-email-roberto.sassu@polito.it>
+Subject: [RFC][PATCH v3 1/6] encrypted-keys: fixed valid_master_desc() function description
+Date: Mon, 24 Jan 2011 17:44:49 +0100
+Message-Id: <1295887497-20198-2-git-send-email-roberto.sassu@polito.it>
 X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1295887497-20198-1-git-send-email-roberto.sassu@polito.it>
+References: <1295887497-20198-1-git-send-email-roberto.sassu@polito.it>
 MIME-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----97D182EDF6DA1FFF02A6654A0DBB6F01"
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----379D27A9D3C21332FF378776229D2DFE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is an S/MIME signed message
 
-------97D182EDF6DA1FFF02A6654A0DBB6F01
+------379D27A9D3C21332FF378776229D2DFE
 
-This patch set adds support for the 'encrypted' key type in the eCryptfs
-filesystem.
+Valid key type prefixes for the parameter 'key-type' are: 'trusted' and
+'user'.
 
-Changelog from version v2:
-- rebased on the latest commit of the mainline kernel (d315777b32a);
-- added two new functions ecryptfs_get_encrypted_key_payload_data() and
-  ecryptfs_get_encrypted_key() in the file fs/ecryptfs/ecryptfs_kernel.h.
+Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+Acked-by: Gianluca Ramunno <ramunno@polito.it>
+Acked-by: Mimi Zohar <zohar@us.ibm.com>
+---
+ security/keys/encrypted.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Roberto Sassu
-
-
-Roberto Sassu (6):
-  encrypted-keys: fixed valid_master_desc() function description
-  encrypted-keys: added additional debug messages
-  encrypted-keys: add key format support
-  eCryptfs: export global eCryptfs definitions to
-    include/linux/ecryptfs.h
-  encrypted-keys: add ecryptfs format support
-  eCryptfs: added support for the encrypted key type
-
- Documentation/keys-ecryptfs.txt          |   68 +++++++++
- Documentation/keys-trusted-encrypted.txt |   52 ++++---
- fs/ecryptfs/ecryptfs_kernel.h            |  150 +++++--------------
- fs/ecryptfs/keystore.c                   |   11 +-
- include/keys/encrypted-type.h            |   13 ++-
- include/linux/ecryptfs.h                 |  113 ++++++++++++++
- security/keys/Makefile                   |    2 +-
- security/keys/encrypted.c                |  242 ++++++++++++++++++++++++------
- security/keys/keys_ecryptfs.c            |   81 ++++++++++
- security/keys/keys_ecryptfs.h            |   30 ++++
- 10 files changed, 577 insertions(+), 185 deletions(-)
- create mode 100644 Documentation/keys-ecryptfs.txt
- create mode 100644 include/linux/ecryptfs.h
- create mode 100644 security/keys/keys_ecryptfs.c
- create mode 100644 security/keys/keys_ecryptfs.h
-
+diff --git a/security/keys/encrypted.c b/security/keys/encrypted.c
+index 9e7e4ce..6135836 100644
+--- a/security/keys/encrypted.c
++++ b/security/keys/encrypted.c
+@@ -84,7 +84,7 @@ static int aes_get_sizes(void)
+ /*
+  * valid_master_desc - verify the 'key-type:desc' of a new/updated master-key
+  *
+- * key-type:= "trusted:" | "encrypted:"
++ * key-type:= "trusted:" | "user:"
+  * desc:= master-key description
+  *
+  * Verify that 'key-type' is valid and that 'desc' exists. On key update,
 -- 
 1.7.3.4
 
 
-------97D182EDF6DA1FFF02A6654A0DBB6F01
+------379D27A9D3C21332FF378776229D2DFE
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -107,17 +96,17 @@ YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
 MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
 aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
 Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
-CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTAxMjQxNjQ0NTdaMCMGCSqG
-SIb3DQEJBDEWBBQWyP0ANDmrRPrbB+T2m/Vn2KhFrDB5BgkqhkiG9w0BCQ8xbDBq
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTAxMjQxNjQ1MTBaMCMGCSqG
+SIb3DQEJBDEWBBRHTvaMh5yOxFm3zKUfv/4f3vz7QTB5BgkqhkiG9w0BCQ8xbDBq
 MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
 DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
-hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQAetz18OVTjjRs5YkwP3M2ZPrzu
-JVuB/xNYLve5l3U/c7P1k44z27tK5oknaW7XY1JbduJfhbtvBwCK31pyu/zSl0O9
-2JvSL+oiVcr7ro/W5HU1mTGBenARKr68qlEXPH7ZkrpiyD/kBeRBY0EJR1Wc0ZFp
-mWF+Nj5xk5kifYo5AjfLn0CSZx1uGEGw8NeLltDxQ+BpYTGfEWE+0mGSuxpDtw2Z
-UJa7ppz6AiEFHtvhXVMWCNalawOZT62596nh7LewOkYsFnhg8VwmTSZCYKveGRQG
-pQdIeezChrWW1EBfnNSfK1N+2RfFU3TSBYdwWwKtMPaFkKhW3xaxZjaWvIYz
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQBAYxdLWPMd2BZ2opwa/B5teiPE
+S4RNdcDAOtcIQYELnGdmNfEgtYKg+90D042zck3ivwzOHEL6mSCCxAEl0FGtF22j
+PimH1/B1eLx7e78eEseX9h/bxBJERB37Ckm0rQ8g0t2cteRYDRQxjAmRZ8GNp7ql
+fObQ4ppht1JZcawGkqdDflI8A9JhZiQ88h9q/wuE7T+o/vcvkm2WZya1wzSe4THx
+Lx1aNtqWwMFdixBT1KLoRq1YdIjKLZ1vw8HpeD3x/TmtzH1/cLlbPvVyWi23Uy+N
+59kpmLX+/Fq0Z0SC55+jKP+XiFVr5ssoeZfJCh9wRak7rci5owW+/+AgPJFd
 
-------97D182EDF6DA1FFF02A6654A0DBB6F01--
+------379D27A9D3C21332FF378776229D2DFE--
 
 
