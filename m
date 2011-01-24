@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019Ab1AXV0o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 16:26:44 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61331 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751554Ab1AXV0n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 16:26:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=PJwZlOcNtSZeJdBiaw5atldFnj9eAmfhdPHkm5QhTU/Si1YXuW3NhalN6Rwkx4ayi6
-         3QlkfTASepinfHx1abtaLQKWYLzcGmr0b3isChW0L31AyKd8RVKkLYH/G7jJNHfYd1z4
-         MGY73kNgR5mGB7jFiErLLlUaJzxNitIVBiCXo=
+	id S1753086Ab1AXV2y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 16:28:54 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:35589 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751554Ab1AXV2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 16:28:52 -0500
+Date: Mon, 24 Jan 2011 22:28:38 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Renninger <trenn@suse.de>, tardyp@gmail.com,
+        jean.pihet@newoldbits.com, acme@ghostprotocols.net,
+        linux-perf-users@vger.kernel.org, mathieu.desnoyers@efficios.com,
+        linux-trace-users@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Perf ABI versioning
+Message-ID: <20110124212838.GB13724@elte.hu>
+References: <201101241704.01021.trenn@suse.de>
+ <20110124203449.GC2318@nowhere>
 MIME-Version: 1.0
-In-Reply-To: <1295891761-18366-9-git-send-email-catalin.marinas@arm.com>
-References: <1295891761-18366-1-git-send-email-catalin.marinas@arm.com>
-	<1295891761-18366-9-git-send-email-catalin.marinas@arm.com>
-Date: Tue, 25 Jan 2011 08:26:42 +1100
-Message-ID: <AANLkTi=d0q0Upde3=b4tpu3icOr4XdifcFRvBHuXgsBN@mail.gmail.com>
-Subject: Re: [PATCH v4 08/19] ARM: LPAE: Introduce the 3-level page table
- format definitions
-From: Nick Piggin <npiggin@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110124203449.GC2318@nowhere>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Too bad about the PAE thing; my condolences.
 
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-On Tue, Jan 25, 2011 at 4:55 AM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> This patch introduces the pgtable-3level*.h files with definitions
-> specific to the LPAE page table format (3 levels of page tables).
+> This may be generally useful to help dealing with tracepoint ABI changes.
+> 
+> But instead of a global tracing ABI number, I would rather suggest one number per 
+> tracepoint subsystem (sched, power, etc...).
 
-Seeing as you're shaking up these definitions, what do you think about
-switching from 4level-fixup.h to pgtable-nopud.h / pgtable-nopmd.h headers?
-One day eventually it would be nice to get rid of the fixup mode.
+Nooooooooooo ... !!! :-)
+
+Please lets stop this madness before it gets too serious: we dont do ABI version 
+numbering in Linux, full stop.
+
+We use 'natural' ABIs where the lack of an ABI component triggers some sort of 
+clean, finegrained error. Like a -EINVAL on a not-yet-implemented ABI component, a 
+non-existent file entry, or -ENOSYS on a non-existent syscall.
+
+Such a design is arbitrarily backportable or forward portable, it's extensible and 
+it is actually maintainable.
+
+In the ABI version numbering direction lies Windows madness ...
+
+Thanks,
+
+	Ingo
