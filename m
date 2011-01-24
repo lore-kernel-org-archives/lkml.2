@@ -1,135 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185Ab1AXXVK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 18:21:10 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:43081 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753082Ab1AXXVI (ORCPT
+	id S1752873Ab1AXXYP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 18:24:15 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33299 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236Ab1AXXYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 18:21:08 -0500
-Subject: [ANNOUNCE] TCM/LIO v4.0.0-rc7 for 2.6.38-rc2
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: "Linux-iSCSI.org Target Dev" 
-	<linux-iscsi-target-dev@googlegroups.com>
-Content-Type: text/plain
-Date: Mon, 24 Jan 2011 15:21:04 -0800
-Message-Id: <1295911264.24778.79.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Mon, 24 Jan 2011 18:24:13 -0500
+Date: Mon, 24 Jan 2011 23:23:02 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Ryan Mallon <ryan@bluewatersys.com>
+Cc: Julia Lawall <julia@diku.dk>, Vasiliy Kulikov <segooon@gmail.com>,
+        kernel-janitors@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] arch/arm/mach-at91/clock.c: Add missing IS_ERR test
+Message-ID: <20110124232302.GQ24104@n2100.arm.linux.org.uk>
+References: <4D3DD964.9020107@bluewatersys.com> <Pine.LNX.4.64.1101242058430.3167@ask.diku.dk> <20110124200515.GA30963@albatros> <4D3DDD07.1030809@bluewatersys.com> <Pine.LNX.4.64.1101242126570.3167@ask.diku.dk> <4D3DE35B.1030102@bluewatersys.com> <Pine.LNX.4.64.1101242200500.3167@ask.diku.dk> <4D3DE9CD.2040800@bluewatersys.com> <Pine.LNX.4.64.1101242231240.3167@ask.diku.dk> <4D3DF46A.1030009@bluewatersys.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D3DF46A.1030009@bluewatersys.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings all,
+On Tue, Jan 25, 2011 at 10:51:38AM +1300, Ryan Mallon wrote:
+> You could, but it would not be helpful. Clock associations are used so
+> that _different_ devices can have the same function and map to the
+> correct clock. This is used when there are multiple instances of a
+> single peripheral. For example, the uart clocks work like this:
+> 
+> 	at91_clock_associate("usart1_clk", &pdev->dev, "usart");
+> 
+> so then you can do this in a driver:
+> 	
+> 	uart_clk = clk_get(&pdev->dev, "usart");
+> 
+> Rather than:
+> 
+> 	uart_clk = clk_get(NULL, "usart1_clk");
+> 
+> The former will find the correct uart clock for the device. Because each
+> uart is a separate device the correct clock will be selected for each uart.
+> 	
+> My point was that there should be no overlap between clk->name and
+> clk->function otherwise clk_get will not be able to return the correct
+> clock.
 
-TCM/LIO v4.0.0-rc7 for 2.6.38-rc2 has been tagged and pushed into the
-LIO upstream tree at @ lio-core-2.6.git/linus-38-rc2.  At this point
-lio-core-2.6.git/linus-38-rc2 has been synced with mainline target code,
-and the v4.0.0-rc7 PULL requests will be sent out shortly.
+It would be nice if AT91 could switch over to using clkdev at some
+point, which greatly helps with associating struct clk's with their
+device/function names - and reduces the amount of "different" code.
 
-Thanks again to everyone who submitted patches and gave feedback this
-round for LIO upstream code.  With these v4.0 changes headed into
-mainline, the new lio-4.1 development tree will be starting shortly for
-items tagged as 'for-39'.
+You can then use clk_add_alias() to create aliases of an existing
+clock.
 
-Thanks!
+Looking at your clk_get(), I think one way to do this would be, in
+clk_register():
 
---nab
+	struct clk_lookup *cl;
 
-Christoph Hellwig (2):
-  target: do not include target_core_mib.h under include/target
-  target: remove EXTRA_CFLAGS
+	/* create function-only entry */
+	cl = clkdev_alloc(clk, clk->name, NULL);
+	if (!cl)
+		return -ENOMEM;
+	clkdev_add(cl);
 
-Dan Carpenter (2):
-  target: remove an unused variable
-  target: unlock on error path in configfs
+	/* not sure if you need this? */
+	if (clk->dev && clk->function) {
+		cl = clkdev_alloc(clk, clk->function, "%s", dev_name(clk->dev));
+		if (!cl)
+			return -ENOMEM;
+		clkdev_add(cl);
+	}
 
-Fubo Chen (3):
-  target: Drop nacl->device_list_lock on
-    core_update_device_list_for_node failure
-  target: Reaquire hba_lock + se_port_lock during se_clear_dev_ports
-    continue
-  target: Minor sparse warning fixes and annotations
+at91_clock_associate() becomes:
 
-Jesper Juhl (2):
-  target/file: Fix memory leak in fd_set_configfs_dev_params().
-  target: remove duplicate include target_core_device.h
+	err = clk_add_alias(func, dev_name(dev), id, NULL);
+	return err;
 
-Kiran Patil (3):
-  TCM/LIO: Support for large FC offload (write exchange)
-  ixgbe: Added support for receive offload in base driver for storage
-    target.
-  TCM/OpenFCoE : Added Large Send Offload
+Although maybe in the long run see about removing at91_clock_associate()
+entirely as its just a wrapper.
 
-Nicholas Bellinger (25):
-  tcm_fc: Clear frame_len before skipping to next frame
-  Revert "tcm_fc: Clear frame_len before skipping to next frame"
-  target: Add linux/blkdev.h include in target_core_base.h
-  target: Add SCSI and BLOCK depends for TARGET_CORE
-  target: Fix excessive stack usage
-  target: Fix T_TASK(cmd)->t_task_cdb assignement breakage
-  target: Add missing core_scsi3_put_pr_reg() for explict REGISTER key
-    change
-  target: Call transport_new_cmd_failure() while draining qobj_list
-    during LUN_RESET
-  target: Convert remaining usage of simple_strtoul -> strict_strtoul
-  [SCSI] target: Add LIO target core v4.0.0-rc6
-  target: iblock/pscsi claim checking for NULL instead of IS_ERR
-  target: fix dubious one-bit signed bitfield
-  target/iblock: Fix failed bd claim NULL pointer dereference
-  iscsi: Fix OOPs in crypto_free_hash() exception path
-  iscsi: select CRYPTO and CRYPTO_CRC32C* by default
-  target/iblock: Fix memory leak in iblock_set_configfs_dev_params
-  target: Fix memory leaks in
-    target_core_dev_pr_store_attr_res_aptpl_metadata
-  target: Fix demo-mode MappedLUN shutdown UA/PR breakage
-  target: Release left-over demo-mode NodeACLs w/
-    tfo->tpg_check_demo_mode_cache()=1
-  target: Call missing list_del() for demo-mode MappedLUN disable
-  target: Call proc_mkdir + remove_proc_entry with NULL parameter
-  target: Convert backend ->create_virtdevice() call to return ERR_PTR
-  target: Remove spurious double cast from structure macro accessors
-  lio-core v4.0.0-rc7
-  target core v4.0.0-rc7
+The only requirement there is that 'dev' in each case is a registered
+device, otherwise dev_name() won't work.
 
-Roland Dreier (2):
-  target: Fix memory leak on error path
-  target: Remove unneeded test of se_cmd
-
- drivers/target/Kconfig                           |    2 +
- drivers/target/Makefile                          |    1 -
- drivers/target/lio-target/Kconfig                |    3 +
- drivers/target/lio-target/iscsi_target_login.c   |    4 +-
- drivers/target/lio-target/iscsi_target_version.h |    2 +-
- drivers/target/target_core_configfs.c            |   56 ++++++++---
- drivers/target/target_core_device.c              |   51 +++++-----
- drivers/target/target_core_fabric_configfs.c     |   79 ++++++++---------
- drivers/target/target_core_fabric_lib.c          |    7 +-
- drivers/target/target_core_file.c                |   30 +++++--
- drivers/target/target_core_hba.c                 |    2 +-
- drivers/target/target_core_iblock.c              |   48 ++++++----
- drivers/target/target_core_mib.c                 |   20 ++++
- drivers/target/target_core_mib.h                 |    8 --
- drivers/target/target_core_pr.c                  |   59 ++++++------
- drivers/target/target_core_pscsi.c               |   45 +++++----
- drivers/target/target_core_pscsi.h               |    2 +-
- drivers/target/target_core_rd.c                  |   10 +-
- drivers/target/target_core_rd.h                  |    2 -
- drivers/target/target_core_scdb.c                |    2 +-
- drivers/target/target_core_tmr.c                 |   13 ++-
- drivers/target/target_core_tpg.c                 |   27 +++++-
- drivers/target/target_core_transport.c           |   68 +++++++-------
- drivers/target/tcm_fc/tcm_fc.h                   |    3 +
- drivers/target/tcm_fc/tfc_cmd.c                  |   33 ++++++-
- drivers/target/tcm_fc/tfc_conf.c                 |    4 +
- drivers/target/tcm_fc/tfc_io.c                   |  108 ++++++++++++++++++++--
- include/target/target_core_base.h                |   51 ++++++-----
- include/target/target_core_fabric_configfs.h     |    2 +-
- include/target/target_core_fabric_ops.h          |    2 +-
- include/target/target_core_transport.h           |    5 +
- 31 files changed, 495 insertions(+), 254 deletions(-)
-
-
+You can then use the generic clk_get()/clk_put() which clkdev provides.
