@@ -1,60 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827Ab1AXN3S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 08:29:18 -0500
-Received: from mailfw02.zoner.fi ([84.34.147.249]:34023 "EHLO
-	mailfw02.zoner.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707Ab1AXN3R (ORCPT
+	id S1752840Ab1AXNbO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 08:31:14 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38615 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752022Ab1AXNbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 08:29:17 -0500
-X-Greylist: delayed 601 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Jan 2011 08:29:16 EST
-From: Lasse Collin <lasse.collin@tukaani.org>
-To: Andreas Schwab <schwab@linux-m68k.org>, Jesper Juhl <jj@chaosbits.net>
-Subject: Re: Possible array overrun in lzma_reset()
-Date: Mon, 24 Jan 2011 15:19:07 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-ARCH; KDE/4.5.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <alpine.LNX.2.00.1101222124360.7746@swampdragon.chaosbits.net> <m2bp38r33j.fsf@igel.home>
-In-Reply-To: <m2bp38r33j.fsf@igel.home>
+	Mon, 24 Jan 2011 08:31:13 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=xiUa8OcgiEDJvSjkorzhf/kQaveZQW73tzRE7mpe+DAQ9EK1UaC07CcSEJPDej3XW7
+         yd4xeFHMfpUzrtkjg9UfUrzbkrXnSY742vsx7OIiEnGbaY1L2IsHZR98i14GuxbJoawF
+         h7At5m8h6dEko9e2ta6GU5hlC4J2XEUb9lZ5g=
+Date: Mon, 24 Jan 2011 14:31:05 +0100
+From: Tejun Heo <tj@kernel.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Linux SCSI List <linux-scsi@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] scsi: remove bogus use of struct execute_work in sg
+Message-ID: <20110124133105.GC11404@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101241519.07547.lasse.collin@tukaani.org>
-X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-01-23 Andreas Schwab wrote:
-> Jesper Juhl <jj@chaosbits.net> writes:
->
-> > 787           probs = s->lzma.is_match[0];
-> > At conditional (1): "i < 14134UL" taking true path
-> > At conditional (2): "i < 14134UL" taking true path
-> > At conditional (3): "i < 14134UL" taking true path
-> > 788           for (i = 0; i < PROBS_TOTAL; ++i)
-> > Event overrun-local: Overrunning static array of size 32 bytes at byte position 28266 by indexing pointer "probs" with index variable "i".
-> > Event overrun-local: Note: These bugs are often difficult to see at first glance. Coverity recommends a close inspection of the events leading to this overrun.
-> > 789                   probs[i] = RC_BIT_MODEL_TOTAL / 2;
-> > ...
-> >
-> > I looked into the report and found that 's->lzma.is_match' is
-> >       uint16_t is_match[STATES][POS_STATES_MAX]
-> > where 'STATES' is '#define STATES 12' and 'POS_STATES_MAX' is '#define POS_STATES_MAX (1 << 4)'.
-> >
-> > So I think the checker has a point.
->
-> The loop treats the part of the structure from is_match to the end as
-> a single array of PROBS_TOTAL uint16_t (which it is, in effect).
+execute_work usage in sg is bogus.  execute_in_process_context() is
+never used and ew is used purely as wrapper around work_struct which
+is superflous.  Use work_struct directly.
 
-Correct. The comment in the code tries to say it too:
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Acked-by: Douglas Gilbert <dgilbert@interlog.com>
+---
+This hasn't changed from the previous posting.
 
-    * All probabilities are initialized to the same value. This hack
-    * makes the code smaller by avoiding a separate loop for each
-    * probability array.
+  http://thread.gmane.org/gmane.linux.scsi/62923
 
-So there is no bug.
+Thanks.
 
--- 
-Lasse Collin  |  IRC: Larhzu @ IRCnet & Freenode
+ drivers/scsi/sg.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+Index: work/drivers/scsi/sg.c
+===================================================================
+--- work.orig/drivers/scsi/sg.c
++++ work/drivers/scsi/sg.c
+@@ -139,7 +139,7 @@ typedef struct sg_request {	/* SG_MAX_QU
+ 	volatile char done;	/* 0->before bh, 1->before read, 2->read */
+ 	struct request *rq;
+ 	struct bio *bio;
+-	struct execute_work ew;
++	struct work_struct work;
+ } Sg_request;
+ 
+ typedef struct sg_fd {		/* holds the state of a file descriptor */
+@@ -162,7 +162,7 @@ typedef struct sg_fd {		/* holds the sta
+ 	char keep_orphan;	/* 0 -> drop orphan (def), 1 -> keep for read() */
+ 	char mmap_called;	/* 0 -> mmap() never called on this fd */
+ 	struct kref f_ref;
+-	struct execute_work ew;
++	struct work_struct work;
+ } Sg_fd;
+ 
+ typedef struct sg_device { /* holds the state of each scsi generic device */
+@@ -1248,7 +1248,7 @@ sg_mmap(struct file *filp, struct vm_are
+ 
+ static void sg_rq_end_io_usercontext(struct work_struct *work)
+ {
+-	struct sg_request *srp = container_of(work, struct sg_request, ew.work);
++	struct sg_request *srp = container_of(work, struct sg_request, work);
+ 	struct sg_fd *sfp = srp->parentfp;
+ 
+ 	sg_finish_rem_req(srp);
+@@ -1335,8 +1335,8 @@ static void sg_rq_end_io(struct request
+ 		kill_fasync(&sfp->async_qp, SIGPOLL, POLL_IN);
+ 		kref_put(&sfp->f_ref, sg_remove_sfp);
+ 	} else {
+-		INIT_WORK(&srp->ew.work, sg_rq_end_io_usercontext);
+-		schedule_work(&srp->ew.work);
++		INIT_WORK(&srp->work, sg_rq_end_io_usercontext);
++		schedule_work(&srp->work);
+ 	}
+ }
+ 
+@@ -2089,7 +2089,7 @@ sg_add_sfp(Sg_device * sdp, int dev)
+ 
+ static void sg_remove_sfp_usercontext(struct work_struct *work)
+ {
+-	struct sg_fd *sfp = container_of(work, struct sg_fd, ew.work);
++	struct sg_fd *sfp = container_of(work, struct sg_fd, work);
+ 	struct sg_device *sdp = sfp->parentdp;
+ 
+ 	/* Cleanup any responses which were never read(). */
+@@ -2126,8 +2126,8 @@ static void sg_remove_sfp(struct kref *k
+ 	write_unlock_irqrestore(&sg_index_lock, iflags);
+ 	wake_up_interruptible(&sdp->o_excl_wait);
+ 
+-	INIT_WORK(&sfp->ew.work, sg_remove_sfp_usercontext);
+-	schedule_work(&sfp->ew.work);
++	INIT_WORK(&sfp->work, sg_remove_sfp_usercontext);
++	schedule_work(&sfp->work);
+ }
+ 
+ static int
