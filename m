@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894Ab1AXNrF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 08:47:05 -0500
-Received: from stinky.trash.net ([213.144.137.162]:63335 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752680Ab1AXNrD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 08:47:03 -0500
-Message-ID: <4D3D82D1.6050305@trash.net>
-Date: Mon, 24 Jan 2011 14:46:57 +0100
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
+	id S1751571Ab1AXN5V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 08:57:21 -0500
+Received: from max.feld.cvut.cz ([147.32.192.36]:42599 "EHLO max.feld.cvut.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750735Ab1AXN5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 08:57:20 -0500
+X-Greylist: delayed 478 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Jan 2011 08:57:19 EST
+From: Michal Sojka <sojkam1@fel.cvut.cz>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] perf: Document default event for perf record
+In-Reply-To: <20110124131050.GA6367@ghostprotocols.net>
+References: <1295695127-29309-1-git-send-email-sojkam1@fel.cvut.cz> <20110124130540.GD5932@ghostprotocols.net> <20110124131050.GA6367@ghostprotocols.net>
+User-Agent: Notmuch/0.5-87-g9705d00 (http://notmuchmail.org) Emacs/23.2.1 (x86_64-pc-linux-gnu)
+Date: Mon, 24 Jan 2011 14:16:14 +0100
+Message-ID: <87aaiqjvc1.fsf@steelpick.2x.cz>
 MIME-Version: 1.0
-To: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: netfilter: marking IPv6 packets sends them to the wrong interface
-References: <20110123122108.GA30305@darkside.kls.lan>
-In-Reply-To: <20110123122108.GA30305@darkside.kls.lan>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.01.2011 13:21, Mario 'BitKoenig' Holbe wrote:
-> Hello,
-> 
-> I have a strange issue with netfilter MARK on IPv6 which I cannot
-> explain and which I believe to be a kernel bug:
-> If I mark outgoing IPv6 packets they appear to be transmitted via the
-> wrong physical interface. At least multicast packets - at least some of
-> them.
-> 
-> I'm running a Linux-based router with two local interfaces and radvd
-> advertises stateless autoconfiguration information on them.
-> If I mark all outgoing IPv6 packets, after some time all hosts on both
-> subnets appear to be autoconfigured for both subnets, i.e. they all have
-> two IPv6 addresses - one of each subnet and two default routes - one for
-> each router interface. Of course, only one of them really works on each
-> host.
-> 
-> The gateway does pretty normal routing, no routing policies,
-> particularly no fwmark rules, does no bridging or something like that.
-> The network interfaces are Intel driven by e100.
-> 
-> The following debug session is done with a 2.6.32 kernel, the condensed
-> packet information originates from tcpdump:
-> 
-> Without marking everything runs as it should be.
-> Marking eth0 packets results in all advertisements transmitted via eth1.
-> The behaviour goes back to normal as soon as the marking disappears.
-> Marking eth1 packets doesn't appear to change the normal behaviour at
-> the first glance, but with that I experience hiccups after some time of
-> inactivity (i.e. from time to time ping6 from one subnet to the other
-> gets no answers for the first 6 to 8 packets). 
-> 
-> I also tried marking with 0xff00 instead of 1 - same results.
-> I tested this on kernels 2.6.26, 2.6.32, and 2.6.37 - all show the same
-> behaviour.
+The description of -e option was reformatted (unindented and enclosed
+in an OpenBlock) in order to render the added line correctly.
 
-That probably means that we're not using the correct keys
-when rerouting in ip6_route_me_harder(). Just for testing,
-please try to disable the ip6_route_me_harder() call in
-net/ipv6/netfilter/ip6table_mangle.c::ip6t_mangle_out().
+Signed-off-by: Michal Sojka <sojkam1@fel.cvut.cz>
+---
+ tools/perf/Documentation/perf-record.txt |   28 ++++++++++++++++------------
+ 1 files changed, 16 insertions(+), 12 deletions(-)
+
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index e032716..bfcf3f2 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -27,18 +27,22 @@ OPTIONS
+ -e::
+ --event=::
+ 	Select the PMU event. Selection can be:
+-
+-        - a symbolic event name	(use 'perf list' to list all events)
+-
+-        - a raw PMU event (eventsel+umask) in the form of rNNN where NNN is a
+-	  hexadecimal event descriptor.
+-
+-        - a hardware breakpoint event in the form of '\mem:addr[:access]'
+-          where addr is the address in memory you want to break in.
+-          Access is the memory access type (read, write, execute) it can
+-          be passed as follows: '\mem:addr[:[r][w][x]]'.
+-          If you want to profile read-write accesses in 0x1000, just set
+-          'mem:0x1000:rw'.
+++
++--
++- a symbolic event name	(use 'perf list' to list all events)
++
++- a raw PMU event (eventsel+umask) in the form of rNNN where NNN is a
++  hexadecimal event descriptor.
++
++- a hardware breakpoint event in the form of '\mem:addr[:access]'
++  where addr is the address in memory you want to break in.
++  Access is the memory access type (read, write, execute) it can
++  be passed as follows: '\mem:addr[:[r][w][x]]'.
++  If you want to profile read-write accesses in 0x1000, just set
++  'mem:0x1000:rw'.
++
++By default, 'cpu-cycles' event is selected.
++--
+ 
+ --filter=<filter>::
+         Event filter.
+-- 
+1.7.2.3
 
