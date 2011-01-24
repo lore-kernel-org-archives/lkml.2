@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102Ab1AXOmu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 09:42:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15253 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752899Ab1AXOms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 09:42:48 -0500
-Date: Mon, 24 Jan 2011 15:34:07 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>, Nick Piggin <npiggin@kernel.dk>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Andrea Arcangeli <aarcange@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 00/21] mm: Preemptibility -v6
-Message-ID: <20110124143407.GA19856@redhat.com>
-References: <20101126143843.801484792@chello.nl> <alpine.LSU.2.00.1101172301340.2899@sister.anvils> <1295457039.28776.137.camel@laptop> <alpine.LSU.2.00.1101201052060.1603@sister.anvils> <1295624034.28776.303.camel@laptop> <1295871714.28776.406.camel@laptop>
+	id S1753147Ab1AXOnK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 09:43:10 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33136 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753061Ab1AXOnI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 09:43:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=e3Z7IMAfg2lF1uuGpSZWyTNbu+ukReZSndYuMWEJsQwp9C/oI0SQwH022X2uaezf3C
+         4ekoowk/gdWnECLVsyTzWH9QbLTHbLpi3A2gf4iTQETVRVq+7Pvv6qVOVSqgC2SJhrn5
+         54Pe+oEaLSHbL2/vT0/mbMF7CRQCIJ1d+H0U8=
+Date: Mon, 24 Jan 2011 15:43:03 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Ryan Wilson <hap9@epoch.ncsc.mil>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <JBeulich@novell.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: [PATCH] xen-pcifront: don't use flush_scheduled_work()
+Message-ID: <20110124144303.GG11404@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1295871714.28776.406.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24, Peter Zijlstra wrote:
->
-> On Fri, 2011-01-21 at 16:33 +0100, Peter Zijlstra wrote:
->
-> > Index: linux-2.6/mm/rmap.c
-> > ===================================================================
-> > --- linux-2.6.orig/mm/rmap.c
-> > +++ linux-2.6/mm/rmap.c
-> > @@ -1559,9 +1559,20 @@ void __put_anon_vma(struct anon_vma *ano
-> >  	 * Synchronize against page_lock_anon_vma() such that
-> >  	 * we can safely hold the lock without the anon_vma getting
-> >  	 * freed.
-> > +	 *
-> > +	 * Relies on the full mb implied by the atomic_dec_and_test() from
-> > +	 * put_anon_vma() against the full mb implied by mutex_trylock() from
-> > +	 * page_lock_anon_vma(). This orders:
-> > +	 *
-> > +	 * page_lock_anon_vma()		VS	put_anon_vma()
-> > +	 *   mutex_trylock()			  atomic_dec_and_test()
-> > +	 *   smp_mb()				  smp_mb()
-> > +	 *   atomic_read()			  mutex_is_locked()
->
-> Bah!, I thought all mutex_trylock() implementations used an atomic op
-> with return value (which implies a mb), but it looks like (at least*)
-> PPC doesn't and only provides a LOCK barrier.
+flush_scheduled_work() is scheduled for deprecation.  Cancel ->op_work
+directly instead.
 
-But, mutex_trylock() must imply the one-way barrier, otherwise it
-is buggy, no?
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Ryan Wilson <hap9@epoch.ncsc.mil>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jan Beulich <JBeulich@novell.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+---
+ drivers/pci/xen-pcifront.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-IOW, page_lock_anon_vma() does:
-
-	if (mutex_trylock(anon_vma->root->lock)) {
-		...
-		atomic_read(&anon_vma->refcount);
-		...
-	}
-
-If this atomic_read() can leak out of the critical section, then
-I think mutex_trylock() should be fixed. Or I misunderstood the
-problem completely...
-
-BTW, from https://lkml.org/lkml/2010/11/26/213
-
-	+ * Similar to page_get_anon_vma() except it locks the anon_vma.
-	...
-	-	struct anon_vma *anon_vma = page_get_anon_vma(page);
-
-looks like, page_get_anon_vma() becomes unused.
-
-Oleg.
-
+Index: work/drivers/pci/xen-pcifront.c
+===================================================================
+--- work.orig/drivers/pci/xen-pcifront.c
++++ work/drivers/pci/xen-pcifront.c
+@@ -733,8 +733,7 @@ static void free_pdev(struct pcifront_de
+ 
+ 	pcifront_free_roots(pdev);
+ 
+-	/*For PCIE_AER error handling job*/
+-	flush_scheduled_work();
++	cancel_work_sync(&pdev->op_work);
+ 
+ 	if (pdev->irq >= 0)
+ 		unbind_from_irqhandler(pdev->irq, pdev);
