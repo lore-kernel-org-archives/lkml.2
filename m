@@ -1,87 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315Ab1AXPdU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 10:33:20 -0500
-Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.96]:35486 "EHLO
-	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752879Ab1AXPdT (ORCPT
+	id S1753378Ab1AXPdu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 10:33:50 -0500
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:46181 "EHLO
+	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753337Ab1AXPdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 10:33:19 -0500
-Date: Mon, 24 Jan 2011 10:32:28 -0500
-From: Ben Blum <bblum@andrew.cmu.edu>
-To: Paul Menage <menage@google.com>
-Cc: Ben Blum <bblum@andrew.cmu.edu>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, akpm@linux-foundation.org,
-        ebiederm@xmission.com, lizf@cn.fujitsu.com, matthltc@us.ibm.com,
-        oleg@redhat.com, David Rientjes <rientjes@google.com>,
-        Miao Xie <miaox@cn.fujitsu.com>
-Subject: Re: [PATCH v7 2/3] cgroups: add atomic-context per-thread
- subsystem callbacks
-Message-ID: <20110124153228.GB24303@ghc17.ghc.andrew.cmu.edu>
-References: <20101224082226.GA13872@ghc17.ghc.andrew.cmu.edu>
- <20101226120919.GA28529@ghc17.ghc.andrew.cmu.edu>
- <20101226121100.GC28529@ghc17.ghc.andrew.cmu.edu>
- <AANLkTimytfrDnr_5SzBUFQu0SaGdAWDC0p38hiFiHrtU@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimytfrDnr_5SzBUFQu0SaGdAWDC0p38hiFiHrtU@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.4.9.4220
-X-SMTP-Spam-Clean: 8% (
- BODY_SIZE_1700_1799 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, ECARD_KNOWN_DOMAINS 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CD 0, __CT 0, __CT_TEXT_PLAIN 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __USER_AGENT 0)
-X-SMTP-Spam-Score: 8%
+	Mon, 24 Jan 2011 10:33:49 -0500
+X-Spam-ASN: 
+From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Gordeev <lasaine@lvk.cs.msu.su>
+Subject: [PATCH] parport: make lockdep happy with waitlist_lock
+Date: Mon, 24 Jan 2011 18:33:40 +0300
+Message-Id: <824b6fef0971504d44a56b3b54ee0e21bf7f1519.1295883191.git.lasaine@lvk.cs.msu.su>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <20110124152831.GB4416@elte.hu>
+References: <20110124152831.GB4416@elte.hu>
+X-AV-Checked: ClamAV using ClamSMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24, 2011 at 12:38:06AM -0800, Paul Menage wrote:
-> Hi Ben,
-> 
-> Finally finding a moment to actually look at these patches. Sorry it's
-> been a while. Can you send the patches inline rather than as
-> attachments in future?
+parport_unregister_device should never be used when interrupts are
+enabled in hardware and irq handler is registered so there is no need
+to disable interrupts when using waitlist_lock. But there is no way to
+explain this subtle semantics to lockdep analyzer. So disable interrupts
+here too to simplify things. The price is negligible.
 
-Whoops, sure thing.
+Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+---
+ drivers/parport/share.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> 
-> Reviewed-by: Paul Menage <menage@google.com>
-> 
-> This patch looks fine, although I think that freezer_can_attach_task()
-> could be simplified to:
-> 
-> static int freezer_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
-> {
->   if (__cgroup_freezing_or_frozen(tsk))
->     return -EBUSY;
->   return 0;
-> }
-> 
-> since we guarantee that rcu_read_lock() is held across this call.
+diff --git a/drivers/parport/share.c b/drivers/parport/share.c
+index a2d9d1e..a848e02 100644
+--- a/drivers/parport/share.c
++++ b/drivers/parport/share.c
+@@ -678,7 +678,7 @@ void parport_unregister_device(struct pardevice *dev)
+ 
+ 	/* Make sure we haven't left any pointers around in the wait
+ 	 * list. */
+-	spin_lock (&port->waitlist_lock);
++	spin_lock_irq(&port->waitlist_lock);
+ 	if (dev->waitprev || dev->waitnext || port->waithead == dev) {
+ 		if (dev->waitprev)
+ 			dev->waitprev->waitnext = dev->waitnext;
+@@ -689,7 +689,7 @@ void parport_unregister_device(struct pardevice *dev)
+ 		else
+ 			port->waittail = dev->waitprev;
+ 	}
+-	spin_unlock (&port->waitlist_lock);
++	spin_unlock_irq(&port->waitlist_lock);
+ 
+ 	kfree(dev->state);
+ 	kfree(dev);
+-- 
+1.7.2.3
 
-I put a note there that "rcu_read_lock allows recursive locking", to
-denote that it's okay to double-lock when it's called from
-cgroup_attach_proc. I guess this isn't very clear: the reason the lock
-is there is because in cgroup_attach_task, I call it without
-rcu_read_lock (not necessary in most cases), but freezer needs RCU there
-in either case. I wrote in the documentation: "This may run in
-rcu_read-side", which I guess isn't very clear either.
-
-> 
-> There appears to be a tiny bit of rot in kernel/cpu.c (due to the
-> addition of the exit() callback) and memcontrol.c (due to some changes
-> at the start of mem_cgroup_move_task()) but neither impact actual
-> code.
-> 
-> I think that before actually pushing to mainline, we'll need to sort
-> out the cpuset mempolicy yielding issue, since that could be a
-> user-visible API change.
-> 
-> 
-> Paul
-
-Hmm. The quirks caused by this are specific to using cgroup.procs, and
-since cgroup.procs is new, I wouldn't say this is an API "change"?
-
-Thanks,
-Ben
