@@ -1,125 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892Ab1AXJ0I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 04:26:08 -0500
-Received: from mailout00.t-online.de ([194.25.134.16]:41951 "EHLO
-	mailout00.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255Ab1AXJ0H (ORCPT
+	id S1751669Ab1AXJ0n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 04:26:43 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:14453 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107Ab1AXJ0l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 04:26:07 -0500
-Message-ID: <4D3D45A3.7040809@t-online.de>
-Date: Mon, 24 Jan 2011 10:25:55 +0100
-From: Knut Petersen <Knut_Petersen@t-online.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	Mon, 24 Jan 2011 04:26:41 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=L2ZPauDHQt68dn4Oh841+N9ychvZCzHUIXIWdyh9tdDPGOhTvjX7pqVSXwZFIMtxf7
+         kz5c2RDGN1SI6rRoU3EA==
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: paulus@samba.org, mostrows@earthlink.net, linux-ppp@vger.kernel.org
-Subject: [BUG] 2.6.38-rc2: Circular Locking Dependency
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-ID: TcGUnOZBYhBjWWSnInwkitTrzrGSbkyxWqmay2ykq+uRrY2oo81xkwZwCkwHVt3wAC
-X-TOI-MSGID: ed07c19b-5e37-48f1-8599-f5fa3d5e72bf
+In-Reply-To: <20110124090708.GA16202@n2100.arm.linux.org.uk>
+References: <1295834493-5019-1-git-send-email-ccross@android.com>
+	<1295834493-5019-14-git-send-email-ccross@android.com>
+	<20110124090708.GA16202@n2100.arm.linux.org.uk>
+Date: Mon, 24 Jan 2011 01:26:39 -0800
+X-Google-Sender-Auth: XHieDVyKwLqUxnz5ZQBJL-3vBbE
+Message-ID: <AANLkTimEdkMsv+NERv6E6AyBcAKv9szJBsJYHmFBDnbS@mail.gmail.com>
+Subject: Re: [PATCH v2 13/28] ARM: tegra: Add suspend and hotplug support
+From: Colin Cross <ccross@android.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-tegra@vger.kernel.org, konkers@android.com,
+        Gary King <gking@nvidia.com>, linux-kernel@vger.kernel.org,
+        olof@lixom.net, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As I was hunting something different I found the following (potential)
-problem on an openSuSE 11.3 system with kernel 2.6.38-rc2.
-The message is triggerd by smpppd starting a dsl connection.
+On Mon, Jan 24, 2011 at 1:07 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Sun, Jan 23, 2011 at 06:01:18PM -0800, Colin Cross wrote:
+>> Tegra supports three low power modes that involve powering down the CPU.
+>
+> It is a common misconception that on CPU hot-unplug you need to save the
+> entire universe of the CPU going down.
+>
+> When CPUs are hot-plugged, they reinitialize, which includes resetting
+> most of the CPU state.
 
-Knut
+The hotplug code path on Tegra currently shares the same path as cpu
+idle, because the CPU ends up in the same state for both.  This
+version of the patch ensures that when the cpu is brought back online,
+it goes through the normal reset vector.  In hotplug, the state ends
+up getting saved on the way down, but not used on the way back up.
 
+> There is no point saving the user register state, svc register state,
+> abort register state, interrupt register state, undefined mode register
+> state, TTB base registers, TTB control register, memory type remapping
+> registers nor the context register.  These are all reinitialized when
+> the CPU is brought up again.
 
- NET: Registered protocol family 24
+The register state is fixed in this version of the patch by calling
+cpu_init() in the resume and idle code.  I'll look again if there is a
+better way of handling the rest of the registers, but this code is
+mostly needed for the suspend and idle cases where the normal boot
+process is not used.
 
- =======================================================
- [ INFO: possible circular locking dependency detected ]
- 2.6.38-rc2-kape #7
- -------------------------------------------------------
- pppd/2529 is trying to acquire lock:
-  (&(&pch->downl)->rlock){+.....}, at: [<f814a634>] ppp_push+0x59/0x4a8
-[ppp_generic]
+> VFP state should already be saved - when a CPU is hot-unplugged, we can't
+> leave a threads VFP register set stored in that hardware as it would
+> become inaccessible, so there's no point saving VFP state.  Recently
+> code was added to invalidate the software VFP state for a CPU being
+> hot-unplugged and reinitialize the VFP hardware on CPU hotplug.
 
- but task is already holding lock:
-  (&(&ppp->wlock)->rlock){+.-...}, at: [<f814ae1b>]
-ppp_xmit_process+0x19/0x451 [ppp_generic]
+Despite what the patch description says, this version of the patch
+does not save VFP state any more.  I will update the description.  It
+looks like if CONFIG_SMP=y, the VFP code saves the VFP context on
+every task switch, so nothing is needed during cpu idle.  However, if
+CONFIG_SMP=n, I think some way to save the VFP context is needed.
 
- which lock already depends on the new lock.
+> We also have the necessary hooks into the PM code to deal with VFP state
+> saving/restore on PM suspend/resume.
+>
+> The breakpoint/watchdog stuff _should_ be handled by the breakpoint/
+> watchdog code, not by each individual platform.  Please can you work
+> with Will Deacon if this is not the case to ensure that the breakpoint/
+> watchdog code can handle CPU hotplug.
 
+This version of the patch does not save breakpoint/watchdogs, but
+something will need to save them during idle when the cpu is powered
+down.
 
- the existing dependency chain (in reverse order) is:
+> Lastly, L2 cache controller should have suspend/resume support added.
 
- -> #2 (&(&ppp->wlock)->rlock){+.-...}:
-        [<c01462b2>] lock_acquire+0x47/0x5e
-        [<c0471de1>] _raw_spin_lock_bh+0x2a/0x39
-        [<f814ae1b>] ppp_xmit_process+0x19/0x451 [ppp_generic]
-        [<f814b39f>] ppp_start_xmit+0x14c/0x165 [ppp_generic]
-        [<c04179ae>] dev_hard_start_xmit+0x3b1/0x489
-        [<c0424a53>] sch_direct_xmit+0x55/0x1b1
-        [<c0417cf9>] dev_queue_xmit+0x273/0x4dd
-        [<c0434d31>] ip_finish_output+0x2b9/0x31f
-        [<c043578c>] ip_output+0xe0/0xfb
-        [<c0432c33>] ip_forward_finish+0x7b/0xa1
-        [<c0432ede>] ip_forward+0x285/0x313
-        [<c0431a30>] ip_rcv_finish+0x2b4/0x30f
-        [<c0431ef6>] ip_rcv+0x21c/0x242
-        [<c0415090>] __netif_receive_skb+0x34a/0x388
-        [<c04151f7>] netif_receive_skb+0x32/0x35
-        [<c0415218>] napi_skb_finish+0x1e/0x34
-        [<c0415d72>] napi_gro_receive+0xbf/0xc7
-        [<c035f25a>] sky2_poll+0x66e/0x92f
-        [<c04153eb>] net_rx_action+0x3f/0xfe
-        [<c0128563>] __do_softirq+0x76/0xfd
+Patch 4 in this series improves the L2 controller's PM support, and
+this patch uses l2x0_disable, l2x0_enable, and l2x0_init.
 
- -> #1 (_xmit_NETROM){+.-...}:
-        [<c01462b2>] lock_acquire+0x47/0x5e
-        [<c0471c9c>] _raw_spin_lock_irqsave+0x2e/0x3e
-        [<c040ed60>] skb_dequeue+0x12/0x4a
-        [<f814c237>] ppp_channel_push+0x2e/0x94 [ppp_generic]
-        [<f814c33f>] ppp_write+0xa2/0xac [ppp_generic]
-        [<c0188e50>] vfs_write+0x8c/0x120
-        [<c018909d>] sys_write+0x3b/0x60
-        [<c010274c>] sysenter_do_call+0x12/0x32
+> We _really_ need to stop having platforms manually saving lots of CPU
+> state for suspend/hot unplug.
+>
+> That should reduce the amount of state you're saving down to something
+> more manageable.
+>
+>> +
+>> +#ifdef CONFIG_HOTPLUG_CPU
+>> +
+>> +int platform_cpu_kill(unsigned int cpu)
+>> +{
+>> +     unsigned int reg;
+>> +
+>> +     do {
+>> +             reg = readl(CLK_RST_CONTROLLER_RST_CPU_CMPLX_SET);
+>> +             cpu_relax();
+>> +     } while (!(reg & (1<<cpu)));
+>> +
+>> +     spin_lock(&boot_lock);
+>> +     reg = readl(CLK_RST_CONTROLLER_CLK_CPU_CMPLX);
+>> +     writel(reg | (1<<(8+cpu)), CLK_RST_CONTROLLER_CLK_CPU_CMPLX);
+>> +     spin_unlock(&boot_lock);
+>> +
+>> +     return 1;
+>> +}
+>> +
+>> +void platform_cpu_die(unsigned int cpu)
+>> +{
+>> +#ifdef DEBUG
+>> +     unsigned int this_cpu = hard_smp_processor_id();
+>> +
+>> +     if (cpu != this_cpu) {
+>> +             printk(KERN_CRIT "Eek! platform_cpu_die running on %u, should be %u\n",
+>> +                        this_cpu, cpu);
+>> +             BUG();
+>> +     }
+>> +#endif
+>> +
+>> +     gic_cpu_exit(0);
+>> +     barrier();
+>> +     flush_cache_all();
+>> +     barrier();
+>> +     __cortex_a9_save(0);
+>> +
+>> +     /*
+>> +      * __cortex_a9_save can return through __cortex_a9_restore, but that
+>> +      * should never happen for a hotplugged cpu
+>> +      */
+>> +     BUG();
+>> +}
+>> +
+>> +int platform_cpu_disable(unsigned int cpu)
+>> +{
+>> +     /*
+>> +      * we don't allow CPU 0 to be shutdown (it is still too special
+>> +      * e.g. clock tick interrupts)
+>> +      */
+>> +     if (unlikely(!tegra_context_area))
+>> +             return -ENXIO;
+>> +
+>> +     return cpu == 0 ? -EPERM : 0;
+>> +}
+>> +#endif
+>
+> Please leave this in hotplug.c so that it matches what other platforms
+> do.  Otherwise it's likely to be missed by any updates that happen
+> architecture-wide.
 
- -> #0 (&(&pch->downl)->rlock){+.....}:
-        [<c014594c>] __lock_acquire+0xe23/0x13ad
-        [<c01462b2>] lock_acquire+0x47/0x5e
-        [<c0471de1>] _raw_spin_lock_bh+0x2a/0x39
-        [<f814a634>] ppp_push+0x59/0x4a8 [ppp_generic]
-        [<f814b1d9>] ppp_xmit_process+0x3d7/0x451 [ppp_generic]
-        [<f814c336>] ppp_write+0x99/0xac [ppp_generic]
-        [<c0188e50>] vfs_write+0x8c/0x120
-        [<c018909d>] sys_write+0x3b/0x60
-        [<c010274c>] sysenter_do_call+0x12/0x32
-
- other info that might help us debug this:
-
- 1 lock held by pppd/2529:
-  #0:  (&(&ppp->wlock)->rlock){+.-...}, at: [<f814ae1b>]
-ppp_xmit_process+0x19/0x451 [ppp_generic]
-
- stack backtrace:
- Pid: 2529, comm: pppd Not tainted 2.6.38-rc2-kape #7
- Call Trace:
-  [<c0143c54>] ? print_circular_bug+0x93/0x9f
-  [<c014594c>] ? __lock_acquire+0xe23/0x13ad
-  [<c014599a>] ? __lock_acquire+0xe71/0x13ad
-  [<c01462b2>] ? lock_acquire+0x47/0x5e
-  [<f814a634>] ? ppp_push+0x59/0x4a8 [ppp_generic]
-  [<c0471de1>] ? _raw_spin_lock_bh+0x2a/0x39
-  [<f814a634>] ? ppp_push+0x59/0x4a8 [ppp_generic]
-  [<f814a634>] ? ppp_push+0x59/0x4a8 [ppp_generic]
-  [<c014685c>] ? mark_held_locks+0x41/0x5d
-  [<c0472236>] ? _raw_spin_unlock_irqrestore+0x36/0x59
-  [<c0146958>] ? trace_hardirqs_on_caller+0xe0/0x11a
-  [<c0472242>] ? _raw_spin_unlock_irqrestore+0x42/0x59
-  [<c040ed91>] ? skb_dequeue+0x43/0x4a
-  [<f814b1d9>] ? ppp_xmit_process+0x3d7/0x451 [ppp_generic]
-  [<c0474723>] ? sub_preempt_count+0x81/0x8e
-  [<c040ec5e>] ? skb_queue_tail+0x2d/0x32
-  [<f814c336>] ? ppp_write+0x99/0xac [ppp_generic]
-  [<c0188e50>] ? vfs_write+0x8c/0x120
-  [<f814c29d>] ? ppp_write+0x0/0xac [ppp_generic]
-  [<c018909d>] ? sys_write+0x3b/0x60
-  [<c010274c>] ? sysenter_do_call+0x12/0x32
-
+Will do
