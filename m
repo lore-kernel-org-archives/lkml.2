@@ -1,116 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335Ab1AXPdn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 10:33:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19942 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753008Ab1AXPdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 10:33:42 -0500
-Message-ID: <4D3D9BCE.9000306@redhat.com>
-Date: Mon, 24 Jan 2011 16:33:34 +0100
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.4pre) Gecko/20091014 Fedora/3.0-2.8.b4.fc11 Thunderbird/3.0b4
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Nitin Gupta <ngupta@vflare.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/4] [resend] Staging: zram: simplify zram_make_request
-References: <4D0B88E5.4040005@redhat.com> <4D0B89F7.1000103@redhat.com> <4D38D6DE.10405@vflare.org> <20110121204517.GA28587@kroah.com>
-In-Reply-To: <20110121204517.GA28587@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753241Ab1AXPh0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 10:37:26 -0500
+Received: from caiajhbdcbhh.dreamhost.com ([208.97.132.177]:51175 "EHLO
+	homiemail-a61.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752763Ab1AXPhZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 10:37:25 -0500
+Subject: [PATCH] security: keyring: remove redundant NULL check
+From: Davidlohr Bueso <dave@gnu.org>
+To: David Howells <dhowells@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Cc: keyrings@linux-nfs.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 24 Jan 2011 12:37:17 -0300
+Message-ID: <1295883437.2156.1.camel@offworld>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Davidlohr Bueso <dave@gnu.org>
+Date: Sun, 23 Jan 2011 22:01:20 -0300
 
-zram_read() and zram_write() always return zero, so make them return
-void to simplify the code.
-
-Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
-Acked-by: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
 ---
- zram_drv.c |   19 ++++++++-----------
- 1 file changed, 8 insertions(+), 11 deletions(-)
+ security/keys/keyring.c |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 01d6dd9..5ed4e75 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -200,7 +200,7 @@ static void handle_uncompressed_page(struct zram *zram,
- 	flush_dcache_page(page);
+diff --git a/security/keys/keyring.c b/security/keys/keyring.c
+index d37f713..cb8110b 100644
+--- a/security/keys/keyring.c
++++ b/security/keys/keyring.c
+@@ -866,11 +866,10 @@ void __key_link_end(struct key *keyring, struct key_type *type,
+ 	if (type == &key_type_keyring)
+ 		up_write(&keyring_serialise_link_sem);
+ 
+-	if (prealloc) {
+-		kfree(prealloc);
+-		key_payload_reserve(keyring,
+-				    keyring->datalen - KEYQUOTA_LINK_BYTES);
+-	}
++	kfree(prealloc);
++	key_payload_reserve(keyring,
++			keyring->datalen - KEYQUOTA_LINK_BYTES);
++
+ 	up_write(&keyring->sem);
  }
  
--static int zram_read(struct zram *zram, struct bio *bio)
-+static void zram_read(struct zram *zram, struct bio *bio)
- {
- 
- 	int i;
-@@ -209,7 +209,7 @@ static int zram_read(struct zram *zram, struct bio *bio)
- 
- 	if (unlikely(!zram->init_done)) {
- 		bio_endio(bio, -ENXIO);
--		return 0;
-+		return;
- 	}
- 
- 	zram_stat64_inc(zram, &zram->stats.num_reads);
-@@ -271,14 +271,13 @@ static int zram_read(struct zram *zram, struct bio *bio)
- 
- 	set_bit(BIO_UPTODATE, &bio->bi_flags);
- 	bio_endio(bio, 0);
--	return 0;
-+	return;
- 
- out:
- 	bio_io_error(bio);
--	return 0;
- }
- 
--static int zram_write(struct zram *zram, struct bio *bio)
-+static void zram_write(struct zram *zram, struct bio *bio)
- {
- 	int i, ret;
- 	u32 index;
-@@ -402,11 +401,10 @@ memstore:
- 
- 	set_bit(BIO_UPTODATE, &bio->bi_flags);
- 	bio_endio(bio, 0);
--	return 0;
-+	return;
- 
- out:
- 	bio_io_error(bio);
--	return 0;
- }
- 
- /*
-@@ -431,7 +429,6 @@ static inline int valid_io_request(struct zram *zram, struct bio *bio)
-  */
- static int zram_make_request(struct request_queue *queue, struct bio *bio)
- {
--	int ret = 0;
- 	struct zram *zram = queue->queuedata;
- 
- 	if (!valid_io_request(zram, bio)) {
-@@ -442,15 +439,15 @@ static int zram_make_request(struct request_queue *queue, struct bio *bio)
- 
- 	switch (bio_data_dir(bio)) {
- 	case READ:
--		ret = zram_read(zram, bio);
-+		zram_read(zram, bio);
- 		break;
- 
- 	case WRITE:
--		ret = zram_write(zram, bio);
-+		zram_write(zram, bio);
- 		break;
- 	}
- 
--	return ret;
-+	return 0;
- }
- 
- void zram_reset_device(struct zram *zram)
+-- 
+1.7.1
+
 
 
