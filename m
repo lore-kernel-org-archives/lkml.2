@@ -1,101 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585Ab1AXKVh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 05:21:37 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38055 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752400Ab1AXKVg (ORCPT
+	id S1752497Ab1AXKWL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 05:22:11 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:42671 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751763Ab1AXKWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 05:21:36 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 24 Jan 2011 19:15:35 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/7] memcg : comment, style fixes for recent patch of
- move_parent
-Message-Id: <20110124191535.514ef2d9.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110124101402.GT2232@cmpxchg.org>
-References: <20110121153431.191134dd.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110121153726.54f4a159.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110124101402.GT2232@cmpxchg.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 24 Jan 2011 05:22:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=tXWp1ftw9pJehLUwo4V/1rVQUH2zpbs+R1eridt4vm4HsUa0MtDJDDBuWsPO+XdwrC
+         vvmN2mTnH28uKuiPzOrXk+jwR40nvV99Rwb3ol7gyoBHt8p6csF/y8nOXphNf/hbhjSF
+         cByrv1bAaiRYJgq1JMzjuaoKYSCnk95JOzdkU=
+Date: Mon, 24 Jan 2011 18:21:59 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Harald Dunkel <harri@afaics.de>
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kenrel.org
+Subject: [Patch] make installkernel configurable from command line (was Re:
+ how to avoid that install.sh goes mad, if I am not root?)
+Message-ID: <20110124102159.GD5510@cr0.nay.redhat.com>
+References: <4D388A08.1010004@afaics.de>
+ <19768.44428.482148.361069@pilspetsen.it.uu.se>
+ <ihbvd1$jbj$3@dough.gmane.org>
+ <4D3A03CA.2060507@afaics.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D3A03CA.2060507@afaics.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Jan 2011 11:14:02 +0100
-Johannes Weiner <hannes@cmpxchg.org> wrote:
+On Fri, Jan 21, 2011 at 11:08:10PM +0100, Harald Dunkel wrote:
+>-----BEGIN PGP SIGNED MESSAGE-----
+>Hash: SHA1
+>
+>On 01/21/11 13:49, WANG Cong wrote:
+>> On Thu, 20 Jan 2011 22:47:56 +0100, Mikael Pettersson wrote:
+>>>
+>>> First, at least on x86, the kernel will look for the 'installkernel'
+>>> executable first in your own ~/bin/, so if you have that then it will
+>>> override /sbin/installkernel.
+>>>
+>> 
+>> That still doesn't look like a good solution.
+>> 
+>
+>Same for me.
+>
+>Obviously running /sbin/installkernel is not reasonable for
+>UID != 0 (or if $FAKEROOTKEY is set), so I would suggest to
+>skip /sbin/installkernel and the default Lilo setup in
+>install.sh for this case.
+>
 
-> On Fri, Jan 21, 2011 at 03:37:26PM +0900, KAMEZAWA Hiroyuki wrote:
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > 
-> > A fix for 987eba66e0e6aa654d60881a14731a353ee0acb4
-> > 
-> > A clean up for mem_cgroup_move_parent(). 
-> >  - remove unnecessary initialization of local variable.
-> >  - rename charge_size -> page_size
-> >  - remove unnecessary (wrong) comment.
-> > 
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > ---
-> >  mm/memcontrol.c |   17 +++++++++--------
-> >  1 file changed, 9 insertions(+), 8 deletions(-)
-> > 
-> > Index: mmotm-0107/mm/memcontrol.c
-> > ===================================================================
-> > --- mmotm-0107.orig/mm/memcontrol.c
-> > +++ mmotm-0107/mm/memcontrol.c
-> > @@ -2265,7 +2265,7 @@ static int mem_cgroup_move_parent(struct
-> >  	struct cgroup *cg = child->css.cgroup;
-> >  	struct cgroup *pcg = cg->parent;
-> >  	struct mem_cgroup *parent;
-> > -	int charge = PAGE_SIZE;
-> > +	int page_size;
-> >  	unsigned long flags;
-> >  	int ret;
-> >  
-> > @@ -2278,22 +2278,23 @@ static int mem_cgroup_move_parent(struct
-> >  		goto out;
-> >  	if (isolate_lru_page(page))
-> >  		goto put;
-> > -	/* The page is isolated from LRU and we have no race with splitting */
-> > -	charge = PAGE_SIZE << compound_order(page);
-> > +
-> > +	page_size = PAGE_SIZE << compound_order(page);
-> 
-> Okay, so you remove the wrong comment, but that does not make the code
-> right.  What protects compound_order from reading garbage because the
-> page is currently splitting?
-> 
+Will the patch below work for you?
 
-==
-static int mem_cgroup_move_account(struct page_cgroup *pc,
-                struct mem_cgroup *from, struct mem_cgroup *to,
-                bool uncharge, int charge_size)
-{
-        int ret = -EINVAL;
-        unsigned long flags;
+With this patch, you should be able to specify your own installkernel
+by "make INSTALLKERNEL=/your/installkernel install".
 
-        if ((charge_size > PAGE_SIZE) && !PageTransHuge(pc->page))
-                return -EBUSY;
-==
+Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
 
-This is called under compound_lock(). Then, if someone breaks THP,
--EBUSY and retry.
-
-
-Thanks,
--Kame
-
-
-
+---
+diff --git a/Makefile b/Makefile
+index 1f47495..44abded 100644
+--- a/Makefile
++++ b/Makefile
+@@ -327,7 +327,7 @@ OBJCOPY		= $(CROSS_COMPILE)objcopy
+ OBJDUMP		= $(CROSS_COMPILE)objdump
+ AWK		= awk
+ GENKSYMS	= scripts/genksyms/genksyms
+-INSTALLKERNEL  := installkernel
++INSTALLKERNEL  ?= /sbin/installkernel
+ DEPMOD		= /sbin/depmod
+ KALLSYMS	= scripts/kallsyms
+ PERL		= perl
+diff --git a/arch/x86/boot/install.sh b/arch/x86/boot/install.sh
+index d13ec1c..c41f2b8 100644
+--- a/arch/x86/boot/install.sh
++++ b/arch/x86/boot/install.sh
+@@ -33,8 +33,7 @@ verify "$3"
+ 
+ # User may have a custom install script
+ 
+-if [ -x ~/bin/${INSTALLKERNEL} ]; then exec ~/bin/${INSTALLKERNEL} "$@"; fi
+-if [ -x /sbin/${INSTALLKERNEL} ]; then exec /sbin/${INSTALLKERNEL} "$@"; fi
++if [ -x "${INSTALLKERNEL}" ]; then exec "${INSTALLKERNEL}" "$@"; fi
+ 
+ # Default install - same as make zlilo
+ 
 
