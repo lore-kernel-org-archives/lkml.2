@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388Ab1AXP1R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 10:27:17 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:44584 "EHLO
+	id S1753374Ab1AXP0y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 10:26:54 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:44593 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753276Ab1AXP0V (ORCPT
+	with ESMTP id S1753149Ab1AXP0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 10:26:21 -0500
+	Mon, 24 Jan 2011 10:26:24 -0500
 From: Borislav Petkov <bp@amd64.org>
 To: <x86@kernel.org>
 Cc: <linux-kernel@vger.kernel.org>, Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 3/7] x86, microcode, AMD: Release firmware on error
-Date: Mon, 24 Jan 2011 16:28:59 +0100
-Message-Id: <1295882943-11184-4-git-send-email-bp@amd64.org>
+Subject: [PATCH 4/7] x86, microcode, AMD: Simplify install_equiv_cpu_table
+Date: Mon, 24 Jan 2011 16:29:00 +0100
+Message-Id: <1295882943-11184-5-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.4.rc2
 In-Reply-To: <1295882943-11184-1-git-send-email-bp@amd64.org>
 References: <1295882943-11184-1-git-send-email-bp@amd64.org>
@@ -22,71 +22,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-When the ucode magic is wrong, for whatever reason, we don't release the
-loaded firmware binary and its related resources. Make sure we do. Also,
-fix function naming to fit this driver's convention and shorten variable
-names.
+There's no need to memcpy the ucode header in order to look at it only
+in this function - use the original buffer instead. Also, fix return
+type semantics by returning a negative value on error and a positive
+otherwise.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 Acked-by: Andreas Herrmann <Andreas.Herrmann3@amd.com>
 ---
- arch/x86/kernel/microcode_amd.c |   26 ++++++++++++++------------
- 1 files changed, 14 insertions(+), 12 deletions(-)
+ arch/x86/kernel/microcode_amd.c |   21 ++++++++-------------
+ 1 files changed, 8 insertions(+), 13 deletions(-)
 
 diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
-index 0fe6d1a..ef91df0 100644
+index ef91df0..9a451d7 100644
 --- a/arch/x86/kernel/microcode_amd.c
 +++ b/arch/x86/kernel/microcode_amd.c
-@@ -278,27 +278,29 @@ generic_load_microcode(int cpu, const u8 *data, size_t size)
- 	return state;
- }
+@@ -188,27 +188,22 @@ get_next_ucode(const u8 *buf, unsigned int size, unsigned int *mc_size)
  
--static enum ucode_state request_microcode_fw(int cpu, struct device *device)
-+static enum ucode_state request_microcode_amd(int cpu, struct device *device)
+ static int install_equiv_cpu_table(const u8 *buf)
  {
- 	const char *fw_name = "amd-ucode/microcode_amd.bin";
--	const struct firmware *firmware;
--	enum ucode_state ret;
-+	const struct firmware *fw;
-+	enum ucode_state ret = UCODE_NFOUND;
+-	u8 *container_hdr[UCODE_CONTAINER_HEADER_SIZE];
+-	unsigned int *buf_pos = (unsigned int *)container_hdr;
+-	unsigned long size;
++	unsigned int *ibuf = (unsigned int *)buf;
++	unsigned int type = ibuf[1];
++	unsigned int size = ibuf[2];
  
--	if (request_firmware(&firmware, fw_name, device)) {
-+	if (request_firmware(&fw, fw_name, device)) {
- 		printk(KERN_ERR "microcode: failed to load file %s\n", fw_name);
--		return UCODE_NFOUND;
-+		goto out;
+-	get_ucode_data(&container_hdr, buf, UCODE_CONTAINER_HEADER_SIZE);
+-
+-	size = buf_pos[2];
+-
+-	if (buf_pos[1] != UCODE_EQUIV_CPU_TABLE_TYPE || !size) {
++	if (type != UCODE_EQUIV_CPU_TABLE_TYPE || !size) {
+ 		pr_err("error: invalid type field in container file section header\n");
+-		return 0;
++		return -EINVAL;
  	}
  
--	if (*(u32 *)firmware->data != UCODE_MAGIC) {
--		pr_err("invalid UCODE_MAGIC (0x%08x)\n",
--		       *(u32 *)firmware->data);
--		return UCODE_ERROR;
-+	ret = UCODE_ERROR;
-+	if (*(u32 *)fw->data != UCODE_MAGIC) {
-+		pr_err("Invalid UCODE_MAGIC (0x%08x)\n", *(u32 *)fw->data);
-+		goto fw_release;
+ 	equiv_cpu_table = vmalloc(size);
+ 	if (!equiv_cpu_table) {
+ 		pr_err("failed to allocate equivalent CPU table\n");
+-		return 0;
++		return -ENOMEM;
  	}
  
--	ret = generic_load_microcode(cpu, firmware->data, firmware->size);
-+	ret = generic_load_microcode(cpu, fw->data, fw->size);
+-	buf += UCODE_CONTAINER_HEADER_SIZE;
+-	get_ucode_data(equiv_cpu_table, buf, size);
++	get_ucode_data(equiv_cpu_table, buf + UCODE_CONTAINER_HEADER_SIZE, size);
  
--	release_firmware(firmware);
-+fw_release:
-+	release_firmware(fw);
- 
-+out:
- 	return ret;
+ 	return size + UCODE_CONTAINER_HEADER_SIZE; /* add header length */
  }
+@@ -232,7 +227,7 @@ generic_load_microcode(int cpu, const u8 *data, size_t size)
+ 	enum ucode_state state = UCODE_OK;
  
-@@ -319,7 +321,7 @@ static void microcode_fini_cpu_amd(int cpu)
- 
- static struct microcode_ops microcode_amd_ops = {
- 	.request_microcode_user           = request_microcode_user,
--	.request_microcode_fw             = request_microcode_fw,
-+	.request_microcode_fw             = request_microcode_amd,
- 	.collect_cpu_info                 = collect_cpu_info_amd,
- 	.apply_microcode                  = apply_microcode_amd,
- 	.microcode_fini_cpu               = microcode_fini_cpu_amd,
+ 	offset = install_equiv_cpu_table(ucode_ptr);
+-	if (!offset) {
++	if (offset < 0) {
+ 		pr_err("failed to create equivalent cpu table\n");
+ 		return UCODE_ERROR;
+ 	}
 -- 
 1.7.4.rc2
 
