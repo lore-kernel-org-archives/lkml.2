@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751895Ab1AXOwH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 09:52:07 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:26773 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477Ab1AXOwE (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 24 Jan 2011 09:52:04 -0500
-Date: Mon, 24 Jan 2011 09:49:20 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Thomas Hellstrom <thomas@shipmail.org>
-Cc: dri-devel@lists.freedesktop.org, airlied@linux.ie,
-        linux-kernel@vger.kernel.org, konrad@darnok.org
-Subject: Re: [RFC PATCH v2] Utilize the PCI API in the TTM framework.
-Message-ID: <20110124144920.GA16965@dumpdata.com>
-References: <1294420304-24811-1-git-send-email-konrad.wilk@oracle.com>
- <4D2B16F3.1070105@shipmail.org>
- <20110110152135.GA9732@dumpdata.com>
- <4D2B2CC1.2050203@shipmail.org>
- <20110110164519.GA27066@dumpdata.com>
- <4D2B70FB.3000504@shipmail.org>
- <20110111155545.GD10897@dumpdata.com>
- <4D2D706E.5000508@shipmail.org>
- <20110112151939.GA20679@dumpdata.com>
+	id S1752807Ab1AXOzK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 09:55:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59354 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751673Ab1AXOzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 09:55:08 -0500
+Date: Mon, 24 Jan 2011 09:54:51 -0500
+From: Jarod Wilson <jarod@redhat.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-i2c@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Andy Walls <awalls@md.metrocast.net>, Joe Perches <joe@perches.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] drivers/staging/lirc: Remove obsolete cleanup for
+ clientdata
+Message-ID: <20110124145451.GD28403@redhat.com>
+References: <1295865880-27672-1-git-send-email-w.sang@pengutronix.de>
+ <1295865880-27672-4-git-send-email-w.sang@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110112151939.GA20679@dumpdata.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1295865880-27672-4-git-send-email-w.sang@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 12, 2011 at 10:19:39AM -0500, Konrad Rzeszutek Wilk wrote:
-> On Wed, Jan 12, 2011 at 10:12:14AM +0100, Thomas Hellstrom wrote:
-> > Hi, Konrad.
-> > 
-> > This discussion has become a bit lenghty. I'll filter out the
-> > sorted-out stuff, which leaves me with two remaining issues:
+On Mon, Jan 24, 2011 at 11:44:30AM +0100, Wolfram Sang wrote:
+> A few new i2c-drivers came into the kernel which clear the clientdata-pointer
+> on exit or error. This is obsolete meanwhile, the core will do it. Simplify the
+> kfree() calls after that, the pointers don't need to be checked.
 > 
-> <nods>
+> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+> Cc: Andy Walls <awalls@md.metrocast.net>
+> Cc: Jarod Wilson <jarod@redhat.com>
+> Cc: Joe Perches <joe@perches.com>
+> ---
+> 
+> Compile tested only.
 
-ping?
+Looks sane to me.
 
-... did I miss some extra discussion?
+Acked-by: Jarod Wilson <jarod@redhat.com>
+
+-- 
+Jarod Wilson
+jarod@redhat.com
+
