@@ -1,51 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753466Ab1AXQLH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 11:11:07 -0500
-Received: from stinky.trash.net ([213.144.137.162]:33042 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753357Ab1AXQLG (ORCPT
+	id S1753355Ab1AXQNH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 11:13:07 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:47265 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752910Ab1AXQNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 11:11:06 -0500
-Message-ID: <4D3DA48A.2020605@trash.net>
-Date: Mon, 24 Jan 2011 17:10:50 +0100
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	Mon, 24 Jan 2011 11:13:06 -0500
+Date: Mon, 24 Jan 2011 11:13:04 -0500
+From: Kyle McMartin <kyle@mcmartin.ca>
+To: mingo@redhat.com
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com
+Subject: [PATCH] perf: fix gcc 4.6.0 issues with tools/perf
+Message-ID: <20110124161304.GK27353@bombadil.infradead.org>
 MIME-Version: 1.0
-To: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        NetDev <netdev@vger.kernel.org>
-Subject: Re: netfilter: marking IPv6 packets sends them to the wrong interface
-References: <20110123122108.GA30305@darkside.kls.lan> <4D3D82D1.6050305@trash.net> <20110124143518.GA2616@darkside.kls.lan>
-In-Reply-To: <20110124143518.GA2616@darkside.kls.lan>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 24.01.2011 15:35, schrieb Mario 'BitKoenig' Holbe:
-> On Mon, Jan 24, 2011 at 02:46:57PM +0100, Patrick McHardy wrote:
->> On 23.01.2011 13:21, Mario 'BitKoenig' Holbe wrote:
->>> Without marking everything runs as it should be.
->>> Marking eth0 packets results in all advertisements transmitted via eth1.
->>> The behaviour goes back to normal as soon as the marking disappears.
->>> I also tried marking with 0xff00 instead of 1 - same results.
->> That probably means that we're not using the correct keys
->> when rerouting in ip6_route_me_harder(). Just for testing,
->> please try to disable the ip6_route_me_harder() call in
->> net/ipv6/netfilter/ip6table_mangle.c::ip6t_mangle_out().
-> 
-> Yes, disabling the ip6_route_me_harder() call in ip6t_mangle_out()
-> results in the advertisements being transmitted on the correct
-> interfaces
+Hi Ingo,
 
-Thanks. The problem appears to be that ip6_route_me_harder()
-only uses the socket's oif for the route lookup when the
-socket is bound to an interface, but radvd uses IPV6_PKTINFO
-to specify the outgoing interface.
+GCC 4.6.0 in Fedora rawhide turned up some compile errors in tools/perf
+due to the -Werror=unused-but-set-variable flag.
 
-I guess netfilter shouldn't be overriding IPV6_PKTINFO, but
-we unfortunately have neither an indication of this nor the
-original route lookup keys available at the time the packet
-is rerouted.
+I've gone through and annotated some of the assignments that had side
+effects (ie: return value from a function) with the __used annotation,
+and in some cases, just removed unused code.
+
+In a few cases, we were assigning something useful, but not using it in
+later parts of the function.
+
+regards, Kyle
+
+kyle@dreadnought:~/src% gcc --version
+gcc (GCC) 4.6.0 20110122 (Red Hat 4.6.0-0.3)
+
+---
+
+ bench/sched-pipe.c                          |    2 +-
+ builtin-sched.c                             |   12 +++---------
+ builtin-top.c                               |    5 +----
+ util/header.c                               |    2 +-
+ util/hist.c                                 |    3 ---
+ util/scripting-engines/trace-event-python.c |    3 +--
+ util/symbol.c                               |    4 ++--
+ util/trace-event-parse.c                    |    2 +-
+ util/ui/browsers/map.c                      |    2 +-
+ 9 files changed, 11 insertions(+), 24 deletions(-)
+
+diff --git a/tools/perf/bench/sched-pipe.c b/tools/perf/bench/sched-pipe.c
+index d9ab3ce..0c7454f 100644
+--- a/tools/perf/bench/sched-pipe.c
++++ b/tools/perf/bench/sched-pipe.c
+@@ -55,7 +55,7 @@ int bench_sched_pipe(int argc, const char **argv,
+ 	 * discarding returned value of read(), write()
+ 	 * causes error in building environment for perf
+ 	 */
+-	int ret, wait_stat;
++	int __used ret, wait_stat;
+ 	pid_t pid, retpid;
+ 
+ 	argc = parse_options(argc, argv, options,
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index 29e7ffd..f9e304f 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -369,11 +369,6 @@ static void
+ process_sched_event(struct task_desc *this_task __used, struct sched_atom *atom)
+ {
+ 	int ret = 0;
+-	u64 now;
+-	long long delta;
+-
+-	now = get_nsecs();
+-	delta = start_time + atom->timestamp - now;
+ 
+ 	switch (atom->type) {
+ 		case SCHED_EVENT_RUN:
+@@ -562,7 +557,7 @@ static void wait_for_tasks(void)
+ 
+ static void run_one_test(void)
+ {
+-	u64 T0, T1, delta, avg_delta, fluct, std_dev;
++	u64 T0, T1, delta, avg_delta, fluct;
+ 
+ 	T0 = get_nsecs();
+ 	wait_for_tasks();
+@@ -578,7 +573,6 @@ static void run_one_test(void)
+ 	else
+ 		fluct = delta - avg_delta;
+ 	sum_fluct += fluct;
+-	std_dev = sum_fluct / nr_runs / sqrt(nr_runs);
+ 	if (!run_avg)
+ 		run_avg = delta;
+ 	run_avg = (run_avg*9 + delta)/10;
+@@ -799,7 +793,7 @@ replay_switch_event(struct trace_switch_event *switch_event,
+ 		    u64 timestamp,
+ 		    struct thread *thread __used)
+ {
+-	struct task_desc *prev, *next;
++	struct task_desc *prev, __used *next;
+ 	u64 timestamp0;
+ 	s64 delta;
+ 
+@@ -1404,7 +1398,7 @@ map_switch_event(struct trace_switch_event *switch_event,
+ 		 u64 timestamp,
+ 		 struct thread *thread __used)
+ {
+-	struct thread *sched_out, *sched_in;
++	struct thread *sched_out __used, *sched_in;
+ 	int new_shortname;
+ 	u64 timestamp0;
+ 	s64 delta;
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 05344c6..373cfc0 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -182,7 +182,6 @@ static int parse_source(struct sym_entry *syme)
+ 	FILE *file;
+ 	char command[PATH_MAX*2];
+ 	const char *path;
+-	u64 len;
+ 
+ 	if (!syme)
+ 		return -1;
+@@ -211,8 +210,6 @@ static int parse_source(struct sym_entry *syme)
+ 	}
+ 	path = map->dso->long_name;
+ 
+-	len = sym->end - sym->start;
+-
+ 	sprintf(command,
+ 		"objdump --start-address=%#0*Lx --stop-address=%#0*Lx -dS %s",
+ 		BITS_PER_LONG / 4, map__rip_2objdump(map, sym->start),
+@@ -1295,7 +1292,7 @@ static int __cmd_top(void)
+ {
+ 	pthread_t thread;
+ 	struct perf_evsel *counter;
+-	int i, ret;
++	int i, ret __used;
+ 	/*
+ 	 * FIXME: perf_session__new should allow passing a O_MMAP, so that all this
+ 	 * mmap reading, etc is encapsulated in it. Use O_WRONLY for now.
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 989fa2d..c0e5019 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1139,7 +1139,7 @@ int event__synthesize_tracing_data(int fd, struct list_head *pattrs,
+ {
+ 	event_t ev;
+ 	ssize_t size = 0, aligned_size = 0, padding;
+-	int err = 0;
++	int err __used = 0;
+ 
+ 	memset(&ev, 0, sizeof(ev));
+ 
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index c749ba6..a01a33d 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -1091,7 +1091,6 @@ int hist_entry__annotate(struct hist_entry *self, struct list_head *head,
+ 	char command[PATH_MAX * 2];
+ 	FILE *file;
+ 	int err = 0;
+-	u64 len;
+ 	char symfs_filename[PATH_MAX];
+ 
+ 	if (filename) {
+@@ -1136,8 +1135,6 @@ fallback:
+ 		 filename, sym->name, map->unmap_ip(map, sym->start),
+ 		 map->unmap_ip(map, sym->end));
+ 
+-	len = sym->end - sym->start;
+-
+ 	pr_debug("annotating [%p] %30s : [%p] %30s\n",
+ 		 dso, dso->long_name, sym, sym->name);
+ 
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index c6d9933..2040b85 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -248,8 +248,7 @@ static void python_process_event(int cpu, void *data,
+ 	context = PyCObject_FromVoidPtr(scripting_context, NULL);
+ 
+ 	PyTuple_SetItem(t, n++, PyString_FromString(handler_name));
+-	PyTuple_SetItem(t, n++,
+-			PyCObject_FromVoidPtr(scripting_context, NULL));
++	PyTuple_SetItem(t, n++, context);
+ 
+ 	if (handler) {
+ 		PyTuple_SetItem(t, n++, PyInt_FromLong(cpu));
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 15ccfba..52e82cf 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1517,8 +1517,8 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+ 			     symbol_conf.symfs, self->long_name);
+ 			break;
+ 		case DSO__ORIG_GUEST_KMODULE:
+-			if (map->groups && map->groups->machine)
+-				root_dir = map->groups->machine->root_dir;
++			if (map->groups && machine)
++				root_dir = machine->root_dir;
+ 			else
+ 				root_dir = "";
+ 			snprintf(name, size, "%s%s%s", symbol_conf.symfs,
+diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+index 73a0222..d8e622d 100644
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -153,7 +153,7 @@ void parse_proc_kallsyms(char *file, unsigned int size __unused)
+ 	char *next = NULL;
+ 	char *addr_str;
+ 	char ch;
+-	int ret;
++	int ret __used;
+ 	int i;
+ 
+ 	line = strtok_r(file, "\n", &next);
+diff --git a/tools/perf/util/ui/browsers/map.c b/tools/perf/util/ui/browsers/map.c
+index e35437d..3788cad 100644
+--- a/tools/perf/util/ui/browsers/map.c
++++ b/tools/perf/util/ui/browsers/map.c
+@@ -40,7 +40,7 @@ static int ui_entry__read(const char *title, char *bf, size_t size, int width)
+ out_free_form:
+ 	newtPopWindow();
+ 	newtFormDestroy(form);
+-	return 0;
++	return err;
+ }
+ 
+ struct map_browser {
