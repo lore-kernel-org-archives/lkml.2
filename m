@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab1AXXa5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 18:30:57 -0500
-Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:49075 "EHLO
-	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752615Ab1AXXa5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 18:30:57 -0500
-Message-ID: <4D3E0BAE.6090202@lougher.demon.co.uk>
-Date: Mon, 24 Jan 2011 23:30:54 +0000
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1753172Ab1AXXbV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 18:31:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23889 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752615Ab1AXXbU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 18:31:20 -0500
+Message-ID: <4D3E0BB9.5070805@redhat.com>
+Date: Mon, 24 Jan 2011 18:31:05 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] SquashFS, XZ: Don't use uninitialized variable in squashfs_xz_uncompress
-References: <alpine.LNX.2.00.1101202140070.11854@swampdragon.chaosbits.net> <20110124144353.c04c77b4.akpm@linux-foundation.org>
-In-Reply-To: <20110124144353.c04c77b4.akpm@linux-foundation.org>
+To: Glauber Costa <glommer@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH 14/16] KVM-GST: KVM Steal time registration
+References: <1295892397-11354-1-git-send-email-glommer@redhat.com> <1295892397-11354-15-git-send-email-glommer@redhat.com>
+In-Reply-To: <1295892397-11354-15-git-send-email-glommer@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/01/11 22:43, Andrew Morton wrote:
-> On Thu, 20 Jan 2011 21:53:23 +0100 (CET)
-> Jesper Juhl<jj@chaosbits.net>  wrote:
+On 01/24/2011 01:06 PM, Glauber Costa wrote:
+> Register steal time within KVM. Everytime we sample the steal time
+> information, we update a local variable that tells what was the
+> last time read. We then account the difference.
 >
->> In fs/squashfs/xz_wrapper.c::squashfs_xz_uncompress() we have this code:
->>
->> 	enum xz_ret xz_err;
->> 	...
->> 	do {
->> 		if (stream->buf.in_pos == stream->buf.in_size&&  k<  b) {
->> 		... [nothing that assigns to 'xz_err'] ...
->> 			if (avail == 0) {
->> 				offset = 0;
->> 				put_bh(bh[k++]);
->> 				continue;
->
-> hm, maybe.  The handling of the `avail == 0' case looks odd.  It sits
-> there in a loop doing wait_on_buffer() against buffers which it will
-> never use and possible reporting -EIO for a buffer which it didn't use,
-> which seems bogus.
+> Signed-off-by: Glauber Costa<glommer@redhat.com>
+> CC: Rik van Riel<riel@redhat.com>
+> CC: Jeremy Fitzhardinge<jeremy.fitzhardinge@citrix.com>
+> CC: Peter Zijlstra<peterz@infradead.org>
+> CC: Avi Kivity<avi@redhat.com>
 
-Hi Andrew,
+On second thought - how does this deal with cpu hotplug and
+hot unplug?
 
-I'm just about to send out a patch that fixes this uninitialised variable
-bug by way of getting rid of that if (avail == 0) case.
+Do you allocate a new one of these structs every time a cpu
+is hot unplugged and then hotplugged, leaking the old one?
 
-The avail == 0 case is a workaround for the fact that the caller code
-can occasionally pass a buffer head that has already been
-consumed (read offset into buffer head is at the end of the buffer).
-
-Phillip
-
+Will leaving the old value around confuse the steal time
+calculation?
