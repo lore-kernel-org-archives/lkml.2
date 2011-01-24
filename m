@@ -1,46 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471Ab1AXRX5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 12:23:57 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49966 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753152Ab1AXRX4 (ORCPT
+	id S1753672Ab1AXRYe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 12:24:34 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:52394 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753152Ab1AXRYd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 12:23:56 -0500
-Date: Mon, 24 Jan 2011 17:22:44 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Hans Ulli Kroll <ulli.kroll@googlemail.com>
-Cc: rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/2] ARM: Gemini: add RTC support for Gemini SoC
-Message-ID: <20110124172244.GJ24104@n2100.arm.linux.org.uk>
-References: <1292339307-14336-1-git-send-email-ulli.kroll@googlemail.com> <20110107093155.GN31708@n2100.arm.linux.org.uk> <20110119110754.GB31652@n2100.arm.linux.org.uk>
+	Mon, 24 Jan 2011 12:24:33 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=F1vL9Lczk2qh82T1BlMdSNRFNSl7HNj2FfhXfAqQ8AGK/sq6ZkB/zzwKtNOguGWW5W
+         8fQl6Ezu+49bjRZFSsbGjQcc8P/rqrELRjGFAJFajqFqkFEFVM4Mis3ic5Dl054SpeG5
+         Ap1OQF7g+kngXEe8yr8xxye2OjKN6mMz1HpIs=
+Date: Mon, 24 Jan 2011 18:24:28 +0100
+From: Tejun Heo <tj@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: cl@linux.com, Pekka Enbeerg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
+        mathieu.desnoyers@efficios.com, akpm@linux-foundation.org
+Subject: [PATCH 2/3] x86: Use this_cpu_has for thermal_interrupt current cpu
+Message-ID: <20110124172428.GJ27510@htj.dyndns.org>
+References: <20110124172357.GI27510@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110119110754.GB31652@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20110124172357.GI27510@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19, 2011 at 11:07:54AM +0000, Russell King - ARM Linux wrote:
-> On Fri, Jan 07, 2011 at 09:31:55AM +0000, Russell King - ARM Linux wrote:
-> > On Tue, Dec 14, 2010 at 04:08:25PM +0100, Hans Ulli Kroll wrote:
-> > > This patch adds the driver for the rtc chip on the Gemini SoC
-> > 
-> > I'll take patch 2, but not patch 1.  There is no requirement for patch 1
-> > to come via my tree - it can be handled by the RTC people.
-> > 
-> > My tree is not for random driver code being merged into mainline just
-> > because it's used on some ARM platform somewhere.
-> > 
-> > (I'm making this request as a result of feedback from Linus on last nights
-> > merge of the ARM tree.)
-> 
-> What's the status of patch 1 wrt the RTC folk?
+From: Christoph Lameter <cl@linux.com>
 
-So... complete silence.
+It is more effective to use a segment prefix instead of calculating the
+address of the current cpu area amd then testing flags.
 
-I'll take the ARM specific patch but you'll have to find some other way
-to get the drivers/rtc part in.
+Signed-off-by: Christoph Lameter <cl@linux.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+---
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+Index: work/arch/x86/kernel/cpu/mcheck/therm_throt.c
+===================================================================
+--- work.orig/arch/x86/kernel/cpu/mcheck/therm_throt.c
++++ work/arch/x86/kernel/cpu/mcheck/therm_throt.c
+@@ -354,7 +354,6 @@ static void notify_thresholds(__u64 msr_
+ static void intel_thermal_interrupt(void)
+ {
+ 	__u64 msr_val;
+-	struct cpuinfo_x86 *c = &cpu_data(smp_processor_id());
+ 
+ 	rdmsrl(MSR_IA32_THERM_STATUS, msr_val);
+ 
+@@ -366,19 +365,19 @@ static void intel_thermal_interrupt(void
+ 				CORE_LEVEL) != 0)
+ 		mce_log_therm_throt_event(CORE_THROTTLED | msr_val);
+ 
+-	if (cpu_has(c, X86_FEATURE_PLN))
++	if (this_cpu_has(X86_FEATURE_PLN))
+ 		if (therm_throt_process(msr_val & THERM_STATUS_POWER_LIMIT,
+ 					POWER_LIMIT_EVENT,
+ 					CORE_LEVEL) != 0)
+ 			mce_log_therm_throt_event(CORE_POWER_LIMIT | msr_val);
+ 
+-	if (cpu_has(c, X86_FEATURE_PTS)) {
++	if (this_cpu_has(X86_FEATURE_PTS)) {
+ 		rdmsrl(MSR_IA32_PACKAGE_THERM_STATUS, msr_val);
+ 		if (therm_throt_process(msr_val & PACKAGE_THERM_STATUS_PROCHOT,
+ 					THERMAL_THROTTLING_EVENT,
+ 					PACKAGE_LEVEL) != 0)
+ 			mce_log_therm_throt_event(PACKAGE_THROTTLED | msr_val);
+-		if (cpu_has(c, X86_FEATURE_PLN))
++		if (this_cpu_has(X86_FEATURE_PLN))
+ 			if (therm_throt_process(msr_val &
+ 					PACKAGE_THERM_STATUS_POWER_LIMIT,
+ 					POWER_LIMIT_EVENT,
