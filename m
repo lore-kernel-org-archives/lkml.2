@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062Ab1AXVN3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 16:13:29 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36185
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752994Ab1AXVN1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 16:13:27 -0500
-Date: Mon, 24 Jan 2011 13:14:02 -0800 (PST)
-Message-Id: <20110124.131402.226784705.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: jamie@audible.transient.net, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: 2.6.38-rc1: arp triggers RTNL assertion
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1295903498.2924.17.camel@edumazet-laptop>
-References: <1295635976.2609.23.camel@edumazet-laptop>
-	<20110121.130657.106806953.davem@davemloft.net>
-	<1295903498.2924.17.camel@edumazet-laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753129Ab1AXVNj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 16:13:39 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:15856 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753086Ab1AXVNi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 16:13:38 -0500
+Date: Mon, 24 Jan 2011 22:14:20 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Chris Ball <cjb@laptop.org>
+cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Vrabel <david.vrabel@csr.com>, Axel Lin <axel.lin@gmail.com>,
+        trivial@kernel.org
+Subject: Re: [PATCH] MMC, USHC: Don't double include usb.h in ushc.c
+In-Reply-To: <20110124210645.GB11110@void.printf.net>
+Message-ID: <alpine.LNX.2.00.1101242213350.10252@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1101242156050.10252@swampdragon.chaosbits.net> <20110124210202.GA11110@void.printf.net> <alpine.LNX.2.00.1101242204020.10252@swampdragon.chaosbits.net> <20110124210645.GB11110@void.printf.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Mon, 24 Jan 2011 22:11:38 +0100
+On Mon, 24 Jan 2011, Chris Ball wrote:
 
-> Le vendredi 21 janvier 2011 à 13:06 -0800, David Miller a écrit :
->> From: Eric Dumazet <eric.dumazet@gmail.com>
->> Date: Fri, 21 Jan 2011 19:52:56 +0100
->> 
->> > Here is how I fixed this, thanks again Jamie !
->> > 
->> > [PATCH] net: neighbour: pneigh_lookup() doesnt need RTNL
->> 
->> Eric, I don't think we can do this.
->> 
->> Fundamentally, any time a user operation changes the configuration
->> of the networking, we must hold the RTNL.
->> 
->> Eliding the RTNL for lookups is fine, but for things that change
->> state it is not.
->> 
->> I therefore think you'll need to rework the arp_ioctl() portions
->> of the commit that introduced this regression.
->> 
+> Hi,
 > 
-> Here is a second try of the fix, thanks !
+> On Mon, Jan 24, 2011 at 10:05:05PM +0100, Jesper Juhl wrote:
+> > > I've already replied to you ACKing this patch, and pushed it to mmc-next. 
+> > > 
+> > Odd, I don't see that in my mailbox :-( But then I've had a few incidents 
+> > of being bling in that regard lately, so it's probably my fault. Sorry.
 > 
-> Note : Tested with CONFIG_PROVE_RCU=y
+> It's okay.  Here's an archive of the thread:
+>   https://patchwork.kernel.org/patch/469621/
 > 
-> [PATCH] net: arp_ioctl() must hold RTNL
+Argh, reading it again I clearly remember that mail exchange. Must have 
+deleted it from my mailbox by accident. 
 
-Thanks Eric, this one looks a lot better.  I'll apply this later
-tonight.
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
