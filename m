@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab1AXXbV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 18:31:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23889 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752615Ab1AXXbU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 18:31:20 -0500
-Message-ID: <4D3E0BB9.5070805@redhat.com>
-Date: Mon, 24 Jan 2011 18:31:05 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S1752921Ab1AXXcT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 18:32:19 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53196 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752771Ab1AXXcS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 18:32:18 -0500
+Date: Mon, 24 Jan 2011 23:31:38 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: David Brown <davidb@codeaurora.org>
+Cc: linux-arm-msm@vger.kernel.org, Sergei Shtylyov <sshtylyov@mvista.com>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 05/11] msm: Physical offset for MSM8960
+Message-ID: <20110124233138.GS24104@n2100.arm.linux.org.uk>
+References: <1292384961-8851-1-git-send-email-stepanm@codeaurora.org> <1295468747-22796-1-git-send-email-davidb@codeaurora.org> <1295468747-22796-6-git-send-email-davidb@codeaurora.org>
 MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>
-Subject: Re: [PATCH 14/16] KVM-GST: KVM Steal time registration
-References: <1295892397-11354-1-git-send-email-glommer@redhat.com> <1295892397-11354-15-git-send-email-glommer@redhat.com>
-In-Reply-To: <1295892397-11354-15-git-send-email-glommer@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295468747-22796-6-git-send-email-davidb@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2011 01:06 PM, Glauber Costa wrote:
-> Register steal time within KVM. Everytime we sample the steal time
-> information, we update a local variable that tells what was the
-> last time read. We then account the difference.
->
-> Signed-off-by: Glauber Costa<glommer@redhat.com>
-> CC: Rik van Riel<riel@redhat.com>
-> CC: Jeremy Fitzhardinge<jeremy.fitzhardinge@citrix.com>
-> CC: Peter Zijlstra<peterz@infradead.org>
-> CC: Avi Kivity<avi@redhat.com>
+On Wed, Jan 19, 2011 at 12:25:41PM -0800, David Brown wrote:
+> From: Stepan Moskovchenko <stepanm@codeaurora.org>
+> 
+> Add the physical memory offset value for the Qualcomm
+> MSM8960 chip.
+> 
+> Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+> Signed-off-by: David Brown <davidb@codeaurora.org>
+> ---
+>  arch/arm/mach-msm/include/mach/memory.h |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/mach-msm/include/mach/memory.h b/arch/arm/mach-msm/include/mach/memory.h
+> index 070e17d..014bbd3 100644
+> --- a/arch/arm/mach-msm/include/mach/memory.h
+> +++ b/arch/arm/mach-msm/include/mach/memory.h
+> @@ -25,6 +25,8 @@
+>  #define PHYS_OFFSET		UL(0x00200000)
+>  #elif defined(CONFIG_ARCH_MSM8X60)
+>  #define PHYS_OFFSET		UL(0x40200000)
+> +#elif defined(CONFIG_ARCH_MSM8960)
+> +#define PHYS_OFFSET		UL(0x40200000)
 
-On second thought - how does this deal with cpu hotplug and
-hot unplug?
+Note that this will all change during the next merge window to
+PLAT_PHYS_OFFSET.
 
-Do you allocate a new one of these structs every time a cpu
-is hot unplugged and then hotplugged, leaking the old one?
-
-Will leaving the old value around confuse the steal time
-calculation?
