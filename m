@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421Ab1AXE31 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 23:29:27 -0500
-Received: from www.tglx.de ([62.245.132.106]:55500 "EHLO www.tglx.de"
+	id S1753132Ab1AXE3n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 23:29:43 -0500
+Received: from www.tglx.de ([62.245.132.106]:55669 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751773Ab1AXE3Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 23:29:24 -0500
+	id S1752519Ab1AXE3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 23:29:42 -0500
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: linux-kernel@vger.kernel.org
 Cc: sodaville@linutronix.de, x86@kernel.org,
         devicetree-discuss@lists.ozlabs.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: [PATCH TIP 01/14] x86/e820: remove conditional early mapping in parse_e820_ext
-Date: Mon, 24 Jan 2011 09:58:49 +0530
-Message-Id: <1295843342-1122-2-git-send-email-bigeasy@linutronix.de>
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH TIP 08/14] x86/dtb: add support for PCI devices backed by dtb nodes
+Date: Mon, 24 Jan 2011 09:58:56 +0530
+Message-Id: <1295843342-1122-9-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1295843342-1122-1-git-send-email-bigeasy@linutronix.de>
 References: <1295843342-1122-1-git-send-email-bigeasy@linutronix.de>
@@ -22,97 +21,167 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch ensures that the memory passed from parse_setup_data() is
-large enough to cover the complete data structure. That means that the
-conditional mapping in parse_e820_ext() can go.
+x86_of_pci_init() does two things:
+- it provides a generic irq enable and disable function. enable queries
+  the device tree for the interrupt information, calls ->xlate on the
+  irq host and updates the pci->irq information for the device.
 
-While here, I also attempt not to map two pages if the address is not
-aligned to a page boundary.
+- it walks through PCI buss(es) in the device tree and adds its children
+  (devices) nodes to appropriate pci_dev nodes in kernel. So the dtb
+  node information is available at probe time of the PCI device.
 
+Adding a PCI bus based on the information in the device tree is
+currently not supported. Right now direct access via ioports is used.
+
+Cc: devicetree-discuss@lists.ozlabs.org
+Tested-by: Dirk Brandewie <dirk.brandewie@gmail.com>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
 ---
- arch/x86/include/asm/e820.h |    2 +-
- arch/x86/kernel/e820.c      |    8 +-------
- arch/x86/kernel/setup.c     |   18 +++++++++++++++---
- 3 files changed, 17 insertions(+), 11 deletions(-)
+ arch/x86/include/asm/prom.h |   17 +++++++++
+ arch/x86/kernel/prom.c      |   82 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 99 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-index e99d55d..908b969 100644
---- a/arch/x86/include/asm/e820.h
-+++ b/arch/x86/include/asm/e820.h
-@@ -96,7 +96,7 @@ extern void e820_setup_gap(void);
- extern int e820_search_gap(unsigned long *gapstart, unsigned long *gapsize,
- 			unsigned long start_addr, unsigned long long end_addr);
- struct setup_data;
--extern void parse_e820_ext(struct setup_data *data, unsigned long pa_data);
-+extern void parse_e820_ext(struct setup_data *data);
+diff --git a/arch/x86/include/asm/prom.h b/arch/x86/include/asm/prom.h
+index bd67ab2..3ed0bd6 100644
+--- a/arch/x86/include/asm/prom.h
++++ b/arch/x86/include/asm/prom.h
+@@ -16,6 +16,7 @@
  
- #if defined(CONFIG_X86_64) || \
- 	(defined(CONFIG_X86_32) && defined(CONFIG_HIBERNATION))
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 294f26d..5fad626 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -667,21 +667,15 @@ __init void e820_setup_gap(void)
-  * boot_params.e820_map, others are passed via SETUP_E820_EXT node of
-  * linked list of struct setup_data, which is parsed here.
-  */
--void __init parse_e820_ext(struct setup_data *sdata, unsigned long pa_data)
-+void __init parse_e820_ext(struct setup_data *sdata)
- {
--	u32 map_len;
- 	int entries;
- 	struct e820entry *extmap;
- 
- 	entries = sdata->len / sizeof(struct e820entry);
--	map_len = sdata->len + sizeof(struct setup_data);
--	if (map_len > PAGE_SIZE)
--		sdata = early_ioremap(pa_data, map_len);
- 	extmap = (struct e820entry *)(sdata->data);
- 	__append_e820_map(extmap, entries);
- 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
--	if (map_len > PAGE_SIZE)
--		early_iounmap(sdata, map_len);
- 	printk(KERN_INFO "extended physical RAM map:\n");
- 	e820_print_map("extended");
- }
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index d3cfe26..f8e7152 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -429,16 +429,28 @@ static void __init parse_setup_data(void)
- 		return;
- 	pa_data = boot_params.hdr.setup_data;
- 	while (pa_data) {
--		data = early_memremap(pa_data, PAGE_SIZE);
-+		u32 data_len;
-+		u32 map_len;
+ #include <linux/of.h>
+ #include <linux/types.h>
++#include <linux/pci.h>
+ #include <asm/irq.h>
+ #include <asm/atomic.h>
+ #include <asm/setup.h>
+@@ -28,8 +29,24 @@ extern void add_dtb(u64 data);
+ void x86_dtb_find_config(void);
+ void x86_dtb_get_config(unsigned int unused);
+ void add_interrupt_host(struct irq_domain *ih);
++void __cpuinit x86_of_pci_init(void);
 +
-+		map_len = max(PAGE_SIZE - (pa_data & ~PAGE_MASK),
-+				(u64)sizeof(struct setup_data));
-+		data = early_memremap(pa_data, map_len);
-+		data_len = data->len + sizeof(struct setup_data);
-+		if (data_len > map_len) {
-+			early_iounmap(data, map_len);
-+			data = early_memremap(pa_data, data_len);
-+			map_len = data_len;
++static inline struct device_node *pci_device_to_OF_node(struct pci_dev *pdev)
++{
++	return pdev->dev.of_node;
++}
++
++static inline struct device_node *pci_bus_to_OF_node(struct pci_bus *bus)
++{
++	if (bus->self)
++		return pci_device_to_OF_node(bus->self);
++	else
++		return NULL;
++}
++
+ #else
+ static inline void add_dtb(u64 data) { }
++static inline void x86_of_pci_init(void) { }
+ #define x86_dtb_find_config x86_init_noop
+ #define x86_dtb_get_config x86_init_uint_noop
+ #define of_ioapic 0
+diff --git a/arch/x86/kernel/prom.c b/arch/x86/kernel/prom.c
+index 16c124e..8525ca0 100644
+--- a/arch/x86/kernel/prom.c
++++ b/arch/x86/kernel/prom.c
+@@ -9,10 +9,13 @@
+ #include <linux/of_address.h>
+ #include <linux/of_platform.h>
+ #include <linux/slab.h>
++#include <linux/pci.h>
++#include <linux/of_pci.h>
+ 
+ #include <asm/hpet.h>
+ #include <asm/irq_controller.h>
+ #include <asm/io_apic.h>
++#include <asm/pci_x86.h>
+ 
+ __initdata u64 initial_dtb;
+ char __initdata cmd_line[COMMAND_LINE_SIZE];
+@@ -99,6 +102,85 @@ void __init add_dtb(u64 data)
+ 	initial_dtb = data + offsetof(struct setup_data, data);
+ }
+ 
++#ifdef CONFIG_PCI
++static int x86_of_pci_irq_enable(struct pci_dev *dev)
++{
++	struct of_irq oirq;
++	u32 virq;
++	int ret;
++	u8 pin;
++
++	ret = pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
++	if (ret)
++		return ret;
++	if (!pin)
++		return 0;
++
++	ret = of_irq_map_pci(dev, &oirq);
++	if (ret)
++		return ret;
++
++	virq = irq_create_of_mapping(oirq.controller, oirq.specifier,
++			oirq.size);
++	if (virq == 0)
++		return -EINVAL;
++	dev->irq = virq;
++	return 0;
++}
++
++static void x86_of_pci_irq_disable(struct pci_dev *dev)
++{
++}
++
++void __cpuinit x86_of_pci_init(void)
++{
++	struct device_node *np;
++
++	pcibios_enable_irq = x86_of_pci_irq_enable;
++	pcibios_disable_irq = x86_of_pci_irq_disable;
++
++	for_each_node_by_type(np, "pci") {
++		const void *prop;
++		struct pci_bus *bus;
++		unsigned int bus_min;
++		struct device_node *child;
++
++		prop = of_get_property(np, "bus-range", NULL);
++		if (!prop)
++			continue;
++		bus_min = be32_to_cpup(prop);
++
++		bus = pci_find_bus(0, bus_min);
++		if (!bus) {
++			printk(KERN_ERR "Can't find a node for bus %s.\n",
++					np->full_name);
++			continue;
 +		}
 +
- 		switch (data->type) {
- 		case SETUP_E820_EXT:
--			parse_e820_ext(data, pa_data);
-+			parse_e820_ext(data);
- 			break;
- 		default:
- 			break;
- 		}
- 		pa_data = data->next;
--		early_iounmap(data, PAGE_SIZE);
-+		early_iounmap(data, map_len);
- 	}
- }
- 
++		if (bus->self)
++			bus->self->dev.of_node = np;
++		else
++			bus->dev.of_node = np;
++
++		for_each_child_of_node(np, child) {
++			struct pci_dev *dev;
++			u32 devfn;
++
++			prop = of_get_property(child, "reg", NULL);
++			if (!prop)
++				continue;
++
++			devfn = (be32_to_cpup(prop) >> 8) & 0xff;
++			dev = pci_get_slot(bus, devfn);
++			if (!dev)
++				continue;
++			dev->dev.of_node = child;
++			pci_dev_put(dev);
++		}
++	}
++}
++#endif
++
+ static void __init dtb_setup_hpet(void)
+ {
+ 	struct device_node *dn;
 -- 
 1.7.3.2
 
