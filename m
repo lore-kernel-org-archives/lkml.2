@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807Ab1AXOzK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 09:55:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59354 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751673Ab1AXOzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 09:55:08 -0500
-Date: Mon, 24 Jan 2011 09:54:51 -0500
-From: Jarod Wilson <jarod@redhat.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: linux-i2c@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Andy Walls <awalls@md.metrocast.net>, Joe Perches <joe@perches.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] drivers/staging/lirc: Remove obsolete cleanup for
- clientdata
-Message-ID: <20110124145451.GD28403@redhat.com>
-References: <1295865880-27672-1-git-send-email-w.sang@pengutronix.de>
- <1295865880-27672-4-git-send-email-w.sang@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295865880-27672-4-git-send-email-w.sang@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752935Ab1AXOzS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 09:55:18 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:41596 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673Ab1AXOzO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 09:55:14 -0500
+Subject: Re: [PATCH repost 2/4] dmaengine/dw_dmac: allow src/dst masters to
+ be configured at runtime
+From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
+        Jamie Iles <jamie.iles@picochip.com>
+In-Reply-To: <1295619115-18420-3-git-send-email-jamie@jamieiles.com>
+References: <1295619115-18420-1-git-send-email-jamie@jamieiles.com>
+	 <1295619115-18420-3-git-send-email-jamie@jamieiles.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Atmel Corporation
+Date: Mon, 24 Jan 2011 15:54:57 +0100
+Message-ID: <1295880898.2903.2.camel@hcegtvedt>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 24 Jan 2011 14:54:59.0138 (UTC) FILETIME=[ABE33220:01CBBBD6]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24, 2011 at 11:44:30AM +0100, Wolfram Sang wrote:
-> A few new i2c-drivers came into the kernel which clear the clientdata-pointer
-> on exit or error. This is obsolete meanwhile, the core will do it. Simplify the
-> kfree() calls after that, the pointers don't need to be checked.
+On Fri, 2011-01-21 at 14:11 +0000, Jamie Iles wrote: 
+> Some platforms have flexible mastering capabilities and this needs
+> to be selected at runtime. If the platform has specified private
+> data in the form of the dw_dma_slave then fetch the source and
+> destination masters from here. If this isn't present, default to
+> the previous of 0 and 1.
 > 
-> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-> Cc: Andy Walls <awalls@md.metrocast.net>
-> Cc: Jarod Wilson <jarod@redhat.com>
-> Cc: Joe Perches <joe@perches.com>
-> ---
+> v2: cleanup whitespace
 > 
-> Compile tested only.
+> Cc: Dan Williams <dan.j.williams@intel.com>
+> Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+> Signed-off-by: Jamie Iles <jamie.iles@picochip.com>
 
-Looks sane to me.
+Acked-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
 
-Acked-by: Jarod Wilson <jarod@redhat.com>
+<snipp>
 
 -- 
-Jarod Wilson
-jarod@redhat.com
+Hans-Christian Egtvedt
 
