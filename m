@@ -1,146 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022Ab1AXSUJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 13:20:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25946 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753724Ab1AXSUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 13:20:07 -0500
-Message-ID: <4D3DC2C2.1060905@redhat.com>
-Date: Mon, 24 Jan 2011 13:19:46 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Avi Kiviti <avi@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>,
-        ttracy@redhat.com, dshaks@redhat.com,
-        "Nakajima, Jun" <jun.nakajima@intel.com>
-Subject: Re: [RFC -v6 PATCH 4/8] sched: Add yield_to(task, preempt) functionality
-References: <20110120163127.2568f4fe@annuminas.surriel.com>	 <20110120163443.762c2409@annuminas.surriel.com> <1295892748.28776.463.camel@laptop>
-In-Reply-To: <1295892748.28776.463.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753530Ab1AXSbV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 13:31:21 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:46683 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752948Ab1AXSbU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 13:31:20 -0500
+Subject: Re: [PATCH 16/16] KVM-GST: adjust scheduler cpu power
+From: Peter Zijlstra <peterz@infradead.org>
+To: Glauber Costa <glommer@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
+        Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Avi Kivity <avi@redhat.com>
+In-Reply-To: <1295892397-11354-17-git-send-email-glommer@redhat.com>
+References: <1295892397-11354-1-git-send-email-glommer@redhat.com>
+	 <1295892397-11354-17-git-send-email-glommer@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 24 Jan 2011 19:32:00 +0100
+Message-ID: <1295893920.28776.468.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2011 01:12 PM, Peter Zijlstra wrote:
-> On Thu, 2011-01-20 at 16:34 -0500, Rik van Riel wrote:
->> From: Mike Galbraith<efault@gmx.de>
->>
->> Currently only implemented for fair class tasks.
->>
->> Add a yield_to_task method() to the fair scheduling class. allowing the
->> caller of yield_to() to accelerate another thread in it's thread group,
->> task group.
->>
->> Implemented via a scheduler hint, using cfs_rq->next to encourage the
->> target being selected.  We can rely on pick_next_entity to keep things
->> fair, so noone can accelerate a thread that has already used its fair
->> share of CPU time.
->>
->> This also means callers should only call yield_to when they really
->> mean it.  Calling it too often can result in the scheduler just
->> ignoring the hint.
->>
->> Signed-off-by: Rik van Riel<riel@redhat.com>
->> Signed-off-by: Marcelo Tosatti<mtosatti@redhat.com>
->> Signed-off-by: Mike Galbraith<efault@gmx.de>
->
-> Patch 5 wants to be merged back in here I think..
+On Mon, 2011-01-24 at 13:06 -0500, Glauber Costa wrote:
+> This is a first proposal for using steal time information
+> to influence the scheduler. There are a lot of optimizations
+> and fine grained adjustments to be done, but it is working reasonably
+> so far for me (mostly)
+> 
+> With this patch (and some host pinnings to demonstrate the situation),
+> two vcpus with very different steal time (Say 80 % vs 1 %) will not get
+> an even distribution of processes. This is a situation that can naturally
+> arise, specially in overcommited scenarios. Previosly, the guest scheduler
+> would wrongly think that all cpus have the same ability to run processes,
+> lowering the overall throughput.
+> 
+> Signed-off-by: Glauber Costa <glommer@redhat.com>
+> CC: Rik van Riel <riel@redhat.com>
+> CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> CC: Peter Zijlstra <peterz@infradead.org>
+> CC: Avi Kivity <avi@redhat.com>
+> ---
+>  include/linux/sched.h |    1 +
+>  kernel/sched.c        |    4 ++++
+>  kernel/sched_fair.c   |   10 ++++++++++
+>  3 files changed, 15 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index d747f94..beab72d 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -302,6 +302,7 @@ long io_schedule_timeout(long timeout);
+>  extern void cpu_init (void);
+>  extern void trap_init(void);
+>  extern void update_process_times(int user);
+> +extern cputime_t (*hypervisor_steal_time)(void);
+>  extern void scheduler_tick(void);
+>  
+>  extern void sched_show_task(struct task_struct *p);
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index 3b3e88d..c460f0d 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -501,6 +501,8 @@ struct rq {
+>  	struct sched_domain *sd;
+>  
+>  	unsigned long cpu_power;
+> +	unsigned long real_ticks;
+> +	unsigned long total_ticks;
+>  
+>  	unsigned char idle_at_tick;
+>  	/* For active balancing */
+> @@ -3533,10 +3535,12 @@ static int touch_steal_time(int is_idle)
+>  	if (is_idle)
+>  		return 0;
+>  
+> +	rq->total_ticks++;
+>  	if (steal) {
+>  		account_steal_time(steal);
+>  		return 1;
+>  	}
+> +	rq->real_ticks++;
+>  	return 0;
+>  }
 
-Agreed, but I wanted Mike's comments first  :)
+yuck!! is ticks really the best you can do?
 
+I thought kvm had a ns resolution steal-time clock?
 
->> +/**
->> + * yield_to - yield the current processor to another thread in
->> + * your thread group, or accelerate that thread toward the
->> + * processor it's on.
->> + *
->> + * It's the caller's job to ensure that the target task struct
->> + * can't go away on us before we can do any checks.
->> + *
->> + * Returns true if we indeed boosted the target task.
->> + */
->> +bool __sched yield_to(struct task_struct *p, bool preempt)
->> +{
->> +	struct task_struct *curr = current;
->> +	struct rq *rq, *p_rq;
->> +	unsigned long flags;
->> +	bool yielded = 0;
->> +
->> +	local_irq_save(flags);
->> +	rq = this_rq();
->> +
->> +again:
->> +	p_rq = task_rq(p);
->> +	double_rq_lock(rq, p_rq);
->> +	while (task_rq(p) != p_rq) {
->> +		double_rq_unlock(rq, p_rq);
->> +		goto again;
->> +	}
->> +
->> +	if (!curr->sched_class->yield_to_task)
->> +		goto out;
->> +
->> +	if (curr->sched_class != p->sched_class)
->> +		goto out;
->> +
->> +	if (task_running(p_rq, p) || p->state)
->> +		goto out;
->> +
->> +	if (!same_thread_group(p, curr))
->> +		goto out;
->> +
->> +#ifdef CONFIG_FAIR_GROUP_SCHED
->> +	if (task_group(p) != task_group(curr))
->> +		goto out;
->> +#endif
->> +
->> +	yielded = curr->sched_class->yield_to_task(rq, p, preempt);
->> +
->> +out:
->> +	double_rq_unlock(rq, p_rq);
->> +	local_irq_restore(flags);
->> +
->> +	if (yielded)
->> +		yield();
->
-> Calling yield() here is funny, you just had all the locks to actually do
-> it..
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index c62ebae..1364c28 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -2509,6 +2509,16 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
+>  		power >>= SCHED_LOAD_SHIFT;
+>  	}
+>  
+> +	WARN_ON(cpu_rq(cpu)->real_ticks > cpu_rq(cpu)->total_ticks);
+> +
+> +	if (cpu_rq(cpu)->total_ticks) {
+> +		power *= cpu_rq(cpu)->real_ticks;
+> +		power /= cpu_rq(cpu)->total_ticks;
+> +	}
+> +
+> +	cpu_rq(cpu)->total_ticks = 0;
+> +	cpu_rq(cpu)->real_ticks = 0;
+> +
+>  	sdg->cpu_power_orig = power;
+>  
+>  	if (sched_feat(ARCH_POWER))
 
-This is us giving up the CPU, which requires not holding locks.
-
-A different thing than us giving the CPU away to someone else.
-
->> +static bool yield_to_task_fair(struct rq *rq, struct task_struct *p, bool preempt)
->> +{
->> +	struct sched_entity *se =&p->se;
->> +
->> +	if (!se->on_rq)
->> +		return false;
->> +
->> +	/* Tell the scheduler that we'd really like pse to run next. */
->> +	set_next_buddy(se);
->> +
->> +	/* Make p's CPU reschedule; pick_next_entity takes care of fairness. */
->> +	if (preempt)
->> +		resched_task(rq->curr);
->> +
->> +	return true;
->> +}
->
-> So here we set ->next, we could be ->last, and after this we'll set
-> ->yield to curr by calling yield().
->
-> So if you do this cyclically I can see ->yield == {->next,->last}
-> happening.
-
-That would only happen if we called yield_to with ourselves
-as the argument!
-
-There is no caller in the tree that does that - task p is
-another task, not ourselves.
+I would really much rather see you change update_rq_clock_task() and
+subtract your ns resolution steal time from our wall-time,
+update_rq_clock_task() already updates the cpu_power relative to the
+remaining time available.
