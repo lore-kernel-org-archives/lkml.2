@@ -1,49 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678Ab1AXLbW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 06:31:22 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46880 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665Ab1AXLbV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 06:31:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Q4pMSuuMJOCAKr2qeRPsyCebOgfY9XYY66ZcfYeNLoIkW86+Qe1BKpTH/QKWjAIhvu
-         ZPOyJLc2QsI4sjBo1VtxmL+QAWE6DmHYX7rVLeaFoo/bbv2DK9C0b+fmPWO+Hz5eMgFj
-         hQM/2DoqOzstHQiafK6kOm2p3QUIyBOPxfMLw=
+	id S1752733Ab1AXLfK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 06:35:10 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:39239 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752357Ab1AXLfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 06:35:08 -0500
+Date: Mon, 24 Jan 2011 12:34:58 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/7] memcg : comment, style fixes for recent patch of
+ move_parent
+Message-ID: <20110124113458.GX2232@cmpxchg.org>
+References: <20110121153431.191134dd.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110121153726.54f4a159.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110124101402.GT2232@cmpxchg.org>
+ <20110124191535.514ef2d9.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110124104510.GW2232@cmpxchg.org>
+ <AANLkTi=sg5HpCTdXgEVYS5rCqtoVVho6dxn8giwZ4kmY@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1295735888-25527-2-git-send-email-lars@metafoo.de>
-References: <1295735888-25527-1-git-send-email-lars@metafoo.de>
-	<1295735888-25527-2-git-send-email-lars@metafoo.de>
-Date: Mon, 24 Jan 2011 20:31:19 +0900
-Message-ID: <AANLkTim2L=ybmFhFXkQ+h_FrqQuMzzt9tHj_+WMgbyN5@mail.gmail.com>
-Subject: Re: [alsa-devel] [PATCH] SoC: Samsung: Fix outdated cpu_dai_name for
- s3c24xx i2s
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, "for 2.6.37" <stable@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=sg5HpCTdXgEVYS5rCqtoVVho6dxn8giwZ4kmY@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 23, 2011 at 7:38 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
-> During the multi-component patch the s3c24xx i2s driver was renamed from
-> "s3c24xx-i2s" to "s3c24xx-iis", while the sound board drivers were not
-> updated to reflect this change as well.
->
-> As a result there is no match between the dai_link and the i2s driver and no
-> sound card is instantiated.
->
-> This patch fixes the problem by updating the sound board drivers to use
-> "s3c24xx-iis" for the cpu_dai_name.
->
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> Cc: stable@kernel.org (for 2.6.37)
+On Mon, Jan 24, 2011 at 08:14:22PM +0900, Hiroyuki Kamezawa wrote:
+> 2011/1/24 Johannes Weiner <hannes@cmpxchg.org>:
+> > On Mon, Jan 24, 2011 at 07:15:35PM +0900, KAMEZAWA Hiroyuki wrote:
+> >> On Mon, 24 Jan 2011 11:14:02 +0100
+> >> Johannes Weiner <hannes@cmpxchg.org> wrote:
+> >>
+> >> > On Fri, Jan 21, 2011 at 03:37:26PM +0900, KAMEZAWA Hiroyuki wrote:
+> >> > > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> >> > >
+> >> > > A fix for 987eba66e0e6aa654d60881a14731a353ee0acb4
+> >> > >
+> >> > > A clean up for mem_cgroup_move_parent().
+> >> > >  - remove unnecessary initialization of local variable.
+> >> > >  - rename charge_size -> page_size
+> >> > >  - remove unnecessary (wrong) comment.
+> >> > >
+> >> > > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> >> > > ---
+> >> > >  mm/memcontrol.c |   17 +++++++++--------
+> >> > >  1 file changed, 9 insertions(+), 8 deletions(-)
+> >> > >
+> >> > > Index: mmotm-0107/mm/memcontrol.c
+> >> > > ===================================================================
+> >> > > --- mmotm-0107.orig/mm/memcontrol.c
+> >> > > +++ mmotm-0107/mm/memcontrol.c
+> >> > > @@ -2265,7 +2265,7 @@ static int mem_cgroup_move_parent(struct
+> >> > >   struct cgroup *cg = child->css.cgroup;
+> >> > >   struct cgroup *pcg = cg->parent;
+> >> > >   struct mem_cgroup *parent;
+> >> > > - int charge = PAGE_SIZE;
+> >> > > + int page_size;
+> >> > >   unsigned long flags;
+> >> > >   int ret;
+> >> > >
+> >> > > @@ -2278,22 +2278,23 @@ static int mem_cgroup_move_parent(struct
+> >> > >           goto out;
+> >> > >   if (isolate_lru_page(page))
+> >> > >           goto put;
+> >> > > - /* The page is isolated from LRU and we have no race with splitting */
+> >> > > - charge = PAGE_SIZE << compound_order(page);
+> >> > > +
+> >> > > + page_size = PAGE_SIZE << compound_order(page);
+> >> >
+> >> > Okay, so you remove the wrong comment, but that does not make the code
+> >> > right.  What protects compound_order from reading garbage because the
+> >> > page is currently splitting?
+> >> >
+> >>
+> >> ==
+> >> static int mem_cgroup_move_account(struct page_cgroup *pc,
+> >>                 struct mem_cgroup *from, struct mem_cgroup *to,
+> >>                 bool uncharge, int charge_size)
+> >> {
+> >>         int ret = -EINVAL;
+> >>         unsigned long flags;
+> >>
+> >>         if ((charge_size > PAGE_SIZE) && !PageTransHuge(pc->page))
+> >>                 return -EBUSY;
+> >> ==
+> >>
+> >> This is called under compound_lock(). Then, if someone breaks THP,
+> >> -EBUSY and retry.
+> >
+> > This charge_size contains exactly the garbage you just read from an
+> > unprotected compound_order().  It could be anything if the page is
+> > split concurrently.
+> 
+> Then, my recent fix to LRU accounting which use compound_order() is racy, too ?
 
-Acked-by: Jassi Brar <jassi.brar@samsung.com>
+In lru add/delete/move/rotate?  No, that should be safe because we
+have the lru lock there and __split_huge_page_refcount() takes the
+lock as well.
+
+> I'll replace compound_order() with
+>   if (PageTransHuge(page))
+>       size = HPAGE_SIZE.
+> 
+> Does this work ?
+
+Yes, I think this should work.  This gives a sane size for try_charge
+and we still catch a split under the compound_lock later in
+move_account as you described above.
