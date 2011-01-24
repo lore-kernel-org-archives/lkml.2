@@ -1,78 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751540Ab1AXJB0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 04:01:26 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:44833 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214Ab1AXJBZ (ORCPT
+	id S1751568Ab1AXJCw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 04:02:52 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:64883 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323Ab1AXJCu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 04:01:25 -0500
-Date: Mon, 24 Jan 2011 10:04:10 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Borislav Petkov <bp@amd64.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 08/12] perf: Carve out mmap helpers for general use
-Message-ID: <20110124090410.GA8924@aftab>
-References: <1295622575-18607-1-git-send-email-bp@amd64.org>
- <1295622575-18607-9-git-send-email-bp@amd64.org>
- <20110121172937.GC15066@ghostprotocols.net>
+	Mon, 24 Jan 2011 04:02:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110121172937.GC15066@ghostprotocols.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110122024229.GB2870@nowhere>
+References: <AANLkTinNoYbDe5huY4_Q6YidbWxqXqVWbVP2_7o-=P3W@mail.gmail.com>
+	<20110120161101.GA17218@nowhere>
+	<AANLkTinhX6UwQA0HFhuu5=jbq84woVhqtahuzA5hEo2o@mail.gmail.com>
+	<20110121164404.GA2520@nowhere>
+	<AANLkTi=Tx3DYczwf9U=QS9XGs6C8sjKwVZr+RLuo781V@mail.gmail.com>
+	<20110122024229.GB2870@nowhere>
+Date: Mon, 24 Jan 2011 10:02:49 +0100
+Message-ID: <AANLkTi=UX=oyXZnLFB4s7FD_SsP5dA=E=WsyQLaTO-aX@mail.gmail.com>
+Subject: Re: [PATCH V2] tracing, perf : add cpu hotplug trace events
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
+        rostedt@goodmis.org, amit.kucheria@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 21, 2011 at 12:29:37PM -0500, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Jan 21, 2011 at 04:09:31PM +0100, Borislav Petkov escreveu:
-> > From: Borislav Petkov <borislav.petkov@amd.com>
-> > 
-> > Export the mmap_read* helpers into tools/lib/perf/mmap.[ch]
-> 
-> Borislav, can you take a look at:
-> 
-> http://git.kernel.org/?p=linux/kernel/git/acme/linux-2.6.git;a=shortlog;h=refs/heads/perf/core
-> 
-> More specifically take a look at the function test__basic_mmap in:
-> 
-> http://git.kernel.org/?p=linux/kernel/git/acme/linux-2.6.git;a=blob;f=tools/perf/builtin-test.c;h=f03798a298b00b328a11f06ce20cc352d123ec28;hb=refs/heads/perf/core
-> 
-> 434 /*
-> 435  * This test will generate random numbers of calls to some getpid syscalls,
-> 436  * then establish an mmap for a group of events that are created to monitor
-> 437  * the syscalls.
-> 438  *
-> 439  * It will receive the events, using mmap, use its PERF_SAMPLE_ID generated
-> 440  * sample.id field to map back to its respective perf_evsel instance.
-> 441  *
-> 442  * Then it checks if the number of syscalls reported as perf events by
-> 443  * the kernel corresponds to the number of syscalls made.
-> 444  */
+On 22 January 2011 03:42, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Fri, Jan 21, 2011 at 06:41:58PM +0100, Vincent Guittot wrote:
+>> On 21 January 2011 17:44, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> > On Fri, Jan 21, 2011 at 09:43:18AM +0100, Vincent Guittot wrote:
+>> >> On 20 January 2011 17:11, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>> >> > On Thu, Jan 20, 2011 at 09:25:54AM +0100, Vincent Guittot wrote:
+>> >> >> Please find below a new proposal for adding trace events for cpu hotplug.
+>> >> >> The goal is to measure the latency of each part (kernel, architecture)
+>> >> >> and also to trace the cpu hotplug activity with other power events. I
+>> >> >> have tested these traces events on an arm platform.
+>> >> >>
+>> >> >> Changes since previous version:
+>> >> >> -Use cpu_hotplug for trace name
+>> >> >> -Define traces for kernel core and arch parts only
+>> >> >> -Use DECLARE_EVENT_CLASS and DEFINE_EVENT
+>> >> >> -Use proper indentation
+>> >> >>
+>> >> >> Subject: [PATCH] cpu hotplug tracepoint
+>> >> >>
+>> >> >> this patch adds new events for cpu hotplug tracing
+>> >> >>  * plug/unplug sequence
+>> >> >>  * core and architecture latency measurements
+>> >> >>
+>> >> >> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.com>
+>> >> >> ---
+>> >> >>  include/trace/events/cpu_hotplug.h |  117 ++++++++++++++++++++++++++++++++++++
+>> >> >
+>> >> > Note we can't apply new tracepoints if they are not inserted in the code.
+>> >>
+>> >> I agree, i just want to have 1st feedbacks on the tracepoint interface
+>> >> before providing a patch which inserts the trace in the code.
+>> >>
+>> >> >
+>> >> >> +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_wait_die_start,
+>> >> >> +
+>> >> >> +     TP_PROTO(unsigned int cpuid),
+>> >> >> +
+>> >> >> +     TP_ARGS(cpuid)
+>> >> >> +);
+>> >> >> +
+>> >> >> +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_wait_die_end,
+>> >> >> +
+>> >> >> +     TP_PROTO(unsigned int cpuid),
+>> >> >> +
+>> >> >> +     TP_ARGS(cpuid)
+>> >> >> +);
+>> >> >
+>> >> > What is wait die, compared to die for example?
+>> >> >
+>> >>
+>> >> The arch_wait_die is used to trace the process which waits for the cpu
+>> >> to die (__cpu_die) and the arch_die is used to trace when the cpu dies
+>> >> (cpu_die)
+>> >
+>> > I still can't find the difference.
+>> >
+>> > Having:
+>> >
+>> > trace_cpu_hotplug_arch_die_start(cpu)
+>> > __cpu_die();
+>> > trace_cpu_hotplug_arch_die_end(cpu)
+>> >
+>> > Is not enough to get both the information that a cpu dies
+>> > and the time took to do so?
+>> >
+>>
+>> it's quite interesting to trace the cpu_die function because the cpu
+>> really dies in this one.
+>
+> Note in case of success, you have barely the same time between die and
+> wait_die, the difference will reside in some completion wait/polling,
+> noise, mostly. Probably most of the time unnoticeable and irrelevant.
+>
 
-Ok, I see at least one problem with my patch - you've reworked the
-mmaping functionality in evlist.c/evsel.c and I should use it too, I
-guess. For that, I think you'd want me to apply my stuff ontop of your
-perf/core branch, right?
+OK, tracing only __cpu_die should be enough
 
-Am I missing something else?
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+> Plus if you opt for this scheme, you need to put your die hook into
+> every architectures, while otherwise a simple trace_cpu_die_start()
+> trace_cpu_die_stop() pair around __cpu_die() call in the generic code
+> is enough.
+>
+>> The __cpu_die function can't return if the
+>> cpu fails to die in the very last step and then wake up. But this
+>> could be detected with some cpu_die traces.
+>>
+>>
+>> for a normal use case we have something like :
+>> cpu 0 enters __cpu_die
+>> cpu 1 enters cpu_die
+>> cpu1 acks that it is going to died
+>> cpu0 returns from __cpu_die
+>>
+>> if the cpu 1 fails to die at the very last step, we could have:
+>> cpu 0 enters __cpu_die
+>> cpu 1 enters cpu_idle --> cpu_die
+>> cpu1 leaves cpu_die because of some issues and comes back into cpu_idle.
+>> cpu0 returns from __cpu_die after a timeout or an error ack
+>
+> If it fails in the hardware level, you'll certainly notice in your
+> power profiling because a CPU is not supposed to take seconds to
+> die. Especially with a such visual tool like pytimechart, it will
+> be obvious.
+>
+> For the details, that's something that must be found in syslogs and
+> that's it.
+>
+> I don't think it's a good idea to handle such buggy and unexpected case at
+> the tracepoint level. You don't want to profile bugs, you want to debug them.
+> So it doesn't belong to this space IMHO.
+>
+>> Then, cpu_die traces can be used with power traces for profiling the
+>> cpu power state. May be, the power.h trace file is a better place for
+>> the cpu_die traces ?
+>
+> Hmm, this should probably stay inside the cpu hotplug tracepoint family,
+> this is where people will seek them in the first place.
+>
