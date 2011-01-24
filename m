@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751989Ab1AXW3o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 17:29:44 -0500
-Received: from cantor.suse.de ([195.135.220.2]:47626 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751339Ab1AXW3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 17:29:43 -0500
-From: Thomas Renninger <trenn@suse.de>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: Perf ABI versioning
-Date: Mon, 24 Jan 2011 23:30:01 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5-5.99.12.5343e5f-desktop; KDE/4.4.4; x86_64; ; )
-Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        tardyp@gmail.com, jean.pihet@newoldbits.com,
-        linux-perf-users@vger.kernel.org, mathieu.desnoyers@efficios.com,
-        linux-trace-users@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <201101241704.01021.trenn@suse.de> <201101242249.14471.trenn@suse.de> <20110124215755.GE6367@ghostprotocols.net>
-In-Reply-To: <20110124215755.GE6367@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101242330.03008.trenn@suse.de>
+	id S1752478Ab1AXWbI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 17:31:08 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:57422
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751527Ab1AXWbH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 17:31:07 -0500
+Date: Mon, 24 Jan 2011 14:31:41 -0800 (PST)
+Message-Id: <20110124.143141.104045281.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: runningdoglackey@yahoo.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: Problems with /proc/net/tcp6 - possible bug - ipv6
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1295732444.2651.68.camel@edumazet-laptop>
+References: <115440.16148.qm@web63902.mail.re1.yahoo.com>
+	<1295731235.2651.66.camel@edumazet-laptop>
+	<1295732444.2651.68.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 24 January 2011 22:57:55 Arnaldo Carvalho de Melo wrote:
-> Em Mon, Jan 24, 2011 at 10:49:13PM +0100, Thomas Renninger escreveu:
-... 
-> Using the /format file hashed as peterz said is elegant, fine grained
-> content based ABI number :-)
-Ok thanks, I should have had a closer look at the binary format.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Sat, 22 Jan 2011 22:40:44 +0100
 
-It may make sense at some time to provide a library so that other tools
-can make use of the most convenient functions in tools/perf/utils/*
-as well?
+> Le samedi 22 janvier 2011 à 22:20 +0100, Eric Dumazet a écrit :
+>> Le samedi 22 janvier 2011 à 11:42 -0800, PK a écrit :
+>> > Eric Dumazet wrote:
+>> > > 
+>> > > I had some incidents, after hours of testing...
+>> > >
+>> > > After following patch, I could not reproduce it.
+>> > 
+>> > 
+>> > Looks like that patch solved the /proc/net/tcp6 problem.  The causal commit was 
+>> > the one you identified... confirmed with bisect.
+>> > 
+>> > These warnings show up when I run the script (or I presume any tcp6 connection 
+>> > flooder) with /proc/sys/net/tcp/ipv4/tcp_tw_recycle enabled.  There's textual 
+>> > corruption of the traces a lot of the time.  Here's a sample trace that doesn't 
+>> > appear to be corrupt.  All the warnings I've seen are from route.c:209, and I 
+>> > don't see how that would cause memory corruption.
+>> 
+>> Thats a different isse, already reported, under investigation.
+>> 
+>> David did some changes recently
+>> 
+>> http://comments.gmane.org/gmane.linux.network/179874
+>> 
+>> 
+>> 
+> 
+> In my testings, I even have crashes in cleanup_once() if I
+> enable /proc/sys/net/ipv4/tcp_tw_recycle 
 
-I'll have a look at the powertop perf implementations I wanted to
-look at anyway and try to understand the stuff a bit better.
-
-Thanks,
-
-       Thomas
+I'm looking into this, thanks guys.
