@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796Ab1AXRvA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 12:51:00 -0500
-Received: from stinky.trash.net ([213.144.137.162]:34767 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753530Ab1AXRu7 (ORCPT
+	id S1753765Ab1AXRzH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 12:55:07 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:48585 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753354Ab1AXRzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 12:50:59 -0500
-Message-ID: <4D3DBBFE.7070701@trash.net>
-Date: Mon, 24 Jan 2011 18:50:54 +0100
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	Mon, 24 Jan 2011 12:55:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=TNek4j1w72FNNKQzUKErWmLHxdc58l3+piuvapfXhDqkOdxR7tcPc3jk53DyVUvB2/
+         s46hB1ce5jILMXhdj1yu7FXgyAmJvwinpmozCmafK6H+2Ux0i9WlJrICOWgJ7Lke0UYE
+         F5xB0n3w439QMRI4Tink9j72fQEwwLvlYcxQ4=
+Date: Mon, 24 Jan 2011 09:54:57 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org
+Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils ?
+Message-ID: <20110124175456.GA17855@core.coreip.homeip.net>
+References: <4D3C5F73.2050408@teksavvy.com>
 MIME-Version: 1.0
-To: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>,
-        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        NetDev <netdev@vger.kernel.org>
-Subject: Re: netfilter: marking IPv6 packets sends them to the wrong interface
-References: <20110123122108.GA30305@darkside.kls.lan> <4D3D82D1.6050305@trash.net> <20110124143518.GA2616@darkside.kls.lan> <4D3DA48A.2020605@trash.net> <20110124170213.GB2616@darkside.kls.lan>
-In-Reply-To: <20110124170213.GB2616@darkside.kls.lan>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D3C5F73.2050408@teksavvy.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 24.01.2011 18:02, schrieb Mario 'BitKoenig' Holbe:
-> On Mon, Jan 24, 2011 at 05:10:50PM +0100, Patrick McHardy wrote:
->>> Yes, disabling the ip6_route_me_harder() call in ip6t_mangle_out()
->>> results in the advertisements being transmitted on the correct
->>> interfaces
->> Thanks. The problem appears to be that ip6_route_me_harder()
->> only uses the socket's oif for the route lookup when the
->> socket is bound to an interface, but radvd uses IPV6_PKTINFO
->> to specify the outgoing interface.
->>
->> I guess netfilter shouldn't be overriding IPV6_PKTINFO, but
->> we unfortunately have neither an indication of this nor the
->> original route lookup keys available at the time the packet
->> is rerouted.
+Hi Mark,
+
+On Sun, Jan 23, 2011 at 12:03:47PM -0500, Mark Lord wrote:
+> As of the 2.6.36 kernel, the userspace commands lsinput and input-kbd
+> no longer work.  And if I grab newer/patched versions of those from the latest
+> Ubuntu 10.10, then those newer/patched versions do not work with kernels
+> *before* 2.6.36.
 > 
-> Mh, I'm not sure, but I guess an indication of netfilter not overriding
-> IPV6_PKTINFO could be the fact that the source address does not
-> change...
-
-No, ip6_route_me_harder() only attaches a new route to the packet,
-the packets contents are not changed.
-
-> From my 1st mail:
-> | # ip6tables -t mangle -A OUTPUT -o eth0 -j MARK --set-mark 1
-> | # /etc/init.d/radvd start
-> | -> eth0: <no traffic>
-> | -> eth1: fe80::2a0:c9ff:fee6:90ce > ff02::1: prefix 2001:6f8:90c:10::/64
-> | -> eth1: fe80::2d0:b7ff:fe06:6b36 > ff02::1: prefix 2001:6f8:90c:12::/64
+> At first glance, this looks like a visible regression.
+> Is there a version of input-utils that works with both
+> old and new kernels ?
 > 
-> fe80::2d0:b7ff:fe06:6b36 is the link-local address of eth0 set by radvd
-> in IPV6_PKTINFO as well. This, of course, is no guarantee for
-> ipi6_ifindex not being changed, but I believe if something would have
-> changed it, it would also have changed ipi6_addr.
 
-No, what is happening is that radvd sends the packet with a specified
-ifindex using IPV6_PKTINFO. The mangle table notices that the mark
-changes and calls ip6_route_me_harder(), which performs a new route
-lookup without taking the specified oif into account. It therefore
-chooses the first of your two routes and sends the packet out eth1.
+The event protocol number was updated to reflect support of large
+scancodes, unfortunately some of the utilities expected exact version
+and refuse to work with updated one. Ubuntu's fix was simply recompile
+the code using the new define, this make it work on newer kernels but of
+course broke the old ones...
+
+-- 
+Dmitry
