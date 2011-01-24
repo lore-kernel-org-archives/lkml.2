@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792Ab1AXHgT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 02:36:19 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62812 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752537Ab1AXHgN (ORCPT
+	id S1752511Ab1AXHig (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 02:38:36 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52835 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751761Ab1AXHie convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 02:36:13 -0500
+	Mon, 24 Jan 2011 02:38:34 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=SQIzUC3L2fOpFlctm6ebORBoL81qva1KCZ0PiRi20N54wSACEGt3qIzfyMeoXCP+Nn
-         xmNlkvjTdy2x9IeKZ5Fxox4lkhexrBbJw8aovIhwNzs7NU2WRcqp15iJWLa8kyFyrlkR
-         2tin1cFnb0nAoXaEeMPeHipr5MONCtIOSQ17o=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=k82kfvLvm9yUYNNf7sBqScEo+JqodQrvx5SmsFM1XXMgMbNc+y3e5y9YgoZnmNz3BG
+         G+cDUkKV4KpK7nQcmYHt2ZEj/FrAZZRAF0aMqhv426wkWyioYK9wujqGNvq80Deil+n8
+         z6JcQXsCwgKmdyFqQW5oZbNMlxGMClaiw9Hkk=
+MIME-Version: 1.0
+In-Reply-To: <4D396AAF.6080603@mvista.com>
+References: <1295597961-7565-1-git-send-email-dengcheng.zhu@gmail.com>
+	<1295597961-7565-4-git-send-email-dengcheng.zhu@gmail.com>
+	<4D396AAF.6080603@mvista.com>
+Date: Mon, 24 Jan 2011 15:38:34 +0800
+Message-ID: <AANLkTin34=STRp+xstbvwD5W2scEfZj5Fjf0L7F=oo4j@mail.gmail.com>
+Subject: Re: [PATCH v4 3/5] MIPS/Perf-events: Fix event check in validate_event()
 From: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-To: ralf@linux-mips.org, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
-        will.deacon@arm.com
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        wuzhangjin@gmail.com, paulus@samba.org, mingo@elte.hu, acme@redhat.com,
-        dengcheng.zhu@gmail.com, matt@console-pimps.org, sshtylyov@mvista.com,
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: ralf@linux-mips.org, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
+        will.deacon@arm.com, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, wuzhangjin@gmail.com, paulus@samba.org,
+        mingo@elte.hu, acme@redhat.com, matt@console-pimps.org,
         ddaney@caviumnetworks.com
-Subject: [RESEND PATCH v4 5/5] MIPS/Perf-events: Use unsigned delta for right shift in event update
-Date: Mon, 24 Jan 2011 15:35:49 +0800
-Message-Id: <1295854549-7928-6-git-send-email-dengcheng.zhu@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1295854549-7928-1-git-send-email-dengcheng.zhu@gmail.com>
-References: <1295854549-7928-1-git-send-email-dengcheng.zhu@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Leverage the commit for ARM by Will Deacon:
+Thanks. The patch set was resent.
 
-- 446a5a8b1eb91a6990e5c8fe29f14e7a95b69132
-    ARM: 6205/1: perf: ensure counter delta is treated as unsigned
 
-    Hardware performance counters on ARM are 32-bits wide but atomic64_t
-    variables are used to represent counter data in the hw_perf_event structure.
+Deng-Cheng
 
-    The armpmu_event_update function right-shifts a signed 64-bit delta variable
-    and adds the result to the event count. This can lead to shifting in sign-bits
-    if the MSB of the 32-bit counter value is set. This results in perf output
-    such as:
-
-     Performance counter stats for 'sleep 20':
-
-     18446744073460670464  cycles             <-- 0xFFFFFFFFF12A6000
-            7783773  instructions             #      0.000 IPC
-                465  context-switches
-                161  page-faults
-            1172393  branches
-
-       20.154242147  seconds time elapsed
-
-    This patch ensures that the delta value is treated as unsigned so that the
-    right shift sets the upper bits to zero.
-
-Acked-by: Will Deacon <will.deacon@arm.com>
-Acked-by: David Daney <ddaney@caviumnetworks.com>
-Signed-off-by: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
----
-Changes:
-v4 - v3:
-o None
-v3 - v2:
-o Keep all mentioned commits in the form of number + title + original
-summary + (MIPS specific info when needed).
-v2 - v1:
-o None
-
- arch/mips/kernel/perf_event.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/mips/kernel/perf_event.c b/arch/mips/kernel/perf_event.c
-index 8f7d2f8..a824485 100644
---- a/arch/mips/kernel/perf_event.c
-+++ b/arch/mips/kernel/perf_event.c
-@@ -169,7 +169,7 @@ static void mipspmu_event_update(struct perf_event *event,
- 	unsigned long flags;
- 	int shift = 64 - TOTAL_BITS;
- 	s64 prev_raw_count, new_raw_count;
--	s64 delta;
-+	u64 delta;
- 
- again:
- 	prev_raw_count = local64_read(&hwc->prev_count);
--- 
-1.7.1
-
+2011/1/21 Sergei Shtylyov <sshtylyov@mvista.com>:
+> Hello.
+>
+> On 21-01-2011 11:19, Deng-Cheng Zhu wrote:
+>
+>> Ignore events that are in off/error state or belong to a different PMU.
+>
+>> This patch originates from the following commit for ARM by Will Deacon:
+>
+>> - 65b4711ff513767341aa1915c822de6ec0de65cb
+>>     ARM: 6352/1: perf: fix event validation
+>
+>>     The validate_event function in the ARM perf events backend has the
+>>     following problems:
+>
+>>     1.) Events that are disabled count towards the cost.
+>>     2.) Events associated with other PMUs [for example, software events or
+>>         breakpoints] do not count towards the cost, but do fail
+>> validation,
+>>         causing the group to fail.
+>
+>>     This patch changes validate_event so that it ignores events in the
+>>     PERF_EVENT_STATE_OFF state or that are scheduled for other PMUs.
+>
+>> Changes:
+>> v4 - v3:
+>> o None
+>> v3 - v2:
+>> o Keep all mentioned commits in the form of number + title + original
+>> summary + (MIPS specific info when needed).
+>> v2 - v1:
+>> o Corrected the return value of the event check in validate_event().
+>
+>   The patch changes should follow the --- tearline, not precede it.
+>
+>> Acked-by: Will Deacon<will.deacon@arm.com>
+>> Acked-by: David Daney<ddaney@caviumnetworks.com>
+>> Signed-off-by: Deng-Cheng Zhu<dengcheng.zhu@gmail.com>
+>> ---
+>
+> WBR, Sergei
+>
