@@ -1,36 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752756Ab1AXMBh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 07:01:37 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52346 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752497Ab1AXMBg (ORCPT
+	id S1752765Ab1AXMHW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 07:07:22 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:65517 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752566Ab1AXMHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 07:01:36 -0500
-Date: Mon, 24 Jan 2011 12:01:34 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, "for 2.6.37" <stable@kernel.org>
-Subject: Re: [PATCH] ASoC: Fix codec device id format used by some dai_links
-Message-ID: <20110124120134.GB29925@opensource.wolfsonmicro.com>
-References: <1295735888-25527-1-git-send-email-lars@metafoo.de>
- <20110122233309.GA22799@opensource.wolfsonmicro.com>
- <4D3B7361.3030800@metafoo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D3B7361.3030800@metafoo.de>
-X-Cookie: Keep it short for pithy sake.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 24 Jan 2011 07:07:20 -0500
+From: Bernhard Walle <walle@corscience.de>
+To: ben-linux@fluff.org
+Cc: ddaney@caviumnetworks.com, ralf@linux-mips.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] i2c: octeon: Make the timeout 1*HZ instead of 1 jiffy
+Date: Mon, 24 Jan 2011 13:05:41 +0100
+Message-Id: <1295870741-19970-1-git-send-email-walle@corscience.de>
+X-Mailer: git-send-email 1.7.1
+X-Provags-ID: V02:K0:PtmzdNyzNYZ69YMN0wGE44jl9n7EakxnrGANbj2LlAj
+ FidEfaba2dMxsTG3k9Q50ZkpcZ3SY2WQT0GYGsMTG1JovBFBBn
+ OV4qyCLOSPkwgzEo2Xi1D7MiLhjp9GQc6x+xW+HflzlifCzL+A
+ DA146Q56YKxtdBXp452jF4j/vnltYsRU0+yANU0rz/ldLJEwKO
+ 8FtRwfHG1LXciFf6SeUew==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 23, 2011 at 01:16:33AM +0100, Lars-Peter Clausen wrote:
+Since the timeout in the struct i2c_adapter use jiffies as unit and a
+timeout should be independent of CONFIG_HZ and most drivers that specify
+a timeout here use just HZ, change the i2c-octeon driver to use 1*HZ
+(which is a second), too.
 
-> I could resend the patch with those three cases which were definitely wrong in the
-> current patch fixed to use the correct SPI or platform id. Or I could just send the
-> fix for the neo1973 and neo1973_gta02 boards. Which one do you prefer?
+Signed-off-by: Bernhard Walle <walle@corscience.de>
+---
+ drivers/i2c/busses/i2c-octeon.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Please submit just the stuff you know is a good fix.
+diff --git a/drivers/i2c/busses/i2c-octeon.c b/drivers/i2c/busses/i2c-octeon.c
+index 0fe1102..537a4ee 100644
+--- a/drivers/i2c/busses/i2c-octeon.c
++++ b/drivers/i2c/busses/i2c-octeon.c
+@@ -460,7 +460,7 @@ static struct i2c_adapter octeon_i2c_ops = {
+ 	.owner = THIS_MODULE,
+ 	.name = "OCTEON adapter",
+ 	.algo = &octeon_i2c_algo,
+-	.timeout = 2,
++	.timeout = HZ,
+ };
+ 
+ /**
+-- 
+1.7.1
+
