@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199Ab1AXDuh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 22:50:37 -0500
-Received: from core.signal11.us ([64.251.29.136]:34904 "EHLO core.signal11.us"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753076Ab1AXDuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 22:50:35 -0500
-From: Alan Ott <alan@signal11.us>
-To: Randy Dunlap <rdunlap@xenotime.net>, Jiri Kosina <jkosina@suse.cz>,
-        Alan Ott <alan@signal11.us>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        greg@kroah.com, stern@rowland.harvard.edu
-Cc: Alan Ott <alan@signal11.us>
-Subject: [PATCH v4 0/1] HID: Report Descriptor in Sysfs
-Date: Sun, 23 Jan 2011 22:50:17 -0500
-Message-Id: <1295841018-8561-1-git-send-email-alan@signal11.us>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <20110123225935.GB12488@kroah.com>
-References: <20110123225935.GB12488@kroah.com>
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Sun Jan 23 22:50:35 2011
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 4d3cf70b34925665814101
+	id S1753203Ab1AXD5g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 22:57:36 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:5981 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753019Ab1AXD5f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 22:57:35 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApMEAD+FPE15LN5mgWdsb2JhbACkZRYBARYiJLsDDYVDBA
+Date: Mon, 24 Jan 2011 14:57:17 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: linux-kernel@vger.kernel.org, hch@infradead.org
+Subject: Re: [PATCH 07/10] fs: make generic file read/write functions plug
+Message-ID: <20110124035717.GC16267@dastard>
+References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>
+ <1295659049-2688-8-git-send-email-jaxboe@fusionio.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295659049-2688-8-git-send-email-jaxboe@fusionio.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is version 4 of the patch, with Documentation as requested by Greg KH,
-a version number fixed in the documentation, and sent to the right people
-this time. (Sorry for the noise; I forgot to re-run get_maintainer.pl after
-I added the docs for v3).
+On Sat, Jan 22, 2011 at 01:17:26AM +0000, Jens Axboe wrote:
+> Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+> ---
+>  mm/filemap.c |    7 +++++++
+>  1 files changed, 7 insertions(+), 0 deletions(-)
+> 
+.....
+> @@ -2432,11 +2436,13 @@ ssize_t generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+>  {
+>  	struct file *file = iocb->ki_filp;
+>  	struct inode *inode = file->f_mapping->host;
+> +	struct blk_plug plug;
+>  	ssize_t ret;
+>  
+>  	BUG_ON(iocb->ki_pos != pos);
+>  
+>  	mutex_lock(&inode->i_mutex);
+> +	blk_start_plug(&plug);
+>  	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
+>  	mutex_unlock(&inode->i_mutex);
+>  
+> @@ -2447,6 +2453,7 @@ ssize_t generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+>  		if (err < 0 && ret > 0)
+>  			ret = err;
+>  	}
+> +	blk_finish_plug(&plug);
+>  	return ret;
+>  }
+>  EXPORT_SYMBOL(generic_file_aio_write);
 
-Original email follows:
+Why do you want to plug all writes? For non-synchronous buffered
+writes we won't be doing any IO, so why woul dwe want to plug and
+unplug in that case? Shouldn't the plug/unplug be places in
+.writepage for the buffered writeback case (which would handle sync
+writes, too)?
 
-So I'd like to have access to the HID report descriptor in a sysfs entry, so
-I can read it without opening the device.  hid-core seemed like the place to
-put it.
+Also, what is the impact of not plugging here? You change
+generic_file_aio_write, but filesystems like XFS supply their own
+.aio_write method and hence woul dneed some kind of change, too?
 
-Using the /sys/class links, for hidraw devices, this puts a new file,
-report_descriptor in the directory:
-	/sys/class/hidraw/hidraw0/device/
+Cheers,
 
-For my USB device (for example), the new file is in:
-	/sys/bus/usb/devices/1-5.3:1.0/0003:046D:C216.0001/
-
-For my Bluetooth device, the new file is in:
-	/sys/class/bluetooth/hci0/hci0:11/0005:054C:0268.0002/
-
-I'm not super confident that these file locations are the best place, but I
-made a best guess so that it could be discussed.  The current location is
-where the hid-core stuff lives.  Is there a reason these directories are
-named bus:vendor:product:id (instead of hid-core or something similar)?  Is
-there a better way to do this?
-
-Alan.
-
-Alan Ott (1):
-  hid: Add HID Report Descriptor to sysfs.
-
- Documentation/ABI/testing/sysfs-driver-hid |   10 ++++++++
- drivers/hid/hid-core.c                     |   33 ++++++++++++++++++++++++++++
- 2 files changed, 43 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-driver-hid
-
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
