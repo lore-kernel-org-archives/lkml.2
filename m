@@ -1,164 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751669Ab1AXJ0n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 04:26:43 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:14453 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751107Ab1AXJ0l convert rfc822-to-8bit (ORCPT
+	id S1752105Ab1AXJ1f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 04:27:35 -0500
+Received: from lider.pardus.org.tr ([193.140.100.216]:60786 "EHLO
+	lider.pardus.org.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751598Ab1AXJ1d convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 04:26:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=L2ZPauDHQt68dn4Oh841+N9ychvZCzHUIXIWdyh9tdDPGOhTvjX7pqVSXwZFIMtxf7
-         kz5c2RDGN1SI6rRoU3EA==
+	Mon, 24 Jan 2011 04:27:33 -0500
+From: Ozan =?utf-8?q?=C3=87a=C4=9Flayan?= <ozan@pardus.org.tr>
+Organization: TUBITAK/UEKAE
+To: Lionel Debroux <lionel_debroux@yahoo.fr>
+Subject: Re: Common boot/shutdown issues with the latest 2.6.37 (Mostly Asus laptops)
+Date: Mon, 24 Jan 2011 11:21:50 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.31.14-132-pae; KDE/4.4.5; i686; ; )
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org, rjw@sisk.pl,
+        colin.king@canonical.com
+References: <179044.7274.qm@web28416.mail.ukl.yahoo.com>
+In-Reply-To: <179044.7274.qm@web28416.mail.ukl.yahoo.com>
 MIME-Version: 1.0
-In-Reply-To: <20110124090708.GA16202@n2100.arm.linux.org.uk>
-References: <1295834493-5019-1-git-send-email-ccross@android.com>
-	<1295834493-5019-14-git-send-email-ccross@android.com>
-	<20110124090708.GA16202@n2100.arm.linux.org.uk>
-Date: Mon, 24 Jan 2011 01:26:39 -0800
-X-Google-Sender-Auth: XHieDVyKwLqUxnz5ZQBJL-3vBbE
-Message-ID: <AANLkTimEdkMsv+NERv6E6AyBcAKv9szJBsJYHmFBDnbS@mail.gmail.com>
-Subject: Re: [PATCH v2 13/28] ARM: tegra: Add suspend and hotplug support
-From: Colin Cross <ccross@android.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-tegra@vger.kernel.org, konkers@android.com,
-        Gary King <gking@nvidia.com>, linux-kernel@vger.kernel.org,
-        olof@lixom.net, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Message-Id: <201101241121.50658.ozan@pardus.org.tr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24, 2011 at 1:07 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Sun, Jan 23, 2011 at 06:01:18PM -0800, Colin Cross wrote:
->> Tegra supports three low power modes that involve powering down the CPU.
->
-> It is a common misconception that on CPU hot-unplug you need to save the
-> entire universe of the CPU going down.
->
-> When CPUs are hot-plugged, they reinitialize, which includes resetting
-> most of the CPU state.
+Pazartesi 24 Ocak 2011 gÃ¼nÃ¼ (saat 11:04:35) Lionel Debroux ÅŸunlarÄ± yazmÄ±ÅŸtÄ±:
+> 
+> --- En date de : Dim 23.1.11, Ozan Ã‡aÄŸlayan <ozan@pardus.org.tr>
+> a Ã©crit :
+> 
+> > De: Ozan Ã‡aÄŸlayan <ozan@pardus.org.tr>
+> > Objet: Re: Common boot/shutdown issues with the latest 2.6.37 (Mostly Asus laptops)
+> > Ã€: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org, rjw@sisk.pl, colin.king@canonical.com
+> > Date: Dimanche 23 janvier 2011, 21h24
+> > On 23.01.2011 16:28, Ozan Ã‡aÄŸlayan
+> > wrote:
+> > > Hi,
+> > >
+> > > I'm getting a lot of bug reports about hanging
+> > boot/shutdowns on these
+> > > days.
+> > >
+> > > Most of the affected hardware are ASUS laptops. The
+> > problem is that I
+> > > don't have access to any of those problematic laptops
+> > and the users are
+> > > not able at all to debug/bisect what is going on.
+> > However, I have
+> > > collected dmesgs of good/bad boots, acpidump, etc.
+> > >
+> > > Here are the current status:
+> > >
+> > > "Asus F50SV does not boot unless lapic is passed"
+> > > https://bugzilla.kernel.org/show_bug.cgi?id=26502
+> > >
+> > > "Regression between 2.6.35-020635-rc1 and
+> > 2.6.35-020635 breaks acpi
+> > > support on Asus X71 laptop"
+> > > https://bugs.launchpad.net/ubuntu/+source/linux-meta/+bug/689796
+> > >
+> > > "Asus N61JQ hangs at shutdown unless lapic is passed"
+> > > (Not reported upstream yet, I've only downstream bug
+> > report which is
+> > > Turkish)
+> > > http://bugs.pardus.org.tr/show_bug.cgi?id=15969
+> > >
+> > > "Asus X61S does not boot unless acpi=off is given"
+> > > (Not reported upstream yet, I've only downstream bug
+> > report which is
+> > > Turkish)
+> > > http://bugs.pardus.org.tr/show_bug.cgi?id=16322
+> > > (I've told the reporter to try with nolapic, it will
+> > probably fix the
+> > > issue but until confirmed acpi=off is the only
+> > solution. 2.6.36 was fine)
+> > >
+> > > I'll post more bugs in here as I've found them.
+> > 
+> > (CC'ing: Colin King from Canonical)
+> > 
+> > Another one for Asus N90Sc which was booting fine with
+> > 10.04
+> > but fails to boot with 10.10:
+> >   https://bugs.launchpad.net/ubuntu/+source/linux/+bug/653626
+> > 
+> > Seen that the issue mostly happens on Asus boxes, it's
+> > possible
+> > that their firmwares are buggy but they were
+> > booting/shutting down
+> > correctly until a recent change in kernel.
+> My ASUS F3Jv-AS022P (Core 2 Duo T7200, 2 GB RAM, BIOS version
+> 207) has trouble (read: it reboots within one second of the
+> vmlinuz being loaded) with recent kernels as well.
+> 
+> While I haven't performed a full bisection yet (which is why 
+> I didn't try reporting the problem until I saw this thread),
+> I have narrowed down the problem by compiling several tagged
+> versions:
+> * 2.6.35 series: .4 and .6 boot successfully, .8 and .10 fail;
+> * 2.6.36 series: -rc2 boots successfully, .1 fails;
+> * 2.6.37 series: -rc4 fails.
 
-The hotplug code path on Tegra currently shares the same path as cpu
-idle, because the CPU ends up in the same state for both.  This
-version of the patch ensures that when the cpu is brought back online,
-it goes through the normal reset vector.  In hotplug, the state ends
-up getting saved on the way down, but not used on the way back up.
+So it's probably a commit to the mainline tree which was picked by 2.6.35
+maintainer to the stable tree (probably it was CC'ed) cause this.
 
-> There is no point saving the user register state, svc register state,
-> abort register state, interrupt register state, undefined mode register
-> state, TTB base registers, TTB control register, memory type remapping
-> registers nor the context register.  These are all reinitialized when
-> the CPU is brought up again.
+Does passing nolapic or acpi=off cures the issue? Maybe rebooting immediately while booting
+is a sign of another problem, I don't know.
 
-The register state is fixed in this version of the patch by calling
-cpu_init() in the resume and idle code.  I'll look again if there is a
-better way of handling the rest of the registers, but this code is
-mostly needed for the suspend and idle cases where the normal boot
-process is not used.
-
-> VFP state should already be saved - when a CPU is hot-unplugged, we can't
-> leave a threads VFP register set stored in that hardware as it would
-> become inaccessible, so there's no point saving VFP state.  Recently
-> code was added to invalidate the software VFP state for a CPU being
-> hot-unplugged and reinitialize the VFP hardware on CPU hotplug.
-
-Despite what the patch description says, this version of the patch
-does not save VFP state any more.  I will update the description.  It
-looks like if CONFIG_SMP=y, the VFP code saves the VFP context on
-every task switch, so nothing is needed during cpu idle.  However, if
-CONFIG_SMP=n, I think some way to save the VFP context is needed.
-
-> We also have the necessary hooks into the PM code to deal with VFP state
-> saving/restore on PM suspend/resume.
->
-> The breakpoint/watchdog stuff _should_ be handled by the breakpoint/
-> watchdog code, not by each individual platform.  Please can you work
-> with Will Deacon if this is not the case to ensure that the breakpoint/
-> watchdog code can handle CPU hotplug.
-
-This version of the patch does not save breakpoint/watchdogs, but
-something will need to save them during idle when the cpu is powered
-down.
-
-> Lastly, L2 cache controller should have suspend/resume support added.
-
-Patch 4 in this series improves the L2 controller's PM support, and
-this patch uses l2x0_disable, l2x0_enable, and l2x0_init.
-
-> We _really_ need to stop having platforms manually saving lots of CPU
-> state for suspend/hot unplug.
->
-> That should reduce the amount of state you're saving down to something
-> more manageable.
->
->> +
->> +#ifdef CONFIG_HOTPLUG_CPU
->> +
->> +int platform_cpu_kill(unsigned int cpu)
->> +{
->> +     unsigned int reg;
->> +
->> +     do {
->> +             reg = readl(CLK_RST_CONTROLLER_RST_CPU_CMPLX_SET);
->> +             cpu_relax();
->> +     } while (!(reg & (1<<cpu)));
->> +
->> +     spin_lock(&boot_lock);
->> +     reg = readl(CLK_RST_CONTROLLER_CLK_CPU_CMPLX);
->> +     writel(reg | (1<<(8+cpu)), CLK_RST_CONTROLLER_CLK_CPU_CMPLX);
->> +     spin_unlock(&boot_lock);
->> +
->> +     return 1;
->> +}
->> +
->> +void platform_cpu_die(unsigned int cpu)
->> +{
->> +#ifdef DEBUG
->> +     unsigned int this_cpu = hard_smp_processor_id();
->> +
->> +     if (cpu != this_cpu) {
->> +             printk(KERN_CRIT "Eek! platform_cpu_die running on %u, should be %u\n",
->> +                        this_cpu, cpu);
->> +             BUG();
->> +     }
->> +#endif
->> +
->> +     gic_cpu_exit(0);
->> +     barrier();
->> +     flush_cache_all();
->> +     barrier();
->> +     __cortex_a9_save(0);
->> +
->> +     /*
->> +      * __cortex_a9_save can return through __cortex_a9_restore, but that
->> +      * should never happen for a hotplugged cpu
->> +      */
->> +     BUG();
->> +}
->> +
->> +int platform_cpu_disable(unsigned int cpu)
->> +{
->> +     /*
->> +      * we don't allow CPU 0 to be shutdown (it is still too special
->> +      * e.g. clock tick interrupts)
->> +      */
->> +     if (unlikely(!tegra_context_area))
->> +             return -ENXIO;
->> +
->> +     return cpu == 0 ? -EPERM : 0;
->> +}
->> +#endif
->
-> Please leave this in hotplug.c so that it matches what other platforms
-> do.  Otherwise it's likely to be missed by any updates that happen
-> architecture-wide.
-
-Will do
+---
+Ozan Ã‡aÄŸlayan
+TUBITAK/UEKAE - Pardus Linux
+http://www.pardus.org.tr/eng
