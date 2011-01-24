@@ -1,114 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950Ab1AXVNE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 16:13:04 -0500
-Received: from smtp-out-035.synserver.de ([212.40.180.35]:1083 "HELO
-	smtp-out-035.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752486Ab1AXVNC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 16:13:02 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 16874
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 2/2] SoC: Samsung: Fix outdated cpu_dai_name for s3c24xx i2s
-Date: Mon, 24 Jan 2011 22:12:42 +0100
-Message-Id: <1295903562-4564-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1295903363-4433-1-git-send-email-lars@metafoo.de>
-References: <1295903363-4433-1-git-send-email-lars@metafoo.de>
+	id S1753062Ab1AXVN3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 16:13:29 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36185
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752994Ab1AXVN1 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 16:13:27 -0500
+Date: Mon, 24 Jan 2011 13:14:02 -0800 (PST)
+Message-Id: <20110124.131402.226784705.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: jamie@audible.transient.net, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: 2.6.38-rc1: arp triggers RTNL assertion
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1295903498.2924.17.camel@edumazet-laptop>
+References: <1295635976.2609.23.camel@edumazet-laptop>
+	<20110121.130657.106806953.davem@davemloft.net>
+	<1295903498.2924.17.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During the multi-component patch the s3c24xx i2s driver was renamed from
-"s3c24xx-i2s" to "s3c24xx-iis", while the sound board drivers were not
-updated to reflect this change as well.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Mon, 24 Jan 2011 22:11:38 +0100
 
-As a result there is no match between the dai_link and the i2s driver and no
-sound card is instantiated.
+> Le vendredi 21 janvier 2011 à 13:06 -0800, David Miller a écrit :
+>> From: Eric Dumazet <eric.dumazet@gmail.com>
+>> Date: Fri, 21 Jan 2011 19:52:56 +0100
+>> 
+>> > Here is how I fixed this, thanks again Jamie !
+>> > 
+>> > [PATCH] net: neighbour: pneigh_lookup() doesnt need RTNL
+>> 
+>> Eric, I don't think we can do this.
+>> 
+>> Fundamentally, any time a user operation changes the configuration
+>> of the networking, we must hold the RTNL.
+>> 
+>> Eliding the RTNL for lookups is fine, but for things that change
+>> state it is not.
+>> 
+>> I therefore think you'll need to rework the arp_ioctl() portions
+>> of the commit that introduced this regression.
+>> 
+> 
+> Here is a second try of the fix, thanks !
+> 
+> Note : Tested with CONFIG_PROVE_RCU=y
+> 
+> [PATCH] net: arp_ioctl() must hold RTNL
 
-This patch fixes the problem by updating the sound board drivers to use
-"s3c24xx-iis" for the cpu_dai_name.
-
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- sound/soc/samsung/neo1973_gta02_wm8753.c       |    2 +-
- sound/soc/samsung/neo1973_wm8753.c             |    2 +-
- sound/soc/samsung/s3c24xx_simtec_hermes.c      |    2 +-
- sound/soc/samsung/s3c24xx_simtec_tlv320aic23.c |    2 +-
- sound/soc/samsung/s3c24xx_uda134x.c            |    2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/sound/soc/samsung/neo1973_gta02_wm8753.c b/sound/soc/samsung/neo1973_gta02_wm8753.c
-index 9e05e10..0d0ae2b 100644
---- a/sound/soc/samsung/neo1973_gta02_wm8753.c
-+++ b/sound/soc/samsung/neo1973_gta02_wm8753.c
-@@ -397,7 +397,7 @@ static struct snd_soc_dai_link neo1973_gta02_dai[] = {
- { /* Hifi Playback - for similatious use with voice below */
- 	.name = "WM8753",
- 	.stream_name = "WM8753 HiFi",
--	.cpu_dai_name = "s3c24xx-i2s",
-+	.cpu_dai_name = "s3c24xx-iis",
- 	.codec_dai_name = "wm8753-hifi",
- 	.init = neo1973_gta02_wm8753_init,
- 	.platform_name = "samsung-audio",
-diff --git a/sound/soc/samsung/neo1973_wm8753.c b/sound/soc/samsung/neo1973_wm8753.c
-index cf69e14..d20815d 100644
---- a/sound/soc/samsung/neo1973_wm8753.c
-+++ b/sound/soc/samsung/neo1973_wm8753.c
-@@ -559,7 +559,7 @@ static struct snd_soc_dai_link neo1973_dai[] = {
- 	.name = "WM8753",
- 	.stream_name = "WM8753 HiFi",
- 	.platform_name = "samsung-audio",
--	.cpu_dai_name = "s3c24xx-i2s",
-+	.cpu_dai_name = "s3c24xx-iis",
- 	.codec_dai_name = "wm8753-hifi",
- 	.codec_name = "wm8753-codec.0-001a",
- 	.init = neo1973_wm8753_init,
-diff --git a/sound/soc/samsung/s3c24xx_simtec_hermes.c b/sound/soc/samsung/s3c24xx_simtec_hermes.c
-index 287a971..08fcaaa 100644
---- a/sound/soc/samsung/s3c24xx_simtec_hermes.c
-+++ b/sound/soc/samsung/s3c24xx_simtec_hermes.c
-@@ -95,7 +95,7 @@ static struct snd_soc_dai_link simtec_dai_aic33 = {
- 	.name		= "tlv320aic33",
- 	.stream_name	= "TLV320AIC33",
- 	.codec_name	= "tlv320aic3x-codec.0-001a",
--	.cpu_dai_name	= "s3c24xx-i2s",
-+	.cpu_dai_name	= "s3c24xx-iis",
- 	.codec_dai_name = "tlv320aic3x-hifi",
- 	.platform_name	= "samsung-audio",
- 	.init		= simtec_hermes_init,
-diff --git a/sound/soc/samsung/s3c24xx_simtec_tlv320aic23.c b/sound/soc/samsung/s3c24xx_simtec_tlv320aic23.c
-index d2b14ba..116e3e6 100644
---- a/sound/soc/samsung/s3c24xx_simtec_tlv320aic23.c
-+++ b/sound/soc/samsung/s3c24xx_simtec_tlv320aic23.c
-@@ -86,7 +86,7 @@ static struct snd_soc_dai_link simtec_dai_aic23 = {
- 	.name		= "tlv320aic23",
- 	.stream_name	= "TLV320AIC23",
- 	.codec_name	= "tlv320aic3x-codec.0-001a",
--	.cpu_dai_name	= "s3c24xx-i2s",
-+	.cpu_dai_name	= "s3c24xx-iis",
- 	.codec_dai_name = "tlv320aic3x-hifi",
- 	.platform_name	= "samsung-audio",
- 	.init		= simtec_tlv320aic23_init,
-diff --git a/sound/soc/samsung/s3c24xx_uda134x.c b/sound/soc/samsung/s3c24xx_uda134x.c
-index cdc8ecb..2c09e93 100644
---- a/sound/soc/samsung/s3c24xx_uda134x.c
-+++ b/sound/soc/samsung/s3c24xx_uda134x.c
-@@ -228,7 +228,7 @@ static struct snd_soc_dai_link s3c24xx_uda134x_dai_link = {
- 	.stream_name = "UDA134X",
- 	.codec_name = "uda134x-hifi",
- 	.codec_dai_name = "uda134x-hifi",
--	.cpu_dai_name = "s3c24xx-i2s",
-+	.cpu_dai_name = "s3c24xx-iis",
- 	.ops = &s3c24xx_uda134x_ops,
- 	.platform_name	= "samsung-audio",
- };
--- 
-1.7.2.3
-
+Thanks Eric, this one looks a lot better.  I'll apply this later
+tonight.
