@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751687Ab1AXTuv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 14:50:51 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:14551 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751554Ab1AXTut (ORCPT
+	id S1751855Ab1AXTu4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 14:50:56 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:57728 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719Ab1AXTuy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 14:50:49 -0500
-Date: Mon, 24 Jan 2011 20:51:30 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Ian Kent <raven@themaw.net>
-cc: linux-kernel@vger.kernel.org, autofs@linux.kernel.org
-Subject: Re: [PATCH] autofs4: Do not potentially dereference NULL pointer
- returned by fget() in autofs_dev_ioctl_setpipefd()
-In-Reply-To: <alpine.LNX.2.00.1012182238560.17400@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1101242048590.10252@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1012182238560.17400@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 24 Jan 2011 14:50:54 -0500
+Subject: Re: [PATCH 16/16] KVM-GST: adjust scheduler cpu power
+From: Peter Zijlstra <peterz@infradead.org>
+To: Glauber Costa <glommer@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
+        Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Avi Kivity <avi@redhat.com>
+In-Reply-To: <1295895083.15920.9.camel@mothafucka.localdomain>
+References: <1295892397-11354-1-git-send-email-glommer@redhat.com>
+	 <1295892397-11354-17-git-send-email-glommer@redhat.com>
+	 <1295893920.28776.468.camel@laptop>
+	 <1295895083.15920.9.camel@mothafucka.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 24 Jan 2011 20:51:30 +0100
+Message-ID: <1295898690.28776.472.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ian,
-
-On Sat, 18 Dec 2010, Jesper Juhl wrote:
-
-> Hi,
+On Mon, 2011-01-24 at 16:51 -0200, Glauber Costa wrote:
+> > I would really much rather see you change update_rq_clock_task() and
+> > subtract your ns resolution steal time from our wall-time,
+> > update_rq_clock_task() already updates the cpu_power relative to the
+> > remaining time available.
 > 
-> In fs/autofs4/dev-ioctl.c::autofs_dev_ioctl_setpipefd() we call fget(), 
-> which may return NULL, but we do not explicitly test for that NULL return 
-> so we may end up dereferencing a NULL pointer - bad.
-> 
-> When I originally submitted this patch I had chosen EBUSY as the return 
-> value to use if this happens. Ian Kent was kind enough to explain why that 
-> would most likely be wrong and why EBADF should most likely be used 
-> instead. This version of the patch uses EBADF.
-> 
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  dev-ioctl.c |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/fs/autofs4/dev-ioctl.c b/fs/autofs4/dev-ioctl.c
-> index eff9a41..a650d7e 100644
-> --- a/fs/autofs4/dev-ioctl.c
-> +++ b/fs/autofs4/dev-ioctl.c
-> @@ -372,6 +372,10 @@ static int autofs_dev_ioctl_setpipefd(struct file *fp,
->  		return -EBUSY;
->  	} else {
->  		struct file *pipe = fget(pipefd);
-> +		if (!pipe) {
-> +			err = -EBADF;
-> +			goto out;
-> +		}
->  		if (!pipe->f_op || !pipe->f_op->write) {
->  			err = -EPIPE;
->  			fput(pipe);
-> 
+> But then we get into the problems we already discussed in previous
+> submissions, which is, we don't really want to alter any notion of
+> wallclock time. Could you list any more concrete advantages of the
+> specific way you proposed? 
 
-It's been more than a month now since I submitted this updated patch 
-adressing your feedback, but I've not seen any feedback on it.
-Is it OK? Will you merge it? 
+clock_task is the time spend on the task, by not taking steal time into
+account all steal time is accounted as service to whatever task was
+current when the vcpu wasn't running.
 
-/Jesper
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+It doesn't change wall-time in the sense of gtod, only the service time
+to tasks.
