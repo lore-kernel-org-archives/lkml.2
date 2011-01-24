@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752781Ab1AXMOe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 07:14:34 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:39344 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412Ab1AXMOd (ORCPT
+	id S1752730Ab1AXMV2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 07:21:28 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:35592 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678Ab1AXMV1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 07:14:33 -0500
-Date: Mon, 24 Jan 2011 13:14:05 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Bernhard Walle <walle@corscience.de>
-Cc: ben-linux@fluff.org, ddaney@caviumnetworks.com, ralf@linux-mips.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: octeon: Make the timeout 1*HZ instead of 1 jiffy
-Message-ID: <20110124131405.4583a7af@endymion.delvare>
-In-Reply-To: <1295870741-19970-1-git-send-email-walle@corscience.de>
-References: <1295870741-19970-1-git-send-email-walle@corscience.de>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+	Mon, 24 Jan 2011 07:21:27 -0500
+Subject: Re: [PATCH 00/21] mm: Preemptibility -v6
+From: Peter Zijlstra <peterz@infradead.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>, Nick Piggin <npiggin@kernel.dk>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, Andrea Arcangeli <aarcange@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1295624034.28776.303.camel@laptop>
+References: <20101126143843.801484792@chello.nl>
+	 <alpine.LSU.2.00.1101172301340.2899@sister.anvils>
+	 <1295457039.28776.137.camel@laptop>
+	 <alpine.LSU.2.00.1101201052060.1603@sister.anvils>
+	 <1295624034.28776.303.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 24 Jan 2011 13:21:54 +0100
+Message-ID: <1295871714.28776.406.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bernhard,
+On Fri, 2011-01-21 at 16:33 +0100, Peter Zijlstra wrote:
 
-On Mon, 24 Jan 2011 13:05:41 +0100, Bernhard Walle wrote:
-> Since the timeout in the struct i2c_adapter use jiffies as unit and a
-> timeout should be independent of CONFIG_HZ and most drivers that specify
-> a timeout here use just HZ, change the i2c-octeon driver to use 1*HZ
-> (which is a second), too.
-> 
-> Signed-off-by: Bernhard Walle <walle@corscience.de>
-> ---
->  drivers/i2c/busses/i2c-octeon.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-octeon.c b/drivers/i2c/busses/i2c-octeon.c
-> index 0fe1102..537a4ee 100644
-> --- a/drivers/i2c/busses/i2c-octeon.c
-> +++ b/drivers/i2c/busses/i2c-octeon.c
-> @@ -460,7 +460,7 @@ static struct i2c_adapter octeon_i2c_ops = {
->  	.owner = THIS_MODULE,
->  	.name = "OCTEON adapter",
->  	.algo = &octeon_i2c_algo,
-> -	.timeout = 2,
-> +	.timeout = HZ,
->  };
->  
->  /**
+> Index: linux-2.6/mm/rmap.c
+> ===================================================================
+> --- linux-2.6.orig/mm/rmap.c
+> +++ linux-2.6/mm/rmap.c
+> @@ -1559,9 +1559,20 @@ void __put_anon_vma(struct anon_vma *ano
+>  	 * Synchronize against page_lock_anon_vma() such that
+>  	 * we can safely hold the lock without the anon_vma getting
+>  	 * freed.
+> +	 *
+> +	 * Relies on the full mb implied by the atomic_dec_and_test() from
+> +	 * put_anon_vma() against the full mb implied by mutex_trylock() from
+> +	 * page_lock_anon_vma(). This orders:
+> +	 *
+> +	 * page_lock_anon_vma()		VS	put_anon_vma()
+> +	 *   mutex_trylock()			  atomic_dec_and_test()
+> +	 *   smp_mb()				  smp_mb()
+> +	 *   atomic_read()			  mutex_is_locked()
 
-This is a large timeout value, much larger than any value the
-i2c-octeon driver was using today for any possible value of HZ.
-Wouldn't it make more sense to set it to HZ / 50, which is 2 for HZ =
-100, leaving the setting unchanged for this common case at least?
+Bah!, I thought all mutex_trylock() implementations used an atomic op
+with return value (which implies a mb), but it looks like (at least*)
+PPC doesn't and only provides a LOCK barrier.
 
--- 
-Jean Delvare
+
+* possibly ARM and SH don't either, but I can't read either ASMs well
+enough to tell.
+
