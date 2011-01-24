@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166Ab1AXTTy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 14:19:54 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:11889 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329Ab1AXTTx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 14:19:53 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6236"; a="71787612"
-Message-ID: <4D3DD0D8.10905@codeaurora.org>
-Date: Mon, 24 Jan 2011 11:19:52 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1751706Ab1AXTWu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 14:22:50 -0500
+Received: from mx2.fusionio.com ([64.244.102.31]:50933 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750712Ab1AXTWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 14:22:49 -0500
+X-ASG-Debug-ID: 1295896968-01de280c5331760001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4D3DD184.4040700@fusionio.com>
+Date: Mon, 24 Jan 2011 20:22:44 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v4 01/19] ARM: Make the argument to virt_to_phys() "const
- volatile"
-References: <1295891761-18366-1-git-send-email-catalin.marinas@arm.com> <1295891761-18366-2-git-send-email-catalin.marinas@arm.com>
-In-Reply-To: <1295891761-18366-2-git-send-email-catalin.marinas@arm.com>
-Content-Type: text/plain; charset=windows-1252
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        Shaohua Li <shaohua.li@intel.com>
+Subject: Re: [PATCH 10/10] fs: make aio plug
+References: <1295659049-2688-1-git-send-email-jaxboe@fusionio.com>	<1295659049-2688-11-git-send-email-jaxboe@fusionio.com>	<x497hdugp32.fsf@segfault.boston.devel.redhat.com>	<4D3DCE5D.9090708@fusionio.com> <x4939oigljs.fsf@segfault.boston.devel.redhat.com>
+X-ASG-Orig-Subj: Re: [PATCH 10/10] fs: make aio plug
+In-Reply-To: <x4939oigljs.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1295896968
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.53327
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2011 09:55 AM, Catalin Marinas wrote:
-> Changing the virt_to_phys() argument to "const volatile void *" avoids
-> compiler warnings in some situations where this function is used.
->
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Stephen Boyd <sboyd@codeaurora.org>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> ---
+On 2011-01-24 20:15, Jeff Moyer wrote:
+> Jens Axboe <jaxboe@fusionio.com> writes:
+> 
+>>>> @@ -1698,6 +1701,7 @@ long do_io_submit(aio_context_t ctx_id, long nr,
+>>>>  		if (ret)
+>>>>  			break;
+>>>>  	}
+>>>> +	blk_finish_plug(&plug);
+>>>>  	aio_batch_free(batch_hash);
+>>>
+>>> I'm pretty sure you want blk_finish_plug to run after aio_batch_free.
+>>
+>> You mean to cover the iput()? That's not a bad idea, if that ends up
+>> writing it out. I did a few read tests here and confirmed it's sending
+>> down batches of whatever number is submitted.
+> 
+> No, I actually didn't make it all the way through 5/10, so I didn't
+> realize you got rid of the blk_run_address_space.  I agree with the TODO
+> item to get rid of the aio batching, since it's now taken care of with
+> the on-stack plugging.
 
-Acked-by: Stephen Boyd <sboyd@codeaurora.org>
+Oh, so that was the whole point of the series :-)
 
-Any chance we can get this one patch into 2.6.38? It fixes a warning for
-MSM.
+> As for the iput, I don't think you will get the final iput here, since
+> you've just scheduled I/O against the file.
+
+Good point, so the original comment is moot - it wont make a difference.
+Still, may not be a bad idea to do the freeing first. I was sort-of
+hoping to be able to kill the batching in fs/aio.c completely, though...
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Jens Axboe
 
