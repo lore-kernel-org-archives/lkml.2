@@ -1,29 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156Ab1AXSIM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 13:08:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14244 "EHLO mx1.redhat.com"
+	id S1754219Ab1AXSIT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 13:08:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23635 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754076Ab1AXSIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 13:08:07 -0500
+	id S1754076Ab1AXSIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 13:08:17 -0500
 From: Glauber Costa <glommer@redhat.com>
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
         Rik van Riel <riel@redhat.com>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
         Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>
-Subject: [PATCH 14/16] KVM-GST: KVM Steal time registration
-Date: Mon, 24 Jan 2011 13:06:35 -0500
-Message-Id: <1295892397-11354-15-git-send-email-glommer@redhat.com>
+Subject: [PATCH 16/16] KVM-GST: adjust scheduler cpu power
+Date: Mon, 24 Jan 2011 13:06:37 -0500
+Message-Id: <1295892397-11354-17-git-send-email-glommer@redhat.com>
 In-Reply-To: <1295892397-11354-1-git-send-email-glommer@redhat.com>
 References: <1295892397-11354-1-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register steal time within KVM. Everytime we sample the steal time
-information, we update a local variable that tells what was the
-last time read. We then account the difference.
+This is a first proposal for using steal time information
+to influence the scheduler. There are a lot of optimizations
+and fine grained adjustments to be done, but it is working reasonably
+so far for me (mostly)
+
+With this patch (and some host pinnings to demonstrate the situation),
+two vcpus with very different steal time (Say 80 % vs 1 %) will not get
+an even distribution of processes. This is a situation that can naturally
+arise, specially in overcommited scenarios. Previosly, the guest scheduler
+would wrongly think that all cpus have the same ability to run processes,
+lowering the overall throughput.
 
 Signed-off-by: Glauber Costa <glommer@redhat.com>
 CC: Rik van Riel <riel@redhat.com>
@@ -31,75 +39,70 @@ CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 CC: Peter Zijlstra <peterz@infradead.org>
 CC: Avi Kivity <avi@redhat.com>
 ---
- arch/x86/kernel/kvmclock.c |   32 ++++++++++++++++++++++++++++++++
- 1 files changed, 32 insertions(+), 0 deletions(-)
+ include/linux/sched.h |    1 +
+ kernel/sched.c        |    4 ++++
+ kernel/sched_fair.c   |   10 ++++++++++
+ 3 files changed, 15 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
-index c304fdb..c0b0522 100644
---- a/arch/x86/kernel/kvmclock.c
-+++ b/arch/x86/kernel/kvmclock.c
-@@ -22,6 +22,7 @@
- #include <asm/msr.h>
- #include <asm/apic.h>
- #include <linux/percpu.h>
-+#include <linux/sched.h>
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index d747f94..beab72d 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -302,6 +302,7 @@ long io_schedule_timeout(long timeout);
+ extern void cpu_init (void);
+ extern void trap_init(void);
+ extern void update_process_times(int user);
++extern cputime_t (*hypervisor_steal_time)(void);
+ extern void scheduler_tick(void);
  
- #include <asm/x86_init.h>
- #include <asm/reboot.h>
-@@ -42,7 +43,9 @@ early_param("no-kvmclock", parse_no_kvmclock);
+ extern void sched_show_task(struct task_struct *p);
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 3b3e88d..c460f0d 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -501,6 +501,8 @@ struct rq {
+ 	struct sched_domain *sd;
  
- /* The hypervisor will put information about time periodically here */
- static DEFINE_PER_CPU_SHARED_ALIGNED(struct pvclock_vcpu_time_info, hv_clock);
-+static DEFINE_PER_CPU_SHARED_ALIGNED(struct kvm_steal_time, steal_time);
- static struct pvclock_wall_clock wall_clock;
-+static DEFINE_PER_CPU(u64, steal_info);
+ 	unsigned long cpu_power;
++	unsigned long real_ticks;
++	unsigned long total_ticks;
  
- static int kvm_register_mem_area(u64 base, int type, int size)
- {
-@@ -153,14 +156,43 @@ static struct clocksource kvm_clock = {
- 	.flags = CLOCK_SOURCE_IS_CONTINUOUS,
- };
+ 	unsigned char idle_at_tick;
+ 	/* For active balancing */
+@@ -3533,10 +3535,12 @@ static int touch_steal_time(int is_idle)
+ 	if (is_idle)
+ 		return 0;
  
-+static cputime_t kvm_account_steal_time(void)
-+{
-+	u64 delta = 0;
-+	u64 *last_steal_info, this_steal_info;
-+	struct kvm_steal_time *src;
-+	cputime_t cpu;
-+
-+	src = &get_cpu_var(steal_time);
-+	this_steal_info = src->steal;
-+	put_cpu_var(steal_time);
-+
-+	last_steal_info = &get_cpu_var(steal_info);
-+
-+	delta = this_steal_info - *last_steal_info;
-+
-+	*last_steal_info = this_steal_info;
-+	put_cpu_var(steal_info);
-+
-+	cpu = usecs_to_cputime(delta / 1000);
-+
-+	return cpu;
-+}
-+
- int kvm_register_clock(char *txt)
- {
- 	int cpu = smp_processor_id();
- 	int low, high, ret;
- 	struct pvclock_vcpu_time_info *vcpu_time;
-+	struct kvm_steal_time *stime;
- 	static int warned;
++	rq->total_ticks++;
+ 	if (steal) {
+ 		account_steal_time(steal);
+ 		return 1;
+ 	}
++	rq->real_ticks++;
+ 	return 0;
+ }
  
- 	vcpu_time = &per_cpu(hv_clock, cpu);
-+	stime = &per_cpu(steal_time, cpu);
-+
-+	ret = kvm_register_mem_area(__pa(stime), KVM_AREA_STEAL_TIME, sizeof(*stime));
-+	if (ret == 0)
-+		hypervisor_steal_time = kvm_account_steal_time;
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index c62ebae..1364c28 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -2509,6 +2509,16 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
+ 		power >>= SCHED_LOAD_SHIFT;
+ 	}
  
- 	ret = kvm_register_mem_area(__pa(vcpu_time), KVM_AREA_SYSTIME,
- 				    sizeof(*vcpu_time));
++	WARN_ON(cpu_rq(cpu)->real_ticks > cpu_rq(cpu)->total_ticks);
++
++	if (cpu_rq(cpu)->total_ticks) {
++		power *= cpu_rq(cpu)->real_ticks;
++		power /= cpu_rq(cpu)->total_ticks;
++	}
++
++	cpu_rq(cpu)->total_ticks = 0;
++	cpu_rq(cpu)->real_ticks = 0;
++
+ 	sdg->cpu_power_orig = power;
+ 
+ 	if (sched_feat(ARCH_POWER))
 -- 
 1.7.2.3
 
