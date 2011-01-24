@@ -1,44 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752235Ab1AXKV1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 05:21:27 -0500
-Received: from vwp2514.webpack.hosteurope.de ([87.230.42.24]:56846 "EHLO
-	vwp2514.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751302Ab1AXKV0 (ORCPT
+	id S1752585Ab1AXKVh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 05:21:37 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38055 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752400Ab1AXKVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 05:21:26 -0500
-Subject: Re: [PATCH] ARM: pxa: fix suspend on PXA3XX
-From: Sven Neumann <s.neumann@raumfeld.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Eric Miao <eric.y.miao@gmail.com>, Daniel Mack <daniel@caiaq.de>
-In-Reply-To: <1295864152-773-1-git-send-email-s.neumann@raumfeld.com>
-References: <20110124095138.GC16202@n2100.arm.linux.org.uk>
-	 <1295864152-773-1-git-send-email-s.neumann@raumfeld.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: RAUMFELD GmbH
-Date: Mon, 24 Jan 2011 11:21:23 +0100
-Message-ID: <1295864483.2044.31.camel@sven>
+	Mon, 24 Jan 2011 05:21:36 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 24 Jan 2011 19:15:35 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/7] memcg : comment, style fixes for recent patch of
+ move_parent
+Message-Id: <20110124191535.514ef2d9.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110124101402.GT2232@cmpxchg.org>
+References: <20110121153431.191134dd.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110121153726.54f4a159.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110124101402.GT2232@cmpxchg.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-bounce-key: webpack.hosteurope.de;s.neumann@raumfeld.com;1295864486;a6868627;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-24 at 11:15 +0100, Sven Neumann wrote:
-> Resurrect the save and restore functions in pxa3xx_cpu_pm_fns
-> so that pxa_pm_enter() won't crash. This fixes a regression
-> introduced by commit aae8224d.
+On Mon, 24 Jan 2011 11:14:02 +0100
+Johannes Weiner <hannes@cmpxchg.org> wrote:
+
+> On Fri, Jan 21, 2011 at 03:37:26PM +0900, KAMEZAWA Hiroyuki wrote:
+> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > 
+> > A fix for 987eba66e0e6aa654d60881a14731a353ee0acb4
+> > 
+> > A clean up for mem_cgroup_move_parent(). 
+> >  - remove unnecessary initialization of local variable.
+> >  - rename charge_size -> page_size
+> >  - remove unnecessary (wrong) comment.
+> > 
+> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > ---
+> >  mm/memcontrol.c |   17 +++++++++--------
+> >  1 file changed, 9 insertions(+), 8 deletions(-)
+> > 
+> > Index: mmotm-0107/mm/memcontrol.c
+> > ===================================================================
+> > --- mmotm-0107.orig/mm/memcontrol.c
+> > +++ mmotm-0107/mm/memcontrol.c
+> > @@ -2265,7 +2265,7 @@ static int mem_cgroup_move_parent(struct
+> >  	struct cgroup *cg = child->css.cgroup;
+> >  	struct cgroup *pcg = cg->parent;
+> >  	struct mem_cgroup *parent;
+> > -	int charge = PAGE_SIZE;
+> > +	int page_size;
+> >  	unsigned long flags;
+> >  	int ret;
+> >  
+> > @@ -2278,22 +2278,23 @@ static int mem_cgroup_move_parent(struct
+> >  		goto out;
+> >  	if (isolate_lru_page(page))
+> >  		goto put;
+> > -	/* The page is isolated from LRU and we have no race with splitting */
+> > -	charge = PAGE_SIZE << compound_order(page);
+> > +
+> > +	page_size = PAGE_SIZE << compound_order(page);
 > 
-> Signed-off-by: Sven Neumann <s.neumann@raumfeld.com>
+> Okay, so you remove the wrong comment, but that does not make the code
+> right.  What protects compound_order from reading garbage because the
+> page is currently splitting?
+> 
 
-With this patch the crash is gone and the device enters suspend. It
-still has resume problems, but this is the same as with 2.6.37 and needs
-further investigation.
+==
+static int mem_cgroup_move_account(struct page_cgroup *pc,
+                struct mem_cgroup *from, struct mem_cgroup *to,
+                bool uncharge, int charge_size)
+{
+        int ret = -EINVAL;
+        unsigned long flags;
+
+        if ((charge_size > PAGE_SIZE) && !PageTransHuge(pc->page))
+                return -EBUSY;
+==
+
+This is called under compound_lock(). Then, if someone breaks THP,
+-EBUSY and retry.
 
 
-Sven
+Thanks,
+-Kame
+
+
 
 
