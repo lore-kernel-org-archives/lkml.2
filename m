@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047Ab1AXW5D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 17:57:03 -0500
+	id S1753147Ab1AXW5s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 17:57:48 -0500
 Received: from claw.goop.org ([74.207.240.146]:58145 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752950Ab1AXW4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 17:56:21 -0500
+	id S1752905Ab1AXW4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 17:56:19 -0500
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Haavard Skinnemoen <hskinnemoen@atmel.com>, Linux-MM <linux-mm@kvack.org>,
@@ -13,9 +13,9 @@ Cc: Haavard Skinnemoen <hskinnemoen@atmel.com>, Linux-MM <linux-mm@kvack.org>,
         Nick Piggin <npiggin@kernel.dk>,
         Xen-devel <xen-devel@lists.xensource.com>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 6/9] vmalloc: use apply_to_page_range_batch() for vmap_page_range_noflush()
-Date: Mon, 24 Jan 2011 14:56:04 -0800
-Message-Id: <937b74f8d19f7e62d63d4e82c2cf21f3bd636d9e.1295653400.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 2/9] mm: add apply_to_page_range_batch()
+Date: Mon, 24 Jan 2011 14:56:00 -0800
+Message-Id: <7f635db45f8e921c9203fdfb904d0095b7af6480.1295653400.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <cover.1295653400.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1295653400.git.jeremy.fitzhardinge@citrix.com>
@@ -27,134 +27,147 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-There's no need to open-code it when there's a helpful utility
-function.
+apply_to_page_range() calls its callback function once for each pte, which
+is pretty inefficient since it will almost always be operating on a batch
+of adjacent ptes.  apply_to_page_range_batch() calls its callback
+with both a pte_t * and a count, so it can operate on multiple ptes at
+once.
+
+The callback is expected to handle all its ptes, or return an error.  For
+both apply_to_page_range and apply_to_page_range_batch, it is up to
+the caller to work out how much progress was made if either fails with
+an error.
 
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Cc: Nick Piggin <npiggin@kernel.dk>
 ---
- mm/vmalloc.c |   92 ++++++++++++++++++---------------------------------------
- 1 files changed, 29 insertions(+), 63 deletions(-)
+ include/linux/mm.h |    6 +++++
+ mm/memory.c        |   57 +++++++++++++++++++++++++++++++++++++--------------
+ 2 files changed, 47 insertions(+), 16 deletions(-)
 
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index e99aa3b..cf4e705 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -53,63 +53,34 @@ static void vunmap_page_range(unsigned long addr, unsigned long end)
- 	apply_to_page_range_batch(&init_mm, addr, end - addr, vunmap_pte, NULL);
- }
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index bb898ec..5a32a8a 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1533,6 +1533,12 @@ typedef int (*pte_fn_t)(pte_t *pte, unsigned long addr, void *data);
+ extern int apply_to_page_range(struct mm_struct *mm, unsigned long address,
+ 			       unsigned long size, pte_fn_t fn, void *data);
  
--static int vmap_pte_range(pmd_t *pmd, unsigned long addr,
--		unsigned long end, pgprot_t prot, struct page **pages, int *nr)
-+struct vmap_data
- {
--	pte_t *pte;
-+	struct page **pages;
-+	unsigned index;
-+	pgprot_t prot;
-+};
- 
--	/*
--	 * nr is a running index into the array which helps higher level
--	 * callers keep track of where we're up to.
--	 */
-+static int vmap_pte(pte_t *pte, unsigned count,
-+		    unsigned long addr, void *data)
-+{
-+	struct vmap_data *vmap = data;
- 
--	pte = pte_alloc_kernel(pmd, addr);
--	if (!pte)
--		return -ENOMEM;
--	do {
--		struct page *page = pages[*nr];
-+	while (count--) {
-+		struct page *page = vmap->pages[vmap->index];
- 
- 		if (WARN_ON(!pte_none(*pte)))
- 			return -EBUSY;
++typedef int (*pte_batch_fn_t)(pte_t *pte, unsigned count,
++			      unsigned long addr, void *data);
++extern int apply_to_page_range_batch(struct mm_struct *mm,
++				     unsigned long address, unsigned long size,
++				     pte_batch_fn_t fn, void *data);
 +
- 		if (WARN_ON(!page))
- 			return -ENOMEM;
--		set_pte_at(&init_mm, addr, pte, mk_pte(page, prot));
--		(*nr)++;
--	} while (pte++, addr += PAGE_SIZE, addr != end);
--	return 0;
--}
+ #ifdef CONFIG_PROC_FS
+ void vm_stat_account(struct mm_struct *, unsigned long, struct file *, long);
+ #else
+diff --git a/mm/memory.c b/mm/memory.c
+index 740470c..496e4e6 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2012,11 +2012,10 @@ EXPORT_SYMBOL(remap_pfn_range);
  
--static int vmap_pmd_range(pud_t *pud, unsigned long addr,
--		unsigned long end, pgprot_t prot, struct page **pages, int *nr)
--{
--	pmd_t *pmd;
--	unsigned long next;
--
--	pmd = pmd_alloc(&init_mm, pud, addr);
--	if (!pmd)
--		return -ENOMEM;
--	do {
--		next = pmd_addr_end(addr, end);
--		if (vmap_pte_range(pmd, addr, next, prot, pages, nr))
--			return -ENOMEM;
--	} while (pmd++, addr = next, addr != end);
--	return 0;
--}
-+		set_pte_at(&init_mm, addr, pte, mk_pte(page, vmap->prot));
- 
--static int vmap_pud_range(pgd_t *pgd, unsigned long addr,
--		unsigned long end, pgprot_t prot, struct page **pages, int *nr)
--{
--	pud_t *pud;
--	unsigned long next;
-+		pte++;
-+		addr += PAGE_SIZE;
-+		vmap->index++;
-+	}
- 
--	pud = pud_alloc(&init_mm, pgd, addr);
--	if (!pud)
--		return -ENOMEM;
--	do {
--		next = pud_addr_end(addr, end);
--		if (vmap_pmd_range(pud, addr, next, prot, pages, nr))
--			return -ENOMEM;
--	} while (pud++, addr = next, addr != end);
- 	return 0;
- }
- 
-@@ -122,22 +93,17 @@ static int vmap_pud_range(pgd_t *pgd, unsigned long addr,
- static int vmap_page_range_noflush(unsigned long start, unsigned long end,
- 				   pgprot_t prot, struct page **pages)
+ static int apply_to_pte_range(struct mm_struct *mm, pmd_t *pmd,
+ 				     unsigned long addr, unsigned long end,
+-				     pte_fn_t fn, void *data)
++				     pte_batch_fn_t fn, void *data)
  {
--	pgd_t *pgd;
--	unsigned long next;
--	unsigned long addr = start;
--	int err = 0;
--	int nr = 0;
+ 	pte_t *pte;
+ 	int err;
+-	pgtable_t token;
+ 	spinlock_t *uninitialized_var(ptl);
+ 
+ 	pte = (mm == &init_mm) ?
+@@ -2028,25 +2027,17 @@ static int apply_to_pte_range(struct mm_struct *mm, pmd_t *pmd,
+ 	BUG_ON(pmd_huge(*pmd));
+ 
+ 	arch_enter_lazy_mmu_mode();
 -
--	BUG_ON(addr >= end);
--	pgd = pgd_offset_k(addr);
+-	token = pmd_pgtable(*pmd);
+-
 -	do {
--		next = pgd_addr_end(addr, end);
--		err = vmap_pud_range(pgd, addr, next, prot, pages, &nr);
+-		err = fn(pte++, addr, data);
 -		if (err)
--			return err;
--	} while (pgd++, addr = next, addr != end);
+-			break;
+-	} while (addr += PAGE_SIZE, addr != end);
 -
--	return nr;
-+	int err;
-+	struct vmap_data vmap = {
-+		.pages = pages,
-+		.index = 0,
-+		.prot = prot
-+	};
-+	
-+	err = apply_to_page_range_batch(&init_mm, start, end - start,
-+					vmap_pte, &vmap);
-+	
-+	return err ? err : vmap.index;
++	err = fn(pte, (end - addr) / PAGE_SIZE, addr, data);
+ 	arch_leave_lazy_mmu_mode();
+ 
+ 	if (mm != &init_mm)
+-		pte_unmap_unlock(pte-1, ptl);
++		pte_unmap_unlock(pte, ptl);
+ 	return err;
  }
  
- static int vmap_page_range(unsigned long start, unsigned long end,
+ static int apply_to_pmd_range(struct mm_struct *mm, pud_t *pud,
+ 				     unsigned long addr, unsigned long end,
+-				     pte_fn_t fn, void *data)
++				     pte_batch_fn_t fn, void *data)
+ {
+ 	pmd_t *pmd;
+ 	unsigned long next;
+@@ -2068,7 +2059,7 @@ static int apply_to_pmd_range(struct mm_struct *mm, pud_t *pud,
+ 
+ static int apply_to_pud_range(struct mm_struct *mm, pgd_t *pgd,
+ 				     unsigned long addr, unsigned long end,
+-				     pte_fn_t fn, void *data)
++				     pte_batch_fn_t fn, void *data)
+ {
+ 	pud_t *pud;
+ 	unsigned long next;
+@@ -2090,8 +2081,9 @@ static int apply_to_pud_range(struct mm_struct *mm, pgd_t *pgd,
+  * Scan a region of virtual memory, filling in page tables as necessary
+  * and calling a provided function on each leaf page table.
+  */
+-int apply_to_page_range(struct mm_struct *mm, unsigned long addr,
+-			unsigned long size, pte_fn_t fn, void *data)
++int apply_to_page_range_batch(struct mm_struct *mm,
++			      unsigned long addr, unsigned long size,
++			      pte_batch_fn_t fn, void *data)
+ {
+ 	pgd_t *pgd;
+ 	unsigned long next;
+@@ -2109,6 +2101,39 @@ int apply_to_page_range(struct mm_struct *mm, unsigned long addr,
+ 
+ 	return err;
+ }
++EXPORT_SYMBOL_GPL(apply_to_page_range_batch);
++
++struct pte_single_fn
++{
++	pte_fn_t fn;
++	void *data;
++};
++
++static int apply_pte_batch(pte_t *pte, unsigned count,
++			   unsigned long addr, void *data)
++{
++	struct pte_single_fn *single = data;
++	int err = 0;
++
++	while (count--) {
++		err = single->fn(pte, addr, single->data);
++		if (err)
++			break;
++
++		addr += PAGE_SIZE;
++		pte++;
++	}
++
++	return err;
++}
++
++int apply_to_page_range(struct mm_struct *mm, unsigned long addr,
++			unsigned long size, pte_fn_t fn, void *data)
++{
++	struct pte_single_fn single = { .fn = fn, .data = data };
++	return apply_to_page_range_batch(mm, addr, size,
++					 apply_pte_batch, &single);
++}
+ EXPORT_SYMBOL_GPL(apply_to_page_range);
+ 
+ /*
 -- 
 1.7.3.4
 
