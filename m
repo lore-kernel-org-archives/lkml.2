@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871Ab1AXQyG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 11:54:06 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:44695 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753823Ab1AXQyC (ORCPT
+	id S1753903Ab1AXQyR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 11:54:17 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40645 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753823Ab1AXQyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 11:54:02 -0500
-Subject: Re: [PATCH] ARM: mm: Regarding section when dealing with meminfo
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: KyongHo Cho <pullip.cho@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        KeyYoung Park <keyyoung.park@samsung.com>,
-        linux-kernel@vger.kernel.org, Ilho Lee <ilho215.lee@samsung.com>,
-        linux-mm@kvack.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <20110123180532.GA3509@n2100.arm.linux.org.uk>
-References: <1295516739-9839-1-git-send-email-pullip.cho@samsung.com>
-	 <1295544047.9039.609.camel@nimitz>
-	 <20110120180146.GH6335@n2100.arm.linux.org.uk>
-	 <1295547087.9039.694.camel@nimitz>
-	 <20110123180532.GA3509@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Mon, 24 Jan 2011 08:52:17 -0800
-Message-ID: <1295887937.11047.119.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 24 Jan 2011 11:54:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=Uo91Ylipzoit7ZH5BcUz56NbwYVu1DyD+/hSWStx3+fu5PQMBkXkCBmvKWxTyO95kI
+         I55IAXcSPcEeMmlwNKVgAi/JoqCimkKHgbDP0aWc9vtzrNvO00wlYMkozVxcrySxxq11
+         EAb7fwj1WU3H6EjgUwRc58QCGAnKmASbc9+Pg=
+Date: Mon, 24 Jan 2011 17:54:12 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] tty_ldisc: don't use flush_scheduled_work()
+Message-ID: <20110124165412.GF27510@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-01-23 at 18:05 +0000, Russell King - ARM Linux wrote:
-> On Thu, Jan 20, 2011 at 10:11:27AM -0800, Dave Hansen wrote:
-> > On Thu, 2011-01-20 at 18:01 +0000, Russell King - ARM Linux wrote:
-> > > > The x86 version of show_mem() actually manages to do this without any
-> > > > #ifdefs, and works for a ton of configuration options.  It uses
-> > > > pfn_valid() to tell whether it can touch a given pfn.
-> > > 
-> > > x86 memory layout tends to be very simple as it expects memory to
-> > > start at the beginning of every region described by a pgdat and extend
-> > > in one contiguous block.  I wish ARM was that simple.
-> > 
-> > x86 memory layouts can be pretty funky and have been that way for a long
-> > time.  That's why we *have* to handle holes in x86's show_mem().  My
-> > laptop even has a ~1GB hole in its ZONE_DMA32:
-> 
-> If x86 is soo funky, I suggest you try the x86 version of show_mem()
-> on an ARM platform with memory holes.  Make sure you try it with
-> sparsemem as well...
+flush_scheduled_work() is scheduled to be deprecated.  Explicitly sync
+flush the used work items instead.  Note that before this change,
+flush_scheduled_work() wouldn't have properly flushed tty->buf.work if
+it were on timer.
 
-x86 uses the generic lib/ show_mem().  It works for any holes, as long
-as they're expressed in one of the memory models so that pfn_valid()
-notices them.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Greg Kroah-Hartman <greg@kroah.com>
+---
+ drivers/tty/tty_ldisc.c |   17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
 
-ARM looks like its pfn_valid() is backed up by searching the (ASM
-arch-specific) memblocks.  That looks like it would be fairly slow
-compared to the other pfn_valid() implementations and I can see why it's
-being avoided in show_mem().
-
-Maybe we should add either the MAX_ORDER or section_nr() trick to the
-lib/ implementation.  I bet that would use pfn_valid() rarely enough to
-meet any performance concerns.
-
--- Dave
-
+Index: work/drivers/tty/tty_ldisc.c
+===================================================================
+--- work.orig/drivers/tty/tty_ldisc.c
++++ work/drivers/tty/tty_ldisc.c
+@@ -535,6 +535,19 @@ static int tty_ldisc_halt(struct tty_str
+ }
+ 
+ /**
++ *	tty_ldisc_flush_works	-	flush all works of a tty
++ *	@tty: tty device to flush works for
++ *
++ *	Sync flush all works belonging to @tty.
++ */
++static void tty_ldisc_flush_works(struct tty_struct *tty)
++{
++	flush_work_sync(&tty->hangup_work);
++	flush_work_sync(&tty->SAK_work);
++	flush_delayed_work_sync(&tty->buf.work);
++}
++
++/**
+  *	tty_ldisc_wait_idle	-	wait for the ldisc to become idle
+  *	@tty: tty to wait for
+  *
+@@ -653,7 +666,7 @@ int tty_set_ldisc(struct tty_struct *tty
+ 
+ 	mutex_unlock(&tty->ldisc_mutex);
+ 
+-	flush_scheduled_work();
++	tty_ldisc_flush_works(tty);
+ 
+ 	retval = tty_ldisc_wait_idle(tty);
+ 
+@@ -905,7 +918,7 @@ void tty_ldisc_release(struct tty_struct
+ 
+ 	tty_unlock();
+ 	tty_ldisc_halt(tty);
+-	flush_scheduled_work();
++	tty_ldisc_flush_works(tty);
+ 	tty_lock();
+ 
+ 	mutex_lock(&tty->ldisc_mutex);
