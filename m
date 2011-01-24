@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431Ab1AXQY7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 11:24:59 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:40935 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036Ab1AXQY5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 11:24:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=t2oRFu9Qh5UV7IROYVYVRuzgy0eUDZRwnSaJOyQFeCMI9yEf+a8Qq7r9IWNiyy3NCW
-         +GXzgIxVYgHuqKo6hQFjCKu7GZcIVIT8c6lwRBZ9A95Li1AAdS8TaUrbPRCfkRU6JtIb
-         BfNYzIZiaH3Z5dUJ017w7xZ2daOLWFf+hj6/Q=
-Date: Mon, 24 Jan 2011 17:24:14 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: linux-kernel@vger.kernel.org,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        "James E.J. Bottomley" <James.Bottomley@hansenpartnership.com>,
-        linux-scsi@vger.kernel.org, Brian King <brking@linux.vnet.ibm.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>
-Subject: Re: [PATCH 17/32] scsi/ibmvstgt: use system_wq instead of vtgtd
- workqueue
-Message-ID: <20110124162414.GD27510@htj.dyndns.org>
-References: <1294062595-30097-1-git-send-email-tj@kernel.org>
- <1294062595-30097-18-git-send-email-tj@kernel.org>
- <AANLkTi=Fg8wjf-XfVsq0X4RWx7i8F1V7gC6-8Y5LPbnL@mail.gmail.com>
+	id S1753478Ab1AXQZk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 11:25:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32631 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753243Ab1AXQZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 11:25:39 -0500
+Message-ID: <4D3DA7F7.4010306@redhat.com>
+Date: Mon, 24 Jan 2011 10:25:27 -0600
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=Fg8wjf-XfVsq0X4RWx7i8F1V7gC6-8Y5LPbnL@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Chris Wilson <chris@chris-wilson.co.uk>
+CC: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>
+Subject: Re: [PATCH] ext4: Fix invalid free of cache->name after ext4_mb_init()
+ error
+References: <1295876547-6338-1-git-send-email-chris@chris-wilson.co.uk>
+In-Reply-To: <1295876547-6338-1-git-send-email-chris@chris-wilson.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 01/24/2011 07:42 AM, Chris Wilson wrote:
+> The name allocated for the kmem_cache was being freed in the error path even
+> if that name was still assigned to the newly created cache.
 
-On Mon, Jan 24, 2011 at 05:09:18PM +0100, Bart Van Assche wrote:
-> Insertion of  flush_work_sync() fixes a race - that's a good catch.
-> flush_work_sync() should be invoked a little earlier though because
-> the scheduled work may access the queue destroyed by the
-> crq_queue_destroy(target) call. And the CRQ interrupt should be
-> disabled from before flush_work_sync() is invoked until after the CRQ
-> has been destroyed.
+This code still has trouble on the module unload / uninit path;
+I sent a more invasive patch to just use static patch names,
+see [PATCH] ext4: make grpinfo slab cache names static
+from last week.
 
-Heh, I'm a bit out of my depth here.  If you know what's necessary,
-please go ahead and make the change.
+-Eric
 
-> Regarding the queue removal: I might have missed something, but why
-> would you like to remove the vtgtd work queue ? Since the ibmvstgt
-> driver is a storage target driver, processing latency matters. I'm
-> afraid that switching from a dedicated queue to the global work queue
-> will increase processing latency.
+> Cc: "Theodore Ts'o" <tytso@mit.edu>
+> Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+> ---
+>  fs/ext4/mballoc.c |    5 ++---
+>  1 files changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+> index 851f49b..69b90fe 100644
+> --- a/fs/ext4/mballoc.c
+> +++ b/fs/ext4/mballoc.c
+> @@ -2423,7 +2423,6 @@ int ext4_mb_init(struct super_block *sb, int needs_recovery)
+>  	int ret;
+>  	int cache_index;
+>  	struct kmem_cache *cachep;
+> -	char *namep = NULL;
+>  
+>  	i = (sb->s_blocksize_bits + 2) * sizeof(*sbi->s_mb_offsets);
+>  
+> @@ -2443,7 +2442,7 @@ int ext4_mb_init(struct super_block *sb, int needs_recovery)
+>  	cache_index = sb->s_blocksize_bits - EXT4_MIN_BLOCK_LOG_SIZE;
+>  	cachep = ext4_groupinfo_caches[cache_index];
+>  	if (!cachep) {
+> -		char name[32];
+> +		char name[32], *namep;
+>  		int len = offsetof(struct ext4_group_info,
+>  					bb_counters[sb->s_blocksize_bits + 2]);
+>  
+> @@ -2459,6 +2458,7 @@ int ext4_mb_init(struct super_block *sb, int needs_recovery)
+>  		cachep = kmem_cache_create(namep, len, 0,
+>  					     SLAB_RECLAIM_ACCOUNT, NULL);
+>  		if (!cachep) {
+> +			kfree(namep);
+>  			ret = -ENOMEM;
+>  			goto out;
+>  		}
+> @@ -2520,7 +2520,6 @@ out:
+>  	if (ret) {
+>  		kfree(sbi->s_mb_offsets);
+>  		kfree(sbi->s_mb_maxs);
+> -		kfree(namep);
+>  	}
+>  	return ret;
+>  }
 
-Having a dedicated workqueue no longer makes any difference regarding
-processing latency.  Each workqueue is mere frontend to the shared
-worker pool anyway.  Dedicated workqueues are now meaningful only as
-forward progress guarantee, attribute and/or flush domain - IOW, when
-the workqueue needs to be used during memory reclaim, the work items
-need to have specific attributes or certain group of work items need
-to be flushed together.  Apart from that, there's virtually no
-difference between using the system_wq and a dedicated one.  As using
-the system one is usually simpler, it's natural to do that.
-
-Thank you.
-
--- 
-tejun
