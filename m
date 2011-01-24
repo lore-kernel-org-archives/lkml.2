@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220Ab1AXEIE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 23:08:04 -0500
-Received: from ozlabs.org ([203.10.76.45]:57775 "EHLO ozlabs.org"
+	id S1753235Ab1AXEMe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 23:12:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35904 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753041Ab1AXEID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 23:08:03 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PULL] module and param
-Date: Mon, 24 Jan 2011 14:37:50 +1030
-User-Agent: KMail/1.13.5 (Linux/2.6.35-24-generic; KDE/4.5.1; i686; ; )
-Cc: linux-kernel@vger.kernel.org
+	id S1753019Ab1AXEMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 23:12:33 -0500
+Date: Mon, 24 Jan 2011 12:15:20 +0800
+From: Han Pingtian <phan@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Denis Kirjanov <dkirjanov@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org
+Subject: Re: [PATCH] perftools: Fix build error
+Message-ID: <20110124041520.GC4694@hpt.nay.redhat.com>
+Mail-Followup-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+	Denis Kirjanov <dkirjanov@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+	linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+	paulus@samba.org
+References: <20110120093246.GA8031@hera.kernel.org>
+ <20110120114719.GD23661@elte.hu>
+ <4D385866.3060405@kernel.org>
+ <20110120172218.GB13482@ghostprotocols.net>
+ <20110121085721.GD2994@hpt.nay.redhat.com>
+ <20110121132011.GA15066@ghostprotocols.net>
+ <20110124025304.GB4694@hpt.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101241437.51173.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110124025304.GB4694@hpt.nay.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 1bae4ce27c9c90344f23c65ea6966c50ffeae2f5:
+On Mon, Jan 24, 2011 at 10:53:04AM +0800, Han Pingtian wrote:
+> On Fri, Jan 21, 2011 at 11:20:11AM -0200, Arnaldo Carvalho de Melo wrote:
+> > Right, one patch doing the conversion for the whole tools/perf tree
+> > would be better.
+> > 
+> > Han, if you can after the patch make sure it builds in an RHEL4 machine,
+> > that would be great,
+> OK, I'll test perf/urgent on RHEL4 environments.
+> > 
+I have tested on RHEL4, the building works fine.
+> > Thanks,
+> > 
+> > - Arnaldo
 
-  Linux 2.6.38-rc2 (2011-01-21 19:01:34 -0800)
-
-are available in the git repository at:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6-for-linus.git master
-
-Dmitry Torokhov (1):
-      module: show version information for built-in modules in sysfs
-
-Linus Walleij (1):
-      param: add null statement to compiled-in module params
-
-Rusty Russell (2):
-      module: fix linker error for MODULE_VERSION when !MODULE and CONFIG_SYSFS=n
-      module: fix missing semicolons in MODULE macro usage
-
- drivers/net/arm/ks8695net.c       |    2 +-
- include/asm-generic/vmlinux.lds.h |    7 ++++
- include/linux/module.h            |   27 +++++++++++++++
- include/linux/moduleparam.h       |    6 ++-
- kernel/params.c                   |   65 ++++++++++++++++++++++++++++++------
- net/dsa/dsa.c                     |    2 +-
- 6 files changed, 94 insertions(+), 15 deletions(-)
+-- 
+Han Pingtian
+Quality Engineer
+hpt @ #kernel-qe
+Red Hat, Inc
+Freedom ... courage ... Commitment ... ACCOUNTABILITY
