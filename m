@@ -1,156 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab1AXXmT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 18:42:19 -0500
-Received: from claw.goop.org ([74.207.240.146]:50296 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752800Ab1AXXlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 18:41:24 -0500
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        the arch/x86 maintainers <x86@kernel.org>,
+	id S1753253Ab1AXXqX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 18:46:23 -0500
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:55979 "EHLO
+	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752790Ab1AXXqV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 18:46:21 -0500
+X-Spam-ASN: 
+From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 1/6] x86/ticketlock: clean up types and accessors
-Date: Mon, 24 Jan 2011 15:41:14 -0800
-Message-Id: <fab3996182c6af4ef2c5de7d3028314d17565faf.1295909908.git.jeremy.fitzhardinge@citrix.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <cover.1295909908.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1295909908.git.jeremy.fitzhardinge@citrix.com>
-In-Reply-To: <cover.1295909908.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1295909908.git.jeremy.fitzhardinge@citrix.com>
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Gordeev <lasaine@lvk.cs.msu.su>
+Subject: [PATCH] pps: claim parallel port exclusively
+Date: Tue, 25 Jan 2011 02:46:05 +0300
+Message-Id: <5f4d478f7f5ec0e0734b29e6f35c635c86a2488d.1295912692.git.lasaine@lvk.cs.msu.su>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <20110121194317.GA8908@elte.hu>
+References: <20110121194317.GA8908@elte.hu>
+X-AV-Checked: ClamAV using ClamSMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Both pps_parport and pps_gen_parport are written in a way that they
+can't share a port with any other driver. This can result in locking up
+the process that loads modules or even the whole kernel if the modules
+are compiled in. Use PARPORT_FLAG_EXCL to indicate this.
 
-A few cleanups to the way spinlocks are defined and accessed:
- - define __ticket_t which is the size of a spinlock ticket (ie, enough
-   bits to hold all the cpus)
- - Define struct arch_spinlock as a union containing plain slock and
-   the head and tail tickets
- - Use head and tail to implement some of the spinlock predicates.
- - Make all ticket variables unsigned.
- - Use TICKET_SHIFT to form constants
-
-Most of this will be used in later patches.
-
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 ---
- arch/x86/include/asm/spinlock.h       |   24 ++++++++++--------------
- arch/x86/include/asm/spinlock_types.h |   20 ++++++++++++++++++--
- 2 files changed, 28 insertions(+), 16 deletions(-)
+ drivers/pps/clients/pps_parport.c        |    2 +-
+ drivers/pps/generators/pps_gen_parport.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index 3089f70..d6d5784 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -56,11 +56,9 @@
-  * much between them in performance though, especially as locks are out of line.
-  */
- #if (NR_CPUS < 256)
--#define TICKET_SHIFT 8
--
- static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
- {
--	short inc = 0x0100;
-+	unsigned short inc = 1 << TICKET_SHIFT;
+diff --git a/drivers/pps/clients/pps_parport.c b/drivers/pps/clients/pps_parport.c
+index 32221ef..c571d6d 100644
+--- a/drivers/pps/clients/pps_parport.c
++++ b/drivers/pps/clients/pps_parport.c
+@@ -163,7 +163,7 @@ static void parport_attach(struct parport *port)
+ 	}
  
- 	asm volatile (
- 		LOCK_PREFIX "xaddw %w0, %1\n"
-@@ -79,7 +77,7 @@ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
+ 	device->pardev = parport_register_device(port, KBUILD_MODNAME,
+-			NULL, NULL, parport_irq, 0, device);
++			NULL, NULL, parport_irq, PARPORT_FLAG_EXCL, device);
+ 	if (!device->pardev) {
+ 		pr_err("couldn't register with %s\n", port->name);
+ 		goto err_free;
+diff --git a/drivers/pps/generators/pps_gen_parport.c b/drivers/pps/generators/pps_gen_parport.c
+index 5c32f8d..b93af3e 100644
+--- a/drivers/pps/generators/pps_gen_parport.c
++++ b/drivers/pps/generators/pps_gen_parport.c
+@@ -198,7 +198,7 @@ static void parport_attach(struct parport *port)
+ 	}
  
- static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
- {
--	int tmp, new;
-+	unsigned int tmp, new;
- 
- 	asm volatile("movzwl %2, %0\n\t"
- 		     "cmpb %h0,%b0\n\t"
-@@ -104,12 +102,10 @@ static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
- 		     : "memory", "cc");
- }
- #else
--#define TICKET_SHIFT 16
--
- static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
- {
--	int inc = 0x00010000;
--	int tmp;
-+	unsigned inc = 1 << TICKET_SHIFT;
-+	unsigned tmp;
- 
- 	asm volatile(LOCK_PREFIX "xaddl %0, %1\n"
- 		     "movzwl %w0, %2\n\t"
-@@ -129,8 +125,8 @@ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
- 
- static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
- {
--	int tmp;
--	int new;
-+	unsigned tmp;
-+	unsigned new;
- 
- 	asm volatile("movl %2,%0\n\t"
- 		     "movl %0,%1\n\t"
-@@ -160,16 +156,16 @@ static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
- 
- static inline int __ticket_spin_is_locked(arch_spinlock_t *lock)
- {
--	int tmp = ACCESS_ONCE(lock->slock);
-+	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
- 
--	return !!(((tmp >> TICKET_SHIFT) ^ tmp) & ((1 << TICKET_SHIFT) - 1));
-+	return !!(tmp.tail ^ tmp.head);
- }
- 
- static inline int __ticket_spin_is_contended(arch_spinlock_t *lock)
- {
--	int tmp = ACCESS_ONCE(lock->slock);
-+	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
- 
--	return (((tmp >> TICKET_SHIFT) - tmp) & ((1 << TICKET_SHIFT) - 1)) > 1;
-+	return ((tmp.tail - tmp.head) & TICKET_MASK) > 1;
- }
- 
- #ifndef CONFIG_PARAVIRT_SPINLOCKS
-diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
-index dcb48b2..e3ad1e3 100644
---- a/arch/x86/include/asm/spinlock_types.h
-+++ b/arch/x86/include/asm/spinlock_types.h
-@@ -5,11 +5,27 @@
- # error "please don't include this file directly"
- #endif
- 
-+#include <linux/types.h>
-+
-+#if (CONFIG_NR_CPUS < 256)
-+typedef u8  __ticket_t;
-+#else
-+typedef u16 __ticket_t;
-+#endif
-+
-+#define TICKET_SHIFT	(sizeof(__ticket_t) * 8)
-+#define TICKET_MASK	((__ticket_t)((1 << TICKET_SHIFT) - 1))
-+
- typedef struct arch_spinlock {
--	unsigned int slock;
-+	union {
-+		unsigned int slock;
-+		struct __raw_tickets {
-+			__ticket_t head, tail;
-+		} tickets;
-+	};
- } arch_spinlock_t;
- 
--#define __ARCH_SPIN_LOCK_UNLOCKED	{ 0 }
-+#define __ARCH_SPIN_LOCK_UNLOCKED	{ { .slock = 0 } }
- 
- typedef struct {
- 	unsigned int lock;
+ 	device.pardev = parport_register_device(port, KBUILD_MODNAME,
+-			NULL, NULL, NULL, 0, &device);
++			NULL, NULL, NULL, PARPORT_FLAG_EXCL, &device);
+ 	if (!device.pardev) {
+ 		pr_err("couldn't register with %s\n", port->name);
+ 		return;
 -- 
-1.7.3.4
+1.7.2.3
 
