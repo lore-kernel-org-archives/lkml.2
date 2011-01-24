@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754003Ab1AXSqC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 13:46:02 -0500
-Received: from exprod5og110.obsmtp.com ([64.18.0.20]:36196 "EHLO
-	exprod5og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753562Ab1AXSqA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 13:46:00 -0500
-Date: Mon, 24 Jan 2011 12:48:13 -0600
-From: Rich Coe <Richard.Coe@med.ge.com>
-To: Tobias Karnat <tobias.karnat@googlemail.com>
-Cc: Thomas Renninger <trenn@suse.de>, richard.coe@med.ge.com,
-        jslaby@novell.com, linux-acpi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: acpi_button: random oops on boot
-Message-Id: <20110124124813.bb03c6fe.Richard.Coe@med.ge.com>
-In-Reply-To: <1295892786.3265.48.camel@Tobias-Karnat>
-References: <1291477752.5096.27.camel@Tobias-Karnat>
-	<1291679699.6246.11.camel@Tobias-Karnat>
-	<20101207051521.GA16804@helgaas.com>
-	<201101241403.21707.trenn@suse.de>
-	<1295892786.3265.48.camel@Tobias-Karnat>
-Organization: CSE
-X-Mailer: Sylpheed 3.1.0beta3-r2688 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+	id S1754063Ab1AXSsG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 13:48:06 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:34640 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753562Ab1AXSsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 13:48:04 -0500
+Subject: Re: [PATCH] ARM: mm: Regarding section when dealing with meminfo
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: KyongHo Cho <pullip.cho@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        KeyYoung Park <keyyoung.park@samsung.com>,
+        linux-kernel@vger.kernel.org, Ilho Lee <ilho215.lee@samsung.com>,
+        linux-mm@kvack.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20110124175807.GA27427@n2100.arm.linux.org.uk>
+References: <1295516739-9839-1-git-send-email-pullip.cho@samsung.com>
+	 <1295544047.9039.609.camel@nimitz>
+	 <20110120180146.GH6335@n2100.arm.linux.org.uk>
+	 <1295547087.9039.694.camel@nimitz>
+	 <20110123180532.GA3509@n2100.arm.linux.org.uk>
+	 <1295887937.11047.119.camel@nimitz>
+	 <20110124175807.GA27427@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Mon, 24 Jan 2011 10:47:37 -0800
+Message-ID: <1295894857.11047.556.camel@nimitz>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-GEHealthcare-MailScanner: Found to be clean
-X-GEHealthcare-MailScanner-From: richard.coe@med.ge.com
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Jan 2011 19:13:06 +0100
-Tobias Karnat <tobias.karnat@googlemail.com> wrote:
-> Am Montag, den 24.01.2011, 14:03 +0100 schrieb Thomas Renninger:
-> I hope Rich is still interested in a solution as I am. The bad thing is
-> that the latest working version I had been running on that machine was
-> ancient 2.6.23. So this problem is a regression, which I would have
-> noticed earlier, if I had updated that machine more often.
-> 
-> It is not an hardware problem [...]
+On Mon, 2011-01-24 at 17:58 +0000, Russell King - ARM Linux wrote:
+> Wrong.  For flatmem, we have a pfn_valid() which is backed by doing a
+> one, two or maybe rarely three compare search of the memblocks.  Short
+> of having a bitmap of every page in the 4GB memory space, you can't
+> get more efficient than that.
 
-I don't think it's a hardware problem either.  
+Sweet.  So, we can just take the original patch that started this
+conversation, add the requisite pfn_valid()s and pfn_to_page()s, and
+skip the sparsemem #ifdefs.  Right?
 
-I reproduced this on later kernels, 2.6.36 (I think). 
-I've been working on a project that's almost finished, then I plan on going
-back to tracking down this issue.
+-- Dave
 
-Rich
--- 
