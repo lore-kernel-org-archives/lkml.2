@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834Ab1AXQzI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 11:55:08 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:36353 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753646Ab1AXQzH (ORCPT
+	id S1753802Ab1AXRCW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 12:02:22 -0500
+Received: from piggy.rz.tu-ilmenau.de ([141.24.4.8]:59627 "EHLO
+	piggy.rz.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753819Ab1AXRCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 11:55:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=GEmvMrZI/yb6B8KcinTY8e72mzJJ8RxOVr5ZA4Tc5MDW9DHJ9EHaLlikF9iGb9bbLa
-         LaoFdDtbGybpn/w4kreasnWIOWsy3g1j50uucSpkQHqTWWcKPqGlVcYoV8P3vSJmCuAQ
-         xVGu0zU6lJdqF4rZqZk6H2y5fo3jezjPBf5dw=
-Date: Mon, 24 Jan 2011 17:54:48 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] nozomi: don't use flush_scheduled_work()
-Message-ID: <20110124165448.GG27510@htj.dyndns.org>
+	Mon, 24 Jan 2011 12:02:20 -0500
+Date: Mon, 24 Jan 2011 18:02:13 +0100
+From: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>
+To: Patrick McHardy <kaber@trash.net>
+Cc: netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        NetDev <netdev@vger.kernel.org>
+Subject: Re: netfilter: marking IPv6 packets sends them to the wrong
+ interface
+Message-ID: <20110124170213.GB2616@darkside.kls.lan>
+Mail-Followup-To: Mario 'BitKoenig' Holbe <Mario.Holbe@TU-Ilmenau.DE>,
+	Patrick McHardy <kaber@trash.net>, netfilter-devel@vger.kernel.org,
+	linux-kernel@vger.kernel.org, NetDev <netdev@vger.kernel.org>
+References: <20110123122108.GA30305@darkside.kls.lan>
+ <4D3D82D1.6050305@trash.net>
+ <20110124143518.GA2616@darkside.kls.lan>
+ <4D3DA48A.2020605@trash.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7ZAtKRhVyVSsbBD2"
 Content-Disposition: inline
+In-Reply-To: <4D3DA48A.2020605@trash.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-flush_scheduled_work() in tty_exit() doesn't seem to target any
-specific work.  If it was to flush work items used in tty generic
-layer, they're already flushed properly during tty release.
 
-flush_scheduled_work() is going away.  Remove the seemingly redundant
-usage.
+--7ZAtKRhVyVSsbBD2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: Alan Cox <alan@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/char/nozomi.c |    2 --
- 1 file changed, 2 deletions(-)
+On Mon, Jan 24, 2011 at 05:10:50PM +0100, Patrick McHardy wrote:
+> > Yes, disabling the ip6_route_me_harder() call in ip6t_mangle_out()
+> > results in the advertisements being transmitted on the correct
+> > interfaces
+> Thanks. The problem appears to be that ip6_route_me_harder()
+> only uses the socket's oif for the route lookup when the
+> socket is bound to an interface, but radvd uses IPV6_PKTINFO
+> to specify the outgoing interface.
+>=20
+> I guess netfilter shouldn't be overriding IPV6_PKTINFO, but
+> we unfortunately have neither an indication of this nor the
+> original route lookup keys available at the time the packet
+> is rerouted.
 
-Index: work/drivers/char/nozomi.c
-===================================================================
---- work.orig/drivers/char/nozomi.c
-+++ work/drivers/char/nozomi.c
-@@ -1514,8 +1514,6 @@ static void __devexit tty_exit(struct no
- 
- 	DBG1(" ");
- 
--	flush_scheduled_work();
--
- 	for (i = 0; i < MAX_PORT; ++i) {
- 		struct tty_struct *tty = tty_port_tty_get(&dc->port[i].port);
- 		if (tty && list_empty(&tty->hangup_work.entry))
+Mh, I'm not sure, but I guess an indication of netfilter not overriding
+IPV6_PKTINFO could be the fact that the source address does not
+change...
+
+=46rom my 1st mail:
+| # ip6tables -t mangle -A OUTPUT -o eth0 -j MARK --set-mark 1
+| # /etc/init.d/radvd start
+| -> eth0: <no traffic>
+| -> eth1: fe80::2a0:c9ff:fee6:90ce > ff02::1: prefix 2001:6f8:90c:10::/64
+| -> eth1: fe80::2d0:b7ff:fe06:6b36 > ff02::1: prefix 2001:6f8:90c:12::/64
+
+fe80::2d0:b7ff:fe06:6b36 is the link-local address of eth0 set by radvd
+in IPV6_PKTINFO as well. This, of course, is no guarantee for
+ipi6_ifindex not being changed, but I believe if something would have
+changed it, it would also have changed ipi6_addr.
+
+
+Mario
+--=20
+Doing it right is no excuse for not meeting the schedule.
+                                -- Plant Manager, Delphi Corporation
+
+--7ZAtKRhVyVSsbBD2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEVAwUBTT2wlRS+e2HeSPbpAQKnAQf7BF6cP8EOCTP6nIII2iHZLeOg4FELkgak
+LeF3iH6OzoTQAUyTOP53sw3PZTmKayRdkd7i2qSRYzQ4WhouFwNDx0KP10HLCwMq
+ha9ut70TLwnxXbtoIyHMRBgHO1DvzJgSVvPshzaCREjbgwR9OLUj3J5CuWHxf16X
+9Nep9+1PZGLF/iUouzxsIab/2mW+g9wKl2bjaZ27aiqihNm+M3H5bXzfX6LmSCqS
+/KpbuAPcKh4PKas4nsDXNdTlcZfvIgHBZBUWawsk2Vr9pQ0HZEexcz4OJGmxn6v9
+NUDAJEKmVv24DxMsEapAwYQnx73LbGfiO9Zh109FBmd9TT2h3dGiwA==
+=ImCo
+-----END PGP SIGNATURE-----
+
+--7ZAtKRhVyVSsbBD2--
