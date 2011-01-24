@@ -1,121 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530Ab1AXSbV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 13:31:21 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:46683 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752948Ab1AXSbU convert rfc822-to-8bit (ORCPT
+	id S1753587Ab1AXSeE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 13:34:04 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:43608 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752948Ab1AXSeC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 13:31:20 -0500
-Subject: Re: [PATCH 16/16] KVM-GST: adjust scheduler cpu power
-From: Peter Zijlstra <peterz@infradead.org>
-To: Glauber Costa <glommer@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
-        Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Avi Kivity <avi@redhat.com>
-In-Reply-To: <1295892397-11354-17-git-send-email-glommer@redhat.com>
-References: <1295892397-11354-1-git-send-email-glommer@redhat.com>
-	 <1295892397-11354-17-git-send-email-glommer@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 24 Jan 2011 19:32:00 +0100
-Message-ID: <1295893920.28776.468.camel@laptop>
+	Mon, 24 Jan 2011 13:34:02 -0500
+Date: Tue, 25 Jan 2011 00:03:52 +0530
+From: Anithra P Janakiraman <anithra@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: dave@linux.vnet.ibm.com, xiyou.wangcong@gmail.com, sugaken.r3@gmail.com,
+        alan@lxorguk.ukuu.org.uk, srikar@linux.vnet.ibm.com, suzuki@in.ibm.com,
+        vatsa@linux.vnet.ibm.com, ananth@in.ibm.com
+Subject: [PATCH v2] Softdog enhancement to optionally invoke panic instead
+ of reboot on timer expiry
+Message-ID: <20110125000352.0be09450@linux.vnet.ibm.com>
+Organization: IBM
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.6; i686-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-24 at 13:06 -0500, Glauber Costa wrote:
-> This is a first proposal for using steal time information
-> to influence the scheduler. There are a lot of optimizations
-> and fine grained adjustments to be done, but it is working reasonably
-> so far for me (mostly)
-> 
-> With this patch (and some host pinnings to demonstrate the situation),
-> two vcpus with very different steal time (Say 80 % vs 1 %) will not get
-> an even distribution of processes. This is a situation that can naturally
-> arise, specially in overcommited scenarios. Previosly, the guest scheduler
-> would wrongly think that all cpus have the same ability to run processes,
-> lowering the overall throughput.
-> 
-> Signed-off-by: Glauber Costa <glommer@redhat.com>
-> CC: Rik van Riel <riel@redhat.com>
-> CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> CC: Peter Zijlstra <peterz@infradead.org>
-> CC: Avi Kivity <avi@redhat.com>
-> ---
->  include/linux/sched.h |    1 +
->  kernel/sched.c        |    4 ++++
->  kernel/sched_fair.c   |   10 ++++++++++
->  3 files changed, 15 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index d747f94..beab72d 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -302,6 +302,7 @@ long io_schedule_timeout(long timeout);
->  extern void cpu_init (void);
->  extern void trap_init(void);
->  extern void update_process_times(int user);
-> +extern cputime_t (*hypervisor_steal_time)(void);
->  extern void scheduler_tick(void);
->  
->  extern void sched_show_task(struct task_struct *p);
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 3b3e88d..c460f0d 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -501,6 +501,8 @@ struct rq {
->  	struct sched_domain *sd;
->  
->  	unsigned long cpu_power;
-> +	unsigned long real_ticks;
-> +	unsigned long total_ticks;
->  
->  	unsigned char idle_at_tick;
->  	/* For active balancing */
-> @@ -3533,10 +3535,12 @@ static int touch_steal_time(int is_idle)
->  	if (is_idle)
->  		return 0;
->  
-> +	rq->total_ticks++;
->  	if (steal) {
->  		account_steal_time(steal);
->  		return 1;
->  	}
-> +	rq->real_ticks++;
->  	return 0;
->  }
 
-yuck!! is ticks really the best you can do?
+Hi,
 
-I thought kvm had a ns resolution steal-time clock?
+We currently have no way of determining the reason for failure when a
+softdog timeout occurs. We use softdog to watch for critical application
+failures, and at the minimum a snapshot of the system would help to
+determine the cause. In such a scenario the application could fail but
+there isn't a softlockup as such, hence the detect softlockup feature
+does not help.
+The patch below adds a module parameter soft_panic which when set to
+1 causes softdog to invoke panic instead of reboot when the softdog
+timer expires. By invoking panic we execute kdump if it is configured
+and the vmcore generated by kdump should provide atleast a minimal idea
+of the reason for failure.
 
-> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> index c62ebae..1364c28 100644
-> --- a/kernel/sched_fair.c
-> +++ b/kernel/sched_fair.c
-> @@ -2509,6 +2509,16 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
->  		power >>= SCHED_LOAD_SHIFT;
->  	}
->  
-> +	WARN_ON(cpu_rq(cpu)->real_ticks > cpu_rq(cpu)->total_ticks);
-> +
-> +	if (cpu_rq(cpu)->total_ticks) {
-> +		power *= cpu_rq(cpu)->real_ticks;
-> +		power /= cpu_rq(cpu)->total_ticks;
-> +	}
-> +
-> +	cpu_rq(cpu)->total_ticks = 0;
-> +	cpu_rq(cpu)->real_ticks = 0;
-> +
->  	sdg->cpu_power_orig = power;
->  
->  	if (sched_feat(ARCH_POWER))
+Based on an original patch by Ken Sugawara <sugaken.r3@gmail.com>
+Signed-off-by: Anithra P J <anithra@linux.vnet.ibm.com>
+---
+ drivers/watchdog/softdog.c |   18 +++++++++++++++---
+ 1 file changed, 15 insertions(+), 3 deletions(-)
 
-I would really much rather see you change update_rq_clock_task() and
-subtract your ns resolution steal time from our wall-time,
-update_rq_clock_task() already updates the cpu_power relative to the
-remaining time available.
+Index: linux-2.6.38-rc1/drivers/watchdog/softdog.c
+===================================================================
+--- linux-2.6.38-rc1.orig/drivers/watchdog/softdog.c
++++ linux-2.6.38-rc1/drivers/watchdog/softdog.c
+@@ -48,6 +48,7 @@
+ #include <linux/init.h>
+ #include <linux/jiffies.h>
+ #include <linux/uaccess.h>
++#include <linux/kernel.h>
+ 
+ #define PFX "SoftDog: "
+ 
+@@ -75,6 +76,13 @@
+ 	"Softdog action, set to 1 to ignore reboots, 0 to reboot "
+ 					"(default depends on ONLY_TESTING)");
+ 
++
++static int soft_panic;
++
++module_param(soft_panic, int, 0);
++MODULE_PARM_DESC(soft_panic,
++	"Softdog action, set to 1 to panic, 0 to reboot (default 0)");
++
+ /*
+  *	Our timer
+  */
+@@ -98,7 +106,10 @@
+ 
+ 	if (soft_noboot)
+ 		printk(KERN_CRIT PFX "Triggered - Reboot ignored.\n");
+-	else {
++	else if (soft_panic) {
++		printk(KERN_CRIT PFX "Initiating panic.\n");
++		panic("Software Watchdog Timer expired.");
++	} else {
+ 		printk(KERN_CRIT PFX "Initiating system reboot.\n");
+ 		emergency_restart();
+ 		printk(KERN_CRIT PFX "Reboot didn't ?????\n");
+@@ -267,7 +278,8 @@
+ };
+ 
+ static char banner[] __initdata = KERN_INFO "Software Watchdog Timer: 0.07 "
+-	"initialized. soft_noboot=%d soft_margin=%d sec (nowayout= %d)\n";
++	"initialized. soft_noboot=%d soft_margin=%d sec soft_panic=%d "
++	"(nowayout= %d)\n";
+ 
+ static int __init watchdog_init(void)
+ {
+@@ -298,7 +310,7 @@
+ 		return ret;
+ 	}
+ 
+-	printk(banner, soft_noboot, soft_margin, nowayout);
++	printk(banner, soft_noboot, soft_margin, soft_panic, nowayout);
+ 
+ 	return 0;
+ }
+
+
+
