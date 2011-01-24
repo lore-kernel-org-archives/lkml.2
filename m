@@ -1,93 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800Ab1AXWxE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 17:53:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56276 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751878Ab1AXWxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 17:53:02 -0500
-Date: Mon, 24 Jan 2011 17:52:53 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        Chad Talbott <ctalbott@google.com>, Nauman Rafique <nauman@google.com>,
-        Divyesh Shah <dpshah@google.com>, jmoyer@redhat.com,
-        Shaohua Li <shaohua.li@intel.com>
-Subject: Re: [PATCH 5/6 v3] cfq-iosched: CFQ group hierarchical scheduling
- and use_hierarchy interface
-Message-ID: <20110124225253.GF9420@redhat.com>
-References: <4D180ECE.4000305@cn.fujitsu.com>
- <4D185382.8080601@cn.fujitsu.com>
+	id S1752856Ab1AXWxp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 17:53:45 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:17714 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752556Ab1AXWxo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 17:53:44 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp03.nvidia.com on Mon, 24 Jan 2011 14:53:24 -0800
+Date: Mon, 24 Jan 2011 14:53:23 -0800
+From: rmorell@nvidia.com
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Benoit Goby <benoit@android.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
+        Oliver Neukum <oliver@neukum.org>, Olof Johansson <olof@lixom.net>,
+        Erik Gilling <konkers@android.com>, Colin Cross <ccross@android.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 2/2] USB: ehci: tegra: Align DMA transfers to 32 bytes
+Message-ID: <20110124225323.GA5701@morell.nvidia.com>
+References: <1295559715-14264-3-git-send-email-rmorell@nvidia.com>
+ <Pine.LNX.4.44L0.1101241132420.2030-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D185382.8080601@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <Pine.LNX.4.44L0.1101241132420.2030-100000@iolanthe.rowland.org>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 27, 2010 at 04:51:14PM +0800, Gui Jianfeng wrote:
+On Mon, Jan 24, 2011 at 08:36:55AM -0800, Alan Stern wrote:
+> On Thu, 20 Jan 2011, Robert Morell wrote:
+> 
+> > The Tegra2 USB controller doesn't properly deal with misaligned DMA
+> > buffers, causing corruption.  This is especially prevalent with USB
+> > network adapters, where skbuff alignment is often in the middle of a
+> > 4-byte dword.
+> > 
+> > To avoid this, allocate a temporary buffer for the DMA if the provided
+> > buffer isn't sufficiently aligned.
+> > 
+> > Signed-off-by: Robert Morell <rmorell@nvidia.com>
+> > ---
+> >  drivers/usb/host/ehci-tegra.c |   92 +++++++++++++++++++++++++++++++++++++++++
+> >  1 files changed, 92 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+> > index 2341904..7cdfc65 100644
+> > --- a/drivers/usb/host/ehci-tegra.c
+> > +++ b/drivers/usb/host/ehci-tegra.c
+> > @@ -32,6 +32,8 @@
+> >  #define TEGRA_USB_USBMODE_HOST			(3 << 0)
+> >  #define TEGRA_USB_PORTSC1_PTC(x)		(((x) & 0xf) << 16)
+> >  
+> > +#define TEGRA_USB_DMA_ALIGN 32
+> > +
+> >  struct tegra_ehci_context {
+> >  	bool valid;
+> >  	u32 command;
+> > @@ -461,6 +463,94 @@ static int tegra_ehci_bus_resume(struct usb_hcd *hcd)
+> >  }
+> >  #endif
+> >  
+> > +struct temp_buffer {
+> > +	void *kmalloc_ptr;
+> > +	void *old_xfer_buffer;
+> > +	u8 data[0];
+> > +};
+> > +
+> > +static void free_temp_buffer(struct urb *urb, int status)
+> > +{
+> > +	enum dma_data_direction dir;
+> > +	struct temp_buffer *temp;
+> > +
+> > +	if (!(urb->transfer_flags & URB_ALIGNED_TEMP_BUFFER))
+> > +		return;
+> > +
+> > +	dir = usb_urb_dir_in(urb) ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
+> > +
+> > +	temp = container_of(urb->transfer_buffer, struct temp_buffer,
+> > +			    data);
+> > +
+> > +	if (dir == DMA_FROM_DEVICE && !status)
+> > +		memcpy(temp->old_xfer_buffer, temp->data,
+> > +			urb->transfer_buffer_length);
+> 
+> Even if status is nonzero, there may be valid data in the buffer.  You 
+> should skip that test.
 
-[..]
-> -static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd);
-> -
->  static struct cfq_rb_root *service_tree_for(struct cfq_group *cfqg,
->  					    enum wl_prio_t prio,
->  					    enum wl_type_t type)
-> @@ -640,10 +646,19 @@ static inline unsigned cfq_group_get_avg_queues(struct cfq_data *cfqd,
->  static inline unsigned
->  cfq_group_slice(struct cfq_data *cfqd, struct cfq_group *cfqg)
->  {
-> -	struct cfq_rb_root *st = &cfqd->grp_service_tree;
->  	struct cfq_entity *cfqe = &cfqg->cfqe;
-> +	struct cfq_rb_root *st = cfqe->service_tree;
-> +	int group_slice = cfq_target_latency;
-> +
-> +	/* Calculate group slice in a hierarchical way */
-> +	do {
-> +		group_slice = group_slice * cfqe->weight / st->total_weight;
-> +		cfqe = cfqe->parent;
-> +		if (cfqe)
-> +			st = cfqe->service_tree;
-> +	} while (cfqe);
->  
-> -	return cfq_target_latency * cfqe->weight / st->total_weight;
-> +	return group_slice;
->  }
+Thanks for looking, Alan.  I added that test based on earlier feedback.
+I think the big concern here is security: if the URB fails in such a way
+that the buffer is not overwritten, then we may copy out freed kernel
+data to userspace.
 
-Gui, I think this is still not fully correct. In flat mode there was
-only 1 service tree at top and all the groups were on that service tree
-so st->total_weight worked fine.
+Are there specific status codes that I can check for here?  I guess the
+only other option is to remove the direction check from the alloc path
+or alloc with GFP_ZERO.
 
-But now with hierarchical mode, children group might be on one of the
-sync-idle tree and there might be other queues on other service tree
-in the parent group. 
+Thanks,
+Robert
 
-So we shall have to have a notion of total group weigt (and not just
-service tree weight) to calculate this accurately I think.
-
-Secondly, this logic does not take into account the ioprio or sync/async
-to calculate the group share. I think for the time being we can keep
-it simple and later look into it to refine it.
-
-Also I want to have some integration/simplification of workload slice
-a and cfqq slice calculation logic with group slice logic. I guess will take
-that up later.
-
->  
->  static inline void
-> @@ -666,7 +681,8 @@ cfq_set_prio_slice(struct cfq_data *cfqd, struct cfq_queue *cfqq)
->  			/* scale low_slice according to IO priority
->  			 * and sync vs async */
->  			unsigned low_slice =
-> -				min(slice, base_low_slice * slice / sync_slice);
-> +				min(slice, base_low_slice * slice /
-> +				    sync_slice);
-
-Why extra line?
-
-Thanks
-Vivek
+> No other problems that I can see.
+> 
+> Alan Stern
+> 
+> 
