@@ -1,103 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751507Ab1AXTzM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 14:55:12 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:63334 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214Ab1AXTzL convert rfc822-to-8bit (ORCPT
+	id S1751878Ab1AXT4I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 14:56:08 -0500
+Received: from mail.bluewatersys.com ([202.124.120.130]:6273 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751214Ab1AXT4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 14:55:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=SV8qVCh4hQOkHKliTYyltuugKZX8nE/A+2Q38Xw9UfjxQUnGWIpmLFlOqY+pzYovYU
-         yemjpz663k9pCI1Bi+hqJGbYXtehBS1vM/HzBhVealAFgIh+Q7BIRdiMo/JlV+/+NK15
-         rQuc910wZUBeuCmExoLVNkKBG3sPjZbC4njPY=
+	Mon, 24 Jan 2011 14:56:06 -0500
+Message-ID: <4D3DD964.9020107@bluewatersys.com>
+Date: Tue, 25 Jan 2011 08:56:20 +1300
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <1295789862-25482-4-git-send-email-tj@kernel.org>
-References: <1295789862-25482-1-git-send-email-tj@kernel.org>
-	<1295789862-25482-4-git-send-email-tj@kernel.org>
-Date: Mon, 24 Jan 2011 11:55:10 -0800
-X-Google-Sender-Auth: ORUIkCVXEWFFxpbMgEBKf9KE6ZY
-Message-ID: <AANLkTik0eOxrqwV-xd-tJKXFRG9=irVXs9uJtpZ57qLU@mail.gmail.com>
-Subject: Re: [PATCH 03/16] x86: Make default_send_IPI_mask_sequence/allbutself_logical()
- 32bit only
-From: Yinghai Lu <yinghai@kernel.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tglx@linutronix.de, x86@kernel.org, eric.dumazet@gmail.com,
-        brgerst@gmail.com, gorcunov@gmail.com, penberg@kernel.org,
-        shaohui.zheng@intel.com, rientjes@google.com
+To: Julia Lawall <julia@diku.dk>
+CC: Russell King <linux@arm.linux.org.uk>, kernel-janitors@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] arch/arm/mach-at91/clock.c: Add missing IS_ERR test
+References: <1295898922-18822-1-git-send-email-julia@diku.dk> <1295898922-18822-3-git-send-email-julia@diku.dk>
+In-Reply-To: <1295898922-18822-3-git-send-email-julia@diku.dk>
+X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 23, 2011 at 5:37 AM, Tejun Heo <tj@kernel.org> wrote:
-> Both functions are used only in 32bit.  Put them inside CONFIG_X86_32.
-> This is to prepare for logical apicid handling update.
->
-> - Cyrill Gorcunov spotted that I forgot to move declarations in ipi.h
->  under CONFIG_X86_32.  Fixed.
->
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reviewed-by: Pekka Enberg <penberg@kernel.org>
-> Reviewed-by: Cyrill Gorcunov <gorcunov@gmail.com>
-> ---
->  arch/x86/include/asm/ipi.h |    8 ++++----
->  arch/x86/kernel/apic/ipi.c |    4 ++--
->  2 files changed, 6 insertions(+), 6 deletions(-)
->
-> diff --git a/arch/x86/include/asm/ipi.h b/arch/x86/include/asm/ipi.h
-> index 0b72282..615fa90 100644
-> --- a/arch/x86/include/asm/ipi.h
-> +++ b/arch/x86/include/asm/ipi.h
-> @@ -123,10 +123,6 @@ extern void default_send_IPI_mask_sequence_phys(const struct cpumask *mask,
->                                                 int vector);
->  extern void default_send_IPI_mask_allbutself_phys(const struct cpumask *mask,
->                                                         int vector);
-> -extern void default_send_IPI_mask_sequence_logical(const struct cpumask *mask,
-> -                                                        int vector);
-> -extern void default_send_IPI_mask_allbutself_logical(const struct cpumask *mask,
-> -                                                        int vector);
->
->  /* Avoid include hell */
->  #define NMI_VECTOR 0x02
-> @@ -150,6 +146,10 @@ static inline void __default_local_send_IPI_all(int vector)
->  }
->
->  #ifdef CONFIG_X86_32
-> +extern void default_send_IPI_mask_sequence_logical(const struct cpumask *mask,
-> +                                                        int vector);
-> +extern void default_send_IPI_mask_allbutself_logical(const struct cpumask *mask,
-> +                                                        int vector);
->  extern void default_send_IPI_mask_logical(const struct cpumask *mask,
->                                                 int vector);
->  extern void default_send_IPI_allbutself(int vector);
-> diff --git a/arch/x86/kernel/apic/ipi.c b/arch/x86/kernel/apic/ipi.c
-> index 08385e0..5037736 100644
-> --- a/arch/x86/kernel/apic/ipi.c
-> +++ b/arch/x86/kernel/apic/ipi.c
-> @@ -56,6 +56,8 @@ void default_send_IPI_mask_allbutself_phys(const struct cpumask *mask,
->        local_irq_restore(flags);
->  }
->
-> +#ifdef CONFIG_X86_32
-> +
->  void default_send_IPI_mask_sequence_logical(const struct cpumask *mask,
->                                                 int vector)
->  {
-> @@ -96,8 +98,6 @@ void default_send_IPI_mask_allbutself_logical(const struct cpumask *mask,
->        local_irq_restore(flags);
->  }
->
-> -#ifdef CONFIG_X86_32
-> -
->  /*
->  * This is only used on smaller machines.
->  */
+On 01/25/2011 08:55 AM, Julia Lawall wrote:
+> Function clk_get, defined just below this code, returns ERR_PTR not NULL in
+> an error case.
+> 
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @r@
+> identifier f;
+> @@
+> f(...) { ... return ERR_PTR(...); }
+> 
+> @@
+> identifier r.f, fld;
+> expression x;
+> statement S1,S2;
+> @@
+>  x = f(...)
+>  ... when != IS_ERR(x)
+> (
+>  if (IS_ERR(x) ||...) S1 else S2
+> |
+> *x->fld
+> )
+> // </smpl>
 
-Acked-by: Yinghai Lu <yinghai@kernel.org>
+I'm always really impressed by this tool :-).
+
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+>  arch/arm/mach-at91/clock.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-at91/clock.c b/arch/arm/mach-at91/clock.c
+> index 9113da6..c9ee6d0 100644
+> --- a/arch/arm/mach-at91/clock.c
+> +++ b/arch/arm/mach-at91/clock.c
+> @@ -224,7 +224,7 @@ void __init at91_clock_associate(const char *id, struct device *dev, const char
+>  {
+>  	struct clk *clk = clk_get(NULL, id);
+>  
+> -	if (!dev || !clk || !IS_ERR(clk_get(dev, func)))
+> +	if (!dev || IS_ERR(clk) || !IS_ERR(clk_get(dev, func)))
+>  		return;
+
+I think we want:
+
+	if (!dev || !clk || IS_ERR(clk) || !IS_ERR(clk_get(dev, func)))
+		return;
+
+Since it is valid to return a NULL clk, and we don't want to try and
+dereference it if that is the case.
+
+We could also probably drop the !IS_ERR(clk_get(dev, func)) check, since
+as far as I can tell it is just checking to see if the clock is already
+associated, but there is no harm in re-assigning the same values, and
+the two assignments in at91_clock_associate are going to be much quicker
+than the lookup in clk_get.
+
+~Ryan
+
+-- 
+Bluewater Systems Ltd - ARM Technology Solution Centre
+
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+Fax:   +64 3 3779135			  USA 1800 261 2934
