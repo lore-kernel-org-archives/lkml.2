@@ -1,94 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753728Ab1AXQg7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 11:36:59 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:48682 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753675Ab1AXQg4 (ORCPT
+	id S1753573Ab1AXQgi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 11:36:38 -0500
+Received: from fb1.tech.numericable.fr ([82.216.111.51]:42562 "EHLO
+	fb1.tech.numericable.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753490Ab1AXQgf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 11:36:56 -0500
-Date: Mon, 24 Jan 2011 11:36:55 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Robert Morell <rmorell@nvidia.com>
-cc: David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Benoit Goby <benoit@android.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
-        Oliver Neukum <oliver@neukum.org>, Olof Johansson <olof@lixom.net>,
-        Erik Gilling <konkers@android.com>, Colin Cross <ccross@android.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 2/2] USB: ehci: tegra: Align DMA transfers to 32 bytes
-In-Reply-To: <1295559715-14264-3-git-send-email-rmorell@nvidia.com>
-Message-ID: <Pine.LNX.4.44L0.1101241132420.2030-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 24 Jan 2011 11:36:35 -0500
+From: Corentin Chary <corentincj@iksaif.net>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: platform-driver-x86@vger.kernel.org, acpi4asus-user@lists.sourceforge.net,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Chris Bagwell <chris@cnpbagwell.com>,
+        Corentin Chary <corentincj@iksaif.net>
+Subject: [PATCH 06/14] eeepc-wmi: add an helper using simple return codes
+Date: Mon, 24 Jan 2011 17:23:50 +0100
+Message-Id: <1295886238-15961-7-git-send-email-corentincj@iksaif.net>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1295886238-15961-1-git-send-email-corentincj@iksaif.net>
+References: <1295886238-15961-1-git-send-email-corentincj@iksaif.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Jan 2011, Robert Morell wrote:
+eeepc_wmi_get_devstate returns an acpi_status, so each
+call need extra logic to handle the return code. This
+patch add a simple getter, returning a boolean (or a
+negative error code).
 
-> The Tegra2 USB controller doesn't properly deal with misaligned DMA
-> buffers, causing corruption.  This is especially prevalent with USB
-> network adapters, where skbuff alignment is often in the middle of a
-> 4-byte dword.
-> 
-> To avoid this, allocate a temporary buffer for the DMA if the provided
-> buffer isn't sufficiently aligned.
-> 
-> Signed-off-by: Robert Morell <rmorell@nvidia.com>
-> ---
->  drivers/usb/host/ehci-tegra.c |   92 +++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 92 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
-> index 2341904..7cdfc65 100644
-> --- a/drivers/usb/host/ehci-tegra.c
-> +++ b/drivers/usb/host/ehci-tegra.c
-> @@ -32,6 +32,8 @@
->  #define TEGRA_USB_USBMODE_HOST			(3 << 0)
->  #define TEGRA_USB_PORTSC1_PTC(x)		(((x) & 0xf) << 16)
->  
-> +#define TEGRA_USB_DMA_ALIGN 32
-> +
->  struct tegra_ehci_context {
->  	bool valid;
->  	u32 command;
-> @@ -461,6 +463,94 @@ static int tegra_ehci_bus_resume(struct usb_hcd *hcd)
->  }
->  #endif
->  
-> +struct temp_buffer {
-> +	void *kmalloc_ptr;
-> +	void *old_xfer_buffer;
-> +	u8 data[0];
-> +};
-> +
-> +static void free_temp_buffer(struct urb *urb, int status)
-> +{
-> +	enum dma_data_direction dir;
-> +	struct temp_buffer *temp;
-> +
-> +	if (!(urb->transfer_flags & URB_ALIGNED_TEMP_BUFFER))
-> +		return;
-> +
-> +	dir = usb_urb_dir_in(urb) ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
-> +
-> +	temp = container_of(urb->transfer_buffer, struct temp_buffer,
-> +			    data);
-> +
-> +	if (dir == DMA_FROM_DEVICE && !status)
-> +		memcpy(temp->old_xfer_buffer, temp->data,
-> +			urb->transfer_buffer_length);
+Signed-off-by: Corentin Chary <corentincj@iksaif.net>
+---
+ drivers/platform/x86/eeepc-wmi.c |   96 +++++++++++++++----------------------
+ 1 files changed, 39 insertions(+), 57 deletions(-)
 
-Even if status is nonzero, there may be valid data in the buffer.  You 
-should skip that test.
-
-No other problems that I can see.
-
-Alan Stern
-
+diff --git a/drivers/platform/x86/eeepc-wmi.c b/drivers/platform/x86/eeepc-wmi.c
+index d823458..de501fb 100644
+--- a/drivers/platform/x86/eeepc-wmi.c
++++ b/drivers/platform/x86/eeepc-wmi.c
+@@ -257,6 +257,29 @@ static acpi_status eeepc_wmi_set_devstate(u32 dev_id, u32 ctrl_param,
+ 	return status;
+ }
+ 
++/* Helper for special devices with magic return codes */
++static int eeepc_wmi_get_devstate_simple(u32 dev_id)
++{
++	u32 retval = 0;
++	acpi_status status;
++
++	status = eeepc_wmi_get_devstate(dev_id, &retval);
++
++	if (ACPI_FAILURE(status))
++		return -EINVAL;
++
++	/* If the device is present, DSTS will always set some bits
++	 * 0x00070000 - 1110000000000000000 - device supported
++	 * 0x00060000 - 1100000000000000000 - not supported
++	 * 0x00020000 - 0100000000000000000 - device supported
++	 * 0x00010000 - 0010000000000000000 - not supported / special mode ?
++	 */
++	if (!retval || retval == 0x00060000)
++		return -ENODEV;
++
++	return retval & 0x1;
++}
++
+ /*
+  * LEDs
+  */
+@@ -290,23 +313,7 @@ static void tpd_led_set(struct led_classdev *led_cdev,
+ 
+ static int read_tpd_state(struct eeepc_wmi *eeepc)
+ {
+-	u32 retval;
+-	acpi_status status;
+-
+-	status = eeepc_wmi_get_devstate(EEEPC_WMI_DEVID_TPDLED, &retval);
+-
+-	if (ACPI_FAILURE(status))
+-		return -1;
+-	else if (!retval || retval == 0x00060000)
+-		/*
+-		 * if touchpad led is present, DSTS will set some bits,
+-		 * usually 0x00020000.
+-		 * 0x00060000 means that the device is not supported
+-		 */
+-		return -ENODEV;
+-	else
+-		/* Status is stored in the first bit */
+-		return retval & 0x1;
++	return eeepc_wmi_get_devstate_simple(EEEPC_WMI_DEVID_TPDLED);
+ }
+ 
+ static enum led_brightness tpd_led_get(struct led_classdev *led_cdev)
+@@ -358,15 +365,11 @@ static void eeepc_wmi_led_exit(struct eeepc_wmi *eeepc)
+  */
+ static bool eeepc_wlan_rfkill_blocked(struct eeepc_wmi *eeepc)
+ {
+-	u32 retval;
+-	acpi_status status;
+-
+-	status = eeepc_wmi_get_devstate(EEEPC_WMI_DEVID_WLAN, &retval);
++	int result = eeepc_wmi_get_devstate_simple(EEEPC_WMI_DEVID_WLAN);
+ 
+-	if (ACPI_FAILURE(status))
++	if (result < 0)
+ 		return false;
+-
+-	return !(retval & 0x1);
++	return !result;
+ }
+ 
+ static void eeepc_rfkill_hotplug(struct eeepc_wmi *eeepc)
+@@ -494,19 +497,12 @@ static void eeepc_unregister_rfkill_notifier(struct eeepc_wmi *eeepc,
+ static int eeepc_get_adapter_status(struct hotplug_slot *hotplug_slot,
+ 				    u8 *value)
+ {
+-	u32 retval;
+-	acpi_status status;
+-
+-	status = eeepc_wmi_get_devstate(EEEPC_WMI_DEVID_WLAN, &retval);
+-
+-	if (ACPI_FAILURE(status))
+-		return -EIO;
++	int result = eeepc_wmi_get_devstate_simple(EEEPC_WMI_DEVID_WLAN);
+ 
+-	if (!retval || retval == 0x00060000)
+-		return -ENODEV;
+-	else
+-		*value = (retval & 0x1);
++	if (result < 0)
++		return result;
+ 
++	*value = !!result;
+ 	return 0;
+ }
+ 
+@@ -601,15 +597,14 @@ static int eeepc_rfkill_set(void *data, bool blocked)
+ static void eeepc_rfkill_query(struct rfkill *rfkill, void *data)
+ {
+ 	int dev_id = (unsigned long)data;
+-	u32 retval;
+-	acpi_status status;
++	int result;
+ 
+-	status = eeepc_wmi_get_devstate(dev_id, &retval);
++	result = eeepc_wmi_get_devstate_simple(dev_id);
+ 
+-	if (ACPI_FAILURE(status))
++	if (result < 0)
+ 		return ;
+ 
+-	rfkill_set_sw_state(rfkill, !(retval & 0x1));
++	rfkill_set_sw_state(rfkill, !result);
+ }
+ 
+ static int eeepc_rfkill_wlan_set(void *data, bool blocked)
+@@ -650,23 +645,10 @@ static int eeepc_new_rfkill(struct eeepc_wmi *eeepc,
+ 			    const char *name,
+ 			    enum rfkill_type type, int dev_id)
+ {
+-	int result;
+-	u32 retval;
+-	acpi_status status;
+-
+-	status = eeepc_wmi_get_devstate(dev_id, &retval);
++	int result = eeepc_wmi_get_devstate_simple(dev_id);
+ 
+-	if (ACPI_FAILURE(status))
+-		return -1;
+-
+-	/* If the device is present, DSTS will always set some bits
+-	 * 0x00070000 - 1110000000000000000 - device supported
+-	 * 0x00060000 - 1100000000000000000 - not supported
+-	 * 0x00020000 - 0100000000000000000 - device supported
+-	 * 0x00010000 - 0010000000000000000 - not supported / special mode ?
+-	 */
+-	if (!retval || retval == 0x00060000)
+-		return -ENODEV;
++	if (result < 0)
++		return result;
+ 
+ 	if (dev_id == EEEPC_WMI_DEVID_WLAN && eeepc->hotplug_wireless)
+ 		*rfkill = rfkill_alloc(name, &eeepc->platform_device->dev, type,
+@@ -678,7 +660,7 @@ static int eeepc_new_rfkill(struct eeepc_wmi *eeepc,
+ 	if (!*rfkill)
+ 		return -EINVAL;
+ 
+-	rfkill_init_sw_state(*rfkill, !(retval & 0x1));
++	rfkill_init_sw_state(*rfkill, !result);
+ 	result = rfkill_register(*rfkill);
+ 	if (result) {
+ 		rfkill_destroy(*rfkill);
+-- 
+1.7.3.4
 
