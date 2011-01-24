@@ -1,87 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179Ab1AXT61 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 14:58:27 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:41092 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751763Ab1AXT6Z convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 14:58:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=pZx+5bLp/KuCUYke78GtSGrxYa72et0PoLDi4hcJGR9fq9nPa86Er8brcCFiLeDNoS
-         7H31dwuIHPrE7Di1dfozDPrnr2aJRG0JCxOLelH+ksRFVjNaydJHw1Mi6mKTsxirVhsb
-         CfLep1Nn7mJ3sfuQbDkhlbaMWoJcHXb1KkPVc=
+	id S1752245Ab1AXUBH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 15:01:07 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:39825 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751301Ab1AXUBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 15:01:05 -0500
+Date: Mon, 24 Jan 2011 21:00:59 +0100 (CET)
+From: Julia Lawall <julia@diku.dk>
+To: Ryan Mallon <ryan@bluewatersys.com>
+Cc: Russell King <linux@arm.linux.org.uk>, kernel-janitors@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] arch/arm/mach-at91/clock.c: Add missing IS_ERR test
+In-Reply-To: <4D3DD964.9020107@bluewatersys.com>
+Message-ID: <Pine.LNX.4.64.1101242058430.3167@ask.diku.dk>
+References: <1295898922-18822-1-git-send-email-julia@diku.dk>
+ <1295898922-18822-3-git-send-email-julia@diku.dk> <4D3DD964.9020107@bluewatersys.com>
 MIME-Version: 1.0
-In-Reply-To: <1295789862-25482-5-git-send-email-tj@kernel.org>
-References: <1295789862-25482-1-git-send-email-tj@kernel.org>
-	<1295789862-25482-5-git-send-email-tj@kernel.org>
-Date: Mon, 24 Jan 2011 11:58:24 -0800
-X-Google-Sender-Auth: f-DX7FF8sktrf13-7W0V_cIUnpA
-Message-ID: <AANLkTimi0Q6mqD68H5WOf=grwuVXxMPKHgM7z6RcbhE1@mail.gmail.com>
-Subject: Re: [PATCH 04/16] x86: Replace cpu_2_logical_apicid[] with early
- percpu variable
-From: Yinghai Lu <yinghai@kernel.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tglx@linutronix.de, x86@kernel.org, eric.dumazet@gmail.com,
-        brgerst@gmail.com, gorcunov@gmail.com, penberg@kernel.org,
-        shaohui.zheng@intel.com, rientjes@google.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 23, 2011 at 5:37 AM, Tejun Heo <tj@kernel.org> wrote:
-> Unlike x86_64, on x86_32, the mapping from cpu to logical apicid may
-> vary depending on apic in use.  cpu_2_logical_apicid[] array is used
-> for this mapping.  Replace it with early percpu variable
-> x86_cpu_to_logical_apicid to make it better aligned with other
-> mappings.
->
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> ---
->  arch/x86/include/asm/apic.h      |    4 ----
->  arch/x86/include/asm/smp.h       |    3 +++
->  arch/x86/kernel/apic/apic.c      |   11 +++++++++++
->  arch/x86/kernel/apic/es7000_32.c |    2 +-
->  arch/x86/kernel/apic/numaq_32.c  |    2 +-
->  arch/x86/kernel/apic/summit_32.c |    4 ++--
->  arch/x86/kernel/setup_percpu.c   |    7 +++++++
->  arch/x86/kernel/smpboot.c        |    7 ++-----
->  8 files changed, 27 insertions(+), 13 deletions(-)
->
-> diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-> index 5e3969c..eb139ec 100644
-> --- a/arch/x86/include/asm/apic.h
-> +++ b/arch/x86/include/asm/apic.h
-> @@ -595,8 +595,4 @@ extern int default_check_phys_apicid_present(int phys_apicid);
->
->  #endif /* CONFIG_X86_LOCAL_APIC */
->
-> -#ifdef CONFIG_X86_32
-> -extern u8 cpu_2_logical_apicid[NR_CPUS];
-> -#endif
-> -
->  #endif /* _ASM_X86_APIC_H */
-> diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
-> index 4c2f63c..dc7c46a 100644
-> --- a/arch/x86/include/asm/smp.h
-> +++ b/arch/x86/include/asm/smp.h
-> @@ -38,6 +38,9 @@ static inline struct cpumask *cpu_core_mask(int cpu)
->
->  DECLARE_EARLY_PER_CPU(u16, x86_cpu_to_apicid);
->  DECLARE_EARLY_PER_CPU(u16, x86_bios_cpu_apicid);
-> +#if defined(CONFIG_SMP) && defined(CONFIG_X86_32)
-> +DECLARE_EARLY_PER_CPU(int, x86_cpu_to_logical_apicid);
-> +#endif
+On Tue, 25 Jan 2011, Ryan Mallon wrote:
 
-why changing it from u8 to int?
+> On 01/25/2011 08:55 AM, Julia Lawall wrote:
+> > Function clk_get, defined just below this code, returns ERR_PTR not NULL in
+> > an error case.
+> > 
+> > The semantic match that finds this problem is as follows:
+> > (http://coccinelle.lip6.fr/)
+> > 
+> > // <smpl>
+> > @r@
+> > identifier f;
+> > @@
+> > f(...) { ... return ERR_PTR(...); }
+> > 
+> > @@
+> > identifier r.f, fld;
+> > expression x;
+> > statement S1,S2;
+> > @@
+> >  x = f(...)
+> >  ... when != IS_ERR(x)
+> > (
+> >  if (IS_ERR(x) ||...) S1 else S2
+> > |
+> > *x->fld
+> > )
+> > // </smpl>
+> 
+> I'm always really impressed by this tool :-).
+> 
+> > 
+> > Signed-off-by: Julia Lawall <julia@diku.dk>
+> > 
+> > ---
+> >  arch/arm/mach-at91/clock.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/arm/mach-at91/clock.c b/arch/arm/mach-at91/clock.c
+> > index 9113da6..c9ee6d0 100644
+> > --- a/arch/arm/mach-at91/clock.c
+> > +++ b/arch/arm/mach-at91/clock.c
+> > @@ -224,7 +224,7 @@ void __init at91_clock_associate(const char *id, struct device *dev, const char
+> >  {
+> >  	struct clk *clk = clk_get(NULL, id);
+> >  
+> > -	if (!dev || !clk || !IS_ERR(clk_get(dev, func)))
+> > +	if (!dev || IS_ERR(clk) || !IS_ERR(clk_get(dev, func)))
+> >  		return;
+> 
+> I think we want:
+> 
+> 	if (!dev || !clk || IS_ERR(clk) || !IS_ERR(clk_get(dev, func)))
+> 		return;
+> 
+> Since it is valid to return a NULL clk, and we don't want to try and
+> dereference it if that is the case.
 
-Thanks
+Looking at the given defintion of clk_get, I can't see how that could 
+happen:
 
-Yinghai
+struct clk *clk_get(struct device *dev, const char *id)
+{
+        struct clk *clk;
+
+        list_for_each_entry(clk, &clocks, node) {
+                if (strcmp(id, clk->name) == 0)
+                        return clk;
+                if (clk->function && (dev == clk->dev) && strcmp(id, clk->function) == 0)
+                        return clk;
+        }
+
+        return ERR_PTR(-ENOENT);
+}
+
+Both paths to the non-ERR_PTR return dereference clk.
+
+julia
+
+> We could also probably drop the !IS_ERR(clk_get(dev, func)) check, since
+> as far as I can tell it is just checking to see if the clock is already
+> associated, but there is no harm in re-assigning the same values, and
+> the two assignments in at91_clock_associate are going to be much quicker
+> than the lookup in clk_get.
+> 
+> ~Ryan
+> 
+> -- 
+> Bluewater Systems Ltd - ARM Technology Solution Centre
+> 
+> Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+> ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+> http://www.bluewatersys.com	New Zealand
+> Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+> Fax:   +64 3 3779135			  USA 1800 261 2934
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
