@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753129Ab1AXVNj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 16:13:39 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:15856 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753086Ab1AXVNi (ORCPT
+	id S1753158Ab1AXVNw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 16:13:52 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:50004 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753139Ab1AXVNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 16:13:38 -0500
-Date: Mon, 24 Jan 2011 22:14:20 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Chris Ball <cjb@laptop.org>
-cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Vrabel <david.vrabel@csr.com>, Axel Lin <axel.lin@gmail.com>,
-        trivial@kernel.org
-Subject: Re: [PATCH] MMC, USHC: Don't double include usb.h in ushc.c
-In-Reply-To: <20110124210645.GB11110@void.printf.net>
-Message-ID: <alpine.LNX.2.00.1101242213350.10252@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1101242156050.10252@swampdragon.chaosbits.net> <20110124210202.GA11110@void.printf.net> <alpine.LNX.2.00.1101242204020.10252@swampdragon.chaosbits.net> <20110124210645.GB11110@void.printf.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Mon, 24 Jan 2011 16:13:51 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110124203802.GC29975@ghostprotocols.net>
+References: <20110124133400.GA1228@elte.hu> <AANLkTinsVNy9a1bR0AgD7=Vupoujt03RuZ32v39XSknx@mail.gmail.com>
+ <20110124200738.GA10833@elte.hu> <AANLkTi=C0L=21zhH_L+cRPv2ZCRE9L93tKtC9ELrcTBW@mail.gmail.com>
+ <AANLkTi=V61L6vgFZ_4u20dZvv2=tvi-XJMc2HqOnjMo4@mail.gmail.com> <20110124203802.GC29975@ghostprotocols.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 25 Jan 2011 07:13:28 +1000
+Message-ID: <AANLkTikGAg9KtTwiM0eago-BLvnWsWnSfuv+zBjBE6VH@mail.gmail.com>
+Subject: Re: [GIT PULL] perf fixes
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Jan 2011, Chris Ball wrote:
+On Tue, Jan 25, 2011 at 6:38 AM, Arnaldo Carvalho de Melo
+<acme@redhat.com> wrote:
+>
+> Was this on a freshly installed machine? Or on a freshly updated one?
 
-> Hi,
-> 
-> On Mon, Jan 24, 2011 at 10:05:05PM +0100, Jesper Juhl wrote:
-> > > I've already replied to you ACKing this patch, and pushed it to mmc-next. 
-> > > 
-> > Odd, I don't see that in my mailbox :-( But then I've had a few incidents 
-> > of being bling in that regard lately, so it's probably my fault. Sorry.
-> 
-> It's okay.  Here's an archive of the thread:
->   https://patchwork.kernel.org/patch/469621/
-> 
-Argh, reading it again I clearly remember that mail exchange. Must have 
-deleted it from my mailbox by accident. 
+It is. And the machine is slow too.
 
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
+> Probably its the build-id collecting at the end of a session, on the
+> first run you had a cold cache and it had to figure out which binaries
+> to cache on ~/.debug, second time it was already cached so it was fast.
 
+That sounds like a reasonable explanation.
+
+So just ignore this report,
+
+             Linus
