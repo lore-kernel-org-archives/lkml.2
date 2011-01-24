@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752906Ab1AXAf0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 19:35:26 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40586 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608Ab1AXAfZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 19:35:25 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 24 Jan 2011 09:29:22 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/7] memcg : more fixes and clean up for 2.6.28-rc
-Message-Id: <20110124092922.0fb50ada.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110121153431.191134dd.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110121153431.191134dd.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752924Ab1AXAhs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 19:37:48 -0500
+Received: from core.signal11.us ([64.251.29.136]:50753 "EHLO core.signal11.us"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752748Ab1AXAhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 19:37:47 -0500
+From: Alan Ott <alan@signal11.us>
+To: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, greg@kroah.com,
+        stern@rowland.harvard.edu, libusb-devel@lists.sourceforge.net
+Cc: Alan Ott <alan@signal11.us>
+Subject: [PATCH v3 0/1] HID: Report Descriptor in Sysfs
+Date: Sun, 23 Jan 2011 19:36:16 -0500
+Message-Id: <1295829377-7731-1-git-send-email-alan@signal11.us>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <20110123225935.GB12488@kroah.com>
+References: <20110123225935.GB12488@kroah.com>
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Sun Jan 23 19:37:46 2011
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 4d3cc9da26381643010366
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Jan 2011 15:34:31 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+This is version 3 of the patch, with binary data in the sysfs file instead
+of ASCII, as suggested by Alan Stern and Greg KH.  Also now with
+documentation.
 
-> 
-> This is a set of patches which I'm now testing, and it seems it passed
-> small test. So I post this.
-> 
-> Some are bug fixes and other are clean ups but I think these are for 2.6.38.
-> 
-> Brief decription
-> 
-> [1/7] remove buggy comment and use better name for mem_cgroup_move_parent()
->       The fixes for mem_cgroup_move_parent() is already in mainline, this is
->       an add-on.
-> 
-> [2/7] a bug fix for a new function mem_cgroup_split_huge_fixup(),
->       which was recently merged.
-> 
-> [3/7] prepare for fixes in [4/7],[5/7]. This is an enhancement of function
->       which is used now.
-> 
-> [4/7] fix mem_cgroup_charge() for THP. By this, memory cgroup's charge function
->       will handle THP request in sane way.
-> 
-> [5/7] fix khugepaged scan condition for memcg.
->       This is a fix for hang of processes under small/buzy memory cgroup.
-> 
-> [6/7] rename vairable names to be page_size, nr_pages, bytes rather than
->       ambiguous names.
-> 
-> [7/7] some memcg function requires the caller to initialize variable
->       before call. It's ugly and fix it.
-> 
-> 
-> I think patch 1,2,3,4,5 is urgent ones. But I think patch "5" needs some
-> good review. But without "5", stress-test on small memory cgroup will not
-> run succesfully.
-> 
+Original Description:
 
-I'll rebase this set to onto http://marc.info/?l=linux-mm&m=129559263207634&w=2
-and post v2.
+So I'd like to have access to the HID report descriptor in a sysfs entry, so
+I can read it without opening the device.  hid-core seemed like the place to
+put it.
 
-Thanks,
--Kame
+Using the /sys/class links, for hidraw devices, this puts a new file,
+report_descriptor in the directory:
+	/sys/class/hidraw/hidraw0/device/
+
+For my USB device (for example), the new file is in:
+	/sys/bus/usb/devices/1-5.3:1.0/0003:046D:C216.0001/
+
+For my Bluetooth device, the new file is in:
+	/sys/class/bluetooth/hci0/hci0:11/0005:054C:0268.0002/
+
+I'm not super confident that these file locations are the best place, but I
+made a best guess so that it could be discussed.  The current location is
+where the hid-core stuff lives.  Is there a reason these directories are
+named bus:vendor:product:id (instead of hid-core or something similar)?  Is
+there a better way to do this?
+
+Alan.
+
+Alan Ott (1):
+  hid: Add HID Report Descriptor to sysfs.
+
+ Documentation/ABI/testing/sysfs-driver-hid |   10 ++++++++
+ drivers/hid/hid-core.c                     |   33 ++++++++++++++++++++++++++++
+ 2 files changed, 43 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-driver-hid
+
 
