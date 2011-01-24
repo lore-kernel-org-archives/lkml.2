@@ -1,91 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752444Ab1AXVkb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 16:40:31 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:16274 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752255Ab1AXVk3 (ORCPT
+	id S1751989Ab1AXVmj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 16:42:39 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33001 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750831Ab1AXVmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 16:40:29 -0500
-Date: Mon, 24 Jan 2011 22:41:11 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: x86@kernel.org
-cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
-        Soren Sandmann <ssp@redhat.com>, Alexey Dobriyan <adobriyan@gmail.com>
-Subject: [PATCH] X86-64: Don't use pointer to out-of-scope variable in
- dump_trace()
-Message-ID: <alpine.LNX.2.00.1101242232590.10252@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Mon, 24 Jan 2011 16:42:38 -0500
+Date: Mon, 24 Jan 2011 21:42:25 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nick Piggin <npiggin@gmail.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 08/19] ARM: LPAE: Introduce the 3-level page table
+	format definitions
+Message-ID: <20110124214225.GO24104@n2100.arm.linux.org.uk>
+References: <1295891761-18366-1-git-send-email-catalin.marinas@arm.com> <1295891761-18366-9-git-send-email-catalin.marinas@arm.com> <AANLkTi=d0q0Upde3=b4tpu3icOr4XdifcFRvBHuXgsBN@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=d0q0Upde3=b4tpu3icOr4XdifcFRvBHuXgsBN@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In arch/x86/kernel/dumpstack_64.c::dump_trace() we have this code:
+On Tue, Jan 25, 2011 at 08:26:42AM +1100, Nick Piggin wrote:
+> Too bad about the PAE thing; my condolences.
+> 
+> 
+> On Tue, Jan 25, 2011 at 4:55 AM, Catalin Marinas
+> <catalin.marinas@arm.com> wrote:
+> > This patch introduces the pgtable-3level*.h files with definitions
+> > specific to the LPAE page table format (3 levels of page tables).
+> 
+> Seeing as you're shaking up these definitions, what do you think about
+> switching from 4level-fixup.h to pgtable-nopud.h / pgtable-nopmd.h headers?
+> One day eventually it would be nice to get rid of the fixup mode.
 
-...
-  		if (!stack) {
-  			unsigned long dummy;
-  			stack = &dummy;
-  			if (task && task != current)
-  				stack = (unsigned long *)task->thread.sp;
-  		}
-  	
-  		bp = stack_frame(task, regs);
-  		/*
-  		 * Print function call entries in all stacks, starting at the
-  		 * current stack address. If the stacks consist of nested
-  		 * exceptions
-  		 */
-  		tinfo = task_thread_info(task);
+I have patches to do this which I de-queued for the last merge window.
+It's not entirely trivial and without problem.  You can find the patches
+in linux-next now.
 
-  		for (;;) {
-  			char *id;
-  			unsigned long *estack_end;
-  			estack_end = in_exception_stack(cpu, (unsigned long)stack,
-  							&used, &id);
-...
-
-You'll notice that we assign to 'stack' the address of the variable 
-'dummy' which is only in-scope inside the 'if (!stack)'. So when we later 
-access stack (at the end of the above, and assuming we did not take the 
-'if (task && task != current)' branch) we'll be using the address of a 
-variable that is no longer in scope. I believe this patch is the proper 
-fix, but I freely admit that I'm not 100% certain.
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- dumpstack_64.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-  compile tested only.
-
-diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
-index 6410133..a6b6fcf 100644
---- a/arch/x86/kernel/dumpstack_64.c
-+++ b/arch/x86/kernel/dumpstack_64.c
-@@ -149,13 +149,13 @@ void dump_trace(struct task_struct *task,
- 	unsigned used = 0;
- 	struct thread_info *tinfo;
- 	int graph = 0;
-+	unsigned long dummy;
- 	unsigned long bp;
- 
- 	if (!task)
- 		task = current;
- 
- 	if (!stack) {
--		unsigned long dummy;
- 		stack = &dummy;
- 		if (task && task != current)
- 			stack = (unsigned long *)task->thread.sp;
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+I was waiting for the new set of patches from Catalin before going back
+and working out the solutions to some of those problems.
