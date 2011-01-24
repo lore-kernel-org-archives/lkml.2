@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948Ab1AXOcd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 09:32:33 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56550 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751346Ab1AXOcc (ORCPT
+	id S1752910Ab1AXOf0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 09:35:26 -0500
+Received: from piggy.rz.tu-ilmenau.de ([141.24.4.8]:33474 "EHLO
+	piggy.rz.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751895Ab1AXOfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 09:32:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=nlpIilRjcSP4CB+oqWzH0Kmc4qiXuhe+cQKZ1YZq+jX3Ugd2UglVa8Es3ecFzOc30Z
-         po4fOnFd2+Hdm4OPrYaTGXmYSSx6z1LNW/r9t/zeI3wZD52Gt8bgAJudtU1xT6XPd8FO
-         ztpr3Dwn//AJzU0pLF+LdP66emKF4g0ezxcbM=
-Date: Mon, 24 Jan 2011 15:32:25 +0100
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-Cc: Masayuki Ohtake <masa-korg@dsn.okisemi.com>,
-        Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-Subject: [PATCH] pch_gbe: don't use flush_scheduled_work()
-Message-ID: <20110124143225.GF11404@htj.dyndns.org>
+	Mon, 24 Jan 2011 09:35:25 -0500
+Date: Mon, 24 Jan 2011 15:35:18 +0100
+From: "Mario 'BitKoenig' Holbe" <Mario.Holbe@TU-Ilmenau.DE>
+To: Patrick McHardy <kaber@trash.net>
+Cc: netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: netfilter: marking IPv6 packets sends them to the wrong
+ interface
+Message-ID: <20110124143518.GA2616@darkside.kls.lan>
+Mail-Followup-To: Mario 'BitKoenig' Holbe <Mario.Holbe@TU-Ilmenau.DE>,
+	Patrick McHardy <kaber@trash.net>, netfilter-devel@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20110123122108.GA30305@darkside.kls.lan>
+ <4D3D82D1.6050305@trash.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mYCpIKhGyMATD0i+"
 Content-Disposition: inline
+In-Reply-To: <4D3D82D1.6050305@trash.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Directly cancel adapter->reset_task instead of using to-be-deprecated
-flush_scheduled_work().
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-Cc: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-Cc: David S. Miller <davem@davemloft.net>
----
- drivers/net/pch_gbe/pch_gbe_main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+--mYCpIKhGyMATD0i+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Index: work/drivers/net/pch_gbe/pch_gbe_main.c
-===================================================================
---- work.orig/drivers/net/pch_gbe/pch_gbe_main.c
-+++ work/drivers/net/pch_gbe/pch_gbe_main.c
-@@ -2247,7 +2247,7 @@ static void pch_gbe_remove(struct pci_de
- 	struct net_device *netdev = pci_get_drvdata(pdev);
- 	struct pch_gbe_adapter *adapter = netdev_priv(netdev);
- 
--	flush_scheduled_work();
-+	cancel_work_sync(&adapter->reset_task);
- 	unregister_netdev(netdev);
- 
- 	pch_gbe_hal_phy_hw_reset(&adapter->hw);
+On Mon, Jan 24, 2011 at 02:46:57PM +0100, Patrick McHardy wrote:
+> On 23.01.2011 13:21, Mario 'BitKoenig' Holbe wrote:
+> > Without marking everything runs as it should be.
+> > Marking eth0 packets results in all advertisements transmitted via eth1.
+> > The behaviour goes back to normal as soon as the marking disappears.
+> > I also tried marking with 0xff00 instead of 1 - same results.
+> That probably means that we're not using the correct keys
+> when rerouting in ip6_route_me_harder(). Just for testing,
+> please try to disable the ip6_route_me_harder() call in
+> net/ipv6/netfilter/ip6table_mangle.c::ip6t_mangle_out().
+
+Yes, disabling the ip6_route_me_harder() call in ip6t_mangle_out()
+results in the advertisements being transmitted on the correct
+interfaces.
+
+
+Mario
+--=20
+I thought the only thing the internet was good for was porn.  -- Futurama
+
+--mYCpIKhGyMATD0i+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEVAwUBTT2OJhS+e2HeSPbpAQKMvQf/b8mSHiKJnarNyI94b7ReRh92QZB0w5Bs
+pvy/CJ6wgk9M2MxoVlJYI/QF3Ys5jGnkURDEvcyo/Moi863t+7xX4IsLE4gB/jqw
+bDwMRHToITovKuE/pWqR3flHQEhMwAtCMI8QHrJcLicY/hpsltsj7TDnP3XHIVYn
+AMUoY0aLe8EWkPHLNfSBGOE2t5SYRTolsexyBdA9K4184HERRkIozKj3DMg6AgMM
+suF3D6olTdYN6poJLkPYMp/ZRECriO1e9b10hc0AV8hXrn65pGKXGrwCNP6mljpW
+edO6dOcpY4h4juXuCAaTcIbMJut3GPfbQnou/y0rICVluT6it0uIJQ==
+=G19Y
+-----END PGP SIGNATURE-----
+
+--mYCpIKhGyMATD0i+--
