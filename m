@@ -1,130 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752150Ab1AXHeT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 02:34:19 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:41361 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751785Ab1AXHeT (ORCPT
+	id S1752104Ab1AXHfb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 02:35:31 -0500
+Received: from mail.windriver.com ([147.11.1.11]:38452 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751763Ab1AXHfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 02:34:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=hGBZu25gHEHwGnATQDhnmpTaRIgFJg2DgLxpJham3QygsQHipfg+LOEs3WCqvWjhHe
-         y1TRokMC6JdiqbTtJd25aW8Dp5Og6Bq/UBk055PbYYvJcGu1f4JuwrlC4LiTWTkrd25f
-         RdvJh/ZI2ngaNyunP9G9PVaUtiKWkBQEuxjLk=
+	Mon, 24 Jan 2011 02:35:30 -0500
+Date: Mon, 24 Jan 2011 15:33:52 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: linux-kernel@vger.kernel.org, mfwitten@gmail.com,
+        christian@nerdbynature.de, a.p.zijlstra@chello.nl,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <efault@gmx.de>
+Subject: [PATCH V3] sched: fix autogroup nice tune on UP
+Message-ID: <20110124073352.GA24186@windriver.com>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <20110123150341.GA2643@zhy>
+ <1295847626-2396-1-git-send-email-yong.zhang0@gmail.com>
+ <AANLkTi=gRO0tCdEzmn3Ne6Wj6bXd1G8nhLw2E_-Yw3WA@mail.gmail.com>
+ <AANLkTi=3f8nvEuFbHqjnTXtrK_sAC-A9+XAMjAHgjT3d@mail.gmail.com>
+ <AANLkTikLnOXOAeBgMQCcOqgNP1WrVf9QeFEkgthTbU2N@mail.gmail.com>
 MIME-Version: 1.0
-Date: Mon, 24 Jan 2011 02:34:18 -0500
-Message-ID: <AANLkTinaOQpuJis5HgK316ANxpDS8eZ8Q0S4a44POrp0@mail.gmail.com>
-Subject: [PATCH] a patch to fix the cpu-offline-online problem caused by pm_idle
-From: Luming Yu <luming.yu@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Len Brown <lenb@kernel.org>
-Content-Type: multipart/mixed; boundary=000e0cd6ac9caa8fbd049a92a09d
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <AANLkTikLnOXOAeBgMQCcOqgNP1WrVf9QeFEkgthTbU2N@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 24 Jan 2011 07:33:54.0104 (UTC) FILETIME=[0D7F7B80:01CBBB99]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---000e0cd6ac9caa8fbd049a92a09d
-Content-Type: text/plain; charset=UTF-8
+On Mon, Jan 24, 2011 at 08:18:11AM +0200, Pekka Enberg wrote:
+> I proposed extracting the shares calculation logic in
+> update_cfs_shares() to reduce code duplication for the SMP and UP
+> patch. So something like this:
 
-Hi there,
+Thanks for your example.
+So something like this?
 
-I've seen many problems caused by deep-c-state-capable pm_idle on a
-NHM-EX system with this test script
-# for i in `seq 1 1000`; do echo $i; echo 0 >
-/sys/devices/system/cpu/cpu59/online ; sleep 1; echo 1 >
-/sys/devices/system/cpu/cpu59/online; done
+---
+From: Yong Zhang <yong.zhang0@gmail.com>
+Subject: [PATCH V3] sched: fix autogroup nice tune on UP
 
-As the bug " CPU online/offline causes system slowdown"
-https://bugzilla.redhat.com/show_bug.cgi?id=586551 described.
+When on UP with FAIR_GROUP_SCHED enabled, tune shares
+only affect tg->shares, but is not reflected on
+tg->se->load, the reason is update_cfs_shares()
+do nothing on UP.
+So introduce update_cfs_shares() for UP && FAIR_GROUP_SCHED.
 
-The simplest and easiest and cleanest way I can think of now is as the
-patch attached.
+This issue is found when enable autogroup, but also
+exists on cgroup.cpu on UP.
 
-Signed-off-by: Yu Luming <luming.yu@intel.com>
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Mike Galbraith <efault@gmx.de>
+---
 
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index c75fcdd..d419eb3 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -135,6 +135,7 @@ int __ref register_cpu_notifier(struct notifier_block *nb)
+Changelog from V2:
+  Move share caculation to calc_cfs_shares(), thus save
+  some duplicated code for update_cfs_shares().
+  Idea from Pekka Enberg.
 
- #ifdef CONFIG_HOTPLUG_CPU
+ kernel/sched_fair.c |   78 ++++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 53 insertions(+), 25 deletions(-)
 
-+static void (*pm_idle_saved) (void) __read_mostly;
- EXPORT_SYMBOL(register_cpu_notifier);
-
- void __ref unregister_cpu_notifier(struct notifier_block *nb)
-@@ -145,6 +146,19 @@ void __ref unregister_cpu_notifier(struct
-notifier_block *nb)
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 77e9166..3547699 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -699,7 +699,8 @@ account_entity_dequeue(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 	cfs_rq->nr_running--;
  }
- EXPORT_SYMBOL(unregister_cpu_notifier);
-
-+static inline void save_pm_idle(void)
-+{
-+	pm_idle_saved = pm_idle;
-+	pm_idle = default_idle;
-+	cpu_idle_wait();
-+}
-+
-+static inline void restore_pm_idle(void)
-+{
-+	pm_idle = pm_idle_saved;
-+	cpu_idle_wait();
-+}
-+
- static inline void check_for_tasks(int cpu)
+ 
+-#if defined CONFIG_SMP && defined CONFIG_FAIR_GROUP_SCHED
++#ifdef CONFIG_FAIR_GROUP_SCHED
++# ifdef CONFIG_SMP
+ static void update_cfs_rq_load_contribution(struct cfs_rq *cfs_rq,
+ 					    int global_update)
  {
- 	struct task_struct *p;
-@@ -278,7 +292,9 @@ int __ref cpu_down(unsigned int cpu)
- 		goto out;
- 	}
+@@ -762,6 +763,51 @@ static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update)
+ 		list_del_leaf_cfs_rq(cfs_rq);
+ }
+ 
++static long calc_cfs_shares(struct cfs_rq *cfs_rq, struct task_group *tg,
++				long weight_delta)
++{
++	long load_weight, load, shares;
++
++	load = cfs_rq->load.weight + weight_delta;
++
++	load_weight = atomic_read(&tg->load_weight);
++	load_weight -= cfs_rq->load_contribution;
++	load_weight += load;
++
++	shares = (tg->shares * load);
++	if (load_weight)
++		shares /= load_weight;
++
++	if (shares < MIN_SHARES)
++		shares = MIN_SHARES;
++	if (shares > tg->shares)
++		shares = tg->shares;
++
++	return shares;
++}
++
++static void update_entity_shares_tick(struct cfs_rq *cfs_rq)
++{
++	if (cfs_rq->load_unacc_exec_time > sysctl_sched_shares_window) {
++		update_cfs_load(cfs_rq, 0);
++		update_cfs_shares(cfs_rq, 0);
++	}
++}
++# else /* CONFIG_SMP */
++static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update)
++{
++}
++
++static inline long calc_cfs_shares(struct cfs_rq *cfs_rq, struct task_group *tg,
++				long weight_delta)
++{
++	return tg->shares;
++}
++
++static inline void update_entity_shares_tick(struct cfs_rq *cfs_rq)
++{
++}
++# endif /* CONFIG_SMP */
+ static void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
+ 			    unsigned long weight)
+ {
+@@ -782,7 +828,7 @@ static void update_cfs_shares(struct cfs_rq *cfs_rq, long weight_delta)
+ {
+ 	struct task_group *tg;
+ 	struct sched_entity *se;
+-	long load_weight, load, shares;
++	long shares;
+ 
+ 	if (!cfs_rq)
+ 		return;
+@@ -791,32 +837,14 @@ static void update_cfs_shares(struct cfs_rq *cfs_rq, long weight_delta)
+ 	se = tg->se[cpu_of(rq_of(cfs_rq))];
+ 	if (!se)
+ 		return;
+-
+-	load = cfs_rq->load.weight + weight_delta;
+-
+-	load_weight = atomic_read(&tg->load_weight);
+-	load_weight -= cfs_rq->load_contribution;
+-	load_weight += load;
+-
+-	shares = (tg->shares * load);
+-	if (load_weight)
+-		shares /= load_weight;
+-
+-	if (shares < MIN_SHARES)
+-		shares = MIN_SHARES;
+-	if (shares > tg->shares)
+-		shares = tg->shares;
++#ifndef CONFIG_SMP
++	if (likely(se->load.weight == tg->shares))
++		return;
++#endif
++	shares = calc_cfs_shares(cfs_rq, tg, weight_delta);
+ 
+ 	reweight_entity(cfs_rq_of(se), se, shares);
+ }
+-
+-static void update_entity_shares_tick(struct cfs_rq *cfs_rq)
+-{
+-	if (cfs_rq->load_unacc_exec_time > sysctl_sched_shares_window) {
+-		update_cfs_load(cfs_rq, 0);
+-		update_cfs_shares(cfs_rq, 0);
+-	}
+-}
+ #else /* CONFIG_FAIR_GROUP_SCHED */
+ static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update)
+ {
+-- 
+1.7.0.4
 
-+	save_pm_idle();
- 	err = _cpu_down(cpu, 0);
-+	restore_pm_idle();
-
- out:
- 	cpu_maps_update_done();
-@@ -376,7 +392,9 @@ int __cpuinit cpu_up(unsigned int cpu)
- 		goto out;
- 	}
-
-+	save_pm_idle();
- 	err = _cpu_up(cpu, 0);
-+	restore_pm_idle();
-
- out:
- 	cpu_maps_update_done();
-
---000e0cd6ac9caa8fbd049a92a09d
-Content-Type: application/octet-stream; 
-	name="bz586551-using-default-idle.patch"
-Content-Disposition: attachment; 
-	filename="bz586551-using-default-idle.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gjb27f9x0
-
-ZGlmZiAtLWdpdCBhL2tlcm5lbC9jcHUuYyBiL2tlcm5lbC9jcHUuYwppbmRleCBjNzVmY2RkLi5k
-NDE5ZWIzIDEwMDY0NAotLS0gYS9rZXJuZWwvY3B1LmMKKysrIGIva2VybmVsL2NwdS5jCkBAIC0x
-MzUsNiArMTM1LDcgQEAgaW50IF9fcmVmIHJlZ2lzdGVyX2NwdV9ub3RpZmllcihzdHJ1Y3Qgbm90
-aWZpZXJfYmxvY2sgKm5iKQogCiAjaWZkZWYgQ09ORklHX0hPVFBMVUdfQ1BVCiAKK3N0YXRpYyB2
-b2lkICgqcG1faWRsZV9zYXZlZCkgKHZvaWQpIF9fcmVhZF9tb3N0bHk7CiBFWFBPUlRfU1lNQk9M
-KHJlZ2lzdGVyX2NwdV9ub3RpZmllcik7CiAKIHZvaWQgX19yZWYgdW5yZWdpc3Rlcl9jcHVfbm90
-aWZpZXIoc3RydWN0IG5vdGlmaWVyX2Jsb2NrICpuYikKQEAgLTE0NSw2ICsxNDYsMTkgQEAgdm9p
-ZCBfX3JlZiB1bnJlZ2lzdGVyX2NwdV9ub3RpZmllcihzdHJ1Y3Qgbm90aWZpZXJfYmxvY2sgKm5i
-KQogfQogRVhQT1JUX1NZTUJPTCh1bnJlZ2lzdGVyX2NwdV9ub3RpZmllcik7CiAKK3N0YXRpYyBp
-bmxpbmUgdm9pZCBzYXZlX3BtX2lkbGUodm9pZCkKK3sKKwlwbV9pZGxlX3NhdmVkID0gcG1faWRs
-ZTsKKwlwbV9pZGxlID0gZGVmYXVsdF9pZGxlOworCWNwdV9pZGxlX3dhaXQoKTsKK30KKworc3Rh
-dGljIGlubGluZSB2b2lkIHJlc3RvcmVfcG1faWRsZSh2b2lkKQoreworCXBtX2lkbGUgPSBwbV9p
-ZGxlX3NhdmVkOworCWNwdV9pZGxlX3dhaXQoKTsKK30KKwogc3RhdGljIGlubGluZSB2b2lkIGNo
-ZWNrX2Zvcl90YXNrcyhpbnQgY3B1KQogewogCXN0cnVjdCB0YXNrX3N0cnVjdCAqcDsKQEAgLTI3
-OCw3ICsyOTIsOSBAQCBpbnQgX19yZWYgY3B1X2Rvd24odW5zaWduZWQgaW50IGNwdSkKIAkJZ290
-byBvdXQ7CiAJfQogCisJc2F2ZV9wbV9pZGxlKCk7CiAJZXJyID0gX2NwdV9kb3duKGNwdSwgMCk7
-CisJcmVzdG9yZV9wbV9pZGxlKCk7CiAKIG91dDoKIAljcHVfbWFwc191cGRhdGVfZG9uZSgpOwpA
-QCAtMzc2LDcgKzM5Miw5IEBAIGludCBfX2NwdWluaXQgY3B1X3VwKHVuc2lnbmVkIGludCBjcHUp
-CiAJCWdvdG8gb3V0OwogCX0KIAorCXNhdmVfcG1faWRsZSgpOwogCWVyciA9IF9jcHVfdXAoY3B1
-LCAwKTsKKwlyZXN0b3JlX3BtX2lkbGUoKTsKIAogb3V0OgogCWNwdV9tYXBzX3VwZGF0ZV9kb25l
-KCk7Cg==
---000e0cd6ac9caa8fbd049a92a09d--
