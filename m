@@ -1,103 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab1AXR6r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 12:58:47 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60899 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753805Ab1AXR6p (ORCPT
+	id S1753962Ab1AXR4X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 12:56:23 -0500
+Received: from service87.mimecast.com ([94.185.240.25]:50917 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753891Ab1AXR4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 12:58:45 -0500
-Date: Mon, 24 Jan 2011 17:58:07 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: KyongHo Cho <pullip.cho@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        KeyYoung Park <keyyoung.park@samsung.com>,
-        linux-kernel@vger.kernel.org, Ilho Lee <ilho215.lee@samsung.com>,
-        linux-mm@kvack.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: mm: Regarding section when dealing with meminfo
-Message-ID: <20110124175807.GA27427@n2100.arm.linux.org.uk>
-References: <1295516739-9839-1-git-send-email-pullip.cho@samsung.com> <1295544047.9039.609.camel@nimitz> <20110120180146.GH6335@n2100.arm.linux.org.uk> <1295547087.9039.694.camel@nimitz> <20110123180532.GA3509@n2100.arm.linux.org.uk> <1295887937.11047.119.camel@nimitz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295887937.11047.119.camel@nimitz>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 24 Jan 2011 12:56:20 -0500
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 04/19] ARM: LPAE: Use PMD_(SHIFT|SIZE|MASK) instead of PGDIR_*
+Date: Mon, 24 Jan 2011 17:55:46 +0000
+Message-Id: <1295891761-18366-5-git-send-email-catalin.marinas@arm.com>
+X-Mailer: git-send-email 1.7.3.2.164.g6f10c.dirty
+In-Reply-To: <1295891761-18366-1-git-send-email-catalin.marinas@arm.com>
+References: <1295891761-18366-1-git-send-email-catalin.marinas@arm.com>
+X-OriginalArrivalTime: 24 Jan 2011 17:56:11.0194 (UTC) FILETIME=[FC2349A0:01CBBBEF]
+X-MC-Unique: 111012417561700601
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id p0OHxgu6031613
 
-On Mon, Jan 24, 2011 at 08:52:17AM -0800, Dave Hansen wrote:
-> On Sun, 2011-01-23 at 18:05 +0000, Russell King - ARM Linux wrote:
-> > On Thu, Jan 20, 2011 at 10:11:27AM -0800, Dave Hansen wrote:
-> > > On Thu, 2011-01-20 at 18:01 +0000, Russell King - ARM Linux wrote:
-> > > > > The x86 version of show_mem() actually manages to do this without any
-> > > > > #ifdefs, and works for a ton of configuration options.  It uses
-> > > > > pfn_valid() to tell whether it can touch a given pfn.
-> > > > 
-> > > > x86 memory layout tends to be very simple as it expects memory to
-> > > > start at the beginning of every region described by a pgdat and extend
-> > > > in one contiguous block.  I wish ARM was that simple.
-> > > 
-> > > x86 memory layouts can be pretty funky and have been that way for a long
-> > > time.  That's why we *have* to handle holes in x86's show_mem().  My
-> > > laptop even has a ~1GB hole in its ZONE_DMA32:
-> > 
-> > If x86 is soo funky, I suggest you try the x86 version of show_mem()
-> > on an ARM platform with memory holes.  Make sure you try it with
-> > sparsemem as well...
-> 
-> x86 uses the generic lib/ show_mem().  It works for any holes, as long
-> as they're expressed in one of the memory models so that pfn_valid()
-> notices them.
+PGDIR_SHIFT and PMD_SHIFT for the classic 2-level page table format have
+the same value (21). This patch converts the PGDIR_* uses in the kernel
+to the PMD_* equivalent so that LPAE builds can reuse the same code.
 
-I think that's what I said.
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+---
+ arch/arm/kernel/module.c  |    2 +-
+ arch/arm/mm/dma-mapping.c |    6 +++---
+ arch/arm/mm/mmu.c         |   10 +++++-----
+ 3 files changed, 9 insertions(+), 9 deletions(-)
 
-> ARM looks like its pfn_valid() is backed up by searching the (ASM
-> arch-specific) memblocks.  That looks like it would be fairly slow
-> compared to the other pfn_valid() implementations and I can see why it's
-> being avoided in show_mem().
+diff --git a/arch/arm/kernel/module.c b/arch/arm/kernel/module.c
+index 2cfe816..94292bb 100644
+--- a/arch/arm/kernel/module.c
++++ b/arch/arm/kernel/module.c
+@@ -32,7 +32,7 @@
+  * recompiling the whole kernel when CONFIG_XIP_KERNEL is turned on/off.
+  */
+ #undef MODULES_VADDR
+-#define MODULES_VADDR	(((unsigned long)_etext + ~PGDIR_MASK) & PGDIR_MASK)
++#define MODULES_VADDR	(((unsigned long)_etext + ~PMD_MASK) & PMD_MASK)
+ #endif
+ 
+ #ifdef CONFIG_MMU
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index 4771dba..4fbcda8 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -121,8 +121,8 @@ static void __dma_free_buffer(struct page *page, size_t size)
+ #endif
+ 
+ #define CONSISTENT_OFFSET(x)	(((unsigned long)(x) - CONSISTENT_BASE) >> PAGE_SHIFT)
+-#define CONSISTENT_PTE_INDEX(x) (((unsigned long)(x) - CONSISTENT_BASE) >> PGDIR_SHIFT)
+-#define NUM_CONSISTENT_PTES (CONSISTENT_DMA_SIZE >> PGDIR_SHIFT)
++#define CONSISTENT_PTE_INDEX(x) (((unsigned long)(x) - CONSISTENT_BASE) >> PMD_SHIFT)
++#define NUM_CONSISTENT_PTES (CONSISTENT_DMA_SIZE >> PMD_SHIFT)
+ 
+ /*
+  * These are the page tables (2MB each) covering uncached, DMA consistent allocations
+@@ -172,7 +172,7 @@ static int __init consistent_init(void)
+ 		}
+ 
+ 		consistent_pte[i++] = pte;
+-		base += (1 << PGDIR_SHIFT);
++		base += (1 << PMD_SHIFT);
+ 	} while (base < CONSISTENT_END);
+ 
+ 	return ret;
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index cae8d68..195a31e 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -857,14 +857,14 @@ static inline void prepare_page_table(void)
+ 	/*
+ 	 * Clear out all the mappings below the kernel image.
+ 	 */
+-	for (addr = 0; addr < MODULES_VADDR; addr += PGDIR_SIZE)
++	for (addr = 0; addr < MODULES_VADDR; addr += PMD_SIZE)
+ 		pmd_clear(pmd_off_k(addr));
+ 
+ #ifdef CONFIG_XIP_KERNEL
+ 	/* The XIP kernel is mapped in the module area -- skip over it */
+-	addr = ((unsigned long)_etext + PGDIR_SIZE - 1) & PGDIR_MASK;
++	addr = ((unsigned long)_etext + PMD_SIZE - 1) & PMD_MASK;
+ #endif
+-	for ( ; addr < PAGE_OFFSET; addr += PGDIR_SIZE)
++	for ( ; addr < PAGE_OFFSET; addr += PMD_SIZE)
+ 		pmd_clear(pmd_off_k(addr));
+ 
+ 	/*
+@@ -879,7 +879,7 @@ static inline void prepare_page_table(void)
+ 	 * memory bank, up to the end of the vmalloc region.
+ 	 */
+ 	for (addr = __phys_to_virt(end);
+-	     addr < VMALLOC_END; addr += PGDIR_SIZE)
++	     addr < VMALLOC_END; addr += PMD_SIZE)
+ 		pmd_clear(pmd_off_k(addr));
+ }
+ 
+@@ -920,7 +920,7 @@ static void __init devicemaps_init(struct machine_desc *mdesc)
+ 	 */
+ 	vectors_page = early_alloc(PAGE_SIZE);
+ 
+-	for (addr = VMALLOC_END; addr; addr += PGDIR_SIZE)
++	for (addr = VMALLOC_END; addr; addr += PMD_SIZE)
+ 		pmd_clear(pmd_off_k(addr));
+ 
+ 	/*
 
-Wrong.  For flatmem, we have a pfn_valid() which is backed by doing a
-one, two or maybe rarely three compare search of the memblocks.  Short
-of having a bitmap of every page in the 4GB memory space, you can't
-get more efficient than that.
-
-For sparsemem, sparsemem provides its own pfn_valid() which is _far_
-from what we require:
-
-static inline int pfn_valid(unsigned long pfn)
-{
-        if (pfn_to_section_nr(pfn) >= NR_MEM_SECTIONS)
-                return 0;
-        return valid_section(__nr_to_section(pfn_to_section_nr(pfn)));
-}
-
-> Maybe we should add either the MAX_ORDER or section_nr() trick to the
-> lib/ implementation.  I bet that would use pfn_valid() rarely enough to
-> meet any performance concerns.
-
-No.  I think it's entirely possible that on some platforms we have holes
-within sections.  Like I said, ours is more funky than x86.
-
-The big problem we have on ARM is that the kernel sparsemem stuff doesn't
-*actually* support sparse memory.  What it supports is fully populated
-blocks of memory of fixed size (known at compile time) where some blocks
-may be contiguous.  Blocks are assumed to be populated from physical
-address zero.
-
-It doesn't actually support partially populated blocks.
-
-So, if your memory granule size is 4MB, and your memory starts at
-0xc0000000 physical, you're stuck with 768 unused sparsemem blocks
-at the beginning of memory.  If it's 1MB, then you have 3072 unused
-sparsemem blocks.  Each mem_section structure is 8 bytes, so that
-could be 24K of zeros.
-
-What we actually need is infrastructure in the kernel which can properly
-handle sparse memory efficiently without causing such wastage.  If your
-platform has four memory chunks, eg at 0xc0000000, 0xc4000000, 0xc8000000,
-and 0xcc000000, then you want to build the kernel to tell it "there may
-be four chunks with a 64MB offset, each chunk may be partially populated."
-
-It seems that Sparsemem can't do that efficiently.
