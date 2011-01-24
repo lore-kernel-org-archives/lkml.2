@@ -1,108 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754219Ab1AXSIT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 13:08:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23635 "EHLO mx1.redhat.com"
+	id S1754073Ab1AXSIH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 13:08:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55058 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754076Ab1AXSIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 13:08:17 -0500
+	id S1753891Ab1AXSIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 13:08:02 -0500
 From: Glauber Costa <glommer@redhat.com>
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
-        Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>
-Subject: [PATCH 16/16] KVM-GST: adjust scheduler cpu power
-Date: Mon, 24 Jan 2011 13:06:37 -0500
-Message-Id: <1295892397-11354-17-git-send-email-glommer@redhat.com>
+        Avi Kivity <avi@redhat.com>
+Subject: [PATCH 06/16] KVM-HDR: Implement wallclock over KVM - KVM Virtual Memory
+Date: Mon, 24 Jan 2011 13:06:27 -0500
+Message-Id: <1295892397-11354-7-git-send-email-glommer@redhat.com>
 In-Reply-To: <1295892397-11354-1-git-send-email-glommer@redhat.com>
 References: <1295892397-11354-1-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a first proposal for using steal time information
-to influence the scheduler. There are a lot of optimizations
-and fine grained adjustments to be done, but it is working reasonably
-so far for me (mostly)
+As a proof of concept to KVM - Kernel Virtual Memory, this patch
+implements wallclock grabbing on top of it. At first, it may seem
+as a waste of work to just redo it, since it is working well. But over the
+time, other MSRs were added - think ASYNC_PF - and more will probably come.
+After this patch, we won't need to ever add another virtual MSR to KVM.
 
-With this patch (and some host pinnings to demonstrate the situation),
-two vcpus with very different steal time (Say 80 % vs 1 %) will not get
-an even distribution of processes. This is a situation that can naturally
-arise, specially in overcommited scenarios. Previosly, the guest scheduler
-would wrongly think that all cpus have the same ability to run processes,
-lowering the overall throughput.
+If the hypervisor fails to register the memory area, we switch back to legacy
+behavior on things that were already present - like kvm clock.
+
+This patch contains the hypervisor implementation for it. I am keeping it
+separate from the headers to facilitate backports to people who wants to backport
+the kernel part but not the hypervisor, or the other way around.
 
 Signed-off-by: Glauber Costa <glommer@redhat.com>
-CC: Rik van Riel <riel@redhat.com>
-CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-CC: Peter Zijlstra <peterz@infradead.org>
 CC: Avi Kivity <avi@redhat.com>
 ---
- include/linux/sched.h |    1 +
- kernel/sched.c        |    4 ++++
- kernel/sched_fair.c   |   10 ++++++++++
- 3 files changed, 15 insertions(+), 0 deletions(-)
+ arch/x86/kvm/x86.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index d747f94..beab72d 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -302,6 +302,7 @@ long io_schedule_timeout(long timeout);
- extern void cpu_init (void);
- extern void trap_init(void);
- extern void update_process_times(int user);
-+extern cputime_t (*hypervisor_steal_time)(void);
- extern void scheduler_tick(void);
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 4ee9c87..a232a36 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1540,16 +1540,26 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+ 		break;
+ 	case MSR_KVM_REGISTER_MEM_AREA: {
+ 		struct kvm_memory_area area_desc;
++		u64 wall_data;
  
- extern void sched_show_task(struct task_struct *p);
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 3b3e88d..c460f0d 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -501,6 +501,8 @@ struct rq {
- 	struct sched_domain *sd;
+ 		kvm_read_guest(vcpu->kvm, data, &area_desc, sizeof(area_desc));
+ 		area_desc.result = 0xF;
  
- 	unsigned long cpu_power;
-+	unsigned long real_ticks;
-+	unsigned long total_ticks;
- 
- 	unsigned char idle_at_tick;
- 	/* For active balancing */
-@@ -3533,10 +3535,12 @@ static int touch_steal_time(int is_idle)
- 	if (is_idle)
- 		return 0;
- 
-+	rq->total_ticks++;
- 	if (steal) {
- 		account_steal_time(steal);
- 		return 1;
++		if (area_desc.type == KVM_AREA_WALLCLOCK) {
++			kvm_read_guest(vcpu->kvm, area_desc.base,
++				       &wall_data, area_desc.size);
++			vcpu->kvm->arch.wall_clock = wall_data;
++			kvm_write_wall_clock(vcpu->kvm, wall_data);
++			goto rma_out;
++		}
++
+ 		if (vcpu->kvm->register_mem_area_uspace) {
+ 			vcpu->run->exit_reason = KVM_EXIT_X86_MSR_OP;
+ 			vcpu->run->msr.msr_data = data;
+ 			return 1;
+ 		}
+ rma_out:
++		area_desc.result = 0;
+ 		kvm_write_guest(vcpu->kvm, data, &area_desc, sizeof(area_desc));
+ 		break;
  	}
-+	rq->real_ticks++;
- 	return 0;
- }
- 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index c62ebae..1364c28 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -2509,6 +2509,16 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
- 		power >>= SCHED_LOAD_SHIFT;
- 	}
- 
-+	WARN_ON(cpu_rq(cpu)->real_ticks > cpu_rq(cpu)->total_ticks);
-+
-+	if (cpu_rq(cpu)->total_ticks) {
-+		power *= cpu_rq(cpu)->real_ticks;
-+		power /= cpu_rq(cpu)->total_ticks;
-+	}
-+
-+	cpu_rq(cpu)->total_ticks = 0;
-+	cpu_rq(cpu)->real_ticks = 0;
-+
- 	sdg->cpu_power_orig = power;
- 
- 	if (sched_feat(ARCH_POWER))
 -- 
 1.7.2.3
 
