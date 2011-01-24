@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab1AXXBH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 18:01:07 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42221
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752399Ab1AXXBG (ORCPT
+	id S1752950Ab1AXXES (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 18:04:18 -0500
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:7662 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752478Ab1AXXER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 18:01:06 -0500
-Date: Mon, 24 Jan 2011 15:01:40 -0800 (PST)
-Message-Id: <20110124.150140.39171549.davem@davemloft.net>
-To: bhutchings@solarflare.com
-Cc: tglx@linutronix.de, netdev@vger.kernel.org,
-        linux-net-drivers@solarflare.com, therbert@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next-2.6 2/5] lib: cpu_rmap: CPU affinity
- reverse-mapping
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1295471005.11126.86.camel@bwh-desktop>
-References: <1295470787.11126.82.camel@bwh-desktop>
-	<1295471005.11126.86.camel@bwh-desktop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 24 Jan 2011 18:04:17 -0500
+From: David Daney <ddaney@caviumnetworks.com>
+To: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        akpm@linux-foundation.org
+Cc: linux-mips@linux-mips.org, David Daney <ddaney@caviumnetworks.com>
+Subject: [PATCH] binfmt_elf: Quiet GCC-4.6 'set but not used' warning in load_elf_binary()
+Date: Mon, 24 Jan 2011 15:04:09 -0800
+Message-Id: <1295910249-23626-1-git-send-email-ddaney@caviumnetworks.com>
+X-Mailer: git-send-email 1.7.2.3
+X-OriginalArrivalTime: 24 Jan 2011 23:04:17.0398 (UTC) FILETIME=[06C62960:01CBBC1B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <bhutchings@solarflare.com>
-Date: Wed, 19 Jan 2011 21:03:25 +0000
+With GCC-4.6 we get warnings about things being 'set but not used'.
 
-> When initiating I/O on a multiqueue and multi-IRQ device, we may want
-> to select a queue for which the response will be handled on the same
-> or a nearby CPU.  This requires a reverse-map of IRQ affinity.  Add
-> library functions to support a generic reverse-mapping from CPUs to
-> objects with affinity and the specific case where the objects are
-> IRQs.
-> 
-> Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+In load_elf_binary() this can happen with reloc_func_desc if
+ELF_PLAT_INIT is defined, but doesn't use the reloc_func_desc
+argument.
 
-Applied.
+Quiet the warning/error by marking reloc_func_desc as __maybe_unused.
+
+Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+---
+ fs/binfmt_elf.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index d5b640b..b2fae009 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -570,7 +570,7 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
+ 	unsigned long elf_entry;
+ 	unsigned long interp_load_addr = 0;
+ 	unsigned long start_code, end_code, start_data, end_data;
+-	unsigned long reloc_func_desc = 0;
++	unsigned long reloc_func_desc __maybe_unused = 0;
+ 	int executable_stack = EXSTACK_DEFAULT;
+ 	unsigned long def_flags = 0;
+ 	struct {
+-- 
+1.7.2.3
+
