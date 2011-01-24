@@ -1,91 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174Ab1AXDhe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 22:37:34 -0500
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:58397 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753015Ab1AXDhd convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 22:37:33 -0500
-From: Arun MURTHY <arun.murthy@stericsson.com>
-To: Mattias WALLIN <mattias.wallin@stericsson.com>
-Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Date: Mon, 24 Jan 2011 04:37:08 +0100
-Subject: RE: [PATCH] mfd: ab8500-gpadc Add new GPADC driver
-Thread-Topic: [PATCH] mfd: ab8500-gpadc Add new GPADC driver
-Thread-Index: Acu5Y84XruP6Z4dJRK+VRFXY0+gZkwCEip1Q
-Message-ID: <F45880696056844FA6A73F415B568C6953738FAC5D@EXDCVYMBSTM006.EQ1STM.local>
-References: <1295519304-27062-1-git-send-email-arun.murthy@stericsson.com>
- <4D382C9F.6000108@stericsson.com>
-  <F45880696056844FA6A73F415B568C69537384B9F3@EXDCVYMBSTM006.EQ1STM.local>
- <4D39770C.20208@stericsson.com>
-In-Reply-To: <4D39770C.20208@stericsson.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1753238Ab1AXDus (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 22:50:48 -0500
+Received: from core.signal11.us ([64.251.29.136]:34912 "EHLO core.signal11.us"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753041Ab1AXDug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 22:50:36 -0500
+From: Alan Ott <alan@signal11.us>
+To: Randy Dunlap <rdunlap@xenotime.net>, Jiri Kosina <jkosina@suse.cz>,
+        Alan Ott <alan@signal11.us>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        greg@kroah.com, stern@rowland.harvard.edu
+Cc: Alan Ott <alan@signal11.us>
+Subject: [PATCH v4 1/1] hid: Add HID Report Descriptor to sysfs.
+Date: Sun, 23 Jan 2011 22:50:18 -0500
+Message-Id: <1295841018-8561-2-git-send-email-alan@signal11.us>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <20110123225935.GB12488@kroah.com>
+References: <20110123225935.GB12488@kroah.com>
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Sun Jan 23 22:50:35 2011
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 4d3cf70b35002123370416
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Henceforth in order to secure the usage of GPADC, and in order to
-> > restrict it to only EM and AUDIO sub-module, the gpadc device struct
-> > was added to ab8500 struct. Also that the exported function
-> > ab8500_gpadc_convert has an argument struct ab8500_gpadc, which can
-> > be obtained be dereferencing the struct ab8500. This is possible only
-> > with the ab8500 and its clients, thereby securing the usage to
-> > battery driver and audio acc detect.
-> Yes and I would like to remove this restriction and have a simpler more
-> open api.
-> First I don't like that users needs to do a lot of pointer
-> dereferencing in their call like ab8500_gpadc_convert(dev->parent-
-> >ab8500->gpadc, USB_CHARGER) (an example).
+Add a new binary sysfs entry called report_descriptor which contains
+the HID report descriptor.
 
-It's very much simple. All clients of ab500 will have a pointer to the
-struct ab8500. Pointer to GPADC struct is an element in ab8500.
-Hence it is something like  ab8500_gpadc_convert(di->ab8500->gpadc,
-BAT_CTRL); I don't find anything complicated in this.
+Signed-off-by: Alan Ott <alan@signal11.us>
+---
+ Documentation/ABI/testing/sysfs-driver-hid |   10 ++++++++
+ drivers/hid/hid-core.c                     |   33 ++++++++++++++++++++++++++++
+ 2 files changed, 43 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-driver-hid
 
-> I prefer a get function that returns a handle that should be used as
-> first argument in the convert calls.
-> It also makes sense if this driver will be extended to use more
-> channels.
+diff --git a/Documentation/ABI/testing/sysfs-driver-hid b/Documentation/ABI/testing/sysfs-driver-hid
+new file mode 100644
+index 0000000..b6490e1
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-driver-hid
+@@ -0,0 +1,10 @@
++What:		For USB devices	: /sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/<hid-bus>:<vendor-id>:<product-id>.<num>/report_descriptor
++		For BT devices	: /sys/class/bluetooth/hci<addr>/<hid-bus>:<vendor-id>:<product-id>.<num>/report_descriptor
++		Symlink		: /sys/class/hidraw/hidraw<num>/device/report_descriptor
++Date:		Jan 2011
++KernelVersion:	2.0.39
++Contact:	Alan Ott <alan@signal11.us>
++Description:	When read, this file returns the device's raw binary HID
++		report descriptor.
++		This file cannot be written.
++Users:		HIDAPI library (http://www.signal11.us/oss/hidapi)
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index d678cf3..32bbd5d 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1159,6 +1159,32 @@ static bool hid_hiddev(struct hid_device *hdev)
+ 	return !!hid_match_id(hdev, hid_hiddev_list);
+ }
+ 
++
++static ssize_t
++read_report_descriptor(struct file *filp, struct kobject *kobj,
++		struct bin_attribute *attr,
++		char *buf, loff_t off, size_t count)
++{
++	struct device *dev = container_of(kobj, struct device, kobj);
++	struct hid_device *hdev = container_of(dev, struct hid_device, dev);
++
++	if (off >= hdev->rsize)
++		return 0;
++
++	if (off + count > hdev->rsize)
++		count = hdev->rsize - off;
++
++	memcpy(buf, hdev->rdesc + off, count);
++
++	return count;
++}
++
++static struct bin_attribute dev_bin_attr_report_desc = {
++	.attr = { .name = "report_descriptor", .mode = 0444 },
++	.read = read_report_descriptor,
++	.size = HID_MAX_DESCRIPTOR_SIZE,
++};
++
+ int hid_connect(struct hid_device *hdev, unsigned int connect_mask)
+ {
+ 	static const char *types[] = { "Device", "Pointer", "Mouse", "Device",
+@@ -1169,6 +1195,7 @@ int hid_connect(struct hid_device *hdev, unsigned int connect_mask)
+ 	char buf[64];
+ 	unsigned int i;
+ 	int len;
++	int ret;
+ 
+ 	if (hdev->quirks & HID_QUIRK_HIDDEV_FORCE)
+ 		connect_mask |= (HID_CONNECT_HIDDEV_FORCE | HID_CONNECT_HIDDEV);
+@@ -1230,6 +1257,11 @@ int hid_connect(struct hid_device *hdev, unsigned int connect_mask)
+ 		bus = "<UNKNOWN>";
+ 	}
+ 
++	ret = device_create_bin_file(&hdev->dev, &dev_bin_attr_report_desc);
++	if (ret)
++		hid_warn(hdev,
++			 "can't create sysfs report descriptor attribute err: %d\n", ret);
++
+ 	hid_info(hdev, "%s: %s HID v%x.%02x %s [%s] on %s\n",
+ 		 buf, bus, hdev->version >> 8, hdev->version & 0xff,
+ 		 type, hdev->name, hdev->phys);
+@@ -1240,6 +1272,7 @@ EXPORT_SYMBOL_GPL(hid_connect);
+ 
+ void hid_disconnect(struct hid_device *hdev)
+ {
++	device_remove_bin_file(&hdev->dev, &dev_bin_attr_report_desc);
+ 	if (hdev->claimed & HID_CLAIMED_INPUT)
+ 		hidinput_disconnect(hdev);
+ 	if (hdev->claimed & HID_CLAIMED_HIDDEV)
+-- 
+1.7.0.4
 
-This is not possible. This is the limitation/the feature of the hardware.
-It's not the software that limits the channel.
-In the GPADC hardware, there are dedicated channel and also dedicatedly
-allocated to the clients which are nothing but the battery parameters(
-voltage, current, battery resistance, ac voltage, usb voltage) and the
-audio acc. Apart from these no other peripheral or channel can use this.
-It's not the restriction because of this implementation, but are the features
-supported by the GPPDC hardware. Even if implemented considering your
-comments, none other apart from the above mentioned can use(No extra
-channels can be added and the existing channel are already hardwired hence
-can't be modified/changed)  
 
-> Second this driver will be used by for example accessories which likely
-> will be called by 3 party drivers
-This is not at all the 3rd part driver. Acc is part of audio block which
-is a module in AB8500. Hence Audio will be a client of ab8500 mfd.
-
-> and to make their life easier I don't want to force them to this
-> ab8500-core dependency.
-Its not that software is forcing or limiting the use to only ab8500
-clients, but it's more the hardware feature.
-Please refer the ab8500 datasheet for further details.
-
-> I agree however that the users must be in above list and most of them
-> are ab8500 devices already.
-In that case there comes no instance where others apart from the ab8500
-clients using this drivers.
-
-Thanks and Regards,
-Arun R Murthy
--------------
