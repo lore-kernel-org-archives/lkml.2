@@ -1,102 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751878Ab1AXT4I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 14:56:08 -0500
-Received: from mail.bluewatersys.com ([202.124.120.130]:6273 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751214Ab1AXT4G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 14:56:06 -0500
-Message-ID: <4D3DD964.9020107@bluewatersys.com>
-Date: Tue, 25 Jan 2011 08:56:20 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1751989Ab1AXT4a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 14:56:30 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45389 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751895Ab1AXT43 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 14:56:29 -0500
 MIME-Version: 1.0
-To: Julia Lawall <julia@diku.dk>
-CC: Russell King <linux@arm.linux.org.uk>, kernel-janitors@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] arch/arm/mach-at91/clock.c: Add missing IS_ERR test
-References: <1295898922-18822-1-git-send-email-julia@diku.dk> <1295898922-18822-3-git-send-email-julia@diku.dk>
-In-Reply-To: <1295898922-18822-3-git-send-email-julia@diku.dk>
-X-Enigmail-Version: 1.1.2
+In-Reply-To: <20110124133400.GA1228@elte.hu>
+References: <20110124133400.GA1228@elte.hu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 25 Jan 2011 05:48:01 +1000
+Message-ID: <AANLkTinsVNy9a1bR0AgD7=Vupoujt03RuZ32v39XSknx@mail.gmail.com>
+Subject: Re: [GIT PULL] perf fixes
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2011 08:55 AM, Julia Lawall wrote:
-> Function clk_get, defined just below this code, returns ERR_PTR not NULL in
-> an error case.
-> 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @r@
-> identifier f;
-> @@
-> f(...) { ... return ERR_PTR(...); }
-> 
-> @@
-> identifier r.f, fld;
-> expression x;
-> statement S1,S2;
-> @@
->  x = f(...)
->  ... when != IS_ERR(x)
-> (
->  if (IS_ERR(x) ||...) S1 else S2
-> |
-> *x->fld
-> )
-> // </smpl>
+On Mon, Jan 24, 2011 at 11:34 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> Please pull the latest perf-fixes-for-linus git tree from:
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-fixes-for-linus
 
-I'm always really impressed by this tool :-).
+I'm not sure if this was true before too, but when I do
 
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> ---
->  arch/arm/mach-at91/clock.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/mach-at91/clock.c b/arch/arm/mach-at91/clock.c
-> index 9113da6..c9ee6d0 100644
-> --- a/arch/arm/mach-at91/clock.c
-> +++ b/arch/arm/mach-at91/clock.c
-> @@ -224,7 +224,7 @@ void __init at91_clock_associate(const char *id, struct device *dev, const char
->  {
->  	struct clk *clk = clk_get(NULL, id);
->  
-> -	if (!dev || !clk || !IS_ERR(clk_get(dev, func)))
-> +	if (!dev || IS_ERR(clk) || !IS_ERR(clk_get(dev, func)))
->  		return;
+    perf report -agf sleep 10
 
-I think we want:
+while compiling the kernel to get a system profile on x86-32, the
+resulting pef.data file will cause "perf report" to just hang.
 
-	if (!dev || !clk || IS_ERR(clk) || !IS_ERR(clk_get(dev, func)))
-		return;
+Is it just me?
 
-Since it is valid to return a NULL clk, and we don't want to try and
-dereference it if that is the case.
-
-We could also probably drop the !IS_ERR(clk_get(dev, func)) check, since
-as far as I can tell it is just checking to see if the clock is already
-associated, but there is no harm in re-assigning the same values, and
-the two assignments in at91_clock_associate are going to be much quicker
-than the lookup in clk_get.
-
-~Ryan
-
--- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
-
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
+                Linus
