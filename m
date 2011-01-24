@@ -1,235 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631Ab1AXLMr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 06:12:47 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45143 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752251Ab1AXLMq (ORCPT
+	id S1752672Ab1AXLOY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 06:14:24 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:56346 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752251Ab1AXLOX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 06:12:46 -0500
+	Mon, 24 Jan 2011 06:14:23 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=vyaOznivUuzlpywZ3JBn9/nvh2sp+IYO/3YPOeup6Q4JSax96ErEjl1Hmiaa9Pj/+k
-         2ZUoFupLBAg5aI5ralFlp74BsnuzO8kS9yLpizkOywwMdql8+Q3KTtl6uVY07iZtnmHX
-         XdKasOyEWVMlt9DWm/jeLNp75AwwOlIvpRspM=
-Date: Mon, 24 Jan 2011 12:12:41 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Roland Dreier <rdreier@cisco.com>
-Cc: linux-kernel@vger.kernel.org, Roland Dreier <rolandd@cisco.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>
-Subject: [PATCH RFC] RDMA: use alloc[_ordered]_workqueue()
-Message-ID: <20110124111241.GB11404@htj.dyndns.org>
-References: <1292086307-19211-1-git-send-email-tj@kernel.org>
- <1292086307-19211-2-git-send-email-tj@kernel.org>
- <adamxn0yujn.fsf@cisco.com>
- <20110124110654.GA11404@htj.dyndns.org>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=D8OXy2CkJdS/NhGxJek6tr0FV/CjA7qnrJ3yVIyKij5CKUM6MYfnhRD9XsbVXr0+9i
+         tGg0WgLRngKCjx6njGbZJgfS8hRYeTZGq/5uZWlMow0T6lsO7KieXpxmM8mWcFkV++s0
+         SA1gS4eIQAlSMa1BIv2F1+rErR47IBY1vOQjw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110124110654.GA11404@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110124104510.GW2232@cmpxchg.org>
+References: <20110121153431.191134dd.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110121153726.54f4a159.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110124101402.GT2232@cmpxchg.org>
+	<20110124191535.514ef2d9.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110124104510.GW2232@cmpxchg.org>
+Date: Mon, 24 Jan 2011 20:14:22 +0900
+Message-ID: <AANLkTi=sg5HpCTdXgEVYS5rCqtoVVho6dxn8giwZ4kmY@mail.gmail.com>
+Subject: Re: [PATCH 1/7] memcg : comment, style fixes for recent patch of move_parent
+From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace create[_singlethread]_workqueue() usages with the new
-alloc[_ordered]_workqueue().  This removes rescuers from all
-infiniband workqueues.
+2011/1/24 Johannes Weiner <hannes@cmpxchg.org>:
+> On Mon, Jan 24, 2011 at 07:15:35PM +0900, KAMEZAWA Hiroyuki wrote:
+>> On Mon, 24 Jan 2011 11:14:02 +0100
+>> Johannes Weiner <hannes@cmpxchg.org> wrote:
+>>
+>> > On Fri, Jan 21, 2011 at 03:37:26PM +0900, KAMEZAWA Hiroyuki wrote:
+>> > > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>> > >
+>> > > A fix for 987eba66e0e6aa654d60881a14731a353ee0acb4
+>> > >
+>> > > A clean up for mem_cgroup_move_parent().
+>> > >  - remove unnecessary initialization of local variable.
+>> > >  - rename charge_size -> page_size
+>> > >  - remove unnecessary (wrong) comment.
+>> > >
+>> > > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>> > > ---
+>> > >  mm/memcontrol.c |   17 +++++++++--------
+>> > >  1 file changed, 9 insertions(+), 8 deletions(-)
+>> > >
+>> > > Index: mmotm-0107/mm/memcontrol.c
+>> > > ===================================================================
+>> > > --- mmotm-0107.orig/mm/memcontrol.c
+>> > > +++ mmotm-0107/mm/memcontrol.c
+>> > > @@ -2265,7 +2265,7 @@ static int mem_cgroup_move_parent(struct
+>> > >   struct cgroup *cg = child->css.cgroup;
+>> > >   struct cgroup *pcg = cg->parent;
+>> > >   struct mem_cgroup *parent;
+>> > > - int charge = PAGE_SIZE;
+>> > > + int page_size;
+>> > >   unsigned long flags;
+>> > >   int ret;
+>> > >
+>> > > @@ -2278,22 +2278,23 @@ static int mem_cgroup_move_parent(struct
+>> > >           goto out;
+>> > >   if (isolate_lru_page(page))
+>> > >           goto put;
+>> > > - /* The page is isolated from LRU and we have no race with splitting */
+>> > > - charge = PAGE_SIZE << compound_order(page);
+>> > > +
+>> > > + page_size = PAGE_SIZE << compound_order(page);
+>> >
+>> > Okay, so you remove the wrong comment, but that does not make the code
+>> > right.  What protects compound_order from reading garbage because the
+>> > page is currently splitting?
+>> >
+>>
+>> ==
+>> static int mem_cgroup_move_account(struct page_cgroup *pc,
+>>                 struct mem_cgroup *from, struct mem_cgroup *to,
+>>                 bool uncharge, int charge_size)
+>> {
+>>         int ret = -EINVAL;
+>>         unsigned long flags;
+>>
+>>         if ((charge_size > PAGE_SIZE) && !PageTransHuge(pc->page))
+>>                 return -EBUSY;
+>> ==
+>>
+>> This is called under compound_lock(). Then, if someone breaks THP,
+>> -EBUSY and retry.
+>
+> This charge_size contains exactly the garbage you just read from an
+> unprotected compound_order().  It could be anything if the page is
+> split concurrently.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Roland Dreier <rolandd@cisco.com>
-Cc: Sean Hefty <sean.hefty@intel.com>
-Cc: Hal Rosenstock <hal.rosenstock@gmail.com>
----
-Hello,
+Then, my recent fix to LRU accounting which use compound_order() is racy, too ?
 
-So, all the create* -> alloc* conversions were dropped (one
-flush_scheduled_work() conversion was incorrectly dropped in the
-process, fixed by the other patch).  Was this because of forward
-progress under memory pressure guarantee?
+I'll replace compound_order() with
+  if (PageTransHuge(page))
+      size = HPAGE_SIZE.
 
-It doesn't look like infiniband can be safely used in memory reclaim
-path anyway (ie. it doesn't seem safe to host swap space) but I could
-definitely be mistaken.  If forward progress is necessary, the right
-thing to do is adding WQ_MEM_RECLAIM flag to workqueue allocation
-calls.
+Does this work ?
+If there are no way to aquire size of page without lock, I need to add one.
+Any idea?
 
-Thank you.
-
- drivers/infiniband/core/addr.c            |    2 +-
- drivers/infiniband/core/cm.c              |    2 +-
- drivers/infiniband/core/cma.c             |    2 +-
- drivers/infiniband/core/iwcm.c            |    2 +-
- drivers/infiniband/core/mad.c             |    2 +-
- drivers/infiniband/core/multicast.c       |    2 +-
- drivers/infiniband/hw/cxgb3/iwch_cm.c     |    2 +-
- drivers/infiniband/hw/cxgb4/cm.c          |    2 +-
- drivers/infiniband/hw/mlx4/main.c         |    2 +-
- drivers/infiniband/hw/mthca/mthca_catas.c |    2 +-
- drivers/infiniband/hw/nes/nes_cm.c        |    4 ++--
- drivers/infiniband/ulp/ipoib/ipoib_main.c |    2 +-
- 12 files changed, 13 insertions(+), 13 deletions(-)
-
-Index: work/drivers/infiniband/core/addr.c
-===================================================================
---- work.orig/drivers/infiniband/core/addr.c
-+++ work/drivers/infiniband/core/addr.c
-@@ -438,7 +438,7 @@ static struct notifier_block nb = {
- 
- static int __init addr_init(void)
- {
--	addr_wq = create_singlethread_workqueue("ib_addr");
-+	addr_wq = alloc_ordered_workqueue("ib_addr", 0);
- 	if (!addr_wq)
- 		return -ENOMEM;
- 
-Index: work/drivers/infiniband/core/cma.c
-===================================================================
---- work.orig/drivers/infiniband/core/cma.c
-+++ work/drivers/infiniband/core/cma.c
-@@ -3257,7 +3257,7 @@ static int __init cma_init(void)
- {
- 	int ret;
- 
--	cma_wq = create_singlethread_workqueue("rdma_cm");
-+	cma_wq = alloc_ordered_workqueue("rdma_cm", 0);
- 	if (!cma_wq)
- 		return -ENOMEM;
- 
-Index: work/drivers/infiniband/core/iwcm.c
-===================================================================
---- work.orig/drivers/infiniband/core/iwcm.c
-+++ work/drivers/infiniband/core/iwcm.c
-@@ -1015,7 +1015,7 @@ EXPORT_SYMBOL(iw_cm_init_qp_attr);
- 
- static int __init iw_cm_init(void)
- {
--	iwcm_wq = create_singlethread_workqueue("iw_cm_wq");
-+	iwcm_wq = alloc_ordered_workqueue("iw_cm_wq", 0);
- 	if (!iwcm_wq)
- 		return -ENOMEM;
- 
-Index: work/drivers/infiniband/core/mad.c
-===================================================================
---- work.orig/drivers/infiniband/core/mad.c
-+++ work/drivers/infiniband/core/mad.c
-@@ -2839,7 +2839,7 @@ static int ib_mad_port_open(struct ib_de
- 		goto error7;
- 
- 	snprintf(name, sizeof name, "ib_mad%d", port_num);
--	port_priv->wq = create_singlethread_workqueue(name);
-+	port_priv->wq = alloc_ordered_workqueue(name, 0);
- 	if (!port_priv->wq) {
- 		ret = -ENOMEM;
- 		goto error8;
-Index: work/drivers/infiniband/core/multicast.c
-===================================================================
---- work.orig/drivers/infiniband/core/multicast.c
-+++ work/drivers/infiniband/core/multicast.c
-@@ -872,7 +872,7 @@ int mcast_init(void)
- {
- 	int ret;
- 
--	mcast_wq = create_singlethread_workqueue("ib_mcast");
-+	mcast_wq = alloc_ordered_workqueue("ib_mcast", 0);
- 	if (!mcast_wq)
- 		return -ENOMEM;
- 
-Index: work/drivers/infiniband/hw/cxgb3/iwch_cm.c
-===================================================================
---- work.orig/drivers/infiniband/hw/cxgb3/iwch_cm.c
-+++ work/drivers/infiniband/hw/cxgb3/iwch_cm.c
-@@ -2236,7 +2236,7 @@ int __init iwch_cm_init(void)
- {
- 	skb_queue_head_init(&rxq);
- 
--	workq = create_singlethread_workqueue("iw_cxgb3");
-+	workq = alloc_ordered_workqueue("iw_cxgb3", 0);
- 	if (!workq)
- 		return -ENOMEM;
- 
-Index: work/drivers/infiniband/hw/cxgb4/cm.c
-===================================================================
---- work.orig/drivers/infiniband/hw/cxgb4/cm.c
-+++ work/drivers/infiniband/hw/cxgb4/cm.c
-@@ -2356,7 +2356,7 @@ int __init c4iw_cm_init(void)
- 	spin_lock_init(&timeout_lock);
- 	skb_queue_head_init(&rxq);
- 
--	workq = create_singlethread_workqueue("iw_cxgb4");
-+	workq = alloc_ordered_workqueue("iw_cxgb4", 0);
- 	if (!workq)
- 		return -ENOMEM;
- 
-Index: work/drivers/infiniband/hw/mlx4/main.c
-===================================================================
---- work.orig/drivers/infiniband/hw/mlx4/main.c
-+++ work/drivers/infiniband/hw/mlx4/main.c
-@@ -1214,7 +1214,7 @@ static int __init mlx4_ib_init(void)
- {
- 	int err;
- 
--	wq = create_singlethread_workqueue("mlx4_ib");
-+	wq = alloc_ordered_workqueue("mlx4_ib", 0);
- 	if (!wq)
- 		return -ENOMEM;
- 
-Index: work/drivers/infiniband/hw/mthca/mthca_catas.c
-===================================================================
---- work.orig/drivers/infiniband/hw/mthca/mthca_catas.c
-+++ work/drivers/infiniband/hw/mthca/mthca_catas.c
-@@ -186,7 +186,7 @@ int __init mthca_catas_init(void)
- {
- 	INIT_WORK(&catas_work, catas_reset);
- 
--	catas_wq = create_singlethread_workqueue("mthca_catas");
-+	catas_wq = alloc_ordered_workqueue("mthca_catas", 0);
- 	if (!catas_wq)
- 		return -ENOMEM;
- 
-Index: work/drivers/infiniband/hw/nes/nes_cm.c
-===================================================================
---- work.orig/drivers/infiniband/hw/nes/nes_cm.c
-+++ work/drivers/infiniband/hw/nes/nes_cm.c
-@@ -2381,10 +2381,10 @@ static struct nes_cm_core *nes_cm_alloc_
- 	nes_debug(NES_DBG_CM, "Init CM Core completed -- cm_core=%p\n", cm_core);
- 
- 	nes_debug(NES_DBG_CM, "Enable QUEUE EVENTS\n");
--	cm_core->event_wq = create_singlethread_workqueue("nesewq");
-+	cm_core->event_wq = alloc_ordered_workqueue("nesewq", 0);
- 	cm_core->post_event = nes_cm_post_event;
- 	nes_debug(NES_DBG_CM, "Enable QUEUE DISCONNECTS\n");
--	cm_core->disconn_wq = create_singlethread_workqueue("nesdwq");
-+	cm_core->disconn_wq = alloc_ordered_workqueue("nesdwq", 0);
- 
- 	print_core(cm_core);
- 	return cm_core;
-Index: work/drivers/infiniband/ulp/ipoib/ipoib_main.c
-===================================================================
---- work.orig/drivers/infiniband/ulp/ipoib/ipoib_main.c
-+++ work/drivers/infiniband/ulp/ipoib/ipoib_main.c
-@@ -1374,7 +1374,7 @@ static int __init ipoib_init_module(void
- 	 * so flush_scheduled_work() can deadlock during device
- 	 * removal.
- 	 */
--	ipoib_workqueue = create_singlethread_workqueue("ipoib");
-+	ipoib_workqueue = alloc_ordered_workqueue("ipoib", 0);
- 	if (!ipoib_workqueue) {
- 		ret = -ENOMEM;
- 		goto err_fs;
-Index: work/drivers/infiniband/core/cm.c
-===================================================================
---- work.orig/drivers/infiniband/core/cm.c
-+++ work/drivers/infiniband/core/cm.c
-@@ -3804,7 +3804,7 @@ static int __init ib_cm_init(void)
- 	if (ret)
- 		return -ENOMEM;
- 
--	cm.wq = create_workqueue("ib_cm");
-+	cm.wq = alloc_workqueue("ib_cm", 0, 0);
- 	if (!cm.wq) {
- 		ret = -ENOMEM;
- 		goto error1;
+Thanks,
+-Kame
