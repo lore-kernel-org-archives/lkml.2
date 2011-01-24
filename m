@@ -1,91 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596Ab1AXEtX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 23:49:23 -0500
-Received: from claw.goop.org ([74.207.240.146]:58883 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751892Ab1AXEtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 23:49:22 -0500
-Message-ID: <4D3D04CE.2050905@goop.org>
-Date: Sun, 23 Jan 2011 20:49:18 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1751319Ab1AXFVF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 00:21:05 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:63871 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118Ab1AXFVE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 00:21:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=RJ84p4BZ+9am3IxcFOtFiqY84MbDfr7PrH+EOj+PuShhUqeEGRf4NeXUyrpGt/qr4s
+         FssE3WCNItRCOYbgyrMJP9Uv9kR1uETOWjEfMAY3nEvzH3nZFsfibczISfgnEkeH3Myt
+         LxOpSiF/8BMVdirQFqmLl5/xgz7/uZqpN7bcI=
+Date: Mon, 24 Jan 2011 13:20:53 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Dick Streefland <dick@streefland.net>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arkadiusz Miskiewicz <arekm@maven.pl>
+Subject: Re: [PATCH] scripts/extract-ikconfig: add xz compression support
+Message-ID: <20110124052053.GD6971@cr0.nay.redhat.com>
+References: <20110123234457.GB2321@streefland.net>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefan Bader <stefan.bader@canonical.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        xen-devel@lists.xensource.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] Re: [PATCH] xen: p2m: correctly initialize partial
- p2m	leave
-References: <4D3848DF.9000906@canonical.com> <20110120151032.GD5092@dumpdata.com>
-In-Reply-To: <20110120151032.GD5092@dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110123234457.GB2321@streefland.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2011 07:10 AM, Konrad Rzeszutek Wilk wrote:
-> On Thu, Jan 20, 2011 at 03:38:23PM +0100, Stefan Bader wrote:
->> There have been changes and code been moved around, so this is just a quick
->> rebase of the change I tested on a 2.6.37 based kernel. The basic problem seem
->> still valid, though.
-> Nice catch..
+On Mon, Jan 24, 2011 at 12:44:57AM +0100, Dick Streefland wrote:
+>Add support for kernels compressed with xz to the extract-ikconfig script.
+>
+>Signed-off-by: Dick Streefland <dick@streefland.net>
 
-Indeed!
+Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
 
->> Initially I thought of adding a cc to stable into the s-o-b, but the patch needs
->> to be adapted anyway (I can supply that version if the way I fixed the issue
->> looks ok).
->>
->> Regards,
->> Stefan
->> >From 1e9c9514caf0399c88ae9288e6db8e3d1c4b4be5 Mon Sep 17 00:00:00 2001
->> From: Stefan Bader <stefan.bader@canonical.com>
->> Date: Thu, 20 Jan 2011 11:37:43 +0100
->> Subject: [PATCH] xen: p2m: correctly initialize partial p2m leave
->>
->> After changing the p2m mapping to a tree by
->>
->>   commit 58e05027b530ff081ecea68e38de8d59db8f87e0
->>     xen: convert p2m to a 3 level tree
->>
->> and trying to boot a DomU with 615MB of memory, the following crash was
->> observed in the dump:
->>
->> kernel direct mapping tables up to 26f00000 @ 1ec4000-1fff000
->> BUG: unable to handle kernel NULL pointer dereference at (null)
->> IP: [<c0107397>] xen_set_pte+0x27/0x60
->> *pdpt = 0000000000000000 *pde = 0000000000000000
->>
->> Adding further debug statements showed that when trying to set up
->> pfn=0x26700 the returned mapping was invalid.
->>
->> pfn=0x266ff calling set_pte(0xc1fe77f8, 0x6b3003)
->> pfn=0x26700 calling set_pte(0xc1fe7800, 0x3)
->>
->> Although the last_pfn obtained from the startup info is 0x26700, which
->> should in turn not be hit, the additional 8MB which are added as extra
->> memory normally seem to be ok. This lead to looking into the initial
->> p2m tree construction, which uses the smaller value and assuming that
->> there is other code handling the extra memory.
->>
->> When the p2m tree is set up, the leaves are directly pointed to the
->> array which the domain builder set up. But if the mapping is not on a
->> boundary that fits into one p2m page, this will result in the last leaf
->> being only partially valid. And as the invalid entries are not
->> initialized in that case, things go badly wrong.
->>
->> I am trying to fix that by checking whether the current leaf is a
->> complete map and if not, allocate a completely new page and copy only
->> the valid pointers there. This may not be the most efficient or elegant
->> solution, but at least it seems to allow me booting DomUs with memory
->> assignments all over the range.
-
-Since the p2m page is just a normal page that happens to have been
-initialized by the domain builder, I think we can just fill the tail of
-the page with INVALID_P2M_ENTRY in place, rather than having to allocate
-a new one.
-
-    J
+Thanks.
