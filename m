@@ -1,81 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513Ab1AXQcj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 11:32:39 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:42214 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753397Ab1AXQch (ORCPT
+	id S1753583Ab1AXQdj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 11:33:39 -0500
+Received: from fb2.tech.numericable.fr ([82.216.111.50]:44813 "EHLO
+	fb2.tech.numericable.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753463Ab1AXQde (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 11:32:37 -0500
-Date: Mon, 24 Jan 2011 11:32:36 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Robert Morell <rmorell@nvidia.com>
-cc: David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Benoit Goby <benoit@android.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
-        Oliver Neukum <oliver@neukum.org>, Olof Johansson <olof@lixom.net>,
-        Erik Gilling <konkers@android.com>, Colin Cross <ccross@android.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 1/2] USB: HCD: Add driver hooks for (un)?map_urb_for_dma
-In-Reply-To: <1295559715-14264-2-git-send-email-rmorell@nvidia.com>
-Message-ID: <Pine.LNX.4.44L0.1101241126220.2030-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 24 Jan 2011 11:33:34 -0500
+From: Corentin Chary <corentincj@iksaif.net>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: platform-driver-x86@vger.kernel.org, acpi4asus-user@lists.sourceforge.net,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Chris Bagwell <chris@cnpbagwell.com>,
+        Corentin Chary <corentincj@iksaif.net>
+Subject: [PATCH 04/14] eeepc-wmi: serialize access to wmi method
+Date: Mon, 24 Jan 2011 17:23:48 +0100
+Message-Id: <1295886238-15961-5-git-send-email-corentincj@iksaif.net>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1295886238-15961-1-git-send-email-corentincj@iksaif.net>
+References: <1295886238-15961-1-git-send-email-corentincj@iksaif.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Jan 2011, Robert Morell wrote:
+\AMW0.WMBC, which is the main method that we use,
+is not reentrant. When wireless hotpluging is enabled,
+toggling the status of the wireless device using WMBC will
+trigger a notification and the notification handler need to
+call WMBC again to get the new status of the device, this
+will trigger the following error:
 
-> Provide optional hooks for the host controller driver to override the
-> default DMA mapping and unmapping routines.  In general, these shouldn't
-> be necessary unless the host controller has special DMA requirements,
-> such as alignment contraints.  If these are not specified, the
-> general usb_hcd_(un)?map_urb_for_dma functions will be used instead.
-> Also, pass the status to unmap_urb_for_dma so it can know whether the
-> DMA buffer has been overwritten.
-> 
-> Finally, add a flag to be used by these implementations if they
-> allocated a temporary buffer so it can be freed properly when unmapping.
+ACPI Error (dswload-0802): [_T_0] Namespace lookup failure, AE_ALREADY_EXISTS
+ACPI Exception: AE_ALREADY_EXISTS, During name lookup/catalog (20100428/psloop-231)
+ACPI Error (psparse-0537): Method parse/execution failed [\AMW0.WMBC] (Node f7023b88), AE_ALREADY_EXISTS
+ACPI: Marking method WMBC as Serialized because of AE_ALREADY_EXISTS error
 
-Overall this looks fine.
+Since there is currently no way to tell the acpi subsystem to mark
+a method as serialized, we do it in eeepc-wmi.
 
-> Signed-off-by: Robert Morell <rmorell@nvidia.com>
-> ---
-> 
-> The original patches renamed the exported symbols from
-> (un)?map_urb_setup_for_dma to usb_hcd_(un)?map_urb_setup_for_dma, and continued
-> to use the ones not prefixed by "usb_hcd" internally.  However, due to commit
-> 1dae423dd9b which already exported unmap_urb_setup_for_dma as-is, I reworked
-> this to export both unchanged and switch to the hooked_ prefix internally.
+Of course, we could let the first call fail, and then it would work,
+but it doesn't seems really clean, and it will make the first
+WMBC call return a random value.
 
-In fact, it would be preferable to have the "usb_" or "usb_hcd_" prefix
-on exported symbols.  Can you write a third patch to go before these
-two, which changes the existing usages?  I think there aren't too many.
+This patch was tested on EeePc 1000H with a RaLink RT2860
+wireless card using the rt2800pci driver. rt2860sta driver
+seems to deadlock when we remove the pci device...
 
-> diff --git a/include/linux/usb/hcd.h b/include/linux/usb/hcd.h
-> index 0b6e751..dc487ff 100644
-> --- a/include/linux/usb/hcd.h
-> +++ b/include/linux/usb/hcd.h
-> @@ -233,6 +233,18 @@ struct hc_driver {
->  	int	(*urb_dequeue)(struct usb_hcd *hcd,
->  				struct urb *urb, int status);
->  
-> +	/* (optional) these hooks allow an HCD to override the default DMA
-> +	 * mapping and unmapping routines.  In general, they shouldn't be
-> +	 * necessary unless the host controller has special DMA requirements,
-> +	 * such as alignment contraints.  If these are not specified, the
-> +         * general (un)?map_urb_for_dma functions will be used instead (and it
-> +         * may be a good idea to call these functions in your HCD
-> +         * implementation) */
+Signed-off-by: Corentin Chary <corentincj@iksaif.net>
+---
+ drivers/platform/x86/eeepc-wmi.c |   78 +++++++++++++++++++++++++++++++++++---
+ 1 files changed, 72 insertions(+), 6 deletions(-)
 
-Leading tabs vs. spaces.  Also, the style rules (not always rigorously
-followed, but we may as well try) require the /* and */ to be on their
-own lines.
-
-Alan Stern
+diff --git a/drivers/platform/x86/eeepc-wmi.c b/drivers/platform/x86/eeepc-wmi.c
+index 01bc2b3..eb4c0ce 100644
+--- a/drivers/platform/x86/eeepc-wmi.c
++++ b/drivers/platform/x86/eeepc-wmi.c
+@@ -137,6 +137,9 @@ struct eeepc_wmi {
+ 
+ 	struct hotplug_slot *hotplug_slot;
+ 	struct mutex hotplug_lock;
++	struct mutex wmi_lock;
++	struct workqueue_struct *hotplug_workqueue;
++	struct work_struct hotplug_work;
+ 
+ 	struct eeepc_wmi_debug debug;
+ };
+@@ -370,15 +373,19 @@ static void eeepc_rfkill_hotplug(struct eeepc_wmi *eeepc)
+ {
+ 	struct pci_dev *dev;
+ 	struct pci_bus *bus;
+-	bool blocked = eeepc_wlan_rfkill_blocked(eeepc);
++	bool blocked;
+ 	bool absent;
+ 	u32 l;
+ 
+-	if (eeepc->wlan_rfkill)
+-		rfkill_set_sw_state(eeepc->wlan_rfkill, blocked);
++	mutex_lock(&eeepc->wmi_lock);
++	blocked = eeepc_wlan_rfkill_blocked(eeepc);
++	mutex_unlock(&eeepc->wmi_lock);
+ 
+ 	mutex_lock(&eeepc->hotplug_lock);
+ 
++	if (eeepc->wlan_rfkill)
++		rfkill_set_sw_state(eeepc->wlan_rfkill, blocked);
++
+ 	if (eeepc->hotplug_slot) {
+ 		bus = pci_find_bus(0, 1);
+ 		if (!bus) {
+@@ -435,7 +442,14 @@ static void eeepc_rfkill_notify(acpi_handle handle, u32 event, void *data)
+ 	if (event != ACPI_NOTIFY_BUS_CHECK)
+ 		return;
+ 
+-	eeepc_rfkill_hotplug(eeepc);
++	/*
++	 * We can't call directly eeepc_rfkill_hotplug because most
++	 * of the time WMBC is still being executed and not reetrant.
++	 * There is currently no way to tell ACPICA that  we want this
++	 * method to be serialized, we schedule a eeepc_rfkill_hotplug
++	 * call later, in a safer context.
++	 */
++	queue_work(eeepc->hotplug_workqueue, &eeepc->hotplug_work);
+ }
+ 
+ static int eeepc_register_rfkill_notifier(struct eeepc_wmi *eeepc,
+@@ -508,6 +522,14 @@ static struct hotplug_slot_ops eeepc_hotplug_slot_ops = {
+ 	.get_power_status = eeepc_get_adapter_status,
+ };
+ 
++static void eeepc_hotplug_work(struct work_struct *work)
++{
++	struct eeepc_wmi *eeepc;
++
++	eeepc = container_of(work, struct eeepc_wmi, hotplug_work);
++	eeepc_rfkill_hotplug(eeepc);
++}
++
+ static int eeepc_setup_pci_hotplug(struct eeepc_wmi *eeepc)
+ {
+ 	int ret = -ENOMEM;
+@@ -518,6 +540,13 @@ static int eeepc_setup_pci_hotplug(struct eeepc_wmi *eeepc)
+ 		return -ENODEV;
+ 	}
+ 
++	eeepc->hotplug_workqueue =
++		create_singlethread_workqueue("hotplug_workqueue");
++	if (!eeepc->hotplug_workqueue)
++		goto error_workqueue;
++
++	INIT_WORK(&eeepc->hotplug_work, eeepc_hotplug_work);
++
+ 	eeepc->hotplug_slot = kzalloc(sizeof(struct hotplug_slot), GFP_KERNEL);
+ 	if (!eeepc->hotplug_slot)
+ 		goto error_slot;
+@@ -547,6 +576,8 @@ error_info:
+ 	kfree(eeepc->hotplug_slot);
+ 	eeepc->hotplug_slot = NULL;
+ error_slot:
++	destroy_workqueue(eeepc->hotplug_workqueue);
++error_workqueue:
+ 	return ret;
+ }
+ 
+@@ -575,6 +606,34 @@ static void eeepc_rfkill_query(struct rfkill *rfkill, void *data)
+ 	rfkill_set_sw_state(rfkill, !(retval & 0x1));
+ }
+ 
++static int eeepc_rfkill_wlan_set(void *data, bool blocked)
++{
++	struct eeepc_wmi *eeepc = data;
++	int ret;
++
++	/*
++	 * This handler is enabled only if hotplug is enabled.
++	 * In this case, the eeepc_wmi_set_devstate() will
++	 * trigger a wmi notification and we need to wait
++	 * this call to finish before being able to call
++	 * any wmi method
++	 */
++	mutex_lock(&eeepc->wmi_lock);
++	ret = eeepc_rfkill_set((void *)(long)EEEPC_WMI_DEVID_WLAN, blocked);
++	mutex_unlock(&eeepc->wmi_lock);
++	return ret;
++}
++
++static void eeepc_rfkill_wlan_query(struct rfkill *rfkill, void *data)
++{
++	eeepc_rfkill_query(rfkill, (void *)(long)EEEPC_WMI_DEVID_WLAN);
++}
++
++static const struct rfkill_ops eeepc_rfkill_wlan_ops = {
++	.set_block = eeepc_rfkill_wlan_set,
++	.query = eeepc_rfkill_wlan_query,
++};
++
+ static const struct rfkill_ops eeepc_rfkill_ops = {
+ 	.set_block = eeepc_rfkill_set,
+ 	.query = eeepc_rfkill_query,
+@@ -603,8 +662,12 @@ static int eeepc_new_rfkill(struct eeepc_wmi *eeepc,
+ 	if (!retval || retval == 0x00060000)
+ 		return -ENODEV;
+ 
+-	*rfkill = rfkill_alloc(name, &eeepc->platform_device->dev, type,
+-			       &eeepc_rfkill_ops, (void *)(long)dev_id);
++	if (dev_id == EEEPC_WMI_DEVID_WLAN && eeepc->hotplug_wireless)
++		*rfkill = rfkill_alloc(name, &eeepc->platform_device->dev, type,
++				       &eeepc_rfkill_wlan_ops, eeepc);
++	else
++		*rfkill = rfkill_alloc(name, &eeepc->platform_device->dev, type,
++				       &eeepc_rfkill_ops, (void *)(long)dev_id);
+ 
+ 	if (!*rfkill)
+ 		return -EINVAL;
+@@ -636,6 +699,8 @@ static void eeepc_wmi_rfkill_exit(struct eeepc_wmi *eeepc)
+ 	eeepc_rfkill_hotplug(eeepc);
+ 	if (eeepc->hotplug_slot)
+ 		pci_hp_deregister(eeepc->hotplug_slot);
++	if (eeepc->hotplug_workqueue)
++		destroy_workqueue(eeepc->hotplug_workqueue);
+ 
+ 	if (eeepc->bluetooth_rfkill) {
+ 		rfkill_unregister(eeepc->bluetooth_rfkill);
+@@ -654,6 +719,7 @@ static int eeepc_wmi_rfkill_init(struct eeepc_wmi *eeepc)
+ 	int result = 0;
+ 
+ 	mutex_init(&eeepc->hotplug_lock);
++	mutex_init(&eeepc->wmi_lock);
+ 
+ 	result = eeepc_new_rfkill(eeepc, &eeepc->wlan_rfkill,
+ 				  "eeepc-wlan", RFKILL_TYPE_WLAN,
+-- 
+1.7.3.4
 
