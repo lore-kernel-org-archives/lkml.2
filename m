@@ -1,36 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316Ab1AXJiC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 04:38:02 -0500
-Received: from buzon.uach.mx ([148.229.1.4]:39532 "EHLO buzon.uach.mx"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751302Ab1AXJh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 04:37:59 -0500
-X-Greylist: delayed 3599 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Jan 2011 04:37:59 EST
-Date: Mon, 24 Jan 2011 09:37:29 +0100
-From: tsaenz@uach.mx
-Subject: Transaction notice
-Reply-to: nwpp@nwpp.co-mail.com
-Message-id: <f66889c929f0.4d3d4859@uach.mx>
-MIME-version: 1.0
-X-Mailer: Sun Java(tm) System Messenger Express 6.2-3.04 (built Jul 15 2005)
-Content-type: text/plain; charset=us-ascii
-Content-language: en
-Content-transfer-encoding: 7BIT
-Content-disposition: inline
-X-Accept-Language: en
-To: unlisted-recipients:; (no To-header on input)
+	id S1752235Ab1AXJp3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 04:45:29 -0500
+Received: from casper.infradead.org ([85.118.1.10]:50716 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751631Ab1AXJp2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 04:45:28 -0500
+Subject: Re: [patch 0/9] locking: Remove the deprecated lock initializers
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <20110123143631.392446736@linutronix.de>
+References: <20110123143631.392446736@linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 24 Jan 2011 10:46:13 +0100
+Message-ID: <1295862373.28776.310.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2011-01-23 at 15:16 +0000, Thomas Gleixner wrote:
+> SPIN_LOCK_UNLOCKED and RW_LOCK_UNLOCKED are deprecated since lockdep
+> was merged. Fixup the last pertinacious users and remove the initializers.
 
+Nice!,
 
-I humbly seek your cooperation towards an immense beneficial proposal to you.
-Contact me through the email address below for details.
- 
-aapp@nwpp.co-mail.com
-
-Remember that the subject of this mail is Transaction notice.
-It is very important that you recall this so that you will recognize my email when I send the details after your response. 
-J.S.
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
