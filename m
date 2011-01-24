@@ -1,101 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462Ab1AXJGc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 04:06:32 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:36620 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752295Ab1AXJG3 (ORCPT
+	id S1752625Ab1AXJHd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 04:07:33 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45522 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460Ab1AXJH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 04:06:29 -0500
-Message-ID: <4D3D4109.9020103@canonical.com>
-Date: Mon, 24 Jan 2011 10:06:17 +0100
-From: Stefan Bader <stefan.bader@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+	Mon, 24 Jan 2011 04:07:29 -0500
+Date: Mon, 24 Jan 2011 09:07:08 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Colin Cross <ccross@android.com>
+Cc: linux-tegra@vger.kernel.org, konkers@android.com,
+        Gary King <gking@nvidia.com>, linux-kernel@vger.kernel.org,
+        olof@lixom.net, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 13/28] ARM: tegra: Add suspend and hotplug support
+Message-ID: <20110124090708.GA16202@n2100.arm.linux.org.uk>
+References: <1295834493-5019-1-git-send-email-ccross@android.com> <1295834493-5019-14-git-send-email-ccross@android.com>
 MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        xen-devel@lists.xensource.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] Re: [PATCH] xen: p2m: correctly initialize partial
- p2m	leave
-References: <4D3848DF.9000906@canonical.com> <20110120151032.GD5092@dumpdata.com> <4D3D04CE.2050905@goop.org>
-In-Reply-To: <4D3D04CE.2050905@goop.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295834493-5019-14-git-send-email-ccross@android.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2011 05:49 AM, Jeremy Fitzhardinge wrote:
-> On 01/20/2011 07:10 AM, Konrad Rzeszutek Wilk wrote:
->> On Thu, Jan 20, 2011 at 03:38:23PM +0100, Stefan Bader wrote:
->>> There have been changes and code been moved around, so this is just a quick
->>> rebase of the change I tested on a 2.6.37 based kernel. The basic problem seem
->>> still valid, though.
->> Nice catch..
-> 
-> Indeed!
-> 
->>> Initially I thought of adding a cc to stable into the s-o-b, but the patch needs
->>> to be adapted anyway (I can supply that version if the way I fixed the issue
->>> looks ok).
->>>
->>> Regards,
->>> Stefan
->>> >From 1e9c9514caf0399c88ae9288e6db8e3d1c4b4be5 Mon Sep 17 00:00:00 2001
->>> From: Stefan Bader <stefan.bader@canonical.com>
->>> Date: Thu, 20 Jan 2011 11:37:43 +0100
->>> Subject: [PATCH] xen: p2m: correctly initialize partial p2m leave
->>>
->>> After changing the p2m mapping to a tree by
->>>
->>>   commit 58e05027b530ff081ecea68e38de8d59db8f87e0
->>>     xen: convert p2m to a 3 level tree
->>>
->>> and trying to boot a DomU with 615MB of memory, the following crash was
->>> observed in the dump:
->>>
->>> kernel direct mapping tables up to 26f00000 @ 1ec4000-1fff000
->>> BUG: unable to handle kernel NULL pointer dereference at (null)
->>> IP: [<c0107397>] xen_set_pte+0x27/0x60
->>> *pdpt = 0000000000000000 *pde = 0000000000000000
->>>
->>> Adding further debug statements showed that when trying to set up
->>> pfn=0x26700 the returned mapping was invalid.
->>>
->>> pfn=0x266ff calling set_pte(0xc1fe77f8, 0x6b3003)
->>> pfn=0x26700 calling set_pte(0xc1fe7800, 0x3)
->>>
->>> Although the last_pfn obtained from the startup info is 0x26700, which
->>> should in turn not be hit, the additional 8MB which are added as extra
->>> memory normally seem to be ok. This lead to looking into the initial
->>> p2m tree construction, which uses the smaller value and assuming that
->>> there is other code handling the extra memory.
->>>
->>> When the p2m tree is set up, the leaves are directly pointed to the
->>> array which the domain builder set up. But if the mapping is not on a
->>> boundary that fits into one p2m page, this will result in the last leaf
->>> being only partially valid. And as the invalid entries are not
->>> initialized in that case, things go badly wrong.
->>>
->>> I am trying to fix that by checking whether the current leaf is a
->>> complete map and if not, allocate a completely new page and copy only
->>> the valid pointers there. This may not be the most efficient or elegant
->>> solution, but at least it seems to allow me booting DomUs with memory
->>> assignments all over the range.
-> 
-> Since the p2m page is just a normal page that happens to have been
-> initialized by the domain builder, I think we can just fill the tail of
-> the page with INVALID_P2M_ENTRY in place, rather than having to allocate
-> a new one.
-> 
->     J
+On Sun, Jan 23, 2011 at 06:01:18PM -0800, Colin Cross wrote:
+> Tegra supports three low power modes that involve powering down the CPU.
 
-That was exactly the detail I was not sure about and did not want to make
-assumptions after only spending a little bit digging around in the code. The
-safest assumption was to expect other data to be possibly located after the p2m
-array. Please feel free to clean up the code any time.
+It is a common misconception that on CPU hot-unplug you need to save the
+entire universe of the CPU going down.
 
--Stefan
+When CPUs are hot-plugged, they reinitialize, which includes resetting
+most of the CPU state.
+
+There is no point saving the user register state, svc register state,
+abort register state, interrupt register state, undefined mode register
+state, TTB base registers, TTB control register, memory type remapping
+registers nor the context register.  These are all reinitialized when
+the CPU is brought up again.
+
+VFP state should already be saved - when a CPU is hot-unplugged, we can't
+leave a threads VFP register set stored in that hardware as it would
+become inaccessible, so there's no point saving VFP state.  Recently
+code was added to invalidate the software VFP state for a CPU being
+hot-unplugged and reinitialize the VFP hardware on CPU hotplug.
+
+We also have the necessary hooks into the PM code to deal with VFP state
+saving/restore on PM suspend/resume.
+
+The breakpoint/watchdog stuff _should_ be handled by the breakpoint/
+watchdog code, not by each individual platform.  Please can you work
+with Will Deacon if this is not the case to ensure that the breakpoint/
+watchdog code can handle CPU hotplug.
+
+Lastly, L2 cache controller should have suspend/resume support added.
+
+We _really_ need to stop having platforms manually saving lots of CPU
+state for suspend/hot unplug.
+
+That should reduce the amount of state you're saving down to something
+more manageable.
+
+> +
+> +#ifdef CONFIG_HOTPLUG_CPU
+> +
+> +int platform_cpu_kill(unsigned int cpu)
+> +{
+> +	unsigned int reg;
+> +
+> +	do {
+> +		reg = readl(CLK_RST_CONTROLLER_RST_CPU_CMPLX_SET);
+> +		cpu_relax();
+> +	} while (!(reg & (1<<cpu)));
+> +
+> +	spin_lock(&boot_lock);
+> +	reg = readl(CLK_RST_CONTROLLER_CLK_CPU_CMPLX);
+> +	writel(reg | (1<<(8+cpu)), CLK_RST_CONTROLLER_CLK_CPU_CMPLX);
+> +	spin_unlock(&boot_lock);
+> +
+> +	return 1;
+> +}
+> +
+> +void platform_cpu_die(unsigned int cpu)
+> +{
+> +#ifdef DEBUG
+> +	unsigned int this_cpu = hard_smp_processor_id();
+> +
+> +	if (cpu != this_cpu) {
+> +		printk(KERN_CRIT "Eek! platform_cpu_die running on %u, should be %u\n",
+> +			   this_cpu, cpu);
+> +		BUG();
+> +	}
+> +#endif
+> +
+> +	gic_cpu_exit(0);
+> +	barrier();
+> +	flush_cache_all();
+> +	barrier();
+> +	__cortex_a9_save(0);
+> +
+> +	/*
+> +	 * __cortex_a9_save can return through __cortex_a9_restore, but that
+> +	 * should never happen for a hotplugged cpu
+> +	 */
+> +	BUG();
+> +}
+> +
+> +int platform_cpu_disable(unsigned int cpu)
+> +{
+> +	/*
+> +	 * we don't allow CPU 0 to be shutdown (it is still too special
+> +	 * e.g. clock tick interrupts)
+> +	 */
+> +	if (unlikely(!tegra_context_area))
+> +		return -ENXIO;
+> +
+> +	return cpu == 0 ? -EPERM : 0;
+> +}
+> +#endif
+
+Please leave this in hotplug.c so that it matches what other platforms
+do.  Otherwise it's likely to be missed by any updates that happen
+architecture-wide.
