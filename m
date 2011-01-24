@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752427Ab1AXUF0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 15:05:26 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:47241 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751486Ab1AXUFY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 15:05:24 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=mN1d2BI0JKBW7Rio7ODLTqWCIsklxOe1zTg7UbKnbrb8IpAs0c+xcEjH4On/26JPw4
-         IM4WjyoUmpBcD413DWIpKwYFhC1qvZlB4afOy+8/ls4nS93YL/qKPjct5xxUO86oUVOO
-         kaWHS4pb1RX4UL5RkA5BzQRBLBPj0WEp7HT6A=
-Date: Mon, 24 Jan 2011 23:05:17 +0300
-From: Vasiliy Kulikov <segooon@gmail.com>
-To: Julia Lawall <julia@diku.dk>
-Cc: Ryan Mallon <ryan@bluewatersys.com>, Russell King <linux@arm.linux.org.uk>,
-        kernel-janitors@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] arch/arm/mach-at91/clock.c: Add missing IS_ERR test
-Message-ID: <20110124200515.GA30963@albatros>
-References: <1295898922-18822-1-git-send-email-julia@diku.dk>
- <1295898922-18822-3-git-send-email-julia@diku.dk>
- <4D3DD964.9020107@bluewatersys.com>
- <Pine.LNX.4.64.1101242058430.3167@ask.diku.dk>
+	id S1751751Ab1AXUIA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 15:08:00 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:38844 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751321Ab1AXUH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 15:07:59 -0500
+Date: Mon, 24 Jan 2011 21:07:38 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] perf fixes
+Message-ID: <20110124200738.GA10833@elte.hu>
+References: <20110124133400.GA1228@elte.hu>
+ <AANLkTinsVNy9a1bR0AgD7=Vupoujt03RuZ32v39XSknx@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1101242058430.3167@ask.diku.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinsVNy9a1bR0AgD7=Vupoujt03RuZ32v39XSknx@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24, 2011 at 21:00 +0100, Julia Lawall wrote:
-> On Tue, 25 Jan 2011, Ryan Mallon wrote:
-> 
-> > On 01/25/2011 08:55 AM, Julia Lawall wrote:
-> > > @@ -224,7 +224,7 @@ void __init at91_clock_associate(const char *id, struct device *dev, const char
-> > >  {
-> > >  	struct clk *clk = clk_get(NULL, id);
-> > >  
-> > > -	if (!dev || !clk || !IS_ERR(clk_get(dev, func)))
-> > > +	if (!dev || IS_ERR(clk) || !IS_ERR(clk_get(dev, func)))
-> > >  		return;
-> > 
-> > I think we want:
-> > 
-> > 	if (!dev || !clk || IS_ERR(clk) || !IS_ERR(clk_get(dev, func)))
-> > 		return;
-> > 
-> > Since it is valid to return a NULL clk, and we don't want to try and
-> > dereference it if that is the case.
-> 
-> Looking at the given defintion of clk_get, I can't see how that could 
-> happen:
 
-clk_get() is defined per-architecture, sometimes it is NULL only.
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-> struct clk *clk_get(struct device *dev, const char *id)
-> {
->         struct clk *clk;
+> On Mon, Jan 24, 2011 at 11:34 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > Please pull the latest perf-fixes-for-linus git tree from:
+> >
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-fixes-for-linus
 > 
->         list_for_each_entry(clk, &clocks, node) {
->                 if (strcmp(id, clk->name) == 0)
->                         return clk;
->                 if (clk->function && (dev == clk->dev) && strcmp(id, clk->function) == 0)
->                         return clk;
->         }
+> I'm not sure if this was true before too, but when I do
 > 
->         return ERR_PTR(-ENOENT);
-> }
-> 
-> Both paths to the non-ERR_PTR return dereference clk.
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>     perf report -agf sleep 10
 
--- 
-Vasiliy
+(that's perf record i guess?)
+
+> 
+> while compiling the kernel to get a system profile on x86-32, the
+> resulting pef.data file will cause "perf report" to just hang.
+> 
+> Is it just me?
+
+We used to have such bugs recently so i'm quite sure what you see is real.
+
+The above test is almost the same what i did before sending you the pull request, so 
+it's not occuring all the time and on all boxes.
+
+The distro version on that box you are using would be helpful, plus the build output 
+you get when you build 'tools/perf'. (I.e. which libraries are there. If it comes up 
+empty with no complaints you have all the devel libraries.)
+
+We'll try to reproduce it locally before asking more debug data from you, 
+perf.data's can be pretty large to send via email :)
+
+Thanks,
+
+	Ingo
