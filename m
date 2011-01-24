@@ -1,73 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643Ab1AXWjv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 17:39:51 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49604
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751724Ab1AXWju (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 17:39:50 -0500
-Date: Mon, 24 Jan 2011 14:40:25 -0800 (PST)
-Message-Id: <20110124.144025.189712500.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: runningdoglackey@yahoo.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: Problems with /proc/net/tcp6 - possible bug - ipv6
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1295732444.2651.68.camel@edumazet-laptop>
-References: <115440.16148.qm@web63902.mail.re1.yahoo.com>
-	<1295731235.2651.66.camel@edumazet-laptop>
-	<1295732444.2651.68.camel@edumazet-laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1752666Ab1AXWkh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 17:40:37 -0500
+Received: from fieldses.org ([174.143.236.118]:32836 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751339Ab1AXWkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 17:40:36 -0500
+Date: Mon, 24 Jan 2011 17:40:32 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Chuck Lever <chuck.lever@oracle.com>
+Cc: nbowler@elliptictech.com, trond.myklebust@netapp.com,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NLM: Fix "kernel BUG at fs/lockd/host.c:417!" or
+ ".../host.c:283!"
+Message-ID: <20110124224031.GB22575@fieldses.org>
+References: <20110124204332.1878.35846.stgit@matisse.1015granger.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110124204332.1878.35846.stgit@matisse.1015granger.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Sat, 22 Jan 2011 22:40:44 +0100
+On Mon, Jan 24, 2011 at 03:50:26PM -0500, Chuck Lever wrote:
+> Nick Bowler <nbowler@elliptictech.com> reports:
+> 
+> > We were just having some NFS server troubles, and my client machine
+> > running 2.6.38-rc1+ (specifically, commit 2b1caf6ed7b888c95) crashed
+> > hard (syslog output appended to this mail).
+> >
+> > I'm not sure what the exact timeline was or how to reproduce this,
+> > but the server was rebooted during all this.  Since I've never seen
+> > this happen before, it is possibly a regression from previous kernel
+> > releases.  However, I recently updated my nfs-utils (on the client) to
+> > version 1.2.3, so that might be related as well.
+> 
+>   [ BUG output redacted ]
+> 
+> When done searching, the for_each_host loop in next_host_state() falls
+> through and returns the final host on the host chain without bumping
+> it's reference count.
+> 
+> Since the host's ref count is only one at that point, releasing the
+> host in nlm_host_rebooted() attempts to destroy the host prematurely,
+> and therefore hits a BUG().
+> 
+> Likely, the original intent of the for_each_host behavior in
+> next_host_state() was to handle the case when the host chain is empty.
+> Searching the chain and finding no suitable host to return needs to be
+> handled as well.
+> 
+> Defensively restructure next_host_state() always to return NULL when
+> the loop falls through.
+> 
+> Introduced by commit b10e30f6 "lockd: reorganize nlm_host_rebooted".
 
-> In my testings, I even have crashes in cleanup_once() if I
-> enable /proc/sys/net/ipv4/tcp_tw_recycle 
+Whoops, thanks for finding that.  The fix looks right to me.
 
-Luckily, this bug was easy to fix, I've just committed the
-following to net-2.6
+--b.
 
-The other crash (the !RTF_CACHE WARN assertion) I'm looking
-into now.
-
---------------------
->From 1c5642cf754939c318a0230b0f546a9e20888292 Mon Sep 17 00:00:00 2001
-From: David S. Miller <davem@davemloft.net>
-Date: Mon, 24 Jan 2011 14:37:46 -0800
-Subject: [PATCH] inetpeer: Use correct AVL tree base pointer in inet_getpeer().
-
-Family was hard-coded to AF_INET but should be daddr->family.
-
-This fixes crashes when unlinking ipv6 peer entries, since the
-unlink code was looking up the base pointer properly.
-
-Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- net/ipv4/inetpeer.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/net/ipv4/inetpeer.c b/net/ipv4/inetpeer.c
-index d9bc857..a96e656 100644
---- a/net/ipv4/inetpeer.c
-+++ b/net/ipv4/inetpeer.c
-@@ -475,7 +475,7 @@ static int cleanup_once(unsigned long ttl)
- struct inet_peer *inet_getpeer(struct inetpeer_addr *daddr, int create)
- {
- 	struct inet_peer __rcu **stack[PEER_MAXDEPTH], ***stackptr;
--	struct inet_peer_base *base = family_to_base(AF_INET);
-+	struct inet_peer_base *base = family_to_base(daddr->family);
- 	struct inet_peer *p;
- 
- 	/* Look up for the address quickly, lockless.
--- 
-1.7.3.4
-
+> 
+> Cc: J. Bruce Fields <bfields@fieldses.org>
+> Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
+> ---
+> 
+> I was able to reproduce this BUG on my client running 2.6.38-rc2
+> from earlier today.  Here is a proposed fix.  I can't reproduce the
+> BUG with this patch applied.
+> 
+> However, my reproducer hit the BUG in nlmsvc_release_host().  Nick hit
+> roughly the same BUG in nlmclnt_release_host(), which suggests his
+> "client" was also acting as a server.  The symptoms are similar enough
+> that I believe this patch should be sufficient to address both cases.
+> 
+> 
+>  fs/lockd/host.c |    9 +++++----
+>  1 files changed, 5 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/lockd/host.c b/fs/lockd/host.c
+> index 5f1bcb2..b7c99bf 100644
+> --- a/fs/lockd/host.c
+> +++ b/fs/lockd/host.c
+> @@ -520,7 +520,7 @@ static struct nlm_host *next_host_state(struct hlist_head *cache,
+>  					struct nsm_handle *nsm,
+>  					const struct nlm_reboot *info)
+>  {
+> -	struct nlm_host *host = NULL;
+> +	struct nlm_host *host;
+>  	struct hlist_head *chain;
+>  	struct hlist_node *pos;
+>  
+> @@ -532,12 +532,13 @@ static struct nlm_host *next_host_state(struct hlist_head *cache,
+>  			host->h_state++;
+>  
+>  			nlm_get_host(host);
+> -			goto out;
+> +			mutex_unlock(&nlm_host_mutex);
+> +			return host;
+>  		}
+>  	}
+> -out:
+> +
+>  	mutex_unlock(&nlm_host_mutex);
+> -	return host;
+> +	return NULL;
+>  }
+>  
+>  /**
+> 
