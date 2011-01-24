@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010Ab1AXULi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 15:11:38 -0500
-Received: from mail.bluewatersys.com ([202.124.120.130]:23275 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750712Ab1AXULh (ORCPT
+	id S1752418Ab1AXUMI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 15:12:08 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51082 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab1AXUMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 15:11:37 -0500
-Message-ID: <4D3DDD07.1030809@bluewatersys.com>
-Date: Tue, 25 Jan 2011 09:11:51 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+	Mon, 24 Jan 2011 15:12:05 -0500
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH] fix Steven's Copyright typos
+Date: Mon, 24 Jan 2011 21:12:01 +0100
+Message-Id: <1295899921-11333-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.3
 MIME-Version: 1.0
-To: Vasiliy Kulikov <segooon@gmail.com>
-CC: Julia Lawall <julia@diku.dk>, Russell King <linux@arm.linux.org.uk>,
-        kernel-janitors@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] arch/arm/mach-at91/clock.c: Add missing IS_ERR test
-References: <1295898922-18822-1-git-send-email-julia@diku.dk> <1295898922-18822-3-git-send-email-julia@diku.dk> <4D3DD964.9020107@bluewatersys.com> <Pine.LNX.4.64.1101242058430.3167@ask.diku.dk> <20110124200515.GA30963@albatros>
-In-Reply-To: <20110124200515.GA30963@albatros>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2011 09:05 AM, Vasiliy Kulikov wrote:
-> On Mon, Jan 24, 2011 at 21:00 +0100, Julia Lawall wrote:
->> On Tue, 25 Jan 2011, Ryan Mallon wrote:
->>
->>> On 01/25/2011 08:55 AM, Julia Lawall wrote:
->>>> @@ -224,7 +224,7 @@ void __init at91_clock_associate(const char *id, struct device *dev, const char
->>>>  {
->>>>  	struct clk *clk = clk_get(NULL, id);
->>>>  
->>>> -	if (!dev || !clk || !IS_ERR(clk_get(dev, func)))
->>>> +	if (!dev || IS_ERR(clk) || !IS_ERR(clk_get(dev, func)))
->>>>  		return;
->>>
->>> I think we want:
->>>
->>> 	if (!dev || !clk || IS_ERR(clk) || !IS_ERR(clk_get(dev, func)))
->>> 		return;
->>>
->>> Since it is valid to return a NULL clk, and we don't want to try and
->>> dereference it if that is the case.
->>
->> Looking at the given defintion of clk_get, I can't see how that could 
->> happen:
-> 
-> clk_get() is defined per-architecture, sometimes it is NULL only.
+OK, the copyright allows you to write a copy, still I think the lawyers
+prefer the correct spelling.
 
-Julia is correct. Some architectures can return NULL from clk_get, but I
-didn't check the at91 before posting :-/. If we can't return NULL from
-clk_get then we shouldn't bother checking for it. I do think we should
-drop the !IS_ERR(clk_get(dev, func)) check though.
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+ scripts/kconfig/streamline_config.pl |    2 +-
+ tools/testing/ktest/ktest.pl         |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-~Ryan
-
+diff --git a/scripts/kconfig/streamline_config.pl b/scripts/kconfig/streamline_config.pl
+index fd81fc3..a4fe923 100644
+--- a/scripts/kconfig/streamline_config.pl
++++ b/scripts/kconfig/streamline_config.pl
+@@ -1,6 +1,6 @@
+ #!/usr/bin/perl -w
+ #
+-# Copywrite 2005-2009 - Steven Rostedt
++# Copyright 2005-2009 - Steven Rostedt
+ # Licensed under the terms of the GNU GPL License version 2
+ #
+ #  It's simple enough to figure out how this works.
+diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
+index e1c62ee..ba7c63a 100755
+--- a/tools/testing/ktest/ktest.pl
++++ b/tools/testing/ktest/ktest.pl
+@@ -1,6 +1,6 @@
+ #!/usr/bin/perl -w
+ #
+-# Copywrite 2010 - Steven Rostedt <srostedt@redhat.com>, Red Hat Inc.
++# Copyright 2010 - Steven Rostedt <srostedt@redhat.com>, Red Hat Inc.
+ # Licensed under the terms of the GNU GPL License version 2
+ #
+ 
 -- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
+1.7.2.3
 
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
