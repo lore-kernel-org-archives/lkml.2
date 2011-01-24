@@ -1,145 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548Ab1AXEpG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 23:45:06 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:65245 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751900Ab1AXEpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 23:45:04 -0500
-Message-ID: <4D3D03DE.20604@cn.fujitsu.com>
-Date: Mon, 24 Jan 2011 12:45:18 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1752596Ab1AXEtX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 23:49:23 -0500
+Received: from claw.goop.org ([74.207.240.146]:58883 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751892Ab1AXEtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 23:49:22 -0500
+Message-ID: <4D3D04CE.2050905@goop.org>
+Date: Sun, 23 Jan 2011 20:49:18 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>
-CC: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        Chad Talbott <ctalbott@google.com>, Nauman Rafique <nauman@google.com>,
-        Divyesh Shah <dpshah@google.com>, jmoyer@redhat.com,
-        Shaohua Li <shaohua.li@intel.com>
-Subject: Re: [PATCH 3/6 v3] cfq-iosched: Introduce vdisktime and io weight
- for CFQ queue
-References: <4D180ECE.4000305@cn.fujitsu.com> <4D185374.6090300@cn.fujitsu.com> <20110119225855.GH13887@redhat.com> <4D37B2DA.1060908@cn.fujitsu.com> <20110120110952.GA16184@redhat.com>
-In-Reply-To: <20110120110952.GA16184@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-01-24 12:44:27,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-01-24 12:44:27,
-	Serialize complete at 2011-01-24 12:44:27
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefan Bader <stefan.bader@canonical.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        xen-devel@lists.xensource.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] Re: [PATCH] xen: p2m: correctly initialize partial
+ p2m	leave
+References: <4D3848DF.9000906@canonical.com> <20110120151032.GD5092@dumpdata.com>
+In-Reply-To: <20110120151032.GD5092@dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> On Thu, Jan 20, 2011 at 11:58:18AM +0800, Gui Jianfeng wrote:
->> Vivek Goyal wrote:
->>> On Mon, Dec 27, 2010 at 04:51:00PM +0800, Gui Jianfeng wrote:
->>>> Introduce vdisktime and io weight for CFQ queue scheduling. Currently, io priority
->>>> maps to a range [100,1000]. It also gets rid of cfq_slice_offset() logic and makes
->>>> use the same scheduling algorithm as CFQ group does. This helps for CFQ queue and
->>>> group scheduling on the same service tree.
->>>>
->>>> Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
->>> [..]
->>>> @@ -1246,47 +1278,71 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
->>>>  
->>>>  	service_tree = service_tree_for(cfqq->cfqg, cfqq_prio(cfqq),
->>>>  						cfqq_type(cfqq));
->>>> +	/*
->>>> +	 * For the time being, put the newly added CFQ queue at the end of the
->>>> +	 * service tree.
->>>> +	 */
->>>> +	if (RB_EMPTY_NODE(&cfqe->rb_node)) {
->>>> +		/*
->>>> +		 * If this CFQ queue moves to another group, the original
->>>> +		 * vdisktime makes no sense any more, reset the vdisktime
->>>> +		 * here.
->>>> +		 */
->>>> +		parent = rb_last(&service_tree->rb);
->>>> +		if (parent) {
->>>> +			u64 boost;
->>>> +			s64 __vdisktime;
->>>> +
->>>> +			__cfqe = rb_entry_entity(parent);
->>>> +			cfqe->vdisktime = __cfqe->vdisktime + CFQ_IDLE_DELAY;
->>>> +
->>>> +			/* Give some vdisktime boost according to its weight */
->>>> +			boost = cfq_get_boost(cfqd, cfqe);
->>>> +			__vdisktime = cfqe->vdisktime - boost;
->>>> +			if (__vdisktime > service_tree->min_vdisktime)
->>>> +				cfqe->vdisktime = __vdisktime;
->>>> +			else
->>>> +				cfqe->vdisktime = service_tree->min_vdisktime;
->>>> +		} else
->>>> +			cfqe->vdisktime = service_tree->min_vdisktime;
->>> Hi Gui,
->>>
->>> Is above logic actually working? I suspect that most of the time all the
->>> new queues will end up getting same vdisktime and that is st->min_vdisktime
->>> and there will be no service differentiation across various prio.
->>>
->>> Reason being, on SSD, idle is disabled. So very few/no queue will consume
->>> its slice and follow reque path. So every queue will be new. Now you are
->>> doing following.
->>>
->>> 	cfqd->vdisktime = vdisktime_of_parent + IDLE_DELAY - boost
->>>
->>> assume vdisktime_of_parent=st->min_vdisktime, then (IDLE_DELAY - boost)
->>> is always going to be a -ve number and hence cfqd->vdisktime will 
->>> default to st->min_vdisktime. (IDLE_DELAY=200 while boost should be a huge
->>> value due to SERVICE_SHIFT thing).
->> Vivek,
+On 01/20/2011 07:10 AM, Konrad Rzeszutek Wilk wrote:
+> On Thu, Jan 20, 2011 at 03:38:23PM +0100, Stefan Bader wrote:
+>> There have been changes and code been moved around, so this is just a quick
+>> rebase of the change I tested on a 2.6.37 based kernel. The basic problem seem
+>> still valid, though.
+> Nice catch..
+
+Indeed!
+
+>> Initially I thought of adding a cc to stable into the s-o-b, but the patch needs
+>> to be adapted anyway (I can supply that version if the way I fixed the issue
+>> looks ok).
 >>
->> Actually, I tested on rotational disk with idling disabled, I saw service
->> differentiation between two tasks with different ioprio.
->> I don't have a SSD on hand, But I'll get one and do more tests.
-> 
-> Ok, I am really not sure how did it work for you because boost will
-> turn out to be huge number in comparision to IDLE_DELAY or vdisktime
-> of parent. If you have some blktrace data or if you can explain how
-> it is working will help in understanding it better.
+>> Regards,
+>> Stefan
+>> >From 1e9c9514caf0399c88ae9288e6db8e3d1c4b4be5 Mon Sep 17 00:00:00 2001
+>> From: Stefan Bader <stefan.bader@canonical.com>
+>> Date: Thu, 20 Jan 2011 11:37:43 +0100
+>> Subject: [PATCH] xen: p2m: correctly initialize partial p2m leave
+>>
+>> After changing the p2m mapping to a tree by
+>>
+>>   commit 58e05027b530ff081ecea68e38de8d59db8f87e0
+>>     xen: convert p2m to a 3 level tree
+>>
+>> and trying to boot a DomU with 615MB of memory, the following crash was
+>> observed in the dump:
+>>
+>> kernel direct mapping tables up to 26f00000 @ 1ec4000-1fff000
+>> BUG: unable to handle kernel NULL pointer dereference at (null)
+>> IP: [<c0107397>] xen_set_pte+0x27/0x60
+>> *pdpt = 0000000000000000 *pde = 0000000000000000
+>>
+>> Adding further debug statements showed that when trying to set up
+>> pfn=0x26700 the returned mapping was invalid.
+>>
+>> pfn=0x266ff calling set_pte(0xc1fe77f8, 0x6b3003)
+>> pfn=0x26700 calling set_pte(0xc1fe7800, 0x3)
+>>
+>> Although the last_pfn obtained from the startup info is 0x26700, which
+>> should in turn not be hit, the additional 8MB which are added as extra
+>> memory normally seem to be ok. This lead to looking into the initial
+>> p2m tree construction, which uses the smaller value and assuming that
+>> there is other code handling the extra memory.
+>>
+>> When the p2m tree is set up, the leaves are directly pointed to the
+>> array which the domain builder set up. But if the mapping is not on a
+>> boundary that fits into one p2m page, this will result in the last leaf
+>> being only partially valid. And as the invalid entries are not
+>> initialized in that case, things go badly wrong.
+>>
+>> I am trying to fix that by checking whether the current leaf is a
+>> complete map and if not, allocate a completely new page and copy only
+>> the valid pointers there. This may not be the most efficient or elegant
+>> solution, but at least it seems to allow me booting DomUs with memory
+>> assignments all over the range.
 
-Vivek,
+Since the p2m page is just a normal page that happens to have been
+initialized by the domain builder, I think we can just fill the tail of
+the page with INVALID_P2M_ENTRY in place, rather than having to allocate
+a new one.
 
-I think there must be something configuration wrong in my previous tests.
-I tested again with patch applied. I don't see service differentiation
-this time.
-But, I do the same test on vanilla kernel, I don't see service differentiation
-either. I dig into it. It seems when I set slice_idle and group_idle to zero,
-it means i close idle window by mannual. In this case, IO tasks becomes SYNC NOIDLE
-workloads, they will preempts each other mutually. And the cfqq will always be put
-at the front of service tree. So we don't see service differentiation.
-
-Actually, We don't want preemption happening in such case, right? So I think we should
-refine the preemption logic. 
-Thoughts?
-
-Below is my fio job file:
-
-[global]
-directory=/hdb3
-ioengine=sync
-runtime=30
-time_based=1
-direct=1
-bs=128K
-size=64M
-numjobs=1
-exec_prerun='echo 3 > /proc/sys/vm/drop_caches'
-
-[task-prio-0]
-description=task-prio-0
-rw=read
-prio=0
-filename=file1
-
-[task-prio-7]
-description=task-prio-7
-rw=read
-prio=7
-filename=file2
-
-Thanks,
-Gui
+    J
