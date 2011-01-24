@@ -1,247 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802Ab1AXAUm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 19:20:42 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36549 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752433Ab1AXAUl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 19:20:41 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 24 Jan 2011 09:14:41 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH 4/7] memcg : fix charge function of THP allocation.
-Message-Id: <20110124091441.5dcb937c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110121174818.28e1cc83.nishimura@mxp.nes.nec.co.jp>
-References: <20110121153431.191134dd.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110121154430.70d45f15.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110121174818.28e1cc83.nishimura@mxp.nes.nec.co.jp>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752870Ab1AXAYX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 19:24:23 -0500
+Received: from tundra.namei.org ([65.99.196.166]:50550 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752433Ab1AXAYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Jan 2011 19:24:21 -0500
+Date: Mon, 24 Jan 2011 11:24:10 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Michal Schmidt <mschmidt@redhat.com>
+cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] TPM: Long default timeout fix
+In-Reply-To: <20110120154603.2bdf5d9b@alice>
+Message-ID: <alpine.LRH.2.00.1101241123290.30744@tundra.namei.org>
+References: <1289596730-28966-1-git-send-email-srajiv@linux.vnet.ibm.com> <20110120154603.2bdf5d9b@alice>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Jan 2011 17:48:18 +0900
-Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+On Thu, 20 Jan 2011, Michal Schmidt wrote:
 
-> On Fri, 21 Jan 2011 15:44:30 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> what is the status of this patch from Rajiv? It has been in Fedora
+> kernels for some time, but I do not see it applied upstream:
 > 
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> On Fri, 12 Nov 2010 19:18:50 -0200 Rajiv Andrade wrote:
+> > If duration variable value is 0 at this point, it's because
+> > chip->vendor.duration wasn't filled by tpm_get_timeouts() yet.
+> > This patch sets then the lowest timeout just to give enough
+> > time for tpm_get_timeouts() to further succeed.
 > > 
-> > When THP is used, Hugepage size charge can happen. It's not handled
-> > correctly in mem_cgroup_do_charge(). For example, THP can fallback
-> > to small page allocation when HUGEPAGE allocation seems difficult
-> > or busy, but memory cgroup doesn't understand it and continue to
-> > try HUGEPAGE charging. And the worst thing is memory cgroup
-> > believes 'memory reclaim succeeded' if limit - usage > PAGE_SIZE.
+> > This fix avoids long boot times in case another entity attempts
+> > to send commands to the TPM when the TPM isn't accessible.
 > > 
-> > By this, khugepaged etc...can goes into inifinite reclaim loop
-> > if tasks in memcg are busy.
-> > 
-> > After this patch 
-> >  - Hugepage allocation will fail if 1st trial of page reclaim fails.
-> >  - distinguish THP allocaton from Bached allocation. 
-> > 
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > ---
-> >  mm/memcontrol.c |   51 +++++++++++++++++++++++++++++++++++----------------
-> >  1 file changed, 35 insertions(+), 16 deletions(-)
-> > 
-> > Index: mmotm-0107/mm/memcontrol.c
-> > ===================================================================
-> > --- mmotm-0107.orig/mm/memcontrol.c
-> > +++ mmotm-0107/mm/memcontrol.c
-> > @@ -1812,24 +1812,25 @@ enum {
-> >  	CHARGE_OK,		/* success */
-> >  	CHARGE_RETRY,		/* need to retry but retry is not bad */
-> >  	CHARGE_NOMEM,		/* we can't do more. return -ENOMEM */
-> > +	CHARGE_NEED_BREAK,	/* big size allocation failure */
-> >  	CHARGE_WOULDBLOCK,	/* GFP_WAIT wasn't set and no enough res. */
-> >  	CHARGE_OOM_DIE,		/* the current is killed because of OOM */
-> >  };
-> >  
-> >  static int __mem_cgroup_do_charge(struct mem_cgroup *mem, gfp_t gfp_mask,
-> > -				int csize, bool oom_check)
-> > +			int page_size, bool do_reclaim, bool oom_check)
-> 
-> I'm sorry, I can't understand why we need 'do_reclaim'. See below.
-> 
-> >  {
-> >  	struct mem_cgroup *mem_over_limit;
-> >  	struct res_counter *fail_res;
-> >  	unsigned long flags = 0;
-> >  	int ret;
-> >  
-> > -	ret = res_counter_charge(&mem->res, csize, &fail_res);
-> > +	ret = res_counter_charge(&mem->res, page_size, &fail_res);
-> >  
-> >  	if (likely(!ret)) {
-> >  		if (!do_swap_account)
-> >  			return CHARGE_OK;
-> > -		ret = res_counter_charge(&mem->memsw, csize, &fail_res);
-> > +		ret = res_counter_charge(&mem->memsw, page_size, &fail_res);
-> >  		if (likely(!ret))
-> >  			return CHARGE_OK;
-> >  
-> > @@ -1838,14 +1839,14 @@ static int __mem_cgroup_do_charge(struct
-> >  	} else
-> >  		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
-> >  
-> > -	if (csize > PAGE_SIZE) /* change csize and retry */
-> > +	if (!do_reclaim)
-> >  		return CHARGE_RETRY;
-> >  
-> 
-> From the very beginning, do we need this "CHARGE_RETRY" ?
-> 
+> > Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
 
-Reducing charge_size here in automatic and go back to the start of this function ? 
-I think returning here is better.
+Applied to
+git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6#for-linus
 
-
-> >  	if (!(gfp_mask & __GFP_WAIT))
-> >  		return CHARGE_WOULDBLOCK;
-> >  
-> >  	ret = mem_cgroup_hierarchical_reclaim(mem_over_limit, NULL,
-> > -					gfp_mask, flags, csize);
-> > +					gfp_mask, flags, page_size);
-> >  	/*
-> >  	 * try_to_free_mem_cgroup_pages() might not give us a full
-> >  	 * picture of reclaim. Some pages are reclaimed and might be
-> > @@ -1853,19 +1854,28 @@ static int __mem_cgroup_do_charge(struct
-> >  	 * Check the limit again to see if the reclaim reduced the
-> >  	 * current usage of the cgroup before giving up
-> >  	 */
-> > -	if (ret || mem_cgroup_check_under_limit(mem_over_limit, csize))
-> > +	if (ret || mem_cgroup_check_under_limit(mem_over_limit, page_size))
-> >  		return CHARGE_RETRY;
-> >  
-> >  	/*
-> > +	 * When page_size > PAGE_SIZE, THP calls this function and it's
-> > +	 * ok to tell 'there are not enough pages for hugepage'. THP will
-> > +	 * fallback into PAGE_SIZE allocation. If we do reclaim eagerly,
-> > +	 * page splitting will occur and it seems much worse.
-> > +	 */
-> > +	if (page_size > PAGE_SIZE)
-> > +		return CHARGE_NEED_BREAK;
-> > +
-> > +	/*
-> >  	 * At task move, charge accounts can be doubly counted. So, it's
-> >  	 * better to wait until the end of task_move if something is going on.
-> >  	 */
-> >  	if (mem_cgroup_wait_acct_move(mem_over_limit))
-> >  		return CHARGE_RETRY;
-> > -
-> >  	/* If we don't need to call oom-killer at el, return immediately */
-> >  	if (!oom_check)
-> >  		return CHARGE_NOMEM;
-> > +
-> >  	/* check OOM */
-> >  	if (!mem_cgroup_handle_oom(mem_over_limit, gfp_mask))
-> >  		return CHARGE_OOM_DIE;
-> > @@ -1885,7 +1895,7 @@ static int __mem_cgroup_try_charge(struc
-> >  	int nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
-> >  	struct mem_cgroup *mem = NULL;
-> >  	int ret;
-> > -	int csize = max(CHARGE_SIZE, (unsigned long) page_size);
-> > +	bool use_pcp_cache = (page_size == PAGE_SIZE);
-> >  
-> >  	/*
-> >  	 * Unlike gloval-vm's OOM-kill, we're not in memory shortage
-> > @@ -1910,7 +1920,7 @@ again:
-> >  		VM_BUG_ON(css_is_removed(&mem->css));
-> >  		if (mem_cgroup_is_root(mem))
-> >  			goto done;
-> > -		if (page_size == PAGE_SIZE && consume_stock(mem))
-> > +		if (use_pcp_cache && consume_stock(mem))
-> >  			goto done;
-> >  		css_get(&mem->css);
-> >  	} else {
-> > @@ -1933,7 +1943,7 @@ again:
-> >  			rcu_read_unlock();
-> >  			goto done;
-> >  		}
-> > -		if (page_size == PAGE_SIZE && consume_stock(mem)) {
-> > +		if (use_pcp_cache && consume_stock(mem)) {
-> >  			/*
-> >  			 * It seems dagerous to access memcg without css_get().
-> >  			 * But considering how consume_stok works, it's not
-> > @@ -1967,17 +1977,26 @@ again:
-> >  			oom_check = true;
-> >  			nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
-> >  		}
-> > -
-> > -		ret = __mem_cgroup_do_charge(mem, gfp_mask, csize, oom_check);
-> > +		if (use_pcp_cache)
-> > +			ret = __mem_cgroup_do_charge(mem, gfp_mask,
-> > +					CHARGE_SIZE, false, oom_check);
-> > +		else
-> > +			ret = __mem_cgroup_do_charge(mem, gfp_mask,
-> > +					page_size, true, oom_check);
-> >  
-> 
-> hmm, this confuses me. I think 'use_pcp_cache' will be used to decide
-> whether we should do consume_stock() or not, but why we change charge size
-> and reclaim behavior depending on it ? I think this code itself is right,
-> but using 'use_pcp_cache' confused me.
-> 
-
-Is it problem of function name ? 
-'do_batched_charge' or some ?
-
-I'd like to use a 'xxxx_size' variable rather than 2 xxxx_size variable.
-
-
-
-> 
-> >  		switch (ret) {
-> >  		case CHARGE_OK:
-> >  			break;
-> >  		case CHARGE_RETRY: /* not in OOM situation but retry */
-> > -			csize = page_size;
-> > +			if (use_pcp_cache)/* need to reclaim pages */
-> > +				use_pcp_cache = false;
-> >  			css_put(&mem->css);
-> >  			mem = NULL;
-> >  			goto again;
-> > +		case CHARGE_NEED_BREAK: /* page_size > PAGE_SIZE */
-> > +			css_put(&mem->css);
-> > +			/* returning faiulre doesn't mean OOM for hugepages */
-> > +			goto nomem;
-> 
-> I like this change.
-> 
-> >  		case CHARGE_WOULDBLOCK: /* !__GFP_WAIT */
-> >  			css_put(&mem->css);
-> >  			goto nomem;
-> > @@ -1994,9 +2013,9 @@ again:
-> >  			goto bypass;
-> >  		}
-> >  	} while (ret != CHARGE_OK);
-> > -
-> > -	if (csize > page_size)
-> > -		refill_stock(mem, csize - page_size);
-> > +	/* This flag is cleared when we fail CHAEGE_SIZE charge. */
-> > +	if (use_pcp_cache)
-> > +		refill_stock(mem, CHARGE_SIZE - page_size);
-> 
-> Ditto. can't we keep 'csize' and old code here ?
-> 
-
-I remove csize. 2 'size' variable is confusing.
-
-
-Thanks.
--Kame
-
+-- 
+James Morris
+<jmorris@namei.org>
