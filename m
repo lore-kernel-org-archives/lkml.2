@@ -1,444 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155Ab1AXJTJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 04:19:09 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:25458 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676Ab1AXJTH (ORCPT
+	id S1751892Ab1AXJ0I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 04:26:08 -0500
+Received: from mailout00.t-online.de ([194.25.134.16]:41951 "EHLO
+	mailout00.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255Ab1AXJ0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 04:19:07 -0500
-Date: Mon, 24 Jan 2011 10:18:43 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
-Cc: <ben-linux@fluff.org>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] unicore32: add i2c bus driver for PKUnity SoC
-Message-ID: <20110124101843.5041be6e@endymion.delvare>
-In-Reply-To: <01d101cbba22$d8071bb0$88155310$@mprc.pku.edu.cn>
-References: <01d101cbba22$d8071bb0$88155310$@mprc.pku.edu.cn>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 24 Jan 2011 04:26:07 -0500
+Message-ID: <4D3D45A3.7040809@t-online.de>
+Date: Mon, 24 Jan 2011 10:25:55 +0100
+From: Knut Petersen <Knut_Petersen@t-online.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: paulus@samba.org, mostrows@earthlink.net, linux-ppp@vger.kernel.org
+Subject: [BUG] 2.6.38-rc2: Circular Locking Dependency
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
+X-ID: TcGUnOZBYhBjWWSnInwkitTrzrGSbkyxWqmay2ykq+uRrY2oo81xkwZwCkwHVt3wAC
+X-TOI-MSGID: ed07c19b-5e37-48f1-8599-f5fa3d5e72bf
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guan,
+As I was hunting something different I found the following (potential)
+problem on an openSuSE 11.3 system with kernel 2.6.38-rc2.
+The message is triggerd by smpppd starting a dsl connection.
 
-On Sat, 22 Jan 2011 18:55:09 +0800, Guan Xuetao wrote:
-> From: Guan Xuetao <gxt@mprc.pku.edu.cn>
-> 
-> This patch adds framebuffer driver for unigfx engine in PKUnity SoC.
+Knut
 
-While I don't have the time for a full review, I would like to at least
-sort out the integration issues. Framebuffer driver, really? I doubt
-it. If this is a copy-and-paste mistake, and this is actually an I2C
-system bus driver, you will have to change the driver name (see below.)
-If what you actually meant is that this is a driver for the I2C/DDC
-channels on a graphics chip, then you have to move this driver to the
-same directory the framebuffer driver lives in, as all other
-framebuffer drivers do.
 
-> Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
-> ---
->  drivers/i2c/busses/Kconfig    |    5 +
->  drivers/i2c/busses/Makefile   |    1 +
->  drivers/i2c/busses/puv3_i2c.c |  300 +++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 306 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-> index 3a6321c..20d328c 100644
-> --- a/drivers/i2c/busses/Kconfig
-> +++ b/drivers/i2c/busses/Kconfig
-> @@ -236,6 +236,11 @@ config I2C_VIAPRO
->  	  This driver can also be built as a module.  If so, the module
->  	  will be called i2c-viapro.
->  
-> +config I2C_PUV3
-> +	tristate "PKUnity v3 I2C bus support"
-> +	depends on I2C && UNICORE32 && ARCH_PUV3
+ NET: Registered protocol family 24
 
-The whole menu depends on I2C, so you don't have to repeat it.
+ =======================================================
+ [ INFO: possible circular locking dependency detected ]
+ 2.6.38-rc2-kape #7
+ -------------------------------------------------------
+ pppd/2529 is trying to acquire lock:
+  (&(&pch->downl)->rlock){+.....}, at: [<f814a634>] ppp_push+0x59/0x4a8
+[ppp_generic]
 
-> +	select I2C_ALGOBIT
+ but task is already holding lock:
+  (&(&ppp->wlock)->rlock){+.-...}, at: [<f814ae1b>]
+ppp_xmit_process+0x19/0x451 [ppp_generic]
 
-Where is the description of what the driver is for? All other entries
-have it, yours is no exception.
+ which lock already depends on the new lock.
 
-> +
->  if ACPI
->  
->  comment "ACPI drivers"
-> diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
-> index 84cb16a..cb4a097 100644
-> --- a/drivers/i2c/busses/Makefile
-> +++ b/drivers/i2c/busses/Makefile
-> @@ -61,6 +61,7 @@ obj-$(CONFIG_I2C_STU300)	+= i2c-stu300.o
->  obj-$(CONFIG_I2C_VERSATILE)	+= i2c-versatile.o
->  obj-$(CONFIG_I2C_OCTEON)	+= i2c-octeon.o
->  obj-$(CONFIG_I2C_XILINX)	+= i2c-xiic.o
-> +obj-$(CONFIG_I2C_PUV3)		+= puv3_i2c.o
 
-Assuming that this is the right place for your driver, then the name is
-NOT correct. As you can see, all drivers are names i2c-*, so your
-driver should be too. And the it should be inserted in alphabetical
-order.
+ the existing dependency chain (in reverse order) is:
 
-See also my comments below related to the probe() and remove()
-functions.
+ -> #2 (&(&ppp->wlock)->rlock){+.-...}:
+        [<c01462b2>] lock_acquire+0x47/0x5e
+        [<c0471de1>] _raw_spin_lock_bh+0x2a/0x39
+        [<f814ae1b>] ppp_xmit_process+0x19/0x451 [ppp_generic]
+        [<f814b39f>] ppp_start_xmit+0x14c/0x165 [ppp_generic]
+        [<c04179ae>] dev_hard_start_xmit+0x3b1/0x489
+        [<c0424a53>] sch_direct_xmit+0x55/0x1b1
+        [<c0417cf9>] dev_queue_xmit+0x273/0x4dd
+        [<c0434d31>] ip_finish_output+0x2b9/0x31f
+        [<c043578c>] ip_output+0xe0/0xfb
+        [<c0432c33>] ip_forward_finish+0x7b/0xa1
+        [<c0432ede>] ip_forward+0x285/0x313
+        [<c0431a30>] ip_rcv_finish+0x2b4/0x30f
+        [<c0431ef6>] ip_rcv+0x21c/0x242
+        [<c0415090>] __netif_receive_skb+0x34a/0x388
+        [<c04151f7>] netif_receive_skb+0x32/0x35
+        [<c0415218>] napi_skb_finish+0x1e/0x34
+        [<c0415d72>] napi_gro_receive+0xbf/0xc7
+        [<c035f25a>] sky2_poll+0x66e/0x92f
+        [<c04153eb>] net_rx_action+0x3f/0xfe
+        [<c0128563>] __do_softirq+0x76/0xfd
 
->  
->  # External I2C/SMBus adapter drivers
->  obj-$(CONFIG_I2C_PARPORT)	+= i2c-parport.o
-> diff --git a/drivers/i2c/busses/puv3_i2c.c b/drivers/i2c/busses/puv3_i2c.c
-> new file mode 100644
-> index 0000000..fb4f1fd
-> --- /dev/null
-> +++ b/drivers/i2c/busses/puv3_i2c.c
-> @@ -0,0 +1,300 @@
-> +/*
-> + * I2C driver for PKUnity-v3 SoC
-> + * Code specific to PKUnity SoC and UniCore ISA
-> + *
-> + *	Maintained by GUAN Xue-tao <gxt@mprc.pku.edu.cn>
-> + *	Copyright (C) 2001-2010 Guan Xuetao
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/kernel.h>
-> +#include <linux/err.h>
-> +#include <linux/slab.h>
-> +#include <linux/types.h>
-> +#include <linux/delay.h>
-> +#include <linux/i2c.h>
-> +#include <linux/init.h>
-> +#include <linux/clk.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/io.h>
-> +#include <mach/hardware.h>
-> +
-> +static int i2c_reg = -1;
+ -> #1 (_xmit_NETROM){+.-...}:
+        [<c01462b2>] lock_acquire+0x47/0x5e
+        [<c0471c9c>] _raw_spin_lock_irqsave+0x2e/0x3e
+        [<c040ed60>] skb_dequeue+0x12/0x4a
+        [<f814c237>] ppp_channel_push+0x2e/0x94 [ppp_generic]
+        [<f814c33f>] ppp_write+0xa2/0xac [ppp_generic]
+        [<c0188e50>] vfs_write+0x8c/0x120
+        [<c018909d>] sys_write+0x3b/0x60
+        [<c010274c>] sysenter_do_call+0x12/0x32
 
-Please allocate and use per-device data structure for device state
-tracking. Global variables are evil (for this use case at least.)
+ -> #0 (&(&pch->downl)->rlock){+.....}:
+        [<c014594c>] __lock_acquire+0xe23/0x13ad
+        [<c01462b2>] lock_acquire+0x47/0x5e
+        [<c0471de1>] _raw_spin_lock_bh+0x2a/0x39
+        [<f814a634>] ppp_push+0x59/0x4a8 [ppp_generic]
+        [<f814b1d9>] ppp_xmit_process+0x3d7/0x451 [ppp_generic]
+        [<f814c336>] ppp_write+0x99/0xac [ppp_generic]
+        [<c0188e50>] vfs_write+0x8c/0x120
+        [<c018909d>] sys_write+0x3b/0x60
+        [<c010274c>] sysenter_do_call+0x12/0x32
 
-> +
-> +/*
-> + * Poll the i2c status register until the specified bit is set.
-> + * Returns 0 if timed out (100 msec).
-> + */
-> +static short poll_status(unsigned long bit)
-> +{
-> +	int loop_cntr = 1000;
-> +
-> +	if (bit & I2C_STATUS_TFNF) {
-> +		do {
-> +			udelay(10);
-> +		} while (!(I2C_STATUS & bit) && (--loop_cntr > 0));
-> +	} else {
-> +		/* RXRDY handler */
-> +		do {
-> +			if (I2C_TAR == I2C_TAR_EEPROM)
-> +				msleep(20);
-> +			else
-> +				udelay(10);
-> +		} while (!(I2C_RXFLR & 0xf) && (--loop_cntr > 0));
-> +	}
-> +
-> +	return (loop_cntr > 0);
-> +}
-> +
-> +static int xfer_read(struct i2c_adapter *adap, unsigned char *buf, int length)
-> +{
-> +	/* Read data */
-> +	while (length--) {
-> +		if (!poll_status(I2C_STATUS_TFNF)) {
-> +			dev_dbg(&adap->dev, "Tx FIFO Not Full timeout\n");
-> +			return -ETIMEDOUT;
-> +		}
-> +
-> +		/* send addr */
-> +		I2C_DATACMD = i2c_reg | I2C_DATACMD_WRITE;
-> +
-> +		/* get ready to next write */
-> +		i2c_reg++;
-> +
-> +		/* send read CMD */
-> +		I2C_DATACMD = I2C_DATACMD_READ;
-> +
-> +		/* wait until the Rx FIFO have available */
-> +		if (!poll_status(I2C_STATUS_RFNE)) {
-> +			dev_dbg(&adap->dev, "RXRDY timeout\n");
-> +			return -ETIMEDOUT;
-> +		}
-> +
-> +		/* read the data to buf */
-> +		*buf = (I2C_DATACMD & I2C_DATACMD_DAT_MASK);
-> +		buf++;
-> +	}
-> +
-> +	i2c_reg = -1;
-> +
-> +	return 0;
-> +}
-> +
-> +static int xfer_write(struct i2c_adapter *adap, unsigned char *buf, int length)
-> +{
-> +	/* Do nothing but storing the reg_num to a static variable */
-> +	i2c_reg = *buf;
-> +	if (i2c_reg == -1) {
-> +		printk(KERN_WARNING "Error i2c reg\n");
-> +		return -ETIMEDOUT;
-> +	}
-> +
-> +	if (length == 1)
-> +		return 0;
-> +
-> +	buf++;
-> +	length--;
-> +	while (length--) {
-> +		/* send addr */
-> +		I2C_DATACMD = i2c_reg | I2C_DATACMD_WRITE;
-> +
-> +		/* send write CMD */
-> +		I2C_DATACMD = *buf | I2C_DATACMD_WRITE;
-> +
-> +		/* wait until the Rx FIFO have available */
-> +		msleep(20);
-> +
-> +		/* read the data to buf */
-> +		i2c_reg++;
-> +		buf++;
-> +	}
-> +
-> +	i2c_reg = -1;
-> +
-> +	return 0;
-> +}
-> +
-> +/*
-> + * Generic i2c master transfer entrypoint.
-> + *
-> + */
-> +static int puv3_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg *pmsg,
-> +		int num)
-> +{
-> +	int i, ret;
-> +	unsigned char swap;
-> +
-> +	/* Disable i2c */
-> +	I2C_ENABLE = I2C_ENABLE_DISABLE;
-> +
-> +	/* Set the work mode and speed*/
-> +	I2C_CON = I2C_CON_MASTER | I2C_CON_SPEED_STD | I2C_CON_SLAVEDISABLE;
-> +
-> +	I2C_TAR = pmsg->addr;
-> +
-> +	/* Enable i2c */
-> +	I2C_ENABLE = I2C_ENABLE_ENABLE;
-> +
-> +	dev_dbg(&adap->dev, "puv3_i2c_xfer: processing %d messages:\n", num);
-> +
-> +	for (i = 0; i < num; i++) {
-> +		dev_dbg(&adap->dev, " #%d: %sing %d byte%s %s 0x%02x\n", i,
-> +			pmsg->flags & I2C_M_RD ? "read" : "writ",
-> +			pmsg->len, pmsg->len > 1 ? "s" : "",
-> +			pmsg->flags & I2C_M_RD ? "from" : "to",	pmsg->addr);
-> +
-> +		if (pmsg->len && pmsg->buf) {	/* sanity check */
-> +			if (pmsg->flags & I2C_M_RD)
-> +				ret = xfer_read(adap, pmsg->buf, pmsg->len);
-> +			else
-> +				ret = xfer_write(adap, pmsg->buf, pmsg->len);
-> +
-> +			if (ret)
-> +				return ret;
-> +
-> +		}
-> +		dev_dbg(&adap->dev, "transfer complete\n");
-> +		pmsg++;		/* next message */
-> +	}
-> +
-> +	/* XXX: fixup be16_to_cpu in bq27x00_battery.c */
-> +	if (pmsg->addr == I2C_TAR_PWIC) {
-> +		swap = pmsg->buf[0];
-> +		pmsg->buf[0] = pmsg->buf[1];
-> +		pmsg->buf[1] = swap;
-> +	}
-> +
-> +	return i;
-> +}
-> +
-> +/*
-> + * Return list of supported functionality.
-> + */
-> +static u32 puv3_i2c_func(struct i2c_adapter *adapter)
-> +{
-> +	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
-> +}
-> +
-> +static struct i2c_algorithm puv3_i2c_algorithm = {
-> +	.master_xfer	= puv3_i2c_xfer,
-> +	.functionality	= puv3_i2c_func,
-> +};
-> +
-> +/*
-> + * Main initialization routine.
-> + */
-> +static int __devinit puv3_i2c_probe(struct platform_device *pdev)
-> +{
-> +	struct i2c_adapter *adapter;
-> +	struct resource *res;
-> +	int rc;
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	if (!res)
-> +		return -ENXIO;
+ other info that might help us debug this:
 
--ENODEV would seem more appropriate.
+ 1 lock held by pppd/2529:
+  #0:  (&(&ppp->wlock)->rlock){+.-...}, at: [<f814ae1b>]
+ppp_xmit_process+0x19/0x451 [ppp_generic]
 
-> +
-> +	if (!request_mem_region(res->start, resource_size(res), "puv3_i2c"))
-> +		return -EBUSY;
-> +
-> +	adapter = kzalloc(sizeof(struct i2c_adapter), GFP_KERNEL);
-> +	if (adapter == NULL) {
-> +		dev_err(&pdev->dev, "can't allocate inteface!\n");
-> +		rc = -ENOMEM;
-> +		goto fail2;
-> +	}
-> +	snprintf(adapter->name, sizeof(adapter->name), "PUV3");
+ stack backtrace:
+ Pid: 2529, comm: pppd Not tainted 2.6.38-rc2-kape #7
+ Call Trace:
+  [<c0143c54>] ? print_circular_bug+0x93/0x9f
+  [<c014594c>] ? __lock_acquire+0xe23/0x13ad
+  [<c014599a>] ? __lock_acquire+0xe71/0x13ad
+  [<c01462b2>] ? lock_acquire+0x47/0x5e
+  [<f814a634>] ? ppp_push+0x59/0x4a8 [ppp_generic]
+  [<c0471de1>] ? _raw_spin_lock_bh+0x2a/0x39
+  [<f814a634>] ? ppp_push+0x59/0x4a8 [ppp_generic]
+  [<f814a634>] ? ppp_push+0x59/0x4a8 [ppp_generic]
+  [<c014685c>] ? mark_held_locks+0x41/0x5d
+  [<c0472236>] ? _raw_spin_unlock_irqrestore+0x36/0x59
+  [<c0146958>] ? trace_hardirqs_on_caller+0xe0/0x11a
+  [<c0472242>] ? _raw_spin_unlock_irqrestore+0x42/0x59
+  [<c040ed91>] ? skb_dequeue+0x43/0x4a
+  [<f814b1d9>] ? ppp_xmit_process+0x3d7/0x451 [ppp_generic]
+  [<c0474723>] ? sub_preempt_count+0x81/0x8e
+  [<c040ec5e>] ? skb_queue_tail+0x2d/0x32
+  [<f814c336>] ? ppp_write+0x99/0xac [ppp_generic]
+  [<c0188e50>] ? vfs_write+0x8c/0x120
+  [<f814c29d>] ? ppp_write+0x0/0xac [ppp_generic]
+  [<c018909d>] ? sys_write+0x3b/0x60
+  [<c010274c>] ? sysenter_do_call+0x12/0x32
 
-Please include some uniqueness in the name. The address of the mem
-region would be a good candidate:
-
-	snprintf(adapter->name, sizeof(adapter->name), "PUV3 at 0x%08x",
-		 res->start);
-
-This lets user-space differentiate between the adapters if there are
-more than one.
-
-> +	adapter->algo = &puv3_i2c_algorithm;
-> +	adapter->class = I2C_CLASS_HWMON;
-> +	adapter->dev.parent = &pdev->dev;
-> +
-> +	platform_set_drvdata(pdev, adapter);
-> +
-> +	rc = i2c_add_numbered_adapter(adapter);
-
-You can't call i2c_add_numbered_adapter() if you haven't set
-adapter->nr first.
-
-> +	if (rc) {
-> +		dev_err(&pdev->dev, "Adapter %s registration failed\n",
-> +				adapter->name);
-
-Quotes around %s would be welcome.
-
-> +		goto fail3;
-> +	}
-> +
-> +	dev_info(&pdev->dev, "PKUnity v3 i2c bus driver.\n");
-
-Wrong message. You have just registered a device, not a driver.
-
-> +	return 0;
-> +
-> +fail3:
-
-Please use descriptive labels, otherwise it's easy to mess up and jump
-to the wrong one.
-
-> +	platform_set_drvdata(pdev, NULL);
-> +	kfree(adapter);
-> +fail2:
-> +	release_mem_region(res->start, resource_size(res));
-> +
-> +	return rc;
-> +}
-> +
-> +static int puv3_i2c_remove(struct platform_device *pdev)
-
-Missing __devexit.
-
-> +{
-> +	struct i2c_adapter *adapter = platform_get_drvdata(pdev);
-> +	struct resource *res;
-> +	int rc;
-> +
-> +	rc = i2c_del_adapter(adapter);
-> +	platform_set_drvdata(pdev, NULL);
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	release_mem_region(res->start, resource_size(res));
-> +
-> +	return rc;
-
-The logic in this function doesn't make sense. If i2c_del_adapter()
-fails, you must exit immediately. Freeing the resources while the
-adapter is still registered can only lead to a crash.
-
-Additionally, you are leaking memory in the success case, as adapter is
-never freed.
-
-> +}
-> +
-> +#ifdef CONFIG_PM
-> +static int puv3_i2c_suspend(struct platform_device *dev, pm_message_t state)
-> +{
-> +	int poll_count;
-> +	/* Disable the IIC */
-> +	I2C_ENABLE = I2C_ENABLE_DISABLE;
-> +	for (poll_count = 0; poll_count < 50; poll_count++) {
-> +		if (I2C_ENSTATUS & I2C_ENSTATUS_ENABLE)
-> +			udelay(25);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int puv3_i2c_resume(struct platform_device *dev)
-> +{
-> +	return 0 ;
-> +}
-> +#else
-> +#define puv3_i2c_suspend NULL
-> +#define puv3_i2c_resume NULL
-> +#endif
-> +
-> +MODULE_ALIAS("platform:puv3_i2c");
-> +
-> +static struct platform_driver puv3_i2c_driver = {
-> +	.probe		= puv3_i2c_probe,
-> +	.remove		= __devexit_p(puv3_i2c_remove),
-> +	.suspend	= puv3_i2c_suspend,
-> +	.resume		= puv3_i2c_resume,
-> +	.driver		= {
-> +		.name	= "PKUnity-v3-I2C",
-> +		.owner	= THIS_MODULE,
-> +	}
-> +};
-> +
-> +static int __init puv3_i2c_init(void)
-> +{
-> +	return platform_driver_register(&puv3_i2c_driver);
-> +}
-> +
-> +static void __exit puv3_i2c_exit(void)
-> +{
-> +	platform_driver_unregister(&puv3_i2c_driver);
-> +}
-> +
-> +module_init(puv3_i2c_init);
-> +module_exit(puv3_i2c_exit);
-> +
-> +MODULE_DESCRIPTION("PKUnity v3 I2C driver");
-> +MODULE_LICENSE("GPL v2");
-
--- 
-Jean Delvare
