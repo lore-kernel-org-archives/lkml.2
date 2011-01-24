@@ -1,143 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751829Ab1AXV47 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 16:56:59 -0500
-Received: from claw.goop.org ([74.207.240.146]:43760 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751301Ab1AXV46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 16:56:58 -0500
-Message-ID: <4D3DF5A5.7070301@goop.org>
-Date: Mon, 24 Jan 2011 13:56:53 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1751952Ab1AXV6F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 16:58:05 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:44709 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751339Ab1AXV6C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 16:58:02 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=iciXQ63un+AtgwI8uweFpnZBN7hy2YeMOfNujZj3iOCKLt9Xpc9aDoh2JzqcYY6E9G
+         ZHYZWHufrloy3FOhlbyVST16eWOwrRap/g2P+0vwd05MMNVKdRIuqGAE/+1q/fQ6lRba
+         b3Z5fOJz+9cQq4cRxhAw5CCneXOR4U/lUWUMo=
+Date: Mon, 24 Jan 2011 19:57:55 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Thomas Renninger <trenn@suse.de>
+Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        tardyp@gmail.com, jean.pihet@newoldbits.com,
+        linux-perf-users@vger.kernel.org, mathieu.desnoyers@efficios.com,
+        linux-trace-users@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Perf ABI versioning
+Message-ID: <20110124215755.GE6367@ghostprotocols.net>
+References: <201101241704.01021.trenn@suse.de>
+ <20110124203449.GC2318@nowhere>
+ <20110124212838.GB13724@elte.hu>
+ <201101242249.14471.trenn@suse.de>
 MIME-Version: 1.0
-To: vatsa@linux.vnet.ibm.com
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Eric Dumazet <dada1@cosmosbay.com>, Jan Beulich <JBeulich@novell.com>,
-        Avi Kivity <avi@redhat.com>, Xen-devel <xen-devel@lists.xensource.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        suzuki@in.ibm.com
-Subject: Re: [PATCH 13/14] x86/ticketlock: add slowpath logic
-References: <cover.1289940821.git.jeremy.fitzhardinge@citrix.com> <97ed99ae9160bdb6477284b333bd6708fb7a19cb.1289940821.git.jeremy.fitzhardinge@citrix.com> <20110117152222.GA19233@linux.vnet.ibm.com> <20110119162348.GA29900@linux.vnet.ibm.com>
-In-Reply-To: <20110119162348.GA29900@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201101242249.14471.trenn@suse.de>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2011 08:23 AM, Srivatsa Vaddagiri wrote:
-> On Mon, Jan 17, 2011 at 08:52:22PM +0530, Srivatsa Vaddagiri wrote:
->> I think this is still racy ..
->>
->> Unlocker				Locker
->>
->> 				
->> test slowpath
->> 	-> false
->> 		
->> 				set slowpath flag
->> 				test for lock pickup
->> 					-> fail
->> 				block
->>
->>
->> unlock
->>
->> unlock needs to happen first before testing slowpath? I have made that change
->> for my KVM guest and it seems to be working well with that change .. Will
->> cleanup and post my patches shortly
-> Patch below fixes the race described above. You can fold this to your patch
-> 13/14 if you agree this is in right direction.
->
->
-> Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
->
-> ---
->  arch/x86/include/asm/spinlock.h      |    7 +++----
->  arch/x86/kernel/paravirt-spinlocks.c |   22 +++++-----------------
->  2 files changed, 8 insertions(+), 21 deletions(-)
->
-> Index: linux-2.6.37/arch/x86/include/asm/spinlock.h
-> ===================================================================
-> --- linux-2.6.37.orig/arch/x86/include/asm/spinlock.h
-> +++ linux-2.6.37/arch/x86/include/asm/spinlock.h
-> @@ -55,7 +55,7 @@ static __always_inline void __ticket_unl
+Em Mon, Jan 24, 2011 at 10:49:13PM +0100, Thomas Renninger escreveu:
+> On Monday 24 January 2011 22:28:38 Ingo Molnar wrote:
+> > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > 
+> > > This may be generally useful to help dealing with tracepoint ABI changes.
+> > > 
+> > > But instead of a global tracing ABI number, I would rather suggest one number per 
+> > > tracepoint subsystem (sched, power, etc...).
+> > 
+> > Nooooooooooo ... !!! :-)
+> > 
+> > Please lets stop this madness before it gets too serious: we dont do ABI version 
+> > numbering in Linux, full stop.
+> Ok... :)
 >  
->  /* Only defined when CONFIG_PARAVIRT_SPINLOCKS defined, but may as
->   * well leave the prototype always visible.  */
-> -extern void __ticket_unlock_release_slowpath(struct arch_spinlock *lock);
-> +extern void __ticket_unlock_slowpath(struct arch_spinlock *lock);
->  
->  #ifdef CONFIG_PARAVIRT_SPINLOCKS
->  
-> @@ -166,10 +166,9 @@ static __always_inline int arch_spin_try
->  static __always_inline void arch_spin_unlock(arch_spinlock_t *lock)
->  {
->  	barrier();		/* prevent reordering out of locked region */
-> +	__ticket_unlock_release(lock);
->  	if (unlikely(__ticket_in_slowpath(lock)))
-> -		__ticket_unlock_release_slowpath(lock);
-> -	else
-> -		__ticket_unlock_release(lock);
-> +		__ticket_unlock_slowpath(lock);
->  	barrier();		/* prevent reordering into locked region */
->  }
->  
-> Index: linux-2.6.37/arch/x86/kernel/paravirt-spinlocks.c
-> ===================================================================
-> --- linux-2.6.37.orig/arch/x86/kernel/paravirt-spinlocks.c
-> +++ linux-2.6.37/arch/x86/kernel/paravirt-spinlocks.c
-> @@ -22,33 +22,21 @@ EXPORT_SYMBOL(pv_lock_ops);
->   * bits.  However, we need to be careful about this because someone
->   * may just be entering as we leave, and enter the slowpath.
->   */
-> -void __ticket_unlock_release_slowpath(struct arch_spinlock *lock)
-> +void __ticket_unlock_slowpath(struct arch_spinlock *lock)
->  {
->  	struct arch_spinlock old, new;
->  
->  	BUILD_BUG_ON(((__ticket_t)NR_CPUS) != NR_CPUS);
->  
->  	old = ACCESS_ONCE(*lock);
-> -
->  	new = old;
-> -	new.tickets.head += TICKET_LOCK_INC;
->  
->  	/* Clear the slowpath flag */
->  	new.tickets.tail &= ~TICKET_SLOWPATH_FLAG;
-> +	if (new.tickets.head == new.tickets.tail)
-> +		cmpxchg(&lock->head_tail, old.head_tail, new.head_tail);
->  
-> -	/*
-> -	 * If there's currently people waiting or someone snuck in
-> -	 * since we read the lock above, then do a normal unlock and
-> -	 * kick.  If we managed to unlock with no queued waiters, then
-> -	 * we can clear the slowpath flag.
-> -	 */
-> -	if (new.tickets.head != new.tickets.tail ||
-> -	    cmpxchg(&lock->head_tail,
-> -		    old.head_tail, new.head_tail) != old.head_tail) {
-> -		/* still people waiting */
-> -		__ticket_unlock_release(lock);
-> -	}
-> -
-> +	/* Wake up an appropriate waiter */
->  	__ticket_unlock_kick(lock, new.tickets.head);
+> > We use 'natural' ABIs where the lack of an ABI component triggers some sort of 
+> > clean, finegrained error. Like a -EINVAL on a not-yet-implemented ABI component, a 
+> > non-existent file entry, or -ENOSYS on a non-existent syscall.
+> If the whole stuff matures, someone might think about a nice concept to be able
+> to shift around perf.data binaries which can be processed by userspace tools,
+> independent of the kernel version running below on which the perf.data
+> was produced.
 
-Does the __ticket_unlock_kick need to be unconditional?  If the
-cmpxchg() fails, then it means someone else has come in and changed the
-lock under our feet, and presumably they'll do the kick as needed?
+We try to do that already, things like sample_id_all that is a feature
+present on a new kernel are capability queried by trying to ask the
+kernel for it and if it fails, cope with that and do as before it, in
+some cases warning the user if the fallback can lead to inacuracies.
 
-Or is there the possibility that the kick will get lost?
+Shifting around perf.data files accross arquitectures and OS/vendor
+releases is an everyday goal.
 
-There's certainly no harm in doing a redundant kick, and I'd expect that
-case to be pretty rare...
+I.e. the new perf binary works with older kernels.
 
-    J
+We also try hard to keep the latest tools building on older kernels.
+
+Using the /format file hashed as peterz said is elegant, fine grained
+content based ABI number :-)
+
+- Arnaldo
