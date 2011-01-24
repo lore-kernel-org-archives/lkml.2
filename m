@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918Ab1AXQyo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 11:54:44 -0500
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:58708 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753610Ab1AXQyn (ORCPT
+	id S1753834Ab1AXQzI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 11:55:08 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:36353 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753646Ab1AXQzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 11:54:43 -0500
-Date: Mon, 24 Jan 2011 11:54:41 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Chuck Lever <chuck.lever@oracle.com>
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: Re: possible regression: BUG in client lockd with server reboot.
-Message-ID: <20110124165441.GA14255@elliptictech.com>
-References: <20110124144107.GA3718@elliptictech.com>
- <4707872F-6CC4-477D-AE0B-A7DCEEF29ABF@oracle.com>
+	Mon, 24 Jan 2011 11:55:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=GEmvMrZI/yb6B8KcinTY8e72mzJJ8RxOVr5ZA4Tc5MDW9DHJ9EHaLlikF9iGb9bbLa
+         LaoFdDtbGybpn/w4kreasnWIOWsy3g1j50uucSpkQHqTWWcKPqGlVcYoV8P3vSJmCuAQ
+         xVGu0zU6lJdqF4rZqZk6H2y5fo3jezjPBf5dw=
+Date: Mon, 24 Jan 2011 17:54:48 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] nozomi: don't use flush_scheduled_work()
+Message-ID: <20110124165448.GG27510@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4707872F-6CC4-477D-AE0B-A7DCEEF29ABF@oracle.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-01-24 11:08 -0500, Chuck Lever wrote:
-> Nick-
-> 
-> On Jan 24, 2011, at 9:41 AM, Nick Bowler wrote:
-> 
-> > We were just having some NFS server troubles, and my client machine
-> > running 2.6.38-rc1+ (specifically, commit 2b1caf6ed7b888c95) crashed
-> > hard (syslog output appended to this mail).
-> 
-> I don't seem to have 2b1caf6e.  Can you post the short description?
+flush_scheduled_work() in tty_exit() doesn't seem to target any
+specific work.  If it was to flush work items used in tty generic
+layer, they're already flushed properly during tty release.
 
-commit 2b1caf6ed7b888c95a1909d343799672731651a5
-Merge: d551d81 bd924e8
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Thu Jan 20 18:30:37 2011 -0800
+flush_scheduled_work() is going away.  Remove the seemingly redundant
+usage.
 
-    Merge branch 'core-fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: Alan Cox <alan@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/char/nozomi.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-> host.c:283 is " BUG_ON(!list_empty(&host->h_lockowners));" in my tree.
-> Can you confirm this is the same for you?
-
-Yes, it is.
-
-> I'll have a look.
-
-Great, thanks!
-
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Index: work/drivers/char/nozomi.c
+===================================================================
+--- work.orig/drivers/char/nozomi.c
++++ work/drivers/char/nozomi.c
+@@ -1514,8 +1514,6 @@ static void __devexit tty_exit(struct no
+ 
+ 	DBG1(" ");
+ 
+-	flush_scheduled_work();
+-
+ 	for (i = 0; i < MAX_PORT; ++i) {
+ 		struct tty_struct *tty = tty_port_tty_get(&dc->port[i].port);
+ 		if (tty && list_empty(&tty->hangup_work.entry))
