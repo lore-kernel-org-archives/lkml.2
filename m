@@ -1,236 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab1AXQNH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 11:13:07 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:47265 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752910Ab1AXQNG (ORCPT
+	id S1753431Ab1AXQY7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 11:24:59 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40935 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753036Ab1AXQY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 11:13:06 -0500
-Date: Mon, 24 Jan 2011 11:13:04 -0500
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: mingo@redhat.com
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com
-Subject: [PATCH] perf: fix gcc 4.6.0 issues with tools/perf
-Message-ID: <20110124161304.GK27353@bombadil.infradead.org>
+	Mon, 24 Jan 2011 11:24:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=t2oRFu9Qh5UV7IROYVYVRuzgy0eUDZRwnSaJOyQFeCMI9yEf+a8Qq7r9IWNiyy3NCW
+         +GXzgIxVYgHuqKo6hQFjCKu7GZcIVIT8c6lwRBZ9A95Li1AAdS8TaUrbPRCfkRU6JtIb
+         BfNYzIZiaH3Z5dUJ017w7xZ2daOLWFf+hj6/Q=
+Date: Mon, 24 Jan 2011 17:24:14 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: linux-kernel@vger.kernel.org,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        "James E.J. Bottomley" <James.Bottomley@hansenpartnership.com>,
+        linux-scsi@vger.kernel.org, Brian King <brking@linux.vnet.ibm.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>
+Subject: Re: [PATCH 17/32] scsi/ibmvstgt: use system_wq instead of vtgtd
+ workqueue
+Message-ID: <20110124162414.GD27510@htj.dyndns.org>
+References: <1294062595-30097-1-git-send-email-tj@kernel.org>
+ <1294062595-30097-18-git-send-email-tj@kernel.org>
+ <AANLkTi=Fg8wjf-XfVsq0X4RWx7i8F1V7gC6-8Y5LPbnL@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <AANLkTi=Fg8wjf-XfVsq0X4RWx7i8F1V7gC6-8Y5LPbnL@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+Hello,
 
-GCC 4.6.0 in Fedora rawhide turned up some compile errors in tools/perf
-due to the -Werror=unused-but-set-variable flag.
+On Mon, Jan 24, 2011 at 05:09:18PM +0100, Bart Van Assche wrote:
+> Insertion of  flush_work_sync() fixes a race - that's a good catch.
+> flush_work_sync() should be invoked a little earlier though because
+> the scheduled work may access the queue destroyed by the
+> crq_queue_destroy(target) call. And the CRQ interrupt should be
+> disabled from before flush_work_sync() is invoked until after the CRQ
+> has been destroyed.
 
-I've gone through and annotated some of the assignments that had side
-effects (ie: return value from a function) with the __used annotation,
-and in some cases, just removed unused code.
+Heh, I'm a bit out of my depth here.  If you know what's necessary,
+please go ahead and make the change.
 
-In a few cases, we were assigning something useful, but not using it in
-later parts of the function.
+> Regarding the queue removal: I might have missed something, but why
+> would you like to remove the vtgtd work queue ? Since the ibmvstgt
+> driver is a storage target driver, processing latency matters. I'm
+> afraid that switching from a dedicated queue to the global work queue
+> will increase processing latency.
 
-regards, Kyle
+Having a dedicated workqueue no longer makes any difference regarding
+processing latency.  Each workqueue is mere frontend to the shared
+worker pool anyway.  Dedicated workqueues are now meaningful only as
+forward progress guarantee, attribute and/or flush domain - IOW, when
+the workqueue needs to be used during memory reclaim, the work items
+need to have specific attributes or certain group of work items need
+to be flushed together.  Apart from that, there's virtually no
+difference between using the system_wq and a dedicated one.  As using
+the system one is usually simpler, it's natural to do that.
 
-kyle@dreadnought:~/src% gcc --version
-gcc (GCC) 4.6.0 20110122 (Red Hat 4.6.0-0.3)
+Thank you.
 
----
-
- bench/sched-pipe.c                          |    2 +-
- builtin-sched.c                             |   12 +++---------
- builtin-top.c                               |    5 +----
- util/header.c                               |    2 +-
- util/hist.c                                 |    3 ---
- util/scripting-engines/trace-event-python.c |    3 +--
- util/symbol.c                               |    4 ++--
- util/trace-event-parse.c                    |    2 +-
- util/ui/browsers/map.c                      |    2 +-
- 9 files changed, 11 insertions(+), 24 deletions(-)
-
-diff --git a/tools/perf/bench/sched-pipe.c b/tools/perf/bench/sched-pipe.c
-index d9ab3ce..0c7454f 100644
---- a/tools/perf/bench/sched-pipe.c
-+++ b/tools/perf/bench/sched-pipe.c
-@@ -55,7 +55,7 @@ int bench_sched_pipe(int argc, const char **argv,
- 	 * discarding returned value of read(), write()
- 	 * causes error in building environment for perf
- 	 */
--	int ret, wait_stat;
-+	int __used ret, wait_stat;
- 	pid_t pid, retpid;
- 
- 	argc = parse_options(argc, argv, options,
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 29e7ffd..f9e304f 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -369,11 +369,6 @@ static void
- process_sched_event(struct task_desc *this_task __used, struct sched_atom *atom)
- {
- 	int ret = 0;
--	u64 now;
--	long long delta;
--
--	now = get_nsecs();
--	delta = start_time + atom->timestamp - now;
- 
- 	switch (atom->type) {
- 		case SCHED_EVENT_RUN:
-@@ -562,7 +557,7 @@ static void wait_for_tasks(void)
- 
- static void run_one_test(void)
- {
--	u64 T0, T1, delta, avg_delta, fluct, std_dev;
-+	u64 T0, T1, delta, avg_delta, fluct;
- 
- 	T0 = get_nsecs();
- 	wait_for_tasks();
-@@ -578,7 +573,6 @@ static void run_one_test(void)
- 	else
- 		fluct = delta - avg_delta;
- 	sum_fluct += fluct;
--	std_dev = sum_fluct / nr_runs / sqrt(nr_runs);
- 	if (!run_avg)
- 		run_avg = delta;
- 	run_avg = (run_avg*9 + delta)/10;
-@@ -799,7 +793,7 @@ replay_switch_event(struct trace_switch_event *switch_event,
- 		    u64 timestamp,
- 		    struct thread *thread __used)
- {
--	struct task_desc *prev, *next;
-+	struct task_desc *prev, __used *next;
- 	u64 timestamp0;
- 	s64 delta;
- 
-@@ -1404,7 +1398,7 @@ map_switch_event(struct trace_switch_event *switch_event,
- 		 u64 timestamp,
- 		 struct thread *thread __used)
- {
--	struct thread *sched_out, *sched_in;
-+	struct thread *sched_out __used, *sched_in;
- 	int new_shortname;
- 	u64 timestamp0;
- 	s64 delta;
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 05344c6..373cfc0 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -182,7 +182,6 @@ static int parse_source(struct sym_entry *syme)
- 	FILE *file;
- 	char command[PATH_MAX*2];
- 	const char *path;
--	u64 len;
- 
- 	if (!syme)
- 		return -1;
-@@ -211,8 +210,6 @@ static int parse_source(struct sym_entry *syme)
- 	}
- 	path = map->dso->long_name;
- 
--	len = sym->end - sym->start;
--
- 	sprintf(command,
- 		"objdump --start-address=%#0*Lx --stop-address=%#0*Lx -dS %s",
- 		BITS_PER_LONG / 4, map__rip_2objdump(map, sym->start),
-@@ -1295,7 +1292,7 @@ static int __cmd_top(void)
- {
- 	pthread_t thread;
- 	struct perf_evsel *counter;
--	int i, ret;
-+	int i, ret __used;
- 	/*
- 	 * FIXME: perf_session__new should allow passing a O_MMAP, so that all this
- 	 * mmap reading, etc is encapsulated in it. Use O_WRONLY for now.
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 989fa2d..c0e5019 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1139,7 +1139,7 @@ int event__synthesize_tracing_data(int fd, struct list_head *pattrs,
- {
- 	event_t ev;
- 	ssize_t size = 0, aligned_size = 0, padding;
--	int err = 0;
-+	int err __used = 0;
- 
- 	memset(&ev, 0, sizeof(ev));
- 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index c749ba6..a01a33d 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -1091,7 +1091,6 @@ int hist_entry__annotate(struct hist_entry *self, struct list_head *head,
- 	char command[PATH_MAX * 2];
- 	FILE *file;
- 	int err = 0;
--	u64 len;
- 	char symfs_filename[PATH_MAX];
- 
- 	if (filename) {
-@@ -1136,8 +1135,6 @@ fallback:
- 		 filename, sym->name, map->unmap_ip(map, sym->start),
- 		 map->unmap_ip(map, sym->end));
- 
--	len = sym->end - sym->start;
--
- 	pr_debug("annotating [%p] %30s : [%p] %30s\n",
- 		 dso, dso->long_name, sym, sym->name);
- 
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index c6d9933..2040b85 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -248,8 +248,7 @@ static void python_process_event(int cpu, void *data,
- 	context = PyCObject_FromVoidPtr(scripting_context, NULL);
- 
- 	PyTuple_SetItem(t, n++, PyString_FromString(handler_name));
--	PyTuple_SetItem(t, n++,
--			PyCObject_FromVoidPtr(scripting_context, NULL));
-+	PyTuple_SetItem(t, n++, context);
- 
- 	if (handler) {
- 		PyTuple_SetItem(t, n++, PyInt_FromLong(cpu));
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 15ccfba..52e82cf 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1517,8 +1517,8 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
- 			     symbol_conf.symfs, self->long_name);
- 			break;
- 		case DSO__ORIG_GUEST_KMODULE:
--			if (map->groups && map->groups->machine)
--				root_dir = map->groups->machine->root_dir;
-+			if (map->groups && machine)
-+				root_dir = machine->root_dir;
- 			else
- 				root_dir = "";
- 			snprintf(name, size, "%s%s%s", symbol_conf.symfs,
-diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
-index 73a0222..d8e622d 100644
---- a/tools/perf/util/trace-event-parse.c
-+++ b/tools/perf/util/trace-event-parse.c
-@@ -153,7 +153,7 @@ void parse_proc_kallsyms(char *file, unsigned int size __unused)
- 	char *next = NULL;
- 	char *addr_str;
- 	char ch;
--	int ret;
-+	int ret __used;
- 	int i;
- 
- 	line = strtok_r(file, "\n", &next);
-diff --git a/tools/perf/util/ui/browsers/map.c b/tools/perf/util/ui/browsers/map.c
-index e35437d..3788cad 100644
---- a/tools/perf/util/ui/browsers/map.c
-+++ b/tools/perf/util/ui/browsers/map.c
-@@ -40,7 +40,7 @@ static int ui_entry__read(const char *title, char *bf, size_t size, int width)
- out_free_form:
- 	newtPopWindow();
- 	newtFormDestroy(form);
--	return 0;
-+	return err;
- }
- 
- struct map_browser {
+-- 
+tejun
