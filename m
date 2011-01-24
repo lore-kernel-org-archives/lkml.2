@@ -1,107 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920Ab1AXXTs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 18:19:48 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:55080 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752520Ab1AXXTr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 18:19:47 -0500
-Date: Mon, 24 Jan 2011 23:19:23 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm-fixes
-Message-ID: <alpine.DEB.2.00.1101242317050.29414@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753141Ab1AXXT6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 18:19:58 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:11247 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753003Ab1AXXT4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 18:19:56 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6236"; a="71819194"
+From: David Brown <davidb@codeaurora.org>
+To: Daniel Walker <dwalker@codeaurora.org>
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 02/11] msm: Generalize timer register mappings
+In-Reply-To: <1295909876.29639.69.camel@c-dwalke-linux.qualcomm.com> (Daniel
+	Walker's message of "Mon, 24 Jan 2011 14:57:56 -0800")
+References: <1292384961-8851-1-git-send-email-stepanm@codeaurora.org>
+	<1295468747-22796-1-git-send-email-davidb@codeaurora.org>
+	<1295468747-22796-3-git-send-email-davidb@codeaurora.org>
+	<1295908604.29639.62.camel@c-dwalke-linux.qualcomm.com>
+	<8yaei81kjlc.fsf@huya.qualcomm.com>
+	<1295909876.29639.69.camel@c-dwalke-linux.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+X-Hashcash: 1:20:110124:linux-kernel@vger.kernel.org::rdehXeP5qfM3cv0l:00000000000000000000000000000000008O/
+X-Hashcash: 1:20:110124:linux-arm-msm@vger.kernel.org::bxytdbLkoZ4BmcIy:000000000000000000000000000000001zGi
+X-Hashcash: 1:20:110124:dwalker@codeaurora.org::GrXJmv1ZObgzx1sB:0000000000000000000000000000000000000002wlT
+X-Hashcash: 1:20:110124:linux-arm-kernel@lists.infradead.org::GgNnNgDxB1NP9bdW:00000000000000000000000002wTp
+Date: Mon, 24 Jan 2011 15:19:53 -0800
+Message-ID: <8yazkqpj3dy.fsf@huya.qualcomm.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-1859150887-1295911163=:29414"
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Mon, Jan 24 2011, Daniel Walker wrote:
 
---29444707-1859150887-1295911163=:29414
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+> On Mon, 2011-01-24 at 14:44 -0800, David Brown wrote:
+>> On Mon, Jan 24 2011, Daniel Walker wrote:
+>> 
+>> > On Wed, 2011-01-19 at 12:25 -0800, David Brown wrote:
+>> >> +       int global_offset = 0;
+>> >> +
+>> >> +       if (cpu_is_msm7x01()) {
+>> >> +               msm_clocks[MSM_CLOCK_GPT].regbase = MSM_CSR_BASE;
+>> >> +               msm_clocks[MSM_CLOCK_DGT].regbase = MSM_CSR_BASE + 0x10;
+>> >> +       } else if (cpu_is_msm7x30()) {
+>> >> +               msm_clocks[MSM_CLOCK_GPT].regbase = MSM_CSR_BASE + 0x04;
+>> >> +               msm_clocks[MSM_CLOCK_DGT].regbase = MSM_CSR_BASE + 0x24;
+>> >> +       } else if (cpu_is_qsd8x50()) {
+>> >> +               msm_clocks[MSM_CLOCK_GPT].regbase = MSM_CSR_BASE;
+>> >> +               msm_clocks[MSM_CLOCK_DGT].regbase = MSM_CSR_BASE + 0x10;
+>> >> +       } else if (cpu_is_msm8x60()) {
+>> >> +               msm_clocks[MSM_CLOCK_GPT].regbase = MSM_TMR_BASE + 0x04;
+>> >> +               msm_clocks[MSM_CLOCK_DGT].regbase = MSM_TMR_BASE + 0x24;
+>> >> +
+>> >> +               /* Use CPU0's timer as the global timer. */
+>> >> +               global_offset = MSM_TMR0_BASE - MSM_TMR_BASE;
+>> >> +       } else
+>> >> +               BUG(); 
+>> >
+>> > Ifdef's here would be OK I think, your already using the "runtime"
+>> > checks ..
+>> 
+>> The point of the change is to get rid of the ifdefs so that we can
+>> dynamically detect which target we are on.  Yes, there are other places
+>> where it doesn't work, but we'll get there gradually.
+>
+> I'm not suggesting you do something you can't do right now ..
+>
+> For instance you could make,
+>
+> #define MSM_MSM7XXX_DGT_BASE          (MSM_TMR_BASE + 0x10)
+>
+> and use that instead of what you have above.
 
+I did it this way intentionally.
 
-Hi Linus,
+I don't see how adding an extra level of indirection to the name helps
+make it any clearer.  The register offsets are defined in only one
+place, right in this block of code.  It is obvious which target and
+which register is which.  Having an extra name defined somewhere else
+just gives me another symbol I have to follow when I'm trying to read
+the code later.
 
-Mostly i915 serious fixes, along with some minor radeon changes.
+Avoiding magic numbers is fine in the code, when it actually helps.
+Here, it doesn't do anything other than add a name that only gets used
+once in a context that already describes what it is.
 
-(no global header files touched ;-)
+David
 
-Dave.
-
-The following changes since commit d315777b32a4696feb86f2a0c9e9f39c94683649:
-
-  Merge branch 'BUG_ON' of git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6-for-linus (2011-01-24 19:58:39 +1000)
-
-are available in the git repository at:
-
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
-
-Alex Deucher (5):
-      drm/radeon/kms: fix a spelling error in an error message
-      drm/radeon/kms: make the mac rv630 quirk generic
-      drm/radeon/kms: match r6xx/r7xx/evergreen asic_reset with previous asics
-      drm/radeon/kms: simplify atom adjust pll setup
-      drm/radeon/kms: add new radeon_info ioctl query for clock crystal freq
-
-Chris Wilson (12):
-      drm/i915: Initialise ring vfuncs for old DRI paths
-      drm/i915: Add dependency on CONFIG_TMPFS
-      drm/i915: Don't kick-off hangcheck after a DRI interrupt
-      drm/i915/ringbuffer: Fix use of stale HEAD position whilst polling for space
-      drm/i915: Fix use of invalid array size for ring->sync_seqno
-      drm/i915: Recognise non-VGA display devices
-      drm/i915,agp/intel: Do not clear stolen entries
-      drm/i915: Increase the amount of defense before computing vblank timestamps
-      drm/i915: Disable high-precision vblank timestamping for UMS
-      drm/i915: Handle the no-interrupts case for UMS by polling
-      Merge remote branch 'linus/master' into drm-intel-fixes
-      drm/i915: Prevent uninitialised reads during error state capture
-
-Dave Airlie (1):
-      Merge branch 'drm-intel-fixes-2' of ssh://master.kernel.org/.../ickle/drm-intel into drm-fixes
-
-Jesse Barnes (2):
-      drm/i915: set more FBC chicken bits
-      drm/i915: make the blitter report buffer modifications to the FBC unit
-
-Michael Karcher (1):
-      drm/i915: Use consistent mappings for OpRegion between ACPI and i915
-
-Michel Dänzer (1):
-      drm/radeon/kms: Initialize pageflip spinlocks.
-
- drivers/char/agp/intel-gtt.c               |   19 +++---
- drivers/gpu/drm/Kconfig                    |    3 +
- drivers/gpu/drm/i915/i915_dma.c            |   35 +++++-------
- drivers/gpu/drm/i915/i915_drv.c            |    5 +-
- drivers/gpu/drm/i915/i915_drv.h            |    5 +-
- drivers/gpu/drm/i915/i915_gem.c            |   12 +++-
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |    2 +-
- drivers/gpu/drm/i915/i915_gem_gtt.c        |    4 +
- drivers/gpu/drm/i915/i915_irq.c            |   37 +++++++++---
- drivers/gpu/drm/i915/i915_reg.h            |    6 ++
- drivers/gpu/drm/i915/intel_display.c       |   25 ++++++++-
- drivers/gpu/drm/i915/intel_opregion.c      |    3 +-
- drivers/gpu/drm/i915/intel_ringbuffer.c    |   83 ++++++++++++++++++++++------
- drivers/gpu/drm/i915/intel_ringbuffer.h    |    3 +
- drivers/gpu/drm/radeon/atombios_crtc.c     |   22 ++------
- drivers/gpu/drm/radeon/evergreen.c         |    3 +
- drivers/gpu/drm/radeon/r100.c              |    2 +-
- drivers/gpu/drm/radeon/r600.c              |    3 +
- drivers/gpu/drm/radeon/radeon_atombios.c   |   14 ++---
- drivers/gpu/drm/radeon/radeon_drv.c        |    2 +-
- drivers/gpu/drm/radeon/radeon_irq_kms.c    |    3 +
- drivers/gpu/drm/radeon/radeon_kms.c        |    4 +
- drivers/gpu/vga/vgaarb.c                   |    2 +-
- include/drm/radeon_drm.h                   |    1 +
- 24 files changed, 203 insertions(+), 95 deletions(-)
---29444707-1859150887-1295911163=:29414--
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
