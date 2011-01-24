@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab1AXP0U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 10:26:20 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:44568 "EHLO
+	id S1753388Ab1AXP1R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 10:27:17 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:44584 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847Ab1AXP0S (ORCPT
+	with ESMTP id S1753276Ab1AXP0V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 10:26:18 -0500
+	Mon, 24 Jan 2011 10:26:21 -0500
 From: Borislav Petkov <bp@amd64.org>
 To: <x86@kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, Borislav Petkov <borislav.petkov@amd.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 1/7] sysdev: Do not register with sysdev when erroring on add
-Date: Mon, 24 Jan 2011 16:28:57 +0100
-Message-Id: <1295882943-11184-2-git-send-email-bp@amd64.org>
+Cc: <linux-kernel@vger.kernel.org>, Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH 3/7] x86, microcode, AMD: Release firmware on error
+Date: Mon, 24 Jan 2011 16:28:59 +0100
+Message-Id: <1295882943-11184-4-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.4.rc2
 In-Reply-To: <1295882943-11184-1-git-send-email-bp@amd64.org>
 References: <1295882943-11184-1-git-send-email-bp@amd64.org>
@@ -23,136 +22,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-When encountering an error while executing the driver's ->add method, we
-should cancel registration and unwind what we've regged so far. The low
-level ->add methods do return proper error codes but those aren't looked
-at in sysdev_driver_register(). Fix that by sharing the unregistering
-code.
+When the ucode magic is wrong, for whatever reason, we don't release the
+loaded firmware binary and its related resources. Make sure we do. Also,
+fix function naming to fit this driver's convention and shorten variable
+names.
 
-Also, fixup warning messages formatting while at it.
-
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Acked-by: Andreas Herrmann <Andreas.Herrmann3@amd.com>
 ---
- drivers/base/sys.c |   65 ++++++++++++++++++++++++++++++++++++---------------
- 1 files changed, 46 insertions(+), 19 deletions(-)
+ arch/x86/kernel/microcode_amd.c |   26 ++++++++++++++------------
+ 1 files changed, 14 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/base/sys.c b/drivers/base/sys.c
-index 1667aaf..f6fb547 100644
---- a/drivers/base/sys.c
-+++ b/drivers/base/sys.c
-@@ -166,6 +166,36 @@ EXPORT_SYMBOL_GPL(sysdev_class_unregister);
- 
- static DEFINE_MUTEX(sysdev_drivers_lock);
- 
-+/*
-+ * @dev != NULL means that we're unwinding because some drv->add()
-+ * failed for some reason. You need to grab sysdev_drivers_lock before
-+ * calling this.
-+ */
-+static void __sysdev_driver_remove(struct sysdev_class *cls,
-+				   struct sysdev_driver *drv,
-+				   struct sys_device *from_dev)
-+{
-+	struct sys_device *dev = from_dev;
-+
-+	list_del_init(&drv->entry);
-+	if (!cls)
-+		return;
-+
-+	if (!drv->remove)
-+		goto kset_put;
-+
-+	if (dev)
-+		list_for_each_entry_continue_reverse(dev, &cls->kset.list,
-+						     kobj.entry)
-+			drv->remove(dev);
-+	else
-+		list_for_each_entry(dev, &cls->kset.list, kobj.entry)
-+			drv->remove(dev);
-+
-+kset_put:
-+	kset_put(&cls->kset);
-+}
-+
- /**
-  *	sysdev_driver_register - Register auxillary driver
-  *	@cls:	Device class driver belongs to.
-@@ -175,14 +205,14 @@ static DEFINE_MUTEX(sysdev_drivers_lock);
-  *	called on each operation on devices of that class. The refcount
-  *	of @cls is incremented.
-  */
--
- int sysdev_driver_register(struct sysdev_class *cls, struct sysdev_driver *drv)
- {
-+	struct sys_device *dev = NULL;
- 	int err = 0;
- 
- 	if (!cls) {
--		WARN(1, KERN_WARNING "sysdev: invalid class passed to "
--			"sysdev_driver_register!\n");
-+		WARN(1, KERN_WARNING "sysdev: invalid class passed to %s!\n",
-+			__func__);
- 		return -EINVAL;
- 	}
- 
-@@ -198,19 +228,27 @@ int sysdev_driver_register(struct sysdev_class *cls, struct sysdev_driver *drv)
- 
- 		/* If devices of this class already exist, tell the driver */
- 		if (drv->add) {
--			struct sys_device *dev;
--			list_for_each_entry(dev, &cls->kset.list, kobj.entry)
--				drv->add(dev);
-+			list_for_each_entry(dev, &cls->kset.list, kobj.entry) {
-+				err = drv->add(dev);
-+				if (err)
-+					goto unwind;
-+			}
- 		}
- 	} else {
- 		err = -EINVAL;
- 		WARN(1, KERN_ERR "%s: invalid device class\n", __func__);
- 	}
-+
-+	goto unlock;
-+
-+unwind:
-+	__sysdev_driver_remove(cls, drv, dev);
-+
-+unlock:
- 	mutex_unlock(&sysdev_drivers_lock);
- 	return err;
+diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
+index 0fe6d1a..ef91df0 100644
+--- a/arch/x86/kernel/microcode_amd.c
++++ b/arch/x86/kernel/microcode_amd.c
+@@ -278,27 +278,29 @@ generic_load_microcode(int cpu, const u8 *data, size_t size)
+ 	return state;
  }
  
--
- /**
-  *	sysdev_driver_unregister - Remove an auxillary driver.
-  *	@cls:	Class driver belongs to.
-@@ -220,23 +258,12 @@ void sysdev_driver_unregister(struct sysdev_class *cls,
- 			      struct sysdev_driver *drv)
+-static enum ucode_state request_microcode_fw(int cpu, struct device *device)
++static enum ucode_state request_microcode_amd(int cpu, struct device *device)
  {
- 	mutex_lock(&sysdev_drivers_lock);
--	list_del_init(&drv->entry);
--	if (cls) {
--		if (drv->remove) {
--			struct sys_device *dev;
--			list_for_each_entry(dev, &cls->kset.list, kobj.entry)
--				drv->remove(dev);
--		}
--		kset_put(&cls->kset);
--	}
-+	__sysdev_driver_remove(cls, drv, NULL);
- 	mutex_unlock(&sysdev_drivers_lock);
- }
--
- EXPORT_SYMBOL_GPL(sysdev_driver_register);
- EXPORT_SYMBOL_GPL(sysdev_driver_unregister);
+ 	const char *fw_name = "amd-ucode/microcode_amd.bin";
+-	const struct firmware *firmware;
+-	enum ucode_state ret;
++	const struct firmware *fw;
++	enum ucode_state ret = UCODE_NFOUND;
  
--
--
- /**
-  *	sysdev_register - add a system device to the tree
-  *	@sysdev:	device in question
+-	if (request_firmware(&firmware, fw_name, device)) {
++	if (request_firmware(&fw, fw_name, device)) {
+ 		printk(KERN_ERR "microcode: failed to load file %s\n", fw_name);
+-		return UCODE_NFOUND;
++		goto out;
+ 	}
+ 
+-	if (*(u32 *)firmware->data != UCODE_MAGIC) {
+-		pr_err("invalid UCODE_MAGIC (0x%08x)\n",
+-		       *(u32 *)firmware->data);
+-		return UCODE_ERROR;
++	ret = UCODE_ERROR;
++	if (*(u32 *)fw->data != UCODE_MAGIC) {
++		pr_err("Invalid UCODE_MAGIC (0x%08x)\n", *(u32 *)fw->data);
++		goto fw_release;
+ 	}
+ 
+-	ret = generic_load_microcode(cpu, firmware->data, firmware->size);
++	ret = generic_load_microcode(cpu, fw->data, fw->size);
+ 
+-	release_firmware(firmware);
++fw_release:
++	release_firmware(fw);
+ 
++out:
+ 	return ret;
+ }
+ 
+@@ -319,7 +321,7 @@ static void microcode_fini_cpu_amd(int cpu)
+ 
+ static struct microcode_ops microcode_amd_ops = {
+ 	.request_microcode_user           = request_microcode_user,
+-	.request_microcode_fw             = request_microcode_fw,
++	.request_microcode_fw             = request_microcode_amd,
+ 	.collect_cpu_info                 = collect_cpu_info_amd,
+ 	.apply_microcode                  = apply_microcode_amd,
+ 	.microcode_fini_cpu               = microcode_fini_cpu_amd,
 -- 
 1.7.4.rc2
 
