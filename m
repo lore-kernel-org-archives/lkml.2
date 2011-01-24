@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab1AXX33 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 18:29:29 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53378 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752771Ab1AXX32 (ORCPT
+	id S1752817Ab1AXXa5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 18:30:57 -0500
+Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:49075 "EHLO
+	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752615Ab1AXXa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 18:29:28 -0500
-Date: Mon, 24 Jan 2011 23:28:43 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: David Brown <davidb@codeaurora.org>
-Cc: linux-arm-msm@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 11/11] msm: Support for the MSM8960 RUMI3 target
-Message-ID: <20110124232843.GR24104@n2100.arm.linux.org.uk>
-References: <1292384961-8851-1-git-send-email-stepanm@codeaurora.org> <1295468747-22796-1-git-send-email-davidb@codeaurora.org> <1295468747-22796-12-git-send-email-davidb@codeaurora.org>
+	Mon, 24 Jan 2011 18:30:57 -0500
+Message-ID: <4D3E0BAE.6090202@lougher.demon.co.uk>
+Date: Mon, 24 Jan 2011 23:30:54 +0000
+From: Phillip Lougher <phillip@lougher.demon.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295468747-22796-12-git-send-email-davidb@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] SquashFS, XZ: Don't use uninitialized variable in squashfs_xz_uncompress
+References: <alpine.LNX.2.00.1101202140070.11854@swampdragon.chaosbits.net> <20110124144353.c04c77b4.akpm@linux-foundation.org>
+In-Reply-To: <20110124144353.c04c77b4.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19, 2011 at 12:25:47PM -0800, David Brown wrote:
-> --- a/arch/arm/mach-msm/board-msm8960.c
-> +++ b/arch/arm/mach-msm/board-msm8960.c
-> @@ -41,6 +41,9 @@ static void __init msm8960_init_irq(void)
->  	/* Edge trigger PPIs except AVS_SVICINT and AVS_SVICINTSWDONE */
->  	writel(0xFFFFD7FF, MSM_QGIC_DIST_BASE + GIC_DIST_CONFIG + 4);
->  
-> +	if (machine_is_msm8960_rumi3())
-> +		writel(0x0000FFFF, MSM_QGIC_DIST_BASE + GIC_DIST_ENABLE_SET);
-> +
+On 24/01/11 22:43, Andrew Morton wrote:
+> On Thu, 20 Jan 2011 21:53:23 +0100 (CET)
+> Jesper Juhl<jj@chaosbits.net>  wrote:
+>
+>> In fs/squashfs/xz_wrapper.c::squashfs_xz_uncompress() we have this code:
+>>
+>> 	enum xz_ret xz_err;
+>> 	...
+>> 	do {
+>> 		if (stream->buf.in_pos == stream->buf.in_size&&  k<  b) {
+>> 		... [nothing that assigns to 'xz_err'] ...
+>> 			if (avail == 0) {
+>> 				offset = 0;
+>> 				put_bh(bh[k++]);
+>> 				continue;
+>
+> hm, maybe.  The handling of the `avail == 0' case looks odd.  It sits
+> there in a loop doing wait_on_buffer() against buffers which it will
+> never use and possible reporting -EIO for a buffer which it didn't use,
+> which seems bogus.
 
-We really need to sort out the GIC initialization so that this kind of
-stuff isn't scattered throughout platform files.
+Hi Andrew,
 
-In fact, I thought we had already sorted out enabling the SGI interrupts
-in the common gic code - it happens when you call gic_cpu_init().  So
-I don't think the above is required.
+I'm just about to send out a patch that fixes this uninitialised variable
+bug by way of getting rid of that if (avail == 0) case.
 
-As far as the edge triggering PPIs, that also needs sorting properly.
+The avail == 0 case is a workaround for the fact that the caller code
+can occasionally pass a buffer head that has already been
+consumed (read offset into buffer head is at the end of the buffer).
+
+Phillip
+
