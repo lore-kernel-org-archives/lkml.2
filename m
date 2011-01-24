@@ -1,82 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab1AXVk3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 16:40:29 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:59273 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673Ab1AXVk2 (ORCPT
+	id S1752444Ab1AXVkb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 16:40:31 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:16274 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752255Ab1AXVk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 16:40:28 -0500
-Date: Mon, 24 Jan 2011 15:40:18 -0600
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: "Andrew G. Morgan" <morgan@kernel.org>
-Cc: Eric Paris <eparis@redhat.com>, "Serge E. Hallyn" <serge@canonical.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        sgrubb@redhat.com
-Subject: Re: [PATCH] System Wide Capability Bounding Set
-Message-ID: <20110124214018.GA8395@hallyn.com>
-References: <1294266337.3237.45.camel@localhost.localdomain>
- <20110111220201.GA6446@localhost>
- <1295034658.2816.16.camel@localhost.localdomain>
- <AANLkTik07sOb8oQThFPLvAnQLXbyPJ+oqtqE2SMX2erk@mail.gmail.com>
- <1295645135.3403.31.camel@localhost.localdomain>
- <AANLkTinPGMijRFnn8T=fndnCCGAsNq_6qCOzKcuhZE8H@mail.gmail.com>
+	Mon, 24 Jan 2011 16:40:29 -0500
+Date: Mon, 24 Jan 2011 22:41:11 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: x86@kernel.org
+cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
+        Soren Sandmann <ssp@redhat.com>, Alexey Dobriyan <adobriyan@gmail.com>
+Subject: [PATCH] X86-64: Don't use pointer to out-of-scope variable in
+ dump_trace()
+Message-ID: <alpine.LNX.2.00.1101242232590.10252@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinPGMijRFnn8T=fndnCCGAsNq_6qCOzKcuhZE8H@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Andrew G. Morgan (morgan@kernel.org):
-> > But how can that leave us with an impotent root?  Root would be easily
-> > able to craft a file with any caps it wants in fI and fP on any of the
-> > plethora of helper programs the kernel calls and escalate away it's
-> > impotence.
-> 
-> Again, assuming that you are really trying to limit the power of
-> kernel auto-exec'd programs, then you can see how secure bits can make
-> root-power harder to obtain. (Examples using libcap utilities.)
-> 
-> [root@pip foo]# whoami
-> root
-> [root@pip foo]# ls -l foo.sh
-> -rwx------ 1 bin nobody 31 2011-01-22 19:07 foo.sh
-> [root@pip foo]# /sbin/capsh --secbits=0x0 -- ./foo.sh
-> Hello, Root
-> [root@pip foo]# /sbin/capsh --secbits=0x2f -- ./foo.sh
-> /bin/bash: ./foo.sh: Permission denied
-> [root@pip foo]#
-> 
-> That is, the 0x2f value of the secure bits turns off root's privilege.
-> This includes the privilege to add capabilities to files (run this
-> from the progs subdirectory of the libcap source, after a build):
-> 
-> [root@pip progs]# /sbin/capsh --secbits=0 -- \
-> -c "/sbin/setcap cap_setfcap=ep setcap"
-> [root@pip progs]# /sbin/getcap -v setcap
-> setcap = cap_setfcap+ep
-> [root@pip progs]# /sbin/setcap -r setcap
-> [root@pip progs]# /sbin/getcap -v setcap
-> setcap
-> [root@pip progs]# /sbin/capsh --secbits=0x2f -- \
-> -c "/sbin/setcap cap_setfcap=ep setcap"
-> unable to set CAP_SETFCAP effective capability: Operation not permitted
-> [root@pip progs]#
-> 
-> So, my point is that if the kernel threads were launched with a
-> user-space configurable set of secure bits, and the regular exec()
-> rules were used by these kernel-launched processes to obtain
-> privilege, you could block the kernel from getting any user-space
-> privileges via secure bits.
+In arch/x86/kernel/dumpstack_64.c::dump_trace() we have this code:
 
-That's not even necessary, is it?  In order to get capabilities
-from fI into pP, you need those capabilities in pI to begin
-with.  So as long as we make sure that removing a capability from
-the root task's bounding set also removes it from it's inheritable
-set, no task it execs can re-gain those capabilities.
+...
+  		if (!stack) {
+  			unsigned long dummy;
+  			stack = &dummy;
+  			if (task && task != current)
+  				stack = (unsigned long *)task->thread.sp;
+  		}
+  	
+  		bp = stack_frame(task, regs);
+  		/*
+  		 * Print function call entries in all stacks, starting at the
+  		 * current stack address. If the stacks consist of nested
+  		 * exceptions
+  		 */
+  		tinfo = task_thread_info(task);
 
--serge
+  		for (;;) {
+  			char *id;
+  			unsigned long *estack_end;
+  			estack_end = in_exception_stack(cpu, (unsigned long)stack,
+  							&used, &id);
+...
+
+You'll notice that we assign to 'stack' the address of the variable 
+'dummy' which is only in-scope inside the 'if (!stack)'. So when we later 
+access stack (at the end of the above, and assuming we did not take the 
+'if (task && task != current)' branch) we'll be using the address of a 
+variable that is no longer in scope. I believe this patch is the proper 
+fix, but I freely admit that I'm not 100% certain.
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ dumpstack_64.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+  compile tested only.
+
+diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
+index 6410133..a6b6fcf 100644
+--- a/arch/x86/kernel/dumpstack_64.c
++++ b/arch/x86/kernel/dumpstack_64.c
+@@ -149,13 +149,13 @@ void dump_trace(struct task_struct *task,
+ 	unsigned used = 0;
+ 	struct thread_info *tinfo;
+ 	int graph = 0;
++	unsigned long dummy;
+ 	unsigned long bp;
+ 
+ 	if (!task)
+ 		task = current;
+ 
+ 	if (!stack) {
+-		unsigned long dummy;
+ 		stack = &dummy;
+ 		if (task && task != current)
+ 			stack = (unsigned long *)task->thread.sp;
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
