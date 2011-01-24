@@ -1,78 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab1AXSHw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 13:07:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4427 "EHLO mx1.redhat.com"
+	id S1753948Ab1AXSHy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 13:07:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64419 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752541Ab1AXSHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 13:07:50 -0500
+	id S1753891Ab1AXSHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 13:07:53 -0500
 From: Glauber Costa <glommer@redhat.com>
 To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
-        Avi Kivity <avi@redhat.com>
-Subject: [PATCH 01/16] KVM-HDR: register KVM basic header infrastructure
-Date: Mon, 24 Jan 2011 13:06:22 -0500
-Message-Id: <1295892397-11354-2-git-send-email-glommer@redhat.com>
-In-Reply-To: <1295892397-11354-1-git-send-email-glommer@redhat.com>
-References: <1295892397-11354-1-git-send-email-glommer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, aliguori@us.ibm.com
+Subject: [PATCH 00/16] New Proposal for steal time in KVM
+Date: Mon, 24 Jan 2011 13:06:21 -0500
+Message-Id: <1295892397-11354-1-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KVM, which stands for KVM Virtual Memory (I wanted to call it KVM Virtual Mojito),
-is a piece of shared memory that is visible to both the hypervisor and the guest
-kernel - but not the guest userspace.
+Hello people
 
-The basic idea is that the guest can tell the hypervisor about a specific
-piece of memory, and what it expects to find in there. This is a generic
-abstraction, that goes to userspace (qemu) if KVM (the hypervisor) can't
-handle a specific request, thus giving us flexibility in some features
-in the future.
+This is the new version of the steal time series, this time on steroids.
+The steal time per se is not much different from the last time I posted, so
+I'll highlight what's around it.
 
-KVM (The hypervisor) can change the contents of this piece of memory at
-will. This works well with paravirtual information, and hopefully
-normal guest memory - like last update time for the watchdog, for
-instance.
+Since one of the main fights was around how to register the shared memory area,
+which would end up with a new MSR, I decided to provide an MSR to end all MSR
+allocations. This patchset contains a generic GuestKernel-to-Hypervisor memory
+registering, that can be further used and abused without too much hassle, even by
+letting userspace handle what the hypervisor won't - think of feature emulation in
+older hosts, or any other thing.
 
-This is basic KVM registration headers. I am keeping headers
-separate to facilitate backports to people who wants to backport
-the kernel part but not the hypervisor, or the other way around.
+To demonstrate that, and how it works, I ported kvmclock to this infrastructure.
+After that, I used it to implement steal time information exchange.
 
-Signed-off-by: Glauber Costa <glommer@redhat.com>
-CC: Avi Kivity <avi@redhat.com>
----
- arch/x86/include/asm/kvm_para.h |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+Even our last discussions, I am keeping the steal time accounting in sched.c.
+I still see value on that, as opposed to a lower level, because it will give us
+easier access to the scheduler variables, such as the cpu runqueue.
 
-diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index a427bf7..b0b0ee0 100644
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -21,6 +21,7 @@
-  */
- #define KVM_FEATURE_CLOCKSOURCE2        3
- #define KVM_FEATURE_ASYNC_PF		4
-+#define KVM_FEATURE_MEMORY_AREA		5
- 
- /* The last 8 bits are used to indicate how to interpret the flags field
-  * in pvclock structure. If no bits are set, all flags are ignored.
-@@ -35,6 +36,16 @@
- #define MSR_KVM_SYSTEM_TIME_NEW 0x4b564d01
- #define MSR_KVM_ASYNC_PF_EN 0x4b564d02
- 
-+#define MSR_KVM_REGISTER_MEM_AREA 0x4b564d03
-+
-+struct kvm_memory_area {
-+	__u64 base;
-+	__u32 size;
-+	__u32 type;
-+	__u8  result;
-+	__u8  pad[3];
-+};
-+
- #define KVM_MAX_MMU_OP_BATCH           32
- 
- #define KVM_ASYNC_PF_ENABLED			(1 << 0)
+The last patch in the series uses this to decrease CPU power according to the
+current steal time information, leading to a possibly more smart scheduling.
+This, in particular, is very early work, and advise on that - including "Stop now,
+you idiot!" is very welcome.
+
+TODO:
+ * Handle unregister over reboots
+ * Grab a list of current registrations, for migration
+ * Write documentation
+ * Check size in hv registerings, to prevent out of boundaries
+   exploits
+
+
+Glauber Costa (16):
+  KVM-HDR: register KVM basic header infrastructure
+  KVM-HV: KVM - KVM Virtual Memory hypervisor implementation
+  KVM-HDR: KVM Userspace registering ioctl
+  KVM-HV: KVM Userspace registering ioctl
+  KVM-HDR: Implement wallclock over KVM - KVM Virtual Memory
+  KVM-HDR: Implement wallclock over KVM - KVM Virtual Memory
+  KVM-GST: Implement wallclock over KVM - KVM Virtual Memory
+  KVM-HDR: Implement kvmclock systemtime over KVM - KVM Virtual Memory
+  KVM-HV: Implement kvmclock systemtime over KVM - KVM Virtual Memory
+  KVM-GST: Implement kvmclock systemtime over KVM - KVM Virtual Memory
+  KVM-HDR: KVM Steal time implementation
+  KVM-HV: KVM Steal time implementation
+  KVM-HV: KVM Steal time calculation
+  KVM-GST: KVM Steal time registration
+  KVM-GST: KVM Steal time accounting
+  KVM-GST: adjust scheduler cpu power
+
+ arch/x86/include/asm/kvm_host.h |    3 +
+ arch/x86/include/asm/kvm_para.h |   19 +++++++
+ arch/x86/kernel/kvmclock.c      |  104 +++++++++++++++++++++++++++++++++-----
+ arch/x86/kvm/svm.c              |    4 ++
+ arch/x86/kvm/vmx.c              |    4 ++
+ arch/x86/kvm/x86.c              |   99 +++++++++++++++++++++++++++++--------
+ include/linux/kvm.h             |   14 +++++-
+ include/linux/kvm_host.h        |    1 +
+ include/linux/sched.h           |    1 +
+ kernel/sched.c                  |   44 ++++++++++++++++
+ kernel/sched_fair.c             |   10 ++++
+ 11 files changed, 268 insertions(+), 35 deletions(-)
+
 -- 
 1.7.2.3
 
