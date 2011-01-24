@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752975Ab1AXBNe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Jan 2011 20:13:34 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:49043 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752877Ab1AXBNb convert rfc822-to-8bit (ORCPT
+	id S1752950Ab1AXBRG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Jan 2011 20:17:06 -0500
+Received: from www.wytron.com.tw ([211.75.82.101]:59632 "EHLO
+	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751750Ab1AXBRF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Jan 2011 20:13:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=CZdi8IflktuEE/l4SiKKvakoqoiN8sXu36ksX1ApTYTP2IPtGalbA1M1Ws79zP8mZq
-         sihD3pRY72fsZWDPiF30Pf9Eh1tiYOOcwTAq5rJFMj7cNh1OoJZfXKtbLb60BHl6Qjoq
-         3Qv5hVfY8GY7wlHY9WgDmAdtG610vsU5mYGuk=
+	Sun, 23 Jan 2011 20:17:05 -0500
+Message-ID: <4D3CD38D.4080808@wytron.com.tw>
+Date: Mon, 24 Jan 2011 09:19:09 +0800
+From: Thomas Chou <thomas@wytron.com.tw>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <201101232128.03007.rjw@sisk.pl>
-References: <201101201226.41021.rjw@sisk.pl>
-	<201101222012.14028.rjw@sisk.pl>
-	<AANLkTikstr=vY=1S7A4Pudg3u=k4eJ7HRz6tWwAq4N-v@mail.gmail.com>
-	<201101232128.03007.rjw@sisk.pl>
-Date: Mon, 24 Jan 2011 09:13:30 +0800
-Message-ID: <AANLkTi=YwD7kBZ6XsnUpCfqCmTuwwhkcAYvjXJL3Fj8O@mail.gmail.com>
-Subject: Re: [PATCH 0/11] ACPI: Fixes and cleanups related to iomaps management
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Jonas Bonn <jonas@southpole.se>
+CC: Grant Likely <grant.likely@secretlab.ca>, nios2-dev@sopc.et.ntust.edu.tw,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Mike Frysinger <vapier@gentoo.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net
+Subject: Re: [PATCH v2] spi: add OpenCores tiny SPI driver
+References: <1294800109-31603-1-git-send-email-thomas@wytron.com.tw>	 <1295249542-26743-1-git-send-email-thomas@wytron.com.tw>	 <20110120165430.GA24445@angua.secretlab.ca>	 <4D38AAEB.7020308@wytron.com.tw> <1295612849.23825.26.camel@needafix>
+In-Reply-To: <1295612849.23825.26.camel@needafix>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 192.168.1.15
+X-SA-Exim-Mail-From: thomas@wytron.com.tw
+X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24, 2011 at 4:28 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Sunday, January 23, 2011, Jeff Chua wrote:
->> On Sun, Jan 23, 2011 at 3:12 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > On Saturday, January 22, 2011, Jeff Chua wrote:
->> >> 2011/1/22 Rafael J. Wysocki <rjw@sisk.pl>:
->> >> > On Saturday, January 22, 2011, Jeff Chua wrote:
->> Strange. If I didn't offline, it hanged during suspend even without
->> thinkpad_acpi. I could see that the suspend code does the offline
->> automatically, but executing the offline before calling suspend makes
->> it no hanging.
+Hi Jonas,
+
+
+On 01/21/2011 08:27 PM, Jonas Bonn wrote:
+> It would be nice to use the same name for the OpenCores project and the
+> device tree identifier, and since "opencores" is already in the name,
+> the "oc_" bit is superfluous anyway.  I'd suggest "opencores,tiny-spi"
+> in order to match your OpenCores project name.
 >
-> That means there's a problem in the CPU hotplug code that manifests itslef
-> during suspend.  Is this 100% reproducible?  Did it happen with 2.6.37?
+> Versioning of OpenCores cores is not sorted yet.  In order to avoid
+> clashing with the versioning/naming scheme that's decided on, please
+> just use a neutral version number for now (especially as your core is so
+> new).  e.g. "opencores,tiny-spi-0"
+>
 
-Quite reproducible. Once "something" trigger the hang,  no matter how
-I reset the system, it'll still hang at suspend. And at other times,
-it just worked. I tried many things, but it seems if I go back to use
-an earlier version (2.6.37 works perfectly for suspend-to-disk/mem),
-then switched back to the newer broken version, it'll work for a few
-cycles before hanging at suspend-to-disk.
+Thanks. I will update it to "opencores,tiny-spi-1.0".
 
-I guess it could be CPU hotplug, and may be that thinkpad-acpi is
-triggering the broken cpu hotplug to fail.
-
-Jeff
+- Thomas
