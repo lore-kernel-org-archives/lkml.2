@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615Ab1AXQoE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 11:44:04 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:56355 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753397Ab1AXQny convert rfc822-to-8bit (ORCPT
+	id S1753735Ab1AXQop (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 11:44:45 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:33535 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753531Ab1AXQoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 11:43:54 -0500
-Subject: Re: possible regression: BUG in client lockd with server reboot.
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=us-ascii
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <20110124144107.GA3718@elliptictech.com>
-Date: Mon, 24 Jan 2011 11:08:46 -0500
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <4707872F-6CC4-477D-AE0B-A7DCEEF29ABF@oracle.com>
-References: <20110124144107.GA3718@elliptictech.com>
-To: Nick Bowler <nbowler@elliptictech.com>
-X-Mailer: Apple Mail (2.1082)
+	Mon, 24 Jan 2011 11:44:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=TrCtJJp5cs0SRQmwXG8G+RIACsF7HZuUeky+CmP1FaBMESjTraK5TS+4TLFj0JATv+
+         P2vFJ4EKFeE3ah93qam9tWiqrBma4nAwUck6VSnbWlIjdkU7hX6sG3cCORaIt9Rx+zza
+         U5VjakKMya9OkUNwqumccyv6sT+Ys+dRQfxzY=
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: jaxboe@fusionio.com, akpm@linux-foundation.org,
+        Dmitry Monakhov <dmonakhov@openvz.org>
+Subject: [PATCH 1/2] [PATCH] loop: prevent partial read
+Date: Mon, 24 Jan 2011 19:43:44 +0300
+Message-Id: <1295887425-7260-1-git-send-email-dmonakhov@openvz.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nick-
+If read was not fully successful we have to fail whole bio to
+prevent information leak.
 
-On Jan 24, 2011, at 9:41 AM, Nick Bowler wrote:
+##Testcase_begin
+dd if=/dev/zero of=./tmp bs=1M count=1
+losetup /dev/loop0 ./file -o 4096
+truncate -s 0 ./file
+# OOps loop offset is now beyond i_size, so read will silently fail.
+# So bio's pages would not be cleared, may which result in information leak.
+hexdump -C /dev/loop0
+##testcase_end
 
-> We were just having some NFS server troubles, and my client machine
-> running 2.6.38-rc1+ (specifically, commit 2b1caf6ed7b888c95) crashed
-> hard (syslog output appended to this mail).
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+---
+ drivers/block/loop.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-I don't seem to have 2b1caf6e.  Can you post the short description?
-
-host.c:283 is " BUG_ON(!list_empty(&host->h_lockowners));" in my tree.  Can you confirm this is the same for you?
-
-I'll have a look.
-
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index 49e6a54..32e23f6 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -448,7 +448,8 @@ do_lo_receive(struct loop_device *lo,
+ 
+ 	if (retval < 0)
+ 		return retval;
+-
++	if (retval != bvec->bv_len)
++		return -EIO;
+ 	return 0;
+ }
+ 
 -- 
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
+1.7.2.3
 
