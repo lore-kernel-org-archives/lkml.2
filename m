@@ -1,117 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab1AXLfK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 06:35:10 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:39239 "EHLO zene.cmpxchg.org"
+	id S1752412Ab1AXLnT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 06:43:19 -0500
+Received: from fanny.its.uu.se ([130.238.4.241]:49185 "EHLO fanny.its.uu.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752357Ab1AXLfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 06:35:08 -0500
-Date: Mon, 24 Jan 2011 12:34:58 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/7] memcg : comment, style fixes for recent patch of
- move_parent
-Message-ID: <20110124113458.GX2232@cmpxchg.org>
-References: <20110121153431.191134dd.kamezawa.hiroyu@jp.fujitsu.com>
- <20110121153726.54f4a159.kamezawa.hiroyu@jp.fujitsu.com>
- <20110124101402.GT2232@cmpxchg.org>
- <20110124191535.514ef2d9.kamezawa.hiroyu@jp.fujitsu.com>
- <20110124104510.GW2232@cmpxchg.org>
- <AANLkTi=sg5HpCTdXgEVYS5rCqtoVVho6dxn8giwZ4kmY@mail.gmail.com>
+	id S1751698Ab1AXLnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 06:43:17 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=sg5HpCTdXgEVYS5rCqtoVVho6dxn8giwZ4kmY@mail.gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19773.26066.137666.718852@pilspetsen.it.uu.se>
+Date: Mon, 24 Jan 2011 12:43:14 +0100
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+Cc: Harald Dunkel <harri@afaics.de>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kenrel.org
+Subject: Re: [Patch] make installkernel configurable from command line (was Re:
+ how to avoid that install.sh goes mad, if I am not root?)
+In-Reply-To: <20110124102159.GD5510@cr0.nay.redhat.com>
+References: <4D388A08.1010004@afaics.de>
+	<19768.44428.482148.361069@pilspetsen.it.uu.se>
+	<ihbvd1$jbj$3@dough.gmane.org>
+	<4D3A03CA.2060507@afaics.de>
+	<20110124102159.GD5510@cr0.nay.redhat.com>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24, 2011 at 08:14:22PM +0900, Hiroyuki Kamezawa wrote:
-> 2011/1/24 Johannes Weiner <hannes@cmpxchg.org>:
-> > On Mon, Jan 24, 2011 at 07:15:35PM +0900, KAMEZAWA Hiroyuki wrote:
-> >> On Mon, 24 Jan 2011 11:14:02 +0100
-> >> Johannes Weiner <hannes@cmpxchg.org> wrote:
-> >>
-> >> > On Fri, Jan 21, 2011 at 03:37:26PM +0900, KAMEZAWA Hiroyuki wrote:
-> >> > > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> >> > >
-> >> > > A fix for 987eba66e0e6aa654d60881a14731a353ee0acb4
-> >> > >
-> >> > > A clean up for mem_cgroup_move_parent().
-> >> > >  - remove unnecessary initialization of local variable.
-> >> > >  - rename charge_size -> page_size
-> >> > >  - remove unnecessary (wrong) comment.
-> >> > >
-> >> > > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> >> > > ---
-> >> > >  mm/memcontrol.c |   17 +++++++++--------
-> >> > >  1 file changed, 9 insertions(+), 8 deletions(-)
-> >> > >
-> >> > > Index: mmotm-0107/mm/memcontrol.c
-> >> > > ===================================================================
-> >> > > --- mmotm-0107.orig/mm/memcontrol.c
-> >> > > +++ mmotm-0107/mm/memcontrol.c
-> >> > > @@ -2265,7 +2265,7 @@ static int mem_cgroup_move_parent(struct
-> >> > >   struct cgroup *cg = child->css.cgroup;
-> >> > >   struct cgroup *pcg = cg->parent;
-> >> > >   struct mem_cgroup *parent;
-> >> > > - int charge = PAGE_SIZE;
-> >> > > + int page_size;
-> >> > >   unsigned long flags;
-> >> > >   int ret;
-> >> > >
-> >> > > @@ -2278,22 +2278,23 @@ static int mem_cgroup_move_parent(struct
-> >> > >           goto out;
-> >> > >   if (isolate_lru_page(page))
-> >> > >           goto put;
-> >> > > - /* The page is isolated from LRU and we have no race with splitting */
-> >> > > - charge = PAGE_SIZE << compound_order(page);
-> >> > > +
-> >> > > + page_size = PAGE_SIZE << compound_order(page);
-> >> >
-> >> > Okay, so you remove the wrong comment, but that does not make the code
-> >> > right.  What protects compound_order from reading garbage because the
-> >> > page is currently splitting?
-> >> >
-> >>
-> >> ==
-> >> static int mem_cgroup_move_account(struct page_cgroup *pc,
-> >>                 struct mem_cgroup *from, struct mem_cgroup *to,
-> >>                 bool uncharge, int charge_size)
-> >> {
-> >>         int ret = -EINVAL;
-> >>         unsigned long flags;
-> >>
-> >>         if ((charge_size > PAGE_SIZE) && !PageTransHuge(pc->page))
-> >>                 return -EBUSY;
-> >> ==
-> >>
-> >> This is called under compound_lock(). Then, if someone breaks THP,
-> >> -EBUSY and retry.
-> >
-> > This charge_size contains exactly the garbage you just read from an
-> > unprotected compound_order().  It could be anything if the page is
-> > split concurrently.
-> 
-> Then, my recent fix to LRU accounting which use compound_order() is racy, too ?
+=?utf-8?Q?Am=C3=A9rico?= Wang writes:
+ > On Fri, Jan 21, 2011 at 11:08:10PM +0100, Harald Dunkel wrote:
+ > >-----BEGIN PGP SIGNED MESSAGE-----
+ > >Hash: SHA1
+ > >
+ > >On 01/21/11 13:49, WANG Cong wrote:
+ > >> On Thu, 20 Jan 2011 22:47:56 +0100, Mikael Pettersson wrote:
+ > >>>
+ > >>> First, at least on x86, the kernel will look for the 'installkernel'
+ > >>> executable first in your own ~/bin/, so if you have that then it will
+ > >>> override /sbin/installkernel.
+ > >>>
+ > >> 
+ > >> That still doesn't look like a good solution.
+ > >> 
+ > >
+ > >Same for me.
+ > >
+ > >Obviously running /sbin/installkernel is not reasonable for
+ > >UID != 0 (or if $FAKEROOTKEY is set), so I would suggest to
+ > >skip /sbin/installkernel and the default Lilo setup in
+ > >install.sh for this case.
+ > >
+ > 
+ > Will the patch below work for you?
+ > 
+ > With this patch, you should be able to specify your own installkernel
+ > by "make INSTALLKERNEL=/your/installkernel install".
+ > 
+ > Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+ > 
+ > ---
+ > diff --git a/Makefile b/Makefile
+ > index 1f47495..44abded 100644
+ > --- a/Makefile
+ > +++ b/Makefile
+ > @@ -327,7 +327,7 @@ OBJCOPY		= $(CROSS_COMPILE)objcopy
+ >  OBJDUMP		= $(CROSS_COMPILE)objdump
+ >  AWK		= awk
+ >  GENKSYMS	= scripts/genksyms/genksyms
+ > -INSTALLKERNEL  := installkernel
+ > +INSTALLKERNEL  ?= /sbin/installkernel
+ >  DEPMOD		= /sbin/depmod
+ >  KALLSYMS	= scripts/kallsyms
+ >  PERL		= perl
+ > diff --git a/arch/x86/boot/install.sh b/arch/x86/boot/install.sh
+ > index d13ec1c..c41f2b8 100644
+ > --- a/arch/x86/boot/install.sh
+ > +++ b/arch/x86/boot/install.sh
+ > @@ -33,8 +33,7 @@ verify "$3"
+ >  
+ >  # User may have a custom install script
+ >  
+ > -if [ -x ~/bin/${INSTALLKERNEL} ]; then exec ~/bin/${INSTALLKERNEL} "$@"; fi
+ > -if [ -x /sbin/${INSTALLKERNEL} ]; then exec /sbin/${INSTALLKERNEL} "$@"; fi
+ > +if [ -x "${INSTALLKERNEL}" ]; then exec "${INSTALLKERNEL}" "$@"; fi
 
-In lru add/delete/move/rotate?  No, that should be safe because we
-have the lru lock there and __split_huge_page_refcount() takes the
-lock as well.
+NAK -- this breaks existing setups which rely on /root/bin/installkernel
+being picked up automatically.
 
-> I'll replace compound_order() with
->   if (PageTransHuge(page))
->       size = HPAGE_SIZE.
-> 
-> Does this work ?
-
-Yes, I think this should work.  This gives a sane size for try_charge
-and we still catch a split under the compound_lock later in
-move_account as you described above.
+Can you handle 'make INSTALLKERNEL=...' without breaking that please?
