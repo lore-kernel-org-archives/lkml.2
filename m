@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586Ab1AXUkz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 15:40:55 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44241 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344Ab1AXUkx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 15:40:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=wy9ARqP9H69DrO3x2JdCzJXVoyRLMp27w+ClASL6SALSqz0pAUY7C2OJJPLnlpYhLn
-         Xw5HTVGnqgEmqUyEj5+7cfPbyXdUjIm9wAI33U/CpWf3F6tcFPe6cryfxvQWr+LDUYVK
-         7U4EGbmr9Zo0TrJtjxnOfPxqaISvi+GtaSRuc=
-Date: Mon, 24 Jan 2011 21:40:44 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Renninger <trenn@suse.de>, tardyp@gmail.com,
-        jean.pihet@newoldbits.com, acme@ghostprotocols.net,
-        linux-perf-users@vger.kernel.org, mathieu.desnoyers@efficios.com,
-        linux-trace-users@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Perf ABI versioning
-Message-ID: <20110124204042.GD2318@nowhere>
-References: <201101241704.01021.trenn@suse.de>
- <20110124203449.GC2318@nowhere>
- <1295901543.28776.475.camel@laptop>
+	id S1752617Ab1AXUnb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 15:43:31 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:34791 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751242Ab1AXUna (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 15:43:30 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Julia Lawall <julia@diku.dk>
+Subject: Re: [PATCH 3/4] drivers/video/bf537-lq035.c: Add missing IS_ERR test
+Date: Mon, 24 Jan 2011 15:43:17 -0500
+User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.5.5; x86_64; ; )
+Cc: Paul Mundt <lethal@linux-sh.org>, kernel-janitors@vger.kernel.org,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        Bryan Wu <cooloney@kernel.org>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1295898922-18822-1-git-send-email-julia@diku.dk> <1295898922-18822-4-git-send-email-julia@diku.dk>
+In-Reply-To: <1295898922-18822-4-git-send-email-julia@diku.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295901543.28776.475.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: multipart/signed;
+  boundary="nextPart4542647.ktSb8pjErU";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101241543.19543.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24, 2011 at 09:39:03PM +0100, Peter Zijlstra wrote:
-> On Mon, 2011-01-24 at 21:34 +0100, Frederic Weisbecker wrote:
-> > 
-> > But instead of a global tracing ABI number, I would rather suggest
-> > one number per tracepoint subsystem (sched, power, etc...).
-> > 
-> > Ideally it would be per event, but sometimes those events tend to be
-> > renamed or a whole tracepoint subsystem refactored (see workqueue
-> > lately). Hence it might be better per subsystem. 
-> 
-> What's wrong with what we have? the /format file is pretty unique to
-> function as a version number of you use a hash over it.
+--nextPart4542647.ktSb8pjErU
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Yeah we could in fact use it to find if fields have been added,
-removed. Right, all in one that looks enough to me.
+On Monday, January 24, 2011 14:55:21 Julia Lawall wrote:
+> lcd_device_register may return ERR_PTR, so a check is added for this value
+> before the dereference.  All of the other changes reorganize the error
+> handling code in this function to avoid duplicating all of it in the added
+> case.
+>=20
+> In the original code, in one case, the global variable fb_buffer was set =
+to
+> NULL in error code that appears after this variable is initialized.  This
+> is done now in all error handling code that has this property.
+
+Acked-by: Mike Frysinger <vapier@gentoo.org>
+=2Dmike
+
+--nextPart4542647.ktSb8pjErU
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iQIcBAABAgAGBQJNPeRnAAoJEEFjO5/oN/WB218P/02NaQe+P9RR8qyHQKItMfCm
+7ZGjjfuLTgTc9+1w4ijcDKdJQMuq1KzeiG033+LhNA8LdJ3jpmc4gVuslwbjYl1y
+CGKAeLsUIfuAn/s5A/4iMzBsREXWadlX5Ze8T6zDQKBrr2UJMqFfhualSlt9W7Ho
+1UEt6kXEKINf5lbD8LHXQV2zIlR0tp8qJ/4xLbCacs8G4gMc6GaYxHiDlAxvk8WY
+qMZI05QPr1ykMFTX/T2OEc6fnZAHlZ+VbuR2YUb+UC0TEClbbV7J4sVh7wgbGpoX
+YPLF7bLkVYxVfVyAMii4REaZiXx3bFi8iPNde9AgeDFoo7HmF/DcLy0qaWIOKj9F
+/jp/0ELj4HW8LfszeGezvMIGsMiGbkkt2rMe5j5NOBNcFRxDyZP5YB8zUnMBj7Xv
+Ut75erzf1wg5QGUf6FihzYt8LoKmlvIoM6oMT1YrDjAQeG5ubi2KtSyqEIRza0KL
+sEoiu/ZH7rMZ3zjeWytRbCt5W0fspcx4tU3rVyvsAVEVT3n3cYu5T945XsLKE7xw
+0azDC6lRIfLSLBoXZURNHi+hz0WxiMn8viyYvS5buoJoV0NR4DPRmjiwinD2bT8P
+Oe/FJxB2eGTGkAu1WbP0ie43QerKytmpORZz0QFcE6e0CSVTPbBYozicXUfnG7oM
+fWB4/xpyTFWclTw36WTj
+=JU5K
+-----END PGP SIGNATURE-----
+
+--nextPart4542647.ktSb8pjErU--
