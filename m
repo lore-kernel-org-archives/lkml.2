@@ -1,114 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868Ab1AXRFN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 12:05:13 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33646 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753339Ab1AXRFJ convert rfc822-to-8bit (ORCPT
+	id S1753921Ab1AXRF7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 12:05:59 -0500
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:44513 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753398Ab1AXRF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 12:05:09 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=gg1Ft1vUg3GpfLSDutc/U9hjMHF2uK53J52mTiaBnGBhyTEdiK3GlfAPMvZAmrOb+7
-         daH2fc9VJTY5W3oyYCxcglllgKwQI0ZfLd7AFu4KdQ7qsGWTnArs4a7PDiuOUohUBKo5
-         K0vvuk4uJm8AjSex0R7m1FiuZqfSLq5uV2Bso=
+	Mon, 24 Jan 2011 12:05:57 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: 5tk0CDMVM1mN046Nxh8tErB5BIdy2W7HpIduQ1l6O7xDyGd
+ crsqi4WDpq6AIAcA6VqZwoCgNGK8IK3aHAhJFIKDSe01K99xRgDB2MHVhE7g
+ HSCgTHBZP3d4MNxLQIbXonHCY8BGzEVN438SzmFXUKaf80KMwS60kzTOneLC
+ p8QQdIWl0xTX1oVfquY2_niGEzeHeggj9rzASEoqUQYEyI.0w7FStL6yZ48j
+ _WLmns1YsoXmzBNwpfffv.IX51PU0sAmSQx3Q7VBSFZzHqb3ukgB48aodsBq
+ pHCAiXnZWG8WFvtB4tDBmNbSVStckMqc8nILy5T6H1cNPolQ-
+X-Yahoo-Newman-Property: ymail-3
+Date: Mon, 24 Jan 2011 11:05:54 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Tejun Heo <tj@kernel.org>, Pekka Enbeerg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        akpm@linux-foundation.org
+Subject: Re: x86: A fast way to check capabilities of the current cpu
+In-Reply-To: <4D3A096C.7060800@zytor.com>
+Message-ID: <alpine.DEB.2.00.1101241105180.31219@router.home>
+References: <alpine.DEB.2.00.1012151404070.21102@router.home> <20110121171133.GI2832@htj.dyndns.org> <alpine.DEB.2.00.1101211114530.15692@router.home> <20110121172836.GK2832@htj.dyndns.org> <alpine.DEB.2.00.1101211139330.15692@router.home>
+ <4D3A096C.7060800@zytor.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <4D359E5C.1070002@parallels.com>
-References: <4D359E5C.1070002@parallels.com>
-Date: Mon, 24 Jan 2011 12:05:09 -0500
-Message-ID: <AANLkTi=hYycozY46ohaWNQ7pzSijnoAkeSOGfTG4CY2C@mail.gmail.com>
-Subject: Re: [PATCH] Replace scripts/headers_install.pl with a shell script.
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Rob Landley <rlandley@parallels.com>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, Jesper Juhl <jj@chaosbits.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 21 Jan 2011, H. Peter Anvin wrote:
 
-On Tue, Jan 18, 2011 at 9:06 AM, Rob Landley <rlandley@parallels.com> wrote:
-> From: Rob Landley <rlandley@parallels.com>
+> On 01/21/2011 09:46 AM, Christoph Lameter wrote:
+> >> Oh, you're right.  Sorry about that.  Can you please then add a
+> >> comment noting that the operation is x86 only?  Maybe prefix it with
+> >> x86_?
+> >
+> > For a function defined in an specific include file and only used in arch
+> > specific code?
 >
-> Remove perl from make headers_install by replacing a perl script (doing
-> a simple regex search and replace) with a smaller and faster shell script
-> implementation.  The new shell script is a single for loop calling sed and
-> piping its output through unifdef to produce the target file.
->
-> Change from last time: better error handling.  Split "sed | unifdef" into
-> two stages with a temp file because dash hasn't got PIPEFAIL.  Add check
-> for exit code, add trap handler to delete output when exiting prematurely.
->
-one more thing,
+> Yes, x86_ prefix to indicate it's an x86-specific interface, as opposed
+> to arch_ which is a architecture-specific component of the
+> implementation of a generic interface.
 
-> Signed-off-by: Rob Landley <rlandley@parallels.com>
-> ---
->
->  scripts/Makefile.headersinst |    6 ++--
->  scripts/headers_install.pl   |   49 ---------------------------------
->  scripts/headers_install.sh   |   39 ++++++++++++++++++++++++++
->  3 files changed, 42 insertions(+), 52 deletions(-)
->
-> diff -ruN linux-2.6.30.old/scripts/headers_install.sh linux-2.6.30/scripts/headers_install.sh
-> --- linux-2.6.30.old/scripts/headers_install.sh 1969-12-31 18:00:00.000000000 -0600
-> +++ linux-2.6.30/scripts/headers_install.sh     2009-06-22 16:21:23.000000000 -0500
-> @@ -0,0 +1,42 @@
-> +#!/bin/sh
-> +
-> +if [ $# -lt 2 ]
-> +then
-> +       echo "Usage: headers_install.sh INDIR OUTDIR [FILES...]
-> +       echo
-> +       echo "Prepares kernel header files for use by user space, by removing"
-> +       echo "all compiler.h definitions and #includes, removing any"
-> +       echo "#ifdef __KERNEL__ sections, and putting __underscores__ around"
-> +       echo "asm/inline/volatile keywords."
-> +       echo
-> +       echo "INDIR:  directory to read each kernel header FILE from."
-> +       echo "OUTDIR: directory to write each userspace header FILE to."
-> +       echo "FILES:  list of header files to operate on."
-> +
-> +       exit 1
-> +fi
-> +
-> +# Grab arguments
-> +
-> +INDIR="$1"
-> +shift
-> +OUTDIR="$1"
-> +shift
-> +
-> +# Iterate through files listed on command line
-> +
-> +trap "rm -f $OUTDIR/$i $OUTDIR.sed" EXIT
-> +for i in "$@"
-> +do
-> +       sed -r \
-> +               -e 's/([ \t(])(__user|__force|__iomem)[ \t]/\1/g' \
-> +               -e 's/__attribute_const__([ \t]|$)/\1/g' \
-> +               -e 's@^#include <linux/compiler.h>@@' \
-> +               -e 's/(^|[ \t])(inline|asm|volatile)([ \t(]|$)/\1__\2__\3/g' \
-> +               "$INDIR/$i" > "$OUTDIR/$i.sed" || exit 1
-> +       scripts/unifdef -U__KERNEL__ -D__EXPORTED_HEADERS__ "$OUTDIR/$i.sed" \
-> +               > "$OUTDIR/$i"
-> +       [ $? -gt 1 ] && exit 1
-> +       rm -f "$OUTDIR/$i.sed"
-you can avoid all the ugly and inconsistent[0] errors checking by
-adding a simple:
+Subject: x86,percpu: Add x86_ prefix to this_cpu_test_bit and do not use percpu_read_stable
 
-set -e
+Add a prefix to this_cpu_test_bit and friends and do not use percpu_read_stable for
+checking per cpu features.
 
-at the beginning of the script.
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
- - Arnaud
 
-ps: sorry for the late review, I was AFK last week.
+---
+ arch/x86/include/asm/cpufeature.h |    2 +-
+ arch/x86/include/asm/percpu.h     |   12 ++++++------
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
-[0]: ie. using an explicit test (use of the || operator) for the sed
-invocation, and an implicit test (check of the value of $?) for
-unifdef.
+Index: linux-2.6/arch/x86/include/asm/cpufeature.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/cpufeature.h	2011-01-24 09:18:53.000000000 -0600
++++ linux-2.6/arch/x86/include/asm/cpufeature.h	2011-01-24 09:19:02.000000000 -0600
+@@ -224,7 +224,7 @@ extern const char * const x86_power_flag
+
+ #define this_cpu_has(bit)						\
+ 	(__builtin_constant_p(bit) && REQUIRED_MASK_BIT_SET(bit) ? 1 : 	\
+-	 this_cpu_test_bit(bit, (unsigned long *)&cpu_info.x86_capability))
++	 x86_this_cpu_test_bit(bit, (unsigned long *)&cpu_info.x86_capability))
+
+ #define boot_cpu_has(bit)	cpu_has(&boot_cpu_data, bit)
+
+Index: linux-2.6/arch/x86/include/asm/percpu.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/percpu.h	2011-01-24 09:18:53.000000000 -0600
++++ linux-2.6/arch/x86/include/asm/percpu.h	2011-01-24 09:24:21.000000000 -0600
+@@ -492,15 +492,15 @@ do {									\
+ 	old__;								\
+ })
+
+-static __always_inline int this_cpu_constant_test_bit(unsigned int nr,
++static __always_inline int x86_this_cpu_constant_test_bit(unsigned int nr,
+                         const unsigned long __percpu *addr)
+ {
+ 	unsigned long __percpu *a = (unsigned long *)addr + nr / BITS_PER_LONG;
+
+-	return ((1UL << (nr % BITS_PER_LONG)) & percpu_read_stable(*a)) != 0;
++	return ((1UL << (nr % BITS_PER_LONG)) & percpu_read(*a)) != 0;
+ }
+
+-static inline int this_cpu_variable_test_bit(int nr,
++static inline int x86_this_cpu_variable_test_bit(int nr,
+                         const unsigned long __percpu *addr)
+ {
+ 	int oldbit;
+@@ -513,10 +513,10 @@ static inline int this_cpu_variable_test
+ 	return oldbit;
+ }
+
+-#define this_cpu_test_bit(nr, addr)			\
++#define x86_this_cpu_test_bit(nr, addr)			\
+ 	(__builtin_constant_p((nr))			\
+-	 ? this_cpu_constant_test_bit((nr), (addr))	\
+-	 : this_cpu_variable_test_bit((nr), (addr)))
++	 ? x86_this_cpu_constant_test_bit((nr), (addr))	\
++	 : x86_this_cpu_variable_test_bit((nr), (addr)))
+
+
+ #include <asm-generic/percpu.h>
