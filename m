@@ -1,147 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751568Ab1AXJCw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 04:02:52 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:64883 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323Ab1AXJCu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 04:02:50 -0500
+	id S1751678Ab1AXJEj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 04:04:39 -0500
+Received: from nm14.bullet.mail.ukl.yahoo.com ([217.146.183.188]:43893 "HELO
+	nm14.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751392Ab1AXJEh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 04:04:37 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 337369.42729.bm@omp1016.mail.ukl.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.fr;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=RLPIZUXLf+iq8m+aP2AlZIrR00EArTQD8SBaiX2ZmTk1mz2LlF6Qw2q/nXnVshUJ6t+jzyAGDhj6W+cPcZniL5tCCeRZm7iKPXmeROJDxSy3whXwOdnEUy0XnbOKbwmeRCBV2FTRB0sZdlyelCKORSKmED+6CHRBT85cmQXBIJ8=;
+Message-ID: <179044.7274.qm@web28416.mail.ukl.yahoo.com>
+X-YMail-OSG: EwoRuDwVM1leZylDEZ4RskAsKAW0BdcIOCBAzHYTnxaU2_0
+ uxPn6XF.4
+X-Mailer: YahooMailClassic/11.4.20 YahooMailWebService/0.8.107.285259
+Date: Mon, 24 Jan 2011 09:04:35 +0000 (GMT)
+From: Lionel Debroux <lionel_debroux@yahoo.fr>
+Subject: Re: Common boot/shutdown issues with the latest 2.6.37 (Mostly Asus laptops)
+To: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org, rjw@sisk.pl,
+        colin.king@canonical.com,
+        =?utf-8?B?T3phbiDDh2HEn2xheWFu?= <ozan@pardus.org.tr>
+In-Reply-To: <4D3C8E90.6010506@pardus.org.tr>
 MIME-Version: 1.0
-In-Reply-To: <20110122024229.GB2870@nowhere>
-References: <AANLkTinNoYbDe5huY4_Q6YidbWxqXqVWbVP2_7o-=P3W@mail.gmail.com>
-	<20110120161101.GA17218@nowhere>
-	<AANLkTinhX6UwQA0HFhuu5=jbq84woVhqtahuzA5hEo2o@mail.gmail.com>
-	<20110121164404.GA2520@nowhere>
-	<AANLkTi=Tx3DYczwf9U=QS9XGs6C8sjKwVZr+RLuo781V@mail.gmail.com>
-	<20110122024229.GB2870@nowhere>
-Date: Mon, 24 Jan 2011 10:02:49 +0100
-Message-ID: <AANLkTi=UX=oyXZnLFB4s7FD_SsP5dA=E=WsyQLaTO-aX@mail.gmail.com>
-Subject: Re: [PATCH V2] tracing, perf : add cpu hotplug trace events
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
-        rostedt@goodmis.org, amit.kucheria@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 January 2011 03:42, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Fri, Jan 21, 2011 at 06:41:58PM +0100, Vincent Guittot wrote:
->> On 21 January 2011 17:44, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> > On Fri, Jan 21, 2011 at 09:43:18AM +0100, Vincent Guittot wrote:
->> >> On 20 January 2011 17:11, Frederic Weisbecker <fweisbec@gmail.com> wrote:
->> >> > On Thu, Jan 20, 2011 at 09:25:54AM +0100, Vincent Guittot wrote:
->> >> >> Please find below a new proposal for adding trace events for cpu hotplug.
->> >> >> The goal is to measure the latency of each part (kernel, architecture)
->> >> >> and also to trace the cpu hotplug activity with other power events. I
->> >> >> have tested these traces events on an arm platform.
->> >> >>
->> >> >> Changes since previous version:
->> >> >> -Use cpu_hotplug for trace name
->> >> >> -Define traces for kernel core and arch parts only
->> >> >> -Use DECLARE_EVENT_CLASS and DEFINE_EVENT
->> >> >> -Use proper indentation
->> >> >>
->> >> >> Subject: [PATCH] cpu hotplug tracepoint
->> >> >>
->> >> >> this patch adds new events for cpu hotplug tracing
->> >> >>  * plug/unplug sequence
->> >> >>  * core and architecture latency measurements
->> >> >>
->> >> >> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.com>
->> >> >> ---
->> >> >>  include/trace/events/cpu_hotplug.h |  117 ++++++++++++++++++++++++++++++++++++
->> >> >
->> >> > Note we can't apply new tracepoints if they are not inserted in the code.
->> >>
->> >> I agree, i just want to have 1st feedbacks on the tracepoint interface
->> >> before providing a patch which inserts the trace in the code.
->> >>
->> >> >
->> >> >> +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_wait_die_start,
->> >> >> +
->> >> >> +     TP_PROTO(unsigned int cpuid),
->> >> >> +
->> >> >> +     TP_ARGS(cpuid)
->> >> >> +);
->> >> >> +
->> >> >> +DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_wait_die_end,
->> >> >> +
->> >> >> +     TP_PROTO(unsigned int cpuid),
->> >> >> +
->> >> >> +     TP_ARGS(cpuid)
->> >> >> +);
->> >> >
->> >> > What is wait die, compared to die for example?
->> >> >
->> >>
->> >> The arch_wait_die is used to trace the process which waits for the cpu
->> >> to die (__cpu_die) and the arch_die is used to trace when the cpu dies
->> >> (cpu_die)
->> >
->> > I still can't find the difference.
->> >
->> > Having:
->> >
->> > trace_cpu_hotplug_arch_die_start(cpu)
->> > __cpu_die();
->> > trace_cpu_hotplug_arch_die_end(cpu)
->> >
->> > Is not enough to get both the information that a cpu dies
->> > and the time took to do so?
->> >
->>
->> it's quite interesting to trace the cpu_die function because the cpu
->> really dies in this one.
->
-> Note in case of success, you have barely the same time between die and
-> wait_die, the difference will reside in some completion wait/polling,
-> noise, mostly. Probably most of the time unnoticeable and irrelevant.
->
 
-OK, tracing only __cpu_die should be enough
 
-> Plus if you opt for this scheme, you need to put your die hook into
-> every architectures, while otherwise a simple trace_cpu_die_start()
-> trace_cpu_die_stop() pair around __cpu_die() call in the generic code
-> is enough.
->
->> The __cpu_die function can't return if the
->> cpu fails to die in the very last step and then wake up. But this
->> could be detected with some cpu_die traces.
->>
->>
->> for a normal use case we have something like :
->> cpu 0 enters __cpu_die
->> cpu 1 enters cpu_die
->> cpu1 acks that it is going to died
->> cpu0 returns from __cpu_die
->>
->> if the cpu 1 fails to die at the very last step, we could have:
->> cpu 0 enters __cpu_die
->> cpu 1 enters cpu_idle --> cpu_die
->> cpu1 leaves cpu_die because of some issues and comes back into cpu_idle.
->> cpu0 returns from __cpu_die after a timeout or an error ack
->
-> If it fails in the hardware level, you'll certainly notice in your
-> power profiling because a CPU is not supposed to take seconds to
-> die. Especially with a such visual tool like pytimechart, it will
-> be obvious.
->
-> For the details, that's something that must be found in syslogs and
-> that's it.
->
-> I don't think it's a good idea to handle such buggy and unexpected case at
-> the tracepoint level. You don't want to profile bugs, you want to debug them.
-> So it doesn't belong to this space IMHO.
->
->> Then, cpu_die traces can be used with power traces for profiling the
->> cpu power state. May be, the power.h trace file is a better place for
->> the cpu_die traces ?
->
-> Hmm, this should probably stay inside the cpu hotplug tracepoint family,
-> this is where people will seek them in the first place.
->
+--- En date deÂ : Dim 23.1.11, Ozan Ã‡aÄŸlayan <ozan@pardus.org.tr>
+a Ã©critÂ :
+
+> De: Ozan Ã‡aÄŸlayan <ozan@pardus.org.tr>
+> Objet: Re: Common boot/shutdown issues with the latest 2.6.37 (Mostly Asus laptops)
+> Ã€: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org, rjw@sisk.pl, colin.king@canonical.com
+> Date: Dimanche 23 janvier 2011, 21h24
+> On 23.01.2011 16:28, Ozan Ã‡aÄŸlayan
+> wrote:
+> > Hi,
+> >
+> > I'm getting a lot of bug reports about hanging
+> boot/shutdowns on these
+> > days.
+> >
+> > Most of the affected hardware are ASUS laptops. The
+> problem is that I
+> > don't have access to any of those problematic laptops
+> and the users are
+> > not able at all to debug/bisect what is going on.
+> However, I have
+> > collected dmesgs of good/bad boots, acpidump, etc.
+> >
+> > Here are the current status:
+> >
+> > "Asus F50SV does not boot unless lapic is passed"
+> > https://bugzilla.kernel.org/show_bug.cgi?id=26502
+> >
+> > "Regression between 2.6.35-020635-rc1 and
+> 2.6.35-020635 breaks acpi
+> > support on Asus X71 laptop"
+> > https://bugs.launchpad.net/ubuntu/+source/linux-meta/+bug/689796
+> >
+> > "Asus N61JQ hangs at shutdown unless lapic is passed"
+> > (Not reported upstream yet, I've only downstream bug
+> report which is
+> > Turkish)
+> > http://bugs.pardus.org.tr/show_bug.cgi?id=15969
+> >
+> > "Asus X61S does not boot unless acpi=off is given"
+> > (Not reported upstream yet, I've only downstream bug
+> report which is
+> > Turkish)
+> > http://bugs.pardus.org.tr/show_bug.cgi?id=16322
+> > (I've told the reporter to try with nolapic, it will
+> probably fix the
+> > issue but until confirmed acpi=off is the only
+> solution. 2.6.36 was fine)
+> >
+> > I'll post more bugs in here as I've found them.
+> 
+> (CC'ing: Colin King from Canonical)
+> 
+> Another one for Asus N90Sc which was booting fine with
+> 10.04
+> but fails to boot with 10.10:
+> Â  https://bugs.launchpad.net/ubuntu/+source/linux/+bug/653626
+> 
+> Seen that the issue mostly happens on Asus boxes, it's
+> possible
+> that their firmwares are buggy but they were
+> booting/shutting down
+> correctly until a recent change in kernel.
+My ASUS F3Jv-AS022P (Core 2 Duo T7200, 2 GB RAM, BIOS version
+207) has trouble (read: it reboots within one second of the
+vmlinuz being loaded) with recent kernels as well.
+
+While I haven't performed a full bisection yet (which is why 
+I didn't try reporting the problem until I saw this thread),
+I have narrowed down the problem by compiling several tagged
+versions:
+* 2.6.35 series: .4 and .6 boot successfully, .8 and .10 fail;
+* 2.6.36 series: -rc2 boots successfully, .1 fails;
+* 2.6.37 series: -rc4 fails.
+
+
+I can perform further testing if needed.
+
+
+Regards,
+Lionel.
+
+
+      
