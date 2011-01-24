@@ -1,73 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424Ab1AXQHx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 11:07:53 -0500
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:43058 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753331Ab1AXQHv (ORCPT
+	id S1753445Ab1AXQIl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 11:08:41 -0500
+Received: from smtp-auth.no-ip.com ([204.16.252.94]:58786 "EHLO
+	smtp-auth.no-ip.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753331Ab1AXQIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 11:07:51 -0500
-X-Sasl-enc: s/fts5yd46/6M4gvp+Gp3K1rOZVx/mXba+J9ABR4r77J 1295885270
-Date: Mon, 24 Jan 2011 14:07:47 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Thomas Renninger <trenn@suse.de>
-Cc: "R, Durgadoss" <durgadoss.r@intel.com>, jdelvare@novell.com,
-        "Zhang, Rui" <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-perf-users@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-trace-users@vger.kernel.org
-Subject: Re: Thermal kernel events API to userspace - Was: Re: thermal:
- Avoid CONFIG_NET compile dependency
-Message-ID: <20110124160747.GD6424@khazad-dum.debian.net>
-References: <D6D887BA8C9DFF48B5233887EF046541094482F511@bgsmsx502.gar.corp.intel.com>
- <D6D887BA8C9DFF48B5233887EF046541094488B86F@bgsmsx502.gar.corp.intel.com>
- <201101241135.23576.trenn@suse.de>
- <201101241407.28376.trenn@suse.de>
+	Mon, 24 Jan 2011 11:08:39 -0500
+X-No-IP: mailerx1.ca@noip-smtp
+X-Report-Spam-To: abuse@no-ip.com
+From: "=?utf-8?B?QW5udWFpcmUgZGVzIFN1YnZlbnRpb25zIGF1IFF1w6liZWMgMjAxMQ==?=" 
+	<ann.sub.quebec@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: =?utf-8?B?QW5udWFpcmUgZGVzIFN1YnZlbnRpb25zIGF1IFF1w6liZWMgMjAxMQ==?=
+Date: Mon, 24 Jan 2011 11:08:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201101241407.28376.trenn@suse.de>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-ID: <1295861660c71d53d8b4bf163c84f4470b0e4d7294@gmail.com>
+Reply-To: ann.sub.quebec@gmail.com
+Content-Type: text/plain;
+	charset="utf-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Jan 2011, Thomas Renninger wrote:
-> I wonder whether netlink is the way to go for thermal
-> events at all.
-> Sending an udev event would already contain the sysfs
-> path to the thermal device. A variable which thermal event
-> got thrown could get added and userspace can read out the rest
-> easily from sysfs files. But I expect udev is not intended
-> for such general events?
+﻿[English message will follow]
 
-udev is heavyweight in the userspace side, we'd be much better off using the
-ACPI event interface (which is netlink), or a new one to deliver system
-status events, instead of continously abusing udev for this stuff.
+Offrez à vos usagers une nouvelle ressource électronique pour le développement communautaire et économique.
 
-> > > Also, the thermal_aux0 and _aux1, we can use the final format specified by you.
-> > > enum events {
-> > >  	THERMAL_CRITICAL,
-> > >  	/* user defined thermal events */
-> > >  	THERMAL_USER_AUX0,
-> > >  	THERMAL_USER_AUX1,
-> > >  	THERMAL_DEV_FAULT,
-> > >  };
+L'Annuaire Des Subventions en ligne est accessible par fureteur internet et repose sur une plateforme Filemaker utilisant la fonction "instant web publishing".
+Tout en étant extrêmement versatile et puissant l'Annuaire des Subventions au Québec en ligne est maintenant une solution des plus conviviales pour Windows, 
+Mac et le Web.
 
-Please give us at least two levels of thermal alarm: critical and emergency
-(or warning and critical -- it doesn't matter much, as long as there are at
-least two levels, and which one comes first is defined by the
-specification).  I'd have immediate use for them on thinkpads.
+Sous forme d'une base de données ce nouvel outil permet désormais d'accéder directement aux programmes d'aides et de subventions disponibles pour le Québec.
 
-It is probably best to have three levels (warning, critical, emergency).
-Best not to tie the API/ABI to the notion of "too hot", one can also alarm
-when it starts to get to cold.
+Continuellement mise à jour cette base de données permet aux utilisateurs de visualiser rapidement les programmes offerts par une multitude de gouvernements et 
+fondations, permettant ainsi de réduire considérablement le temps consacré à la recherche.
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+A titre informatif, voici une liste d'organisations offrant ce nouveau service à leurs usagers:
+
+A.E.L.I.E.S
+AIBACE
+AMERESCO
+ASSOCIATION REGIONALE DE SOCCER DE LAVAL
+ASTRAL MÉDIA AFFICHAGE
+BANQUE DE DÉVELOPPEMENT DU CANADA 
+BETON PRESTIGE
+BEACONSFIELD PUBLIC LIBRARY
+BIBLIOTHEQUE DU PARLEMENT 
+C.A.D.A.
+C.H.U.S.
+C.I.J.A.
+C.P.S. LE FAUBOURG
+C.P.S.S.S.
+CARREFOUR BUREAUTIQUE COTE NORD
+CATHERINE BLANCHET ING.
+CEGEP DE JONQUIERE
+CHAMBRE DE COMMERCE RÉGION DE MÉGANTIC 
+CITÉ DE LA REHABILITATION
+CLD DE LA MRC DE MATANE
+CLD LAC ETCHEMINS
+COAZIMUT CORP.
+COMMISSION DE LA CONSTRUCTION DU QUEBEC
+COMMISSION SCOLAIRE DE JONCQUIERE
+CONSEIL DU LOISIR SCIENTIFIQUE DE L'OUTAOUAIS
+CONSULTANTS AIRE
+COOP FORESTIER DE GIRARDVILLE
+CREE NATION OF WEMENDJI
+DÉPUTÉ PASCAL-PIERRE PAILLÉ
+DISTRIBUTION SOLIDAIRE
+DOMAINE DES PIONNIERS
+ECO SYSTEM
+ECOLE C.P. LE TREMPLIN
+ECOLE DE MUSIQUE MANON CHENARD
+ECOLE DE TECHNOLOGIE SUPERIEURE / DEPT. DECANAT
+ECOLE STE-MARIE MEDIATRICE
+EDUCAIDE
+ENSEIGNE ACCESS
+FONDATION LEO CORMIER
+FONDATION RESSOURCE JEUNESSE
+G.T.D.S. INC.
+GALLERIE ROCCIA INC.
+GROUPE BERMEX INC.
+GROUPE TVA
+HAVRE DU FJORD
+HEMA QUEBEC
+I.C.E.A.
+I.T.H.Q.
+ICREDESA ORG
+IPP
+JULIEN GEOFFROY ARCHITECT
+KLIMFAX
+LES LAVETTES
+L'HERBO-THEQUE
+L'INSTITUT INTERNATIONAL DE LOGISTIQUE DE MONTRÉAL 
+L'ORGANISME DE BASSIN VERSANT LAC ST-JEAN
+LUC AUDET, CA. INC.
+MAISON FUNÉRAIRE BLAIS INC 
+MERCIER HOME STAGING
+MICRO MENTIS
+MRC DE LA METIS
+MUNICIPALITE DE BERRY
+MUNICIPALITE DU HAVRE ST-PIERRE
+P.E.G.H.B.
+PARC DE LA GORGE DE COATICOOK
+PARENTS SECOURS DU QUÉBEC
+PORTAGE
+PREMTEC
+PRODUCTIONS INTERFACE DESIGN
+R.O.B.V.Q.
+RAYMOND CHABOT GRANT ET THORNTON
+REVES ALCHIMIQUES
+RSSS DES AURORES BOREALES
+S.D.E.I.
+SPEEDWARE
+STATION THERMAL SUTTON INC.
+ST-GEORGE ANGLICAN CHURCH
+TRI-CO GROUP INC.
+U. DE MTL. / CAMPUS DE FACULTEE MEDECINE
+U. DU QC A CHICOUTIMI / DEPT. DE LA PSYCHOLOGIE
+UQUAT
+VILLE DE CHATEAUGUAY
+VILLE DE MATANE
+VILLE DE MONTREAL
+VILLE DE PORT-CARTIER
+VILLE DE ST-AUGUSTIN
+VILLE DE VARENNES
+
+Acces à la base de données en ligne / 1 an............................$129.95
+Annuaire des Subventions au Quebec 2011 (Cd-rom,.pdf).................$ 69.95
+Annuaire des Subventions au Quebec 2011 (imprimé + Cd-rom gratuit)...$ 149.95
+
+Pour de plus amples informations contactez:
+Natasha Robillard au 1-866-322-3376, 450-229-1942
+
+Annuaire des Subventions au Québec
+1999 Le Skieur
+Sainte-Adele
+Qc
+J8B 2Y9
+450-229-1942
+
+
+
+
+Pour ne plus recevoir de courriel: subventionquebec@gmail.com
+
+.............................................................
+
+New 2011 editions
+
+Canadian Business Publications is offering to the public a revised edition of the Canadian Subsidy Directory, a guide containing more than 3000 direct and indirect financial subsidies, grants and loans offered by government departments and agencies, foundations, associations and organizations.  
+In this new 2011 edition all programs are well described.
+
+The Canadian Subsidy Directory is the most comprehensive tool to start up a business, improve existent activities, set up a business plan, or obtain assistance from experts in fields such as: Industry, transport, agriculture, communications, municipal infrastructure, education, import-export, labor, construction and renovation, the service sector, hi-tech industries, research and development, joint ventures, arts, cinema, theatre, music and recording industry , the self employed, contests, and new talents.
+Assistance from and for foundations and associations, guidance to prepare a business plan, market surveys, computers, and much more!
+
+NEW: The Canadian Subsidy Directory (database) offers continuously updated information for non-profit organizations, businesses, municipalities, individuals and aboriginals.
+This database contains more than 3000 subsidies, grants or loans offered by various Canadian governments agencies and foundations.
+Completely hosted, no database software to download or manage.
+
+Viewable With Your Favorite Browser, Online Anywhere, Anytime. Access from anywhere in the world on any internet connected PC or Mac.
+
+Canadian Subsidy Directory (All Canada, federal + provincial + foundations)
+Available in three different formats:
+. CD-rom (.Acrobat Reader file, .pdf) / $69.95
+. Printed (Free cd included) / $149.95
+. On-line database access (1 year subscription) / $129.95
+
+If you require any additional information, please contact:
+Natasha Robillard, toll free 1-866-322-3376 
+450-229-1942 (local)
+
+
+This commercial email message is broadcasted by Canadian Business Publications
+To remove your email from the distribution list please use: subventionquebec@gmail.com
+
+Ontario:
+4865 Hwy 138, r.r. 1
+St-Andrews west
+On
+K0C 2A0
+
+Quebec:
+1999 Le Skieur
+Ste-Adele
+Qc
+J8B 2Y9
+
