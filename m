@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810Ab1AXNJh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 08:09:37 -0500
-Received: from www.tglx.de ([62.245.132.106]:59998 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752497Ab1AXNJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 08:09:36 -0500
-Date: Mon, 24 Jan 2011 14:09:24 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: torbenh <torbenh@gmx.de>
-cc: linux-kernel@vger.kernel.org, johnstul@us.ibm.com, hch@infradead.org,
-        yong.zhang0@gmail.com
-Subject: Re: [PATCH 09/18] frv: switch do_timer() to xtime_update()
-In-Reply-To: <20110124125152.GA29377@siel.b>
-Message-ID: <alpine.LFD.2.00.1101241400170.31804@localhost6.localdomain6>
-References: <1295651224-29823-1-git-send-email-torbenh@gmx.de> <1295651224-29823-10-git-send-email-torbenh@gmx.de> <alpine.LFD.2.00.1101221051570.2971@localhost6.localdomain6> <20110124125152.GA29377@siel.b>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752824Ab1AXNK4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 08:10:56 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:39143 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752639Ab1AXNKz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 08:10:55 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=TdvaR+qBFAIiPMj4qSy35g/ihkIFIEwTbUWRDIHXgaMvKpmIwNyvAR6zUUYbOYc9+R
+         eQG4aZ35nW7hvlce/oD9SczIzH9YXW6UofIpxK9YD9XSOx9mCASBcEbDdZBO+pwubEST
+         Ub6aTr0+bVA26m9AiT32aTsXdAAk9A90PXG5M=
+Date: Mon, 24 Jan 2011 11:10:50 -0200
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Michal Sojka <sojkam1@fel.cvut.cz>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] perf: Document default event for perf record
+Message-ID: <20110124131050.GA6367@ghostprotocols.net>
+References: <1295695127-29309-1-git-send-email-sojkam1@fel.cvut.cz>
+ <20110124130540.GD5932@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110124130540.GD5932@ghostprotocols.net>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Jan 2011, torbenh wrote:
-> On Sat, Jan 22, 2011 at 11:01:49AM +0100, Thomas Gleixner wrote:
-> > On Sat, 22 Jan 2011, Torben Hohn wrote:
-> > 
-> > > this code looks like its protecting __set_LEDS() with this lock also.
-> > > i dont think thats necessary.
-> > 
-> > This changelog is horrible. 
+Em Mon, Jan 24, 2011 at 11:05:40AM -0200, Arnaldo Carvalho de Melo escreveu:
+> Em Sat, Jan 22, 2011 at 12:18:37PM +0100, Michal Sojka escreveu:
+> > The description of -e option was reformatted (unindented and enclosed
+> > in an OpenBlock) in order to render the added line correctly.
 > 
-> agreed.
-> what i meant was that: if i do something while holding a lock,
-> it seems to be necessary to do it while holding the lock.
+> Thanks, applying to perf/core.
 
-Well, it might be that way, but obviously that's not the case with the
-code which is in the xtime lock write locked region (except for the
-do_timer() call). :)
- 
-> > Also all arch/* patches are missing a "Cc: arch-maintainer@somewhere.xxx".
-> 
-> i was planning to send it out with --cc-cmd=./scripts/get_maintainers.pl
-> once you thought it was ok.
-> is that procedure ok ?
+Erm, can you please provide your Signed-off-by as requested in:
 
-get_maintainers creates ugly long cc lists. I prefer hand selected
-cc's. For the arch specific changes cc'ing only the relevant
-maintainer (retrieved from MAINTAINERS) is enough.
+Documentation/SubmittingPatches
 
-> or should i add CC: lines to the commitlogs ?
+?
 
-Either way works. If I pick up such a series, my scripts generate the
-Cc list in the changelog from the mail CC list.
+Thanks a lot,
 
-Thanks,
-
-	tglx
+- Arnaldo
