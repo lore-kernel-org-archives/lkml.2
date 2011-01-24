@@ -1,27 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535Ab1AXQnw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 11:43:52 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55873 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753397Ab1AXQnv (ORCPT
+	id S1753615Ab1AXQoE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 11:44:04 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:56355 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753397Ab1AXQny convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 11:43:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=cNswV+7ulKFTY+Ew7lCuwISBbuh/NKx7xvoy+LJRBH0fu3DPuPGGaNPOFv0d6bpDL9
-         TCtnFVtlnT49Zsq+Fu0GOjk0d598uHQe5AXoOWY6QYcTDZS6GK/E1md2Lk8khM8Y5KSM
-         jthbcaNgQUtlHhuZDA6gIC1hiFMrklVN1mUc8=
-MIME-Version: 1.0
-Date: Tue, 25 Jan 2011 00:43:51 +0800
-Message-ID: <AANLkTikKdtN0wK8Z4hFS-UDW3iJ1HEyVzsV5MK4tetE9@mail.gmail.com>
-Subject: linux-kernel@vger.kernel.org
-From: sen wang <wangchendu@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 24 Jan 2011 11:43:54 -0500
+Subject: Re: possible regression: BUG in client lockd with server reboot.
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=us-ascii
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <20110124144107.GA3718@elliptictech.com>
+Date: Mon, 24 Jan 2011 11:08:46 -0500
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <4707872F-6CC4-477D-AE0B-A7DCEEF29ABF@oracle.com>
+References: <20110124144107.GA3718@elliptictech.com>
+To: Nick Bowler <nbowler@elliptictech.com>
+X-Mailer: Apple Mail (2.1082)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-subscribe linux-kernel@vger.kernel.org
+Nick-
+
+On Jan 24, 2011, at 9:41 AM, Nick Bowler wrote:
+
+> We were just having some NFS server troubles, and my client machine
+> running 2.6.38-rc1+ (specifically, commit 2b1caf6ed7b888c95) crashed
+> hard (syslog output appended to this mail).
+
+I don't seem to have 2b1caf6e.  Can you post the short description?
+
+host.c:283 is " BUG_ON(!list_empty(&host->h_lockowners));" in my tree.  Can you confirm this is the same for you?
+
+I'll have a look.
+
+-- 
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
+
+
