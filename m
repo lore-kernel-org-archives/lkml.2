@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147Ab1AXW5s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 17:57:48 -0500
-Received: from claw.goop.org ([74.207.240.146]:58145 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752905Ab1AXW4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752903Ab1AXW4T (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 24 Jan 2011 17:56:19 -0500
+Received: from claw.goop.org ([74.207.240.146]:58132 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752516Ab1AXW4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 17:56:18 -0500
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Haavard Skinnemoen <hskinnemoen@atmel.com>, Linux-MM <linux-mm@kvack.org>,
@@ -13,161 +13,66 @@ Cc: Haavard Skinnemoen <hskinnemoen@atmel.com>, Linux-MM <linux-mm@kvack.org>,
         Nick Piggin <npiggin@kernel.dk>,
         Xen-devel <xen-devel@lists.xensource.com>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 2/9] mm: add apply_to_page_range_batch()
-Date: Mon, 24 Jan 2011 14:56:00 -0800
-Message-Id: <7f635db45f8e921c9203fdfb904d0095b7af6480.1295653400.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 0/9] Add apply_to_page_range_batch() and use it
+Date: Mon, 24 Jan 2011 14:55:58 -0800
+Message-Id: <cover.1295653400.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <cover.1295653400.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1295653400.git.jeremy.fitzhardinge@citrix.com>
-In-Reply-To: <cover.1295653400.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1295653400.git.jeremy.fitzhardinge@citrix.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-apply_to_page_range() calls its callback function once for each pte, which
-is pretty inefficient since it will almost always be operating on a batch
-of adjacent ptes.  apply_to_page_range_batch() calls its callback
-with both a pte_t * and a count, so it can operate on multiple ptes at
-once.
+I'm proposing this series for 2.6.39.
 
-The callback is expected to handle all its ptes, or return an error.  For
-both apply_to_page_range and apply_to_page_range_batch, it is up to
-the caller to work out how much progress was made if either fails with
-an error.
+We've had apply_to_page_range() for a while, which is a general way to
+apply a function to ptes across a range of addresses - including
+allocating any missing parts of the pagetable as needed.  This logic
+is replicated in a number of places throughout the kernel, but it
+hasn't been widely replaced by this function, partly because of
+concerns about the overhead of calling the function once per pte.
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
----
- include/linux/mm.h |    6 +++++
- mm/memory.c        |   57 +++++++++++++++++++++++++++++++++++++--------------
- 2 files changed, 47 insertions(+), 16 deletions(-)
+This series adds apply_to_page_range_batch() (and reimplements
+apply_to_page_range() in terms of it), which calls the pte operation
+function once per pte page, moving the inner loop into the callback
+function.
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index bb898ec..5a32a8a 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1533,6 +1533,12 @@ typedef int (*pte_fn_t)(pte_t *pte, unsigned long addr, void *data);
- extern int apply_to_page_range(struct mm_struct *mm, unsigned long address,
- 			       unsigned long size, pte_fn_t fn, void *data);
- 
-+typedef int (*pte_batch_fn_t)(pte_t *pte, unsigned count,
-+			      unsigned long addr, void *data);
-+extern int apply_to_page_range_batch(struct mm_struct *mm,
-+				     unsigned long address, unsigned long size,
-+				     pte_batch_fn_t fn, void *data);
-+
- #ifdef CONFIG_PROC_FS
- void vm_stat_account(struct mm_struct *, unsigned long, struct file *, long);
- #else
-diff --git a/mm/memory.c b/mm/memory.c
-index 740470c..496e4e6 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2012,11 +2012,10 @@ EXPORT_SYMBOL(remap_pfn_range);
- 
- static int apply_to_pte_range(struct mm_struct *mm, pmd_t *pmd,
- 				     unsigned long addr, unsigned long end,
--				     pte_fn_t fn, void *data)
-+				     pte_batch_fn_t fn, void *data)
- {
- 	pte_t *pte;
- 	int err;
--	pgtable_t token;
- 	spinlock_t *uninitialized_var(ptl);
- 
- 	pte = (mm == &init_mm) ?
-@@ -2028,25 +2027,17 @@ static int apply_to_pte_range(struct mm_struct *mm, pmd_t *pmd,
- 	BUG_ON(pmd_huge(*pmd));
- 
- 	arch_enter_lazy_mmu_mode();
--
--	token = pmd_pgtable(*pmd);
--
--	do {
--		err = fn(pte++, addr, data);
--		if (err)
--			break;
--	} while (addr += PAGE_SIZE, addr != end);
--
-+	err = fn(pte, (end - addr) / PAGE_SIZE, addr, data);
- 	arch_leave_lazy_mmu_mode();
- 
- 	if (mm != &init_mm)
--		pte_unmap_unlock(pte-1, ptl);
-+		pte_unmap_unlock(pte, ptl);
- 	return err;
- }
- 
- static int apply_to_pmd_range(struct mm_struct *mm, pud_t *pud,
- 				     unsigned long addr, unsigned long end,
--				     pte_fn_t fn, void *data)
-+				     pte_batch_fn_t fn, void *data)
- {
- 	pmd_t *pmd;
- 	unsigned long next;
-@@ -2068,7 +2059,7 @@ static int apply_to_pmd_range(struct mm_struct *mm, pud_t *pud,
- 
- static int apply_to_pud_range(struct mm_struct *mm, pgd_t *pgd,
- 				     unsigned long addr, unsigned long end,
--				     pte_fn_t fn, void *data)
-+				     pte_batch_fn_t fn, void *data)
- {
- 	pud_t *pud;
- 	unsigned long next;
-@@ -2090,8 +2081,9 @@ static int apply_to_pud_range(struct mm_struct *mm, pgd_t *pgd,
-  * Scan a region of virtual memory, filling in page tables as necessary
-  * and calling a provided function on each leaf page table.
-  */
--int apply_to_page_range(struct mm_struct *mm, unsigned long addr,
--			unsigned long size, pte_fn_t fn, void *data)
-+int apply_to_page_range_batch(struct mm_struct *mm,
-+			      unsigned long addr, unsigned long size,
-+			      pte_batch_fn_t fn, void *data)
- {
- 	pgd_t *pgd;
- 	unsigned long next;
-@@ -2109,6 +2101,39 @@ int apply_to_page_range(struct mm_struct *mm, unsigned long addr,
- 
- 	return err;
- }
-+EXPORT_SYMBOL_GPL(apply_to_page_range_batch);
-+
-+struct pte_single_fn
-+{
-+	pte_fn_t fn;
-+	void *data;
-+};
-+
-+static int apply_pte_batch(pte_t *pte, unsigned count,
-+			   unsigned long addr, void *data)
-+{
-+	struct pte_single_fn *single = data;
-+	int err = 0;
-+
-+	while (count--) {
-+		err = single->fn(pte, addr, single->data);
-+		if (err)
-+			break;
-+
-+		addr += PAGE_SIZE;
-+		pte++;
-+	}
-+
-+	return err;
-+}
-+
-+int apply_to_page_range(struct mm_struct *mm, unsigned long addr,
-+			unsigned long size, pte_fn_t fn, void *data)
-+{
-+	struct pte_single_fn single = { .fn = fn, .data = data };
-+	return apply_to_page_range_batch(mm, addr, size,
-+					 apply_pte_batch, &single);
-+}
- EXPORT_SYMBOL_GPL(apply_to_page_range);
- 
- /*
+apply_to_page_range(_batch) also calls its callback with lazy mmu
+updates enabled, which allows batching of the operations in
+environments where this is beneficial (ie, virtualization).  The only
+caveat this introduces is callbacks can't expect to immediately see
+the effects of the pte updates in memory.
+
+Since this is effectively identical to the code in lib/ioremap.c and
+mm/vmalloc.c (twice!), I replace their open-coded variants.  I'm sure
+there are others places in the kernel which could do with this (I only
+stumbled over ioremap by accident).
+
+I also add a minor optimisation to vunmap_page_range() to use a
+plain pte_clear() rather than the more expensive and unnecessary
+ptep_get_and_clear().
+
+Jeremy Fitzhardinge (9):
+  mm: remove unused "token" argument from apply_to_page_range callback.
+  mm: add apply_to_page_range_batch()
+  ioremap: use apply_to_page_range_batch() for ioremap_page_range()
+  vmalloc: use plain pte_clear() for unmaps
+  vmalloc: use apply_to_page_range_batch() for vunmap_page_range()
+  vmalloc: use apply_to_page_range_batch() for
+    vmap_page_range_noflush()
+  vmalloc: use apply_to_page_range_batch() in alloc_vm_area()
+  xen/mmu: use apply_to_page_range_batch() in
+    xen_remap_domain_mfn_range()
+  xen/grant-table: use apply_to_page_range_batch()
+
+ arch/x86/xen/grant-table.c |   30 +++++----
+ arch/x86/xen/mmu.c         |   18 +++--
+ include/linux/mm.h         |    9 ++-
+ lib/ioremap.c              |   85 +++++++------------------
+ mm/memory.c                |   57 ++++++++++++-----
+ mm/vmalloc.c               |  150 ++++++++++++--------------------------------
+ 6 files changed, 140 insertions(+), 209 deletions(-)
+
 -- 
 1.7.3.4
 
