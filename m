@@ -1,78 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751432Ab1AXTsI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 14:48:08 -0500
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:40271 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751107Ab1AXTsH (ORCPT
+	id S1751458Ab1AXTsd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 14:48:33 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:62523 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735Ab1AXTsc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 14:48:07 -0500
-To: Hugh Dickins <hughd@google.com>
-CC: miklos@szeredi.hu, hch@infradead.org, akpm@linux-foundation.org,
-        gurudas.pai@oracle.com, lkml20101129@newton.leun.net,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-reply-to: <alpine.LSU.2.00.1101212014330.4301@sister.anvils> (message from
-	Hugh Dickins on Fri, 21 Jan 2011 20:46:00 -0800 (PST))
-Subject: Re: [PATCH] mm: prevent concurrent unmap_mapping_range() on the same
- inode
-References: <E1PftfG-0007w1-Ek@pomaz-ex.szeredi.hu> <20110120124043.GA4347@infradead.org> <E1PfvGx-00086O-IA@pomaz-ex.szeredi.hu> <alpine.LSU.2.00.1101212014330.4301@sister.anvils>
-Message-Id: <E1PhSO8-0005yN-Dp@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Mon, 24 Jan 2011 20:47:44 +0100
+	Mon, 24 Jan 2011 14:48:32 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=yB/t+Rrj9zLzB6r0JJCIUtbdQlcGtb5kRb6UK/T8d5m/OuJ9gKDomm8tXVy2PfnvXk
+         jUIAwm2zm+C+WLdq0UaSlg0/aa/y4d5v6fXqJ0vWvPwWZoqQ5/rh7uez32dZdOYkbdEZ
+         afBoSxPmPumk74TCjoT04Msik54+svJsnKscE=
+MIME-Version: 1.0
+In-Reply-To: <1295789862-25482-3-git-send-email-tj@kernel.org>
+References: <1295789862-25482-1-git-send-email-tj@kernel.org>
+	<1295789862-25482-3-git-send-email-tj@kernel.org>
+Date: Mon, 24 Jan 2011 11:48:31 -0800
+X-Google-Sender-Auth: tOeoitrL3mli6T5kXR5oAOg9TC4
+Message-ID: <AANLkTikrJtxHO=kPNFe5QwyY-ONX0Ci2N=Dq7Uj9Zu=f@mail.gmail.com>
+Subject: Re: [PATCH 02/16] x86: Drop x86_32 MAX_APICID
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de, x86@kernel.org, eric.dumazet@gmail.com,
+        brgerst@gmail.com, gorcunov@gmail.com, penberg@kernel.org,
+        shaohui.zheng@intel.com, rientjes@google.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Jan 2011, Hugh Dickins wrote:
-> On Thu, 20 Jan 2011, Miklos Szeredi wrote:
-> > On Thu, 20 Jan 2011, Christoph Hellwig wrote:
-> > > On Thu, Jan 20, 2011 at 01:30:58PM +0100, Miklos Szeredi wrote:
-> > > > 
-> > > > Truncate and hole punching already serialize with i_mutex.  Other
-> > > > callers of unmap_mapping_range() do not, and it's difficult to get
-> > > > i_mutex protection for all callers.  In particular ->d_revalidate(),
-> > > > which calls invalidate_inode_pages2_range() in fuse, may be called
-> > > > with or without i_mutex.
-> > > 
-> > > 
-> > > Which I think is mostly a fuse problem.  I really hate bloating the
-> > > generic inode (into which the address_space is embedded) with another
-> > > mutex for deficits in rather special case filesystems. 
-> > 
-> > As Hugh pointed out unmap_mapping_range() has grown a varied set of
-> > callers, which are difficult to fix up wrt i_mutex.  Fuse was just an
-> > example.
-> > 
-> > I don't like the bloat either, but this is the best I could come up
-> > with for fixing this problem generally.  If you have a better idea,
-> > please share it.
-> 
-> If we start from the point that this is mostly a fuse problem (I expect
-> that a thorough audit will show up a few other filesystems too, but
-> let's start from this point): you cite ->d_revalidate as a particular
-> problem, but can we fix up its call sites so that it is always called
-> either with, or much preferably without, i_mutex held?  Though actually
-> I couldn't find where ->d_revalidate() is called while holding i_mutex.
+On Sun, Jan 23, 2011 at 5:37 AM, Tejun Heo <tj@kernel.org> wrote:
+> Commit 56d91f13 (x86, acpi: Add MAX_LOCAL_APIC for 32bit) added
+> MAX_LOCAL_APIC for x86_32 but didn't replace MAX_APICID users with it.
+> Convert MAX_APICID users to MAX_LOCAL_APIC and drop MAX_APICID.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reviewed-by: Pekka Enberg <penberg@kernel.org>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  arch/x86/include/asm/mpspec.h |    2 --
+>  arch/x86/kernel/smpboot.c     |    2 +-
+>  arch/x86/mm/srat_32.c         |    4 ++--
+>  3 files changed, 3 insertions(+), 5 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
+> index 0c90dd9..edc2a45 100644
+> --- a/arch/x86/include/asm/mpspec.h
+> +++ b/arch/x86/include/asm/mpspec.h
+> @@ -33,8 +33,6 @@ extern int mp_bus_id_to_local[MAX_MP_BUSSES];
+>  extern int quad_local_to_mp_bus_id [NR_CPUS/4][4];
+>  #endif
+>
+> -#define MAX_APICID             256
+> -
+>  #else /* CONFIG_X86_64: */
+>
+>  #define MAX_MP_BUSSES          256
+> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> index c255980..d68bab5 100644
+> --- a/arch/x86/kernel/smpboot.c
+> +++ b/arch/x86/kernel/smpboot.c
+> @@ -72,7 +72,7 @@
+>  #include <asm/i8259.h>
+>
+>  #ifdef CONFIG_X86_32
+> -u8 apicid_2_node[MAX_APICID];
+> +u8 apicid_2_node[MAX_LOCAL_APIC];
+>  #endif
+>
+>  /* State of each CPU */
+> diff --git a/arch/x86/mm/srat_32.c b/arch/x86/mm/srat_32.c
+> index ae96e7b..6027a48 100644
+> --- a/arch/x86/mm/srat_32.c
+> +++ b/arch/x86/mm/srat_32.c
+> @@ -57,7 +57,7 @@ struct node_memory_chunk_s {
+>  static struct node_memory_chunk_s __initdata node_memory_chunk[MAXCHUNKS];
+>
+>  static int __initdata num_memory_chunks; /* total number of memory chunks */
+> -static u8 __initdata apicid_to_pxm[MAX_APICID];
+> +static u8 __initdata apicid_to_pxm[MAX_LOCAL_APIC];
+>
+>  int acpi_numa __initdata;
+>
+> @@ -254,7 +254,7 @@ int __init get_memcfg_from_srat(void)
+>        printk(KERN_DEBUG "Number of memory chunks in system = %d\n",
+>                         num_memory_chunks);
+>
+> -       for (i = 0; i < MAX_APICID; i++)
+> +       for (i = 0; i < MAX_LOCAL_APIC; i++)
+>                apicid_2_node[i] = pxm_to_node(apicid_to_pxm[i]);
+>
+>        for (j = 0; j < num_memory_chunks; j++){
+> --
 
-lookup_one_len
-lookup_hash
-  __lookup_hash
-    do_revalidate
-      d_revalidate
-
-I don't see an easy way to get rid of i_mutex for lookup_one_len() and
-lookup_hash().
-
-> Failing that, can fuse down_write i_alloc_sem before calling
-> invalidate_inode_pages2(_range), to achieve the same exclusion?
-> The setattr truncation path takes i_alloc_sem as well as i_mutex,
-> though I'm not certain of its full coverage.
-
-Yeah, fuse could use i_alloc_sem or a private mutex, but that would
-leave the other uses of unmap_mapping_range() to sort this out for
-themsevels.
-
-Thanks,
-Miklos
-
-
+Acked-by: Yinghai Lu <yinghai@kernel.org>
