@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab1AXPuK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 10:50:10 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:42811 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753263Ab1AXPuH (ORCPT
+	id S1753359Ab1AXPvm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 10:51:42 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51543 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753281Ab1AXPvk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 10:50:07 -0500
-Date: Mon, 24 Jan 2011 08:50:02 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Thomas Chou <thomas@wytron.com.tw>
-Cc: Jonas Bonn <jonas@southpole.se>, nios2-dev@sopc.et.ntust.edu.tw,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Mike Frysinger <vapier@gentoo.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        spi-devel-general@lists.sourceforge.net
-Subject: Re: [PATCH v2] spi: add OpenCores tiny SPI driver
-Message-ID: <20110124155002.GA16370@angua.secretlab.ca>
-References: <1294800109-31603-1-git-send-email-thomas@wytron.com.tw>
- <1295249542-26743-1-git-send-email-thomas@wytron.com.tw>
- <20110120165430.GA24445@angua.secretlab.ca>
- <4D38AAEB.7020308@wytron.com.tw>
- <1295612849.23825.26.camel@needafix>
- <4D3CD38D.4080808@wytron.com.tw>
- <1295866794.23825.100.camel@needafix>
- <4D3D91D1.8000701@wytron.com.tw>
+	Mon, 24 Jan 2011 10:51:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=rfTeeTUlmw59rZCd6aGQEbxz/TbDYtesmyZYCv7Sa/X4OQWNKv/yEJ0nqyyVnSwmj4
+         paq4bOYAzvjqBIojr7ndGjcTmCzph12Ei1RTiGG/hHrQ4X8ATA3yyuaus9wd+N5978ge
+         UOxJyEFh4ZUi1Vr6lcb11us7WCwjadsdd1l8w=
+Date: Mon, 24 Jan 2011 16:51:33 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Ryan Wilson <hap9@epoch.ncsc.mil>, Jan Beulich <JBeulich@novell.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH] xen-pcifront: don't use flush_scheduled_work()
+Message-ID: <20110124155133.GA27510@htj.dyndns.org>
+References: <20110124144303.GG11404@htj.dyndns.org>
+ <20110124153958.GA1222@dumpdata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D3D91D1.8000701@wytron.com.tw>
+In-Reply-To: <20110124153958.GA1222@dumpdata.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24, 2011 at 10:50:57PM +0800, Thomas Chou wrote:
-> Hi Jonas,
+Hello,
+
+On Mon, Jan 24, 2011 at 10:39:58AM -0500, Konrad Rzeszutek Wilk wrote:
+> On Mon, Jan 24, 2011 at 03:43:03PM +0100, Tejun Heo wrote:
+> > flush_scheduled_work() is scheduled for deprecation.  Cancel ->op_work
 > 
-> On 01/24/2011 06:59 PM, Jonas Bonn wrote:
-> >We've discussed this a bit internally now and decided that the best way
-> >to version OpenCores cores is to use the SVN commit ID of the rtl/
-> >directory in the project's repository.  So, for your tiny-spi project,
-> >the last SVN commit to update the rtl/ directory was commit number 2;
-> >hence, I'd recommend you use the following device tree identifier:
-> >
-> >opencores,tiny-spi-rtlsvn2
-> >
-> >That's:  opencores,<project>-rtl<VCS><commit ID>
-> >
-> >As projects are currently in SVN, VCS=svn.
-> >
-> >Linux drivers for other OpenCores cores will be updated accordingly.
-> 
-> I will follow your suggestion exactly. Thank you very much.
+> 2.6.39 or 2.6.40? Not seeing it referenced in
+> feature-removal-schedule.txt file?
 
-Make sure you also document the binding in Documentation/powerpc/dts-bindings
+There now are only a handful of users left.  I'm currently sending out
+patches for them.  Once they appear on linux-next, I'll mark
+flush_scheduled_work() deprecated and add it to feature-removal in the
+workqueue tree and push it to linux-next.  So, yeah, it's likely to be
+marked deprecated in 2.6.39.
 
-g.
+Thanks.
 
+-- 
+tejun
