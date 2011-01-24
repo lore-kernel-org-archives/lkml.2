@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496Ab1AXRpv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 12:45:51 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46781 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751882Ab1AXRpu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 12:45:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=gxoW9MF9Bm3RsoQTFNFHFn87tKKu9GiqASonNCDQK4iQ8YT9qDWcsut+t2J6P4LPNH
-         f3Br9eyMwjoMAq5oc3qYlpYElQsZ7e8PaTBotXzVPa++AdsPCEYdIMJ5VTgRBCzhmgeq
-         +o84UIdqrtRl27iB61iW5J5IL3Uh3bdFLQwbs=
-From: Radu Voicilas <rvoicilas@gmail.com>
-To: eparis@redhat.com
-Cc: linux-kernel@vger.kernel.org, Radu Voicilas <rvoicilas@gmail.com>
-Subject: [PATCH] fsnotify.h: Dropped redundant code.
-Date: Mon, 24 Jan 2011 19:45:26 +0200
-Message-Id: <1295891126-31540-1-git-send-email-rvoicilas@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1753599Ab1AXRuI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 12:50:08 -0500
+Received: from claw.goop.org ([74.207.240.146]:42383 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751813Ab1AXRuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 12:50:06 -0500
+Message-ID: <4D3DBBC6.1000407@goop.org>
+Date: Mon, 24 Jan 2011 09:49:58 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Rik van Riel <riel@redhat.com>
+CC: vatsa@linux.vnet.ibm.com, Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        =?UTF-8?B?QW3DqXJpY28gV2FuZw==?= <xiyou.wangcong@gmail.com>,
+        Eric Dumazet <dada1@cosmosbay.com>, Jan Beulich <JBeulich@novell.com>,
+        Avi Kivity <avi@redhat.com>, Xen-devel <xen-devel@lists.xensource.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Virtualization <virtualization@lists.linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        kvm@vger.kernel.org, suzuki@in.ibm.com
+Subject: Re: [PATCH 2/3] kvm hypervisor : Add hypercalls to support pv-ticketlock
+References: <cover.1289940821.git.jeremy.fitzhardinge@citrix.com> <20110119164432.GA30669@linux.vnet.ibm.com> <20110119171239.GB726@linux.vnet.ibm.com> <1295457672.28776.144.camel@laptop> <4D373340.60608@goop.org> <20110120115958.GB11177@linux.vnet.ibm.com> <4D38774B.6070704@goop.org> <20110121140208.GA13609@linux.vnet.ibm.com> <4D399CBD.10506@redhat.com> <20110122061417.GA7258@linux.vnet.ibm.com> <4D3AEF7A.1050709@redhat.com>
+In-Reply-To: <4D3AEF7A.1050709@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code that checks to see whether the provided dentry object is valid
-or not is redundant with the one that's in fs/notify/fsnotify.c in
-the __fsnotify_parent function:
+On 01/22/2011 06:53 AM, Rik van Riel wrote:
+> The main question that remains is whether the PV ticketlocks are
+> a large enough improvement to also merge those.  I expect they
+> will be, and we'll see so in the benchmark numbers.
 
-    if (!dentry)
-        dentry = path->dentry;
+The pathological worst-case of ticket locks in a virtual environment
+isn't very hard to hit, so I expect they'll make a huge difference
+there.   On lightly loaded systems (little or no CPU overcommit) then
+they should be close to a no-op.
 
-Signed-off-by: Radu Voicilas <rvoicilas@gmail.com>
----
- include/linux/fsnotify.h |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/fsnotify.h b/include/linux/fsnotify.h
-index 2a53f10..9e67a41 100644
---- a/include/linux/fsnotify.h
-+++ b/include/linux/fsnotify.h
-@@ -27,9 +27,6 @@ static inline void fsnotify_d_instantiate(struct dentry *dentry,
- /* Notify this dentry's parent about a child's events. */
- static inline int fsnotify_parent(struct path *path, struct dentry *dentry, __u32 mask)
- {
--	if (!dentry)
--		dentry = path->dentry;
--
- 	return __fsnotify_parent(path, dentry, mask);
- }
- 
--- 
-1.7.0.4
-
+    J
