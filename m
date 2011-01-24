@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab1AXTdE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 14:33:04 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:53544 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752666Ab1AXTdD (ORCPT
+	id S1752754Ab1AXTfn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 14:35:43 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45347 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751521Ab1AXTfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 14:33:03 -0500
-Message-ID: <4D3DD366.8000704@mvista.com>
-Date: Mon, 24 Jan 2011 22:30:46 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+	Mon, 24 Jan 2011 14:35:42 -0500
+Date: Mon, 24 Jan 2011 19:35:40 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Colin Cross <ccross@android.com>
+Cc: linux-tegra@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        konkers@android.com, linux-kernel@vger.kernel.org, olof@lixom.net,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 20/28] ARM: tegra: cpufreq: Disable cpufreq during
+ suspend
+Message-ID: <20110124193539.GI29925@opensource.wolfsonmicro.com>
+References: <1295834493-5019-1-git-send-email-ccross@android.com>
+ <1295834493-5019-21-git-send-email-ccross@android.com>
+ <20110124144142.GA16813@sirena.org.uk>
+ <AANLkTikrUdLM8VmW5yCndf927E=drZF1gGBwXq6Dj5mW@mail.gmail.com>
 MIME-Version: 1.0
-To: Yoichi Yuasa <yuasa@linux-mips.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        linux-mips <linux-mips@linux-mips.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fix build error when CONFIG_SWAP is not set
-References: <20110124210813.ba743fc5.yuasa@linux-mips.org>
-In-Reply-To: <20110124210813.ba743fc5.yuasa@linux-mips.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikrUdLM8VmW5yCndf927E=drZF1gGBwXq6Dj5mW@mail.gmail.com>
+X-Cookie: Keep it short for pithy sake.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Mon, Jan 24, 2011 at 10:50:53AM -0800, Colin Cross wrote:
+> On Mon, Jan 24, 2011 at 6:41 AM, Mark Brown
 
-Yoichi Yuasa wrote:
+> > Hrm, what's the situation where that happens and why does it cause
+> > problems?  The regulator API doesn't care if suspend is going on, and
+> > nor do any of the current drivers for regulators.  There is an issue
+> > with keeping things like I2C alive until the bitter end of suspend so
+> > you've got a control bus to the regulators but that's a generic issue
+> > which crops up with other subsystems too so a regulator-specific
+> > workaround seems dodgy.
 
-> In file included from
-> linux-2.6/arch/mips/include/asm/tlb.h:21,
->                  from mm/pgtable-generic.c:9:
-> include/asm-generic/tlb.h: In function 'tlb_flush_mmu':
-> include/asm-generic/tlb.h:76: error: implicit declaration of function
-> 'release_pages'
-> include/asm-generic/tlb.h: In function 'tlb_remove_page':
-> include/asm-generic/tlb.h:105: error: implicit declaration of function
-> 'page_cache_release'
-> make[1]: *** [mm/pgtable-generic.o] Error 1
-> 
-> Signed-off-by: Yoichi Yuasa <yuasa@linux-mips.org>
-[...]
+> The end result is that the regulator driver calls the i2c driver after
+> the i2c driver has been suspended.  On Tegra, this happens because of
+> voltage scaling on the CPU regulator, which can be on the i2c bus.  A
+> sleep in a suspend handler after the i2c bus has been suspended can
+> cause the cpufreq governor to lower the frequency, and try to lower
+> the voltage as well.
 
-> diff --git a/include/linux/swap.h b/include/linux/swap.h
-> index 4d55932..92c1be6 100644
-> --- a/include/linux/swap.h
-> +++ b/include/linux/swap.h
-> @@ -8,6 +8,7 @@
->  #include <linux/memcontrol.h>
->  #include <linux/sched.h>
->  #include <linux/node.h>
-> +#include <linux/pagemap.h>
+OK, that's a general problem - you need to ensure that the I2C and SPI
+controllers are suspended really late.  The OMAP guys also have this
+problem for some RTCs, though in their case things are slightly
+different due to their use of runtime PM.  Looking at your I2C driver
+(BTW, I'd suggest reminding Ben on a more regular basis about that) I
+suspect that moving your suspend and resume callbacks to the _noirq
+varaints will cover a lot of this.
 
-    Hm, if the errors are in <asm-generic/tlb.h>, why add #include in 
-<linux/swap.h>?
+> The problem isn't limited to i2c busses, there are some regulators on
+> spi busses.  You would need to ensure that any driver that has a
 
-WBR. Sergei
+For all practical purposes in this sort of discussion you can typically
+do a s/I2C/I2C and SPI/ - in terms of system integration issues they're
+very similar.
+
+> regulator consumer suspends before the regulator driver it
+> communicates with, and that still wouldn't fix cpufreq, which has a
+> sysdev suspend handler.
+
+So you actively need to push the processor into low power mode during
+suspend?  I'm still not 100% clear what's triggering the issues you're
+seeing and why this seems to be Tegra-only.  If there were a general
+cpufreq/regulator interaction here I'd expect to see all ARM cpufreq
+drivers needing to do the same thing (and probably some handling of this
+in cpufreq core as a result).  If it's not such an issue I'd expect
+there's also entertaining suspend ordering issues elsewhere.
+
+Typically this stuff isn't a problem for regulators themselves since if
+they're active by the time I2C is off they normally get suspended by
+hardware handshakes from the CPU as that enters low power mode - right
+now we have no regulators at all in mainline that do anything in
+software on suspend.  We can get a long way by just ignoring what
+happens to regulators over suspend (there is some work to do here but
+it's orthogonal to this sort of issue).
