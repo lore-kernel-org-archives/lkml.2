@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab1AXQgh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 11:36:37 -0500
-Received: from fb1.tech.numericable.fr ([82.216.111.51]:56401 "EHLO
-	fb1.tech.numericable.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753493Ab1AXQgf (ORCPT
+	id S1753728Ab1AXQg7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 11:36:59 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:48682 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753675Ab1AXQg4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 11:36:35 -0500
-From: Corentin Chary <corentincj@iksaif.net>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: platform-driver-x86@vger.kernel.org, acpi4asus-user@lists.sourceforge.net,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Chris Bagwell <chris@cnpbagwell.com>,
-        Corentin Chary <corentin.chary@gmail.com>
-Subject: [PATCH 00/14] eeepc-wmi updates
-Date: Mon, 24 Jan 2011 17:23:44 +0100
-Message-Id: <1295886238-15961-1-git-send-email-corentincj@iksaif.net>
-X-Mailer: git-send-email 1.7.3.4
+	Mon, 24 Jan 2011 11:36:56 -0500
+Date: Mon, 24 Jan 2011 11:36:55 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Robert Morell <rmorell@nvidia.com>
+cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Benoit Goby <benoit@android.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
+        Oliver Neukum <oliver@neukum.org>, Olof Johansson <olof@lixom.net>,
+        Erik Gilling <konkers@android.com>, Colin Cross <ccross@android.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 2/2] USB: ehci: tegra: Align DMA transfers to 32 bytes
+In-Reply-To: <1295559715-14264-3-git-send-email-rmorell@nvidia.com>
+Message-ID: <Pine.LNX.4.44L0.1101241132420.2030-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Corentin Chary <corentin.chary@gmail.com>
+On Thu, 20 Jan 2011, Robert Morell wrote:
 
-Hi Matthew,
+> The Tegra2 USB controller doesn't properly deal with misaligned DMA
+> buffers, causing corruption.  This is especially prevalent with USB
+> network adapters, where skbuff alignment is often in the middle of a
+> 4-byte dword.
+> 
+> To avoid this, allocate a temporary buffer for the DMA if the provided
+> buffer isn't sufficiently aligned.
+> 
+> Signed-off-by: Robert Morell <rmorell@nvidia.com>
+> ---
+>  drivers/usb/host/ehci-tegra.c |   92 +++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 92 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+> index 2341904..7cdfc65 100644
+> --- a/drivers/usb/host/ehci-tegra.c
+> +++ b/drivers/usb/host/ehci-tegra.c
+> @@ -32,6 +32,8 @@
+>  #define TEGRA_USB_USBMODE_HOST			(3 << 0)
+>  #define TEGRA_USB_PORTSC1_PTC(x)		(((x) & 0xf) << 16)
+>  
+> +#define TEGRA_USB_DMA_ALIGN 32
+> +
+>  struct tegra_ehci_context {
+>  	bool valid;
+>  	u32 command;
+> @@ -461,6 +463,94 @@ static int tegra_ehci_bus_resume(struct usb_hcd *hcd)
+>  }
+>  #endif
+>  
+> +struct temp_buffer {
+> +	void *kmalloc_ptr;
+> +	void *old_xfer_buffer;
+> +	u8 data[0];
+> +};
+> +
+> +static void free_temp_buffer(struct urb *urb, int status)
+> +{
+> +	enum dma_data_direction dir;
+> +	struct temp_buffer *temp;
+> +
+> +	if (!(urb->transfer_flags & URB_ALIGNED_TEMP_BUFFER))
+> +		return;
+> +
+> +	dir = usb_urb_dir_in(urb) ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
+> +
+> +	temp = container_of(urb->transfer_buffer, struct temp_buffer,
+> +			    data);
+> +
+> +	if (dir == DMA_FROM_DEVICE && !status)
+> +		memcpy(temp->old_xfer_buffer, temp->data,
+> +			urb->transfer_buffer_length);
 
-Thanks to a generous donator, I was able to buy an Eeepc 1000H. It really
-easier to make patch when you have the hardware :).
+Even if status is nonzero, there may be valid data in the buffer.  You 
+should skip that test.
 
-These patches add some features to eeepc-wmi that where already available in
-eeepc-laptop (wimax, camera, cardr, wlan hotplug) and some new features
-(backlight power).
+No other problems that I can see.
 
-You may want to take a look at "eeepc-wmi: add hotplug code for Eeepc 1000H"
-and "eeepc-wmi: serialize access to wmi method" since you wrote the original
-patch for eeepc-laptop.
+Alan Stern
 
-It's probably way to late for 2.6.38, so let's queue them for 2.6.39. Anyway
-if disitribution want to backport some patches, it should be easy to do with
-any kernel >= 2.6.34.
-
-Thanks,
-
-Corentin Chary (14):
-  eeepc-wmi: reorder keymap
-  eeepc-wmi: add wlan key found on 1015P
-  eeepc-wmi: add hotplug code for Eeepc 1000H
-  eeepc-wmi: serialize access to wmi method
-  eeepc-wmi: return proper error code in eeepc_rfkill_set()
-  eeepc-wmi: add an helper using simple return codes
-  eeepc-wmi: add hibernate/resume callbacks
-  eeepc-wmi: switch to platform_create_bundle()
-  eeepc-wmi: reorder defines
-  eeepc-wmi: use the presence bit correctly
-  eeepc-wmi: add camera and card reader support
-  eeepc-wmi: add wimax support
-  eeepc-wmi: set the right key code for 0xe9
-  eeepc-wmi: support backlight power (bl_power) attribute
-
- Documentation/ABI/testing/sysfs-platform-eeepc-wmi |   14 +
- drivers/platform/x86/eeepc-wmi.c                   |  744 ++++++++++++++++----
- 2 files changed, 633 insertions(+), 125 deletions(-)
-
--- 
-1.7.3.4
 
