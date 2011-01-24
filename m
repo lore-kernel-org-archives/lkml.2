@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751453Ab1AXFyD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 00:54:03 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:54693 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301Ab1AXFyB convert rfc822-to-8bit (ORCPT
+	id S1751510Ab1AXF4M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 00:56:12 -0500
+Received: from www.wytron.com.tw ([211.75.82.101]:39854 "EHLO
+	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255Ab1AXF4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 00:54:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=QrAa0d14ZlNIjuprt8R5igjV495dwQZaFikaatAih6rgJBA5oCFaoCKK+ybKtmqM7G
-         bEssO/37eODgMqHiKudUcm1b3xf2twTz9Iy4akn7Htu49pWbZdXc3da6cLw9VHIm7fkF
-         oyCVRnqEp4shr/IWsHaYgBCoqxfrQKwWze6lM=
-MIME-Version: 1.0
-In-Reply-To: <1295847626-2396-1-git-send-email-yong.zhang0@gmail.com>
-References: <20110123150341.GA2643@zhy>
-	<1295847626-2396-1-git-send-email-yong.zhang0@gmail.com>
-Date: Mon, 24 Jan 2011 07:54:00 +0200
-X-Google-Sender-Auth: YgIafQLNd3C6N2sjstbLdbG_JBA
-Message-ID: <AANLkTi=gRO0tCdEzmn3Ne6Wj6bXd1G8nhLw2E_-Yw3WA@mail.gmail.com>
-Subject: Re: [PATCH V2] sched: fix autogroup nice tune on UP
-From: Pekka Enberg <penberg@kernel.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mfwitten@gmail.com,
-        christian@nerdbynature.de, a.p.zijlstra@chello.nl,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <efault@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 24 Jan 2011 00:56:11 -0500
+From: Thomas Chou <thomas@wytron.com.tw>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
+        linux-input@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Walter Goossens <waltergoossens@home.nl>,
+        Thomas Chou <thomas@wytron.com.tw>
+Subject: [PATCH v2] altera_ps2: Add devicetree support
+Date: Mon, 24 Jan 2011 13:58:13 +0800
+Message-Id: <1295848693-28472-1-git-send-email-thomas@wytron.com.tw>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <20110117220415.GB17963@angua.secretlab.ca>
+References: <20110117220415.GB17963@angua.secretlab.ca>
+X-SA-Exim-Connect-IP: 192.168.1.15
+X-SA-Exim-Mail-From: thomas@wytron.com.tw
+X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+From: Walter Goossens <waltergoossens@home.nl>
 
-On Mon, Jan 24, 2011 at 7:40 AM, Yong Zhang <yong.zhang0@gmail.com> wrote:
-> +static void update_cfs_shares(struct cfs_rq *cfs_rq, long weight_delta)
-> +{
-> +       struct task_group *tg;
-> +       struct sched_entity *se;
-> +
-> +       if (!cfs_rq)
-> +               return;
-> +
-> +       tg = cfs_rq->tg;
-> +       se = tg->se[0];
-> +       if (!se)
-> +               return;
-> +       if (likely(se->load.weight == tg->shares))
-> +               return;
-> +       reweight_entity(cfs_rq_of(se), se, tg->shares);
-> +}
+Signed-off-by: Walter Goossens <waltergoossens@home.nl>
+Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
+---
+v2 use const and add compat version.
 
-Wouldn't it be cleaner if we'd separate the shares calculation in a
-separate helper function that's just
+ drivers/input/serio/altera_ps2.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
 
-  return tg->shares;
+diff --git a/drivers/input/serio/altera_ps2.c b/drivers/input/serio/altera_ps2.c
+index 7998560..63325ee 100644
+--- a/drivers/input/serio/altera_ps2.c
++++ b/drivers/input/serio/altera_ps2.c
+@@ -19,6 +19,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/slab.h>
++#include <linux/of.h>
+ 
+ #define DRV_NAME "altera_ps2"
+ 
+@@ -173,6 +174,12 @@ static int __devexit altera_ps2_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static const struct of_device_id altera_ps2_match[] = {
++	{ .compatible = "altr,ps2-1.0", },
++	{},
++}
++MODULE_DEVICE_TABLE(of, altera_ps2_match);
++
+ /*
+  * Our device driver structure
+  */
+@@ -182,6 +189,7 @@ static struct platform_driver altera_ps2_driver = {
+ 	.driver	= {
+ 		.name	= DRV_NAME,
+ 		.owner	= THIS_MODULE,
++		.of_match_table = altera_ps2_match,
+ 	},
+ };
+ 
+@@ -189,13 +197,12 @@ static int __init altera_ps2_init(void)
+ {
+ 	return platform_driver_register(&altera_ps2_driver);
+ }
++module_init(altera_ps2_init);
+ 
+ static void __exit altera_ps2_exit(void)
+ {
+ 	platform_driver_unregister(&altera_ps2_driver);
+ }
+-
+-module_init(altera_ps2_init);
+ module_exit(altera_ps2_exit);
+ 
+ MODULE_DESCRIPTION("Altera University Program PS2 controller driver");
+-- 
+1.7.3.4
 
-for UP and extract the current logic for the SMP version?
