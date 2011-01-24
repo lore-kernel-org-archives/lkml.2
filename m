@@ -1,162 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805Ab1AXNH7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 08:07:59 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:53114 "EHLO mx2.mail.elte.hu"
+	id S1752810Ab1AXNJh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 08:09:37 -0500
+Received: from www.tglx.de ([62.245.132.106]:59998 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751861Ab1AXNH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 08:07:58 -0500
-Date: Mon, 24 Jan 2011 14:07:45 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] scheduler fix
-Message-ID: <20110124130745.GA26948@elte.hu>
+	id S1752497Ab1AXNJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 08:09:36 -0500
+Date: Mon, 24 Jan 2011 14:09:24 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: torbenh <torbenh@gmx.de>
+cc: linux-kernel@vger.kernel.org, johnstul@us.ibm.com, hch@infradead.org,
+        yong.zhang0@gmail.com
+Subject: Re: [PATCH 09/18] frv: switch do_timer() to xtime_update()
+In-Reply-To: <20110124125152.GA29377@siel.b>
+Message-ID: <alpine.LFD.2.00.1101241400170.31804@localhost6.localdomain6>
+References: <1295651224-29823-1-git-send-email-torbenh@gmx.de> <1295651224-29823-10-git-send-email-torbenh@gmx.de> <alpine.LFD.2.00.1101221051570.2971@localhost6.localdomain6> <20110124125152.GA29377@siel.b>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Mon, 24 Jan 2011, torbenh wrote:
+> On Sat, Jan 22, 2011 at 11:01:49AM +0100, Thomas Gleixner wrote:
+> > On Sat, 22 Jan 2011, Torben Hohn wrote:
+> > 
+> > > this code looks like its protecting __set_LEDS() with this lock also.
+> > > i dont think thats necessary.
+> > 
+> > This changelog is horrible. 
+> 
+> agreed.
+> what i meant was that: if i do something while holding a lock,
+> it seems to be necessary to do it while holding the lock.
 
-Please pull the latest sched-fixes-for-linus git tree from:
-
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git sched-fixes-for-linus
-
- Thanks,
-
-	Ingo
-
------------------->
-Yong Zhang (1):
-      sched: Fix poor interactivity on UP systems due to group scheduler nice tune bug
-
-
- kernel/sched_fair.c |   78 ++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 53 insertions(+), 25 deletions(-)
-
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 77e9166..3547699 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -699,7 +699,8 @@ account_entity_dequeue(struct cfs_rq *cfs_rq, struct sched_entity *se)
- 	cfs_rq->nr_running--;
- }
+Well, it might be that way, but obviously that's not the case with the
+code which is in the xtime lock write locked region (except for the
+do_timer() call). :)
  
--#if defined CONFIG_SMP && defined CONFIG_FAIR_GROUP_SCHED
-+#ifdef CONFIG_FAIR_GROUP_SCHED
-+# ifdef CONFIG_SMP
- static void update_cfs_rq_load_contribution(struct cfs_rq *cfs_rq,
- 					    int global_update)
- {
-@@ -762,6 +763,51 @@ static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update)
- 		list_del_leaf_cfs_rq(cfs_rq);
- }
- 
-+static long calc_cfs_shares(struct cfs_rq *cfs_rq, struct task_group *tg,
-+				long weight_delta)
-+{
-+	long load_weight, load, shares;
-+
-+	load = cfs_rq->load.weight + weight_delta;
-+
-+	load_weight = atomic_read(&tg->load_weight);
-+	load_weight -= cfs_rq->load_contribution;
-+	load_weight += load;
-+
-+	shares = (tg->shares * load);
-+	if (load_weight)
-+		shares /= load_weight;
-+
-+	if (shares < MIN_SHARES)
-+		shares = MIN_SHARES;
-+	if (shares > tg->shares)
-+		shares = tg->shares;
-+
-+	return shares;
-+}
-+
-+static void update_entity_shares_tick(struct cfs_rq *cfs_rq)
-+{
-+	if (cfs_rq->load_unacc_exec_time > sysctl_sched_shares_window) {
-+		update_cfs_load(cfs_rq, 0);
-+		update_cfs_shares(cfs_rq, 0);
-+	}
-+}
-+# else /* CONFIG_SMP */
-+static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update)
-+{
-+}
-+
-+static inline long calc_cfs_shares(struct cfs_rq *cfs_rq, struct task_group *tg,
-+				long weight_delta)
-+{
-+	return tg->shares;
-+}
-+
-+static inline void update_entity_shares_tick(struct cfs_rq *cfs_rq)
-+{
-+}
-+# endif /* CONFIG_SMP */
- static void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
- 			    unsigned long weight)
- {
-@@ -782,7 +828,7 @@ static void update_cfs_shares(struct cfs_rq *cfs_rq, long weight_delta)
- {
- 	struct task_group *tg;
- 	struct sched_entity *se;
--	long load_weight, load, shares;
-+	long shares;
- 
- 	if (!cfs_rq)
- 		return;
-@@ -791,32 +837,14 @@ static void update_cfs_shares(struct cfs_rq *cfs_rq, long weight_delta)
- 	se = tg->se[cpu_of(rq_of(cfs_rq))];
- 	if (!se)
- 		return;
--
--	load = cfs_rq->load.weight + weight_delta;
--
--	load_weight = atomic_read(&tg->load_weight);
--	load_weight -= cfs_rq->load_contribution;
--	load_weight += load;
--
--	shares = (tg->shares * load);
--	if (load_weight)
--		shares /= load_weight;
--
--	if (shares < MIN_SHARES)
--		shares = MIN_SHARES;
--	if (shares > tg->shares)
--		shares = tg->shares;
-+#ifndef CONFIG_SMP
-+	if (likely(se->load.weight == tg->shares))
-+		return;
-+#endif
-+	shares = calc_cfs_shares(cfs_rq, tg, weight_delta);
- 
- 	reweight_entity(cfs_rq_of(se), se, shares);
- }
--
--static void update_entity_shares_tick(struct cfs_rq *cfs_rq)
--{
--	if (cfs_rq->load_unacc_exec_time > sysctl_sched_shares_window) {
--		update_cfs_load(cfs_rq, 0);
--		update_cfs_shares(cfs_rq, 0);
--	}
--}
- #else /* CONFIG_FAIR_GROUP_SCHED */
- static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update)
- {
+> > Also all arch/* patches are missing a "Cc: arch-maintainer@somewhere.xxx".
+> 
+> i was planning to send it out with --cc-cmd=./scripts/get_maintainers.pl
+> once you thought it was ok.
+> is that procedure ok ?
+
+get_maintainers creates ugly long cc lists. I prefer hand selected
+cc's. For the arch specific changes cc'ing only the relevant
+maintainer (retrieved from MAINTAINERS) is enough.
+
+> or should i add CC: lines to the commitlogs ?
+
+Either way works. If I pick up such a series, my scripts generate the
+Cc list in the changelog from the mail CC list.
+
+Thanks,
+
+	tglx
