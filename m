@@ -1,56 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748Ab1AXVbq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 16:31:46 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:26839 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949Ab1AXVbo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 16:31:44 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6236"; a="71592102"
-From: David Brown <davidb@codeaurora.org>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: linux-arm-msm@vger.kernel.org,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v2 04/11] msm: io: I/O register definitions for MSM8960
-References: <1292384961-8851-1-git-send-email-stepanm@codeaurora.org>
-	<1295468747-22796-1-git-send-email-davidb@codeaurora.org>
-	<1295468747-22796-5-git-send-email-davidb@codeaurora.org>
-	<1295902153.29639.54.camel@c-dwalke-linux.qualcomm.com>
-X-Hashcash: 1:20:110124:dwalker@codeaurora.org::USG7K0D3NFNfZHr6:000000000000000000000000000000000000000055m
-X-Hashcash: 1:20:110124:linux-arm-msm@vger.kernel.org::sgnyKdgbsOcB36K7:000000000000000000000000000000000710
-X-Hashcash: 1:20:110124:linux-arm-kernel@lists.infradead.org::a4Bfm3x5KTfUtd4c:00000000000000000000000001n18
-X-Hashcash: 1:20:110124:arnd@arndb.de::qSI5rqzO/cbakKYv:00001UCR
-X-Hashcash: 1:20:110124:stepanm@codeaurora.org::45Y7GXloB+5HFEAM:0000000000000000000000000000000000000002QM6
-X-Hashcash: 1:20:110124:linux-kernel@vger.kernel.org::rgWRbF0SyBkPtrHk:0000000000000000000000000000000003tD4
-Date: Mon, 24 Jan 2011 13:31:44 -0800
-In-Reply-To: <1295902153.29639.54.camel@c-dwalke-linux.qualcomm.com> (Daniel
-	Walker's message of "Mon, 24 Jan 2011 12:49:13 -0800")
-Message-ID: <8yafwsikmyn.fsf@huya.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1752880Ab1AXVcF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 16:32:05 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:54763 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751811Ab1AXVcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 16:32:02 -0500
+Date: Mon, 24 Jan 2011 22:31:57 +0100 (CET)
+From: Julia Lawall <julia@diku.dk>
+To: Ryan Mallon <ryan@bluewatersys.com>
+Cc: Vasiliy Kulikov <segooon@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        kernel-janitors@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] arch/arm/mach-at91/clock.c: Add missing IS_ERR test
+In-Reply-To: <4D3DE9CD.2040800@bluewatersys.com>
+Message-ID: <Pine.LNX.4.64.1101242231240.3167@ask.diku.dk>
+References: <1295898922-18822-1-git-send-email-julia@diku.dk>
+ <1295898922-18822-3-git-send-email-julia@diku.dk> <4D3DD964.9020107@bluewatersys.com>
+ <Pine.LNX.4.64.1101242058430.3167@ask.diku.dk> <20110124200515.GA30963@albatros>
+ <4D3DDD07.1030809@bluewatersys.com> <Pine.LNX.4.64.1101242126570.3167@ask.diku.dk>
+ <4D3DE35B.1030102@bluewatersys.com> <Pine.LNX.4.64.1101242200500.3167@ask.diku.dk>
+ <4D3DE9CD.2040800@bluewatersys.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24 2011, Daniel Walker wrote:
+On Tue, 25 Jan 2011, Ryan Mallon wrote:
 
-> On Wed, 2011-01-19 at 12:25 -0800, David Brown wrote:
->> +/*
->> + * Copyright (C) 2007 Google, Inc.
->> + * Copyright (c) 2008-2011, Code Aurora Forum. All rights reserved.
->> + * Author: Brian Swetland <swetland@google.com>
->
-> Brian didn't really write this did he?
+> On 01/25/2011 10:01 AM, Julia Lawall wrote:
+> > On Tue, 25 Jan 2011, Ryan Mallon wrote:
+> > 
+> >> On 01/25/2011 09:28 AM, Julia Lawall wrote:
+> >>>> Julia is correct. Some architectures can return NULL from clk_get, but I
+> >>>> didn't check the at91 before posting :-/. If we can't return NULL from
+> >>>> clk_get then we shouldn't bother checking for it. I do think we should
+> >>>> drop the !IS_ERR(clk_get(dev, func)) check though.
+> >>>
+> >>> It seems a bit subtle, because the clk manipulated by clk_get in the call 
+> >>> of clk_get(dev, func) is not necessarily the same as the one in 
+> >>> clock_associate.  But perhaps this is the only possibility in practice?
+> >>
+> >> Not sure I follow. The at91 clk_get does not modify the clk. In
+> >> at91_clock_associate we have:
+> >>
+> >> 	clk->function = func;
+> >> 	clk->dev = dev;
+> >>
+> >> and in clk_get we have:
+> >>
+> >> 	if (clk->function && (dev == clk->dev) &&
+> >> 		strcmp(id, clk->function) == 0)
+> >>             return clk;
+> >>
+> >> So at91_clock_associate sets the function for a clock, and clk_get
+> >> returns clocks based on the function association if the name lookup
+> >> fails. The only caveat to this is that the the clock function name
+> >> (clk->function) is not the same as any others clock's clk->name.
+> > 
+> > Right, that was what I was worried about.  That one would find the same 
+> > information already present but somewhere else.  But perhaps it can't 
+> > happen, or it doesn't matter if it does?
+> 
+> I think that users are expected to ensure that clock names and clock
+> function names do not overlap.
 
-He wrote the code it is based off of.  The author line could probably be
-removed.
+One can't have a clock with a different name but the same device and 
+function?
 
-David
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+julia
