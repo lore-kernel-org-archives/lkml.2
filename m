@@ -1,42 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab1AYQ7H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 11:59:07 -0500
-Received: from imap.ru.mvista.com ([213.79.90.228]:19140 "EHLO
-	buildserver.ru.mvista.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751379Ab1AYQ7F (ORCPT
+	id S1752566Ab1AYRFh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 12:05:37 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37695 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751973Ab1AYRFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 11:59:05 -0500
-X-Greylist: delayed 1865 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Jan 2011 11:59:05 EST
-Date: Tue, 25 Jan 2011 19:27:56 +0300
-From: Anton Vorontsov <avorontsov@mvista.com>
-To: Tobias Klauser <tklauser@distanz.ch>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] tty: serial: altera_uart: remove
- early_altera_uart_setup
-Message-ID: <20110125144529.GA4804@oksana.dev.rtsoft.ru>
-References: <1295966417-11306-1-git-send-email-tklauser@distanz.ch>
+	Tue, 25 Jan 2011 12:05:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=uBfe6l5t8UQ0tpf+7XJCMIzpP/ID5qhTHJIZ2+eA3k3ArMciM7IJIbA2zPkwNYsYjv
+         g1Z/5O1sqt3s0pRMfTLeNI8V8Nza0TPaKuhPzBmAFiZ/92JMKvoBft10J7N0DhVIuZPb
+         jYkukveW6c3XbGTAcr9sfJxtxlj21s8EGtKw4=
+Date: Tue, 25 Jan 2011 19:05:22 +0200
+From: "Ahmed S. Darwish" <darwish.07@gmail.com>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, X86-ML <x86@kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Willy Tarreau <wtarreau@hera.kernel.org>, Willy Tarreau <w@1wt.eu>,
+        Dirk Hohndel <hohndel@infradead.org>, Dirk.Hohndel@intel.com,
+        IDE-ML <linux-ide@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@infradead.org>,
+        Jeff Garzik <jgarzik@pobox.com>
+Subject: Re: [PATCH 0/2][concept RFC] x86: BIOS-save kernel log to disk
+	upon panic
+Message-ID: <20110125170522.GA16285@laptop>
+References: <20110125134748.GA10051@laptop> <20110125140948.GA26762@elte.hu> <20110125153649.GA11386@laptop> <1295971355.4955.104.camel@mulgrave.site>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1295966417-11306-1-git-send-email-tklauser@distanz.ch>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1295971355.4955.104.camel@mulgrave.site>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 03:40:17PM +0100, Tobias Klauser wrote:
-> The function has no users inside the tree and the nios2 architecture
-> doesn't use it (anymore) either.
+Hi!
+
+On Tue, Jan 25, 2011 at 11:02:35AM -0500, James Bottomley wrote:
+> On Tue, 2011-01-25 at 17:36 +0200, Ahmed S. Darwish wrote:
+> > The complete __roadblock__ I'm currently facing though is restoring the disk
+> > controllers to the state originally setup by the BIOS Power-on self-test (POST).
+> > I hope such re-initialization is even technically feasible.
+> > 
+> > Without such re-initialization, we'll just be risking the BIOS code exploding.
+> > That was the case in the 5-minute hang described in the cover sheet (PATCH #0).
 > 
-> Cc: Anton Vorontsov <cbouatmailru@gmail.com>
-> Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
-> ---
+> So this is the bit that's not really technically feasible.  BIOS tends
+> to run storage devices in a very primitive way (so it takes basic
+> settings, for example and sets the device up for one particular channel
+> of access).  When preparing the device for an operating system, we have
+> to blow away all the bios stuff and put it into a more generally
+> performant mode (this isn't just the storage per se, it's also the
+> interrupt and routing).  Unfortunately, currently, we don't bother to
+> save the settings the BIOS was using, so there's no way to reinitialise
+> the device back to bios without an effective reboot.
+>
 
-We don't use it either, at least so far. If/whenever we need it,
-we can always revert this commit. So,
+My current x86 laptop includes the very common ATA PIIX controller. If I
+dumped the PIC, IOAPIC, and disk controller state in a register file in a
+safe area, and re-initialized these before giving control to the BIOS, can
+this move the solution space from being not really technically feasible to
+"quite possible"?
 
-Acked-by: Anton Vorontsov <cbouatmailru@gmail.com>
+I have to admit that my knowledge of disk controllers is nil. The final
+result though can really be worth the effort (as stated by Ingo's mail),
+so I'm _willing_ to explore and prototype different paths.
 
-Thanks!
+>
+> Most BIOS doesn't seem to contain storage re-POST code that's usable
+> (it's all embedded in the boot sequence).
+>
+
+There's this arcane `Warm boot with partial re-initialization' BIOS feature
+using the CMOS register 0xf, but I don't want to to depend on it either.
+
+> James
+> 
+
+Thanks,
+
+-- 
+Darwish
+http://darwish.07.googlepages.com
