@@ -1,42 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948Ab1AYGMM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 01:12:12 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:32849 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752093Ab1AYGMK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 01:12:10 -0500
-Date: Tue, 25 Jan 2011 15:12:03 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: Julia Lawall <julia@diku.dk>, kernel-janitors@vger.kernel.org,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        Bryan Wu <cooloney@kernel.org>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] drivers/video/bf537-lq035.c: Add missing IS_ERR test
-Message-ID: <20110125061203.GD11673@linux-sh.org>
-References: <1295898922-18822-1-git-send-email-julia@diku.dk> <1295898922-18822-4-git-send-email-julia@diku.dk> <201101241543.19543.vapier@gentoo.org>
+	id S1753038Ab1AYGMl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 01:12:41 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:39934 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752731Ab1AYGMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 01:12:40 -0500
+Date: Tue, 25 Jan 2011 07:12:34 +0100 (CET)
+From: Julia Lawall <julia@diku.dk>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ryan Mallon <ryan@bluewatersys.com>,
+        Vasiliy Kulikov <segooon@gmail.com>, kernel-janitors@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] arch/arm/mach-at91/clock.c: Add missing IS_ERR test
+In-Reply-To: <20110125014428.GO24284@game.jcrosoft.org>
+Message-ID: <Pine.LNX.4.64.1101250712110.29909@ask.diku.dk>
+References: <Pine.LNX.4.64.1101242058430.3167@ask.diku.dk>
+ <20110124200515.GA30963@albatros> <4D3DDD07.1030809@bluewatersys.com>
+ <Pine.LNX.4.64.1101242126570.3167@ask.diku.dk> <4D3DE35B.1030102@bluewatersys.com>
+ <Pine.LNX.4.64.1101242200500.3167@ask.diku.dk> <4D3DE9CD.2040800@bluewatersys.com>
+ <Pine.LNX.4.64.1101242231240.3167@ask.diku.dk> <4D3DF46A.1030009@bluewatersys.com>
+ <20110124232302.GQ24104@n2100.arm.linux.org.uk> <20110125014428.GO24284@game.jcrosoft.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201101241543.19543.vapier@gentoo.org>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24, 2011 at 03:43:17PM -0500, Mike Frysinger wrote:
-> On Monday, January 24, 2011 14:55:21 Julia Lawall wrote:
-> > lcd_device_register may return ERR_PTR, so a check is added for this value
-> > before the dereference.  All of the other changes reorganize the error
-> > handling code in this function to avoid duplicating all of it in the added
-> > case.
-> > 
-> > In the original code, in one case, the global variable fb_buffer was set to
-> > NULL in error code that appears after this variable is initialized.  This
-> > is done now in all error handling code that has this property.
-> 
-> Acked-by: Mike Frysinger <vapier@gentoo.org>
+On Tue, 25 Jan 2011, Jean-Christophe PLAGNIOL-VILLARD wrote:
 
-Applied, thanks.
+> On 23:23 Mon 24 Jan     , Russell King - ARM Linux wrote:
+> > On Tue, Jan 25, 2011 at 10:51:38AM +1300, Ryan Mallon wrote:
+> > > You could, but it would not be helpful. Clock associations are used so
+> > > that _different_ devices can have the same function and map to the
+> > > correct clock. This is used when there are multiple instances of a
+> > > single peripheral. For example, the uart clocks work like this:
+> > > 
+> > > 	at91_clock_associate("usart1_clk", &pdev->dev, "usart");
+> > > 
+> > > so then you can do this in a driver:
+> > > 	
+> > > 	uart_clk = clk_get(&pdev->dev, "usart");
+> > > 
+> > > Rather than:
+> > > 
+> > > 	uart_clk = clk_get(NULL, "usart1_clk");
+> > > 
+> > > The former will find the correct uart clock for the device. Because each
+> > > uart is a separate device the correct clock will be selected for each uart.
+> > > 	
+> > > My point was that there should be no overlap between clk->name and
+> > > clk->function otherwise clk_get will not be able to return the correct
+> > > clock.
+> > 
+> > It would be nice if AT91 could switch over to using clkdev at some
+> > point, which greatly helps with associating struct clk's with their
+> > device/function names - and reduces the amount of "different" code.
+> I working on it that's was one of the reason I move clkdev to drivers
+> as AT91 and AVR32 need to switch
+
+Shall I just leave the patch as is then?
+
+julia
