@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753879Ab1AYO3a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 09:29:30 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:49262 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264Ab1AYO32 (ORCPT
+	id S1753905Ab1AYOaD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 09:30:03 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:59537 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753264Ab1AYOaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 09:29:28 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=penE9AmC9SdGpGE2IjuIU1daFAkYuGiTvRwlUpweJ+zrYu4wj3IhyQuQ+T13MgY2b6
-         HW+GQKNSVbZoZdSgp+rL+rn43yGJDpYDvheHRgnlmZvR4OK+KLo9E71kqcvnY/x2gjDi
-         jckxQjN5Xz4W0fYtr2FAz9jZnmo/b/dP4KejU=
-Date: Tue, 25 Jan 2011 15:29:21 +0100
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, davej@redhat.com,
-        cpufreq@vger.kernel.org, Markus.Lidel@shadowconnect.com,
-        tomas.winkler@intel.com, jayamohank@serverengines.com,
-        andrew.vasquez@qlogic.com, James.Bottomley@HansenPartnership.com,
-        linux-scsi@vger.kernel.org, tomof@acm.org, stf_xl@wp.pl,
-        linux-usb@vger.kernel.org, tytso@mit.edu, mfasheh@suse.com,
-        joel.becker@oracle.com, reiserfs-devel@vger.kernel.org, aelder@sgi.com,
-        hch@infradead.org, ericvh@gmail.com, rminnich@sandia.gov,
-        v9fs-developer@lists.sourceforge.net, lucho@ionkov.net,
-        andy.grover@oracle.com
-Subject: Re: [PATCHSET] workqueue: update workqueue users - replace
- create_workqueue()
-Message-ID: <20110125142921.GB27510@htj.dyndns.org>
-References: <1294062595-30097-1-git-send-email-tj@kernel.org>
+	Tue, 25 Jan 2011 09:30:00 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linasvepstas@gmail.com
+Subject: Re: [BUG] Generic syscalls -- chmod vs. fchmodat
+Date: Tue, 25 Jan 2011 15:29:24 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Chris Metcalf <cmetcalf@tilera.com>,
+        GLIBC Devel <libc-alpha@sourceware.org>, linux-kernel@vger.kernel.org,
+        libc-ports@sourceware.org, linux-api@vger.kernel.org,
+        Roland McGrath <roland@redhat.com>, Mike Frysinger <vapier@gentoo.org>
+References: <AANLkTikhKHnR+7DskxYqWXduX4=tpfgsfL4sNYq+4QDq@mail.gmail.com>
+In-Reply-To: <AANLkTikhKHnR+7DskxYqWXduX4=tpfgsfL4sNYq+4QDq@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294062595-30097-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101251529.24779.arnd@arndb.de>
+X-Provags-ID: V02:K0:pWiWKilFUvUzTQlDGlh2uYUHUe/BLsBb0syb9smIHME
+ sGkQVc5iXzQXtGGKz9KfmwVWx2915VGrjX+vAXS2qwV3t8yv0u
+ x7zuqj0NX+gQ4yZfbLsNw7Ptr8773+OGUZdHBO1y7UiPFaeNpp
+ LYwGozK9UWWzFbg7iu/ie+HR2+zx1aVg4zQJhItUyalePzS8TH
+ rPclZXraDjEhwlmNOGV1Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Monday 24 January 2011, Linas Vepstas wrote:
+> Chris, Arnd, all,
 
-There was no response for the following patches and I'm planning on
-routing them through workqueue#for-2.6.39.  If you have an objection
-or want to take the patch through a different tree, please let me
-know.
+[adding linux-api list]
 
- 0006-acpi-kacpi-_wq-don-t-need-WQ_MEM_RECLAIM.patch
- 0007-cpufreq-use-system_wq-instead-of-dedicated-workqueue.patch
- 0012-i2o-use-alloc_workqueue-instead-of-create_workqueue.patch
- 0013-misc-iwmc3200top-use-system_wq-instead-of-dedicated-.patch
- 0016-scsi-be2iscsi-qla2xxx-convert-to-alloc_workqueue.patch
- 0018-scsi-scsi_tgt_lib-scsi_tgtd-isn-t-used-in-memory-rec.patch
- 0019-usb-ueagle-atm-use-system_wq-instead-of-dedicated-wo.patch
- 0025-ext4-convert-to-alloc_workqueue.patch
- 0026-ocfs2-use-system_wq-instead-of-ocfs2_quota_wq.patch
- 0027-reiserfs-make-commit_wq-use-the-default-concurrency-.patch
- 0028-xfs-convert-to-alloc_workqueue.patch
- 0029-net-9p-use-system_wq-instead-of-p9_mux_wq.patch
- 0030-net-9p-replace-p9_poll_task-with-a-work.patch
- 0031-rds-ib-use-system_wq-instead-of-rds_ib_fmr_wq.patch
+> Found a bug/incompatibility in the generic syscalls chmod implementation;
+> not sure if this is a kernel bug or a glibc bug, or how to correctly resolve it.
+> 
+> The new "generic chmod" implementation for glibc sends chmod to the
+> kernel call sys_fchmodat with  AT_FDCWD, instead of using the older
+> "deprecated" chmod syscall.  These two behave slightly differently:  with
+> the new implementation, the file "" (i.e. string of length zero) gets
+> interpreted
+> as . and so the syscall succeeds, setting perms on .  The old syscall would
+> return an errno=2 No such file or directory for this filename.
+> 
+> My gut instinct is that this is a kernel bug, but am not so sure; perhaps this
+> is "working as designed".  I thought of submitting a patch to fs/namei.c to
+> fix this, but then got lost in the details: there didn't seem to be
+> any particularly
+> good place to add this check.  Meanwhile, a glibc test case (posix/tst-chmod.c)
+> is failing as a result.
+> 
+> Should we put a check for this funky non-filename into the glibc
+> generic code, or into sys_chmodat? Recommendations?
 
-The whole series can be found at the following URL.
+My feeling is that it should be in glibc: as Mike mentioned, we don't normally
+change the behavior of existing system calls unless they are obviously
+broken to start with. If we want to keep fchmodat getting the implicit
+"." directory, and at the same time keep fchmod returning an error, the fchmod
+wrapper around fchmodat is the only place that can enforce this.
 
- http://thread.gmane.org/gmane.linux.kernel/1082587
-
-Thank you.
-
--- 
-tejun
+	Arnd
