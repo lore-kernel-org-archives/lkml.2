@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344Ab1AYRWN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 12:22:13 -0500
-Received: from casper.infradead.org ([85.118.1.10]:46991 "EHLO
+	id S1753696Ab1AYR0U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 12:26:20 -0500
+Received: from casper.infradead.org ([85.118.1.10]:46998 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753254Ab1AYRWJ (ORCPT
+	with ESMTP id S1753304Ab1AYRWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 12:22:09 -0500
+	Tue, 25 Jan 2011 12:22:11 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 18/29] perf callchain: Rename cumul_hits into callchain_cumul_hits
-Date: Tue, 25 Jan 2011 15:21:41 -0200
-Message-Id: <1295976112-2796-19-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 26/29] perf tools: Pass the struct opt to the wildcard parsing routine
+Date: Tue, 25 Jan 2011 15:21:49 -0200
+Message-Id: <1295976112-2796-27-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1295976112-2796-1-git-send-email-acme@infradead.org>
 References: <1295976112-2796-1-git-send-email-acme@infradead.org>
@@ -25,111 +27,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-That makes the callchain API naming more consistent and
-reduce potential naming clashes.
+It is needed because it will call parse_event for each tracepoint
+name that matches, and we pass the perf_evlist via opt->value.
 
+Problem introduced in 4503fdd where my assumption about opt being
+always non NULL made me not look at callers of parse_events outside
+builtin-*.c.
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1294977121-5700-3-git-send-email-fweisbec@gmail.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/callchain.c         |   10 +++++-----
- tools/perf/util/callchain.h         |    2 +-
- tools/perf/util/hist.c              |    2 +-
- tools/perf/util/ui/browsers/hists.c |    2 +-
- 4 files changed, 8 insertions(+), 8 deletions(-)
+ tools/perf/util/parse-events.c |   20 +++++++++++---------
+ 1 files changed, 11 insertions(+), 9 deletions(-)
 
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 53a49e0..4c6360f 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -38,14 +38,14 @@ rb_insert_callchain(struct rb_root *root, struct callchain_node *chain,
- 	struct rb_node **p = &root->rb_node;
- 	struct rb_node *parent = NULL;
- 	struct callchain_node *rnode;
--	u64 chain_cumul = cumul_hits(chain);
-+	u64 chain_cumul = callchain_cumul_hits(chain);
- 
- 	while (*p) {
- 		u64 rnode_cumul;
- 
- 		parent = *p;
- 		rnode = rb_entry(parent, struct callchain_node, rb_node);
--		rnode_cumul = cumul_hits(rnode);
-+		rnode_cumul = callchain_cumul_hits(rnode);
- 
- 		switch (mode) {
- 		case CHAIN_FLAT:
-@@ -104,7 +104,7 @@ static void __sort_chain_graph_abs(struct callchain_node *node,
- 
- 	chain_for_each_child(child, node) {
- 		__sort_chain_graph_abs(child, min_hit);
--		if (cumul_hits(child) >= min_hit)
-+		if (callchain_cumul_hits(child) >= min_hit)
- 			rb_insert_callchain(&node->rb_root, child,
- 					    CHAIN_GRAPH_ABS);
- 	}
-@@ -129,7 +129,7 @@ static void __sort_chain_graph_rel(struct callchain_node *node,
- 
- 	chain_for_each_child(child, node) {
- 		__sort_chain_graph_rel(child, min_percent);
--		if (cumul_hits(child) >= min_hit)
-+		if (callchain_cumul_hits(child) >= min_hit)
- 			rb_insert_callchain(&node->rb_root, child,
- 					    CHAIN_GRAPH_REL);
- 	}
-@@ -270,7 +270,7 @@ split_add_child(struct callchain_node *parent,
- 	/* split the hits */
- 	new->hit = parent->hit;
- 	new->children_hit = parent->children_hit;
--	parent->children_hit = cumul_hits(new);
-+	parent->children_hit = callchain_cumul_hits(new);
- 	new->val_nr = parent->val_nr - idx_local;
- 	parent->val_nr = idx_local;
- 
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index d74a19a..07f71e3 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -82,7 +82,7 @@ static inline void callchain_init(struct callchain_root *root)
- 	root->max_depth = 0;
- }
- 
--static inline u64 cumul_hits(struct callchain_node *node)
-+static inline u64 callchain_cumul_hits(struct callchain_node *node)
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index d3086ce..cf082da 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -446,8 +446,8 @@ parse_single_tracepoint_event(char *sys_name,
+ /* sys + ':' + event + ':' + flags*/
+ #define MAX_EVOPT_LEN	(MAX_EVENT_LENGTH * 2 + 2 + 128)
+ static enum event_result
+-parse_multiple_tracepoint_event(char *sys_name, const char *evt_exp,
+-				char *flags)
++parse_multiple_tracepoint_event(const struct option *opt, char *sys_name,
++				const char *evt_exp, char *flags)
  {
- 	return node->hit + node->children_hit;
+ 	char evt_path[MAXPATHLEN];
+ 	struct dirent *evt_ent;
+@@ -480,15 +480,16 @@ parse_multiple_tracepoint_event(char *sys_name, const char *evt_exp,
+ 		if (len < 0)
+ 			return EVT_FAILED;
+ 
+-		if (parse_events(NULL, event_opt, 0))
++		if (parse_events(opt, event_opt, 0))
+ 			return EVT_FAILED;
+ 	}
+ 
+ 	return EVT_HANDLED_ALL;
  }
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index a438a06..02ed318 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -430,7 +430,7 @@ static size_t __callchain__fprintf_graph(FILE *fp, struct callchain_node *self,
- 		u64 cumul;
  
- 		child = rb_entry(node, struct callchain_node, rb_node);
--		cumul = cumul_hits(child);
-+		cumul = callchain_cumul_hits(child);
- 		remaining -= cumul;
+-static enum event_result parse_tracepoint_event(const char **strp,
+-				    struct perf_event_attr *attr)
++static enum event_result
++parse_tracepoint_event(const struct option *opt, const char **strp,
++		       struct perf_event_attr *attr)
+ {
+ 	const char *evt_name;
+ 	char *flags = NULL, *comma_loc;
+@@ -527,7 +528,7 @@ static enum event_result parse_tracepoint_event(const char **strp,
+ 		return EVT_FAILED;
+ 	if (strpbrk(evt_name, "*?")) {
+ 		*strp += strlen(sys_name) + evt_length + 1; /* 1 == the ':' */
+-		return parse_multiple_tracepoint_event(sys_name, evt_name,
++		return parse_multiple_tracepoint_event(opt, sys_name, evt_name,
+ 						       flags);
+ 	} else {
+ 		return parse_single_tracepoint_event(sys_name, evt_name,
+@@ -737,11 +738,12 @@ parse_event_modifier(const char **strp, struct perf_event_attr *attr)
+  * Symbolic names are (almost) exactly matched.
+  */
+ static enum event_result
+-parse_event_symbols(const char **str, struct perf_event_attr *attr)
++parse_event_symbols(const struct option *opt, const char **str,
++		    struct perf_event_attr *attr)
+ {
+ 	enum event_result ret;
  
- 		/*
-diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-index 60c463c..8642823 100644
---- a/tools/perf/util/ui/browsers/hists.c
-+++ b/tools/perf/util/ui/browsers/hists.c
-@@ -377,7 +377,7 @@ static int hist_browser__show_callchain_node_rb_tree(struct hist_browser *self,
- 	while (node) {
- 		struct callchain_node *child = rb_entry(node, struct callchain_node, rb_node);
- 		struct rb_node *next = rb_next(node);
--		u64 cumul = cumul_hits(child);
-+		u64 cumul = callchain_cumul_hits(child);
- 		struct callchain_list *chain;
- 		char folded_sign = ' ';
- 		int first = true;
+-	ret = parse_tracepoint_event(str, attr);
++	ret = parse_tracepoint_event(opt, str, attr);
+ 	if (ret != EVT_FAILED)
+ 		goto modifier;
+ 
+@@ -783,7 +785,7 @@ int parse_events(const struct option *opt, const char *str, int unset __used)
+ 
+ 	for (;;) {
+ 		memset(&attr, 0, sizeof(attr));
+-		ret = parse_event_symbols(&str, &attr);
++		ret = parse_event_symbols(opt, &str, &attr);
+ 		if (ret == EVT_FAILED)
+ 			return -1;
+ 
 -- 
 1.6.2.5
 
