@@ -1,64 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590Ab1AYWQn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 17:16:43 -0500
-Received: from 64.mail-out.ovh.net ([91.121.185.65]:60434 "HELO
-	64.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752735Ab1AYWQm (ORCPT
+	id S1753420Ab1AYWRx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 17:17:53 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:51982 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752390Ab1AYWRv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 17:16:42 -0500
-Message-ID: <4D3F4BC5.5010507@example.com>
-Date: Tue, 25 Jan 2011 23:16:37 +0100
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
-MIME-Version: 1.0
-To: piotr@hosowicz.com
-CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, kurt.van.dijck@eia.be
-Subject: Re: Something is wrong in your source, David
-References: <4D3F4277.20008@example.com> <20110125.134455.115939217.davem@davemloft.net> <4D3F47F8.2020007@example.com>
-In-Reply-To: <4D3F47F8.2020007@example.com>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 5460051599362388338
-X-Ovh-Remote: 83.24.77.83 (dmv83.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	Tue, 25 Jan 2011 17:17:51 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Dave Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org
+Subject: [PATCH 01/20] drm/i810: remove the BKL
+Date: Tue, 25 Jan 2011 23:17:15 +0100
+Message-Id: <1295993854-4971-2-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1295993854-4971-1-git-send-email-arnd@arndb.de>
+References: <1295993854-4971-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:ERfuMZi4rNnZesdqW9EmtkRuuxU8cjJuZX8mrG7eUFh
+ /zBJEuzOFOIekTX3v42+s79okLxL2mw2RmJCrstggHcNo5PzeV
+ 4vodYVkR/uasaJUHVe/R0zMCsyjmeC4PFh8BhIR6g9toHJEe07
+ tFoI7CiXNvyJJnoyu+PEDmwLkWnevcvC1IotrFEqSfXYO1GOos
+ B4lmpj14CnbCHIQq4QgYQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25.01.2011 23:00, Piotr Hosowicz wrote:
-> On 25.01.2011 22:44, David Miller wrote:
->> From: Piotr Hosowicz<piotr@hosowicz.com>
->> Date: Tue, 25 Jan 2011 22:36:55 +0100
->>
->>> Hello David, hello all,
->>>
->>> David, when I apply your source from GIT to Linus source I get this in
->>> final part of the build process:
->>
->> Please always CC: the appropriate developer list for the subsystem
->> where you see the problem, and also make an effort to also contact the
->> developer who might be responsible for the sources in question.
->>
->> I've done this for you.
->
-> Aha, OK. Sorry for the inconvenience. I attach the config which
-> successfuly gets build.
+SMP i810 systems were practically nonexistent and the configuration
+was not officially supported by Intel at the time when Pentium-III
+was common.
 
-Aha, now it built OK, I disabled CAN driver.
+With this change, it is still possible to build a distribution kernel
+that has support for SMP and includes the i810 driver without the BKL.
+As a precaution, check for the theoretical SMP case at run time and
+refuse to load the driver.
 
-Regards,
+We also need to disable CONFIG_PREEMPT builds for this driver.
 
-Piotr Hosowicz
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Dave Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org
+---
+ drivers/gpu/drm/Kconfig         |    4 ++--
+ drivers/gpu/drm/i810/i810_dma.c |   18 +-----------------
+ drivers/gpu/drm/i810/i810_drv.c |    6 +++++-
+ 3 files changed, 8 insertions(+), 20 deletions(-)
 
+diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
+index bea966f..9fc650d 100644
+--- a/drivers/gpu/drm/Kconfig
++++ b/drivers/gpu/drm/Kconfig
+@@ -73,8 +73,8 @@ source "drivers/gpu/drm/radeon/Kconfig"
+ 
+ config DRM_I810
+ 	tristate "Intel I810"
+-	# BKL usage in order to avoid AB-BA deadlocks, may become BROKEN_ON_SMP
+-	depends on DRM && AGP && AGP_INTEL && BKL
++	# !PREEMPT because of missing ioctl locking
++	depends on DRM && AGP && AGP_INTEL && (!PREEMPT || BROKEN)
+ 	help
+ 	  Choose this option if you have an Intel I810 graphics card.  If M is
+ 	  selected, the module will be called i810.  AGP support is required
+diff --git a/drivers/gpu/drm/i810/i810_dma.c b/drivers/gpu/drm/i810/i810_dma.c
+index ff33e53..8f371e8 100644
+--- a/drivers/gpu/drm/i810/i810_dma.c
++++ b/drivers/gpu/drm/i810/i810_dma.c
+@@ -37,7 +37,6 @@
+ #include <linux/interrupt.h>	/* For task queue support */
+ #include <linux/delay.h>
+ #include <linux/slab.h>
+-#include <linux/smp_lock.h>
+ #include <linux/pagemap.h>
+ 
+ #define I810_BUF_FREE		2
+@@ -94,7 +93,6 @@ static int i810_mmap_buffers(struct file *filp, struct vm_area_struct *vma)
+ 	struct drm_buf *buf;
+ 	drm_i810_buf_priv_t *buf_priv;
+ 
+-	lock_kernel();
+ 	dev = priv->minor->dev;
+ 	dev_priv = dev->dev_private;
+ 	buf = dev_priv->mmap_buffer;
+@@ -104,7 +102,6 @@ static int i810_mmap_buffers(struct file *filp, struct vm_area_struct *vma)
+ 	vma->vm_file = filp;
+ 
+ 	buf_priv->currently_mapped = I810_BUF_MAPPED;
+-	unlock_kernel();
+ 
+ 	if (io_remap_pfn_range(vma, vma->vm_start,
+ 			       vma->vm_pgoff,
+@@ -116,7 +113,7 @@ static int i810_mmap_buffers(struct file *filp, struct vm_area_struct *vma)
+ static const struct file_operations i810_buffer_fops = {
+ 	.open = drm_open,
+ 	.release = drm_release,
+-	.unlocked_ioctl = i810_ioctl,
++	.unlocked_ioctl = drm_ioctl,
+ 	.mmap = i810_mmap_buffers,
+ 	.fasync = drm_fasync,
+ 	.llseek = noop_llseek,
+@@ -1242,19 +1239,6 @@ int i810_driver_dma_quiescent(struct drm_device *dev)
+ 	return 0;
+ }
+ 
+-/*
+- * call the drm_ioctl under the big kernel lock because
+- * to lock against the i810_mmap_buffers function.
+- */
+-long i810_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+-{
+-	int ret;
+-	lock_kernel();
+-	ret = drm_ioctl(file, cmd, arg);
+-	unlock_kernel();
+-	return ret;
+-}
+-
+ struct drm_ioctl_desc i810_ioctls[] = {
+ 	DRM_IOCTL_DEF_DRV(I810_INIT, i810_dma_init, DRM_AUTH|DRM_MASTER|DRM_ROOT_ONLY|DRM_UNLOCKED),
+ 	DRM_IOCTL_DEF_DRV(I810_VERTEX, i810_dma_vertex, DRM_AUTH|DRM_UNLOCKED),
+diff --git a/drivers/gpu/drm/i810/i810_drv.c b/drivers/gpu/drm/i810/i810_drv.c
+index 88bcd33..0152fa2 100644
+--- a/drivers/gpu/drm/i810/i810_drv.c
++++ b/drivers/gpu/drm/i810/i810_drv.c
+@@ -57,7 +57,7 @@ static struct drm_driver driver = {
+ 		 .owner = THIS_MODULE,
+ 		 .open = drm_open,
+ 		 .release = drm_release,
+-		 .unlocked_ioctl = i810_ioctl,
++		 .unlocked_ioctl = drm_ioctl,
+ 		 .mmap = drm_mmap,
+ 		 .poll = drm_poll,
+ 		 .fasync = drm_fasync,
+@@ -79,6 +79,10 @@ static struct drm_driver driver = {
+ 
+ static int __init i810_init(void)
+ {
++	if (num_possible_cpus() > 1) {
++		pr_err("drm/i810 does not support SMP\n");
++		return -EINVAL;
++	}
+ 	driver.num_ioctls = i810_max_ioctl;
+ 	return drm_init(&driver);
+ }
 -- 
-F±farowie wracaj± pieszo do domu z opery.
-W pewnej chwili ¿ona mówi do mê¿a:
-- Taki wstyd! Jak mog³e¶ krzykn±æ: Brawo! Bis!,
-gdy primadonna wpad³a do kana³u dla orkiestry?!
-NP: Peter Green Splinter Group - Big Change Is Gonna Come
-NB: 2.6.38-rc2-20110125-2155-pztidm+
+1.7.1
+
