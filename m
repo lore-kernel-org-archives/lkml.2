@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387Ab1AYT4p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 14:56:45 -0500
-Received: from casper.infradead.org ([85.118.1.10]:52236 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753330Ab1AYT4m convert rfc822-to-8bit (ORCPT
+	id S1753334Ab1AYT6w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 14:58:52 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:33651 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751855Ab1AYT6v convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 14:56:42 -0500
-Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 10/20] 10: uprobes: task specific
- information.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Josh Stone <jistone@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Linux-mm <linux-mm@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <4D3F1897.60300@redhat.com>
-References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
-	 <20101216095912.23751.63180.sendpatchset@localhost6.localdomain6>
-	 <1295963775.28776.1056.camel@laptop>  <4D3F1897.60300@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
+	Tue, 25 Jan 2011 14:58:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=hbijucxfKmjrYImHw3G21AX2p3G4fgHY1VF3T/3JbdkttB0MXyA3l6YaSuDiZMGWRf
+         9GCHfTI7qg4itBdQx2qg==
+MIME-Version: 1.0
+In-Reply-To: <20110125030105.GA8761@kroah.com>
+References: <20110125002433.12637.51091.stgit@mike.mtv.corp.google.com> <20110125030105.GA8761@kroah.com>
+From: Mike Waychison <mikew@google.com>
+Date: Tue, 25 Jan 2011 11:58:27 -0800
+Message-ID: <AANLkTim_KmmtAULeeBBsoz_BkxhbQLg24PK_pfPQiLtE@mail.gmail.com>
+Subject: Re: [PATCH v1 0/6] google firmware support
+To: Greg KH <greg@kroah.com>
+Cc: torvalds@linux-foundation.org, San Mehat <san@google.com>,
+        Aaron Durbin <adurbin@google.com>, Duncan Laurie <dlaurie@google.com>,
+        linux-kernel@vger.kernel.org, Tim Hockin <thockin@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Date: Tue, 25 Jan 2011 20:56:35 +0100
-Message-ID: <1295985395.28776.1094.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-25 at 10:38 -0800, Josh Stone wrote:
-> On 01/25/2011 05:56 AM, Peter Zijlstra wrote:
-> > Ah, I think I found it while reading patch 13, you need the pre/post_xol
-> > callbacks, can't you simply synthesize their effect into the replacement
-> > sequence?
-> > 
-> >   push %rax
-> >   mov $vaddr, %rax
-> >   $INSN
-> >   pop %rax
-> >   jmp $next_insn
-> > 
-> > like replacements would obviate the need for the pre/post callbacks and
-> > allow you to run straight through.
-> 
-> For this particular example, you'd better be sure that $INSN doesn't
-> need %rsp intact.
+On Mon, Jan 24, 2011 at 7:01 PM, Greg KH <greg@kroah.com> wrote:
+> On Mon, Jan 24, 2011 at 04:24:34PM -0800, Mike Waychison wrote:
+>>
+>>    - [5] prepares for [6] by introducing prepend_to_dmesg() which
+>>      allows drivers to prepend pre-kernel messages to the dmesg at
+>>      bootup.
+>
+> That seems "rude".  Why can't you just pick out from the kernel log the
+> data you need when it gets printed?  This seems like you feel your code
+> should always get a "First Post!" message.
 
-Well, either that of fix up the %rsp offset, but yes I had not
-considered this.
+Well, the use case we have is that we prepend all the bios output (and
+anything emitted by option roms and boot loaders via int 10h).  This
+typically runs in the 100+ lines of output.
 
-> Control flow in general also makes this challenging.  If $INSN is a
-> call, then any inline fixups won't get a chance until after return.  If
-> $INSN is a jump, then its target must be modified so that both taken and
-> not-taken paths land in respective fixup locations.  I'm sure there are
-> more cases that I'm not thinking of.
+Basically, everything the user sees on the console after power up is
+available to him in the dmesg.  We did this out of convenience as it
+makes for a good looking log :)
 
-Right.
+That said, it's dmesg, and we don't build automation on anything in
+there if we can help it.  I can move this memory console dump
+elsewhere (/sys/firmware/log ?)
 
-> > It would also remove the whole single-step need since they're proper
-> > boosted probes.
-> 
-> Kprobes has boosting, but it doesn't apply to all opcodes.  I would
-> guess that the same could be done for uprobes, where certain opcodes get
-> a fixup sequence like you suggest, but the pre/post_xol mechanism is
-> still needed in general.
+>  What happens when someone
+> else wants this and you get dueling "firsts"?
 
-Bummer..
+No idea :)
+
+Originally I had something a little different for getting this done:
+I had introduced a weak symbol called something like
+"arch_dmesg_fixup()" that could be made strong in the architecture
+code somewhere (in my case, it was in this driver).    That sort of
+pattern would allow us to enforce having only one 'first post'
+callback :)
+
+Anyhow, let me know what you think about /sys/firmware/log or similar.
