@@ -1,145 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752626Ab1AYFqe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 00:46:34 -0500
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:54046 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275Ab1AYFqd (ORCPT
+	id S1751695Ab1AYFsM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 00:48:12 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:56781 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960Ab1AYFsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 00:46:33 -0500
-Date: Tue, 25 Jan 2011 06:46:31 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jiri Slaby <jslaby@suse.cz>, jirislaby@gmail.com, perex@perex.cz,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Andreas Mohr <andi@lisas.de>, Andy Whitcroft <apw@canonical.com>
-Subject: [PATCH] azt3328: repair breakage (Re: [PATCH 1/1] SOUND: azt3328,
- fix broken AZF_FMT_XLATE macro)
-Message-ID: <20110125054631.GA10984@rhlx01.hs-esslingen.de>
-References: <1295704570-27015-1-git-send-email-jslaby@suse.cz>
- <s5h1v44j45c.wl%tiwai@suse.de>
+	Tue, 25 Jan 2011 00:48:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=sQhd8/rccafhTPkKSYQOPK8ZgIZaNdeBO6tuS/3o7krU5VeEmkBKmfz1Eh7XBwTthQ
+         U4O2QsEosoEICXpkColxRXzuHXlLayUOUSuJif/28ObY+SzMZ1/BxY0NPPS4w2GJIbxU
+         G5Wubq5ixcG/BwuR304ag/N2G6LoAgQUu5A3k=
+Date: Tue, 25 Jan 2011 13:48:00 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Mikael Pettersson <mikpe@it.uu.se>
+Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Harald Dunkel <harri@afaics.de>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kenrel.org
+Subject: Re: [Patch] make installkernel configurable from command line (was
+ Re: how to avoid that install.sh goes mad, if I am not root?)
+Message-ID: <20110125054800.GC13618@cr0.nay.redhat.com>
+References: <4D388A08.1010004@afaics.de>
+ <19768.44428.482148.361069@pilspetsen.it.uu.se>
+ <ihbvd1$jbj$3@dough.gmane.org>
+ <4D3A03CA.2060507@afaics.de>
+ <20110124102159.GD5510@cr0.nay.redhat.com>
+ <19773.26066.137666.718852@pilspetsen.it.uu.se>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <s5h1v44j45c.wl%tiwai@suse.de>
-X-Priority: none
+In-Reply-To: <19773.26066.137666.718852@pilspetsen.it.uu.se>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanly revert to non-macro implementation of
-snd_azf3328_codec_setfmt(), to fix last-minute functionality breakage
-induced by following checkpatch.pl recommendations without giving them
-their due full share of thought ("revolting computer, ensuing PEBKAC").
+On Mon, Jan 24, 2011 at 12:43:14PM +0100, Mikael Pettersson wrote:
+>NAK -- this breaks existing setups which rely on /root/bin/installkernel
+>being picked up automatically.
+>
+>Can you handle 'make INSTALLKERNEL=...' without breaking that please?
 
-I would like to thank Jiri Slaby for his very timely (in -rc1 even)
-and unexpected (uncommon hardware) "recognition of the dangerous situation"
-due to his very commendable static parser use. :)
+Yes, here we go.
 
-Reported-by: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Andreas Mohr <andi@lisas.de>
+--------->
+
+Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+
 ---
-On Sat, Jan 22, 2011 at 05:26:39PM +0100, Takashi Iwai wrote:
-> At Sat, 22 Jan 2011 14:56:10 +0100,
-> Jiri Slaby wrote:
-> > I vote for removing that crap completely because it makes the code
-> > weird anyway -- you have to specify manually both of freq and bits
-> > which is I would expect to be avoided exactly by such a macro.
-> 
-> I agree.  Andreas, please either revert back to the plain code,
-> or use a simple look-up table if you don't want switch/case.
-
-And indeed, the currently committed state IS broken since listening to audio
-is strangely devoid of positive effects. :)
-Sucks to be taking a larger tried and tested patch series into the holidays
-and then making minor "improvements" to it before submission.
-
-
-I decided that an additional lookup table isn't really worth it,
-thus reverting is probably best.
-
-
-The checkpatch.pl false positive (which triggered the horrid mistake of
-additionally enclosing this per-case macro within do-while(0)) was:
-
-ERROR: Macros with multiple statements should be enclosed in a do - while loop
-#20: FILE: azt3328.c:982:
-+#define AZF_FMT_XLATE(in_freq, out_bits) \
-+               case AZF_FREQ_ ## in_freq: \
-+                       freq = SOUNDFORMAT_FREQ_ ## out_bits; \
-+                       break;
-
-
-It is also quite interesting to note that this rather uncommon language syntax
-(do...while(0) within switch scope) compiled cleanly without issue
-(no warnings).
-
-
-Please note that this clean revert (exclusively created from existing
-development steps) was compile-tested only and not runtime-tested on -rc2.
-This is due to existing suspected modvers issues on -rc2 (it did work fine
-in many previous versions, now I'm getting unresolved symbols issues
-with my -dirty, extra/ modules, perhaps due to having switched to/enabled
-CONFIG_KERNEL_LZO, CONFIG_DEBUG_SET_MODULE_RONX)
-which I was unable to rectify sufficiently easily so far in my limited time.
-
-The clean revert will be followed up by
-corresponding comments and some cleanup within that function in the mid-future.
-
-Thanks,
-
-Andreas Mohr
-
-diff --git a/sound/pci/azt3328.c b/sound/pci/azt3328.c
-index 6117595..573594b 100644
---- a/sound/pci/azt3328.c
-+++ b/sound/pci/azt3328.c
-@@ -979,31 +979,25 @@ snd_azf3328_codec_setfmt(struct snd_azf3328_codec_data *codec,
+diff --git a/Makefile b/Makefile
+index 1f47495..44abded 100644
+--- a/Makefile
++++ b/Makefile
+@@ -327,7 +327,7 @@ OBJCOPY		= $(CROSS_COMPILE)objcopy
+ OBJDUMP		= $(CROSS_COMPILE)objdump
+ AWK		= awk
+ GENKSYMS	= scripts/genksyms/genksyms
+-INSTALLKERNEL  := installkernel
++INSTALLKERNEL  ?= /sbin/installkernel
+ DEPMOD		= /sbin/depmod
+ KALLSYMS	= scripts/kallsyms
+ PERL		= perl
+diff --git a/arch/x86/boot/install.sh b/arch/x86/boot/install.sh
+index d13ec1c..c8c9a92 100644
+--- a/arch/x86/boot/install.sh
++++ b/arch/x86/boot/install.sh
+@@ -33,8 +33,8 @@ verify "$3"
  
- 	snd_azf3328_dbgcallenter();
- 	switch (bitrate) {
--#define AZF_FMT_XLATE(in_freq, out_bits) \
--	do { \
--		case AZF_FREQ_ ## in_freq: \
--			freq = SOUNDFORMAT_FREQ_ ## out_bits; \
--			break; \
--	} while (0);
--	AZF_FMT_XLATE(4000, SUSPECTED_4000)
--	AZF_FMT_XLATE(4800, SUSPECTED_4800)
--	/* the AZF3328 names it "5510" for some strange reason: */
--	AZF_FMT_XLATE(5512, 5510)
--	AZF_FMT_XLATE(6620, 6620)
--	AZF_FMT_XLATE(8000, 8000)
--	AZF_FMT_XLATE(9600, 9600)
--	AZF_FMT_XLATE(11025, 11025)
--	AZF_FMT_XLATE(13240, SUSPECTED_13240)
--	AZF_FMT_XLATE(16000, 16000)
--	AZF_FMT_XLATE(22050, 22050)
--	AZF_FMT_XLATE(32000, 32000)
-+	case AZF_FREQ_4000:  freq = SOUNDFORMAT_FREQ_SUSPECTED_4000; break;
-+	case AZF_FREQ_4800:  freq = SOUNDFORMAT_FREQ_SUSPECTED_4800; break;
-+	case AZF_FREQ_5512:
-+		/* the AZF3328 names it "5510" for some strange reason */
-+			     freq = SOUNDFORMAT_FREQ_5510; break;
-+	case AZF_FREQ_6620:  freq = SOUNDFORMAT_FREQ_6620; break;
-+	case AZF_FREQ_8000:  freq = SOUNDFORMAT_FREQ_8000; break;
-+	case AZF_FREQ_9600:  freq = SOUNDFORMAT_FREQ_9600; break;
-+	case AZF_FREQ_11025: freq = SOUNDFORMAT_FREQ_11025; break;
-+	case AZF_FREQ_13240: freq = SOUNDFORMAT_FREQ_SUSPECTED_13240; break;
-+	case AZF_FREQ_16000: freq = SOUNDFORMAT_FREQ_16000; break;
-+	case AZF_FREQ_22050: freq = SOUNDFORMAT_FREQ_22050; break;
-+	case AZF_FREQ_32000: freq = SOUNDFORMAT_FREQ_32000; break;
- 	default:
- 		snd_printk(KERN_WARNING "unknown bitrate %d, assuming 44.1kHz!\n", bitrate);
- 		/* fall-through */
--	AZF_FMT_XLATE(44100, 44100)
--	AZF_FMT_XLATE(48000, 48000)
--	AZF_FMT_XLATE(66200, SUSPECTED_66200)
--#undef AZF_FMT_XLATE
-+	case AZF_FREQ_44100: freq = SOUNDFORMAT_FREQ_44100; break;
-+	case AZF_FREQ_48000: freq = SOUNDFORMAT_FREQ_48000; break;
-+	case AZF_FREQ_66200: freq = SOUNDFORMAT_FREQ_SUSPECTED_66200; break;
- 	}
- 	/* val = 0xff07; 3m27.993s (65301Hz; -> 64000Hz???) hmm, 66120, 65967, 66123 */
- 	/* val = 0xff09; 17m15.098s (13123,478Hz; -> 12000Hz???) hmm, 13237.2Hz? */
+ # User may have a custom install script
+ 
+-if [ -x ~/bin/${INSTALLKERNEL} ]; then exec ~/bin/${INSTALLKERNEL} "$@"; fi
+-if [ -x /sbin/${INSTALLKERNEL} ]; then exec /sbin/${INSTALLKERNEL} "$@"; fi
++if [ -x ~/bin/installkernel ]; then exec ~/bin/installkernel "$@"; fi
++if [ -x "${INSTALLKERNEL}" ]; then exec "${INSTALLKERNEL}" "$@"; fi
+ 
+ # Default install - same as make zlilo
+ 
