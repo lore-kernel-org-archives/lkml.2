@@ -1,81 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273Ab1AYRfD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 12:35:03 -0500
-Received: from sh.osrg.net ([192.16.179.4]:57968 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753057Ab1AYRfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 12:35:00 -0500
-Date: Wed, 26 Jan 2011 02:34:09 +0900 (JST)
-Message-Id: <20110126.023409.246150501.ryusuke@osrg.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-nilfs@vger.kernel.org
-Subject: [GIT PULL] nilfs2 fix 
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
+	id S1753335Ab1AYRfn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 12:35:43 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:4269 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751508Ab1AYRfl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 12:35:41 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6236"; a="71711438"
+Subject: Re: [PATCH v2 01/11] msm: Add CPU queries
+From: Daniel Walker <dwalker@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <8yay669hka5.fsf@huya.qualcomm.com>
+References: <1292384961-8851-1-git-send-email-stepanm@codeaurora.org>
+	 <1295468747-22796-1-git-send-email-davidb@codeaurora.org>
+	 <1295468747-22796-2-git-send-email-davidb@codeaurora.org>
+	 <1295914163.29639.77.camel@c-dwalke-linux.qualcomm.com>
+	 <8yak4htj0lb.fsf@huya.qualcomm.com>
+	 <1295915034.29639.78.camel@c-dwalke-linux.qualcomm.com>
+	 <8yay669hka5.fsf@huya.qualcomm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 25 Jan 2011 09:35:10 -0800
+Message-ID: <1295976910.25496.1.camel@c-dwalke-linux.qualcomm.com>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 26 Jan 2011 02:34:11 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Mon, 2011-01-24 at 16:57 -0800, David Brown wrote:
+> On Mon, Jan 24 2011, Daniel Walker wrote:
+> 
+> > On Mon, 2011-01-24 at 16:20 -0800, David Brown wrote:
+> >> On Mon, Jan 24 2011, Daniel Walker wrote:
+> >> 
+> >> > On Wed, 2011-01-19 at 12:25 -0800, David Brown wrote:
+> >> >> +#define cpu_is_msm7x01()       0
+> >> >> +#define cpu_is_msm7x30()       0
+> >> >> +#define cpu_is_qsd8x50()       0
+> >> >> +#define cpu_is_msm8x60()       0
+> >> >
+> >> > Now that I look at this again, why not drop the "x" all together ?
+> >> 
+> >> That might be better for the 8x60.  The complexity is that most of the
+> >> MSM chips have some variants, where the CPU running Linux isn't changed,
+> >> but the modem CPU is different (think CDMA/UMTS).  Until 8960, that was
+> >> distinguished by the second letter.
+> >> 
+> >> Either way doesn't quite match reality, unfortunately.  There are
+> >> devices using a MSM7201 and others using a MSM7601.  As far as Linux is
+> >> concerned, there isn't any difference between them.  If someone wanted
+> >> to try and identify the device they have with the code, it could be
+> >> confusing for either name chosen.
+> >> 
+> >> I was planning on turning msm8x60 into msm8660, since that seems to be
+> >> the most common one.  Perhaps the decoder ring should be put into the
+> >> help text for the options so people can at least figure out which is
+> >> which.
+> >
+> > Are there any of those which do , right now, have Linux support for more
+> > than one variant ?
+> 
+> All of them, in fact.
+> 
+> MSM7201 and MSM7601 are identical as far as Linux is concerned.  Same
+> goes for MSM8250 and MSM8650.  Our dev boards are a somewhat random mix
+> of the two, and it doesn't matter which one you use.
+> 
+> MSM8960 is a completely different chip, it just shares a similar name,
+> to other chips.
 
-please pull from:
+If you break it down without the "x" then you can recreate the "x"
+variant with the actual numerical identifier .. For 8660/8960 you just
+would do as much of a unification as with the others.. You could still
+use 8x60 to identify those two, you just wouldn't use it as often.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
+Daniel
 
-to grab the following bugfix for a reported kernel oops.
+-- 
 
-Thanks,
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-Ryusuke Konishi
---
-The following changes since commit 1bae4ce27c9c90344f23c65ea6966c50ffeae2f5:
-
-  Linux 2.6.38-rc2 (2011-01-21 19:01:34 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
-
-Ryusuke Konishi (1):
-      nilfs2: fix crash after one superblock became unavailable
-
- fs/nilfs2/super.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-
-commit 0ca7a5b9ac5d301845dd6382ff25a699b6263a81
-Author: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Date:   Fri Jan 21 16:40:31 2011 +0900
-
-    nilfs2: fix crash after one superblock became unavailable
-    
-    Fixes the following kernel oops in nilfs_setup_super() which could
-    arise if one of two super-blocks is unavailable.
-    
-    > BUG: unable to handle kernel NULL pointer dereference at   (null)
-    > Pid: 3529, comm: mount.nilfs2 Not tainted 2.6.37 #1 /
-    > EIP: 0060:[<c03196bc>] EFLAGS: 00010202 CPU: 3
-    > EIP is at memcpy+0xc/0x1b
-    > Call Trace:
-    >  [<f953720e>] ? nilfs_setup_super+0x6c/0xa5 [nilfs2]
-    >  [<f95369e9>] ? nilfs_get_root_dentry+0x81/0xcb [nilfs2]
-    >  [<f9537a08>] ? nilfs_mount+0x4f9/0x62c [nilfs2]
-    >  [<c02745cf>] ? kstrdup+0x36/0x3f
-    >  [<f953750f>] ? nilfs_mount+0x0/0x62c [nilfs2]
-    >  [<c0293940>] ? vfs_kern_mount+0x4d/0x12c
-    >  [<c02a5100>] ? get_fs_type+0x76/0x8f
-    >  [<c0293a68>] ? do_kern_mount+0x33/0xbf
-    >  [<c02a784a>] ? do_mount+0x2ed/0x714
-    >  [<c02a6171>] ? copy_mount_options+0x28/0xfc
-    >  [<c02a7ce3>] ? sys_mount+0x72/0xaf
-    >  [<c0473085>] ? syscall_call+0x7/0xb
-    
-    Reported-by: Wakko Warner <wakko@animx.eu.org>
-    Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-    Tested-by: Wakko Warner <wakko@animx.eu.org>
-    Cc: stable <stable@kernel.org> [2.6.37, 2.6.36]
-    LKML-Reference: <20110121024918.GA29598@animx.eu.org>
