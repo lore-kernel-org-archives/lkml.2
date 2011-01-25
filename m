@@ -1,39 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128Ab1AYROp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 12:14:45 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:36474 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752372Ab1AYROo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 12:14:44 -0500
-Date: Tue, 25 Jan 2011 09:14:38 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: Eugene Teo <eugeneteo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Ben Hutchings <bhutchings@solarflare.com>
-Subject: Re: net: clear heap allocation for ethtool_get_regs()
-Message-ID: <20110125171438.GX4979@outflux.net>
-References: <20110125044910.GB8117@infradead.org>
+	id S1753161Ab1AYRRL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 12:17:11 -0500
+Received: from brigitte.telenet-ops.be ([195.130.137.66]:35676 "EHLO
+	brigitte.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752421Ab1AYRRK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 12:17:10 -0500
+Date: Tue, 25 Jan 2011 18:17:05 +0100 (CET)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Ungerer <gregungerer@westnet.com.au>,
+        Linux/m68k <linux-m68k@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [git pull] More m68k updates for 2.6.38
+Message-ID: <alpine.DEB.2.00.1101251814410.18530@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110125044910.GB8117@infradead.org>
-Organization: Canonical
-X-HELO: www.outflux.net
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eugene,
+	Hi Linus,
 
-On Tue, Jan 25, 2011 at 12:49:10PM +0800, Eugene Teo wrote:
-> There is a conflict between commit b00916b1 and a77f5db3. This patch resolves
-> the conflict by clearing the heap allocation in ethtool_get_regs().
+The following changes since commit 1bae4ce27c9c90344f23c65ea6966c50ffeae2f5:
+  Linus Torvalds (1):
+        Linux 2.6.38-rc2
 
-Good catch! Thanks!
+are available in the git repository at:
 
--Kees
+  master.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-Linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
 
--- 
-Kees Cook
-Ubuntu Security Team
+These are two fixes for build errors and one fix for a long-standing debug
+issue.
+
+Thanks for pulling!
+
+Geert Uytterhoeven (3):
+      m68k: Uninline strchr()
+      m68k/atari: Rename "scc" to "atari_scc"
+      m68k/amiga: Fix "debug=mem"
+
+ arch/m68k/amiga/config.c        |   16 +++++++---------
+ arch/m68k/atari/ataints.c       |    4 ++--
+ arch/m68k/atari/config.c        |    2 +-
+ arch/m68k/atari/debug.c         |   14 +++++++-------
+ arch/m68k/include/asm/atarihw.h |    2 +-
+ arch/m68k/include/asm/string.h  |   12 ------------
+ 6 files changed, 18 insertions(+), 32 deletions(-)
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
