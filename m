@@ -1,40 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab1AYLUw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 06:20:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46046 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751940Ab1AYLUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 06:20:51 -0500
-Date: Tue, 25 Jan 2011 19:21:41 +0800
-From: Greg KH <gregkh@suse.de>
-To: Marek Belisko <marek.belisko@open-nandra.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/12] staging: ft1000: Fix coding style.
-Message-ID: <20110125112141.GA14932@suse.de>
-References: <1295953697-9805-1-git-send-email-marek.belisko@open-nandra.com>
- <1295953697-9805-3-git-send-email-marek.belisko@open-nandra.com>
+	id S1752843Ab1AYL1c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 06:27:32 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50670 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354Ab1AYL1b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 06:27:31 -0500
+Date: Tue, 25 Jan 2011 11:26:41 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Julia Lawall <julia@diku.dk>
+Cc: walter harms <wharms@bfs.de>, Vasiliy Kulikov <segooon@gmail.com>,
+        Ryan Mallon <ryan@bluewatersys.com>, kernel-janitors@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] arch/arm/mach-at91/clock.c: Add missing IS_ERR test
+Message-ID: <20110125112641.GG11507@n2100.arm.linux.org.uk>
+References: <1295898922-18822-1-git-send-email-julia@diku.dk> <1295898922-18822-3-git-send-email-julia@diku.dk> <4D3DD964.9020107@bluewatersys.com> <Pine.LNX.4.64.1101242058430.3167@ask.diku.dk> <20110124200515.GA30963@albatros> <Pine.LNX.4.64.1101242108180.3167@ask.diku.dk> <4D3EA6EC.5050305@bfs.de> <20110125104333.GE11507@n2100.arm.linux.org.uk> <4D3EB02D.6090302@bfs.de> <Pine.LNX.4.64.1101251216190.12123@pc-004.diku.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1295953697-9805-3-git-send-email-marek.belisko@open-nandra.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <Pine.LNX.4.64.1101251216190.12123@pc-004.diku.dk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 12:08:08PM +0100, Marek Belisko wrote:
+On Tue, Jan 25, 2011 at 12:18:40PM +0100, Julia Lawall wrote:
+> On Tue, 25 Jan 2011, walter harms wrote:
+> > So these is a bug ? They should return -ENOENT ?
+> > 
+> > The interessting question is: what to do with an error ?
+> > 
+> > Obviously some architecture can live with NULL, so it is not an critical
+> > error. An the patch shows a code that is simply a return, not even the
+> > user is informed that something did not work as expected.
+> > 
+> > From that point of view i would like question if it is useful to have
+> > a "detailed" error instead of just returning NULL.
+> 
+> Somewhat unrelatedly, I often run into code where error handling code is 
+> needed, but not present, and the function returns void, so nothing is 
+> provided for propagating the error further.  I generally consider these 
+> cases to be beyond my expertise to fix...
 
-You just sent me 11 patches with the same identical Subject line.
-Please don't do that.
+That is a pain, but so is returning NULL in error conditions.  If you've
+got several layers of nesting, and every level returns NULL on error,
+it's an awful lot of debugging to find out _why_ a failure happened.
 
-> Fix coding style in check_usb_db() function.
+With error codes, it narrows down the number of places which could have
+returned that error code, and as error codes can be descriptive, it
+turns it into an "oh, I forgot about doing X" or "it's failing *there*"
+rather than a puzzle.
 
-Now that's a line that could be in the Subject that might make it
-unique.
+The only place where it really makes sense to return NULL is with memory
+allocators.  NULL is an accepted value for meaning "I couldn't allocate
+memory" as its not a useful pointer value.
 
-Please redo these 12 patches and resend them.
+The alternative is to have an API like:
 
-thanks,
+	struct clk *clk_get(int *error, ...)
+or
+	int clk_get(struct clk **, ...)
 
-greg k-h
+but that then leads to _additional_ errors made by driver authors and by
+implementations - you can no longer guarantee that *error will always be
+initialized, and this is why the whole ERR_PTR/PTR_ERR/IS_ERR stuff was
+implemented.  The kernel used to have such things in it and they were
+buggy.
