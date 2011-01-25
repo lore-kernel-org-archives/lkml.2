@@ -1,99 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133Ab1AYPGS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 10:06:18 -0500
-Received: from server109-228-6-236.live-servers.net ([109.228.6.236]:54655
-	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751492Ab1AYPGR (ORCPT
+	id S1753181Ab1AYPIn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 10:08:43 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51171 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492Ab1AYPIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 10:06:17 -0500
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Knut Petersen <Knut_Petersen@t-online.de>
-Cc: linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [PATCH] drm/i915/sdvo: If at first we don't succeed in reading the response, wait
-Date: Tue, 25 Jan 2011 15:06:07 +0000
-Message-Id: <1295967967-26041-1-git-send-email-chris@chris-wilson.co.uk>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <4D3EB90C.9020901@t-online.de>
-References: <4D3EB90C.9020901@t-online.de>
-X-Originating-IP: 78.156.66.37
+	Tue, 25 Jan 2011 10:08:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=BprmF0/0IlbXqi+wZ7Jypg96RwwFrzezA404c3SS4EBUfrGolih+4+tikPh18cvDP/
+         hx3a2kLqe8xDknDvAOKjVIcvfmacCMhAgjjkwvr9BaaEo/LMNn9udU0l2SRQSfs+2L2F
+         gpTdl5DcqrGsfyVQtqJeMV1ZANruPGl1zAatU=
+Date: Tue, 25 Jan 2011 16:08:34 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "Ahmed S. Darwish" <darwish.07@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, X86-ML <x86@kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Willy Tarreau <wtarreau@hera.kernel.org>, Willy Tarreau <w@1wt.eu>,
+        Dirk Hohndel <hohndel@infradead.org>, Dirk.Hohndel@intel.com,
+        IDE-ML <linux-ide@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCH 0/2][concept RFC] x86: BIOS-save kernel log to disk
+ upon panic
+Message-ID: <20110125150834.GD27510@htj.dyndns.org>
+References: <20110125134748.GA10051@laptop>
+ <20110125140948.GA26762@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110125140948.GA26762@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We were not pausing after detecting the response was pending and so did
-not allow the hardware sufficient time to complete before aborting. This
-lead to transient failures whilst probing SDVO devices.
+Hello, Ingo.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
----
+On Tue, Jan 25, 2011 at 03:09:48PM +0100, Ingo Molnar wrote:
+> I think the biggest areas of practical concern would be:
+> 
+>  - Can this mechanism ever, under any circumstance corrupt any real
+>    data, destroy the MBR or do other nasties. Can you think of any
+>    additional fail-safe measures where you could _further robustify
+>    the BIOS calls_ to make sure it can never go to the wrong
+>    sector(s)? I really do not want to think of trusting a BIOS to
+>    _write to my disk_.
 
-Knut, this should fix one of the failures in the log:
+It's quite unlikely but I wouldn't say it's completely impossible.
+It's common for ATA controllers to have dual modes of operation - the
+old IDE compatible interface by emulation which is used by BIOS and
+older operating systems and newer interface (ahci) to be used by
+modern OS.  Some need to be explicitly switched and some just need to
+be accessed carefully.  If the controller is accessed by bIOS after
+switched to ahci or commands are in progress via ahci, anything can
+happen.
 
-[  680.371855] [drm:intel_sdvo_debug_write], SDVOC: W: 0B (SDVO_CMD_GET_ATTACHED_DISPLAYS)
-[  680.417190] [drm:intel_sdvo_write_cmd], command returns response Pending [4]
+There's also HPA which changes the size of the device which we often
+unlock.  As it's always at the end, it usually shouldn't cause
+problems but there are BIOSen which expect certain things near the end
+of the device (BIOS RAID ones).  I'm fairly sure nobody is testing
+BIOSen for cases where the size of underlying device changes without
+going through POST.
 
-which caused the detect routine to return connector_status_unknown.
+To summarize, it's unlikely but at the same time there are some
+_truly_ scary beasts out in the wild.  There's certain level of
+danger.
 
-However, there is still immediately following that:
+>  - Is there some hidden disk area somewhere on PCs, or somewhere on
+>    a real partition on typical Linux distributions, which we could
+>    use without having to reinstall the box? This would increase
+>    utility and availability enormously. I'm thinking of partition
+>    _ends_ which sometimes get rounded in an awkward way and which
+>    are potentially skipped by most Linux filesystems. Even a very
+>    small, 512 bytes of area would be extremely useful for debugging
+>    weird suspend hangs ...
 
-[  680.419880] [drm:intel_sdvo_debug_write], SDVOC: W: 11 00 00 (SDVO_CMD_SET_TARGET_OUTPUT)
-[  680.450190] [drm:intel_sdvo_write_cmd], command returns response Invalid arg 
-[3]
+There are holes but writing to them without full knowledge of the
+configuration can be quite dangerous.  I don't think it would be
+possible to mass deploy it without manual configuration unless we
+specifically reserve (and maybe mark) it in the filesystem.
 
-which implies that we are mishandling that odd VGA-2 connector.
--Chris
+>  - Could we automate the recovery of the dump, and just put it into
+>    the regular kernel log on the next (successful) bootup (on a
+>    feature-enabled kernel)? That would make the log of the 'previous
+>    crash' very conveniently available in dmesg and the syslog. Tools
+>    like kerneloops could make use of it immediately.
 
----
- drivers/gpu/drm/i915/intel_sdvo.c |   23 +++++++----------------
- 1 files changed, 7 insertions(+), 16 deletions(-)
+Yeah, that would be actually quite nice.
 
-diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo.c
-index 45cd376..f52df3a 100644
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -473,20 +473,6 @@ static bool intel_sdvo_write_cmd(struct intel_sdvo *intel_sdvo, u8 cmd,
- 		return false;
- 	}
- 
--	i = 3;
--	while (status == SDVO_CMD_STATUS_PENDING && i--) {
--		if (!intel_sdvo_read_byte(intel_sdvo,
--					  SDVO_I2C_CMD_STATUS,
--					  &status))
--			return false;
--	}
--	if (status != SDVO_CMD_STATUS_SUCCESS) {
--		DRM_DEBUG_KMS("command returns response %s [%d]\n",
--			      status <= SDVO_CMD_STATUS_SCALING_NOT_SUPP ? cmd_status_names[status] : "???",
--			      status);
--		return false;
--	}
--
- 	return true;
- }
- 
-@@ -505,12 +491,17 @@ static bool intel_sdvo_read_response(struct intel_sdvo *intel_sdvo,
- 	 *
- 	 * Check 5 times in case the hardware failed to read the docs.
- 	 */
--	do {
-+	if (!intel_sdvo_read_byte(intel_sdvo,
-+				  SDVO_I2C_CMD_STATUS,
-+				  &status))
-+		return false;
-+	while (status == SDVO_CMD_STATUS_PENDING && retry--) {
-+		udelay(15);
- 		if (!intel_sdvo_read_byte(intel_sdvo,
- 					  SDVO_I2C_CMD_STATUS,
- 					  &status))
- 			return false;
--	} while (status == SDVO_CMD_STATUS_PENDING && --retry);
-+	}
- 
- 	DRM_DEBUG_KMS("%s: R: ", SDVO_NAME(intel_sdvo));
- 	if (status <= SDVO_CMD_STATUS_SCALING_NOT_SUPP)
+> All in one, a very intriguing idea IMO, and the hardest bits
+> (lowlevel x86 transition) is all implemented already.
+
+I like the prospect too but am a bit skeptical whether this can be
+made reliable enough to be a convenient tool.
+
+Thanks.
+
 -- 
-1.7.2.3
-
+tejun
