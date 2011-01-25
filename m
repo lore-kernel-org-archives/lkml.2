@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab1AYUMZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 15:12:25 -0500
-Received: from casper.infradead.org ([85.118.1.10]:50642 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508Ab1AYUMY convert rfc822-to-8bit (ORCPT
+	id S1753534Ab1AYUM7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 15:12:59 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:58880 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751508Ab1AYUM5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 15:12:24 -0500
-Subject: Re: [PATCH 16/16] KVM-GST: adjust scheduler cpu power
-From: Peter Zijlstra <peterz@infradead.org>
-To: Glauber Costa <glommer@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
-        Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Avi Kivity <avi@redhat.com>
-In-Reply-To: <1295985756.15920.33.camel@mothafucka.localdomain>
-References: <1295892397-11354-1-git-send-email-glommer@redhat.com>
-	 <1295892397-11354-17-git-send-email-glommer@redhat.com>
-	 <1295893920.28776.468.camel@laptop>
-	 <1295895083.15920.9.camel@mothafucka.localdomain>
-	 <1295898690.28776.472.camel@laptop>
-	 <1295985756.15920.33.camel@mothafucka.localdomain>
-Content-Type: text/plain; charset="UTF-8"
+	Tue, 25 Jan 2011 15:12:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=B2J6pBGAJchm1Ob8kS1+RACRiEY3HK0aqJePZoYGo3E544tkixEq2gF+13MCrU9VyW
+         UPlm7jvB2FpaBmy/y1ohQvzk8kl1EZmiO+fVA1jYM07vlE6l8m3DnGddumD0q9nHZhW4
+         X5mFFezdYIjHdYzz8+b464ZKUcNRwY4u/l+No=
+MIME-Version: 1.0
+In-Reply-To: <20110125174907.664402563@chello.nl>
+References: <20110125173111.720927511@chello.nl>
+	<20110125174907.664402563@chello.nl>
+Date: Tue, 25 Jan 2011 12:12:56 -0800
+X-Google-Sender-Auth: DI5oovGZnb4DdE54V2gMdABjcZE
+Message-ID: <AANLkTikgpX16=ouGCpKqDtr7w-AUWLQNU7cFi4vKWbt+@mail.gmail.com>
+Subject: Re: [PATCH 09/25] ia64: Preemptible mmu_gather
+From: Tony Luck <tony.luck@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Date: Tue, 25 Jan 2011 21:13:06 +0100
-Message-ID: <1295986386.28776.1101.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-25 at 18:02 -0200, Glauber Costa wrote:
+On Tue, Jan 25, 2011 at 9:31 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>  struct mmu_gather {
+>        struct mm_struct        *mm;
+>        unsigned int            nr;             /* == ~0U => fast mode */
+> +       unsigned int            max;
+>        unsigned char           fullmm;         /* non-zero means full mm flush */
+>        unsigned char           need_flush;     /* really unmapped some PTEs? */
+>        unsigned long           start_addr;
+>        unsigned long           end_addr;
+> -       struct page             *pages[FREE_PTE_NR];
+> +       struct page             **pages;
+> +       struct page             *local[8];
+>  };
 
-> I fail to see how does clock_task influence cpu power.
-> If we also have to touch clock_task for better accounting of other
-> stuff, it is a separate story.
-> But for cpu_power, I really fail. Please enlighten me.
+Overall it looks OK - builds, boots & runs too. One question about
+the above bit ... why "8" elements in the local[] array?  This ought to be
+a #define, maybe with a comment explaining the significance. It doesn't
+seem to fill out struct mmu_gather to some "nice" size.  I can't think
+of why batching 8 at a time (in the fallback cannot allocate **pages case)
+is a good number. So is there some science to the choice, or did you
+pluck 8 out of the air?
 
-static void update_rq_clock_task(struct rq *rq, s64 delta)
-{
-        s64 irq_delta;
+Thanks
 
-        irq_delta = irq_time_read(cpu_of(rq)) - rq->prev_irq_time;
-
-        if (irq_delta > delta)
-                irq_delta = delta;
-
-        rq->prev_irq_time += irq_delta;
-        delta -= irq_delta;
-        rq->clock_task += delta;
-
-        if (irq_delta && sched_feat(NONIRQ_POWER))
-                sched_rt_avg_update(rq, irq_delta);
-}
-
-its done through that sched_rt_avg_update() (should probably rename
-that), it computes a floating average of time not spend on fair tasks.
-
-
+-Tony
