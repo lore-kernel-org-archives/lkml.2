@@ -1,121 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948Ab1AYIzF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 03:55:05 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52925 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752853Ab1AYIzA (ORCPT
+	id S1752962Ab1AYJBi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 04:01:38 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:48291 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752511Ab1AYJBg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 03:55:00 -0500
+	Tue, 25 Jan 2011 04:01:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=tzRQgmNPFT1e35u5GmpErvGyXsWx+5PG0jvgsf5Chgf1jtzxA4A4G/BIcc92i3i8+S
+         B4ehfpw3mxiI/A+kk3SH/aI7JRKTqkUsT4uAHFWVhYIDthlT13m/+g/K3c98XeW8mCs/
+         PYZ69prt9d8qlFrprxEILhDEnyF0F+1TrOVSk=
 MIME-Version: 1.0
-Date: Tue, 25 Jan 2011 09:54:59 +0100
-Message-ID: <AANLkTi=hQpCVJWZ_Op4mhnehufcBg2=h_=q4xXD66tGb@mail.gmail.com>
-Subject: [PATCH 2/2] tracing, perf : add cpu hotplug trace events
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
-        fweisbec@gmail.com, rostedt@goodmis.org, amit.kucheria@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20110125083915.GE13618@cr0.nay.redhat.com>
+References: <1295943748-9699-1-git-send-email-yong.zhang0@gmail.com>
+	<20110125083915.GE13618@cr0.nay.redhat.com>
+Date: Tue, 25 Jan 2011 17:01:35 +0800
+Message-ID: <AANLkTi=rL=rwhCPFedynBQm4Osf-8FjQBRwDi3bCrtq7@mail.gmail.com>
+Subject: Re: [PATCH] net: NETCONSOLE_DYNAMIC need CONFIGFS_FS=y
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, nab@linux-iscsi.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Kevin Hilman <khilman@deeprootsystems.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please find below a new proposal for adding trace events for cpu hotplug.
-The goal is to measure the latency of each part (kernel, architecture)
-and also to trace the cpu hotplug activity with other power events. I
-have tested these traces events on an arm platform.
+On Tue, Jan 25, 2011 at 4:39 PM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
+> On Tue, Jan 25, 2011 at 04:22:28PM +0800, Yong Zhang wrote:
+>>With CONFIGFS_FS=m && NETCONSOLE_DYNAMIC=y, build error:
+>>
+>>drivers/built-in.o: In function `netconsole_target_put':
+>>build/drivers/net/netconsole.c:133: undefined reference to `config_item_put'
+>>drivers/built-in.o: In function `netconsole_target_get':
+>>build/drivers/net/netconsole.c:127: undefined reference to `config_item_get'
+>>build/drivers/net/netconsole.c:127: undefined reference to `config_item_get'
+>>drivers/built-in.o: In function `netconsole_target_put':
+>>build/drivers/net/netconsole.c:133: undefined reference to `config_item_put'
+>>drivers/built-in.o: In function `drop_netconsole_target':
+>>build/drivers/net/netconsole.c:634: undefined reference to `config_item_put'
+>>drivers/built-in.o: In function `make_netconsole_target':
+>>build/drivers/net/netconsole.c:607: undefined reference to `config_item_init_type_name'
+>>drivers/built-in.o: In function `dynamic_netconsole_init':
+>>build/drivers/net/netconsole.c:109: undefined reference to `config_group_init'
+>>build/drivers/net/netconsole.c:111: undefined reference to `configfs_register_subsystem'
+>>drivers/built-in.o: In function `dynamic_netconsole_exit':
+>>build/drivers/net/netconsole.c:116: undefined reference to `configfs_unregister_subsystem'
+>>
+>
+> Yeah, this was reported, another way to fix this is "select CONFIGFS_FS".
+> Using "select" makes you configure NETCONSOLE_DYNAMIC without caring
+> about if you have configured CONFIGFS_FS=y, which seems better.
 
-Subject: [PATCH 1/2] add cpu hotplug tracepoints
+OK. Find the original reporting.
 
-this patch adds new events for cpu hotplug tracing
- * plug/unplug sequence
- * core and architecture latency measurements
+Sorry for the noise.
 
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
----
- kernel/cpu.c |   17 +++++++++++++++++
- 1 files changed, 17 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 156cc55..f04e9cf 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -16,6 +16,9 @@
- #include <linux/mutex.h>
- #include <linux/gfp.h>
-
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/cpu_hotplug.h>
-+
- #ifdef CONFIG_SMP
- /* Serializes the updates to cpu_online_mask, cpu_present_mask */
- static DEFINE_MUTEX(cpu_add_remove_lock);
-@@ -200,7 +203,9 @@ static int __ref take_cpu_down(void *_param)
- 	int err;
-
- 	/* Ensure this CPU doesn't handle any more interrupts. */
-+	trace_cpu_hotplug_arch_disable_start((unsigned int)(param->hcpu));
- 	err = __cpu_disable();
-+	trace_cpu_hotplug_arch_disable_end((unsigned int)(param->hcpu));
- 	if (err < 0)
- 		return err;
-
-@@ -256,7 +261,9 @@ static int __ref _cpu_down(unsigned int cpu, int
-tasks_frozen)
- 		cpu_relax();
-
- 	/* This actually kills the CPU. */
-+	trace_cpu_hotplug_arch_die_start(cpu);
- 	__cpu_die(cpu);
-+	trace_cpu_hotplug_arch_die_end(cpu);
-
- 	/* CPU is completely dead: tell everyone.  Too late to complain. */
- 	cpu_notify_nofail(CPU_DEAD | mod, hcpu);
-@@ -274,6 +281,8 @@ int __ref cpu_down(unsigned int cpu)
- {
- 	int err;
-
-+	trace_cpu_hotplug_down_start(cpu);
-+
- 	cpu_maps_update_begin();
-
- 	if (cpu_hotplug_disabled) {
-@@ -285,6 +294,8 @@ int __ref cpu_down(unsigned int cpu)
-
- out:
- 	cpu_maps_update_done();
-+
-+	trace_cpu_hotplug_down_end(cpu);
- 	return err;
- }
- EXPORT_SYMBOL(cpu_down);
-@@ -310,7 +321,9 @@ static int __cpuinit _cpu_up(unsigned int cpu, int
-tasks_frozen)
- 	}
-
- 	/* Arch-specific enabling code. */
-+	trace_cpu_hotplug_arch_up_start(cpu);
- 	ret = __cpu_up(cpu);
-+	trace_cpu_hotplug_arch_up_end(cpu);
- 	if (ret != 0)
- 		goto out_notify;
- 	BUG_ON(!cpu_online(cpu));
-@@ -335,6 +348,8 @@ int __cpuinit cpu_up(unsigned int cpu)
- 	pg_data_t	*pgdat;
- #endif
-
-+	trace_cpu_hotplug_up_start(cpu);
-+
- 	if (!cpu_possible(cpu)) {
- 		printk(KERN_ERR "can't online cpu %d because it is not "
- 			"configured as may-hotadd at boot time\n", cpu);
-@@ -376,6 +391,8 @@ int __cpuinit cpu_up(unsigned int cpu)
-
- 	err = _cpu_up(cpu, 0);
-
-+	trace_cpu_hotplug_up_end(cpu);
-+
- out:
- 	cpu_maps_update_done();
- 	return err;
 -- 
-1.7.1
+Only stand for myself
