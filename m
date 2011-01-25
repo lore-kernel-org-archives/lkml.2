@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020Ab1AYJL3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 04:11:29 -0500
-Received: from casper.infradead.org ([85.118.1.10]:52209 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517Ab1AYJL1 convert rfc822-to-8bit (ORCPT
+	id S1752929Ab1AYJRT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 04:17:19 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:53677 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751708Ab1AYJRR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 04:11:27 -0500
-Subject: Re: [PATCH] a patch to fix the cpu-offline-online problem caused
- by pm_idle
-From: Peter Zijlstra <peterz@infradead.org>
-To: Luming Yu <luming.yu@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>
-In-Reply-To: <AANLkTimq3jmza-t5iL10wgLLycwdDkJ3mznLQsKHM_Kf@mail.gmail.com>
-References: <AANLkTinaOQpuJis5HgK316ANxpDS8eZ8Q0S4a44POrp0@mail.gmail.com>
-	 <1295894492.28776.470.camel@laptop>
-	 <AANLkTimq3jmza-t5iL10wgLLycwdDkJ3mznLQsKHM_Kf@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+	Tue, 25 Jan 2011 04:17:17 -0500
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX190s/oSQat0B+c5pP3OW2xqW+Aegd3wSFsktClXNB
+	RBmpykM1kbXjtc
+From: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+To: Robert Hancock <hancockrwd@gmail.com>
+Subject: Re: libata EH running when switching VTs
+Date: Tue, 25 Jan 2011 10:17:12 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org, ide <linux-ide@vger.kernel.org>,
+        Jens Rutschmann <Jens.Rutschmann@gmx.info>
+References: <201101221625.00775.toralf.foerster@gmx.de> <201101221831.09448.toralf.foerster@gmx.de> <4D3E2612.2060808@gmail.com>
+In-Reply-To: <4D3E2612.2060808@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Date: Tue, 25 Jan 2011 10:12:16 +0100
-Message-ID: <1295946736.28776.479.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Message-Id: <201101251017.13164.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-24 at 20:59 -0500, Luming Yu wrote:
-> 
-> > Ow god this is ugly.. pm_idle should die asap, not find it way into generic code, so NAK!
-> 
-> Without the ugly fix, we seem not able to fix the problem in short time.
-> Or , Are you suggesting to wrap  pm_idle or similar in some generic
-> code that would not disappear in foreseeable future ,
 
-There are patches out there removing pm_idle from x86 (at least).
-pm_idle is a horribly broken interface that really should die.
+Robert Hancock wrote at 02:23:30
+> On 01/22/2011 11:31 AM, Toralf Förster wrote:
+> >>> I'm wondering why I get this in /var/log/messages w/ kernel 2.6.37 when
+> >>> I switch from VT7 (running xorg ) to VT12 (or 1 or 2 or another
+> >>> number) and back:
+> Curious, there seems to be no indication of why EH was triggered,
+> doesn't seem to be have been due to an error. Does this also happen in
+> single-user mode or with minimal processes running? It's possible that
+> userspace is triggering this somehow.
 
->  Or  Are you just
-> suggesting me don't do the stuff in kerne/cpu.c, and do it in Arch
-> code?
+It happens only, when I switch to the VT7 _and_ X is running there.
+It dos not happen when switching  only between straight consoles like from VT1 
+to VT2 or so.
 
-Well, as it stand only about half the architectures out there even have
-a pm_idle pointer, so your patch would break the other half.
+BTW I Cc'ed Jens which have a similar problem with his ThinkPad T61:
 
-If you really need to do this, do it in arch code, but really, why is
-this needed at all? The changelog failed to explain wth happens and why
-this solves it.
+>Hi Toralf,
+>
+>I saw lines similar to yours as well on my T61 during boot. It does not occur 
+>when switching VTs.
+>
+>When I switch VTs as you described I get this in dmesg though:
+>
+>[  491.372673] ata1.00: configured for UDMA/133
+>[  491.372677] ata1: EH complete
+>[  491.680387] EXT4-fs (sda1): re-mounted. Opts: discard,commit=0
+>[  491.683110] EXT4-fs (sda3): re-mounted. Opts: discard,commit=0
+>
+>This is with a vanilla 2.6.37
 
-> But..I bet It's not that wise to let CPU hot-plug code to interact
-> with PM code for all Arch, so I proposed the ugly patch in generic
-> code. 
+-- 
+MfG/Kind regards
+Toralf Förster
 
-Which as I mentioned breaks about half the architectures we have.
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+
