@@ -1,73 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474Ab1AYNF1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 08:05:27 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:40840 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753446Ab1AYNFZ (ORCPT
+	id S1753420Ab1AYNEx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 08:04:53 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:64668 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753392Ab1AYNEv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 08:05:25 -0500
-X-Authenticated: #15668376
-X-Provags-ID: V01U2FsdGVkX192dgNGGZl2SiGs++xBFOtphU4TEOhbTb3pf7K31V
-	18DFBSxRBjGE1/
-From: Emil Langrock <emil.langrock@gmx.de>
-To: linux-kernel@vger.kernel.org
-Subject: Recursive deactivation of local bottom halves
-Date: Tue, 25 Jan 2011 14:05:14 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-trunk-686; KDE/4.4.5; i686; ; )
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101251405.18157.emil.langrock@gmx.de>
-X-Y-GMX-Trusted: 0
+	Tue, 25 Jan 2011 08:04:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=Bol4B5EZxW1+Lzo68kX2vDOnLsTLWZ/3dYcGqXF8G/VE3G8E1GeWBneZA7ebeKPYn9
+         7cJTB/rELosAkcss3EH9uTLzMvEMlYSxMyDvHbsi2+21WG4whUboXBIb1XS1Fypgj20p
+         cTuFN/Chzqgg1ayT0p9u24szS+oIpcL0A8KIk=
+From: Marek Belisko <marek.belisko@open-nandra.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Marek Belisko <marek.belisko@open-nandra.com>
+Subject: [PATCH v2 11/11] staging: ft1000: Fix coding style in get_handshake() function.
+Date: Tue, 25 Jan 2011 14:05:06 +0100
+Message-Id: <1295960706-15667-12-git-send-email-marek.belisko@open-nandra.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1295960706-15667-1-git-send-email-marek.belisko@open-nandra.com>
+References: <1295960706-15667-1-git-send-email-marek.belisko@open-nandra.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+---
+ .../staging/ft1000/ft1000-usb/ft1000_download.c    |   90 +++++++++-----------
+ 1 files changed, 41 insertions(+), 49 deletions(-)
 
-I wanted or more or less had to do following:
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
+index 7ebb683..05f3e22 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
+@@ -185,57 +185,49 @@ static u32 check_usb_db (struct ft1000_device *ft1000dev)
+ //---------------------------------------------------------------------------
+ static u16 get_handshake(struct ft1000_device *ft1000dev, u16 expected_value)
+ {
+-   u16            handshake;
+-   int               loopcnt;
+-   u32             status=0;
++	u16 handshake;
++	int loopcnt;
++	u32 status = 0;
+ 	struct ft1000_info *pft1000info = netdev_priv(ft1000dev->net);
+ 
+-   loopcnt = 0;
+-   while (loopcnt < 100)
+-   {
++	loopcnt = 0;
+ 
+-           // Need to clear downloader doorbell if Hartley ASIC
+-           status = ft1000_write_register (ft1000dev,  FT1000_DB_DNLD_RX, FT1000_REG_DOORBELL);
+-           //DEBUG("FT1000:get_handshake:doorbell = 0x%x\n", temp);
+-               if (pft1000info->fcodeldr)
+-               {
+-                   DEBUG(" get_handshake: fcodeldr is %d\n", pft1000info->fcodeldr);
+-                   pft1000info->fcodeldr = 0;
+-                   status = check_usb_db(ft1000dev);
+-                   if (status != STATUS_SUCCESS)
+-                   {
+-                       DEBUG("get_handshake: check_usb_db failed\n");
+-                       status = STATUS_FAILURE;
+-                       break;
+-                   }
+-                   status = ft1000_write_register (ft1000dev,  FT1000_DB_DNLD_RX, FT1000_REG_DOORBELL);
+-               }
++	while (loopcnt < 100) {
++		/* Need to clear downloader doorbell if Hartley ASIC */
++		status = ft1000_write_register(ft1000dev,  FT1000_DB_DNLD_RX,
++						FT1000_REG_DOORBELL);
++		if (pft1000info->fcodeldr) {
++			DEBUG(" get_handshake: fcodeldr is %d\n",
++				pft1000info->fcodeldr);
++			pft1000info->fcodeldr = 0;
++			status = check_usb_db(ft1000dev);
++			if (status != STATUS_SUCCESS) {
++				DEBUG("get_handshake: check_usb_db failed\n");
++				status = STATUS_FAILURE;
++				break;
++			}
++			status = ft1000_write_register(ft1000dev,
++					FT1000_DB_DNLD_RX,
++					FT1000_REG_DOORBELL);
++		}
+ 
+-                status = ft1000_read_dpram16 (ft1000dev, DWNLD_MAG1_HANDSHAKE_LOC, (u8 *)&handshake, 1);
+-                //DEBUG("get_handshake: handshake is %x\n", tempx);
+-                handshake = ntohs(handshake);
+-                //DEBUG("get_handshake: after swap, handshake is %x\n", handshake);
+-
+-        if (status)
+-           return HANDSHAKE_TIMEOUT_VALUE;
+-
+-        //DEBUG("get_handshake: handshake= %x\n", handshake);
+-        if ((handshake == expected_value) || (handshake == HANDSHAKE_RESET_VALUE_USB))
+-        {
+-            //DEBUG("get_handshake: return handshake %x\n", handshake);
+-            return handshake;
+-        }
+-        else
+-        {
+-            loopcnt++;
+-            msleep (10);
+-        }
+-        //DEBUG("HANDSHKE LOOP: %d\n", loopcnt);
++		status = ft1000_read_dpram16(ft1000dev,
++				DWNLD_MAG1_HANDSHAKE_LOC, (u8 *)&handshake, 1);
++		handshake = ntohs(handshake);
+ 
+-   }
++		if (status)
++			return HANDSHAKE_TIMEOUT_VALUE;
+ 
+-   //DEBUG("get_handshake: return handshake time out\n");
+-   return HANDSHAKE_TIMEOUT_VALUE;
++		if ((handshake == expected_value) ||
++		    (handshake == HANDSHAKE_RESET_VALUE_USB)) {
++			return handshake;
++		} else	{
++			loopcnt++;
++			msleep(10);
++		}
++	}
++
++	return HANDSHAKE_TIMEOUT_VALUE;
+ }
+ 
+ //---------------------------------------------------------------------------
+-- 
+1.7.1
 
-...
-spin_lock_bh(lock1);
-....
-	spin_lock_bh(lock2);
-	...
-	spin_unlock_bh(lock2);
-....
-spin_unlock_bh(lock1);
-....
-
-Now some weird behavior were noticed by a second person and he fixed it by 
-removing the _bh from the inner spinlocks. I checked what the difference is 
-and here is the previous example without the common spin_lock behaviour:
-
-...
-local_bh_disable();
-....
-	local_bh_disable();
-	...
-	local_bh_enable();
-....
-local_bh_enable();
-....
-
-According to http://people.netfilter.org/rusty/unreliable-guides/kernel-
-hacking/routines-softirqs.html it makes no difference how often I use the pair 
-local_bh_disable/local_bh_enable inside local_bh_disable/local_bh_enable. So 
-was this changed?
-
-I also couldn't find any indication in the kernel/softirq.c in the 
-local_bh_enable functionality that the counting in local_bh_disable makes any 
-difference.
-
-Can somebody tell me if that is legal or not (on smp and uniprocessor)? And 
-maybe can show me the related source code why is it may or may not be legal?
-
-Kind regards,
-Emil
