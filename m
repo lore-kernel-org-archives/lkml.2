@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752298Ab1AYBi5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 20:38:57 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:28042 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab1AYBiz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 20:38:55 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=RT4EwQ5CezXt8jHMSd+Jd8ILeoeBydwN7s7Lkjg9wuXfyhahKMQaO9K7erTyNk9FcX
-         zIvJ1UQB5pbBHQxcLPwA==
-Message-ID: <4D3E29A8.7030209@google.com>
-Date: Mon, 24 Jan 2011 17:38:48 -0800
-From: Mike Waychison <mikew@google.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1752150Ab1AYBm2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 20:42:28 -0500
+Received: from claw.goop.org ([74.207.240.146]:50023 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751547Ab1AYBm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 20:42:27 -0500
+Message-ID: <4D3E2A80.1000203@goop.org>
+Date: Mon, 24 Jan 2011 17:42:24 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Greg KH <greg@kroah.com>, torvalds@linux-foundation.org,
-        San Mehat <san@google.com>, Aaron Durbin <adurbin@google.com>,
-        Duncan Laurie <dlaurie@google.com>, linux-kernel@vger.kernel.org,
-        Tim Hockin <thockin@google.com>
-Subject: Re: [PATCH v1 4/6] driver: Google Bootlog
-References: <20110125002433.12637.51091.stgit@mike.mtv.corp.google.com>	<20110125002454.12637.4700.stgit@mike.mtv.corp.google.com> <20110125004953.3e838962@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110125004953.3e838962@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Nick Piggin <npiggin@gmail.com>
+CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 6/6] x86/ticketlock: make __ticket_spin_trylock common
+References: <cover.1295909908.git.jeremy.fitzhardinge@citrix.com>	<4086953399116e4d9a14f9fa1aa8cf33aaef753d.1295909909.git.jeremy.fitzhardinge@citrix.com> <AANLkTimnpm8YdxgnqekMZUbYN=ZAdVy=C1HkY3uHNS2h@mail.gmail.com>
+In-Reply-To: <AANLkTimnpm8YdxgnqekMZUbYN=ZAdVy=C1HkY3uHNS2h@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/11 16:49, Alan Cox wrote:
->> +/*
->> + * Search for the BLOG pointer.
->> + */
->> +static struct bootlog_ptr * __init bootlog_find_pointer(void)
->> +{
->> +	unsigned long address, length, cur;
->> +	struct bootlog_ptr *bp;
->> +
->> +	/* EBDA pointer contains segment the extended BIOS data area */
->> +	address = *(uint16_t *)phys_to_virt(BLOG_EBDA_POINTER);
->> +	address<<= 4;	/* convert segment to physical address */
->> +
->> +	/* EBDA length is byte 0 of the EBDA (stored in kB) */
->> +	length = *(uint8_t *)phys_to_virt(address);
->> +	length<<= 10;	/* convert to bytes */
->
-> Ok this is wrong on two counts
->
-> 1.	If the EBDA pointer is zero then no EBDA is present (older
-> boxes sometimes did this up to about the Athlon era).
->
-> 2.	EBDA isn't an X86 property it's a PC property. asm/bios_ebda
-> provides one helper and perhaps it all belongs in there (along with 'is
-> it a PC' sanity check)
+On 01/24/2011 05:16 PM, Nick Piggin wrote:
+> On Tue, Jan 25, 2011 at 10:41 AM, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+>> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+>>
+>> Make trylock code common regardless of ticket size.
+> What's the asm for this look like?
 
-It's not obvious to me how one would make that sort of check (is a PC) 
-at runtime. Suggestions?
+Asm:
 
->
-> 3.	And its probably a good idea given the standard of BIOS code to
-> also check the EBDA end if given is actually within the 640K limit ...
->
->
->
-> Alan
+        movzwl (%rdi), %eax     # lock_1(D)->slock, tmp
+        cmpb %ah,%al    # tmp
+        leal 0x100(%rax), %edx  # tmp, new
+        jne 1f
+        lock; cmpxchgw %dx,(%rdi)       # new, lock_1(D)->slock
+1:	sete %dl      # new
+        movzbl %dl,%eax # new, tmp
 
+
+
+C:
+
+        movw    (%rdi), %dx     # lock_2(D)->D.5949.tickets, old
+        xorl    %eax, %eax      # D.13954
+        movzbl  %dh, %ecx       # old, tmp70
+        cmpb    %dl, %cl        # old, tmp70
+        jne     .L5     #,
+        leal    256(%rdx), %ecx #, D.13956
+        movl    %edx, %eax      # old, __ret
+        lock; cmpxchgw %cx,(%rdi)       # D.13956,* lock
+        cmpw    %dx, %ax        # old, __ret
+        sete    %al     #, D.13954
+        movzbl  %al, %eax       # D.13954, D.13954
+.L5:
+
+
+The C version can't take advantage of the fact that the cmpxchg directly
+sets the flags, so it ends up re-comparing the old and swapped-out
+values to set the return.  And it doesn't re-use the same sete to set
+the return value in the quick failed-to-acquire path.
+
+It might be worth having a generic cmpxchg() variant which returns a
+succeed/fail flag rather than the fetched value, to avoid comparison in
+this case - since many (most?) cmpxchg() callers end up doing that
+comparison.
+
+How performance critical is trylock?  I guess the ones in fs/dcache.c
+are the ones looming large in your mind.
+
+    J
