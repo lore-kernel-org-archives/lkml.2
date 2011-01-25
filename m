@@ -1,140 +1,655 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754144Ab1AYWTK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 17:19:10 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:62612 "EHLO
+	id S1754047Ab1AYWTF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 17:19:05 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:50380 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753557Ab1AYWSE (ORCPT
+	with ESMTP id S1753829Ab1AYWSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 17:18:04 -0500
+	Tue, 25 Jan 2011 17:18:07 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>,
-        linux-fsdevel@vger.kernel.org
-Subject: [PATCH 10/20] hpfs: replace BKL with a global mutex
-Date: Tue, 25 Jan 2011 23:17:24 +0100
-Message-Id: <1295993854-4971-11-git-send-email-arnd@arndb.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Nick Bowler <nbowler@elliptictech.com>,
+        Evgeniy Dushistov <dushistov@mail.ru>
+Subject: [PATCH 15/20] ufs: remove the BKL
+Date: Tue, 25 Jan 2011 23:17:29 +0100
+Message-Id: <1295993854-4971-16-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1295993854-4971-1-git-send-email-arnd@arndb.de>
 References: <1295993854-4971-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:txarRBwDUwlWhEmjTg5xZANYLAKvyzmrFS2iqGiuEwP
- GSQrpKcRxAnM5Twq3j5Xzd9pLcq8ZCnj5+4Xuov3kd/iZrWS3W
- CIvwWH80Iz7J7X3OkiGZ1B5zoxOTp/yN2sKDlenhKWTd9FhENq
- QCw0gupqkopAEyhKMWY5V0KTv4xDyEwcHT8vhjNfo6OhSxjKCi
- Oo1p+zkau20BZzTqZ9nNQ==
+X-Provags-ID: V02:K0:T2fvDSwl8iTwSlm1oCEzZspjH6DMiOizY3RRdn+tmkT
+ QvkxFn91Y71EjvHEZPEfz09DbwMQKja7Ocb/+r7be0xAZFnoFO
+ mZz8NWhY78v0Xi18LfOh+pyTaHiA/NMFKsg86fgbehsJIfKWjG
+ mPbq4RDvemHdZYvp5I+Xtra+uwuBYwUaPQIR7FewdTeXQD5i8s
+ k2UR2TrJIDXa8JAfIwClA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This removes the BKL in hpfs in a rather awful
-way, by replacing it with a mutex that basically
-serializes the entire file system.
+This introduces a new per-superblock mutex in UFS to replace
+the big kernel lock. I have been careful to avoid nested
+calls to lock_ufs and to get the lock order right with
+respect to other mutexes, in particular lock_super.
 
-The only reason I hope to get away with this
-is because there don't seem to be any real
-users left, and the file system is going out
-through the staging door anyways.
+I did not make any attempt to prove that the big kernel
+lock is not needed in a particular place in the code,
+which is very possible.
 
-Since the mutex code is not even tested and
-I don't expect anyone to do that, I'm marking
-it as broken on SMP and PREEMPT kernels, so
-it won't actually get used.
+The code is still only compile-tested, but it should
+at least be harmless on non-SMP systems, since the
+new mutex is not taken on those.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-Cc: linux-fsdevel@vger.kernel.org
+Cc: Nick Bowler <nbowler@elliptictech.com>
+Cc: Evgeniy Dushistov <dushistov@mail.ru>
 ---
- fs/hpfs/Kconfig   |    2 +-
- fs/hpfs/hpfs_fn.h |   30 ++++++++++++++++++++++++++----
- fs/hpfs/super.c   |    1 +
- 3 files changed, 28 insertions(+), 5 deletions(-)
+ fs/ufs/Kconfig    |    1 -
+ fs/ufs/inode.c    |   78 ++++++++++++++--------------------------------------
+ fs/ufs/namei.c    |   35 +++++++++++------------
+ fs/ufs/super.c    |   55 +++++++++++++++++++++---------------
+ fs/ufs/truncate.c |    5 +--
+ fs/ufs/ufs.h      |    6 +++-
+ 6 files changed, 77 insertions(+), 103 deletions(-)
 
-diff --git a/fs/hpfs/Kconfig b/fs/hpfs/Kconfig
-index 63b6f56..73476c1 100644
---- a/fs/hpfs/Kconfig
-+++ b/fs/hpfs/Kconfig
-@@ -1,7 +1,7 @@
- config HPFS_FS
- 	tristate "OS/2 HPFS file system support"
+diff --git a/fs/ufs/Kconfig b/fs/ufs/Kconfig
+index 30c8f22..e4f10a4 100644
+--- a/fs/ufs/Kconfig
++++ b/fs/ufs/Kconfig
+@@ -1,7 +1,6 @@
+ config UFS_FS
+ 	tristate "UFS file system support (read only)"
  	depends on BLOCK
--	depends on BKL # nontrivial to fix
-+	depends on BROKEN || !(SMP || PREEMPT)
+-	depends on BKL # probably fixable
  	help
- 	  OS/2 is IBM's operating system for PC's, the same as Warp, and HPFS
- 	  is the file system used for organizing files on OS/2 hard disk
-diff --git a/fs/hpfs/hpfs_fn.h b/fs/hpfs/hpfs_fn.h
-index 6761cb3..ffdb16e 100644
---- a/fs/hpfs/hpfs_fn.h
-+++ b/fs/hpfs/hpfs_fn.h
-@@ -13,7 +13,6 @@
- #include <linux/pagemap.h>
+ 	  BSD and derivate versions of Unix (such as SunOS, FreeBSD, NetBSD,
+ 	  OpenBSD and NeXTstep) use a file system called UFS. Some System V
+diff --git a/fs/ufs/inode.c b/fs/ufs/inode.c
+index 2b251f2..03c255f 100644
+--- a/fs/ufs/inode.c
++++ b/fs/ufs/inode.c
+@@ -34,7 +34,6 @@
+ #include <linux/stat.h>
+ #include <linux/string.h>
+ #include <linux/mm.h>
+-#include <linux/smp_lock.h>
  #include <linux/buffer_head.h>
- #include <linux/slab.h>
+ #include <linux/writeback.h>
+ 
+@@ -43,7 +42,7 @@
+ #include "swab.h"
+ #include "util.h"
+ 
+-static u64 ufs_frag_map(struct inode *inode, sector_t frag);
++static u64 ufs_frag_map(struct inode *inode, sector_t frag, bool needs_lock);
+ 
+ static int ufs_block_to_path(struct inode *inode, sector_t i_block, sector_t offsets[4])
+ {
+@@ -82,7 +81,7 @@ static int ufs_block_to_path(struct inode *inode, sector_t i_block, sector_t off
+  * the begining of the filesystem.
+  */
+ 
+-static u64 ufs_frag_map(struct inode *inode, sector_t frag)
++static u64 ufs_frag_map(struct inode *inode, sector_t frag, bool needs_lock)
+ {
+ 	struct ufs_inode_info *ufsi = UFS_I(inode);
+ 	struct super_block *sb = inode->i_sb;
+@@ -107,7 +106,8 @@ static u64 ufs_frag_map(struct inode *inode, sector_t frag)
+ 
+ 	p = offsets;
+ 
+-	lock_kernel();
++	if (needs_lock)
++		lock_ufs(sb);
+ 	if ((flags & UFS_TYPE_MASK) == UFS_TYPE_UFS2)
+ 		goto ufs2;
+ 
+@@ -152,7 +152,8 @@ ufs2:
+ 	ret = temp + (u64) (frag & uspi->s_fpbmask);
+ 
+ out:
+-	unlock_kernel();
++	if (needs_lock)
++		unlock_ufs(sb);
+ 	return ret;
+ }
+ 
+@@ -415,14 +416,16 @@ out:
+ int ufs_getfrag_block(struct inode *inode, sector_t fragment, struct buffer_head *bh_result, int create)
+ {
+ 	struct super_block * sb = inode->i_sb;
+-	struct ufs_sb_private_info * uspi = UFS_SB(sb)->s_uspi;
++	struct ufs_sb_info * sbi = UFS_SB(sb);
++	struct ufs_sb_private_info * uspi = sbi->s_uspi;
+ 	struct buffer_head * bh;
+ 	int ret, err, new;
+ 	unsigned long ptr,phys;
+ 	u64 phys64 = 0;
++	bool needs_lock = (sbi->mutex_owner != current);
+ 	
+ 	if (!create) {
+-		phys64 = ufs_frag_map(inode, fragment);
++		phys64 = ufs_frag_map(inode, fragment, needs_lock);
+ 		UFSD("phys64 = %llu\n", (unsigned long long)phys64);
+ 		if (phys64)
+ 			map_bh(bh_result, sb, phys64);
+@@ -436,7 +439,8 @@ int ufs_getfrag_block(struct inode *inode, sector_t fragment, struct buffer_head
+ 	ret = 0;
+ 	bh = NULL;
+ 
+-	lock_kernel();
++	if (needs_lock)
++		lock_ufs(sb);
+ 
+ 	UFSD("ENTER, ino %lu, fragment %llu\n", inode->i_ino, (unsigned long long)fragment);
+ 	if (fragment >
+@@ -498,7 +502,9 @@ out:
+ 		set_buffer_new(bh_result);
+ 	map_bh(bh_result, sb, phys);
+ abort:
+-	unlock_kernel();
++	if (needs_lock)
++		unlock_ufs(sb);
++
+ 	return err;
+ 
+ abort_too_big:
+@@ -506,48 +512,6 @@ abort_too_big:
+ 	goto abort;
+ }
+ 
+-static struct buffer_head *ufs_getfrag(struct inode *inode,
+-				       unsigned int fragment,
+-				       int create, int *err)
+-{
+-	struct buffer_head dummy;
+-	int error;
+-
+-	dummy.b_state = 0;
+-	dummy.b_blocknr = -1000;
+-	error = ufs_getfrag_block(inode, fragment, &dummy, create);
+-	*err = error;
+-	if (!error && buffer_mapped(&dummy)) {
+-		struct buffer_head *bh;
+-		bh = sb_getblk(inode->i_sb, dummy.b_blocknr);
+-		if (buffer_new(&dummy)) {
+-			memset(bh->b_data, 0, inode->i_sb->s_blocksize);
+-			set_buffer_uptodate(bh);
+-			mark_buffer_dirty(bh);
+-		}
+-		return bh;
+-	}
+-	return NULL;
+-}
+-
+-struct buffer_head * ufs_bread (struct inode * inode, unsigned fragment,
+-	int create, int * err)
+-{
+-	struct buffer_head * bh;
+-
+-	UFSD("ENTER, ino %lu, fragment %u\n", inode->i_ino, fragment);
+-	bh = ufs_getfrag (inode, fragment, create, err);
+-	if (!bh || buffer_uptodate(bh)) 		
+-		return bh;
+-	ll_rw_block (READ, 1, &bh);
+-	wait_on_buffer (bh);
+-	if (buffer_uptodate(bh))
+-		return bh;
+-	brelse (bh);
+-	*err = -EIO;
+-	return NULL;
+-}
+-
+ static int ufs_writepage(struct page *page, struct writeback_control *wbc)
+ {
+ 	return block_write_full_page(page,ufs_getfrag_block,wbc);
+@@ -900,9 +864,9 @@ static int ufs_update_inode(struct inode * inode, int do_sync)
+ int ufs_write_inode(struct inode *inode, struct writeback_control *wbc)
+ {
+ 	int ret;
+-	lock_kernel();
++	lock_ufs(inode->i_sb);
+ 	ret = ufs_update_inode(inode, wbc->sync_mode == WB_SYNC_ALL);
+-	unlock_kernel();
++	unlock_ufs(inode->i_sb);
+ 	return ret;
+ }
+ 
+@@ -922,22 +886,22 @@ void ufs_evict_inode(struct inode * inode)
+ 	if (want_delete) {
+ 		loff_t old_i_size;
+ 		/*UFS_I(inode)->i_dtime = CURRENT_TIME;*/
+-		lock_kernel();
++		lock_ufs(inode->i_sb);
+ 		mark_inode_dirty(inode);
+ 		ufs_update_inode(inode, IS_SYNC(inode));
+ 		old_i_size = inode->i_size;
+ 		inode->i_size = 0;
+ 		if (inode->i_blocks && ufs_truncate(inode, old_i_size))
+ 			ufs_warning(inode->i_sb, __func__, "ufs_truncate failed\n");
+-		unlock_kernel();
++		unlock_ufs(inode->i_sb);
+ 	}
+ 
+ 	invalidate_inode_buffers(inode);
+ 	end_writeback(inode);
+ 
+ 	if (want_delete) {
+-		lock_kernel();
++		lock_ufs(inode->i_sb);
+ 		ufs_free_inode (inode);
+-		unlock_kernel();
++		unlock_ufs(inode->i_sb);
+ 	}
+ }
+diff --git a/fs/ufs/namei.c b/fs/ufs/namei.c
+index 12f39b9..205030a 100644
+--- a/fs/ufs/namei.c
++++ b/fs/ufs/namei.c
+@@ -29,7 +29,6 @@
+ 
+ #include <linux/time.h>
+ #include <linux/fs.h>
 -#include <linux/smp_lock.h>
  
- #include "hpfs.h"
+ #include "ufs_fs.h"
+ #include "ufs.h"
+@@ -55,16 +54,16 @@ static struct dentry *ufs_lookup(struct inode * dir, struct dentry *dentry, stru
+ 	if (dentry->d_name.len > UFS_MAXNAMLEN)
+ 		return ERR_PTR(-ENAMETOOLONG);
  
-@@ -90,6 +89,7 @@ struct hpfs_sb_info {
- 	unsigned sb_max_fwd_alloc;	/* max forwad allocation */
- 	struct mutex hpfs_creation_de;	/* when creating dirents, nobody else
- 					   can alloc blocks */
-+	struct mutex global_mutex;	/* replaces BKL, serializes everything on SMP */
- 	/*unsigned sb_mounting : 1;*/
- 	int sb_timeshift;
- };
-@@ -345,14 +345,36 @@ static inline time32_t gmt_to_local(struct super_block *s, time_t t)
- }
- 
- /*
-- * Locking
-+ * Locking:
-+ *
-+ * hpfs_lock() is a leftover from the big kernel lock.
-+ * This mutex is used as the outermost lock in hpfs,
-+ * all other mutexes (inode->i_mutex, hpfs_inode_info->i_mutex,
-+ * hpfs_inode_info->i_parent_mutex, hpfs_creation_de and
-+ * lock_super) can get taken while hpfs_lock is held already.
-+ *
-+ * Code inspection has shown that hpfs_lock never gets taken
-+ * recursively, and that it never nests inside one of the
-+ * mutexes above, so there should be no deadlocks.
-+ *
-+ * However, it is frequently held while wait_for_buffer
-+ * sleeps, which probably causes a huge slowdown, since
-+ * that serializes all operations on a file system.
-+ *
-+ * Moreover, the locking code is entirely untested, use at
-+ * your own risk.
-  */
- static inline void hpfs_lock(struct super_block *s)
- {
 -	lock_kernel();
-+#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)
-+#warning HPFS is likely broken on SMP configurations
-+	mutex_lock(&hpfs_sb(s)->global_mutex);
-+#endif
- }
- 
- static inline void hpfs_unlock(struct super_block *s)
- {
++	lock_ufs(dir->i_sb);
+ 	ino = ufs_inode_by_name(dir, &dentry->d_name);
+ 	if (ino) {
+ 		inode = ufs_iget(dir->i_sb, ino);
+ 		if (IS_ERR(inode)) {
+-			unlock_kernel();
++			unlock_ufs(dir->i_sb);
+ 			return ERR_CAST(inode);
+ 		}
+ 	}
 -	unlock_kernel();
-+#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT)
-+	mutex_unlock(&hpfs_sb(s)->global_mutex);
-+#endif
++	unlock_ufs(dir->i_sb);
+ 	d_add(dentry, inode);
+ 	return NULL;
  }
-diff --git a/fs/hpfs/super.c b/fs/hpfs/super.c
-index 501ea86..694a683 100644
---- a/fs/hpfs/super.c
-+++ b/fs/hpfs/super.c
-@@ -491,6 +491,7 @@ static int hpfs_fill_super(struct super_block *s, void *options, int silent)
- 	sbi->sb_cp_table = NULL;
+@@ -93,9 +92,9 @@ static int ufs_create (struct inode * dir, struct dentry * dentry, int mode,
+ 		inode->i_fop = &ufs_file_operations;
+ 		inode->i_mapping->a_ops = &ufs_aops;
+ 		mark_inode_dirty(inode);
+-		lock_kernel();
++		lock_ufs(dir->i_sb);
+ 		err = ufs_add_nondir(dentry, inode);
+-		unlock_kernel();
++		unlock_ufs(dir->i_sb);
+ 	}
+ 	UFSD("END: err=%d\n", err);
+ 	return err;
+@@ -115,9 +114,9 @@ static int ufs_mknod (struct inode * dir, struct dentry *dentry, int mode, dev_t
+ 		init_special_inode(inode, mode, rdev);
+ 		ufs_set_inode_dev(inode->i_sb, UFS_I(inode), rdev);
+ 		mark_inode_dirty(inode);
+-		lock_kernel();
++		lock_ufs(dir->i_sb);
+ 		err = ufs_add_nondir(dentry, inode);
+-		unlock_kernel();
++		unlock_ufs(dir->i_sb);
+ 	}
+ 	return err;
+ }
+@@ -133,7 +132,7 @@ static int ufs_symlink (struct inode * dir, struct dentry * dentry,
+ 	if (l > sb->s_blocksize)
+ 		goto out_notlocked;
  
- 	mutex_init(&sbi->hpfs_creation_de);
-+	mutex_init(&sbi->global_mutex);
+-	lock_kernel();
++	lock_ufs(dir->i_sb);
+ 	inode = ufs_new_inode(dir, S_IFLNK | S_IRWXUGO);
+ 	err = PTR_ERR(inode);
+ 	if (IS_ERR(inode))
+@@ -156,7 +155,7 @@ static int ufs_symlink (struct inode * dir, struct dentry * dentry,
  
- 	uid = current_uid();
- 	gid = current_gid();
+ 	err = ufs_add_nondir(dentry, inode);
+ out:
+-	unlock_kernel();
++	unlock_ufs(dir->i_sb);
+ out_notlocked:
+ 	return err;
+ 
+@@ -172,9 +171,9 @@ static int ufs_link (struct dentry * old_dentry, struct inode * dir,
+ 	struct inode *inode = old_dentry->d_inode;
+ 	int error;
+ 
+-	lock_kernel();
++	lock_ufs(dir->i_sb);
+ 	if (inode->i_nlink >= UFS_LINK_MAX) {
+-		unlock_kernel();
++		unlock_ufs(dir->i_sb);
+ 		return -EMLINK;
+ 	}
+ 
+@@ -183,7 +182,7 @@ static int ufs_link (struct dentry * old_dentry, struct inode * dir,
+ 	ihold(inode);
+ 
+ 	error = ufs_add_nondir(dentry, inode);
+-	unlock_kernel();
++	unlock_ufs(dir->i_sb);
+ 	return error;
+ }
+ 
+@@ -195,7 +194,7 @@ static int ufs_mkdir(struct inode * dir, struct dentry * dentry, int mode)
+ 	if (dir->i_nlink >= UFS_LINK_MAX)
+ 		goto out;
+ 
+-	lock_kernel();
++	lock_ufs(dir->i_sb);
+ 	inode_inc_link_count(dir);
+ 
+ 	inode = ufs_new_inode(dir, S_IFDIR|mode);
+@@ -216,7 +215,7 @@ static int ufs_mkdir(struct inode * dir, struct dentry * dentry, int mode)
+ 	err = ufs_add_link(dentry, inode);
+ 	if (err)
+ 		goto out_fail;
+-	unlock_kernel();
++	unlock_ufs(dir->i_sb);
+ 
+ 	d_instantiate(dentry, inode);
+ out:
+@@ -228,7 +227,7 @@ out_fail:
+ 	iput (inode);
+ out_dir:
+ 	inode_dec_link_count(dir);
+-	unlock_kernel();
++	unlock_ufs(dir->i_sb);
+ 	goto out;
+ }
+ 
+@@ -259,7 +258,7 @@ static int ufs_rmdir (struct inode * dir, struct dentry *dentry)
+ 	struct inode * inode = dentry->d_inode;
+ 	int err= -ENOTEMPTY;
+ 
+-	lock_kernel();
++	lock_ufs(dir->i_sb);
+ 	if (ufs_empty_dir (inode)) {
+ 		err = ufs_unlink(dir, dentry);
+ 		if (!err) {
+@@ -268,7 +267,7 @@ static int ufs_rmdir (struct inode * dir, struct dentry *dentry)
+ 			inode_dec_link_count(dir);
+ 		}
+ 	}
+-	unlock_kernel();
++	unlock_ufs(dir->i_sb);
+ 	return err;
+ }
+ 
+diff --git a/fs/ufs/super.c b/fs/ufs/super.c
+index 2c61ac5..f4612f2 100644
+--- a/fs/ufs/super.c
++++ b/fs/ufs/super.c
+@@ -84,7 +84,6 @@
+ #include <linux/blkdev.h>
+ #include <linux/init.h>
+ #include <linux/parser.h>
+-#include <linux/smp_lock.h>
+ #include <linux/buffer_head.h>
+ #include <linux/vfs.h>
+ #include <linux/log2.h>
+@@ -96,6 +95,26 @@
+ #include "swab.h"
+ #include "util.h"
+ 
++void lock_ufs(struct super_block *sb)
++{
++#if defined(CONFIG_SMP) || defined (CONFIG_PREEMPT)
++	struct ufs_sb_info *sbi = UFS_SB(sb);
++
++	mutex_lock(&sbi->mutex);
++	sbi->mutex_owner = current;
++#endif
++}
++
++void unlock_ufs(struct super_block *sb)
++{
++#if defined(CONFIG_SMP) || defined (CONFIG_PREEMPT)
++	struct ufs_sb_info *sbi = UFS_SB(sb);
++
++	sbi->mutex_owner = NULL;
++	mutex_unlock(&sbi->mutex);
++#endif
++}
++
+ static struct inode *ufs_nfs_get_inode(struct super_block *sb, u64 ino, u32 generation)
+ {
+ 	struct ufs_sb_private_info *uspi = UFS_SB(sb)->s_uspi;
+@@ -313,7 +332,6 @@ void ufs_panic (struct super_block * sb, const char * function,
+ 	struct ufs_super_block_first * usb1;
+ 	va_list args;
+ 	
+-	lock_kernel();
+ 	uspi = UFS_SB(sb)->s_uspi;
+ 	usb1 = ubh_get_usb_first(uspi);
+ 	
+@@ -646,8 +664,6 @@ static void ufs_put_super_internal(struct super_block *sb)
+ 	
+ 	UFSD("ENTER\n");
+ 
+-	lock_kernel();
+-
+ 	ufs_put_cstotal(sb);
+ 	size = uspi->s_cssize;
+ 	blks = (size + uspi->s_fsize - 1) >> uspi->s_fshift;
+@@ -676,8 +692,6 @@ static void ufs_put_super_internal(struct super_block *sb)
+ 	kfree (sbi->s_ucg);
+ 	kfree (base);
+ 
+-	unlock_kernel();
+-
+ 	UFSD("EXIT\n");
+ }
+ 
+@@ -696,8 +710,6 @@ static int ufs_fill_super(struct super_block *sb, void *data, int silent)
+ 	unsigned maxsymlen;
+ 	int ret = -EINVAL;
+ 
+-	lock_kernel();
+-
+ 	uspi = NULL;
+ 	ubh = NULL;
+ 	flags = 0;
+@@ -1165,7 +1177,6 @@ magic_found:
+ 			goto failed;
+ 
+ 	UFSD("EXIT\n");
+-	unlock_kernel();
+ 	return 0;
+ 
+ dalloc_failed:
+@@ -1177,12 +1188,10 @@ failed:
+ 	kfree(sbi);
+ 	sb->s_fs_info = NULL;
+ 	UFSD("EXIT (FAILED)\n");
+-	unlock_kernel();
+ 	return ret;
+ 
+ failed_nomem:
+ 	UFSD("EXIT (NOMEM)\n");
+-	unlock_kernel();
+ 	return -ENOMEM;
+ }
+ 
+@@ -1193,8 +1202,8 @@ static int ufs_sync_fs(struct super_block *sb, int wait)
+ 	struct ufs_super_block_third * usb3;
+ 	unsigned flags;
+ 
++	lock_ufs(sb);
+ 	lock_super(sb);
+-	lock_kernel();
+ 
+ 	UFSD("ENTER\n");
+ 
+@@ -1213,8 +1222,8 @@ static int ufs_sync_fs(struct super_block *sb, int wait)
+ 	sb->s_dirt = 0;
+ 
+ 	UFSD("EXIT\n");
+-	unlock_kernel();
+ 	unlock_super(sb);
++	unlock_ufs(sb);
+ 
+ 	return 0;
+ }
+@@ -1256,7 +1265,7 @@ static int ufs_remount (struct super_block *sb, int *mount_flags, char *data)
+ 	unsigned new_mount_opt, ufstype;
+ 	unsigned flags;
+ 
+-	lock_kernel();
++	lock_ufs(sb);
+ 	lock_super(sb);
+ 	uspi = UFS_SB(sb)->s_uspi;
+ 	flags = UFS_SB(sb)->s_flags;
+@@ -1272,7 +1281,7 @@ static int ufs_remount (struct super_block *sb, int *mount_flags, char *data)
+ 	ufs_set_opt (new_mount_opt, ONERROR_LOCK);
+ 	if (!ufs_parse_options (data, &new_mount_opt)) {
+ 		unlock_super(sb);
+-		unlock_kernel();
++		unlock_ufs(sb);
+ 		return -EINVAL;
+ 	}
+ 	if (!(new_mount_opt & UFS_MOUNT_UFSTYPE)) {
+@@ -1280,14 +1289,14 @@ static int ufs_remount (struct super_block *sb, int *mount_flags, char *data)
+ 	} else if ((new_mount_opt & UFS_MOUNT_UFSTYPE) != ufstype) {
+ 		printk("ufstype can't be changed during remount\n");
+ 		unlock_super(sb);
+-		unlock_kernel();
++		unlock_ufs(sb);
+ 		return -EINVAL;
+ 	}
+ 
+ 	if ((*mount_flags & MS_RDONLY) == (sb->s_flags & MS_RDONLY)) {
+ 		UFS_SB(sb)->s_mount_opt = new_mount_opt;
+ 		unlock_super(sb);
+-		unlock_kernel();
++		unlock_ufs(sb);
+ 		return 0;
+ 	}
+ 	
+@@ -1313,7 +1322,7 @@ static int ufs_remount (struct super_block *sb, int *mount_flags, char *data)
+ 		printk("ufs was compiled with read-only support, "
+ 		"can't be mounted as read-write\n");
+ 		unlock_super(sb);
+-		unlock_kernel();
++		unlock_ufs(sb);
+ 		return -EINVAL;
+ #else
+ 		if (ufstype != UFS_MOUNT_UFSTYPE_SUN && 
+@@ -1323,13 +1332,13 @@ static int ufs_remount (struct super_block *sb, int *mount_flags, char *data)
+ 		    ufstype != UFS_MOUNT_UFSTYPE_UFS2) {
+ 			printk("this ufstype is read-only supported\n");
+ 			unlock_super(sb);
+-			unlock_kernel();
++			unlock_ufs(sb);
+ 			return -EINVAL;
+ 		}
+ 		if (!ufs_read_cylinder_structures(sb)) {
+ 			printk("failed during remounting\n");
+ 			unlock_super(sb);
+-			unlock_kernel();
++			unlock_ufs(sb);
+ 			return -EPERM;
+ 		}
+ 		sb->s_flags &= ~MS_RDONLY;
+@@ -1337,7 +1346,7 @@ static int ufs_remount (struct super_block *sb, int *mount_flags, char *data)
+ 	}
+ 	UFS_SB(sb)->s_mount_opt = new_mount_opt;
+ 	unlock_super(sb);
+-	unlock_kernel();
++	unlock_ufs(sb);
+ 	return 0;
+ }
+ 
+@@ -1371,7 +1380,7 @@ static int ufs_statfs(struct dentry *dentry, struct kstatfs *buf)
+ 	struct ufs_super_block_third *usb3;
+ 	u64 id = huge_encode_dev(sb->s_bdev->bd_dev);
+ 
+-	lock_kernel();
++	lock_ufs(sb);
+ 
+ 	usb1 = ubh_get_usb_first(uspi);
+ 	usb2 = ubh_get_usb_second(uspi);
+@@ -1395,7 +1404,7 @@ static int ufs_statfs(struct dentry *dentry, struct kstatfs *buf)
+ 	buf->f_fsid.val[0] = (u32)id;
+ 	buf->f_fsid.val[1] = (u32)(id >> 32);
+ 
+-	unlock_kernel();
++	unlock_ufs(sb);
+ 
+ 	return 0;
+ }
+diff --git a/fs/ufs/truncate.c b/fs/ufs/truncate.c
+index a58f915..e56a4f5 100644
+--- a/fs/ufs/truncate.c
++++ b/fs/ufs/truncate.c
+@@ -40,7 +40,6 @@
+ #include <linux/time.h>
+ #include <linux/stat.h>
+ #include <linux/string.h>
+-#include <linux/smp_lock.h>
+ #include <linux/buffer_head.h>
+ #include <linux/blkdev.h>
+ #include <linux/sched.h>
+@@ -467,7 +466,6 @@ int ufs_truncate(struct inode *inode, loff_t old_i_size)
+ 
+ 	block_truncate_page(inode->i_mapping, inode->i_size, ufs_getfrag_block);
+ 
+-	lock_kernel();
+ 	while (1) {
+ 		retry = ufs_trunc_direct(inode);
+ 		retry |= ufs_trunc_indirect(inode, UFS_IND_BLOCK,
+@@ -487,7 +485,6 @@ int ufs_truncate(struct inode *inode, loff_t old_i_size)
+ 
+ 	inode->i_mtime = inode->i_ctime = CURRENT_TIME_SEC;
+ 	ufsi->i_lastfrag = DIRECT_FRAGMENT;
+-	unlock_kernel();
+ 	mark_inode_dirty(inode);
+ out:
+ 	UFSD("EXIT: err %d\n", err);
+@@ -510,7 +507,9 @@ int ufs_setattr(struct dentry *dentry, struct iattr *attr)
+ 		/* XXX(truncate): truncate_setsize should be called last */
+ 		truncate_setsize(inode, attr->ia_size);
+ 
++		lock_ufs(inode->i_sb);
+ 		error = ufs_truncate(inode, old_i_size);
++		unlock_ufs(inode->i_sb);
+ 		if (error)
+ 			return error;
+ 	}
+diff --git a/fs/ufs/ufs.h b/fs/ufs/ufs.h
+index c08782e..5be2755 100644
+--- a/fs/ufs/ufs.h
++++ b/fs/ufs/ufs.h
+@@ -18,6 +18,8 @@ struct ufs_sb_info {
+ 	unsigned s_cgno[UFS_MAX_GROUP_LOADED];
+ 	unsigned short s_cg_loaded;
+ 	unsigned s_mount_opt;
++	struct mutex mutex;
++	struct task_struct *mutex_owner;
+ };
+ 
+ struct ufs_inode_info {
+@@ -109,7 +111,6 @@ extern struct inode *ufs_iget(struct super_block *, unsigned long);
+ extern int ufs_write_inode (struct inode *, struct writeback_control *);
+ extern int ufs_sync_inode (struct inode *);
+ extern void ufs_evict_inode (struct inode *);
+-extern struct buffer_head * ufs_bread (struct inode *, unsigned, int, int *);
+ extern int ufs_getfrag_block (struct inode *inode, sector_t fragment, struct buffer_head *bh_result, int create);
+ 
+ /* namei.c */
+@@ -154,4 +155,7 @@ static inline u32 ufs_dtogd(struct ufs_sb_private_info * uspi, u64 b)
+ 	return do_div(b, uspi->s_fpg);
+ }
+ 
++extern void lock_ufs(struct super_block *sb);
++extern void unlock_ufs(struct super_block *sb);
++
+ #endif /* _UFS_UFS_H */
 -- 
 1.7.1
 
