@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628Ab1AYLM5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 06:12:57 -0500
-Received: from mx01.sz.bfs.de ([194.94.69.103]:34245 "EHLO mx01.sz.bfs.de"
+	id S1752872Ab1AYLPD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 06:15:03 -0500
+Received: from mga02.intel.com ([134.134.136.20]:15749 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751547Ab1AYLM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 06:12:56 -0500
-Message-ID: <4D3EB02D.6090302@bfs.de>
-Date: Tue, 25 Jan 2011 12:12:45 +0100
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1751025Ab1AYLPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 06:15:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,373,1291622400"; 
+   d="scan'208";a="596220729"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: Thomas Renninger <trenn@suse.de>, "Zhang, Rui" <rui.zhang@intel.com>
+CC: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        "jdelvare@novell.com" <jdelvare@novell.com>,
+        Len Brown <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "linux-perf-users@vger.kernel.org" <linux-perf-users@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-trace-users@vger.kernel.org" 
+	<linux-trace-users@vger.kernel.org>
+Date: Tue, 25 Jan 2011 16:44:54 +0530
+Subject: RE: Thermal kernel events API to userspace - Was: Re: thermal:
+ Avoid CONFIG_NET compile dependency
+Thread-Topic: Thermal kernel events API to userspace - Was: Re: thermal:
+ Avoid CONFIG_NET compile dependency
+Thread-Index: Acu8eGQFj4y2A8NuRymCFXIKUSEtewAAhr+AAAGLGkA=
+Message-ID: <D6D887BA8C9DFF48B5233887EF046541094488C0CB@bgsmsx502.gar.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Julia Lawall <julia@diku.dk>, Vasiliy Kulikov <segooon@gmail.com>,
-        Ryan Mallon <ryan@bluewatersys.com>, kernel-janitors@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] arch/arm/mach-at91/clock.c: Add missing IS_ERR test
-References: <1295898922-18822-1-git-send-email-julia@diku.dk> <1295898922-18822-3-git-send-email-julia@diku.dk> <4D3DD964.9020107@bluewatersys.com> <Pine.LNX.4.64.1101242058430.3167@ask.diku.dk> <20110124200515.GA30963@albatros> <Pine.LNX.4.64.1101242108180.3167@ask.diku.dk> <4D3EA6EC.5050305@bfs.de> <20110125104333.GE11507@n2100.arm.linux.org.uk>
-In-Reply-To: <20110125104333.GE11507@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p0PBF9qt004719
 
+Hi Thomas,
 
-
-Am 25.01.2011 11:43, schrieb Russell King - ARM Linux:
-> On Tue, Jan 25, 2011 at 11:33:16AM +0100, walter harms wrote:
->> Would it be more easy to return NULL in the error case of clk_get() instead
->> of ERR_PTR(-ENOENT) ?
->>
->> So the default could be return NULL and an architecture depending solution
->> replacing that.
 > 
-> That's not how the API is defined.  The API defines error-pointers to be
-> errors, everything should be considered valid.  Please don't go down the
-> route of doing something architecturally different from that.
+> I wonder which events would need userspace to take specific
+> (configured) actions at all and what kind of action it could be.
 > 
-> What if, say, you couldn't return the struct clk because maybe it could
-> only be controlled by one user?  Returning an EBUSY error pointer would
-> indicate this condition.  What if the module providing the struct clk
-> hasn't finished initializing - that's another reason for EBUSY rather
-> than ENOENT.
-> 
-> Error codes are useful to describe why something failed.  NULL pointers
-> can't do that.
+> What is THERMAL_USER_AUX0?
+> When will it get thrown and what is userspace expected to do?
 > 
 
-On Mon, 24 Jan 2011, Vasiliy Kulikov wrote:
-> 
-...
-> clk_get() is defined per-architecture, sometimes it is NULL only.
->
+This THERMAL_USER_AUX0 is meant for the DTS core thresholds.
+In ACPI compliant systems, There are two core thresholds, that
+Can be programmed and read via IA32_THERM_INTERRUPT MSR. One is the
+Lower threshold (AUX0) and the other one is the higher threshold(AUX1).
 
-So these is a bug ? They should return -ENOENT ?
+When the Current temperature goes below the lower threshold, or above
+the higher threshold, the HW generates an interrupt. This is what is
+forwarded to the user space through the netlink events.
 
-The interessting question is: what to do with an error ?
+The user app can increase performance(increase CPU speed..)
+on receiving AUX0 events, and try to reduce performance
+(like CPU frequency reduction, display control..)on getting AUX1 events.
+Basically, the app can do anything to reduce the temperature of the
+Platform.
 
-Obviously some architecture can live with NULL, so it is not an critical
-error. An the patch shows a code that is simply a return, not even the
-user is informed that something did not work as expected.
-
->From that point of view i would like question if it is useful to have
-a "detailed" error instead of just returning NULL.
-
-just my 2 cents,
-re,
- wh
+Thanks,
+Durga
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
