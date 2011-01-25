@@ -1,189 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812Ab1AYFpV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 00:45:21 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49119 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275Ab1AYFpT (ORCPT
+	id S1752626Ab1AYFqe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 00:46:34 -0500
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:54046 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab1AYFqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 00:45:19 -0500
-Date: Tue, 25 Jan 2011 13:53:45 +0900
-From: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, Jan Kara <jack@ucw.cz>
-Subject: Re: [RFC][PATCH] radix_tree: radix_tree_gang_lookup_tag_slot may
- not return forever.
-Message-Id: <20110125135345.ca4bfd79.toshi.okajima@jp.fujitsu.com>
-In-Reply-To: <20110121153154.1ca74dd2.akpm@linux-foundation.org>
-References: <20110121153431.acd113d8.toshi.okajima@jp.fujitsu.com>
-	<20110121153154.1ca74dd2.akpm@linux-foundation.org>
-Organization: Fujitsu co.,ltd.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.12.8; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/mixed;
- boundary="Multipart=_Tue__25_Jan_2011_13_53_45_+0900_hdvDNBiX8uT2kqgN"
+	Tue, 25 Jan 2011 00:46:33 -0500
+Date: Tue, 25 Jan 2011 06:46:31 +0100
+From: Andreas Mohr <andi@lisas.de>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Jiri Slaby <jslaby@suse.cz>, jirislaby@gmail.com, perex@perex.cz,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Andreas Mohr <andi@lisas.de>, Andy Whitcroft <apw@canonical.com>
+Subject: [PATCH] azt3328: repair breakage (Re: [PATCH 1/1] SOUND: azt3328,
+ fix broken AZF_FMT_XLATE macro)
+Message-ID: <20110125054631.GA10984@rhlx01.hs-esslingen.de>
+References: <1295704570-27015-1-git-send-email-jslaby@suse.cz>
+ <s5h1v44j45c.wl%tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5h1v44j45c.wl%tiwai@suse.de>
+X-Priority: none
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+Cleanly revert to non-macro implementation of
+snd_azf3328_codec_setfmt(), to fix last-minute functionality breakage
+induced by following checkpatch.pl recommendations without giving them
+their due full share of thought ("revolting computer, ensuing PEBKAC").
 
---Multipart=_Tue__25_Jan_2011_13_53_45_+0900_hdvDNBiX8uT2kqgN
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+I would like to thank Jiri Slaby for his very timely (in -rc1 even)
+and unexpected (uncommon hardware) "recognition of the dangerous situation"
+due to his very commendable static parser use. :)
 
-Hi Andrew,
-
-On Fri, 21 Jan 2011 15:31:54 -0800
-Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> On Fri, 21 Jan 2011 15:34:31 +0900
-> Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com> wrote:
+Reported-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Andreas Mohr <andi@lisas.de>
+---
+On Sat, Jan 22, 2011 at 05:26:39PM +0100, Takashi Iwai wrote:
+> At Sat, 22 Jan 2011 14:56:10 +0100,
+> Jiri Slaby wrote:
+> > I vote for removing that crap completely because it makes the code
+> > weird anyway -- you have to specify manually both of freq and bits
+> > which is I would expect to be avoided exactly by such a macro.
 > 
-> > Hi.
-> > 
-> > I executed fsstress and then found that the system hung up.
-> > At that time, I took the crash dump. Here is the backtrace of the process
-> > which causes this hangup.
-> > 
-> > [long description]
-> >
-> > --- a/lib/radix-tree.c
-> > +++ b/lib/radix-tree.c
-> > @@ -736,10 +736,11 @@ next:
-> >  		}
-> >  	}
-> >  	/*
-> > -	 * The iftag must have been set somewhere because otherwise
-> > -	 * we would return immediated at the beginning of the function
-> > +	 * We need not to tag the root tag if there is no tag which is set with
-> > +	 * settag within the range from *first_indexp to last_index.
-> >  	 */
-> > -	root_tag_set(root, settag);
-> > +	if (tagged > 0)
-> > +		root_tag_set(root, settag);
-> >  	*first_indexp = index;
-> >  
-> >  	return tagged;
-> 
-> Thanks.
-> 
+> I agree.  Andreas, please either revert back to the plain code,
+> or use a simple look-up table if you don't want switch/case.
 
-> It should be fairly simple to reproduce this hang with the userspace
-> test harness (http://userweb.kernel.org/~akpm/stuff/rtth.tar.gz) and to
-> then demonstrate that the fix fixes it.
-> 
-> If you have time, could you please do that and then send the rtth
-> updates to me?
-> 
-I add regression2_test for this bug into your testset (rtth.tar.gz).
-This is originated from regression1_test.
+And indeed, the currently committed state IS broken since listening to audio
+is strangely devoid of positive effects. :)
+Sucks to be taking a larger tried and tested patch series into the holidays
+and then making minor "improvements" to it before submission.
 
-Regards,
-Toshiyuki Okajima
 
---Multipart=_Tue__25_Jan_2011_13_53_45_+0900_hdvDNBiX8uT2kqgN
-Content-Type: application/octet-stream;
- name="rtth.patch"
-Content-Disposition: attachment;
- filename="rtth.patch"
-Content-Transfer-Encoding: base64
+I decided that an additional lookup table isn't really worth it,
+thus reverting is probably best.
 
-ZGlmZiAtTnVycCBydHRoLm9yZy9NYWtlZmlsZSBydHRoL01ha2VmaWxlCi0tLSBydHRoLm9yZy9N
-YWtlZmlsZQkyMDEwLTExLTExIDA5OjAyOjQ5LjAwMDAwMDAwMCArMDkwMAorKysgcnR0aC9NYWtl
-ZmlsZQkyMDExLTAxLTI0IDE3OjM4OjA4LjAwMDAwMDAwMCArMDkwMApAQCAtMiw3ICsyLDcgQEAK
-IENGTEFHUyArPSAtSS4gLWcgLVdhbGwgLURfTEdQTF9TT1VSQ0UKIExERkxBR1MgKz0gLWxwdGhy
-ZWFkIC1sdXJjdQogVEFSR0VUUyA9IG1haW4KLU9GSUxFUyA9IG1haW4ubyByY3VwZGF0ZS5vIHJh
-ZGl4LXRyZWUubyBsaW51eC5vIHRlc3QubyB0YWdfY2hlY2subyByZWdyZXNzaW9uMS5vCitPRklM
-RVMgPSBtYWluLm8gcmN1cGRhdGUubyByYWRpeC10cmVlLm8gbGludXgubyB0ZXN0Lm8gdGFnX2No
-ZWNrLm8gcmVncmVzc2lvbjEubyByZWdyZXNzaW9uMi5vCiAKIHRhcmdldHM6ICQoVEFSR0VUUykK
-IApkaWZmIC1OdXJwIHJ0dGgub3JnL21haW4uYyBydHRoL21haW4uYwotLS0gcnR0aC5vcmcvbWFp
-bi5jCTIwMTAtMTEtMTEgMDk6MDI6NDkuMDAwMDAwMDAwICswOTAwCisrKyBydHRoL21haW4uYwky
-MDExLTAxLTI1IDEzOjQ4OjU1LjAwMDAwMDAwMCArMDkwMApAQCAtMjYwLDYgKzI2MCw3IEBAIGlu
-dCBtYWluKCkKIAlyYWRpeF90cmVlX2luaXQoKTsKIAogCXJlZ3Jlc3Npb24xX3Rlc3QoKTsKKwly
-ZWdyZXNzaW9uMl90ZXN0KCk7CiAKIAlzaW5nbGVfdGhyZWFkX3Rlc3RzKCk7CiAKZGlmZiAtTnVy
-cCBydHRoLm9yZy9yZWdyZXNzaW9uLmggcnR0aC9yZWdyZXNzaW9uLmgKLS0tIHJ0dGgub3JnL3Jl
-Z3Jlc3Npb24uaAkyMDEwLTExLTExIDA5OjAyOjQ5LjAwMDAwMDAwMCArMDkwMAorKysgcnR0aC9y
-ZWdyZXNzaW9uLmgJMjAxMS0wMS0yNCAxNzoxOTo0OS4wMDAwMDAwMDAgKzA5MDAKQEAgLTIsNSAr
-Miw2IEBACiAjZGVmaW5lIF9fUkVHUkVTU0lPTl9IX18KIAogdm9pZCByZWdyZXNzaW9uMV90ZXN0
-KHZvaWQpOwordm9pZCByZWdyZXNzaW9uMl90ZXN0KHZvaWQpOwogCiAjZW5kaWYKZGlmZiAtTnVy
-cCBydHRoLm9yZy9yZWdyZXNzaW9uMi5jIHJ0dGgvcmVncmVzc2lvbjIuYwotLS0gcnR0aC5vcmcv
-cmVncmVzc2lvbjIuYwkxOTcwLTAxLTAxIDA5OjAwOjAwLjAwMDAwMDAwMCArMDkwMAorKysgcnR0
-aC9yZWdyZXNzaW9uMi5jCTIwMTEtMDEtMjUgMTQ6MjY6MzMuMDAwMDAwMDAwICswOTAwCkBAIC0w
-LDAgKzEsMTI1IEBACisvKgorICogUmVncmVzc2lvbjIKKyAqIERlc2NyaXB0aW9uOgorICogVG9z
-aGl5dWtpIE9rYWppbWEgZGVzY3JpYmVzIHRoZSBmb2xsb3dpbmcgcmFkaXgtdHJlZSBidWc6Cisg
-KgorICogSW4gdGhlIGZvbGxvd2luZyBjYXNlLCB3ZSBjYW4gZ2V0IGEgaGFuZ3VwIG9uIAorICog
-ICByYWRpeF9yYWRpeF90cmVlX2dhbmdfbG9va3VwX3RhZ19zbG90LgorICoKKyAqIDAuICBUaGUg
-cmFkaXggdHJlZSBjb250YWlucyBSQURJWF9UUkVFX01BUF9TSVpFIGl0ZW1zLiBBbmQgdGhlIHRh
-ZyBvZgorICogICAgIGEgY2VydGFpbiBpdGVtIGhhcyBQQUdFQ0FDSEVfVEFHX0RJUlRZLgorICog
-MS4gIHJhZGl4X3RyZWVfcmFuZ2VfdGFnX2lmX3RhZ2dlZCgsIHN0YXJ0LCBlbmQsICwgUEFHRUNB
-Q0hFX1RBR19ESVJUWSwKKyAqICAgICBQQUdFQ0FDSEVfVEFHX1RPV1JJVEUpIGlzIGNhbGxlZCB0
-byBhZGQgUEFHRUNBQ0hFX1RBR19UT1dSSVRFIHRhZworICogICAgIGZvciB0aGUgdGFnIHdoaWNo
-IGhhcyBQQUdFQ0FDSEVfVEFHX0RJUlRZLiBIb3dldmVyLCB0aGVyZSBpcyBubyB0YWcgd2l0aAor
-ICogICAgIFBBR0VDQUNIRV9UQUdfRElSVFkgd2l0aGluIHRoZSByYW5nZSBmcm9tIHN0YXJ0IHRv
-IGVuZC4gQXMgdGhlIHJlc3VsdCwKKyAqICAgICBUaGVyZSBpcyBubyB0YWcgd2l0aCBQQUdFQ0FD
-SEVfVEFHX1RPV1JJVEUgYnV0IHRoZSByb290IHRhZyBoYXMKKyAqICAgICBQQUdFQ0FDSEVfVEFH
-X1RPV1JJVEUuCisgKiAyLiAgQW4gaXRlbSBpcyBhZGRlZCBpbnRvIHRoZSByYWRpeCB0cmVlIGFu
-ZCB0aGVuIHRoZSBsZXZlbCBvZiBpdCBpcyAKKyAqICAgICBleHRlbmRlZCBpbnRvIDIgZnJvbSAx
-LiBBdCB0aGF0IHRpbWUsIHRoZSBuZXcgcmFkaXggdHJlZSBub2RlIHN1Y2NlZWRzIAorICogICAg
-IHRoZSB0YWcgc3RhdHVzIG9mIHRoZSByb290IHRhZy4gVGhlcmVmb3JlIHRoZSB0YWcgb2YgdGhl
-IG5ldyByYWRpeCB0cmVlCisgKiAgICAgbm9kZSBoYXMgUEFHRUNBQ0hFX1RBR19UT1dSSVRFIGJ1
-dCB0aGVyZSBpcyBub3Qgc2xvdCB3aXRoIAorICogICAgIFBBR0VDQUNIRV9UQUdfVE9XUklURSB0
-YWcgaW4gdGhlIGNoaWxkIG5vZGUgb2YgdGhlIG5ldyByYWRpeCB0cmVlIG5vZGUuCisgKiAzLiAg
-VGhlIHRhZyBvZiBhIGNlcnRhaW4gaXRlbSBpcyBjbGVhcmVkIHdpdGggUEFHRUNBQ0hFX1RBR19E
-SVJUWS4KKyAqIDQuICBBbGwgaXRlbXMgd2l0aGluIHRoZSBpbmRleCByYW5nZSBmcm9tIDAgdG8g
-UkFESVhfVFJFRV9NQVBfU0laRSAtIDEgYXJlCisgKiAgICAgcmVsZWFzZWQuIChPbmx5IHRoZSBp
-dGVtIHdoaWNoIGluZGV4IGlzIFJBRElYX1RSRUVfTUFQX1NJWkUgZXhpc3QgaW4gdGhlCisgKiAg
-ICAgcmFkaXggdHJlZS4pIEFzIHRoZSByZXN1bHQsIHRoZSBzbG90IG9mIHRoZSByYWRpeCB0cmVl
-IG5vZGUgaXMgTlVMTCBidXQKKyAqICAgICB0aGUgdGFnIHdoaWNoIGNvcnJlc3BvbmRzIHRvIHRo
-ZSBzbG90IGhhcyBQQUdFQ0FDSEVfVEFHX1RPV1JJVEUuCisgKiA1LiAgcmFkaXhfdHJlZV9nYW5n
-X2xvb2t1cF90YWdfc2xvdChQQUdFQ0FDSEVfVEFHX1RPV1JJVEUpIGNhbGxzCisgKiAgICAgX19s
-b29rdXBfdGFnLiBfX2xvb2t1cF90YWcgcmV0dXJucyB3aXRoIDAuIEFuZCBfX2xvb2t1cF90YWcg
-ZG9lc24ndAorICogICAgIGNoYW5nZSB0aGUgaW5kZXggdGhhdCBpcyB0aGUgaW5wdXQgYW5kIG91
-dHB1dCBwYXJhbWV0ZXIuIEJlY2F1c2UgdGhlIDFzdAorICogICAgIHNsb3Qgb2YgdGhlIHJhZGl4
-IHRyZWUgbm9kZSBpcyBOVUxMLCBidXQgdGhlIHRhZyB3aGljaCBjb3JyZXNwb25kcyB0bworICog
-ICAgIHRoZSBzbG90IGhhcyBQQUdFQ0FDSEVfVEFHX1RPV1JJVEUuCisgKiAgICAgVGhlcmVmb3Jl
-IHJhZGl4X3RyZWVfZ2FuZ19sb29rdXBfdGFnX3Nsb3QgdHJpZXMgdG8gZ2V0IHNvbWUgaXRlbXMg
-YnkKKyAqICAgICBjYWxsaW5nIF9fbG9va3VwX3RhZywgYnV0IGl0IGNhbm5vdCBnZXQgYW55IGl0
-ZW1zIGZvcmV2ZXIuCisgKgorICogVGhlIGZpeCBpcyB0byBjaGFuZ2UgdGhhdCByYWRpeF90cmVl
-X3RhZ19pZl90YWdnZWQgZG9lc24ndCB0YWcgdGhlIHJvb3QgdGFnCisgKiBpZiBpdCBkb2Vzbid0
-IHNldCBhbnkgdGFncyB3aXRoaW4gdGhlIHNwZWNpZmllZCByYW5nZS4KKyAqCisgKiBSdW5uaW5n
-OgorICogVGhpcyB0ZXN0IHNob3VsZCBydW4gdG8gY29tcGxldGlvbiBpbW1lZGlhdGVseS4gVGhl
-IGFib3ZlIGJ1ZyB3b3VsZCBjYXVzZSBpdAorICogdG8gaGFuZyBpbmRlZmluaXRlbHkuCisgKgor
-ICogVXBzdHJlYW0gY29tbWl0OgorICogTm90IHlldAorICovCisjaW5jbHVkZSA8bGludXgva2Vy
-bmVsLmg+CisjaW5jbHVkZSA8bGludXgvZ2ZwLmg+CisjaW5jbHVkZSA8bGludXgvc2xhYi5oPgor
-I2luY2x1ZGUgPGxpbnV4L3JhZGl4LXRyZWUuaD4KKyNpbmNsdWRlIDxzdGRsaWIuaD4KKyNpbmNs
-dWRlIDxzdGRpby5oPgorCisjaW5jbHVkZSAicmVncmVzc2lvbi5oIgorCisjaWZkZWYgX19LRVJO
-RUxfXworI2RlZmluZSBSQURJWF9UUkVFX01BUF9TSElGVCAgICAoQ09ORklHX0JBU0VfU01BTEwg
-PyA0IDogNikKKyNlbHNlCisjZGVmaW5lIFJBRElYX1RSRUVfTUFQX1NISUZUICAgIDMgICAgICAg
-LyogRm9yIG1vcmUgc3RyZXNzZnVsIHRlc3RpbmcgKi8KKyNlbmRpZgorCisjZGVmaW5lIFJBRElY
-X1RSRUVfTUFQX1NJWkUgICAgICgxVUwgPDwgUkFESVhfVFJFRV9NQVBfU0hJRlQpCisjZGVmaW5l
-IFBBR0VDQUNIRV9UQUdfRElSVFkgICAgIDAKKyNkZWZpbmUgUEFHRUNBQ0hFX1RBR19XUklURUJB
-Q0sgMQorI2RlZmluZSBQQUdFQ0FDSEVfVEFHX1RPV1JJVEUgICAyCisKK3N0YXRpYyBSQURJWF9U
-UkVFKG10X3RyZWUsIEdGUF9LRVJORUwpOwordW5zaWduZWQgbG9uZyBwYWdlX2NvdW50ID0gMDsK
-Kworc3RydWN0IHBhZ2UgeworCXVuc2lnbmVkIGxvbmcgaW5kZXg7Cit9OworCitzdGF0aWMgc3Ry
-dWN0IHBhZ2UgKnBhZ2VfYWxsb2Modm9pZCkKK3sKKwlzdHJ1Y3QgcGFnZSAqcDsKKwlwID0gbWFs
-bG9jKHNpemVvZihzdHJ1Y3QgcGFnZSkpOworCXAtPmluZGV4ID0gcGFnZV9jb3VudCsrOworCisJ
-cmV0dXJuIHA7Cit9CisKK3ZvaWQgcmVncmVzc2lvbjJfdGVzdCh2b2lkKQoreworCWludCBpOwor
-CXN0cnVjdCBwYWdlICpwOworCWludCBtYXhfc2xvdHMgPSBSQURJWF9UUkVFX01BUF9TSVpFOwor
-CXVuc2lnbmVkIGxvbmcgaW50IHN0YXJ0LCBlbmQ7CisJc3RydWN0IHBhZ2UgKnBhZ2VzWzFdOwor
-CisJLyogMC4gKi8KKwlmb3IgKGkgPSAwOyBpIDw9IG1heF9zbG90cyAtIDE7IGkrKykgeworCQlw
-ID0gcGFnZV9hbGxvYygpOworCQlyYWRpeF90cmVlX2luc2VydCgmbXRfdHJlZSwgaSwgcCk7CisJ
-fQorCXJhZGl4X3RyZWVfdGFnX3NldCgmbXRfdHJlZSwgbWF4X3Nsb3RzIC0gMSwgUEFHRUNBQ0hF
-X1RBR19ESVJUWSk7CisKKwkvKiAxLiAqLworCXN0YXJ0ID0gMDsKKwllbmQgPSBtYXhfc2xvdHMg
-LSAyOworCXJhZGl4X3RyZWVfcmFuZ2VfdGFnX2lmX3RhZ2dlZCgmbXRfdHJlZSwgJnN0YXJ0LCBl
-bmQsIDEsIAorCQkJCVBBR0VDQUNIRV9UQUdfRElSVFksIFBBR0VDQUNIRV9UQUdfVE9XUklURSk7
-CisKKwkvKiAyLiAqLworCXAgPSBwYWdlX2FsbG9jKCk7CisJcmFkaXhfdHJlZV9pbnNlcnQoJm10
-X3RyZWUsIG1heF9zbG90cywgcCk7CisKKwkvKiAzLiAqLworCXJhZGl4X3RyZWVfdGFnX2NsZWFy
-KCZtdF90cmVlLCBtYXhfc2xvdHMgLSAxLCBQQUdFQ0FDSEVfVEFHX0RJUlRZKTsKKworCS8qIDQu
-ICovCisJZm9yIChpID0gbWF4X3Nsb3RzIC0gMTsgaSA+PSAwOyBpLS0pCisJCXJhZGl4X3RyZWVf
-ZGVsZXRlKCZtdF90cmVlLCBpKTsKKworCS8qIDUuICovCisJLy8gTk9URTogc3RhcnQgc2hvdWxk
-IG5vdCBiZSAwIGJlY2F1c2UgcmFkaXhfdHJlZV9nYW5nX2xvb2t1cF90YWdfc2xvdCAKKwkvLyAg
-ICAgICBjYW4gcmV0dXJuLgorCXN0YXJ0ID0gMTsKKwllbmQgPSBtYXhfc2xvdHMgLSAyOworCXJh
-ZGl4X3RyZWVfZ2FuZ19sb29rdXBfdGFnX3Nsb3QoJm10X3RyZWUsICh2b2lkICoqKilwYWdlcywg
-c3RhcnQsIGVuZCwgCisJCVBBR0VDQUNIRV9UQUdfVE9XUklURSk7CisKKwkvKiBXZSByZW1vdmUg
-YWxsIHRoZSByZW1haW5lZCBub2RlcyAqLworCXJhZGl4X3RyZWVfZGVsZXRlKCZtdF90cmVlLCBt
-YXhfc2xvdHMpOworCisJcHJpbnRmKCJyZWdyZXNzaW9uIHRlc3QgMiwgZG9uZVxuIik7Cit9Cg==
 
---Multipart=_Tue__25_Jan_2011_13_53_45_+0900_hdvDNBiX8uT2kqgN--
+The checkpatch.pl false positive (which triggered the horrid mistake of
+additionally enclosing this per-case macro within do-while(0)) was:
+
+ERROR: Macros with multiple statements should be enclosed in a do - while loop
+#20: FILE: azt3328.c:982:
++#define AZF_FMT_XLATE(in_freq, out_bits) \
++               case AZF_FREQ_ ## in_freq: \
++                       freq = SOUNDFORMAT_FREQ_ ## out_bits; \
++                       break;
+
+
+It is also quite interesting to note that this rather uncommon language syntax
+(do...while(0) within switch scope) compiled cleanly without issue
+(no warnings).
+
+
+Please note that this clean revert (exclusively created from existing
+development steps) was compile-tested only and not runtime-tested on -rc2.
+This is due to existing suspected modvers issues on -rc2 (it did work fine
+in many previous versions, now I'm getting unresolved symbols issues
+with my -dirty, extra/ modules, perhaps due to having switched to/enabled
+CONFIG_KERNEL_LZO, CONFIG_DEBUG_SET_MODULE_RONX)
+which I was unable to rectify sufficiently easily so far in my limited time.
+
+The clean revert will be followed up by
+corresponding comments and some cleanup within that function in the mid-future.
+
+Thanks,
+
+Andreas Mohr
+
+diff --git a/sound/pci/azt3328.c b/sound/pci/azt3328.c
+index 6117595..573594b 100644
+--- a/sound/pci/azt3328.c
++++ b/sound/pci/azt3328.c
+@@ -979,31 +979,25 @@ snd_azf3328_codec_setfmt(struct snd_azf3328_codec_data *codec,
+ 
+ 	snd_azf3328_dbgcallenter();
+ 	switch (bitrate) {
+-#define AZF_FMT_XLATE(in_freq, out_bits) \
+-	do { \
+-		case AZF_FREQ_ ## in_freq: \
+-			freq = SOUNDFORMAT_FREQ_ ## out_bits; \
+-			break; \
+-	} while (0);
+-	AZF_FMT_XLATE(4000, SUSPECTED_4000)
+-	AZF_FMT_XLATE(4800, SUSPECTED_4800)
+-	/* the AZF3328 names it "5510" for some strange reason: */
+-	AZF_FMT_XLATE(5512, 5510)
+-	AZF_FMT_XLATE(6620, 6620)
+-	AZF_FMT_XLATE(8000, 8000)
+-	AZF_FMT_XLATE(9600, 9600)
+-	AZF_FMT_XLATE(11025, 11025)
+-	AZF_FMT_XLATE(13240, SUSPECTED_13240)
+-	AZF_FMT_XLATE(16000, 16000)
+-	AZF_FMT_XLATE(22050, 22050)
+-	AZF_FMT_XLATE(32000, 32000)
++	case AZF_FREQ_4000:  freq = SOUNDFORMAT_FREQ_SUSPECTED_4000; break;
++	case AZF_FREQ_4800:  freq = SOUNDFORMAT_FREQ_SUSPECTED_4800; break;
++	case AZF_FREQ_5512:
++		/* the AZF3328 names it "5510" for some strange reason */
++			     freq = SOUNDFORMAT_FREQ_5510; break;
++	case AZF_FREQ_6620:  freq = SOUNDFORMAT_FREQ_6620; break;
++	case AZF_FREQ_8000:  freq = SOUNDFORMAT_FREQ_8000; break;
++	case AZF_FREQ_9600:  freq = SOUNDFORMAT_FREQ_9600; break;
++	case AZF_FREQ_11025: freq = SOUNDFORMAT_FREQ_11025; break;
++	case AZF_FREQ_13240: freq = SOUNDFORMAT_FREQ_SUSPECTED_13240; break;
++	case AZF_FREQ_16000: freq = SOUNDFORMAT_FREQ_16000; break;
++	case AZF_FREQ_22050: freq = SOUNDFORMAT_FREQ_22050; break;
++	case AZF_FREQ_32000: freq = SOUNDFORMAT_FREQ_32000; break;
+ 	default:
+ 		snd_printk(KERN_WARNING "unknown bitrate %d, assuming 44.1kHz!\n", bitrate);
+ 		/* fall-through */
+-	AZF_FMT_XLATE(44100, 44100)
+-	AZF_FMT_XLATE(48000, 48000)
+-	AZF_FMT_XLATE(66200, SUSPECTED_66200)
+-#undef AZF_FMT_XLATE
++	case AZF_FREQ_44100: freq = SOUNDFORMAT_FREQ_44100; break;
++	case AZF_FREQ_48000: freq = SOUNDFORMAT_FREQ_48000; break;
++	case AZF_FREQ_66200: freq = SOUNDFORMAT_FREQ_SUSPECTED_66200; break;
+ 	}
+ 	/* val = 0xff07; 3m27.993s (65301Hz; -> 64000Hz???) hmm, 66120, 65967, 66123 */
+ 	/* val = 0xff09; 17m15.098s (13123,478Hz; -> 12000Hz???) hmm, 13237.2Hz? */
