@@ -1,172 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734Ab1AYRWv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 12:22:51 -0500
-Received: from casper.infradead.org ([85.118.1.10]:47067 "EHLO
+	id S1753755Ab1AYRWw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 12:22:52 -0500
+Received: from casper.infradead.org ([85.118.1.10]:47066 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753703Ab1AYRWt (ORCPT
+	with ESMTP id S1753702Ab1AYRWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jan 2011 12:22:49 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
         2nddept-manager@sdl.hitachi.co.jp, Franck Bui-Huu <fbuihuu@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Han Pingtian <phan@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 23/29] perf probe: Enable to put probe inline function call site
-Date: Tue, 25 Jan 2011 15:21:46 -0200
-Message-Id: <1295976112-2796-24-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Tom Zanussi <tzanussi@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [GIT PULL 00/29] perf/core improvements for 2.6.39
+Date: Tue, 25 Jan 2011 15:21:23 -0200
+Message-Id: <1295976112-2796-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1295976112-2796-1-git-send-email-acme@infradead.org>
-References: <1295976112-2796-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Hi Ingo,
 
-Enable to put probe inline function call site. This will increase line-based
-probe-ability.
+        Please consider pulling from:
 
-<Without this patch>
-$ ./perf probe -L schedule:48
-<schedule:48>
-                pre_schedule(rq, prev);
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
 
-     50         if (unlikely(!rq->nr_running))
-                        idle_balance(cpu, rq);
+	The 'stat', 'record' and 'top' tools now share the event selector
+lifecycle routines, in the process 'top' switched to using just one mmap per
+CPU, using ioctl(PERF_EVENT_IOC_SET_OUTPUT) to set all events to just the first
+counter on a cpu, etc.
 
-                put_prev_task(rq, prev);
-                next = pick_next_task(rq);
+	I'm now working on a thin python binding for these abstractions, to
+ease prototyping monitoring apps.
 
-     56         if (likely(prev != next)) {
-                        sched_info_switch(prev, next);
-                        trace_sched_switch_out(prev, next);
-                        perf_event_task_sched_out(prev, next);
+Regards,
 
-<With this patch>
-$ ./perf probe -L schedule:48
-<schedule:48>
-     48         pre_schedule(rq, prev);
+- Arnaldo
 
-     50         if (unlikely(!rq->nr_running))
-     51                 idle_balance(cpu, rq);
+Arnaldo Carvalho de Melo (20):
+  perf evsel: Introduce perf_evlist
+  perf evlist: Adopt the pollfd array
+  perf evsel: Support event groups
+  perf evsel: Allow specifying if the inherit bit should be set
+  perf top: Use perf_evsel__open
+  perf record: Use perf_evsel__open
+  perf evsel: Introduce mmap support
+  perf record: Use struct perf_mmap and helpers
+  perf record: Move perf_mmap__write_tail to perf.h
+  perf evlist: Move the mmap array from perf_evsel
+  perf record: Use perf_evlist__mmap
+  perf tools: Add missing cpu_map__delete()
+  perf test: Check counts on all cpus in test__open_syscall_event_on_all_cpus
+  perf evlist: Steal mmap reading routine from 'perf top'
+  perf test: Add test for the evlist mmap routines
+  perf top: Add native_safe_halt to skip symbols
+  perf tools: Pass the struct opt to the wildcard parsing routine
+  perf threads: Move thread_map to separate file
+  perf tools: Move event__parse_sample to evsel.c
+  perf evsel: Introduce perf_evsel__{in,ex}it
 
-     53         put_prev_task(rq, prev);
-     54         next = pick_next_task(rq);
+Franck Bui-Huu (1):
+  perf record: auto detect when stdout is a pipe
 
-     56         if (likely(prev != next)) {
-     57                 sched_info_switch(prev, next);
-     58                 trace_sched_switch_out(prev, next);
-     59                 perf_event_task_sched_out(prev, next);
+Frederic Weisbecker (4):
+  perf callchain: Feed callchains into a cursor
+  perf callchain: Rename cumul_hits into callchain_cumul_hits
+  perf callchain: Rename register_callchain_param into callchain_register_param
+  perf callchain: Don't give arbitrary gender to callchain tree nodes
 
-Cc: 2nddept-manager@sdl.hitachi.co.jp
-Cc: Franck Bui-Huu <fbuihuu@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-LKML-Reference: <20110113124604.22426.48873.stgit@ltc236.sdl.hitachi.co.jp>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/probe-finder.c |   56 ++++++++++++++++++++++++++++++++++-----
- 1 files changed, 48 insertions(+), 8 deletions(-)
+Han Pingtian (1):
+  perf test: check if cpu_map__new() return NULL
 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 508c017..69215bf 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -280,6 +280,19 @@ static bool die_compare_name(Dwarf_Die *dw_die, const char *tname)
- 	return name ? (strcmp(tname, name) == 0) : false;
- }
- 
-+/* Get callsite line number of inline-function instance */
-+static int die_get_call_lineno(Dwarf_Die *in_die)
-+{
-+	Dwarf_Attribute attr;
-+	Dwarf_Word ret;
-+
-+	if (!dwarf_attr(in_die, DW_AT_call_line, &attr))
-+		return -ENOENT;
-+
-+	dwarf_formudata(&attr, &ret);
-+	return (int)ret;
-+}
-+
- /* Get type die */
- static Dwarf_Die *die_get_type(Dwarf_Die *vr_die, Dwarf_Die *die_mem)
- {
-@@ -463,27 +476,54 @@ typedef int (* line_walk_handler_t) (const char *fname, int lineno,
- 				     Dwarf_Addr addr, void *data);
- 
- struct __line_walk_param {
-+	const char *fname;
- 	line_walk_handler_t handler;
- 	void *data;
- 	int retval;
- };
- 
--/* Walk on decl lines in given DIE */
-+static int __die_walk_funclines_cb(Dwarf_Die *in_die, void *data)
-+{
-+	struct __line_walk_param *lw = data;
-+	Dwarf_Addr addr;
-+	int lineno;
-+
-+	if (dwarf_tag(in_die) == DW_TAG_inlined_subroutine) {
-+		lineno = die_get_call_lineno(in_die);
-+		if (lineno > 0 && dwarf_entrypc(in_die, &addr) == 0) {
-+			lw->retval = lw->handler(lw->fname, lineno, addr,
-+						 lw->data);
-+			if (lw->retval != 0)
-+				return DIE_FIND_CB_FOUND;
-+		}
-+	}
-+	return DIE_FIND_CB_SIBLING;
-+}
-+
-+/* Walk on lines of blocks included in given DIE */
- static int __die_walk_funclines(Dwarf_Die *sp_die,
- 				line_walk_handler_t handler, void *data)
- {
--	const char *fname;
-+	struct __line_walk_param lw = {
-+		.handler = handler,
-+		.data = data,
-+		.retval = 0,
-+	};
-+	Dwarf_Die die_mem;
- 	Dwarf_Addr addr;
--	int lineno, ret = 0;
-+	int lineno;
- 
- 	/* Handle function declaration line */
--	fname = dwarf_decl_file(sp_die);
--	if (fname && dwarf_decl_line(sp_die, &lineno) == 0 &&
-+	lw.fname = dwarf_decl_file(sp_die);
-+	if (lw.fname && dwarf_decl_line(sp_die, &lineno) == 0 &&
- 	    dwarf_entrypc(sp_die, &addr) == 0) {
--		ret = handler(fname, lineno, addr, data);
-+		lw.retval = handler(lw.fname, lineno, addr, data);
-+		if (lw.retval != 0)
-+			goto done;
- 	}
--
--	return ret;
-+	die_find_child(sp_die, __die_walk_funclines_cb, &lw, &die_mem);
-+done:
-+	return lw.retval;
- }
- 
- static int __die_walk_culines_cb(Dwarf_Die *sp_die, void *data)
--- 
-1.6.2.5
+Masami Hiramatsu (3):
+  perf probe: Introduce lines walker interface
+  perf probe: Enable to put probe inline function call site
+  perf probe: Add --funcs to show available functions in symtab
+
+ tools/perf/Documentation/perf-probe.txt |    4 +
+ tools/perf/Makefile                     |    4 +
+ tools/perf/builtin-probe.c              |   29 +++-
+ tools/perf/builtin-record.c             |  328 ++++++++++++-----------------
+ tools/perf/builtin-report.c             |   29 ++--
+ tools/perf/builtin-stat.c               |   39 ++--
+ tools/perf/builtin-test.c               |  184 +++++++++++++++-
+ tools/perf/builtin-top.c                |  283 ++++++++-----------------
+ tools/perf/perf.h                       |   26 +++
+ tools/perf/util/callchain.c             |  224 ++++++++++----------
+ tools/perf/util/callchain.h             |   74 ++++++-
+ tools/perf/util/cpumap.c                |    5 +
+ tools/perf/util/cpumap.h                |    2 +-
+ tools/perf/util/event.c                 |  125 -----------
+ tools/perf/util/event.h                 |    5 +-
+ tools/perf/util/evlist.c                |  170 +++++++++++++++
+ tools/perf/util/evlist.h                |   41 ++++
+ tools/perf/util/evsel.c                 |  318 ++++++++++++++++++++++++++--
+ tools/perf/util/evsel.h                 |   33 +++-
+ tools/perf/util/header.c                |   17 +-
+ tools/perf/util/header.h                |    7 +-
+ tools/perf/util/hist.c                  |   15 +-
+ tools/perf/util/hist.h                  |    2 +
+ tools/perf/util/include/linux/list.h    |    1 +
+ tools/perf/util/parse-events.c          |   71 ++-----
+ tools/perf/util/parse-events.h          |    7 -
+ tools/perf/util/probe-event.c           |   68 ++++++-
+ tools/perf/util/probe-event.h           |    1 +
+ tools/perf/util/probe-finder.c          |  361 ++++++++++++++++++-------------
+ tools/perf/util/session.c               |   26 ++-
+ tools/perf/util/session.h               |   20 ++-
+ tools/perf/util/thread.c                |   55 -----
+ tools/perf/util/thread.h                |   14 --
+ tools/perf/util/thread_map.c            |   64 ++++++
+ tools/perf/util/thread_map.h            |   15 ++
+ tools/perf/util/ui/browsers/hists.c     |    2 +-
+ 36 files changed, 1647 insertions(+), 1022 deletions(-)
+ create mode 100644 tools/perf/util/evlist.c
+ create mode 100644 tools/perf/util/evlist.h
+ create mode 100644 tools/perf/util/thread_map.c
+ create mode 100644 tools/perf/util/thread_map.h
 
