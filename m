@@ -1,92 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751971Ab1AYBBU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 20:01:20 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42726 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751374Ab1AYBBT (ORCPT
+	id S1752150Ab1AYBFA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 20:05:00 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:33093 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314Ab1AYBE7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 20:01:19 -0500
-Date: Mon, 24 Jan 2011 17:01:10 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mike Waychison <mikew@google.com>
-Cc: Greg KH <greg@kroah.com>, torvalds@linux-foundation.org,
-        San Mehat <san@google.com>, Aaron Durbin <adurbin@google.com>,
-        Duncan Laurie <dlaurie@google.com>, linux-kernel@vger.kernel.org,
-        Tim Hockin <thockin@google.com>
-Subject: Re: [PATCH v1 5/6] Allow prepending to the dmesg
-Message-Id: <20110124170110.d204c0e9.akpm@linux-foundation.org>
-In-Reply-To: <20110125002459.12637.56291.stgit@mike.mtv.corp.google.com>
-References: <20110125002433.12637.51091.stgit@mike.mtv.corp.google.com>
-	<20110125002459.12637.56291.stgit@mike.mtv.corp.google.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 24 Jan 2011 20:04:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=jurVj01zHNK67SkFxeLVJb6smMsoSMYFEqsWbj+g9cLfCP+kzeVY6txMXyiaQQwjlj
+         f0Xi1lU6VkEShEJBx/qh+r2reKT29rihvC5IsrYY06uoJqAonbAqZOwnPJPHuFdm+Ux7
+         VcQ+XeX4h7sCfzr41pWrES2O2wBnj07hGiR4s=
+MIME-Version: 1.0
+In-Reply-To: <1295915725.1949.967.camel@sli10-conroe>
+References: <1295915725.1949.967.camel@sli10-conroe>
+Date: Tue, 25 Jan 2011 12:04:57 +1100
+Message-ID: <AANLkTikOdiQR+rWXzoU9z5sJv9Q2=ehdhi1NCHXT0a-w@mail.gmail.com>
+Subject: Re: more dput lock contentions in 2.6.38-rc?
+From: Nick Piggin <npiggin@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, "Chen, Tim C" <tim.c.chen@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Jan 2011 16:25:00 -0800
-Mike Waychison <mikew@google.com> wrote:
+On Tue, Jan 25, 2011 at 11:35 AM, Shaohua Li <shaohua.li@intel.com> wrote:
+> Hi,
+> we are testing dbench benchmark and see big drop of 2.6.38-rc compared
+> to 2.6.37 in several machines with 2 sockets or 4 sockets. We have 12
+> disks mount to /mnt/stp/dbenchdata/sd*/ and dbench runs against data of
+> the disks. According to perf, we saw more lock contentions:
+> In 2.6.37: 13.00%        dbench  [kernel.kallsyms]   [k] _raw_spin_lock
+> In 2.6.38-rc: 69.45%        dbench  [kernel.kallsyms]   [k]_raw_spin_lock
+> -     69.45%        dbench  [kernel.kallsyms]   [k] _raw_spin_lock
+>   - _raw_spin_lock
+>      - 48.41% dput
+>         - 61.17% path_put
+>            - 60.47% do_path_lookup
+>               + 53.18% user_path_at
+>               + 42.13% do_filp_open
+>               + 4.69% user_path_parent
 
-> The next patch in this series (Memory Console driver) would like to
-> prepend firmware messages to the kernel logs.
+What filesystems are mounted on the path?
 
-I went to the changelog for "Memory Console driver" to work out why it
-wants to do prepending, but it didn't tell me.
 
-> Instead of exposing all the nitty gritty lock details of the kernel's
-> printk system to the entire kernel, expose a "prepend_to_dmesg()" that
-> attempts to rewrite the in-memory dmesg to inject pre-kernel messages.
-> 
-> This function only prepends if the start of the kernel's messages are
-> still in the ring and there is still room for messages (without losing
-> the current tail of the message log).  We determine this by checking out
-> whether the bufer has yet been cleared (indicated by a new flag:
-> buffer_has_cleared), and by checking whether the buffer is less than
-> full (which would indicate that it had wrapped).
-> 
-> If there is enough room to prepend data, we simply shift the existing
-> log contents down and copy into the buffer the tail of the prepended
-> data that fits.
-> 
-> Signed-off-by: Mike Waychison <mikew@google.com>
-> ---
->  include/linux/printk.h |    5 ++++
->  kernel/printk.c        |   55 +++++++++++++++++++++++++++++++++++++++++++++++-
->  2 files changed, 59 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/printk.h b/include/linux/printk.h
-> index ee048e7..df89965 100644
-> --- a/include/linux/printk.h
-> +++ b/include/linux/printk.h
-> @@ -113,6 +113,7 @@ extern int dmesg_restrict;
->  extern int kptr_restrict;
->  
->  void log_buf_kexec_setup(void);
-> +void prepend_to_dmesg(const char *buffer, size_t length);
+>            - 35.56% d_path
+>                 seq_path
+>                 show_vfsmnt
+>                 seq_read
+>                 vfs_read
+>                 sys_read
+>                 system_call_fastpath
+>                 __GI___libc_read
 
-Should have the __init tag in the declaration (can fix link problems on
-weird architectures).
+This guy is from glibc's statvfs call that dbench uses. It
+parses /proc/mounts for mount flags which is racy (and
+not a good idea to do with any frequency).
 
->  #else
->  static inline __attribute__ ((format (printf, 1, 0)))
->  int vprintk(const char *s, va_list args)
-> @@ -137,6 +138,10 @@ static inline bool printk_timed_ratelimit(unsigned long *caller_jiffies,
->  static inline void log_buf_kexec_setup(void)
->  {
->  }
-> +
-> +void prepend_to_dmesg(const char *buffer, size_t length)
-> +{
-> +}
+A patch went into the kernel that allows glibc to get the
+flags directly. Not sure about glibc status, I imagine it
+will get there in another decade or two... Can you try
+commenting it out of dbench source code?
 
-Didn't this cause the linker to detect multiple definitions of
-prepend_to_dmesg()?
 
-Should be static inline void, or __init and not-inlined in a .c file.
-
->  #endif
->  
-> ...
+>            + 2.17% do_filp_open
+>            + 1.72% mounts_release
+>         + 38.69% link_path_walk
+>      + 30.21% path_get
+>      + 19.08% nameidata_drop_rcu
+>      + 0.83% __d_lookup
+> it appears there are heavy lock contention when dput release '/', 'mnt',
+> 'stp', 'dbenchdata' and 'proc' when dbench is running.
