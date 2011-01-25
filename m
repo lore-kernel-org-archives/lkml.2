@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968Ab1AYC4N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 21:56:13 -0500
-Received: from vms173001pub.verizon.net ([206.46.173.1]:41137 "EHLO
-	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752672Ab1AYC4K (ORCPT
+	id S1753023Ab1AYC7G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 21:59:06 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:45177 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751980Ab1AYC7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 21:56:10 -0500
-Date: Mon, 24 Jan 2011 21:56:02 -0500 (EST)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Lionel Debroux <lionel_debroux@yahoo.fr>
-Cc: =?UTF-8?Q?Ozan_=C3=87a=C4=9Flayan?= <ozan@pardus.org.tr>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org, rjw@sisk.pl,
-        colin.king@canonical.com
-Subject: Re: Common boot/shutdown issues with the latest 2.6.37 (Mostly Asus
- laptops)
-In-reply-to: <4D3DDDA4.2080202@yahoo.fr>
-Message-id: <alpine.LFD.2.02.1101242154090.6097@x980>
-References: <556624.21214.qm@web28409.mail.ukl.yahoo.com>
- <4D3DDDA4.2080202@yahoo.fr>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 24 Jan 2011 21:59:04 -0500
+Date: Mon, 24 Jan 2011 21:59:02 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: rmorell@nvidia.com
+cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Benoit Goby <benoit@android.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
+        Oliver Neukum <oliver@neukum.org>, Olof Johansson <olof@lixom.net>,
+        Erik Gilling <konkers@android.com>, Colin Cross <ccross@android.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 2/2] USB: ehci: tegra: Align DMA transfers to 32 bytes
+In-Reply-To: <20110124225323.GA5701@morell.nvidia.com>
+Message-ID: <Pine.LNX.4.44L0.1101242154550.27801-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>> * 2.6.35 series: .4 and .6 boot successfully, .8 and .10 fail;
-> >>> * 2.6.36 series: -rc2 boots successfully, .1 fails;
-> >>> * 2.6.37 series: -rc4 fails.
-> >>
-> >> So it's probably a commit to the mainline tree which was picked
-> >> by 2.6.35 maintainer to the stable tree (probably it was CC'ed)
-> >> cause this.
-> >>
-> >> Does passing nolapic or acpi=off cures the issue?
-> > IIRC, I tested at least one of these, without improvement.
-> > I'll test again tonight, when I can physically access the
-> > computer.
-> None of nolapic, acpi=off, nolapic acpi=off enables 2.6.35.8 to boot
-> on my ASUS F3Jv-AS022P.
-> The kernel line is
-> kernel /boot/vmlinuz root=/dev/sda9 nomce vga=791 nomodeset
-> I've attached the 2.6.35.6 config.
+On Mon, 24 Jan 2011 rmorell@nvidia.com wrote:
 
-looks like you've bisected as far as:
-2.6.35.6 good
-2.6.35.8 bad
+> > > +	if (dir == DMA_FROM_DEVICE && !status)
+> > > +		memcpy(temp->old_xfer_buffer, temp->data,
+> > > +			urb->transfer_buffer_length);
+> > 
+> > Even if status is nonzero, there may be valid data in the buffer.  You 
+> > should skip that test.
+> 
+> Thanks for looking, Alan.  I added that test based on earlier feedback.
+> I think the big concern here is security: if the URB fails in such a way
+> that the buffer is not overwritten, then we may copy out freed kernel
+> data to userspace.
 
-can you try 2.6.35.7 and continue on to find which specific patch
-in .stable broke your machine?
+Not to userspace, only to the driver that submitted the URB.  That 
+driver must be part of the kernel.  For URBs that _do_ originate in 
+userspace, by way of usbfs, the usbfs code is responsible for not 
+leaking any kernel data.
 
-thanks,
-Len Brown, Intel Open Source Technology Center
+> Are there specific status codes that I can check for here?
+
+No.
+
+>  I guess the
+> only other option is to remove the direction check from the alloc path
+> or alloc with GFP_ZERO.
+
+You don't have to worry about this; it isn't a security concern.
+
+Alan Stern
 
