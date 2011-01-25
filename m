@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972Ab1AYSD7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 13:03:59 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:49172 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753212Ab1AYR7b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753535Ab1AYR7b (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 25 Jan 2011 12:59:31 -0500
-Message-Id: <20110125174907.552970417@chello.nl>
+Received: from bombadil.infradead.org ([18.85.46.34]:49152 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753212Ab1AYR7Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 12:59:24 -0500
+Message-Id: <20110125174908.101902158@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Tue, 25 Jan 2011 18:31:18 +0100
+Date: Tue, 25 Jan 2011 18:31:28 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
@@ -23,63 +23,54 @@ Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
         Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: [PATCH 07/25] sh: Preemptible mmu_gather
+        Hugh Dickins <hughd@google.com>
+Subject: [PATCH 17/25] mm: Improve page_lock_anon_vma() comment
 References: <20110125173111.720927511@chello.nl>
-Content-Disposition: inline; filename=peter_zijlstra-sh-preemptible_mmu_gather.patch
+Content-Disposition: inline; filename=peter_zijlstra-mm-improve_page_lock_anon_vma_comment.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix up the sh mmu_gahter code to conform to the new API.
+A slightly more verbose comment to go along with the trickery in
+page_lock_anon_vma().
 
-Cc: Paul Mundt <lethal@linux-sh.org>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+Acked-by: Hugh Dickins <hughd@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- arch/sh/include/asm/tlb.h |   12 ++----------
- 1 file changed, 2 insertions(+), 10 deletions(-)
+ mm/rmap.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
-Index: linux-2.6/arch/sh/include/asm/tlb.h
+Index: linux-2.6/mm/rmap.c
 ===================================================================
---- linux-2.6.orig/arch/sh/include/asm/tlb.h
-+++ linux-2.6/arch/sh/include/asm/tlb.h
-@@ -23,8 +23,6 @@ struct mmu_gather {
- 	unsigned long		start, end;
- };
+--- linux-2.6.orig/mm/rmap.c
++++ linux-2.6/mm/rmap.c
+@@ -315,8 +315,22 @@ void __init anon_vma_init(void)
+ }
  
--DECLARE_PER_CPU(struct mmu_gather, mmu_gathers);
--
- static inline void init_tlb_gather(struct mmu_gather *tlb)
+ /*
+- * Getting a lock on a stable anon_vma from a page off the LRU is
+- * tricky: page_lock_anon_vma rely on RCU to guard against the races.
++ * Getting a lock on a stable anon_vma from a page off the LRU is tricky!
++ *
++ * Since there is no serialization what so ever against page_remove_rmap()
++ * the best this function can do is return a locked anon_vma that might
++ * have been relevant to this page.
++ *
++ * The page might have been remapped to a different anon_vma or the anon_vma
++ * returned may already be freed (and even reused).
++ *
++ * All users of this function must be very careful when walking the anon_vma
++ * chain and verify that the page in question is indeed mapped in it
++ * [ something equivalent to page_mapped_in_vma() ].
++ *
++ * Since anon_vma's slab is DESTROY_BY_RCU and we know from page_remove_rmap()
++ * that the anon_vma pointer from page->mapping is valid if there is a
++ * mapcount, we can dereference the anon_vma after observing those.
+  */
+ struct anon_vma *page_lock_anon_vma(struct page *page)
  {
- 	tlb->start = TASK_SIZE;
-@@ -36,17 +34,13 @@ static inline void init_tlb_gather(struc
- 	}
- }
- 
--static inline struct mmu_gather *
--tlb_gather_mmu(struct mm_struct *mm, unsigned int full_mm_flush)
-+static inline void
-+tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned int full_mm_flush)
- {
--	struct mmu_gather *tlb = &get_cpu_var(mmu_gathers);
--
- 	tlb->mm = mm;
- 	tlb->fullmm = full_mm_flush;
- 
- 	init_tlb_gather(tlb);
--
--	return tlb;
- }
- 
- static inline void
-@@ -57,8 +51,6 @@ tlb_finish_mmu(struct mmu_gather *tlb, u
- 
- 	/* keep the page table cache within bounds */
- 	check_pgt_cache();
--
--	put_cpu_var(mmu_gathers);
- }
- 
- static inline void
 
 
