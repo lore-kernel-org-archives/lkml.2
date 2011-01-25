@@ -1,39 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973Ab1AYQNt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 11:13:49 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:39826 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab1AYQNs (ORCPT
+	id S1751828Ab1AYQTz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 11:19:55 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:65425 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307Ab1AYQTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 11:13:48 -0500
-Message-ID: <4D3EF6B9.6080608@ridgerun.com>
-Date: Tue, 25 Jan 2011 09:13:45 -0700
-From: Todd Fischer <todd.fischer@ridgerun.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+	Tue, 25 Jan 2011 11:19:54 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Guan Xuetao" <guanxuetao@mprc.pku.edu.cn>
+Subject: Re: [PATCHv1 1/8] unicore32 additional architecture files: pm related files
+Date: Tue, 25 Jan 2011 17:19:05 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <012501cbab3c$2433e7c0$6c9bb740$@mprc.pku.edu.cn>
+In-Reply-To: <012501cbab3c$2433e7c0$6c9bb740$@mprc.pku.edu.cn>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Dan Carpenter <error27@gmail.com>, linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH 10/32] input/tps6507x-ts: use system_wq instead of dedicated
- workqueue
-References: <1294062595-30097-1-git-send-email-tj@kernel.org> <1294062595-30097-11-git-send-email-tj@kernel.org> <20110103143926.GX1886@bicker> <4D21FAA3.8030505@ridgerun.com> <20110125141942.GA27510@htj.dyndns.org>
-In-Reply-To: <20110125141942.GA27510@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201101251719.05243.arnd@arndb.de>
+X-Provags-ID: V02:K0:XIRZQLXEhRaDCPzKSqBSLnCpi/DaYhAh176uJcrCncw
+ 7Dgv+nCi6vhiebcaIyXNjYYRTnBnr9OHw+HqjCvvoqB/SDQreH
+ vgysy7rTSpmOS+TI7hHg8f9Jg4s35k9tHykACl0EwmS6M9Rlc6
+ mh97uyCCgJFx4H3dZ9yfC65erBmbqI+VX7o+7wIgKZjeW8vnbF
+ qnZHtrwfDMcF3L/nvE2pA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2011 07:19 AM, Tejun Heo wrote:
-> Shall I apply the patch?
-> Thanks
-Yes, apply the patch.  I am not sure of the syntax for attaching my sign 
-off.  Hope this is okay.
+On Monday 03 January 2011, Guan Xuetao wrote:
+> From: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+> 
+> Patch 1 adds pm related files, including hibernate and sleep supports.
+> 
+> Signed-off-by: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
 
-Todd
-
-Signed-off-by: Todd Fischer<todd.fischer@ridgerun.com>
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
