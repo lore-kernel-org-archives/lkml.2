@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905Ab1AYOaD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 09:30:03 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:59537 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264Ab1AYOaA (ORCPT
+	id S1753897Ab1AYOc4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 09:32:56 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:4118 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753620Ab1AYOcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 09:30:00 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linasvepstas@gmail.com
-Subject: Re: [BUG] Generic syscalls -- chmod vs. fchmodat
-Date: Tue, 25 Jan 2011 15:29:24 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Chris Metcalf <cmetcalf@tilera.com>,
-        GLIBC Devel <libc-alpha@sourceware.org>, linux-kernel@vger.kernel.org,
-        libc-ports@sourceware.org, linux-api@vger.kernel.org,
-        Roland McGrath <roland@redhat.com>, Mike Frysinger <vapier@gentoo.org>
-References: <AANLkTikhKHnR+7DskxYqWXduX4=tpfgsfL4sNYq+4QDq@mail.gmail.com>
-In-Reply-To: <AANLkTikhKHnR+7DskxYqWXduX4=tpfgsfL4sNYq+4QDq@mail.gmail.com>
+	Tue, 25 Jan 2011 09:32:54 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAOttPk1Ld/sX/2dsb2JhbAAMhAbNV5BigSODOHQEhRc
+X-IronPort-AV: E=Sophos;i="4.60,374,1291611600"; 
+   d="scan'208";a="89156754"
+Message-ID: <4D3EDF13.7010007@teksavvy.com>
+Date: Tue, 25 Jan 2011 09:32:51 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org, linux-media@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, rjw@sisk.pl
+Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils
+ ?
+References: <4D3C5F73.2050408@teksavvy.com> <20110124175456.GA17855@core.coreip.homeip.net> <4D3E1A08.5060303@teksavvy.com> <20110125005555.GA18338@core.coreip.homeip.net> <4D3E4DD1.60705@teksavvy.com> <20110125042016.GA7850@core.coreip.homeip.net> <4D3E5372.9010305@teksavvy.com> <20110125045559.GB7850@core.coreip.homeip.net> <4D3E59CA.6070107@teksavvy.com> <4D3E5A91.30207@teksavvy.com> <20110125053117.GD7850@core.coreip.homeip.net> <4D3EB734.5090100@redhat.com>
+In-Reply-To: <4D3EB734.5090100@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201101251529.24779.arnd@arndb.de>
-X-Provags-ID: V02:K0:pWiWKilFUvUzTQlDGlh2uYUHUe/BLsBb0syb9smIHME
- sGkQVc5iXzQXtGGKz9KfmwVWx2915VGrjX+vAXS2qwV3t8yv0u
- x7zuqj0NX+gQ4yZfbLsNw7Ptr8773+OGUZdHBO1y7UiPFaeNpp
- LYwGozK9UWWzFbg7iu/ie+HR2+zx1aVg4zQJhItUyalePzS8TH
- rPclZXraDjEhwlmNOGV1Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 24 January 2011, Linas Vepstas wrote:
-> Chris, Arnd, all,
+On 11-01-25 06:42 AM, Mauro Carvalho Chehab wrote:
+>
+> I lost part of the thread, but a quick search via the Internet showed that you're using
+> the input tools to work with a Remote Controller, right? Are you using a vanilla
+> kernel, or are you using the media_build backports? There are some distros that are
+> using those backports also like Fedora 14.
 
-[adding linux-api list]
+I use kernel.org kernels exclusively.
 
-> Found a bug/incompatibility in the generic syscalls chmod implementation;
-> not sure if this is a kernel bug or a glibc bug, or how to correctly resolve it.
-> 
-> The new "generic chmod" implementation for glibc sends chmod to the
-> kernel call sys_fchmodat with  AT_FDCWD, instead of using the older
-> "deprecated" chmod syscall.  These two behave slightly differently:  with
-> the new implementation, the file "" (i.e. string of length zero) gets
-> interpreted
-> as . and so the syscall succeeds, setting perms on .  The old syscall would
-> return an errno=2 No such file or directory for this filename.
-> 
-> My gut instinct is that this is a kernel bug, but am not so sure; perhaps this
-> is "working as designed".  I thought of submitting a patch to fs/namei.c to
-> fix this, but then got lost in the details: there didn't seem to be
-> any particularly
-> good place to add this check.  Meanwhile, a glibc test case (posix/tst-chmod.c)
-> is failing as a result.
-> 
-> Should we put a check for this funky non-filename into the glibc
-> generic code, or into sys_chmodat? Recommendations?
+> The issue is simple, and it is related on how the input.c used to handle EVIOSGKEYCODE.
+> Basically, before allowing you to change a key, it used to call EVIOCGKEYCODE to check
+> it that key exists. However, when you're creating a new association, the key didn't
+> exist, and, to be strict with input rules, EVIOCGKEYCODE should return -EINVAL.
 
-My feeling is that it should be in glibc: as Mike mentioned, we don't normally
-change the behavior of existing system calls unless they are obviously
-broken to start with. If we want to keep fchmodat getting the implicit
-"." directory, and at the same time keep fchmod returning an error, the fchmod
-wrapper around fchmodat is the only place that can enforce this.
+No, if the parameters are a valid key, then -EINVAL is never the correct
+thing for a kernel to return.  -EINVAL means "bad parameters",
+and that's not an accurate description of a valid yet unmapped key.
 
-	Arnd
+> To circumvent that behaviour, old versions were returning 0, and associating unmapped
+> scancodes to KEY_RESERVED. We used this workaround for a few kernel versions, while
+> we were discussing the improvements so support larger scancodes.
+
+And now we're stuck with it.  If that is how it works,
+and userspace depends upon it (it does), then consider
+it cast in stone.  Immutable by Linus's Law: don't break userspace.
+
+Create a new ioctl() number for the new behaviour,
+but preserve the old behaviour in exact form for
+a suitable (multi-year) overlap period.
+
+Cheers
