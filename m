@@ -1,42 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675Ab1AYBQa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 20:16:30 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:37288 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751384Ab1AYBQ3 (ORCPT
+	id S1752603Ab1AYBXf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 20:23:35 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:57865 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811Ab1AYBXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 20:16:29 -0500
+	Mon, 24 Jan 2011 20:23:34 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=lNjlkJj9aFL200WFrNUp2VdkuqMvGg18Q7eFAttmkb1bXLQX2pEuocKNpg3JRgTSXW
-         evMVpD+3OabBHeooDjd4DeDFtyRhAlCstQ+W9S1mZPCp+Idb+Crcrg/XvN1FGAQohSsV
-         MD585ZsCXwHAPSb92iMXQEBvsQ0V9mDhXb7Co=
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Eh8w76bGE7hTD9ZNTZgvYO48mJ4Sr+a9qQapf/yZW8lr3v1yNkfNZSg+7oWVHwiq1r
+         84Fvg8lA0dBoUTRTep+Cuw3j+xneArZrn4MfEkS2ScHKJqOlBUdNdWO/4UT1E6E980pU
+         E3zZvgBgRm+c/U9GUfflvBHsgSQaXJ4Nkzy7o=
+Message-ID: <4D3E2612.2060808@gmail.com>
+Date: Mon, 24 Jan 2011 19:23:30 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <4086953399116e4d9a14f9fa1aa8cf33aaef753d.1295909909.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1295909908.git.jeremy.fitzhardinge@citrix.com>
-	<4086953399116e4d9a14f9fa1aa8cf33aaef753d.1295909909.git.jeremy.fitzhardinge@citrix.com>
-Date: Tue, 25 Jan 2011 12:16:27 +1100
-Message-ID: <AANLkTimnpm8YdxgnqekMZUbYN=ZAdVy=C1HkY3uHNS2h@mail.gmail.com>
-Subject: Re: [PATCH 6/6] x86/ticketlock: make __ticket_spin_trylock common
-From: Nick Piggin <npiggin@gmail.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+CC: linux-kernel@vger.kernel.org, ide <linux-ide@vger.kernel.org>
+Subject: Re: libata EH running when switching VTs
+References: <201101221625.00775.toralf.foerster@gmx.de> <4D3B077F.7040000@gmail.com> <201101221831.09448.toralf.foerster@gmx.de>
+In-Reply-To: <201101221831.09448.toralf.foerster@gmx.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 10:41 AM, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
-> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+On 01/22/2011 11:31 AM, Toralf Förster wrote:
 >
-> Make trylock code common regardless of ticket size.
+> Robert Hancock wrote at 17:36:15
+>> (CCing linux-ide)
+>>
+>> On 01/22/2011 09:25 AM, Toralf Förster wrote:
+>>> Hello,
+>>>
+>>> Henrique de Moraes Holschuh wrote at 14:11:12
+>>>
+>>>> I don't even know whom to refer you to.  Maybe ask in LKML directly?
+>>>> Use the subject "libata EH running when switching VTs".  If one of
+>>>> those VTs are in X.org control, say that as well.
+>>>
+>>> I'm wondering why I get this in /var/log/messages w/ kernel 2.6.37 when I
+>>> switch from VT7 (running xorg ) to VT12 (or 1 or 2 or another number) and
+>>> back:
+>>>
+>>>
+>>> 2011-01-22T16:20:53.854+01:00 n22 kernel: ata1: hard resetting link
+>>> 2011-01-22T16:20:54.163+01:00 n22 kernel: ata1: SATA link up 1.5 Gbps
+>>> (SStatus 113 SControl 300)
+>>> 2011-01-22T16:20:54.164+01:00 n22 kernel: ata1.00: ACPI cmd
+>>> ef/02:00:00:00:00:a0 (SET FEATURES) succeeded
+>>> 2011-01-22T16:20:54.164+01:00 n22 kernel: ata1.00: ACPI cmd
+>>> f5/00:00:00:00:00:a0 (SECURITY FREEZE LOCK) filtered out
+>>> 2011-01-22T16:20:54.165+01:00 n22 kernel: ata1.00: ACPI cmd
+>>> ef/5f:00:00:00:00:a0 (SET FEATURES) succeeded
+>>> 2011-01-22T16:20:54.165+01:00 n22 kernel: ata1.00: ACPI cmd
+>>> ef/10:03:00:00:00:a0 (SET FEATURES) filtered out
+>>> 2011-01-22T16:20:54.169+01:00 n22 kernel: ata1.00: ACPI cmd
+>>> ef/02:00:00:00:00:a0 (SET FEATURES) succeeded
+>>> 2011-01-22T16:20:54.169+01:00 n22 kernel: ata1.00: ACPI cmd
+>>> f5/00:00:00:00:00:a0 (SECURITY FREEZE LOCK) filtered out
+>>> 2011-01-22T16:20:54.169+01:00 n22 kernel: ata1.00: ACPI cmd
+>>> ef/5f:00:00:00:00:a0 (SET FEATURES) succeeded
+>>> 2011-01-22T16:20:54.169+01:00 n22 kernel: ata1.00: ACPI cmd
+>>> ef/10:03:00:00:00:a0 (SET FEATURES) filtered out
+>>> 2011-01-22T16:20:54.170+01:00 n22 kernel: ata1.00: configured for
+>>> UDMA/100 2011-01-22T16:20:54.171+01:00 n22 kernel: ata1: EH complete
+>>>
+>>>
+>>> I'm running an almost stable Gentoo on a ThinkPad T400 with current
+>>> kernel (2.6.37, earlier shows this behaviour too)
+>>
+>> Is that the only output you're getting? Can you post the full dmesg log
+>> from bootup?
+>
+> Of course - attached here
 
-What's the asm for this look like?
+Curious, there seems to be no indication of why EH was triggered, 
+doesn't seem to be have been due to an error. Does this also happen in 
+single-user mode or with minimal processes running? It's possible that 
+userspace is triggering this somehow.
