@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121Ab1AYDpp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 22:45:45 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:55571 "EHLO
+	id S1753184Ab1AYDpz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 22:45:55 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:18852 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808Ab1AYDpX (ORCPT
+	with ESMTP id S1752559Ab1AYDpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 22:45:23 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6236"; a="71636084"
+	Mon, 24 Jan 2011 22:45:22 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6236"; a="71636083"
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: David Brown <davidb@codeaurora.org>
 Cc: Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 4/4] msm: clock: Add support for more proc_comm clocks
-Date: Mon, 24 Jan 2011 19:45:18 -0800
-Message-Id: <1295927118-27591-5-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCH 3/4] msm: clock: Invert debugfs directory layout
+Date: Mon, 24 Jan 2011 19:45:17 -0800
+Message-Id: <1295927118-27591-4-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.7.4.rc2.3.g60a2e
 In-Reply-To: <1295927118-27591-1-git-send-email-sboyd@codeaurora.org>
 References: <1295927118-27591-1-git-send-email-sboyd@codeaurora.org>
@@ -22,77 +22,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support the CE_CLK and CODEC_SSBI_CLK. Also add support for uart,
-and i2c clocks on targets which support proc_comm clocks.
+There are currently 3 separate directories for clock debugging in
+debugfs: clk_enable, clk_rate, and clk_local. Each of these
+directories contains a list of clocks. This is rather annoying
+when you are focusing on one clock and want to enable/disable it
+and then check its rate. You either have to cd to the other
+directory or cat ../clk_rate/<clk>.
+
+Invert the layout so that there is one clock directory containing
+a directory for each clock. Inside each respective clock
+directory place an enable, rate, and is_local file relating to
+the clk_enable, clk_disable, and clk_local directories that exist
+today.
 
 Reviewed-by: Saravana Kannan <skannan@codeaurora.org>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/mach-msm/clock-pcom.h      |    4 +++-
- arch/arm/mach-msm/devices-msm7x30.c |    2 ++
- arch/arm/mach-msm/devices-qsd8x50.c |    6 ++++++
- 3 files changed, 11 insertions(+), 1 deletions(-)
+ arch/arm/mach-msm/clock-debug.c |   48 ++++++++++++++++++--------------------
+ 1 files changed, 23 insertions(+), 25 deletions(-)
 
-diff --git a/arch/arm/mach-msm/clock-pcom.h b/arch/arm/mach-msm/clock-pcom.h
-index 17d027b..2c813f1 100644
---- a/arch/arm/mach-msm/clock-pcom.h
-+++ b/arch/arm/mach-msm/clock-pcom.h
-@@ -132,8 +132,10 @@
- #define P_CSI1_P_CLK		97
- #define P_GSBI_CLK		98
- #define P_GSBI_P_CLK		99
-+#define P_CE_CLK		100 /* Crypto engine */
-+#define P_CODEC_SSBI_CLK	101
+diff --git a/arch/arm/mach-msm/clock-debug.c b/arch/arm/mach-msm/clock-debug.c
+index 6f603ed..b67b9e82 100644
+--- a/arch/arm/mach-msm/clock-debug.c
++++ b/arch/arm/mach-msm/clock-debug.c
+@@ -87,47 +87,45 @@ static int clock_debug_local_get(void *data, u64 *val)
+ DEFINE_SIMPLE_ATTRIBUTE(clock_local_fops, clock_debug_local_get,
+ 			NULL, "%llu\n");
  
--#define P_NR_CLKS		100
-+#define P_NR_CLKS		102
+-static struct dentry *dent_rate, *dent_enable, *dent_local;
++static struct dentry *debugfs_base;
  
- struct clk_ops;
- extern struct clk_ops clk_ops_pcom;
-diff --git a/arch/arm/mach-msm/devices-msm7x30.c b/arch/arm/mach-msm/devices-msm7x30.c
-index e430fdd..cd4343b 100644
---- a/arch/arm/mach-msm/devices-msm7x30.c
-+++ b/arch/arm/mach-msm/devices-msm7x30.c
-@@ -134,6 +134,8 @@ struct clk msm_clocks_7x30[] = {
- 	CLK_PCOM("adsp_clk",	ADSP_CLK,	NULL, 0),
- 	CLK_PCOM("cam_m_clk",	CAM_M_CLK,	NULL, 0),
- 	CLK_PCOM("camif_pad_pclk",	CAMIF_PAD_P_CLK,	NULL, OFF),
-+	CLK_PCOM("ce_clk",	CE_CLK,	NULL, 0),
-+	CLK_PCOM("codec_ssbi_clk",	CODEC_SSBI_CLK,	NULL, 0),
- 	CLK_PCOM("ebi1_clk",	EBI1_CLK,	NULL, CLK_MIN),
- 	CLK_PCOM("ecodec_clk",	ECODEC_CLK,	NULL, 0),
- 	CLK_PCOM("emdh_clk",	EMDH_CLK,	NULL, OFF | CLK_MINMAX),
-diff --git a/arch/arm/mach-msm/devices-qsd8x50.c b/arch/arm/mach-msm/devices-qsd8x50.c
-index c5dad8f..bd545f9 100644
---- a/arch/arm/mach-msm/devices-qsd8x50.c
-+++ b/arch/arm/mach-msm/devices-qsd8x50.c
-@@ -316,12 +316,14 @@ int __init msm_add_sdcc(unsigned int controller,
+ int __init clock_debug_init(void)
+ {
+-	dent_rate = debugfs_create_dir("clk_rate", 0);
+-	if (!dent_rate)
+-		goto err;
+-
+-	dent_enable = debugfs_create_dir("clk_enable", 0);
+-	if (!dent_enable)
+-		goto err;
+-
+-	dent_local = debugfs_create_dir("clk_local", NULL);
+-	if (!dent_local)
+-		goto err;
+-
++	debugfs_base = debugfs_create_dir("clk", NULL);
++	if (!debugfs_base)
++		return -ENOMEM;
+ 	return 0;
+-err:
+-	debugfs_remove(dent_local);
+-	debugfs_remove(dent_enable);
+-	debugfs_remove(dent_rate);
+-	return -ENOMEM;
+ }
  
- struct clk msm_clocks_8x50[] = {
- 	CLK_PCOM("adm_clk",	ADM_CLK,	NULL, 0),
-+	CLK_PCOM("ce_clk",	CE_CLK,		NULL, 0),
- 	CLK_PCOM("ebi1_clk",	EBI1_CLK,	NULL, CLK_MIN),
- 	CLK_PCOM("ebi2_clk",	EBI2_CLK,	NULL, 0),
- 	CLK_PCOM("ecodec_clk",	ECODEC_CLK,	NULL, 0),
- 	CLK_PCOM("emdh_clk",	EMDH_CLK,	NULL, OFF | CLK_MINMAX),
- 	CLK_PCOM("gp_clk",	GP_CLK,		NULL, 0),
- 	CLK_PCOM("grp_clk",	GRP_3D_CLK,	NULL, 0),
-+	CLK_PCOM("i2c_clk",	I2C_CLK,	NULL, 0),
- 	CLK_PCOM("icodec_rx_clk",	ICODEC_RX_CLK,	NULL, 0),
- 	CLK_PCOM("icodec_tx_clk",	ICODEC_TX_CLK,	NULL, 0),
- 	CLK_PCOM("imem_clk",	IMEM_CLK,	NULL, OFF),
-@@ -347,7 +349,11 @@ struct clk msm_clocks_8x50[] = {
- 	CLK_PCOM("tsif_ref_clk",	TSIF_REF_CLK,	NULL, 0),
- 	CLK_PCOM("tv_dac_clk",	TV_DAC_CLK,	NULL, 0),
- 	CLK_PCOM("tv_enc_clk",	TV_ENC_CLK,	NULL, 0),
-+	CLK_PCOM("uart_clk",	UART1_CLK,	NULL, OFF),
-+	CLK_PCOM("uart_clk",	UART2_CLK,	NULL, 0),
- 	CLK_PCOM("uart_clk",	UART3_CLK,	&msm_device_uart3.dev, OFF),
-+	CLK_PCOM("uartdm_clk",	UART1DM_CLK,	NULL, OFF),
-+	CLK_PCOM("uartdm_clk",	UART2DM_CLK,	NULL, 0),
- 	CLK_PCOM("usb_hs_clk",	USB_HS_CLK,	NULL, OFF),
- 	CLK_PCOM("usb_hs_pclk",	USB_HS_P_CLK,	NULL, OFF),
- 	CLK_PCOM("usb_otg_clk",	USB_OTG_CLK,	NULL, 0),
+ int __init clock_debug_add(struct clk *clock)
+ {
+ 	char temp[50], *ptr;
++	struct dentry *clk_dir;
+ 
+-	if (!dent_rate || !dent_enable || !dent_local)
++	if (!debugfs_base)
+ 		return -ENOMEM;
+ 
+ 	strncpy(temp, clock->dbg_name, ARRAY_SIZE(temp)-1);
+ 	for (ptr = temp; *ptr; ptr++)
+ 		*ptr = tolower(*ptr);
+ 
+-	debugfs_create_file(temp, S_IRUGO | S_IWUSR, dent_rate,
+-			    clock, &clock_rate_fops);
+-	debugfs_create_file(temp, S_IRUGO | S_IWUSR, dent_enable,
+-			    clock, &clock_enable_fops);
+-	debugfs_create_file(temp, S_IRUGO, dent_local,
+-			    clock, &clock_local_fops);
++	clk_dir = debugfs_create_dir(temp, debugfs_base);
++	if (!clk_dir)
++		return -ENOMEM;
++
++	if (!debugfs_create_file("rate", S_IRUGO | S_IWUSR, clk_dir,
++				clock, &clock_rate_fops))
++		goto error;
+ 
++	if (!debugfs_create_file("enable", S_IRUGO | S_IWUSR, clk_dir,
++				clock, &clock_enable_fops))
++		goto error;
++
++	if (!debugfs_create_file("is_local", S_IRUGO, clk_dir, clock,
++				&clock_local_fops))
++		goto error;
+ 	return 0;
++error:
++	debugfs_remove_recursive(clk_dir);
++	return -ENOMEM;
+ }
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
