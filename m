@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab1AYSCF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 13:02:05 -0500
-Received: from casper.infradead.org ([85.118.1.10]:59979 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753676Ab1AYR7i (ORCPT
+	id S1753649Ab1AYR7f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 12:59:35 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:49178 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753581Ab1AYR7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 12:59:38 -0500
-Message-Id: <20110125174908.423489985@chello.nl>
+	Tue, 25 Jan 2011 12:59:32 -0500
+Message-Id: <20110125174907.664402563@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Tue, 25 Jan 2011 18:31:34 +0100
+Date: Tue, 25 Jan 2011 18:31:20 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
@@ -22,132 +22,132 @@ Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         Nick Piggin <npiggin@kernel.dk>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Subject: [PATCH 23/25] mm: Optimize page_lock_anon_vma() fast-path
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Tony Luck <tony.luck@intel.com>
+Subject: [PATCH 09/25] ia64: Preemptible mmu_gather
 References: <20110125173111.720927511@chello.nl>
-Content-Disposition: inline; filename=peter_zijlstra-mm-optimize_page_lock_anon_vma_fast-path.patch
+Content-Disposition: inline; filename=peter_zijlstra-ia64-preemptible_mmu_gather.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Optimize the page_lock_anon_vma() fast path to be one LOCKed op,
-instead of two.
+Fix up the ia64 mmu_gather code to conform to the new API.
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- mm/rmap.c |   82 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 78 insertions(+), 4 deletions(-)
+ arch/ia64/include/asm/tlb.h |   41 +++++++++++++++++++++++++----------------
+ 1 file changed, 25 insertions(+), 16 deletions(-)
 
-Index: linux-2.6/mm/rmap.c
+Index: linux-2.6/arch/ia64/include/asm/tlb.h
 ===================================================================
---- linux-2.6.orig/mm/rmap.c
-+++ linux-2.6/mm/rmap.c
-@@ -371,20 +371,75 @@ struct anon_vma *page_get_anon_vma(struc
- 	return anon_vma;
+--- linux-2.6.orig/arch/ia64/include/asm/tlb.h
++++ linux-2.6/arch/ia64/include/asm/tlb.h
+@@ -47,21 +47,21 @@
+ #include <asm/machvec.h>
+ 
+ #ifdef CONFIG_SMP
+-# define FREE_PTE_NR		2048
+ # define tlb_fast_mode(tlb)	((tlb)->nr == ~0U)
+ #else
+-# define FREE_PTE_NR		0
+ # define tlb_fast_mode(tlb)	(1)
+ #endif
+ 
+ struct mmu_gather {
+ 	struct mm_struct	*mm;
+ 	unsigned int		nr;		/* == ~0U => fast mode */
++	unsigned int		max;
+ 	unsigned char		fullmm;		/* non-zero means full mm flush */
+ 	unsigned char		need_flush;	/* really unmapped some PTEs? */
+ 	unsigned long		start_addr;
+ 	unsigned long		end_addr;
+-	struct page 		*pages[FREE_PTE_NR];
++	struct page		**pages;
++	struct page		*local[8];
+ };
+ 
+ struct ia64_tr_entry {
+@@ -90,9 +90,6 @@ extern struct ia64_tr_entry *ia64_idtrs[
+ #define RR_RID_MASK	0x00000000ffffff00L
+ #define RR_TO_RID(val) 	((val >> 8) & 0xffffff)
+ 
+-/* Users of the generic TLB shootdown code must declare this storage space. */
+-DECLARE_PER_CPU(struct mmu_gather, mmu_gathers);
+-
+ /*
+  * Flush the TLB for address range START to END and, if not in fast mode, release the
+  * freed pages that where gathered up to this point.
+@@ -147,15 +144,23 @@ ia64_tlb_flush_mmu (struct mmu_gather *t
+ 	}
  }
  
-+/*
-+ * Similar to page_get_anon_vma() except it locks the anon_vma.
-+ *
-+ * Its a little more complex as it tries to keep the fast path to a single
-+ * atomic op -- the trylock. If we fail the trylock, we fall back to getting a
-+ * reference like with page_get_anon_vma() and then block on the mutex.
-+ */
- struct anon_vma *page_lock_anon_vma(struct page *page)
+-/*
+- * Return a pointer to an initialized struct mmu_gather.
+- */
+-static inline struct mmu_gather *
+-tlb_gather_mmu (struct mm_struct *mm, unsigned int full_mm_flush)
++static inline void __tlb_alloc_page(struct mmu_gather *tlb)
  {
--	struct anon_vma *anon_vma = page_get_anon_vma(page);
-+	struct anon_vma *anon_vma = NULL;
-+	unsigned long anon_mapping;
+-	struct mmu_gather *tlb = &get_cpu_var(mmu_gathers);
++	unsigned long addr = __get_free_pages(GFP_NOWAIT | __GFP_NOWARN, 0);
++
++	if (addr) {
++		tlb->pages = (void *)addr;
++		tlb->max = PAGE_SIZE / sizeof(void *);
++	}
++}
  
--	if (anon_vma)
--		anon_vma_lock(anon_vma);
-+	rcu_read_lock();
-+	anon_mapping = (unsigned long) ACCESS_ONCE(page->mapping);
-+	if ((anon_mapping & PAGE_MAPPING_FLAGS) != PAGE_MAPPING_ANON)
-+		goto out;
-+	if (!page_mapped(page))
-+		goto out;
 +
-+	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
-+	if (mutex_trylock(&anon_vma->root->mutex)) {
-+		/*
-+		 * If we observe a !0 refcount, then holding the lock ensures
-+		 * the anon_vma will not go away, see __put_anon_vma().
-+		 */
-+		if (!atomic_read(&anon_vma->refcount)) {
-+			anon_vma_unlock(anon_vma);
-+			anon_vma = NULL;
-+		}
-+		goto out;
-+	}
-+
-+	/* trylock failed, we got to sleep */
-+	if (!atomic_inc_not_zero(&anon_vma->refcount)) {
-+		anon_vma = NULL;
-+		goto out;
-+	}
-+
-+	if (!page_mapped(page)) {
-+		put_anon_vma(anon_vma);
-+		anon_vma = NULL;
-+		goto out;
-+	}
-+
-+	/* we pinned the anon_vma, its safe to sleep */
-+	rcu_read_unlock();
-+	anon_vma_lock(anon_vma);
-+
-+	if (atomic_dec_and_test(&anon_vma->refcount)) {
-+		/*
-+		 * Oops, we held the last refcount, release the lock
-+		 * and bail -- can't simply use put_anon_vma() because
-+		 * we'll deadlock on the anon_vma_lock() recursion.
-+		 */
-+		anon_vma_unlock(anon_vma);
-+		__put_anon_vma(anon_vma);
-+		anon_vma = NULL;
-+	}
- 
- 	return anon_vma;
-+
-+out:
-+	rcu_read_unlock();
-+	return anon_vma;
- }
- 
- void page_unlock_anon_vma(struct anon_vma *anon_vma)
- {
- 	anon_vma_unlock(anon_vma);
--	put_anon_vma(anon_vma);
++static inline void
++tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned int full_mm_flush)
++{
+ 	tlb->mm = mm;
++	tlb->max = ARRAY_SIZE(tlb->local);
++	tlb->pages = tlb->local;
+ 	/*
+ 	 * Use fast mode if only 1 CPU is online.
+ 	 *
+@@ -172,7 +177,6 @@ tlb_gather_mmu (struct mm_struct *mm, un
+ 	tlb->nr = (num_online_cpus() == 1) ? ~0U : 0;
+ 	tlb->fullmm = full_mm_flush;
+ 	tlb->start_addr = ~0UL;
+-	return tlb;
  }
  
  /*
-@@ -1500,6 +1555,25 @@ int try_to_munlock(struct page *page)
- 
- void __put_anon_vma(struct anon_vma *anon_vma)
+@@ -180,7 +184,7 @@ tlb_gather_mmu (struct mm_struct *mm, un
+  * collected.
+  */
+ static inline void
+-tlb_finish_mmu (struct mmu_gather *tlb, unsigned long start, unsigned long end)
++tlb_finish_mmu(struct mmu_gather *tlb, unsigned long start, unsigned long end)
  {
-+	/*
-+	 * Synchronize against page_lock_anon_vma() such that
-+	 * we can safely hold the lock without the anon_vma getting
-+	 * freed.
-+	 *
-+	 * Relies on the full mb implied by the atomic_dec_and_test() from
-+	 * put_anon_vma() against the lock implied by mutex_trylock() from
-+	 * page_lock_anon_vma(). This orders:
-+	 *
-+	 * page_lock_anon_vma()		VS	put_anon_vma()
-+	 *   mutex_trylock()			  atomic_dec_and_test()
-+	 *   LOCK				  MB
-+	 *   atomic_read()			  mutex_is_locked()
-+	 */
-+	if (mutex_is_locked(&anon_vma->root->mutex)) {
-+		anon_vma_lock(anon_vma);
-+		anon_vma_unlock(anon_vma);
-+	}
+ 	/*
+ 	 * Note: tlb->nr may be 0 at this point, so we can't rely on tlb->start_addr and
+@@ -191,7 +195,8 @@ tlb_finish_mmu (struct mmu_gather *tlb, 
+ 	/* keep the page table cache within bounds */
+ 	check_pgt_cache();
+ 
+-	put_cpu_var(mmu_gathers);
++	if (tlb->pages != tlb->local)
++		free_pages((unsigned long)tlb->pages, 0);
+ }
+ 
+ /*
+@@ -208,8 +213,12 @@ tlb_remove_page (struct mmu_gather *tlb,
+ 		free_page_and_swap_cache(page);
+ 		return;
+ 	}
 +
- 	if (anon_vma->root != anon_vma)
- 		put_anon_vma(anon_vma->root);
- 	anon_vma_free(anon_vma);
++	if (!tlb->nr && tlb->pages == tlb->local)
++		__tlb_alloc_page(tlb);
++
+ 	tlb->pages[tlb->nr++] = page;
+-	if (tlb->nr >= FREE_PTE_NR)
++	if (tlb->nr >= tlb->max)
+ 		ia64_tlb_flush_mmu(tlb, tlb->start_addr, tlb->end_addr);
+ }
+ 
 
 
