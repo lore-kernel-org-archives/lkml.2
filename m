@@ -1,96 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab1AYMPv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 07:15:51 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:51269 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753444Ab1AYMPk convert rfc822-to-8bit (ORCPT
+	id S1753487Ab1AYMQD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 07:16:03 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:54594 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753196Ab1AYMPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 07:15:40 -0500
-Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 8/20]  8: uprobes: mmap and fork
- hooks.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20101216095848.23751.73144.sendpatchset@localhost6.localdomain6>
-References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
-	 <20101216095848.23751.73144.sendpatchset@localhost6.localdomain6>
+	Tue, 25 Jan 2011 07:15:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=kZNY5/HtJBHDfw+gBgu4U9ASNQ6POF/0vQI0lwGzS6HCHYkppF0ivfyy7Ik+DP558B
+         Qm6JgCVQs5j0pRTtgdxTxXRQlDBSxQffeBemBt/ccjAcVVi9guho8xWbU7IMJoAsdY9B
+         xaFsgsd446KipXVFH+qzp1n9/6IDJCfo8hHBA=
+Subject: Re: [PATCH 6/6] Cpu features overrides for msp platforms.
+From: Anoop P A <anoop.pa@gmail.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: ralf@linux-mips.org, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <4D3EBD8F.2060608@mvista.com>
+References: <1295943797-20467-1-git-send-email-anoop.pa@gmail.com>
+	 <4D3EBD8F.2060608@mvista.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 25 Jan 2011 13:15:41 +0100
-Message-ID: <1295957741.28776.719.camel@laptop>
+Date: Tue, 25 Jan 2011 18:02:03 +0530
+Message-ID: <1295958724.27661.545.camel@paanoop1-desktop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-16 at 15:28 +0530, Srikar Dronamraju wrote:
-> +static void search_within_subtree(struct rb_node *n, struct inode *inode,
-> +               struct list_head *tmp_list);
-> +
-> +static void add_to_temp_list(struct vm_area_struct *vma, struct inode *inode,
-> +               struct list_head *tmp_list)
-> +{
-> +       struct uprobe *uprobe;
-> +       struct rb_node *n;
-> +       unsigned long flags;
-> +
-> +       n = uprobes_tree.rb_node;
-> +       spin_lock_irqsave(&treelock, flags);
-> +       while (n) {
-> +               uprobe = rb_entry(n, struct uprobe, rb_node);
-> +               if (match_inode(uprobe, inode, &n)) {
-> +                       list_add(&uprobe->pending_list, tmp_list);
-> +                       search_within_subtree(n, inode, tmp_list);
-> +                       break;
-> +               }
-> +       }
-> +       spin_unlock_irqrestore(&treelock, flags);
-> +}
-> +
-> +static void __search_within_subtree(struct rb_node *p, struct inode *inode,
-> +               struct list_head *tmp_list)
-> +{
-> +       struct uprobe *uprobe;
-> +
-> +       uprobe = rb_entry(p, struct uprobe, rb_node);
-> +       if (match_inode(uprobe, inode, &p)) {
-> +               list_add(&uprobe->pending_list, tmp_list);
-> +               search_within_subtree(p, inode, tmp_list);
-> +       }
-> +
-> +
-> +}
-> +
-> +static void search_within_subtree(struct rb_node *n, struct inode *inode,
-> +               struct list_head *tmp_list)
-> +{
-> +       struct rb_node *p;
-> +
-> +       if (p)
-> +               __search_within_subtree(p, inode, tmp_list);
-> +
-> +       p = n->rb_right;
-> +       if (p)
-> +               __search_within_subtree(p, inode, tmp_list);
-> +} 
+On Tue, 2011-01-25 at 15:09 +0300, Sergei Shtylyov wrote:
+> Hello.
+> 
+> On 25-01-2011 11:23, Anoop P.A wrote:
+> 
+> > From: Anoop P A<anoop.pa@gmail.com>
+> 
+> 
+> > Signed-off-by: Anoop P A<anoop.pa@gmail.com>
+> [...]
+> 
+> > diff --git a/arch/mips/include/asm/pmc-sierra/msp71xx/cpu-feature-overrides.h b/arch/mips/include/asm/pmc-sierra/msp71xx/cpu-feature-overrides.h
+> > new file mode 100644
+> > index 0000000..a80801b
+> > --- /dev/null
+> > +++ b/arch/mips/include/asm/pmc-sierra/msp71xx/cpu-feature-overrides.h
+> > @@ -0,0 +1,21 @@
+> > +/*
+> > + * This file is subject to the terms and conditions of the GNU General Public
+> > + * License.  See the file "COPYING" in the main directory of this archive
+> > + * for more details.
+> > + *
+> > + * Copyright (C) 2003, 04, 07 Ralf Baechle (ralf@linux-mips.org)
+> 
+>     If you're the author, how come it's Ralf's copyright here?
 
-Whee recursion FTW!, you just blew your kernel stack :-)
+I just copied that file from some other platform. 
 
-Since you sort inode first, offset second, I think you can simply look
-for the first matching inode entry and simply rb_next() until you don't
-match.
+> 
+> WBR, Sergei
+
+
