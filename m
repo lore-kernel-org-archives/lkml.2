@@ -1,87 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133Ab1AYRUd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 12:20:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58272 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751571Ab1AYRUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 12:20:32 -0500
-Subject: Re: [PATCH 0/2][concept RFC] x86: BIOS-save kernel log to disk
- upon panic
-From: James Bottomley <James.Bottomley@suse.de>
-To: "Ahmed S. Darwish" <darwish.07@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, X86-ML <x86@kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Willy Tarreau <wtarreau@hera.kernel.org>, Willy Tarreau <w@1wt.eu>,
-        Dirk Hohndel <hohndel@infradead.org>, Dirk.Hohndel@intel.com,
-        IDE-ML <linux-ide@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@infradead.org>,
-        Jeff Garzik <jgarzik@pobox.com>
-In-Reply-To: <20110125170522.GA16285@laptop>
-References: <20110125134748.GA10051@laptop> <20110125140948.GA26762@elte.hu>
-	 <20110125153649.GA11386@laptop> <1295971355.4955.104.camel@mulgrave.site>
-	 <20110125170522.GA16285@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 25 Jan 2011 12:20:23 -0500
-Message-ID: <1295976023.9693.8.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	id S1753245Ab1AYRWI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 12:22:08 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:48504 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752905Ab1AYRWF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 12:22:05 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 09/29] perf record: Move perf_mmap__write_tail to perf.h
+Date: Tue, 25 Jan 2011 15:21:32 -0200
+Message-Id: <1295976112-2796-10-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1295976112-2796-1-git-send-email-acme@infradead.org>
+References: <1295976112-2796-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-25 at 19:05 +0200, Ahmed S. Darwish wrote:
-> Hi!
-> 
-> On Tue, Jan 25, 2011 at 11:02:35AM -0500, James Bottomley wrote:
-> > On Tue, 2011-01-25 at 17:36 +0200, Ahmed S. Darwish wrote:
-> > > The complete __roadblock__ I'm currently facing though is restoring the disk
-> > > controllers to the state originally setup by the BIOS Power-on self-test (POST).
-> > > I hope such re-initialization is even technically feasible.
-> > > 
-> > > Without such re-initialization, we'll just be risking the BIOS code exploding.
-> > > That was the case in the 5-minute hang described in the cover sheet (PATCH #0).
-> > 
-> > So this is the bit that's not really technically feasible.  BIOS tends
-> > to run storage devices in a very primitive way (so it takes basic
-> > settings, for example and sets the device up for one particular channel
-> > of access).  When preparing the device for an operating system, we have
-> > to blow away all the bios stuff and put it into a more generally
-> > performant mode (this isn't just the storage per se, it's also the
-> > interrupt and routing).  Unfortunately, currently, we don't bother to
-> > save the settings the BIOS was using, so there's no way to reinitialise
-> > the device back to bios without an effective reboot.
-> >
-> 
-> My current x86 laptop includes the very common ATA PIIX controller. If I
-> dumped the PIC, IOAPIC, and disk controller state in a register file in a
-> safe area, and re-initialized these before giving control to the BIOS, can
-> this move the solution space from being not really technically feasible to
-> "quite possible"?
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-So I'm sure it would be possible to reverse engineer and make work a
-solution for a given motherboard, ATA controller and BIOS ... but
-because you have to go all the way up the root of the PCI tree and into
-the interrupt controllers to do this, I don't really think it would ever
-be a usable generic solutions.
+Close to perf_mmap__read_head() and the perf_mmap struct definition.
+This is useful for any recorder, and we will need it in 'perf test'.
 
-I'd really look at the problem another way: Rather than trying to figure
-out how to put a storage subsystem back into bios, if we had a driver
-that never took a given device out of BIOS configuration, as in ran it
-through the suboptimal bios interface in-kernel, it would be ready to
-use the bios interface to dump with.  The problem is that no-one wants
-that for their main disk ... however, it would be less of a problem if
-we dedicated, say, a USB controller and stick to this.
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-record.c |   13 +------------
+ tools/perf/perf.h           |   12 ++++++++++++
+ 2 files changed, 13 insertions(+), 12 deletions(-)
 
-James
-
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index d89e2f1..109f3b2 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -80,17 +80,6 @@ static const char		*cpu_list;
+ 
+ static struct perf_mmap		mmap_array[MAX_NR_CPUS];
+ 
+-static void mmap_write_tail(struct perf_mmap *md, unsigned long tail)
+-{
+-	struct perf_event_mmap_page *pc = md->base;
+-
+-	/*
+-	 * ensure all reads are done before we write the tail out.
+-	 */
+-	/* mb(); */
+-	pc->data_tail = tail;
+-}
+-
+ static void advance_output(size_t size)
+ {
+ 	bytes_written += size;
+@@ -165,7 +154,7 @@ static void mmap_read(struct perf_mmap *md)
+ 	write_output(buf, size);
+ 
+ 	md->prev = old;
+-	mmap_write_tail(md, old);
++	perf_mmap__write_tail(md, old);
+ }
+ 
+ static volatile int done = 0;
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 5fb5e1f..a5fc660 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -108,6 +108,18 @@ static inline unsigned int perf_mmap__read_head(struct perf_mmap *mm)
+ 	return head;
+ }
+ 
++static inline void perf_mmap__write_tail(struct perf_mmap *md,
++					 unsigned long tail)
++{
++	struct perf_event_mmap_page *pc = md->base;
++
++	/*
++	 * ensure all reads are done before we write the tail out.
++	 */
++	/* mb(); */
++	pc->data_tail = tail;
++}
++
+ /*
+  * prctl(PR_TASK_PERF_EVENTS_DISABLE) will (cheaply) disable all
+  * counters in the current task.
+-- 
+1.6.2.5
 
