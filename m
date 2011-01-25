@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab1AYNZG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 08:25:06 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:49146 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772Ab1AYNZE convert rfc822-to-8bit (ORCPT
+	id S1753208Ab1AYN2q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 08:28:46 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37209 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772Ab1AYN2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 08:25:04 -0500
+	Tue, 25 Jan 2011 08:28:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=RyIH+zle3sy4FEjf7SfVK+hLl70otlfh78gH8wcU4GV741HRCQ7p6z4Qnst1iNThD8
+         +uu55WFj7/2208qQpP0w5Aef+p4i9CJCU6YEAp/b7cP73h5jIHIvxrDVKslPjG+BexAA
+         zd6NBbHEOml5irOoex/1mq3OxFye+H166MJG4=
+Date: Tue, 25 Jan 2011 14:28:37 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Shaohua Li <shaohua.li@intel.com>, lkml <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, eric.dumazet@gmail.com,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH] alpha: use L1_CACHE_BYTES for cacheline size in the
+ linker script
+Message-ID: <20110125132837.GU27510@htj.dyndns.org>
+References: <20101227133719.GD488@htj.dyndns.org>
+ <20101227204309.GA3878@merkur.ravnborg.org>
+ <20101228111822.GF488@htj.dyndns.org>
+ <20101228113345.GG488@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <20110125124524.GJ11507@n2100.arm.linux.org.uk>
-References: <AANLkTi=eCOiP7MrUSG4WRMN0kj_+ZWvZ=z7VYDfkshU_@mail.gmail.com>
-	<8yad3nlh18e.fsf@huya.qualcomm.com>
-	<AANLkTin9fSw5DdqdgCEvtdtc83LFOeA7t0OAUugVmRFD@mail.gmail.com>
-	<20110125102652.GB11507@n2100.arm.linux.org.uk>
-	<bb0c3855a121603232d022b4062752a6@mail.gmail.com>
-	<AANLkTi=vZSZkN2k1gZD0F-C74b_jFWX5HhDhr7BiPhN7@mail.gmail.com>
-	<20110125124524.GJ11507@n2100.arm.linux.org.uk>
-Date: Tue, 25 Jan 2011 13:25:02 +0000
-Message-ID: <AANLkTikVW3vcygUQDTH-x6cXkNdf2WEztbTvdz4YkmCk@mail.gmail.com>
-Subject: Re: questions about arm trustzone
-From: Dave Martin <dave.martin@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        sen wang <wangchendu@gmail.com>, David Brown <davidb@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101228113345.GG488@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 12:45 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Tue, Jan 25, 2011 at 12:24:13PM +0000, Dave Martin wrote:
->> Avoiding this complexity is one of the motivations for using r7 for
->> the syscall number with CONFIG_EABI (instead of using the SVC comment
->> field).
->
-> Your history is not entirely correct.
->
-> I had the kernel side of Thumb userspace support in place long before EABI
-> came along.  Thumb doesn't have a large enough comment field to store the
-> Linux syscall number, so to get around that problem, I decided to use r7
-> for the syscall number.  You'll find 2.4 kernels support Thumb instructions
-> in userspace.
->
-> As part of the EABI switch for ARM mode - which created an incompatible
-> SWI interface anyway, we decided that we could reduce data cache pollution
-> by eliminating the read of the SWI instruction, so we adopted the r7
-> method for ARM EABI mode.
->
+On Tue, Dec 28, 2010 at 12:33:45PM +0100, Tejun Heo wrote:
+> Currently the linker script uses 64 for cacheline size which isn't
+> optimal for all cases.  Include asm/cache.h and use L1_CACHE_BYTES
+> instead as suggested by Sam Ravnborg.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Sam Ravnborg <sam@ravnborg.org>
 
-Fair enough -- I was glossing over things a bit and I'm not familiar
-with all the history.  So, I guess there were plenty of other good
-reasons.
+applied to percpu#for-2.6.39.
 
-Cheers
----Dave
+Thanks.
+
+-- 
+tejun
