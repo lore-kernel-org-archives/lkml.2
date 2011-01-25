@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752356Ab1AYBe1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 20:34:27 -0500
-Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:58755 "EHLO
-	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752788Ab1AYBeX (ORCPT
-	<rfc822;groupwise-jlee@novell.com:5:1>);
-	Mon, 24 Jan 2011 20:34:23 -0500
-Message-Id: <4D3EC34A020000230002799D@novprvlin0050.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Mon, 24 Jan 2011 18:34:18 -0700
-From: "Joey Lee" <jlee@novell.com>
-To: <jj@chaosbits.net>
-Cc: <trivial@kernel.org>, <mjg@redhat.com>, <carlos@strangeworlds.co.uk>,
-        <linux-kernel@vger.kernel.org>, <platform-driver-x86@vger.kernel.org>
-Subject: Re: [PATCH] X86, Acer, WMI: Do not double include linux/dmi.h
- in acer-wmi.c
+	id S1751895Ab1AYBiz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 20:38:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33725 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751384Ab1AYBiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 20:38:54 -0500
+Subject: Re: [GIT PULL for 38-rc3]  target updates for v4.0.0-rc7
+From: James Bottomley <James.Bottomley@suse.de>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1295918871.24778.161.camel@haakon2.linux-iscsi.org>
+References: <1295914455.24778.115.camel@haakon2.linux-iscsi.org>
+	 <1295915790.15425.44.camel@mulgrave.site>
+	 <1295918871.24778.161.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 24 Jan 2011 19:38:43 -0600
+Message-ID: <1295919523.15425.104.camel@mulgrave.site>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jesper, 
-
-於 一，2011-01-24 於 22:12 +0100，Jesper Juhl 提到：
-> Including linux/dmi.h once in drivers/platform/x86/acer-wmi.c is enough.
+On Mon, 2011-01-24 at 17:27 -0800, Nicholas A. Bellinger wrote:
+> On Mon, 2011-01-24 at 18:36 -0600, James Bottomley wrote:
+> > On Mon, 2011-01-24 at 16:14 -0800, Nicholas A. Bellinger wrote:
+> > > Hi James and Co,
+> > > 
+> > > Here are the latest v4.0.0-rc7 updates for mainline drivers/target/ code
+> > > rebased against linux-2.6.git -> .38-rc2.  These individual patches have
+> > > been reviewed on linux-scsi and commited into the upstream LIO kernel
+> > > tree, so please consider pulling for .38-rc3:
+> > > 
+> > >    git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-38-rc3
+> > > 
+> > > Also at this point, having Linus pull directly from
+> > > scsi-post-merge-2.6.git/for-38-rcX for mainline target bugfixes +
+> > > improvements may make more sense.
+> > > 
+> > > Linus/Andrew/James, please let me know which you prefer here.
+> > 
+> > Right at the moment, I'm trying to encourage a few people with
+> > established areas to experiment with their own git trees in SCSI, but
+> > the target subsystem, being a newcomer, wouldn't be one of these, so,
+> > for the time being, patch series over linux-scsi please for review and
+> > feedback.
+> > 
 > 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  acer-wmi.c |    1 -
->  1 file changed, 1 deletion(-)
+> Sure, thanks for the clarification.  The same set of patches are
+> available against your .37-FINAL based scsi-post-merge-2.6.git/master
+> HEAD here:
 > 
-> diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
-> index c5c4b8c..f21eb53 100644
-> --- a/drivers/platform/x86/acer-wmi.c
-> +++ b/drivers/platform/x86/acer-wmi.c
-> @@ -39,7 +39,6 @@
->  #include <linux/slab.h>
->  #include <linux/input.h>
->  #include <linux/input/sparse-keymap.h>
-> -#include <linux/dmi.h>
->  
->  #include <acpi/acpi_drivers.h>
->  
+>    git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-jejb
 > 
+> Please let me know if you have any further questions,
 
-Reviewed-by: Lee, Chun-Yi <jlee@novell.com>
+Over the list, please, not in a git tree.  What I need is for others to
+review them ... and appearing on the list best encourages that.
 
-Thank's for your patch to fix my fail.
+It's also better to use something more stable as the base, like linus
+head or scsi-misc as the base.  The postmerge tree is my most volatile
+tree (fairly constantly rebasing as I try to get the merge fixes
+right) ... and it's currently defunct until another merge clash appears.
 
-Joey Lee
+By way of demonstration, try pulling your current postmerge tree into
+linus head and see what happens (the resulting conflicts are because of
+the rebases).
+
+James
+
 
