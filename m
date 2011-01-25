@@ -1,84 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279Ab1AYNOl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 08:14:41 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:2543 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753082Ab1AYNOk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 08:14:40 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6236"; a="71900119"
-From: "Tanya Brokhman" <tlinder@codeaurora.org>
-To: "'Alan Stern'" <stern@rowland.harvard.edu>
-Cc: <gregkh@suse.de>, <linux-usb@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>,
-        "'David Brownell'" <dbrownell@users.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>
-References: <1290085052-4977-1-git-send-email-tlinder@codeaurora.org> <Pine.LNX.4.44L0.1011181045430.1801-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1011181045430.1801-100000@iolanthe.rowland.org>
-Subject: RE: [PATCH v6] usb: Adding SuperSpeed support to dummy_hcd
-Date: Tue, 25 Jan 2011 15:14:31 +0200
-Message-ID: <000601cbbc91$cf9d8d80$6ed8a880$@org>
+	id S1753349Ab1AYNPS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 08:15:18 -0500
+Received: from lucidpixels.com ([75.144.35.66]:53494 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752235Ab1AYNPQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 08:15:16 -0500
+Date: Tue, 25 Jan 2011 08:15:15 -0500 (EST)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: xfs@oss.sgi.com
+cc: linux-kernel@vger.kernel.org
+Subject: 2.6.37: XFS / BUG: soft lockup - CPU#0 stuck for 61s!
+ [kworker/0:0:4783]
+Message-ID: <alpine.DEB.2.00.1101250810500.19338@p34.internal.lan>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: AcuHOp/bi1bUWNRLTA+k+ia80ABiew1VhKlA
-Content-Language: en-us
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, 18 Nov 2010, Tatyana Brokhman wrote:
-> 
-> > USB 3.0 hub includes 2 hubs - HS and SS ones.
-> > Thus, when dummy_hcd enabled it will register 2 root hubs (SS and
-> HS).
-> 
-> Hmm.  A quick comparison with the original source shows that you
-> neglected to add code for SuperSpeed transfers to periodic_bytes() and
-> show_urb().
+Hi,
 
-Added in the next patch that will be uploaded soon.
+I was rm -rf'ing some directories with many files and I tried to mkdir a 
+directory elsewhere on the filesystem and this happened:
 
-> 
-> > @@ -1352,6 +1544,9 @@ static void dummy_timer (unsigned long _dum)
-> >  	case USB_SPEED_HIGH:
-> >  		total = 512/*bytes*/ * 13/*packets*/ * 8/*uframes*/;
-> >  		break;
-> > +	case USB_SPEED_SUPER:
-> > +		total = 400 << 20; /* 400MB = 400*(2^20) bytes */
-> > +		break;
-> 
-> Somehow I doubt that SuperSpeed USB, quick though it is, can transfer
-> 400 MB in one millisecond.  Where did you get that number from?
-> 
+# ps auxww | grep ' D '
+root       560  0.0  0.0      0     0 ?        D    Jan20   0:00 [fsnotify_mark]
+root      1327  0.0  0.0      0     0 ?        D    Jan20   0:07 [xfssyncd/sda1]
+root     19006  5.8  0.0   4472   768 pts/40   D    08:07   0:10 rm -rf dir1 dir2 dir3 dir4 dir5 dir6
 
->From USB3.0 Spec section 4.4.11. My mistake was that this value (400 << 20)
-is per sec and not per milisec. When we divide it by 1000 (milisec) we'll
-receive a value close to what you suggested bellow. Fixed.
+The filesystem in question:
+/dev/sda1 on /r1 type xfs (rw,noatime,nobarrier,logbufs=8,logbsize=262144,delaylog,inode64)
 
-> I can't find the appropriate table in the USB-3.0 spec (it might not be
-> there at all), but with a bus transfer rate of 500 million bytes/s it
-> seems clear that you can't transfer more than 500000 bytes per frame.
-> The actual limit must be lower than that, maybe something like 1024
-> bytes/packet * 60 packets/uframe * 8 uframes/frame = 491520
-> bytes/frame.
-> 
-> Alan Stern
+The lockup:
 
-Sorry for the poor quoting (this mail is a bit old) and the late response.
-Our intention was to release the unittests we used to test this
-implementation with the next patch version but releasing them got delayed
-due to legal issues.
+[392833.039090] BUG: soft lockup - CPU#0 stuck for 61s! [kworker/0:0:4783]
+[392833.039094] Modules linked in:
+[392833.039095] CPU 0 
+[392833.039096] Modules linked in:
+[392833.039097] 
+[392833.039099] Pid: 4783, comm: kworker/0:0 Not tainted 2.6.37 #2 DP55KG/ 
+[392833.039101] RIP: 0010:[<ffffffff812286b2>]  [<ffffffff812286b2>] xfs_ail_insert+0x12/0x80
+[392833.039105] RSP: 0018:ffff8800c24edd08  EFLAGS: 00000202
+[392833.039107] RAX: ffff8802c2c11078 RBX: ffff88017426da98 RCX: 0000007a0012eb01
+[392833.039108] RDX: ffff8802c1d19660 RSI: ffff88017426da98 RDI: 0000007a0012eb02
+[392833.039109] RBP: ffffffff8149cbce R08: 000000000000007a R09: 000000000000007a
+[392833.039111] R10: ffff88041a436c48 R11: ffff8802d4e93058 R12: 000000000000001b
+[392833.039112] R13: ffff88041e85db00 R14: dead000000100100 R15: ffffffff810a0f07
+[392833.039113] FS:  0000000000000000(0000) GS:ffff8800df000000(0000) knlGS:0000000000000000
+[392833.039115] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[392833.039116] CR2: 00000000025cc098 CR3: 000000028bcec000 CR4: 00000000000006f0
+[392833.039118] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[392833.039119] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[392833.039120] Process kworker/0:0 (pid: 4783, threadinfo ffff8800c24ec000, task ffff880057a56750)
+[392833.039122] Stack:
+[392833.039123]  ffffffff8122876c ffff88017426da98 ffff88041a436c40 000000000000007a
+[392833.039126]  ffff88041e59a9c0 ffff88041e59aa48 ffffffff81227236 ffff880356dfccc0
+[392833.039128]  0000007a0012eb01 ffff88023de8a340 ffff88006f6dba40 0000000000000000
+[392833.039130] Call Trace:
+[392833.039133]  [<ffffffff8122876c>] ? xfs_trans_ail_update+0x4c/0xd0
+[392833.039136]  [<ffffffff81227236>] ? xfs_trans_item_committed+0xb6/0xe0
+[392833.039139]  [<ffffffff8121cc90>] ? xlog_cil_committed+0x30/0xe0
+[392833.039141]  [<ffffffff8121968c>] ? xlog_state_do_callback+0x15c/0x2c0
+[392833.039144]  [<ffffffff81231b20>] ? xfs_buf_iodone_work+0x0/0x60
+[392833.039147]  [<ffffffff8104829b>] ? process_one_work+0xfb/0x3b0
+[392833.039149]  [<ffffffff8104892e>] ? worker_thread+0x14e/0x400
+[392833.039151]  [<ffffffff810487e0>] ? worker_thread+0x0/0x400
+[392833.039152]  [<ffffffff810487e0>] ? worker_thread+0x0/0x400
+[392833.039155]  [<ffffffff8104c0e6>] ? kthread+0x96/0xa0
+[392833.039158]  [<ffffffff81003014>] ? kernel_thread_helper+0x4/0x10
+[392833.039160]  [<ffffffff8104c050>] ? kthread+0x0/0xa0
+[392833.039162]  [<ffffffff81003010>] ? kernel_thread_helper+0x0/0x10
+[392833.039163] Code: 48 8b 6c 24 10 4c 8b 64 24 18 4c 8b 6c 24 20 48 83 c4 28 e9 11 0b ff ff 90 4c 8d 57 08 4c 3b 57 08 74 58 48 8b 47 10 48 8b 50 08 <49> 39 c2 0f 18 0a 74 20 48 8b 4e 10 48 8b 78 10 49 89 c8 49 89 
+[392833.039179] Call Trace:
+[392833.039180]  [<ffffffff8122876c>] ? xfs_trans_ail_update+0x4c/0xd0
+[392833.039182]  [<ffffffff81227236>] ? xfs_trans_item_committed+0xb6/0xe0
+[392833.039184]  [<ffffffff8121cc90>] ? xlog_cil_committed+0x30/0xe0
+[392833.039186]  [<ffffffff8121968c>] ? xlog_state_do_callback+0x15c/0x2c0
+[392833.039188]  [<ffffffff81231b20>] ? xfs_buf_iodone_work+0x0/0x60
+[392833.039190]  [<ffffffff8104829b>] ? process_one_work+0xfb/0x3b0
+[392833.039192]  [<ffffffff8104892e>] ? worker_thread+0x14e/0x400
+[392833.039194]  [<ffffffff810487e0>] ? worker_thread+0x0/0x400
+[392833.039196]  [<ffffffff810487e0>] ? worker_thread+0x0/0x400
+[392833.039198]  [<ffffffff8104c0e6>] ? kthread+0x96/0xa0
+[392833.039200]  [<ffffffff81003014>] ? kernel_thread_helper+0x4/0x10
+[392833.039202]  [<ffffffff8104c050>] ? kthread+0x0/0xa0
+[392833.039204]  [<ffffffff81003010>] ? kernel_thread_helper+0x0/0x10
 
-Best regards,
-Tanya Brokhman
-Consultant for Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+Is this normal?  Is it because I am using delaylog?  I notice when I use 
+delaylog, there is an EXTREME amount of lag/hanging of the system 
+sometimes when deleting thousands/millions of files until its done.
 
-
-
-
-
+Justin.
