@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985Ab1AYDp2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 22:45:28 -0500
+	id S1753121Ab1AYDpp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 22:45:45 -0500
 Received: from wolverine02.qualcomm.com ([199.106.114.251]:55571 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751612Ab1AYDpW (ORCPT
+	with ESMTP id S1752808Ab1AYDpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 22:45:22 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6236"; a="71636081"
+	Mon, 24 Jan 2011 22:45:23 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6236"; a="71636084"
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: David Brown <davidb@codeaurora.org>
 Cc: Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 1/4] msm: clock: Remove unused code and definitions
-Date: Mon, 24 Jan 2011 19:45:15 -0800
-Message-Id: <1295927118-27591-2-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCH 4/4] msm: clock: Add support for more proc_comm clocks
+Date: Mon, 24 Jan 2011 19:45:18 -0800
+Message-Id: <1295927118-27591-5-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.7.4.rc2.3.g60a2e
 In-Reply-To: <1295927118-27591-1-git-send-email-sboyd@codeaurora.org>
 References: <1295927118-27591-1-git-send-email-sboyd@codeaurora.org>
@@ -22,200 +22,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove dead code and push out clock-7x30.h and clock-pcom.h to
-where they are actually used.
+Support the CE_CLK and CODEC_SSBI_CLK. Also add support for uart,
+and i2c clocks on targets which support proc_comm clocks.
 
 Reviewed-by: Saravana Kannan <skannan@codeaurora.org>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/mach-msm/board-msm8x60.c   |    5 +---
- arch/arm/mach-msm/clock-pcom.c      |    1 +
- arch/arm/mach-msm/clock.c           |   21 ++--------------
- arch/arm/mach-msm/clock.h           |   45 -----------------------------------
- arch/arm/mach-msm/devices-msm7x30.c |    1 +
- arch/arm/mach-msm/devices-qsd8x50.c |    1 +
- 6 files changed, 7 insertions(+), 67 deletions(-)
+ arch/arm/mach-msm/clock-pcom.h      |    4 +++-
+ arch/arm/mach-msm/devices-msm7x30.c |    2 ++
+ arch/arm/mach-msm/devices-qsd8x50.c |    6 ++++++
+ 3 files changed, 11 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/mach-msm/board-msm8x60.c b/arch/arm/mach-msm/board-msm8x60.c
-index 9b5eb2b..e09c174 100644
---- a/arch/arm/mach-msm/board-msm8x60.c
-+++ b/arch/arm/mach-msm/board-msm8x60.c
-@@ -28,10 +28,7 @@
- #include <mach/board.h>
- #include <mach/msm_iomap.h>
+diff --git a/arch/arm/mach-msm/clock-pcom.h b/arch/arm/mach-msm/clock-pcom.h
+index 17d027b..2c813f1 100644
+--- a/arch/arm/mach-msm/clock-pcom.h
++++ b/arch/arm/mach-msm/clock-pcom.h
+@@ -132,8 +132,10 @@
+ #define P_CSI1_P_CLK		97
+ #define P_GSBI_CLK		98
+ #define P_GSBI_P_CLK		99
++#define P_CE_CLK		100 /* Crypto engine */
++#define P_CODEC_SSBI_CLK	101
  
--unsigned long clk_get_max_axi_khz(void)
--{
--	return 0;
--}
-+#include "devices.h"
+-#define P_NR_CLKS		100
++#define P_NR_CLKS		102
  
- static void __init msm8x60_map_io(void)
- {
-diff --git a/arch/arm/mach-msm/clock-pcom.c b/arch/arm/mach-msm/clock-pcom.c
-index a3b4562..8c4e867 100644
---- a/arch/arm/mach-msm/clock-pcom.c
-+++ b/arch/arm/mach-msm/clock-pcom.c
-@@ -20,6 +20,7 @@
- 
- #include "proc_comm.h"
- #include "clock.h"
-+#include "clock-pcom.h"
- 
- /*
-  * glue for the proc_comm interface
-diff --git a/arch/arm/mach-msm/clock.c b/arch/arm/mach-msm/clock.c
-index 2069bfa..8f71f8d 100644
---- a/arch/arm/mach-msm/clock.c
-+++ b/arch/arm/mach-msm/clock.c
-@@ -29,6 +29,7 @@
- #include "clock.h"
- #include "proc_comm.h"
- #include "clock-7x30.h"
-+#include "clock-pcom.h"
- 
- static DEFINE_MUTEX(clocks_mutex);
- static DEFINE_SPINLOCK(clocks_lock);
-@@ -37,13 +38,6 @@ struct clk *msm_clocks;
- unsigned msm_num_clocks;
- 
- /*
-- * Bitmap of enabled clocks, excluding ACPU which is always
-- * enabled
-- */
--static DECLARE_BITMAP(clock_map_enabled, NR_CLKS);
--static DEFINE_SPINLOCK(clock_map_lock);
--
--/*
-  * Standard clock functions defined in include/linux/clk.h
-  */
- struct clk *clk_get(struct device *dev, const char *id)
-@@ -77,12 +71,8 @@ int clk_enable(struct clk *clk)
- 	unsigned long flags;
- 	spin_lock_irqsave(&clocks_lock, flags);
- 	clk->count++;
--	if (clk->count == 1) {
-+	if (clk->count == 1)
- 		clk->ops->enable(clk->id);
--		spin_lock(&clock_map_lock);
--		clock_map_enabled[BIT_WORD(clk->id)] |= BIT_MASK(clk->id);
--		spin_unlock(&clock_map_lock);
--	}
- 	spin_unlock_irqrestore(&clocks_lock, flags);
- 	return 0;
- }
-@@ -94,12 +84,8 @@ void clk_disable(struct clk *clk)
- 	spin_lock_irqsave(&clocks_lock, flags);
- 	BUG_ON(clk->count == 0);
- 	clk->count--;
--	if (clk->count == 0) {
-+	if (clk->count == 0)
- 		clk->ops->disable(clk->id);
--		spin_lock(&clock_map_lock);
--		clock_map_enabled[BIT_WORD(clk->id)] &= ~BIT_MASK(clk->id);
--		spin_unlock(&clock_map_lock);
--	}
- 	spin_unlock_irqrestore(&clocks_lock, flags);
- }
- EXPORT_SYMBOL(clk_disable);
-@@ -196,7 +182,6 @@ void __init msm_clock_init(struct clk *clock_tbl, unsigned num_clocks)
- {
- 	unsigned n;
- 
--	spin_lock_init(&clocks_lock);
- 	mutex_lock(&clocks_mutex);
- 	msm_clocks = clock_tbl;
- 	msm_num_clocks = num_clocks;
-diff --git a/arch/arm/mach-msm/clock.h b/arch/arm/mach-msm/clock.h
-index c270b55..6a0cade 100644
---- a/arch/arm/mach-msm/clock.h
-+++ b/arch/arm/mach-msm/clock.h
-@@ -20,9 +20,6 @@
- #include <linux/list.h>
- #include <mach/clk.h>
- 
--#include "clock-pcom.h"
--#include "clock-7x30.h"
--
- #define CLKFLAG_INVERT			0x00000001
- #define CLKFLAG_NOINVERT		0x00000002
- #define CLKFLAG_NONEST			0x00000004
-@@ -59,51 +56,9 @@ struct clk {
- 	struct device *dev;
- };
- 
--#define A11S_CLK_CNTL_ADDR		(MSM_CSR_BASE + 0x100)
--#define A11S_CLK_SEL_ADDR		(MSM_CSR_BASE + 0x104)
--#define A11S_VDD_SVS_PLEVEL_ADDR	(MSM_CSR_BASE + 0x124)
--
--#ifdef CONFIG_DEBUG_FS
--#define CLOCK_DBG_NAME(x) .dbg_name = x,
--#else
--#define CLOCK_DBG_NAME(x)
--#endif
--
--#define CLOCK(clk_name, clk_id, clk_dev, clk_flags) {	\
--	.name = clk_name, \
--	.id = clk_id, \
--	.flags = clk_flags, \
--	.dev = clk_dev, \
--	 CLOCK_DBG_NAME(#clk_id) \
--	}
--
- #define OFF CLKFLAG_AUTO_OFF
- #define CLK_MIN CLKFLAG_MIN
- #define CLK_MAX CLKFLAG_MAX
- #define CLK_MINMAX (CLK_MIN | CLK_MAX)
--#define NR_CLKS	P_NR_CLKS
--
--enum {
--	PLL_0 = 0,
--	PLL_1,
--	PLL_2,
--	PLL_3,
--	PLL_4,
--	PLL_5,
--	PLL_6,
--	NUM_PLL
--};
--
--enum clkvote_client {
--	CLKVOTE_ACPUCLK = 0,
--	CLKVOTE_PMQOS,
--	CLKVOTE_MAX,
--};
--
--int msm_clock_require_tcxo(unsigned long *reason, int nbits);
--int msm_clock_get_name(uint32_t id, char *name, uint32_t size);
--int ebi1_clk_set_min_rate(enum clkvote_client client, unsigned long rate);
--unsigned long clk_get_max_axi_khz(void);
- 
- #endif
--
+ struct clk_ops;
+ extern struct clk_ops clk_ops_pcom;
 diff --git a/arch/arm/mach-msm/devices-msm7x30.c b/arch/arm/mach-msm/devices-msm7x30.c
-index d4c7afc..e430fdd 100644
+index e430fdd..cd4343b 100644
 --- a/arch/arm/mach-msm/devices-msm7x30.c
 +++ b/arch/arm/mach-msm/devices-msm7x30.c
-@@ -28,6 +28,7 @@
- #include <asm/mach/flash.h>
- 
- #include "clock-pcom.h"
-+#include "clock-7x30.h"
- 
- #include <mach/mmc.h>
- 
+@@ -134,6 +134,8 @@ struct clk msm_clocks_7x30[] = {
+ 	CLK_PCOM("adsp_clk",	ADSP_CLK,	NULL, 0),
+ 	CLK_PCOM("cam_m_clk",	CAM_M_CLK,	NULL, 0),
+ 	CLK_PCOM("camif_pad_pclk",	CAMIF_PAD_P_CLK,	NULL, OFF),
++	CLK_PCOM("ce_clk",	CE_CLK,	NULL, 0),
++	CLK_PCOM("codec_ssbi_clk",	CODEC_SSBI_CLK,	NULL, 0),
+ 	CLK_PCOM("ebi1_clk",	EBI1_CLK,	NULL, CLK_MIN),
+ 	CLK_PCOM("ecodec_clk",	ECODEC_CLK,	NULL, 0),
+ 	CLK_PCOM("emdh_clk",	EMDH_CLK,	NULL, OFF | CLK_MINMAX),
 diff --git a/arch/arm/mach-msm/devices-qsd8x50.c b/arch/arm/mach-msm/devices-qsd8x50.c
-index c9fa655..c5dad8f 100644
+index c5dad8f..bd545f9 100644
 --- a/arch/arm/mach-msm/devices-qsd8x50.c
 +++ b/arch/arm/mach-msm/devices-qsd8x50.c
-@@ -27,6 +27,7 @@
- #include <asm/mach/flash.h>
+@@ -316,12 +316,14 @@ int __init msm_add_sdcc(unsigned int controller,
  
- #include <mach/mmc.h>
-+#include "clock-pcom.h"
- 
- static struct resource resources_uart3[] = {
- 	{
+ struct clk msm_clocks_8x50[] = {
+ 	CLK_PCOM("adm_clk",	ADM_CLK,	NULL, 0),
++	CLK_PCOM("ce_clk",	CE_CLK,		NULL, 0),
+ 	CLK_PCOM("ebi1_clk",	EBI1_CLK,	NULL, CLK_MIN),
+ 	CLK_PCOM("ebi2_clk",	EBI2_CLK,	NULL, 0),
+ 	CLK_PCOM("ecodec_clk",	ECODEC_CLK,	NULL, 0),
+ 	CLK_PCOM("emdh_clk",	EMDH_CLK,	NULL, OFF | CLK_MINMAX),
+ 	CLK_PCOM("gp_clk",	GP_CLK,		NULL, 0),
+ 	CLK_PCOM("grp_clk",	GRP_3D_CLK,	NULL, 0),
++	CLK_PCOM("i2c_clk",	I2C_CLK,	NULL, 0),
+ 	CLK_PCOM("icodec_rx_clk",	ICODEC_RX_CLK,	NULL, 0),
+ 	CLK_PCOM("icodec_tx_clk",	ICODEC_TX_CLK,	NULL, 0),
+ 	CLK_PCOM("imem_clk",	IMEM_CLK,	NULL, OFF),
+@@ -347,7 +349,11 @@ struct clk msm_clocks_8x50[] = {
+ 	CLK_PCOM("tsif_ref_clk",	TSIF_REF_CLK,	NULL, 0),
+ 	CLK_PCOM("tv_dac_clk",	TV_DAC_CLK,	NULL, 0),
+ 	CLK_PCOM("tv_enc_clk",	TV_ENC_CLK,	NULL, 0),
++	CLK_PCOM("uart_clk",	UART1_CLK,	NULL, OFF),
++	CLK_PCOM("uart_clk",	UART2_CLK,	NULL, 0),
+ 	CLK_PCOM("uart_clk",	UART3_CLK,	&msm_device_uart3.dev, OFF),
++	CLK_PCOM("uartdm_clk",	UART1DM_CLK,	NULL, OFF),
++	CLK_PCOM("uartdm_clk",	UART2DM_CLK,	NULL, 0),
+ 	CLK_PCOM("usb_hs_clk",	USB_HS_CLK,	NULL, OFF),
+ 	CLK_PCOM("usb_hs_pclk",	USB_HS_P_CLK,	NULL, OFF),
+ 	CLK_PCOM("usb_otg_clk",	USB_OTG_CLK,	NULL, 0),
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
