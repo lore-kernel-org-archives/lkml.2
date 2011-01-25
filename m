@@ -1,138 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371Ab1AYLcz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 06:32:55 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:55051 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752973Ab1AYLax (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 06:30:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=vryxbx2CTiGjDSYan9SY9kj+9vIFJ2Gk3j99DrCPW/Di/lnoHqY3gk4Y+fGZjS+NHv
-         6XbtFum9FVLoPqncq4Hf3ew9rbf/wcLxx0atVO1ae3DYz1H3WyTNSRCICeymRLiAf/K1
-         tn2G3qIUX9q8/e3eyKXu6GA79ShHfkhYbV1L8=
-From: Marek Belisko <marek.belisko@open-nandra.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH resend 03/12] staging: ft1000: Fix coding style in check_usb_db() function.
-Date: Tue, 25 Jan 2011 12:31:14 +0100
-Message-Id: <1295955083-11086-3-git-send-email-marek.belisko@open-nandra.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1295955083-11086-1-git-send-email-marek.belisko@open-nandra.com>
-References: <1295955083-11086-1-git-send-email-marek.belisko@open-nandra.com>
+	id S1752693Ab1AYLjW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 06:39:22 -0500
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:49327 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751650Ab1AYLjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 06:39:21 -0500
+Message-ID: <4D3EB66C.4090006@kernel.dk>
+Date: Tue, 25 Jan 2011 12:39:24 +0100
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: "Darrick J. Wong" <djwong@us.ibm.com>, Vivek Goyal <vgoyal@redhat.com>,
+        tytso@mit.edu, shli@kernel.org, neilb@suse.de,
+        adilger.kernel@dilger.ca, jack@suse.cz, snitzer@redhat.com,
+        linux-kernel@vger.kernel.org, kmannth@us.ibm.com, cmm@us.ibm.com,
+        linux-ext4@vger.kernel.org, rwheeler@redhat.com, hch@lst.de,
+        josef@redhat.com
+Subject: Re: [PATCH 3/3] block: reimplement FLUSH/FUA to support merge
+References: <1295625598-15203-1-git-send-email-tj@kernel.org> <1295625598-15203-4-git-send-email-tj@kernel.org> <20110121185617.GI12072@redhat.com> <20110123102526.GA23121@htj.dyndns.org> <20110124203155.GA32261@tux1.beaverton.ibm.com> <20110125102128.GO27510@htj.dyndns.org>
+In-Reply-To: <20110125102128.GO27510@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
----
- .../staging/ft1000/ft1000-usb/ft1000_download.c    |   87 +++++++++----------
- 1 files changed, 41 insertions(+), 46 deletions(-)
+On 2011-01-25 11:21, Tejun Heo wrote:
+> Hello, Darrick.
+> 
+> On Mon, Jan 24, 2011 at 12:31:55PM -0800, Darrick J. Wong wrote:
+>>> So, I think it's better to start with something simple and improve it
+>>> with actual testing.  If the current simple implementation can match
+>>> Darrick's previous numbers, let's first settle the mechanisms.  We can
+>>
+>> Yep, the fsync-happy numbers more or less match... at least for 2.6.37:
+>> http://tinyurl.com/4q2xeao
+> 
+> Good to hear.  Thanks for the detailed testing.
+> 
+>> I'll give 2.6.38-rc2 a try later, though -rc1 didn't boot for me, so these
+>> numbers are based on a backport to .37. :(
+> 
+> Well, there hasn' been any change in the area during the merge window
+> anyway, so I think testing on 2.6.37 should be fine.
+> 
+>>> I don't really think we should design the whole thing around broken
+>>> devices which incorrectly report writeback cache when it need not.
+>>> The correct place to work around that is during device identification
+>>> not in the flush logic.
+>>
+>> elm3a4_sas and elm3c71_extsas advertise writeback cache yet the
+>> flush completion times are suspiciously low.  I suppose it could be
+>> useful to disable flushes to squeeze out that last bit of
+>> performance, though I don't know how one goes about querying the
+>> disk array to learn if there's a battery behind the cache.  I guess
+>> the current mechanism (admin knob that picks a safe default) is good
+>> enough.
+> 
+> Yeap, that or a blacklist of devices which lie.
+> 
+> Jens, what do you think?  If you don't object, let's put this through
+> linux-next.
 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
-index edeabff..30501f5 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
-@@ -125,54 +125,49 @@ struct dsp_image_info {
- //---------------------------------------------------------------------------
- static u32 check_usb_db (struct ft1000_device *ft1000dev)
- {
--   int               loopcnt;
--   u16            temp;
--   u32             status, ret_val = HANDSHAKE_MAG_TIMEOUT_VALUE;
--
--   loopcnt = 0;
--   while (loopcnt < 10)
--   {
--
--      status = ft1000_read_register (ft1000dev, &temp, FT1000_REG_DOORBELL);
--      DEBUG("check_usb_db: read FT1000_REG_DOORBELL value is %x\n", temp);
--      if (temp & 0x0080)
--      {
--           DEBUG("FT1000:Got checkusb doorbell\n");
--           status = ft1000_write_register (ft1000dev, 0x0080, FT1000_REG_DOORBELL);
--           status = ft1000_write_register (ft1000dev, 0x0100, FT1000_REG_DOORBELL);
--           status = ft1000_write_register (ft1000dev,  0x8000, FT1000_REG_DOORBELL);
--           break;
--      }
--      else
--      {
--           loopcnt++;
--           msleep (10);
--      }
--
--   } //end of while
--
--
--   loopcnt = 0;
--   while (loopcnt < 20)
--   {
--
--      status = ft1000_read_register (ft1000dev, &temp, FT1000_REG_DOORBELL);
--      DEBUG("FT1000:check_usb_db:Doorbell = 0x%x\n", temp);
--      if (temp & 0x8000)
--      {
--         loopcnt++;
--         msleep (10);
--      }
--      else
--      {
--         DEBUG("check_usb_db: door bell is cleared, return 0\n");
--	ret_val = 0;
--	break;
--      }
--   }
-+	int loopcnt;
-+	u16 temp;
-+	u32 status, ret_val = HANDSHAKE_MAG_TIMEOUT_VALUE;
-+
-+	loopcnt = 0;
-+	while (loopcnt < 10) {
-+
-+		status = ft1000_read_register(ft1000dev, &temp,
-+						FT1000_REG_DOORBELL);
-+		DEBUG("check_usb_db: read FT1000_REG_DOORBELL value is %x\n",
-+			temp);
-+		if (temp & 0x0080) {
-+			DEBUG("FT1000:Got checkusb doorbell\n");
-+			status = ft1000_write_register(ft1000dev, 0x0080,
-+							FT1000_REG_DOORBELL);
-+			status = ft1000_write_register(ft1000dev, 0x0100,
-+							FT1000_REG_DOORBELL);
-+			status = ft1000_write_register(ft1000dev,  0x8000,
-+							FT1000_REG_DOORBELL);
-+			break;
-+		} else {
-+			loopcnt++;
-+			msleep(10);
-+		}
-+	}
-+
-+	loopcnt = 0;
-+	while (loopcnt < 20) {
-+
-+		status = ft1000_read_register(ft1000dev, &temp,
-+						FT1000_REG_DOORBELL);
-+		DEBUG("FT1000:check_usb_db:Doorbell = 0x%x\n", temp);
-+		if (temp & 0x8000) {
-+			loopcnt++;
-+			msleep(10);
-+		} else {
-+			DEBUG("check_usb_db: door bell is cleared,return 0\n");
-+			ret_val = 0;
-+			break;
-+		}
-+	}
- 
- 	return ret_val;
--
- }
- 
- //---------------------------------------------------------------------------
+I like the approach, I'll queue it up for 2.6.39.
+
 -- 
-1.7.1
+Jens Axboe
 
