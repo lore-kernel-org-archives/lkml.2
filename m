@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810Ab1AYQuP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 11:50:15 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:60554 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752025Ab1AYQuN (ORCPT
+	id S1752829Ab1AYQvX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 11:51:23 -0500
+Received: from casper.infradead.org ([85.118.1.10]:43582 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752596Ab1AYQvW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 11:50:13 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=JYJ70XQkfLfaBRATdmts+Q8g6xdTeDu1hbYB/JXMws0tc+6up5vKw9gXij1Co/XoCQ
-         lY5L9L9KZz1ECtLxoUKWLrU+W3aC3nMCl1R6ncXNtfmDR7+7RQSGHSov4mAFtML3UNuz
-         eQdzPFuNbB3vEwWyp3djKDGdqtFiIC8/gfydU=
-Date: Tue, 25 Jan 2011 08:50:06 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Todd Fischer <todd.fischer@ridgerun.com>
-Cc: Tejun Heo <tj@kernel.org>, Dan Carpenter <error27@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH 10/32] input/tps6507x-ts: use system_wq instead of
- dedicated workqueue
-Message-ID: <20110125165005.GB19701@core.coreip.homeip.net>
-References: <1294062595-30097-1-git-send-email-tj@kernel.org>
- <1294062595-30097-11-git-send-email-tj@kernel.org>
- <20110103143926.GX1886@bicker>
- <4D21FAA3.8030505@ridgerun.com>
- <20110125141942.GA27510@htj.dyndns.org>
- <4D3EF6B9.6080608@ridgerun.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D3EF6B9.6080608@ridgerun.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 25 Jan 2011 11:51:22 -0500
+Subject: Re: [PATCH 01/18] move do_timer() from kernel/timer.c into
+ kernel/time/timekeeping.c
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: john stultz <johnstul@us.ibm.com>, Torben Hohn <torbenh@gmx.de>,
+        LKML <linux-kernel@vger.kernel.org>, hch@infradead.org,
+        yong.zhang0@gmail.com
+In-Reply-To: <1295951677.28776.489.camel@laptop>
+References: <1295651224-29823-1-git-send-email-torbenh@gmx.de>
+	 <1295651224-29823-2-git-send-email-torbenh@gmx.de>
+	 <1295901169.4845.29.camel@work-vm>
+	 <alpine.LFD.2.00.1101242254420.31804@localhost6.localdomain6>
+	 <1295907672.2274.44.camel@twins>
+	 <alpine.LFD.2.00.1101242344090.31804@localhost6.localdomain6>
+	 <1295946514.28776.476.camel@laptop>  <1295951677.28776.489.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 25 Jan 2011 17:51:59 +0100
+Message-ID: <1295974319.28776.1070.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 09:13:45AM -0700, Todd Fischer wrote:
-> On 01/25/2011 07:19 AM, Tejun Heo wrote:
-> >Shall I apply the patch?
-> >Thanks
-> Yes, apply the patch.  I am not sure of the syntax for attaching my
-> sign off.  Hope this is okay.
-> 
-> Todd
-> 
-> Signed-off-by: Todd Fischer<todd.fischer@ridgerun.com>
-> 
+On Tue, 2011-01-25 at 11:34 +0100, Peter Zijlstra wrote:
 
-That should be Acked-by since you are not passing the patch along.
+> Something like the (completely untested) below would do I guess:
 
-Fine with the as well.
+> @@ -8172,6 +8180,8 @@ void __init sched_init(void)
+>  	init_idle(current, smp_processor_id());
+>  
+>  	calc_load_update = jiffies + LOAD_FREQ;
+> +	global_load_timer.slack = 0;
+> +	mod_timer(&global_load_timer, calc_load_update + 10);
+>  
+>  	/*
+>  	 * During early bootup we pretend to be a normal task:
 
-Thanks.
-
--- 
-Dmitry
+OK, so calling mod_timer() before init_timers() is _not_ a good idea ;-)
