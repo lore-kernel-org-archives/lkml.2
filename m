@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017Ab1AYTlQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 14:41:16 -0500
-Received: from pfepb.post.tele.dk ([195.41.46.236]:43347 "EHLO
-	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751827Ab1AYTlP (ORCPT
+	id S1753086Ab1AYTnN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 14:43:13 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:38410 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828Ab1AYTnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 14:41:15 -0500
-Date: Tue, 25 Jan 2011 20:41:12 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Subject: Re: [PATCH 00/25] mm: Preemptibility -v7
-Message-ID: <20110125194112.GA31419@merkur.ravnborg.org>
-References: <20110125173111.720927511@chello.nl> <20110125183240.GA31346@merkur.ravnborg.org> <1295983733.28776.1072.camel@laptop>
+	Tue, 25 Jan 2011 14:43:12 -0500
+Date: Tue, 25 Jan 2011 12:43:05 -0700
+From: Eric B Munson <emunson@mgebm.net>
+To: Anton Blanchard <anton@samba.org>
+Cc: dwg@au1.ibm.com, mel@csn.ul.ie, akpm@linux-foundation.org,
+        hughd@google.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] hugepage: Protect region tracking lists with its
+ own spinlock
+Message-ID: <20110125194305.GA3041@mgebm.net>
+References: <20110125143226.37532ea2@kryten>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cWoXeonUoKmBZSoM"
 Content-Disposition: inline
-In-Reply-To: <1295983733.28776.1072.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110125143226.37532ea2@kryten>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 08:28:53PM +0100, Peter Zijlstra wrote:
-> On Tue, 2011-01-25 at 19:32 +0100, Sam Ravnborg wrote:
-> 
-> > Foregive me my ignorance..
-> > Why is this relevant for sparc64 but not for sparc32?
-> > 
-> > A quick grep showed up only this in sparc32 specific files:
-> > 
-> > mm/init_32.c:DEFINE_PER_CPU(struct mmu_gather, mmu_gathers);
-> > 
-> > Maybe this is just something sparc32 does not support?
-> 
-> sparc32 uses include/asm-generic/tlb.h, whereas sparc64 implements its
-> own variant.
 
-Ahh, thanks!
+--cWoXeonUoKmBZSoM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	Sam
+On Tue, 25 Jan 2011, Anton Blanchard wrote:
+
+>=20
+> In preparation for creating a hash of spinlocks to replace the global
+> hugetlb_instantiation_mutex, protect the region tracking code with
+> its own spinlock.
+>=20
+> Signed-off-by: Anton Blanchard <anton@samba.org>=20
+
+Reviewed-by: Eric B Munson <emunson@mgebm.net>
+
+--cWoXeonUoKmBZSoM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNPyfJAAoJEH65iIruGRnNwLQH/17T2WJC8w2z70KCfhHpNS1K
+5HoO+DTOw+a+j4tJ2STov2nPhv9g8L20dDuPq24EPBVbGuVSAbUXUSE4a44B2Is6
+thYdwq86uhQDJtaO/EWjW6ZgwxHjl1umAtKYE0tSyxoVQns5eKZw+qPH1x6ivuBn
+cTQKtvqNihul+avFuuAXR6EWA9pknAJlqR94ns4oH9lGDnd8rfAhGYT6ea9ETgKH
+UA2OC9eggYa7w7MnVrBao38n5QKVMX9oNXzmHe4WAHqa9xtY8HdR5fvLmm3+yOo0
+/Bom28ZI34HYPvKQPQv7/gqpBjpCazn58kB/5pLtxFSm2o5lcZfy/G6DbOBGwYo=
+=aOOG
+-----END PGP SIGNATURE-----
+
+--cWoXeonUoKmBZSoM--
