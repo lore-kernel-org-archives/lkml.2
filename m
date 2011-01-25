@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683Ab1AYNve (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 08:51:34 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46257 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753582Ab1AYNvc (ORCPT
+	id S1753695Ab1AYNxh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 08:53:37 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:56177 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753600Ab1AYNxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 08:51:32 -0500
+	Tue, 25 Jan 2011 08:53:34 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:content-transfer-encoding
          :in-reply-to:user-agent;
-        b=JgbWZZAkweoAEPeLauDYcJ58/oA8YZ47ZYL37OEXVpRcqj37t4paRMjrCMv6w7emN/
-         y+MNTI0kiaD37n0vbnLWONTI7d2wTATnzSJ/ogSIVBGOpsqTqu1RnI0W0kvnKGjcvgC8
-         ztJUDT+SydCLnY8avuphyU2wLTktu1ivWHneU=
-Date: Tue, 25 Jan 2011 15:51:22 +0200
+        b=ThtyHYMIB0sJZOEnM+iipxvPT0KbBeWfAN12ipu12xoBtiATXQUa3ydk7jnL4DnVIi
+         +eehFRNbG/MLzyC26zbkBq9UB7qNtnixXGH/M8oC0ffP3WMCvkZZhV56rqXIDEl4P7N5
+         GVIeFGpp+YqXYFM8riZ30SBkHjmFKH4/2GTdA=
+Date: Tue, 25 Jan 2011 15:53:26 +0200
 From: "Ahmed S. Darwish" <darwish.07@gmail.com>
 To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@redhat.com>, X86-ML <x86@kernel.org>
@@ -24,11 +24,12 @@ Cc: Tony Luck <tony.luck@intel.com>, Dave Jones <davej@redhat.com>,
         Randy Dunlap <rdunlap@xenotime.net>,
         Willy Tarreau <wtarreau@hera.kernel.org>, Willy Tarreau <w@1wt.eu>,
         Dirk Hohndel <hohndel@infradead.org>, Dirk.Hohndel@intel.com,
+        Simon Kagstrom <simon.kagstrom@netinsight.net>,
         IDE-ML <linux-ide@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -next 1/2][RFC] x86: Saveoops: Switch to real-mode and call
-	BIOS
-Message-ID: <20110125135122.GB10051@laptop>
+Subject: [PATCH -next 2/2][RFC] x86: Saveoops: Reserve low memory and
+	register code
+Message-ID: <20110125135326.GC10051@laptop>
 References: <20110125134748.GA10051@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -41,515 +42,340 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-We get called here upon panic()s to save the kernel log buffer.
+Using the x86 memblock interface, reserve below 1-Mbyte low memory areas
+for the Saveoops LongMode -> RealMode switch code, ring buffer, and stack.
+All the low memory areas are dynamically allocated and reserved, giving
+memblock enough flexibility to choose the best available areas possible.
 
-First, switch from 64-bit long mode to 16-bit real mode. Afterwards, save the
-log buffer to disk using extended INT 0x13 BIOS services. The user has given
-us an absolute LBA disk address to save the log buffer to.
+To trigger Saveoops on panic(), it's registered using the kmsg_dump hooks.
+That interface is quite racy for our goals, but it's quickly used now to
+prototype the code (check the XXX mark for details.)
 
-By x86 design, this code is mandated to run on a single identity-mapped page.
-
-- How to initialize the disk hardware to its POST state (thus making the
-  BIOS code work reliably) while keeping system RAM unmodified?
-
-- Is it guaranteed that '0x80' will always be the boot disk drive number?
-  If not, we need to be passed the boot drive number from the bootloader.
+Once Saveoops code is triggered, it identity maps the first 2 MBytes (the
+switch code disables paging), copy the log buffer to its reserved 8086-
+accessible area, and jumps to the switch code (PATCH #1.)
 
 Signed-off-by: Ahmed S. Darwish <darwish.07@gmail.com>
 ---
 
- arch/x86/kernel/saveoops-rmode.S |  483 ++++++++++++++++++++++++++++++++++++++
- 1 files changed, 483 insertions(+), 0 deletions(-)
+ arch/x86/kernel/saveoops.c      |  219 +++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/setup.c         |    9 ++
+ arch/x86/include/asm/saveoops.h |   15 +++
+ arch/x86/kernel/Makefile        |    3 +
+ lib/Kconfig.debug               |   15 +++
+ 5 files changed, 261 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/saveoops-rmode.S b/arch/x86/kernel/saveoops-rmode.S
+diff --git a/arch/x86/kernel/saveoops.c b/arch/x86/kernel/saveoops.c
 new file mode 100644
-index 0000000..6e07112
+index 0000000..f48fc0a
 --- /dev/null
-+++ b/arch/x86/kernel/saveoops-rmode.S
-@@ -0,0 +1,483 @@
++++ b/arch/x86/kernel/saveoops.c
+@@ -0,0 +1,219 @@
 +/* PROTOTYPE - PROTOTYPE - PROTOTYPE - PROTOTYPE - PROTOTYPE - PROTOTYPE */
 +
 +/*
-+ * Saveoops LongMode -> RealMode switch
++ * SAVEOOPS -- Save kernel log buffer to disk upon panic()
 + *
-+ * Don't come here with any unfinished business at hand, there's no return.
-+ * After writing the log buffer to disk, we just halt.
++ * To safely access disk in situations like very early boot or where the
++ * disk access code itself is buggy, we use BIOS INT13h extended services.
++ * To access such services, switch to 8086 real-mode first.
 + */
 +
-+#include <linux/linkage.h>
++#include <linux/kernel.h>
++#include <linux/compiler.h>
++#include <linux/log2.h>
++#include <linux/time.h>
++#include <linux/kmsg_dump.h>
++#include <linux/memblock.h>
++#include <linux/sched.h>
 +
-+#include <asm/processor-flags.h>
-+#include <asm/msr-index.h>
-+#include <asm/pgtable_types.h>
-+#include <asm/segment.h>
++#include <asm/page.h>
++#include <asm/pgtable.h>
++#include <asm/tlbflush.h>
 +#include <asm/saveoops.h>
 +
 +/*
-+ * Notes:
-+ * - Avoid using relocatable symbols: we run from a different place than
-+ *   where we're originally linked to. Use absolute addresses
-+ * - Run this from an identity page since we disable paging
-+ * - Dynamic values are used for all x86 table bases to let this code run
-+ *   from *any* memory region below 1-Mbyte
++ * We can only access the first MByte in real mode, thus allocate
++ * low-memory areas for the ring buffer, and rmode code and stack.
 + */
-+	.code64
-+ENTRY(saveoops_start)
-+	/*
-+	 * Switch to 32bit-compatibility mode using a L=0 code segment
-+	 */
-+
-+	cli
-+
-+	/* Permanently store passed parameters */
-+	movq	%rdi, %rbp
-+	movl	%esi, (ringbuf_addr - saveoops_start)(%ebp)
-+	movl	%edx, (rstack_base - saveoops_start)(%ebp)
-+	movq	%rcx, (disk_sector - saveoops_start)(%ebp)
-+	movl	%r8d, (ringbuf_len - saveoops_start)(%ebp)
-+
-+	/* Dynamically set the 32bit-compat. GDTR base */
-+	leaq	(lmode32_gdt - saveoops_start)(%ebp), %rax
-+	movq	%rax, (lmode32_gdt + 2 - saveoops_start)(%ebp)
-+
-+	/* Dynamically set the 32bit farpointer base */
-+	leal	(compat32 - saveoops_start)(%ebp), %eax
-+	movl	%eax, (lmode32_farpointer - saveoops_start)(%ebp)
-+
-+	lgdt	(lmode32_gdt - saveoops_start)(%ebp)
-+	ljmpl	*(lmode32_farpointer - saveoops_start)(%ebp)	# addr32
-+
-+	.code32
-+compat32:
-+	/*
-+	 * 32bit-compatibility Long Mode, using a L=0 %cs
-+	 */
-+
-+	movw	$__KERNEL_DS, %ax
-+	movw	%ax, %ds
-+	movw	%ax, %es
-+	movw	%ax, %ss
-+
-+	/* 'Deactivate' long mode: disable paging */
-+	movl	%cr0, %eax
-+	andl    $~X86_CR0_PG, %eax
-+	movl    %eax, %cr0
-+
-+	/*
-+	 * Prepare identity maps for the first 2Mbytes. PAE is already
-+	 * enabled from the original pmode -> lmode transition.
-+	 *
-+	 * Reuse head.S page tables instead of creating new ones. Such
-+	 * early tables are in fact already reused by the newer direct
-+	 * mapping tables, but since paging is now disabled (and we're
-+	 * not returning back), hopefully nothing will blow up.
-+	 */
-+
-+	/*
-+	 * Pick a table for the PAE Page Directory (PD)
-+	 */
-+
-+	.equ	level2_pae_ident_pgt, (level2_ident_pgt - __START_KERNEL_map)
-+	.equ	level2_entry_count, 512
-+	.equ	level2_entry_len, 8
-+
-+	xorl	%eax, %eax
-+	movl	$level2_pae_ident_pgt, %edi
-+	movl    $((level2_entry_count * level2_entry_len) / 4), %ecx
-+	rep	stosl
-+
-+	movl	$(0 + __PAGE_KERNEL_IDENT_LARGE_EXEC), level2_pae_ident_pgt
-+
-+	/*
-+	 * Pick a table for for the PAE Page Directory Pointer (PDP)
-+	 */
-+
-+	.equ	level3_pae_ident_pgt, (level2_spare_pgt - __START_KERNEL_map)
-+	.equ	level3_entry_count, 4
-+	.equ	level3_entry_len, 8
-+
-+	xorl	%eax, %eax
-+	movl	$level3_pae_ident_pgt, %edi
-+	movl    $((level3_entry_count * level3_entry_len) / 4), %ecx
-+	rep	stosl
-+
-+	movl	$(level2_pae_ident_pgt + _PAGE_PRESENT), level3_pae_ident_pgt
-+
-+	movl	$level3_pae_ident_pgt, %eax
-+	movl    %eax, %cr3
-+
-+	/* 'Disable' long mode: clear the EFER.LME bit */
-+	movl	$MSR_EFER, %ecx
-+	rdmsr
-+	btcl	$_EFER_LME, %eax
-+	wrmsr
-+
-+	/* Finally, move to 32-bit pmode: re-enabling paging */
-+	movl	%cr0, %eax
-+	orl     $X86_CR0_PG, %eax
-+	movl    %eax, %cr0
-+	jmp	pmode32			# flush prefetch
-+
-+pmode32:
-+	/*
-+	 * 32-bit protected mode, using a 2MB identity page.
-+	 */
-+
-+	/* Paging was only enabled for the lmode->pmode step */
-+	movl	%cr0, %eax
-+	andl    $~X86_CR0_PG, %eax
-+	movl    %eax, %cr0		# paging no more
-+
-+	xorl	%eax, %eax
-+	movl	%eax, %cr3		# flush the TLB
-+
-+	/* Dynamically set the GDTR base value */
-+	leal	(pmode16_gdt - saveoops_start)(%ebp), %eax
-+	movl	%eax, (pmode16_gdt + 2 - saveoops_start)(%ebp)	# base[00:32]
-+
-+	/* Dynamically set %cs and %ds bases */
-+	leal	(pmode16 - saveoops_start)(%ebp), %eax
-+	movw	%ax, (pmode16_cs + 2 - saveoops_start)(%ebp)	# base[00:15]
-+	movw	%ax, (pmode16_ds + 2 - saveoops_start)(%ebp)	# base[00:15]
-+	shrl	$16, %eax
-+	movb	%al, (pmode16_cs + 4 - saveoops_start)(%ebp)	# base[16:23]
-+	movb	%al, (pmode16_ds + 4 - saveoops_start)(%ebp)	# base[16:23]
-+
-+	/* Load the 16-bit code and data segments */
-+	lgdt	(pmode16_gdt - saveoops_start)(%ebp)
-+
-+	/* Switch to 16-bit pmode: use the setup 16-bit %cs */
-+	ljmp	$0x08, $0x0
-+
-+	/*
-+	 * - “Segment base addresses should be 16-byte aligned” --Intel
-+	 * - We also use this as the rmode code base; the 16-byte align
-+	 *   will make address caclulations much easier.
-+	 */
-+	.align 16
-+	.globl pmode16
-+	.code16
-+pmode16:
-+	/*
-+	 * We're now in the 16-bit protected mode. Since PE is still = 1,
-+	 * we can change a segment cache by loading a GDT selector value.
-+	 */
-+
-+	movw	$0x10, %ax
-+	movw	%ax, %ds
-+	movw	%ax, %es
-+	movw	%ax, %fs
-+	movw	%ax, %gs
-+	movw	%ax, %ss
-+
-+	/*
-+	 * NOTE! Due to the new %cs and %ds bases, dereference addresses
-+	 * using the from ‘label - pmode16’ from now on.
-+	 */
-+
-+	/* Dynamically build an rmode segment and offset */
-+	leal	(pmode16 - saveoops_start)(%ebp), %eax		# absolute value
-+	shrl	$4, %eax
-+	movw	%ax, rmode_farpointer - pmode16 + 2		# 8086 %cs
-+	movw	$(rmode - pmode16), rmode_farpointer - pmode16	# offset
-+
-+	/* Restore real-mode BIOS interrupt entries */
-+	lidt   (rmode_idtr - pmode16)
-+
-+	/* Switch to canonical real-mode: clear PE */
-+	movl	%cr0, %eax
-+	andl	$~X86_CR0_PE, %eax
-+	movl	%eax, %cr0
-+
-+	/* Flush prefetch; use the 8086 code segment */
-+	ljmp	*(rmode_farpointer - pmode16)
-+
-+#ifdef	SAVEOOPS_DEBUG
-+	/*
-+	 * Valid for any real-mode context where a stack exists
-+	 */
-+#define __print(msg)		;\
-+	pushfl			;\
-+	pushal			;\
-+	pushw	$(1f - pmode16) ;\
-+	call	print_string	;\
-+	.ascii	"Saveoops: "	;\
-+	.ascii	msg		;\
-+	.asciz	"      \n\r"	;\
-+1:	popal			;\
-+	popfl
-+#else
-+#define __print(msg)		;
-+#endif
-+
-+	.align 16
-+rmode:
-+	/*
-+	 * REAL Mode, at last!
-+	 *
-+	 * For further details on the BIOS interrupts used, check any
-+	 * version of the “Enhanced Disk Drive Specification”.
-+	 */
-+
-+	movw	%cs, %ax
-+	movw	%ax, %ds
-+	movw	%ax, %es
-+	movw	%ax, %fs
-+	movw	%ax, %gs
-+
-+	/* Setup passed stack area */
-+	movl	(rstack_base - pmode16), %eax
-+	shrl	$4, %eax			# 16byte-aligned
-+	movw	%ax, %ss
-+	movw	$RMODE_STACK_LEN, %sp
-+
-+	__print	("Entered real mode")
-+
-+	/*
-+	 * XXXX: We always use the boot disk drive number '0x80'. Can
-+	 * this map to a wrong device?
-+	 *
-+	 * NOTE! Do not trust the BIOS: assume it clobbered all the
-+	 * registers (relevant and not) while servicing interrupts.
-+	 */
-+
-+	/*
-+	 * Check Extensions Present (0x41) - Does the BIOS provide
-+	 * EDD int 0x13 extensions?
-+	 *
-+	 * input  %bx     - 0x55aa
-+	 * input  %dl     - drive number
-+	 * output success - carry = 0 && bx = 0xaa55 && cx bit0 = 1
-+	 * output failure - carry = 1 || any false condition above
-+	 */
-+	movb	$0x41, %ah
-+	movw	$0x55aa, %bx
-+	movb	$0x80, %dl
-+	xorw	%cx, %cx
-+	pushw	%ds
-+	int	$0x13
-+	popw	%ds
-+	__print	("Queried BIOS for EDD services")
-+	jc	no_edd1
-+	cmpw	$0xaa55, %bx
-+	jne	no_edd2
-+	shrw	$1, %cx
-+	jnc	no_edd3
-+
-+	/* Store 16byte-aligned ring buffer address in disk packet */
-+	movl	(ringbuf_addr - pmode16), %eax
-+	shrl	$4, %eax
-+	movw	%ax, (buffer_seg - pmode16)
-+	xorw	%ax, %ax
-+	movw	%ax, (buffer_offset - pmode16)
-+
-+	/* Store ringbuf number of 512-byte blocks in disk packet */
-+	movl	(ringbuf_len - pmode16), %eax
-+	movb	%al, (sectors_cnt - pmode16)
-+
-+	__print	("Prepared the Disk Address Packet")
-+
-+	/*
-+	 * Reset Hard Disks (0x00)
-+	 *
-+	 * input  %dl	  - drive number
-+	 * output success - carry = 0 && %ah (err code) = 0
-+	 * output failure - carry = 1 || %ah = error code
-+	 *
-+	 * The kernel has just paniced and left the disk controller
-+	 * in an unknown state. Reset controllers before write.
-+	 */
-+	xorw	%ax, %ax
-+	movb	$0x80, %dl
-+	pushw	%ds
-+	int	$0x13
-+	popw	%ds
-+	__print	("Disk controller reset")
-+	jc	init_err1
-+	cmpb	$0x0, %ah
-+	jne	init_err2
-+
-+	/*
-+	 * Extended Write (0x43) - Transfer data from RAM to disk
-+	 *
-+	 * input  %al     - 0 (write with verify off)
-+	 * input  %dl     - drive number
-+	 * input  %ds:si  - pointer to the Disk Address Packet
-+	 * output success - carry = 0 && %ah (err code) = 0
-+	 * output failure - carry = 1 || %ah = error code
-+	 */
-+	movb	$0x43, %ah
-+	xorb	%al, %al
-+	movb	$0x80, %dl
-+	movw	$(disk_address_packet - pmode16), %si
-+	pushw	%ds
-+	int	$0x13
-+	popw	%ds
-+	__print	("Extended write finished")
-+	jc	write_err1
-+	cmpb	$0x0, %ah
-+	jne	write_err2
-+	jmp	success
-+
-+init_err1:
-+	__print ("INT 0x13/0x0 init error 1")
-+	jmp	print_errcode
-+init_err2:
-+	__print ("INT 0x13/0x0 init error 2")
-+	jmp	print_errcode
-+write_err1:
-+	__print	("INT 0x13/0x43 write error 1")
-+	jmp	print_errcode
-+write_err2:
-+	__print	("INT 0x13/0x43 write error 2")
-+	jmp	print_errcode
-+no_edd1:
-+	__print	("Bios does not support EDD service (err=1)")
-+	jmp	print_errcode
-+no_edd2:
-+	__print	("Bios does not support EDD service (err=2)")
-+	jmp	print_errcode
-+no_edd3:
-+	__print	("Bios does not support EDD service (err=3)")
-+	jmp	print_errcode
-+success:
-+	__print	("Sucess!!!")
-+	jmp	print_errcode
-+
-+halt:	hlt
-+	jmp	halt
-+
-+#ifdef	SAVEOOPS_DEBUG
-+	/*
-+	 * Print Null-terminated string pointed by top of the stack
-+	 */
-+	.type	print_string, @function
-+print_string:
-+	popw	%si
-+1:	xorb	%bh, %bh
-+	movb	$0x0e, %ah
-+	lodsb
-+	cmpb	$0, %al
-+	je	2f
-+	int	$0x10
-+	jmp	1b
-+2:	ret
-+
-+	/*
-+	 * print %dx value in hexadecimal ascii
-+	 */
-+	.type	print_hex, @function
-+print_hex:
-+	xorb   %bh, %bh
-+	movw   $4, %cx			# 2-bytes = 4 hex digits
-+print_digit:
-+	rolw   $4, %dx			# highest-order 4 bits in front
-+	movw   $0x0e0f, %ax		# bios function 0x0e
-+	andb   %dl, %al
-+	cmpb   $0x0a, %al		# transform to ASCII
-+	jl     digit
-+	addb   $0x07, %al
-+digit:
-+	addb   $0x30, %al
-+	int    $0x10
-+	loop   print_digit
-+	ret
-+
-+	/*
-+	 * Print INT13 err code, number of sectors written
-+	 */
-+print_errcode:
-+	movb	%ah, %dl
-+	call	print_hex
-+	movw	(sectors_cnt - pmode16), %dx
-+	call	print_hex
-+	jmp	halt
-+#else
-+print_errcode:
-+	jmp	halt
-+#endif
-+
++static phys_addr_t ring_buf;
++static phys_addr_t code_buf;
++static phys_addr_t rmode_stack;
 +
 +/*
-+ * Virtual data section; ‘(dyn.)’ = A dynamically-set value
++ * Below 1-Mbyte pointer to lmode->rmode switch code.
 + */
++static void (* __noreturn rmode_switch)(phys_addr_t code_buf,
++					phys_addr_t ring_buf,
++					phys_addr_t rmode_stack,
++					uint64_t disk_lba,
++					uint64_t ring_buf_len);
 +
-+	.align 16
-+lmode32_gdt:
-+	.word	lmode32_gdt_end - lmode32_gdt - 1
-+	.quad	0x0000000000000000	# base (dyn.)
-+	.word	0, 0, 0			# padding
-+lmode32_cs:
-+	.word	0xffff			# limit
-+	.word	0x0000			# base
-+	.word	0x9a00			# P=1, C=0, type=0xA (r/x)
-+	.word   0x00cf			# L=0 (compat.), D=1 (32-bit), G=1
-+lmode32_ds:
-+	.word	0xffff			# limit
-+	.word	0x0000			# base
-+	.word	0x9200			# P=1, type=0x2 (r/w)
-+	.word	0x00cf			# G=1, D=1 (32-bit)
-+lmode32_gdt_end:
++/*
++ * Absolute LBA address where the log will be saved on disk.
++ */
++static uint64_t disk_lba = CONFIG_SAVEOOPS_DISK_LBA;
 +
-+lmode32_farpointer:
-+	.long	0x00000000		# offset (dyn.)
-+	.word	lmode32_cs -lmode32_gdt # %cs selector
++/*
++ * Extended BIOS services write to disk in units of 512-byte sectors.
++ * Thus, always align the ring buffer size on a 512-byte boundary.
++ */
++#define RMODE_SEGMENT_LIMIT	0x10000UL
++#define RING_SIZE		(60UL * 1024)
++#define SAVEOOPS_HEADER		"*SAVEOOPS-WRITTEN KERNEL LOG*"
 +
-+	.align 16
-+pmode16_gdt:
-+	.word	pmode16_gdt_end - pmode16_gdt - 1
-+	.long	0x00000000		# base (dyn.)
-+	.word	0x0000			# padding
-+pmode16_cs:
-+	.word	0xffff			# limit
-+	.word	0x0000			# base (dyn.)
-+	.word	0x9a00			# P=1, DPL=00, type=0xA (execute/read)
-+	.word	0x0000			# G=0 (byte), D=0 (16-bit)
-+pmode16_ds:
-+	.word	0xffff			# limit
-+	.word	0x0000			# base (dyn.)
-+	.word	0x9200			# P=1, DPL=00, type=0x2 (read/write)
-+	.word	0x0000			# G=0 (byte), D=0 (16-bit)
-+pmode16_gdt_end:
++/*
++ * Page tables to identity map the first 2 Mbytes.
++ */
++static __aligned(PAGE_SIZE) pud_t ident_level3[PTRS_PER_PUD];
++static __aligned(PAGE_SIZE) pmd_t ident_level2[PTRS_PER_PMD];
 +
-+rmode_farpointer:
-+	.word	0x0000			# offset (dyn.)
-+	.word	0x0000			# %cs (dyn.)
++/*
++ * The lmode->rmode switching code needs to run from an identity page
++ * since it disables paging.
++ */
++static void build_identity_mappings(void)
++{
++	pgd_t *pgde;
++	pud_t *pude;
++	pmd_t *pmde;
 +
-+rmode_idtr:
-+	.equ	RIDT_BASE, 0x0		# PC architecture defined
-+	.equ	RIDT_ENTRY_SIZE, 0x4	# 8086 defined
-+	.equ	RIDT_ENTRIES, 0x100	# 8086, 286, 386+ defined
-+	.word	RIDT_ENTRIES * RIDT_ENTRY_SIZE - 1
-+	.long	RIDT_BASE
++	pmde = ident_level2;
++	set_pmd(pmde, __pmd(0 + __PAGE_KERNEL_IDENT_LARGE_EXEC));
 +
-+	/* Values passed by long-mode C code */
-+ringbuf_addr:
-+	.long	0x00000000		# 16-byte aligned, < 1-MB (dyn.)
-+ringbuf_len:
-+	.long	0x00000000		# 512-byte aligned (dyn.)
-+rstack_base:
-+	.long	0x00000000		# 16-byte aligned, < 1-MB (dyn.)
++	pude = ident_level3;
++	set_pud(pude, __pud(__pa(ident_level2) + _KERNPG_TABLE));
 +
-+	.align 16
-+disk_address_packet:			# for extended INT 0x13 services (dyn.)
-+packet_size:
-+	.byte	0x10			# in bytes
-+reserved0:
-+	.byte	0x00			# must be zero
-+sectors_cnt:
-+	.byte	0x00			# number of blocks to transfer [1 - 127]
-+reserved1:
-+	.byte	0x00			# must be zero
-+buffer_offset:
-+	.word	0x0000			# read/write buffer offset
-+buffer_seg:
-+	.word	0x0000			# read/write buffer segment
-+disk_sector:
-+	.quad	0x0000000000000000	# logical sector number (LBA)
++	pgde = init_level4_pgt;
++	set_pgd(pgde, __pgd(__pa(ident_level3) + _KERNPG_TABLE));
 +
-+ENTRY(saveoops_end)
++	__flush_tlb_all();
++}
++
++/*
++ * XXX: Our use of kmsg_dump interface is invalid. We completely halt the
++ *	machine when getting called; this means:
++ *	- other registered loggers won't have a chance to read the ring
++ *	- other CPU cores might also be accessing the disk, racing with
++ *	  BIOS code that will do the same.
++ *
++ *	Such interface is now used to get things going. A new interface
++ *	satisfying our special requirements needs to be created. A
++ *	solution is to do an rmode->lmode switch after writing to disk.
++ */
++static void saveoops_do_dump(struct kmsg_dumper *dumper,
++			     enum kmsg_dump_reason reason,
++			     const char *s1, unsigned long l1,
++			     const char *s2, unsigned long l2)
++{
++	unsigned long l1_cpy, l2_cpy, s1_start, s2_start;
++	struct timeval timestamp;
++	char *buf, *buf_orig;
++	int hdr_size;
++
++	if (reason != KMSG_DUMP_PANIC)
++		return;
++
++	do_gettimeofday(&timestamp);
++
++	buf = __va(ring_buf);
++	buf_orig = buf;
++	memset(buf, '\0', RING_SIZE);
++	buf += sprintf(buf, "%s\n", SAVEOOPS_HEADER);
++	buf += sprintf(buf, "%lu.%lu\n", timestamp.tv_sec, timestamp.tv_usec);
++
++	hdr_size = buf - buf_orig;
++	l2_cpy = min(l2, RING_SIZE - hdr_size);
++	l1_cpy = min(l1, RING_SIZE - hdr_size - l2_cpy);
++
++	s2_start = l2 - l2_cpy;
++	s1_start = l1 - l1_cpy;
++	memcpy(buf, s1 + s1_start, l1_cpy);
++	memcpy(buf + l1_cpy, s2 + s2_start, l2_cpy);
++
++	printk(KERN_EMERG "Saveoops: Saving kernel log to boot disk LBA "
++	       "address %llu\n", disk_lba);
++
++	local_irq_disable();
++	build_identity_mappings();
++	rmode_switch(code_buf, ring_buf, rmode_stack, disk_lba, RING_SIZE >> 9);
++}
++
++static struct kmsg_dumper saveoops_dumper = {
++	.dump = saveoops_do_dump,
++};
++
++/*
++ * Real-mode switch code start and end markers.
++ * @pmode16: 16-bit protected mode entry point; 8086-segments base.
++ */
++extern const char saveoops_start[];
++extern const char saveoops_end[];
++extern const char pmode16[];
++
++/*
++ * Simplify real mode segmented-addressing calculations
++ */
++#define RMODE_DATA_ALIGN	16
++
++void __init saveoops_init(void)
++{
++	unsigned int code_size, code_align;
++	int res;
++
++	if (disk_lba == -1) {
++		printk(KERN_INFO "Saveoops: No disk LBA given; will not save "
++		       "kernel log to disk upon panic.\n");
++		return;
++	}
++
++	BUILD_BUG_ON(!IS_ALIGNED(RING_SIZE, 512));
++	BUILD_BUG_ON(RING_SIZE > RMODE_SEGMENT_LIMIT);
++	BUILD_BUG_ON(RMODE_STACK_LEN > RMODE_SEGMENT_LIMIT);
++	BUG_ON((saveoops_end - pmode16) > RMODE_SEGMENT_LIMIT);
++
++	ring_buf = memblock_find_in_range(0, 1<<20, RING_SIZE, RMODE_DATA_ALIGN);
++	if (ring_buf == MEMBLOCK_ERROR) {
++		printk(KERN_ERR "Saveoops: requesting a low-memory region "
++		       "for ring buffer failed\n");
++		return;
++	}
++	memblock_x86_reserve_range(ring_buf, ring_buf + RING_SIZE,
++				   "SAVEOOPS ringbuf");
++	printk(KERN_INFO "Saveoops: Acquired [0x%llx-0x%llx] for the ring "
++	       "buffer\n", ring_buf, ring_buf + RING_SIZE);
++
++	/* The pmode->rmode switch code “MUST” be in a single page */
++	code_size = saveoops_end - saveoops_start;
++	code_align = roundup_pow_of_two(code_size);
++	code_buf = memblock_find_in_range(0, 1<<20, code_size, code_align);
++	if (code_buf == MEMBLOCK_ERROR) {
++		printk(KERN_ERR "Saveoops: requesting a low-memory region "
++		       "for mode-switching code failed\n");
++		goto fail3;
++	}
++	memblock_x86_reserve_range(code_buf, code_buf + code_size,
++				   "SAVEOOPS codebuf");
++	printk(KERN_INFO "Saveoops: Acquired [0x%llx-0x%llx] for rmode-switch "
++	       "code\n", code_buf, code_buf + code_size);
++
++	rmode_stack = memblock_find_in_range(0, 1<<20, RMODE_STACK_LEN,
++					     RMODE_DATA_ALIGN);
++	if (rmode_stack == MEMBLOCK_ERROR) {
++		printk(KERN_ERR "Saveoops: requesting a low-memory region "
++		       "for real-mode stack failed\n");
++		goto fail2;
++	}
++	memblock_x86_reserve_range(rmode_stack, rmode_stack + RMODE_STACK_LEN,
++				   "SAVEOOPS r-stack");
++	printk(KERN_INFO "Saveoops: Acquired [0x%llx-0x%llx] for rmode stack\n",
++	       rmode_stack, rmode_stack + RMODE_STACK_LEN);
++
++	res = kmsg_dump_register(&saveoops_dumper);
++	if (res) {
++		printk(KERN_ERR "Saveoops: registering kmsg dumper failed");
++		goto fail1;
++	}
++
++	memcpy(__va(code_buf), saveoops_start, code_size);
++	rmode_switch = (void *)code_buf;
++	return;
++
++fail1:
++	memblock_x86_free_range(rmode_stack, rmode_stack + RMODE_STACK_LEN);
++fail2:
++	memblock_x86_free_range(code_buf, code_buf + code_size);
++fail3:
++	memblock_x86_free_range(ring_buf, ring_buf + RING_SIZE);
++}
 +
 +/* PROTOTYPE - PROTOTYPE - PROTOTYPE - PROTOTYPE - PROTOTYPE - PROTOTYPE */
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index d3cfe26..3686df8 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -50,6 +50,9 @@
+ #include <asm/pci-direct.h>
+ #include <linux/init_ohci1394_dma.h>
+ #include <linux/kvm_para.h>
++#ifdef CONFIG_SAVEOOPS
++#include <asm/saveoops.h>
++#endif
+ 
+ #include <linux/errno.h>
+ #include <linux/kernel.h>
+@@ -925,6 +928,12 @@ void __init setup_arch(char **cmdline_p)
+ 	memblock.current_limit = get_max_mapped();
+ 	memblock_x86_fill();
+ 
++#ifdef CONFIG_SAVEOOPS
++	/* Initialize Saveoops at the earliest point possible: memblock
++	 * find_in_range is used here to reserve low-memory areas */
++	saveoops_init();
++#endif
++
+ 	/* preallocate 4k for mptable mpc */
+ 	early_reserve_e820_mpc_new();
+
+diff --git a/arch/x86/include/asm/saveoops.h b/arch/x86/include/asm/saveoops.h
+new file mode 100644
+index 0000000..d81e840
+--- /dev/null
++++ b/arch/x86/include/asm/saveoops.h
+@@ -0,0 +1,15 @@
++#ifndef _SAVEOOPS_H
++#define _SAVEOOPS_H
++
++/*
++ * Definitions shared between Saveoops C and assembly code.
++ */
++
++#define RMODE_STACK_LEN		0x1000	/* Arbitrary */
++
++#ifndef __ASSEMBLY__
++
++void __init saveoops_init(void);
++
++#endif /* !__ASSEMBLY__ */
++#endif /* _SAVEOOPS_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 34244b2..9a097f2 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -121,4 +121,7 @@ ifeq ($(CONFIG_X86_64),y)
+ 
+ 	obj-$(CONFIG_PCI_MMCONFIG)	+= mmconf-fam10h_64.o
+ 	obj-y				+= vsmp_64.o
++
++	obj-$(CONFIG_SAVEOOPS)		+= saveoops.o
++	obj-$(CONFIG_SAVEOOPS)		+= saveoops-rmode.o
+ endif
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 4a78f8c..b994791 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -231,6 +231,21 @@ config BOOTPARAM_HUNG_TASK_PANIC
+ 
+ 	  Say N if unsure.
+ 
++config SAVEOOPS
++	bool "Save kernel panics to disk using BIOS"
++	depends on X86_64
++	---help---
++	  <TO-BE-ADDED>
++
++config SAVEOOPS_DISK_LBA
++       int "Boot disk LBA offset to save panic to"
++       default -1
++       depends on SAVEOOPS
++       ---help---
++	 Use this boot disk LBA address to save the kernel log.
++	 To find a partition LBA address use: $fdisk -ul
++	 [VERY DANGEROUS] <FURTHER-INFO-TO-BE-ADDED>
++
+ config BOOTPARAM_HUNG_TASK_PANIC_VALUE
+ 	int
+ 	depends on DETECT_HUNG_TASK
 
 --
 Darwish
