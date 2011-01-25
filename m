@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752624Ab1AYHtX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 02:49:23 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:15154 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695Ab1AYHtW (ORCPT
+	id S1752487Ab1AYHtt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 02:49:49 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:11030 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499Ab1AYHts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 02:49:22 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6236"; a="71870850"
-From: David Brown <davidb@codeaurora.org>
-To: sen wang <wangchendu@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: questions about arm trustzone
-In-Reply-To: <AANLkTi=eCOiP7MrUSG4WRMN0kj_+ZWvZ=z7VYDfkshU_@mail.gmail.com>
-	(sen wang's message of "Tue, 25 Jan 2011 10:15:14 +0800")
-References: <AANLkTi=eCOiP7MrUSG4WRMN0kj_+ZWvZ=z7VYDfkshU_@mail.gmail.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-X-Hashcash: 1:20:110125:linux-arm-kernel@lists.infradead.org::k7Yl5+JnX08M1k5i:00000000000000000000000002gvn
-X-Hashcash: 1:20:110125:wangchendu@gmail.com::N3QtbISMv7FV6+7W:0000000000000000000000000000000000000000036h0
-X-Hashcash: 1:20:110125:linux-kernel@vger.kernel.org::GTJ8TPXoUKkpgaFR:0000000000000000000000000000000004iOK
-Date: Mon, 24 Jan 2011 23:49:21 -0800
-Message-ID: <8yad3nlh18e.fsf@huya.qualcomm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 25 Jan 2011 02:49:48 -0500
+Date: Tue, 25 Jan 2011 08:49:30 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Andy Walls <awalls@md.metrocast.net>
+Cc: Wolfram Sang <w.sang@pengutronix.de>, linux-i2c@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Jarod Wilson <jarod@redhat.com>, Joe Perches <joe@perches.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] drivers/staging/lirc: Remove obsolete cleanup for 
+ clientdata
+Message-ID: <20110125084930.6d87161a@endymion.delvare>
+In-Reply-To: <1295914142.2420.29.camel@localhost>
+References: <1295865880-27672-1-git-send-email-w.sang@pengutronix.de>
+	<1295865880-27672-4-git-send-email-w.sang@pengutronix.de>
+	<1295914142.2420.29.camel@localhost>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24 2011, sen wang wrote:
+On Mon, 24 Jan 2011 19:09:02 -0500, Andy Walls wrote:
+> On Mon, 2011-01-24 at 11:44 +0100, Wolfram Sang wrote:
+> > A few new i2c-drivers came into the kernel which clear the clientdata-pointer
+> > on exit or error. This is obsolete meanwhile, the core will do it. Simplify the
+> > kfree() calls after that, the pointers don't need to be checked.
+> > 
+> > Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> > Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> > Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+> > Cc: Andy Walls <awalls@md.metrocast.net>
+> 
+> Nak.
+> 
+> In a module where I plan to do more cleanup and add reference counting
+> to struct IR, IR_tx, and IR_rx objects, I'd like the explicit "NULL"s in
+> pointer checks to stay in for now.
+> 
+> Removing the explicit constant "NULL" makes searching for checks against
+> NULL pointers more difficult when auditing the code (No red syntax
+> highlighting and a /NULL search misses).
 
-> we need to build a little os in the secure mode,and run linux in the
-> normal world.but, can I use gcc to compile the special instructions like 'smc'.
-> which gcc version can work? and where can i find the example code
-> switching between the secure and normal worlds?
+I agree that Wolfram was too generous with his clean-ups this time.
+Wolfram, you should only be removing the calls to i2c_set_clientdata(x,
+NULL), not changing the logic of the code.
 
-In the 2.6.38-rc2 kernel, arch/arm/mach-msm/scm.c does this.  I don't
-think there is any other code in the kernel, yet.
-
-David
+Furthermore, lirc_zilog is currently undergoing heavy changes, I'd
+rather let Andy and Jarod work on that staging driver, and clean up
+what needs to be later.
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Jean Delvare
