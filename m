@@ -1,81 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752693Ab1AYHs3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 02:48:29 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:42958 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695Ab1AYHs2 (ORCPT
+	id S1752624Ab1AYHtX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 02:49:23 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:15154 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695Ab1AYHtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 02:48:28 -0500
-Date: Tue, 25 Jan 2011 16:48:20 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Heiko Schocher <hs@denx.de>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-fbdev@vger.kernel.org,
-        devicetree-discuss@ozlabs.org, Ben Dooks <ben@simtec.co.uk>,
-        Vincent Sanders <vince@simtec.co.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH 3/4 v4] video, sm501: add OF binding to support SM501
-Message-ID: <20110125074820.GI11673@linux-sh.org>
-References: <1291451028-22532-1-git-send-email-hs@denx.de> <1295940031-28268-1-git-send-email-hs@denx.de>
+	Tue, 25 Jan 2011 02:49:22 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6236"; a="71870850"
+From: David Brown <davidb@codeaurora.org>
+To: sen wang <wangchendu@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: questions about arm trustzone
+In-Reply-To: <AANLkTi=eCOiP7MrUSG4WRMN0kj_+ZWvZ=z7VYDfkshU_@mail.gmail.com>
+	(sen wang's message of "Tue, 25 Jan 2011 10:15:14 +0800")
+References: <AANLkTi=eCOiP7MrUSG4WRMN0kj_+ZWvZ=z7VYDfkshU_@mail.gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+X-Hashcash: 1:20:110125:linux-arm-kernel@lists.infradead.org::k7Yl5+JnX08M1k5i:00000000000000000000000002gvn
+X-Hashcash: 1:20:110125:wangchendu@gmail.com::N3QtbISMv7FV6+7W:0000000000000000000000000000000000000000036h0
+X-Hashcash: 1:20:110125:linux-kernel@vger.kernel.org::GTJ8TPXoUKkpgaFR:0000000000000000000000000000000004iOK
+Date: Mon, 24 Jan 2011 23:49:21 -0800
+Message-ID: <8yad3nlh18e.fsf@huya.qualcomm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295940031-28268-1-git-send-email-hs@denx.de>
-User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 08:20:31AM +0100, Heiko Schocher wrote:
-> @@ -1934,7 +1943,29 @@ static int __devinit sm501fb_probe(struct platform_device *pdev)
->  	}
->  
->  	if (info->pdata == NULL) {
-> -		dev_info(dev, "using default configuration data\n");
-> +		int found = 0;
-> +#if defined(CONFIG_OF)
-> +		struct device_node *np = pdev->dev.parent->of_node;
-> +		const u8 *prop;
-> +		const char *cp;
-> +		int len;
-> +
-> +		info->pdata = &sm501fb_def_pdata;
-> +		if (np) {
-> +			/* Get EDID */
-> +			cp = of_get_property(np, "mode", &len);
-> +			if (cp)
-> +				strcpy(fb_mode, cp);
-> +			prop = of_get_property(np, "edid", &len);
-> +			if (prop && len == EDID_LENGTH) {
-> +				info->edid_data = kmemdup(prop, EDID_LENGTH,
-> +							  GFP_KERNEL);
-> +				found = 1;
-> +			}
-> +		}
-> +#endif
-> +		if (!found)
-> +			dev_info(dev, "using default configuration data\n");
->  	}
->  
->  	/* probe for the presence of each panel */
+On Mon, Jan 24 2011, sen wang wrote:
 
-Starting to get a bit pedantic.. but kmemdup() tries to do a kmalloc(),
-and so can fail. Your other patches handle the info->edid_data == NULL
-case, in addition to the kfree(), but you're probably going to want to
-chomp that found assignment incase of the allocation failing and falling
-back on the default mode.
+> we need to build a little os in the secure mode,and run linux in the
+> normal world.but, can I use gcc to compile the special instructions like 'smc'.
+> which gcc version can work? and where can i find the example code
+> switching between the secure and normal worlds?
 
-You also don't really have any need to keep the EDID block around after
-probe as far as I can tell, so you should be able to rework this in to
-something more like:
+In the 2.6.38-rc2 kernel, arch/arm/mach-msm/scm.c does this.  I don't
+think there is any other code in the kernel, yet.
 
-	info->edid_data = kmemdup(..);
-	...
-	if (info->edid_data) {
-		fb_edid_to_monspecs(..);
-		kfree(info->edid_data);
-		fb_videomode_to_modelist(..);
-	}
+David
 
-	...
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
