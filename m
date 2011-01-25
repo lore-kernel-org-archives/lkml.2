@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751855Ab1AYA54 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 19:57:56 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:10366 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314Ab1AYA5z (ORCPT
+	id S1751971Ab1AYBBU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 20:01:20 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42726 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751374Ab1AYBBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 19:57:55 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6236"; a="71831451"
-From: David Brown <davidb@codeaurora.org>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 01/11] msm: Add CPU queries
-In-Reply-To: <1295915034.29639.78.camel@c-dwalke-linux.qualcomm.com> (Daniel
-	Walker's message of "Mon, 24 Jan 2011 16:23:54 -0800")
-References: <1292384961-8851-1-git-send-email-stepanm@codeaurora.org>
-	<1295468747-22796-1-git-send-email-davidb@codeaurora.org>
-	<1295468747-22796-2-git-send-email-davidb@codeaurora.org>
-	<1295914163.29639.77.camel@c-dwalke-linux.qualcomm.com>
-	<8yak4htj0lb.fsf@huya.qualcomm.com>
-	<1295915034.29639.78.camel@c-dwalke-linux.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-X-Hashcash: 1:20:110125:linux-arm-kernel@lists.infradead.org::Z+I6TKpPlJlTQEBS:00000000000000000000000001U8B
-X-Hashcash: 1:20:110125:linux-arm-msm@vger.kernel.org::4rqdxyCmHcKlavf6:000000000000000000000000000000003yep
-X-Hashcash: 1:20:110125:dwalker@codeaurora.org::CqAMXmlUwiXieyM4:0000000000000000000000000000000000000005rVT
-X-Hashcash: 1:20:110125:linux-kernel@vger.kernel.org::5WFisu01wDhAUo6k:0000000000000000000000000000000009p1h
-Date: Mon, 24 Jan 2011 16:57:54 -0800
-Message-ID: <8yay669hka5.fsf@huya.qualcomm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 24 Jan 2011 20:01:19 -0500
+Date: Mon, 24 Jan 2011 17:01:10 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mike Waychison <mikew@google.com>
+Cc: Greg KH <greg@kroah.com>, torvalds@linux-foundation.org,
+        San Mehat <san@google.com>, Aaron Durbin <adurbin@google.com>,
+        Duncan Laurie <dlaurie@google.com>, linux-kernel@vger.kernel.org,
+        Tim Hockin <thockin@google.com>
+Subject: Re: [PATCH v1 5/6] Allow prepending to the dmesg
+Message-Id: <20110124170110.d204c0e9.akpm@linux-foundation.org>
+In-Reply-To: <20110125002459.12637.56291.stgit@mike.mtv.corp.google.com>
+References: <20110125002433.12637.51091.stgit@mike.mtv.corp.google.com>
+	<20110125002459.12637.56291.stgit@mike.mtv.corp.google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24 2011, Daniel Walker wrote:
+On Mon, 24 Jan 2011 16:25:00 -0800
+Mike Waychison <mikew@google.com> wrote:
 
-> On Mon, 2011-01-24 at 16:20 -0800, David Brown wrote:
->> On Mon, Jan 24 2011, Daniel Walker wrote:
->> 
->> > On Wed, 2011-01-19 at 12:25 -0800, David Brown wrote:
->> >> +#define cpu_is_msm7x01()       0
->> >> +#define cpu_is_msm7x30()       0
->> >> +#define cpu_is_qsd8x50()       0
->> >> +#define cpu_is_msm8x60()       0
->> >
->> > Now that I look at this again, why not drop the "x" all together ?
->> 
->> That might be better for the 8x60.  The complexity is that most of the
->> MSM chips have some variants, where the CPU running Linux isn't changed,
->> but the modem CPU is different (think CDMA/UMTS).  Until 8960, that was
->> distinguished by the second letter.
->> 
->> Either way doesn't quite match reality, unfortunately.  There are
->> devices using a MSM7201 and others using a MSM7601.  As far as Linux is
->> concerned, there isn't any difference between them.  If someone wanted
->> to try and identify the device they have with the code, it could be
->> confusing for either name chosen.
->> 
->> I was planning on turning msm8x60 into msm8660, since that seems to be
->> the most common one.  Perhaps the decoder ring should be put into the
->> help text for the options so people can at least figure out which is
->> which.
->
-> Are there any of those which do , right now, have Linux support for more
-> than one variant ?
+> The next patch in this series (Memory Console driver) would like to
+> prepend firmware messages to the kernel logs.
 
-All of them, in fact.
+I went to the changelog for "Memory Console driver" to work out why it
+wants to do prepending, but it didn't tell me.
 
-MSM7201 and MSM7601 are identical as far as Linux is concerned.  Same
-goes for MSM8250 and MSM8650.  Our dev boards are a somewhat random mix
-of the two, and it doesn't matter which one you use.
+> Instead of exposing all the nitty gritty lock details of the kernel's
+> printk system to the entire kernel, expose a "prepend_to_dmesg()" that
+> attempts to rewrite the in-memory dmesg to inject pre-kernel messages.
+> 
+> This function only prepends if the start of the kernel's messages are
+> still in the ring and there is still room for messages (without losing
+> the current tail of the message log).  We determine this by checking out
+> whether the bufer has yet been cleared (indicated by a new flag:
+> buffer_has_cleared), and by checking whether the buffer is less than
+> full (which would indicate that it had wrapped).
+> 
+> If there is enough room to prepend data, we simply shift the existing
+> log contents down and copy into the buffer the tail of the prepended
+> data that fits.
+> 
+> Signed-off-by: Mike Waychison <mikew@google.com>
+> ---
+>  include/linux/printk.h |    5 ++++
+>  kernel/printk.c        |   55 +++++++++++++++++++++++++++++++++++++++++++++++-
+>  2 files changed, 59 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/printk.h b/include/linux/printk.h
+> index ee048e7..df89965 100644
+> --- a/include/linux/printk.h
+> +++ b/include/linux/printk.h
+> @@ -113,6 +113,7 @@ extern int dmesg_restrict;
+>  extern int kptr_restrict;
+>  
+>  void log_buf_kexec_setup(void);
+> +void prepend_to_dmesg(const char *buffer, size_t length);
 
-MSM8960 is a completely different chip, it just shares a similar name,
-to other chips.
+Should have the __init tag in the declaration (can fix link problems on
+weird architectures).
 
-David
+>  #else
+>  static inline __attribute__ ((format (printf, 1, 0)))
+>  int vprintk(const char *s, va_list args)
+> @@ -137,6 +138,10 @@ static inline bool printk_timed_ratelimit(unsigned long *caller_jiffies,
+>  static inline void log_buf_kexec_setup(void)
+>  {
+>  }
+> +
+> +void prepend_to_dmesg(const char *buffer, size_t length)
+> +{
+> +}
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Didn't this cause the linker to detect multiple definitions of
+prepend_to_dmesg()?
+
+Should be static inline void, or __init and not-inlined in a .c file.
+
+>  #endif
+>  
+> ...
