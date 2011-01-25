@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259Ab1AYWKz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 17:10:55 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:16313 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753113Ab1AYWKx (ORCPT
+	id S1753386Ab1AYWLN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 17:11:13 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62756 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753047Ab1AYWLL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 17:10:53 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBALvZPk1Ld/sX/2dsb2JhbAAMhAbNZ5BYgSODOHQEhRc
-X-IronPort-AV: E=Sophos;i="4.60,376,1291611600"; 
-   d="scan'208";a="89221641"
-Message-ID: <4D3F4A69.7090702@teksavvy.com>
-Date: Tue, 25 Jan 2011 17:10:49 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Tue, 25 Jan 2011 17:11:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=e2WPDKn9Ejq499OZNdYfkkUPutsSHXYn3fPS7lEQ4iS+00nPdRZTEIr1cp5yKFO81N
+         3HP7HZnQh4sX1F65l/Zh0SU2XElq9Vlfu1Inyg20+f+sVNVgPLd2Vauqe9y/85HaU3Ah
+         BXinzOwMM1dqvjHzIfFBfiMrHsKO35oIDN1LQ=
 MIME-Version: 1.0
-To: "Ahmed S. Darwish" <darwish.07@gmail.com>
-CC: James Bottomley <James.Bottomley@suse.de>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        X86-ML <x86@kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Willy Tarreau <wtarreau@hera.kernel.org>, Willy Tarreau <w@1wt.eu>,
-        Dirk Hohndel <hohndel@infradead.org>, Dirk.Hohndel@intel.com,
-        IDE-ML <linux-ide@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@infradead.org>,
-        Jeff Garzik <jgarzik@pobox.com>
-Subject: Re: [PATCH 0/2][concept RFC] x86: BIOS-save kernel log to disk	upon
- panic
-References: <20110125134748.GA10051@laptop> <20110125140948.GA26762@elte.hu> <20110125153649.GA11386@laptop> <1295971355.4955.104.camel@mulgrave.site> <20110125170522.GA16285@laptop>
-In-Reply-To: <20110125170522.GA16285@laptop>
+Reply-To: linasvepstas@gmail.com
+In-Reply-To: <4D3F4156.7010900@redhat.com>
+References: <AANLkTikhKHnR+7DskxYqWXduX4=tpfgsfL4sNYq+4QDq@mail.gmail.com>
+ <20110125174515.C1DC2183C19@magilla.sf.frob.com> <201101251921.15184.arnd@arndb.de>
+ <201101251352.03079.vapier@gentoo.org> <4D3F2AD9.8060000@redhat.com>
+ <4D3F3308.1050305@redhat.com> <4D3F4156.7010900@redhat.com>
+From: Linas Vepstas <linasvepstas@gmail.com>
+Date: Tue, 25 Jan 2011 16:10:48 -0600
+Message-ID: <AANLkTi=_sRM6k+fiKiOkbano7LCmys6Hy2Em_W3GaYx=@mail.gmail.com>
+Subject: Re: [BUG] Generic syscalls -- chmod vs. fchmodat
+To: Eric Blake <eblake@redhat.com>
+Cc: Mike Frysinger <vapier@gentoo.org>, Arnd Bergmann <arnd@arndb.de>,
+        Paul Eggert <eggert@cs.ucla.edu>, Roland McGrath <roland@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        GLIBC Devel <libc-alpha@sourceware.org>, linux-kernel@vger.kernel.org,
+        libc-ports@sourceware.org, linux-api@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-01-25 12:05 PM, Ahmed S. Darwish wrote:
+Hi,
+
+On 25 January 2011 15:32, Eric Blake <eblake@redhat.com> wrote:
 >
-> My current x86 laptop includes the very common ATA PIIX controller. 
+> 7. fchmodat(AT_FDCWD, "") must fail with ENOENT.  Apparently, the kernel
+> currently modifies ".", although point 1 says it might make more sense
+> to fail with ENOENT so that glibc doesn't have to do as much work in
+> chmod and fchmodat (if the kernel call does not change, then the burden
+> is on glibc).
 
+Interesting discussion, but I'm very embarrassed to say I started it
+due to a mis-diagnosis of a bug :-(
 
-ata_piix is just about ideal for this sort of thing.
+In fact, the current kernels *do* check for an empty string, and do so
+in order to maintain POSIX compliance, per Eric's points 5 and 7.
+See fs/namei.c in do_getname, circa line 114,  where we read:
 
-Except, don't use the BIOS to write the logs,
-but rather code/use a very simple set of polling-PIO
-functions to talk directly through the PIIX to the drive.
+ * POSIX.1 2.4: an empty pathname is invalid (ENOENT).
 
-Really really simple code to do that, and it would likely
-work with anything ata-piix, and most other non-AHCI chipsets too.
+This is backed up with code, circa line 129 ff:
 
-Not perfect, but probably good enough for a lot of scenarios.
-The old hd.c driver shows how to read/write a sector at a time,
-and that kind of code is easily converted to simply poll for completion.
+   retval = strncpy_from_user(page, filename, len);
+...
+else if (!retval)
+      retval = -ENOENT;
+   return retval;
 
-Cheers
+So an empty string will have length zero, and the ENOENT is indeed
+set.
+
+This handles cases 5 & 7.  I've no idea how any of the other cases
+work out.
+
+Note that getname() is used in a variety of places; its not just chmod,
+but also in symlinks and many others.
+
+--linas
