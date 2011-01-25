@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754030Ab1AYVO3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 16:14:29 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:47441 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753961Ab1AYVO2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 16:14:28 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=izLOLKv+P/MuKj1HXMFo3jye7fyv4BwAnvOKh4K4DaudXRYm+rZObN3xsLRblHX31k
-         yKWcNxosdEn8xVRVWloWzFJHEgBooFIR/t5rBexelIEsqGdeaTjlH0r6Cwr01rsqMA8O
-         mjHHYuU9EnKQjzDAdhZ+m8zwYEk/pNsfr1FuE=
+	id S1754047Ab1AYVVA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 16:21:00 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53578 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753919Ab1AYVU6 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 16:20:58 -0500
 MIME-Version: 1.0
-In-Reply-To: <1295864750-1238-1-git-send-email-s.neumann@raumfeld.com>
-References: <20110124101701.GE16202@n2100.arm.linux.org.uk> <1295864750-1238-1-git-send-email-s.neumann@raumfeld.com>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Wed, 26 Jan 2011 05:06:23 +0800
-Message-ID: <AANLkTinrxiHx6jX9jFzVzjq5FH-W=MLoDThAtRq2a1zZ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: pxa: fix suspend on PXA3XX
-To: Sven Neumann <s.neumann@raumfeld.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Daniel Mack <daniel@caiaq.de>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110125210153.GB19896@core.coreip.homeip.net>
+References: <20110125042016.GA7850@core.coreip.homeip.net> <4D3E5372.9010305@teksavvy.com>
+ <20110125045559.GB7850@core.coreip.homeip.net> <4D3E59CA.6070107@teksavvy.com>
+ <4D3E5A91.30207@teksavvy.com> <20110125053117.GD7850@core.coreip.homeip.net>
+ <4D3EB734.5090100@redhat.com> <20110125164803.GA19701@core.coreip.homeip.net>
+ <AANLkTi=1Mh0JrYk5itvef7O7e7pR+YKos-w56W5q4B8B@mail.gmail.com>
+ <20110125205453.GA19896@core.coreip.homeip.net> <20110125210153.GB19896@core.coreip.homeip.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 26 Jan 2011 07:20:07 +1000
+Message-ID: <AANLkTiknmVaOhvhTXC_5G3m-HDrTJCyqbjOPgnUEFZpA@mail.gmail.com>
+Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils ?
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Mark Lord <kernel@teksavvy.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org, linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-How about this instead?
+On Wed, Jan 26, 2011 at 7:01 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+>
+> BTW, another issue is that evdev's ioctl returns -EINVAL for unknown
+> ioctls so applications would have hard time figuring out whether error
+> returned because of kernel being too old or because they are trying to
+> retrieve/establish invalid mapping if they had to go only by the error
+> code.
 
-diff --git a/arch/arm/mach-pxa/pm.c b/arch/arm/mach-pxa/pm.c
-index 978e1b2..1807c9a 100644
---- a/arch/arm/mach-pxa/pm.c
-+++ b/arch/arm/mach-pxa/pm.c
-@@ -33,7 +33,7 @@ int pxa_pm_enter(suspend_state_t state)
- #endif
+So that's just another evdev interface bug.
 
- 	/* skip registers saving for standby */
--	if (state != PM_SUSPEND_STANDBY) {
-+	if (state != PM_SUSPEND_STANDBY && pxa_cpu_pm_fns->save) {
- 		pxa_cpu_pm_fns->save(sleep_save);
- 		/* before sleeping, calculate and save a checksum */
- 		for (i = 0; i < pxa_cpu_pm_fns->save_count - 1; i++)
-@@ -44,7 +44,7 @@ int pxa_pm_enter(suspend_state_t state)
- 	pxa_cpu_pm_fns->enter(state);
- 	cpu_init();
+> As far as I can see EINVAL is a proper error for unknown ioctls:
+>
+> [dtor@hammer work]$ man 2 ioctl | grep EINVAL
+>       EINVAL Request or argp is not valid.
 
--	if (state != PM_SUSPEND_STANDBY) {
-+	if (state != PM_SUSPEND_STANDBY && pxa_cpu_pm_fns->restore) {
- 		/* after sleeping, validate the checksum */
- 		for (i = 0; i < pxa_cpu_pm_fns->save_count - 1; i++)
- 			checksum += sleep_save[i];
+Yeah, there's some confusion there.
+
+The "unknown ioctl" error code is (for traditional reasons) ENOTTY,
+but yes, the EINVAL thing admittedly has a lot of legacy use too.
+
+Inside the kernel, the preferred way to say "I don't recognize that
+ioctl number" is actually ENOIOCTLCMD.  That's exactly so that various
+nested ioctl handlers can then tell the difference between "I didn't
+recognize that ioctl" and "I understand what you asked me to do, but
+your arguments were crap".
+
+vfs_ioctl() will then turn ENOIOCTLCMD to EINVAL to return to user space.
+
+                  Linus
