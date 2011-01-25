@@ -1,84 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab1AYSyf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 13:54:35 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:56067 "EHLO smtp.gentoo.org"
+	id S1753431Ab1AYS4e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 13:56:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57415 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751828Ab1AYSyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 13:54:33 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: Arnd Bergmann <arnd@arndb.de>, Paul Eggert <eggert@cs.ucla.edu>,
-        Eric Blake <ebb9@byu.net>
-Subject: Re: [BUG] Generic syscalls -- chmod vs. fchmodat
-Date: Tue, 25 Jan 2011 13:52:00 -0500
-User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.5.5; x86_64; ; )
-Cc: Roland McGrath <roland@redhat.com>, linasvepstas@gmail.com,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        GLIBC Devel <libc-alpha@sourceware.org>, linux-kernel@vger.kernel.org,
-        libc-ports@sourceware.org, linux-api@vger.kernel.org
-References: <AANLkTikhKHnR+7DskxYqWXduX4=tpfgsfL4sNYq+4QDq@mail.gmail.com> <20110125174515.C1DC2183C19@magilla.sf.frob.com> <201101251921.15184.arnd@arndb.de>
-In-Reply-To: <201101251921.15184.arnd@arndb.de>
+	id S1752478Ab1AYS4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 13:56:33 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart6083298.yfAf693vRu";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201101251352.03079.vapier@gentoo.org>
+From: Roland McGrath <roland@redhat.com>
+To: Josh Stone <jistone@redhat.com>
+X-Fcc: ~/Mail/linus
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Linux-mm <linux-mm@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 10/20] 10: uprobes: task specific information.
+In-Reply-To: Josh Stone's message of  Tuesday, 25 January 2011 10:38:15 -0800 <4D3F1897.60300@redhat.com>
+References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
+	<20101216095912.23751.63180.sendpatchset@localhost6.localdomain6>
+	<1295963775.28776.1056.camel@laptop>
+	<4D3F1897.60300@redhat.com>
+X-Shopping-List: (1) Lustrous dependent dirt relaxers
+   (2) Voluptuous dogboy socks
+   (3) Righteous burgers
+   (4) Boisterous friction obsessions
+   (5) Portuguese Compressors
+Message-Id: <20110125185544.7044218098B@magilla.sf.frob.com>
+Date: Tue, 25 Jan 2011 10:55:44 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart6083298.yfAf693vRu
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+> On 01/25/2011 05:56 AM, Peter Zijlstra wrote:
+> > Ah, I think I found it while reading patch 13, you need the pre/post_xol
+> > callbacks, can't you simply synthesize their effect into the replacement
+> > sequence?
+> > 
+> >   push %rax
+> >   mov $vaddr, %rax
+> >   $INSN
+> >   pop %rax
+> >   jmp $next_insn
+> > 
+> > like replacements would obviate the need for the pre/post callbacks and
+> > allow you to run straight through.
+> 
+> For this particular example, you'd better be sure that $INSN doesn't
+> need %rsp intact.
 
-On Tuesday, January 25, 2011 13:21:14 Arnd Bergmann wrote:
-> On Tuesday 25 January 2011 18:45:15 Roland McGrath wrote:
-> >  I know of no reason to
-> >=20
-> > think that the current treatment of the empty string was ever intended =
-at
-> > the creation of the *at interfaces.
->=20
-> I always assumed that this was done so that the *at syscalls can replace
-> both the ones that take a file descriptor (e.g. fstat) and the ones that
-> take a pathname (e.g. stat), which is sensible for the non-AT_FDCWD case,
-> although not documented in the man pages.
->=20
-> Treating the empty string special for AT_FDCWD is rather pointless, but
-> at least consistent.
+In general it is quite bad form to touch the user's stack at all for
+instrumentation purposes.  Unexpected stack usage might be what you are
+trying to debug, after all.
 
-i dont know if the gnulib peeps are on these lists, but i think their=20
-implementations of some of the *at funcs leverage the extended behavior tha=
-t=20
-is available under Linux.  or at least, i'm certain they'll have some insig=
-ht=20
-into some of these nuances.
-=2Dmike
+On x86-64 in particular, it is strictly verboten to touch the user's stack
+immediately below the SP.  In the x86-64 ABI, the 128 bytes below %rsp are
+a scratch area for leaf functions that normal compiled user code will use
+to store data that must not be clobbered.  (Normal signal handler frames
+start 128 bytes below %rsp for this reason.)
 
---nextPart6083298.yfAf693vRu
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+That's aside from the more obvious issues Josh mentioned, where the
+instruction itself is a push/pop/call/ret or uses an addressing mode
+relative to %rsp.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
 
-iQIcBAABAgAGBQJNPxvSAAoJEEFjO5/oN/WBK+sQAJwq0dJKP+rv3bXDv1qlq8BJ
-MGeRFiJrahps+qkmGYc0C3hd8QvCtwf/6NwkKD9SbViW+81eI2R087egwZ5djsUQ
-zlJLjj3A9DLuOaDqZPA7c6Y1Hhj4kbfYhmapA1hhVGaZBKbpFbzQsm4W08XeVVDk
-eqekSCRzWehf+Yrc+XrX5rOTPJDSiqlTVfoSRaBSh62vALAHZyRVsg0FzHQr1xiC
-ulh0mtym8n13UdAB9CVe49Vj/DQWP1hUb63iBmbkw6JJbZRJBr5gM6KfEjbHDaAm
-igDqF4grZXGjjHOSfI6Mm4FvBgyjyOkPQBOCcqbob6vgCIA9ZF1k28bCfDnhhWIW
-/wl2TmbBb21WpGgytqBlZjZw/vyPoT5kK9DUdbXnk4isLkpeJPWKgyeqzoqp/s9p
-kvJLT+OylPRxP7k/B18kadesAcSxFmhTqsZE2V9pnUSmegiIOPjGEsBgGroWNW7K
-YluXqd+/u0AjVin2OpOnR6rpQVBGp98vKDWncSHzs3qEsCsreVyFS9/flulRncwz
-oyikPcQBXm0hozOOClxY9pAdSL3KrCMli9s3eXcWrh4ZNMqws3ZCIbPZW//fjwu/
-4KUJqBh2P6gCoXg+oxd4enYDnXjBPUwvIyoeLsQ5rUo+Fknb22lgytxUc2N3dqLG
-Ogp+zs3CTyVFef3z3kIA
-=ZvLr
------END PGP SIGNATURE-----
-
---nextPart6083298.yfAf693vRu--
+Thanks,
+Roland
