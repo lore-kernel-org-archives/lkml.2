@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890Ab1AYMpp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 07:45:45 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36854 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752476Ab1AYMpo (ORCPT
+	id S1752910Ab1AYNEh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 08:04:37 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36351 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751281Ab1AYNEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 07:45:44 -0500
-Date: Tue, 25 Jan 2011 12:45:24 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Dave Martin <dave.martin@linaro.org>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        sen wang <wangchendu@gmail.com>, David Brown <davidb@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: questions about arm trustzone
-Message-ID: <20110125124524.GJ11507@n2100.arm.linux.org.uk>
-References: <AANLkTi=eCOiP7MrUSG4WRMN0kj_+ZWvZ=z7VYDfkshU_@mail.gmail.com> <8yad3nlh18e.fsf@huya.qualcomm.com> <AANLkTin9fSw5DdqdgCEvtdtc83LFOeA7t0OAUugVmRFD@mail.gmail.com> <20110125102652.GB11507@n2100.arm.linux.org.uk> <bb0c3855a121603232d022b4062752a6@mail.gmail.com> <AANLkTi=vZSZkN2k1gZD0F-C74b_jFWX5HhDhr7BiPhN7@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=vZSZkN2k1gZD0F-C74b_jFWX5HhDhr7BiPhN7@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 25 Jan 2011 08:04:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=gVSxnf3AzokwMnJiAExxcEU3NQF6b0tCRppMl8p8u1oM1QI6OBVzRtExo0/ml6tn80
+         8VdVZzVtM715Q57Wxa3OWUFIkj/bOV9afGjLnGaEjxp8pJdb/evRbJPidtQHLB7kxfwo
+         ZFidUU+hztm5HHT5asUh2bXLOF68vKVyMRCjA=
+From: Marek Belisko <marek.belisko@open-nandra.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Marek Belisko <marek.belisko@open-nandra.com>
+Subject: [PATCH v2 00/11] staging: ft1000: Various coding style cleanups.
+Date: Tue, 25 Jan 2011 14:04:55 +0100
+Message-Id: <1295960706-15667-1-git-send-email-marek.belisko@open-nandra.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 12:24:13PM +0000, Dave Martin wrote:
-> Avoiding this complexity is one of the motivations for using r7 for
-> the syscall number with CONFIG_EABI (instead of using the SVC comment
-> field).
+Changes from v1..v2:
+- remove patch - staging: ft1000: Use common return point
+- fix various alignment problems in patches:
+Fix coding style in get_handshake_usb() function.
+Fix coding style in get_request_type() function.
+Fix coding style in get_request_type_usb() function.
+Fix coding style in get_request_value() function.
 
-Your history is not entirely correct.
+Marek Belisko (11):
+  staging: ft1000: Remove dead code.
+  staging: ft1000: Fix coding style in check_usb_db() function.
+  staging: ft1000: Fix coding style in put_handshake() function.
+  staging: ft1000: Fix coding style in get_handshake_usb() function.
+  staging: ft1000: Fix coding style in put_handshake_usb() function.
+  staging: ft1000: Fix coding style in get_request_type() function.
+  staging: ft1000: Fix coding style in get_request_type_usb() function.
+  staging: ft1000: Fix coding style in get_request_value() function.
+  staging: ft1000: Fix coding style in put_request_value() function.
+  staging: ft1000: Fix coding style in hdr_checksum() function.
+  staging: ft1000: Fix coding style in get_handshake() function.
 
-I had the kernel side of Thumb userspace support in place long before EABI
-came along.  Thumb doesn't have a large enough comment field to store the
-Linux syscall number, so to get around that problem, I decided to use r7
-for the syscall number.  You'll find 2.4 kernels support Thumb instructions
-in userspace.
+ .../staging/ft1000/ft1000-usb/ft1000_download.c    |  487 ++++++++------------
+ 1 files changed, 204 insertions(+), 283 deletions(-)
 
-As part of the EABI switch for ARM mode - which created an incompatible
-SWI interface anyway, we decided that we could reduce data cache pollution
-by eliminating the read of the SWI instruction, so we adopted the r7
-method for ARM EABI mode.
