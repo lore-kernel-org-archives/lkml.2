@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829Ab1AYQvX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 11:51:23 -0500
-Received: from casper.infradead.org ([85.118.1.10]:43582 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752596Ab1AYQvW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 11:51:22 -0500
-Subject: Re: [PATCH 01/18] move do_timer() from kernel/timer.c into
- kernel/time/timekeeping.c
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: john stultz <johnstul@us.ibm.com>, Torben Hohn <torbenh@gmx.de>,
-        LKML <linux-kernel@vger.kernel.org>, hch@infradead.org,
-        yong.zhang0@gmail.com
-In-Reply-To: <1295951677.28776.489.camel@laptop>
-References: <1295651224-29823-1-git-send-email-torbenh@gmx.de>
-	 <1295651224-29823-2-git-send-email-torbenh@gmx.de>
-	 <1295901169.4845.29.camel@work-vm>
-	 <alpine.LFD.2.00.1101242254420.31804@localhost6.localdomain6>
-	 <1295907672.2274.44.camel@twins>
-	 <alpine.LFD.2.00.1101242344090.31804@localhost6.localdomain6>
-	 <1295946514.28776.476.camel@laptop>  <1295951677.28776.489.camel@laptop>
+	id S1752890Ab1AYQyf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 11:54:35 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:6497 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752522Ab1AYQye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 11:54:34 -0500
+X-IronPort-AV: E=Sophos;i="4.60,374,1291611600"; 
+   d="scan'208";a="12122882"
+Subject: Re: [Xen-devel] [PATCH] xen: p2m: correctly initialize partial p2m
+ leave
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Stefan Bader <stefan.bader@canonical.com>
+CC: Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D3848DF.9000906@canonical.com>
+References: <4D3848DF.9000906@canonical.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 25 Jan 2011 17:51:59 +0100
-Message-ID: <1295974319.28776.1070.camel@laptop>
-Mime-Version: 1.0
+Organization: Citrix Systems, Inc.
+Date: Tue, 25 Jan 2011 16:54:32 +0000
+Message-ID: <1295974472.14780.6579.camel@zakaz.uk.xensource.com>
+MIME-Version: 1.0
 X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-25 at 11:34 +0100, Peter Zijlstra wrote:
+Please always include an inline copy of a patch for easier
+review-by-reply, even if you also include an attachment because your
+mailer mangles patches.
 
-> Something like the (completely untested) below would do I guess:
+Anyway, I suspect the following comment is obsoleted by Jeremy's "just
+do it in place" suggestion but:
 
-> @@ -8172,6 +8180,8 @@ void __init sched_init(void)
->  	init_idle(current, smp_processor_id());
->  
->  	calc_load_update = jiffies + LOAD_FREQ;
-> +	global_load_timer.slack = 0;
-> +	mod_timer(&global_load_timer, calc_load_update + 10);
->  
->  	/*
->  	 * During early bootup we pretend to be a normal task:
+On Thu, 2011-01-20 at 14:38 +0000, Stefan Bader wrote:
+> [...]
+> +                       unsigned long **p2m = extend_brk(PAGE_SIZE, PAGE_SIZE);
 
-OK, so calling mod_timer() before init_timers() is _not_ a good idea ;-)
+I think this would need to be matched by a corresponding RESERVE_BRK of some sort.
+
+Ian.
+
+
