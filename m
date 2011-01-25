@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754101Ab1AYVg6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 16:36:58 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:39937 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752792Ab1AYVg5 (ORCPT
+	id S1754141Ab1AYVhB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 16:37:01 -0500
+Received: from 64.mail-out.ovh.net ([91.121.185.65]:60971 "HELO
+	64.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753402Ab1AYVg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 16:36:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=rqAKpzOR1Dacj8EfCfAtT5aExE8c7PeKKZm1D/8ePt779fNWdMbj7dQfpItL86TQEc
-         XXjUvdxv1kq4OWLzgyH7eF1VM5MTgM5jnDxBGGvzEYXRUI0DtBrsemIQwRee0bTtWCGu
-         6E5TAqg+bFqq6M+/hTsEWkRJsXy+A/mve6h/g=
-Message-ID: <4D3F4275.50709@garzik.org>
-Date: Tue, 25 Jan 2011 16:36:53 -0500
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	Tue, 25 Jan 2011 16:36:59 -0500
+Message-ID: <4D3F4277.20008@example.com>
+Date: Tue, 25 Jan 2011 22:36:55 +0100
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
 MIME-Version: 1.0
-To: Mike Waychison <mikew@google.com>
-CC: Greg KH <greg@kroah.com>, torvalds@linux-foundation.org,
-        San Mehat <san@google.com>, Aaron Durbin <adurbin@google.com>,
-        Duncan Laurie <dlaurie@google.com>, linux-kernel@vger.kernel.org,
-        Tim Hockin <thockin@google.com>
-Subject: Re: [PATCH v1 1/6] Add oops notification chain.
-References: <20110125002433.12637.51091.stgit@mike.mtv.corp.google.com> <20110125002439.12637.8515.stgit@mike.mtv.corp.google.com> <20110125020658.GA3481@kroah.com> <AANLkTinLoDN_6zG56J7V154jrRc-K+BzAHFO3qS_r8J0@mail.gmail.com>
-In-Reply-To: <AANLkTinLoDN_6zG56J7V154jrRc-K+BzAHFO3qS_r8J0@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: David Miller <davem@davemloft.net>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Something is wrong in your source, David
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 4789578203830841637
+X-Ovh-Remote: 79.185.215.233 (adtd233.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2011 03:01 PM, Mike Waychison wrote:
-> On Mon, Jan 24, 2011 at 6:06 PM, Greg KH<greg@kroah.com>  wrote:
->> On Mon, Jan 24, 2011 at 04:24:39PM -0800, Mike Waychison wrote:
->>> From: Aaron Durbin<adurbin@google.com>
->>>
->>> Later firmware patches in this series would like to be able to be
->>> notified whenever an oops occurs on the system, so that it can be
->>> recorded in the boot log.
->>>
->>> This patch introduces a notifier_block called "oops_notifier_list"
->>> so that drivers can register to get called whenever an Oops is
->>> triggered.
->>
->> But we already have a panic notifier list.  Why create a new one?
->> What's wrong with the existing one that doesn't work properly for you?
->
-> AFAICT, the panic notifier list doesn't get called on oops.
+Hello David, hello all,
 
-Have you tried playing with panic_on_oops ?
+David, when I apply your source from GIT to Linus source I get this in 
+final part of the build process:
 
-	Jeff
+   (...)
+   LD [M]  drivers/net/wireless/ath/ath9k/ath9k.o
+   LD [M]  drivers/net/wireless/ath/ath9k/ath9k_hw.o
+   LD [M]  drivers/net/wireless/ath/ath9k/ath9k_common.o
+   LD [M]  drivers/net/wireless/ath/ath9k/ath9k_htc.o
+   Building modules, stage 2.
+   MODPOST 2690 modules
+ERROR: "register_candev" [drivers/net/can/softing/softing.ko] undefined!
+ERROR: "alloc_candev" [drivers/net/can/softing/softing.ko] undefined!
+ERROR: "can_bus_off" [drivers/net/can/softing/softing.ko] undefined!
+ERROR: "close_candev" [drivers/net/can/softing/softing.ko] undefined!
+ERROR: "free_candev" [drivers/net/can/softing/softing.ko] undefined!
+ERROR: "unregister_candev" [drivers/net/can/softing/softing.ko] undefined!
+ERROR: "alloc_can_skb" [drivers/net/can/softing/softing.ko] undefined!
+ERROR: "open_candev" [drivers/net/can/softing/softing.ko] undefined!
+ERROR: "can_get_echo_skb" [drivers/net/can/softing/softing.ko] undefined!
+ERROR: "can_put_echo_skb" [drivers/net/can/softing/softing.ko] undefined!
+WARNING: modpost: Found 24 section mismatch(es).
+To see full details build your kernel with:
+'make CONFIG_DEBUG_SECTION_MISMATCH=y'
+make[2]: *** [__modpost] B³±d 1
+make[1]: *** [modules] B³±d 2
+make[1]: Opuszczenie katalogu 
+`/usr/src/linus/linux-2.6-20110125-2155-pztidm'
+make: *** [debian/stamp/build/kernel] B³±d 2
 
 
+-- 
+TV: "Grucha³a jest taka, ¿e cieszy siê z ka¿dego pchniêcia."
+NP: Patrick O'Hearn - Beneath the Celestial Sphere
+NB: 2.6.38-rc2-20110125-1848-ti+
