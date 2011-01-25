@@ -1,167 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751940Ab1AYFF5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 00:05:57 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:41903 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751160Ab1AYFFz (ORCPT
+	id S1752355Ab1AYFGM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 00:06:12 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:47435
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751682Ab1AYFGL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 00:05:55 -0500
-Subject: [PATCH 1/3] Move zone_reclaim() outside of CONFIG_NUMA (v4)
-To: linux-mm@kvack.org, akpm@linux-foundation.org
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-Cc: npiggin@kernel.dk, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kosaki.motohiro@jp.fujitsu.com, cl@linux.com,
-        kamezawa.hiroyu@jp.fujitsu.com
-Date: Tue, 25 Jan 2011 10:35:35 +0530
-Message-ID: <20110125050430.13141.21260.stgit@localhost6.localdomain6>
-In-Reply-To: <20110125050255.13141.688.stgit@localhost6.localdomain6>
-References: <20110125050255.13141.688.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Tue, 25 Jan 2011 00:06:11 -0500
+Date: Mon, 24 Jan 2011 21:06:46 -0800 (PST)
+Message-Id: <20110124.210646.226764975.davem@davemloft.net>
+To: eugeneteo@kernel.org
+Cc: linux-kernel@vger.kernel.org, kees.cook@canonical.com,
+        bhutchings@solarflare.com
+Subject: Re: net: clear heap allocation for ethtool_get_regs()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110124.210543.193717502.davem@davemloft.net>
+References: <20110125044910.GB8117@infradead.org>
+	<20110124.210543.193717502.davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves zone_reclaim and associated helpers
-outside CONFIG_NUMA. This infrastructure is reused
-in the patches for page cache control that follow.
+From: David Miller <davem@davemloft.net>
+Date: Mon, 24 Jan 2011 21:05:43 -0800 (PST)
 
-Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
----
- include/linux/mmzone.h |    4 ++--
- include/linux/swap.h   |    4 ++--
- kernel/sysctl.c        |   18 +++++++++---------
- mm/page_alloc.c        |    6 +++---
- mm/vmscan.c            |    2 --
- 5 files changed, 16 insertions(+), 18 deletions(-)
+> From: Eugene Teo <eugeneteo@kernel.org>
+> Date: Tue, 25 Jan 2011 12:49:10 +0800
+> 
+>> There is a conflict between commit b00916b1 and a77f5db3. This patch resolves
+>> the conflict by clearing the heap allocation in ethtool_get_regs().
+>> 
+>> Cc: stable@kernel.org
+>> Signed-off-by: Eugene Teo <eugeneteo@kernel.org>
+> 
+> Applied, thanks Eugene.
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 02ecb01..2485acc 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -303,12 +303,12 @@ struct zone {
- 	 */
- 	unsigned long		lowmem_reserve[MAX_NR_ZONES];
- 
--#ifdef CONFIG_NUMA
--	int node;
- 	/*
- 	 * zone reclaim becomes active if more unmapped pages exist.
- 	 */
- 	unsigned long		min_unmapped_pages;
-+#ifdef CONFIG_NUMA
-+	int node;
- 	unsigned long		min_slab_pages;
- #endif
- 	struct per_cpu_pageset __percpu *pageset;
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 5e3355a..7b75626 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -255,11 +255,11 @@ extern int vm_swappiness;
- extern int remove_mapping(struct address_space *mapping, struct page *page);
- extern long vm_total_pages;
- 
-+extern int sysctl_min_unmapped_ratio;
-+extern int zone_reclaim(struct zone *, gfp_t, unsigned int);
- #ifdef CONFIG_NUMA
- extern int zone_reclaim_mode;
--extern int sysctl_min_unmapped_ratio;
- extern int sysctl_min_slab_ratio;
--extern int zone_reclaim(struct zone *, gfp_t, unsigned int);
- #else
- #define zone_reclaim_mode 0
- static inline int zone_reclaim(struct zone *z, gfp_t mask, unsigned int order)
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index bc86bb3..12e8f26 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1224,15 +1224,6 @@ static struct ctl_table vm_table[] = {
- 		.extra1		= &zero,
- 	},
- #endif
--#ifdef CONFIG_NUMA
--	{
--		.procname	= "zone_reclaim_mode",
--		.data		= &zone_reclaim_mode,
--		.maxlen		= sizeof(zone_reclaim_mode),
--		.mode		= 0644,
--		.proc_handler	= proc_dointvec,
--		.extra1		= &zero,
--	},
- 	{
- 		.procname	= "min_unmapped_ratio",
- 		.data		= &sysctl_min_unmapped_ratio,
-@@ -1242,6 +1233,15 @@ static struct ctl_table vm_table[] = {
- 		.extra1		= &zero,
- 		.extra2		= &one_hundred,
- 	},
-+#ifdef CONFIG_NUMA
-+	{
-+		.procname	= "zone_reclaim_mode",
-+		.data		= &zone_reclaim_mode,
-+		.maxlen		= sizeof(zone_reclaim_mode),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+		.extra1		= &zero,
-+	},
- 	{
- 		.procname	= "min_slab_ratio",
- 		.data		= &sysctl_min_slab_ratio,
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index aede3a4..7b56473 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4167,10 +4167,10 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 
- 		zone->spanned_pages = size;
- 		zone->present_pages = realsize;
--#ifdef CONFIG_NUMA
--		zone->node = nid;
- 		zone->min_unmapped_pages = (realsize*sysctl_min_unmapped_ratio)
- 						/ 100;
-+#ifdef CONFIG_NUMA
-+		zone->node = nid;
- 		zone->min_slab_pages = (realsize * sysctl_min_slab_ratio) / 100;
- #endif
- 		zone->name = zone_names[j];
-@@ -5084,7 +5084,6 @@ int min_free_kbytes_sysctl_handler(ctl_table *table, int write,
- 	return 0;
- }
- 
--#ifdef CONFIG_NUMA
- int sysctl_min_unmapped_ratio_sysctl_handler(ctl_table *table, int write,
- 	void __user *buffer, size_t *length, loff_t *ppos)
- {
-@@ -5101,6 +5100,7 @@ int sysctl_min_unmapped_ratio_sysctl_handler(ctl_table *table, int write,
- 	return 0;
- }
- 
-+#ifdef CONFIG_NUMA
- int sysctl_min_slab_ratio_sysctl_handler(ctl_table *table, int write,
- 	void __user *buffer, size_t *length, loff_t *ppos)
- {
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 47a5096..5899f2f 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2868,7 +2868,6 @@ static int __init kswapd_init(void)
- 
- module_init(kswapd_init)
- 
--#ifdef CONFIG_NUMA
- /*
-  * Zone reclaim mode
-  *
-@@ -3078,7 +3077,6 @@ int zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 
- 	return ret;
- }
--#endif
- 
- /*
-  * page_evictable - test whether a page is evictable
-
+Ugh, I just noticed, Eugene could you please always CC: netdev on
+networking patches?  Thanks.
