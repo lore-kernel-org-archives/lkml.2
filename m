@@ -1,70 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab1AYVcI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 16:32:08 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36985
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753581Ab1AYVcG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 16:32:06 -0500
-Date: Tue, 25 Jan 2011 13:32:40 -0800 (PST)
-Message-Id: <20110125.133240.59688304.davem@davemloft.net>
-To: toshiharu-linux@dsn.okisemi.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, qi.wang@intel.com,
-        yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com
-Subject: Re: [PATCH] pch_gbe: Fix the issue that the receiving data is not
- normal.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4D3D0373.30003@dsn.okisemi.com>
-References: <4D3D0373.30003@dsn.okisemi.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1754106Ab1AYVc0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 16:32:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43263 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754089Ab1AYVcY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 16:32:24 -0500
+Message-ID: <4D3F4156.7010900@redhat.com>
+Date: Tue, 25 Jan 2011 14:32:06 -0700
+From: Eric Blake <eblake@redhat.com>
+Organization: Red Hat
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Mnenhy/0.8.3 Thunderbird/3.1.7
+MIME-Version: 1.0
+CC: Mike Frysinger <vapier@gentoo.org>, Arnd Bergmann <arnd@arndb.de>,
+        Paul Eggert <eggert@cs.ucla.edu>, Roland McGrath <roland@redhat.com>,
+        linasvepstas@gmail.com, Chris Metcalf <cmetcalf@tilera.com>,
+        GLIBC Devel <libc-alpha@sourceware.org>, linux-kernel@vger.kernel.org,
+        libc-ports@sourceware.org, linux-api@vger.kernel.org
+Subject: Re: [BUG] Generic syscalls -- chmod vs. fchmodat
+References: <AANLkTikhKHnR+7DskxYqWXduX4=tpfgsfL4sNYq+4QDq@mail.gmail.com> <20110125174515.C1DC2183C19@magilla.sf.frob.com> <201101251921.15184.arnd@arndb.de> <201101251352.03079.vapier@gentoo.org> <4D3F2AD9.8060000@redhat.com> <4D3F3308.1050305@redhat.com>
+In-Reply-To: <4D3F3308.1050305@redhat.com>
+X-Enigmail-Version: 1.1.2
+OpenPGP: url=http://people.redhat.com/eblake/eblake.gpg
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="------------enigB8B280F5F3CB958B1C534D9A"
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-Date: Mon, 24 Jan 2011 13:43:31 +0900
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigB8B280F5F3CB958B1C534D9A
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> This PCH_GBE driver had an issue that the receiving data is not normal.
-> This driver had not removed correctly the padding data 
-> which the DMA include in receiving data. 
-> 
-> This patch fixed this issue.
-> 
-> Signed-off-by: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
+On 01/25/2011 01:31 PM, Eric Blake wrote:
+> One other thing to point out - this is not the first time glibc has
+> added code around *at kernel syscalls in order to provide POSIX
+> semantics where the Linux syscall does not.  Remember that both futimen=
+s
+> and utimensat are implemented on top of the same syscall, and that
+> futimens(AT_FDCWD, times) must fail rather than set the times on ".".
 
-There are bugs in these changes:
+I guess an executive summary of the issue, from my point of view, is
+that I like the idea of making both simple versions of a command call
+into the same *at version of the syscall [chmod via
+sys_fchmodat(AT_FDCWD,name), and fchmod via sys_fchmodat(fd, NULL)],
+provided that:
 
->  			if (skb_copy_flag) {	/* recycle  skb */
->  				struct sk_buff *new_skb;
->  				new_skb =
-> -				    netdev_alloc_skb(netdev,
-> -						     length + NET_IP_ALIGN);
-> +				    netdev_alloc_skb(netdev, length);
->  				if (new_skb) {
->  					if (!skb_padding_flag) {
->  						skb_reserve(new_skb,
-> -								NET_IP_ALIGN);
-> +							PCH_GBE_DMA_PADDING);
->  					}
->  					memcpy(new_skb->data, skb->data,
->  						length);
+1. chmod("") must continue to fail with ENOENT (here, it might make
+sense for the kernel to do the filtering, since there is an obvious
+difference between "" and NULL; but if the kernel call does not change,
+then the burden is on glibc instead)
 
-If "!skb_padding_flag" then you will write past the end of the SKB
-data in that memcpy.
+2. fchmod(AT_FDCWD) must continue to fail with EBADF (here, it might
+make sense for the kernel to do the filtering - if the name argument is
+NULL, then the fd argument must be non-negative; but precedence with
+futimens vs. sys_utimensat puts the burden on glibc instead)
 
-You cannot allocate only "length" then proceed to reserve PCH_GBE_DMA_PADDING
-and then add "length" worth of data on top of that.  In such a cause you
-must allocate at least "length + PCH_GBE_DMA_PADDING".
+3. chmod(NULL) is undefined.  Currently it fails with EFAULT, but I see
+no reason why it can't start failing with EBADF (assuming the kernel
+does filtering as for point 2) or start operating on ".", because it's
+only a buggy program that would be making that call in the first place
+(actually, failing with EBADF is a little safer, as silent conversion
+between two types of failures is a bit easier to audit for consequences
+than is silent conversion from error to success).
 
-Furthermore you _MUST_ respect NET_IP_ALIGN.  Some platforms set this value
-to "0", because otherwise performance suffers greatly.
+4. fchmodat(fd, NULL) is undefined.  For non-negative fd, POSIX allows
+failure, but it also allows behaving like fchmod.  Portable programs
+can't rely on a particular behavior, but glibc is more than welcome to
+rely on a particular syscall behavior for implementing the simpler
+functions.
 
-There are two seperate issues, removing the padding bytes provided by
-the device, and aligning the IP headers as wanted by the cpu
-architecutre.  Therefore they should be handled seperately, and we
-therefore should still see references to NET_IP_ALIGN in your patch.
+5. fchmodat(fd, "") must fail with ENOENT.  For non-negative fd,
+apparently the kernel currently modifies fd, although point 1 says it
+might make more sense to fail with ENOENT so that glibc doesn't have to
+do as much work in chmod and fchmodat (if the kernel call does not
+change, then the burden is on glibc).
+
+6. fchmodat(AT_FDCWD, NULL) is undefined.  For AT_FDCWD, the kernel
+currently modifies ".", although point 2 says it might make more sense
+to fail with EBADF so that glibc doesn't have to do as much work in fchmo=
+d.
+
+7. fchmodat(AT_FDCWD, "") must fail with ENOENT.  Apparently, the kernel
+currently modifies ".", although point 1 says it might make more sense
+to fail with ENOENT so that glibc doesn't have to do as much work in
+chmod and fchmodat (if the kernel call does not change, then the burden
+is on glibc).
+
+--=20
+Eric Blake   eblake@redhat.com    +1-801-349-2682
+Libvirt virtualization library http://libvirt.org
+
+
+--------------enigB8B280F5F3CB958B1C534D9A
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Public key at http://people.redhat.com/eblake/eblake.gpg
+Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
+
+iQEcBAEBCAAGBQJNP0FWAAoJEKeha0olJ0NqfmMH/0lATthcNht9vU/kP49SnvKx
+e1wmOUH5l7O7X6MtDXxHQYgp7IxiU4QJcvdZuqQ2HiyoAFCW41H4R+E7pwujKO38
+wYSVnpebsfT3vAck+ocz3EKNdDp4mudf7PLcVicDvJVnzYbg5NdKktvyygR2LBo+
+aqDr87bEeB7RcYqK7mIMBxpRRijpIhmj3IPjV1oScNjKxKPZI8B8HjTGIZ/4jcGR
+cIQ20S5Wu6ShV1j1gsHpK7HxnSVS7fppnuKRgmVPl/wnWGCQuvmPViLolboUlJ6x
+9YDreoTQwz5Ajq52h03ftiNFtLBXYS81T7jpwQkdF7qew/gFj9U13iGEl75ddgg=
+=TbNi
+-----END PGP SIGNATURE-----
+
+--------------enigB8B280F5F3CB958B1C534D9A--
