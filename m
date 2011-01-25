@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752150Ab1AYBFA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 20:05:00 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33093 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314Ab1AYBE7 convert rfc822-to-8bit (ORCPT
+	id S1752476Ab1AYBFZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 20:05:25 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:46924 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314Ab1AYBFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 20:04:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=jurVj01zHNK67SkFxeLVJb6smMsoSMYFEqsWbj+g9cLfCP+kzeVY6txMXyiaQQwjlj
-         f0Xi1lU6VkEShEJBx/qh+r2reKT29rihvC5IsrYY06uoJqAonbAqZOwnPJPHuFdm+Ux7
-         VcQ+XeX4h7sCfzr41pWrES2O2wBnj07hGiR4s=
+	Mon, 24 Jan 2011 20:05:23 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6236"; a="71619301"
+From: David Brown <davidb@codeaurora.org>
+To: Stepan Moskovchenko <stepanm@codeaurora.org>
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] msm: serial: Add MSM8960 serial support
+In-Reply-To: <1295663921-32723-1-git-send-email-stepanm@codeaurora.org>
+	(Stepan Moskovchenko's message of "Fri, 21 Jan 2011 18:38:41 -0800")
+References: <1295663921-32723-1-git-send-email-stepanm@codeaurora.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+X-Hashcash: 1:20:110125:linux-arm-msm@vger.kernel.org::NNmyrnwFTl/EWxBc:000000000000000000000000000000000GMB
+X-Hashcash: 1:20:110125:linux-arm-kernel@lists.infradead.org:://EQ/fnWMzavlxBj:00000000000000000000000001GsJ
+X-Hashcash: 1:20:110125:linux-kernel@vger.kernel.org::qX2BDXmCH//5ukAe:0000000000000000000000000000000001om1
+X-Hashcash: 1:20:110125:stepanm@codeaurora.org::DKv1v5PeUyQRmL9O:00000000000000000000000000000000000000033WO
+Date: Mon, 24 Jan 2011 17:05:22 -0800
+Message-ID: <8yar5c1hjxp.fsf@huya.qualcomm.com>
 MIME-Version: 1.0
-In-Reply-To: <1295915725.1949.967.camel@sli10-conroe>
-References: <1295915725.1949.967.camel@sli10-conroe>
-Date: Tue, 25 Jan 2011 12:04:57 +1100
-Message-ID: <AANLkTikOdiQR+rWXzoU9z5sJv9Q2=ehdhi1NCHXT0a-w@mail.gmail.com>
-Subject: Re: more dput lock contentions in 2.6.38-rc?
-From: Nick Piggin <npiggin@gmail.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>, "Chen, Tim C" <tim.c.chen@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 11:35 AM, Shaohua Li <shaohua.li@intel.com> wrote:
-> Hi,
-> we are testing dbench benchmark and see big drop of 2.6.38-rc compared
-> to 2.6.37 in several machines with 2 sockets or 4 sockets. We have 12
-> disks mount to /mnt/stp/dbenchdata/sd*/ and dbench runs against data of
-> the disks. According to perf, we saw more lock contentions:
-> In 2.6.37: 13.00%        dbench  [kernel.kallsyms]   [k] _raw_spin_lock
-> In 2.6.38-rc: 69.45%        dbench  [kernel.kallsyms]   [k]_raw_spin_lock
-> -     69.45%        dbench  [kernel.kallsyms]   [k] _raw_spin_lock
->   - _raw_spin_lock
->      - 48.41% dput
->         - 61.17% path_put
->            - 60.47% do_path_lookup
->               + 53.18% user_path_at
->               + 42.13% do_filp_open
->               + 4.69% user_path_parent
+On Fri, Jan 21 2011, Stepan Moskovchenko wrote:
 
-What filesystems are mounted on the path?
+> diff --git a/arch/arm/mach-msm/devices-msm8960.c b/arch/arm/mach-msm/devices-msm8960.c
+> new file mode 100644
+> index 0000000..821e6d1
+> --- /dev/null
+> +++ b/arch/arm/mach-msm/devices-msm8960.c
+> @@ -0,0 +1,83 @@
+> +/*
+> + * Copyright (C) 2008 Google, Inc.
+> + * Copyright (c) 2008-2011, Code Aurora Forum. All rights reserved.
 
+What is the general consenus on this kind of copyright.  Stepan started
+with a file with a Google copyright on it, but has largely rewritten the
+file to support the new board.  Should we be keeping the copyright from
+the file?
 
->            - 35.56% d_path
->                 seq_path
->                 show_vfsmnt
->                 seq_read
->                 vfs_read
->                 sys_read
->                 system_call_fastpath
->                 __GI___libc_read
+Thanks,
+David
 
-This guy is from glibc's statvfs call that dbench uses. It
-parses /proc/mounts for mount flags which is racy (and
-not a good idea to do with any frequency).
-
-A patch went into the kernel that allows glibc to get the
-flags directly. Not sure about glibc status, I imagine it
-will get there in another decade or two... Can you try
-commenting it out of dbench source code?
-
-
->            + 2.17% do_filp_open
->            + 1.72% mounts_release
->         + 38.69% link_path_walk
->      + 30.21% path_get
->      + 19.08% nameidata_drop_rcu
->      + 0.83% __d_lookup
-> it appears there are heavy lock contention when dput release '/', 'mnt',
-> 'stp', 'dbenchdata' and 'proc' when dbench is running.
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
