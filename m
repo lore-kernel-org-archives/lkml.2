@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab1AYR0X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 12:26:23 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:48542 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753302Ab1AYRWL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753296Ab1AYRWL (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 25 Jan 2011 12:22:11 -0500
+Received: from casper.infradead.org ([85.118.1.10]:46994 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753255Ab1AYRWK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 12:22:10 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -15,13 +15,13 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 27/29] perf threads: Move thread_map to separate file
-Date: Tue, 25 Jan 2011 15:21:50 -0200
-Message-Id: <1295976112-2796-28-git-send-email-acme@infradead.org>
+Subject: [PATCH 16/29] perf test: Add test for the evlist mmap routines
+Date: Tue, 25 Jan 2011 15:21:39 -0200
+Message-Id: <1295976112-2796-17-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1295976112-2796-1-git-send-email-acme@infradead.org>
 References: <1295976112-2796-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,10 +29,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-To untangle it from struct thread handling, that is tied to symbols, etc.
+This test will generate random numbers of calls to some getpid syscalls,
+then establish an mmap for a group of events that are created to monitor
+these syscalls.
 
-Right now in the python bindings I'm working on I need just a subset of
-the util/ files, untangling it allows me to do that.
+It will receive the events, using mmap, use its PERF_SAMPLE_ID generated
+sample.id field to map back to its respective perf_evsel instance.
+
+Then it checks if the number of syscalls reported as perf events by the
+kernel corresponds to the number of syscalls made.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -44,288 +49,219 @@ Cc: Tom Zanussi <tzanussi@gmail.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile          |    2 +
- tools/perf/builtin-record.c  |    1 +
- tools/perf/builtin-stat.c    |    1 +
- tools/perf/builtin-test.c    |    2 +-
- tools/perf/builtin-top.c     |    1 +
- tools/perf/util/evsel.c      |    2 +-
- tools/perf/util/thread.c     |   55 ------------------------------------
- tools/perf/util/thread.h     |   14 ---------
- tools/perf/util/thread_map.c |   64 ++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/thread_map.h |   15 ++++++++++
- 10 files changed, 86 insertions(+), 71 deletions(-)
- create mode 100644 tools/perf/util/thread_map.c
- create mode 100644 tools/perf/util/thread_map.h
+ tools/perf/builtin-test.c |  171 ++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 169 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index f20bc6f..638e8e1 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -426,6 +426,7 @@ LIB_H += util/values.h
- LIB_H += util/sort.h
- LIB_H += util/hist.h
- LIB_H += util/thread.h
-+LIB_H += util/thread_map.h
- LIB_H += util/trace-event.h
- LIB_H += util/probe-finder.h
- LIB_H += util/probe-event.h
-@@ -471,6 +472,7 @@ LIB_OBJS += $(OUTPUT)util/map.o
- LIB_OBJS += $(OUTPUT)util/pstack.o
- LIB_OBJS += $(OUTPUT)util/session.o
- LIB_OBJS += $(OUTPUT)util/thread.o
-+LIB_OBJS += $(OUTPUT)util/thread_map.o
- LIB_OBJS += $(OUTPUT)util/trace-event-parse.o
- LIB_OBJS += $(OUTPUT)util/trace-event-read.o
- LIB_OBJS += $(OUTPUT)util/trace-event-info.o
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 1346d42..d788630 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -24,6 +24,7 @@
- #include "util/session.h"
- #include "util/symbol.h"
- #include "util/cpumap.h"
-+#include "util/thread_map.h"
- 
- #include <unistd.h>
- #include <sched.h>
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index e2a2d02..8906adf 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -49,6 +49,7 @@
- #include "util/header.h"
- #include "util/cpumap.h"
- #include "util/thread.h"
-+#include "util/thread_map.h"
- 
- #include <sys/prctl.h>
- #include <math.h>
 diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 4fd3453..dc91ee0 100644
+index 5a50e47..4fd3453 100644
 --- a/tools/perf/builtin-test.c
 +++ b/tools/perf/builtin-test.c
-@@ -12,7 +12,7 @@
- #include "util/parse-events.h"
- #include "util/session.h"
- #include "util/symbol.h"
--#include "util/thread.h"
-+#include "util/thread_map.h"
+@@ -7,7 +7,9 @@
  
- static long page_size;
- 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 31fbaf3..d0b16d9 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -26,6 +26,7 @@
+ #include "util/cache.h"
+ #include "util/debug.h"
++#include "util/evlist.h"
+ #include "util/parse-options.h"
++#include "util/parse-events.h"
  #include "util/session.h"
  #include "util/symbol.h"
  #include "util/thread.h"
-+#include "util/thread_map.h"
- #include "util/util.h"
- #include <linux/rbtree.h>
- #include "util/parse-options.h"
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index ee49035..9a6d942 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -3,7 +3,7 @@
- #include "../perf.h"
- #include "util.h"
- #include "cpumap.h"
--#include "thread.h"
-+#include "thread_map.h"
+@@ -238,14 +240,14 @@ out:
+ #include "util/evsel.h"
+ #include <sys/types.h>
  
- #include <unistd.h>
- #include <sys/mman.h>
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index 00f4ead..d5d3b22 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -7,61 +7,6 @@
- #include "util.h"
- #include "debug.h"
- 
--/* Skip "." and ".." directories */
--static int filter(const struct dirent *dir)
--{
--	if (dir->d_name[0] == '.')
--		return 0;
--	else
--		return 1;
--}
--
--struct thread_map *thread_map__new_by_pid(pid_t pid)
--{
--	struct thread_map *threads;
--	char name[256];
--	int items;
--	struct dirent **namelist = NULL;
--	int i;
--
--	sprintf(name, "/proc/%d/task", pid);
--	items = scandir(name, &namelist, filter, NULL);
--	if (items <= 0)
--                return NULL;
--
--	threads = malloc(sizeof(*threads) + sizeof(pid_t) * items);
--	if (threads != NULL) {
--		for (i = 0; i < items; i++)
--			threads->map[i] = atoi(namelist[i]->d_name);
--		threads->nr = items;
--	}
--
--	for (i=0; i<items; i++)
--		free(namelist[i]);
--	free(namelist);
--
--	return threads;
--}
--
--struct thread_map *thread_map__new_by_tid(pid_t tid)
--{
--	struct thread_map *threads = malloc(sizeof(*threads) + sizeof(pid_t));
--
--	if (threads != NULL) {
--		threads->map[0] = tid;
--		threads->nr	= 1;
--	}
--
--	return threads;
--}
--
--struct thread_map *thread_map__new(pid_t pid, pid_t tid)
--{
--	if (pid != -1)
--		return thread_map__new_by_pid(pid);
--	return thread_map__new_by_tid(tid);
--}
--
- static struct thread *thread__new(pid_t pid)
+-static int trace_event__id(const char *event_name)
++static int trace_event__id(const char *evname)
  {
- 	struct thread *self = zalloc(sizeof(*self));
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index d757410..e5f2401 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -18,24 +18,10 @@ struct thread {
- 	int			comm_len;
- };
+ 	char *filename;
+ 	int err = -1, fd;
  
--struct thread_map {
--	int nr;
--	int map[];
--};
--
- struct perf_session;
+ 	if (asprintf(&filename,
+ 		     "/sys/kernel/debug/tracing/events/syscalls/%s/id",
+-		     event_name) < 0)
++		     evname) < 0)
+ 		return -1;
  
- void thread__delete(struct thread *self);
+ 	fd = open(filename, O_RDONLY);
+@@ -439,6 +441,167 @@ out_thread_map_delete:
+ 	return err;
+ }
  
--struct thread_map *thread_map__new_by_pid(pid_t pid);
--struct thread_map *thread_map__new_by_tid(pid_t tid);
--struct thread_map *thread_map__new(pid_t pid, pid_t tid);
--
--static inline void thread_map__delete(struct thread_map *threads)
--{
--	free(threads);
--}
--
- int thread__set_comm(struct thread *self, const char *comm);
- int thread__comm_len(struct thread *self);
- struct thread *perf_session__findnew(struct perf_session *self, pid_t pid);
-diff --git a/tools/perf/util/thread_map.c b/tools/perf/util/thread_map.c
-new file mode 100644
-index 0000000..a5df131
---- /dev/null
-+++ b/tools/perf/util/thread_map.c
-@@ -0,0 +1,64 @@
-+#include <dirent.h>
-+#include <stdlib.h>
-+#include <stdio.h>
-+#include "thread_map.h"
-+
-+/* Skip "." and ".." directories */
-+static int filter(const struct dirent *dir)
++/*
++ * This test will generate random numbers of calls to some getpid syscalls,
++ * then establish an mmap for a group of events that are created to monitor
++ * the syscalls.
++ *
++ * It will receive the events, using mmap, use its PERF_SAMPLE_ID generated
++ * sample.id field to map back to its respective perf_evsel instance.
++ *
++ * Then it checks if the number of syscalls reported as perf events by
++ * the kernel corresponds to the number of syscalls made.
++ */
++static int test__basic_mmap(void)
 +{
-+	if (dir->d_name[0] == '.')
-+		return 0;
-+	else
-+		return 1;
-+}
-+
-+struct thread_map *thread_map__new_by_pid(pid_t pid)
-+{
++	int err = -1;
++	event_t *event;
 +	struct thread_map *threads;
-+	char name[256];
-+	int items;
-+	struct dirent **namelist = NULL;
-+	int i;
++	struct perf_session session;
++	struct cpu_map *cpus;
++	struct perf_evlist *evlist;
++	struct perf_event_attr attr = {
++		.type		= PERF_TYPE_TRACEPOINT,
++		.read_format	= PERF_FORMAT_ID,
++		.sample_type	= PERF_SAMPLE_ID,
++		.watermark	= 0,
++	};
++	cpu_set_t cpu_set;
++	const char *syscall_names[] = { "getsid", "getppid", "getpgrp",
++					"getpgid", };
++	pid_t (*syscalls[])(void) = { (void *)getsid, getppid, getpgrp,
++				      (void*)getpgid };
++#define nsyscalls ARRAY_SIZE(syscall_names)
++	int ids[nsyscalls];
++	unsigned int nr_events[nsyscalls],
++		     expected_nr_events[nsyscalls], i, j;
++	struct perf_evsel *evsels[nsyscalls], *evsel;
 +
-+	sprintf(name, "/proc/%d/task", pid);
-+	items = scandir(name, &namelist, filter, NULL);
-+	if (items <= 0)
-+                return NULL;
++	for (i = 0; i < nsyscalls; ++i) {
++		char name[64];
 +
-+	threads = malloc(sizeof(*threads) + sizeof(pid_t) * items);
-+	if (threads != NULL) {
-+		for (i = 0; i < items; i++)
-+			threads->map[i] = atoi(namelist[i]->d_name);
-+		threads->nr = items;
++		snprintf(name, sizeof(name), "sys_enter_%s", syscall_names[i]);
++		ids[i] = trace_event__id(name);
++		if (ids[i] < 0) {
++			pr_debug("Is debugfs mounted on /sys/kernel/debug?\n");
++			return -1;
++		}
++		nr_events[i] = 0;
++		expected_nr_events[i] = random() % 257;
 +	}
 +
-+	for (i=0; i<items; i++)
-+		free(namelist[i]);
-+	free(namelist);
-+
-+	return threads;
-+}
-+
-+struct thread_map *thread_map__new_by_tid(pid_t tid)
-+{
-+	struct thread_map *threads = malloc(sizeof(*threads) + sizeof(pid_t));
-+
-+	if (threads != NULL) {
-+		threads->map[0] = tid;
-+		threads->nr	= 1;
++	threads = thread_map__new(-1, getpid());
++	if (threads == NULL) {
++		pr_debug("thread_map__new\n");
++		return -1;
 +	}
 +
-+	return threads;
++	cpus = cpu_map__new(NULL);
++	if (threads == NULL) {
++		pr_debug("thread_map__new\n");
++		goto out_free_threads;
++	}
++
++	CPU_ZERO(&cpu_set);
++	CPU_SET(cpus->map[0], &cpu_set);
++	sched_setaffinity(0, sizeof(cpu_set), &cpu_set);
++	if (sched_setaffinity(0, sizeof(cpu_set), &cpu_set) < 0) {
++		pr_debug("sched_setaffinity() failed on CPU %d: %s ",
++			 cpus->map[0], strerror(errno));
++		goto out_free_cpus;
++	}
++
++	evlist = perf_evlist__new();
++	if (threads == NULL) {
++		pr_debug("perf_evlist__new\n");
++		goto out_free_cpus;
++	}
++
++	/* anonymous union fields, can't be initialized above */
++	attr.wakeup_events = 1;
++	attr.sample_period = 1;
++
++	/*
++ 	 * FIXME: use evsel->attr.sample_type in event__parse_sample.
++ 	 * 	  This will nicely remove the requirement that we have
++ 	 * 	  all the events with the same sample_type.
++ 	 */
++	session.sample_type = attr.sample_type;
++
++	for (i = 0; i < nsyscalls; ++i) {
++		attr.config = ids[i];
++		evsels[i] = perf_evsel__new(&attr, i);
++		if (evsels[i] == NULL) {
++			pr_debug("perf_evsel__new\n");
++			goto out_free_evlist;
++		}
++
++		perf_evlist__add(evlist, evsels[i]);
++
++		if (perf_evsel__open(evsels[i], cpus, threads, false, false) < 0) {
++			pr_debug("failed to open counter: %s, "
++				 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
++				 strerror(errno));
++			goto out_close_fd;
++		}
++	}
++
++	if (perf_evlist__mmap(evlist, cpus, threads, 128, true) < 0) {
++		pr_debug("failed to mmap events: %d (%s)\n", errno,
++			 strerror(errno));
++		goto out_close_fd;
++	}
++
++	for (i = 0; i < nsyscalls; ++i)
++		for (j = 0; j < expected_nr_events[i]; ++j) {
++			int foo = syscalls[i]();
++			++foo;
++		}
++
++	while ((event = perf_evlist__read_on_cpu(evlist, 0)) != NULL) {
++		struct sample_data sample;
++
++		if (event->header.type != PERF_RECORD_SAMPLE) {
++			pr_debug("unexpected %s event\n",
++				 event__get_event_name(event->header.type));
++			goto out_munmap;
++		}
++
++		event__parse_sample(event, &session, &sample);
++		evsel = perf_evlist__id2evsel(evlist, sample.id);
++		if (evsel == NULL) {
++			pr_debug("event with id %" PRIu64
++				 " doesn't map to an evsel\n", sample.id);
++			goto out_munmap;
++		}
++		nr_events[evsel->idx]++;
++	}
++
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		if (nr_events[evsel->idx] != expected_nr_events[evsel->idx]) {
++			pr_debug("expected %d %s events, got %d\n",
++				 expected_nr_events[evsel->idx],
++				 event_name(evsel), nr_events[evsel->idx]);
++			goto out_munmap;
++		}
++	}
++
++	err = 0;
++out_munmap:
++	perf_evlist__munmap(evlist, 1);
++out_close_fd:
++	for (i = 0; i < nsyscalls; ++i)
++		perf_evsel__close_fd(evsels[i], 1, threads->nr);
++out_free_evlist:
++	perf_evlist__delete(evlist);
++out_free_cpus:
++	cpu_map__delete(cpus);
++out_free_threads:
++	thread_map__delete(threads);
++	return err;
++#undef nsyscalls
 +}
 +
-+struct thread_map *thread_map__new(pid_t pid, pid_t tid)
-+{
-+	if (pid != -1)
-+		return thread_map__new_by_pid(pid);
-+	return thread_map__new_by_tid(tid);
-+}
-+
-+void thread_map__delete(struct thread_map *threads)
-+{
-+	free(threads);
-+}
-diff --git a/tools/perf/util/thread_map.h b/tools/perf/util/thread_map.h
-new file mode 100644
-index 0000000..3cb9073
---- /dev/null
-+++ b/tools/perf/util/thread_map.h
-@@ -0,0 +1,15 @@
-+#ifndef __PERF_THREAD_MAP_H
-+#define __PERF_THREAD_MAP_H
-+
-+#include <sys/types.h>
-+
-+struct thread_map {
-+	int nr;
-+	int map[];
-+};
-+
-+struct thread_map *thread_map__new_by_pid(pid_t pid);
-+struct thread_map *thread_map__new_by_tid(pid_t tid);
-+struct thread_map *thread_map__new(pid_t pid, pid_t tid);
-+void thread_map__delete(struct thread_map *threads);
-+#endif	/* __PERF_THREAD_MAP_H */
+ static struct test {
+ 	const char *desc;
+ 	int (*func)(void);
+@@ -456,6 +619,10 @@ static struct test {
+ 		.func = test__open_syscall_event_on_all_cpus,
+ 	},
+ 	{
++		.desc = "read samples using the mmap interface",
++		.func = test__basic_mmap,
++	},
++	{
+ 		.func = NULL,
+ 	},
+ };
 -- 
 1.6.2.5
 
