@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872Ab1AYKoe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 05:44:34 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46286 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752433Ab1AYKod (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 05:44:33 -0500
-Date: Tue, 25 Jan 2011 10:43:33 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: walter harms <wharms@bfs.de>
-Cc: Julia Lawall <julia@diku.dk>, Vasiliy Kulikov <segooon@gmail.com>,
-        Ryan Mallon <ryan@bluewatersys.com>, kernel-janitors@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] arch/arm/mach-at91/clock.c: Add missing IS_ERR test
-Message-ID: <20110125104333.GE11507@n2100.arm.linux.org.uk>
-References: <1295898922-18822-1-git-send-email-julia@diku.dk> <1295898922-18822-3-git-send-email-julia@diku.dk> <4D3DD964.9020107@bluewatersys.com> <Pine.LNX.4.64.1101242058430.3167@ask.diku.dk> <20110124200515.GA30963@albatros> <Pine.LNX.4.64.1101242108180.3167@ask.diku.dk> <4D3EA6EC.5050305@bfs.de>
+	id S1751980Ab1AYLDg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 06:03:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45596 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750831Ab1AYLDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 06:03:35 -0500
+Date: Tue, 25 Jan 2011 12:03:33 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Joey Lee <jlee@novell.com>
+Cc: jj@chaosbits.net, mjg@redhat.com, carlos@strangeworlds.co.uk,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] X86, Acer, WMI: Do not double include linux/dmi.h in
+ acer-wmi.c
+In-Reply-To: <4D3EC34A020000230002799D@novprvlin0050.provo.novell.com>
+Message-ID: <alpine.LNX.2.00.1101251203260.5725@pobox.suse.cz>
+References: <4D3EC34A020000230002799D@novprvlin0050.provo.novell.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D3EA6EC.5050305@bfs.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 11:33:16AM +0100, walter harms wrote:
-> Would it be more easy to return NULL in the error case of clk_get() instead
-> of ERR_PTR(-ENOENT) ?
+On Mon, 24 Jan 2011, Joey Lee wrote:
+
+> Hi Jesper, 
 > 
-> So the default could be return NULL and an architecture depending solution
-> replacing that.
+> 於 一，2011-01-24 於 22:12 +0100，Jesper Juhl 提到：
+> > Including linux/dmi.h once in drivers/platform/x86/acer-wmi.c is enough.
+> > 
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > ---
+> >  acer-wmi.c |    1 -
+> >  1 file changed, 1 deletion(-)
+> > 
+> > diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+> > index c5c4b8c..f21eb53 100644
+> > --- a/drivers/platform/x86/acer-wmi.c
+> > +++ b/drivers/platform/x86/acer-wmi.c
+> > @@ -39,7 +39,6 @@
+> >  #include <linux/slab.h>
+> >  #include <linux/input.h>
+> >  #include <linux/input/sparse-keymap.h>
+> > -#include <linux/dmi.h>
+> >  
+> >  #include <acpi/acpi_drivers.h>
+> >  
+> > 
+> 
+> Reviewed-by: Lee, Chun-Yi <jlee@novell.com>
 
-That's not how the API is defined.  The API defines error-pointers to be
-errors, everything should be considered valid.  Please don't go down the
-route of doing something architecturally different from that.
+Applied, thanks.
 
-What if, say, you couldn't return the struct clk because maybe it could
-only be controlled by one user?  Returning an EBUSY error pointer would
-indicate this condition.  What if the module providing the struct clk
-hasn't finished initializing - that's another reason for EBUSY rather
-than ENOENT.
-
-Error codes are useful to describe why something failed.  NULL pointers
-can't do that.
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
