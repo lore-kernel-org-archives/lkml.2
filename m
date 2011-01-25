@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753023Ab1AYC7G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 21:59:06 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:45177 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751980Ab1AYC7E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 21:59:04 -0500
-Date: Mon, 24 Jan 2011 21:59:02 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: rmorell@nvidia.com
-cc: David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Benoit Goby <benoit@android.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
-        Oliver Neukum <oliver@neukum.org>, Olof Johansson <olof@lixom.net>,
-        Erik Gilling <konkers@android.com>, Colin Cross <ccross@android.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 2/2] USB: ehci: tegra: Align DMA transfers to 32 bytes
-In-Reply-To: <20110124225323.GA5701@morell.nvidia.com>
-Message-ID: <Pine.LNX.4.44L0.1101242154550.27801-100000@netrider.rowland.org>
+	id S1753079Ab1AYDAi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 22:00:38 -0500
+Received: from kroah.org ([198.145.64.141]:34524 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752919Ab1AYDAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 22:00:37 -0500
+Date: Tue, 25 Jan 2011 11:01:05 +0800
+From: Greg KH <greg@kroah.com>
+To: Mike Waychison <mikew@google.com>
+Cc: torvalds@linux-foundation.org, San Mehat <san@google.com>,
+        Aaron Durbin <adurbin@google.com>, Duncan Laurie <dlaurie@google.com>,
+        linux-kernel@vger.kernel.org, Tim Hockin <thockin@google.com>
+Subject: Re: [PATCH v1 0/6] google firmware support
+Message-ID: <20110125030105.GA8761@kroah.com>
+References: <20110125002433.12637.51091.stgit@mike.mtv.corp.google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110125002433.12637.51091.stgit@mike.mtv.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Jan 2011 rmorell@nvidia.com wrote:
-
-> > > +	if (dir == DMA_FROM_DEVICE && !status)
-> > > +		memcpy(temp->old_xfer_buffer, temp->data,
-> > > +			urb->transfer_buffer_length);
-> > 
-> > Even if status is nonzero, there may be valid data in the buffer.  You 
-> > should skip that test.
+On Mon, Jan 24, 2011 at 04:24:34PM -0800, Mike Waychison wrote:
+> This patchset applies to v2.6.38-rc2.
 > 
-> Thanks for looking, Alan.  I added that test based on earlier feedback.
-> I think the big concern here is security: if the URB fails in such a way
-> that the buffer is not overwritten, then we may copy out freed kernel
-> data to userspace.
+> The following series implements support for interfaces exposed by
+> google's servers' firmware.
+> 
+> We'd like to have these small drivers included as they are required for
+> proper use of the kernel in our infrastructure.  They may not seem like
+> much, but a lot of our health automation as well as our human debugging
+> efforts are dependent on the functionality herein.
+> 
+> I'm pretty happy with the way this patchset looks and would like to ask
+> that they be merged at some point if there aren't any big objections.
+> Getting these in the public Linux tree would bring us closer to being
+> able to easily test kernels as they are released.
+> 
+> I wasn't certain who to send these patches to, please advise if I should
+> be CCing anyone else.
 
-Not to userspace, only to the driver that submitted the URB.  That 
-driver must be part of the kernel.  For URBs that _do_ originate in 
-userspace, by way of usbfs, the usbfs code is responsible for not 
-leaking any kernel data.
+I can take these, once they get all worked out, as I think I'm still the
+de-facto firmware maintainer.
 
-> Are there specific status codes that I can check for here?
+> [1] and [5] are the only ones that touch the 'core' kernel.
+> 
+> 
+>    - [1] adds a notifier_block that is called on Oops.
 
-No.
+This seems like a duplication of the existing infrastructure we already
+have for getting notified of oopses.
 
->  I guess the
-> only other option is to remove the direction check from the alloc path
-> or alloc with GFP_ZERO.
+>    - [2] introduces CONFIG_GOOGLE_FIRMWARE which all Google firmware
+>      drivers can depend upon.
+> 
+>    - [3] and [4] are drivers we use that are ready for inclusion.  [3]
+>      communicates with our EFI images via an SMI handshake.  [4] works
+>      with our older BIOSes to construct a log of reboot reasons.
+> 
+>    - [5] prepares for [6] by introducing prepend_to_dmesg() which
+>      allows drivers to prepend pre-kernel messages to the dmesg at
+>      bootup.
 
-You don't have to worry about this; it isn't a security concern.
+That seems "rude".  Why can't you just pick out from the kernel log the
+data you need when it gets printed?  This seems like you feel your code
+should always get a "First Post!" message.  What happens when someone
+else wants this and you get dueling "firsts"?
 
-Alan Stern
+thanks,
 
+greg k-h
