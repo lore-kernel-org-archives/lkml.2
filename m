@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752988Ab1AYPmM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 10:42:12 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35168 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751977Ab1AYPmL (ORCPT
+	id S1752973Ab1AYPv5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 10:51:57 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:49755 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751977Ab1AYPvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 10:42:11 -0500
-Date: Tue, 25 Jan 2011 15:41:33 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Colin Cross <ccross@android.com>, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, olof@lixom.net,
-        konkers@android.com, Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 04/28] ARM: mm: cache-l2x0: Add support for
-	re-enabling l2x0
-Message-ID: <20110125154133.GB17280@n2100.arm.linux.org.uk>
-References: <1295834493-5019-1-git-send-email-ccross@android.com> <1295834493-5019-5-git-send-email-ccross@android.com> <1295968464.10109.264.camel@e102109-lin.cambridge.arm.com>
+	Tue, 25 Jan 2011 10:51:55 -0500
+X-Sasl-enc: F/UqcN1TCHoNE3Xi/HAG9xjWdMmPm+W3d/VwzerAfGrN 1295970715
+Date: Tue, 25 Jan 2011 13:51:52 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: Thomas Renninger <trenn@suse.de>, "R, Durgadoss" <durgadoss.r@intel.com>,
+        "jdelvare@novell.com" <jdelvare@novell.com>,
+        Len Brown <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        "linux-perf-users@vger.kernel.org" <linux-perf-users@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-trace-users@vger.kernel.org" 
+	<linux-trace-users@vger.kernel.org>
+Subject: Re: Thermal kernel events API to userspace - Was: Re: thermal:
+ Avoid CONFIG_NET compile dependency
+Message-ID: <20110125155152.GC14803@khazad-dum.debian.net>
+References: <D6D887BA8C9DFF48B5233887EF046541094482F511@bgsmsx502.gar.corp.intel.com>
+ <D6D887BA8C9DFF48B5233887EF046541094488B86F@bgsmsx502.gar.corp.intel.com>
+ <201101241135.23576.trenn@suse.de>
+ <201101241407.28376.trenn@suse.de>
+ <20110124160747.GD6424@khazad-dum.debian.net>
+ <1295942269.1866.1201.camel@rui>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1295968464.10109.264.camel@e102109-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1295942269.1866.1201.camel@rui>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 03:14:24PM +0000, Catalin Marinas wrote:
-> On Mon, 2011-01-24 at 02:01 +0000, Colin Cross wrote:
-> > --- a/arch/arm/mm/cache-l2x0.c
-> > +++ b/arch/arm/mm/cache-l2x0.c
-> > @@ -252,16 +252,26 @@ static void l2x0_flush_range(unsigned long start, unsigned long end)
-> >         spin_unlock_irqrestore(&l2x0_lock, flags);
-> >  }
+On Tue, 25 Jan 2011, Zhang Rui wrote:
+> On Tue, 2011-01-25 at 00:07 +0800, Henrique de Moraes Holschuh wrote:
+> > > > > Also, the thermal_aux0 and _aux1, we can use the final format specified by you.
+> > > > > enum events {
+> > > > >  	THERMAL_CRITICAL,
+> > > > >  	/* user defined thermal events */
+> > > > >  	THERMAL_USER_AUX0,
+> > > > >  	THERMAL_USER_AUX1,
+> > > > >  	THERMAL_DEV_FAULT,
+> > > > >  };
 > > 
-> > +/* enables l2x0 after l2x0_disable, does not invalidate */
-> > +void l2x0_enable(void)
-> > +{
-> > +       unsigned long flags;
-> > +
-> > +       spin_lock_irqsave(&l2x0_lock, flags);
-> > +       writel_relaxed(1, l2x0_base + L2X0_CTRL);
-> > +       spin_unlock_irqrestore(&l2x0_lock, flags);
-> > +}
-> > +
-> >  static void l2x0_disable(void)
-> >  {
-> >         unsigned long flags;
+> > Please give us at least two levels of thermal alarm: critical and emergency
+> > (or warning and critical -- it doesn't matter much, as long as there are at
+> > least two levels, and which one comes first is defined by the
+> > specification).  I'd have immediate use for them on thinkpads.
 > > 
-> >         spin_lock_irqsave(&l2x0_lock, flags);
-> > -       writel(0, l2x0_base + L2X0_CTRL);
-> > +       writel_relaxed(0, l2x0_base + L2X0_CTRL);
-> >         spin_unlock_irqrestore(&l2x0_lock, flags);
-> >  }
+> > It is probably best to have three levels (warning, critical, emergency).
+> > Best not to tie the API/ABI to the notion of "too hot", one can also alarm
+> > when it starts to get to cold.
 > > 
-> > -void __init l2x0_init(void __iomem *base, __u32 aux_val, __u32 aux_mask)
-> > +void l2x0_init(void __iomem *base, __u32 aux_val, __u32 aux_mask)
-> >  {
-> >         __u32 aux;
-> >         __u32 cache_id;
-> 
-> So this assumes that the L2 registers are accessible. I suspect the
-> platform code calling it should know this.
-> 
-> The patch looks fine.
-> 
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+> when it's the "too hot" case, what kind of action should be taken upon
+> the warning/critical/emergency events?
+> I mean what's the difference between these three levels.
 
-I think we need to come up with some proper way to deal with cpuidle
-which doesn't involve adding lots of globally visible functions to all
-sorts of bits of code and having platforms call them individually,
-otherwise this is going to get _really_ messy in the future.
+*ASSUMING* it is monitoring the box (which is a damn big assumption, and
+should be stated outright):
 
-Maybe we need a notifier list which can be told when cpuidle events
-happen, so that parts of the system such as VFP and L2 cache support
-can do the right thing without having platforms add lots of stuff like
+Warning: do something to stop generating so much heat, warn user, try to
+increase cooling.  Let userspace bother with this.
 
-	gic_secondary_init();
-	gic_restore_interrupt_types();
-	vfp_enable();
-	l2x0_enable();
-	twd_enable();
-	... etc ...
+Critical: *STOP* generating so much heat (throttle cpu, throttle GPU,
+shutdown non-critical devices, etc).  Increase cooling to max.  WARN the
+user that a machine emergency exists and shutdown is imminent, and that he
+has to power off or sleep to ram *NOW*.
 
-in their SoC specific code.
+Emergency: emergency sync, and initiate immediate suspend to ram. If that
+fails, initiate emergency powerdown.
+
+Likely one wants kernel notifiers for this stuff, too, so that we can have
+in-kernel handlers (optional or not, configurable or not, that is orthogonal
+to the issue) that can try to do something to help.
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
