@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509Ab1AYRWW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 12:22:22 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:48523 "EHLO
+	id S1753535Ab1AYRWY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 12:22:24 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:48524 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753230Ab1AYRWI (ORCPT
+	with ESMTP id S1753234Ab1AYRWI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jan 2011 12:22:08 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 19/29] perf callchain: Rename register_callchain_param into callchain_register_param
-Date: Tue, 25 Jan 2011 15:21:42 -0200
-Message-Id: <1295976112-2796-20-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 15/29] perf evlist: Steal mmap reading routine from 'perf top'
+Date: Tue, 25 Jan 2011 15:21:38 -0200
+Message-Id: <1295976112-2796-16-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1295976112-2796-1-git-send-email-acme@infradead.org>
 References: <1295976112-2796-1-git-send-email-acme@infradead.org>
@@ -25,70 +27,198 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-To make the callchain API naming more consistent.
+Will be used in the upcoming 'perf test' entry for the evlist mmap
+routines.
 
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1294977121-5700-4-git-send-email-fweisbec@gmail.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-report.c |    4 ++--
- tools/perf/util/callchain.c |    2 +-
- tools/perf/util/callchain.h |    2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ tools/perf/builtin-top.c |   56 ++---------------------------------------
+ tools/perf/util/evlist.c |   62 ++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/evlist.h |    4 +++
+ 3 files changed, 69 insertions(+), 53 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index c95599a..f6a4349 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -221,7 +221,7 @@ static int perf_session__setup_sample_type(struct perf_session *self)
- 	} else if (!dont_use_callchains && callchain_param.mode != CHAIN_NONE &&
- 		   !symbol_conf.use_callchain) {
- 			symbol_conf.use_callchain = true;
--			if (register_callchain_param(&callchain_param) < 0) {
-+			if (callchain_register_param(&callchain_param) < 0) {
- 				fprintf(stderr, "Can't register callchain"
- 						" params\n");
- 				return -EINVAL;
-@@ -423,7 +423,7 @@ parse_callchain_opt(const struct option *opt __used, const char *arg,
- 	if (tok2)
- 		callchain_param.print_limit = strtod(tok2, &endptr);
- setup:
--	if (register_callchain_param(&callchain_param) < 0) {
-+	if (callchain_register_param(&callchain_param) < 0) {
- 		fprintf(stderr, "Can't register callchain params\n");
- 		return -1;
- 	}
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 4c6360f..5b3f09d 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -143,7 +143,7 @@ sort_chain_graph_rel(struct rb_root *rb_root, struct callchain_root *chain_root,
- 	rb_root->rb_node = chain_root->node.rb_root.rb_node;
- }
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index df85c1f..58352ad 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1100,67 +1100,17 @@ static void event__process_sample(const event_t *self,
  
--int register_callchain_param(struct callchain_param *param)
-+int callchain_register_param(struct callchain_param *param)
+ static void perf_session__mmap_read_cpu(struct perf_session *self, int cpu)
  {
- 	switch (param->mode) {
- 	case CHAIN_GRAPH_ABS:
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index 07f71e3..2bb5403 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -87,7 +87,7 @@ static inline u64 callchain_cumul_hits(struct callchain_node *node)
- 	return node->hit + node->children_hit;
+-	struct perf_mmap *md = &evsel_list->mmap[cpu];
+-	unsigned int head = perf_mmap__read_head(md);
+-	unsigned int old = md->prev;
+-	unsigned char *data = md->base + page_size;
+ 	struct sample_data sample;
+-	int diff;
+-
+-	/*
+-	 * If we're further behind than half the buffer, there's a chance
+-	 * the writer will bite our tail and mess up the samples under us.
+-	 *
+-	 * If we somehow ended up ahead of the head, we got messed up.
+-	 *
+-	 * In either case, truncate and restart at head.
+-	 */
+-	diff = head - old;
+-	if (diff > md->mask / 2 || diff < 0) {
+-		fprintf(stderr, "WARNING: failed to keep up with mmap data.\n");
+-
+-		/*
+-		 * head points to a known good entry, start there.
+-		 */
+-		old = head;
+-	}
+-
+-	for (; old != head;) {
+-		event_t *event = (event_t *)&data[old & md->mask];
+-
+-		event_t event_copy;
+-
+-		size_t size = event->header.size;
+-
+-		/*
+-		 * Event straddles the mmap boundary -- header should always
+-		 * be inside due to u64 alignment of output.
+-		 */
+-		if ((old & md->mask) + size != ((old + size) & md->mask)) {
+-			unsigned int offset = old;
+-			unsigned int len = min(sizeof(*event), size), cpy;
+-			void *dst = &event_copy;
+-
+-			do {
+-				cpy = min(md->mask + 1 - (offset & md->mask), len);
+-				memcpy(dst, &data[offset & md->mask], cpy);
+-				offset += cpy;
+-				dst += cpy;
+-				len -= cpy;
+-			} while (len);
+-
+-			event = &event_copy;
+-		}
++	event_t *event;
+ 
++	while ((event = perf_evlist__read_on_cpu(evsel_list, cpu)) != NULL) {
+ 		event__parse_sample(event, self, &sample);
++
+ 		if (event->header.type == PERF_RECORD_SAMPLE)
+ 			event__process_sample(event, &sample, self);
+ 		else
+ 			event__process(event, &sample, self);
+-		old += size;
+ 	}
+-
+-	md->prev = old;
  }
  
--int register_callchain_param(struct callchain_param *param);
-+int callchain_register_param(struct callchain_param *param);
- int callchain_append(struct callchain_root *root,
- 		     struct callchain_cursor *cursor,
- 		     u64 period);
+ static void perf_session__mmap_read(struct perf_session *self)
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index deb82a4..4b3b84c 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -95,3 +95,65 @@ struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id)
+ 			return sid->evsel;
+ 	return NULL;
+ }
++
++event_t *perf_evlist__read_on_cpu(struct perf_evlist *evlist, int cpu)
++{
++	/* XXX Move this to perf.c, making it generally available */
++	unsigned int page_size = sysconf(_SC_PAGE_SIZE);
++	struct perf_mmap *md = &evlist->mmap[cpu];
++	unsigned int head = perf_mmap__read_head(md);
++	unsigned int old = md->prev;
++	unsigned char *data = md->base + page_size;
++	event_t *event = NULL;
++	int diff;
++
++	/*
++	 * If we're further behind than half the buffer, there's a chance
++	 * the writer will bite our tail and mess up the samples under us.
++	 *
++	 * If we somehow ended up ahead of the head, we got messed up.
++	 *
++	 * In either case, truncate and restart at head.
++	 */
++	diff = head - old;
++	if (diff > md->mask / 2 || diff < 0) {
++		fprintf(stderr, "WARNING: failed to keep up with mmap data.\n");
++
++		/*
++		 * head points to a known good entry, start there.
++		 */
++		old = head;
++	}
++
++	if (old != head) {
++		size_t size;
++
++		event = (event_t *)&data[old & md->mask];
++		size = event->header.size;
++
++		/*
++		 * Event straddles the mmap boundary -- header should always
++		 * be inside due to u64 alignment of output.
++		 */
++		if ((old & md->mask) + size != ((old + size) & md->mask)) {
++			unsigned int offset = old;
++			unsigned int len = min(sizeof(*event), size), cpy;
++			void *dst = &evlist->event_copy;
++
++			do {
++				cpy = min(md->mask + 1 - (offset & md->mask), len);
++				memcpy(dst, &data[offset & md->mask], cpy);
++				offset += cpy;
++				dst += cpy;
++				len -= cpy;
++			} while (len);
++
++			event = &evlist->event_copy;
++		}
++
++		old += size;
++	}
++
++	md->prev = old;
++	return event;
++}
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index dbfcc79..2871206 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/list.h>
+ #include "../perf.h"
++#include "event.h"
+ 
+ struct pollfd;
+ 
+@@ -15,6 +16,7 @@ struct perf_evlist {
+ 	int		 nr_entries;
+ 	int		 nr_fds;
+ 	int		 mmap_len;
++	event_t		 event_copy;
+ 	struct perf_mmap *mmap;
+ 	struct pollfd	 *pollfd;
+ };
+@@ -32,4 +34,6 @@ void perf_evlist__add_pollfd(struct perf_evlist *evlist, int fd);
+ 
+ struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id);
+ 
++event_t *perf_evlist__read_on_cpu(struct perf_evlist *self, int cpu);
++
+ #endif /* __PERF_EVLIST_H */
 -- 
 1.6.2.5
 
