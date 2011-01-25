@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520Ab1AYW2i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 17:28:38 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:40414 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752754Ab1AYW2g (ORCPT
+	id S1753951Ab1AYW2x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 17:28:53 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48038
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753624Ab1AYW2w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 17:28:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=K5cYYAHRdHyMRj95WYuBB25pUZgrT7RbUkzLuCJVHYbSE39r4JOn1v5Ipc8fH3MNCX
-         VdSht54RT9iadIU1fWXbcCafXbytVUy8uXozerytTA9+ssO0d3ZzwYeDyVmLV/2+d3A4
-         bHpqjenpvak9ou+w4N4XK3L8SlpuIw6zQRyK0=
-Date: Tue, 25 Jan 2011 23:28:31 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 17/20] tracing: don't trace the BKL
-Message-ID: <20110125222828.GA2532@nowhere>
+	Tue, 25 Jan 2011 17:28:52 -0500
+Date: Tue, 25 Jan 2011 14:29:26 -0800 (PST)
+Message-Id: <20110125.142926.246535705.davem@davemloft.net>
+To: arnd@arndb.de
+Cc: linux-kernel@vger.kernel.org, acme@ghostprotocols.net,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 14/20] staging/appletalk: remove the BKL
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1295993854-4971-15-git-send-email-arnd@arndb.de>
 References: <1295993854-4971-1-git-send-email-arnd@arndb.de>
- <1295993854-4971-18-git-send-email-arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295993854-4971-18-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	<1295993854-4971-15-git-send-email-arnd@arndb.de>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 11:17:31PM +0100, Arnd Bergmann wrote:
-> No reason to trace it when the last user is gone.
+From: Arnd Bergmann <arnd@arndb.de>
+Date: Tue, 25 Jan 2011 23:17:28 +0100
+
+> This changes appletalk to use lock_sock instead of
+> lock_kernel for serialization. I tried to make sure
+> that we don't hold the socket lock during sleeping
+> functions, but I did not try to prove whether the
+> locks are necessary in the first place.
+> 
+> Compile-tested only.
 > 
 > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+If you're moving appletalk to staging because "nobody is motivated
+enough to remove the BKL" and then you actually do the work to remove
+the BKL, I really don't see any point in doing the whole staging
+thing.
 
-You could also remove file and line arguments from _(un)lock_kernel
-but as the final removal follows, we just don't care.
+We always keep an eye on every protocol that sits under the top-level
+net/.  Every socket API change propagates, as does every other
+networking API change that matters for those protocols.
 
-Tell us if you want that in the tracing tree. But I guess this
-should be included in the same set than the rest or?
-
-Thanks!
+You can move appletalk down to staging if that stops happening, which
+it won't.
