@@ -1,59 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927Ab1AYTEX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 14:04:23 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:43556 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673Ab1AYTEW (ORCPT
+	id S1752631Ab1AYTKh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 14:10:37 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:12155 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751598Ab1AYTKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 14:04:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=hVj/5DLJlkox6pXPqHhwmK/VyvBBBp1BYRn/dgm8+TxSMjVf9l6yOeyYWyWBUWgNR8
-         nZoXxPhLhr5xFOn7nKdkhLrTkSAwGvovjDM4ltbosTPgTSqgRa93Yd8azDe4CCBmM7Ra
-         vy5phXoRDRNAb4LR6X+mBUzPRG5Gi1mWodi9A=
-Message-ID: <4D3F1EAF.1080609@garzik.org>
-Date: Tue, 25 Jan 2011 14:04:15 -0500
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Tony Luck <tony.luck@intel.com>
-CC: "Ahmed S. Darwish" <darwish.07@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, X86-ML <x86@kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Willy Tarreau <wtarreau@hera.kernel.org>, Willy Tarreau <w@1wt.eu>,
-        Dirk Hohndel <hohndel@infradead.org>, Dirk.Hohndel@intel.com,
-        IDE-ML <linux-ide@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH 0/2][concept RFC] x86: BIOS-save kernel log to disk upon
- panic
-References: <20110125134748.GA10051@laptop> <20110125140948.GA26762@elte.hu> <20110125153649.GA11386@laptop> <AANLkTikHe8Bq1f-nv8hiAeY7rs7t5MWTvEUSYT81py4S@mail.gmail.com>
-In-Reply-To: <AANLkTikHe8Bq1f-nv8hiAeY7rs7t5MWTvEUSYT81py4S@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Jan 2011 14:10:36 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 25 Jan 2011 10:59:26 -0800
+From: rklein@nvidia.com
+To: cbouatmailru@gmail.com
+Cc: olofj@chromium.org, linux-kernel@vger.kernel.org,
+        Rhyland Klein <rklein@nvidia.com>
+Subject: [PATCH v3] power: bq20z75: add support for charge properties
+Date: Tue, 25 Jan 2011 11:10:06 -0800
+Message-Id: <1295982606-4604-1-git-send-email-rklein@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2011 12:32 PM, Tony Luck wrote:
-> One more "is this bit of the BIOS code safe" concern that I have is that
-> you'll be using the "write" path of the INT 0x13 code ... which isn't the
-> path that is tested by booting ... it *ought* to be OK - but untested paths
-> in BIOS seem to be broken paths all too often.
+From: Rhyland Klein <rklein@nvidia.com>
 
+Adding support for charge properties for gas gauge.
+Also ensuring that battery mode is correct now for energy as well as
+charge properties by setting it on the fly.
 
-Not really...  as others have noted, we reprogram the controller in a 
-different mode, once the kernel starts.
+I also added 2 functions to power_supply.h to help identify the units for
+specific properties more easily by power supplies.
 
-	Jeff
+Signed-off-by: Rhyland Klein <rklein@nvidia.com>
+---
+-Changes from v1 to v2
+	-removed the macros to determine unit and moved them to
+	 common functions in power_supply.h
+-Changes from v2 to v3
+	-removed camelCase variable name
 
+ drivers/power/bq20z75.c      |   98 +++++++++++++++++++++++++++++++++++++-----
+ include/linux/power_supply.h |   46 ++++++++++++++++++++
+ 2 files changed, 133 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/power/bq20z75.c b/drivers/power/bq20z75.c
+index 492da27..4141775 100644
+--- a/drivers/power/bq20z75.c
++++ b/drivers/power/bq20z75.c
+@@ -38,11 +38,22 @@ enum {
+ 	REG_CYCLE_COUNT,
+ 	REG_SERIAL_NUMBER,
+ 	REG_REMAINING_CAPACITY,
++	REG_REMAINING_CAPACITY_CHARGE,
+ 	REG_FULL_CHARGE_CAPACITY,
++	REG_FULL_CHARGE_CAPACITY_CHARGE,
+ 	REG_DESIGN_CAPACITY,
++	REG_DESIGN_CAPACITY_CHARGE,
+ 	REG_DESIGN_VOLTAGE,
+ };
+ 
++/* Battery Mode defines */
++#define BATTERY_MODE_OFFSET		0x03
++#define BATTERY_MODE_MASK		0x8000
++enum bq20z75_battery_mode {
++	BATTERY_MODE_AMPS,
++	BATTERY_MODE_WATTS
++};
++
+ /* manufacturer access defines */
+ #define MANUFACTURER_ACCESS_STATUS	0x0006
+ #define MANUFACTURER_ACCESS_SLEEP	0x0011
+@@ -78,8 +89,12 @@ static const struct bq20z75_device_data {
+ 		BQ20Z75_DATA(POWER_SUPPLY_PROP_CAPACITY, 0x0E, 0, 100),
+ 	[REG_REMAINING_CAPACITY] =
+ 		BQ20Z75_DATA(POWER_SUPPLY_PROP_ENERGY_NOW, 0x0F, 0, 65535),
++	[REG_REMAINING_CAPACITY_CHARGE] =
++		BQ20Z75_DATA(POWER_SUPPLY_PROP_CHARGE_NOW, 0x0F, 0, 65535),
+ 	[REG_FULL_CHARGE_CAPACITY] =
+ 		BQ20Z75_DATA(POWER_SUPPLY_PROP_ENERGY_FULL, 0x10, 0, 65535),
++	[REG_FULL_CHARGE_CAPACITY_CHARGE] =
++		BQ20Z75_DATA(POWER_SUPPLY_PROP_CHARGE_FULL, 0x10, 0, 65535),
+ 	[REG_TIME_TO_EMPTY] =
+ 		BQ20Z75_DATA(POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG, 0x12, 0,
+ 			65535),
+@@ -93,6 +108,9 @@ static const struct bq20z75_device_data {
+ 	[REG_DESIGN_CAPACITY] =
+ 		BQ20Z75_DATA(POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN, 0x18, 0,
+ 			65535),
++	[REG_DESIGN_CAPACITY_CHARGE] =
++		BQ20Z75_DATA(POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN, 0x18, 0,
++			65535),
+ 	[REG_DESIGN_VOLTAGE] =
+ 		BQ20Z75_DATA(POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN, 0x19, 0,
+ 			65535),
+@@ -117,6 +135,9 @@ static enum power_supply_property bq20z75_properties[] = {
+ 	POWER_SUPPLY_PROP_ENERGY_NOW,
+ 	POWER_SUPPLY_PROP_ENERGY_FULL,
+ 	POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN,
++	POWER_SUPPLY_PROP_CHARGE_NOW,
++	POWER_SUPPLY_PROP_CHARGE_FULL,
++	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
+ };
+ 
+ struct bq20z75_info {
+@@ -260,6 +281,9 @@ static void  bq20z75_unit_adjustment(struct i2c_client *client,
+ 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+ 	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
+ 	case POWER_SUPPLY_PROP_CURRENT_NOW:
++	case POWER_SUPPLY_PROP_CHARGE_NOW:
++	case POWER_SUPPLY_PROP_CHARGE_FULL:
++	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
+ 		val->intval *= BASE_UNIT_CONVERSION;
+ 		break;
+ 
+@@ -281,11 +305,44 @@ static void  bq20z75_unit_adjustment(struct i2c_client *client,
+ 	}
+ }
+ 
++static enum bq20z75_battery_mode
++bq20z75_set_battery_mode(struct i2c_client *client,
++	enum bq20z75_battery_mode mode)
++{
++	int ret, original_val;
++
++	original_val = bq20z75_read_word_data(client, BATTERY_MODE_OFFSET);
++	if (original_val < 0)
++		return original_val;
++
++	if ((original_val & BATTERY_MODE_MASK) == mode)
++		return mode;
++
++	if (mode == BATTERY_MODE_AMPS)
++		ret = original_val & ~BATTERY_MODE_MASK;
++	else
++		ret = original_val | BATTERY_MODE_MASK;
++
++	ret = bq20z75_write_word_data(client, BATTERY_MODE_OFFSET, ret);
++	if (ret < 0)
++		return ret;
++
++	return original_val & BATTERY_MODE_MASK;
++}
++
+ static int bq20z75_get_battery_capacity(struct i2c_client *client,
+ 	int reg_offset, enum power_supply_property psp,
+ 	union power_supply_propval *val)
+ {
+ 	s32 ret;
++	enum bq20z75_battery_mode mode = BATTERY_MODE_WATTS;
++
++	if (power_supply_is_amp_property(psp))
++		mode = BATTERY_MODE_AMPS;
++
++	mode = bq20z75_set_battery_mode(client, mode);
++	if (mode < 0)
++		return mode;
+ 
+ 	ret = bq20z75_read_word_data(client, bq20z75_data[reg_offset].addr);
+ 	if (ret < 0)
+@@ -298,6 +355,10 @@ static int bq20z75_get_battery_capacity(struct i2c_client *client,
+ 	} else
+ 		val->intval = ret;
+ 
++	ret = bq20z75_set_battery_mode(client, mode);
++	if (ret < 0)
++		return ret;
++
+ 	return 0;
+ }
+ 
+@@ -318,11 +379,25 @@ static int bq20z75_get_battery_serial_number(struct i2c_client *client,
+ 	return 0;
+ }
+ 
++static int bq20z75_get_property_index(struct i2c_client *client,
++	enum power_supply_property psp)
++{
++	int count;
++	for (count = 0; count < ARRAY_SIZE(bq20z75_data); count++)
++		if (psp == bq20z75_data[count].psp)
++			return count;
++
++	dev_warn(&client->dev,
++		"%s: Invalid Property - %d\n", __func__, psp);
++
++	return -EINVAL;
++}
++
+ static int bq20z75_get_property(struct power_supply *psy,
+ 	enum power_supply_property psp,
+ 	union power_supply_propval *val)
+ {
+-	int count;
++	int ps_index;
+ 	int ret;
+ 	struct bq20z75_info *bq20z75_device = container_of(psy,
+ 				struct bq20z75_info, power_supply);
+@@ -343,13 +418,15 @@ static int bq20z75_get_property(struct power_supply *psy,
+ 	case POWER_SUPPLY_PROP_ENERGY_NOW:
+ 	case POWER_SUPPLY_PROP_ENERGY_FULL:
+ 	case POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN:
++	case POWER_SUPPLY_PROP_CHARGE_NOW:
++	case POWER_SUPPLY_PROP_CHARGE_FULL:
++	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
+ 	case POWER_SUPPLY_PROP_CAPACITY:
+-		for (count = 0; count < ARRAY_SIZE(bq20z75_data); count++) {
+-			if (psp == bq20z75_data[count].psp)
+-				break;
+-		}
++		ps_index = bq20z75_get_property_index(client, psp);
++		if (ps_index < 0)
++			return ps_index;
+ 
+-		ret = bq20z75_get_battery_capacity(client, count, psp, val);
++		ret = bq20z75_get_battery_capacity(client, ps_index, psp, val);
+ 		if (ret)
+ 			return ret;
+ 
+@@ -369,12 +446,11 @@ static int bq20z75_get_property(struct power_supply *psy,
+ 	case POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG:
+ 	case POWER_SUPPLY_PROP_TIME_TO_FULL_AVG:
+ 	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
+-		for (count = 0; count < ARRAY_SIZE(bq20z75_data); count++) {
+-			if (psp == bq20z75_data[count].psp)
+-				break;
+-		}
++		ps_index = bq20z75_get_property_index(client, psp);
++		if (ps_index < 0)
++			return ps_index;
+ 
+-		ret = bq20z75_get_battery_property(client, count, psp, val);
++		ret = bq20z75_get_battery_property(client, ps_index, psp, val);
+ 		if (ret)
+ 			return ret;
+ 
+diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+index 7d73256..39408ee 100644
+--- a/include/linux/power_supply.h
++++ b/include/linux/power_supply.h
+@@ -213,4 +213,50 @@ extern void power_supply_unregister(struct power_supply *psy);
+ /* For APM emulation, think legacy userspace. */
+ extern struct class *power_supply_class;
+ 
++static inline bool power_supply_is_amp_property(
++	enum power_supply_property psp){
++
++	switch (psp) {
++	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
++	case POWER_SUPPLY_PROP_CHARGE_EMPTY_DESIGN:
++	case POWER_SUPPLY_PROP_CHARGE_FULL:
++	case POWER_SUPPLY_PROP_CHARGE_EMPTY:
++	case POWER_SUPPLY_PROP_CHARGE_NOW:
++	case POWER_SUPPLY_PROP_CHARGE_AVG:
++	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
++	case POWER_SUPPLY_PROP_CURRENT_MAX:
++	case POWER_SUPPLY_PROP_CURRENT_NOW:
++	case POWER_SUPPLY_PROP_CURRENT_AVG:
++		return 1;
++	default:
++		break;
++	}
++
++	return 0;
++}
++
++static inline bool power_supply_is_watt_property(
++	enum power_supply_property psp){
++
++	switch (psp) {
++	case POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN:
++	case POWER_SUPPLY_PROP_ENERGY_EMPTY_DESIGN:
++	case POWER_SUPPLY_PROP_ENERGY_FULL:
++	case POWER_SUPPLY_PROP_ENERGY_EMPTY:
++	case POWER_SUPPLY_PROP_ENERGY_NOW:
++	case POWER_SUPPLY_PROP_ENERGY_AVG:
++	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
++	case POWER_SUPPLY_PROP_VOLTAGE_MIN:
++	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
++	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
++	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
++	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
++		return 1;
++	default:
++		break;
++	}
++
++	return 0;
++}
++
+ #endif /* __LINUX_POWER_SUPPLY_H__ */
+-- 
+1.7.0.4
 
