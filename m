@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379Ab1AYUA3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 15:00:29 -0500
-Received: from lider.pardus.org.tr ([193.140.100.216]:42694 "EHLO
-	lider.pardus.org.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954Ab1AYUA2 (ORCPT
+	id S1753409Ab1AYUCA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 15:02:00 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:14270 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753255Ab1AYUB7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 15:00:28 -0500
-Message-ID: <4D3F2BDB.7050508@pardus.org.tr>
-Date: Tue, 25 Jan 2011 22:00:27 +0200
-From: =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozan@pardus.org.tr>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Tue, 25 Jan 2011 15:01:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=EwpONhXDl018IIfL+drjQJd2sc3pE51ELvY4MDz02+R2rSivVGxs6uDvMNnyDLi6dM
+         GK8eIg1aq0u1ye5HHUmA==
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Lionel Debroux <lionel_debroux@yahoo.fr>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        colin.king@canonical.com
-Subject: Re: Common boot/shutdown issues with the latest 2.6.37 (Mostly Asus
- laptops)
-References: <556624.21214.qm@web28409.mail.ukl.yahoo.com> <201101252038.25113.rjw@sisk.pl> <4D3F2869.3000406@pardus.org.tr> <201101252054.46647.rjw@sisk.pl>
-In-Reply-To: <201101252054.46647.rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110125020658.GA3481@kroah.com>
+References: <20110125002433.12637.51091.stgit@mike.mtv.corp.google.com>
+ <20110125002439.12637.8515.stgit@mike.mtv.corp.google.com> <20110125020658.GA3481@kroah.com>
+From: Mike Waychison <mikew@google.com>
+Date: Tue, 25 Jan 2011 12:01:35 -0800
+Message-ID: <AANLkTinLoDN_6zG56J7V154jrRc-K+BzAHFO3qS_r8J0@mail.gmail.com>
+Subject: Re: [PATCH v1 1/6] Add oops notification chain.
+To: Greg KH <greg@kroah.com>
+Cc: torvalds@linux-foundation.org, San Mehat <san@google.com>,
+        Aaron Durbin <adurbin@google.com>, Duncan Laurie <dlaurie@google.com>,
+        linux-kernel@vger.kernel.org, Tim Hockin <thockin@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 24, 2011 at 6:06 PM, Greg KH <greg@kroah.com> wrote:
+> On Mon, Jan 24, 2011 at 04:24:39PM -0800, Mike Waychison wrote:
+>> From: Aaron Durbin <adurbin@google.com>
+>>
+>> Later firmware patches in this series would like to be able to be
+>> notified whenever an oops occurs on the system, so that it can be
+>> recorded in the boot log.
+>>
+>> This patch introduces a notifier_block called "oops_notifier_list"
+>> so that drivers can register to get called whenever an Oops is
+>> triggered.
+>
+> But we already have a panic notifier list.  Why create a new one?
+> What's wrong with the existing one that doesn't work properly for you?
 
-> However, it would be good to check if the affected systems work with
-> intel_idle + the above patch instead of acpi_idle.
-
-My bad. I thought that I enabled intel_idle but it was not
-driving those processors but it seems that I've not enabled it on those 
-kernels.
-
-Okay, ASAP I'll report back what's going on with intel_idle + the
-patch that you gave.
-
-
--- 
-Pardus Linux
-http://www.pardus.org.tr/eng
+AFAICT, the panic notifier list doesn't get called on oops.  Should we
+reuse it and actually add meaning to the 'reason' argument?  It does
+become a misnomer if we do that :\
