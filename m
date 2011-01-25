@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928Ab1AYW0S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 17:26:18 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47546 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752936Ab1AYW0Q (ORCPT
+	id S1754056Ab1AYW0z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 17:26:55 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36022 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752548Ab1AYW0x convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 17:26:16 -0500
+	Tue, 25 Jan 2011 17:26:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=GGh8AQb0hHXwZTl1Xb0Fw9PXhtrzdX1x+ypCrS6uU126c4o53bzjEgMVrzDkjEmVXY
+         Mc4fEo2/StzAqeZrXZy94sLVQpt5wjTTg7aDeRYvgYtSfm2kFrtYw+fCNoPm9+TRvur7
+         PhkbdhD8JYZ1u5kTlvzaeyQPmnXy1GAqagNII=
 MIME-Version: 1.0
-In-Reply-To: <4D3F4804.6070508@redhat.com>
-References: <4D3E4DD1.60705@teksavvy.com> <20110125042016.GA7850@core.coreip.homeip.net>
- <4D3E5372.9010305@teksavvy.com> <20110125045559.GB7850@core.coreip.homeip.net>
- <4D3E59CA.6070107@teksavvy.com> <4D3E5A91.30207@teksavvy.com>
- <20110125053117.GD7850@core.coreip.homeip.net> <4D3EB734.5090100@redhat.com>
- <20110125164803.GA19701@core.coreip.homeip.net> <AANLkTi=1Mh0JrYk5itvef7O7e7pR+YKos-w56W5q4B8B@mail.gmail.com>
- <20110125205453.GA19896@core.coreip.homeip.net> <4D3F4804.6070508@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 26 Jan 2011 08:25:25 +1000
-Message-ID: <AANLkTikBzqtb01G=hMJO9bcctnQ_J21OR3DfxDbufsVd@mail.gmail.com>
-Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils ?
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mark Lord <kernel@teksavvy.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org, linux-media@vger.kernel.org
+In-Reply-To: <20110125151346.GB14803@khazad-dum.debian.net>
+References: <Pine.LNX.4.64.1101251740380.3737@boston.corp.fedex.com>
+	<20110125151346.GB14803@khazad-dum.debian.net>
+Date: Wed, 26 Jan 2011 06:26:53 +0800
+Message-ID: <AANLkTim9cN8KXx5DVrH_nBzVjnmuYsxOHwP4msBKs=gS@mail.gmail.com>
+Subject: Re: thinkpad-acpi: fn-f4 issues
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: LKML <linux-kernel@vger.kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        platform-driver-x86@vger.kernel.org,
+        ibm-acpi-devel@lists.sourceforge.net, Dominik Kopp <my@kabelfunk.de>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 26, 2011 at 8:00 AM, Mauro Carvalho Chehab
-<mchehab@redhat.com> wrote:
->
-> See, it will only look into the 16-bits scancode space. There are several remote
-> controllers with 24 bits and 32 bits, so the tool is already broken anyway.
+On Tue, Jan 25, 2011 at 11:13 PM, Henrique de Moraes Holschuh
+<hmh@hmh.eng.br> wrote:
+> That will basicaly lobotomize the driver, as the "hotkeys" are really the
+> entire firmware event interface(!).
 
-Mauro, stop blathering.
+Didn't know that.
 
-The problem is that the tool used to work with OLD DEVICES AND SETUPS
-that used to work. That broke. It needs to get fixed.
+> Which thinkpad do you have that need CONFIG_THINKPAD_ACPI_HOTKEY_POLL to
+> handle Fn+F4?   I don't expect that to be needed on anything newer than a
+> T32...
 
-We do not change user-land ABI. Not now, not ever. And no, "the tool
-is broken" is NOT an excuse. Bringing it up as one is unacceptable.
-The fact that there are devices that didn't use to be supported at all
-that don't work with the old tool has absolutely ZERO relevance,
-because that's not a regression.
+X201s which is quite new.
 
-No regressions. No excuses. No "user-land is broken", however much you
-disagree with it.
 
-                  Linus
+> Can I have the full kernel log, please?
+
+thinkpad_acpi: ThinkPad ACPI Extras v0.24
+thinkpad_acpi: http://ibm-acpi.sf.net/
+thinkpad_acpi: ThinkPad BIOS 6QET62WW (1.32 ), EC 6QHT31WW-1.12
+thinkpad_acpi: Lenovo ThinkPad X201s, model 5413FGA
+thinkpad_acpi: detected a 8-level brightness capable ThinkPad
+thinkpad_acpi: radio switch found; radios are enabled
+thinkpad_acpi: possible tablet mode switch found; ThinkPad in laptop mode
+thinkpad_acpi: rfkill switch tpacpi_bluetooth_sw: radio is blocked
+Registered led device: tpacpi::thinklight
+Registered led device: tpacpi::power
+Registered led device: tpacpi::standby
+Registered led device: tpacpi::thinkvantage
+thinkpad_acpi: volume: disabled as there is no ALSA support in this kernel
+input: ThinkPad Extra Buttons as /devices/platform/thinkpad_acpi/input/input5
+
+And the volume up/down does not work either even with thinkpad ALSA
+support enabled.
+
+Thanks,
+Jeff.
