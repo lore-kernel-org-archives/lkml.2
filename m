@@ -1,210 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab1AYWTI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 17:19:08 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:49476 "EHLO
+	id S1754026Ab1AYWTD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 17:19:03 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:50989 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753810Ab1AYWSF (ORCPT
+	with ESMTP id S1753836Ab1AYWSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 17:18:05 -0500
+	Tue, 25 Jan 2011 17:18:07 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        netdev@vger.kernel.org
-Subject: [PATCH 14/20] staging/appletalk: remove the BKL
-Date: Tue, 25 Jan 2011 23:17:28 +0100
-Message-Id: <1295993854-4971-15-git-send-email-arnd@arndb.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Palash Bandyopadhyay <palash.bandyopadhyay@conexant.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 04/20] staging/cx25721: serialize access to devlist
+Date: Tue, 25 Jan 2011 23:17:18 +0100
+Message-Id: <1295993854-4971-5-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1295993854-4971-1-git-send-email-arnd@arndb.de>
 References: <1295993854-4971-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:YA56HOYYQxpBEi/IWjRITVdJ02E6AI0+EtgmDLTEpdp
- nE3VMQGpLjUQMSaYrAbr87vWoAXqeMXCBNMXkinQ6BPTEqSz+m
- 5L4dFm8qyN2cMFhjMpGbOK35oWfNbx1Pke8f+bIyd/Z5wI5JrU
- 4DH6tlumxOMr0iYMV53WqBpRa1lFzQDw/85uTICIHm/ZpZSQ6D
- muDprNKqeCVx1c/GBClow==
+X-Provags-ID: V02:K0:htY8vs7Qoxuw9aiMoAzJJO2HNgSTFaInx4Kj1zCWIE1
+ cX0omVq8Iuy/0KfsSA1c0Am5wOcaI/Zt/rwgdVq32PbxAWI9yf
+ DMJMWqQIUwkZXSZfJ2bfqxArgRK5fCiRe679rI4UU0PJRw+z2I
+ f1BUmgCxKucZQQWEjCwJVVGv1uu2JNYnd87qyzOrbGNsjjoLrP
+ 7MzG1xDXDJzHsOWtMX6Ww==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This changes appletalk to use lock_sock instead of
-lock_kernel for serialization. I tried to make sure
-that we don't hold the socket lock during sleeping
-functions, but I did not try to prove whether the
-locks are necessary in the first place.
-
-Compile-tested only.
+Out of the three files accessing the device list,
+one uses a mutex, one uses the BKL and one does
+not have any locking. That is of course pointless,
+so let's make all of them use the same mutex,
+and get rid of one more BKL user.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: netdev@vger.kernel.org
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Palash Bandyopadhyay <palash.bandyopadhyay@conexant.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/staging/appletalk/Kconfig |    1 -
- drivers/staging/appletalk/ddp.c   |   40 ++++++++++++++----------------------
- 2 files changed, 16 insertions(+), 25 deletions(-)
+ drivers/staging/cx25821/Kconfig         |    1 -
+ drivers/staging/cx25821/cx25821-alsa.c  |    2 ++
+ drivers/staging/cx25821/cx25821-core.c  |   16 +++++++---------
+ drivers/staging/cx25821/cx25821-video.c |    9 ++++-----
+ drivers/staging/cx25821/cx25821.h       |    3 ++-
+ 5 files changed, 15 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/staging/appletalk/Kconfig b/drivers/staging/appletalk/Kconfig
-index 0b376a9..f5a8916 100644
---- a/drivers/staging/appletalk/Kconfig
-+++ b/drivers/staging/appletalk/Kconfig
-@@ -3,7 +3,6 @@
- #
- config ATALK
- 	tristate "Appletalk protocol support"
--	depends on BKL # waiting to be removed from net/appletalk/ddp.c
- 	select LLC
- 	---help---
- 	  AppleTalk is the protocol that Apple computers can use to communicate
-diff --git a/drivers/staging/appletalk/ddp.c b/drivers/staging/appletalk/ddp.c
-index 940dd19..0e2240c 100644
---- a/drivers/staging/appletalk/ddp.c
-+++ b/drivers/staging/appletalk/ddp.c
-@@ -54,7 +54,6 @@
- #include <linux/capability.h>
- #include <linux/module.h>
- #include <linux/if_arp.h>
--#include <linux/smp_lock.h>
- #include <linux/termios.h>	/* For TIOCOUTQ/INQ */
- #include <linux/compat.h>
- #include <linux/slab.h>
-@@ -1052,13 +1051,13 @@ static int atalk_release(struct socket *sock)
- {
- 	struct sock *sk = sock->sk;
+diff --git a/drivers/staging/cx25821/Kconfig b/drivers/staging/cx25821/Kconfig
+index b265695..5f6b542 100644
+--- a/drivers/staging/cx25821/Kconfig
++++ b/drivers/staging/cx25821/Kconfig
+@@ -1,7 +1,6 @@
+ config VIDEO_CX25821
+ 	tristate "Conexant cx25821 support"
+ 	depends on DVB_CORE && VIDEO_DEV && PCI && I2C
+-	depends on BKL # please fix
+ 	select I2C_ALGOBIT
+ 	select VIDEO_BTCX
+ 	select VIDEO_TVEEPROM
+diff --git a/drivers/staging/cx25821/cx25821-alsa.c b/drivers/staging/cx25821/cx25821-alsa.c
+index 160f669..ebdba7c 100644
+--- a/drivers/staging/cx25821/cx25821-alsa.c
++++ b/drivers/staging/cx25821/cx25821-alsa.c
+@@ -770,10 +770,12 @@ static int cx25821_alsa_init(void)
+ 	struct cx25821_dev *dev = NULL;
+ 	struct list_head *list;
  
--	lock_kernel();
-+	lock_sock(sk);
- 	if (sk) {
- 		sock_orphan(sk);
- 		sock->sk = NULL;
- 		atalk_destroy_socket(sk);
++	mutex_lock(&cx25821_devlist_mutex);
+ 	list_for_each(list, &cx25821_devlist) {
+ 		dev = list_entry(list, struct cx25821_dev, devlist);
+ 		cx25821_audio_initdev(dev);
  	}
--	unlock_kernel();
-+	release_sock(sk);
- 	return 0;
- }
++	mutex_unlock(&cx25821_devlist_mutex);
  
-@@ -1143,7 +1142,7 @@ static int atalk_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
- 	if (addr->sat_family != AF_APPLETALK)
- 		return -EAFNOSUPPORT;
+ 	if (dev == NULL)
+ 		pr_info("ERROR ALSA: no cx25821 cards found\n");
+diff --git a/drivers/staging/cx25821/cx25821-core.c b/drivers/staging/cx25821/cx25821-core.c
+index a216b62..523ac5e 100644
+--- a/drivers/staging/cx25821/cx25821-core.c
++++ b/drivers/staging/cx25821/cx25821-core.c
+@@ -33,9 +33,6 @@ MODULE_DESCRIPTION("Driver for Athena cards");
+ MODULE_AUTHOR("Shu Lin - Hiep Huynh");
+ MODULE_LICENSE("GPL");
  
--	lock_kernel();
-+	lock_sock(sk);
- 	if (addr->sat_addr.s_net == htons(ATADDR_ANYNET)) {
- 		struct atalk_addr *ap = atalk_find_primary();
- 
-@@ -1179,7 +1178,7 @@ static int atalk_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
- 	sock_reset_flag(sk, SOCK_ZAPPED);
- 	err = 0;
- out:
--	unlock_kernel();
-+	release_sock(sk);
- 	return err;
- }
- 
-@@ -1215,7 +1214,7 @@ static int atalk_connect(struct socket *sock, struct sockaddr *uaddr,
- #endif
- 	}
- 
--	lock_kernel();
-+	lock_sock(sk);
- 	err = -EBUSY;
- 	if (sock_flag(sk, SOCK_ZAPPED))
- 		if (atalk_autobind(sk) < 0)
-@@ -1233,7 +1232,7 @@ static int atalk_connect(struct socket *sock, struct sockaddr *uaddr,
- 	sk->sk_state = TCP_ESTABLISHED;
- 	err = 0;
- out:
--	unlock_kernel();
-+	release_sock(sk);
- 	return err;
- }
- 
-@@ -1249,7 +1248,7 @@ static int atalk_getname(struct socket *sock, struct sockaddr *uaddr,
- 	struct atalk_sock *at = at_sk(sk);
- 	int err;
- 
--	lock_kernel();
-+	lock_sock(sk);
- 	err = -ENOBUFS;
- 	if (sock_flag(sk, SOCK_ZAPPED))
- 		if (atalk_autobind(sk) < 0)
-@@ -1277,17 +1276,7 @@ static int atalk_getname(struct socket *sock, struct sockaddr *uaddr,
- 	memcpy(uaddr, &sat, sizeof(sat));
- 
- out:
--	unlock_kernel();
--	return err;
--}
+-struct list_head cx25821_devlist;
+-EXPORT_SYMBOL(cx25821_devlist);
 -
--static unsigned int atalk_poll(struct file *file, struct socket *sock,
--			   poll_table *wait)
--{
--	int err;
--	lock_kernel();
--	err = datagram_poll(file, sock, wait);
--	unlock_kernel();
-+	release_sock(sk);
- 	return err;
+ static unsigned int debug;
+ module_param(debug, int, 0644);
+ MODULE_PARM_DESC(debug, "enable debug messages");
+@@ -46,8 +43,10 @@ MODULE_PARM_DESC(card, "card type");
+ 
+ static unsigned int cx25821_devcount;
+ 
+-static DEFINE_MUTEX(devlist);
++DEFINE_MUTEX(cx25821_devlist_mutex);
++EXPORT_SYMBOL(cx25821_devlist_mutex);
+ LIST_HEAD(cx25821_devlist);
++EXPORT_SYMBOL(cx25821_devlist);
+ 
+ struct sram_channel cx25821_sram_channels[] = {
+ 	[SRAM_CH00] = {
+@@ -911,9 +910,9 @@ static int cx25821_dev_setup(struct cx25821_dev *dev)
+ 	dev->nr = ++cx25821_devcount;
+ 	sprintf(dev->name, "cx25821[%d]", dev->nr);
+ 
+-	mutex_lock(&devlist);
++	mutex_lock(&cx25821_devlist_mutex);
+ 	list_add_tail(&dev->devlist, &cx25821_devlist);
+-	mutex_unlock(&devlist);
++	mutex_unlock(&cx25821_devlist_mutex);
+ 
+ 	strcpy(cx25821_boards[UNKNOWN_BOARD].name, "unknown");
+ 	strcpy(cx25821_boards[CX25821_BOARD].name, "cx25821");
+@@ -1465,9 +1464,9 @@ static void __devexit cx25821_finidev(struct pci_dev *pci_dev)
+ 	if (pci_dev->irq)
+ 		free_irq(pci_dev->irq, dev);
+ 
+-	mutex_lock(&devlist);
++	mutex_lock(&cx25821_devlist_mutex);
+ 	list_del(&dev->devlist);
+-	mutex_unlock(&devlist);
++	mutex_unlock(&cx25821_devlist_mutex);
+ 
+ 	cx25821_dev_unregister(dev);
+ 	v4l2_device_unregister(v4l2_dev);
+@@ -1501,7 +1500,6 @@ static struct pci_driver cx25821_pci_driver = {
+ 
+ static int __init cx25821_init(void)
+ {
+-	INIT_LIST_HEAD(&cx25821_devlist);
+ 	pr_info("driver version %d.%d.%d loaded\n",
+ 		(CX25821_VERSION_CODE >> 16) & 0xff,
+ 		(CX25821_VERSION_CODE >> 8) & 0xff,
+diff --git a/drivers/staging/cx25821/cx25821-video.c b/drivers/staging/cx25821/cx25821-video.c
+index 0d8d756..ab05392 100644
+--- a/drivers/staging/cx25821/cx25821-video.c
++++ b/drivers/staging/cx25821/cx25821-video.c
+@@ -27,7 +27,6 @@
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+ #include "cx25821-video.h"
+-#include <linux/smp_lock.h>
+ 
+ MODULE_DESCRIPTION("v4l2 driver module for cx25821 based TV cards");
+ MODULE_AUTHOR("Hiep Huynh <hiep.huynh@conexant.com>");
+@@ -815,7 +814,7 @@ static int video_open(struct file *file)
+        if (NULL == fh)
+ 	       return -ENOMEM;
+ 
+-       lock_kernel();
++	mutex_lock(&cx25821_devlist_mutex);
+ 
+        list_for_each(list, &cx25821_devlist)
+        {
+@@ -832,8 +831,8 @@ static int video_open(struct file *file)
+        }
+ 
+        if (NULL == dev) {
+-	       unlock_kernel();
+-	       return -ENODEV;
++		mutex_unlock(&cx25821_devlist_mutex);
++		return -ENODEV;
+        }
+ 
+        file->private_data = fh;
+@@ -862,7 +861,7 @@ static int video_open(struct file *file)
+ 			      sizeof(struct cx25821_buffer), fh, NULL);
+ 
+        dprintk(1, "post videobuf_queue_init()\n");
+-       unlock_kernel();
++	mutex_unlock(&cx25821_devlist_mutex);
+ 
+        return 0;
  }
+diff --git a/drivers/staging/cx25821/cx25821.h b/drivers/staging/cx25821/cx25821.h
+index 5511523..6230243 100644
+--- a/drivers/staging/cx25821/cx25821.h
++++ b/drivers/staging/cx25821/cx25821.h
+@@ -31,7 +31,6 @@
+ #include <linux/delay.h>
+ #include <linux/sched.h>
+ #include <linux/kdev_t.h>
+-#include <linux/smp_lock.h>
  
-@@ -1596,7 +1585,7 @@ static int atalk_sendmsg(struct kiocb *iocb, struct socket *sock, struct msghdr
- 	if (len > DDP_MAXSZ)
- 		return -EMSGSIZE;
+ #include <media/v4l2-common.h>
+ #include <media/v4l2-device.h>
+@@ -445,6 +444,8 @@ static inline struct cx25821_dev *get_cx25821(struct v4l2_device *v4l2_dev)
+ 	v4l2_device_call_all(&dev->v4l2_dev, 0, o, f, ##args)
  
--	lock_kernel();
-+	lock_sock(sk);
- 	if (usat) {
- 		err = -EBUSY;
- 		if (sock_flag(sk, SOCK_ZAPPED))
-@@ -1651,7 +1640,9 @@ static int atalk_sendmsg(struct kiocb *iocb, struct socket *sock, struct msghdr
- 			sk, size, dev->name);
- 
- 	size += dev->hard_header_len;
-+	release_sock(sk);
- 	skb = sock_alloc_send_skb(sk, size, (flags & MSG_DONTWAIT), &err);
-+	lock_sock(sk);
- 	if (!skb)
- 		goto out;
- 
-@@ -1738,7 +1729,7 @@ static int atalk_sendmsg(struct kiocb *iocb, struct socket *sock, struct msghdr
- 	SOCK_DEBUG(sk, "SK %p: Done write (%Zd).\n", sk, len);
- 
- out:
--	unlock_kernel();
-+	release_sock(sk);
- 	return err ? : len;
- }
- 
-@@ -1753,9 +1744,10 @@ static int atalk_recvmsg(struct kiocb *iocb, struct socket *sock, struct msghdr
- 	int err = 0;
- 	struct sk_buff *skb;
- 
--	lock_kernel();
- 	skb = skb_recv_datagram(sk, flags & ~MSG_DONTWAIT,
- 						flags & MSG_DONTWAIT, &err);
-+	lock_sock(sk);
+ extern struct list_head cx25821_devlist;
++extern struct mutex cx25821_devlist_mutex;
 +
- 	if (!skb)
- 		goto out;
+ extern struct cx25821_board cx25821_boards[];
+ extern struct cx25821_subid cx25821_subids[];
  
-@@ -1787,7 +1779,7 @@ static int atalk_recvmsg(struct kiocb *iocb, struct socket *sock, struct msghdr
- 	skb_free_datagram(sk, skb);	/* Free the datagram. */
- 
- out:
--	unlock_kernel();
-+	release_sock(sk);
- 	return err ? : copied;
- }
- 
-@@ -1887,7 +1879,7 @@ static const struct proto_ops atalk_dgram_ops = {
- 	.socketpair	= sock_no_socketpair,
- 	.accept		= sock_no_accept,
- 	.getname	= atalk_getname,
--	.poll		= atalk_poll,
-+	.poll		= datagram_poll,
- 	.ioctl		= atalk_ioctl,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl	= atalk_compat_ioctl,
 -- 
 1.7.1
 
