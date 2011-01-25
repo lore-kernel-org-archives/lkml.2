@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465Ab1AYKX1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 05:23:27 -0500
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:49159 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753226Ab1AYKTf (ORCPT
+	id S1753511Ab1AYKX3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 05:23:29 -0500
+Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:38911 "EHLO
+	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753341Ab1AYKTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jan 2011 05:19:35 -0500
 From: Linus Walleij <linus.walleij@stericsson.com>
@@ -12,9 +12,9 @@ To: Dan Williams <dan.j.williams@intel.com>
 Cc: <linux-kernel@vger.kernel.org>, Lee Jones <lee.jones@linaro.org>,
         Rabin Vincent <rabin.vincent@stericsson.com>,
         Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH 17/32] dma40: remove duplicated dev addr code
-Date: Tue, 25 Jan 2011 11:18:20 +0100
-Message-ID: <1295950715-22340-18-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 05/32] dma40: use helpers for channel type check
+Date: Tue, 25 Jan 2011 11:18:08 +0100
+Message-ID: <1295950715-22340-6-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1295950715-22340-1-git-send-email-linus.walleij@stericsson.com>
 References: <1295950715-22340-1-git-send-email-linus.walleij@stericsson.com>
@@ -26,135 +26,235 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rabin Vincent <rabin.vincent@stericsson.com>
 
+The somewhat confusing check
+
+	d40c->log_num == D40_PHY_CHAN
+
+and its variants are used in several places to check if a channel is logical or
+physical.  Use appropriately named helpers to do this to make the code more
+readable.
+
 Acked-by: Per Forlin <per.forlin@stericsson.com>
 Acked-by: Jonas Aaberg <jonas.aberg@stericsson.com>
 Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
 Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
 ---
- drivers/dma/ste_dma40.c |   66 +++++++++++++++++++++-------------------------
- 1 files changed, 30 insertions(+), 36 deletions(-)
+ drivers/dma/ste_dma40.c |   54 +++++++++++++++++++++++++++-------------------
+ 1 files changed, 32 insertions(+), 22 deletions(-)
 
 diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 495f9eb..65b5aad 100644
+index 3d4cea3..0073988 100644
 --- a/drivers/dma/ste_dma40.c
 +++ b/drivers/dma/ste_dma40.c
-@@ -1909,25 +1909,10 @@ static int d40_prep_slave_sg_log(struct d40_desc *d40d,
- 				 struct scatterlist *sgl,
- 				 unsigned int sg_len,
- 				 enum dma_data_direction direction,
--				 unsigned long dma_flags)
-+				 dma_addr_t dev_addr)
- {
--	dma_addr_t dev_addr = 0;
- 	int total_size;
- 
--	if (direction == DMA_FROM_DEVICE)
--		if (d40c->runtime_addr)
--			dev_addr = d40c->runtime_addr;
--		else
--			dev_addr = d40c->base->plat_data->dev_rx[d40c->dma_cfg.src_dev_type];
--	else if (direction == DMA_TO_DEVICE)
--		if (d40c->runtime_addr)
--			dev_addr = d40c->runtime_addr;
--		else
--			dev_addr = d40c->base->plat_data->dev_tx[d40c->dma_cfg.dst_dev_type];
--
--	else
--		return -EINVAL;
--
- 	total_size = d40_log_sg_to_dev(sgl, sg_len,
- 				       &d40d->lli_log,
- 				       &d40c->log_def,
-@@ -1947,27 +1932,12 @@ static int d40_prep_slave_sg_phy(struct d40_desc *d40d,
- 				 struct scatterlist *sgl,
- 				 unsigned int sgl_len,
- 				 enum dma_data_direction direction,
--				 unsigned long dma_flags)
-+				 dma_addr_t dev_addr)
- {
--	dma_addr_t src_dev_addr;
--	dma_addr_t dst_dev_addr;
-+	dma_addr_t src_dev_addr = direction == DMA_FROM_DEVICE ? dev_addr : 0;
-+	dma_addr_t dst_dev_addr = direction == DMA_TO_DEVICE ? dev_addr : 0;
- 	int res;
- 
--	if (direction == DMA_FROM_DEVICE) {
--		dst_dev_addr = 0;
--		if (d40c->runtime_addr)
--			src_dev_addr = d40c->runtime_addr;
--		else
--			src_dev_addr = d40c->base->plat_data->dev_rx[d40c->dma_cfg.src_dev_type];
--	} else if (direction == DMA_TO_DEVICE) {
--		if (d40c->runtime_addr)
--			dst_dev_addr = d40c->runtime_addr;
--		else
--			dst_dev_addr = d40c->base->plat_data->dev_tx[d40c->dma_cfg.dst_dev_type];
--		src_dev_addr = 0;
--	} else
--		return -EINVAL;
--
- 	res = d40_phy_sg_to_lli(sgl,
- 				sgl_len,
- 				src_dev_addr,
-@@ -1997,6 +1967,24 @@ static int d40_prep_slave_sg_phy(struct d40_desc *d40d,
- 	return 0;
+@@ -306,6 +306,16 @@ static struct device *chan2dev(struct d40_chan *d40c)
+ 	return &d40c->chan.dev->device;
  }
  
-+static dma_addr_t
-+d40_get_dev_addr(struct d40_chan *chan, enum dma_data_direction direction)
++static bool chan_is_physical(struct d40_chan *chan)
 +{
-+	struct stedma40_platform_data *plat = chan->base->plat_data;
-+	struct stedma40_chan_cfg *cfg = &chan->dma_cfg;
-+	dma_addr_t addr;
-+
-+	if (chan->runtime_addr)
-+		return chan->runtime_addr;
-+
-+	if (direction == DMA_FROM_DEVICE)
-+		addr = plat->dev_rx[cfg->src_dev_type];
-+	else if (direction == DMA_TO_DEVICE)
-+		addr = plat->dev_tx[cfg->dst_dev_type];
-+
-+	return addr;
++	return chan->log_num == D40_PHY_CHAN;
 +}
 +
- static struct dma_async_tx_descriptor *d40_prep_slave_sg(struct dma_chan *chan,
- 							 struct scatterlist *sgl,
- 							 unsigned int sg_len,
-@@ -2006,6 +1994,7 @@ static struct dma_async_tx_descriptor *d40_prep_slave_sg(struct dma_chan *chan,
- 	struct d40_desc *d40d;
- 	struct d40_chan *d40c = container_of(chan, struct d40_chan,
- 					     chan);
-+	dma_addr_t dev_addr;
- 	unsigned long flags;
- 	int err;
- 
-@@ -2014,18 +2003,23 @@ static struct dma_async_tx_descriptor *d40_prep_slave_sg(struct dma_chan *chan,
- 		return ERR_PTR(-EINVAL);
- 	}
- 
-+	if (direction != DMA_FROM_DEVICE && direction != DMA_TO_DEVICE)
-+		return NULL;
++static bool chan_is_logical(struct d40_chan *chan)
++{
++	return !chan_is_physical(chan);
++}
 +
+ static void __iomem *chan_base(struct d40_chan *chan)
+ {
+ 	return chan->base->virtbase + D40_DREG_PCBASE +
+@@ -400,7 +410,7 @@ static int d40_lcla_free_all(struct d40_chan *d40c,
+ 	int i;
+ 	int ret = -EINVAL;
+ 
+-	if (d40c->log_num == D40_PHY_CHAN)
++	if (chan_is_physical(d40c))
+ 		return 0;
+ 
+ 	spin_lock_irqsave(&d40c->base->lcla_pool.lock, flags);
+@@ -472,7 +482,7 @@ static void d40_desc_load(struct d40_chan *d40c, struct d40_desc *d40d)
+ {
+ 	int curr_lcla = -EINVAL, next_lcla;
+ 
+-	if (d40c->log_num == D40_PHY_CHAN) {
++	if (chan_is_physical(d40c)) {
+ 		d40_phy_lli_write(d40c->base->virtbase,
+ 				  d40c->phy_chan->num,
+ 				  d40d->lli_phy.dst,
+@@ -788,7 +798,7 @@ static u32 d40_get_prmo(struct d40_chan *d40c)
+ 			= D40_DREG_PRMO_LCHAN_SRC_LOG_DST_LOG,
+ 	};
+ 
+-	if (d40c->log_num == D40_PHY_CHAN)
++	if (chan_is_physical(d40c))
+ 		return phy_map[d40c->dma_cfg.mode_opt];
+ 	else
+ 		return log_map[d40c->dma_cfg.mode_opt];
+@@ -802,7 +812,7 @@ static void d40_config_write(struct d40_chan *d40c)
+ 	/* Odd addresses are even addresses + 4 */
+ 	addr_base = (d40c->phy_chan->num % 2) * 4;
+ 	/* Setup channel mode to logical or physical */
+-	var = ((u32)(d40c->log_num != D40_PHY_CHAN) + 1) <<
++	var = ((u32)(chan_is_logical(d40c)) + 1) <<
+ 		D40_CHAN_POS(d40c->phy_chan->num);
+ 	writel(var, d40c->base->virtbase + D40_DREG_PRMSE + addr_base);
+ 
+@@ -811,7 +821,7 @@ static void d40_config_write(struct d40_chan *d40c)
+ 
+ 	writel(var, d40c->base->virtbase + D40_DREG_PRMOE + addr_base);
+ 
+-	if (d40c->log_num != D40_PHY_CHAN) {
++	if (chan_is_logical(d40c)) {
+ 		int lidx = (d40c->phy_chan->num << D40_SREG_ELEM_LOG_LIDX_POS)
+ 			   & D40_SREG_ELEM_LOG_LIDX_MASK;
+ 		void __iomem *chanbase = chan_base(d40c);
+@@ -830,7 +840,7 @@ static u32 d40_residue(struct d40_chan *d40c)
+ {
+ 	u32 num_elt;
+ 
+-	if (d40c->log_num != D40_PHY_CHAN)
++	if (chan_is_logical(d40c))
+ 		num_elt = (readl(&d40c->lcpa->lcsp2) & D40_MEM_LCSP2_ECNT_MASK)
+ 			>> D40_MEM_LCSP2_ECNT_POS;
+ 	else {
+@@ -846,7 +856,7 @@ static bool d40_tx_is_linked(struct d40_chan *d40c)
+ {
+ 	bool is_link;
+ 
+-	if (d40c->log_num != D40_PHY_CHAN)
++	if (chan_is_logical(d40c))
+ 		is_link = readl(&d40c->lcpa->lcsp3) &  D40_MEM_LCSP3_DLOS_MASK;
+ 	else
+ 		is_link = readl(chan_base(d40c) + D40_CHAN_REG_SDLNK)
+@@ -869,7 +879,7 @@ static int d40_pause(struct dma_chan *chan)
+ 
+ 	res = d40_channel_execute_command(d40c, D40_DMA_SUSPEND_REQ);
+ 	if (res == 0) {
+-		if (d40c->log_num != D40_PHY_CHAN) {
++		if (chan_is_logical(d40c)) {
+ 			d40_config_set_event(d40c, false);
+ 			/* Resume the other logical channels if any */
+ 			if (d40_chan_has_events(d40c))
+@@ -895,7 +905,7 @@ static int d40_resume(struct dma_chan *chan)
  	spin_lock_irqsave(&d40c->lock, flags);
  
- 	d40d = d40_prep_desc(d40c, sgl, sg_len, dma_flags);
+ 	if (d40c->base->rev == 0)
+-		if (d40c->log_num != D40_PHY_CHAN) {
++		if (chan_is_logical(d40c)) {
+ 			res = d40_channel_execute_command(d40c,
+ 							  D40_DMA_SUSPEND_REQ);
+ 			goto no_suspend;
+@@ -904,7 +914,7 @@ static int d40_resume(struct dma_chan *chan)
+ 	/* If bytes left to transfer or linked tx resume job */
+ 	if (d40_residue(d40c) || d40_tx_is_linked(d40c)) {
+ 
+-		if (d40c->log_num != D40_PHY_CHAN)
++		if (chan_is_logical(d40c))
+ 			d40_config_set_event(d40c, true);
+ 
+ 		res = d40_channel_execute_command(d40c, D40_DMA_RUN);
+@@ -944,7 +954,7 @@ static int d40_start(struct d40_chan *d40c)
+ 	if (d40c->base->rev == 0) {
+ 		int err;
+ 
+-		if (d40c->log_num != D40_PHY_CHAN) {
++		if (chan_is_logical(d40c)) {
+ 			err = d40_channel_execute_command(d40c,
+ 							  D40_DMA_SUSPEND_REQ);
+ 			if (err)
+@@ -952,7 +962,7 @@ static int d40_start(struct d40_chan *d40c)
+ 		}
+ 	}
+ 
+-	if (d40c->log_num != D40_PHY_CHAN)
++	if (chan_is_logical(d40c))
+ 		d40_config_set_event(d40c, true);
+ 
+ 	return d40_channel_execute_command(d40c, D40_DMA_RUN);
+@@ -1495,7 +1505,7 @@ static int d40_free_dma(struct d40_chan *d40c)
+ 		return res;
+ 	}
+ 
+-	if (d40c->log_num != D40_PHY_CHAN) {
++	if (chan_is_logical(d40c)) {
+ 		/* Release logical channel, deactivate the event line */
+ 
+ 		d40_config_set_event(d40c, false);
+@@ -1548,7 +1558,7 @@ static bool d40_is_paused(struct d40_chan *d40c)
+ 
+ 	spin_lock_irqsave(&d40c->lock, flags);
+ 
+-	if (d40c->log_num == D40_PHY_CHAN) {
++	if (chan_is_physical(d40c)) {
+ 		if (d40c->phy_chan->num % 2 == 0)
+ 			active_reg = d40c->base->virtbase + D40_DREG_ACTIVE;
+ 		else
+@@ -1638,7 +1648,7 @@ struct dma_async_tx_descriptor *stedma40_memcpy_sg(struct dma_chan *chan,
+ 	d40d->lli_current = 0;
+ 	d40d->txd.flags = dma_flags;
+ 
+-	if (d40c->log_num != D40_PHY_CHAN) {
++	if (chan_is_logical(d40c)) {
+ 
+ 		if (d40_pool_lli_alloc(d40d, d40d->lli_len, true) < 0) {
+ 			dev_err(&d40c->chan.dev->device,
+@@ -1765,9 +1775,9 @@ static int d40_alloc_chan_resources(struct dma_chan *chan)
+ 
+ 	/* Fill in basic CFG register values */
+ 	d40_phy_cfg(&d40c->dma_cfg, &d40c->src_def_cfg,
+-		    &d40c->dst_def_cfg, d40c->log_num != D40_PHY_CHAN);
++		    &d40c->dst_def_cfg, chan_is_logical(d40c));
+ 
+-	if (d40c->log_num != D40_PHY_CHAN) {
++	if (chan_is_logical(d40c)) {
+ 		d40_log_cfg(&d40c->dma_cfg,
+ 			    &d40c->log_def.lcsp1, &d40c->log_def.lcsp3);
+ 
+@@ -1857,7 +1867,7 @@ static struct dma_async_tx_descriptor *d40_prep_memcpy(struct dma_chan *chan,
+ 
+ 	d40d->txd.tx_submit = d40_tx_submit;
+ 
+-	if (d40c->log_num != D40_PHY_CHAN) {
++	if (chan_is_logical(d40c)) {
+ 
+ 		if (d40_pool_lli_alloc(d40d, d40d->lli_len, true) < 0) {
+ 			dev_err(&d40c->chan.dev->device,
+@@ -2093,7 +2103,7 @@ static struct dma_async_tx_descriptor *d40_prep_slave_sg(struct dma_chan *chan,
  	if (d40d == NULL)
  		goto err;
  
-+	dev_addr = d40_get_dev_addr(d40c, direction);
-+
- 	if (chan_is_logical(d40c))
+-	if (d40c->log_num != D40_PHY_CHAN)
++	if (chan_is_logical(d40c))
  		err = d40_prep_slave_sg_log(d40d, d40c, sgl, sg_len,
--					    direction, dma_flags);
-+					    direction, dev_addr);
+ 					    direction, dma_flags);
  	else
- 		err = d40_prep_slave_sg_phy(d40d, d40c, sgl, sg_len,
--					    direction, dma_flags);
-+					    direction, dev_addr);
- 	if (err) {
- 		chan_err(d40c, "Failed to prepare %s slave sg job: %d\n",
- 			chan_is_logical(d40c) ? "log" : "phy", err);
+@@ -2103,7 +2113,7 @@ static struct dma_async_tx_descriptor *d40_prep_slave_sg(struct dma_chan *chan,
+ 		dev_err(&d40c->chan.dev->device,
+ 			"[%s] Failed to prepare %s slave sg job: %d\n",
+ 			__func__,
+-			d40c->log_num != D40_PHY_CHAN ? "log" : "phy", err);
++			chan_is_logical(d40c) ? "log" : "phy", err);
+ 		goto err;
+ 	}
+ 
+@@ -2253,7 +2263,7 @@ static void d40_set_runtime_config(struct dma_chan *chan,
+ 		return;
+ 	}
+ 
+-	if (d40c->log_num != D40_PHY_CHAN) {
++	if (chan_is_logical(d40c)) {
+ 		if (config_maxburst >= 16)
+ 			psize = STEDMA40_PSIZE_LOG_16;
+ 		else if (config_maxburst >= 8)
+@@ -2286,7 +2296,7 @@ static void d40_set_runtime_config(struct dma_chan *chan,
+ 	cfg->dst_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL;
+ 
+ 	/* Fill in register values */
+-	if (d40c->log_num != D40_PHY_CHAN)
++	if (chan_is_logical(d40c))
+ 		d40_log_cfg(cfg, &d40c->log_def.lcsp1, &d40c->log_def.lcsp3);
+ 	else
+ 		d40_phy_cfg(cfg, &d40c->src_def_cfg,
 -- 
 1.7.3.2
 
