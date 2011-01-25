@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab1AYSAr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 13:00:47 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:11951 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753764Ab1AYR7q (ORCPT
+	id S1753828Ab1AYR7p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 12:59:45 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:52455 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753764Ab1AYR7m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 12:59:46 -0500
-From: David Daney <ddaney@caviumnetworks.com>
-To: linux-usb@vger.kernel.org, gregkh@suse.de, dbrownell@users.sourceforge.net
-Cc: linux-kernel@vger.kernel.org, David Daney <ddaney@caviumnetworks.com>
-Subject: [PATCH 1/4] USB: EHCI: Remove dead code from ehci-sched.c
-Date: Tue, 25 Jan 2011 09:59:34 -0800
-Message-Id: <1295978377-22930-1-git-send-email-ddaney@caviumnetworks.com>
-X-Mailer: git-send-email 1.7.2.3
-X-OriginalArrivalTime: 25 Jan 2011 17:59:46.0275 (UTC) FILETIME=[A6BFCB30:01CBBCB9]
+	Tue, 25 Jan 2011 12:59:42 -0500
+Message-Id: <20110125174907.500706729@chello.nl>
+User-Agent: quilt/0.48-1
+Date: Tue, 25 Jan 2011 18:31:17 +0100
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Miller <davem@davemloft.net>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: [PATCH 06/25] arm: Preemptible mmu_gather
+References: <20110125173111.720927511@chello.nl>
+Content-Disposition: inline; filename=peter_zijlstra-arm-preemptible_mmu_gather.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pre-release GCC-4.6 now correctly flags this code as dead.
+Fix up the arm mmu_gahter code to conform to the new API.
 
-Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+Cc: Russell King <rmk@arm.linux.org.uk>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- drivers/usb/host/ehci-sched.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+ arch/arm/include/asm/tlb.h |   12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/usb/host/ehci-sched.c b/drivers/usb/host/ehci-sched.c
-index aa46f57..30fbdbe 100644
---- a/drivers/usb/host/ehci-sched.c
-+++ b/drivers/usb/host/ehci-sched.c
-@@ -1048,8 +1048,6 @@ iso_stream_put(struct ehci_hcd *ehci, struct ehci_iso_stream *stream)
- 	 * not like a QH -- no persistent state (toggle, halt)
- 	 */
- 	if (stream->refcount == 1) {
--		int		is_in;
+Index: linux-2.6/arch/arm/include/asm/tlb.h
+===================================================================
+--- linux-2.6.orig/arch/arm/include/asm/tlb.h
++++ linux-2.6/arch/arm/include/asm/tlb.h
+@@ -40,17 +40,11 @@ struct mmu_gather {
+ 	unsigned long		range_end;
+ };
+ 
+-DECLARE_PER_CPU(struct mmu_gather, mmu_gathers);
 -
- 		// BUG_ON (!list_empty(&stream->td_list));
+-static inline struct mmu_gather *
+-tlb_gather_mmu(struct mm_struct *mm, unsigned int full_mm_flush)
++static inline void
++tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned int full_mm_flush)
+ {
+-	struct mmu_gather *tlb = &get_cpu_var(mmu_gathers);
+-
+ 	tlb->mm = mm;
+ 	tlb->fullmm = full_mm_flush;
+-
+-	return tlb;
+ }
  
- 		while (!list_empty (&stream->free_list)) {
-@@ -1076,7 +1074,6 @@ iso_stream_put(struct ehci_hcd *ehci, struct ehci_iso_stream *stream)
- 			}
- 		}
+ static inline void
+@@ -61,8 +55,6 @@ tlb_finish_mmu(struct mmu_gather *tlb, u
  
--		is_in = (stream->bEndpointAddress & USB_DIR_IN) ? 0x10 : 0;
- 		stream->bEndpointAddress &= 0x0f;
- 		if (stream->ep)
- 			stream->ep->hcpriv = NULL;
--- 
-1.7.2.3
+ 	/* keep the page table cache within bounds */
+ 	check_pgt_cache();
+-
+-	put_cpu_var(mmu_gathers);
+ }
+ 
+ /*
+
 
