@@ -1,382 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab1AYWSW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 17:18:22 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:60153 "EHLO
+	id S1753925Ab1AYWSL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 17:18:11 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:61112 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753842Ab1AYWSM (ORCPT
+	with ESMTP id S1753740Ab1AYWSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 17:18:12 -0500
+	Tue, 25 Jan 2011 17:18:03 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Alan Cox <alan@linux.intel.com>,
-        Alessio Igor Bogani <abogani@texware.it>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Hendry <andrew.hendry@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Hans Verkuil <hverkuil@xs4all.nl>, Jan Blunck <jblunck@infradead.org>,
-        John Kacur <jkacur@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Matthew Wilcox <matthew@wil.cx>, Oliver Neukum <oliver@neukum.org>,
-        Paul Menage <menage@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [PATCH 20/20] BKL: That's all, folks
-Date: Tue, 25 Jan 2011 23:17:34 +0100
-Message-Id: <1295993854-4971-21-git-send-email-arnd@arndb.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 17/20] tracing: don't trace the BKL
+Date: Tue, 25 Jan 2011 23:17:31 +0100
+Message-Id: <1295993854-4971-18-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1295993854-4971-1-git-send-email-arnd@arndb.de>
 References: <1295993854-4971-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:oUdfTE6Gncxfa2noBF1BIsMeFufmzuydH+EZJyKNwG2
- gA6rlZO1KrBq3zcuWiV04+L8TbkkG5wb2xZm1gGKMJM1zKJ+9b
- O7n3S1zbonWDkZV2ix2nvYDxz2f4gAuX5vXkOA+9yIT4DBGFG/
- w2vR82iF1JY9A+Nne84GKxyAOfYOHjop/vzZlp6Xp2QudBzcCK
- M3klkAC0uvdNLiqRFXNwg==
+X-Provags-ID: V02:K0:xcEXSpRXa8FbTpsLPnl8Kg2+Ca8/BPQ3D8gsjorcTr7
+ eIf0uAaROHTBwnuQOcYbbEBI7iHWn/k+DFokkOGTG4CuCa86W9
+ kj6+LonOFxFQLlQN4BvPk/xxri5GuAEW3ZY62M40BHR/CgtwmU
+ iqraHaqiwz+NK7l6ejRcofqYyhYit8KFEpBAGuGRQ3wAPIkvQz
+ LMQc5UiUhrinf+aBKyuYg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This removes the implementation of the big kernel lock,
-at last. A lot of people have worked on this in the
-past, I so the credit for this patch should be with
-everyone who participated in the hunt.
-
-The names on the Cc list are the people that were the
-most active in this, according to the recorded git
-history, in alphabetical order.
+No reason to trace it when the last user is gone.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Alan Cox <alan@linux.intel.com>
-Cc: Alessio Igor Bogani <abogani@texware.it>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Hendry <andrew.hendry@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: Jan Blunck <jblunck@infradead.org>
-Cc: John Kacur <jkacur@redhat.com>
-Cc: Jonathan Corbet <corbet@lwn.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Matthew Wilcox <matthew@wil.cx>
-Cc: Oliver Neukum <oliver@neukum.org>
-Cc: Paul Menage <menage@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
 ---
- include/linux/hardirq.h  |    9 +---
- include/linux/smp_lock.h |   65 ----------------------
- init/Kconfig             |    5 --
- kernel/sched.c           |    7 ---
- lib/Makefile             |    1 -
- lib/kernel_lock.c        |  136 ----------------------------------------------
- 6 files changed, 1 insertions(+), 222 deletions(-)
- delete mode 100644 include/linux/smp_lock.h
- delete mode 100644 lib/kernel_lock.c
+ include/trace/events/bkl.h |   61 --------------------------------------------
+ lib/kernel_lock.c          |    7 -----
+ 2 files changed, 0 insertions(+), 68 deletions(-)
+ delete mode 100644 include/trace/events/bkl.h
 
-diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
-index 32f9fd6..ba36217 100644
---- a/include/linux/hardirq.h
-+++ b/include/linux/hardirq.h
-@@ -93,13 +93,6 @@
-  */
- #define in_nmi()	(preempt_count() & NMI_MASK)
- 
--#if defined(CONFIG_PREEMPT) && defined(CONFIG_BKL)
--# include <linux/sched.h>
--# define PREEMPT_INATOMIC_BASE (current->lock_depth >= 0)
--#else
--# define PREEMPT_INATOMIC_BASE 0
--#endif
--
- #if defined(CONFIG_PREEMPT)
- # define PREEMPT_CHECK_OFFSET 1
- #else
-@@ -113,7 +106,7 @@
-  * used in the general case to determine whether sleeping is possible.
-  * Do not use in_atomic() in driver code.
-  */
--#define in_atomic()	((preempt_count() & ~PREEMPT_ACTIVE) != PREEMPT_INATOMIC_BASE)
-+#define in_atomic()	((preempt_count() & ~PREEMPT_ACTIVE) != 0)
- 
- /*
-  * Check whether we were atomic before we did preempt_disable():
-diff --git a/include/linux/smp_lock.h b/include/linux/smp_lock.h
+diff --git a/include/trace/events/bkl.h b/include/trace/events/bkl.h
 deleted file mode 100644
-index 3a19882..0000000
---- a/include/linux/smp_lock.h
+index 1af72dc..0000000
+--- a/include/trace/events/bkl.h
 +++ /dev/null
-@@ -1,65 +0,0 @@
--#ifndef __LINUX_SMPLOCK_H
--#define __LINUX_SMPLOCK_H
+@@ -1,61 +0,0 @@
+-#undef TRACE_SYSTEM
+-#define TRACE_SYSTEM bkl
 -
--#ifdef CONFIG_LOCK_KERNEL
--#include <linux/sched.h>
+-#if !defined(_TRACE_BKL_H) || defined(TRACE_HEADER_MULTI_READ)
+-#define _TRACE_BKL_H
 -
--extern int __lockfunc __reacquire_kernel_lock(void);
--extern void __lockfunc __release_kernel_lock(void);
+-#include <linux/tracepoint.h>
 -
--/*
-- * Release/re-acquire global kernel lock for the scheduler
-- */
--#define release_kernel_lock(tsk) do { 		\
--	if (unlikely((tsk)->lock_depth >= 0))	\
--		__release_kernel_lock();	\
--} while (0)
+-TRACE_EVENT(lock_kernel,
 -
--static inline int reacquire_kernel_lock(struct task_struct *task)
--{
--	if (unlikely(task->lock_depth >= 0))
--		return __reacquire_kernel_lock();
--	return 0;
--}
+-	TP_PROTO(const char *func, const char *file, int line),
 -
--extern void __lockfunc
--_lock_kernel(const char *func, const char *file, int line)
--__acquires(kernel_lock);
+-	TP_ARGS(func, file, line),
 -
--extern void __lockfunc
--_unlock_kernel(const char *func, const char *file, int line)
--__releases(kernel_lock);
+-	TP_STRUCT__entry(
+-		__field(	int,		depth			)
+-		__field_ext(	const char *,	func, FILTER_PTR_STRING	)
+-		__field_ext(	const char *,	file, FILTER_PTR_STRING	)
+-		__field(	int,		line			)
+-	),
 -
--#define lock_kernel() do {					\
--	_lock_kernel(__func__, __FILE__, __LINE__);		\
--} while (0)
+-	TP_fast_assign(
+-		/* We want to record the lock_depth after lock is acquired */
+-		__entry->depth = current->lock_depth + 1;
+-		__entry->func = func;
+-		__entry->file = file;
+-		__entry->line = line;
+-	),
 -
--#define unlock_kernel()	do {					\
--	_unlock_kernel(__func__, __FILE__, __LINE__);		\
--} while (0)
+-	TP_printk("depth=%d file:line=%s:%d func=%s()", __entry->depth,
+-		  __entry->file, __entry->line, __entry->func)
+-);
 -
--/*
-- * Various legacy drivers don't really need the BKL in a specific
-- * function, but they *do* need to know that the BKL became available.
-- * This function just avoids wrapping a bunch of lock/unlock pairs
-- * around code which doesn't really need it.
-- */
--static inline void cycle_kernel_lock(void)
--{
--	lock_kernel();
--	unlock_kernel();
--}
+-TRACE_EVENT(unlock_kernel,
 -
--#else
+-	TP_PROTO(const char *func, const char *file, int line),
 -
--#ifdef CONFIG_BKL /* provoke build bug if not set */
--#define lock_kernel()
--#define unlock_kernel()
--#define cycle_kernel_lock()			do { } while(0)
--#endif /* CONFIG_BKL */
+-	TP_ARGS(func, file, line),
 -
--#define release_kernel_lock(task)		do { } while(0)
--#define reacquire_kernel_lock(task)		0
+-	TP_STRUCT__entry(
+-		__field(int,		depth		)
+-		__field(const char *,	func		)
+-		__field(const char *,	file		)
+-		__field(int,		line		)
+-	),
 -
--#endif /* CONFIG_LOCK_KERNEL */
--#endif /* __LINUX_SMPLOCK_H */
-diff --git a/init/Kconfig b/init/Kconfig
-index be788c0..a88d1c9 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -69,11 +69,6 @@ config BROKEN_ON_SMP
- 	depends on BROKEN || !SMP
- 	default y
- 
--config LOCK_KERNEL
--	bool
--	depends on (SMP || PREEMPT) && BKL
--	default y
+-	TP_fast_assign(
+-		__entry->depth = current->lock_depth;
+-		__entry->func = func;
+-		__entry->file = file;
+-		__entry->line = line;
+-	),
 -
- config INIT_ENV_ARG_LIMIT
- 	int
- 	default 32 if !UML
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 18d38e4..8e33e07 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -32,7 +32,6 @@
- #include <linux/init.h>
- #include <linux/uaccess.h>
- #include <linux/highmem.h>
--#include <linux/smp_lock.h>
- #include <asm/mmu_context.h>
- #include <linux/interrupt.h>
- #include <linux/capability.h>
-@@ -3945,9 +3944,6 @@ need_resched:
- 	rcu_note_context_switch(cpu);
- 	prev = rq->curr;
- 
--	release_kernel_lock(prev);
--need_resched_nonpreemptible:
+-	TP_printk("depth=%d file:line=%s:%d func=%s()", __entry->depth,
+-		  __entry->file, __entry->line, __entry->func)
+-);
 -
- 	schedule_debug(prev);
- 
- 	if (sched_feat(HRTICK))
-@@ -4010,9 +4006,6 @@ need_resched_nonpreemptible:
- 
- 	post_schedule(rq);
- 
--	if (unlikely(reacquire_kernel_lock(prev)))
--		goto need_resched_nonpreemptible;
+-#endif /* _TRACE_BKL_H */
 -
- 	preempt_enable_no_resched();
- 	if (need_resched())
- 		goto need_resched;
-diff --git a/lib/Makefile b/lib/Makefile
-index cbb774f..de6c609 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -43,7 +43,6 @@ obj-$(CONFIG_GENERIC_FIND_LAST_BIT) += find_last_bit.o
- CFLAGS_hweight.o = $(subst $(quote),,$(CONFIG_ARCH_HWEIGHT_CFLAGS))
- obj-$(CONFIG_GENERIC_HWEIGHT) += hweight.o
- 
--obj-$(CONFIG_LOCK_KERNEL) += kernel_lock.o
- obj-$(CONFIG_BTREE) += btree.o
- obj-$(CONFIG_DEBUG_PREEMPT) += smp_processor_id.o
- obj-$(CONFIG_DEBUG_LIST) += list_debug.o
+-/* This part must be outside protection */
+-#include <trace/define_trace.h>
 diff --git a/lib/kernel_lock.c b/lib/kernel_lock.c
-deleted file mode 100644
-index d80e122..0000000
+index b135d04..d80e122 100644
 --- a/lib/kernel_lock.c
-+++ /dev/null
-@@ -1,136 +0,0 @@
--/*
-- * lib/kernel_lock.c
-- *
-- * This is the traditional BKL - big kernel lock. Largely
-- * relegated to obsolescence, but used by various less
-- * important (or lazy) subsystems.
-- */
--#include <linux/module.h>
--#include <linux/kallsyms.h>
--#include <linux/semaphore.h>
--#include <linux/smp_lock.h>
++++ b/lib/kernel_lock.c
+@@ -10,9 +10,6 @@
+ #include <linux/semaphore.h>
+ #include <linux/smp_lock.h>
+ 
+-#define CREATE_TRACE_POINTS
+-#include <trace/events/bkl.h>
 -
--/*
-- * The 'big kernel lock'
-- *
-- * This spinlock is taken and released recursively by lock_kernel()
-- * and unlock_kernel().  It is transparently dropped and reacquired
-- * over schedule().  It is used to protect legacy code that hasn't
-- * been migrated to a proper locking design yet.
-- *
-- * Don't use in new code.
-- */
--static  __cacheline_aligned_in_smp DEFINE_RAW_SPINLOCK(kernel_flag);
+ /*
+  * The 'big kernel lock'
+  *
+@@ -120,8 +117,6 @@ void __lockfunc _lock_kernel(const char *func, const char *file, int line)
+ {
+ 	int depth = current->lock_depth + 1;
+ 
+-	trace_lock_kernel(func, file, line);
 -
+ 	if (likely(!depth)) {
+ 		might_sleep();
+ 		__lock_kernel();
+@@ -134,8 +129,6 @@ void __lockfunc _unlock_kernel(const char *func, const char *file, int line)
+ 	BUG_ON(current->lock_depth < 0);
+ 	if (likely(--current->lock_depth < 0))
+ 		__unlock_kernel();
 -
--/*
-- * Acquire/release the underlying lock from the scheduler.
-- *
-- * This is called with preemption disabled, and should
-- * return an error value if it cannot get the lock and
-- * TIF_NEED_RESCHED gets set.
-- *
-- * If it successfully gets the lock, it should increment
-- * the preemption count like any spinlock does.
-- *
-- * (This works on UP too - do_raw_spin_trylock will never
-- * return false in that case)
-- */
--int __lockfunc __reacquire_kernel_lock(void)
--{
--	while (!do_raw_spin_trylock(&kernel_flag)) {
--		if (need_resched())
--			return -EAGAIN;
--		cpu_relax();
--	}
--	preempt_disable();
--	return 0;
--}
--
--void __lockfunc __release_kernel_lock(void)
--{
--	do_raw_spin_unlock(&kernel_flag);
--	preempt_enable_no_resched();
--}
--
--/*
-- * These are the BKL spinlocks - we try to be polite about preemption.
-- * If SMP is not on (ie UP preemption), this all goes away because the
-- * do_raw_spin_trylock() will always succeed.
-- */
--#ifdef CONFIG_PREEMPT
--static inline void __lock_kernel(void)
--{
--	preempt_disable();
--	if (unlikely(!do_raw_spin_trylock(&kernel_flag))) {
--		/*
--		 * If preemption was disabled even before this
--		 * was called, there's nothing we can be polite
--		 * about - just spin.
--		 */
--		if (preempt_count() > 1) {
--			do_raw_spin_lock(&kernel_flag);
--			return;
--		}
--
--		/*
--		 * Otherwise, let's wait for the kernel lock
--		 * with preemption enabled..
--		 */
--		do {
--			preempt_enable();
--			while (raw_spin_is_locked(&kernel_flag))
--				cpu_relax();
--			preempt_disable();
--		} while (!do_raw_spin_trylock(&kernel_flag));
--	}
--}
--
--#else
--
--/*
-- * Non-preemption case - just get the spinlock
-- */
--static inline void __lock_kernel(void)
--{
--	do_raw_spin_lock(&kernel_flag);
--}
--#endif
--
--static inline void __unlock_kernel(void)
--{
--	/*
--	 * the BKL is not covered by lockdep, so we open-code the
--	 * unlocking sequence (and thus avoid the dep-chain ops):
--	 */
--	do_raw_spin_unlock(&kernel_flag);
--	preempt_enable();
--}
--
--/*
-- * Getting the big kernel lock.
-- *
-- * This cannot happen asynchronously, so we only need to
-- * worry about other CPU's.
-- */
--void __lockfunc _lock_kernel(const char *func, const char *file, int line)
--{
--	int depth = current->lock_depth + 1;
--
--	if (likely(!depth)) {
--		might_sleep();
--		__lock_kernel();
--	}
--	current->lock_depth = depth;
--}
--
--void __lockfunc _unlock_kernel(const char *func, const char *file, int line)
--{
--	BUG_ON(current->lock_depth < 0);
--	if (likely(--current->lock_depth < 0))
--		__unlock_kernel();
--}
--
--EXPORT_SYMBOL(_lock_kernel);
--EXPORT_SYMBOL(_unlock_kernel);
--
+-	trace_unlock_kernel(func, file, line);
+ }
+ 
+ EXPORT_SYMBOL(_lock_kernel);
 -- 
 1.7.1
 
