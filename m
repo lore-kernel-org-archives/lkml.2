@@ -1,83 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753394Ab1AYLcN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 06:32:13 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:59127 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753176Ab1AYLb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 06:31:57 -0500
-Date: Tue, 25 Jan 2011 12:31:55 +0100 (CET)
-From: Julia Lawall <julia@diku.dk>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: walter harms <wharms@bfs.de>, Vasiliy Kulikov <segooon@gmail.com>,
-        Ryan Mallon <ryan@bluewatersys.com>, kernel-janitors@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] arch/arm/mach-at91/clock.c: Add missing IS_ERR test
-In-Reply-To: <20110125112641.GG11507@n2100.arm.linux.org.uk>
-Message-ID: <Pine.LNX.4.64.1101251231060.12123@pc-004.diku.dk>
-References: <1295898922-18822-1-git-send-email-julia@diku.dk>
- <1295898922-18822-3-git-send-email-julia@diku.dk> <4D3DD964.9020107@bluewatersys.com>
- <Pine.LNX.4.64.1101242058430.3167@ask.diku.dk> <20110124200515.GA30963@albatros>
- <Pine.LNX.4.64.1101242108180.3167@ask.diku.dk> <4D3EA6EC.5050305@bfs.de>
- <20110125104333.GE11507@n2100.arm.linux.org.uk> <4D3EB02D.6090302@bfs.de>
- <Pine.LNX.4.64.1101251216190.12123@pc-004.diku.dk>
- <20110125112641.GG11507@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753379Ab1AYLb6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 06:31:58 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39955 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753241Ab1AYLbA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 06:31:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=ni+IHIvy4HXL/lcYD3IINY5ebK5rk6Cqa5wTJIfcqyJVxJYbwuzI5+lOmL3dRbwK4A
+         v3f13dGZt/+yJKLBBhQqAe24bXSe+H5iHUHokZjD1CzX5l3LEMxWAogpkFJegLngTiQa
+         NvZv5HtuN7ZW3QQZkDx/t9bCsoEF1kFyjQzuM=
+From: Marek Belisko <marek.belisko@open-nandra.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Marek Belisko <marek.belisko@open-nandra.com>
+Subject: [PATCH resend 08/12] staging: ft1000: Fix coding style in get_request_type_usb() function.
+Date: Tue, 25 Jan 2011 12:31:19 +0100
+Message-Id: <1295955083-11086-8-git-send-email-marek.belisko@open-nandra.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1295955083-11086-1-git-send-email-marek.belisko@open-nandra.com>
+References: <1295955083-11086-1-git-send-email-marek.belisko@open-nandra.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Jan 2011, Russell King - ARM Linux wrote:
+Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+---
+ .../staging/ft1000/ft1000-usb/ft1000_download.c    |   48 +++++++++----------
+ 1 files changed, 23 insertions(+), 25 deletions(-)
 
-> On Tue, Jan 25, 2011 at 12:18:40PM +0100, Julia Lawall wrote:
-> > On Tue, 25 Jan 2011, walter harms wrote:
-> > > So these is a bug ? They should return -ENOENT ?
-> > > 
-> > > The interessting question is: what to do with an error ?
-> > > 
-> > > Obviously some architecture can live with NULL, so it is not an critical
-> > > error. An the patch shows a code that is simply a return, not even the
-> > > user is informed that something did not work as expected.
-> > > 
-> > > From that point of view i would like question if it is useful to have
-> > > a "detailed" error instead of just returning NULL.
-> > 
-> > Somewhat unrelatedly, I often run into code where error handling code is 
-> > needed, but not present, and the function returns void, so nothing is 
-> > provided for propagating the error further.  I generally consider these 
-> > cases to be beyond my expertise to fix...
-> 
-> That is a pain, but so is returning NULL in error conditions.  If you've
-> got several layers of nesting, and every level returns NULL on error,
-> it's an awful lot of debugging to find out _why_ a failure happened.
-> 
-> With error codes, it narrows down the number of places which could have
-> returned that error code, and as error codes can be descriptive, it
-> turns it into an "oh, I forgot about doing X" or "it's failing *there*"
-> rather than a puzzle.
-> 
-> The only place where it really makes sense to return NULL is with memory
-> allocators.  NULL is an accepted value for meaning "I couldn't allocate
-> memory" as its not a useful pointer value.
-> 
-> The alternative is to have an API like:
-> 
-> 	struct clk *clk_get(int *error, ...)
-> or
-> 	int clk_get(struct clk **, ...)
-> 
-> but that then leads to _additional_ errors made by driver authors and by
-> implementations - you can no longer guarantee that *error will always be
-> initialized, and this is why the whole ERR_PTR/PTR_ERR/IS_ERR stuff was
-> implemented.  The kernel used to have such things in it and they were
-> buggy.
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
+index bf20e64..3b56661 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
+@@ -364,34 +364,32 @@ static u16 get_request_type(struct ft1000_device *ft1000dev)
+ 
+ static u16 get_request_type_usb(struct ft1000_device *ft1000dev)
+ {
+-   u16   request_type;
+-   u32    status;
+-   u16   tempword;
+-   u32    tempx;
++	u16   request_type;
++	u32    status;
++	u16   tempword;
++	u32    tempx;
+ 	struct ft1000_info *pft1000info = netdev_priv(ft1000dev->net);
+-   if ( pft1000info->bootmode == 1)
+-   {
+-       status = fix_ft1000_read_dpram32 (ft1000dev, DWNLD_MAG1_TYPE_LOC, (u8 *)&tempx);
+-       tempx = ntohl(tempx);
+-   }
+-   else
+-   {
+-       if (pft1000info->usbboot == 2) {
+-          tempx = pft1000info->tempbuf[2];
+-          tempword = pft1000info->tempbuf[3];
+-       }
+-       else {
+-          tempx = 0;
+-          status = ft1000_read_dpram16 (ft1000dev, DWNLD_MAG1_TYPE_LOC, (u8 *)&tempword, 1);
+-       }
+-       tempx |= (tempword << 16);
+-       tempx = ntohl(tempx);
+-   }
+-   request_type = (u16)tempx;
+ 
+-   //DEBUG("get_request_type: request_type is %x\n", request_type);
+-   return request_type;
++	if (pft1000info->bootmode == 1) {
++		status = fix_ft1000_read_dpram32(ft1000dev,
++				DWNLD_MAG1_TYPE_LOC, (u8 *)&tempx);
++		tempx = ntohl(tempx);
++	} else {
++		if (pft1000info->usbboot == 2) {
++			tempx = pft1000info->tempbuf[2];
++			tempword = pft1000info->tempbuf[3];
++		} else {
++			tempx = 0;
++			status = ft1000_read_dpram16(ft1000dev,
++					DWNLD_MAG1_TYPE_LOC,
++					(u8 *)&tempword, 1);
++		}
++		tempx |= (tempword << 16);
++		tempx = ntohl(tempx);
++	}
++	request_type = (u16)tempx;
+ 
++	return request_type;
+ }
+ 
+ //---------------------------------------------------------------------------
+-- 
+1.7.1
 
-I agree that error codes are very useful.  The problem is rather how to 
-propagate any sort of error indicator, whether ERR_PTR, NULL, an negative 
-integer, etc.
-
-julia
