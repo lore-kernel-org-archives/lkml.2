@@ -1,94 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751746Ab1AYGz6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 01:55:58 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:25039 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245Ab1AYGz5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 01:55:57 -0500
-Date: Tue, 25 Jan 2011 15:55:32 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCH 1/3] MAINTAINERS: Move s3c2410 drivers to ARM/SAMSUNG ARM
-In-reply-to: <038101cbb5e1$021300e0$063902a0$%kim@samsung.com>
-To: "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Ben Dooks'" <ben-linux@fluff.org>, linux-kernel@vger.kernel.org
-Cc: linux@simtec.co.uk, akpm@linux-foundation.org
-Message-id: <01dc01cbbc5c$ded2c840$9c7858c0$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=US-ASCII
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: Acuzz6SFkp+eUEFdSGCMnOAViLw4BACET6BgAZpR5eA=
-References: <0bd9310fc4d79ee83f9f657640be251d84dbf86f.1294998254.git.ben-linux@fluff.org>
- <038101cbb5e1$021300e0$063902a0$%kim@samsung.com>
+	id S1751708Ab1AYHB6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 02:01:58 -0500
+Received: from mga11.intel.com ([192.55.52.93]:8647 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751097Ab1AYHB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 02:01:56 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,373,1291622400"; 
+   d="scan'208,223";a="880661979"
+Date: Tue, 25 Jan 2011 15:01:54 +0800
+From: Yin Kangkai <kangkai.yin@linux.intel.com>
+To: linux-serial@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        "Woodhouse, David" <david.woodhouse@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] serial: change the divisor latch only when prescalar
+ actually changed
+Message-ID: <20110125070154.GI3315@kai-debian>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kukjin Kim wrote:
-> 
-> Ben Dooks wrote:
-> >
-> > There are currnetly two entries under the "SIMTEC EB2410ITX (BAST)"
-> > machine entry for drivers/*/*s3c2410*, which is catching everything
-> > s3c2410 driver related.
-> >
-> > This entry is for a specific S3C2410 based machine, so move these two
-> > file entries to the "ARM/SAMSUNG ARM ARCHITECTURES" entry, where it
-> > will reach a wider audience of interested parties.
-> >
-> > Signed-off-by: Ben Dooks <ben-linux@fluff.org>
-> > Cc: Simtec Linux Team <linux@simtec.co.uk>
-> > Cc: Kukjin Kim <kgene.kim@samsung.com>
-> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-> 
+>From ae9984c3c24ad17d04a2fed547d1628f29b5be99 Mon Sep 17 00:00:00 2001
+From: Yin Kangkai <kangkai.yin@intel.com>
+Date: Mon, 24 Jan 2011 20:01:40 +0800
+Subject: [PATCH] serial: change the divisor latch only when prescalar actually changed.
 
-Hello Andrew,
+In 8250.c original ns16550 autoconfig code, we change the divisor latch when
+we goto to high speed mode, we're assuming the previous speed is legacy. This
+some times is not true.
 
-Could you please pick this up in your tree?
+For example in a system with both CONFIG_SERIAL_8250 and
+CONFIG_SERIAL_8250_PNP set, in this case, the code (autoconfig) will
+be called twice, one in serial8250_init/probe() and the other is from
+serial_pnp_probe. When serial_pnp_probe calls the autoconfig for NS16550A,
+it's already in high speed mode, change the divisor latch (quot << 3) in this
+case will make the UART console garbled.
 
-Thanks.
+Signed-off-by: Yin Kangkai <kangkai.yin@intel.com>
+---
+ drivers/serial/8250.c |   33 +++++++++++++++++++++------------
+ 1 files changed, 21 insertions(+), 12 deletions(-)
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+diff --git a/drivers/serial/8250.c b/drivers/serial/8250.c
+index b57f40f..e928e06 100644
+--- a/drivers/serial/8250.c
++++ b/drivers/serial/8250.c
+@@ -927,6 +927,24 @@ static int broken_efr(struct uart_8250_port *up)
+ 	return 0;
+ }
+ 
++static inline int ns16550a_goto_highspeed(struct uart_8250_port *up)
++{
++	unsigned char status;
++
++	status = serial_in(up, 0x04); /* EXCR2 */
++#define PRESL(x) ((x) & 0x30)
++	if (PRESL(status) == 0x10) {
++		/* already in high speed mode */
++		return 0;
++	} else {
++		status &= ~0xB0; /* Disable LOCK, mask out PRESL[01] */
++		status |= 0x10;  /* 1.625 divisor for baud_base --> 921600 */
++		serial_outp(up, 0x04, status);
++	}
++	return 1;
++}
++
++
+ /*
+  * We know that the chip has FIFOs.  Does it have an EFR?  The
+  * EFR is located in the same register position as the IIR and
+@@ -998,12 +1016,8 @@ static void autoconfig_16550a(struct uart_8250_port *up)
+ 			quot = serial_dl_read(up);
+ 			quot <<= 3;
+ 
+-			status1 = serial_in(up, 0x04); /* EXCR2 */
+-			status1 &= ~0xB0; /* Disable LOCK, mask out PRESL[01] */
+-			status1 |= 0x10;  /* 1.625 divisor for baud_base --> 921600 */
+-			serial_outp(up, 0x04, status1);
+-
+-			serial_dl_write(up, quot);
++			if (ns16550a_goto_highspeed(up))
++				serial_dl_write(up, quot);
+ 
+ 			serial_outp(up, UART_LCR, 0);
+ 
+@@ -2975,15 +2989,10 @@ void serial8250_resume_port(int line)
+ 	struct uart_8250_port *up = &serial8250_ports[line];
+ 
+ 	if (up->capabilities & UART_NATSEMI) {
+-		unsigned char tmp;
+-
+ 		/* Ensure it's still in high speed mode */
+ 		serial_outp(up, UART_LCR, 0xE0);
+ 
+-		tmp = serial_in(up, 0x04); /* EXCR2 */
+-		tmp &= ~0xB0; /* Disable LOCK, mask out PRESL[01] */
+-		tmp |= 0x10;  /* 1.625 divisor for baud_base --> 921600 */
+-		serial_outp(up, 0x04, tmp);
++		ns16550a_goto_highspeed(up);
+ 
+ 		serial_outp(up, UART_LCR, 0);
+ 		up->port.uartclk = 921600*16;
+-- 
+1.6.5
 
-> > ---
-> >  MAINTAINERS |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/MAINTAINERS b/MAINTAINERS
-> > index 64d7621..464f0ec 100644
-> > --- a/MAINTAINERS
-> > +++ b/MAINTAINERS
-> > @@ -975,6 +975,8 @@ S:	Maintained
-> >  F:	arch/arm/plat-samsung/
-> >  F:	arch/arm/plat-s3c24xx/
-> >  F:	arch/arm/plat-s5p/
-> > +F:	drivers/*/*s3c2410*
-> > +F:	drivers/*/*/*s3c2410*
-> >
-> >  ARM/S3C2410 ARM ARCHITECTURE
-> >  M:	Ben Dooks <ben-linux@fluff.org>
-> > @@ -5565,8 +5567,6 @@ M:	Vincent Sanders <support@simtec.co.uk>
-> >  W:	http://www.simtec.co.uk/products/EB2410ITX/
-> >  S:	Supported
-> >  F:	arch/arm/mach-s3c2410/
-> > -F:	drivers/*/*s3c2410*
-> > -F:	drivers/*/*/*s3c2410*
-> >
-> >  TI DAVINCI MACHINE SUPPORT
-> >  M:	Kevin Hilman <khilman@deeprootsystems.com>
-> > --
-> > 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
 
+-- 
+Don't worry, be happy.
