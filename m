@@ -1,76 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386Ab1AYWLN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 17:11:13 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62756 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047Ab1AYWLL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 17:11:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
-         :subject:to:cc:content-type:content-transfer-encoding;
-        b=e2WPDKn9Ejq499OZNdYfkkUPutsSHXYn3fPS7lEQ4iS+00nPdRZTEIr1cp5yKFO81N
-         3HP7HZnQh4sX1F65l/Zh0SU2XElq9Vlfu1Inyg20+f+sVNVgPLd2Vauqe9y/85HaU3Ah
-         BXinzOwMM1dqvjHzIfFBfiMrHsKO35oIDN1LQ=
-MIME-Version: 1.0
-Reply-To: linasvepstas@gmail.com
-In-Reply-To: <4D3F4156.7010900@redhat.com>
-References: <AANLkTikhKHnR+7DskxYqWXduX4=tpfgsfL4sNYq+4QDq@mail.gmail.com>
- <20110125174515.C1DC2183C19@magilla.sf.frob.com> <201101251921.15184.arnd@arndb.de>
- <201101251352.03079.vapier@gentoo.org> <4D3F2AD9.8060000@redhat.com>
- <4D3F3308.1050305@redhat.com> <4D3F4156.7010900@redhat.com>
-From: Linas Vepstas <linasvepstas@gmail.com>
-Date: Tue, 25 Jan 2011 16:10:48 -0600
-Message-ID: <AANLkTi=_sRM6k+fiKiOkbano7LCmys6Hy2Em_W3GaYx=@mail.gmail.com>
-Subject: Re: [BUG] Generic syscalls -- chmod vs. fchmodat
-To: Eric Blake <eblake@redhat.com>
-Cc: Mike Frysinger <vapier@gentoo.org>, Arnd Bergmann <arnd@arndb.de>,
-        Paul Eggert <eggert@cs.ucla.edu>, Roland McGrath <roland@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        GLIBC Devel <libc-alpha@sourceware.org>, linux-kernel@vger.kernel.org,
-        libc-ports@sourceware.org, linux-api@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753520Ab1AYWLS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 17:11:18 -0500
+Received: from mga01.intel.com ([192.55.52.88]:21181 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752721Ab1AYWLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 17:11:15 -0500
+Message-Id: <b7da2f$q83ub3@fmsmga001.fm.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,376,1291622400"; 
+   d="scan'208";a="880933219"
+Date: Tue, 25 Jan 2011 22:11:03 +0000
+To: Knut Petersen <Knut_Petersen@t-online.de>
+Subject: Re: [PATCH] drm/i915/sdvo: If at first we dont succeed in reading the response, wait
+Cc: linux-kernel@vger.kernel.org
+References: <4D3EB90C.9020901@t-online.de> <1295967967-26041-1-git-send-email-chris@chris-wilson.co.uk> <4D3F4849.4030905@t-online.de>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <4D3F4849.4030905@t-online.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 25 Jan 2011 23:01:45 +0100, Knut Petersen <Knut_Petersen@t-online.de> wrote:
+> I think that patch also should be a candidate for 2.6.37.1 as it fixes a
+> regression
+> introduced in 2.6.37.
 
-On 25 January 2011 15:32, Eric Blake <eblake@redhat.com> wrote:
->
-> 7. fchmodat(AT_FDCWD, "") must fail with ENOENT.  Apparently, the kernel
-> currently modifies ".", although point 1 says it might make more sense
-> to fail with ENOENT so that glibc doesn't have to do as much work in
-> chmod and fchmodat (if the kernel call does not change, then the burden
-> is on glibc).
+(Actually I think the bug is older than that...)
 
-Interesting discussion, but I'm very embarrassed to say I started it
-due to a mis-diagnosis of a bug :-(
+> Something new:
+> 
+> Have a look at the attached new log.  I connected a 2nd monitor, so
+> there is a monitor attached to both
+> the VGA-1 and DVI-1 connectors. At the framebuffer console prompt (no X
+> running)
+> I changed to console 2 and back to console 1. The log starts at the
+> point of switching
+> back to console 1. Now ... shouldn't I read something about a
+> output_poll_execute for VGA-1?
 
-In fact, the current kernels *do* check for an empty string, and do so
-in order to maintain POSIX compliance, per Eric's points 5 and 7.
-See fs/namei.c in do_getname, circa line 114,  where we read:
+In this case, no. VGA-1 has hw hotplug support, so that connector is not
+polled but uses an interrupt instead.
+-Chris
 
- * POSIX.1 2.4: an empty pathname is invalid (ENOENT).
-
-This is backed up with code, circa line 129 ff:
-
-   retval = strncpy_from_user(page, filename, len);
-...
-else if (!retval)
-      retval = -ENOENT;
-   return retval;
-
-So an empty string will have length zero, and the ENOENT is indeed
-set.
-
-This handles cases 5 & 7.  I've no idea how any of the other cases
-work out.
-
-Note that getname() is used in a variety of places; its not just chmod,
-but also in symlinks and many others.
-
---linas
+-- 
+Chris Wilson, Intel Open Source Technology Centre
