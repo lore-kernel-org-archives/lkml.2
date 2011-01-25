@@ -1,210 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab1AYWUn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 17:20:43 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:52175 "EHLO
+	id S1754109Ab1AYWUp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 17:20:45 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:58950 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753705Ab1AYWSB (ORCPT
+	with ESMTP id S1753679Ab1AYWSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 17:18:01 -0500
+	Tue, 25 Jan 2011 17:18:00 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Russell King <rmk@arm.linux.org.uk>,
-        Stuart Swales <stuart.swales.croftnuisk@gmail.com>
-Subject: [PATCH 08/20] adfs: remove the big kernel lock
-Date: Tue, 25 Jan 2011 23:17:22 +0100
-Message-Id: <1295993854-4971-9-git-send-email-arnd@arndb.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Andrew Hendry <andrew.hendry@gmail.com>,
+        linux-x25@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH 12/20] x25: remove the BKL
+Date: Tue, 25 Jan 2011 23:17:26 +0100
+Message-Id: <1295993854-4971-13-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1295993854-4971-1-git-send-email-arnd@arndb.de>
 References: <1295993854-4971-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:021osT6Ew6X5m2fkV7PsXtXOFeujoWp3qRa3XTDs4XL
- de4P8AmOU9nU9zyBQr+m8nt04U6/uvJA2jy30nYD0zI+6C7MKn
- WDMqIyVkA3iPQPmAtBfs+YIylRR9VGm96B1WLjmNFNKuR0xbyN
- YzxzyHW9p7W9MvcCFSEVQtFvWSaeNui++/hCe/uTamyyzOCXGm
- IwT5eOiqSX5bLTKhKNMPA==
+X-Provags-ID: V02:K0:qUE95tRxh+f6ymExJtFZhlI6oJVFT86eKVgwpHYPELK
+ ljHhwRxteh4LEJUMBYvxVkhQnLnEZcJRbIIN/etQmQ0lcxWXbt
+ pGkV8yGLAmnFyd0qra5pRm+v2y9k5NAEfXMCYW8JR1+Cdpl9GW
+ 2qwimlaaVPfrQ0ZG7ptaJ02jIWYBDFT/lOc3//l1BclnHdLlok
+ ernU9Vjl4cL+vz0mhL6CA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to Russell King, adfs was written to not require the big
-kernel lock, and all inode updates are done under adfs_dir_lock.
+This replaces all instances of lock_kernel in x25
+with lock_sock, taking care to release the socket
+lock around sleeping functions (sock_alloc_send_skb
+and skb_recv_datagram). It is not clear whether
+this is a correct solution, but it seem to be what
+other protocols do in the same situation.
 
-All other metadata in adfs is read-only and does not require locking.
-The use of the BKL is the result of various pushdowns from the VFS
-operations.
+Compile-tested only.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King <rmk@arm.linux.org.uk>
-Cc: Stuart Swales <stuart.swales.croftnuisk@gmail.com>
+Cc: Andrew Hendry <andrew.hendry@gmail.com>
+Cc: linux-x25@vger.kernel.org
+Cc: netdev@vger.kernel.org
 ---
- fs/adfs/Kconfig |    1 -
- fs/adfs/dir.c   |    6 ------
- fs/adfs/inode.c |    6 ------
- fs/adfs/super.c |   13 +------------
- 4 files changed, 1 insertions(+), 25 deletions(-)
+ net/x25/Kconfig   |    1 -
+ net/x25/af_x25.c  |   61 ++++++++++++++++------------------------------------
+ net/x25/x25_out.c |    7 ++++-
+ 3 files changed, 24 insertions(+), 45 deletions(-)
 
-diff --git a/fs/adfs/Kconfig b/fs/adfs/Kconfig
-index 1dd5f34..e55182a 100644
---- a/fs/adfs/Kconfig
-+++ b/fs/adfs/Kconfig
-@@ -1,7 +1,6 @@
- config ADFS_FS
- 	tristate "ADFS file system support (EXPERIMENTAL)"
- 	depends on BLOCK && EXPERIMENTAL
--	depends on BKL # need to fix
- 	help
- 	  The Acorn Disc Filing System is the standard file system of the
- 	  RiscOS operating system which runs on Acorn's ARM-based Risc PC
-diff --git a/fs/adfs/dir.c b/fs/adfs/dir.c
-index 3b4a764..3d83075 100644
---- a/fs/adfs/dir.c
-+++ b/fs/adfs/dir.c
-@@ -9,7 +9,6 @@
-  *
-  *  Common directory handling for ADFS
-  */
+diff --git a/net/x25/Kconfig b/net/x25/Kconfig
+index 2196e55..e6759c9 100644
+--- a/net/x25/Kconfig
++++ b/net/x25/Kconfig
+@@ -5,7 +5,6 @@
+ config X25
+ 	tristate "CCITT X.25 Packet Layer (EXPERIMENTAL)"
+ 	depends on EXPERIMENTAL
+-	depends on BKL # should be fixable
+ 	---help---
+ 	  X.25 is a set of standardized network protocols, similar in scope to
+ 	  frame relay; the one physical line from your box to the X.25 network
+diff --git a/net/x25/af_x25.c b/net/x25/af_x25.c
+index ad96ee9..8f5d1bb 100644
+--- a/net/x25/af_x25.c
++++ b/net/x25/af_x25.c
+@@ -40,7 +40,6 @@
+ #include <linux/errno.h>
+ #include <linux/kernel.h>
+ #include <linux/sched.h>
 -#include <linux/smp_lock.h>
- #include "adfs.h"
+ #include <linux/timer.h>
+ #include <linux/string.h>
+ #include <linux/net.h>
+@@ -432,15 +431,6 @@ void x25_destroy_socket_from_timer(struct sock *sk)
+ 	sock_put(sk);
+ }
  
- /*
-@@ -27,8 +26,6 @@ adfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
- 	struct adfs_dir dir;
- 	int ret = 0;
- 
--	lock_kernel();	
+-static void x25_destroy_socket(struct sock *sk)
+-{
+-	sock_hold(sk);
+-	lock_sock(sk);
+-	__x25_destroy_socket(sk);
+-	release_sock(sk);
+-	sock_put(sk);
+-}
 -
- 	if (filp->f_pos >> 32)
+ /*
+  *	Handling for system calls applied via the various interfaces to a
+  *	X.25 socket object.
+@@ -647,18 +637,19 @@ static int x25_release(struct socket *sock)
+ 	struct sock *sk = sock->sk;
+ 	struct x25_sock *x25;
+ 
+-	lock_kernel();
+ 	if (!sk)
+-		goto out;
++		return 0;
+ 
+ 	x25 = x25_sk(sk);
+ 
++	sock_hold(sk);
++	lock_sock(sk);
+ 	switch (x25->state) {
+ 
+ 		case X25_STATE_0:
+ 		case X25_STATE_2:
+ 			x25_disconnect(sk, 0, 0, 0);
+-			x25_destroy_socket(sk);
++			__x25_destroy_socket(sk);
+ 			goto out;
+ 
+ 		case X25_STATE_1:
+@@ -678,7 +669,8 @@ static int x25_release(struct socket *sock)
+ 
+ 	sock_orphan(sk);
+ out:
+-	unlock_kernel();
++	release_sock(sk);
++	sock_put(sk);
+ 	return 0;
+ }
+ 
+@@ -1085,7 +1077,7 @@ static int x25_sendmsg(struct kiocb *iocb, struct socket *sock,
+ 	size_t size;
+ 	int qbit = 0, rc = -EINVAL;
+ 
+-	lock_kernel();
++	lock_sock(sk);
+ 	if (msg->msg_flags & ~(MSG_DONTWAIT|MSG_OOB|MSG_EOR|MSG_CMSG_COMPAT))
  		goto out;
  
-@@ -70,7 +67,6 @@ free_out:
- 	ops->free(&dir);
+@@ -1148,9 +1140,10 @@ static int x25_sendmsg(struct kiocb *iocb, struct socket *sock,
  
+ 	size = len + X25_MAX_L2_LEN + X25_EXT_MIN_LEN;
+ 
++	release_sock(sk);
+ 	skb = sock_alloc_send_skb(sk, size, noblock, &rc);
+-	if (!skb)
+-		goto out;
++	lock_sock(sk);
++
+ 	X25_SKB_CB(skb)->flags = msg->msg_flags;
+ 
+ 	skb_reserve(skb, X25_MAX_L2_LEN + X25_EXT_MIN_LEN);
+@@ -1231,26 +1224,10 @@ static int x25_sendmsg(struct kiocb *iocb, struct socket *sock,
+ 			len++;
+ 	}
+ 
+-	/*
+-	 * lock_sock() is currently only used to serialize this x25_kick()
+-	 * against input-driven x25_kick() calls. It currently only blocks
+-	 * incoming packets for this socket and does not protect against
+-	 * any other socket state changes and is not called from anywhere
+-	 * else. As x25_kick() cannot block and as long as all socket
+-	 * operations are BKL-wrapped, we don't need take to care about
+-	 * purging the backlog queue in x25_release().
+-	 *
+-	 * Using lock_sock() to protect all socket operations entirely
+-	 * (and making the whole x25 stack SMP aware) unfortunately would
+-	 * require major changes to {send,recv}msg and skb allocation methods.
+-	 * -> 2.5 ;)
+-	 */
+-	lock_sock(sk);
+ 	x25_kick(sk);
+-	release_sock(sk);
+ 	rc = len;
  out:
 -	unlock_kernel();
- 	return ret;
- }
- 
-@@ -276,7 +272,6 @@ adfs_lookup(struct inode *dir, struct dentry *dentry, struct nameidata *nd)
- 	struct object_info obj;
- 	int error;
++	release_sock(sk);
+ 	return rc;
+ out_kfree_skb:
+ 	kfree_skb(skb);
+@@ -1271,7 +1248,7 @@ static int x25_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 	unsigned char *asmptr;
+ 	int rc = -ENOTCONN;
  
 -	lock_kernel();
- 	error = adfs_dir_lookup_byname(dir, &dentry->d_name, &obj);
- 	if (error == 0) {
- 		error = -EACCES;
-@@ -288,7 +283,6 @@ adfs_lookup(struct inode *dir, struct dentry *dentry, struct nameidata *nd)
- 		if (inode)
- 			error = 0;
- 	}
--	unlock_kernel();
- 	d_add(dentry, inode);
- 	return ERR_PTR(error);
- }
-diff --git a/fs/adfs/inode.c b/fs/adfs/inode.c
-index 65794b8..09fe401 100644
---- a/fs/adfs/inode.c
-+++ b/fs/adfs/inode.c
-@@ -7,7 +7,6 @@
-  * it under the terms of the GNU General Public License version 2 as
-  * published by the Free Software Foundation.
-  */
--#include <linux/smp_lock.h>
- #include <linux/buffer_head.h>
- #include <linux/writeback.h>
- #include "adfs.h"
-@@ -316,8 +315,6 @@ adfs_notify_change(struct dentry *dentry, struct iattr *attr)
- 	unsigned int ia_valid = attr->ia_valid;
- 	int error;
- 	
--	lock_kernel();
--
- 	error = inode_change_ok(inode, attr);
- 
++	lock_sock(sk);
  	/*
-@@ -359,7 +356,6 @@ adfs_notify_change(struct dentry *dentry, struct iattr *attr)
- 	if (ia_valid & (ATTR_SIZE | ATTR_MTIME | ATTR_MODE))
- 		mark_inode_dirty(inode);
+ 	 * This works for seqpacket too. The receiver has ordered the queue for
+ 	 * us! We do one quick check first though
+@@ -1300,8 +1277,10 @@ static int x25_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 		msg->msg_flags |= MSG_OOB;
+ 	} else {
+ 		/* Now we can treat all alike */
++		release_sock(sk);
+ 		skb = skb_recv_datagram(sk, flags & ~MSG_DONTWAIT,
+ 					flags & MSG_DONTWAIT, &rc);
++		lock_sock(sk);
+ 		if (!skb)
+ 			goto out;
+ 
+@@ -1338,14 +1317,12 @@ static int x25_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 
+ 	msg->msg_namelen = sizeof(struct sockaddr_x25);
+ 
+-	lock_sock(sk);
+ 	x25_check_rbuf(sk);
+-	release_sock(sk);
+ 	rc = copied;
+ out_free_dgram:
+ 	skb_free_datagram(sk, skb);
  out:
 -	unlock_kernel();
- 	return error;
++	release_sock(sk);
+ 	return rc;
  }
  
-@@ -374,7 +370,6 @@ int adfs_write_inode(struct inode *inode, struct writeback_control *wbc)
- 	struct object_info obj;
- 	int ret;
+@@ -1581,18 +1558,18 @@ out_cud_release:
  
--	lock_kernel();
- 	obj.file_id	= inode->i_ino;
- 	obj.name_len	= 0;
- 	obj.parent_id	= ADFS_I(inode)->parent_id;
-@@ -384,6 +379,5 @@ int adfs_write_inode(struct inode *inode, struct writeback_control *wbc)
- 	obj.size	= inode->i_size;
+ 		case SIOCX25CALLACCPTAPPRV: {
+ 			rc = -EINVAL;
+-			lock_kernel();
++			lock_sock(sk);
+ 			if (sk->sk_state != TCP_CLOSE)
+ 				break;
+ 			clear_bit(X25_ACCPT_APPRV_FLAG, &x25->flags);
+-			unlock_kernel();
++			release_sock(sk);
+ 			rc = 0;
+ 			break;
+ 		}
  
- 	ret = adfs_dir_update(sb, &obj, wbc->sync_mode == WB_SYNC_ALL);
--	unlock_kernel();
- 	return ret;
- }
-diff --git a/fs/adfs/super.c b/fs/adfs/super.c
-index 2d79540..06d7388 100644
---- a/fs/adfs/super.c
-+++ b/fs/adfs/super.c
-@@ -14,7 +14,6 @@
- #include <linux/mount.h>
- #include <linux/seq_file.h>
- #include <linux/slab.h>
--#include <linux/smp_lock.h>
- #include <linux/statfs.h>
- #include "adfs.h"
- #include "dir_f.h"
-@@ -120,15 +119,11 @@ static void adfs_put_super(struct super_block *sb)
- 	int i;
- 	struct adfs_sb_info *asb = ADFS_SB(sb);
+ 		case SIOCX25SENDCALLACCPT:  {
+ 			rc = -EINVAL;
+-			lock_kernel();
++			lock_sock(sk);
+ 			if (sk->sk_state != TCP_ESTABLISHED)
+ 				break;
+ 			/* must call accptapprv above */
+@@ -1600,7 +1577,7 @@ out_cud_release:
+ 				break;
+ 			x25_write_internal(sk, X25_CALL_ACCEPTED);
+ 			x25->state = X25_STATE_3;
+-			unlock_kernel();
++			release_sock(sk);
+ 			rc = 0;
+ 			break;
+ 		}
+diff --git a/net/x25/x25_out.c b/net/x25/x25_out.c
+index d00649f..f1a6ff1 100644
+--- a/net/x25/x25_out.c
++++ b/net/x25/x25_out.c
+@@ -68,8 +68,11 @@ int x25_output(struct sock *sk, struct sk_buff *skb)
+ 		frontlen = skb_headroom(skb);
  
--	lock_kernel();
--
- 	for (i = 0; i < asb->s_map_size; i++)
- 		brelse(asb->s_map[i].dm_bh);
- 	kfree(asb->s_map);
- 	kfree(asb);
- 	sb->s_fs_info = NULL;
--
--	unlock_kernel();
- }
- 
- static int adfs_show_options(struct seq_file *seq, struct vfsmount *mnt)
-@@ -359,15 +354,11 @@ static int adfs_fill_super(struct super_block *sb, void *data, int silent)
- 	struct adfs_sb_info *asb;
- 	struct inode *root;
- 
--	lock_kernel();
--
- 	sb->s_flags |= MS_NODIRATIME;
- 
- 	asb = kzalloc(sizeof(*asb), GFP_KERNEL);
--	if (!asb) {
--		unlock_kernel();
-+	if (!asb)
- 		return -ENOMEM;
--	}
- 	sb->s_fs_info = asb;
- 
- 	/* set default options */
-@@ -485,7 +476,6 @@ static int adfs_fill_super(struct super_block *sb, void *data, int silent)
- 		adfs_error(sb, "get root inode failed\n");
- 		goto error;
- 	}
--	unlock_kernel();
- 	return 0;
- 
- error_free_bh:
-@@ -493,7 +483,6 @@ error_free_bh:
- error:
- 	sb->s_fs_info = NULL;
- 	kfree(asb);
--	unlock_kernel();
- 	return -EINVAL;
- }
- 
+ 		while (skb->len > 0) {
+-			if ((skbn = sock_alloc_send_skb(sk, frontlen + max_len,
+-							noblock, &err)) == NULL){
++			release_sock(sk);
++			skbn = sock_alloc_send_skb(sk, frontlen + max_len,
++						   1, &err);
++			lock_sock(sk);
++			if (!skbn) {
+ 				if (err == -EWOULDBLOCK && noblock){
+ 					kfree_skb(skb);
+ 					return sent;
 -- 
 1.7.1
 
