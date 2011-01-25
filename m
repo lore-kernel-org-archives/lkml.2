@@ -1,85 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883Ab1AYXNR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 18:13:17 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:32796 "EHLO
+	id S1753909Ab1AYXPA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 18:15:00 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:33744 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753027Ab1AYXNQ convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753125Ab1AYXO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 18:13:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=m+Z4Mm1NYa9kipug1lt0qCxKDApdYuV1XZDHdluEWGWysFPbCfuOC6CEXwcEQkqyUX
-         Gx8ztnz7A6h28BVZ0c4A==
-MIME-Version: 1.0
-In-Reply-To: <20110125031752.GA9846@kroah.com>
-References: <20110125002433.12637.51091.stgit@mike.mtv.corp.google.com>
- <20110125002449.12637.35623.stgit@mike.mtv.corp.google.com> <20110125031752.GA9846@kroah.com>
-From: Mike Waychison <mikew@google.com>
-Date: Tue, 25 Jan 2011 15:12:52 -0800
-Message-ID: <AANLkTi=XhRX-=k8UmmQFshP6fgF_q2c-9gEHuH0mWu0a@mail.gmail.com>
-Subject: Re: [PATCH v1 3/6] driver: Google EFI SMI
-To: Greg KH <greg@kroah.com>
-Cc: torvalds@linux-foundation.org, San Mehat <san@google.com>,
-        Aaron Durbin <adurbin@google.com>, Duncan Laurie <dlaurie@google.com>,
-        linux-kernel@vger.kernel.org, Tim Hockin <thockin@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Tue, 25 Jan 2011 18:14:59 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=to:cc:subject:message-id:date:from;
+	b=wCxWFBHIEckOyJS/t+LxyYPKqistzPev0Q5kGw2Yre4+ZHOlGlUj3447LNxQ6A0Cy
+	srX9MKLZEk9Z1wWfLunQw==
+To: user-mode-linux-devel@lists.sourceforge.net
+Cc: ppluzhnikov@google.com, linux-kernel@vger.kernel.org,
+        Jeff Dike <jdike@addtoit.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [patch] UML kernels on {i386,x86_64} produce bad coredumps
+Message-Id: <20110125231433.F2408190C3A@elbrus2.mtv.corp.google.com>
+Date: Tue, 25 Jan 2011 15:14:33 -0800 (PST)
+From: ppluzhnikov@google.com (Paul Pluzhnikov)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24, 2011 at 7:17 PM, Greg KH <greg@kroah.com> wrote:
-> On Mon, Jan 24, 2011 at 04:24:49PM -0800, Mike Waychison wrote:
->> +struct gsmi_ioctl {
->> +     uint16_t        length;         /* total length including data */
->> +     int             version;        /* structure version */
->> +     int             command;        /* ioctl command */
->
-> Ick.  Use proper data types if you are going to create a new ioctl.
-> Same goes for the structures above (hint, use __u32 and friends, not the
-> unit??_t crap.
->
-> I'd strongly suggest NOT creating a new ioctl though, that' just going
-> to be a pain in the long run.
+Greetings,
 
-Ok.  I'll change these.  Even if the __u32 vs u32 vs uint32_t
-differentiation is non-sense :(
+One of our users reported that when a user-level program SIGSEGVs under
+UML kernel, the resulting core dump is not very usable.
 
->
->
->> +     union {
->> +             struct gsmi_get_nvram_var       get_nvram_var;
->> +             struct gsmi_get_next_var        get_next_var;
->> +             struct gsmi_set_nvram_var       set_nvram_var;
->> +             struct gsmi_set_event_log       set_event_log;
->> +             struct gsmi_clear_event_log     clear_event_log;
->> +     } gsmi_cmd;
->> +} __packed;
->> +
->> +#define GSMI_BASE                    'G'
->> +#define GSMI_IOCTL_VERSION           1
->> +#define GSMI_IOCTL                   _IOWR(GSMI_BASE, GSMI_IOCTL_VERSION, \
->> +                                         struct gsmi_ioctl)
->> +
->> +#endif /* _LINUX_GSMI_H */
->> diff --git a/include/linux/miscdevice.h b/include/linux/miscdevice.h
->> index 18fd130..34f5dfa 100644
->> --- a/include/linux/miscdevice.h
->> +++ b/include/linux/miscdevice.h
->> @@ -40,6 +40,7 @@
->>  #define BTRFS_MINOR          234
->>  #define AUTOFS_MINOR         235
->>  #define MAPPER_CTRL_MINOR    236
->> +#define GOOGLE_SMI_MINOR     242
->>  #define MISC_DYNAMIC_MINOR   255
->
-> Why make this a static number and not just use a dynamic one?
+I have reproduced that with the latest kernel:
 
-Well, we use static device numbers, which is why it has historically
-been static as well.  Yes, that puts us squarely in the 1990s :)
+  make ARCH=um defconfig; make ARCH=um
 
-I can change this guy too though.
+Run the resulting kernel, then "inside" run this program:
+
+#include <pthread.h>
+
+void *fn(void *p)
+{
+ abort();
+}
+
+int main()
+{
+ pthread_t tid;
+ pthread_create(&tid, 0, fn, 0);
+ pthread_join(tid, 0);
+ return 0;
+}
+
+Analyze the coredump with GDB. Here is what you'll see:
+
+sudo gdb -q -ex 'set solib-absolute-prefix ../root_fs' -ex 'file ../root_fs/var/tmp/mt-abort' -ex 'core ../root_fs/var/tmp/core.762'
+Reading symbols from /usr/local/google/root_fs/var/tmp/mt-abort...done.
+[New Thread 763]
+[New Thread 762]
+Core was generated by `./mt-abort'.
+Program terminated with signal 6, Aborted.
+#0  0x0000000040255250 in raise () from ../root_fs/lib64/libc.so.6
+(gdb) info thread
+  2 Thread 762  0x0000000000000000 in ?? ()
+* 1 Thread 763  0x0000000040255250 in raise () from ../root_fs/lib64/libc.so.6
+
+Note that thread#2 looks funny.
+
+(gdb) thread 2
+[Switching to thread 2 (Thread 762)]#0  0x0000000000000000 in ?? ()
+(gdb) info reg
+rax            0x0      0
+rbx            0x0      0
+rcx            0x0      0
+rdx            0x0      0
+rsi            0x0      0
+rdi            0x0      0
+rbp            0x0      0x0
+rsp            0x0      0x0
+r8             0x0      0
+r9             0x0      0
+r10            0x0      0
+r11            0x0      0
+r12            0x0      0
+r13            0x0      0
+r14            0x0      0
+r15            0x0      0
+rip            0x0      0
+eflags         0x0      [ ]
+cs             0x0      0
+ss             0x0      0
+ds             0x0      0
+es             0x0      0
+fs             0x0      0
+gs             0x0      0
+
+Examining the core shows that NT_PRSTATUS notes for all threads other than
+the one that crashed are zeroed out.
+
+I believe this is happening because neither ELF_CORE_COPY_TASK_REGS nor
+task_pt_regs are defined under ARCH=um, and so elf_core_copy_task_regs()
+becomes a no-op.
+
+Attached patch fixes this for SUBARCH={x86_64,i386}.
+
+Thanks,
+--
+Paul Pluzhnikov
+
+P.S. Google has blanket FSF copyright assignment.
+
+
+Signed-off-by: Paul Pluzhnikov <ppluzhnikov@google.com>
+
+
+diff --git a/arch/um/sys-i386/asm/elf.h b/arch/um/sys-i386/asm/elf.h
+index a979a22..d964a41 100644
+--- a/arch/um/sys-i386/asm/elf.h
++++ b/arch/um/sys-i386/asm/elf.h
+@@ -75,6 +75,8 @@ typedef struct user_i387_struct elf_fpregset_t;
+ 	pr_reg[16] = PT_REGS_SS(regs);		\
+ } while (0);
+ 
++#define task_pt_regs(t) (&(t)->thread.regs)
++
+ struct task_struct;
+ 
+ extern int elf_core_copy_fpregs(struct task_struct *t, elf_fpregset_t *fpu);
+diff --git a/arch/um/sys-x86_64/asm/elf.h b/arch/um/sys-x86_64/asm/elf.h
+index d760967f..d6d5af3 100644
+--- a/arch/um/sys-x86_64/asm/elf.h
++++ b/arch/um/sys-x86_64/asm/elf.h
+@@ -95,6 +95,8 @@ typedef struct user_i387_struct elf_fpregset_t;
+ 	(pr_reg)[25] = 0;					\
+ 	(pr_reg)[26] = 0;
+ 
++#define task_pt_regs(t) (&(t)->thread.regs)
++
+ struct task_struct;
+ 
+ extern int elf_core_copy_fpregs(struct task_struct *t, elf_fpregset_t *fpu);
