@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929Ab1AYSAv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 13:00:51 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:33132 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753654Ab1AYSAt (ORCPT
+	id S1753911Ab1AYSAr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 13:00:47 -0500
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:11951 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753764Ab1AYR7q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 13:00:49 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6237"; a="71929532"
-Subject: Re: [PATCH 20/32] video/msm_fb: use system_wq instead of dedicated
- workqueues
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>, linux-kernel@vger.kernel.org,
-        Stanislaw Gruszka <stf_xl@wp.pl>, linux-usb@vger.kernel.org,
-        David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-arm-msm@vger.kernel.org
-In-Reply-To: <20110125134558.GY27510@htj.dyndns.org>
-References: <1294062595-30097-1-git-send-email-tj@kernel.org>
-	 <1294062595-30097-21-git-send-email-tj@kernel.org>
-	 <20110103170615.GB2285@redhat.com>
-	 <1294078245.18295.5.camel@c-dwalke-linux.qualcomm.com>
-	 <20110125134558.GY27510@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 25 Jan 2011 10:00:20 -0800
-Message-ID: <1295978420.25496.18.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Jan 2011 12:59:46 -0500
+From: David Daney <ddaney@caviumnetworks.com>
+To: linux-usb@vger.kernel.org, gregkh@suse.de, dbrownell@users.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, David Daney <ddaney@caviumnetworks.com>
+Subject: [PATCH 1/4] USB: EHCI: Remove dead code from ehci-sched.c
+Date: Tue, 25 Jan 2011 09:59:34 -0800
+Message-Id: <1295978377-22930-1-git-send-email-ddaney@caviumnetworks.com>
+X-Mailer: git-send-email 1.7.2.3
+X-OriginalArrivalTime: 25 Jan 2011 17:59:46.0275 (UTC) FILETIME=[A6BFCB30:01CBBCB9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-25 at 14:45 +0100, Tejun Heo wrote:
-> On Mon, Jan 03, 2011 at 10:10:45AM -0800, Daniel Walker wrote:
-> > On Mon, 2011-01-03 at 18:06 +0100, Stanislaw Gruszka wrote:
-> > > On Mon, Jan 03, 2011 at 02:49:43PM +0100, Tejun Heo wrote:
-> > > > With cmwq, there's no reason to use separate workqueues.  Drop
-> > > > msmfb_info->resume_workqueue and use system_wq instead.
-> > > > 
-> > > > Signed-off-by: Tejun Heo <tj@kernel.org>
-> > > > Cc: Stanislaw Gruszka <stf_xl@wp.pl>
-> > > I'm not the right person, CC according to MAINTAINERS
-> > 
-> > ARM/QUALCOMM MSM MACHINE SUPPORT
-> > M:      David Brown <davidb@codeaurora.org>
-> > M:      Daniel Walker <dwalker@codeaurora.org>
-> > M:      Bryan Huntsman <bryanh@codeaurora.org>
-> 
-> Oops, sorry about that.  So how does the patch look?  Are you gonna
-> take it through msm tree or shall I take it?
+The pre-release GCC-4.6 now correctly flags this code as dead.
 
-David ?
+Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+---
+ drivers/usb/host/ehci-sched.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-Daniel
-
+diff --git a/drivers/usb/host/ehci-sched.c b/drivers/usb/host/ehci-sched.c
+index aa46f57..30fbdbe 100644
+--- a/drivers/usb/host/ehci-sched.c
++++ b/drivers/usb/host/ehci-sched.c
+@@ -1048,8 +1048,6 @@ iso_stream_put(struct ehci_hcd *ehci, struct ehci_iso_stream *stream)
+ 	 * not like a QH -- no persistent state (toggle, halt)
+ 	 */
+ 	if (stream->refcount == 1) {
+-		int		is_in;
+-
+ 		// BUG_ON (!list_empty(&stream->td_list));
+ 
+ 		while (!list_empty (&stream->free_list)) {
+@@ -1076,7 +1074,6 @@ iso_stream_put(struct ehci_hcd *ehci, struct ehci_iso_stream *stream)
+ 			}
+ 		}
+ 
+-		is_in = (stream->bEndpointAddress & USB_DIR_IN) ? 0x10 : 0;
+ 		stream->bEndpointAddress &= 0x0f;
+ 		if (stream->ep)
+ 			stream->ep->hcpriv = NULL;
 -- 
-
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.7.2.3
 
