@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab1AYVHm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 16:07:42 -0500
-Received: from casper.infradead.org ([85.118.1.10]:37518 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753860Ab1AYVHl convert rfc822-to-8bit (ORCPT
+	id S1754004Ab1AYVIs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 16:08:48 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:46292 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753167Ab1AYVIr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 16:07:41 -0500
-Subject: Re: [PATCH 16/16] KVM-GST: adjust scheduler cpu power
-From: Peter Zijlstra <peterz@infradead.org>
-To: Glauber Costa <glommer@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
-        Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Avi Kivity <avi@redhat.com>
-In-Reply-To: <1295988455.15920.35.camel@mothafucka.localdomain>
-References: <1295892397-11354-1-git-send-email-glommer@redhat.com>
-	 <1295892397-11354-17-git-send-email-glommer@redhat.com>
-	 <1295893920.28776.468.camel@laptop>
-	 <1295895083.15920.9.camel@mothafucka.localdomain>
-	 <1295898690.28776.472.camel@laptop>
-	 <1295985756.15920.33.camel@mothafucka.localdomain>
-	 <1295986386.28776.1101.camel@laptop>
-	 <1295988455.15920.35.camel@mothafucka.localdomain>
+	Tue, 25 Jan 2011 16:08:47 -0500
+Subject: Re: [PATCH 00/25] mm: Preemptibility -v7
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hugh Dickins <hughd@google.com>, benh <benh@kernel.crashing.org>
+In-Reply-To: <4D3F36CB.6060505@linux.intel.com>
+References: <20110125173111.720927511@chello.nl>
+	 <m2ipxcsr6v.fsf@linux.intel.com> <1295987985.28776.1118.camel@laptop>
+	 <4D3F36CB.6060505@linux.intel.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Tue, 25 Jan 2011 22:07:44 +0100
-Message-ID: <1295989664.28776.1124.camel@laptop>
+Date: Tue, 25 Jan 2011 22:09:30 +0100
+Message-ID: <1295989770.28776.1127.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-25 at 18:47 -0200, Glauber Costa wrote:
-> On Tue, 2011-01-25 at 21:13 +0100, Peter Zijlstra wrote:
-> > On Tue, 2011-01-25 at 18:02 -0200, Glauber Costa wrote:
-> > 
-> > > I fail to see how does clock_task influence cpu power.
-> > > If we also have to touch clock_task for better accounting of other
-> > > stuff, it is a separate story.
-> > > But for cpu_power, I really fail. Please enlighten me.
-> > 
-> > static void update_rq_clock_task(struct rq *rq, s64 delta)
-> > {
-> >         s64 irq_delta;
-> > 
-> >         irq_delta = irq_time_read(cpu_of(rq)) - rq->prev_irq_time;
-> > 
-> >         if (irq_delta > delta)
-> >                 irq_delta = delta;
-> > 
-> >         rq->prev_irq_time += irq_delta;
-> >         delta -= irq_delta;
-> >         rq->clock_task += delta;
-> > 
-> >         if (irq_delta && sched_feat(NONIRQ_POWER))
-> >                 sched_rt_avg_update(rq, irq_delta);
-> > }
-> > 
-> > its done through that sched_rt_avg_update() (should probably rename
-> > that), it computes a floating average of time not spend on fair tasks.
-> > 
-> It creates a dependency on CONFIG_IRQ_TIME_ACCOUNTING, though.
-> This piece of code is simply compiled out if this option is disabled.
+On Tue, 2011-01-25 at 12:47 -0800, Andi Kleen wrote:
+> 
+> I thought the reason for the preempt off inside the mmu gather region was
+> to stay on the same CPU for local/remote flushes. How would it change that? 
 
-We can pull this bit out and make the common bit also available for
-paravirt.
+afaik its been preempt-off solely because it was always inside a number
+of spinlocks, I know both Hugh and BenH worked on making it preemptible
+far before I started this.
+
+I remember Hugh and Nick talking about this at OLS'06 or 07, can't
+really remember.
+
+As to local/remote flushes, there is no real saying where the pages came
+from due to on-demand paging and the scheduler never having had a notion
+of home-node. Therefore freeing them wouldn't be more of less local if
+that is exposed to the same migration as allocation was.
+
+
