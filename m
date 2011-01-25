@@ -1,325 +1,382 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753967Ab1AYWSN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 17:18:13 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:63529 "EHLO
+	id S1753994Ab1AYWSW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 17:18:22 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:60153 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752390Ab1AYWSE (ORCPT
+	with ESMTP id S1753842Ab1AYWSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 17:18:04 -0500
+	Tue, 25 Jan 2011 17:18:12 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 19/20] drivers: remove extraneous includes of smp_lock.h
-Date: Tue, 25 Jan 2011 23:17:33 +0100
-Message-Id: <1295993854-4971-20-git-send-email-arnd@arndb.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Alan Cox <alan@linux.intel.com>,
+        Alessio Igor Bogani <abogani@texware.it>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Hendry <andrew.hendry@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Hans Verkuil <hverkuil@xs4all.nl>, Jan Blunck <jblunck@infradead.org>,
+        John Kacur <jkacur@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Matthew Wilcox <matthew@wil.cx>, Oliver Neukum <oliver@neukum.org>,
+        Paul Menage <menage@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [PATCH 20/20] BKL: That's all, folks
+Date: Tue, 25 Jan 2011 23:17:34 +0100
+Message-Id: <1295993854-4971-21-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1295993854-4971-1-git-send-email-arnd@arndb.de>
 References: <1295993854-4971-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:vOrifhWy7YESYTivLLNKXwaAbtm/8qhtbPcT0QEjgc8
- mnLnZDesYurmkS9caoWG9o9DJ28Az4UBxry6+2vvG9GNxvV/mM
- nLGYskdUpYNCs4GfNImoByAJ3a8rAYeJaQTWzHn2OJMEiPjQwc
- 0wBcA4WFyBreT8KbM3z4BQBQovkBH9lcUAPv38Y8jQRInCGQUi
- Dy4ItQyc+UaaRwzpccL0A==
+X-Provags-ID: V02:K0:oUdfTE6Gncxfa2noBF1BIsMeFufmzuydH+EZJyKNwG2
+ gA6rlZO1KrBq3zcuWiV04+L8TbkkG5wb2xZm1gGKMJM1zKJ+9b
+ O7n3S1zbonWDkZV2ix2nvYDxz2f4gAuX5vXkOA+9yIT4DBGFG/
+ w2vR82iF1JY9A+Nne84GKxyAOfYOHjop/vzZlp6Xp2QudBzcCK
+ M3klkAC0uvdNLiqRFXNwg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These were missed the last time I cleaned this up
-globally, because of code moving around or new code
-getting merged.
+This removes the implementation of the big kernel lock,
+at last. A lot of people have worked on this in the
+past, I so the credit for this patch should be with
+everyone who participated in the hunt.
+
+The names on the Cc list are the people that were the
+most active in this, according to the recorded git
+history, in alphabetical order.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Alan Cox <alan@linux.intel.com>
+Cc: Alessio Igor Bogani <abogani@texware.it>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Hendry <andrew.hendry@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Jan Blunck <jblunck@infradead.org>
+Cc: John Kacur <jkacur@redhat.com>
+Cc: Jonathan Corbet <corbet@lwn.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Matthew Wilcox <matthew@wil.cx>
+Cc: Oliver Neukum <oliver@neukum.org>
+Cc: Paul Menage <menage@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
 ---
- drivers/scsi/megaraid/megaraid_sas_fp.c     |    1 -
- drivers/scsi/megaraid/megaraid_sas_fusion.c |    1 -
- drivers/staging/easycap/easycap.h           |    1 -
- drivers/staging/easycap/easycap_ioctl.c     |    1 -
- drivers/target/target_core_device.c         |    1 -
- drivers/target/target_core_fabric_lib.c     |    1 -
- drivers/target/target_core_file.c           |    1 -
- drivers/target/target_core_hba.c            |    1 -
- drivers/target/target_core_iblock.c         |    1 -
- drivers/target/target_core_pscsi.c          |    1 -
- drivers/target/target_core_rd.c             |    1 -
- drivers/target/target_core_tpg.c            |    1 -
- drivers/target/target_core_transport.c      |    1 -
- drivers/tty/n_hdlc.c                        |    1 -
- drivers/tty/n_r3964.c                       |    1 -
- drivers/tty/pty.c                           |    1 -
- drivers/tty/tty_io.c                        |    1 -
- drivers/tty/tty_ldisc.c                     |    2 --
- drivers/tty/vt/selection.c                  |    1 -
- drivers/tty/vt/vc_screen.c                  |    1 -
- drivers/tty/vt/vt.c                         |    1 -
- drivers/tty/vt/vt_ioctl.c                   |    1 -
- 22 files changed, 0 insertions(+), 23 deletions(-)
+ include/linux/hardirq.h  |    9 +---
+ include/linux/smp_lock.h |   65 ----------------------
+ init/Kconfig             |    5 --
+ kernel/sched.c           |    7 ---
+ lib/Makefile             |    1 -
+ lib/kernel_lock.c        |  136 ----------------------------------------------
+ 6 files changed, 1 insertions(+), 222 deletions(-)
+ delete mode 100644 include/linux/smp_lock.h
+ delete mode 100644 lib/kernel_lock.c
 
-diff --git a/drivers/scsi/megaraid/megaraid_sas_fp.c b/drivers/scsi/megaraid/megaraid_sas_fp.c
-index 53fa96a..8fe3a45 100644
---- a/drivers/scsi/megaraid/megaraid_sas_fp.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_fp.c
-@@ -39,7 +39,6 @@
- #include <linux/spinlock.h>
- #include <linux/interrupt.h>
- #include <linux/delay.h>
--#include <linux/smp_lock.h>
- #include <linux/uio.h>
- #include <linux/uaccess.h>
- #include <linux/fs.h>
-diff --git a/drivers/scsi/megaraid/megaraid_sas_fusion.c b/drivers/scsi/megaraid/megaraid_sas_fusion.c
-index c1e09d5..d6e2a66 100644
---- a/drivers/scsi/megaraid/megaraid_sas_fusion.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_fusion.c
-@@ -38,7 +38,6 @@
- #include <linux/spinlock.h>
- #include <linux/interrupt.h>
- #include <linux/delay.h>
--#include <linux/smp_lock.h>
- #include <linux/uio.h>
- #include <linux/uaccess.h>
- #include <linux/fs.h>
-diff --git a/drivers/staging/easycap/easycap.h b/drivers/staging/easycap/easycap.h
-index 8ebf96f..063d447 100644
---- a/drivers/staging/easycap/easycap.h
-+++ b/drivers/staging/easycap/easycap.h
-@@ -65,7 +65,6 @@
- #include <linux/errno.h>
- #include <linux/init.h>
- #include <linux/slab.h>
--#include <linux/smp_lock.h>
- #include <linux/module.h>
- #include <linux/kref.h>
- #include <linux/usb.h>
-diff --git a/drivers/staging/easycap/easycap_ioctl.c b/drivers/staging/easycap/easycap_ioctl.c
-index 447953a..c1a0c9c 100644
---- a/drivers/staging/easycap/easycap_ioctl.c
-+++ b/drivers/staging/easycap/easycap_ioctl.c
-@@ -25,7 +25,6 @@
- */
- /*****************************************************************************/
+diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
+index 32f9fd6..ba36217 100644
+--- a/include/linux/hardirq.h
++++ b/include/linux/hardirq.h
+@@ -93,13 +93,6 @@
+  */
+ #define in_nmi()	(preempt_count() & NMI_MASK)
  
--#include <linux/smp_lock.h>
- #include "easycap.h"
- #include "easycap_debug.h"
- #include "easycap_standard.h"
-diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
-index 317ce58..b0759d5 100644
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -33,7 +33,6 @@
- #include <linux/timer.h>
- #include <linux/slab.h>
- #include <linux/spinlock.h>
--#include <linux/smp_lock.h>
- #include <linux/kthread.h>
- #include <linux/in.h>
- #include <net/sock.h>
-diff --git a/drivers/target/target_core_fabric_lib.c b/drivers/target/target_core_fabric_lib.c
-index 2628564..a3c695a 100644
---- a/drivers/target/target_core_fabric_lib.c
-+++ b/drivers/target/target_core_fabric_lib.c
-@@ -28,7 +28,6 @@
- #include <linux/string.h>
- #include <linux/ctype.h>
- #include <linux/spinlock.h>
--#include <linux/smp_lock.h>
- #include <scsi/scsi.h>
- #include <scsi/scsi_cmnd.h>
- 
-diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
-index 0aaca88..190ca8a 100644
---- a/drivers/target/target_core_file.c
-+++ b/drivers/target/target_core_file.c
-@@ -33,7 +33,6 @@
- #include <linux/blkdev.h>
- #include <linux/slab.h>
- #include <linux/spinlock.h>
--#include <linux/smp_lock.h>
- #include <scsi/scsi.h>
- #include <scsi/scsi_host.h>
- 
-diff --git a/drivers/target/target_core_hba.c b/drivers/target/target_core_hba.c
-index 4bbe820..73f7d6d 100644
---- a/drivers/target/target_core_hba.c
-+++ b/drivers/target/target_core_hba.c
-@@ -31,7 +31,6 @@
- #include <linux/timer.h>
- #include <linux/slab.h>
- #include <linux/spinlock.h>
--#include <linux/smp_lock.h>
- #include <linux/in.h>
- #include <net/sock.h>
- #include <net/tcp.h>
-diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
-index c6e0d75..39dac3a 100644
---- a/drivers/target/target_core_iblock.c
-+++ b/drivers/target/target_core_iblock.c
-@@ -35,7 +35,6 @@
- #include <linux/blkdev.h>
- #include <linux/slab.h>
- #include <linux/spinlock.h>
--#include <linux/smp_lock.h>
- #include <linux/bio.h>
- #include <linux/genhd.h>
- #include <linux/file.h>
-diff --git a/drivers/target/target_core_pscsi.c b/drivers/target/target_core_pscsi.c
-index 742d246..d7606b6 100644
---- a/drivers/target/target_core_pscsi.c
-+++ b/drivers/target/target_core_pscsi.c
-@@ -34,7 +34,6 @@
- #include <linux/blk_types.h>
- #include <linux/slab.h>
- #include <linux/spinlock.h>
--#include <linux/smp_lock.h>
- #include <linux/genhd.h>
- #include <linux/cdrom.h>
- #include <linux/file.h>
-diff --git a/drivers/target/target_core_rd.c b/drivers/target/target_core_rd.c
-index 979aebf..8dc6d74 100644
---- a/drivers/target/target_core_rd.c
-+++ b/drivers/target/target_core_rd.c
-@@ -34,7 +34,6 @@
- #include <linux/blkdev.h>
- #include <linux/slab.h>
- #include <linux/spinlock.h>
--#include <linux/smp_lock.h>
- #include <scsi/scsi.h>
- #include <scsi/scsi_host.h>
- 
-diff --git a/drivers/target/target_core_tpg.c b/drivers/target/target_core_tpg.c
-index abfa81a..8f0ba2d 100644
---- a/drivers/target/target_core_tpg.c
-+++ b/drivers/target/target_core_tpg.c
-@@ -31,7 +31,6 @@
- #include <linux/timer.h>
- #include <linux/slab.h>
- #include <linux/spinlock.h>
--#include <linux/smp_lock.h>
- #include <linux/in.h>
- #include <net/sock.h>
- #include <net/tcp.h>
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 28b6292..1a5c00b 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -34,7 +34,6 @@
- #include <linux/slab.h>
- #include <linux/blkdev.h>
- #include <linux/spinlock.h>
--#include <linux/smp_lock.h>
- #include <linux/kthread.h>
- #include <linux/in.h>
- #include <linux/cdrom.h>
-diff --git a/drivers/tty/n_hdlc.c b/drivers/tty/n_hdlc.c
-index 47d3228..994745a 100644
---- a/drivers/tty/n_hdlc.c
-+++ b/drivers/tty/n_hdlc.c
-@@ -97,7 +97,6 @@
- #include <linux/slab.h>
- #include <linux/tty.h>
- #include <linux/errno.h>
--#include <linux/smp_lock.h>
- #include <linux/string.h>	/* used in new tty drivers */
- #include <linux/signal.h>	/* used in new tty drivers */
- #include <linux/if.h>
-diff --git a/drivers/tty/n_r3964.c b/drivers/tty/n_r3964.c
-index 88dda0c..5c6c314 100644
---- a/drivers/tty/n_r3964.c
-+++ b/drivers/tty/n_r3964.c
-@@ -57,7 +57,6 @@
- #include <linux/ioport.h>
- #include <linux/in.h>
- #include <linux/slab.h>
--#include <linux/smp_lock.h>
- #include <linux/tty.h>
- #include <linux/errno.h>
- #include <linux/string.h>	/* used in new tty drivers */
-diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-index 923a485..2310cb7 100644
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -23,7 +23,6 @@
- #include <linux/major.h>
- #include <linux/mm.h>
- #include <linux/init.h>
--#include <linux/smp_lock.h>
- #include <linux/sysctl.h>
- #include <linux/device.h>
- #include <linux/uaccess.h>
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 464d09d..f0422d5 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -90,7 +90,6 @@
- #include <linux/proc_fs.h>
- #include <linux/init.h>
- #include <linux/module.h>
--#include <linux/smp_lock.h>
- #include <linux/device.h>
- #include <linux/wait.h>
- #include <linux/bitops.h>
-diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index 4214d58..70808ad 100644
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -34,8 +34,6 @@
- #include <linux/vt_kern.h>
- #include <linux/selection.h>
- 
--#include <linux/smp_lock.h>	/* For the moment */
+-#if defined(CONFIG_PREEMPT) && defined(CONFIG_BKL)
+-# include <linux/sched.h>
+-# define PREEMPT_INATOMIC_BASE (current->lock_depth >= 0)
+-#else
+-# define PREEMPT_INATOMIC_BASE 0
+-#endif
 -
- #include <linux/kmod.h>
- #include <linux/nsproxy.h>
+ #if defined(CONFIG_PREEMPT)
+ # define PREEMPT_CHECK_OFFSET 1
+ #else
+@@ -113,7 +106,7 @@
+  * used in the general case to determine whether sleeping is possible.
+  * Do not use in_atomic() in driver code.
+  */
+-#define in_atomic()	((preempt_count() & ~PREEMPT_ACTIVE) != PREEMPT_INATOMIC_BASE)
++#define in_atomic()	((preempt_count() & ~PREEMPT_ACTIVE) != 0)
  
-diff --git a/drivers/tty/vt/selection.c b/drivers/tty/vt/selection.c
-index ebae344..e04876b 100644
---- a/drivers/tty/vt/selection.c
-+++ b/drivers/tty/vt/selection.c
-@@ -26,7 +26,6 @@
- #include <linux/selection.h>
- #include <linux/tiocl.h>
- #include <linux/console.h>
--#include <linux/smp_lock.h>
+ /*
+  * Check whether we were atomic before we did preempt_disable():
+diff --git a/include/linux/smp_lock.h b/include/linux/smp_lock.h
+deleted file mode 100644
+index 3a19882..0000000
+--- a/include/linux/smp_lock.h
++++ /dev/null
+@@ -1,65 +0,0 @@
+-#ifndef __LINUX_SMPLOCK_H
+-#define __LINUX_SMPLOCK_H
+-
+-#ifdef CONFIG_LOCK_KERNEL
+-#include <linux/sched.h>
+-
+-extern int __lockfunc __reacquire_kernel_lock(void);
+-extern void __lockfunc __release_kernel_lock(void);
+-
+-/*
+- * Release/re-acquire global kernel lock for the scheduler
+- */
+-#define release_kernel_lock(tsk) do { 		\
+-	if (unlikely((tsk)->lock_depth >= 0))	\
+-		__release_kernel_lock();	\
+-} while (0)
+-
+-static inline int reacquire_kernel_lock(struct task_struct *task)
+-{
+-	if (unlikely(task->lock_depth >= 0))
+-		return __reacquire_kernel_lock();
+-	return 0;
+-}
+-
+-extern void __lockfunc
+-_lock_kernel(const char *func, const char *file, int line)
+-__acquires(kernel_lock);
+-
+-extern void __lockfunc
+-_unlock_kernel(const char *func, const char *file, int line)
+-__releases(kernel_lock);
+-
+-#define lock_kernel() do {					\
+-	_lock_kernel(__func__, __FILE__, __LINE__);		\
+-} while (0)
+-
+-#define unlock_kernel()	do {					\
+-	_unlock_kernel(__func__, __FILE__, __LINE__);		\
+-} while (0)
+-
+-/*
+- * Various legacy drivers don't really need the BKL in a specific
+- * function, but they *do* need to know that the BKL became available.
+- * This function just avoids wrapping a bunch of lock/unlock pairs
+- * around code which doesn't really need it.
+- */
+-static inline void cycle_kernel_lock(void)
+-{
+-	lock_kernel();
+-	unlock_kernel();
+-}
+-
+-#else
+-
+-#ifdef CONFIG_BKL /* provoke build bug if not set */
+-#define lock_kernel()
+-#define unlock_kernel()
+-#define cycle_kernel_lock()			do { } while(0)
+-#endif /* CONFIG_BKL */
+-
+-#define release_kernel_lock(task)		do { } while(0)
+-#define reacquire_kernel_lock(task)		0
+-
+-#endif /* CONFIG_LOCK_KERNEL */
+-#endif /* __LINUX_SMPLOCK_H */
+diff --git a/init/Kconfig b/init/Kconfig
+index be788c0..a88d1c9 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -69,11 +69,6 @@ config BROKEN_ON_SMP
+ 	depends on BROKEN || !SMP
+ 	default y
  
- /* Don't take this from <ctype.h>: 011-015 on the screen aren't spaces */
- #define isspace(c)	((c) == ' ')
-diff --git a/drivers/tty/vt/vc_screen.c b/drivers/tty/vt/vc_screen.c
-index eab3a1f..09dc635 100644
---- a/drivers/tty/vt/vc_screen.c
-+++ b/drivers/tty/vt/vc_screen.c
-@@ -34,7 +34,6 @@
- #include <linux/kbd_kern.h>
- #include <linux/console.h>
- #include <linux/device.h>
+-config LOCK_KERNEL
+-	bool
+-	depends on (SMP || PREEMPT) && BKL
+-	default y
+-
+ config INIT_ENV_ARG_LIMIT
+ 	int
+ 	default 32 if !UML
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 18d38e4..8e33e07 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -32,7 +32,6 @@
+ #include <linux/init.h>
+ #include <linux/uaccess.h>
+ #include <linux/highmem.h>
 -#include <linux/smp_lock.h>
- #include <linux/sched.h>
- #include <linux/fs.h>
- #include <linux/poll.h>
-diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-index 76407ec..82517ad 100644
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -89,7 +89,6 @@
- #include <linux/mutex.h>
- #include <linux/vt_kern.h>
- #include <linux/selection.h>
--#include <linux/smp_lock.h>
- #include <linux/tiocl.h>
- #include <linux/kbd_kern.h>
- #include <linux/consolemap.h>
-diff --git a/drivers/tty/vt/vt_ioctl.c b/drivers/tty/vt/vt_ioctl.c
-index 6b68a0f..1d5f5e4 100644
---- a/drivers/tty/vt/vt_ioctl.c
-+++ b/drivers/tty/vt/vt_ioctl.c
-@@ -27,7 +27,6 @@
- #include <linux/console.h>
- #include <linux/consolemap.h>
- #include <linux/signal.h>
--#include <linux/smp_lock.h>
- #include <linux/timex.h>
+ #include <asm/mmu_context.h>
+ #include <linux/interrupt.h>
+ #include <linux/capability.h>
+@@ -3945,9 +3944,6 @@ need_resched:
+ 	rcu_note_context_switch(cpu);
+ 	prev = rq->curr;
  
- #include <asm/io.h>
+-	release_kernel_lock(prev);
+-need_resched_nonpreemptible:
+-
+ 	schedule_debug(prev);
+ 
+ 	if (sched_feat(HRTICK))
+@@ -4010,9 +4006,6 @@ need_resched_nonpreemptible:
+ 
+ 	post_schedule(rq);
+ 
+-	if (unlikely(reacquire_kernel_lock(prev)))
+-		goto need_resched_nonpreemptible;
+-
+ 	preempt_enable_no_resched();
+ 	if (need_resched())
+ 		goto need_resched;
+diff --git a/lib/Makefile b/lib/Makefile
+index cbb774f..de6c609 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -43,7 +43,6 @@ obj-$(CONFIG_GENERIC_FIND_LAST_BIT) += find_last_bit.o
+ CFLAGS_hweight.o = $(subst $(quote),,$(CONFIG_ARCH_HWEIGHT_CFLAGS))
+ obj-$(CONFIG_GENERIC_HWEIGHT) += hweight.o
+ 
+-obj-$(CONFIG_LOCK_KERNEL) += kernel_lock.o
+ obj-$(CONFIG_BTREE) += btree.o
+ obj-$(CONFIG_DEBUG_PREEMPT) += smp_processor_id.o
+ obj-$(CONFIG_DEBUG_LIST) += list_debug.o
+diff --git a/lib/kernel_lock.c b/lib/kernel_lock.c
+deleted file mode 100644
+index d80e122..0000000
+--- a/lib/kernel_lock.c
++++ /dev/null
+@@ -1,136 +0,0 @@
+-/*
+- * lib/kernel_lock.c
+- *
+- * This is the traditional BKL - big kernel lock. Largely
+- * relegated to obsolescence, but used by various less
+- * important (or lazy) subsystems.
+- */
+-#include <linux/module.h>
+-#include <linux/kallsyms.h>
+-#include <linux/semaphore.h>
+-#include <linux/smp_lock.h>
+-
+-/*
+- * The 'big kernel lock'
+- *
+- * This spinlock is taken and released recursively by lock_kernel()
+- * and unlock_kernel().  It is transparently dropped and reacquired
+- * over schedule().  It is used to protect legacy code that hasn't
+- * been migrated to a proper locking design yet.
+- *
+- * Don't use in new code.
+- */
+-static  __cacheline_aligned_in_smp DEFINE_RAW_SPINLOCK(kernel_flag);
+-
+-
+-/*
+- * Acquire/release the underlying lock from the scheduler.
+- *
+- * This is called with preemption disabled, and should
+- * return an error value if it cannot get the lock and
+- * TIF_NEED_RESCHED gets set.
+- *
+- * If it successfully gets the lock, it should increment
+- * the preemption count like any spinlock does.
+- *
+- * (This works on UP too - do_raw_spin_trylock will never
+- * return false in that case)
+- */
+-int __lockfunc __reacquire_kernel_lock(void)
+-{
+-	while (!do_raw_spin_trylock(&kernel_flag)) {
+-		if (need_resched())
+-			return -EAGAIN;
+-		cpu_relax();
+-	}
+-	preempt_disable();
+-	return 0;
+-}
+-
+-void __lockfunc __release_kernel_lock(void)
+-{
+-	do_raw_spin_unlock(&kernel_flag);
+-	preempt_enable_no_resched();
+-}
+-
+-/*
+- * These are the BKL spinlocks - we try to be polite about preemption.
+- * If SMP is not on (ie UP preemption), this all goes away because the
+- * do_raw_spin_trylock() will always succeed.
+- */
+-#ifdef CONFIG_PREEMPT
+-static inline void __lock_kernel(void)
+-{
+-	preempt_disable();
+-	if (unlikely(!do_raw_spin_trylock(&kernel_flag))) {
+-		/*
+-		 * If preemption was disabled even before this
+-		 * was called, there's nothing we can be polite
+-		 * about - just spin.
+-		 */
+-		if (preempt_count() > 1) {
+-			do_raw_spin_lock(&kernel_flag);
+-			return;
+-		}
+-
+-		/*
+-		 * Otherwise, let's wait for the kernel lock
+-		 * with preemption enabled..
+-		 */
+-		do {
+-			preempt_enable();
+-			while (raw_spin_is_locked(&kernel_flag))
+-				cpu_relax();
+-			preempt_disable();
+-		} while (!do_raw_spin_trylock(&kernel_flag));
+-	}
+-}
+-
+-#else
+-
+-/*
+- * Non-preemption case - just get the spinlock
+- */
+-static inline void __lock_kernel(void)
+-{
+-	do_raw_spin_lock(&kernel_flag);
+-}
+-#endif
+-
+-static inline void __unlock_kernel(void)
+-{
+-	/*
+-	 * the BKL is not covered by lockdep, so we open-code the
+-	 * unlocking sequence (and thus avoid the dep-chain ops):
+-	 */
+-	do_raw_spin_unlock(&kernel_flag);
+-	preempt_enable();
+-}
+-
+-/*
+- * Getting the big kernel lock.
+- *
+- * This cannot happen asynchronously, so we only need to
+- * worry about other CPU's.
+- */
+-void __lockfunc _lock_kernel(const char *func, const char *file, int line)
+-{
+-	int depth = current->lock_depth + 1;
+-
+-	if (likely(!depth)) {
+-		might_sleep();
+-		__lock_kernel();
+-	}
+-	current->lock_depth = depth;
+-}
+-
+-void __lockfunc _unlock_kernel(const char *func, const char *file, int line)
+-{
+-	BUG_ON(current->lock_depth < 0);
+-	if (likely(--current->lock_depth < 0))
+-		__unlock_kernel();
+-}
+-
+-EXPORT_SYMBOL(_lock_kernel);
+-EXPORT_SYMBOL(_unlock_kernel);
+-
 -- 
 1.7.1
 
