@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951Ab1AYXQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 18:16:56 -0500
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:48358 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753676Ab1AYXQy (ORCPT
+	id S1753997Ab1AYXVe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 18:21:34 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:23514 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753027Ab1AYXVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 18:16:54 -0500
-X-Sasl-enc: FidmkbEKLuAbevrWjsrcyFncXZ0Vb8wJuUeKfXtoZdJg 1295997413
-Date: Tue, 25 Jan 2011 21:16:51 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Dominik Kopp <my@kabelfunk.de>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, platform-driver-x86@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jeff Chua <jeff.chua.linux@gmail.com>,
-        ibm-acpi-devel@lists.sourceforge.net
-Subject: Re: [ibm-acpi-devel] thinkpad-acpi: fn-f4 issues
-Message-ID: <20110125231651.GB25953@khazad-dum.debian.net>
-References: <Pine.LNX.4.64.1101251740380.3737@boston.corp.fedex.com>
- <20110125151346.GB14803@khazad-dum.debian.net>
- <4D3F3AFF.7020407@kabelfunk.de>
+	Tue, 25 Jan 2011 18:21:32 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6237"; a="71754604"
+From: David Brown <davidb@codeaurora.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Stanislaw Gruszka <stf_xl@wp.pl>,
+        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 20/32] video/msm_fb: use system_wq instead of dedicated workqueues
+In-Reply-To: <1294062595-30097-21-git-send-email-tj@kernel.org> (Tejun Heo's
+	message of "Mon, 3 Jan 2011 14:49:43 +0100")
+References: <1294062595-30097-1-git-send-email-tj@kernel.org>
+	<1294062595-30097-21-git-send-email-tj@kernel.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+X-Hashcash: 1:20:110125:linux-arm-msm@vger.kernel.org::Xya332UvNVusaa12:000000000000000000000000000000004HOi
+X-Hashcash: 1:20:110125:tj@kernel.org::uf8Ui6yW4MPw3GSX:00000cc8
+X-Hashcash: 1:20:110125:linux-usb@vger.kernel.org::MCBn6VztrJrS20E5:0000000000000000000000000000000000002ehZ
+X-Hashcash: 1:20:110125:linux-kernel@vger.kernel.org::hZ7xsc2xpu6ymPxY:0000000000000000000000000000000005kxF
+X-Hashcash: 1:20:110125:stf_xl@wp.pl::KXNK07HDGGwsM9sO:000007vVc
+Date: Tue, 25 Jan 2011 15:21:31 -0800
+Message-ID: <8yaoc74d0xw.fsf@huya.qualcomm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D3F3AFF.7020407@kabelfunk.de>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Jan 2011, Dominik Kopp wrote:
-> I have also a X100e and the Fn-F4 (suspend-to-memory) and Fn-F12
-> (suspend-to-disk) are not working. (no effect at all)
+On Mon, Jan 03 2011, Tejun Heo wrote:
 
-> [   15.362664] thinkpad_acpi: asked for hotkey mask 0x040988fc, but
-> firmware forced it to 0x000988fc
+> With cmwq, there's no reason to use separate workqueues.  Drop
+> msmfb_info->resume_workqueue and use system_wq instead.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Stanislaw Gruszka <stf_xl@wp.pl>
+> Cc: linux-usb@vger.kernel.org
+> ---
+> Only compile tested.  Please feel free to take it into the subsystem
+> tree or simply ack - I'll route it through the wq tree.
 
-The driver IS asking for Fn+F4 events.  Please send me the output of
-acpidump, gzipped.
+I'll pull this into the MSM tree.
 
-In the meanwhile, check if the input device is producing events when
-you're pressing Fn+f4.  It could well be sending KEY_SUSPEND, but if
-there's nobody listening...
+Thanks,
+David
 
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
