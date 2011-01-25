@@ -1,67 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802Ab1AYB14 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 20:27:56 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:46472 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab1AYB1z (ORCPT
+	id S1752872Ab1AYB2L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 20:28:11 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38771 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752807Ab1AYB2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 20:27:55 -0500
-Subject: Re: [GIT PULL for 38-rc3]  target updates for v4.0.0-rc7
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1295915790.15425.44.camel@mulgrave.site>
-References: <1295914455.24778.115.camel@haakon2.linux-iscsi.org>
-	 <1295915790.15425.44.camel@mulgrave.site>
-Content-Type: text/plain
-Date: Mon, 24 Jan 2011 17:27:51 -0800
-Message-Id: <1295918871.24778.161.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	Mon, 24 Jan 2011 20:28:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject:references
+         :in-reply-to:content-type:content-transfer-encoding;
+        b=sClIvqHWnX0rlJ2Njdw18XvQe/RjEUTKTFnnnqPo1zH7c9HPIE1avzuLyVN9jE5dzV
+         H2LLOWS4AI7/41RKT+Sd44VZVAPAAgLF/gGdj/rXm3lBT5d5vMC+QDpJ0XaByDd8hR7d
+         m5s09ykCS000dJ3PheALQ5RgIYv4oinYkjyq8=
+Message-ID: <4D3E2727.8060208@gmail.com>
+Date: Mon, 24 Jan 2011 19:28:07 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: Re: Coherent DMA mapping for existing struct page
+References: <87ipxevyiq.fsf@inspiron.ap.columbia.edu>
+In-Reply-To: <87ipxevyiq.fsf@inspiron.ap.columbia.edu>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-24 at 18:36 -0600, James Bottomley wrote:
-> On Mon, 2011-01-24 at 16:14 -0800, Nicholas A. Bellinger wrote:
-> > Hi James and Co,
-> > 
-> > Here are the latest v4.0.0-rc7 updates for mainline drivers/target/ code
-> > rebased against linux-2.6.git -> .38-rc2.  These individual patches have
-> > been reviewed on linux-scsi and commited into the upstream LIO kernel
-> > tree, so please consider pulling for .38-rc3:
-> > 
-> >    git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-38-rc3
-> > 
-> > Also at this point, having Linus pull directly from
-> > scsi-post-merge-2.6.git/for-38-rcX for mainline target bugfixes +
-> > improvements may make more sense.
-> > 
-> > Linus/Andrew/James, please let me know which you prefer here.
-> 
-> Right at the moment, I'm trying to encourage a few people with
-> established areas to experiment with their own git trees in SCSI, but
-> the target subsystem, being a newcomer, wouldn't be one of these, so,
-> for the time being, patch series over linux-scsi please for review and
-> feedback.
-> 
+On 01/24/2011 02:26 PM, Nikolaus Rath wrote:
+> Hello,
+>
+> How do I set up a coherent DMA mapping for an existing struct page?
+> dma_alloc_coherent() wants to allocate its own buffer, and
+> dma_map_page() sets up streaming mappings. Which function am I missing?
 
-Sure, thanks for the clarification.  The same set of patches are
-available against your .37-FINAL based scsi-post-merge-2.6.git/master
-HEAD here:
-
-   git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-jejb
-
-Please let me know if you have any further questions,
-
---nab
-
-
+I don't think you can do this. On some platforms, only certain memory 
+can be used for coherent DMA, so you can't just use any arbitrary page.
