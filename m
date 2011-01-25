@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736Ab1AYSez (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 13:34:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45855 "EHLO mx1.redhat.com"
+	id S1752663Ab1AYSit (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 13:38:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47131 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752179Ab1AYSey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 13:34:54 -0500
+	id S1751866Ab1AYSis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 13:38:48 -0500
+Message-ID: <4D3F1897.60300@redhat.com>
+Date: Tue, 25 Jan 2011 10:38:15 -0800
+From: Josh Stone <jistone@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Linux-mm <linux-mm@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 10/20] 10: uprobes: task specific
+ information.
+References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>	 <20101216095912.23751.63180.sendpatchset@localhost6.localdomain6> <1295963775.28776.1056.camel@laptop>
+In-Reply-To: <1295963775.28776.1056.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: Arnd Bergmann <arnd@arndb.de>
-X-Fcc: ~/Mail/linus
-Cc: linasvepstas@gmail.com, Chris Metcalf <cmetcalf@tilera.com>,
-        GLIBC Devel <libc-alpha@sourceware.org>, linux-kernel@vger.kernel.org,
-        libc-ports@sourceware.org, linux-api@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [BUG] Generic syscalls -- chmod vs. fchmodat
-In-Reply-To: Arnd Bergmann's message of  Tuesday, 25 January 2011 19:21:14 +0100 <201101251921.15184.arnd@arndb.de>
-References: <AANLkTikhKHnR+7DskxYqWXduX4=tpfgsfL4sNYq+4QDq@mail.gmail.com>
-	<201101251529.24779.arnd@arndb.de>
-	<20110125174515.C1DC2183C19@magilla.sf.frob.com>
-	<201101251921.15184.arnd@arndb.de>
-X-Windows: the art of incompetence.
-Message-Id: <20110125183437.7C6C2180999@magilla.sf.frob.com>
-Date: Tue, 25 Jan 2011 10:34:37 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tuesday 25 January 2011 18:45:15 Roland McGrath wrote:
-> >  I know of no reason to
-> > think that the current treatment of the empty string was ever intended at
-> > the creation of the *at interfaces.
+On 01/25/2011 05:56 AM, Peter Zijlstra wrote:
+> Ah, I think I found it while reading patch 13, you need the pre/post_xol
+> callbacks, can't you simply synthesize their effect into the replacement
+> sequence?
 > 
-> I always assumed that this was done so that the *at syscalls can replace
-> both the ones that take a file descriptor (e.g. fstat) and the ones that
-> take a pathname (e.g. stat), which is sensible for the non-AT_FDCWD case,
-> although not documented in the man pages.
+>   push %rax
+>   mov $vaddr, %rax
+>   $INSN
+>   pop %rax
+>   jmp $next_insn
+> 
+> like replacements would obviate the need for the pre/post callbacks and
+> allow you to run straight through.
 
-I see your point.  That is, having the empty string relative to a file
-descriptor work means it can replace f* calls on non-directories, whereas
-the standard method of passing "." for descriptor-relative resolution can
-only work on a file descriptor open on a directory.  Is that what you mean?
+For this particular example, you'd better be sure that $INSN doesn't
+need %rsp intact.
 
-I don't think this was part of the original intent when the calls were
-added, but I suppose it makes sense.
+Control flow in general also makes this challenging.  If $INSN is a
+call, then any inline fixups won't get a chance until after return.  If
+$INSN is a jump, then its target must be modified so that both taken and
+not-taken paths land in respective fixup locations.  I'm sure there are
+more cases that I'm not thinking of.
 
-> Treating the empty string special for AT_FDCWD is rather pointless, but
-> at least consistent.
+> It would also remove the whole single-step need since they're proper
+> boosted probes.
 
-I agree about the consistency point.  However, one could also call it
-consistent if the empty string fails to resolve when operating on either a
-directory file descriptor or AT_FDCWD but works on a non-directory file
-descriptor.  POSIX does not mandate that *at calls fail with ENOTDIR when
-passed a non-directory file descriptor (it's a "may fail" error, not a
-"shall fail" error).  So that behavior would be consistent both with the
-POSIX requirements as I read them, and with the desire you mentioned to let
-the fblahat system call serve to implement fblah as well as blah.  Then
-libc would not have to wrap the *at calls with any special check to conform
-to POSIX.
+Kprobes has boosting, but it doesn't apply to all opcodes.  I would
+guess that the same could be done for uprobes, where certain opcodes get
+a fixup sequence like you suggest, but the pre/post_xol mechanism is
+still needed in general.
 
-
-Thanks,
-Roland
+Josh
