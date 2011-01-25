@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175Ab1AYPKx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 10:10:53 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:48373 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492Ab1AYPKw (ORCPT
+	id S1753215Ab1AYPNv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 10:13:51 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:37895 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752730Ab1AYPNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 10:10:52 -0500
-Message-ID: <4D3EE7F6.9080904@linux.vnet.ibm.com>
-Date: Tue, 25 Jan 2011 20:40:46 +0530
-From: Anithra P Janakiraman <anithra@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.4pre) Gecko/20090922 Fedora/3.0-3.9.b4.fc12 Thunderbird/3.0b4
+	Tue, 25 Jan 2011 10:13:49 -0500
+X-Sasl-enc: UALsj270sO0HwxX0pIol+FxDdW7N+6mtRoOguEsmVG7J 1295968429
+Date: Tue, 25 Jan 2011 13:13:46 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        platform-driver-x86@vger.kernel.org,
+        ibm-acpi-devel@lists.sourceforge.net
+Subject: thinkpad-acpi: fn-f4 issues
+Message-ID: <20110125151346.GB14803@khazad-dum.debian.net>
+References: <Pine.LNX.4.64.1101251740380.3737@boston.corp.fedex.com>
 MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/0] Panic on softdog timeout
-References: <4D358B34.7040902@linux.vnet.ibm.com> <1295368527.31327.193.camel@nimitz>
-In-Reply-To: <1295368527.31327.193.camel@nimitz>
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1101251740380.3737@boston.corp.fedex.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2011 10:05 PM, Dave Hansen wrote:
-> On Tue, 2011-01-18 at 18:14 +0530, Anithra P Janakiraman wrote:
->    
->> We currently have no way of determining the reason for failure when a
->> softdog timeout occurs. At the minimum a snapshot of the system would
->> help to determine the cause.
->> The attached patch invokes panic on softdog timeout iff kdump is
->> configured, if kdump is not configured it works as usual.
->>      
-> This sounds like a decent idea.  But, is it something that should be a
-> bit more optional?  We currently have boot options for when to reboot or
-> panic for other things, and this is really the first use of
-> kexec_crash_image outside of kexec itself.  Is it really the best switch
-> to use?
->
-> Will this break anyone who expects a quick, clean, reboot and instead
-> gets a kdump?  Should we make _all_ emergency_restart()s use kdump?
->
-> You might have noticed, but your subject is a little wonky.  It should
-> probably just omit the 1/1 stuff when you only have a single patch
-> series.  The subject is pretty short and doesn't really explain what's
-> going on.  Could you beef it up a bit?
->
->    
->
+(cc: trimmed down, as this is now a thinkpad-acpi matter)
 
-Thanks for looking at it and for the comments. I've sent a
-version 2 of the patch that hopefully addresses all your
-comments.
+On Tue, 25 Jan 2011, Jeff Chua wrote:
+> As for the thinkpad-acpi, here a little patch to disable all hotkeys
+> so that Fn-F4 works natively to suspend-to-memory when
+> CONFIG_THINKPAD_ACPI_HOTKEY_POLL is not set.
+> 
+> Thanks,
+> Jeff
+> 
+> --- lx/drivers/platform/x86/thinkpad_acpi.c.org	2011-01-22 21:48:05.000000000 +0800
+> +++ lx/drivers/platform/x86/thinkpad_acpi.c	2011-01-22 21:55:14.000000000 +0800
+> @@ -8776,10 +8776,12 @@
+>  	{
+>  		.data = &thinkpad_acpi_driver_data,
+>  	},
+> +#ifdef CONFIG_THINKPAD_ACPI_HOTKEY_POLL
+>  	{
+>  		.init = hotkey_init,
+>  		.data = &hotkey_driver_data,
+>  	},
+> +#endif
 
-link:
-http://permalink.gmane.org/gmane.linux.kernel/1091282
+That will basicaly lobotomize the driver, as the "hotkeys" are really the
+entire firmware event interface(!).
 
-For some strange reason i'm unable to find a link to my
-mail on lkml.org. I see emails only upto the 23rd of Jan.
+Which thinkpad do you have that need CONFIG_THINKPAD_ACPI_HOTKEY_POLL to
+handle Fn+F4?   I don't expect that to be needed on anything newer than a
+T32...
 
-Regards,
-Anithra.
+Can I have the full kernel log, please?
 
-
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
