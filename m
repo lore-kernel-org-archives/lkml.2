@@ -1,73 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556Ab1AYHHh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 02:07:37 -0500
-Received: from www.wytron.com.tw ([211.75.82.101]:41943 "EHLO
-	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab1AYHHf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 02:07:35 -0500
-From: Thomas Chou <thomas@wytron.com.tw>
-To: Grant Likely <grant.likely@secretlab.ca>, Nicolas Pitre <nico@fluxnic.net>
-Cc: linux-kernel@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
-        devicetree-discuss@lists.ozlabs.org, netdev@vger.kernel.org,
-        Thomas Chou <thomas@wytron.com.tw>
-Subject: [PATCH v2] smc91x: add devicetree support
-Date: Tue, 25 Jan 2011 15:09:59 +0800
-Message-Id: <1295939399-4197-1-git-send-email-thomas@wytron.com.tw>
-X-Mailer: git-send-email 1.7.3.5
-In-Reply-To: <AANLkTikgsqJqdW2qh7h4yATCmGFb5MkHCosma_DOBq-Y@mail.gmail.com>
-References: <AANLkTikgsqJqdW2qh7h4yATCmGFb5MkHCosma_DOBq-Y@mail.gmail.com>
-X-SA-Exim-Connect-IP: 192.168.1.15
-X-SA-Exim-Mail-From: thomas@wytron.com.tw
-X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
+	id S1752143Ab1AYHHe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 02:07:34 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:60799 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751355Ab1AYHHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 02:07:33 -0500
+Date: Tue, 25 Jan 2011 08:07:26 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        stable@kernel.org
+Subject: Re: [PATCH 1/3] memcg: fix account leak at failure of memsw
+ acconting.
+Message-ID: <20110125070726.GA2217@cmpxchg.org>
+References: <20110125145720.cd0cbe16.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110125150042.fa7a9a9a.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110125150042.fa7a9a9a.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
----
-v2 specify part numbers in compat as Grant suggested.
+On Tue, Jan 25, 2011 at 03:00:42PM +0900, KAMEZAWA Hiroyuki wrote:
+> This is required for 2.6.36-stable and later.
+> ==
+> Commit 4b53433468c87794b523e4683fbd4e8e8aca1f63 removes
+> a cancel of charge at case: 
+> memory charge-> success.
+> mem+swap charge-> failure.
+> 
+> This leaks usage of memory. Fix it.
+> 
+> This patch is required for stable tree since 2.6.36.
+> 
+> CC: stable@kernel.org
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
- drivers/net/smc91x.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/net/smc91x.c b/drivers/net/smc91x.c
-index 726df61..de48ebd 100644
---- a/drivers/net/smc91x.c
-+++ b/drivers/net/smc91x.c
-@@ -81,6 +81,7 @@ static const char version[] =
- #include <linux/ethtool.h>
- #include <linux/mii.h>
- #include <linux/workqueue.h>
-+#include <linux/of.h>
- 
- #include <linux/netdevice.h>
- #include <linux/etherdevice.h>
-@@ -2394,6 +2395,13 @@ static int smc_drv_resume(struct device *dev)
- 	return 0;
- }
- 
-+static const struct of_device_id smc91x_match[] = {
-+	{ .compatible = "smsc,smc91c94", },
-+	{ .compatible = "smsc,smc91c111", },
-+	{},
-+}
-+MODULE_DEVICE_TABLE(of, smc91x_match);
-+
- static struct dev_pm_ops smc_drv_pm_ops = {
- 	.suspend	= smc_drv_suspend,
- 	.resume		= smc_drv_resume,
-@@ -2406,6 +2414,9 @@ static struct platform_driver smc_driver = {
- 		.name	= CARDNAME,
- 		.owner	= THIS_MODULE,
- 		.pm	= &smc_drv_pm_ops,
-+#ifdef CONFIG_OF
-+		.of_match_table = smc91x_match,
-+#endif
- 	},
- };
- 
--- 
-1.7.3.5
-
+Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
