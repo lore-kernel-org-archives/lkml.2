@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751499Ab1AYAuD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 19:50:03 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:42118 "EHLO
-	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751236Ab1AYAuB (ORCPT
+	id S1751529Ab1AYA4F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 19:56:05 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:59957 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236Ab1AYA4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 19:50:01 -0500
-Date: Tue, 25 Jan 2011 00:49:53 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Mike Waychison <mikew@google.com>
-Cc: Greg KH <greg@kroah.com>, torvalds@linux-foundation.org,
-        San Mehat <san@google.com>, Aaron Durbin <adurbin@google.com>,
-        Duncan Laurie <dlaurie@google.com>, linux-kernel@vger.kernel.org,
-        Tim Hockin <thockin@google.com>
-Subject: Re: [PATCH v1 4/6] driver: Google Bootlog
-Message-ID: <20110125004953.3e838962@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110125002454.12637.4700.stgit@mike.mtv.corp.google.com>
-References: <20110125002433.12637.51091.stgit@mike.mtv.corp.google.com>
-	<20110125002454.12637.4700.stgit@mike.mtv.corp.google.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 24 Jan 2011 19:56:03 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=wTVUSzjdI8HBxcDWd2zormLnLOhd1jECJ5sft/zO5MHCx/e2eMVGzEq9pOena9qerK
+         JXngQKOx4vgfJ6N/hr5hClqWoq7W8fz8FH9VsREVEmxaiCf7qLWTMqDdINi0gIclwqWa
+         yo8TfYd/yVqpd9aPFDfd9sbXWDr5mbbsAIVHI=
+Date: Mon, 24 Jan 2011 16:55:55 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org
+Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils ?
+Message-ID: <20110125005555.GA18338@core.coreip.homeip.net>
+References: <4D3C5F73.2050408@teksavvy.com>
+ <20110124175456.GA17855@core.coreip.homeip.net>
+ <4D3E1A08.5060303@teksavvy.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D3E1A08.5060303@teksavvy.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +/*
-> + * Search for the BLOG pointer.
-> + */
-> +static struct bootlog_ptr * __init bootlog_find_pointer(void)
-> +{
-> +	unsigned long address, length, cur;
-> +	struct bootlog_ptr *bp;
-> +
-> +	/* EBDA pointer contains segment the extended BIOS data area */
-> +	address = *(uint16_t *)phys_to_virt(BLOG_EBDA_POINTER);
-> +	address <<= 4;	/* convert segment to physical address */
-> +
-> +	/* EBDA length is byte 0 of the EBDA (stored in kB) */
-> +	length = *(uint8_t *)phys_to_virt(address);
-> +	length <<= 10;	/* convert to bytes */
+On Mon, Jan 24, 2011 at 07:32:08PM -0500, Mark Lord wrote:
+> On 11-01-24 12:54 PM, Dmitry Torokhov wrote:
+> > Hi Mark,
+> > 
+> > On Sun, Jan 23, 2011 at 12:03:47PM -0500, Mark Lord wrote:
+> >> As of the 2.6.36 kernel, the userspace commands lsinput and input-kbd
+> >> no longer work.  And if I grab newer/patched versions of those from the latest
+> >> Ubuntu 10.10, then those newer/patched versions do not work with kernels
+> >> *before* 2.6.36.
+> >>
+> >> At first glance, this looks like a visible regression.
+> >> Is there a version of input-utils that works with both
+> >> old and new kernels ?
+> >>
+> > 
+> > The event protocol number was updated to reflect support of large
+> > scancodes, unfortunately some of the utilities expected exact version
+> > and refuse to work with updated one.
+> 
+> 
+> So is there a danger of memory corruption if running a binary
+> that doesn't check the version number?
+> 
 
-Ok this is wrong on two counts
+No, as far as I know we kept ABI intact.
 
-1.	If the EBDA pointer is zero then no EBDA is present (older
-boxes sometimes did this up to about the Athlon era).
+> In other words, did the size and/or format of returned data
+> change for an ioctl() or something here?
 
-2.	EBDA isn't an X86 property it's a PC property. asm/bios_ebda
-provides one helper and perhaps it all belongs in there (along with 'is
-it a PC' sanity check)
+Yes, we introduced new ioctls (keeping old ones and their ABI intact).
+The change is that EVIOCGVERSION ioctl now returns 0x10001 instead of
+0x10000.
 
-3.	And its probably a good idea given the standard of BIOS code to
-also check the EBDA end if given is actually within the 640K limit ...
+> 
+> If so, then that is a user-visible regression, and shouldn't happen.
+> One correct way to handle that, would be to create a new ioctl(),
+> and mark the old one as deprecated, for removal a few years later perhaps.
+> 
+> ???
 
+Right.
 
+However a few input utilities insist that they will only work with event
+protocol version 0x10000. It is purely their choice, however misguided
+it might be.
 
-Alan
+-- 
+Dmitry
