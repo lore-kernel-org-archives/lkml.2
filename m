@@ -1,113 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663Ab1AYQsN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 11:48:13 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:55488 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307Ab1AYQsM (ORCPT
+	id S1752623Ab1AYQtM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 11:49:12 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61001 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307Ab1AYQtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 11:48:12 -0500
+	Tue, 25 Jan 2011 11:49:10 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=dnLDL3jrnGgH+d7riCsHcH1a2/q/QKyhJlHmA+No0WCGBBky2TnkeEVJPeSvHYolC0
-         z+0V1t9V0FJwbO4obVAkFhhnW1rkuyJjt77q9HtQLaoBgF11xFOBcvVT7pj2fyTWcOLx
-         RgNbT8a6u5Z5GNfXPwWfrjqDfWaJFI2Vhk7j4=
-Date: Tue, 25 Jan 2011 08:48:03 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Mark Lord <kernel@teksavvy.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils ?
-Message-ID: <20110125164803.GA19701@core.coreip.homeip.net>
-References: <4D3E1A08.5060303@teksavvy.com>
- <20110125005555.GA18338@core.coreip.homeip.net>
- <4D3E4DD1.60705@teksavvy.com>
- <20110125042016.GA7850@core.coreip.homeip.net>
- <4D3E5372.9010305@teksavvy.com>
- <20110125045559.GB7850@core.coreip.homeip.net>
- <4D3E59CA.6070107@teksavvy.com>
- <4D3E5A91.30207@teksavvy.com>
- <20110125053117.GD7850@core.coreip.homeip.net>
- <4D3EB734.5090100@redhat.com>
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=KusXOKP5ph6R24fjijNWivp7Eoc5qBakcTNFp4Z8v92f5Jl9krnV3EcUyvKnaf/gSM
+         1K2ORm5i/pbZ1w/OE92ELyaj2VwyqK0oLKuxwQU4krHb2gMK865yjA98SkVTSnVuH0dG
+         N73p9Hva4j1NlhHjZOjOH2azfacj3USalEWEw=
+Message-ID: <4D3EFEF5.80406@gmail.com>
+Date: Tue, 25 Jan 2011 19:48:53 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D3EB734.5090100@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: eranian@google.com
+CC: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+        perfmon2-devel@lists.sf.net, eranian@gmail.com, robert.richter@amd.com,
+        acme@redhat.com, ming.m.lin@intel.com
+Subject: Re: [PATCH] perf_events: fix Pentium4 raw event validation
+References: <4d3efb2f.1252d80a.1a80.ffffc83f@mx.google.com>
+In-Reply-To: <4d3efb2f.1252d80a.1a80.ffffc83f@mx.google.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 09:42:44AM -0200, Mauro Carvalho Chehab wrote:
-> Em 25-01-2011 03:31, Dmitry Torokhov escreveu:
-> > On Tue, Jan 25, 2011 at 12:07:29AM -0500, Mark Lord wrote:
-> >> On 11-01-25 12:04 AM, Mark Lord wrote:
-> >>> On 11-01-24 11:55 PM, Dmitry Torokhov wrote:
-> >>>> On Mon, Jan 24, 2011 at 11:37:06PM -0500, Mark Lord wrote:
-> >>> ..
-> >>>>> This results in (map->size==10) for 2.6.36+ (wrong),
-> >>>>> and a much larger map->size for 2.6.35 and earlier.
-> >>>>>
-> >>>>> So perhaps EVIOCGKEYCODE has changed?
-> >>>>>
-> >>>>
-> >>>> So the utility expects that all devices have flat scancode space and
-> >>>> driver might have changed so it does not recognize scancode 10 as valid
-> >>>> scancode anymore.
-> >>>>
-> >>>> The options are:
-> >>>>
-> >>>> 1. Convert to EVIOCGKEYCODE2
-> >>>> 2. Ignore errors from EVIOCGKEYCODE and go through all 65536 iterations.
-> >>>
-> >>> or 3. Revert/fix the in-kernel regression.
-> >>>
-> >>> The EVIOCGKEYCODE ioctl is supposed to return KEY_RESERVED for unmapped
-> >>> (but value) keycodes, and only return -EINVAL when the keycode itself
-> >>> is out of range.
-> >>>
-> >>> That's how it worked in all kernels prior to 2.6.36,
-> >>> and now it is broken.  It now returns -EINVAL for any unmapped keycode,
-> >>> even though keycodes higher than that still have mappings.
-> >>>
-> >>> This is a bug, a regression, and breaks userspace.
-> >>> I haven't identified *where* in the kernel the breakage happened,
-> >>> though.. that code confuses me.  :)
-> >>
-> >> Note that this device DOES have "flat scancode space",
-> >> and the kernel is now incorrectly signalling an error (-EINVAL)
-> >> in response to a perfectly valid query of a VALID (and mappable)
-> >> keycode on the remote control
-> >>
-> >> The code really is a valid button, it just doesn't have a default mapping
-> >> set by the kernel (I can set a mapping for that code from userspace and it works).
-> >>
-> > 
-> > OK, in this case let's ping Mauro - I think he done the adjustments to
-> > IR keymap hanlding.
+On 01/25/2011 06:32 PM, Stephane Eranian wrote:
+> This patches fixes some issies with raw event validation on Pentium 4 (Netburst)
+> processors.
 > 
-> I lost part of the thread, but a quick search via the Internet showed that you're using
-> the input tools to work with a Remote Controller, right? Are you using a vanilla
-> kernel, or are you using the media_build backports? There are some distros that are
-> using those backports also like Fedora 14.
+> As I was testing libpfm4 Netburst support, I ran into two problems in the
+> p4_validate_raw_event() function:
+>    - the shared field must be checked ONLY when HT is on
+>    - the binding to ESCR register was missing
 > 
-> In the latter case, I found the reason why the backports were not working and I fixed
-> it a couple days ago:
-> 	http://git.linuxtv.org/media_build.git?a=commit;h=b83dc3e49d90527d8e1016d09e06f4842a6a847a
+> The second item was causing raw events to not be encoded correctly compared
+> to generic PMU events.
 > 
-> The issue is simple, and it is related on how the input.c used to handle EVIOSGKEYCODE.
-> Basically, before allowing you to change a key, it used to call EVIOCGKEYCODE to check
-> it that key exists. However, when you're creating a new association, the key didn't
-> exist, and, to be strict with input rules, EVIOCGKEYCODE should return -EINVAL.
+> With this patch, I can now pass Netburst events to libpfm4 examples and
+> get meaningful results:
+>   $ task -e global_power_events:running:u  noploop 1
+>   noploop for 1 seconds
+>   3,206,304,898 global_power_events:running
+> 
+> Signed-off-by: Stephane Eranian <eranian@google.com>
 
-We should be able to handle the case where scancode is valid even though
-it might be unmapped yet. This is regardless of what version of
-EVIOCGKEYCODE we use, 1 or 2, and whether it is sparse keymap or not.
+Thanks a lot Stephane!
 
-Is it possible to validate the scancode by driver?
-
+Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
 -- 
-Dmitry
+    Cyrill
