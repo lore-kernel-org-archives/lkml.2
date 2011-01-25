@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469Ab1AYNGd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 08:06:33 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64668 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753163Ab1AYNEn (ORCPT
+	id S1753504Ab1AYNGz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 08:06:55 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:53274 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753275Ab1AYNGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 08:04:43 -0500
+	Tue, 25 Jan 2011 08:06:43 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=CW5/GxqmpMrt7tG7ZXoU81eHW/q2yvw6Noq02uGuZDeijKgh4UKSi7OMSSZ5D3Mi98
-         D/ZOV46sXrBN+qbf1ug+1RFGSIMcG6Z5UbCqbfdvx37p+VTzxd4W8+4FQsnfbdT6jso4
-         YAcfsbF9HOrj7Y6p9STmc72vp6UEoifuZGer8=
-From: Marek Belisko <marek.belisko@open-nandra.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH v2 06/11] staging: ft1000: Fix coding style in get_request_type() function.
-Date: Tue, 25 Jan 2011 14:05:01 +0100
-Message-Id: <1295960706-15667-7-git-send-email-marek.belisko@open-nandra.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1295960706-15667-1-git-send-email-marek.belisko@open-nandra.com>
-References: <1295960706-15667-1-git-send-email-marek.belisko@open-nandra.com>
+        h=sender:date:from:to:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Rva5+Ftqf/4agOezno3OEZ70dU66xEicbMSPmPzsGaQi5m+xye3CVD4Es8g1LA/0Mx
+         xQ4GZiGWSaeCa132W1Z/tCxYY/WY2H+iRvn88q8EoQ2lJaYwCg4KbzuIPL829cTcTPS+
+         meSoOHEC8SAY6/dwRraBY2odSOkR1yhFd+hE0=
+Date: Tue, 25 Jan 2011 14:06:38 +0100
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org,
+        hch@infradead.org
+Subject: Re: [PATCHSET] block: convert block drivers to ->check_events()
+Message-ID: <20110125130638.GS27510@htj.dyndns.org>
+References: <1293557352-10592-1-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1293557352-10592-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
----
- .../staging/ft1000/ft1000-usb/ft1000_download.c    |   38 +++++++++-----------
- 1 files changed, 17 insertions(+), 21 deletions(-)
+Hello, Jens.
 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
-index 1e442fc..f87b927 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
-@@ -340,30 +340,26 @@ static void put_handshake_usb(struct ft1000_device *ft1000dev,u16 handshake_valu
- //---------------------------------------------------------------------------
- static u16 get_request_type(struct ft1000_device *ft1000dev)
- {
--   u16   request_type;
--   u32    status;
--   u16   tempword;
--   u32    tempx;
-+	u16 request_type;
-+	u32 status;
-+	u16 tempword;
-+	u32 tempx;
- 	struct ft1000_info *pft1000info = netdev_priv(ft1000dev->net);
- 
--   if ( pft1000info->bootmode == 1)
--   {
--       status = fix_ft1000_read_dpram32 (ft1000dev, DWNLD_MAG1_TYPE_LOC, (u8 *)&tempx);
--       tempx = ntohl(tempx);
--   }
--   else
--   {
--       tempx = 0;
--
--       status = ft1000_read_dpram16 (ft1000dev, DWNLD_MAG1_TYPE_LOC, (u8 *)&tempword, 1);
--       tempx |= (tempword << 16);
--       tempx = ntohl(tempx);
--   }
--   request_type = (u16)tempx;
--
--   //DEBUG("get_request_type: request_type is %x\n", request_type);
--   return request_type;
-+	if (pft1000info->bootmode == 1) {
-+		status = fix_ft1000_read_dpram32(ft1000dev,
-+				DWNLD_MAG1_TYPE_LOC, (u8 *)&tempx);
-+		tempx = ntohl(tempx);
-+	} else {
-+		tempx = 0;
-+		status = ft1000_read_dpram16(ft1000dev,
-+				DWNLD_MAG1_TYPE_LOC, (u8 *)&tempword, 1);
-+		tempx |= (tempword << 16);
-+		tempx = ntohl(tempx);
-+	}
-+	request_type = (u16)tempx;
- 
-+	return request_type;
- }
- 
- static u16 get_request_type_usb(struct ft1000_device *ft1000dev)
+On Tue, Dec 28, 2010 at 06:28:56PM +0100, Tejun Heo wrote:
+>  0001-block-don-t-implicitly-trigger-event-check-on-disk_u.patch
+>  0002-block-don-t-check-events-on-close-unless-it-was-bloc.patch
+>  0003-block-don-t-check-events-while-open-is-in-progress.patch
+>  0004-ide-convert-to-bdops-check_events.patch
+>  0005-floppy-ami-ata-flop-convert-to-bdops-check_events.patch
+>  0006-gdrom-viocd-convert-to-bdops-check_events.patch
+>  0007-paride-convert-to-bdops-check_events.patch
+>  0008-dac960-convert-to-bdops-check_events.patch
+>  0009-swim-3-convert-to-bdops-check_events.patch
+>  0010-ub-convert-to-bdops-check_events.patch
+>  0011-xsysace-convert-to-bdops-check_events.patch
+>  0012-i2o_block-convert-to-bdops-check_events.patch
+>  0013-s390-tape_block-convert-to-bdops-check_events.patch
+>  0014-umem-drop-dummy-media_changed.patch
+>  0015-pktcdvd-convert-to-bdops-check_events.patch
+>  0016-staging-convert-to-bdops-check_events.patch
+
+This series seems to have been forgotten.  I think 0001-0003 better go
+in for 2.6.38 as they affect user-visible behavior (in not too
+significant way but still).
+
+The other patches can go in for 2.6.39.  0005 gets an easy-to-resolve
+context conflict but all other patches apply as-is.  I'll post the
+refreshed version of 0005 as a reply to the original patch.  If you
+want the whole series reposted, please let me know.
+
+Thank you.
+
 -- 
-1.7.1
-
+tejun
