@@ -1,288 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235Ab1AYSH6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 13:07:58 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:51619 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752552Ab1AYSH4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 13:07:56 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:content-type
-         :content-transfer-encoding;
-        b=hJ2WI01AATsL0fkxqyalM9tj5AwZLqN/zsb1LicpgfywJstW6iVrryYgZ7woYFrD9g
-         2Be52tY5m4jATVEttmz5l/qp0OwlADb1Av0vZFWRWS4EumAlttnXMPyaVGXCqbSnmcQN
-         efYnP7Qz/peB72uFHCYWdT3PtgkwWfRb/GDrg=
-MIME-Version: 1.0
-From: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
-Date: Tue, 25 Jan 2011 19:07:15 +0100
-Message-ID: <AANLkTikZXR74B8so+1humvdenMXE6USZ76bmtR0Xsg57@mail.gmail.com>
-Subject: [PATCH] bq27x00_battery
+	id S1753344Ab1AYSLp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 13:11:45 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:44890 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752771Ab1AYSLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 13:11:44 -0500
+Date: Tue, 25 Jan 2011 10:10:58 -0800
+From: Kees Cook <kees.cook@canonical.com>
 To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
+        Marcus Meissner <meissner@suse.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Eugene Teo <eugeneteo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, Bjorn Helgaas <bjorn.helgaas@hp.com>,
+        Len Brown <len.brown@intel.com>, Changli Gao <xiaosuo@gmail.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>
+Subject: [PATCH] use %pK for /proc/kallsyms and /proc/modules
+Message-ID: <20110125181058.GA25670@outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add support for properties POWER_SUPPLY_PROP_CHARGE_NOW,
-POWER_SUPPLY_PROP_CHARGE_FULL, POWER_SUPPLY_PROP_ENERGY_NOW,
-POWER_SUPPLY_PROP_ONLINE in module bq27x00_battery. It also fix
-reporting correct (devided by resistor sense) values on
-bq27000/bq27200 batteries.
+Instead of messing with permissions on these files, use %pK for kernel
+addresses to reduce potential information leaks that might be used to
+help target kernel privilege escalation exploits.
 
-Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-Tested-by: Pali Rohár <pali.rohar@gmail.com>
+Note that this changes %x to %p, so some legitimately 0 values in
+/proc/kallsyms would have changed from 00000000 to "(null)". To avoid
+this, "(null)" is not used when using the "K" format. Anything parsing
+such addresses should have no problem with this change. (Thanks to Joe
+Perches for the suggestion.)
 
---- a/drivers/power/bq27x00_battery.c	2011-01-22 14:06:48.000000000 +0100
-+++ b/drivers/power/bq27x00_battery.c	2011-01-23 04:06:04.000000000 +0100
-@@ -3,9 +3,14 @@
-  *
-  * Copyright (C) 2008 Rodolfo Giometti <giometti@linux.it>
-  * Copyright (C) 2008 Eurotech S.p.A. <info@eurotech.it>
-+ * Copyright (C) 2011 Pali Rohár <pali.rohar@gmail.com>
-  *
-  * Based on a previous work by Copyright (C) 2008 Texas Instruments, Inc.
-  *
-+ * Datasheets:
-+ * http://focus.ti.com/docs/prod/folders/print/bq27000.html
-+ * http://focus.ti.com/docs/prod/folders/print/bq27500.html
-+ *
-  * This package is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-  * published by the Free Software Foundation.
-@@ -27,8 +32,9 @@
- #include <linux/slab.h>
- #include <asm/unaligned.h>
+Note that when compiling with -Wformat, these harmless warnings will
+be emitted, and can be ignored:
+  warning: '0' flag used with ‘%p’ gnu_printf format
 
--#define DRIVER_VERSION			"1.1.0"
-+#define DRIVER_VERSION			"1.2.0"
+Signed-off-by: Kees Cook <kees.cook@canonical.com>
+---
+ kernel/kallsyms.c |    4 ++--
+ kernel/module.c   |    4 ++--
+ lib/vsprintf.c    |    2 +-
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
-+#define BQ27x00_REG_MODE		0x00
- #define BQ27x00_REG_TEMP		0x06
- #define BQ27x00_REG_VOLT		0x08
- #define BQ27x00_REG_AI			0x14
-@@ -36,11 +42,16 @@
- #define BQ27x00_REG_TTE			0x16
- #define BQ27x00_REG_TTF			0x18
- #define BQ27x00_REG_TTECP		0x26
-+#define BQ27x00_REG_NAC			0x0C /* Nominal available capaciy */
-+#define BQ27x00_REG_LMD			0x12 /* Last measured discharge */
-+#define BQ27x00_REG_AE			0x22 /* Available Enery */
-
-+#define BQ27000_RS			20 /* Resistor sense */
- #define BQ27000_REG_RSOC		0x0B /* Relative State-of-Charge */
- #define BQ27000_FLAG_CHGS		BIT(7)
-+#define BQ27000_FLAG_FC			BIT(5)
-
--#define BQ27500_REG_SOC			0x2c
-+#define BQ27500_REG_SOC			0x2C
- #define BQ27500_FLAG_DSC		BIT(0)
- #define BQ27500_FLAG_FC			BIT(9)
-
-@@ -74,7 +85,11 @@ static enum power_supply_property bq27x0
- 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
- 	POWER_SUPPLY_PROP_CURRENT_NOW,
- 	POWER_SUPPLY_PROP_CAPACITY,
-+	POWER_SUPPLY_PROP_CHARGE_NOW,
-+	POWER_SUPPLY_PROP_CHARGE_FULL,
-+	POWER_SUPPLY_PROP_ENERGY_NOW,
- 	POWER_SUPPLY_PROP_TEMP,
-+	POWER_SUPPLY_PROP_ONLINE,
- 	POWER_SUPPLY_PROP_TIME_TO_EMPTY_NOW,
- 	POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG,
- 	POWER_SUPPLY_PROP_TIME_TO_FULL_NOW,
-@@ -91,6 +106,24 @@ static int bq27x00_read(u8 reg, int *rt_
- }
-
- /*
-+ * Return the GPIO status (0 or 1)
-+ * Or < 0 if something fails.
-+ */
-+static int bq27x00_battery_gpio(struct bq27x00_device_info *di)
-+{
-+	int ret;
-+	int gpio = 0;
-+
-+	ret = bq27x00_read(BQ27x00_REG_MODE, &gpio, 0, di);
-+	if (ret) {
-+		dev_err(di->dev, "error reading GPIO status\n");
-+		return ret;
-+	}
-+
-+	return (gpio & 0x40) >> 6;
-+}
-+
-+/*
-  * Return the battery temperature in tenths of degree Celsius
-  * Or < 0 if something fails.
-  */
-@@ -112,7 +145,7 @@ static int bq27x00_battery_temperature(s
- }
-
- /*
-- * Return the battery Voltage in milivolts
-+ * Return the battery Voltage in µV
-  * Or < 0 if something fails.
-  */
- static int bq27x00_battery_voltage(struct bq27x00_device_info *di)
-@@ -130,7 +163,7 @@ static int bq27x00_battery_voltage(struc
- }
-
- /*
-- * Return the battery average current
-+ * Return the battery average current in µA
-  * Note that current can be negative signed as well
-  * Or 0 if something fails.
-  */
-@@ -149,6 +182,7 @@ static int bq27x00_battery_current(struc
- 	if (di->chip == BQ27500) {
- 		/* bq27500 returns signed value */
- 		curr = (int)(s16)curr;
-+		curr *= 1000;
- 	} else {
- 		ret = bq27x00_read(BQ27x00_REG_FLAGS, &flags, 0, di);
- 		if (ret < 0) {
-@@ -159,9 +193,10 @@ static int bq27x00_battery_current(struc
- 			dev_dbg(di->dev, "negative current!\n");
- 			curr = -curr;
- 		}
-+		curr = curr * 3570 / BQ27000_RS;
- 	}
-
--	return curr * 1000;
-+	return curr;
- }
-
- /*
-@@ -185,6 +220,75 @@ static int bq27x00_battery_rsoc(struct b
- 	return rsoc;
- }
-
-+/*
-+ * Return the battery Nominal available capaciy in µAh
-+ * Or < 0 if something fails.
-+ */
-+static int bq27x00_battery_nac(struct bq27x00_device_info *di)
-+{
-+	int ret;
-+	int nac = 0;
-+
-+	ret = bq27x00_read(BQ27x00_REG_NAC, &nac, 0, di);
-+	if (ret) {
-+		dev_err(di->dev, "error reading nominal available capaciy\n");
-+		return ret;
-+	}
-+
-+	if (di->chip == BQ27500)
-+		nac *= 1000;
-+	else
-+		nac = nac * 3570 / BQ27000_RS;
-+
-+	return nac;
-+}
-+
-+/*
-+ * Return the battery Last measured discharge in µAh
-+ * Or < 0 if something fails.
-+ */
-+static int bq27x00_battery_lmd(struct bq27x00_device_info *di)
-+{
-+	int ret;
-+	int lmd = 0;
-+
-+	ret = bq27x00_read(BQ27x00_REG_LMD, &lmd, 0, di);
-+	if (ret) {
-+		dev_err(di->dev, "error reading last measured discharge\n");
-+		return ret;
-+	}
-+
-+	if (di->chip == BQ27500)
-+		lmd *= 1000;
-+	else
-+		lmd = lmd * 3570 / BQ27000_RS;
-+
-+	return lmd;
-+}
-+
-+/*
-+ * Return the battery Available energy in µWh
-+ * Or < 0 if something fails.
-+ */
-+static int bq27x00_battery_energy(struct bq27x00_device_info *di)
-+{
-+	int ret;
-+	int ae = 0;
-+
-+	ret = bq27x00_read(BQ27x00_REG_LMD, &ae, 0, di);
-+	if (ret) {
-+		dev_err(di->dev, "error reading available energy\n");
-+		return ret;
-+	}
-+
-+	if (di->chip == BQ27500)
-+		ae *= 1000;
-+	else
-+		ae = ae * 29200 / BQ27000_RS;
-+
-+	return ae;
-+}
-+
- static int bq27x00_battery_status(struct bq27x00_device_info *di,
- 				  union power_supply_propval *val)
- {
-@@ -206,7 +310,9 @@ static int bq27x00_battery_status(struct
- 		else
- 			status = POWER_SUPPLY_STATUS_CHARGING;
- 	} else {
--		if (flags & BQ27000_FLAG_CHGS)
-+		if (flags & BQ27000_FLAG_FC)
-+			status = POWER_SUPPLY_STATUS_FULL;
-+		else if (flags & BQ27000_FLAG_CHGS)
- 			status = POWER_SUPPLY_STATUS_CHARGING;
- 		else
- 			status = POWER_SUPPLY_STATUS_DISCHARGING;
-@@ -233,7 +339,7 @@ static int bq27x00_battery_time(struct b
- 	}
-
- 	if (tval == 65535)
--		return -ENODATA;
-+		tval = 0;
-
- 	val->intval = tval * 60;
+diff --git a/kernel/kallsyms.c b/kernel/kallsyms.c
+index 6f6d091..074b762 100644
+--- a/kernel/kallsyms.c
++++ b/kernel/kallsyms.c
+@@ -477,11 +477,11 @@ static int s_show(struct seq_file *m, void *p)
+ 		 */
+ 		type = iter->exported ? toupper(iter->type) :
+ 					tolower(iter->type);
+-		seq_printf(m, "%0*lx %c %s\t[%s]\n",
++		seq_printf(m, "%0*pK %c %s\t[%s]\n",
+ 			   (int)(2 * sizeof(void *)),
+ 			   iter->value, type, iter->name, iter->module_name);
+ 	} else
+-		seq_printf(m, "%0*lx %c %s\n",
++		seq_printf(m, "%0*pK %c %s\n",
+ 			   (int)(2 * sizeof(void *)),
+ 			   iter->value, iter->type, iter->name);
  	return 0;
-@@ -253,6 +359,9 @@ static int bq27x00_battery_get_property(
- 	case POWER_SUPPLY_PROP_STATUS:
- 		ret = bq27x00_battery_status(di, val);
- 		break;
-+	case POWER_SUPPLY_PROP_ONLINE:
-+		val->intval = bq27x00_battery_gpio(di);
-+		break;
- 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
- 	case POWER_SUPPLY_PROP_PRESENT:
- 		val->intval = bq27x00_battery_voltage(di);
-@@ -265,6 +374,15 @@ static int bq27x00_battery_get_property(
- 	case POWER_SUPPLY_PROP_CAPACITY:
- 		val->intval = bq27x00_battery_rsoc(di);
- 		break;
-+	case POWER_SUPPLY_PROP_CHARGE_NOW:
-+		val->intval = bq27x00_battery_nac(di);
-+		break;
-+	case POWER_SUPPLY_PROP_CHARGE_FULL:
-+		val->intval = bq27x00_battery_lmd(di);
-+		break;
-+	case POWER_SUPPLY_PROP_ENERGY_NOW:
-+		val->intval = bq27x00_battery_energy(di);
-+		break;
- 	case POWER_SUPPLY_PROP_TEMP:
- 		val->intval = bq27x00_battery_temperature(di);
- 		break;
-@@ -469,4 +587,7 @@ module_exit(bq27x00_battery_exit);
+diff --git a/kernel/module.c b/kernel/module.c
+index 34e00b7..748465c 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -1168,7 +1168,7 @@ static ssize_t module_sect_show(struct module_attribute *mattr,
+ {
+ 	struct module_sect_attr *sattr =
+ 		container_of(mattr, struct module_sect_attr, mattr);
+-	return sprintf(buf, "0x%lx\n", sattr->address);
++	return sprintf(buf, "0x%pK\n", sattr->address);
+ }
+ 
+ static void free_sect_attrs(struct module_sect_attrs *sect_attrs)
+@@ -3224,7 +3224,7 @@ static int m_show(struct seq_file *m, void *p)
+ 		   mod->state == MODULE_STATE_COMING ? "Loading":
+ 		   "Live");
+ 	/* Used by oprofile and other similar tools. */
+-	seq_printf(m, " 0x%p", mod->module_core);
++	seq_printf(m, " 0x%pK", mod->module_core);
+ 
+ 	/* Taints info */
+ 	if (mod->taints)
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index d3023df..288d770 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -991,7 +991,7 @@ static noinline_for_stack
+ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+ 	      struct printf_spec spec)
+ {
+-	if (!ptr) {
++	if (!ptr && *fmt != 'K') {
+ 		/*
+ 		 * Print (null) with the same width as a pointer so it makes
+ 		 * tabular output look nice.
+-- 
+1.7.2.3
 
- MODULE_AUTHOR("Rodolfo Giometti <giometti@linux.it>");
- MODULE_DESCRIPTION("BQ27x00 battery monitor driver");
-+MODULE_ALIAS("i2c:bq27000");
-+MODULE_ALIAS("i2c:bq27200");
-+MODULE_ALIAS("i2c:bq27500");
- MODULE_LICENSE("GPL");
+-- 
+Kees Cook
+Ubuntu Security Team
