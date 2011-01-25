@@ -1,71 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752418Ab1AYBLI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 20:11:08 -0500
-Received: from mga11.intel.com ([192.55.52.93]:46299 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751490Ab1AYBLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 20:11:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,372,1291622400"; 
-   d="scan'208";a="880586471"
-Subject: Re: more dput lock contentions in 2.6.38-rc?
-From: Shaohua Li <shaohua.li@intel.com>
-To: Nick Piggin <npiggin@gmail.com>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>, "Chen, Tim C" <tim.c.chen@intel.com>
-In-Reply-To: <AANLkTikOdiQR+rWXzoU9z5sJv9Q2=ehdhi1NCHXT0a-w@mail.gmail.com>
-References: <1295915725.1949.967.camel@sli10-conroe>
-	 <AANLkTikOdiQR+rWXzoU9z5sJv9Q2=ehdhi1NCHXT0a-w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 25 Jan 2011 09:11:04 +0800
-Message-ID: <1295917864.1949.970.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752628Ab1AYBNy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 20:13:54 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:39337 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751724Ab1AYBNx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 20:13:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=YTCTB3od1L+PltdFXWzbMzfWXWmsOl5crVbqonLPBIh1EZ1hklCMTmONbAh+AL6UNO
+         bcQGxPFT2KGz6NlQfN0gkyE7R4zdqyshY81rMi4yGVupX6Z+EXOaEnbds+P2GuAWYKMN
+         D/STqdx1oviBXB5YB7e4cc7y4kZBN4c+cIdUU=
+MIME-Version: 1.0
+In-Reply-To: <8cc17932f623d3e65efb0b5e223537a28cc566e7.1295909909.git.jeremy.fitzhardinge@citrix.com>
+References: <cover.1295909908.git.jeremy.fitzhardinge@citrix.com>
+	<8cc17932f623d3e65efb0b5e223537a28cc566e7.1295909909.git.jeremy.fitzhardinge@citrix.com>
+Date: Tue, 25 Jan 2011 12:13:52 +1100
+Message-ID: <AANLkTi=ZdDCYiUoZJHkxRsKyBjtTUmtWqzJOusZGwafO@mail.gmail.com>
+Subject: Re: [PATCH 3/6] x86/ticketlock: Use C for __ticket_spin_unlock
+From: Nick Piggin <npiggin@gmail.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-25 at 09:04 +0800, Nick Piggin wrote:
-> On Tue, Jan 25, 2011 at 11:35 AM, Shaohua Li <shaohua.li@intel.com> wrote:
-> > Hi,
-> > we are testing dbench benchmark and see big drop of 2.6.38-rc compared
-> > to 2.6.37 in several machines with 2 sockets or 4 sockets. We have 12
-> > disks mount to /mnt/stp/dbenchdata/sd*/ and dbench runs against data of
-> > the disks. According to perf, we saw more lock contentions:
-> > In 2.6.37: 13.00%        dbench  [kernel.kallsyms]   [k] _raw_spin_lock
-> > In 2.6.38-rc: 69.45%        dbench  [kernel.kallsyms]   [k]_raw_spin_lock
-> > -     69.45%        dbench  [kernel.kallsyms]   [k] _raw_spin_lock
-> >   - _raw_spin_lock
-> >      - 48.41% dput
-> >         - 61.17% path_put
-> >            - 60.47% do_path_lookup
-> >               + 53.18% user_path_at
-> >               + 42.13% do_filp_open
-> >               + 4.69% user_path_parent
-> 
-> What filesystems are mounted on the path?
-ext3 or ext4
+On Tue, Jan 25, 2011 at 10:41 AM, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+>
+> If we don't need to use a locked inc for unlock, then implement it in C.
+>
+> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> ---
+>  arch/x86/include/asm/spinlock.h |   32 +++++++++++++++++---------------
+>  1 files changed, 17 insertions(+), 15 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+> index f48a6e3..0170ba9 100644
+> --- a/arch/x86/include/asm/spinlock.h
+> +++ b/arch/x86/include/asm/spinlock.h
+> @@ -33,9 +33,21 @@
+>  * On PPro SMP or if we are using OOSTORE, we use a locked operation to unlock
+>  * (PPro errata 66, 92)
+>  */
+> -# define UNLOCK_LOCK_PREFIX LOCK_PREFIX
+> +static __always_inline void __ticket_unlock_release(struct arch_spinlock *lock)
+> +{
+> +       if (sizeof(lock->tickets.head) == sizeof(u8))
+> +               asm (LOCK_PREFIX "incb %0"
+> +                    : "+m" (lock->tickets.head) : : "memory");
+> +       else
+> +               asm (LOCK_PREFIX "incw %0"
+> +                    : "+m" (lock->tickets.head) : : "memory");
+> +
+> +}
+>  #else
+> -# define UNLOCK_LOCK_PREFIX
+> +static __always_inline void __ticket_unlock_release(struct arch_spinlock *lock)
+> +{
+> +       lock->tickets.head++;
+> +}
+>  #endif
+>
+>  /*
+> @@ -93,14 +105,6 @@ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+>
+>        return tmp;
+>  }
+> -
+> -static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
+> -{
+> -       asm volatile(UNLOCK_LOCK_PREFIX "incb %0"
+> -                    : "+m" (lock->slock)
+> -                    :
+> -                    : "memory", "cc");
+> -}
+>  #else
+>  static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
+>  {
+> @@ -144,15 +148,13 @@ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+>
+>        return tmp;
+>  }
+> +#endif
+>
+>  static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
+>  {
+> -       asm volatile(UNLOCK_LOCK_PREFIX "incw %0"
+> -                    : "+m" (lock->slock)
+> -                    :
+> -                    : "memory", "cc");
+> +       __ticket_unlock_release(lock);
+> +       barrier();              /* prevent reordering into locked region */
+>  }
+> -#endif
 
-> >            - 35.56% d_path
-> >                 seq_path
-> >                 show_vfsmnt
-> >                 seq_read
-> >                 vfs_read
-> >                 sys_read
-> >                 system_call_fastpath
-> >                 __GI___libc_read
-> 
-> This guy is from glibc's statvfs call that dbench uses. It
-> parses /proc/mounts for mount flags which is racy (and
-> not a good idea to do with any frequency).
-> 
-> A patch went into the kernel that allows glibc to get the
-> flags directly. Not sure about glibc status, I imagine it
-> will get there in another decade or two... Can you try
-> commenting it out of dbench source code?
-Sure, maybe after Chinese new year holiday, sorry.
+The barrier is wrong.
 
+What makes me a tiny bit uneasy is that gcc is allowed to implement
+this any way it wishes. OK there may be a NULL intersection of possible
+valid assembly which is a buggy unlock... but relying on gcc to implement
+lock primitives is scary. Does this really help in a way that can't be done
+with the assembly versions?
