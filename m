@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab1AYO22 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 09:28:28 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:27659 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753677Ab1AYO21 (ORCPT
+	id S1753879Ab1AYO3a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 09:29:30 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49262 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753264Ab1AYO32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 09:28:27 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAMJsPk1Ld/sX/2dsb2JhbAAMhAbNV5BlgSODOHQEhRc
-X-IronPort-AV: E=Sophos;i="4.60,374,1291611600"; 
-   d="scan'208";a="89156242"
-Message-ID: <4D3EDE07.1080200@teksavvy.com>
-Date: Tue, 25 Jan 2011 09:28:23 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Tue, 25 Jan 2011 09:29:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=penE9AmC9SdGpGE2IjuIU1daFAkYuGiTvRwlUpweJ+zrYu4wj3IhyQuQ+T13MgY2b6
+         HW+GQKNSVbZoZdSgp+rL+rn43yGJDpYDvheHRgnlmZvR4OK+KLo9E71kqcvnY/x2gjDi
+         jckxQjN5Xz4W0fYtr2FAz9jZnmo/b/dP4KejU=
+Date: Tue, 25 Jan 2011 15:29:21 +0100
+From: Tejun Heo <tj@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, davej@redhat.com,
+        cpufreq@vger.kernel.org, Markus.Lidel@shadowconnect.com,
+        tomas.winkler@intel.com, jayamohank@serverengines.com,
+        andrew.vasquez@qlogic.com, James.Bottomley@HansenPartnership.com,
+        linux-scsi@vger.kernel.org, tomof@acm.org, stf_xl@wp.pl,
+        linux-usb@vger.kernel.org, tytso@mit.edu, mfasheh@suse.com,
+        joel.becker@oracle.com, reiserfs-devel@vger.kernel.org, aelder@sgi.com,
+        hch@infradead.org, ericvh@gmail.com, rminnich@sandia.gov,
+        v9fs-developer@lists.sourceforge.net, lucho@ionkov.net,
+        andy.grover@oracle.com
+Subject: Re: [PATCHSET] workqueue: update workqueue users - replace
+ create_workqueue()
+Message-ID: <20110125142921.GB27510@htj.dyndns.org>
+References: <1294062595-30097-1-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org,
-        mchehab@redhat.com
-Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils
- ?
-References: <4D3C5F73.2050408@teksavvy.com> <20110124175456.GA17855@core.coreip.homeip.net> <4D3E1A08.5060303@teksavvy.com> <20110125005555.GA18338@core.coreip.homeip.net> <4D3E4DD1.60705@teksavvy.com> <20110125042016.GA7850@core.coreip.homeip.net> <4D3E5372.9010305@teksavvy.com> <20110125045559.GB7850@core.coreip.homeip.net> <4D3E59CA.6070107@teksavvy.com> <20110125052902.GC7850@core.coreip.homeip.net>
-In-Reply-To: <20110125052902.GC7850@core.coreip.homeip.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294062595-30097-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-01-25 12:29 AM, Dmitry Torokhov wrote:
-> On Tue, Jan 25, 2011 at 12:04:10AM -0500, Mark Lord wrote:
->> On 11-01-24 11:55 PM, Dmitry Torokhov wrote:
->>> On Mon, Jan 24, 2011 at 11:37:06PM -0500, Mark Lord wrote:
-..
->>> The options are:
->>>
->>> 1. Convert to EVIOCGKEYCODE2
->>> 2. Ignore errors from EVIOCGKEYCODE and go through all 65536 iterations.
->>
->> or 3. Revert/fix the in-kernel regression.
->>
->> The EVIOCGKEYCODE ioctl is supposed to return KEY_RESERVED for unmapped
->> (but value) keycodes, and only return -EINVAL when the keycode itself
->> is out of range.
-> 
-> You are inventing rules.  You are requesting a scancode->keycode
-> mapping. If scancode is unknown/invalid for the device ioctl returns
-> -EINVAL.
+Hello,
 
--EINVAL signals bad/invalid parameters.
-That's NOT what is happening here.
+There was no response for the following patches and I'm planning on
+routing them through workqueue#for-2.6.39.  If you have an objection
+or want to take the patch through a different tree, please let me
+know.
 
-> For unmapped - yes, either KEY_RESERVED or KEY_UNKNOWN should be
-> returned. For invalid scancodes -EINVAL shoudl be returned. 
+ 0006-acpi-kacpi-_wq-don-t-need-WQ_MEM_RECLAIM.patch
+ 0007-cpufreq-use-system_wq-instead-of-dedicated-workqueue.patch
+ 0012-i2o-use-alloc_workqueue-instead-of-create_workqueue.patch
+ 0013-misc-iwmc3200top-use-system_wq-instead-of-dedicated-.patch
+ 0016-scsi-be2iscsi-qla2xxx-convert-to-alloc_workqueue.patch
+ 0018-scsi-scsi_tgt_lib-scsi_tgtd-isn-t-used-in-memory-rec.patch
+ 0019-usb-ueagle-atm-use-system_wq-instead-of-dedicated-wo.patch
+ 0025-ext4-convert-to-alloc_workqueue.patch
+ 0026-ocfs2-use-system_wq-instead-of-ocfs2_quota_wq.patch
+ 0027-reiserfs-make-commit_wq-use-the-default-concurrency-.patch
+ 0028-xfs-convert-to-alloc_workqueue.patch
+ 0029-net-9p-use-system_wq-instead-of-p9_mux_wq.patch
+ 0030-net-9p-replace-p9_poll_task-with-a-work.patch
+ 0031-rds-ib-use-system_wq-instead-of-rds_ib_fmr_wq.patch
 
-Exactly my point.  The scancode in question is 100% valid and mapable,
-yet the kernel is rejecting it as -EINVAL.  Incorrect.
+The whole series can be found at the following URL.
 
-BUG. Regression. Breaks userspace. Must get fixed.
+ http://thread.gmane.org/gmane.linux.kernel/1082587
 
-Cheers
+Thank you.
+
+-- 
+tejun
