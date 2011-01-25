@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab1AYBXf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 20:23:35 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:57865 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811Ab1AYBXe (ORCPT
+	id S1752750Ab1AYBXj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 20:23:39 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:22031 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752607Ab1AYBXh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 20:23:34 -0500
+	Mon, 24 Jan 2011 20:23:37 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=Eh8w76bGE7hTD9ZNTZgvYO48mJ4Sr+a9qQapf/yZW8lr3v1yNkfNZSg+7oWVHwiq1r
-         84Fvg8lA0dBoUTRTep+Cuw3j+xneArZrn4MfEkS2ScHKJqOlBUdNdWO/4UT1E6E980pU
-         E3zZvgBgRm+c/U9GUfflvBHsgSQaXJ4Nkzy7o=
-Message-ID: <4D3E2612.2060808@gmail.com>
-Date: Mon, 24 Jan 2011 19:23:30 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=ALjcQkoN5g44Y0BFF0Ra681VroVvG7Q/KeKtBlGoeFoY2KCvzSYtv9hatKSADQjWfF
+         u+R+9of9YpefP+lDy8eA==
 MIME-Version: 1.0
-To: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-CC: linux-kernel@vger.kernel.org, ide <linux-ide@vger.kernel.org>
-Subject: Re: libata EH running when switching VTs
-References: <201101221625.00775.toralf.foerster@gmx.de> <4D3B077F.7040000@gmail.com> <201101221831.09448.toralf.foerster@gmx.de>
-In-Reply-To: <201101221831.09448.toralf.foerster@gmx.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110124102647.GF16202@n2100.arm.linux.org.uk>
+References: <1295834493-5019-1-git-send-email-ccross@android.com>
+	<1295834493-5019-29-git-send-email-ccross@android.com>
+	<20110124102647.GF16202@n2100.arm.linux.org.uk>
+Date: Mon, 24 Jan 2011 17:23:30 -0800
+X-Google-Sender-Auth: g37npw8bOnt_YPvmJ1l5oO_hKlI
+Message-ID: <AANLkTi=Ar7dAtRHj=uZ9a+CGSaU4FhJA92+AyHoJcrcH@mail.gmail.com>
+Subject: Re: [PATCH v2 28/28] ARM: tegra: clock: Add forward reference to
+ struct clk
+From: Colin Cross <ccross@android.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-tegra@vger.kernel.org, konkers@android.com,
+        linux-kernel@vger.kernel.org, olof@lixom.net,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/22/2011 11:31 AM, Toralf FÃ¶rster wrote:
->
-> Robert Hancock wrote at 17:36:15
->> (CCing linux-ide)
+On Mon, Jan 24, 2011 at 2:26 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Sun, Jan 23, 2011 at 06:01:33PM -0800, Colin Cross wrote:
+>> diff --git a/arch/arm/mach-tegra/include/mach/clkdev.h b/arch/arm/mach-tegra/include/mach/clkdev.h
+>> index 412f5c6..66cd3f4 100644
+>> --- a/arch/arm/mach-tegra/include/mach/clkdev.h
+>> +++ b/arch/arm/mach-tegra/include/mach/clkdev.h
+>> @@ -20,6 +20,8 @@
+>>  #ifndef __MACH_CLKDEV_H
+>>  #define __MACH_CLKDEV_H
 >>
->> On 01/22/2011 09:25 AM, Toralf FÃ¶rster wrote:
->>> Hello,
->>>
->>> Henrique de Moraes Holschuh wrote at 14:11:12
->>>
->>>> I don't even know whom to refer you to.  Maybe ask in LKML directly?
->>>> Use the subject "libata EH running when switching VTs".  If one of
->>>> those VTs are in X.org control, say that as well.
->>>
->>> I'm wondering why I get this in /var/log/messages w/ kernel 2.6.37 when I
->>> switch from VT7 (running xorg ) to VT12 (or 1 or 2 or another number) and
->>> back:
->>>
->>>
->>> 2011-01-22T16:20:53.854+01:00 n22 kernel: ata1: hard resetting link
->>> 2011-01-22T16:20:54.163+01:00 n22 kernel: ata1: SATA link up 1.5 Gbps
->>> (SStatus 113 SControl 300)
->>> 2011-01-22T16:20:54.164+01:00 n22 kernel: ata1.00: ACPI cmd
->>> ef/02:00:00:00:00:a0 (SET FEATURES) succeeded
->>> 2011-01-22T16:20:54.164+01:00 n22 kernel: ata1.00: ACPI cmd
->>> f5/00:00:00:00:00:a0 (SECURITY FREEZE LOCK) filtered out
->>> 2011-01-22T16:20:54.165+01:00 n22 kernel: ata1.00: ACPI cmd
->>> ef/5f:00:00:00:00:a0 (SET FEATURES) succeeded
->>> 2011-01-22T16:20:54.165+01:00 n22 kernel: ata1.00: ACPI cmd
->>> ef/10:03:00:00:00:a0 (SET FEATURES) filtered out
->>> 2011-01-22T16:20:54.169+01:00 n22 kernel: ata1.00: ACPI cmd
->>> ef/02:00:00:00:00:a0 (SET FEATURES) succeeded
->>> 2011-01-22T16:20:54.169+01:00 n22 kernel: ata1.00: ACPI cmd
->>> f5/00:00:00:00:00:a0 (SECURITY FREEZE LOCK) filtered out
->>> 2011-01-22T16:20:54.169+01:00 n22 kernel: ata1.00: ACPI cmd
->>> ef/5f:00:00:00:00:a0 (SET FEATURES) succeeded
->>> 2011-01-22T16:20:54.169+01:00 n22 kernel: ata1.00: ACPI cmd
->>> ef/10:03:00:00:00:a0 (SET FEATURES) filtered out
->>> 2011-01-22T16:20:54.170+01:00 n22 kernel: ata1.00: configured for
->>> UDMA/100 2011-01-22T16:20:54.171+01:00 n22 kernel: ata1: EH complete
->>>
->>>
->>> I'm running an almost stable Gentoo on a ThinkPad T400 with current
->>> kernel (2.6.37, earlier shows this behaviour too)
->>
->> Is that the only output you're getting? Can you post the full dmesg log
->> from bootup?
+>> +struct clk;
+>> +
+>>  static inline int __clk_get(struct clk *clk)
+>>  {
+>>       return 1;
 >
-> Of course - attached here
+> If you're having to add that, I suspect this include is being
+> inappropriately included by files.
+>
 
-Curious, there seems to be no indication of why EH was triggered, 
-doesn't seem to be have been due to an error. Does this also happen in 
-single-user mode or with minimal processes running? It's possible that 
-userspace is triggering this somehow.
+The Tegra clock definition file, arch/arm/mach-tegra/tegra2_clocks.c,
+includes the private clock.h that defines struct clk after including
+linux/clkdev.h, and does not include linux/clk.h, so the forward
+declaration is necessary.
