@@ -1,147 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874Ab1AYWBr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 17:01:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48133 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751680Ab1AYWBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 17:01:45 -0500
-Message-ID: <4D3F4804.6070508@redhat.com>
-Date: Tue, 25 Jan 2011 20:00:36 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1753923Ab1AYWBu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 17:01:50 -0500
+Received: from mailout10.t-online.de ([194.25.134.21]:45646 "EHLO
+	mailout10.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752478Ab1AYWBs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 17:01:48 -0500
+Message-ID: <4D3F4849.4030905@t-online.de>
+Date: Tue, 25 Jan 2011 23:01:45 +0100
+From: Knut Petersen <Knut_Petersen@t-online.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mark Lord <kernel@teksavvy.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils
- ?
-References: <4D3E4DD1.60705@teksavvy.com> <20110125042016.GA7850@core.coreip.homeip.net> <4D3E5372.9010305@teksavvy.com> <20110125045559.GB7850@core.coreip.homeip.net> <4D3E59CA.6070107@teksavvy.com> <4D3E5A91.30207@teksavvy.com> <20110125053117.GD7850@core.coreip.homeip.net> <4D3EB734.5090100@redhat.com> <20110125164803.GA19701@core.coreip.homeip.net> <AANLkTi=1Mh0JrYk5itvef7O7e7pR+YKos-w56W5q4B8B@mail.gmail.com> <20110125205453.GA19896@core.coreip.homeip.net>
-In-Reply-To: <20110125205453.GA19896@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Chris Wilson <chris@chris-wilson.co.uk>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drm/i915/sdvo: If at first we don't succeed in reading
+ the response, wait
+References: <4D3EB90C.9020901@t-online.de> <1295967967-26041-1-git-send-email-chris@chris-wilson.co.uk>
+In-Reply-To: <1295967967-26041-1-git-send-email-chris@chris-wilson.co.uk>
+Content-Type: multipart/mixed;
+ boundary="------------060105070206040801090204"
+X-ID: TiEjBvZTwhnquJd92Ig0sZOgn77wsx9gypIbFX4TbMpoZhVcOdQILd6Noc7n4Rig-Y
+X-TOI-MSGID: 302ca864-bc35-4626-bca2-28c072d44d57
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 25-01-2011 18:54, Dmitry Torokhov escreveu:
-> On Wed, Jan 26, 2011 at 06:09:45AM +1000, Linus Torvalds wrote:
->> On Wed, Jan 26, 2011 at 2:48 AM, Dmitry Torokhov
->> <dmitry.torokhov@gmail.com> wrote:
->>>
->>> We should be able to handle the case where scancode is valid even though
->>> it might be unmapped yet. This is regardless of what version of
->>> EVIOCGKEYCODE we use, 1 or 2, and whether it is sparse keymap or not.
->>>
->>> Is it possible to validate the scancode by driver?
->>
->> More appropriately, why not just revert the thing? The version change
+This is a multi-part message in MIME format.
+--------------060105070206040801090204
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 
-Reverting the version increment is a bad thing. I agree with Dmitry that
-an application that fails just because the API version were incremented
-is buggy.
-
-> Well, then we'll break Ubuntu again as they recompiled their input-utils
-> package (without fixing the check). And the rest of distros do not seem
-> to be using that package...
-
-Reverting it will also break the ir-keytable userspace program that it is
-meant to be used by the Remote Controller devices, and uses it to adjust
-its behaviour to support RC's with more than 16 bits of scancodes.
-
-I agree that it is bad that the ABI broke, but reverting it will cause even
-more damage.
-
->> and the buggy EINVAL return both.
-> 
-> I believe that -EINVAL thing only affects RC devices that Mauro switched
-> to the new rc-core; input core in itself should be ABI compatible. Thus
-> I'll leave the decision to him whether he wants to revert or fix
-> compatibility issue.
-
-The Remote Controller keycode tables are very sparse. In general,
-they contain up to 100 entries, and the scan codes typically have 16
-bits. Some newer devices have 24 or 32 bits. With version 1, as the table
-index is the scancode, in order to read all keytables with EVIOCGKEYCODE,
-the userspace needs to do 2^16 reads (or 2^32 for RC-6 remotes).
-I don't need to say that this is highly ineffective. So, using V1
-doesn't work fine anyway for Remote Controllers.
-
-Btw, ir-keycodestool don't work with V1 and more than 16 bits, because it
-doesn't scale. I didn't actually checked, but based on Dmitry's patch
-for input-kbd, it is clear to me that the old version only supports 16
-bits scancodes:
-
-Em 25-01-2011 04:52, Dmitry Torokhov escreveu:
-> From c22c85c0b675422a23e3d853ed06fedc36805774 Mon Sep 17 00:00:00 2001
-> From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Date: Mon, 24 Jan 2011 22:49:59 -0800
-> Subject: [PATCH] input-kbd - switch to using EVIOCGKEYCODE2 when available
-> 
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Am 25.01.2011 16:06, schrieb Chris Wilson:
+> We were not pausing after detecting the response was pending and so did
+> not allow the hardware sufficient time to complete before aborting. This
+> lead to transient failures whilst probing SDVO devices.
+>
+> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 > ---
->  input-kbd.c |  118 ++++++++++++++++++++++++++++++++++++++++-------------------
->  1 files changed, 80 insertions(+), 38 deletions(-)
-> 
-> diff --git a/input-kbd.c b/input-kbd.c
-> index e94529d..5d93d54 100644
-> --- a/input-kbd.c
-> +++ b/input-kbd.c
-<snip>
-> @@ -23,7 +41,7 @@ struct kbd_map {
->  
->  /* ------------------------------------------------------------------ */
->  
-> -static struct kbd_map* kbd_map_read(int fd)
-> +static struct kbd_map* kbd_map_read(int fd, unsigned int version)
->  {
->  	struct kbd_entry entry;
->  	struct kbd_map *map;
-> @@ -32,16 +50,37 @@ static struct kbd_map* kbd_map_read(int fd)
->  	map = malloc(sizeof(*map));
->  	memset(map,0,sizeof(*map));
->  	for (map->size = 0; map->size < 65536; map->size++) {
+>
+> Knut, this should fix one of the failures in the log:
+>
+> [  680.371855] [drm:intel_sdvo_debug_write], SDVOC: W: 0B (SDVO_CMD_GET_ATTACHED_DISPLAYS)
+> [  680.417190] [drm:intel_sdvo_write_cmd], command returns response Pending [4]
+>
+> which caused the detect routine to return connector_status_unknown.
+>
+> However, there is still immediately following that:
+>
+> [  680.419880] [drm:intel_sdvo_debug_write], SDVOC: W: 11 00 00 (SDVO_CMD_SET_TARGET_OUTPUT)
+> [  680.450190] [drm:intel_sdvo_write_cmd], command returns response Invalid arg 
+> [3]
+>
+> which implies that we are mishandling that odd VGA-2 connector.
+> -Chris
+>
+>   
 
-See, it will only look into the 16-bits scancode space. There are several remote
-controllers with 24 bits and 32 bits, so the tool is already broken anyway.
+Well, you are great, better than you thought yourself ;-)
 
-On the tests I did here with an ir-keytable version made before such change,
-with a Fedora rawhide kernel (2.6.37), I didn't notice any breakage at
-EVIOCGKEYCODE. I'll do more tests tomorrow with a vanilla Kernel. I'll
-compile a vanilla 2.6.37 kernel tomorrow and, if needed, write a patch.
+The floating VGA-2 status is rock solid now, both problems solved.
 
-> 
->>
->> As Mark said, breaking user space simply isn't acceptable. And since
->> breaking user space isn't acceptable, then incrementing the version is
->> stupid too.
-> 
-> It might not have been the best idea to increment, however I maintain
-> that if there exists version is can be changed. Otherwise there is no
-> point in having version at all.
+The machine idles at 800Mhz, load increases speed to 1860 MHz. The code had
+actually less time to execute under load, time became to short without
+the delay ...
 
-Not arguing in favor of the version numbering, but it is easy to read
-the version increment at the beginning of the application, and adjust
-if the code will use EVIOCGKEYCODE or EVIOCGKEYCODE_V2 of the ioctl's,
-depending on what kernel provides.
+I think that patch also should be a candidate for 2.6.37.1 as it fixes a
+regression
+introduced in 2.6.37.
 
-Ok, we might be just calling the new ioctl and check for -ENOSYS at
-the beginning, using some fake arguments.
+Something new:
 
-> As I said, reverting the version bump will cause yet another wave of
-> breakages so I propose leaving version as is.
-> 
->>
->> The way we add new ioctl's is not by incrementing some "ABI version"
->> crap. It's by adding new ioctl's or system calls or whatever that
->> simply used to return -ENOSYS or other error before, while preserving
->> the old ABI. That way old binaries don't break (for _ANY_ reason), and
->> new binaries can see "oh, this doesn't support the new thing".
-> 
-> That has been done as well; we have 2 new ioctls and kept 2 old ioctls.
-> 
+Have a look at the attached new log.  I connected a 2nd monitor, so
+there is a monitor attached to both
+the VGA-1 and DVI-1 connectors. At the framebuffer console prompt (no X
+running)
+I changed to console 2 and back to console 1. The log starts at the
+point of switching
+back to console 1. Now ... shouldn't I read something about a
+output_poll_execute for VGA-1?
 
-Regards,
-Mauro.
+Knut
+
+
+
+
+--------------060105070206040801090204
+Content-Type: text/plain;
+ name="2Chris"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="2Chris"
+
+[  629.662700] [drm:drm_crtc_helper_set_config],
+[  629.662705] [drm:drm_crtc_helper_set_config], [CRTC:3] [FB:87] #connectors=1 (x y) (0 0)
+[  629.662724] [drm:drm_crtc_helper_set_config], [CONNECTOR:5:VGA-1] to [CRTC:3]
+[  629.662728] [drm:drm_crtc_helper_set_config], [CONNECTOR:8:DVI-D-1] to [CRTC:4]
+[  629.662732] [drm:drm_crtc_helper_set_config], Setting connector DPMS state to on
+[  629.662735] [drm:drm_crtc_helper_set_config],  [CONNECTOR:5:VGA-1] set DPMS on
+[  629.662739] [drm:drm_crtc_helper_set_config],
+[  629.662741] [drm:drm_crtc_helper_set_config], [CRTC:4] [FB:87] #connectors=1 (x y) (0 0)
+[  629.662749] [drm:drm_crtc_helper_set_config], [CONNECTOR:5:VGA-1] to [CRTC:3]
+[  629.662753] [drm:drm_crtc_helper_set_config], [CONNECTOR:8:DVI-D-1] to [CRTC:4]
+[  629.662756] [drm:drm_crtc_helper_set_config], Setting connector DPMS state to on
+[  629.662760] [drm:drm_crtc_helper_set_config],  [CONNECTOR:8:DVI-D-1] set DPMS on
+
+[  631.576055] [drm:intel_sdvo_debug_write], SDVOB: W: 0B                         (SDVO_CMD_GET_ATTACHED_DISPLAYS)
+[  631.587810] [drm:intel_sdvo_read_response], SDVOB: R: (Success) 01 00
+[  631.604015] [drm:intel_sdvo_detect], SDVO response 1 0 [1]
+[  631.606959] [drm:intel_sdvo_debug_write], SDVOB: W: 7A 02                      (SDVO_CMD_SET_CONTROL_BUS_SWITCH)
+[  631.624124] [drm:intel_sdvo_debug_write], SDVOB: W: 7A 02                      (SDVO_CMD_SET_CONTROL_BUS_SWITCH)
+[  631.755023] [drm:output_poll_execute], [CONNECTOR:8:DVI-D-1] status updated from 1 to 1
+[  631.758257] [drm:intel_sdvo_debug_write], SDVOC: W: 0B                         (SDVO_CMD_GET_ATTACHED_DISPLAYS)
+[  631.839893] [drm:intel_sdvo_read_response], SDVOC: R: (Success) 00 00
+[  631.860027] [drm:intel_sdvo_detect], SDVO response 0 0 [2]
+[  631.862974] [drm:output_poll_execute], [CONNECTOR:44:VGA-2] status updated from 2 to 2
+
+[  634.880024] [drm:intel_sdvo_debug_write], SDVOB: W: 0B                         (SDVO_CMD_GET_ATTACHED_DISPLAYS)
+[  634.895785] [drm:intel_sdvo_read_response], SDVOB: R: (Success) 01 00
+[  634.920022] [drm:intel_sdvo_detect], SDVO response 1 0 [1]
+[  634.922971] [drm:intel_sdvo_debug_write], SDVOB: W: 7A 02                      (SDVO_CMD_SET_CONTROL_BUS_SWITCH)
+[  634.945705] [drm:intel_sdvo_debug_write], SDVOB: W: 7A 02                      (SDVO_CMD_SET_CONTROL_BUS_SWITCH)
+[  635.270273] [drm:output_poll_execute], [CONNECTOR:8:DVI-D-1] status updated from 1 to 1
+[  635.288772] [drm:intel_sdvo_debug_write], SDVOC: W: 0B                         (SDVO_CMD_GET_ATTACHED_DISPLAYS)
+[  635.449262] [drm:intel_sdvo_read_response], SDVOC: R: (Success) 00 00
+[  635.493740] [drm:intel_sdvo_detect], SDVO response 0 0 [2]
+[  635.510435] [drm:output_poll_execute], [CONNECTOR:44:VGA-2] status updated from 2 to 2
+
+--------------060105070206040801090204--
