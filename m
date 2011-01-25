@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752360Ab1AYK3Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 05:29:25 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43816 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab1AYK3Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 05:29:24 -0500
-Date: Tue, 25 Jan 2011 10:29:05 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 01/19] ARM: Make the argument to virt_to_phys()
-	"const volatile"
-Message-ID: <20110125102905.GC11507@n2100.arm.linux.org.uk>
-References: <1295891761-18366-1-git-send-email-catalin.marinas@arm.com> <1295891761-18366-2-git-send-email-catalin.marinas@arm.com> <4D3DD0D8.10905@codeaurora.org> <201101251100.11052.arnd@arndb.de>
+	id S1752486Ab1AYKd1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 05:33:27 -0500
+Received: from mx01.sz.bfs.de ([194.94.69.103]:10522 "EHLO mx01.sz.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751547Ab1AYKd0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 05:33:26 -0500
+Message-ID: <4D3EA6EC.5050305@bfs.de>
+Date: Tue, 25 Jan 2011 11:33:16 +0100
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201101251100.11052.arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Julia Lawall <julia@diku.dk>
+CC: Vasiliy Kulikov <segooon@gmail.com>, Ryan Mallon <ryan@bluewatersys.com>,
+        Russell King <linux@arm.linux.org.uk>, kernel-janitors@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] arch/arm/mach-at91/clock.c: Add missing IS_ERR test
+References: <1295898922-18822-1-git-send-email-julia@diku.dk> <1295898922-18822-3-git-send-email-julia@diku.dk> <4D3DD964.9020107@bluewatersys.com> <Pine.LNX.4.64.1101242058430.3167@ask.diku.dk> <20110124200515.GA30963@albatros> <Pine.LNX.4.64.1101242108180.3167@ask.diku.dk>
+In-Reply-To: <Pine.LNX.4.64.1101242108180.3167@ask.diku.dk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 11:00:10AM +0100, Arnd Bergmann wrote:
-> On Monday 24 January 2011, Stephen Boyd wrote:
-> > On 01/24/2011 09:55 AM, Catalin Marinas wrote:
-> > > Changing the virt_to_phys() argument to "const volatile void *" avoids
-> > > compiler warnings in some situations where this function is used.
-> > >
-> > > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> > > Cc: Stephen Boyd <sboyd@codeaurora.org>
-> > > Cc: Arnd Bergmann <arnd@arndb.de>
-> 
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> 
-> > Acked-by: Stephen Boyd <sboyd@codeaurora.org>
-> > 
-> > Any chance we can get this one patch into 2.6.38? It fixes a warning for
-> > MSM.
-> 
-> Stephen, you might want to have a look at why the warning even appears
-> on MSM. Most uses of 'volatile' are misguided, and there could be an
-> actual bug in there.
 
-It's actually the right thing - look at x86's definition:
 
-static inline phys_addr_t virt_to_phys(volatile void *address)
+Am 24.01.2011 21:09, schrieb Julia Lawall:
+> On Mon, 24 Jan 2011, Vasiliy Kulikov wrote:
+> 
+>> On Mon, Jan 24, 2011 at 21:00 +0100, Julia Lawall wrote:
+>>> On Tue, 25 Jan 2011, Ryan Mallon wrote:
+>>>
+>>>> On 01/25/2011 08:55 AM, Julia Lawall wrote:
+>>>>> @@ -224,7 +224,7 @@ void __init at91_clock_associate(const char *id, struct device *dev, const char
+>>>>>  {
+>>>>>  	struct clk *clk = clk_get(NULL, id);
+>>>>>  
+>>>>> -	if (!dev || !clk || !IS_ERR(clk_get(dev, func)))
+>>>>> +	if (!dev || IS_ERR(clk) || !IS_ERR(clk_get(dev, func)))
+>>>>>  		return;
+>>>>
+>>>> I think we want:
+>>>>
+>>>> 	if (!dev || !clk || IS_ERR(clk) || !IS_ERR(clk_get(dev, func)))
+>>>> 		return;
+>>>>
+>>>> Since it is valid to return a NULL clk, and we don't want to try and
+>>>> dereference it if that is the case.
+>>>
+>>> Looking at the given defintion of clk_get, I can't see how that could 
+>>> happen:
+>>
+>> clk_get() is defined per-architecture, sometimes it is NULL only.
+> 
+> In this case there is a definition in the same file, so it doesn't seem 
+> necessary to worry about possible other ones.  Unless there is some goal 
+> in the future to remove the local one?
+> 
+
+Would it be more easy to return NULL in the error case of clk_get() instead
+of ERR_PTR(-ENOENT) ?
+
+So the default could be return NULL and an architecture depending solution
+replacing that.
+
+re,
+ wh
