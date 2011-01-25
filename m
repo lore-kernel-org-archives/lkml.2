@@ -1,63 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751400Ab1AYFEN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 00:04:13 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:2452 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750702Ab1AYFEM (ORCPT
+	id S1751599Ab1AYFEk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 00:04:40 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:38413 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750702Ab1AYFEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 00:04:12 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBABboPU1Ld/sX/2dsb2JhbAAMhAfMXZBigSSDOHQEhRc
-X-IronPort-AV: E=Sophos;i="4.60,372,1291611600"; 
-   d="scan'208";a="89131596"
-Message-ID: <4D3E59CA.6070107@teksavvy.com>
-Date: Tue, 25 Jan 2011 00:04:10 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Tue, 25 Jan 2011 00:04:38 -0500
+Subject: [PATCH 0/3] Unmapped Page Cache Control (v4)
+To: linux-mm@kvack.org, akpm@linux-foundation.org
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+Cc: npiggin@kernel.dk, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kosaki.motohiro@jp.fujitsu.com, cl@linux.com,
+        kamezawa.hiroyu@jp.fujitsu.com
+Date: Tue, 25 Jan 2011 10:34:07 +0530
+Message-ID: <20110125050255.13141.688.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org
-Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils
- ?
-References: <4D3C5F73.2050408@teksavvy.com> <20110124175456.GA17855@core.coreip.homeip.net> <4D3E1A08.5060303@teksavvy.com> <20110125005555.GA18338@core.coreip.homeip.net> <4D3E4DD1.60705@teksavvy.com> <20110125042016.GA7850@core.coreip.homeip.net> <4D3E5372.9010305@teksavvy.com> <20110125045559.GB7850@core.coreip.homeip.net>
-In-Reply-To: <20110125045559.GB7850@core.coreip.homeip.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-01-24 11:55 PM, Dmitry Torokhov wrote:
-> On Mon, Jan 24, 2011 at 11:37:06PM -0500, Mark Lord wrote:
-..
->> This results in (map->size==10) for 2.6.36+ (wrong),
->> and a much larger map->size for 2.6.35 and earlier.
->>
->> So perhaps EVIOCGKEYCODE has changed?
->>
-> 
-> So the utility expects that all devices have flat scancode space and
-> driver might have changed so it does not recognize scancode 10 as valid
-> scancode anymore.
-> 
-> The options are:
-> 
-> 1. Convert to EVIOCGKEYCODE2
-> 2. Ignore errors from EVIOCGKEYCODE and go through all 65536 iterations.
+The following series implements page cache control,
+this is a split out version of patch 1 of version 3 of the
+page cache optimization patches posted earlier at
+Previous posting http://lwn.net/Articles/419564/
 
-or 3. Revert/fix the in-kernel regression.
+The previous few revision received lot of comments, I've tried to
+address as many of those as possible in this revision.
 
-The EVIOCGKEYCODE ioctl is supposed to return KEY_RESERVED for unmapped
-(but value) keycodes, and only return -EINVAL when the keycode itself
-is out of range.
+Detailed Description
+====================
+This patch implements unmapped page cache control via preferred
+page cache reclaim. The current patch hooks into kswapd and reclaims
+page cache if the user has requested for unmapped page control.
+This is useful in the following scenario
+- In a virtualized environment with cache=writethrough, we see
+  double caching - (one in the host and one in the guest). As
+  we try to scale guests, cache usage across the system grows.
+  The goal of this patch is to reclaim page cache when Linux is running
+  as a guest and get the host to hold the page cache and manage it.
+  There might be temporary duplication, but in the long run, memory
+  in the guests would be used for mapped pages.
+- The option is controlled via a boot option and the administrator
+  can selectively turn it on, on a need to use basis.
 
-That's how it worked in all kernels prior to 2.6.36,
-and now it is broken.  It now returns -EINVAL for any unmapped keycode,
-even though keycodes higher than that still have mappings.
+A lot of the code is borrowed from zone_reclaim_mode logic for
+__zone_reclaim(). One might argue that the with ballooning and
+KSM this feature is not very useful, but even with ballooning,
+we need extra logic to balloon multiple VM machines and it is hard
+to figure out the correct amount of memory to balloon. With these
+patches applied, each guest has a sufficient amount of free memory
+available, that can be easily seen and reclaimed by the balloon driver.
+The additional memory in the guest can be reused for additional
+applications or used to start additional guests/balance memory in
+the host.
 
-This is a bug, a regression, and breaks userspace.
-I haven't identified *where* in the kernel the breakage happened,
-though.. that code confuses me.  :)
+KSM currently does not de-duplicate host and guest page cache. The goal
+of this patch is to help automatically balance unmapped page cache when
+instructed to do so.
 
-Thanks.
+The sysctl for min_unmapped_ratio provides further control from
+within the guest on the amount of unmapped pages to reclaim, a similar
+max_unmapped_ratio sysctl is added and helps in the decision making
+process of when reclaim should occur. This is tunable and set by
+default to 16 (based on tradeoff's seen between aggressiveness in
+balancing versus size of unmapped pages). Distro's and administrators
+can further tweak this for desired control.
+
+Data from the previous patchsets can be found at
+https://lkml.org/lkml/2010/11/30/79
+
+
+---
+
+Balbir Singh (3):
+      Move zone_reclaim() outside of CONFIG_NUMA
+      Refactor zone_reclaim code
+      Provide control over unmapped pages
+
+
+ Documentation/kernel-parameters.txt |    8 ++
+ include/linux/mmzone.h              |    9 ++-
+ include/linux/swap.h                |   23 +++++--
+ init/Kconfig                        |   12 +++
+ kernel/sysctl.c                     |   29 ++++++--
+ mm/page_alloc.c                     |   31 ++++++++-
+ mm/vmscan.c                         |  122 +++++++++++++++++++++++++++++++----
+ 7 files changed, 202 insertions(+), 32 deletions(-)
+
+-- 
+Balbir Singh
