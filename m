@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753161Ab1AYRRL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 12:17:11 -0500
-Received: from brigitte.telenet-ops.be ([195.130.137.66]:35676 "EHLO
-	brigitte.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752421Ab1AYRRK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 12:17:10 -0500
-Date: Tue, 25 Jan 2011 18:17:05 +0100 (CET)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Ungerer <gregungerer@westnet.com.au>,
-        Linux/m68k <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [git pull] More m68k updates for 2.6.38
-Message-ID: <alpine.DEB.2.00.1101251814410.18530@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753133Ab1AYRUd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 12:20:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58272 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751571Ab1AYRUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 12:20:32 -0500
+Subject: Re: [PATCH 0/2][concept RFC] x86: BIOS-save kernel log to disk
+ upon panic
+From: James Bottomley <James.Bottomley@suse.de>
+To: "Ahmed S. Darwish" <darwish.07@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, X86-ML <x86@kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Willy Tarreau <wtarreau@hera.kernel.org>, Willy Tarreau <w@1wt.eu>,
+        Dirk Hohndel <hohndel@infradead.org>, Dirk.Hohndel@intel.com,
+        IDE-ML <linux-ide@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@infradead.org>,
+        Jeff Garzik <jgarzik@pobox.com>
+In-Reply-To: <20110125170522.GA16285@laptop>
+References: <20110125134748.GA10051@laptop> <20110125140948.GA26762@elte.hu>
+	 <20110125153649.GA11386@laptop> <1295971355.4955.104.camel@mulgrave.site>
+	 <20110125170522.GA16285@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 25 Jan 2011 12:20:23 -0500
+Message-ID: <1295976023.9693.8.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi Linus,
+On Tue, 2011-01-25 at 19:05 +0200, Ahmed S. Darwish wrote:
+> Hi!
+> 
+> On Tue, Jan 25, 2011 at 11:02:35AM -0500, James Bottomley wrote:
+> > On Tue, 2011-01-25 at 17:36 +0200, Ahmed S. Darwish wrote:
+> > > The complete __roadblock__ I'm currently facing though is restoring the disk
+> > > controllers to the state originally setup by the BIOS Power-on self-test (POST).
+> > > I hope such re-initialization is even technically feasible.
+> > > 
+> > > Without such re-initialization, we'll just be risking the BIOS code exploding.
+> > > That was the case in the 5-minute hang described in the cover sheet (PATCH #0).
+> > 
+> > So this is the bit that's not really technically feasible.  BIOS tends
+> > to run storage devices in a very primitive way (so it takes basic
+> > settings, for example and sets the device up for one particular channel
+> > of access).  When preparing the device for an operating system, we have
+> > to blow away all the bios stuff and put it into a more generally
+> > performant mode (this isn't just the storage per se, it's also the
+> > interrupt and routing).  Unfortunately, currently, we don't bother to
+> > save the settings the BIOS was using, so there's no way to reinitialise
+> > the device back to bios without an effective reboot.
+> >
+> 
+> My current x86 laptop includes the very common ATA PIIX controller. If I
+> dumped the PIC, IOAPIC, and disk controller state in a register file in a
+> safe area, and re-initialized these before giving control to the BIOS, can
+> this move the solution space from being not really technically feasible to
+> "quite possible"?
 
-The following changes since commit 1bae4ce27c9c90344f23c65ea6966c50ffeae2f5:
-  Linus Torvalds (1):
-        Linux 2.6.38-rc2
+So I'm sure it would be possible to reverse engineer and make work a
+solution for a given motherboard, ATA controller and BIOS ... but
+because you have to go all the way up the root of the PCI tree and into
+the interrupt controllers to do this, I don't really think it would ever
+be a usable generic solutions.
 
-are available in the git repository at:
+I'd really look at the problem another way: Rather than trying to figure
+out how to put a storage subsystem back into bios, if we had a driver
+that never took a given device out of BIOS configuration, as in ran it
+through the suboptimal bios interface in-kernel, it would be ready to
+use the bios interface to dump with.  The problem is that no-one wants
+that for their main disk ... however, it would be less of a problem if
+we dedicated, say, a USB controller and stick to this.
 
-  master.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-Linus
-  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+James
 
-These are two fixes for build errors and one fix for a long-standing debug
-issue.
 
-Thanks for pulling!
-
-Geert Uytterhoeven (3):
-      m68k: Uninline strchr()
-      m68k/atari: Rename "scc" to "atari_scc"
-      m68k/amiga: Fix "debug=mem"
-
- arch/m68k/amiga/config.c        |   16 +++++++---------
- arch/m68k/atari/ataints.c       |    4 ++--
- arch/m68k/atari/config.c        |    2 +-
- arch/m68k/atari/debug.c         |   14 +++++++-------
- arch/m68k/include/asm/atarihw.h |    2 +-
- arch/m68k/include/asm/string.h  |   12 ------------
- 6 files changed, 18 insertions(+), 32 deletions(-)
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
