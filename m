@@ -1,135 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab1AYWl3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 17:41:29 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:54293 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752936Ab1AYWl1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 17:41:27 -0500
-Date: Tue, 25 Jan 2011 16:41:22 -0600
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-To: Roberto Sassu <roberto.sassu@polito.it>
-Cc: linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dhowells@redhat.com, jmorris@namei.org, zohar@linux.vnet.ibm.com,
-        safford@watson.ibm.com, ramunno@polito.it, kirkland@canonical.com
-Subject: Re: [RFC][PATCH v3 6/6] eCryptfs: added support for the encrypted
- key type
-Message-ID: <20110125224122.GB12392@boyd.l.tihix.com>
-References: <1295887497-20198-1-git-send-email-roberto.sassu@polito.it>
- <1295887497-20198-7-git-send-email-roberto.sassu@polito.it>
+	id S1753520Ab1AYWm4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 17:42:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60142 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752548Ab1AYWmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 17:42:55 -0500
+Date: Tue, 25 Jan 2011 23:42:44 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        =?utf-8?B?QUtQTeOAgA==?= <akpm@linux-foundation.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Huang Ying <ying.huang@intel.com>, LKLM <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] Isolate only one page of anonymous THP
+Message-ID: <20110125224244.GK926@random.random>
+References: <4D3E63A0.9000301@np.css.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1295887497-20198-7-git-send-email-roberto.sassu@polito.it>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4D3E63A0.9000301@np.css.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon Jan 24, 2011 at 05:44:54PM +0100, Roberto Sassu <roberto.sassu@polito.it> wrote:
-> The function ecryptfs_keyring_auth_tok_for_sig() has been modified in order
-> to search keys of both 'user' and 'encrypted' types.
-> 
-> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
-> Acked-by: Gianluca Ramunno <ramunno@polito.it>
+Hello Jin,
 
-Thanks for the new revision.
+On Tue, Jan 25, 2011 at 02:46:08PM +0900, Jin Dongming wrote:
+> When the tail page of THP is poisoned, the head page will be
+> poisoned too.
+> 
+> Lets make an assumption like following:
+>   1. Guest OS is running on KVM.
+>   2. Two processes(A and B) on Guest OS use pages in the same THP
+>      of Host.
+>      - process A is using the head page.
+>      - process B is using the tail pages.
+> 
+>   So when the tail page is poisoned, process B should be killed.
+>   But process A is killed and process B is still alive in fact.
 
-Acked-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Do we have paravirt memory-failure support to actually kill single
+processes in guest depending on which page they run on instead of the
+whole guest?
 
-> ---
->  fs/ecryptfs/ecryptfs_kernel.h |   41 +++++++++++++++++++++++++++++++++++++++--
->  fs/ecryptfs/keystore.c        |   11 +++++++----
->  2 files changed, 46 insertions(+), 6 deletions(-)
+>   The reason for process A killed is that the head page is poisoned
+>   when the tail page is poisoned and the address reported
+>   with sigbus is the address of head page not the poisoned tail page.
 > 
-> diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
-> index 2e2242f..2b50397 100644
-> --- a/fs/ecryptfs/ecryptfs_kernel.h
-> +++ b/fs/ecryptfs/ecryptfs_kernel.h
-> @@ -29,6 +29,7 @@
->  #define ECRYPTFS_KERNEL_H
+>   The reason for process B alive is that PG_hwpoisoned of the poisoned
+>   tail page is cleared after the poisoned THP is split and the address
+>   reported with sigbus is the address of head page.
+
+Agree about the fact we mark the head page poisoned instead of the
+tail page and it's not accurate as it should.
+
+> It is expected that the process using the poisoned tail page is killed,
+> but not that the process using the healthy head page is killed.
 > 
->  #include <keys/user-type.h>
-> +#include <keys/encrypted-type.h>
->  #include <linux/fs.h>
->  #include <linux/fs_stack.h>
->  #include <linux/namei.h>
-> @@ -78,11 +79,47 @@ struct ecryptfs_page_crypt_context {
->  	} param;
->  };
+> So it is better to avoid poisoning other than the page which is really
+> poisoned.
+>   (While we poison all pages in a huge page in case of hugetlb,
+>    we can do this for THP thanks to split_huge_page().)
+
+Yes we can be more accurate with THP thanks to your change to
+__split_huge_page_refcount, full agreement with your huge_memory.c change.
+
 > 
-> +#if defined(CONFIG_ENCRYPTED_KEYS) || defined(CONFIG_ENCRYPTED_KEYS_MODULE)
-> +static inline struct ecryptfs_auth_tok *
-> +ecryptfs_get_encrypted_key_payload_data(struct key *key)
-> +{
-> +	if (key->type == &key_type_encrypted)
-> +		return (struct ecryptfs_auth_tok *)
-> +			(&((struct encrypted_key_payload *)key->payload.data)->payload_data);
-> +	else
-> +		return NULL;
-> +}
-> +
-> +static inline struct key *ecryptfs_get_encrypted_key(char *sig)
-> +{
-> +	return request_key(&key_type_encrypted, sig, NULL);
-> +}
-> +
-> +#else
-> +static inline struct ecryptfs_auth_tok *
-> +ecryptfs_get_encrypted_key_payload_data(struct key *key)
-> +{
-> +	return NULL;
-> +}
-> +
-> +static inline struct key *ecryptfs_get_encrypted_key(char *sig)
-> +{
-> +	return ERR_PTR(-ENOKEY);
-> +}
-> +
-> +#endif /* CONFIG_ENCRYPTED_KEYS */
-> +
->  static inline struct ecryptfs_auth_tok *
->  ecryptfs_get_key_payload_data(struct key *key)
->  {
-> -	return (struct ecryptfs_auth_tok *)
-> -		(((struct user_key_payload*)key->payload.data)->data);
-> +	struct ecryptfs_auth_tok *auth_tok;
-> +
-> +	auth_tok = ecryptfs_get_encrypted_key_payload_data(key);
-> +	if (!auth_tok)
-> +		return (struct ecryptfs_auth_tok *)
-> +			(((struct user_key_payload *)key->payload.data)->data);
-> +	else
-> +		return auth_tok;
->  }
-> 
->  #define ECRYPTFS_MAX_KEYSET_SIZE 1024
-> diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
-> index c1436cf..17194b8 100644
-> --- a/fs/ecryptfs/keystore.c
-> +++ b/fs/ecryptfs/keystore.c
-> @@ -1560,10 +1560,13 @@ int ecryptfs_keyring_auth_tok_for_sig(struct key **auth_tok_key,
-> 
->  	(*auth_tok_key) = request_key(&key_type_user, sig, NULL);
->  	if (!(*auth_tok_key) || IS_ERR(*auth_tok_key)) {
-> -		printk(KERN_ERR "Could not find key with description: [%s]\n",
-> -		       sig);
-> -		rc = process_request_key_err(PTR_ERR(*auth_tok_key));
-> -		goto out;
-> +		(*auth_tok_key) = ecryptfs_get_encrypted_key(sig);
-> +		if (!(*auth_tok_key) || IS_ERR(*auth_tok_key)) {
-> +			printk(KERN_ERR "Could not find key with description: [%s]\n",
-> +			      sig);
-> +			rc = process_request_key_err(PTR_ERR(*auth_tok_key));
-> +			goto out;
-> +		}
+> Here we fix two parts:
+>   1. poison the real poisoned page only.
+
+Agreed.
+
+>   2. make the poisoned page work as the poisoned regular
+>      page(4k page).
+
+You're adding one more unsafe compound_head() usage.
+
+This is not a remark not specific to this patch, and I pointed this
+out already in some header commit of THP, but it likely got lost in
+the noise so I remind it here (and no, I don't expect everyone to read
+the headers, you're already doing great job at reading the code and
+the details of split_huge_page internals to fix these bits).
+
+So in short my remark is that most compound_head() are broken for
+hugetlbfs too in memory-failure.c.
+
+I introduced a compound_trans_head that can be used safely like
+memory-failure does in most places:
+
+get_page_unless_zero(compound_head(pfn_to_page(pfn))) -> unsafe for THP and hugetlbfs (current status)
+get_page_unless_zero(compound_trans_head(pfn_to_page(pfn))) -> safe only for THP
+
+I didn't go search and replace compound_trans_head in memory-failure
+because it would remain broken for hugetlbfs... so it wasn't
+definitive solution.
+
+I however made a compound_trans_order that is safe for both (hugetlbfs
+I doubt frees the page from under you like split_huge_page could do,
+so after get_page_unless_zero succeeds on the head, hugetlbfs should
+be safe calling both compound_order or compound_trans_order, THP
+instead needs compound_trans_order). I'm afraid however that in some
+place compound_trans_order may be still unsafe for hugetlbfs if
+compound_trans_order is called on a hugetlbfs page before getting its
+refcount (it's definitely safe for THP instead).
+
+I'm uncertain if it's worth to fix these races considering it's
+hardware failure we're talking about, so maybe math guarantee isn't
+needed for something that deals with an imperfect world that can crash
+anyway if the memory failure happens in a kernel .text. hugetlbfs
+allocations usually are static and practically only used by commercial
+DB, so it's almost impossible to hit the race in any practical case
+(unless you exercise it while the db shutsdown). It's your call...
+
+If we don't fix the race for hugetlbfs, then you can go ahead and
+replace compound_head with compound_trans_head for every place where
+__split_huge_page_refcount can run from under you, and then THP will
+be math-safe. Very easy fix.
+
+NOTE: when memcg calls compound_order it's safe because it's calling
+it always on the head page. Also if you call compound_order inside a
+page_table_lock when the hugepmd page isn't set to splitting yet, it's
+safe. The unsafe is taking an arbitrary pfn, convert to page struct,
+and run compound_order or compound_head on it, and it's equally unsafe
+for hugetlbfs and THP. The difference is, after get_page_unless_zero
+succeeds on hugetlbfs then you're safe calling compound_order, while
+for THP split_huge_page can still run and so compound_trans_order is
+needed.
+
+> @@ -906,6 +907,14 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
 >  	}
->  	(*auth_tok) = ecryptfs_get_key_payload_data(*auth_tok_key);
->  	if (ecryptfs_verify_version((*auth_tok)->version)) {
-> -- 
-> 1.7.3.4
-> 
+>  
+>  	/*
+> +	 * ppage: poisoned page
+> +	 *   if p is regular page(4k page) or THP(anonymous),
+> +	 *        ppage == real poisoned page;
+> +	 *   else p is hugetlb or others, ppage == head page.
+> +	 */
+> +	ppage = compound_head(p);
+> +
+> +	/*
+>  	 * First collect all the processes that have the page
+>  	 * mapped in dirty form.  This has to be done before try_to_unmap,
+>  	 * because ttu takes the rmap data structures down.
+
+I would suggest to change it like this pseudocode:
+
+ if (PageTransHuge(hpage)) {
+   /* verify that this isn't a hugetlbfs head page, the check for
+   PageAnon is just for avoid tripping a split_huge_page internal
+   debug check, as split_huge_page refuses to deal with anything that
+   isn't an anon page. PageAnon can't go away from under us because we
+   hold a refcount on the hpage, without a refcount on the hpage
+   split_huge_page can't be safely called in the first place, having a
+   refcount on the tail isn't enough to be safe. */
+   if (!PageHuge(hpage) && PageAnon(hpage)) {
+     if (split_huge_page(hpage)) {
+      /*
+       * The vma/anon_vma was freed from under us, the page should be
+       * unused, let it be freed by releasing it.
+       */
+       /* comment for you: we must make sure to mark the already unused pages poisoned */
+       return SWAP_FAIL;
+     }
+     hpage = p;
+   }
+ }
 
 
+Something like that, which also avoids to call a second compound_head
+at all for CONFIG_TRANSPARENT_HUGEPAGE=n as the whole block goes away.
+
+Thanks a lot for looking into the THP memory-failure support, I
+appreciate!
+
+Andrea
