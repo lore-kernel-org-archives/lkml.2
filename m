@@ -1,46 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832Ab1AYN5P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 08:57:15 -0500
-Received: from casper.infradead.org ([85.118.1.10]:46094 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753758Ab1AYN4N convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 08:56:13 -0500
-Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 16/20] 16: uprobes: register a
- notifier for uprobes.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Linux-mm <linux-mm@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20101216100021.23751.19275.sendpatchset@localhost6.localdomain6>
-References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
-	 <20101216100021.23751.19275.sendpatchset@localhost6.localdomain6>
+	id S1753742Ab1AYOC2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 09:02:28 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:51421 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753615Ab1AYOC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 09:02:27 -0500
+X-IronPort-AV: E=Sophos;i="4.60,374,1291611600"; 
+   d="scan'208";a="12117407"
+Subject: Re: [Xen-devel] Re: [PATCH 08/23] xen: statically initialize
+ cpu_evtchn_mask_p
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        "Konrad Rzeszutek Wilk" <konrad@kernel.org>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
+In-Reply-To: <4D3DBA6A.3080700@redhat.com>
+References: <1286898271-32018-1-git-send-email-konrad.wilk@oracle.com>
+	 <1286898271-32018-9-git-send-email-konrad.wilk@oracle.com>
+	 <4D3DBA6A.3080700@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 25 Jan 2011 14:56:18 +0100
-Message-ID: <1295963778.28776.1058.camel@laptop>
-Mime-Version: 1.0
+Organization: Citrix Systems, Inc.
+Date: Tue, 25 Jan 2011 14:02:17 +0000
+Message-ID: <1295964137.14780.6148.camel@zakaz.uk.xensource.com>
+MIME-Version: 1.0
 X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-12-16 at 15:30 +0530, Srikar Dronamraju wrote:
-> Uprobe needs to be intimated on int3 and singlestep exceptions.
-> Hence uprobes registers a die notifier so that its notified of the events.
+On Mon, 2011-01-24 at 17:44 +0000, Paolo Bonzini wrote:
+> On 10/12/2010 05:44 PM, Konrad Rzeszutek Wilk wrote:
+> > -static struct cpu_evtchn_s *cpu_evtchn_mask_p;
+> > +
+> > +static __initdata struct cpu_evtchn_s init_evtchn_mask = {
+> > +	.bits[0 ... (NR_EVENT_CHANNELS/BITS_PER_LONG)-1] = ~0ul,
+> > +};
+> > +static struct cpu_evtchn_s *cpu_evtchn_mask_p =&init_evtchn_mask;
+> > +
+> >   static inline unsigned long *cpu_evtchn_mask(int cpu)
+> >   {
+> >   	return cpu_evtchn_mask_p[cpu].bits;
+> 
+> This causes a modpost warning:
+> 
+>     WARNING: drivers/xen/built-in.o(.data+0x0): Section mismatch in
+>     reference from the variable cpu_evtchn_mask_p to the variable
+>     .init.data:init_evtchn_mask
+> 
+>     The variable cpu_evtchn_mask_p references
+>     the variable __initdata init_evtchn_mask
+> 
+>     If the reference is valid then annotate the
+>     variable with __init* or __refdata (see linux/init.h) or name the variable:
+>     *driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console, 
+> 
+> This is harmless, the variable is initialized to non-init data
+> in an __init function.  The added noise is ugly, though.
 
-Why isn't this part of the previous patch? This splitup really doesn't
-make sense.
+Does this help? If I understand the comment which precedes  __initref
+correctly it is intended to address precisely this situation.
+
+Ian.
+8<---------
+
+xen: events: mark cpu_evtchn_mask_p as __refdata
+
+This variable starts out pointing at init_evtchn_mask which is marked
+__initdata but is set to point to a non-init data region in xen_init_IRQ
+which is itself an __init function so this is safe.
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index 31af0ac..5061af0 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -114,7 +114,7 @@ struct cpu_evtchn_s {
+ static __initdata struct cpu_evtchn_s init_evtchn_mask = {
+ 	.bits[0 ... (NR_EVENT_CHANNELS/BITS_PER_LONG)-1] = ~0ul,
+ };
+-static struct cpu_evtchn_s *cpu_evtchn_mask_p = &init_evtchn_mask;
++static struct __refdata cpu_evtchn_s *cpu_evtchn_mask_p =
+&init_evtchn_mask;
+ 
+ static inline unsigned long *cpu_evtchn_mask(int cpu)
+ {
+
+
+
