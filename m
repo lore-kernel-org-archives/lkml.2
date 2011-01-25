@@ -1,138 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006Ab1AYX3Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 18:29:24 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:59885 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753645Ab1AYX3W (ORCPT
+	id S1753893Ab1AYXd3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 18:33:29 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:12868 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752623Ab1AYXd1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 18:29:22 -0500
+	Tue, 25 Jan 2011 18:33:27 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=q6iiy0N+iV3Gp2SR04Qf5ARS5cQnFeWFOgQG7u3U25zs31y62RVc+cRWp/VQUsUjoP
-         BjUWjSsb77tnih7ahJ0WRUNa2loYXPtOi/Ynh27inB7CWwy2QvIxgq+2zEOO61TkZPPg
-         wGSB4+OaTYIhfMVC+Acn3YsnVirFxZ+MfGTDU=
-Date: Tue, 25 Jan 2011 15:29:14 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Mark Lord <kernel@teksavvy.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils ?
-Message-ID: <20110125232914.GA20130@core.coreip.homeip.net>
-References: <20110125045559.GB7850@core.coreip.homeip.net>
- <4D3E59CA.6070107@teksavvy.com>
- <4D3E5A91.30207@teksavvy.com>
- <20110125053117.GD7850@core.coreip.homeip.net>
- <4D3EB734.5090100@redhat.com>
- <20110125164803.GA19701@core.coreip.homeip.net>
- <AANLkTi=1Mh0JrYk5itvef7O7e7pR+YKos-w56W5q4B8B@mail.gmail.com>
- <20110125205453.GA19896@core.coreip.homeip.net>
- <4D3F4804.6070508@redhat.com>
- <4D3F4D11.9040302@teksavvy.com>
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=R8T410dabP69KjfrQBdE0mFQ4eC/paltfP0YixLID92BAQpax0bWQryZwsYIt41ZZ1
+         GvHFmJX7etLBglGCJI/Q==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D3F4D11.9040302@teksavvy.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <AANLkTimd44_FjnJUCNwz412Ned5S_+YcyHjfitus3vLQ@mail.gmail.com>
+References: <1294990949-2729-1-git-send-email-ccross@android.com>
+	<AANLkTimqiqABxCejdeOQWZZ62DVUZW2v-yMpdu1aNDQT@mail.gmail.com>
+	<20110114120229.GA15996@n2100.arm.linux.org.uk>
+	<1295014231.7901.41.camel@e102109-lin.cambridge.arm.com>
+	<20110114154919.GE15996@n2100.arm.linux.org.uk>
+	<1295022193.7901.56.camel@e102109-lin.cambridge.arm.com>
+	<20110114163520.GH15996@n2100.arm.linux.org.uk>
+	<1295024327.7901.70.camel@e102109-lin.cambridge.arm.com>
+	<20110114173050.GJ15996@n2100.arm.linux.org.uk>
+	<20110114184759.GN15996@n2100.arm.linux.org.uk>
+	<AANLkTi=J2A1Qv6NGB1bsMr6d+1VFV26KEBQ=NJ=791s0@mail.gmail.com>
+	<AANLkTimd44_FjnJUCNwz412Ned5S_+YcyHjfitus3vLQ@mail.gmail.com>
+Date: Tue, 25 Jan 2011 15:33:24 -0800
+X-Google-Sender-Auth: BZJmbELEUX-MzPRBJYqR33-U7Es
+Message-ID: <AANLkTimZ9itumf=QZPD55+JA5cUOWKgwuA1_5=XsdPsP@mail.gmail.com>
+Subject: Re: [PATCH] ARM: vfp: Fix up exception location in Thumb mode
+From: Colin Cross <ccross@android.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 05:22:09PM -0500, Mark Lord wrote:
-> On 11-01-25 05:00 PM, Mauro Carvalho Chehab wrote:
-> > Em 25-01-2011 18:54, Dmitry Torokhov escreveu:
-> >> On Wed, Jan 26, 2011 at 06:09:45AM +1000, Linus Torvalds wrote:
-> >>> On Wed, Jan 26, 2011 at 2:48 AM, Dmitry Torokhov
-> >>> <dmitry.torokhov@gmail.com> wrote:
-> >>>>
-> >>>> We should be able to handle the case where scancode is valid even though
-> >>>> it might be unmapped yet. This is regardless of what version of
-> >>>> EVIOCGKEYCODE we use, 1 or 2, and whether it is sparse keymap or not.
-> >>>>
-> >>>> Is it possible to validate the scancode by driver?
-> >>>
-> >>> More appropriately, why not just revert the thing? The version change
-> > 
-> > Reverting the version increment is a bad thing. I agree with Dmitry that
-> > an application that fails just because the API version were incremented
-> > is buggy.
-> > 
-> >> Well, then we'll break Ubuntu again as they recompiled their input-utils
-> >> package (without fixing the check). And the rest of distros do not seem
-> >> to be using that package...
-> > 
-> > Reverting it will also break the ir-keytable userspace program that it is
-> > meant to be used by the Remote Controller devices, and uses it to adjust
-> > its behaviour to support RC's with more than 16 bits of scancodes.
-> > 
-> > I agree that it is bad that the ABI broke, but reverting it will cause even
-> > more damage.
-> 
-> There we disagree.  Sure it's a very poorly thought out interface,
-> but the way to fix it is to put a new one along side the old,
-> and put the old back the way it was before it got broken.
-> 
-> I'm not making a fuss here for myself -- I'm more than capable of working
-> around new kernel bugs like these, but for every person like me there are
-> likely hundreds of others who simply get frustrated and give up.
-> 
-> If you're worried about Ubuntu's adaptation to the buggy regression,
-> then email their developers (kernel and input-utils packagers) explaining
-> the revert, and they can coordination their kernel and input-utils updates
-> to do the Right Thing.
-> 
-> But for all of the rest of us, our systems are broken by this change.
-> 
-> ...
-> 
-> 
-> >>> As Mark said, breaking user space simply isn't acceptable. And since
-> >>> breaking user space isn't acceptable, then incrementing the version is
-> >>> stupid too.
-> >>
-> >> It might not have been the best idea to increment, however I maintain
-> >> that if there exists version is can be changed. Otherwise there is no
-> >> point in having version at all.
-> > 
-> > Not arguing in favor of the version numbering, but it is easy to read
-> > the version increment at the beginning of the application, and adjust
-> > if the code will use EVIOCGKEYCODE or EVIOCGKEYCODE_V2 of the ioctl's,
-> > depending on what kernel provides.
-> > 
-> > Ok, we might be just calling the new ioctl and check for -ENOSYS at
-> > the beginning, using some fake arguments.
-> > 
-> >> As I said, reverting the version bump will cause yet another wave of
-> >> breakages so I propose leaving version as is.
-> >>
-> >>>
-> >>> The way we add new ioctl's is not by incrementing some "ABI version"
-> >>> crap. It's by adding new ioctl's or system calls or whatever that
-> >>> simply used to return -ENOSYS or other error before, while preserving
-> >>> the old ABI. That way old binaries don't break (for _ANY_ reason), and
-> >>> new binaries can see "oh, this doesn't support the new thing".
-> >>
-> >> That has been done as well; we have 2 new ioctls and kept 2 old ioctls.
-> 
-> That's the problem: you did NOT keep the two old ioctls().
-> Those got changed too.. so now we have four NEW ioctls(),
-> none of which backward compatible with userspace.
-> 
+On Fri, Jan 14, 2011 at 11:51 AM, Colin Cross <ccross@android.com> wrote:
+> On Fri, Jan 14, 2011 at 11:23 AM, Colin Cross <ccross@android.com> wrote:
+>> On Fri, Jan 14, 2011 at 10:47 AM, Russell King - ARM Linux
+>> <linux@arm.linux.org.uk> wrote:
+>>> So... this incrementally on top of the previous patch (which I've
+>>> reproduced below as there's a subtle comment change in there wrt IRQ
+>>> state.)
+>>>
+>>> This means we have consistent state - both r2 and regs->ARM_pc always
+>>> point to the next instruction to be executed in every case, which means
+>>> its easy to understand and remember while reading through the code.
+>>>
+>>> diff -u b/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+>>> --- b/arch/arm/kernel/entry-armv.S
+>>> +++ b/arch/arm/kernel/entry-armv.S
+>>> @@ -499,10 +499,11 @@
+>>>        blo     __und_usr_unknown
+>>>  3:     ldrht   r0, [r4]
+>>>        add     r2, r2, #2                      @ r2 is PC + 2, make it PC + 4
+>>> -       orr     r0, r0, r5, lsl #16
+>>> +       str     r2, [sp, #S_PC]                 @ it's a 2x16bit instr, update
+>>> +       orr     r0, r0, r5, lsl #16             @  regs->ARM_pc
+>>>        @
+>>>        @ r0 = the two 16-bit Thumb instructions which caused the exception
+>>> -       @ r2 = PC value for the following Thumb instruction (:= regs->ARM_pc+2)
+>>> +       @ r2 = PC value for the following Thumb instruction (:= regs->ARM_pc)
+>>>        @ r4 = PC value for the first 16-bit Thumb instruction
+>>>        @
+>>>  #else
+>>>
+>>> 8<-x-x-
+>>>
+>>> diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+>>> index 2b46fea..5876eec 100644
+>>> --- a/arch/arm/kernel/entry-armv.S
+>>> +++ b/arch/arm/kernel/entry-armv.S
+>>> @@ -461,27 +461,35 @@ ENDPROC(__irq_usr)
+>>>        .align  5
+>>>  __und_usr:
+>>>        usr_entry
+>>> -
+>>> -       @
+>>> -       @ fall through to the emulation code, which returns using r9 if
+>>> -       @ it has emulated the instruction, or the more conventional lr
+>>> -       @ if we are to treat this as a real undefined instruction
+>>>        @
+>>> -       @  r0 - instruction
+>>> +       @ The emulation code returns using r9 if it has emulated the
+>>> +       @ instruction, or the more conventional lr if we are to treat
+>>> +       @ this as a real undefined instruction
+>>>        @
+>>>        adr     r9, BSYM(ret_from_exception)
+>>>        adr     lr, BSYM(__und_usr_unknown)
+>>> +       @
+>>> +       @ r2 = regs->ARM_pc, which is either 2 or 4 bytes ahead of the
+>>> +       @ faulting instruction depending on Thumb mode.
+>>> +       @ r3 = regs->ARM_cpsr
+>>> +       @
+>>>        tst     r3, #PSR_T_BIT                  @ Thumb mode?
+>>> -       itet    eq                              @ explicit IT needed for the 1f label
+>>> +       itttt   eq                              @ explicit IT needed for the 1f label
+>>>        subeq   r4, r2, #4                      @ ARM instr at LR - 4
+>>> -       subne   r4, r2, #2                      @ Thumb instr at LR - 2
+>>>  1:     ldreqt  r0, [r4]
+>>>  #ifdef CONFIG_CPU_ENDIAN_BE8
+>>>        reveq   r0, r0                          @ little endian instruction
+>>>  #endif
+>>> +       @
+>>> +       @ r0 = 32-bit ARM instruction which caused the exception
+>>> +       @ r2 = PC value for the following instruction (:= regs->ARM_pc)
+>>> +       @ r4 = PC value for the faulting instruction
+>>> +       @
+>>>        beq     call_fpe
+>>> +
+>>>        @ Thumb instruction
+>>>  #if __LINUX_ARM_ARCH__ >= 7
+>>> +       sub     r4, r2, #2                      @ Thumb instr at LR - 2
+>>>  2:
+>>>  ARM(  ldrht   r5, [r4], #2    )
+>>>  THUMB(        ldrht   r5, [r4]        )
+>>> @@ -492,18 +500,19 @@ __und_usr:
+>>>  3:     ldrht   r0, [r4]
+>>>        add     r2, r2, #2                      @ r2 is PC + 2, make it PC + 4
+>>>        orr     r0, r0, r5, lsl #16
+>>> +       @
+>>> +       @ r0 = the two 16-bit Thumb instructions which caused the exception
+>>> +       @ r2 = PC value for the following Thumb instruction (:= regs->ARM_pc+2)
+>>> +       @ r4 = PC value for the first 16-bit Thumb instruction
+>>> +       @
+>>>  #else
+>>>        b       __und_usr_unknown
+>>>  #endif
+>>> - UNWIND(.fnend         )
+>>> + UNWIND(.fnend)
+>>>  ENDPROC(__und_usr)
+>>>
+>>> -       @
+>>> -       @ fallthrough to call_fpe
+>>> -       @
+>>> -
+>>>  /*
+>>> - * The out of line fixup for the ldrt above.
+>>> + * The out of line fixup for the ldrt instructions above.
+>>>  */
+>>>        .pushsection .fixup, "ax"
+>>>  4:     mov     pc, r9
+>>> @@ -534,11 +543,12 @@ ENDPROC(__und_usr)
+>>>  * NEON handler code.
+>>>  *
+>>>  * Emulators may wish to make use of the following registers:
+>>> - *  r0  = instruction opcode.
+>>> - *  r2  = PC+4
+>>> + *  r0  = instruction opcode (32-bit ARM or two 16-bit Thumb)
+>>> + *  r2  = PC value to resume execution after successful emulation
+>>>  *  r9  = normal "successful" return address
+>>> - *  r10 = this threads thread_info structure.
+>>> + *  r10 = this threads thread_info structure
+>>>  *  lr  = unrecognised instruction return address
+>>> + * IRQs disabled, FIQs enabled.
+>>>  */
+>>>        @
+>>>        @ Fall-through from Thumb-2 __und_usr
+>>> diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+>>> index ee57640..eeb9250 100644
+>>> --- a/arch/arm/kernel/traps.c
+>>> +++ b/arch/arm/kernel/traps.c
+>>> @@ -347,9 +347,9 @@ asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
+>>>        void __user *pc;
+>>>
+>>>        /*
+>>> -        * According to the ARM ARM, PC is 2 or 4 bytes ahead,
+>>> -        * depending whether we're in Thumb mode or not.
+>>> -        * Correct this offset.
+>>> +        * According to the ARM ARM, the PC is 2 or 4 bytes ahead
+>>> +        * depending on Thumb mode.  Correct this offset so that
+>>> +        * regs->ARM_pc points at the faulting instruction.
+>>>         */
+>>>        regs->ARM_pc -= correction;
+>>>
+>>> diff --git a/arch/arm/vfp/entry.S b/arch/arm/vfp/entry.S
+>>> index 4fa9903..2bf6089 100644
+>>> --- a/arch/arm/vfp/entry.S
+>>> +++ b/arch/arm/vfp/entry.S
+>>> @@ -19,6 +19,15 @@
+>>>  #include <asm/vfpmacros.h>
+>>>  #include "../kernel/entry-header.S"
+>>>
+>>> +@ VFP entry point.
+>>> +@
+>>> +@  r0  = instruction opcode (32-bit ARM or two 16-bit Thumb)
+>>> +@  r2  = PC value to resume execution after successful emulation
+>>> +@  r9  = normal "successful" return address
+>>> +@  r10 = this threads thread_info structure
+>>> +@  lr  = unrecognised instruction return address
+>>> +@  IRQs disabled.
+>>> +@
+>>>  ENTRY(do_vfp)
+>>>  #ifdef CONFIG_PREEMPT
+>>>        ldr     r4, [r10, #TI_PREEMPT]  @ get preempt count
+>>> diff --git a/arch/arm/vfp/vfphw.S b/arch/arm/vfp/vfphw.S
+>>> index 9897dcf..7292921 100644
+>>> --- a/arch/arm/vfp/vfphw.S
+>>> +++ b/arch/arm/vfp/vfphw.S
+>>> @@ -61,13 +61,13 @@
+>>>
+>>>  @ VFP hardware support entry point.
+>>>  @
+>>> -@  r0  = faulted instruction
+>>> -@  r2  = faulted PC+4
+>>> -@  r9  = successful return
+>>> +@  r0  = instruction opcode (32-bit ARM or two 16-bit Thumb)
+>>> +@  r2  = PC value to resume execution after successful emulation
+>>> +@  r9  = normal "successful" return address
+>>>  @  r10 = vfp_state union
+>>>  @  r11 = CPU number
+>>> -@  lr  = failure return
+>>> -
+>>> +@  lr  = unrecognised instruction return address
+>>> +@  IRQs enabled.
+>>>  ENTRY(vfp_support_entry)
+>>>        DBGSTR3 "instr %08x pc %08x state %p", r0, r2, r10
+>>
+>> I tested copying r2 to regs->ARM_pc like this patch does, and it fixes
+>> my test case.  Could this second patch go first so it can be applied
+>> to stable?
+>>
+>
+> Also, both patches together Tested-by: Colin Cross <ccross@android.com>
+>
 
-Please calm down. This, in fact, is not new vs old ioctl problem but
-rather particular driver (or rather set of drivers) implementation
-issue. Even if we drop the new ioctls and convert the RC code to use the
-old ones you'd be observing the same breakage as RC code responds with
--EINVAL to not-yet-established mappings.
+I think there is an additional change needed to
+__und_usr_unknown/do_undefinstr.  do_undefinstr, which gets called
+directly in __und_usr as well as by mov pc, lr, expects regs->ARM_pc
+to be the fault address, and not the next PC, and gets called for 2 or
+4 byte instructions.  If it gets called after the regs->ARM_pc fixup
+added in the second patch, it will return to the middle of the
+faulting instruction.
 
-I'll see what can be done for these drivers; I guess we could supply a
-fake KEY_RESERVED entry for not mapped scancodes if there are mapped
-scancodes "above" current one. That should result in the same behavior
-for RCs as before.
-
--- 
-Dmitry
+If it do_undefinstr called on a 4 byte thumb instruction, with
+regs->ARM_pc pointing to the end of the faulting instruction, there is
+no good way to figure out where the PC of the instruction that faulted
+is.  Would it make more sense to convert all the exception handlers to
+get regs->ARM_pc as the PC of the faulting instruction, rather than
+getting the PC of the next instruction?  That way, each handler can
+easily use thumb_mode(regs) and decoding the instruction to determine
+how big the instruction is, and decide whether to return to the
+beginning or end of the faulting instruction.
