@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663Ab1AYSit (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 13:38:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47131 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751866Ab1AYSis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 13:38:48 -0500
-Message-ID: <4D3F1897.60300@redhat.com>
-Date: Tue, 25 Jan 2011 10:38:15 -0800
-From: Josh Stone <jistone@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Linux-mm <linux-mm@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 10/20] 10: uprobes: task specific
- information.
-References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>	 <20101216095912.23751.63180.sendpatchset@localhost6.localdomain6> <1295963775.28776.1056.camel@laptop>
-In-Reply-To: <1295963775.28776.1056.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
+	id S1752792Ab1AYSk6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 13:40:58 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43721 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751866Ab1AYSk5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 13:40:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=F6kmVuiIDOhpKQxUqLlhep0a6D2ulCGS2iWEi/lCC0btGhBDLJXTCoOdGZsBPDD+PQ
+         GY3BC0VY6U6HeQHBI6PTwh3HzMMfcPlhTi7e0jip6/VWj+gW0g/z8YhT0wf3qU9MCW62
+         U8z6wUgeXez/OlkYqstRoQ94jKYKZHD8g9PUA=
+Subject: [PATCH] perf: fix alloc_callchain_buffers()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, stable@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Miller <davem@davemloft.net>,
+        Stephane Eranian <eranian@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 25 Jan 2011 19:40:51 +0100
+Message-ID: <1295980851.3588.351.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2011 05:56 AM, Peter Zijlstra wrote:
-> Ah, I think I found it while reading patch 13, you need the pre/post_xol
-> callbacks, can't you simply synthesize their effect into the replacement
-> sequence?
-> 
->   push %rax
->   mov $vaddr, %rax
->   $INSN
->   pop %rax
->   jmp $next_insn
-> 
-> like replacements would obviate the need for the pre/post callbacks and
-> allow you to run straight through.
+Commit 927c7a9e92c4 ( perf: Fix race in callchains ) introduced a
+mismatch in the sizing of struct callchain_cpus_entries.
 
-For this particular example, you'd better be sure that $INSN doesn't
-need %rsp intact.
+nr_cpu_ids must be used instead of num_possible_cpus(), or we might get
+out of bound memory accesses on some machines.
 
-Control flow in general also makes this challenging.  If $INSN is a
-call, then any inline fixups won't get a chance until after return.  If
-$INSN is a jump, then its target must be modified so that both taken and
-not-taken paths land in respective fixup locations.  I'm sure there are
-more cases that I'm not thinking of.
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: David Miller <davem@davemloft.net>
+CC: Stephane Eranian <eranian@google.com>
+CC: stable@kernel.org
+---
+ kernel/perf_event.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-> It would also remove the whole single-step need since they're proper
-> boosted probes.
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 126a302..852ae8c 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -1999,8 +1999,7 @@ static int alloc_callchain_buffers(void)
+ 	 * accessed from NMI. Use a temporary manual per cpu allocation
+ 	 * until that gets sorted out.
+ 	 */
+-	size = sizeof(*entries) + sizeof(struct perf_callchain_entry *) *
+-		num_possible_cpus();
++	size = offsetof(struct callchain_cpus_entries, cpu_entries[nr_cpu_ids]);
+ 
+ 	entries = kzalloc(size, GFP_KERNEL);
+ 	if (!entries)
 
-Kprobes has boosting, but it doesn't apply to all opcodes.  I would
-guess that the same could be done for uprobes, where certain opcodes get
-a fixup sequence like you suggest, but the pre/post_xol mechanism is
-still needed in general.
 
-Josh
