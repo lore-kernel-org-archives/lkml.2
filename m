@@ -1,62 +1,361 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751630Ab1AYQCo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 11:02:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55127 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750702Ab1AYQCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 11:02:43 -0500
-Subject: Re: [PATCH 0/2][concept RFC] x86: BIOS-save kernel log to disk
- upon panic
-From: James Bottomley <James.Bottomley@suse.de>
-To: "Ahmed S. Darwish" <darwish.07@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        X86-ML <x86@kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Willy Tarreau <wtarreau@hera.kernel.org>, Willy Tarreau <w@1wt.eu>,
-        Dirk Hohndel <hohndel@infradead.org>, Dirk.Hohndel@intel.com,
-        IDE-ML <linux-ide@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@infradead.org>
-In-Reply-To: <20110125153649.GA11386@laptop>
-References: <20110125134748.GA10051@laptop> <20110125140948.GA26762@elte.hu>
-	 <20110125153649.GA11386@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 25 Jan 2011 11:02:35 -0500
-Message-ID: <1295971355.4955.104.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	id S1751896Ab1AYQLI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 11:11:08 -0500
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:34498 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751251Ab1AYQLF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 11:11:05 -0500
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+3aIibppu0283ogF9SEP3jxlhh6cfMg==
+X-RZG-CLASS-ID: mo00
+Date: Tue, 25 Jan 2011 17:10:52 +0100
+From: Olaf Hering <olaf@aepfle.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] crash_dump: export is_kdump_kernel to modules, consolidate
+ elfcorehdr_addr, setup_elfcorehdr and saved_max_pfn
+Message-ID: <20110125161052.GA20105@aepfle.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-25 at 17:36 +0200, Ahmed S. Darwish wrote:
-> The complete __roadblock__ I'm currently facing though is restoring the disk
-> controllers to the state originally setup by the BIOS Power-on self-test (POST).
-> I hope such re-initialization is even technically feasible.
-> 
-> Without such re-initialization, we'll just be risking the BIOS code exploding.
-> That was the case in the 5-minute hang described in the cover sheet (PATCH #0).
 
-So this is the bit that's not really technically feasible.  BIOS tends
-to run storage devices in a very primitive way (so it takes basic
-settings, for example and sets the device up for one particular channel
-of access).  When preparing the device for an operating system, we have
-to blow away all the bios stuff and put it into a more generally
-performant mode (this isn't just the storage per se, it's also the
-interrupt and routing).  Unfortunately, currently, we don't bother to
-save the settings the BIOS was using, so there's no way to reinitialise
-the device back to bios without an effective reboot.  Most BIOS doesn't
-seem to contain storage re-POST code that's usable (it's all embedded in
-the boot sequence).
+The Xen PV drivers in a crashed HVM guest can not connect to the dom0
+backend drivers because both frontend and backend drivers are still in
+connected state. To run the connection reset function only in case of a
+crashdump, the is_kdump_kernel() function needs to be available for the
+PV driver modules.
 
-James
+Consolidate elfcorehdr_addr, setup_elfcorehdr and saved_max_pfn into
+kernel/crash_dump.c Also export elfcorehdr_addr to make
+is_kdump_kernel() usable for modules.
 
+Leave 'elfcorehdr' as early_param().  This changes powerpc from
+__setup() to early_param().  It adds an address range check from x86
+also on ia64 and powerpc.
 
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
+
+---
+ arch/arm/kernel/crash_dump.c     |    3 ---
+ arch/arm/kernel/setup.c          |   24 ------------------------
+ arch/ia64/kernel/crash_dump.c    |    3 ---
+ arch/ia64/kernel/efi.c           |    1 +
+ arch/ia64/kernel/setup.c         |   18 ------------------
+ arch/powerpc/kernel/crash_dump.c |   17 -----------------
+ arch/sh/kernel/crash_dump.c      |   22 ----------------------
+ arch/x86/kernel/crash_dump_32.c  |    3 ---
+ arch/x86/kernel/crash_dump_64.c  |    3 ---
+ arch/x86/kernel/e820.c           |    1 +
+ arch/x86/kernel/setup.c          |   22 ----------------------
+ include/linux/bootmem.h          |    4 ----
+ kernel/Makefile                  |    1 +
+ kernel/crash_dump.c              |   33 +++++++++++++++++++++++++++++++++
+ mm/bootmem.c                     |    8 --------
+ 15 files changed, 36 insertions(+), 127 deletions(-)
+
+--- linux-2.6.38.rc.orig/arch/arm/kernel/crash_dump.c
++++ linux-2.6.38.rc/arch/arm/kernel/crash_dump.c
+@@ -18,9 +18,6 @@
+ #include <linux/uaccess.h>
+ #include <linux/io.h>
+ 
+-/* stores the physical address of elf header of crash image */
+-unsigned long long elfcorehdr_addr = ELFCORE_ADDR_MAX;
+-
+ /**
+  * copy_oldmem_page() - copy one page from old kernel memory
+  * @pfn: page frame number to be copied
+--- linux-2.6.38.rc.orig/arch/arm/kernel/setup.c
++++ linux-2.6.38.rc/arch/arm/kernel/setup.c
+@@ -765,30 +765,6 @@ static void __init reserve_crashkernel(v
+ static inline void reserve_crashkernel(void) {}
+ #endif /* CONFIG_KEXEC */
+ 
+-/*
+- * Note: elfcorehdr_addr is not just limited to vmcore. It is also used by
+- * is_kdump_kernel() to determine if we are booting after a panic. Hence
+- * ifdef it under CONFIG_CRASH_DUMP and not CONFIG_PROC_VMCORE.
+- */
+-
+-#ifdef CONFIG_CRASH_DUMP
+-/*
+- * elfcorehdr= specifies the location of elf core header stored by the crashed
+- * kernel. This option will be passed by kexec loader to the capture kernel.
+- */
+-static int __init setup_elfcorehdr(char *arg)
+-{
+-	char *end;
+-
+-	if (!arg)
+-		return -EINVAL;
+-
+-	elfcorehdr_addr = memparse(arg, &end);
+-	return end > arg ? 0 : -EINVAL;
+-}
+-early_param("elfcorehdr", setup_elfcorehdr);
+-#endif /* CONFIG_CRASH_DUMP */
+-
+ static void __init squash_mem_tags(struct tag *tag)
+ {
+ 	for (; tag->hdr.size; tag = tag_next(tag))
+--- linux-2.6.38.rc.orig/arch/ia64/kernel/crash_dump.c
++++ linux-2.6.38.rc/arch/ia64/kernel/crash_dump.c
+@@ -13,9 +13,6 @@
+ #include <asm/page.h>
+ #include <asm/uaccess.h>
+ 
+-/* Stores the physical address of elf header of crash image. */
+-unsigned long long elfcorehdr_addr = ELFCORE_ADDR_MAX;
+-
+ /**
+  * copy_oldmem_page - copy one page from "oldmem"
+  * @pfn: page frame number to be copied
+--- linux-2.6.38.rc.orig/arch/ia64/kernel/efi.c
++++ linux-2.6.38.rc/arch/ia64/kernel/efi.c
+@@ -23,6 +23,7 @@
+  */
+ #include <linux/module.h>
+ #include <linux/bootmem.h>
++#include <linux/crash_dump.h>
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/types.h>
+--- linux-2.6.38.rc.orig/arch/ia64/kernel/setup.c
++++ linux-2.6.38.rc/arch/ia64/kernel/setup.c
+@@ -479,25 +479,7 @@ static __init int setup_nomca(char *s)
+ }
+ early_param("nomca", setup_nomca);
+ 
+-/*
+- * Note: elfcorehdr_addr is not just limited to vmcore. It is also used by
+- * is_kdump_kernel() to determine if we are booting after a panic. Hence
+- * ifdef it under CONFIG_CRASH_DUMP and not CONFIG_PROC_VMCORE.
+- */
+ #ifdef CONFIG_CRASH_DUMP
+-/* elfcorehdr= specifies the location of elf core header
+- * stored by the crashed kernel.
+- */
+-static int __init parse_elfcorehdr(char *arg)
+-{
+-	if (!arg)
+-		return -EINVAL;
+-
+-        elfcorehdr_addr = memparse(arg, &arg);
+-	return 0;
+-}
+-early_param("elfcorehdr", parse_elfcorehdr);
+-
+ int __init reserve_elfcorehdr(u64 *start, u64 *end)
+ {
+ 	u64 length;
+--- linux-2.6.38.rc.orig/arch/powerpc/kernel/crash_dump.c
++++ linux-2.6.38.rc/arch/powerpc/kernel/crash_dump.c
+@@ -28,9 +28,6 @@
+ #define DBG(fmt...)
+ #endif
+ 
+-/* Stores the physical address of elf header of crash image. */
+-unsigned long long elfcorehdr_addr = ELFCORE_ADDR_MAX;
+-
+ #ifndef CONFIG_RELOCATABLE
+ void __init reserve_kdump_trampoline(void)
+ {
+@@ -72,20 +69,6 @@ void __init setup_kdump_trampoline(void)
+ }
+ #endif /* CONFIG_RELOCATABLE */
+ 
+-/*
+- * Note: elfcorehdr_addr is not just limited to vmcore. It is also used by
+- * is_kdump_kernel() to determine if we are booting after a panic. Hence
+- * ifdef it under CONFIG_CRASH_DUMP and not CONFIG_PROC_VMCORE.
+- */
+-static int __init parse_elfcorehdr(char *p)
+-{
+-	if (p)
+-		elfcorehdr_addr = memparse(p, &p);
+-
+-	return 1;
+-}
+-__setup("elfcorehdr=", parse_elfcorehdr);
+-
+ static int __init parse_savemaxmem(char *p)
+ {
+ 	if (p)
+--- linux-2.6.38.rc.orig/arch/sh/kernel/crash_dump.c
++++ linux-2.6.38.rc/arch/sh/kernel/crash_dump.c
+@@ -9,28 +9,6 @@
+ #include <linux/io.h>
+ #include <asm/uaccess.h>
+ 
+-/* Stores the physical address of elf header of crash image. */
+-unsigned long long elfcorehdr_addr = ELFCORE_ADDR_MAX;
+-
+-/*
+- * Note: elfcorehdr_addr is not just limited to vmcore. It is also used by
+- * is_kdump_kernel() to determine if we are booting after a panic. Hence
+- * ifdef it under CONFIG_CRASH_DUMP and not CONFIG_PROC_VMCORE.
+- *
+- * elfcorehdr= specifies the location of elf core header
+- * stored by the crashed kernel.
+- */
+-static int __init parse_elfcorehdr(char *arg)
+-{
+-	if (!arg)
+-		return -EINVAL;
+-
+-	elfcorehdr_addr = memparse(arg, &arg);
+-
+-	return 0;
+-}
+-early_param("elfcorehdr", parse_elfcorehdr);
+-
+ /**
+  * copy_oldmem_page - copy one page from "oldmem"
+  * @pfn: page frame number to be copied
+--- linux-2.6.38.rc.orig/arch/x86/kernel/crash_dump_32.c
++++ linux-2.6.38.rc/arch/x86/kernel/crash_dump_32.c
+@@ -14,9 +14,6 @@
+ 
+ static void *kdump_buf_page;
+ 
+-/* Stores the physical address of elf header of crash image. */
+-unsigned long long elfcorehdr_addr = ELFCORE_ADDR_MAX;
+-
+ static inline bool is_crashed_pfn_valid(unsigned long pfn)
+ {
+ #ifndef CONFIG_X86_PAE
+--- linux-2.6.38.rc.orig/arch/x86/kernel/crash_dump_64.c
++++ linux-2.6.38.rc/arch/x86/kernel/crash_dump_64.c
+@@ -10,9 +10,6 @@
+ #include <linux/uaccess.h>
+ #include <linux/io.h>
+ 
+-/* Stores the physical address of elf header of crash image. */
+-unsigned long long elfcorehdr_addr = ELFCORE_ADDR_MAX;
+-
+ /**
+  * copy_oldmem_page - copy one page from "oldmem"
+  * @pfn: page frame number to be copied
+--- linux-2.6.38.rc.orig/arch/x86/kernel/e820.c
++++ linux-2.6.38.rc/arch/x86/kernel/e820.c
+@@ -11,6 +11,7 @@
+ #include <linux/kernel.h>
+ #include <linux/types.h>
+ #include <linux/init.h>
++#include <linux/crash_dump.h>
+ #include <linux/bootmem.h>
+ #include <linux/pfn.h>
+ #include <linux/suspend.h>
+--- linux-2.6.38.rc.orig/arch/x86/kernel/setup.c
++++ linux-2.6.38.rc/arch/x86/kernel/setup.c
+@@ -601,28 +601,6 @@ void __init reserve_standard_io_resource
+ 
+ }
+ 
+-/*
+- * Note: elfcorehdr_addr is not just limited to vmcore. It is also used by
+- * is_kdump_kernel() to determine if we are booting after a panic. Hence
+- * ifdef it under CONFIG_CRASH_DUMP and not CONFIG_PROC_VMCORE.
+- */
+-
+-#ifdef CONFIG_CRASH_DUMP
+-/* elfcorehdr= specifies the location of elf core header
+- * stored by the crashed kernel. This option will be passed
+- * by kexec loader to the capture kernel.
+- */
+-static int __init setup_elfcorehdr(char *arg)
+-{
+-	char *end;
+-	if (!arg)
+-		return -EINVAL;
+-	elfcorehdr_addr = memparse(arg, &end);
+-	return end > arg ? 0 : -EINVAL;
+-}
+-early_param("elfcorehdr", setup_elfcorehdr);
+-#endif
+-
+ static __init void reserve_ibft_region(void)
+ {
+ 	unsigned long addr, size = 0;
+--- linux-2.6.38.rc.orig/include/linux/bootmem.h
++++ linux-2.6.38.rc/include/linux/bootmem.h
+@@ -19,10 +19,6 @@ extern unsigned long min_low_pfn;
+  */
+ extern unsigned long max_pfn;
+ 
+-#ifdef CONFIG_CRASH_DUMP
+-extern unsigned long saved_max_pfn;
+-#endif
+-
+ #ifndef CONFIG_NO_BOOTMEM
+ /*
+  * node_bootmem_map is a map pointer - the bits represent all physical 
+--- linux-2.6.38.rc.orig/kernel/Makefile
++++ linux-2.6.38.rc/kernel/Makefile
+@@ -107,6 +107,7 @@ obj-$(CONFIG_PERF_EVENTS) += perf_event.
+ obj-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
+ obj-$(CONFIG_USER_RETURN_NOTIFIER) += user-return-notifier.o
+ obj-$(CONFIG_PADATA) += padata.o
++obj-$(CONFIG_CRASH_DUMP) += crash_dump.o
+ 
+ ifneq ($(CONFIG_SCHED_OMIT_FRAME_POINTER),y)
+ # According to Alan Modra <alan@linuxcare.com.au>, the -fno-omit-frame-pointer is
+--- /dev/null
++++ linux-2.6.38.rc/kernel/crash_dump.c
+@@ -0,0 +1,33 @@
++#include <linux/crash_dump.h>
++#include <linux/init.h>
++#include <linux/module.h>
++
++/*
++ * If we have booted due to a crash, max_pfn will be a very low value. We need
++ * to know the amount of memory that the previous kernel used.
++ */
++unsigned long saved_max_pfn;
++
++/*
++ * stores the physical address of elf header of crash image
++ *
++ * Note: elfcorehdr_addr is not just limited to vmcore. It is also used by
++ * is_kdump_kernel() to determine if we are booting after a panic. Hence put
++ * it under CONFIG_CRASH_DUMP and not CONFIG_PROC_VMCORE.
++ */
++unsigned long long elfcorehdr_addr = ELFCORE_ADDR_MAX;
++EXPORT_SYMBOL_GPL(elfcorehdr_addr);
++
++/*
++ * elfcorehdr= specifies the location of elf core header stored by the crashed
++ * kernel. This option will be passed by kexec loader to the capture kernel.
++ */
++static int __init setup_elfcorehdr(char *arg)
++{
++	char *end;
++	if (!arg)
++		return -EINVAL;
++	elfcorehdr_addr = memparse(arg, &end);
++	return end > arg ? 0 : -EINVAL;
++}
++early_param("elfcorehdr", setup_elfcorehdr);
+--- linux-2.6.38.rc.orig/mm/bootmem.c
++++ linux-2.6.38.rc/mm/bootmem.c
+@@ -27,14 +27,6 @@ unsigned long max_low_pfn;
+ unsigned long min_low_pfn;
+ unsigned long max_pfn;
+ 
+-#ifdef CONFIG_CRASH_DUMP
+-/*
+- * If we have booted due to a crash, max_pfn will be a very low value. We need
+- * to know the amount of memory that the previous kernel used.
+- */
+-unsigned long saved_max_pfn;
+-#endif
+-
+ #ifndef CONFIG_NO_BOOTMEM
+ bootmem_data_t bootmem_node_data[MAX_NUMNODES] __initdata;
+ 
