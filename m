@@ -1,101 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657Ab1AYMgz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 07:36:55 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49703 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751545Ab1AYMgx convert rfc822-to-8bit (ORCPT
+	id S1752748Ab1AYMkK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 07:40:10 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:32888 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751682Ab1AYMkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 07:36:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=WoBs6YuYU+HZ1hkqPCYw2PEGoq4YGh0eWoreS9wXW69uPMkPn4vdj8/n+R4ojBgiHp
-         OlbLZCj0dURVveNBu45Fhsihxylx20RGpWj7MtNwMPwk764niwlLo/W8ch4Lg5G+kHq9
-         fS22ly+v6h+ElQ1d59R6U3zVDVhCPWMMSL0jw=
+	Tue, 25 Jan 2011 07:40:08 -0500
+Date: Tue, 25 Jan 2011 12:40:05 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: Kyungmin Park <kmpark@infradead.org>, linux-tegra@vger.kernel.org,
+        konkers@android.com, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        olof@lixom.net, Colin Cross <ccross@android.com>
+Subject: Re: [PATCH v2 20/28] ARM: tegra: cpufreq: Disable cpufreq during
+ suspend
+Message-ID: <20110125124005.GB31453@opensource.wolfsonmicro.com>
+References: <AANLkTinzXJ=PoSNEHAh1gCeH=2araVTvEB++9kcuUmes@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4D3DFBB0.90402@free.fr>
-References: <1290410581.2405.24.camel@minggr.sh.intel.com>
-	<1290431008.2072.119.camel@laptop>
-	<1290443379.4cea9a73cd9ce@imp.free.fr>
-	<1290443758.2072.318.camel@laptop>
-	<20101122164247.GC21836@basil.fritz.box>
-	<20101123235527.54293b59@mat-laptop>
-	<20101126183144.300a71a4@mat-laptop>
-	<1291093230.2405.191.camel@minggr.sh.intel.com>
-	<1291116438.32004.649.camel@laptop>
-	<1291162504.2405.216.camel@minggr.sh.intel.com>
-	<4D3C7C36.903@free.fr>
-	<4D3DFBB0.90402@free.fr>
-Date: Tue, 25 Jan 2011 20:36:52 +0800
-Message-ID: <AANLkTikk1JrB0KxryVruUe2DT304YZ-gk1j72bdZchgu@mail.gmail.com>
-Subject: Re: -tip tree resume fail, bisect to 5bd5a45(x86: Add NX protection
- for kernel data)
-From: Lin Ming <minggr@gmail.com>
-To: matthieu castet <castet.matthieu@free.fr>
-Cc: Lin Ming <ming.m.lin@intel.com>, Peter Zijlstra <peterz@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Siarhei Liakh <sliakh.lkml@gmail.com>,
-        Xuxian Jiang <jiang@cs.ncsu.edu>, Ingo Molnar <mingo@elte.hu>,
-        Arjan van de Ven <arjan@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, tglx <tglx@linutronix.de>,
-        linux-security-module@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinzXJ=PoSNEHAh1gCeH=2araVTvEB++9kcuUmes@mail.gmail.com>
+X-Cookie: You will soon forget this.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 6:22 AM, matthieu castet
-<castet.matthieu@free.fr> wrote:
-> matthieu castet a écrit :
->>
->> Lin Ming a écrit :
->>>
->>> On Tue, 2010-11-30 at 19:27 +0800, Peter Zijlstra wrote:
->>>>
->>>> On Tue, 2010-11-30 at 13:00 +0800, Lin Ming wrote:
->>>>>
->>>>> echo 0 > /sys/devices/system/cpu/cpu1/online;
->>>>> echo 1 > /sys/devices/system/cpu/cpu1/online;
->>>>>
->>>>> then machine just reboots...
->>>>>
->> I tried to do the same thing on qemu, and the same behavior happened (ie
->> reboot when resuming cpu1).
->>
->> After enabling qemu log, I found that a triple fault was happening at the
->> beginning of secondary_startup_64
->> when doing "addq phys_base(%rip), %rax".
->>
->> Why ?
->> I suppose because we access data set to NX, but we don't have enabled yet
->> NX in the msr. So the cpu crash due to "reserved bit check".
->>
->> If we enable NX before reading data, there is no more crash (patch
->> attached).
->>
->> Now I am not sure this is the correct fix. I think the problem is that
->> trampoline using kernel page table
->> is very dangerous. The kernel can have modified them atfer booting !
->> May be all the paging stuff should have been done in head_64.S. A first
->> one with identity mapping, and the second one for
->> the real kernel stuff.
->>
-> Lin, could you try this patch on your x64 machine.
+On Tue, Jan 25, 2011 at 07:56:19PM +0900, MyungJoo Ham wrote:
 
-Hi,
+> Moreover, the suspend-related cpufreq issue gets worse with hibernation.
+> Generally PMICs preserve their register values during suspend-to-mem;
+> however, they lose the values with power-off (and hibernation).
 
-I'm on holiday now.
-I'll test it when I'm back on Feb 9.
+That's interesting - hibernation has been a bit easier when I've looked
+at this stuff precisely because it's equivalent to a cold boot, if the
+PMIC weren't able to boot the CPU then us software engineers wouldn't
+have to worry about any of this stuff :)
 
-Thanks,
-Lin Ming
+> In samsung SoCs, we have mitigated the issue by stopping cpufreq at pm_begin
+> (could have a bit different name) and resume with end.  When stopping
+> cpufreq, we have made it to fix at the boot freq so that we dont face into
+> the inconsistency with hibernation.
 
->
->
-> Thanks
->
-> Matthieu
->
+> Sometimes, when we set voltages for the core, bus, and others, simply saving
+> the whole things and restoring them does not work because the order how the
+> voltages change may matter (and it does with some of Samsung SoCs). Thus, we
+> made them to stop changing and fix at the boot-time default during suspend
+> and hibernation.
+
+The ordering matters greatly, this is the big part of what the PMIC
+power sequencing is doing.  There's also often some handshaking going on
+so the PMIC has to wait for the CPU at various points (with delays or
+with explicit signals) in the process.
+
+Just thinking about how we could address this in cpufreq is the major
+issue that the CPU comes back from resume in a state other than that
+which cpufreq remembered it being in or is the issue that the system
+tries to restore old voltages as part of the resume process?  I guess
+either way a feature in cpufreq which allows the driver to override the
+governor-chosen configuration for suspend would provide a mechanism to
+deal with the issue.
