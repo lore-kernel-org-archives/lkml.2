@@ -1,89 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254Ab1AYOkU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 09:40:20 -0500
-Received: from mx1.zhaw.ch ([160.85.104.50]:51969 "EHLO mx1.zhaw.ch"
+	id S1753368Ab1AYOnF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 09:43:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38843 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751954Ab1AYOkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 09:40:19 -0500
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Greg Kroah-Hartman <gregkh@suse.de>, linux-serial@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Anton Vorontsov <cbouatmailru@gmail.com>
-Subject: [PATCH 1/2] tty: serial: altera_uart: remove early_altera_uart_setup
-Date: Tue, 25 Jan 2011 15:40:17 +0100
-Message-Id: <1295966417-11306-1-git-send-email-tklauser@distanz.ch>
-X-Mailer: git-send-email 1.7.0.4
-X-PMX-Version: 5.5.9.395186, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.1.25.143322
-X-PerlMx-Spam: Gauge=IIIIIIII, Probability=8%, Report='
- BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_2000_2999 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, __FRAUD_BODY_WEBMAIL 0, __FRAUD_WEBMAIL 0, __HAS_MSGID 0, __HAS_X_MAILER 0, __MIME_TEXT_ONLY 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS '
+	id S1751977Ab1AYOnC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 09:43:02 -0500
+Message-ID: <4D3EE171.4020605@redhat.com>
+Date: Tue, 25 Jan 2011 12:42:57 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Mark Lord <kernel@teksavvy.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Extending rc-core/userspace to handle bigger scancodes - Was: Re:
+ 2.6.36/2.6.37: broken compatibility with userspace input-utils ?
+References: <20110124175456.GA17855@core.coreip.homeip.net> <4D3E1A08.5060303@teksavvy.com> <20110125005555.GA18338@core.coreip.homeip.net> <4D3E4DD1.60705@teksavvy.com> <20110125042016.GA7850@core.coreip.homeip.net> <4D3E5372.9010305@teksavvy.com> <20110125045559.GB7850@core.coreip.homeip.net> <4D3E59CA.6070107@teksavvy.com> <4D3E5A91.30207@teksavvy.com> <20110125053117.GD7850@core.coreip.homeip.net> <20110125065217.GE7850@core.coreip.homeip.net>
+In-Reply-To: <20110125065217.GE7850@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function has no users inside the tree and the nios2 architecture
-doesn't use it (anymore) either.
+Em 25-01-2011 04:52, Dmitry Torokhov escreveu:
+> On Mon, Jan 24, 2011 at 09:31:17PM -0800, Dmitry Torokhov wrote:
+>> On Tue, Jan 25, 2011 at 12:07:29AM -0500, Mark Lord wrote:
+>>> On 11-01-25 12:04 AM, Mark Lord wrote:
+>>>> On 11-01-24 11:55 PM, Dmitry Torokhov wrote:
+>>>>> On Mon, Jan 24, 2011 at 11:37:06PM -0500, Mark Lord wrote:
+>>>> ..
+>>>>>> This results in (map->size==10) for 2.6.36+ (wrong),
+>>>>>> and a much larger map->size for 2.6.35 and earlier.
+>>>>>>
+>>>>>> So perhaps EVIOCGKEYCODE has changed?
+>>>>>>
+>>>>>
+>>>>> So the utility expects that all devices have flat scancode space and
+>>>>> driver might have changed so it does not recognize scancode 10 as valid
+>>>>> scancode anymore.
+>>>>>
+>>>>> The options are:
+>>>>>
+>>>>> 1. Convert to EVIOCGKEYCODE2
+>>>>> 2. Ignore errors from EVIOCGKEYCODE and go through all 65536 iterations.
+>>>>
+>>>> or 3. Revert/fix the in-kernel regression.
+>>>>
+>>>> The EVIOCGKEYCODE ioctl is supposed to return KEY_RESERVED for unmapped
+>>>> (but value) keycodes, and only return -EINVAL when the keycode itself
+>>>> is out of range.
+>>>>
+>>>> That's how it worked in all kernels prior to 2.6.36,
+>>>> and now it is broken.  It now returns -EINVAL for any unmapped keycode,
+>>>> even though keycodes higher than that still have mappings.
+>>>>
+>>>> This is a bug, a regression, and breaks userspace.
+>>>> I haven't identified *where* in the kernel the breakage happened,
+>>>> though.. that code confuses me.  :)
+>>>
+>>> Note that this device DOES have "flat scancode space",
+>>> and the kernel is now incorrectly signalling an error (-EINVAL)
+>>> in response to a perfectly valid query of a VALID (and mappable)
+>>> keycode on the remote control
+>>>
+>>> The code really is a valid button, it just doesn't have a default mapping
+>>> set by the kernel (I can set a mapping for that code from userspace and it works).
+>>>
+>>
+>> OK, in this case let's ping Mauro - I think he done the adjustments to
+>> IR keymap hanlding.
+>>
+>> Thanks.
+>>
+> 
+> BTW, could you please try the following patch (it assumes that
+> EVIOCGVERSION in input.c is alreday relaxed).
 
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>
-Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
----
- drivers/tty/serial/altera_uart.c |   23 -----------------------
- include/linux/altera_uart.h      |    4 ----
- 2 files changed, 0 insertions(+), 27 deletions(-)
+Dmitry,
 
-diff --git a/drivers/tty/serial/altera_uart.c b/drivers/tty/serial/altera_uart.c
-index bde59d1..5ef414c 100644
---- a/drivers/tty/serial/altera_uart.c
-+++ b/drivers/tty/serial/altera_uart.c
-@@ -406,29 +406,6 @@ static struct altera_uart altera_uart_ports[CONFIG_SERIAL_ALTERA_UART_MAXPORTS];
- 
- #if defined(CONFIG_SERIAL_ALTERA_UART_CONSOLE)
- 
--int __init early_altera_uart_setup(struct altera_uart_platform_uart *platp)
--{
--	struct uart_port *port;
--	int i;
--
--	for (i = 0; i < CONFIG_SERIAL_ALTERA_UART_MAXPORTS && platp[i].mapbase; i++) {
--		port = &altera_uart_ports[i].port;
--
--		port->line = i;
--		port->type = PORT_ALTERA_UART;
--		port->mapbase = platp[i].mapbase;
--		port->membase = ioremap(port->mapbase, ALTERA_UART_SIZE);
--		port->iotype = SERIAL_IO_MEM;
--		port->irq = platp[i].irq;
--		port->uartclk = platp[i].uartclk;
--		port->flags = UPF_BOOT_AUTOCONF;
--		port->ops = &altera_uart_ops;
--		port->private_data = platp;
--	}
--
--	return 0;
--}
--
- static void altera_uart_console_putc(struct uart_port *port, const char c)
- {
- 	while (!(altera_uart_readl(port, ALTERA_UART_STATUS_REG) &
-diff --git a/include/linux/altera_uart.h b/include/linux/altera_uart.h
-index a10a907..c022c82 100644
---- a/include/linux/altera_uart.h
-+++ b/include/linux/altera_uart.h
-@@ -5,8 +5,6 @@
- #ifndef	__ALTUART_H
- #define	__ALTUART_H
- 
--#include <linux/init.h>
--
- struct altera_uart_platform_uart {
- 	unsigned long mapbase;	/* Physical address base */
- 	unsigned int irq;	/* Interrupt vector */
-@@ -14,6 +12,4 @@ struct altera_uart_platform_uart {
- 	unsigned int bus_shift;	/* Bus shift (address stride) */
- };
- 
--int __init early_altera_uart_setup(struct altera_uart_platform_uart *platp);
--
- #endif /* __ALTUART_H */
--- 
-1.7.0.4
+Thanks for your patch. I used part of his logic to improve the ir-keytable 
+tool at v4l-utils:
+	http://git.linuxtv.org/v4l-utils.git
 
+The ir-keytable is a tool that just handles Remote Controller input devices,
+and do it well, allowing all sorts of operations related to it, and using the
+sysfs /sys/class/rc stuff to help its operation. Without any arguments, it
+lists the existing RC devices. Arguments are there to allow enabling/disabling
+RC protocols, reading/writing/cleaning keycode tables and to test if the
+remote is generating events (EV_MSC/EV_KEY/EV_REP/EV_SYN).
+
+Now, it will be using V2 for reads and keycode cleanups, but will still use
+V1 for writes, as, currently with 32 bits scancodes, there's no gain to use
+V2 for it. Also, changing the tool to use more bits will require to rewrite
+part of the code.
+
+Also, writing a rc-core code that can work with an arbitrary large scancode
+is still on our TODO list.
+
+I'm not entirely sure how to extend the scancode size, as there are a
+few options:
+	1) Core would always work internally with 32 bytes (1024 bits). Some
+logic will be required to accept entries with .len < 32;
+	2) Drivers will define the code lengtht, and core will use it,
+returning -EINVAL if userspace uses a len grater than used internally by
+the core. In this case, we'll need a sysfs node to tell userspace what's
+the maximum allowed size;
+	3) Drivers will define the max number of bits, and core will use it,
+truncating the number to the max size if userspace tries to write more bits 
+than the internal representation;
+	4) Drivers will define the max number of bits, and core will use it,
+returning an error if the number is bigger than the max scancode that can be
+represented internally.
+
+I think that (2) is the best way for doing it, but I'm not yet entirely sure.
+So, it is good to hear some comments about that.
+
+Cheers,
+Mauro
