@@ -1,136 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535Ab1AYNHU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 08:07:20 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:36351 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752945Ab1AYNEi (ORCPT
+	id S1753551Ab1AYNHc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 08:07:32 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:35662 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752993Ab1AYNH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 08:04:38 -0500
+	Tue, 25 Jan 2011 08:07:29 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=UjN46P1BMC79n1ZHMI1vBbVlLr0yzCnXiZgmj3AP4hd5qLjhAOVeLMg0B0VYsKHwnx
-         CzKChhKlnEpFW/hVL0ORJcgbHOevODj6nvaKnB+pOSyrgrbKD2K3H5uVP7nRduTsxWF+
-         2Qc0JPXQXxVdRy7dSYRziGOj2ksqdNkehyhIo=
-From: Marek Belisko <marek.belisko@open-nandra.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH v2 02/11] staging: ft1000: Fix coding style in check_usb_db() function.
-Date: Tue, 25 Jan 2011 14:04:57 +0100
-Message-Id: <1295960706-15667-3-git-send-email-marek.belisko@open-nandra.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1295960706-15667-1-git-send-email-marek.belisko@open-nandra.com>
-References: <1295960706-15667-1-git-send-email-marek.belisko@open-nandra.com>
+        h=sender:date:from:to:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=cYnYHwJL7DY5YorZawuuPNMNj/Pfob6Nm8C/JNdaXgExknGAuMT2I3svdrcbMMDv/w
+         IFV2vLCfu7wWsJgvGrpa++NCqR7YkO2UpdFwYbFk1Yts5xdMXVb9vzh0EMsybqH/y4oF
+         MIoTvInumo4qpDC+sTRAM0+a0E2Wu1UThBo5o=
+Date: Tue, 25 Jan 2011 14:07:24 +0100
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org,
+        hch@infradead.org
+Subject: [PATCH UPDATED 05/16] floppy,{ami|ata}flop: convert to
+ bdops->check_events()
+Message-ID: <20110125130724.GT27510@htj.dyndns.org>
+References: <1293557352-10592-1-git-send-email-tj@kernel.org>
+ <1293557352-10592-6-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1293557352-10592-6-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
----
- .../staging/ft1000/ft1000-usb/ft1000_download.c    |   89 +++++++++----------
- 1 files changed, 42 insertions(+), 47 deletions(-)
+Convert the floppy drivers from ->media_changed() to ->check_events().
+Both floppy and ataflop buffer media changed state bit and clear them
+on revalidation and will behave correctly with kernel event polling.
 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
-index 0ee80b5..03694db 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
-@@ -125,53 +125,48 @@ struct dsp_image_info {
- //---------------------------------------------------------------------------
- static u32 check_usb_db (struct ft1000_device *ft1000dev)
+I can't tell how amiflop clears its event and it's possible that it
+may generate spurious events when polled.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
+---
+Updated to resolve context conflict no top of 2.6.38-rc2.
+
+Thanks.
+
+ drivers/block/amiflop.c |    9 +++++----
+ drivers/block/ataflop.c |   14 ++++++++------
+ drivers/block/floppy.c  |   10 ++++++----
+ 3 files changed, 19 insertions(+), 14 deletions(-)
+
+Index: work/drivers/block/floppy.c
+===================================================================
+--- work.orig/drivers/block/floppy.c
++++ work/drivers/block/floppy.c
+@@ -3770,13 +3770,14 @@ out2:
+ /*
+  * Check if the disk has been changed or if a change has been faked.
+  */
+-static int check_floppy_change(struct gendisk *disk)
++static unsigned int floppy_check_events(struct gendisk *disk,
++					unsigned int clearing)
  {
--   int               loopcnt;
--   u16            temp;
--   u32             status;
--
--   loopcnt = 0;
--   while (loopcnt < 10)
--   {
--
--      status = ft1000_read_register (ft1000dev, &temp, FT1000_REG_DOORBELL);
--      DEBUG("check_usb_db: read FT1000_REG_DOORBELL value is %x\n", temp);
--      if (temp & 0x0080)
--      {
--           DEBUG("FT1000:Got checkusb doorbell\n");
--           status = ft1000_write_register (ft1000dev, 0x0080, FT1000_REG_DOORBELL);
--           status = ft1000_write_register (ft1000dev, 0x0100, FT1000_REG_DOORBELL);
--           status = ft1000_write_register (ft1000dev,  0x8000, FT1000_REG_DOORBELL);
--           break;
--      }
--      else
--      {
--           loopcnt++;
--           msleep (10);
--      }
--
--   } //end of while
--
--
--   loopcnt = 0;
--   while (loopcnt < 20)
--   {
--
--      status = ft1000_read_register (ft1000dev, &temp, FT1000_REG_DOORBELL);
--      DEBUG("FT1000:check_usb_db:Doorbell = 0x%x\n", temp);
--      if (temp & 0x8000)
--      {
--         loopcnt++;
--         msleep (10);
--      }
--      else
--      {
--         DEBUG("check_usb_db: door bell is cleared, return 0\n");
--         return 0;
--      }
--   }
-+	int loopcnt;
-+	u16 temp;
-+	u32 status;
-+
-+	loopcnt = 0;
-+
-+	while (loopcnt < 10) {
-+		status = ft1000_read_register(ft1000dev, &temp,
-+					       FT1000_REG_DOORBELL);
-+		DEBUG("check_usb_db: read FT1000_REG_DOORBELL value is %x\n",
-+		       temp);
-+		if (temp & 0x0080) {
-+			DEBUG("FT1000:Got checkusb doorbell\n");
-+			status = ft1000_write_register(ft1000dev, 0x0080,
-+						FT1000_REG_DOORBELL);
-+			status = ft1000_write_register(ft1000dev, 0x0100,
-+						FT1000_REG_DOORBELL);
-+			status = ft1000_write_register(ft1000dev,  0x8000,
-+						FT1000_REG_DOORBELL);
-+			break;
-+		} else {
-+			loopcnt++;
-+			msleep(10);
-+		}
+ 	int drive = (long)disk->private_data;
  
--   return HANDSHAKE_MAG_TIMEOUT_VALUE;
-+	}
-+
-+	loopcnt = 0;
-+	while (loopcnt < 20) {
-+		status = ft1000_read_register(ft1000dev, &temp,
-+					       FT1000_REG_DOORBELL);
-+		DEBUG("FT1000:check_usb_db:Doorbell = 0x%x\n", temp);
-+		if (temp & 0x8000) {
-+			loopcnt++;
-+			msleep(10);
-+		} else	{
-+			DEBUG("check_usb_db: door bell is cleared, return 0\n");
-+			return 0;
-+		}
-+	}
+ 	if (test_bit(FD_DISK_CHANGED_BIT, &UDRS->flags) ||
+ 	    test_bit(FD_VERIFY_BIT, &UDRS->flags))
+-		return 1;
++		return DISK_EVENT_MEDIA_CHANGE;
  
-+	return HANDSHAKE_MAG_TIMEOUT_VALUE;
+ 	if (time_after(jiffies, UDRS->last_checked + UDP->checkfreq)) {
+ 		lock_fdc(drive, false);
+@@ -3788,7 +3789,7 @@ static int check_floppy_change(struct ge
+ 	    test_bit(FD_VERIFY_BIT, &UDRS->flags) ||
+ 	    test_bit(drive, &fake_change) ||
+ 	    drive_no_geom(drive))
+-		return 1;
++		return DISK_EVENT_MEDIA_CHANGE;
+ 	return 0;
  }
  
- //---------------------------------------------------------------------------
--- 
-1.7.1
-
+@@ -3898,7 +3899,7 @@ static const struct block_device_operati
+ 	.release		= floppy_release,
+ 	.ioctl			= fd_ioctl,
+ 	.getgeo			= fd_getgeo,
+-	.media_changed		= check_floppy_change,
++	.check_events		= floppy_check_events,
+ 	.revalidate_disk	= floppy_revalidate,
+ };
+ 
+@@ -4205,6 +4206,7 @@ static int __init floppy_init(void)
+ 		disks[dr]->major = FLOPPY_MAJOR;
+ 		disks[dr]->first_minor = TOMINOR(dr);
+ 		disks[dr]->fops = &floppy_fops;
++		disks[dr]->events = DISK_EVENT_MEDIA_CHANGE;
+ 		sprintf(disks[dr]->disk_name, "fd%d", dr);
+ 
+ 		init_timer(&motor_off_timer[dr]);
+Index: work/drivers/block/amiflop.c
+===================================================================
+--- work.orig/drivers/block/amiflop.c
++++ work/drivers/block/amiflop.c
+@@ -1658,12 +1658,12 @@ static int floppy_release(struct gendisk
+ }
+ 
+ /*
+- * floppy-change is never called from an interrupt, so we can relax a bit
++ * check_events is never called from an interrupt, so we can relax a bit
+  * here, sleep etc. Note that floppy-on tries to set current_DOR to point
+  * to the desired drive, but it will probably not survive the sleep if
+  * several floppies are used at the same time: thus the loop.
+  */
+-static int amiga_floppy_change(struct gendisk *disk)
++static unsigned amiga_check_events(struct gendisk *disk, unsigned int clearing)
+ {
+ 	struct amiga_floppy_struct *p = disk->private_data;
+ 	int drive = p - unit;
+@@ -1686,7 +1686,7 @@ static int amiga_floppy_change(struct ge
+ 		p->dirty = 0;
+ 		writepending = 0; /* if this was true before, too bad! */
+ 		writefromint = 0;
+-		return 1;
++		return DISK_EVENT_MEDIA_CHANGE;
+ 	}
+ 	return 0;
+ }
+@@ -1697,7 +1697,7 @@ static const struct block_device_operati
+ 	.release	= floppy_release,
+ 	.ioctl		= fd_ioctl,
+ 	.getgeo		= fd_getgeo,
+-	.media_changed	= amiga_floppy_change,
++	.check_events	= amiga_check_events,
+ };
+ 
+ static int __init fd_probe_drives(void)
+@@ -1736,6 +1736,7 @@ static int __init fd_probe_drives(void)
+ 		disk->major = FLOPPY_MAJOR;
+ 		disk->first_minor = drive;
+ 		disk->fops = &floppy_fops;
++		disk->events = DISK_EVENT_MEDIA_CHANGE;
+ 		sprintf(disk->disk_name, "fd%d", drive);
+ 		disk->private_data = &unit[drive];
+ 		set_capacity(disk, 880*2);
+Index: work/drivers/block/ataflop.c
+===================================================================
+--- work.orig/drivers/block/ataflop.c
++++ work/drivers/block/ataflop.c
+@@ -1324,23 +1324,24 @@ static void finish_fdc_done( int dummy )
+  * due to unrecognised disk changes.
+  */
+ 
+-static int check_floppy_change(struct gendisk *disk)
++static unsigned int floppy_check_events(struct gendisk *disk,
++					unsigned int clearing)
+ {
+ 	struct atari_floppy_struct *p = disk->private_data;
+ 	unsigned int drive = p - unit;
+ 	if (test_bit (drive, &fake_change)) {
+ 		/* simulated change (e.g. after formatting) */
+-		return 1;
++		return DISK_EVENT_MEDIA_CHANGE;
+ 	}
+ 	if (test_bit (drive, &changed_floppies)) {
+ 		/* surely changed (the WP signal changed at least once) */
+-		return 1;
++		return DISK_EVENT_MEDIA_CHANGE;
+ 	}
+ 	if (UD.wpstat) {
+ 		/* WP is on -> could be changed: to be sure, buffers should be
+ 		 * invalidated...
+ 		 */
+-		return 1;
++		return DISK_EVENT_MEDIA_CHANGE;
+ 	}
+ 
+ 	return 0;
+@@ -1570,7 +1571,7 @@ static int fd_locked_ioctl(struct block_
+ 		 * or the next access will revalidate - and clear UDT :-(
+ 		 */
+ 
+-		if (check_floppy_change(disk))
++		if (floppy_check_events(disk, 0))
+ 		        floppy_revalidate(disk);
+ 
+ 		if (UD.flags & FTD_MSG)
+@@ -1904,7 +1905,7 @@ static const struct block_device_operati
+ 	.open		= floppy_unlocked_open,
+ 	.release	= floppy_release,
+ 	.ioctl		= fd_ioctl,
+-	.media_changed	= check_floppy_change,
++	.check_events	= floppy_check_events,
+ 	.revalidate_disk= floppy_revalidate,
+ };
+ 
+@@ -1963,6 +1964,7 @@ static int __init atari_floppy_init (voi
+ 		unit[i].disk->first_minor = i;
+ 		sprintf(unit[i].disk->disk_name, "fd%d", i);
+ 		unit[i].disk->fops = &floppy_fops;
++		unit[i].disk->events = DISK_EVENT_MEDIA_CHANGE;
+ 		unit[i].disk->private_data = &unit[i];
+ 		unit[i].disk->queue = blk_init_queue(do_fd_request,
+ 					&ataflop_lock);
