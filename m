@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754Ab1AYSco (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 13:32:44 -0500
-Received: from pfepa.post.tele.dk ([195.41.46.235]:52655 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866Ab1AYScn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 13:32:43 -0500
-Date: Tue, 25 Jan 2011 19:32:40 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Subject: Re: [PATCH 00/25] mm: Preemptibility -v7
-Message-ID: <20110125183240.GA31346@merkur.ravnborg.org>
-References: <20110125173111.720927511@chello.nl>
+	id S1752736Ab1AYSez (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 13:34:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45855 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752179Ab1AYSey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 13:34:54 -0500
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110125173111.720927511@chello.nl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@redhat.com>
+To: Arnd Bergmann <arnd@arndb.de>
+X-Fcc: ~/Mail/linus
+Cc: linasvepstas@gmail.com, Chris Metcalf <cmetcalf@tilera.com>,
+        GLIBC Devel <libc-alpha@sourceware.org>, linux-kernel@vger.kernel.org,
+        libc-ports@sourceware.org, linux-api@vger.kernel.org,
+        Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [BUG] Generic syscalls -- chmod vs. fchmodat
+In-Reply-To: Arnd Bergmann's message of  Tuesday, 25 January 2011 19:21:14 +0100 <201101251921.15184.arnd@arndb.de>
+References: <AANLkTikhKHnR+7DskxYqWXduX4=tpfgsfL4sNYq+4QDq@mail.gmail.com>
+	<201101251529.24779.arnd@arndb.de>
+	<20110125174515.C1DC2183C19@magilla.sf.frob.com>
+	<201101251921.15184.arnd@arndb.de>
+X-Windows: the art of incompetence.
+Message-Id: <20110125183437.7C6C2180999@magilla.sf.frob.com>
+Date: Tue, 25 Jan 2011 10:34:37 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 06:31:11PM +0100, Peter Zijlstra wrote:
+> On Tuesday 25 January 2011 18:45:15 Roland McGrath wrote:
+> >  I know of no reason to
+> > think that the current treatment of the empty string was ever intended at
+> > the creation of the *at interfaces.
 > 
-> This patch-set makes part of the mm a lot more preemptible. It converts
-> i_mmap_lock and anon_vma->lock to mutexes and makes mmu_gather fully
-> preemptible.
-> 
-> The main motivation was making mm_take_all_locks() preemptible, since it
-> appears people are nesting hundreds of spinlocks there.
-> 
-> The side-effects are that can finally make mmu_gather preemptible,
-> something which lots of people have wanted to do for a long time.
-> 
-> It also gets us anon_vma refcounting, which seems to result in a nice
-> cleanup of the anon_vma lifetime rules wrt KSM and compaction.
-> 
-> This patch-set is build and boot-tested on x86_64 (a previous version was
-> also tested on Dave's Niagra2 machines, and I suppose s390 was too when
-> Martin provided the conversion patch for his arch).
-> 
-> There are no known architectures left unconverted.
+> I always assumed that this was done so that the *at syscalls can replace
+> both the ones that take a file descriptor (e.g. fstat) and the ones that
+> take a pathname (e.g. stat), which is sensible for the non-AT_FDCWD case,
+> although not documented in the man pages.
 
-Hi Peter.
+I see your point.  That is, having the empty string relative to a file
+descriptor work means it can replace f* calls on non-directories, whereas
+the standard method of passing "." for descriptor-relative resolution can
+only work on a file descriptor open on a directory.  Is that what you mean?
 
-Foregive me my ignorance..
-Why is this relevant for sparc64 but not for sparc32?
+I don't think this was part of the original intent when the calls were
+added, but I suppose it makes sense.
 
-A quick grep showed up only this in sparc32 specific files:
+> Treating the empty string special for AT_FDCWD is rather pointless, but
+> at least consistent.
 
-mm/init_32.c:DEFINE_PER_CPU(struct mmu_gather, mmu_gathers);
+I agree about the consistency point.  However, one could also call it
+consistent if the empty string fails to resolve when operating on either a
+directory file descriptor or AT_FDCWD but works on a non-directory file
+descriptor.  POSIX does not mandate that *at calls fail with ENOTDIR when
+passed a non-directory file descriptor (it's a "may fail" error, not a
+"shall fail" error).  So that behavior would be consistent both with the
+POSIX requirements as I read them, and with the desire you mentioned to let
+the fblahat system call serve to implement fblah as well as blah.  Then
+libc would not have to wrap the *at calls with any special check to conform
+to POSIX.
 
-Maybe this is just something sparc32 does not support?
 
-	Sam
+Thanks,
+Roland
