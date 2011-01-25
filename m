@@ -1,205 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551Ab1AYNHc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 08:07:32 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35662 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752993Ab1AYNH3 (ORCPT
+	id S1753279Ab1AYNOl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 08:14:41 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:2543 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753082Ab1AYNOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 08:07:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=cYnYHwJL7DY5YorZawuuPNMNj/Pfob6Nm8C/JNdaXgExknGAuMT2I3svdrcbMMDv/w
-         IFV2vLCfu7wWsJgvGrpa++NCqR7YkO2UpdFwYbFk1Yts5xdMXVb9vzh0EMsybqH/y4oF
-         MIoTvInumo4qpDC+sTRAM0+a0E2Wu1UThBo5o=
-Date: Tue, 25 Jan 2011 14:07:24 +0100
-From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org,
-        hch@infradead.org
-Subject: [PATCH UPDATED 05/16] floppy,{ami|ata}flop: convert to
- bdops->check_events()
-Message-ID: <20110125130724.GT27510@htj.dyndns.org>
-References: <1293557352-10592-1-git-send-email-tj@kernel.org>
- <1293557352-10592-6-git-send-email-tj@kernel.org>
+	Tue, 25 Jan 2011 08:14:40 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6236"; a="71900119"
+From: "Tanya Brokhman" <tlinder@codeaurora.org>
+To: "'Alan Stern'" <stern@rowland.harvard.edu>
+Cc: <gregkh@suse.de>, <linux-usb@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>,
+        "'David Brownell'" <dbrownell@users.sourceforge.net>,
+        <linux-kernel@vger.kernel.org>
+References: <1290085052-4977-1-git-send-email-tlinder@codeaurora.org> <Pine.LNX.4.44L0.1011181045430.1801-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1011181045430.1801-100000@iolanthe.rowland.org>
+Subject: RE: [PATCH v6] usb: Adding SuperSpeed support to dummy_hcd
+Date: Tue, 25 Jan 2011 15:14:31 +0200
+Message-ID: <000601cbbc91$cf9d8d80$6ed8a880$@org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1293557352-10592-6-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: AcuHOp/bi1bUWNRLTA+k+ia80ABiew1VhKlA
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert the floppy drivers from ->media_changed() to ->check_events().
-Both floppy and ataflop buffer media changed state bit and clear them
-on revalidation and will behave correctly with kernel event polling.
+> On Thu, 18 Nov 2010, Tatyana Brokhman wrote:
+> 
+> > USB 3.0 hub includes 2 hubs - HS and SS ones.
+> > Thus, when dummy_hcd enabled it will register 2 root hubs (SS and
+> HS).
+> 
+> Hmm.  A quick comparison with the original source shows that you
+> neglected to add code for SuperSpeed transfers to periodic_bytes() and
+> show_urb().
 
-I can't tell how amiflop clears its event and it's possible that it
-may generate spurious events when polled.
+Added in the next patch that will be uploaded soon.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
----
-Updated to resolve context conflict no top of 2.6.38-rc2.
+> 
+> > @@ -1352,6 +1544,9 @@ static void dummy_timer (unsigned long _dum)
+> >  	case USB_SPEED_HIGH:
+> >  		total = 512/*bytes*/ * 13/*packets*/ * 8/*uframes*/;
+> >  		break;
+> > +	case USB_SPEED_SUPER:
+> > +		total = 400 << 20; /* 400MB = 400*(2^20) bytes */
+> > +		break;
+> 
+> Somehow I doubt that SuperSpeed USB, quick though it is, can transfer
+> 400 MB in one millisecond.  Where did you get that number from?
+> 
 
-Thanks.
+>From USB3.0 Spec section 4.4.11. My mistake was that this value (400 << 20)
+is per sec and not per milisec. When we divide it by 1000 (milisec) we'll
+receive a value close to what you suggested bellow. Fixed.
 
- drivers/block/amiflop.c |    9 +++++----
- drivers/block/ataflop.c |   14 ++++++++------
- drivers/block/floppy.c  |   10 ++++++----
- 3 files changed, 19 insertions(+), 14 deletions(-)
+> I can't find the appropriate table in the USB-3.0 spec (it might not be
+> there at all), but with a bus transfer rate of 500 million bytes/s it
+> seems clear that you can't transfer more than 500000 bytes per frame.
+> The actual limit must be lower than that, maybe something like 1024
+> bytes/packet * 60 packets/uframe * 8 uframes/frame = 491520
+> bytes/frame.
+> 
+> Alan Stern
 
-Index: work/drivers/block/floppy.c
-===================================================================
---- work.orig/drivers/block/floppy.c
-+++ work/drivers/block/floppy.c
-@@ -3770,13 +3770,14 @@ out2:
- /*
-  * Check if the disk has been changed or if a change has been faked.
-  */
--static int check_floppy_change(struct gendisk *disk)
-+static unsigned int floppy_check_events(struct gendisk *disk,
-+					unsigned int clearing)
- {
- 	int drive = (long)disk->private_data;
- 
- 	if (test_bit(FD_DISK_CHANGED_BIT, &UDRS->flags) ||
- 	    test_bit(FD_VERIFY_BIT, &UDRS->flags))
--		return 1;
-+		return DISK_EVENT_MEDIA_CHANGE;
- 
- 	if (time_after(jiffies, UDRS->last_checked + UDP->checkfreq)) {
- 		lock_fdc(drive, false);
-@@ -3788,7 +3789,7 @@ static int check_floppy_change(struct ge
- 	    test_bit(FD_VERIFY_BIT, &UDRS->flags) ||
- 	    test_bit(drive, &fake_change) ||
- 	    drive_no_geom(drive))
--		return 1;
-+		return DISK_EVENT_MEDIA_CHANGE;
- 	return 0;
- }
- 
-@@ -3898,7 +3899,7 @@ static const struct block_device_operati
- 	.release		= floppy_release,
- 	.ioctl			= fd_ioctl,
- 	.getgeo			= fd_getgeo,
--	.media_changed		= check_floppy_change,
-+	.check_events		= floppy_check_events,
- 	.revalidate_disk	= floppy_revalidate,
- };
- 
-@@ -4205,6 +4206,7 @@ static int __init floppy_init(void)
- 		disks[dr]->major = FLOPPY_MAJOR;
- 		disks[dr]->first_minor = TOMINOR(dr);
- 		disks[dr]->fops = &floppy_fops;
-+		disks[dr]->events = DISK_EVENT_MEDIA_CHANGE;
- 		sprintf(disks[dr]->disk_name, "fd%d", dr);
- 
- 		init_timer(&motor_off_timer[dr]);
-Index: work/drivers/block/amiflop.c
-===================================================================
---- work.orig/drivers/block/amiflop.c
-+++ work/drivers/block/amiflop.c
-@@ -1658,12 +1658,12 @@ static int floppy_release(struct gendisk
- }
- 
- /*
-- * floppy-change is never called from an interrupt, so we can relax a bit
-+ * check_events is never called from an interrupt, so we can relax a bit
-  * here, sleep etc. Note that floppy-on tries to set current_DOR to point
-  * to the desired drive, but it will probably not survive the sleep if
-  * several floppies are used at the same time: thus the loop.
-  */
--static int amiga_floppy_change(struct gendisk *disk)
-+static unsigned amiga_check_events(struct gendisk *disk, unsigned int clearing)
- {
- 	struct amiga_floppy_struct *p = disk->private_data;
- 	int drive = p - unit;
-@@ -1686,7 +1686,7 @@ static int amiga_floppy_change(struct ge
- 		p->dirty = 0;
- 		writepending = 0; /* if this was true before, too bad! */
- 		writefromint = 0;
--		return 1;
-+		return DISK_EVENT_MEDIA_CHANGE;
- 	}
- 	return 0;
- }
-@@ -1697,7 +1697,7 @@ static const struct block_device_operati
- 	.release	= floppy_release,
- 	.ioctl		= fd_ioctl,
- 	.getgeo		= fd_getgeo,
--	.media_changed	= amiga_floppy_change,
-+	.check_events	= amiga_check_events,
- };
- 
- static int __init fd_probe_drives(void)
-@@ -1736,6 +1736,7 @@ static int __init fd_probe_drives(void)
- 		disk->major = FLOPPY_MAJOR;
- 		disk->first_minor = drive;
- 		disk->fops = &floppy_fops;
-+		disk->events = DISK_EVENT_MEDIA_CHANGE;
- 		sprintf(disk->disk_name, "fd%d", drive);
- 		disk->private_data = &unit[drive];
- 		set_capacity(disk, 880*2);
-Index: work/drivers/block/ataflop.c
-===================================================================
---- work.orig/drivers/block/ataflop.c
-+++ work/drivers/block/ataflop.c
-@@ -1324,23 +1324,24 @@ static void finish_fdc_done( int dummy )
-  * due to unrecognised disk changes.
-  */
- 
--static int check_floppy_change(struct gendisk *disk)
-+static unsigned int floppy_check_events(struct gendisk *disk,
-+					unsigned int clearing)
- {
- 	struct atari_floppy_struct *p = disk->private_data;
- 	unsigned int drive = p - unit;
- 	if (test_bit (drive, &fake_change)) {
- 		/* simulated change (e.g. after formatting) */
--		return 1;
-+		return DISK_EVENT_MEDIA_CHANGE;
- 	}
- 	if (test_bit (drive, &changed_floppies)) {
- 		/* surely changed (the WP signal changed at least once) */
--		return 1;
-+		return DISK_EVENT_MEDIA_CHANGE;
- 	}
- 	if (UD.wpstat) {
- 		/* WP is on -> could be changed: to be sure, buffers should be
- 		 * invalidated...
- 		 */
--		return 1;
-+		return DISK_EVENT_MEDIA_CHANGE;
- 	}
- 
- 	return 0;
-@@ -1570,7 +1571,7 @@ static int fd_locked_ioctl(struct block_
- 		 * or the next access will revalidate - and clear UDT :-(
- 		 */
- 
--		if (check_floppy_change(disk))
-+		if (floppy_check_events(disk, 0))
- 		        floppy_revalidate(disk);
- 
- 		if (UD.flags & FTD_MSG)
-@@ -1904,7 +1905,7 @@ static const struct block_device_operati
- 	.open		= floppy_unlocked_open,
- 	.release	= floppy_release,
- 	.ioctl		= fd_ioctl,
--	.media_changed	= check_floppy_change,
-+	.check_events	= floppy_check_events,
- 	.revalidate_disk= floppy_revalidate,
- };
- 
-@@ -1963,6 +1964,7 @@ static int __init atari_floppy_init (voi
- 		unit[i].disk->first_minor = i;
- 		sprintf(unit[i].disk->disk_name, "fd%d", i);
- 		unit[i].disk->fops = &floppy_fops;
-+		unit[i].disk->events = DISK_EVENT_MEDIA_CHANGE;
- 		unit[i].disk->private_data = &unit[i];
- 		unit[i].disk->queue = blk_init_queue(do_fd_request,
- 					&ataflop_lock);
+Sorry for the poor quoting (this mail is a bit old) and the late response.
+Our intention was to release the unittests we used to test this
+implementation with the next patch version but releasing them got delayed
+due to legal issues.
+
+Best regards,
+Tanya Brokhman
+Consultant for Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+
+
+
+
+
