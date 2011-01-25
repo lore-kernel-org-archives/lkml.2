@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab1AYW0z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 17:26:55 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36022 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752548Ab1AYW0x convert rfc822-to-8bit (ORCPT
+	id S1753520Ab1AYW2i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 17:28:38 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40414 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752754Ab1AYW2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 17:26:53 -0500
+	Tue, 25 Jan 2011 17:28:36 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=GGh8AQb0hHXwZTl1Xb0Fw9PXhtrzdX1x+ypCrS6uU126c4o53bzjEgMVrzDkjEmVXY
-         Mc4fEo2/StzAqeZrXZy94sLVQpt5wjTTg7aDeRYvgYtSfm2kFrtYw+fCNoPm9+TRvur7
-         PhkbdhD8JYZ1u5kTlvzaeyQPmnXy1GAqagNII=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=K5cYYAHRdHyMRj95WYuBB25pUZgrT7RbUkzLuCJVHYbSE39r4JOn1v5Ipc8fH3MNCX
+         VdSht54RT9iadIU1fWXbcCafXbytVUy8uXozerytTA9+ssO0d3ZzwYeDyVmLV/2+d3A4
+         bHpqjenpvak9ou+w4N4XK3L8SlpuIw6zQRyK0=
+Date: Tue, 25 Jan 2011 23:28:31 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 17/20] tracing: don't trace the BKL
+Message-ID: <20110125222828.GA2532@nowhere>
+References: <1295993854-4971-1-git-send-email-arnd@arndb.de>
+ <1295993854-4971-18-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <20110125151346.GB14803@khazad-dum.debian.net>
-References: <Pine.LNX.4.64.1101251740380.3737@boston.corp.fedex.com>
-	<20110125151346.GB14803@khazad-dum.debian.net>
-Date: Wed, 26 Jan 2011 06:26:53 +0800
-Message-ID: <AANLkTim9cN8KXx5DVrH_nBzVjnmuYsxOHwP4msBKs=gS@mail.gmail.com>
-Subject: Re: thinkpad-acpi: fn-f4 issues
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: LKML <linux-kernel@vger.kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        platform-driver-x86@vger.kernel.org,
-        ibm-acpi-devel@lists.sourceforge.net, Dominik Kopp <my@kabelfunk.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295993854-4971-18-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 11:13 PM, Henrique de Moraes Holschuh
-<hmh@hmh.eng.br> wrote:
-> That will basicaly lobotomize the driver, as the "hotkeys" are really the
-> entire firmware event interface(!).
+On Tue, Jan 25, 2011 at 11:17:31PM +0100, Arnd Bergmann wrote:
+> No reason to trace it when the last user is gone.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-Didn't know that.
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 
-> Which thinkpad do you have that need CONFIG_THINKPAD_ACPI_HOTKEY_POLL to
-> handle Fn+F4?   I don't expect that to be needed on anything newer than a
-> T32...
+You could also remove file and line arguments from _(un)lock_kernel
+but as the final removal follows, we just don't care.
 
-X201s which is quite new.
+Tell us if you want that in the tracing tree. But I guess this
+should be included in the same set than the rest or?
 
-
-> Can I have the full kernel log, please?
-
-thinkpad_acpi: ThinkPad ACPI Extras v0.24
-thinkpad_acpi: http://ibm-acpi.sf.net/
-thinkpad_acpi: ThinkPad BIOS 6QET62WW (1.32 ), EC 6QHT31WW-1.12
-thinkpad_acpi: Lenovo ThinkPad X201s, model 5413FGA
-thinkpad_acpi: detected a 8-level brightness capable ThinkPad
-thinkpad_acpi: radio switch found; radios are enabled
-thinkpad_acpi: possible tablet mode switch found; ThinkPad in laptop mode
-thinkpad_acpi: rfkill switch tpacpi_bluetooth_sw: radio is blocked
-Registered led device: tpacpi::thinklight
-Registered led device: tpacpi::power
-Registered led device: tpacpi::standby
-Registered led device: tpacpi::thinkvantage
-thinkpad_acpi: volume: disabled as there is no ALSA support in this kernel
-input: ThinkPad Extra Buttons as /devices/platform/thinkpad_acpi/input/input5
-
-And the volume up/down does not work either even with thinkpad ALSA
-support enabled.
-
-Thanks,
-Jeff.
+Thanks!
