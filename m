@@ -1,283 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831Ab1AYRYr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 12:24:47 -0500
-Received: from casper.infradead.org ([85.118.1.10]:47005 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753399Ab1AYRWQ (ORCPT
+	id S1753791Ab1AYRYd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 12:24:33 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:48548 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753411Ab1AYRWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 12:22:16 -0500
+	Tue, 25 Jan 2011 12:22:17 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        2nddept-manager@sdl.hitachi.co.jp, Franck Bui-Huu <fbuihuu@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 24/29] perf probe: Add --funcs to show available functions in symtab
-Date: Tue, 25 Jan 2011 15:21:47 -0200
-Message-Id: <1295976112-2796-25-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 29/29] perf evsel: Introduce perf_evsel__{in,ex}it
+Date: Tue, 25 Jan 2011 15:21:52 -0200
+Message-Id: <1295976112-2796-30-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1295976112-2796-1-git-send-email-acme@infradead.org>
 References: <1295976112-2796-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Add --funcs to show available functions in symtab.
+Out of the {con,des}structor, as in interpreted language bindings we will
+need to go back from the wrapper object to the real thing. In that case
+using container_of will save us to have an extra pointer in the perf_evsel
+struct.
 
-Originally this feature came from Srikar's uprobes patches
-( http://lkml.org/lkml/2010/8/27/244 )
-
-e.g.
-...
-__ablkcipher_walk_complete
-__absent_pages_in_range
-__account_scheduler_latency
-__add_pages
-__alloc_pages_nodemask
-__alloc_percpu
-__alloc_reserved_percpu
-__alloc_skb
-__alloc_workqueue_key
-__any_online_cpu
-__ata_ehi_push_desc
-...
-
-This also supports symbols in module, e.g.
-
-...
-cleanup_module
-cpuid_maxphyaddr
-emulate_clts
-emulate_instruction
-emulate_int_real
-emulate_invlpg
-emulator_get_dr
-emulator_set_dr
-emulator_task_switch
-emulator_write_emulated
-emulator_write_phys
-fx_init
-...
-
-Original-patch-from: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: 2nddept-manager@sdl.hitachi.co.jp
-Cc: Franck Bui-Huu <fbuihuu@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-LKML-Reference: <20110113124611.22426.10835.stgit@ltc236.sdl.hitachi.co.jp>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-[ committer note: Add missing elf.h for STB_GLOBAL that broke a RHEL4 build ]
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-probe.txt |    4 ++
- tools/perf/builtin-probe.c              |   29 +++++++++++++-
- tools/perf/util/probe-event.c           |   68 ++++++++++++++++++++++++++++++-
- tools/perf/util/probe-event.h           |    1 +
- 4 files changed, 99 insertions(+), 3 deletions(-)
+ tools/perf/util/evlist.c |   29 ++++++++++++++++++++---------
+ tools/perf/util/evlist.h |    2 ++
+ tools/perf/util/evsel.c  |   22 ++++++++++++++++------
+ tools/perf/util/evsel.h  |    3 +++
+ 4 files changed, 41 insertions(+), 15 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
-index 86b797a..fcc51fe 100644
---- a/tools/perf/Documentation/perf-probe.txt
-+++ b/tools/perf/Documentation/perf-probe.txt
-@@ -73,6 +73,10 @@ OPTIONS
- 	(Only for --vars) Show external defined variables in addition to local
- 	variables.
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 4b3b84c..df0610e 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -6,17 +6,21 @@
+ #include <linux/bitops.h>
+ #include <linux/hash.h>
  
-+-F::
-+--funcs::
-+	Show available functions in given module or kernel.
-+
- -f::
- --force::
- 	Forcibly add events with existing name.
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index add163c..6cf708a 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -52,6 +52,7 @@ static struct {
- 	bool show_lines;
- 	bool show_vars;
- 	bool show_ext_vars;
-+	bool show_funcs;
- 	bool mod_events;
- 	int nevents;
- 	struct perf_probe_event events[MAX_PROBES];
-@@ -221,6 +222,8 @@ static const struct option options[] = {
- 	OPT__DRY_RUN(&probe_event_dry_run),
- 	OPT_INTEGER('\0', "max-probes", &params.max_probe_points,
- 		 "Set how many probe points can be found for a probe."),
-+	OPT_BOOLEAN('F', "funcs", &params.show_funcs,
-+		    "Show potential probe-able functions."),
- 	OPT_END()
- };
- 
-@@ -246,7 +249,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 		params.max_probe_points = MAX_PROBES;
- 
- 	if ((!params.nevents && !params.dellist && !params.list_events &&
--	     !params.show_lines))
-+	     !params.show_lines && !params.show_funcs))
- 		usage_with_options(probe_usage, options);
- 
- 	/*
-@@ -267,12 +270,36 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 			pr_err(" Error: Don't use --list with --vars.\n");
- 			usage_with_options(probe_usage, options);
- 		}
-+		if (params.show_funcs) {
-+			pr_err("  Error: Don't use --list with --funcs.\n");
-+			usage_with_options(probe_usage, options);
-+		}
- 		ret = show_perf_probe_events();
- 		if (ret < 0)
- 			pr_err("  Error: Failed to show event list. (%d)\n",
- 			       ret);
- 		return ret;
- 	}
-+	if (params.show_funcs) {
-+		if (params.nevents != 0 || params.dellist) {
-+			pr_err("  Error: Don't use --funcs with"
-+			       " --add/--del.\n");
-+			usage_with_options(probe_usage, options);
-+		}
-+		if (params.show_lines) {
-+			pr_err("  Error: Don't use --funcs with --line.\n");
-+			usage_with_options(probe_usage, options);
-+		}
-+		if (params.show_vars) {
-+			pr_err("  Error: Don't use --funcs with --vars.\n");
-+			usage_with_options(probe_usage, options);
-+		}
-+		ret = show_available_funcs(params.target_module);
-+		if (ret < 0)
-+			pr_err("  Error: Failed to show functions."
-+			       " (%d)\n", ret);
-+		return ret;
-+	}
- 
- #ifdef DWARF_SUPPORT
- 	if (params.show_lines) {
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 6e29d9c..859d377 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -31,6 +31,7 @@
- #include <string.h>
- #include <stdarg.h>
- #include <limits.h>
-+#include <elf.h>
- 
- #undef _GNU_SOURCE
- #include "util.h"
-@@ -111,7 +112,25 @@ static struct symbol *__find_kernel_function_by_name(const char *name,
- 						     NULL);
- }
- 
--const char *kernel_get_module_path(const char *module)
-+static struct map *kernel_get_module_map(const char *module)
++void perf_evlist__init(struct perf_evlist *evlist)
 +{
-+	struct rb_node *nd;
-+	struct map_groups *grp = &machine.kmaps;
++	int i;
 +
-+	if (!module)
-+		module = "kernel";
-+
-+	for (nd = rb_first(&grp->maps[MAP__FUNCTION]); nd; nd = rb_next(nd)) {
-+		struct map *pos = rb_entry(nd, struct map, rb_node);
-+		if (strncmp(pos->dso->short_name + 1, module,
-+			    pos->dso->short_name_len - 2) == 0) {
-+			return pos;
-+		}
-+	}
-+	return NULL;
++	for (i = 0; i < PERF_EVLIST__HLIST_SIZE; ++i)
++		INIT_HLIST_HEAD(&evlist->heads[i]);
++	INIT_LIST_HEAD(&evlist->entries);
 +}
 +
-+static struct dso *kernel_get_module_dso(const char *module)
+ struct perf_evlist *perf_evlist__new(void)
  {
- 	struct dso *dso;
- 	struct map *map;
-@@ -141,7 +160,13 @@ const char *kernel_get_module_path(const char *module)
- 		}
- 	}
- found:
--	return dso->long_name;
-+	return dso;
-+}
-+
-+const char *kernel_get_module_path(const char *module)
-+{
-+	struct dso *dso = kernel_get_module_dso(module);
-+	return (dso) ? dso->long_name : NULL;
+ 	struct perf_evlist *evlist = zalloc(sizeof(*evlist));
+ 
+-	if (evlist != NULL) {
+-		int i;
+-
+-		for (i = 0; i < PERF_EVLIST__HLIST_SIZE; ++i)
+-			INIT_HLIST_HEAD(&evlist->heads[i]);
+-		INIT_LIST_HEAD(&evlist->entries);
+-	}
++	if (evlist != NULL)
++		perf_evlist__init(evlist);
+ 
+ 	return evlist;
+ }
+@@ -33,11 +37,18 @@ static void perf_evlist__purge(struct perf_evlist *evlist)
+ 	evlist->nr_entries = 0;
  }
  
- #ifdef DWARF_SUPPORT
-@@ -1913,3 +1938,42 @@ int del_perf_probe_events(struct strlist *dellist)
- 	return ret;
+-void perf_evlist__delete(struct perf_evlist *evlist)
++void perf_evlist__exit(struct perf_evlist *evlist)
+ {
+-	perf_evlist__purge(evlist);
+ 	free(evlist->mmap);
+ 	free(evlist->pollfd);
++	evlist->mmap = NULL;
++	evlist->pollfd = NULL;
++}
++
++void perf_evlist__delete(struct perf_evlist *evlist)
++{
++	perf_evlist__purge(evlist);
++	perf_evlist__exit(evlist);
+ 	free(evlist);
  }
  
-+/*
-+ * If a symbol corresponds to a function with global binding return 0.
-+ * For all others return 1.
-+ */
-+static int filter_non_global_functions(struct map *map __unused,
-+					struct symbol *sym)
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 2871206..acbe48e 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -24,6 +24,8 @@ struct perf_evlist {
+ struct perf_evsel;
+ 
+ struct perf_evlist *perf_evlist__new(void);
++void perf_evlist__init(struct perf_evlist *evlist);
++void perf_evlist__exit(struct perf_evlist *evlist);
+ void perf_evlist__delete(struct perf_evlist *evlist);
+ 
+ void perf_evlist__add(struct perf_evlist *evlist, struct perf_evsel *entry);
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index a85ae12..76ab553 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -14,15 +14,20 @@
+ #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
+ #define SID(e, x, y) xyarray__entry(e->id, x, y)
+ 
++void perf_evsel__init(struct perf_evsel *evsel,
++		      struct perf_event_attr *attr, int idx)
 +{
-+	if (sym->binding != STB_GLOBAL)
-+		return 1;
-+
-+	return 0;
++	evsel->idx	   = idx;
++	evsel->attr	   = *attr;
++	INIT_LIST_HEAD(&evsel->node);
 +}
 +
-+int show_available_funcs(const char *module)
-+{
-+	struct map *map;
-+	int ret;
-+
-+	setup_pager();
-+
-+	ret = init_vmlinux();
-+	if (ret < 0)
-+		return ret;
-+
-+	map = kernel_get_module_map(module);
-+	if (!map) {
-+		pr_err("Failed to find %s map.\n", (module) ? : "kernel");
-+		return -EINVAL;
-+	}
-+	if (map__load(map, filter_non_global_functions)) {
-+		pr_err("Failed to load map.\n");
-+		return -EINVAL;
-+	}
-+	if (!dso__sorted_by_name(map->dso, map->type))
-+		dso__sort_by_name(map->dso, map->type);
-+
-+	dso__fprintf_symbols_by_name(map->dso, map->type, stdout);
-+	return 0;
+ struct perf_evsel *perf_evsel__new(struct perf_event_attr *attr, int idx)
+ {
+ 	struct perf_evsel *evsel = zalloc(sizeof(*evsel));
+ 
+-	if (evsel != NULL) {
+-		evsel->idx	   = idx;
+-		evsel->attr	   = *attr;
+-		INIT_LIST_HEAD(&evsel->node);
+-	}
++	if (evsel != NULL)
++		perf_evsel__init(evsel, attr, idx);
+ 
+ 	return evsel;
+ }
+@@ -87,11 +92,16 @@ int perf_evlist__alloc_mmap(struct perf_evlist *evlist, int ncpus)
+ 	return evlist->mmap != NULL ? 0 : -ENOMEM;
+ }
+ 
+-void perf_evsel__delete(struct perf_evsel *evsel)
++void perf_evsel__exit(struct perf_evsel *evsel)
+ {
+ 	assert(list_empty(&evsel->node));
+ 	xyarray__delete(evsel->fd);
+ 	xyarray__delete(evsel->id);
 +}
-diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
-index 5accbed..1fb4f18 100644
---- a/tools/perf/util/probe-event.h
-+++ b/tools/perf/util/probe-event.h
-@@ -127,6 +127,7 @@ extern int show_line_range(struct line_range *lr, const char *module);
- extern int show_available_vars(struct perf_probe_event *pevs, int npevs,
- 			       int max_probe_points, const char *module,
- 			       bool externs);
-+extern int show_available_funcs(const char *module);
++
++void perf_evsel__delete(struct perf_evsel *evsel)
++{
++	perf_evsel__exit(evsel);
+ 	free(evsel);
+ }
  
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 667ee4e..7962e75 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -52,6 +52,9 @@ struct thread_map;
+ struct perf_evlist;
  
- /* Maximum index number of event-name postfix */
+ struct perf_evsel *perf_evsel__new(struct perf_event_attr *attr, int idx);
++void perf_evsel__init(struct perf_evsel *evsel,
++		      struct perf_event_attr *attr, int idx);
++void perf_evsel__exit(struct perf_evsel *evsel);
+ void perf_evsel__delete(struct perf_evsel *evsel);
+ 
+ int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
 -- 
 1.6.2.5
 
