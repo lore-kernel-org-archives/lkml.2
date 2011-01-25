@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680Ab1AYAcM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 19:32:12 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:37573 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751323Ab1AYAcL (ORCPT
+	id S1752042Ab1AYAdK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 19:33:10 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:37186 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460Ab1AYAdI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 19:32:11 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAM+oPU1Ld/sX/2dsb2JhbAAMhAbMY5BXgSSDOHQEhHA
-X-IronPort-AV: E=Sophos;i="4.60,372,1291611600"; 
-   d="scan'208";a="89117025"
-Message-ID: <4D3E1A08.5060303@teksavvy.com>
-Date: Mon, 24 Jan 2011 19:32:08 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Mon, 24 Jan 2011 19:33:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=vtDUzc4rcB0Gw83XEKN/SVkOE6HIa3qGaKm9OUSS3Caan6ZdiL9DcEsvVxJUsaq8DY
+         5JAC/IoEoUj1B9F8ke/HAG/DCylHYKiaHJaBHvcWKtf6+kAl2SmkQvu73ulrVXbOpWWG
+         U8c+Eicql7EUXKWhPZCvFTtlxNq/n16DfYJy0=
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org
-Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils
- ?
-References: <4D3C5F73.2050408@teksavvy.com> <20110124175456.GA17855@core.coreip.homeip.net>
-In-Reply-To: <20110124175456.GA17855@core.coreip.homeip.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201101241659.03071.arnd@arndb.de>
+References: <1295385422-3592-1-git-send-email-arnd@arndb.de>
+	<20110119182142.GA3620@elliptictech.com>
+	<AANLkTimOzU328aHnB7+ERSq1ovPBSZgxNQsYRhLghH5L@mail.gmail.com>
+	<201101241659.03071.arnd@arndb.de>
+Date: Tue, 25 Jan 2011 11:33:07 +1100
+Message-ID: <AANLkTik-3k1jQstYhxR7nv6+t2MMFei9ppthKBXF4AX8@mail.gmail.com>
+Subject: Re: [PATCH 4/4] BKL: move CONFIG_BKL to staging
+From: Andrew Hendry <andrew.hendry@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Nick Bowler <nbowler@elliptictech.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-01-24 12:54 PM, Dmitry Torokhov wrote:
-> Hi Mark,
-> 
-> On Sun, Jan 23, 2011 at 12:03:47PM -0500, Mark Lord wrote:
->> As of the 2.6.36 kernel, the userspace commands lsinput and input-kbd
->> no longer work.  And if I grab newer/patched versions of those from the latest
->> Ubuntu 10.10, then those newer/patched versions do not work with kernels
->> *before* 2.6.36.
->>
->> At first glance, this looks like a visible regression.
->> Is there a version of input-utils that works with both
->> old and new kernels ?
->>
-> 
-> The event protocol number was updated to reflect support of large
-> scancodes, unfortunately some of the utilities expected exact version
-> and refuse to work with updated one.
+Might be looking in the wrong spot, but I can't see recent x.25
+changes at http://git.kernel.org/?p=linux/kernel/git/arnd/bkl.git
+If that is current make sure to pickup the previous x.25 bkl patches
+submitted in december via net-next to avoid duplicate effort.
 
+Andrew.
 
-So is there a danger of memory corruption if running a binary
-that doesn't check the version number?
-
-In other words, did the size and/or format of returned data
-change for an ioctl() or something here?
-
-If so, then that is a user-visible regression, and shouldn't happen.
-One correct way to handle that, would be to create a new ioctl(),
-and mark the old one as deprecated, for removal a few years later perhaps.
-
-???
-
-Thanks
+On Tue, Jan 25, 2011 at 2:59 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Sunday 23 January 2011, Andrew Hendry wrote:
+>> Most the x.25 BKLs have patches accepted over the past few months.
+>> There are 3 remaining in send, recieve and destroy that I haven't had time
+>> to work through. If anyone wants to take a look at them I can help test, but
+>> I wont have time until march to focus on them myself.
+>
+> I've given it a try on the weekend, see my bkl.git tree on kernel.org.
+> I have patches for everything except IPX and UFS now, the latter was
+> giving me a hard time but I think I'm getting close there. IPX
+> should not be too hard.
+>
+>        ARnd
+>
