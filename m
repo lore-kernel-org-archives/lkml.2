@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751820Ab1AYAUS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 19:20:18 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:10994 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435Ab1AYAUR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 19:20:17 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6236"; a="71613297"
-From: David Brown <davidb@codeaurora.org>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 01/11] msm: Add CPU queries
-In-Reply-To: <1295914163.29639.77.camel@c-dwalke-linux.qualcomm.com> (Daniel
-	Walker's message of "Mon, 24 Jan 2011 16:09:23 -0800")
-References: <1292384961-8851-1-git-send-email-stepanm@codeaurora.org>
-	<1295468747-22796-1-git-send-email-davidb@codeaurora.org>
-	<1295468747-22796-2-git-send-email-davidb@codeaurora.org>
-	<1295914163.29639.77.camel@c-dwalke-linux.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-X-Hashcash: 1:20:110125:linux-kernel@vger.kernel.org::gcDMXZOeycFTnVAV:0000000000000000000000000000000002NpW
-X-Hashcash: 1:20:110125:linux-arm-msm@vger.kernel.org::TAkRG1+JtrU3inZO:000000000000000000000000000000003Yrc
-X-Hashcash: 1:20:110125:dwalker@codeaurora.org::acV694HS3nC/Tl/C:0000000000000000000000000000000000000007c+R
-X-Hashcash: 1:20:110125:linux-arm-kernel@lists.infradead.org::Y7+KAMjwxQt2ZVvV:00000000000000000000000008TcS
-Date: Mon, 24 Jan 2011 16:20:16 -0800
-Message-ID: <8yak4htj0lb.fsf@huya.qualcomm.com>
+	id S1751522Ab1AYAW5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 19:22:57 -0500
+Received: from csamuel.org ([74.50.50.137]:47248 "EHLO csamuel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751242Ab1AYAWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 19:22:55 -0500
+X-Greylist: delayed 444 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Jan 2011 19:22:55 EST
+Message-ID: <4D3E160F.4050006@csamuel.org>
+Date: Tue, 25 Jan 2011 11:15:11 +1100
+From: Chris Samuel <chris@csamuel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Felix Blanke <felixblanke@gmail.com>
+CC: kreijack@inwind.it, Hugo Mills <hugo-lkml@carfax.org.uk>,
+        linux-btrfs@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: LOOP_GET_STATUS(64) truncates pathnames to 64 chars (was Re: Bug
+ in mkfs.btrfs?!)
+References: <20110122144513.GA2539@scooter> <20110122145222.GB2539@scooter> <20110122151124.GC29985@carfax.org.uk> <20110122155612.GA3664@scooter> <20110123181827.GF29985@carfax.org.uk> <4D3CA568.7050506@libero.it> <20110124130104.GA7354@scooter>
+In-Reply-To: <20110124130104.GA7354@scooter>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24 2011, Daniel Walker wrote:
+/*
+ * CC'd to linux-kernel in case they have any feedback on this.
+ *
+ * Long thread, trying to work out why mkfs.btrfs failed to
+ * make a filesystem on an encrypted loopback mount called
+ * /dev/loop2. Cause turned out to be mkfs.btrfs calling
+ * LOOP_GET_STATUS to find out if the block device was mounted
+ * and getting a truncated device name back and so it later
+ * fails when lstat() is called on the truncated device path.
+ *
+ * The long device name for the encrypted loopback mount was
+ * because /dev/disk/by-id/$ID was used when Felix created it
+ * to cope with devices moving around.
+ */
 
-> On Wed, 2011-01-19 at 12:25 -0800, David Brown wrote:
->> +#define cpu_is_msm7x01()       0
->> +#define cpu_is_msm7x30()       0
->> +#define cpu_is_qsd8x50()       0
->> +#define cpu_is_msm8x60()       0
->
-> Now that I look at this again, why not drop the "x" all together ?
+On 25/01/11 00:01, Felix Blanke wrote:
 
-That might be better for the 8x60.  The complexity is that most of the
-MSM chips have some variants, where the CPU running Linux isn't changed,
-but the modem CPU is different (think CDMA/UMTS).  Until 8960, that was
-distinguished by the second letter.
+> you were talking about the LOOP_GET_STATUS function. I'm not
+> quite sure where does it came from. Is it part of the kernel?
+> Or does it come from the util-linux package?
 
-Either way doesn't quite match reality, unfortunately.  There are
-devices using a MSM7201 and others using a MSM7601.  As far as Linux is
-concerned, there isn't any difference between them.  If someone wanted
-to try and identify the device they have with the code, it could be
-confusing for either name chosen.
+It's in the kernel, and there is both LOOP_GET_STATUS (old
+implementation) and LOOP_GET_STATUS64 (new implementation).
 
-I was planning on turning msm8x60 into msm8660, since that seems to be
-the most common one.  Perhaps the decoder ring should be put into the
-help text for the options so people can at least figure out which is
-which.
+They return structures called loop_info and loop_info64
+respectively and both are defined in include/linux/loop.h .
 
-David
+Sadly in both cases the lengths of paths are defined to be
+LO_NAME_SIZE which is currently 64 and hence either
+implementation will cause the problematic:
 
+lstat("/dev/disk/by-id/ata-INTEL_SSDSA2M160G2GC_CVPO939201JX160AGN-par",
+0x7fffa30b3cf0) = -1 ENOENT (No such file or directory)
+
+I've CC'd this to the LKML in case they have any feedback on
+this apparent problem with the API.
+
+cheers,
+Chris
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+ Chris Samuel  :  http://www.csamuel.org/  :  Melbourne, VIC
