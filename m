@@ -1,590 +1,1007 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798Ab1AYUth (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 15:49:37 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:55203 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753583Ab1AYUtf (ORCPT
+	id S1753869Ab1AYUtn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 15:49:43 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:55235 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753706Ab1AYUth (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 15:49:35 -0500
-Message-ID: <4d3f375a.857a0e0a.122c.478a@mx.google.com>
+	Tue, 25 Jan 2011 15:49:37 -0500
+Message-ID: <4d3f375d.857a0e0a.122c.478c@mx.google.com>
 From: "Igor M. Liplianin" <liplianin@me.by>
-Date: Tue, 25 Jan 2011 22:04:00 +0200
-Subject: [PATCH 5/9 v3] Initial commit to support NetUP Dual DVB-T/C CI RF card.
+Date: Tue, 25 Jan 2011 22:01:00 +0200
+Subject: [PATCH 2/9 v3] Altera FPGA based CI driver module.
 To: <mchehab@infradead.org>, <linux-media@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The card based on cx23885 PCI-e brige. Altera FPGA for CI,
-multistandard demods stv0367 from STM for QAM & OFDM,  Xcieve xc5000 tuners
-and additional cx25840 for second analog input.
+An Altera FPGA CI module for NetUP Dual DVB-T/C RF CI card.
 
 Signed-off-by: Igor M. Liplianin <liplianin@netup.ru>
 ---
- drivers/media/dvb/frontends/stv0367.h       |    4 +-
- drivers/media/video/cx23885/Kconfig         |    3 +-
- drivers/media/video/cx23885/cx23885-cards.c |  103 ++++++++++++++++-
- drivers/media/video/cx23885/cx23885-core.c  |   22 ++--
- drivers/media/video/cx23885/cx23885-dvb.c   |  172 +++++++++++++++++++++++++-
- drivers/media/video/cx23885/cx23885.h       |    4 +-
- 6 files changed, 286 insertions(+), 22 deletions(-)
+ drivers/media/video/cx23885/Kconfig     |    9 +
+ drivers/media/video/cx23885/Makefile    |    1 +
+ drivers/media/video/cx23885/altera-ci.c |  830 +++++++++++++++++++++++++++++++
+ drivers/media/video/cx23885/altera-ci.h |  102 ++++
+ 4 files changed, 942 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/media/video/cx23885/altera-ci.c
+ create mode 100644 drivers/media/video/cx23885/altera-ci.h
 
-diff --git a/drivers/media/dvb/frontends/stv0367.h b/drivers/media/dvb/frontends/stv0367.h
-index 822a8e9..93cc4a5 100644
---- a/drivers/media/dvb/frontends/stv0367.h
-+++ b/drivers/media/dvb/frontends/stv0367.h
-@@ -4,8 +4,8 @@
-  * Driver for ST STV0367 DVB-T & DVB-C demodulator IC.
-  *
-  * Copyright (C) ST Microelectronics.
-- * Copyright (C) 2010 NetUP Inc.
-- * Copyright (C) 2010 Igor M. Liplianin <liplianin@netup.ru>
-+ * Copyright (C) 2010,2011 NetUP Inc.
-+ * Copyright (C) 2010,2011 Igor M. Liplianin <liplianin@netup.ru>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License as published by
 diff --git a/drivers/media/video/cx23885/Kconfig b/drivers/media/video/cx23885/Kconfig
-index 5e5faad..3b6e7f2 100644
+index 6b4a516..5e5faad 100644
 --- a/drivers/media/video/cx23885/Kconfig
 +++ b/drivers/media/video/cx23885/Kconfig
-@@ -1,6 +1,7 @@
- config VIDEO_CX23885
- 	tristate "Conexant cx23885 (2388x successor) support"
--	depends on DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT
-+	depends on DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT && SND
-+	select SND_PCM
- 	select I2C_ALGOBIT
- 	select VIDEO_BTCX
- 	select VIDEO_TUNER
-diff --git a/drivers/media/video/cx23885/cx23885-cards.c b/drivers/media/video/cx23885/cx23885-cards.c
-index b298b73..a3fe26c 100644
---- a/drivers/media/video/cx23885/cx23885-cards.c
-+++ b/drivers/media/video/cx23885/cx23885-cards.c
-@@ -24,10 +24,14 @@
- #include <linux/pci.h>
- #include <linux/delay.h>
- #include <media/cx25840.h>
-+#include <linux/firmware.h>
-+#include <staging/altera.h>
+@@ -33,3 +33,12 @@ config VIDEO_CX23885
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called cx23885
  
- #include "cx23885.h"
- #include "tuner-xc2028.h"
- #include "netup-init.h"
++config MEDIA_ALTERA_CI
++	tristate "Altera FPGA based CI module"
++	depends on VIDEO_CX23885 && DVB_CORE
++	select STAPL_ALTERA
++	---help---
++	  An Altera FPGA CI module for NetUP Dual DVB-T/C RF CI card.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called altera-ci
+diff --git a/drivers/media/video/cx23885/Makefile b/drivers/media/video/cx23885/Makefile
+index e2ee95f..23293c7 100644
+--- a/drivers/media/video/cx23885/Makefile
++++ b/drivers/media/video/cx23885/Makefile
+@@ -5,6 +5,7 @@ cx23885-objs	:= cx23885-cards.o cx23885-video.o cx23885-vbi.o \
+ 		    cx23885-f300.o
+ 
+ obj-$(CONFIG_VIDEO_CX23885) += cx23885.o
++obj-$(CONFIG_MEDIA_ALTERA_CI) += altera-ci.o
+ 
+ EXTRA_CFLAGS += -Idrivers/media/video
+ EXTRA_CFLAGS += -Idrivers/media/common/tuners
+diff --git a/drivers/media/video/cx23885/altera-ci.c b/drivers/media/video/cx23885/altera-ci.c
+new file mode 100644
+index 0000000..e5c0873
+--- /dev/null
++++ b/drivers/media/video/cx23885/altera-ci.c
+@@ -0,0 +1,830 @@
++/*
++ * altera-ci.c
++ *
++ *  CI driver in conjunction with NetUp Dual DVB-T/C RF CI card
++ *
++ * Copyright (C) 2010,2011 NetUP Inc.
++ * Copyright (C) 2010,2011 Igor M. Liplianin <liplianin@netup.ru>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
++
++/*
++ * currently cx23885 GPIO's used.
++ * GPIO-0 ~INT in
++ * GPIO-1 TMS out
++ * GPIO-2 ~reset chips out
++ * GPIO-3 to GPIO-10 data/addr for CA in/out
++ * GPIO-11 ~CS out
++ * GPIO-12 AD_RG out
++ * GPIO-13 ~WR out
++ * GPIO-14 ~RD out
++ * GPIO-15 ~RDY in
++ * GPIO-16 TCK out
++ * GPIO-17 TDO in
++ * GPIO-18 TDI out
++ */
++/*
++ *  Bit definitions for MC417_RWD and MC417_OEN registers
++ * bits 31-16
++ * +-----------+
++ * | Reserved  |
++ * +-----------+
++ *   bit 15  bit 14  bit 13 bit 12  bit 11  bit 10  bit 9   bit 8
++ * +-------+-------+-------+-------+-------+-------+-------+-------+
++ * |  TDI  |  TDO  |  TCK  |  RDY# |  #RD  |  #WR  | AD_RG |  #CS  |
++ * +-------+-------+-------+-------+-------+-------+-------+-------+
++ *  bit 7   bit 6   bit 5   bit 4   bit 3   bit 2   bit 1   bit 0
++ * +-------+-------+-------+-------+-------+-------+-------+-------+
++ * |  DATA7|  DATA6|  DATA5|  DATA4|  DATA3|  DATA2|  DATA1|  DATA0|
++ * +-------+-------+-------+-------+-------+-------+-------+-------+
++ */
++#include <linux/version.h>
++#include <media/videobuf-dma-sg.h>
++#include <media/videobuf-dvb.h>
 +#include "altera-ci.h"
-+#include "xc5000.h"
- #include "cx23888-ir.h"
- 
- static unsigned int enable_885_ir;
-@@ -187,7 +191,7 @@ struct cx23885_board cx23885_boards[] = {
- 		.portb		= CX23885_MPEG_DVB,
- 	},
- 	[CX23885_BOARD_NETUP_DUAL_DVBS2_CI] = {
--		.cimax		= 1,
-+		.ci_type	= 1,
- 		.name		= "NetUP Dual DVB-S2 CI",
- 		.portb		= CX23885_MPEG_DVB,
- 		.portc		= CX23885_MPEG_DVB,
-@@ -329,6 +333,19 @@ struct cx23885_board cx23885_boards[] = {
- 				  CX25840_SVIDEO_CHROMA4,
- 		} },
- 	},
-+	[CX23885_BOARD_NETUP_DUAL_DVB_T_C_CI_RF] = {
-+		.ci_type	= 2,
-+		.name		= "NetUP Dual DVB-T/C-CI RF",
-+		.porta		= CX23885_ANALOG_VIDEO,
-+		.portb		= CX23885_MPEG_DVB,
-+		.portc		= CX23885_MPEG_DVB,
-+		.tuner_type	= TUNER_XC5000,
-+		.tuner_addr	= 0x64,
-+		.input          = { {
-+				.type   = CX23885_VMUX_TELEVISION,
-+				.vmux   = CX25840_COMPOSITE1,
-+		} },
-+	},
- };
- const unsigned int cx23885_bcount = ARRAY_SIZE(cx23885_boards);
- 
-@@ -520,6 +537,10 @@ struct cx23885_subid cx23885_subids[] = {
- 		.subvendor = 0x5654,
- 		.subdevice = 0x2390,
- 		.card      = CX23885_BOARD_GOTVIEW_X5_3D_HYBRID,
-+	}, {
-+		.subvendor = 0x1b55,
-+		.subdevice = 0xe2e4,
-+		.card      = CX23885_BOARD_NETUP_DUAL_DVB_T_C_CI_RF,
- 	},
- };
- const unsigned int cx23885_idcount = ARRAY_SIZE(cx23885_subids);
-@@ -740,6 +761,9 @@ int cx23885_tuner_callback(void *priv, int component, int command, int arg)
- 		/* Tuner Reset Command */
- 		bitmask = 0x02;
- 		break;
-+	case CX23885_BOARD_NETUP_DUAL_DVB_T_C_CI_RF:
-+		altera_ci_tuner_reset(dev, port->nr);
-+		break;
- 	}
- 
- 	if (bitmask) {
-@@ -998,6 +1022,33 @@ void cx23885_gpio_setup(struct cx23885_dev *dev)
- 	case CX23885_BOARD_GOTVIEW_X5_3D_HYBRID:
- 		cx_set(GP0_IO, 0x00010001); /* Bring the part out of reset */
- 		break;
-+	case CX23885_BOARD_NETUP_DUAL_DVB_T_C_CI_RF:
-+		/* GPIO-0 ~INT in
-+		   GPIO-1 TMS out
-+		   GPIO-2 ~reset chips out
-+		   GPIO-3 to GPIO-10 data/addr for CA in/out
-+		   GPIO-11 ~CS out
-+		   GPIO-12 ADDR out
-+		   GPIO-13 ~WR out
-+		   GPIO-14 ~RD out
-+		   GPIO-15 ~RDY in
-+		   GPIO-16 TCK out
-+		   GPIO-17 TDO in
-+		   GPIO-18 TDI out
-+		 */
-+		cx_set(GP0_IO, 0x00060000); /* GPIO-1,2 as out */
-+		/* GPIO-0 as INT, reset & TMS low */
-+		cx_clear(GP0_IO, 0x00010006);
-+		mdelay(100);/* reset delay */
-+		cx_set(GP0_IO, 0x00000004); /* reset high */
-+		cx_write(MC417_CTL, 0x00000037);/* enable GPIO-3..18 pins */
-+		/* GPIO-17 is TDO in, GPIO-15 is ~RDY in, rest is out */
-+		cx_write(MC417_OEN, 0x00005000);
-+		/* ~RD, ~WR high; ADDR low; ~CS high */
-+		cx_write(MC417_RWD, 0x00000d00);
-+		/* enable irq */
-+		cx_write(GPIO_ISM, 0x00000000);/* INTERRUPTS active low*/
-+		break;
- 	}
- }
- 
-@@ -1113,6 +1164,31 @@ void cx23885_ir_fini(struct cx23885_dev *dev)
- 	}
- }
- 
-+int netup_jtag_io(void *device, int tms, int tdi, int read_tdo)
++#include "dvb_ca_en50221.h"
++
++/* FPGA regs */
++#define NETUP_CI_INT_CTRL	0x00
++#define NETUP_CI_BUSCTRL2	0x01
++#define NETUP_CI_ADDR0		0x04
++#define NETUP_CI_ADDR1		0x05
++#define NETUP_CI_DATA		0x06
++#define NETUP_CI_BUSCTRL	0x07
++#define NETUP_CI_PID_ADDR0	0x08
++#define NETUP_CI_PID_ADDR1	0x09
++#define NETUP_CI_PID_DATA	0x0a
++#define NETUP_CI_TSA_DIV	0x0c
++#define NETUP_CI_TSB_DIV	0x0d
++#define NETUP_CI_REVISION	0x0f
++
++/* const for ci op */
++#define NETUP_CI_FLG_CTL	1
++#define NETUP_CI_FLG_RD		1
++#define NETUP_CI_FLG_AD		1
++
++static unsigned int ci_dbg;
++module_param(ci_dbg, int, 0644);
++MODULE_PARM_DESC(ci_dbg, "Enable CI debugging");
++
++static unsigned int pid_dbg;
++module_param(pid_dbg, int, 0644);
++MODULE_PARM_DESC(pid_dbg, "Enable PID filtering debugging");
++
++MODULE_DESCRIPTION("altera FPGA CI module");
++MODULE_AUTHOR("Igor M. Liplianin  <liplianin@netup.ru>");
++MODULE_LICENSE("GPL");
++
++#define ci_dbg_print(args...) \
++	do { \
++		if (ci_dbg) \
++			printk(KERN_DEBUG args); \
++	} while (0)
++
++#define pid_dbg_print(args...) \
++	do { \
++		if (pid_dbg) \
++			printk(KERN_DEBUG args); \
++	} while (0)
++
++struct altera_ci_state;
++struct netup_hw_pid_filter;
++
++struct fpga_internal {
++	void *dev;
++	struct mutex fpga_mutex;/* two CI's on the same fpga */
++	struct netup_hw_pid_filter *pid_filt[2];
++	struct altera_ci_state *state[2];
++	struct work_struct work;
++	int (*fpga_rw) (void *dev, int flag, int data, int rw);
++	int cis_used;
++	int filts_used;
++	int strt_wrk;
++};
++
++/* stores all private variables for communication with CI */
++struct altera_ci_state {
++	struct fpga_internal *internal;
++	struct dvb_ca_en50221 ca;
++	int status;
++	int nr;
++};
++
++/* stores all private variables for hardware pid filtering */
++struct netup_hw_pid_filter {
++	struct fpga_internal *internal;
++	struct dvb_demux *demux;
++	/* save old functions */
++	int (*start_feed)(struct dvb_demux_feed *feed);
++	int (*stop_feed)(struct dvb_demux_feed *feed);
++
++	int status;
++	int nr;
++};
++
++/* internal params node */
++struct fpga_inode {
++	/* pointer for internal params, one for each pair of CI's */
++	struct fpga_internal		*internal;
++	struct fpga_inode		*next_inode;
++};
++
++/* first internal params */
++static struct fpga_inode *fpga_first_inode;
++
++/* find chip by dev */
++static struct fpga_inode *find_inode(void *dev)
 +{
-+	int data;
-+	int tdo = 0;
-+	struct cx23885_dev *dev = (struct cx23885_dev *)device;
-+	/*TMS*/
-+	data = ((cx_read(GP0_IO)) & (~0x00000002));
-+	data |= (tms ? 0x00020002 : 0x00020000);
-+	cx_write(GP0_IO, data);
++	struct fpga_inode *temp_chip = fpga_first_inode;
 +
-+	/*TDI*/
-+	data = ((cx_read(MC417_RWD)) & (~0x0000a000));
-+	data |= (tdi ? 0x00008000 : 0);
-+	cx_write(MC417_RWD, data);
-+	if (read_tdo)
-+		tdo = (data & 0x00004000) ? 1 : 0; /*TDO*/
++	if (temp_chip == NULL)
++		return temp_chip;
 +
-+	cx_write(MC417_RWD, data | 0x00002000);
-+	udelay(1);
-+	/*TCK*/
-+	cx_write(MC417_RWD, data);
++	/*
++	 Search for the last fpga CI chip or
++	 find it by dev */
++	while ((temp_chip != NULL) &&
++				(temp_chip->internal->dev != dev))
++		temp_chip = temp_chip->next_inode;
 +
-+	return tdo;
++	return temp_chip;
++}
++/* check demux */
++static struct fpga_internal *check_filter(struct fpga_internal *temp_int,
++						void *demux_dev, int filt_nr)
++{
++	if (temp_int == NULL)
++		return NULL;
++
++	if ((temp_int->pid_filt[filt_nr]) == NULL)
++		return NULL;
++
++	if (temp_int->pid_filt[filt_nr]->demux == demux_dev)
++		return temp_int;
++
++	return NULL;
 +}
 +
- void cx23885_ir_pci_int_enable(struct cx23885_dev *dev)
- {
- 	switch (dev->board) {
-@@ -1212,6 +1288,7 @@ void cx23885_card_setup(struct cx23885_dev *dev)
- 		ts1->src_sel_val   = CX23885_SRC_SEL_PARALLEL_MPEG_VIDEO;
- 		break;
- 	case CX23885_BOARD_NETUP_DUAL_DVBS2_CI:
-+	case CX23885_BOARD_NETUP_DUAL_DVB_T_C_CI_RF:
- 		ts1->gen_ctrl_val  = 0xc; /* Serial bus + punctured clock */
- 		ts1->ts_clk_en_val = 0x1; /* Enable TS_CLK */
- 		ts1->src_sel_val   = CX23885_SRC_SEL_PARALLEL_MPEG_VIDEO;
-@@ -1271,6 +1348,7 @@ void cx23885_card_setup(struct cx23885_dev *dev)
- 	case CX23885_BOARD_LEADTEK_WINFAST_PXDVR3200_H:
- 	case CX23885_BOARD_COMPRO_VIDEOMATE_E650F:
- 	case CX23885_BOARD_NETUP_DUAL_DVBS2_CI:
-+	case CX23885_BOARD_NETUP_DUAL_DVB_T_C_CI_RF:
- 	case CX23885_BOARD_COMPRO_VIDEOMATE_E800:
- 	case CX23885_BOARD_HAUPPAUGE_HVR1850:
- 	case CX23885_BOARD_MYGICA_X8506:
-@@ -1293,6 +1371,29 @@ void cx23885_card_setup(struct cx23885_dev *dev)
- 	case CX23885_BOARD_NETUP_DUAL_DVBS2_CI:
- 		netup_initialize(dev);
- 		break;
-+	case CX23885_BOARD_NETUP_DUAL_DVB_T_C_CI_RF: {
-+		int ret;
-+		const struct firmware *fw;
-+		const char *filename = "dvb-netup-altera-01.fw";
-+		char *action = "configure";
-+		struct altera_config netup_config = {
-+			.dev = dev,
-+			.action = action,
-+			.jtag_io = netup_jtag_io,
-+		};
++/* find chip by demux */
++static struct fpga_inode *find_dinode(void *demux_dev)
++{
++	struct fpga_inode *temp_chip = fpga_first_inode;
++	struct fpga_internal *temp_int;
 +
-+		netup_initialize(dev);
++	/*
++	 * Search of the last fpga CI chip or
++	 * find it by demux
++	 */
++	while (temp_chip != NULL) {
++		if (temp_chip->internal != NULL) {
++			temp_int = temp_chip->internal;
++			if (check_filter(temp_int, demux_dev, 0))
++				break;
++			if (check_filter(temp_int, demux_dev, 1))
++				break;
++		}
 +
-+		ret = request_firmware(&fw, filename, &dev->pci->dev);
-+		if (ret != 0)
-+			printk(KERN_ERR "did not find the firmware file. (%s) "
-+			"Please see linux/Documentation/dvb/ for more details "
-+			"on firmware-problems.", filename);
-+		else
-+			altera_init(&netup_config, fw);
-+
-+		break;
++		temp_chip = temp_chip->next_inode;
 +	}
- 	}
- }
- 
-diff --git a/drivers/media/video/cx23885/cx23885-core.c b/drivers/media/video/cx23885/cx23885-core.c
-index 3598824..9ad4c9c 100644
---- a/drivers/media/video/cx23885/cx23885-core.c
-+++ b/drivers/media/video/cx23885/cx23885-core.c
-@@ -29,9 +29,11 @@
- #include <linux/interrupt.h>
- #include <linux/delay.h>
- #include <asm/div64.h>
-+#include <linux/firmware.h>
- 
- #include "cx23885.h"
- #include "cimax2.h"
-+#include "altera-ci.h"
- #include "cx23888-ir.h"
- #include "cx23885-ir.h"
- #include "cx23885-av.h"
-@@ -902,8 +904,6 @@ static int cx23885_dev_setup(struct cx23885_dev *dev)
- 	dev->pci_bus  = dev->pci->bus->number;
- 	dev->pci_slot = PCI_SLOT(dev->pci->devfn);
- 	cx23885_irq_add(dev, 0x001f00);
--	if (cx23885_boards[dev->board].cimax > 0)
--		cx23885_irq_add(dev, 0x01800000); /* for CiMaxes */
- 
- 	/* External Master 1 Bus */
- 	dev->i2c_bus[0].nr = 0;
-@@ -1822,14 +1822,13 @@ static irqreturn_t cx23885_irq(int irq, void *dev_id)
- 				PCI_MSK_IR);
- 	}
- 
--	if (cx23885_boards[dev->board].cimax > 0 &&
--		((pci_status & PCI_MSK_GPIO0) ||
--			(pci_status & PCI_MSK_GPIO1))) {
-+	if (cx23885_boards[dev->board].ci_type == 1 &&
-+			(pci_status & (PCI_MSK_GPIO1 | PCI_MSK_GPIO0)))
-+		handled += netup_ci_slot_status(dev, pci_status);
- 
--		if (cx23885_boards[dev->board].cimax > 0)
--			handled += netup_ci_slot_status(dev, pci_status);
--
--	}
-+	if (cx23885_boards[dev->board].ci_type == 2 &&
-+			(pci_status & PCI_MSK_GPIO0))
-+		handled += altera_ci_irq(dev);
- 
- 	if (ts1_status) {
- 		if (cx23885_boards[dev->board].portb == CX23885_MPEG_DVB)
-@@ -2064,7 +2063,10 @@ static int __devinit cx23885_initdev(struct pci_dev *pci_dev,
- 
- 	switch (dev->board) {
- 	case CX23885_BOARD_NETUP_DUAL_DVBS2_CI:
--		cx23885_irq_add_enable(dev, 0x01800000); /* for NetUP */
-+		cx23885_irq_add_enable(dev, PCI_MSK_GPIO1 | PCI_MSK_GPIO0);
-+		break;
-+	case CX23885_BOARD_NETUP_DUAL_DVB_T_C_CI_RF:
-+		cx23885_irq_add_enable(dev, PCI_MSK_GPIO0);
- 		break;
- 	}
- 
-diff --git a/drivers/media/video/cx23885/cx23885-dvb.c b/drivers/media/video/cx23885/cx23885-dvb.c
-index 5958cb8..cf36b9b 100644
---- a/drivers/media/video/cx23885/cx23885-dvb.c
-+++ b/drivers/media/video/cx23885/cx23885-dvb.c
-@@ -58,6 +58,8 @@
- #include "atbm8830.h"
- #include "ds3000.h"
- #include "cx23885-f300.h"
-+#include "altera-ci.h"
-+#include "stv0367.h"
- 
- static unsigned int debug;
- 
-@@ -108,6 +110,22 @@ static void dvb_buf_release(struct videobuf_queue *q,
- 	cx23885_free_buffer(q, (struct cx23885_buffer *)vb);
- }
- 
-+static void cx23885_dvb_gate_ctrl(struct cx23885_tsport  *port, int open)
-+{
-+	struct videobuf_dvb_frontends *f;
-+	struct videobuf_dvb_frontend *fe;
 +
-+	f = &port->frontends;
-+
-+	if (f->gate <= 1) /* undefined or fe0 */
-+		fe = videobuf_dvb_get_frontend(f, 1);
-+	else
-+		fe = videobuf_dvb_get_frontend(f, f->gate);
-+
-+	if (fe && fe->dvb.frontend && fe->dvb.frontend->ops.i2c_gate_ctrl)
-+		fe->dvb.frontend->ops.i2c_gate_ctrl(fe->dvb.frontend, open);
++	return temp_chip;
 +}
 +
- static struct videobuf_queue_ops dvb_qops = {
- 	.buf_setup    = dvb_buf_setup,
- 	.buf_prepare  = dvb_buf_prepare,
-@@ -570,12 +588,84 @@ static struct max2165_config mygic_x8558pro_max2165_cfg2 = {
- 	.i2c_address = 0x60,
- 	.osc_clk = 20
- };
-+static struct stv0367_config netup_stv0367_config[] = {
-+	{
-+		.demod_address = 0x1c,
-+		.xtal = 27000000,
-+		.if_khz = 4500,
-+		.if_iq_mode = 0,
-+		.ts_mode = 1,
-+		.clk_pol = 0,
-+	}, {
-+		.demod_address = 0x1d,
-+		.xtal = 27000000,
-+		.if_khz = 4500,
-+		.if_iq_mode = 0,
-+		.ts_mode = 1,
-+		.clk_pol = 0,
-+	},
-+};
-+
-+static struct xc5000_config netup_xc5000_config[] = {
-+	{
-+		.i2c_address = 0x61,
-+		.if_khz = 4500,
-+	}, {
-+		.i2c_address = 0x64,
-+		.if_khz = 4500,
-+	},
-+};
-+
-+int netup_altera_fpga_rw(void *device, int flag, int data, int read)
++/* deallocating chip */
++static void remove_inode(struct fpga_internal *internal)
 +{
-+	struct cx23885_dev *dev = (struct cx23885_dev *)device;
-+	unsigned long timeout = jiffies + msecs_to_jiffies(1);
++	struct fpga_inode *prev_node = fpga_first_inode;
++	struct fpga_inode *del_node = find_inode(internal->dev);
++
++	if (del_node != NULL) {
++		if (del_node == fpga_first_inode) {
++			fpga_first_inode = del_node->next_inode;
++		} else {
++			while (prev_node->next_inode != del_node)
++				prev_node = prev_node->next_inode;
++
++			if (del_node->next_inode == NULL)
++				prev_node->next_inode = NULL;
++			else
++				prev_node->next_inode =
++					prev_node->next_inode->next_inode;
++		}
++
++		kfree(del_node);
++	}
++}
++
++/* allocating new chip */
++static struct fpga_inode *append_internal(struct fpga_internal *internal)
++{
++	struct fpga_inode *new_node = fpga_first_inode;
++
++	if (new_node == NULL) {
++		new_node = kmalloc(sizeof(struct fpga_inode), GFP_KERNEL);
++		fpga_first_inode = new_node;
++	} else {
++		while (new_node->next_inode != NULL)
++			new_node = new_node->next_inode;
++
++		new_node->next_inode =
++				kmalloc(sizeof(struct fpga_inode), GFP_KERNEL);
++		if (new_node->next_inode != NULL)
++			new_node = new_node->next_inode;
++		else
++			new_node = NULL;
++	}
++
++	if (new_node != NULL) {
++		new_node->internal = internal;
++		new_node->next_inode = NULL;
++	}
++
++	return new_node;
++}
++
++static int netup_fpga_op_rw(struct fpga_internal *inter, int addr,
++							u8 val, u8 read)
++{
++	inter->fpga_rw(inter->dev, NETUP_CI_FLG_AD, addr, 0);
++	return inter->fpga_rw(inter->dev, 0, val, read);
++}
++
++/* flag - mem/io, read - read/write */
++int altera_ci_op_cam(struct dvb_ca_en50221 *en50221, int slot,
++				u8 flag, u8 read, int addr, u8 val)
++{
++
++	struct altera_ci_state *state = en50221->data;
++	struct fpga_internal *inter = state->internal;
++
++	u8 store;
 +	int mem = 0;
 +
-+	cx_set(MC417_RWD, ALT_RD | ALT_WR | ALT_CS);
-+	if (read)
-+		cx_set(MC417_OEN, ALT_DATA);
-+	else {
-+		cx_clear(MC417_OEN, ALT_DATA);/* D0-D7 out */
-+		mem = cx_read(MC417_RWD);
-+		mem &= ~ALT_DATA;
-+		mem |= (data & ALT_DATA);
-+		cx_write(MC417_RWD, mem);
-+	}
++	if (0 != slot)
++		return -EINVAL;
 +
-+	if (flag)
-+		cx_set(MC417_RWD, ALT_AD_RG);/* ADDR */
-+	else
-+		cx_clear(MC417_RWD, ALT_AD_RG);/* VAL */
++	mutex_lock(&inter->fpga_mutex);
 +
-+	cx_clear(MC417_RWD, ALT_CS);/* ~CS */
-+	if (read)
-+		cx_clear(MC417_RWD, ALT_RD);
-+	else
-+		cx_clear(MC417_RWD, ALT_WR);
++	netup_fpga_op_rw(inter, NETUP_CI_ADDR0, ((addr << 1) & 0xfe), 0);
++	netup_fpga_op_rw(inter, NETUP_CI_ADDR1, ((addr >> 7) & 0x7f), 0);
++	store = netup_fpga_op_rw(inter, NETUP_CI_BUSCTRL, 0, NETUP_CI_FLG_RD);
++
++	store &= 0x3f;
++	store |= ((state->nr << 7) | (flag << 6));
++
++	netup_fpga_op_rw(inter, NETUP_CI_BUSCTRL, store, 0);
++	mem = netup_fpga_op_rw(inter, NETUP_CI_DATA, val, read);
++
++	mutex_unlock(&inter->fpga_mutex);
++
++	ci_dbg_print("%s: %s: addr=[0x%02x], %s=%x\n", __func__,
++			(read) ? "read" : "write", addr,
++			(flag == NETUP_CI_FLG_CTL) ? "ctl" : "mem",
++			(read) ? mem : val);
++
++	return mem;
++}
++
++int altera_ci_read_attribute_mem(struct dvb_ca_en50221 *en50221,
++						int slot, int addr)
++{
++	return altera_ci_op_cam(en50221, slot, 0, NETUP_CI_FLG_RD, addr, 0);
++}
++
++int altera_ci_write_attribute_mem(struct dvb_ca_en50221 *en50221,
++						int slot, int addr, u8 data)
++{
++	return altera_ci_op_cam(en50221, slot, 0, 0, addr, data);
++}
++
++int altera_ci_read_cam_ctl(struct dvb_ca_en50221 *en50221, int slot, u8 addr)
++{
++	return altera_ci_op_cam(en50221, slot, NETUP_CI_FLG_CTL,
++						NETUP_CI_FLG_RD, addr, 0);
++}
++
++int altera_ci_write_cam_ctl(struct dvb_ca_en50221 *en50221, int slot,
++						u8 addr, u8 data)
++{
++	return altera_ci_op_cam(en50221, slot, NETUP_CI_FLG_CTL, 0, addr, data);
++}
++
++int altera_ci_slot_reset(struct dvb_ca_en50221 *en50221, int slot)
++{
++	struct altera_ci_state *state = en50221->data;
++	struct fpga_internal *inter = state->internal;
++	/* reasonable timeout for CI reset is 10 seconds */
++	unsigned long t_out = jiffies + msecs_to_jiffies(9999);
++	int ret;
++
++	ci_dbg_print("%s\n", __func__);
++
++	if (0 != slot)
++		return -EINVAL;
++
++	mutex_lock(&inter->fpga_mutex);
++
++	ret = netup_fpga_op_rw(inter, NETUP_CI_BUSCTRL, 0, NETUP_CI_FLG_RD);
++	netup_fpga_op_rw(inter, NETUP_CI_BUSCTRL,
++				ret | (1 << (5 - state->nr)), 0);
 +
 +	for (;;) {
-+		mem = cx_read(MC417_RWD);
-+		if ((mem & ALT_RDY) == 0)
++		mdelay(50);
++		ret = netup_fpga_op_rw(inter, NETUP_CI_BUSCTRL,
++						0, NETUP_CI_FLG_RD);
++		if ((ret & (1 << (5 - state->nr))) == 0)
 +			break;
-+		if (time_after(jiffies, timeout))
++		if (time_after(jiffies, t_out))
 +			break;
-+		udelay(1);
 +	}
 +
-+	cx_set(MC417_RWD, ALT_RD | ALT_WR | ALT_CS);
-+	if (read)
-+		return mem & ALT_DATA;
++	mutex_unlock(&inter->fpga_mutex);
++
++	ci_dbg_print("%s: %d msecs\n", __func__,
++		jiffies_to_msecs(jiffies + msecs_to_jiffies(9999) - t_out));
 +
 +	return 0;
++}
++
++int altera_ci_slot_shutdown(struct dvb_ca_en50221 *en50221, int slot)
++{
++	/* not implemented */
++	return 0;
++}
++
++int altera_ci_slot_ts_ctl(struct dvb_ca_en50221 *en50221, int slot)
++{
++	struct altera_ci_state *state = en50221->data;
++	struct fpga_internal *inter = state->internal;
++	int ret;
++
++	ci_dbg_print("%s\n", __func__);
++
++	if (0 != slot)
++		return -EINVAL;
++
++	mutex_lock(&inter->fpga_mutex);
++
++	ret = netup_fpga_op_rw(inter, NETUP_CI_BUSCTRL, 0, NETUP_CI_FLG_RD);
++	netup_fpga_op_rw(inter, NETUP_CI_BUSCTRL,
++				ret | (1 << (3 - state->nr)), 0);
++
++	mutex_unlock(&inter->fpga_mutex);
++
++	return 0;
++}
++
++/* work handler */
++static void netup_read_ci_status(struct work_struct *work)
++{
++	struct fpga_internal *inter =
++			container_of(work, struct fpga_internal, work);
++	int ret;
++
++	ci_dbg_print("%s\n", __func__);
++
++	mutex_lock(&inter->fpga_mutex);
++	/* ack' irq */
++	ret = netup_fpga_op_rw(inter, NETUP_CI_INT_CTRL, 0, NETUP_CI_FLG_RD);
++	ret = netup_fpga_op_rw(inter, NETUP_CI_BUSCTRL, 0, NETUP_CI_FLG_RD);
++
++	mutex_unlock(&inter->fpga_mutex);
++
++	if (inter->state[1] != NULL) {
++		inter->state[1]->status =
++				((ret & 1) == 0 ?
++				DVB_CA_EN50221_POLL_CAM_PRESENT |
++				DVB_CA_EN50221_POLL_CAM_READY : 0);
++		ci_dbg_print("%s: setting CI[1] status = 0x%x\n",
++				__func__, inter->state[1]->status);
++	};
++
++	if (inter->state[0] != NULL) {
++		inter->state[0]->status =
++				((ret & 2) == 0 ?
++				DVB_CA_EN50221_POLL_CAM_PRESENT |
++				DVB_CA_EN50221_POLL_CAM_READY : 0);
++		ci_dbg_print("%s: setting CI[0] status = 0x%x\n",
++				__func__, inter->state[0]->status);
++	};
++}
++
++/* CI irq handler */
++int altera_ci_irq(void *dev)
++{
++	struct fpga_inode *temp_int = NULL;
++	struct fpga_internal *inter = NULL;
++
++	ci_dbg_print("%s\n", __func__);
++
++	if (dev != NULL) {
++		temp_int = find_inode(dev);
++		if (temp_int != NULL) {
++			inter = temp_int->internal;
++			schedule_work(&inter->work);
++		}
++	}
++
++	return 1;
++}
++EXPORT_SYMBOL(altera_ci_irq);
++
++int altera_poll_ci_slot_status(struct dvb_ca_en50221 *en50221, int slot,
++								int open)
++{
++	struct altera_ci_state *state = en50221->data;
++
++	if (0 != slot)
++		return -EINVAL;
++
++	return state->status;
++}
++
++void altera_hw_filt_release(void *main_dev, int filt_nr)
++{
++	struct fpga_inode *temp_int = find_inode(main_dev);
++	struct netup_hw_pid_filter *pid_filt = NULL;
++
++	ci_dbg_print("%s\n", __func__);
++
++	if (temp_int != NULL) {
++		pid_filt = temp_int->internal->pid_filt[filt_nr - 1];
++		/* stored old feed controls */
++		pid_filt->demux->start_feed = pid_filt->start_feed;
++		pid_filt->demux->stop_feed = pid_filt->stop_feed;
++
++		if (((--(temp_int->internal->filts_used)) <= 0) &&
++			 ((temp_int->internal->cis_used) <= 0)) {
++
++			ci_dbg_print("%s: Actually removing\n", __func__);
++
++			remove_inode(temp_int->internal);
++			kfree(pid_filt->internal);
++		}
++
++		kfree(pid_filt);
++
++	}
++
++}
++EXPORT_SYMBOL(altera_hw_filt_release);
++
++void altera_ci_release(void *dev, int ci_nr)
++{
++	struct fpga_inode *temp_int = find_inode(dev);
++	struct altera_ci_state *state = NULL;
++
++	ci_dbg_print("%s\n", __func__);
++
++	if (temp_int != NULL) {
++		state = temp_int->internal->state[ci_nr - 1];
++		altera_hw_filt_release(dev, ci_nr);
++
++
++		if (((temp_int->internal->filts_used) <= 0) &&
++				((--(temp_int->internal->cis_used)) <= 0)) {
++
++			ci_dbg_print("%s: Actually removing\n", __func__);
++
++			remove_inode(temp_int->internal);
++			kfree(state->internal);
++		}
++
++		if (state != NULL) {
++			if (state->ca.data != NULL)
++				dvb_ca_en50221_release(&state->ca);
++
++			kfree(state);
++		}
++	}
++
++}
++EXPORT_SYMBOL(altera_ci_release);
++
++static void altera_pid_control(struct netup_hw_pid_filter *pid_filt,
++		u16 pid, int onoff)
++{
++	struct fpga_internal *inter = pid_filt->internal;
++	u8 store = 0;
++
++	if (pid == 0x2000)
++		return;
++
++	mutex_lock(&inter->fpga_mutex);
++
++	netup_fpga_op_rw(inter, NETUP_CI_PID_ADDR0, (pid >> 3) & 0xff, 0);
++	netup_fpga_op_rw(inter, NETUP_CI_PID_ADDR1,
++			((pid >> 11) & 0x03) | (pid_filt->nr << 2), 0);
++
++	store = netup_fpga_op_rw(inter, NETUP_CI_PID_DATA, 0, NETUP_CI_FLG_RD);
++
++	if (onoff)/* 0 - on, 1 - off */
++		store |= (1 << (pid & 7));
++	else
++		store &= ~(1 << (pid & 7));
++
++	netup_fpga_op_rw(inter, NETUP_CI_PID_DATA, store, 0);
++
++	mutex_unlock(&inter->fpga_mutex);
++
++	pid_dbg_print("%s: (%d) set pid: %5d 0x%04x '%s'\n", __func__,
++		pid_filt->nr, pid, pid, onoff ? "off" : "on");
++}
++
++static void altera_toggle_fullts_streaming(struct netup_hw_pid_filter *pid_filt,
++					int filt_nr, int onoff)
++{
++	struct fpga_internal *inter = pid_filt->internal;
++	u8 store = 0;
++	int i;
++
++	pid_dbg_print("%s: pid_filt->nr[%d]  now %s\n", __func__, pid_filt->nr,
++			onoff ? "off" : "on");
++
++	if (onoff)/* 0 - on, 1 - off */
++		store = 0xff;/* ignore pid */
++	else
++		store = 0;/* enable pid */
++
++	mutex_lock(&inter->fpga_mutex);
++
++	for (i = 0; i < 1024; i++) {
++		netup_fpga_op_rw(inter, NETUP_CI_PID_ADDR0, i & 0xff, 0);
++
++		netup_fpga_op_rw(inter, NETUP_CI_PID_ADDR1,
++				((i >> 8) & 0x03) | (pid_filt->nr << 2), 0);
++
++		netup_fpga_op_rw(inter, NETUP_CI_PID_DATA, store, 0);
++	}
++
++	mutex_unlock(&inter->fpga_mutex);
++}
++
++int altera_pid_feed_control(void *demux_dev, int filt_nr,
++		struct dvb_demux_feed *feed, int onoff)
++{
++	struct fpga_inode *temp_int = find_dinode(demux_dev);
++	struct fpga_internal *inter = temp_int->internal;
++	struct netup_hw_pid_filter *pid_filt = inter->pid_filt[filt_nr - 1];
++
++	altera_pid_control(pid_filt, feed->pid, onoff ? 0 : 1);
++	/* call old feed proc's */
++	if (onoff)
++		pid_filt->start_feed(feed);
++	else
++		pid_filt->stop_feed(feed);
++
++	if (feed->pid == 0x2000)
++		altera_toggle_fullts_streaming(pid_filt, filt_nr,
++						onoff ? 0 : 1);
++
++	return 0;
++}
++EXPORT_SYMBOL(altera_pid_feed_control);
++
++int altera_ci_start_feed(struct dvb_demux_feed *feed, int num)
++{
++	altera_pid_feed_control(feed->demux, num, feed, 1);
++
++	return 0;
++}
++
++int altera_ci_stop_feed(struct dvb_demux_feed *feed, int num)
++{
++	altera_pid_feed_control(feed->demux, num, feed, 0);
++
++	return 0;
++}
++
++int altera_ci_start_feed_1(struct dvb_demux_feed *feed)
++{
++	return altera_ci_start_feed(feed, 1);
++}
++
++int altera_ci_stop_feed_1(struct dvb_demux_feed *feed)
++{
++	return altera_ci_stop_feed(feed, 1);
++}
++
++int altera_ci_start_feed_2(struct dvb_demux_feed *feed)
++{
++	return altera_ci_start_feed(feed, 2);
++}
++
++int altera_ci_stop_feed_2(struct dvb_demux_feed *feed)
++{
++	return altera_ci_stop_feed(feed, 2);
++}
++
++int altera_hw_filt_init(struct altera_ci_config *config, int hw_filt_nr)
++{
++	struct netup_hw_pid_filter *pid_filt = NULL;
++	struct fpga_inode *temp_int = find_inode(config->dev);
++	struct fpga_internal *inter = NULL;
++	int ret = 0;
++
++	pid_filt = kzalloc(sizeof(struct netup_hw_pid_filter), GFP_KERNEL);
++
++	ci_dbg_print("%s\n", __func__);
++
++	if (!pid_filt) {
++		ret = -ENOMEM;
++		goto err;
++	}
++
++	if (temp_int != NULL) {
++		inter = temp_int->internal;
++		(inter->filts_used)++;
++		ci_dbg_print("%s: Find Internal Structure!\n", __func__);
++	} else {
++		inter = kzalloc(sizeof(struct fpga_internal), GFP_KERNEL);
++		if (!inter) {
++			ret = -ENOMEM;
++			goto err;
++		}
++
++		temp_int = append_internal(inter);
++		inter->filts_used = 1;
++		inter->dev = config->dev;
++		inter->fpga_rw = config->fpga_rw;
++		mutex_init(&inter->fpga_mutex);
++		inter->strt_wrk = 1;
++		ci_dbg_print("%s: Create New Internal Structure!\n", __func__);
++	}
++
++	ci_dbg_print("%s: setting hw pid filter = 0x%x for ci = %d\n", __func__,
++						(int)pid_filt, hw_filt_nr - 1);
++	inter->pid_filt[hw_filt_nr - 1] = pid_filt;
++	pid_filt->demux = config->demux;
++	pid_filt->internal = inter;
++	pid_filt->nr = hw_filt_nr - 1;
++	/* store old feed controls */
++	pid_filt->start_feed = config->demux->start_feed;
++	pid_filt->stop_feed = config->demux->stop_feed;
++	/* replace with new feed controls */
++	if (hw_filt_nr == 1) {
++		pid_filt->demux->start_feed = altera_ci_start_feed_1;
++		pid_filt->demux->stop_feed = altera_ci_stop_feed_1;
++	} else if (hw_filt_nr == 2) {
++		pid_filt->demux->start_feed = altera_ci_start_feed_2;
++		pid_filt->demux->stop_feed = altera_ci_stop_feed_2;
++	}
++
++	altera_toggle_fullts_streaming(pid_filt, 0, 1);
++
++	return 0;
++err:
++	ci_dbg_print("%s: Can't init hardware filter: Error %d\n",
++		     __func__, ret);
++
++	kfree(pid_filt);
++
++	return ret;
++}
++EXPORT_SYMBOL(altera_hw_filt_init);
++
++int altera_ci_init(struct altera_ci_config *config, int ci_nr)
++{
++	struct altera_ci_state *state;
++	struct fpga_inode *temp_int = find_inode(config->dev);
++	struct fpga_internal *inter = NULL;
++	int ret = 0;
++	u8 store = 0;
++
++	state = kzalloc(sizeof(struct altera_ci_state), GFP_KERNEL);
++
++	ci_dbg_print("%s\n", __func__);
++
++	if (!state) {
++		ret = -ENOMEM;
++		goto err;
++	}
++
++	if (temp_int != NULL) {
++		inter = temp_int->internal;
++		(inter->cis_used)++;
++		ci_dbg_print("%s: Find Internal Structure!\n", __func__);
++	} else {
++		inter = kzalloc(sizeof(struct fpga_internal), GFP_KERNEL);
++		if (!inter) {
++			ret = -ENOMEM;
++			goto err;
++		}
++
++		temp_int = append_internal(inter);
++		inter->cis_used = 1;
++		inter->dev = config->dev;
++		inter->fpga_rw = config->fpga_rw;
++		mutex_init(&inter->fpga_mutex);
++		inter->strt_wrk = 1;
++		ci_dbg_print("%s: Create New Internal Structure!\n", __func__);
++	}
++
++	ci_dbg_print("%s: setting state = 0x%x for ci = %d\n", __func__,
++						(int)state, ci_nr - 1);
++	inter->state[ci_nr - 1] = state;
++	state->internal = inter;
++	state->nr = ci_nr - 1;
++
++	state->ca.owner = THIS_MODULE;
++	state->ca.read_attribute_mem = altera_ci_read_attribute_mem;
++	state->ca.write_attribute_mem = altera_ci_write_attribute_mem;
++	state->ca.read_cam_control = altera_ci_read_cam_ctl;
++	state->ca.write_cam_control = altera_ci_write_cam_ctl;
++	state->ca.slot_reset = altera_ci_slot_reset;
++	state->ca.slot_shutdown = altera_ci_slot_shutdown;
++	state->ca.slot_ts_enable = altera_ci_slot_ts_ctl;
++	state->ca.poll_slot_status = altera_poll_ci_slot_status;
++	state->ca.data = state;
++
++	ret = dvb_ca_en50221_init(config->adapter,
++				   &state->ca,
++				   /* flags */ 0,
++				   /* n_slots */ 1);
++	if (0 != ret)
++		goto err;
++
++	altera_hw_filt_init(config, ci_nr);
++
++	if (inter->strt_wrk) {
++		INIT_WORK(&inter->work, netup_read_ci_status);
++		inter->strt_wrk = 0;
++	}
++
++	ci_dbg_print("%s: CI initialized!\n", __func__);
++
++	mutex_lock(&inter->fpga_mutex);
++
++	/* Enable div */
++	netup_fpga_op_rw(inter, NETUP_CI_TSA_DIV, 0x0, 0);
++	netup_fpga_op_rw(inter, NETUP_CI_TSB_DIV, 0x0, 0);
++
++	/* enable TS out */
++	store = netup_fpga_op_rw(inter, NETUP_CI_BUSCTRL2, 0, NETUP_CI_FLG_RD);
++	store |= (3 << 4);
++	netup_fpga_op_rw(inter, NETUP_CI_BUSCTRL2, store, 0);
++
++	ret = netup_fpga_op_rw(inter, NETUP_CI_REVISION, 0, NETUP_CI_FLG_RD);
++	/* enable irq */
++	netup_fpga_op_rw(inter, NETUP_CI_INT_CTRL, 0x44, 0);
++
++	mutex_unlock(&inter->fpga_mutex);
++
++	ci_dbg_print("%s: NetUP CI Revision = 0x%x\n", __func__, ret);
++
++	schedule_work(&inter->work);
++
++	return 0;
++err:
++	ci_dbg_print("%s: Cannot initialize CI: Error %d.\n", __func__, ret);
++
++	kfree(state);
++
++	return ret;
++}
++EXPORT_SYMBOL(altera_ci_init);
++
++int altera_ci_tuner_reset(void *dev, int ci_nr)
++{
++	struct fpga_inode *temp_int = find_inode(dev);
++	struct fpga_internal *inter = NULL;
++	u8 store;
++
++	ci_dbg_print("%s\n", __func__);
++
++	if (temp_int == NULL)
++		return -1;
++
++	if (temp_int->internal == NULL)
++		return -1;
++
++	inter = temp_int->internal;
++
++	mutex_lock(&inter->fpga_mutex);
++
++	store = netup_fpga_op_rw(inter, NETUP_CI_BUSCTRL2, 0, NETUP_CI_FLG_RD);
++	store &= ~(4 << (2 - ci_nr));
++	netup_fpga_op_rw(inter, NETUP_CI_BUSCTRL2, store, 0);
++	msleep(100);
++	store |= (4 << (2 - ci_nr));
++	netup_fpga_op_rw(inter, NETUP_CI_BUSCTRL2, store, 0);
++
++	mutex_unlock(&inter->fpga_mutex);
++
++	return 0;
++}
++EXPORT_SYMBOL(altera_ci_tuner_reset);
+diff --git a/drivers/media/video/cx23885/altera-ci.h b/drivers/media/video/cx23885/altera-ci.h
+new file mode 100644
+index 0000000..ba0c6c0
+--- /dev/null
++++ b/drivers/media/video/cx23885/altera-ci.h
+@@ -0,0 +1,102 @@
++/*
++ * altera-ci.c
++ *
++ *  CI driver in conjunction with NetUp Dual DVB-T/C RF CI card
++ *
++ * Copyright (C) 2010 NetUP Inc.
++ * Copyright (C) 2010 Igor M. Liplianin <liplianin@netup.ru>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
++#ifndef __ALTERA_CI_H
++#define __ALTERA_CI_H
++
++#define ALT_DATA	0x000000ff
++#define ALT_TDI		0x00008000
++#define ALT_TDO		0x00004000
++#define ALT_TCK		0x00002000
++#define ALT_RDY		0x00001000
++#define ALT_RD		0x00000800
++#define ALT_WR		0x00000400
++#define ALT_AD_RG	0x00000200
++#define ALT_CS		0x00000100
++
++struct altera_ci_config {
++	void *dev;/* main dev, for example cx23885_dev */
++	void *adapter;/* for CI to connect to */
++	struct dvb_demux *demux;/* for hardware PID filter to connect to */
++	int (*fpga_rw) (void *dev, int ad_rg, int val, int rw);
 +};
- 
- static int dvb_register(struct cx23885_tsport *port)
- {
- 	struct cx23885_dev *dev = port->dev;
- 	struct cx23885_i2c *i2c_bus = NULL, *i2c_bus2 = NULL;
--	struct videobuf_dvb_frontend *fe0;
-+	struct videobuf_dvb_frontend *fe0, *fe1 = NULL;
-+	int mfe_shared = 0; /* bus not shared by default */
- 	int ret;
- 
- 	/* Get the first frontend */
-@@ -586,6 +676,12 @@ static int dvb_register(struct cx23885_tsport *port)
- 	/* init struct videobuf_dvb */
- 	fe0->dvb.name = dev->name;
- 
-+	/* multi-frontend gate control is undefined or defaults to fe0 */
-+	port->frontends.gate = 0;
 +
-+	/* Sets the gate control callback to be used by i2c command calls */
-+	port->gate_ctrl = cx23885_dvb_gate_ctrl;
++#if defined(CONFIG_MEDIA_ALTERA_CI) || (defined(CONFIG_MEDIA_ALTERA_CI_MODULE) \
++							&& defined(MODULE))
 +
- 	/* init frontend */
- 	switch (dev->board) {
- 	case CX23885_BOARD_HAUPPAUGE_HVR1250:
-@@ -966,20 +1062,61 @@ static int dvb_register(struct cx23885_tsport *port)
- 			break;
- 		}
- 		break;
--
-+	case CX23885_BOARD_NETUP_DUAL_DVB_T_C_CI_RF:
-+		i2c_bus = &dev->i2c_bus[0];
-+		mfe_shared = 1;/* MFE */
-+		port->frontends.gate = 0;/* not clear for me yet */
-+		/* ports B, C */
-+		/* MFE frontend 1 DVB-T */
-+		fe0->dvb.frontend = dvb_attach(stv0367ter_attach,
-+					&netup_stv0367_config[port->nr - 1],
-+					&i2c_bus->i2c_adap);
-+		if (fe0->dvb.frontend != NULL)
-+			if (NULL == dvb_attach(xc5000_attach,
-+					fe0->dvb.frontend,
-+					&i2c_bus->i2c_adap,
-+					&netup_xc5000_config[port->nr - 1]))
-+				goto frontend_detach;
-+		/* MFE frontend 2 */
-+		fe1 = videobuf_dvb_get_frontend(&port->frontends, 2);
-+		if (fe1 == NULL)
-+			goto frontend_detach;
-+		/* DVB-C init */
-+		fe1->dvb.frontend = dvb_attach(stv0367cab_attach,
-+					&netup_stv0367_config[port->nr - 1],
-+					&i2c_bus->i2c_adap);
-+		if (fe1->dvb.frontend != NULL) {
-+			fe1->dvb.frontend->id = 1;
-+			if (NULL == dvb_attach(xc5000_attach,
-+					fe1->dvb.frontend,
-+					&i2c_bus->i2c_adap,
-+					&netup_xc5000_config[port->nr - 1]))
-+				goto frontend_detach;
-+		}
-+		break;
- 	default:
- 		printk(KERN_INFO "%s: The frontend of your DVB/ATSC card "
- 			" isn't supported yet\n",
- 		       dev->name);
- 		break;
- 	}
--	if (NULL == fe0->dvb.frontend) {
++extern int altera_ci_init(struct altera_ci_config *config, int ci_nr);
++extern void altera_ci_release(void *dev, int ci_nr);
++extern int altera_ci_irq(void *dev);
++extern int altera_ci_tuner_reset(void *dev, int ci_nr);
 +
-+	if ((NULL == fe0->dvb.frontend) || (fe1 && NULL == fe1->dvb.frontend)) {
- 		printk(KERN_ERR "%s: frontend initialization failed\n",
--			dev->name);
--		return -1;
-+		       dev->name);
-+		goto frontend_detach;
- 	}
++#else
 +
- 	/* define general-purpose callback pointer */
- 	fe0->dvb.frontend->callback = cx23885_tuner_callback;
-+	if (fe1)
-+		fe1->dvb.frontend->callback = cx23885_tuner_callback;
-+#if 0
-+	/* Ensure all frontends negotiate bus access */
-+	fe0->dvb.frontend->ops.ts_bus_ctrl = cx23885_dvb_bus_ctrl;
-+	if (fe1)
-+		fe1->dvb.frontend->ops.ts_bus_ctrl = cx23885_dvb_bus_ctrl;
++static inline int altera_ci_init(struct altera_ci_config *config, int ci_nr)
++{
++	printk(KERN_WARNING "%s: driver disabled by Kconfig\n", __func__);
++	return 0;
++}
++
++static inline void altera_ci_release(void *dev, int ci_nr)
++{
++	printk(KERN_WARNING "%s: driver disabled by Kconfig\n", __func__);
++	return 0;
++}
++
++static inline int altera_ci_irq(void *dev)
++{
++	printk(KERN_WARNING "%s: driver disabled by Kconfig\n", __func__);
++	return 0;
++}
++
++static int altera_ci_tuner_reset(void *dev, int ci_nr)
++{
++	printk(KERN_WARNING "%s: driver disabled by Kconfig\n", __func__);
++	return 0;
++}
++
 +#endif
- 
- 	/* Put the analog decoder in standby to keep it quiet */
- 	call_all(dev, core, s_power, 0);
-@@ -989,10 +1126,10 @@ static int dvb_register(struct cx23885_tsport *port)
- 
- 	/* register everything */
- 	ret = videobuf_dvb_register_bus(&port->frontends, THIS_MODULE, port,
--					&dev->pci->dev, adapter_nr, 0,
-+					&dev->pci->dev, adapter_nr, mfe_shared,
- 					cx23885_dvb_fe_ioctl_override);
- 	if (ret)
--		return ret;
-+		goto frontend_detach;
- 
- 	/* init CI & MAC */
- 	switch (dev->board) {
-@@ -1008,6 +1145,17 @@ static int dvb_register(struct cx23885_tsport *port)
- 		netup_ci_init(port);
- 		break;
- 		}
-+	case CX23885_BOARD_NETUP_DUAL_DVB_T_C_CI_RF: {
-+		struct altera_ci_config netup_ci_cfg = {
-+			.dev = dev,/* magic number to identify*/
-+			.adapter = &port->frontends.adapter,/* for CI */
-+			.demux = &fe0->dvb.demux,/* for hw pid filter */
-+			.fpga_rw = netup_altera_fpga_rw,
-+		};
++#if 0
++static inline int altera_hw_filt_init(struct altera_ci_config *config,
++							int hw_filt_nr)
++{
++	printk(KERN_WARNING "%s: driver disabled by Kconfig\n", __func__);
++	return 0;
++}
 +
-+		altera_ci_init(&netup_ci_cfg, port->nr);
-+		break;
-+		}
- 	case CX23885_BOARD_TEVII_S470: {
- 		u8 eeprom[256]; /* 24C02 i2c eeprom */
- 
-@@ -1024,6 +1172,11 @@ static int dvb_register(struct cx23885_tsport *port)
- 	}
- 
- 	return ret;
++static inline void altera_hw_filt_release(void *dev, int filt_nr)
++{
++	printk(KERN_WARNING "%s: driver disabled by Kconfig\n", __func__);
++	return 0;
++}
 +
-+frontend_detach:
-+	port->gate_ctrl = NULL;
-+	videobuf_dvb_dealloc_frontends(&port->frontends);
-+	return -EINVAL;
- }
- 
- int cx23885_dvb_register(struct cx23885_tsport *port)
-@@ -1100,8 +1253,13 @@ int cx23885_dvb_unregister(struct cx23885_tsport *port)
- 	case CX23885_BOARD_NETUP_DUAL_DVBS2_CI:
- 		netup_ci_exit(port);
- 		break;
-+	case CX23885_BOARD_NETUP_DUAL_DVB_T_C_CI_RF:
-+		altera_ci_release(port->dev, port->nr);
-+		break;
- 	}
- 
-+	port->gate_ctrl = NULL;
++static inline int altera_pid_feed_control(void *dev, int filt_nr,
++		struct dvb_demux_feed *dvbdmxfeed, int onoff)
++{
++	printk(KERN_WARNING "%s: driver disabled by Kconfig\n", __func__);
++	return 0;
++}
 +
- 	return 0;
- }
- 
-diff --git a/drivers/media/video/cx23885/cx23885.h b/drivers/media/video/cx23885/cx23885.h
-index 62e41ab..8b77fea 100644
---- a/drivers/media/video/cx23885/cx23885.h
-+++ b/drivers/media/video/cx23885/cx23885.h
-@@ -85,6 +85,7 @@
- #define CX23885_BOARD_MYGICA_X8558PRO          27
- #define CX23885_BOARD_LEADTEK_WINFAST_PXTV1200 28
- #define CX23885_BOARD_GOTVIEW_X5_3D_HYBRID     29
-+#define CX23885_BOARD_NETUP_DUAL_DVB_T_C_CI_RF 30
- 
- #define GPIO_0 0x00000001
- #define GPIO_1 0x00000002
-@@ -220,7 +221,7 @@ struct cx23885_board {
- 	 */
- 	u32			clk_freq;
- 	struct cx23885_input    input[MAX_CX23885_INPUT];
--	int			cimax; /* for NetUP */
-+	int			ci_type; /* for NetUP */
- };
- 
- struct cx23885_subid {
-@@ -303,6 +304,7 @@ struct cx23885_tsport {
- 
- 	/* Allow a single tsport to have multiple frontends */
- 	u32                        num_frontends;
-+	void                (*gate_ctrl)(struct cx23885_tsport *port, int open);
- 	void                       *port_priv;
- };
- 
++#endif /* CONFIG_MEDIA_ALTERA_CI */
++
++#endif /* __ALTERA_CI_H */
 -- 
 1.7.1
 
