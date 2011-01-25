@@ -1,267 +1,440 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296Ab1AYRWL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 12:22:11 -0500
-Received: from casper.infradead.org ([85.118.1.10]:46994 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255Ab1AYRWK (ORCPT
+	id S1753810Ab1AYR0p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 12:26:45 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:48541 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753268Ab1AYRWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 12:22:10 -0500
+	Tue, 25 Jan 2011 12:22:11 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 16/29] perf test: Add test for the evlist mmap routines
-Date: Tue, 25 Jan 2011 15:21:39 -0200
-Message-Id: <1295976112-2796-17-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        2nddept-manager@sdl.hitachi.co.jp, Franck Bui-Huu <fbuihuu@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 22/29] perf probe: Introduce lines walker interface
+Date: Tue, 25 Jan 2011 15:21:45 -0200
+Message-Id: <1295976112-2796-23-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1295976112-2796-1-git-send-email-acme@infradead.org>
 References: <1295976112-2796-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-This test will generate random numbers of calls to some getpid syscalls,
-then establish an mmap for a group of events that are created to monitor
-these syscalls.
+Introduce die_walk_lines() for walking on the line list of given die, and use
+it in line_range finder and probe point finder.
 
-It will receive the events, using mmap, use its PERF_SAMPLE_ID generated
-sample.id field to map back to its respective perf_evsel instance.
-
-Then it checks if the number of syscalls reported as perf events by the
-kernel corresponds to the number of syscalls made.
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: 2nddept-manager@sdl.hitachi.co.jp
+Cc: Franck Bui-Huu <fbuihuu@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+LKML-Reference: <20110113124558.22426.48170.stgit@ltc236.sdl.hitachi.co.jp>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+[ committer note: s/%ld/%zd/ for a size_t nlines var that broke f14 x86 build]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-test.c |  171 ++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 169 insertions(+), 2 deletions(-)
+ tools/perf/util/probe-finder.c |  321 +++++++++++++++++++++-------------------
+ 1 files changed, 167 insertions(+), 154 deletions(-)
 
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 5a50e47..4fd3453 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -7,7 +7,9 @@
- 
- #include "util/cache.h"
- #include "util/debug.h"
-+#include "util/evlist.h"
- #include "util/parse-options.h"
-+#include "util/parse-events.h"
- #include "util/session.h"
- #include "util/symbol.h"
- #include "util/thread.h"
-@@ -238,14 +240,14 @@ out:
- #include "util/evsel.h"
- #include <sys/types.h>
- 
--static int trace_event__id(const char *event_name)
-+static int trace_event__id(const char *evname)
- {
- 	char *filename;
- 	int err = -1, fd;
- 
- 	if (asprintf(&filename,
- 		     "/sys/kernel/debug/tracing/events/syscalls/%s/id",
--		     event_name) < 0)
-+		     evname) < 0)
- 		return -1;
- 
- 	fd = open(filename, O_RDONLY);
-@@ -439,6 +441,167 @@ out_thread_map_delete:
- 	return err;
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index ab83b6a..508c017 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -458,6 +458,124 @@ static Dwarf_Die *die_find_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
+ 	return die_find_child(sp_die, __die_find_inline_cb, &addr, die_mem);
  }
  
-+/*
-+ * This test will generate random numbers of calls to some getpid syscalls,
-+ * then establish an mmap for a group of events that are created to monitor
-+ * the syscalls.
-+ *
-+ * It will receive the events, using mmap, use its PERF_SAMPLE_ID generated
-+ * sample.id field to map back to its respective perf_evsel instance.
-+ *
-+ * Then it checks if the number of syscalls reported as perf events by
-+ * the kernel corresponds to the number of syscalls made.
-+ */
-+static int test__basic_mmap(void)
++/* Walker on lines (Note: line number will not be sorted) */
++typedef int (* line_walk_handler_t) (const char *fname, int lineno,
++				     Dwarf_Addr addr, void *data);
++
++struct __line_walk_param {
++	line_walk_handler_t handler;
++	void *data;
++	int retval;
++};
++
++/* Walk on decl lines in given DIE */
++static int __die_walk_funclines(Dwarf_Die *sp_die,
++				line_walk_handler_t handler, void *data)
 +{
-+	int err = -1;
-+	event_t *event;
-+	struct thread_map *threads;
-+	struct perf_session session;
-+	struct cpu_map *cpus;
-+	struct perf_evlist *evlist;
-+	struct perf_event_attr attr = {
-+		.type		= PERF_TYPE_TRACEPOINT,
-+		.read_format	= PERF_FORMAT_ID,
-+		.sample_type	= PERF_SAMPLE_ID,
-+		.watermark	= 0,
-+	};
-+	cpu_set_t cpu_set;
-+	const char *syscall_names[] = { "getsid", "getppid", "getpgrp",
-+					"getpgid", };
-+	pid_t (*syscalls[])(void) = { (void *)getsid, getppid, getpgrp,
-+				      (void*)getpgid };
-+#define nsyscalls ARRAY_SIZE(syscall_names)
-+	int ids[nsyscalls];
-+	unsigned int nr_events[nsyscalls],
-+		     expected_nr_events[nsyscalls], i, j;
-+	struct perf_evsel *evsels[nsyscalls], *evsel;
++	const char *fname;
++	Dwarf_Addr addr;
++	int lineno, ret = 0;
 +
-+	for (i = 0; i < nsyscalls; ++i) {
-+		char name[64];
-+
-+		snprintf(name, sizeof(name), "sys_enter_%s", syscall_names[i]);
-+		ids[i] = trace_event__id(name);
-+		if (ids[i] < 0) {
-+			pr_debug("Is debugfs mounted on /sys/kernel/debug?\n");
-+			return -1;
-+		}
-+		nr_events[i] = 0;
-+		expected_nr_events[i] = random() % 257;
++	/* Handle function declaration line */
++	fname = dwarf_decl_file(sp_die);
++	if (fname && dwarf_decl_line(sp_die, &lineno) == 0 &&
++	    dwarf_entrypc(sp_die, &addr) == 0) {
++		ret = handler(fname, lineno, addr, data);
 +	}
 +
-+	threads = thread_map__new(-1, getpid());
-+	if (threads == NULL) {
-+		pr_debug("thread_map__new\n");
-+		return -1;
-+	}
-+
-+	cpus = cpu_map__new(NULL);
-+	if (threads == NULL) {
-+		pr_debug("thread_map__new\n");
-+		goto out_free_threads;
-+	}
-+
-+	CPU_ZERO(&cpu_set);
-+	CPU_SET(cpus->map[0], &cpu_set);
-+	sched_setaffinity(0, sizeof(cpu_set), &cpu_set);
-+	if (sched_setaffinity(0, sizeof(cpu_set), &cpu_set) < 0) {
-+		pr_debug("sched_setaffinity() failed on CPU %d: %s ",
-+			 cpus->map[0], strerror(errno));
-+		goto out_free_cpus;
-+	}
-+
-+	evlist = perf_evlist__new();
-+	if (threads == NULL) {
-+		pr_debug("perf_evlist__new\n");
-+		goto out_free_cpus;
-+	}
-+
-+	/* anonymous union fields, can't be initialized above */
-+	attr.wakeup_events = 1;
-+	attr.sample_period = 1;
-+
-+	/*
-+ 	 * FIXME: use evsel->attr.sample_type in event__parse_sample.
-+ 	 * 	  This will nicely remove the requirement that we have
-+ 	 * 	  all the events with the same sample_type.
-+ 	 */
-+	session.sample_type = attr.sample_type;
-+
-+	for (i = 0; i < nsyscalls; ++i) {
-+		attr.config = ids[i];
-+		evsels[i] = perf_evsel__new(&attr, i);
-+		if (evsels[i] == NULL) {
-+			pr_debug("perf_evsel__new\n");
-+			goto out_free_evlist;
-+		}
-+
-+		perf_evlist__add(evlist, evsels[i]);
-+
-+		if (perf_evsel__open(evsels[i], cpus, threads, false, false) < 0) {
-+			pr_debug("failed to open counter: %s, "
-+				 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
-+				 strerror(errno));
-+			goto out_close_fd;
-+		}
-+	}
-+
-+	if (perf_evlist__mmap(evlist, cpus, threads, 128, true) < 0) {
-+		pr_debug("failed to mmap events: %d (%s)\n", errno,
-+			 strerror(errno));
-+		goto out_close_fd;
-+	}
-+
-+	for (i = 0; i < nsyscalls; ++i)
-+		for (j = 0; j < expected_nr_events[i]; ++j) {
-+			int foo = syscalls[i]();
-+			++foo;
-+		}
-+
-+	while ((event = perf_evlist__read_on_cpu(evlist, 0)) != NULL) {
-+		struct sample_data sample;
-+
-+		if (event->header.type != PERF_RECORD_SAMPLE) {
-+			pr_debug("unexpected %s event\n",
-+				 event__get_event_name(event->header.type));
-+			goto out_munmap;
-+		}
-+
-+		event__parse_sample(event, &session, &sample);
-+		evsel = perf_evlist__id2evsel(evlist, sample.id);
-+		if (evsel == NULL) {
-+			pr_debug("event with id %" PRIu64
-+				 " doesn't map to an evsel\n", sample.id);
-+			goto out_munmap;
-+		}
-+		nr_events[evsel->idx]++;
-+	}
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		if (nr_events[evsel->idx] != expected_nr_events[evsel->idx]) {
-+			pr_debug("expected %d %s events, got %d\n",
-+				 expected_nr_events[evsel->idx],
-+				 event_name(evsel), nr_events[evsel->idx]);
-+			goto out_munmap;
-+		}
-+	}
-+
-+	err = 0;
-+out_munmap:
-+	perf_evlist__munmap(evlist, 1);
-+out_close_fd:
-+	for (i = 0; i < nsyscalls; ++i)
-+		perf_evsel__close_fd(evsels[i], 1, threads->nr);
-+out_free_evlist:
-+	perf_evlist__delete(evlist);
-+out_free_cpus:
-+	cpu_map__delete(cpus);
-+out_free_threads:
-+	thread_map__delete(threads);
-+	return err;
-+#undef nsyscalls
++	return ret;
 +}
 +
- static struct test {
- 	const char *desc;
- 	int (*func)(void);
-@@ -456,6 +619,10 @@ static struct test {
- 		.func = test__open_syscall_event_on_all_cpus,
- 	},
- 	{
-+		.desc = "read samples using the mmap interface",
-+		.func = test__basic_mmap,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
++static int __die_walk_culines_cb(Dwarf_Die *sp_die, void *data)
++{
++	struct __line_walk_param *lw = data;
++
++	lw->retval = __die_walk_funclines(sp_die, lw->handler, lw->data);
++	if (lw->retval != 0)
++		return DWARF_CB_ABORT;
++
++	return DWARF_CB_OK;
++}
++
++/*
++ * Walk on lines inside given PDIE. If the PDIE is subprogram, walk only on
++ * the lines inside the subprogram, otherwise PDIE must be a CU DIE.
++ */
++static int die_walk_lines(Dwarf_Die *pdie, line_walk_handler_t handler,
++			  void *data)
++{
++	Dwarf_Lines *lines;
++	Dwarf_Line *line;
++	Dwarf_Addr addr;
++	const char *fname;
++	int lineno, ret = 0;
++	Dwarf_Die die_mem, *cu_die;
++	size_t nlines, i;
++
++	/* Get the CU die */
++	if (dwarf_tag(pdie) == DW_TAG_subprogram)
++		cu_die = dwarf_diecu(pdie, &die_mem, NULL, NULL);
++	else
++		cu_die = pdie;
++	if (!cu_die) {
++		pr_debug2("Failed to get CU from subprogram\n");
++		return -EINVAL;
++	}
++
++	/* Get lines list in the CU */
++	if (dwarf_getsrclines(cu_die, &lines, &nlines) != 0) {
++		pr_debug2("Failed to get source lines on this CU.\n");
++		return -ENOENT;
++	}
++	pr_debug2("Get %zd lines from this CU\n", nlines);
++
++	/* Walk on the lines on lines list */
++	for (i = 0; i < nlines; i++) {
++		line = dwarf_onesrcline(lines, i);
++		if (line == NULL ||
++		    dwarf_lineno(line, &lineno) != 0 ||
++		    dwarf_lineaddr(line, &addr) != 0) {
++			pr_debug2("Failed to get line info. "
++				  "Possible error in debuginfo.\n");
++			continue;
++		}
++		/* Filter lines based on address */
++		if (pdie != cu_die)
++			/*
++			 * Address filtering
++			 * The line is included in given function, and
++			 * no inline block includes it.
++			 */
++			if (!dwarf_haspc(pdie, addr) ||
++			    die_find_inlinefunc(pdie, addr, &die_mem))
++				continue;
++		/* Get source line */
++		fname = dwarf_linesrc(line, NULL, NULL);
++
++		ret = handler(fname, lineno, addr, data);
++		if (ret != 0)
++			return ret;
++	}
++
++	/*
++	 * Dwarf lines doesn't include function declarations and inlined
++	 * subroutines. We have to check functions list or given function.
++	 */
++	if (pdie != cu_die)
++		ret = __die_walk_funclines(pdie, handler, data);
++	else {
++		struct __line_walk_param param = {
++			.handler = handler,
++			.data = data,
++			.retval = 0,
++		};
++		dwarf_getfuncs(cu_die, __die_walk_culines_cb, &param, 0);
++		ret = param.retval;
++	}
++
++	return ret;
++}
++
+ struct __find_variable_param {
+ 	const char *name;
+ 	Dwarf_Addr addr;
+@@ -1050,43 +1168,26 @@ static int call_probe_finder(Dwarf_Die *sp_die, struct probe_finder *pf)
+ 	return ret;
+ }
+ 
+-/* Find probe point from its line number */
+-static int find_probe_point_by_line(struct probe_finder *pf)
++static int probe_point_line_walker(const char *fname, int lineno,
++				   Dwarf_Addr addr, void *data)
+ {
+-	Dwarf_Lines *lines;
+-	Dwarf_Line *line;
+-	size_t nlines, i;
+-	Dwarf_Addr addr;
+-	int lineno;
+-	int ret = 0;
++	struct probe_finder *pf = data;
++	int ret;
+ 
+-	if (dwarf_getsrclines(&pf->cu_die, &lines, &nlines) != 0) {
+-		pr_warning("No source lines found.\n");
+-		return -ENOENT;
+-	}
++	if (lineno != pf->lno || strtailcmp(fname, pf->fname) != 0)
++		return 0;
+ 
+-	for (i = 0; i < nlines && ret == 0; i++) {
+-		line = dwarf_onesrcline(lines, i);
+-		if (dwarf_lineno(line, &lineno) != 0 ||
+-		    lineno != pf->lno)
+-			continue;
++	pf->addr = addr;
++	ret = call_probe_finder(NULL, pf);
+ 
+-		/* TODO: Get fileno from line, but how? */
+-		if (strtailcmp(dwarf_linesrc(line, NULL, NULL), pf->fname) != 0)
+-			continue;
+-
+-		if (dwarf_lineaddr(line, &addr) != 0) {
+-			pr_warning("Failed to get the address of the line.\n");
+-			return -ENOENT;
+-		}
+-		pr_debug("Probe line found: line[%d]:%d addr:0x%jx\n",
+-			 (int)i, lineno, (uintmax_t)addr);
+-		pf->addr = addr;
++	/* Continue if no error, because the line will be in inline function */
++	return ret < 0 ?: 0;
++}
+ 
+-		ret = call_probe_finder(NULL, pf);
+-		/* Continuing, because target line might be inlined. */
+-	}
+-	return ret;
++/* Find probe point from its line number */
++static int find_probe_point_by_line(struct probe_finder *pf)
++{
++	return die_walk_lines(&pf->cu_die, probe_point_line_walker, pf);
+ }
+ 
+ /* Find lines which match lazy pattern */
+@@ -1140,15 +1241,31 @@ out_close:
+ 	return nlines;
+ }
+ 
++static int probe_point_lazy_walker(const char *fname, int lineno,
++				   Dwarf_Addr addr, void *data)
++{
++	struct probe_finder *pf = data;
++	int ret;
++
++	if (!line_list__has_line(&pf->lcache, lineno) ||
++	    strtailcmp(fname, pf->fname) != 0)
++		return 0;
++
++	pr_debug("Probe line found: line:%d addr:0x%llx\n",
++		 lineno, (unsigned long long)addr);
++	pf->addr = addr;
++	ret = call_probe_finder(NULL, pf);
++
++	/*
++	 * Continue if no error, because the lazy pattern will match
++	 * to other lines
++	 */
++	return ret < 0 ?: 0;
++}
++
+ /* Find probe points from lazy pattern  */
+ static int find_probe_point_lazy(Dwarf_Die *sp_die, struct probe_finder *pf)
+ {
+-	Dwarf_Lines *lines;
+-	Dwarf_Line *line;
+-	size_t nlines, i;
+-	Dwarf_Addr addr;
+-	Dwarf_Die die_mem;
+-	int lineno;
+ 	int ret = 0;
+ 
+ 	if (list_empty(&pf->lcache)) {
+@@ -1162,45 +1279,7 @@ static int find_probe_point_lazy(Dwarf_Die *sp_die, struct probe_finder *pf)
+ 			return ret;
+ 	}
+ 
+-	if (dwarf_getsrclines(&pf->cu_die, &lines, &nlines) != 0) {
+-		pr_warning("No source lines found.\n");
+-		return -ENOENT;
+-	}
+-
+-	for (i = 0; i < nlines && ret >= 0; i++) {
+-		line = dwarf_onesrcline(lines, i);
+-
+-		if (dwarf_lineno(line, &lineno) != 0 ||
+-		    !line_list__has_line(&pf->lcache, lineno))
+-			continue;
+-
+-		/* TODO: Get fileno from line, but how? */
+-		if (strtailcmp(dwarf_linesrc(line, NULL, NULL), pf->fname) != 0)
+-			continue;
+-
+-		if (dwarf_lineaddr(line, &addr) != 0) {
+-			pr_debug("Failed to get the address of line %d.\n",
+-				 lineno);
+-			continue;
+-		}
+-		if (sp_die) {
+-			/* Address filtering 1: does sp_die include addr? */
+-			if (!dwarf_haspc(sp_die, addr))
+-				continue;
+-			/* Address filtering 2: No child include addr? */
+-			if (die_find_inlinefunc(sp_die, addr, &die_mem))
+-				continue;
+-		}
+-
+-		pr_debug("Probe line found: line[%d]:%d addr:0x%llx\n",
+-			 (int)i, lineno, (unsigned long long)addr);
+-		pf->addr = addr;
+-
+-		ret = call_probe_finder(sp_die, pf);
+-		/* Continuing, because target line might be inlined. */
+-	}
+-	/* TODO: deallocate lines, but how? */
+-	return ret;
++	return die_walk_lines(sp_die, probe_point_lazy_walker, pf);
+ }
+ 
+ /* Callback parameter with return value */
+@@ -1644,91 +1723,28 @@ static int line_range_add_line(const char *src, unsigned int lineno,
+ 	return line_list__add_line(&lr->line_list, lineno);
+ }
+ 
+-/* Search function declaration lines */
+-static int line_range_funcdecl_cb(Dwarf_Die *sp_die, void *data)
++static int line_range_walk_cb(const char *fname, int lineno,
++			      Dwarf_Addr addr __used,
++			      void *data)
+ {
+-	struct dwarf_callback_param *param = data;
+-	struct line_finder *lf = param->data;
+-	const char *src;
+-	int lineno;
+-
+-	src = dwarf_decl_file(sp_die);
+-	if (src && strtailcmp(src, lf->fname) != 0)
+-		return DWARF_CB_OK;
++	struct line_finder *lf = data;
+ 
+-	if (dwarf_decl_line(sp_die, &lineno) != 0 ||
++	if ((strtailcmp(fname, lf->fname) != 0) ||
+ 	    (lf->lno_s > lineno || lf->lno_e < lineno))
+-		return DWARF_CB_OK;
++		return 0;
+ 
+-	param->retval = line_range_add_line(src, lineno, lf->lr);
+-	if (param->retval < 0)
+-		return DWARF_CB_ABORT;
+-	return DWARF_CB_OK;
+-}
++	if (line_range_add_line(fname, lineno, lf->lr) < 0)
++		return -EINVAL;
+ 
+-static int find_line_range_func_decl_lines(struct line_finder *lf)
+-{
+-	struct dwarf_callback_param param = {.data = (void *)lf, .retval = 0};
+-	dwarf_getfuncs(&lf->cu_die, line_range_funcdecl_cb, &param, 0);
+-	return param.retval;
++	return 0;
+ }
+ 
+ /* Find line range from its line number */
+ static int find_line_range_by_line(Dwarf_Die *sp_die, struct line_finder *lf)
+ {
+-	Dwarf_Lines *lines;
+-	Dwarf_Line *line;
+-	size_t nlines, i;
+-	Dwarf_Addr addr;
+-	int lineno, ret = 0;
+-	const char *src;
+-	Dwarf_Die die_mem;
+-
+-	line_list__init(&lf->lr->line_list);
+-	if (dwarf_getsrclines(&lf->cu_die, &lines, &nlines) != 0) {
+-		pr_warning("No source lines found.\n");
+-		return -ENOENT;
+-	}
+-
+-	/* Search probable lines on lines list */
+-	for (i = 0; i < nlines; i++) {
+-		line = dwarf_onesrcline(lines, i);
+-		if (dwarf_lineno(line, &lineno) != 0 ||
+-		    (lf->lno_s > lineno || lf->lno_e < lineno))
+-			continue;
+-
+-		if (sp_die) {
+-			/* Address filtering 1: does sp_die include addr? */
+-			if (dwarf_lineaddr(line, &addr) != 0 ||
+-			    !dwarf_haspc(sp_die, addr))
+-				continue;
+-
+-			/* Address filtering 2: No child include addr? */
+-			if (die_find_inlinefunc(sp_die, addr, &die_mem))
+-				continue;
+-		}
+-
+-		/* TODO: Get fileno from line, but how? */
+-		src = dwarf_linesrc(line, NULL, NULL);
+-		if (strtailcmp(src, lf->fname) != 0)
+-			continue;
+-
+-		ret = line_range_add_line(src, lineno, lf->lr);
+-		if (ret < 0)
+-			return ret;
+-	}
++	int ret;
+ 
+-	/*
+-	 * Dwarf lines doesn't include function declarations. We have to
+-	 * check functions list or given function.
+-	 */
+-	if (sp_die) {
+-		src = dwarf_decl_file(sp_die);
+-		if (src && dwarf_decl_line(sp_die, &lineno) == 0 &&
+-		    (lf->lno_s <= lineno && lf->lno_e >= lineno))
+-			ret = line_range_add_line(src, lineno, lf->lr);
+-	} else
+-		ret = find_line_range_func_decl_lines(lf);
++	ret = die_walk_lines(sp_die ?: &lf->cu_die, line_range_walk_cb, lf);
+ 
+ 	/* Update status */
+ 	if (ret >= 0)
+@@ -1758,9 +1774,6 @@ static int line_range_search_cb(Dwarf_Die *sp_die, void *data)
+ 	struct line_finder *lf = param->data;
+ 	struct line_range *lr = lf->lr;
+ 
+-	pr_debug("find (%llx) %s\n",
+-		 (unsigned long long)dwarf_dieoffset(sp_die),
+-		 dwarf_diename(sp_die));
+ 	if (dwarf_tag(sp_die) == DW_TAG_subprogram &&
+ 	    die_compare_name(sp_die, lr->function)) {
+ 		lf->fname = dwarf_decl_file(sp_die);
 -- 
 1.6.2.5
 
