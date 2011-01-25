@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935Ab1AYUtv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 15:49:51 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:55203 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753909Ab1AYUtu (ORCPT
+	id S1753916Ab1AYUtt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 15:49:49 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:55235 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753836Ab1AYUtm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 15:49:50 -0500
-Message-ID: <4d3f376c.857a0e0a.122c.4795@mx.google.com>
+	Tue, 25 Jan 2011 15:49:42 -0500
+Message-ID: <4d3f3764.857a0e0a.122c.478e@mx.google.com>
 From: "Igor M. Liplianin" <liplianin@me.by>
-Date: Tue, 25 Jan 2011 22:08:00 +0200
-Subject: [PATCH 9/9 v3] cx23885, altera-ci: enable all PID's less than 0x20 in hardware PID filter.
+Date: Tue, 25 Jan 2011 22:07:00 +0200
+Subject: [PATCH 8/9 v3] cx23885: disable MSI for NetUP cards, otherwise CI is not working
 To: <mchehab@infradead.org>, <linux-media@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It takes too long time to scan due to low symbol rate PID's
-like PAT, PMT, CAT, NIT.
-For that matter we enabled permanently all PID's
-less 0x20 in hardware PID filter for NetUP Dual DVB-T/C CI RF card
-to combine rates.
-
 Signed-off-by: Igor M. Liplianin <liplianin@netup.ru>
 ---
- drivers/media/video/cx23885/altera-ci.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
+ drivers/media/video/cx23885/cx23885-core.c |    4 ++++
+ drivers/media/video/cx23885/cx23885-reg.h  |    1 +
+ 2 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/media/video/cx23885/altera-ci.c b/drivers/media/video/cx23885/altera-ci.c
-index e5c0873..ad6cc68 100644
---- a/drivers/media/video/cx23885/altera-ci.c
-+++ b/drivers/media/video/cx23885/altera-ci.c
-@@ -521,7 +521,8 @@ static void altera_pid_control(struct netup_hw_pid_filter *pid_filt,
- 	struct fpga_internal *inter = pid_filt->internal;
- 	u8 store = 0;
+diff --git a/drivers/media/video/cx23885/cx23885-core.c b/drivers/media/video/cx23885/cx23885-core.c
+index d778b1a..9933810 100644
+--- a/drivers/media/video/cx23885/cx23885-core.c
++++ b/drivers/media/video/cx23885/cx23885-core.c
+@@ -1041,6 +1041,10 @@ static int cx23885_dev_setup(struct cx23885_dev *dev)
  
--	if (pid == 0x2000)
-+	/* pid 0-0x1f always enabled, don't touch them */
-+	if ((pid == 0x2000) || (pid < 0x20))
- 		return;
+ 	cx23885_dev_checkrevision(dev);
  
- 	mutex_lock(&inter->fpga_mutex);
-@@ -567,8 +568,9 @@ static void altera_toggle_fullts_streaming(struct netup_hw_pid_filter *pid_filt,
++	/* disable MSI for NetUP cards, otherwise CI is not working */
++	if (cx23885_boards[dev->board].ci_type > 0)
++		cx_clear(RDR_RDRCTL1, 1 << 8);
++
+ 	return 0;
+ }
  
- 		netup_fpga_op_rw(inter, NETUP_CI_PID_ADDR1,
- 				((i >> 8) & 0x03) | (pid_filt->nr << 2), 0);
--
--		netup_fpga_op_rw(inter, NETUP_CI_PID_DATA, store, 0);
-+		/* pid 0-0x1f always enabled */
-+		netup_fpga_op_rw(inter, NETUP_CI_PID_DATA,
-+				(i > 3 ? store : 0), 0);
- 	}
+diff --git a/drivers/media/video/cx23885/cx23885-reg.h b/drivers/media/video/cx23885/cx23885-reg.h
+index a28772d..c87ac68 100644
+--- a/drivers/media/video/cx23885/cx23885-reg.h
++++ b/drivers/media/video/cx23885/cx23885-reg.h
+@@ -292,6 +292,7 @@ Channel manager Data Structure entry = 20 DWORD
+ #define RDR_CFG0	0x00050000
+ #define RDR_CFG1	0x00050004
+ #define RDR_CFG2	0x00050008
++#define RDR_RDRCTL1	0x0005030c
+ #define RDR_TLCTL0	0x00050318
  
- 	mutex_unlock(&inter->fpga_mutex);
+ /* APB DMAC Current Buffer Pointer */
 -- 
 1.7.1
 
