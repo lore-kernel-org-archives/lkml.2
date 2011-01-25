@@ -1,108 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751612Ab1AYAOU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 19:14:20 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:60545 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab1AYAOT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 19:14:19 -0500
-Subject: [GIT PULL for 38-rc3]  target updates for v4.0.0-rc7
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain
-Date: Mon, 24 Jan 2011 16:14:15 -0800
-Message-Id: <1295914455.24778.115.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	id S1751532Ab1AYARN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 19:17:13 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:35820 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751197Ab1AYARM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 19:17:12 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+Subject: [PATCH 2/3] PM / Wakeup: Make pm_save_wakeup_count() work as documented
+Date: Tue, 25 Jan 2011 01:15:33 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc1+; KDE/4.4.4; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+References: <201101250112.40350.rjw@sisk.pl>
+In-Reply-To: <201101250112.40350.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201101250115.34088.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James and Co,
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Here are the latest v4.0.0-rc7 updates for mainline drivers/target/ code
-rebased against linux-2.6.git -> .38-rc2.  These individual patches have
-been reviewed on linux-scsi and commited into the upstream LIO kernel
-tree, so please consider pulling for .38-rc3:
+According to Documentation/ABI/testing/sysfs-power, the
+/sys/power/wakeup_count interface should only make the kernel react
+to wakeup events during suspend if the last write to it has been
+successful.  However, if /sys/power/wakeup_count is written to two
+times in a row, where the first write is successful and the second
+is not, the kernel will still react to wakeup events during suspend
+due to a bug in pm_save_wakeup_count().
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-38-rc3
+Fix the bug by making pm_save_wakeup_count() clear
+events_check_enabled unconditionally before checking if there are
+any new wakeup events registered since the previous read from
+/sys/power/wakeup_count.
 
-Also at this point, having Linus pull directly from
-scsi-post-merge-2.6.git/for-38-rcX for mainline target bugfixes +
-improvements may make more sense.
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/base/power/wakeup.c |   13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-Linus/Andrew/James, please let me know which you prefer here.
-
-Thanks!
-
-Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-
-Christoph Hellwig (2):
-  target: do not include target_core_mib.h under include/target
-  target: remove EXTRA_CFLAGS
-
-Dan Carpenter (2):
-  target: iblock/pscsi claim checking for NULL instead of IS_ERR
-  target: fix dubious one-bit signed bitfield
-
-Fubo Chen (3):
-  target: Drop nacl->device_list_lock on
-    core_update_device_list_for_node failure
-  target: Reaquire hba_lock + se_port_lock during se_clear_dev_ports
-    continue
-  target: Minor sparse warning fixes and annotations
-
-Jesper Juhl (1):
-  target/file: Fix memory leak in fd_set_configfs_dev_params().
-
-Nicholas Bellinger (13):
-  target/iblock: Fix failed bd claim NULL pointer dereference
-  target/iblock: Fix memory leak in iblock_set_configfs_dev_params
-  target: Fix memory leaks in
-    target_core_dev_pr_store_attr_res_aptpl_metadata
-  target: Fix demo-mode MappedLUN shutdown UA/PR breakage
-  target: Release left-over demo-mode NodeACLs w/
-    tfo->tpg_check_demo_mode_cache()=1
-  target: Convert tcm_mod_builder.py from Kbuild -> Makefile
-  target: Fix tcm_mod_builder.py default EXTRA_CFLAGS
-  target: Remove unnecessary tcm_mod_builder.py kbuild EXTRA_CFLAGS
-  target: Call missing list_del() for demo-mode MappedLUN disable
-  target: Call proc_mkdir + remove_proc_entry with NULL parameter
-  target: Convert backend ->create_virtdevice() call to return ERR_PTR
-  target: Remove spurious double cast from structure macro accessors
-  target core v4.0.0-rc7
-
-Roland Dreier (2):
-  target: Fix memory leak on error path
-  target: Remove unneeded test of se_cmd
-
- Documentation/target/tcm_mod_builder.py |   17 +++++------
- drivers/target/Makefile                 |    1 -
- drivers/target/target_core_configfs.c   |   44 +++++++++++++++++++++++++----
- drivers/target/target_core_device.c     |   37 +++++++++++++------------
- drivers/target/target_core_fabric_lib.c |    1 +
- drivers/target/target_core_file.c       |   26 ++++++++++++++---
- drivers/target/target_core_hba.c        |    1 +
- drivers/target/target_core_iblock.c     |   34 ++++++++++++++---------
- drivers/target/target_core_mib.c        |   20 +++++++++++++
- drivers/target/target_core_mib.h        |    7 -----
- drivers/target/target_core_pscsi.c      |   26 ++++++++++-------
- drivers/target/target_core_rd.c         |    8 +++--
- drivers/target/target_core_rd.h         |    2 -
- drivers/target/target_core_tpg.c        |   23 +++++++++++++++
- drivers/target/target_core_transport.c  |    5 +--
- include/target/target_core_base.h       |   46 +++++++++++++++++-------------
- include/target/target_core_fabric_ops.h |    2 +-
- include/target/target_core_transport.h  |    4 +++
- 18 files changed, 205 insertions(+), 99 deletions(-)
-
+Index: linux-2.6/drivers/base/power/wakeup.c
+===================================================================
+--- linux-2.6.orig/drivers/base/power/wakeup.c
++++ linux-2.6/drivers/base/power/wakeup.c
+@@ -644,23 +644,22 @@ bool pm_get_wakeup_count(unsigned int *c
+  *
+  * If @count is equal to the current number of registered wakeup events and the
+  * current number of wakeup events being processed is zero, store @count as the
+- * old number of registered wakeup events to be used by pm_check_wakeup_events()
+- * and return true.  Otherwise return false.
++ * old number of registered wakeup events for pm_check_wakeup_events(), enable
++ * wakeup events detection and return 'true'.  Otherwise disable wakeup events
++ * detection and return 'false'.
+  */
+ bool pm_save_wakeup_count(unsigned int count)
+ {
+-	bool ret = false;
+-
++	events_check_enabled = false;
+ 	spin_lock_irq(&events_lock);
+ 	if (!__pm_wakeup_pending(count)) {
+ 		saved_count = count;
+ 		events_check_enabled = true;
+-		ret = true;
+ 	}
+ 	spin_unlock_irq(&events_lock);
+-	if (!ret)
++	if (!events_check_enabled)
+ 		pm_wakeup_update_hit_counts();
+-	return ret;
++	return events_check_enabled;
+ }
+ 
+ static struct dentry *wakeup_sources_stats_dentry;
 
