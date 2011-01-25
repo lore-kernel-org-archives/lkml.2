@@ -1,97 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753742Ab1AYOC2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 09:02:28 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:51421 "EHLO SMTP.CITRIX.COM"
+	id S1753756Ab1AYOHo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 09:07:44 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:58618 "EHLO smtp6-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753615Ab1AYOC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 09:02:27 -0500
-X-IronPort-AV: E=Sophos;i="4.60,374,1291611600"; 
-   d="scan'208";a="12117407"
-Subject: Re: [Xen-devel] Re: [PATCH 08/23] xen: statically initialize
- cpu_evtchn_mask_p
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jan Beulich <JBeulich@novell.com>,
-        "Konrad Rzeszutek Wilk" <konrad@kernel.org>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-In-Reply-To: <4D3DBA6A.3080700@redhat.com>
-References: <1286898271-32018-1-git-send-email-konrad.wilk@oracle.com>
-	 <1286898271-32018-9-git-send-email-konrad.wilk@oracle.com>
-	 <4D3DBA6A.3080700@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Tue, 25 Jan 2011 14:02:17 +0000
-Message-ID: <1295964137.14780.6148.camel@zakaz.uk.xensource.com>
+	id S1753057Ab1AYOHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 09:07:43 -0500
+Message-ID: <1295964447.4d3ed91f63aa3@imp.free.fr>
+Date: Tue, 25 Jan 2011 15:07:27 +0100
+From: castet.matthieu@free.fr
+To: Matthias Hopf <mhopf@suse.de>
+Cc: Lin Ming <ming.m.lin@intel.com>, Oliver Neukum <oneukum@suse.de>,
+        rjw@sisk.pl, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Denys Vlasenko <vda.linux@googlemail.com>,
+        Michal Marek <mmarek@suse.cz>, Yinghai Lu <yinghai@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Borislav Petkov <bp@alien8.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Siarhei Liakh <sliakh.lkml@gmail.com>,
+        Xuxian Jiang <jiang@cs.ncsu.edu>, Dave Airlie <airlied@redhat.com>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] S3 resume on SandyBridge doesn't work with NX protection (5bd5a45)
+References: <20110119173710.GA1331@suse.de> <20110119230602.6dd34fa3@mat-laptop>
+In-Reply-To: <20110119230602.6dd34fa3@mat-laptop>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+User-Agent: Internet Messaging Program (IMP) 3.2.8
+X-Originating-IP: 93.1.148.21
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-24 at 17:44 +0000, Paolo Bonzini wrote:
-> On 10/12/2010 05:44 PM, Konrad Rzeszutek Wilk wrote:
-> > -static struct cpu_evtchn_s *cpu_evtchn_mask_p;
-> > +
-> > +static __initdata struct cpu_evtchn_s init_evtchn_mask = {
-> > +	.bits[0 ... (NR_EVENT_CHANNELS/BITS_PER_LONG)-1] = ~0ul,
-> > +};
-> > +static struct cpu_evtchn_s *cpu_evtchn_mask_p =&init_evtchn_mask;
-> > +
-> >   static inline unsigned long *cpu_evtchn_mask(int cpu)
-> >   {
-> >   	return cpu_evtchn_mask_p[cpu].bits;
-> 
-> This causes a modpost warning:
-> 
->     WARNING: drivers/xen/built-in.o(.data+0x0): Section mismatch in
->     reference from the variable cpu_evtchn_mask_p to the variable
->     .init.data:init_evtchn_mask
-> 
->     The variable cpu_evtchn_mask_p references
->     the variable __initdata init_evtchn_mask
-> 
->     If the reference is valid then annotate the
->     variable with __init* or __refdata (see linux/init.h) or name the variable:
->     *driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console, 
-> 
-> This is harmless, the variable is initialized to non-init data
-> in an __init function.  The added noise is ugly, though.
+Quoting matthieu castet <castet.matthieu@free.fr>:
 
-Does this help? If I understand the comment which precedes  __initref
-correctly it is intended to address precisely this situation.
-
-Ian.
-8<---------
-
-xen: events: mark cpu_evtchn_mask_p as __refdata
-
-This variable starts out pointing at init_evtchn_mask which is marked
-__initdata but is set to point to a non-init data region in xen_init_IRQ
-which is itself an __init function so this is safe.
-
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 31af0ac..5061af0 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -114,7 +114,7 @@ struct cpu_evtchn_s {
- static __initdata struct cpu_evtchn_s init_evtchn_mask = {
- 	.bits[0 ... (NR_EVENT_CHANNELS/BITS_PER_LONG)-1] = ~0ul,
- };
--static struct cpu_evtchn_s *cpu_evtchn_mask_p = &init_evtchn_mask;
-+static struct __refdata cpu_evtchn_s *cpu_evtchn_mask_p =
-&init_evtchn_mask;
- 
- static inline unsigned long *cpu_evtchn_mask(int cpu)
- {
-
-
+> Hi,
+>
+> Le Wed, 19 Jan 2011 18:37:11 +0100,
+> Matthias Hopf <mhopf@suse.de> a écrit :
+>
+> > Git commit 5bd5a45 in Linus' tree "x86: Add NX protection for kernel
+> > data" apparently breaks resume on SandyBridge machines. This is
+> > supposed to be fixed with commit 691513f "x86: Resume trampoline must
+> > be executable", but even git master (v2.6.38-rc1) shows the same
+> > symptoms.
+> Is it a 32bit or 64 bit kernel ?
+>
+> Could you post the dmesg of the kernel.
+>
+could you try the patch attached in
+https://bugzilla.kernel.org/show_bug.cgi?id=27472
 
