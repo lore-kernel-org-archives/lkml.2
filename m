@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141Ab1AYJwM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 04:52:12 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:46816 "EHLO
+	id S1753184Ab1AYJwN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 04:52:13 -0500
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:46817 "EHLO
 	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829Ab1AYJwJ (ORCPT
+	with ESMTP id S1751926Ab1AYJwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jan 2011 04:52:09 -0500
-Date: Tue, 25 Jan 2011 18:52:00 +0900
+Date: Tue, 25 Jan 2011 18:51:59 +0900
 From: Paul Mundt <lethal@linux-sh.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] sh updates for 2.6.38-rc3
-Message-ID: <20110125095200.GA18488@linux-sh.org>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] fbdev updates for 2.6.38-rc3
+Message-ID: <20110125095159.GA18633@linux-sh.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,34 +23,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Please pull from:
 
-	master.kernel.org:/pub/scm/linux/kernel/git/lethal/sh-2.6.git sh-fixes-for-linus
+	master.kernel.org:/pub/scm/linux/kernel/git/lethal/fbdev-2.6.git fbdev-fixes-for-linus
 
 Which contains:
 
-Aurelien Jarno (1):
-      sh: Fix sh build failure when CONFIG_SFC=m
+Amerigo Wang (1):
+      video: fix some comments in drivers/video/console/vgacon.c
 
-Guennadi Liakhovetski (1):
-      sh: fix MSIOF0 SPI on ecovec: it conflicts with VOU
+Axel Lin (5):
+      video: nuc900fb: fix compile error
+      video: nuc900fb: properly free resources in nuc900fb_remove
+      video: pxa3xx-gcu: Return -EFAULT when copy_from_user() fails
+      video: da8xx-fb: fix fb_probe error path
+      video: pxa168fb: remove a redundant pxa168fb_check_var call
 
-Magnus Damm (1):
-      sh: update INTC to clear IRQ sense valid flag
+Julia Lawall (1):
+      drivers/video/bf537-lq035.c: Add missing IS_ERR test
 
-Nobuhiro Iwamatsu (1):
-      sh: Fix build of sh7750 base boards
+Paul Mundt (1):
+      mailmap: Add an entry for Axel Lin.
 
-Paul Mundt (2):
-      sh: Fix up breakage from asm-generic/pgtable.h changes.
-      sh: support XZ-compressed kernel.
-
- arch/sh/Kconfig                       |    1 +
- arch/sh/Makefile                      |    3 ++-
- arch/sh/boards/mach-ecovec24/setup.c  |    2 ++
- arch/sh/boot/Makefile                 |   11 +++++++++--
- arch/sh/boot/compressed/Makefile      |    4 +++-
- arch/sh/boot/compressed/misc.c        |    4 ++++
- arch/sh/include/asm/pgtable.h         |    1 +
- arch/sh/kernel/cpu/sh4/setup-sh7750.c |    6 +++---
- arch/sh/kernel/topology.c             |    1 +
- drivers/sh/intc/chip.c                |    6 ++++--
- 10 files changed, 30 insertions(+), 9 deletions(-)
+ .mailmap                       |    1 +
+ drivers/video/bf537-lq035.c    |   58 ++++++++++++++++++++++-----------------
+ drivers/video/console/vgacon.c |    6 +---
+ drivers/video/da8xx-fb.c       |    3 +-
+ drivers/video/nuc900fb.c       |    6 +++-
+ drivers/video/pxa168fb.c       |    6 +---
+ drivers/video/pxa3xx-gcu.c     |    4 +-
+ 7 files changed, 44 insertions(+), 40 deletions(-)
