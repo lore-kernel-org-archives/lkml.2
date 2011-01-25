@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753888Ab1AYOtM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 09:49:12 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46802 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753530Ab1AYOtL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 09:49:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Kz22r68jnexfMW8YgsoAd64hU0P9G+6UB670G4rQOvi4A5vBfJbUiXysJNewwfNwqh
-         lFWU2FsJb3yCQpSEn6K3xD4//4JrkCMLIJbz7gLmWtwuc8sqXISdC4+fJlGeJsbXN0dd
-         YFLDzsW5YNdjJTCgWfoxNGy/ZR3LqKQmEoso4=
-Date: Tue, 25 Jan 2011 15:49:05 +0100
-From: Tejun Heo <tj@kernel.org>
-To: "Ahmed S. Darwish" <darwish.07@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, X86-ML <x86@kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Willy Tarreau <wtarreau@hera.kernel.org>, Willy Tarreau <w@1wt.eu>,
-        Dirk Hohndel <hohndel@infradead.org>, Dirk.Hohndel@intel.com,
-        IDE-ML <linux-ide@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2][concept RFC] x86: BIOS-save kernel log to disk
- upon panic
-Message-ID: <20110125144905.GC27510@htj.dyndns.org>
-References: <20110125134748.GA10051@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110125134748.GA10051@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752826Ab1AYO5k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 09:57:40 -0500
+Received: from mx1.zhaw.ch ([160.85.104.50]:53325 "EHLO mx1.zhaw.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751400Ab1AYO5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 09:57:38 -0500
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Greg Kroah-Hartman <gregkh@suse.de>, linux-serial@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] tty: serial: altera_uart: add devicetree support
+Date: Tue, 25 Jan 2011 15:57:37 +0100
+Message-Id: <1295967457-11876-1-git-send-email-tklauser@distanz.ch>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1295966417-11306-1-git-send-email-tklauser@distanz.ch>
+References: <1295966417-11306-1-git-send-email-tklauser@distanz.ch>
+X-PMX-Version: 5.5.9.395186, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.1.25.144515
+X-PerlMx-Spam: Gauge=IIIIIIII, Probability=8%, Report='
+ BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1100_1199 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, __HAS_MSGID 0, __HAS_X_MAILER 0, __MIME_TEXT_ONLY 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS '
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Allow to retreive resources from a device tree (currently used in the
+out-of-tree nios2 architecture port only).
 
-On Tue, Jan 25, 2011 at 03:47:48PM +0200, Ahmed S. Darwish wrote:
-> The main problem, it seems, is that the BIOS "Reset controller" command is not
-> enough to restore disk hardware to a state understandable by the BIOS code.
+Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
+---
+ drivers/tty/serial/altera_uart.c |   16 +++++++++++++---
+ 1 files changed, 13 insertions(+), 3 deletions(-)
 
-I doubt many BIOSen would implement this properly.  It's something no
-one ever uses and modern controllers have a lot more states and are
-more complex to reset.
-
->  - Is it possible to re-initialize the disk hardware to its POST
->    state (thus make the BIOS services work reliably) while keeping
->    system RAM unmodified?
-
-I'm afraid this can't be made reliable.  Nobody uses it and the stuff
-we do during pci initialization is enough to leave some BIOSen
-clueless.
-
->  - If not, can we do it manually by reprogramming the controllers?
-
-It would be only theoretically possible.  We'll basically have to
-write deinitialization routine for different controllers, which of
-course would be super-cold path and not many people would test.
-
-I'm afraid this is gonna be something which works sometimes (or even
-more times than not) but can't ever be made reliable.  I think it
-would be better to head toward usb or other kind of early console.
-
-Thanks.
-
+diff --git a/drivers/tty/serial/altera_uart.c b/drivers/tty/serial/altera_uart.c
+index 7212162..bde59d1 100644
+--- a/drivers/tty/serial/altera_uart.c
++++ b/drivers/tty/serial/altera_uart.c
+@@ -567,13 +567,23 @@ static int __devexit altera_uart_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_OF
++static struct of_device_id altera_uart_match[] = {
++	{ .compatible = "altr,uart-1.0", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, altera_uart_match);
++#endif /* CONFIG_OF */
++
+ static struct platform_driver altera_uart_platform_driver = {
+ 	.probe	= altera_uart_probe,
+ 	.remove	= __devexit_p(altera_uart_remove),
+ 	.driver	= {
+-		.name	= DRV_NAME,
+-		.owner	= THIS_MODULE,
+-		.pm	= NULL,
++		.name		= DRV_NAME,
++		.owner		= THIS_MODULE,
++#ifdef CONFIG_OF
++		.of_match_table	= altera_uart_match,
++#endif
+ 	},
+ };
+ 
 -- 
-tejun
+1.7.0.4
+
