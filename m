@@ -1,81 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751695Ab1AYFsM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 00:48:12 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:56781 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab1AYFsL (ORCPT
+	id S1752485Ab1AYFsl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 00:48:41 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64273 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354Ab1AYFsj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 00:48:11 -0500
+	Tue, 25 Jan 2011 00:48:39 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=sQhd8/rccafhTPkKSYQOPK8ZgIZaNdeBO6tuS/3o7krU5VeEmkBKmfz1Eh7XBwTthQ
-         U4O2QsEosoEICXpkColxRXzuHXlLayUOUSuJif/28ObY+SzMZ1/BxY0NPPS4w2GJIbxU
-         G5Wubq5ixcG/BwuR304ag/N2G6LoAgQUu5A3k=
-Date: Tue, 25 Jan 2011 13:48:00 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Mikael Pettersson <mikpe@it.uu.se>
-Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Harald Dunkel <harri@afaics.de>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kenrel.org
-Subject: Re: [Patch] make installkernel configurable from command line (was
- Re: how to avoid that install.sh goes mad, if I am not root?)
-Message-ID: <20110125054800.GC13618@cr0.nay.redhat.com>
-References: <4D388A08.1010004@afaics.de>
- <19768.44428.482148.361069@pilspetsen.it.uu.se>
- <ihbvd1$jbj$3@dough.gmane.org>
- <4D3A03CA.2060507@afaics.de>
- <20110124102159.GD5510@cr0.nay.redhat.com>
- <19773.26066.137666.718852@pilspetsen.it.uu.se>
+        h=mime-version:sender:from:date:x-google-sender-auth:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=nDJWeTbvOGBQmYaSpUz61bQpLRrAKI+LbREWZKBaWhqAo+vBkZ2ld6JUPUCOnXz/4g
+         /QysfJMGMgYWMwmegDYf8/oR4mF1pG7+YYxQzkbftQc1l/qQ60XKj5J4i+NL0NLwM60X
+         zektijQMe68AfmvbB6Tkn5ue7rXXcpzc5cZOQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <19773.26066.137666.718852@pilspetsen.it.uu.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: halli manjunatha <manjunatha_halli@ti.com>
+Date: Tue, 25 Jan 2011 11:18:18 +0530
+X-Google-Sender-Auth: QA9sK8gOEk77LjTEar_Br9yGIiU
+Message-ID: <AANLkTinAYrGV1k357Bn8trtxafZDoYozG7LDcm3KNBSt@mail.gmail.com>
+Subject: [GIT PULL] TI WL 128x FM V4L2 driver
+To: linux-media <linux-media@vger.kernel.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24, 2011 at 12:43:14PM +0100, Mikael Pettersson wrote:
->NAK -- this breaks existing setups which rely on /root/bin/installkernel
->being picked up automatically.
->
->Can you handle 'make INSTALLKERNEL=...' without breaking that please?
+Hi Mauro,
 
-Yes, here we go.
+Please pull the WL128x FM V4L2 driver from
+http://dev.omapzoom.org/pub/scm/manju/L24x-btfm.git fm_v4l2_upstream
 
---------->
+This is TI WL128x FM V4L2 driver and it introduces ‘wl128x’ folder
+under the ‘drivers/media/radio’. This driver enables support for FM RX
+and TX for Texas Instrument's WL128x (also compatible with WL127x)
+WiLink chip sets. The V4L2 FM driver can work in either Rx or Tx mode,
+and V4L2 interfaces are provided for both.
 
-Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+Texas Instrument's WL128x chip set packs BT, FM, GPS and WLAN in a
+single die with BT, FM and GPS being interfaced over a single UART.
+This driver works on top of the shared transport line discipline
+driver. This driver can also be made use for the WL127x version of the
+chip which packs BT, FM and WLAN only.
 
----
-diff --git a/Makefile b/Makefile
-index 1f47495..44abded 100644
---- a/Makefile
-+++ b/Makefile
-@@ -327,7 +327,7 @@ OBJCOPY		= $(CROSS_COMPILE)objcopy
- OBJDUMP		= $(CROSS_COMPILE)objdump
- AWK		= awk
- GENKSYMS	= scripts/genksyms/genksyms
--INSTALLKERNEL  := installkernel
-+INSTALLKERNEL  ?= /sbin/installkernel
- DEPMOD		= /sbin/depmod
- KALLSYMS	= scripts/kallsyms
- PERL		= perl
-diff --git a/arch/x86/boot/install.sh b/arch/x86/boot/install.sh
-index d13ec1c..c8c9a92 100644
---- a/arch/x86/boot/install.sh
-+++ b/arch/x86/boot/install.sh
-@@ -33,8 +33,8 @@ verify "$3"
- 
- # User may have a custom install script
- 
--if [ -x ~/bin/${INSTALLKERNEL} ]; then exec ~/bin/${INSTALLKERNEL} "$@"; fi
--if [ -x /sbin/${INSTALLKERNEL} ]; then exec /sbin/${INSTALLKERNEL} "$@"; fi
-+if [ -x ~/bin/installkernel ]; then exec ~/bin/installkernel "$@"; fi
-+if [ -x "${INSTALLKERNEL}" ]; then exec "${INSTALLKERNEL}" "$@"; fi
- 
- # Default install - same as make zlilo
- 
+This driver has been reviewed by various folks within TI and also in
+Linux media community. The driver has been tested extensively on TI
+platforms and we believe that it is ready for merge into mainline.
+
+The following changes since commit db309d3d54c2f721dd1176ce86c63b0381c0a258:
+  Mauro Carvalho Chehab (1):
+        [media] add support for Encore FM3
+
+are available in the git repository at:
+
+  http://dev.omapzoom.org/pub/scm/manju/L24x-btfm.git fm_v4l2_upstream
+
+Manjunatha Halli (7):
+      drivers:media:radio: wl128x: FM Driver common header file
+      drivers:media:radio: wl128x: FM Driver V4L2 sources
+      drivers:media:radio: wl128x: FM Driver Common sources
+      drivers:media:radio: wl128x: FM driver RX sources
+      drivers:media:radio: wl128x: FM driver TX sources
+      drivers:media:radio: wl128x: Kconfig & Makefile for wl128x driver
+      drivers:media:radio: Update Kconfig and Makefile for wl128x FM driver
+
+ drivers/media/radio/Kconfig               |    3 +
+ drivers/media/radio/Makefile              |    1 +
+ drivers/media/radio/wl128x/Kconfig        |   17 +
+ drivers/media/radio/wl128x/Makefile       |    6 +
+ drivers/media/radio/wl128x/fmdrv.h        |  244 +++++
+ drivers/media/radio/wl128x/fmdrv_common.c | 1677 +++++++++++++++++++++++++++++
+ drivers/media/radio/wl128x/fmdrv_common.h |  402 +++++++
+ drivers/media/radio/wl128x/fmdrv_rx.c     |  847 +++++++++++++++
+ drivers/media/radio/wl128x/fmdrv_rx.h     |   59 +
+ drivers/media/radio/wl128x/fmdrv_tx.c     |  425 ++++++++
+ drivers/media/radio/wl128x/fmdrv_tx.h     |   37 +
+ drivers/media/radio/wl128x/fmdrv_v4l2.c   |  580 ++++++++++
+ drivers/media/radio/wl128x/fmdrv_v4l2.h   |   33 +
+ 13 files changed, 4331 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/media/radio/wl128x/Kconfig
+ create mode 100644 drivers/media/radio/wl128x/Makefile
+ create mode 100644 drivers/media/radio/wl128x/fmdrv.h
+ create mode 100644 drivers/media/radio/wl128x/fmdrv_common.c
+ create mode 100644 drivers/media/radio/wl128x/fmdrv_common.h
+ create mode 100644 drivers/media/radio/wl128x/fmdrv_rx.c
+ create mode 100644 drivers/media/radio/wl128x/fmdrv_rx.h
+ create mode 100644 drivers/media/radio/wl128x/fmdrv_tx.c
+ create mode 100644 drivers/media/radio/wl128x/fmdrv_tx.h
+ create mode 100644 drivers/media/radio/wl128x/fmdrv_v4l2.c
+ create mode 100644 drivers/media/radio/wl128x/fmdrv_v4l2.h
+
+-- 
+Best Regards
+Manjunatha Halli
