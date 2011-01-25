@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894Ab1AYKnS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 05:43:18 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61404 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752818Ab1AYKnP (ORCPT
+	id S1752872Ab1AYKoe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 05:44:34 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46286 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752433Ab1AYKod (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 05:43:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=pE8CQ6IcALtX//lO2E3o/WsHASkx9rRd+aO9bIivVHbja8M2ABOEDOTYYavmq392eX
-         PVdVs+D8IWG81nAucLvA1zBZjT/g949+qJ6kar9uh5QGjNwwGlqnVFa8+9XbrKj1Cltm
-         o2Q7srHbRajdvRE2h76SSoQf14fqwaw6zAn3s=
-Subject: Re: [PATCH] UBI: fix unaligned leb_start value
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: John Ogness <john.ogness@linutronix.de>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <87zkqu1fuh.fsf@vostro.fn.ogness.net>
-References: <87zkqu1fuh.fsf@vostro.fn.ogness.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 25 Jan 2011 12:42:40 +0200
-Message-ID: <1295952160.7118.1.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 8bit
+	Tue, 25 Jan 2011 05:44:33 -0500
+Date: Tue, 25 Jan 2011 10:43:33 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: walter harms <wharms@bfs.de>
+Cc: Julia Lawall <julia@diku.dk>, Vasiliy Kulikov <segooon@gmail.com>,
+        Ryan Mallon <ryan@bluewatersys.com>, kernel-janitors@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] arch/arm/mach-at91/clock.c: Add missing IS_ERR test
+Message-ID: <20110125104333.GE11507@n2100.arm.linux.org.uk>
+References: <1295898922-18822-1-git-send-email-julia@diku.dk> <1295898922-18822-3-git-send-email-julia@diku.dk> <4D3DD964.9020107@bluewatersys.com> <Pine.LNX.4.64.1101242058430.3167@ask.diku.dk> <20110124200515.GA30963@albatros> <Pine.LNX.4.64.1101242108180.3167@ask.diku.dk> <4D3EA6EC.5050305@bfs.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D3EA6EC.5050305@bfs.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-21 at 15:39 +0100, John Ogness wrote:
-> From: John Ogness <john.ogness@linutronix.de>
+On Tue, Jan 25, 2011 at 11:33:16AM +0100, walter harms wrote:
+> Would it be more easy to return NULL in the error case of clk_get() instead
+> of ERR_PTR(-ENOENT) ?
 > 
-> The wrong header size was used in calculating the data offset. The
-> data offset should be VID header offset + VID header size (aligned to
-> the minimum I/O unit).
-> 
-> Signed-off-by: John Ogness <john.ogness@linutronix.de>
+> So the default could be return NULL and an architecture depending solution
+> replacing that.
 
-I've tweaked the commit message and pushed this to the UBI tree, thanks:
-http://git.infradead.org/ubi-2.6.git/commit/a25376636fa6cee8017a22144652f276840281bf
+That's not how the API is defined.  The API defines error-pointers to be
+errors, everything should be considered valid.  Please don't go down the
+route of doing something architecturally different from that.
 
-> ---
-> This patch is against linux-next-20110121.
-> 
-> Since the value is later aligned, this patch does not fix any real
-> world problem. But it should be fixed nonetheless.
+What if, say, you couldn't return the struct clk because maybe it could
+only be controlled by one user?  Returning an EBUSY error pointer would
+indicate this condition.  What if the module providing the struct clk
+hasn't finished initializing - that's another reason for EBUSY rather
+than ENOENT.
 
-Not exactly, this does not fix any real problem because UBI_EC_HDR_SIZE
-and UBI_VID_HDR_SIZE are currently equivalent :-)
-
-Thank you!
-
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
-
+Error codes are useful to describe why something failed.  NULL pointers
+can't do that.
