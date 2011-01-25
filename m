@@ -1,80 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753583Ab1AYKVk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 05:21:40 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36596 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753450Ab1AYKVg (ORCPT
+	id S1753570Ab1AYKVf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 05:21:35 -0500
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:52344 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753450Ab1AYKTt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 05:21:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=gYBm9JQXEtql7j1tE4ydlQNohGfc5PlD1AN4Tz+VKjtMHxZQD1trK/lQ65ARtneJBL
-         CNNcRhWr1Vub/CKYkfUmOQ2GFKXVoJ6Rl2TTC1KKabhJfd8iq4LQrgxeqAfrV1UmvD2J
-         hbavQJy9P+jgX3tUxKlu5gvEnwZWZ/8HaNvtI=
-Date: Tue, 25 Jan 2011 11:21:28 +0100
-From: Tejun Heo <tj@kernel.org>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, axboe@kernel.dk, tytso@mit.edu,
-        shli@kernel.org, neilb@suse.de, adilger.kernel@dilger.ca, jack@suse.cz,
-        snitzer@redhat.com, linux-kernel@vger.kernel.org, kmannth@us.ibm.com,
-        cmm@us.ibm.com, linux-ext4@vger.kernel.org, rwheeler@redhat.com,
-        hch@lst.de, josef@redhat.com
-Subject: Re: [PATCH 3/3] block: reimplement FLUSH/FUA to support merge
-Message-ID: <20110125102128.GO27510@htj.dyndns.org>
-References: <1295625598-15203-1-git-send-email-tj@kernel.org>
- <1295625598-15203-4-git-send-email-tj@kernel.org>
- <20110121185617.GI12072@redhat.com>
- <20110123102526.GA23121@htj.dyndns.org>
- <20110124203155.GA32261@tux1.beaverton.ibm.com>
+	Tue, 25 Jan 2011 05:19:49 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: <linux-kernel@vger.kernel.org>, Lee Jones <lee.jones@linaro.org>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Subject: [PATCH 24/32] dma40: pass the info pointer all the way to reduce argument count
+Date: Tue, 25 Jan 2011 11:18:27 +0100
+Message-ID: <1295950715-22340-25-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <1295950715-22340-1-git-send-email-linus.walleij@stericsson.com>
+References: <1295950715-22340-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110124203155.GA32261@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Darrick.
+From: Rabin Vincent <rabin.vincent@stericsson.com>
 
-On Mon, Jan 24, 2011 at 12:31:55PM -0800, Darrick J. Wong wrote:
-> > So, I think it's better to start with something simple and improve it
-> > with actual testing.  If the current simple implementation can match
-> > Darrick's previous numbers, let's first settle the mechanisms.  We can
-> 
-> Yep, the fsync-happy numbers more or less match... at least for 2.6.37:
-> http://tinyurl.com/4q2xeao
+Acked-by: Per Forlin <per.forlin@stericsson.com>
+Acked-by: Jonas Aaberg <jonas.aberg@stericsson.com>
+Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+---
+ drivers/dma/ste_dma40.c    |    8 ++------
+ drivers/dma/ste_dma40_ll.c |   42 ++++++++++++++++++------------------------
+ drivers/dma/ste_dma40_ll.h |    5 ++---
+ 3 files changed, 22 insertions(+), 33 deletions(-)
 
-Good to hear.  Thanks for the detailed testing.
-
-> I'll give 2.6.38-rc2 a try later, though -rc1 didn't boot for me, so these
-> numbers are based on a backport to .37. :(
-
-Well, there hasn' been any change in the area during the merge window
-anyway, so I think testing on 2.6.37 should be fine.
-
-> > I don't really think we should design the whole thing around broken
-> > devices which incorrectly report writeback cache when it need not.
-> > The correct place to work around that is during device identification
-> > not in the flush logic.
-> 
-> elm3a4_sas and elm3c71_extsas advertise writeback cache yet the
-> flush completion times are suspiciously low.  I suppose it could be
-> useful to disable flushes to squeeze out that last bit of
-> performance, though I don't know how one goes about querying the
-> disk array to learn if there's a battery behind the cache.  I guess
-> the current mechanism (admin knob that picks a safe default) is good
-> enough.
-
-Yeap, that or a blacklist of devices which lie.
-
-Jens, what do you think?  If you don't object, let's put this through
-linux-next.
-
-Thank you.
-
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index c597dba..3c61c58 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -1679,17 +1679,13 @@ d40_prep_sg_phy(struct d40_chan *chan, struct d40_desc *desc,
+ 				desc->lli_phy.src,
+ 				virt_to_phys(desc->lli_phy.src),
+ 				chan->src_def_cfg,
+-				src_info->data_width,
+-				dst_info->data_width,
+-				src_info->psize);
++				src_info, dst_info);
+ 
+ 	ret = d40_phy_sg_to_lli(sg_dst, sg_len, dst_dev_addr,
+ 				desc->lli_phy.dst,
+ 				virt_to_phys(desc->lli_phy.dst),
+ 				chan->dst_def_cfg,
+-				dst_info->data_width,
+-				src_info->data_width,
+-				dst_info->psize);
++				dst_info, src_info);
+ 
+ 	dma_sync_single_for_device(chan->base->dev, desc->lli_pool.dma_addr,
+ 				   desc->lli_pool.size, DMA_TO_DEVICE);
+diff --git a/drivers/dma/ste_dma40_ll.c b/drivers/dma/ste_dma40_ll.c
+index 9935c6d..509a130 100644
+--- a/drivers/dma/ste_dma40_ll.c
++++ b/drivers/dma/ste_dma40_ll.c
+@@ -125,13 +125,14 @@ void d40_phy_cfg(struct stedma40_chan_cfg *cfg,
+ static int d40_phy_fill_lli(struct d40_phy_lli *lli,
+ 			    dma_addr_t data,
+ 			    u32 data_size,
+-			    int psize,
+ 			    dma_addr_t next_lli,
+ 			    u32 reg_cfg,
+ 			    bool term_int,
+-			    u32 data_width,
+-			    bool is_device)
++			    bool is_device,
++			    struct stedma40_half_channel_info *info)
+ {
++	unsigned int data_width = info->data_width;
++	int psize = info->psize;
+ 	int num_elems;
+ 
+ 	if (psize == STEDMA40_PSIZE_PHY_1)
+@@ -198,16 +199,11 @@ static int d40_seg_size(int size, int data_width1, int data_width2)
+ 	return seg_max;
+ }
+ 
+-static struct d40_phy_lli *d40_phy_buf_to_lli(struct d40_phy_lli *lli,
+-				       dma_addr_t addr,
+-				       u32 size,
+-				       int psize,
+-				       dma_addr_t lli_phys,
+-				       u32 reg_cfg,
+-				       bool term_int,
+-				       u32 data_width1,
+-				       u32 data_width2,
+-				       bool is_device)
++static struct d40_phy_lli *
++d40_phy_buf_to_lli(struct d40_phy_lli *lli, dma_addr_t addr, u32 size,
++		   dma_addr_t lli_phys, u32 reg_cfg, bool term_int,
++		   bool is_device, struct stedma40_half_channel_info *info,
++		   struct stedma40_half_channel_info *otherinfo)
+ {
+ 	int err;
+ 	dma_addr_t next = lli_phys;
+@@ -215,7 +211,8 @@ static struct d40_phy_lli *d40_phy_buf_to_lli(struct d40_phy_lli *lli,
+ 	int size_seg = 0;
+ 
+ 	do {
+-		size_seg = d40_seg_size(size_rest, data_width1, data_width2);
++		size_seg = d40_seg_size(size_rest, info->data_width,
++					otherinfo->data_width);
+ 		size_rest -= size_seg;
+ 
+ 		if (term_int && size_rest == 0)
+@@ -227,12 +224,11 @@ static struct d40_phy_lli *d40_phy_buf_to_lli(struct d40_phy_lli *lli,
+ 		err = d40_phy_fill_lli(lli,
+ 				       addr,
+ 				       size_seg,
+-				       psize,
+ 				       next,
+ 				       reg_cfg,
+ 				       !next,
+-				       data_width1,
+-				       is_device);
++				       is_device,
++				       info);
+ 
+ 		if (err)
+ 			goto err;
+@@ -254,9 +250,8 @@ int d40_phy_sg_to_lli(struct scatterlist *sg,
+ 		      struct d40_phy_lli *lli_sg,
+ 		      dma_addr_t lli_phys,
+ 		      u32 reg_cfg,
+-		      u32 data_width1,
+-		      u32 data_width2,
+-		      int psize)
++		      struct stedma40_half_channel_info *info,
++		      struct stedma40_half_channel_info *otherinfo)
+ {
+ 	int total_size = 0;
+ 	int i;
+@@ -280,13 +275,12 @@ int d40_phy_sg_to_lli(struct scatterlist *sg,
+ 		lli = d40_phy_buf_to_lli(lli,
+ 					 dst,
+ 					 sg_dma_len(current_sg),
+-					 psize,
+ 					 l_phys,
+ 					 reg_cfg,
+ 					 sg_len - 1 == i,
+-					 data_width1,
+-					 data_width2,
+-					 target == dst);
++					 target == dst,
++					 info,
++					 otherinfo);
+ 		if (lli == NULL)
+ 			return -EINVAL;
+ 	}
+diff --git a/drivers/dma/ste_dma40_ll.h b/drivers/dma/ste_dma40_ll.h
+index 867f23f..cd94afd 100644
+--- a/drivers/dma/ste_dma40_ll.h
++++ b/drivers/dma/ste_dma40_ll.h
+@@ -308,9 +308,8 @@ int d40_phy_sg_to_lli(struct scatterlist *sg,
+ 		      struct d40_phy_lli *lli,
+ 		      dma_addr_t lli_phys,
+ 		      u32 reg_cfg,
+-		      u32 data_width1,
+-		      u32 data_width2,
+-		      int psize);
++		      struct stedma40_half_channel_info *info,
++		      struct stedma40_half_channel_info *otherinfo);
+ 
+ /* Logical channels */
+ 
 -- 
-tejun
+1.7.3.2
+
