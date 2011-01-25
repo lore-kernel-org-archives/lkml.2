@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab1AYPNv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 10:13:51 -0500
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:37895 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752730Ab1AYPNt (ORCPT
+	id S1753304Ab1AYPOk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 10:14:40 -0500
+Received: from service87.mimecast.com ([94.185.240.25]:58216 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751772Ab1AYPOj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 10:13:49 -0500
-X-Sasl-enc: UALsj270sO0HwxX0pIol+FxDdW7N+6mtRoOguEsmVG7J 1295968429
-Date: Tue, 25 Jan 2011 13:13:46 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        platform-driver-x86@vger.kernel.org,
-        ibm-acpi-devel@lists.sourceforge.net
-Subject: thinkpad-acpi: fn-f4 issues
-Message-ID: <20110125151346.GB14803@khazad-dum.debian.net>
-References: <Pine.LNX.4.64.1101251740380.3737@boston.corp.fedex.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1101251740380.3737@boston.corp.fedex.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 25 Jan 2011 10:14:39 -0500
+Subject: Re: [PATCH v2 04/28] ARM: mm: cache-l2x0: Add support for
+ re-enabling l2x0
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Colin Cross <ccross@android.com>
+Cc: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        olof@lixom.net, konkers@android.com,
+        Russell King <linux@arm.linux.org.uk>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <1295834493-5019-5-git-send-email-ccross@android.com>
+References: <1295834493-5019-1-git-send-email-ccross@android.com>
+	 <1295834493-5019-5-git-send-email-ccross@android.com>
+Organization: ARM Limited
+Date: Tue, 25 Jan 2011 15:14:24 +0000
+Message-ID: <1295968464.10109.264.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1
+X-OriginalArrivalTime: 25 Jan 2011 15:14:30.0269 (UTC) FILETIME=[90595AD0:01CBBCA2]
+X-MC-Unique: 111012515143411701
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc: trimmed down, as this is now a thinkpad-acpi matter)
-
-On Tue, 25 Jan 2011, Jeff Chua wrote:
-> As for the thinkpad-acpi, here a little patch to disable all hotkeys
-> so that Fn-F4 works natively to suspend-to-memory when
-> CONFIG_THINKPAD_ACPI_HOTKEY_POLL is not set.
+On Mon, 2011-01-24 at 02:01 +0000, Colin Cross wrote:
+> --- a/arch/arm/mm/cache-l2x0.c
+> +++ b/arch/arm/mm/cache-l2x0.c
+> @@ -252,16 +252,26 @@ static void l2x0_flush_range(unsigned long start, unsigned long end)
+>         spin_unlock_irqrestore(&l2x0_lock, flags);
+>  }
 > 
-> Thanks,
-> Jeff
+> +/* enables l2x0 after l2x0_disable, does not invalidate */
+> +void l2x0_enable(void)
+> +{
+> +       unsigned long flags;
+> +
+> +       spin_lock_irqsave(&l2x0_lock, flags);
+> +       writel_relaxed(1, l2x0_base + L2X0_CTRL);
+> +       spin_unlock_irqrestore(&l2x0_lock, flags);
+> +}
+> +
+>  static void l2x0_disable(void)
+>  {
+>         unsigned long flags;
 > 
-> --- lx/drivers/platform/x86/thinkpad_acpi.c.org	2011-01-22 21:48:05.000000000 +0800
-> +++ lx/drivers/platform/x86/thinkpad_acpi.c	2011-01-22 21:55:14.000000000 +0800
-> @@ -8776,10 +8776,12 @@
->  	{
->  		.data = &thinkpad_acpi_driver_data,
->  	},
-> +#ifdef CONFIG_THINKPAD_ACPI_HOTKEY_POLL
->  	{
->  		.init = hotkey_init,
->  		.data = &hotkey_driver_data,
->  	},
-> +#endif
+>         spin_lock_irqsave(&l2x0_lock, flags);
+> -       writel(0, l2x0_base + L2X0_CTRL);
+> +       writel_relaxed(0, l2x0_base + L2X0_CTRL);
+>         spin_unlock_irqrestore(&l2x0_lock, flags);
+>  }
+> 
+> -void __init l2x0_init(void __iomem *base, __u32 aux_val, __u32 aux_mask)
+> +void l2x0_init(void __iomem *base, __u32 aux_val, __u32 aux_mask)
+>  {
+>         __u32 aux;
+>         __u32 cache_id;
 
-That will basicaly lobotomize the driver, as the "hotkeys" are really the
-entire firmware event interface(!).
+So this assumes that the L2 registers are accessible. I suspect the
+platform code calling it should know this.
 
-Which thinkpad do you have that need CONFIG_THINKPAD_ACPI_HOTKEY_POLL to
-handle Fn+F4?   I don't expect that to be needed on anything newer than a
-T32...
+The patch looks fine.
 
-Can I have the full kernel log, please?
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+
