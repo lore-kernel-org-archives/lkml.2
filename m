@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976Ab1AYOxP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 09:53:15 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:47506 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730Ab1AYOxM (ORCPT
+	id S1753888Ab1AYOtM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 09:49:12 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46802 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753530Ab1AYOtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 09:53:12 -0500
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 2/2] mrst/vrtc: avoid using CMOS RTC ops
-To: x86@kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 25 Jan 2011 14:26:28 +0000
-Message-ID: <20110125142627.9886.47807.stgit@bob.linux.org.uk>
-In-Reply-To: <20110125142613.9886.69516.stgit@bob.linux.org.uk>
-References: <20110125142613.9886.69516.stgit@bob.linux.org.uk>
-User-Agent: StGIT/0.14.3
+	Tue, 25 Jan 2011 09:49:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Kz22r68jnexfMW8YgsoAd64hU0P9G+6UB670G4rQOvi4A5vBfJbUiXysJNewwfNwqh
+         lFWU2FsJb3yCQpSEn6K3xD4//4JrkCMLIJbz7gLmWtwuc8sqXISdC4+fJlGeJsbXN0dd
+         YFLDzsW5YNdjJTCgWfoxNGy/ZR3LqKQmEoso4=
+Date: Tue, 25 Jan 2011 15:49:05 +0100
+From: Tejun Heo <tj@kernel.org>
+To: "Ahmed S. Darwish" <darwish.07@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, X86-ML <x86@kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Willy Tarreau <wtarreau@hera.kernel.org>, Willy Tarreau <w@1wt.eu>,
+        Dirk Hohndel <hohndel@infradead.org>, Dirk.Hohndel@intel.com,
+        IDE-ML <linux-ide@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2][concept RFC] x86: BIOS-save kernel log to disk
+ upon panic
+Message-ID: <20110125144905.GC27510@htj.dyndns.org>
+References: <20110125134748.GA10051@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110125134748.GA10051@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Hello,
 
-If we don't assign Moorestown specific wallclock init and ops function
-the rtc/persisent clock code will use CMOS RTC for access, this will
-crash Moorestown as the ioports are not present.
-Also in the vrtc driver, we should avoid using CMOS access to check UIP status.
+On Tue, Jan 25, 2011 at 03:47:48PM +0200, Ahmed S. Darwish wrote:
+> The main problem, it seems, is that the BIOS "Reset controller" command is not
+> enough to restore disk hardware to a state understandable by the BIOS code.
 
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
+I doubt many BIOSen would implement this properly.  It's something no
+one ever uses and modern controllers have a lot more states and are
+more complex to reset.
 
- arch/x86/platform/mrst/mrst.c |    2 ++
- drivers/rtc/rtc-mrst.c        |   13 ++++++++++++-
- 2 files changed, 14 insertions(+), 1 deletions(-)
+>  - Is it possible to re-initialize the disk hardware to its POST
+>    state (thus make the BIOS services work reliably) while keeping
+>    system RAM unmodified?
 
+I'm afraid this can't be made reliable.  Nobody uses it and the stuff
+we do during pci initialization is enough to leave some BIOSen
+clueless.
 
-diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
-index ea6529e..dea829c 100644
---- a/arch/x86/platform/mrst/mrst.c
-+++ b/arch/x86/platform/mrst/mrst.c
-@@ -31,6 +31,7 @@
- #include <asm/apic.h>
- #include <asm/io_apic.h>
- #include <asm/mrst.h>
-+#include <asm/mrst-vrtc.h>
- #include <asm/io.h>
- #include <asm/i8259.h>
- #include <asm/intel_scu_ipc.h>
-@@ -268,6 +269,7 @@ void __init x86_mrst_early_setup(void)
- 
- 	x86_platform.calibrate_tsc = mrst_calibrate_tsc;
- 	x86_platform.i8042_detect = mrst_i8042_detect;
-+	x86_platform.wallclock_init = mrst_rtc_init;
- 	x86_init.pci.init = pci_mrst_init;
- 	x86_init.pci.fixup_irqs = x86_init_noop;
- 
-diff --git a/drivers/rtc/rtc-mrst.c b/drivers/rtc/rtc-mrst.c
-index bcd0cf6..28e02e7 100644
---- a/drivers/rtc/rtc-mrst.c
-+++ b/drivers/rtc/rtc-mrst.c
-@@ -62,6 +62,17 @@ static inline int is_intr(u8 rtc_intr)
- 	return rtc_intr & RTC_IRQMASK;
- }
- 
-+static inline unsigned char vrtc_is_updating(void)
-+{
-+	unsigned char uip;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&rtc_lock, flags);
-+	uip = (vrtc_cmos_read(RTC_FREQ_SELECT) & RTC_UIP);
-+	spin_unlock_irqrestore(&rtc_lock, flags);
-+	return uip;
-+}
-+
- /*
-  * rtc_time's year contains the increment over 1900, but vRTC's YEAR
-  * register can't be programmed to value larger than 0x64, so vRTC
-@@ -76,7 +87,7 @@ static int mrst_read_time(struct device *dev, struct rtc_time *time)
- {
- 	unsigned long flags;
- 
--	if (rtc_is_updating())
-+	if (vrtc_is_updating())
- 		mdelay(20);
- 
- 	spin_lock_irqsave(&rtc_lock, flags);
+>  - If not, can we do it manually by reprogramming the controllers?
 
+It would be only theoretically possible.  We'll basically have to
+write deinitialization routine for different controllers, which of
+course would be super-cold path and not many people would test.
+
+I'm afraid this is gonna be something which works sometimes (or even
+more times than not) but can't ever be made reliable.  I think it
+would be better to head toward usb or other kind of early console.
+
+Thanks.
+
+-- 
+tejun
