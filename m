@@ -1,78 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128Ab1AYIo4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 03:44:56 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:55912 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753008Ab1AYIoz convert rfc822-to-8bit (ORCPT
+	id S1752817Ab1AYIyz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 03:54:55 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57590 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708Ab1AYIyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 03:44:55 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=wKa5gShHxYyqrFnx2fmibnthLoRt46DJkx/6VuKF8r39DAjidfrmx3l3HMgPZ5wb5c
-         Bc0sf4p/XEuKTobmtTh6eTRWxngbxmurCR7jxgkK9Ioe1/EB/0gcqzC3OTxYx+NxI16W
-         nJiEh328jKlj4ZKr8lVhuPOh8wYrGkW6DEeP8=
+	Tue, 25 Jan 2011 03:54:54 -0500
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1101121350350.25498@xanadu.home>
-References: <4D2B4CE4.9080309@ahsoftware.de>
-	<alpine.LFD.2.00.1101101722470.9794@xanadu.home>
-	<4D2BFA08.5030104@ahsoftware.de>
-	<AANLkTinR7ih2ZMRMbXmSvoh-rS3LVv+UCvd0rRH_ESzf@mail.gmail.com>
-	<20110111155930.GH11039@n2100.arm.linux.org.uk>
-	<4D2D1942.4050905@ahsoftware.de>
-	<AANLkTimAFp7ORrJLw2d8-i5pK0MZGTyAN5kmRR37ky1v@mail.gmail.com>
-	<alpine.LFD.2.00.1101121314470.25498@xanadu.home>
-	<20110112184258.GH11039@n2100.arm.linux.org.uk>
-	<alpine.LFD.2.00.1101121350350.25498@xanadu.home>
-Date: Tue, 25 Jan 2011 14:14:55 +0530
-Message-ID: <AANLkTikLwTdV2B5Dyp_adCxgWcE-+Wb6uiN5MBfnA1_K@mail.gmail.com>
-Subject: Re: ARM: relocation out of range (when loading a module)
-From: Sachin Verma <imschnvrm@gmail.com>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rabin Vincent <rabin@rab.in>, Alexander Holler <holler@ahsoftware.de>,
-        Dave Martin <dave.martin@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        catalin.marinas@arm.com
+Date: Tue, 25 Jan 2011 09:54:53 +0100
+Message-ID: <AANLkTimSVTKLrvjDFdmkOG5g6npHafEzPf_E_dFHxL5j@mail.gmail.com>
+Subject: [PATCH V3 1/2] tracing, perf : add cpu hotplug trace events
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
+        fweisbec@gmail.com, rostedt@goodmis.org, amit.kucheria@linaro.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Please find below a new proposal for adding trace events for cpu hotplug.
+The goal is to measure the latency of each part (kernel, architecture)
+and also to trace the cpu hotplug activity with other power events. I
+have tested these traces events on an arm platform.
 
-On Thu, Jan 13, 2011 at 12:25 AM, Nicolas Pitre
-<nicolas.pitre@linaro.org> wrote:
-> On Wed, 12 Jan 2011, Russell King - ARM Linux wrote:
->
->> Then came along the embedded initrd/initramfs idea which rather buggered
->> the scheme when large initramfs are embedded into the image.
->>
->> As the overall feeling at the time was "don't use large initrds" it's
->> something I've never really cared about - and I'm still of the opinion
->> that 16MB of compressed initrd/initramfs is rather silly.
->
-> It is... but we have more than 32MB of RAM total now, and people are
-> running standard distributions on ARM these days, such as Fedora or
-> Ubuntu, including their corresponding initrd that may contain lots of
-> modules, splashscreen data, etc.  So it might be a good idea to think
-> about fixing this limitation before it comes back again.
->
+Subject: [PATCH 1/2] define cpu hotplug tracepoints
 
-in fact it is not just the initrd/initramfs size, i am facing issues
-with loading modules on MMU-less envt(Cortex M3).
-I have 128MB of Physical RAM and i am using a 4MB initrd to boot my
-system. when i try to load kernel modules i get relocation errors.
-As MMU-less systems are allowing modules to be loaded anywhere from
-RAM and not from any predefined limits of MODULES_VADDR and
-MODULES_END.
+this patch adds new events for cpu hotplug tracing
+ * plug/unplug sequence
+ * core and architecture latency measurements
 
-Do you have any pointers on how to tackle this situation for MMU less
-environments?
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+---
+ include/trace/events/cpu_hotplug.h |  103 ++++++++++++++++++++++++++++++++++++
+ 1 files changed, 103 insertions(+), 0 deletions(-)
+ create mode 100644 include/trace/events/cpu_hotplug.h
 
-Regards,
-Sachin.
+diff --git a/include/trace/events/cpu_hotplug.h
+b/include/trace/events/cpu_hotplug.h
+new file mode 100644
+index 0000000..2a255e2
+--- /dev/null
++++ b/include/trace/events/cpu_hotplug.h
+@@ -0,0 +1,103 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM cpu_hotplug
++
++#if !defined(_TRACE_CPU_HOTPLUG_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_CPU_HOTPLUG_H
++
++#include <linux/tracepoint.h>
++
++DECLARE_EVENT_CLASS(cpu_hotplug,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid),
++
++	TP_STRUCT__entry(
++		__field(	unsigned int,	cpuid	)
++	),
++
++	TP_fast_assign(
++		__entry->cpuid = cpuid;
++	),
++
++	TP_printk("cpuid=%u", __entry->cpuid)
++);
++
++/* Core function of cpu hotplug */
++
++DEFINE_EVENT(cpu_hotplug, cpu_hotplug_down_start,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid)
++);
++
++DEFINE_EVENT(cpu_hotplug, cpu_hotplug_down_end,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid)
++);
++
++DEFINE_EVENT(cpu_hotplug, cpu_hotplug_up_start,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid)
++);
++
++DEFINE_EVENT(cpu_hotplug, cpu_hotplug_up_end,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid)
++);
++
++/* Architecture function for cpu hotplug */
++
++DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_disable_start,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid)
++);
++
++DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_disable_end,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid)
++);
++
++DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_die_start,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid)
++);
++
++DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_die_end,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid)
++);
++
++DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_up_start,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid)
++);
++
++DEFINE_EVENT(cpu_hotplug, cpu_hotplug_arch_up_end,
++
++	TP_PROTO(unsigned int cpuid),
++
++	TP_ARGS(cpuid)
++);
++
++#endif /* _TRACE_CPU_HOTPLUG_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+-- 
+1.7.1
