@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506Ab1AYOxD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 09:53:03 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:47504 "EHLO
+	id S1752976Ab1AYOxP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 09:53:15 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:47506 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab1AYOxB (ORCPT
+	with ESMTP id S1752730Ab1AYOxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 09:53:01 -0500
+	Tue, 25 Jan 2011 09:53:12 -0500
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 1/2] x86/platform: add a wallclock_init func to x86_platforms
- ops
+Subject: [PATCH 2/2] mrst/vrtc: avoid using CMOS RTC ops
 To: x86@kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 25 Jan 2011 14:26:16 +0000
-Message-ID: <20110125142613.9886.69516.stgit@bob.linux.org.uk>
+Date: Tue, 25 Jan 2011 14:26:28 +0000
+Message-ID: <20110125142627.9886.47807.stgit@bob.linux.org.uk>
+In-Reply-To: <20110125142613.9886.69516.stgit@bob.linux.org.uk>
+References: <20110125142613.9886.69516.stgit@bob.linux.org.uk>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -21,74 +22,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Feng Tang <feng.tang@intel.com>
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
 
-Some wall clock devices use MMIO based HW register, this new function will
-give them a chance to do some initialization work before their get/set_time
-service get called.
+If we don't assign Moorestown specific wallclock init and ops function
+the rtc/persisent clock code will use CMOS RTC for access, this will
+crash Moorestown as the ioports are not present.
+Also in the vrtc driver, we should avoid using CMOS access to check UIP status.
 
-Signed-off-by: Feng Tang <feng.tang@intel.com>
 Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- arch/x86/include/asm/x86_init.h |    2 ++
- arch/x86/kernel/setup.c         |    2 ++
- arch/x86/kernel/x86_init.c      |    2 ++
- 3 files changed, 6 insertions(+), 0 deletions(-)
+ arch/x86/platform/mrst/mrst.c |    2 ++
+ drivers/rtc/rtc-mrst.c        |   13 ++++++++++++-
+ 2 files changed, 14 insertions(+), 1 deletions(-)
 
 
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index 64642ad..f7fa2e7 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -138,6 +138,7 @@ struct x86_cpuinit_ops {
- /**
-  * struct x86_platform_ops - platform specific runtime functions
-  * @calibrate_tsc:		calibrate TSC
-+ * @wallclock_init:		init the wallclock device
-  * @get_wallclock:		get time from HW clock like RTC etc.
-  * @set_wallclock:		set time back to HW clock
-  * @is_untracked_pat_range	exclude from PAT logic
-@@ -146,6 +147,7 @@ struct x86_cpuinit_ops {
-  */
- struct x86_platform_ops {
- 	unsigned long (*calibrate_tsc)(void);
-+	void (*wallclock_init)(void);
- 	unsigned long (*get_wallclock)(void);
- 	int (*set_wallclock)(unsigned long nowtime);
- 	void (*iommu_shutdown)(void);
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index d3cfe26..c204fd5 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1066,6 +1066,8 @@ void __init setup_arch(char **cmdline_p)
- #endif
- 	x86_init.oem.banner();
+diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
+index ea6529e..dea829c 100644
+--- a/arch/x86/platform/mrst/mrst.c
++++ b/arch/x86/platform/mrst/mrst.c
+@@ -31,6 +31,7 @@
+ #include <asm/apic.h>
+ #include <asm/io_apic.h>
+ #include <asm/mrst.h>
++#include <asm/mrst-vrtc.h>
+ #include <asm/io.h>
+ #include <asm/i8259.h>
+ #include <asm/intel_scu_ipc.h>
+@@ -268,6 +269,7 @@ void __init x86_mrst_early_setup(void)
  
-+	x86_platform.wallclock_init();
+ 	x86_platform.calibrate_tsc = mrst_calibrate_tsc;
+ 	x86_platform.i8042_detect = mrst_i8042_detect;
++	x86_platform.wallclock_init = mrst_rtc_init;
+ 	x86_init.pci.init = pci_mrst_init;
+ 	x86_init.pci.fixup_irqs = x86_init_noop;
+ 
+diff --git a/drivers/rtc/rtc-mrst.c b/drivers/rtc/rtc-mrst.c
+index bcd0cf6..28e02e7 100644
+--- a/drivers/rtc/rtc-mrst.c
++++ b/drivers/rtc/rtc-mrst.c
+@@ -62,6 +62,17 @@ static inline int is_intr(u8 rtc_intr)
+ 	return rtc_intr & RTC_IRQMASK;
+ }
+ 
++static inline unsigned char vrtc_is_updating(void)
++{
++	unsigned char uip;
++	unsigned long flags;
 +
- 	mcheck_init();
- 
- 	local_irq_save(flags);
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index ceb2911..fc3f0e6 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -27,6 +27,7 @@ void __init x86_init_uint_noop(unsigned int unused) { }
- void __init x86_init_pgd_noop(pgd_t *unused) { }
- int __init iommu_init_noop(void) { return 0; }
- void iommu_shutdown_noop(void) { }
-+void wallclock_init_noop(void) { }
- 
++	spin_lock_irqsave(&rtc_lock, flags);
++	uip = (vrtc_cmos_read(RTC_FREQ_SELECT) & RTC_UIP);
++	spin_unlock_irqrestore(&rtc_lock, flags);
++	return uip;
++}
++
  /*
-  * The platform setup functions are preset with the default functions
-@@ -92,6 +93,7 @@ static int default_i8042_detect(void) { return 1; };
+  * rtc_time's year contains the increment over 1900, but vRTC's YEAR
+  * register can't be programmed to value larger than 0x64, so vRTC
+@@ -76,7 +87,7 @@ static int mrst_read_time(struct device *dev, struct rtc_time *time)
+ {
+ 	unsigned long flags;
  
- struct x86_platform_ops x86_platform = {
- 	.calibrate_tsc			= native_calibrate_tsc,
-+	.wallclock_init			= wallclock_init_noop,
- 	.get_wallclock			= mach_get_cmos_time,
- 	.set_wallclock			= mach_set_rtc_mmss,
- 	.iommu_shutdown			= iommu_shutdown_noop,
+-	if (rtc_is_updating())
++	if (vrtc_is_updating())
+ 		mdelay(20);
+ 
+ 	spin_lock_irqsave(&rtc_lock, flags);
 
