@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528Ab1AYUGr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 15:06:47 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:11971 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753167Ab1AYUGq (ORCPT
+	id S1753344Ab1AYUKl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 15:10:41 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40334 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751460Ab1AYUKj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 15:06:46 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6237"; a="71731110"
-Subject: Re: [PATCH v2 01/11] msm: Add CPU queries
-From: Daniel Walker <dwalker@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <8yaei80epie.fsf@huya.qualcomm.com>
-References: <1292384961-8851-1-git-send-email-stepanm@codeaurora.org>
-	 <1295468747-22796-1-git-send-email-davidb@codeaurora.org>
-	 <1295468747-22796-2-git-send-email-davidb@codeaurora.org>
-	 <1295914163.29639.77.camel@c-dwalke-linux.qualcomm.com>
-	 <8yak4htj0lb.fsf@huya.qualcomm.com>
-	 <1295915034.29639.78.camel@c-dwalke-linux.qualcomm.com>
-	 <8yay669hka5.fsf@huya.qualcomm.com>
-	 <1295976910.25496.1.camel@c-dwalke-linux.qualcomm.com>
-	 <8ya39ogg5dm.fsf@huya.qualcomm.com>
-	 <1295983549.25496.33.camel@c-dwalke-linux.qualcomm.com>
-	 <8yaei80epie.fsf@huya.qualcomm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 25 Jan 2011 12:06:18 -0800
-Message-ID: <1295985978.25496.35.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Jan 2011 15:10:39 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110125164803.GA19701@core.coreip.homeip.net>
+References: <4D3E1A08.5060303@teksavvy.com> <20110125005555.GA18338@core.coreip.homeip.net>
+ <4D3E4DD1.60705@teksavvy.com> <20110125042016.GA7850@core.coreip.homeip.net>
+ <4D3E5372.9010305@teksavvy.com> <20110125045559.GB7850@core.coreip.homeip.net>
+ <4D3E59CA.6070107@teksavvy.com> <4D3E5A91.30207@teksavvy.com>
+ <20110125053117.GD7850@core.coreip.homeip.net> <4D3EB734.5090100@redhat.com> <20110125164803.GA19701@core.coreip.homeip.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 26 Jan 2011 06:09:45 +1000
+Message-ID: <AANLkTi=1Mh0JrYk5itvef7O7e7pR+YKos-w56W5q4B8B@mail.gmail.com>
+Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils ?
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Mark Lord <kernel@teksavvy.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org, linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-25 at 11:45 -0800, David Brown wrote:
-> On Tue, Jan 25 2011, Daniel Walker wrote:
-> 
-> > On Tue, 2011-01-25 at 11:17 -0800, David Brown wrote:
-> 
-> > I suggesting we do it across the board because consistency is a good
-> > thing .. It also allows us to use 8x60 when 8660 and 8960 are actually
-> > similar .. You can't deny that 8960 is similar to 8660 because your
-> > patches show some duplication due to it.
-> 
-> You're completely missing the point of these tests.  If _anything_ is
-> different, the macros need to be different.  I don't care if they're
-> similar, I need to know when they are different.  That is the point of
-> the macros.
+On Wed, Jan 26, 2011 at 2:48 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+>
+> We should be able to handle the case where scancode is valid even though
+> it might be unmapped yet. This is regardless of what version of
+> EVIOCGKEYCODE we use, 1 or 2, and whether it is sparse keymap or not.
+>
+> Is it possible to validate the scancode by driver?
 
-I said you would have macros specifically for 8660 and 8960, so if you
-need to know when they're different then you have macro's to do that. 
+More appropriately, why not just revert the thing? The version change
+and the buggy EINVAL return both.
 
-Daniel
+As Mark said, breaking user space simply isn't acceptable. And since
+breaking user space isn't acceptable, then incrementing the version is
+stupid too.
 
--- 
+The way we add new ioctl's is not by incrementing some "ABI version"
+crap. It's by adding new ioctl's or system calls or whatever that
+simply used to return -ENOSYS or other error before, while preserving
+the old ABI. That way old binaries don't break (for _ANY_ reason), and
+new binaries can see "oh, this doesn't support the new thing".
 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+                Linus
