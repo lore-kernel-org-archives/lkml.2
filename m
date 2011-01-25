@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751819Ab1AYFH0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 00:07:26 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39379 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751025Ab1AYFHZ convert rfc822-to-8bit (ORCPT
+	id S1752732Ab1AYFHd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 00:07:33 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:30732 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752198Ab1AYFHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 00:07:25 -0500
+	Tue, 25 Jan 2011 00:07:31 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAH/pPU1Ld/sX/2dsb2JhbAAMhAfMYpBigSSDOHQEhRc
+X-IronPort-AV: E=Sophos;i="4.60,372,1291611600"; 
+   d="scan'208";a="89131682"
+Message-ID: <4D3E5A91.30207@teksavvy.com>
+Date: Tue, 25 Jan 2011 00:07:29 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20110124.210646.226764975.davem@davemloft.net>
-References: <20110125044910.GB8117@infradead.org>
-	<20110124.210543.193717502.davem@davemloft.net>
-	<20110124.210646.226764975.davem@davemloft.net>
-Date: Tue, 25 Jan 2011 13:07:24 +0800
-Message-ID: <AANLkTimfrEXxJ2Vi31PZKWGvUL=O2v0eNt9tDhEr=fit@mail.gmail.com>
-Subject: Re: net: clear heap allocation for ethtool_get_regs()
-From: Eugene Teo <eugeneteo@kernel.sg>
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, kees.cook@canonical.com,
-        bhutchings@solarflare.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org
+Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils
+ ?
+References: <4D3C5F73.2050408@teksavvy.com> <20110124175456.GA17855@core.coreip.homeip.net> <4D3E1A08.5060303@teksavvy.com> <20110125005555.GA18338@core.coreip.homeip.net> <4D3E4DD1.60705@teksavvy.com> <20110125042016.GA7850@core.coreip.homeip.net> <4D3E5372.9010305@teksavvy.com> <20110125045559.GB7850@core.coreip.homeip.net> <4D3E59CA.6070107@teksavvy.com>
+In-Reply-To: <4D3E59CA.6070107@teksavvy.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 1:06 PM, David Miller <davem@davemloft.net> wrote:
-> From: David Miller <davem@davemloft.net>
-> Date: Mon, 24 Jan 2011 21:05:43 -0800 (PST)
->
->> From: Eugene Teo <eugeneteo@kernel.org>
->> Date: Tue, 25 Jan 2011 12:49:10 +0800
->>
->>> There is a conflict between commit b00916b1 and a77f5db3. This patch resolves
->>> the conflict by clearing the heap allocation in ethtool_get_regs().
+On 11-01-25 12:04 AM, Mark Lord wrote:
+> On 11-01-24 11:55 PM, Dmitry Torokhov wrote:
+>> On Mon, Jan 24, 2011 at 11:37:06PM -0500, Mark Lord wrote:
+> ..
+>>> This results in (map->size==10) for 2.6.36+ (wrong),
+>>> and a much larger map->size for 2.6.35 and earlier.
 >>>
->>> Cc: stable@kernel.org
->>> Signed-off-by: Eugene Teo <eugeneteo@kernel.org>
+>>> So perhaps EVIOCGKEYCODE has changed?
+>>>
 >>
->> Applied, thanks Eugene.
->
-> Ugh, I just noticed, Eugene could you please always CC: netdev on
-> networking patches?  Thanks.
+>> So the utility expects that all devices have flat scancode space and
+>> driver might have changed so it does not recognize scancode 10 as valid
+>> scancode anymore.
+>>
+>> The options are:
+>>
+>> 1. Convert to EVIOCGKEYCODE2
+>> 2. Ignore errors from EVIOCGKEYCODE and go through all 65536 iterations.
+> 
+> or 3. Revert/fix the in-kernel regression.
+> 
+> The EVIOCGKEYCODE ioctl is supposed to return KEY_RESERVED for unmapped
+> (but value) keycodes, and only return -EINVAL when the keycode itself
+> is out of range.
+> 
+> That's how it worked in all kernels prior to 2.6.36,
+> and now it is broken.  It now returns -EINVAL for any unmapped keycode,
+> even though keycodes higher than that still have mappings.
+> 
+> This is a bug, a regression, and breaks userspace.
+> I haven't identified *where* in the kernel the breakage happened,
+> though.. that code confuses me.  :)
 
-Will do that. Thanks Dave.
+Note that this device DOES have "flat scancode space",
+and the kernel is now incorrectly signalling an error (-EINVAL)
+in response to a perfectly valid query of a VALID (and mappable)
+keycode on the remote control
 
-Eugene
+The code really is a valid button, it just doesn't have a default mapping
+set by the kernel (I can set a mapping for that code from userspace and it works).
+
+This is a BUG.  Returning -EINVAL here is entirely wrong.
+
+Cheers
