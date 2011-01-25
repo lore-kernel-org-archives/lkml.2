@@ -1,199 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754026Ab1AYWTD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 17:19:03 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:50989 "EHLO
+	id S1754068Ab1AYWTG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 17:19:06 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:60049 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753836Ab1AYWSH (ORCPT
+	with ESMTP id S1753825Ab1AYWSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 17:18:07 -0500
+	Tue, 25 Jan 2011 17:18:06 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Palash Bandyopadhyay <palash.bandyopadhyay@conexant.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 04/20] staging/cx25721: serialize access to devlist
-Date: Tue, 25 Jan 2011 23:17:18 +0100
-Message-Id: <1295993854-4971-5-git-send-email-arnd@arndb.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Arjan van de Ven <arjan@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 18/20] rtmutex-tester: remove BKL tests
+Date: Tue, 25 Jan 2011 23:17:32 +0100
+Message-Id: <1295993854-4971-19-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1295993854-4971-1-git-send-email-arnd@arndb.de>
 References: <1295993854-4971-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:htY8vs7Qoxuw9aiMoAzJJO2HNgSTFaInx4Kj1zCWIE1
- cX0omVq8Iuy/0KfsSA1c0Am5wOcaI/Zt/rwgdVq32PbxAWI9yf
- DMJMWqQIUwkZXSZfJ2bfqxArgRK5fCiRe679rI4UU0PJRw+z2I
- f1BUmgCxKucZQQWEjCwJVVGv1uu2JNYnd87qyzOrbGNsjjoLrP
- 7MzG1xDXDJzHsOWtMX6Ww==
+X-Provags-ID: V02:K0:kCXhAE0Sv168l4qWik6sJWxElBsWlp1HReD0B559Adg
+ hwuoDsg9hodk9sRwXYMNobltMnFhLnwc654Bi2RDZHySDtHlk/
+ TBBc6qx83mWorhtsVURPAgBSIytM65hhMIxnqiEj7+91+TdWTH
+ K3MzIA4t6y/GfFI9Kh/rHO2J7/px9nMDZnqmNoxZJF6V9Vvjiq
+ aofv97vperWGqaC1FacZA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Out of the three files accessing the device list,
-one uses a mutex, one uses the BKL and one does
-not have any locking. That is of course pointless,
-so let's make all of them use the same mutex,
-and get rid of one more BKL user.
+The BKL is going away, no need to test it any more.
+I left the definitions of the test case numbers
+in, so that the other tests do not get renumbered.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Palash Bandyopadhyay <palash.bandyopadhyay@conexant.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- drivers/staging/cx25821/Kconfig         |    1 -
- drivers/staging/cx25821/cx25821-alsa.c  |    2 ++
- drivers/staging/cx25821/cx25821-core.c  |   16 +++++++---------
- drivers/staging/cx25821/cx25821-video.c |    9 ++++-----
- drivers/staging/cx25821/cx25821.h       |    3 ++-
- 5 files changed, 15 insertions(+), 16 deletions(-)
+ kernel/rtmutex-tester.c |   39 ++++-----------------------------------
+ 1 files changed, 4 insertions(+), 35 deletions(-)
 
-diff --git a/drivers/staging/cx25821/Kconfig b/drivers/staging/cx25821/Kconfig
-index b265695..5f6b542 100644
---- a/drivers/staging/cx25821/Kconfig
-+++ b/drivers/staging/cx25821/Kconfig
-@@ -1,7 +1,6 @@
- config VIDEO_CX25821
- 	tristate "Conexant cx25821 support"
- 	depends on DVB_CORE && VIDEO_DEV && PCI && I2C
--	depends on BKL # please fix
- 	select I2C_ALGOBIT
- 	select VIDEO_BTCX
- 	select VIDEO_TVEEPROM
-diff --git a/drivers/staging/cx25821/cx25821-alsa.c b/drivers/staging/cx25821/cx25821-alsa.c
-index 160f669..ebdba7c 100644
---- a/drivers/staging/cx25821/cx25821-alsa.c
-+++ b/drivers/staging/cx25821/cx25821-alsa.c
-@@ -770,10 +770,12 @@ static int cx25821_alsa_init(void)
- 	struct cx25821_dev *dev = NULL;
- 	struct list_head *list;
- 
-+	mutex_lock(&cx25821_devlist_mutex);
- 	list_for_each(list, &cx25821_devlist) {
- 		dev = list_entry(list, struct cx25821_dev, devlist);
- 		cx25821_audio_initdev(dev);
- 	}
-+	mutex_unlock(&cx25821_devlist_mutex);
- 
- 	if (dev == NULL)
- 		pr_info("ERROR ALSA: no cx25821 cards found\n");
-diff --git a/drivers/staging/cx25821/cx25821-core.c b/drivers/staging/cx25821/cx25821-core.c
-index a216b62..523ac5e 100644
---- a/drivers/staging/cx25821/cx25821-core.c
-+++ b/drivers/staging/cx25821/cx25821-core.c
-@@ -33,9 +33,6 @@ MODULE_DESCRIPTION("Driver for Athena cards");
- MODULE_AUTHOR("Shu Lin - Hiep Huynh");
- MODULE_LICENSE("GPL");
- 
--struct list_head cx25821_devlist;
--EXPORT_SYMBOL(cx25821_devlist);
--
- static unsigned int debug;
- module_param(debug, int, 0644);
- MODULE_PARM_DESC(debug, "enable debug messages");
-@@ -46,8 +43,10 @@ MODULE_PARM_DESC(card, "card type");
- 
- static unsigned int cx25821_devcount;
- 
--static DEFINE_MUTEX(devlist);
-+DEFINE_MUTEX(cx25821_devlist_mutex);
-+EXPORT_SYMBOL(cx25821_devlist_mutex);
- LIST_HEAD(cx25821_devlist);
-+EXPORT_SYMBOL(cx25821_devlist);
- 
- struct sram_channel cx25821_sram_channels[] = {
- 	[SRAM_CH00] = {
-@@ -911,9 +910,9 @@ static int cx25821_dev_setup(struct cx25821_dev *dev)
- 	dev->nr = ++cx25821_devcount;
- 	sprintf(dev->name, "cx25821[%d]", dev->nr);
- 
--	mutex_lock(&devlist);
-+	mutex_lock(&cx25821_devlist_mutex);
- 	list_add_tail(&dev->devlist, &cx25821_devlist);
--	mutex_unlock(&devlist);
-+	mutex_unlock(&cx25821_devlist_mutex);
- 
- 	strcpy(cx25821_boards[UNKNOWN_BOARD].name, "unknown");
- 	strcpy(cx25821_boards[CX25821_BOARD].name, "cx25821");
-@@ -1465,9 +1464,9 @@ static void __devexit cx25821_finidev(struct pci_dev *pci_dev)
- 	if (pci_dev->irq)
- 		free_irq(pci_dev->irq, dev);
- 
--	mutex_lock(&devlist);
-+	mutex_lock(&cx25821_devlist_mutex);
- 	list_del(&dev->devlist);
--	mutex_unlock(&devlist);
-+	mutex_unlock(&cx25821_devlist_mutex);
- 
- 	cx25821_dev_unregister(dev);
- 	v4l2_device_unregister(v4l2_dev);
-@@ -1501,7 +1500,6 @@ static struct pci_driver cx25821_pci_driver = {
- 
- static int __init cx25821_init(void)
- {
--	INIT_LIST_HEAD(&cx25821_devlist);
- 	pr_info("driver version %d.%d.%d loaded\n",
- 		(CX25821_VERSION_CODE >> 16) & 0xff,
- 		(CX25821_VERSION_CODE >> 8) & 0xff,
-diff --git a/drivers/staging/cx25821/cx25821-video.c b/drivers/staging/cx25821/cx25821-video.c
-index 0d8d756..ab05392 100644
---- a/drivers/staging/cx25821/cx25821-video.c
-+++ b/drivers/staging/cx25821/cx25821-video.c
-@@ -27,7 +27,6 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
- #include "cx25821-video.h"
--#include <linux/smp_lock.h>
- 
- MODULE_DESCRIPTION("v4l2 driver module for cx25821 based TV cards");
- MODULE_AUTHOR("Hiep Huynh <hiep.huynh@conexant.com>");
-@@ -815,7 +814,7 @@ static int video_open(struct file *file)
-        if (NULL == fh)
- 	       return -ENOMEM;
- 
--       lock_kernel();
-+	mutex_lock(&cx25821_devlist_mutex);
- 
-        list_for_each(list, &cx25821_devlist)
-        {
-@@ -832,8 +831,8 @@ static int video_open(struct file *file)
-        }
- 
-        if (NULL == dev) {
--	       unlock_kernel();
--	       return -ENODEV;
-+		mutex_unlock(&cx25821_devlist_mutex);
-+		return -ENODEV;
-        }
- 
-        file->private_data = fh;
-@@ -862,7 +861,7 @@ static int video_open(struct file *file)
- 			      sizeof(struct cx25821_buffer), fh, NULL);
- 
-        dprintk(1, "post videobuf_queue_init()\n");
--       unlock_kernel();
-+	mutex_unlock(&cx25821_devlist_mutex);
- 
-        return 0;
- }
-diff --git a/drivers/staging/cx25821/cx25821.h b/drivers/staging/cx25821/cx25821.h
-index 5511523..6230243 100644
---- a/drivers/staging/cx25821/cx25821.h
-+++ b/drivers/staging/cx25821/cx25821.h
-@@ -31,7 +31,6 @@
- #include <linux/delay.h>
+diff --git a/kernel/rtmutex-tester.c b/kernel/rtmutex-tester.c
+index 66cb89b..d5b5435 100644
+--- a/kernel/rtmutex-tester.c
++++ b/kernel/rtmutex-tester.c
+@@ -9,7 +9,6 @@
+ #include <linux/kthread.h>
+ #include <linux/module.h>
  #include <linux/sched.h>
- #include <linux/kdev_t.h>
 -#include <linux/smp_lock.h>
+ #include <linux/spinlock.h>
+ #include <linux/sysdev.h>
+ #include <linux/timer.h>
+@@ -27,7 +26,6 @@ struct test_thread_data {
+ 	int			opcode;
+ 	int			opdata;
+ 	int			mutexes[MAX_RT_TEST_MUTEXES];
+-	int			bkl;
+ 	int			event;
+ 	struct sys_device	sysdev;
+ };
+@@ -46,8 +44,8 @@ enum test_opcodes {
+ 	RTTEST_LOCKINTNOWAIT,	/* 6 Lock interruptible no wait in wakeup, data = lockindex */
+ 	RTTEST_LOCKCONT,	/* 7 Continue locking after the wakeup delay */
+ 	RTTEST_UNLOCK,		/* 8 Unlock, data = lockindex */
+-	RTTEST_LOCKBKL,		/* 9 Lock BKL */
+-	RTTEST_UNLOCKBKL,	/* 10 Unlock BKL */
++	RTTEST_LOCKBKL,		/* 9 Was: Lock BKL */
++	RTTEST_UNLOCKBKL,	/* 10 Was: Unlock BKL */
+ 	RTTEST_SIGNAL,		/* 11 Signal other test thread, data = thread id */
+ 	RTTEST_RESETEVENT = 98,	/* 98 Reset event counter */
+ 	RTTEST_RESET = 99,	/* 99 Reset all pending operations */
+@@ -74,13 +72,6 @@ static int handle_op(struct test_thread_data *td, int lockwakeup)
+ 				td->mutexes[i] = 0;
+ 			}
+ 		}
+-
+-		if (!lockwakeup && td->bkl == 4) {
+-#ifdef CONFIG_LOCK_KERNEL
+-			unlock_kernel();
+-#endif
+-			td->bkl = 0;
+-		}
+ 		return 0;
  
- #include <media/v4l2-common.h>
- #include <media/v4l2-device.h>
-@@ -445,6 +444,8 @@ static inline struct cx25821_dev *get_cx25821(struct v4l2_device *v4l2_dev)
- 	v4l2_device_call_all(&dev->v4l2_dev, 0, o, f, ##args)
+ 	case RTTEST_RESETEVENT:
+@@ -131,25 +122,6 @@ static int handle_op(struct test_thread_data *td, int lockwakeup)
+ 		td->mutexes[id] = 0;
+ 		return 0;
  
- extern struct list_head cx25821_devlist;
-+extern struct mutex cx25821_devlist_mutex;
-+
- extern struct cx25821_board cx25821_boards[];
- extern struct cx25821_subid cx25821_subids[];
+-	case RTTEST_LOCKBKL:
+-		if (td->bkl)
+-			return 0;
+-		td->bkl = 1;
+-#ifdef CONFIG_LOCK_KERNEL
+-		lock_kernel();
+-#endif
+-		td->bkl = 4;
+-		return 0;
+-
+-	case RTTEST_UNLOCKBKL:
+-		if (td->bkl != 4)
+-			break;
+-#ifdef CONFIG_LOCK_KERNEL
+-		unlock_kernel();
+-#endif
+-		td->bkl = 0;
+-		return 0;
+-
+ 	default:
+ 		break;
+ 	}
+@@ -196,7 +168,6 @@ void schedule_rt_mutex_test(struct rt_mutex *mutex)
+ 		td->event = atomic_add_return(1, &rttest_event);
+ 		break;
  
+-	case RTTEST_LOCKBKL:
+ 	default:
+ 		break;
+ 	}
+@@ -229,8 +200,6 @@ void schedule_rt_mutex_test(struct rt_mutex *mutex)
+ 		td->event = atomic_add_return(1, &rttest_event);
+ 		return;
+ 
+-	case RTTEST_LOCKBKL:
+-		return;
+ 	default:
+ 		return;
+ 	}
+@@ -380,11 +349,11 @@ static ssize_t sysfs_test_status(struct sys_device *dev, struct sysdev_attribute
+ 	spin_lock(&rttest_lock);
+ 
+ 	curr += sprintf(curr,
+-		"O: %4d, E:%8d, S: 0x%08lx, P: %4d, N: %4d, B: %p, K: %d, M:",
++		"O: %4d, E:%8d, S: 0x%08lx, P: %4d, N: %4d, B: %p, M:",
+ 		td->opcode, td->event, tsk->state,
+ 			(MAX_RT_PRIO - 1) - tsk->prio,
+ 			(MAX_RT_PRIO - 1) - tsk->normal_prio,
+-		tsk->pi_blocked_on, td->bkl);
++		tsk->pi_blocked_on);
+ 
+ 	for (i = MAX_RT_TEST_MUTEXES - 1; i >=0 ; i--)
+ 		curr += sprintf(curr, "%d", td->mutexes[i]);
 -- 
 1.7.1
 
