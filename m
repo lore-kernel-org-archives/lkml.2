@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926Ab1AYVEd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 16:04:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48872 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753545Ab1AYVEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 16:04:32 -0500
-Date: Tue, 25 Jan 2011 16:04:16 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, axboe@kernel.dk, tytso@mit.edu,
-        djwong@us.ibm.com, shli@kernel.org, neilb@suse.de,
-        adilger.kernel@dilger.ca, jack@suse.cz, linux-kernel@vger.kernel.org,
-        kmannth@us.ibm.com, cmm@us.ibm.com, linux-ext4@vger.kernel.org,
-        rwheeler@redhat.com, hch@lst.de, josef@redhat.com
-Subject: Re: [PATCH 3/3] block: reimplement FLUSH/FUA to support merge
-Message-ID: <20110125210414.GC3013@redhat.com>
-References: <1295625598-15203-1-git-send-email-tj@kernel.org>
- <1295625598-15203-4-git-send-email-tj@kernel.org>
- <20110122004955.GA17792@redhat.com>
- <20110123103133.GC23121@htj.dyndns.org>
- <20110125204606.GE10664@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110125204606.GE10664@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753994Ab1AYVHm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 16:07:42 -0500
+Received: from casper.infradead.org ([85.118.1.10]:37518 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753860Ab1AYVHl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 16:07:41 -0500
+Subject: Re: [PATCH 16/16] KVM-GST: adjust scheduler cpu power
+From: Peter Zijlstra <peterz@infradead.org>
+To: Glauber Costa <glommer@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
+        Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Avi Kivity <avi@redhat.com>
+In-Reply-To: <1295988455.15920.35.camel@mothafucka.localdomain>
+References: <1295892397-11354-1-git-send-email-glommer@redhat.com>
+	 <1295892397-11354-17-git-send-email-glommer@redhat.com>
+	 <1295893920.28776.468.camel@laptop>
+	 <1295895083.15920.9.camel@mothafucka.localdomain>
+	 <1295898690.28776.472.camel@laptop>
+	 <1295985756.15920.33.camel@mothafucka.localdomain>
+	 <1295986386.28776.1101.camel@laptop>
+	 <1295988455.15920.35.camel@mothafucka.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 25 Jan 2011 22:07:44 +0100
+Message-ID: <1295989664.28776.1124.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25 2011 at  3:46pm -0500,
-Vivek Goyal <vgoyal@redhat.com> wrote:
-
-> On Sun, Jan 23, 2011 at 11:31:33AM +0100, Tejun Heo wrote:
-> > On Fri, Jan 21, 2011 at 07:49:55PM -0500, Mike Snitzer wrote:
-> > > > + * If the device doesn't have writeback cache, FLUSH and FUA don't make any
-> > > > + * difference.  The requests are either completed immediately if there's no
-> > > > + * data or executed as normal requests otherwise.
-> > > 
-> > > For devices without a writeback cache, I'm not seeing where pure flushes
-> > > are completed immediately.  But I do see where data is processed
-> > > directly in blk_insert_flush().
+On Tue, 2011-01-25 at 18:47 -0200, Glauber Costa wrote:
+> On Tue, 2011-01-25 at 21:13 +0100, Peter Zijlstra wrote:
+> > On Tue, 2011-01-25 at 18:02 -0200, Glauber Costa wrote:
 > > 
-> > Yeah, it does.  Pure flushes on a device w/o writeback cache, @policy
-> > is zero and blk_flush_complete_seq() will directly proceed to
-> > REQ_FSEQ_DONE.
-> 
-> I see following code in __generic_make_request(). I am wondering if empty
-> flushes will be completed here itself if device does not have writeback
-> cache.
-> 
->                 /*
->                  * Filter flush bio's early so that make_request based
->                  * drivers without flush support don't have to worry
->                  * about them.
->                  */
->                 if ((bio->bi_rw & (REQ_FLUSH | REQ_FUA)) && !q->flush_flags) {
->                         bio->bi_rw &= ~(REQ_FLUSH | REQ_FUA);
->                         if (!nr_sectors) {
->                                 err = 0;
->                                 goto end_io;
->                         }
->                 }
+> > > I fail to see how does clock_task influence cpu power.
+> > > If we also have to touch clock_task for better accounting of other
+> > > stuff, it is a separate story.
+> > > But for cpu_power, I really fail. Please enlighten me.
+> > 
+> > static void update_rq_clock_task(struct rq *rq, s64 delta)
+> > {
+> >         s64 irq_delta;
+> > 
+> >         irq_delta = irq_time_read(cpu_of(rq)) - rq->prev_irq_time;
+> > 
+> >         if (irq_delta > delta)
+> >                 irq_delta = delta;
+> > 
+> >         rq->prev_irq_time += irq_delta;
+> >         delta -= irq_delta;
+> >         rq->clock_task += delta;
+> > 
+> >         if (irq_delta && sched_feat(NONIRQ_POWER))
+> >                 sched_rt_avg_update(rq, irq_delta);
+> > }
+> > 
+> > its done through that sched_rt_avg_update() (should probably rename
+> > that), it computes a floating average of time not spend on fair tasks.
+> > 
+> It creates a dependency on CONFIG_IRQ_TIME_ACCOUNTING, though.
+> This piece of code is simply compiled out if this option is disabled.
 
-Yes, due to the !q->flush_flags check, empty flushes will complete here
-if the device's request_queue doesn't advertise support for FLUSH or FUA
-via blk_queue_flush().
-
-Mike
-
-
+We can pull this bit out and make the common bit also available for
+paravirt.
