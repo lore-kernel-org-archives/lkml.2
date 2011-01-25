@@ -1,88 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279Ab1AYNXp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 08:23:45 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:59675 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752629Ab1AYNXn convert rfc822-to-8bit (ORCPT
+	id S1753411Ab1AYNZG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 08:25:06 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:49146 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772Ab1AYNZE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 08:23:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=BsbaTKWTQCcjTL5MTkjse1+Z5ogUb55D6CVHQnPd25J7YM77vIO2ZeCwsZxFmNavAC
-         zGGZtfOoBdhdLuoQSTRaZ6sxoBvPu0g509R9m8a5hGLgiXxvfMRF447jnZnDFBAgKsum
-         mF2AkLoL53GO9Qyqhbusdfzs7eQBx9lKmSZWA=
+	Tue, 25 Jan 2011 08:25:04 -0500
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikLwTdV2B5Dyp_adCxgWcE-+Wb6uiN5MBfnA1_K@mail.gmail.com>
-References: <4D2B4CE4.9080309@ahsoftware.de>
-	<alpine.LFD.2.00.1101101722470.9794@xanadu.home>
-	<4D2BFA08.5030104@ahsoftware.de>
-	<AANLkTinR7ih2ZMRMbXmSvoh-rS3LVv+UCvd0rRH_ESzf@mail.gmail.com>
-	<20110111155930.GH11039@n2100.arm.linux.org.uk>
-	<4D2D1942.4050905@ahsoftware.de>
-	<AANLkTimAFp7ORrJLw2d8-i5pK0MZGTyAN5kmRR37ky1v@mail.gmail.com>
-	<alpine.LFD.2.00.1101121314470.25498@xanadu.home>
-	<20110112184258.GH11039@n2100.arm.linux.org.uk>
-	<alpine.LFD.2.00.1101121350350.25498@xanadu.home>
-	<AANLkTikLwTdV2B5Dyp_adCxgWcE-+Wb6uiN5MBfnA1_K@mail.gmail.com>
-Date: Tue, 25 Jan 2011 13:23:43 +0000
-X-Google-Sender-Auth: PKGl14gaQvcRw37WgNEh-qX4Y8o
-Message-ID: <AANLkTim3C7P=Wzd9w--yrCrXsq7JQLPQdLMkSv28xqDB@mail.gmail.com>
-Subject: Re: ARM: relocation out of range (when loading a module)
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Sachin Verma <imschnvrm@gmail.com>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rabin Vincent <rabin@rab.in>, Alexander Holler <holler@ahsoftware.de>,
-        Dave Martin <dave.martin@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110125124524.GJ11507@n2100.arm.linux.org.uk>
+References: <AANLkTi=eCOiP7MrUSG4WRMN0kj_+ZWvZ=z7VYDfkshU_@mail.gmail.com>
+	<8yad3nlh18e.fsf@huya.qualcomm.com>
+	<AANLkTin9fSw5DdqdgCEvtdtc83LFOeA7t0OAUugVmRFD@mail.gmail.com>
+	<20110125102652.GB11507@n2100.arm.linux.org.uk>
+	<bb0c3855a121603232d022b4062752a6@mail.gmail.com>
+	<AANLkTi=vZSZkN2k1gZD0F-C74b_jFWX5HhDhr7BiPhN7@mail.gmail.com>
+	<20110125124524.GJ11507@n2100.arm.linux.org.uk>
+Date: Tue, 25 Jan 2011 13:25:02 +0000
+Message-ID: <AANLkTikVW3vcygUQDTH-x6cXkNdf2WEztbTvdz4YkmCk@mail.gmail.com>
+Subject: Re: questions about arm trustzone
+From: Dave Martin <dave.martin@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        sen wang <wangchendu@gmail.com>, David Brown <davidb@codeaurora.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 January 2011 08:44, Sachin Verma <imschnvrm@gmail.com> wrote:
-> On Thu, Jan 13, 2011 at 12:25 AM, Nicolas Pitre
-> <nicolas.pitre@linaro.org> wrote:
->> On Wed, 12 Jan 2011, Russell King - ARM Linux wrote:
->>
->>> Then came along the embedded initrd/initramfs idea which rather buggered
->>> the scheme when large initramfs are embedded into the image.
->>>
->>> As the overall feeling at the time was "don't use large initrds" it's
->>> something I've never really cared about - and I'm still of the opinion
->>> that 16MB of compressed initrd/initramfs is rather silly.
->>
->> It is... but we have more than 32MB of RAM total now, and people are
->> running standard distributions on ARM these days, such as Fedora or
->> Ubuntu, including their corresponding initrd that may contain lots of
->> modules, splashscreen data, etc. Â So it might be a good idea to think
->> about fixing this limitation before it comes back again.
->>
+On Tue, Jan 25, 2011 at 12:45 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Tue, Jan 25, 2011 at 12:24:13PM +0000, Dave Martin wrote:
+>> Avoiding this complexity is one of the motivations for using r7 for
+>> the syscall number with CONFIG_EABI (instead of using the SVC comment
+>> field).
 >
-> in fact it is not just the initrd/initramfs size, i am facing issues
-> with loading modules on MMU-less envt(Cortex M3).
-> I have 128MB of Physical RAM and i am using a 4MB initrd to boot my
-> system. when i try to load kernel modules i get relocation errors.
-> As MMU-less systems are allowing modules to be loaded anywhere from
-> RAM and not from any predefined limits of MODULES_VADDR and
-> MODULES_END.
+> Your history is not entirely correct.
 >
-> Do you have any pointers on how to tackle this situation for MMU less
-> environments?
+> I had the kernel side of Thumb userspace support in place long before EABI
+> came along.  Thumb doesn't have a large enough comment field to store the
+> Linux syscall number, so to get around that problem, I decided to use r7
+> for the syscall number.  You'll find 2.4 kernels support Thumb instructions
+> in userspace.
+>
+> As part of the EABI switch for ARM mode - which created an incompatible
+> SWI interface anyway, we decided that we could reduce data cache pollution
+> by eliminating the read of the SWI instruction, so we adopted the r7
+> method for ARM EABI mode.
+>
 
-I don't think there is a simple solution. As a hack, you could define
-DMA and Normal Zones in your system and force module allocations from
-the DMA zone (which would be close to the kernel).
+Fair enough -- I was glossing over things a bit and I'm not familiar
+with all the history.  So, I guess there were plenty of other good
+reasons.
 
-I'm not sure whether the kernel could be compile with a larger memory
-model, but then you have to improve the kernel to handle new
-relocation types.
-
--- 
-Catalin
+Cheers
+---Dave
