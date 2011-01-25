@@ -1,90 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990Ab1AYUzE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 15:55:04 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:58595 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753610Ab1AYUzC (ORCPT
+	id S1753883Ab1AYU6Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 15:58:16 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45362 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753773Ab1AYU6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 15:55:02 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=F4/qCFtMgyapnSn3Ueqf9mJtBkRT/gRSA1Q1JecQSI7faahG6Y+xTmgpbxzkmQ1jzV
-         s6H0BYbQ3i8twvvSFJs3ela1rQgVeqD02AMWin1g4gL++NpDvPVXADaQkqAo0y9F/lnS
-         +aifKeOKtiPZOvGwGNeC7m4oY7Wv9IcbqIxVg=
-Date: Tue, 25 Jan 2011 12:54:53 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Mark Lord <kernel@teksavvy.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils ?
-Message-ID: <20110125205453.GA19896@core.coreip.homeip.net>
-References: <4D3E4DD1.60705@teksavvy.com>
- <20110125042016.GA7850@core.coreip.homeip.net>
- <4D3E5372.9010305@teksavvy.com>
- <20110125045559.GB7850@core.coreip.homeip.net>
- <4D3E59CA.6070107@teksavvy.com>
- <4D3E5A91.30207@teksavvy.com>
- <20110125053117.GD7850@core.coreip.homeip.net>
- <4D3EB734.5090100@redhat.com>
- <20110125164803.GA19701@core.coreip.homeip.net>
- <AANLkTi=1Mh0JrYk5itvef7O7e7pR+YKos-w56W5q4B8B@mail.gmail.com>
+	Tue, 25 Jan 2011 15:58:15 -0500
+Date: Tue, 25 Jan 2011 21:57:54 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Andy Walls <awalls@md.metrocast.net>
+Cc: linux-i2c@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Jarod Wilson <jarod@redhat.com>, Joe Perches <joe@perches.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] drivers/staging/lirc: Remove obsolete cleanup for
+ clientdata
+Message-ID: <20110125205754.GB22589@pengutronix.de>
+References: <1295865880-27672-1-git-send-email-w.sang@pengutronix.de>
+ <1295865880-27672-4-git-send-email-w.sang@pengutronix.de>
+ <1295914142.2420.29.camel@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jho1yZJdad60DJr+"
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=1Mh0JrYk5itvef7O7e7pR+YKos-w56W5q4B8B@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1295914142.2420.29.camel@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 26, 2011 at 06:09:45AM +1000, Linus Torvalds wrote:
-> On Wed, Jan 26, 2011 at 2:48 AM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> >
-> > We should be able to handle the case where scancode is valid even though
-> > it might be unmapped yet. This is regardless of what version of
-> > EVIOCGKEYCODE we use, 1 or 2, and whether it is sparse keymap or not.
-> >
-> > Is it possible to validate the scancode by driver?
-> 
-> More appropriately, why not just revert the thing? The version change
 
-Well, then we'll break Ubuntu again as they recompiled their input-utils
-package (without fixing the check). And the rest of distros do not seem
-to be using that package...
+--jho1yZJdad60DJr+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> and the buggy EINVAL return both.
+On Mon, Jan 24, 2011 at 07:09:02PM -0500, Andy Walls wrote:
+> On Mon, 2011-01-24 at 11:44 +0100, Wolfram Sang wrote:
+> > A few new i2c-drivers came into the kernel which clear the clientdata-p=
+ointer
+> > on exit or error. This is obsolete meanwhile, the core will do it. Simp=
+lify the
+> > kfree() calls after that, the pointers don't need to be checked.
+> >=20
+> > Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> > Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> > Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+> > Cc: Andy Walls <awalls@md.metrocast.net>
+>=20
+> Nak.
+>=20
+> In a module where I plan to do more cleanup and add reference counting
+> to struct IR, IR_tx, and IR_rx objects, I'd like the explicit "NULL"s in
+> pointer checks to stay in for now.
 
-I believe that -EINVAL thing only affects RC devices that Mauro switched
-to the new rc-core; input core in itself should be ABI compatible. Thus
-I'll leave the decision to him whether he wants to revert or fix
-compatibility issue.
+Okay, I will ignore this driver until it comes out of staging.
 
-> 
-> As Mark said, breaking user space simply isn't acceptable. And since
-> breaking user space isn't acceptable, then incrementing the version is
-> stupid too.
+Thanks,
 
-It might not have been the best idea to increment, however I maintain
-that if there exists version is can be changed. Otherwise there is no
-point in having version at all.
+   Wolfram
 
-As I said, reverting the version bump will cause yet another wave of
-breakages so I propose leaving version as is.
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
-> 
-> The way we add new ioctl's is not by incrementing some "ABI version"
-> crap. It's by adding new ioctl's or system calls or whatever that
-> simply used to return -ENOSYS or other error before, while preserving
-> the old ABI. That way old binaries don't break (for _ANY_ reason), and
-> new binaries can see "oh, this doesn't support the new thing".
+--jho1yZJdad60DJr+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-That has been done as well; we have 2 new ioctls and kept 2 old ioctls.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
 
--- 
-Dmitry
+iEYEARECAAYFAk0/OVIACgkQD27XaX1/VRthgACgnah2/2nSjroHHkLiFZ7bWoq1
+NHwAoKCl7Ssi8OraQFvUPerNR30byc3j
+=ZOSa
+-----END PGP SIGNATURE-----
+
+--jho1yZJdad60DJr+--
