@@ -1,36 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017Ab1AYHDe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 02:03:34 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:45493 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335Ab1AYHDc (ORCPT
+	id S1752556Ab1AYHHh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 02:07:37 -0500
+Received: from www.wytron.com.tw ([211.75.82.101]:41943 "EHLO
+	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355Ab1AYHHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 02:03:32 -0500
-Date: Tue, 25 Jan 2011 16:03:25 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Amerigo Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Yannick Heneault <yheneaul@matrox.com>,
-        Matthew Garrett <mjg@redhat.com>, linux-fbdev@vger.kernel.org
-Subject: Re: [Patch V2] video: fix some comments in drivers/video/console/vgacon.c
-Message-ID: <20110125070324.GG11673@linux-sh.org>
-References: <1295418242-19859-1-git-send-email-amwang@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295418242-19859-1-git-send-email-amwang@redhat.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	Tue, 25 Jan 2011 02:07:35 -0500
+From: Thomas Chou <thomas@wytron.com.tw>
+To: Grant Likely <grant.likely@secretlab.ca>, Nicolas Pitre <nico@fluxnic.net>
+Cc: linux-kernel@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
+        devicetree-discuss@lists.ozlabs.org, netdev@vger.kernel.org,
+        Thomas Chou <thomas@wytron.com.tw>
+Subject: [PATCH v2] smc91x: add devicetree support
+Date: Tue, 25 Jan 2011 15:09:59 +0800
+Message-Id: <1295939399-4197-1-git-send-email-thomas@wytron.com.tw>
+X-Mailer: git-send-email 1.7.3.5
+In-Reply-To: <AANLkTikgsqJqdW2qh7h4yATCmGFb5MkHCosma_DOBq-Y@mail.gmail.com>
+References: <AANLkTikgsqJqdW2qh7h4yATCmGFb5MkHCosma_DOBq-Y@mail.gmail.com>
+X-SA-Exim-Connect-IP: 192.168.1.15
+X-SA-Exim-Mail-From: thomas@wytron.com.tw
+X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 19, 2011 at 02:24:02PM +0800, Amerigo Wang wrote:
-> Now vgacon_scrollback_startup() uses slab, not bootmem,
-> the comment above it is obsolete, so does __init_refok.
-> 
-> Signed-off-by: WANG Cong <amwang@redhat.com>
-> 
-Applied, thanks.
+Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
+---
+v2 specify part numbers in compat as Grant suggested.
+
+ drivers/net/smc91x.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/smc91x.c b/drivers/net/smc91x.c
+index 726df61..de48ebd 100644
+--- a/drivers/net/smc91x.c
++++ b/drivers/net/smc91x.c
+@@ -81,6 +81,7 @@ static const char version[] =
+ #include <linux/ethtool.h>
+ #include <linux/mii.h>
+ #include <linux/workqueue.h>
++#include <linux/of.h>
+ 
+ #include <linux/netdevice.h>
+ #include <linux/etherdevice.h>
+@@ -2394,6 +2395,13 @@ static int smc_drv_resume(struct device *dev)
+ 	return 0;
+ }
+ 
++static const struct of_device_id smc91x_match[] = {
++	{ .compatible = "smsc,smc91c94", },
++	{ .compatible = "smsc,smc91c111", },
++	{},
++}
++MODULE_DEVICE_TABLE(of, smc91x_match);
++
+ static struct dev_pm_ops smc_drv_pm_ops = {
+ 	.suspend	= smc_drv_suspend,
+ 	.resume		= smc_drv_resume,
+@@ -2406,6 +2414,9 @@ static struct platform_driver smc_driver = {
+ 		.name	= CARDNAME,
+ 		.owner	= THIS_MODULE,
+ 		.pm	= &smc_drv_pm_ops,
++#ifdef CONFIG_OF
++		.of_match_table = smc91x_match,
++#endif
+ 	},
+ };
+ 
+-- 
+1.7.3.5
+
