@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752372Ab1AYGx1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 01:53:27 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64352 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245Ab1AYGx0 (ORCPT
+	id S1751746Ab1AYGz6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 01:55:58 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:25039 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751245Ab1AYGz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 01:53:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=s4rHZNEri1m/iVgo4uf9GDrKpC+H6Ot2TAr5hX6GOZ7sPnsAYqkhNNFvKFZ+1GpqW9
-         lGQHAM40O4BTMJySLpmEMT0rE26ipJDw1A77K5fAfs2KX09Vnh9Uq9BRwOJAskdHmrt8
-         Sm7PCuDpGCZDzKK4ucOPOAH0Iye85Ysham+Pc=
-From: "Anoop P.A" <anoop.pa@gmail.com>
-To: ralf@linux-mips.org, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Cc: Anoop P A <anoop.pa@gmail.com>
-Subject: [PATCH] Fix build error for non-malta VSMP kernel.
-Date: Tue, 25 Jan 2011 12:39:15 +0530
-Message-Id: <1295939355-7281-1-git-send-email-anoop.pa@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Tue, 25 Jan 2011 01:55:57 -0500
+Date: Tue, 25 Jan 2011 15:55:32 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: [PATCH 1/3] MAINTAINERS: Move s3c2410 drivers to ARM/SAMSUNG ARM
+In-reply-to: <038101cbb5e1$021300e0$063902a0$%kim@samsung.com>
+To: "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Ben Dooks'" <ben-linux@fluff.org>, linux-kernel@vger.kernel.org
+Cc: linux@simtec.co.uk, akpm@linux-foundation.org
+Message-id: <01dc01cbbc5c$ded2c840$9c7858c0$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=US-ASCII
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: Acuzz6SFkp+eUEFdSGCMnOAViLw4BACET6BgAZpR5eA=
+References: <0bd9310fc4d79ee83f9f657640be251d84dbf86f.1294998254.git.ben-linux@fluff.org>
+ <038101cbb5e1$021300e0$063902a0$%kim@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anoop P A <anoop.pa@gmail.com>
+Kukjin Kim wrote:
+> 
+> Ben Dooks wrote:
+> >
+> > There are currnetly two entries under the "SIMTEC EB2410ITX (BAST)"
+> > machine entry for drivers/*/*s3c2410*, which is catching everything
+> > s3c2410 driver related.
+> >
+> > This entry is for a specific S3C2410 based machine, so move these two
+> > file entries to the "ARM/SAMSUNG ARM ARCHITECTURES" entry, where it
+> > will reach a wider audience of interested parties.
+> >
+> > Signed-off-by: Ben Dooks <ben-linux@fluff.org>
+> > Cc: Simtec Linux Team <linux@simtec.co.uk>
+> > Cc: Kukjin Kim <kgene.kim@samsung.com>
+> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+> 
 
-VSMP kernel build for non-malta platforms fails with following error
+Hello Andrew,
 
-  LD      init/built-in.o
-  LD      .tmp_vmlinux1
-arch/mips/built-in.o: In function `vsmp_init_secondary':
-smp-mt.c:(.cpuinit.text+0x23cc): undefined reference to `gic_present'
-smp-mt.c:(.cpuinit.text+0x23d0): undefined reference to `gic_present'
-make: *** [.tmp_vmlinux1] Error 1
+Could you please pick this up in your tree?
 
-gic_present variable is declared only if IRQ_GIC is selected.
+Thanks.
 
-Signed-off-by: Anoop P A <anoop.pa@gmail.com>
----
- arch/mips/kernel/smp-mt.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
-diff --git a/arch/mips/kernel/smp-mt.c b/arch/mips/kernel/smp-mt.c
-index c0e8141..54235b5 100644
---- a/arch/mips/kernel/smp-mt.c
-+++ b/arch/mips/kernel/smp-mt.c
-@@ -151,6 +151,7 @@ static void vsmp_send_ipi_mask(const struct cpumask *mask, unsigned int action)
- 
- static void __cpuinit vsmp_init_secondary(void)
- {
-+#ifdef CONFIG_IRQ_GIC
- 	extern int gic_present;
- 
- 	/* This is Malta specific: IPI,performance and timer interrupts */
-@@ -158,6 +159,7 @@ static void __cpuinit vsmp_init_secondary(void)
- 		change_c0_status(ST0_IM, STATUSF_IP3 | STATUSF_IP4 |
- 					 STATUSF_IP6 | STATUSF_IP7);
- 	else
-+#endif
- 		change_c0_status(ST0_IM, STATUSF_IP0 | STATUSF_IP1 |
- 					 STATUSF_IP6 | STATUSF_IP7);
- }
--- 
-1.7.0.4
+> > ---
+> >  MAINTAINERS |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+> > index 64d7621..464f0ec 100644
+> > --- a/MAINTAINERS
+> > +++ b/MAINTAINERS
+> > @@ -975,6 +975,8 @@ S:	Maintained
+> >  F:	arch/arm/plat-samsung/
+> >  F:	arch/arm/plat-s3c24xx/
+> >  F:	arch/arm/plat-s5p/
+> > +F:	drivers/*/*s3c2410*
+> > +F:	drivers/*/*/*s3c2410*
+> >
+> >  ARM/S3C2410 ARM ARCHITECTURE
+> >  M:	Ben Dooks <ben-linux@fluff.org>
+> > @@ -5565,8 +5567,6 @@ M:	Vincent Sanders <support@simtec.co.uk>
+> >  W:	http://www.simtec.co.uk/products/EB2410ITX/
+> >  S:	Supported
+> >  F:	arch/arm/mach-s3c2410/
+> > -F:	drivers/*/*s3c2410*
+> > -F:	drivers/*/*/*s3c2410*
+> >
+> >  TI DAVINCI MACHINE SUPPORT
+> >  M:	Kevin Hilman <khilman@deeprootsystems.com>
+> > --
+> > 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
