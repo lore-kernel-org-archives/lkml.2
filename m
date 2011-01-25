@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910Ab1AYWCb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 17:02:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51467 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751980Ab1AYWC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 17:02:29 -0500
-Date: Tue, 25 Jan 2011 23:01:18 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        =?utf-8?B?QUtQTeOAgA==?= <akpm@linux-foundation.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Huang Ying <ying.huang@intel.com>, LKLM <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] Avoid unmapping THP when it is failed to be split.
-Message-ID: <20110125220118.GJ926@random.random>
-References: <4D3E6377.6060803@np.css.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D3E6377.6060803@np.css.fujitsu.com>
+	id S1753946Ab1AYWCr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 17:02:47 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:43802 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753904Ab1AYWCp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 17:02:45 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6237"; a="71960686"
+Subject: Re: [PATCH 1/4] msm: clock: Remove unused code and definitions
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, David Brown <davidb@codeaurora.org>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <4D3F4609.3000808@codeaurora.org>
+References: <1295927118-27591-1-git-send-email-sboyd@codeaurora.org>
+	 <1295927118-27591-2-git-send-email-sboyd@codeaurora.org>
+	 <1295991537.25496.49.camel@c-dwalke-linux.qualcomm.com>
+	 <4D3F4609.3000808@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 25 Jan 2011 14:02:17 -0800
+Message-ID: <1295992937.25496.75.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 02:45:27PM +0900, Jin Dongming wrote:
-> If the THP is failed to be split,
->    1. The processes using the poisoned page could not be collected.
->       (Because page_mapped_in_vma() in collect_procs_anon() always
->        returns NULL.)
+On Tue, 2011-01-25 at 13:52 -0800, Saravana Kannan wrote:
+> On 01/25/2011 01:38 PM, Daniel Walker wrote:
+> > On Mon, 2011-01-24 at 19:45 -0800, Stephen Boyd wrote:
+> >> Remove dead code and push out clock-7x30.h and clock-pcom.h to
+> >> where they are actually used.
+> >>
+> >
+> > I'd do two patches for this. The stuff your doing is too disconnected.
+> >
+> > Daniel
+> >
+> There is a whole bunch of unused code in the clock files and it's being 
+> deleted. I don't see a point of splitting it up per file.
 
-page_mapped_in_vma is only called after split_huge_page without
-requiring this change.
+It's easier to review when changes aren't merged that don't related to
+each other.
 
->    2. The poisoned page could not be unmapped.
->       (If CONFIG_DEBUG_VM is "y", VM_BUG_ON(PageTransHuge(page))
->        in try_to_unmap() will be called, and system panic will be
->        caused.)
+Daniel
 
-This is more reasonable argument for the change because at times
-collect_procs may fail kmalloc or for other reasons kill may be set to
-1 without split_huge_page having run.
 
->    3. The processes using the poisoned page could not be killed, too.
->       (Because no process is collected in 1.)
+-- 
 
-I don't see the point of the change for 1.
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-> So if splitting THP is failed, it is better to stop unmapping
-> rather than causing panic. System might servive if the page is freed
-> later.
-
-Splitting THP can't fail unless the page is freed under
-split_huge_page (like if the process quits while you're calling
-split_huge_page and in turn the anon_vma was already unusable).
-
-Patch looks good but just for point 2.
