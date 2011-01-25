@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910Ab1AYJn0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 04:43:26 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:50230 "EHLO
-	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751356Ab1AYJnY (ORCPT
+	id S1753178Ab1AYJnc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 04:43:32 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:61827 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751946Ab1AYJn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 04:43:24 -0500
-Date: Tue, 25 Jan 2011 09:43:19 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Mike Waychison <mikew@google.com>
-Cc: Greg KH <greg@kroah.com>, torvalds@linux-foundation.org,
-        San Mehat <san@google.com>, Aaron Durbin <adurbin@google.com>,
-        Duncan Laurie <dlaurie@google.com>, linux-kernel@vger.kernel.org,
-        Tim Hockin <thockin@google.com>
-Subject: Re: [PATCH v1 4/6] driver: Google Bootlog
-Message-ID: <20110125094319.2ce1b2e2@lxorguk.ukuu.org.uk>
-In-Reply-To: <4D3E29A8.7030209@google.com>
-References: <20110125002433.12637.51091.stgit@mike.mtv.corp.google.com>
-	<20110125002454.12637.4700.stgit@mike.mtv.corp.google.com>
-	<20110125004953.3e838962@lxorguk.ukuu.org.uk>
-	<4D3E29A8.7030209@google.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Jan 2011 04:43:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:x-x-sender:to:cc:subject:message-id:mime-version
+         :content-type;
+        b=Dk0YQ0Jg9ddu53A4uvvedygkn1+XB63x1dILgFo3n+bSDoNhR7MDRWwR6VGyUzxGxF
+         Y2tdYB+To2HDL8nw6hDsL0eIz2OoQPSlrNTDGlWmF9X0oXWTdcTtecgkeVZKPCzoPkLw
+         Xs5S5sWCdn1C/deaz477pv/7902TS+R0lAaJE=
+Date: Tue, 25 Jan 2011 17:43:22 +0800 (SGT)
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+X-X-Sender: root@boston.corp.fedex.com
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>, Len Brown <lenb@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH 0/11] ACPI: Fixes and cleanups related to iomaps management
+Message-ID: <Pine.LNX.4.64.1101251740380.3737@boston.corp.fedex.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > 2.	EBDA isn't an X86 property it's a PC property. asm/bios_ebda
-> > provides one helper and perhaps it all belongs in there (along with 'is
-> > it a PC' sanity check)
-> 
-> It's not obvious to me how one would make that sort of check (is a PC) 
-> at runtime. Suggestions?
 
-I suspect the right thing to do is to put a get_ebda_foo() helper set
-into arch/x86 which platforms can override. That way non PC platforms can
-simply report zero.
+On Tue, Jan 25, 2011 at 5:37 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Monday, January 24, 2011, Henrique de Moraes Holschuh wrote:
+> It turns out there's a bug in intel_idle causing people a lot of pain 
+> with CPU hotplugging.  Should be fixed now it the Linus' tree.
 
-One for the x86 maintainers.
+Uh, I see the git fix now. Thanks. The workaround I did was to manually 
+offline all CPUs before suspend and that fixed it too.
 
-Alan
+As for the thinkpad-acpi, here a little patch to disable all hotkeys so 
+that Fn-F4 works natively to suspend-to-memory when 
+CONFIG_THINKPAD_ACPI_HOTKEY_POLL is not set.
+
+Thanks,
+Jeff
+
+--- lx/drivers/platform/x86/thinkpad_acpi.c.org	2011-01-22 21:48:05.000000000 +0800
++++ lx/drivers/platform/x86/thinkpad_acpi.c	2011-01-22 21:55:14.000000000 +0800
+@@ -8776,10 +8776,12 @@
+  	{
+  		.data = &thinkpad_acpi_driver_data,
+  	},
++#ifdef CONFIG_THINKPAD_ACPI_HOTKEY_POLL
+  	{
+  		.init = hotkey_init,
+  		.data = &hotkey_driver_data,
+  	},
++#endif
+  	{
+  		.init = bluetooth_init,
+
+
