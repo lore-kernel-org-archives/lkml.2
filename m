@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751532Ab1AYARN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 19:17:13 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:35820 "EHLO ogre.sisk.pl"
+	id S1752046Ab1AYART (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 19:17:19 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:43813 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751197Ab1AYARM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 19:17:12 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
-Subject: [PATCH 2/3] PM / Wakeup: Make pm_save_wakeup_count() work as documented
-Date: Tue, 25 Jan 2011 01:15:33 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc1+; KDE/4.4.4; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-References: <201101250112.40350.rjw@sisk.pl>
-In-Reply-To: <201101250112.40350.rjw@sisk.pl>
+	id S1751307Ab1AYARP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 19:17:15 -0500
+Date: Tue, 25 Jan 2011 01:16:58 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] perf fixes
+Message-ID: <20110125001658.GA17623@elte.hu>
+References: <20110124133400.GA1228@elte.hu>
+ <AANLkTinsVNy9a1bR0AgD7=Vupoujt03RuZ32v39XSknx@mail.gmail.com>
+ <20110124200738.GA10833@elte.hu>
+ <AANLkTi=C0L=21zhH_L+cRPv2ZCRE9L93tKtC9ELrcTBW@mail.gmail.com>
+ <AANLkTi=V61L6vgFZ_4u20dZvv2=tvi-XJMc2HqOnjMo4@mail.gmail.com>
+ <20110124203802.GC29975@ghostprotocols.net>
+ <20110124212526.GA13724@elte.hu>
+ <20110124220032.GE29975@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101250115.34088.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110124220032.GE29975@ghostprotocols.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
 
-According to Documentation/ABI/testing/sysfs-power, the
-/sys/power/wakeup_count interface should only make the kernel react
-to wakeup events during suspend if the last write to it has been
-successful.  However, if /sys/power/wakeup_count is written to two
-times in a row, where the first write is successful and the second
-is not, the kernel will still react to wakeup events during suspend
-due to a bug in pm_save_wakeup_count().
+* Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
 
-Fix the bug by making pm_save_wakeup_count() clear
-events_check_enabled unconditionally before checking if there are
-any new wakeup events registered since the previous read from
-/sys/power/wakeup_count.
+> Em Mon, Jan 24, 2011 at 10:25:26PM +0100, Ingo Molnar escreveu:
+> > * Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
+> > > Was this on a freshly installed machine? Or on a freshly updated one?
+> > > 
+> > > Probably its the build-id collecting at the end of a session, on the
+> > > first run you had a cold cache and it had to figure out which binaries
+> > > to cache on ~/.debug, second time it was already cached so it was fast.
+> > 
+> > Hm, it would be nice to not surprise users with an unlimited-timeout, up to half a 
+> > minute 'frozen' app. Can we possibly display a more finegrained progress indicator?
+> 
+> Definetely, adding this to the todo list.
+> 
+> In fact perf_session__process_events already has an ui_progress stuff,
+> its just that it works only on report/TUI. Need to make it work with
+> some /-|/- spinning text progress indicator after a "collecting
+> build-ids:" string, something like that.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/base/power/wakeup.c |   13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+Yeah, something like that would awesome!
 
-Index: linux-2.6/drivers/base/power/wakeup.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/wakeup.c
-+++ linux-2.6/drivers/base/power/wakeup.c
-@@ -644,23 +644,22 @@ bool pm_get_wakeup_count(unsigned int *c
-  *
-  * If @count is equal to the current number of registered wakeup events and the
-  * current number of wakeup events being processed is zero, store @count as the
-- * old number of registered wakeup events to be used by pm_check_wakeup_events()
-- * and return true.  Otherwise return false.
-+ * old number of registered wakeup events for pm_check_wakeup_events(), enable
-+ * wakeup events detection and return 'true'.  Otherwise disable wakeup events
-+ * detection and return 'false'.
-  */
- bool pm_save_wakeup_count(unsigned int count)
- {
--	bool ret = false;
--
-+	events_check_enabled = false;
- 	spin_lock_irq(&events_lock);
- 	if (!__pm_wakeup_pending(count)) {
- 		saved_count = count;
- 		events_check_enabled = true;
--		ret = true;
- 	}
- 	spin_unlock_irq(&events_lock);
--	if (!ret)
-+	if (!events_check_enabled)
- 		pm_wakeup_update_hit_counts();
--	return ret;
-+	return events_check_enabled;
- }
- 
- static struct dentry *wakeup_sources_stats_dentry;
+No need for it to be particularly pretty or complex - just _some_ minimal feedback 
+to the user gives us most of the bang for the buck already.
 
+( And, of course, the best solution is to make it all run even faster. When it comes
+  to debuginfo data structures i can not prevent myself from thinking 'bloat!' ;-)
+
+Thanks,
+
+	Ingo
