@@ -1,48 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166Ab1AYSVe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 13:21:34 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:56403 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492Ab1AYSVd (ORCPT
+	id S1752390Ab1AYScV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 13:32:21 -0500
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:38016 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751772Ab1AYScU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 13:21:33 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Roland McGrath <roland@redhat.com>
-Subject: Re: [BUG] Generic syscalls -- chmod vs. fchmodat
-Date: Tue, 25 Jan 2011 19:21:14 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37+; KDE/4.5.1; x86_64; ; )
-Cc: linasvepstas@gmail.com, Chris Metcalf <cmetcalf@tilera.com>,
-        GLIBC Devel <libc-alpha@sourceware.org>, linux-kernel@vger.kernel.org,
-        libc-ports@sourceware.org, linux-api@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>
-References: <AANLkTikhKHnR+7DskxYqWXduX4=tpfgsfL4sNYq+4QDq@mail.gmail.com> <201101251529.24779.arnd@arndb.de> <20110125174515.C1DC2183C19@magilla.sf.frob.com>
-In-Reply-To: <20110125174515.C1DC2183C19@magilla.sf.frob.com>
+	Tue, 25 Jan 2011 13:32:20 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+References: <1295834493-5019-1-git-send-email-ccross@android.com>
+ <1295834493-5019-5-git-send-email-ccross@android.com> <1295968464.10109.264.camel@e102109-lin.cambridge.arm.com>
+ <20110125154133.GB17280@n2100.arm.linux.org.uk> <1295979242.10109.308.camel@e102109-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101251921.15184.arnd@arndb.de>
-X-Provags-ID: V02:K0:QMmDK7AV3OOetT+gsVDre4UKPKnSZ0+0/GZjkwNLSwC
- +HdZKiI+4/gOXe1wYZjhNIcG9VIoMuPoeRlAhhZ9LKfYU8308A
- ila/Bj5o4iIj5ufC4qFZyvtACN6EucgjCnshXu5WQ9zrrEVMYV
- HPgr7bDXdHyL0m6GRh1IAUVH5pW/Lu4sY6u02Zdju3YJMa32/q
- v1o/SOuGisE8yRPXEw7mQ==
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: Acu8u7KCwhXmEL/iQBe2UXqbx+W52wAAbzZw
+In-Reply-To: <1295979242.10109.308.camel@e102109-lin.cambridge.arm.com>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
+Date: Wed, 26 Jan 2011 00:02:15 +0530
+Message-ID: <2f97ec8a084e590220e1548fc927b60e@mail.gmail.com>
+Subject: RE: [PATCH v2 04/28] ARM: mm: cache-l2x0: Add support for re-enabling l2x0
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Colin Cross <ccross@android.com>, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, olof@lixom.net,
+        konkers@android.com, Linus Walleij <linus.walleij@stericsson.com>,
+        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 25 January 2011 18:45:15 Roland McGrath wrote:
->  I know of no reason to
-> think that the current treatment of the empty string was ever intended at
-> the creation of the *at interfaces.
+> -----Original Message-----
+> From: Catalin Marinas [mailto:catalin.marinas@arm.com]
+> Sent: Tuesday, January 25, 2011 11:44 PM
+> To: Russell King - ARM Linux
+> Cc: Colin Cross; linux-tegra@vger.kernel.org; linux-arm-
+> kernel@lists.infradead.org; olof@lixom.net; konkers@android.com;
+> Santosh Shilimkar; Linus Walleij; Tony Lindgren; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH v2 04/28] ARM: mm: cache-l2x0: Add support for
+> re-enabling l2x0
+>
+> On Tue, 2011-01-25 at 15:41 +0000, Russell King - ARM Linux wrote:
+> > I think we need to come up with some proper way to deal with
+> cpuidle
+> > which doesn't involve adding lots of globally visible functions to
+> all
+> > sorts of bits of code and having platforms call them individually,
+> > otherwise this is going to get _really_ messy in the future.
+> >
+> > Maybe we need a notifier list which can be told when cpuidle
+> events
+> > happen, so that parts of the system such as VFP and L2 cache
+> support
+> > can do the right thing without having platforms add lots of stuff
+> like
+> >
+> >         gic_secondary_init();
+> >         gic_restore_interrupt_types();
+> >         vfp_enable();
+> >         l2x0_enable();
+> >         twd_enable();
+> >         ... etc ...
+> >
+> > in their SoC specific code.
+>
+> But do we need a strict order between such operations? The notifier
+> call
+> chain isn't too flexible.
+>
+I guess it does depends on how the archs have integrated a9. Example
+on OMAP there are different power modes possible.
+	1. CPU context ,TWD lost
+	2. CPU context ,TWD + L1 is lost
+	3. CPU context + L1 is lost + GIC lost
+	4. CPU context + L1 is lost + GIC lost + L2 lost
+So there is need to have flexibility of calling these function
+based on power modes. I don't know how notifiers can give
+this flexibility
 
-I always assumed that this was done so that the *at syscalls can replace
-both the ones that take a file descriptor (e.g. fstat) and the ones that
-take a pathname (e.g. stat), which is sensible for the non-AT_FDCWD case,
-although not documented in the man pages.
-
-Treating the empty string special for AT_FDCWD is rather pointless, but
-at least consistent.
-
-	Arnd
+Regards,
+Santosh
