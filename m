@@ -1,293 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631Ab1AYTKh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 14:10:37 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:12155 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598Ab1AYTKg (ORCPT
+	id S1752707Ab1AYTML (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 14:12:11 -0500
+Received: from nm25.bullet.mail.ac4.yahoo.com ([98.139.52.222]:48663 "HELO
+	nm25.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751598Ab1AYTMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 14:10:36 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 25 Jan 2011 10:59:26 -0800
-From: rklein@nvidia.com
-To: cbouatmailru@gmail.com
-Cc: olofj@chromium.org, linux-kernel@vger.kernel.org,
-        Rhyland Klein <rklein@nvidia.com>
-Subject: [PATCH v3] power: bq20z75: add support for charge properties
-Date: Tue, 25 Jan 2011 11:10:06 -0800
-Message-Id: <1295982606-4604-1-git-send-email-rklein@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
+	Tue, 25 Jan 2011 14:12:10 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 833822.13398.bm@omp1050.mail.ac4.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type;
+  b=LGzMST4T9u0kOIDzreTytTLWO7y8OcOLinrgp4PwL9/HBWBLHhkvKg4XR2Javoh8cWegjhGHaLEV7udmm07R/m79jQMXfsu5/p2YzkNQXYKoW0lxL/p1Q1MZg8V3k4hXn5kTp3p0X3XP+T1UZnsnR+76JJKIC+NFW8vwXi2ZeF0=;
+Message-ID: <583930.75035.qm@web161804.mail.bf1.yahoo.com>
+X-YMail-OSG: wbUvzQ8VM1ne12Pbh.DnrGN0MvFVrvvszrWDvs2YvaTwGoj
+ eNe6tBehTtTEFrWkOiHea5FVRBd_y7mCFbmrBgU051ZjA7zlKWwAYRV8iPTJ
+ 3OdiqXEWErXNlf7re84B.J_AC9mBlaTqZursVlCw.ZrXf4hizDwtEEe8UB5n
+ a09.XobLcp6._3BxszWIacrTiU01kCQLScmWrKLqYN9V6kMrKrmYn683DuXH
+ GtxVpTBep33rF7Zxi.NkjK6iXA.ZJQ.ini_XPrYGoPyGuwdB1dozshVKtbBm
+ JQ1UtALzt
+X-Mailer: YahooMailRC/555 YahooMailWebService/0.8.107.285259
+Date: Tue, 25 Jan 2011 11:12:08 -0800 (PST)
+From: Mikko Vinni <mmvinni@yahoo.com>
+Subject: Re: SD card reads corrupted (JMicron card reader)
+To: linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>
+Cc: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rhyland Klein <rklein@nvidia.com>
+Hi,
 
-Adding support for charge properties for gas gauge.
-Also ensuring that battery mode is correct now for energy as well as
-charge properties by setting it on the fly.
+Follow up to the original message: I have been trying to bisect the problem,
+but haven't determined a definitely "good" kernel yet. The problem certainly
+manifests itself on 2.6.36.3 when the config is straight from Arch Linux's
+kernel26-headers 2.6.36.3-1 package. If I disable staging drivers (via
+CONFIG_STAGING_EXCLUDE_BUILD=y), the problem goes away. Very
+annoying to notice that after half a dozen kernel compiles.
 
-I also added 2 functions to power_supply.h to help identify the units for
-specific properties more easily by power supplies.
+Anyway, I have two versions of the 2.6.36.3 kernel+modules, one with
+staging drivers (bad) and one without (good). If I take the vmlinuz and
+System.map files from the good version and put them together with
+the bad modules, it works. So, something in the main kernel instead of
+the modules, I assume, but what could be changing there with the staging
+switch to cause such a specific problem? In the config all the staging
+drivers are set to be modules.
 
-Signed-off-by: Rhyland Klein <rklein@nvidia.com>
----
--Changes from v1 to v2
-	-removed the macros to determine unit and moved them to
-	 common functions in power_supply.h
--Changes from v2 to v3
-	-removed camelCase variable name
+Mikko
 
- drivers/power/bq20z75.c      |   98 +++++++++++++++++++++++++++++++++++++-----
- include/linux/power_supply.h |   46 ++++++++++++++++++++
- 2 files changed, 133 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/power/bq20z75.c b/drivers/power/bq20z75.c
-index 492da27..4141775 100644
---- a/drivers/power/bq20z75.c
-+++ b/drivers/power/bq20z75.c
-@@ -38,11 +38,22 @@ enum {
- 	REG_CYCLE_COUNT,
- 	REG_SERIAL_NUMBER,
- 	REG_REMAINING_CAPACITY,
-+	REG_REMAINING_CAPACITY_CHARGE,
- 	REG_FULL_CHARGE_CAPACITY,
-+	REG_FULL_CHARGE_CAPACITY_CHARGE,
- 	REG_DESIGN_CAPACITY,
-+	REG_DESIGN_CAPACITY_CHARGE,
- 	REG_DESIGN_VOLTAGE,
- };
- 
-+/* Battery Mode defines */
-+#define BATTERY_MODE_OFFSET		0x03
-+#define BATTERY_MODE_MASK		0x8000
-+enum bq20z75_battery_mode {
-+	BATTERY_MODE_AMPS,
-+	BATTERY_MODE_WATTS
-+};
-+
- /* manufacturer access defines */
- #define MANUFACTURER_ACCESS_STATUS	0x0006
- #define MANUFACTURER_ACCESS_SLEEP	0x0011
-@@ -78,8 +89,12 @@ static const struct bq20z75_device_data {
- 		BQ20Z75_DATA(POWER_SUPPLY_PROP_CAPACITY, 0x0E, 0, 100),
- 	[REG_REMAINING_CAPACITY] =
- 		BQ20Z75_DATA(POWER_SUPPLY_PROP_ENERGY_NOW, 0x0F, 0, 65535),
-+	[REG_REMAINING_CAPACITY_CHARGE] =
-+		BQ20Z75_DATA(POWER_SUPPLY_PROP_CHARGE_NOW, 0x0F, 0, 65535),
- 	[REG_FULL_CHARGE_CAPACITY] =
- 		BQ20Z75_DATA(POWER_SUPPLY_PROP_ENERGY_FULL, 0x10, 0, 65535),
-+	[REG_FULL_CHARGE_CAPACITY_CHARGE] =
-+		BQ20Z75_DATA(POWER_SUPPLY_PROP_CHARGE_FULL, 0x10, 0, 65535),
- 	[REG_TIME_TO_EMPTY] =
- 		BQ20Z75_DATA(POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG, 0x12, 0,
- 			65535),
-@@ -93,6 +108,9 @@ static const struct bq20z75_device_data {
- 	[REG_DESIGN_CAPACITY] =
- 		BQ20Z75_DATA(POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN, 0x18, 0,
- 			65535),
-+	[REG_DESIGN_CAPACITY_CHARGE] =
-+		BQ20Z75_DATA(POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN, 0x18, 0,
-+			65535),
- 	[REG_DESIGN_VOLTAGE] =
- 		BQ20Z75_DATA(POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN, 0x19, 0,
- 			65535),
-@@ -117,6 +135,9 @@ static enum power_supply_property bq20z75_properties[] = {
- 	POWER_SUPPLY_PROP_ENERGY_NOW,
- 	POWER_SUPPLY_PROP_ENERGY_FULL,
- 	POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN,
-+	POWER_SUPPLY_PROP_CHARGE_NOW,
-+	POWER_SUPPLY_PROP_CHARGE_FULL,
-+	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
- };
- 
- struct bq20z75_info {
-@@ -260,6 +281,9 @@ static void  bq20z75_unit_adjustment(struct i2c_client *client,
- 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
- 	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
- 	case POWER_SUPPLY_PROP_CURRENT_NOW:
-+	case POWER_SUPPLY_PROP_CHARGE_NOW:
-+	case POWER_SUPPLY_PROP_CHARGE_FULL:
-+	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
- 		val->intval *= BASE_UNIT_CONVERSION;
- 		break;
- 
-@@ -281,11 +305,44 @@ static void  bq20z75_unit_adjustment(struct i2c_client *client,
- 	}
- }
- 
-+static enum bq20z75_battery_mode
-+bq20z75_set_battery_mode(struct i2c_client *client,
-+	enum bq20z75_battery_mode mode)
-+{
-+	int ret, original_val;
-+
-+	original_val = bq20z75_read_word_data(client, BATTERY_MODE_OFFSET);
-+	if (original_val < 0)
-+		return original_val;
-+
-+	if ((original_val & BATTERY_MODE_MASK) == mode)
-+		return mode;
-+
-+	if (mode == BATTERY_MODE_AMPS)
-+		ret = original_val & ~BATTERY_MODE_MASK;
-+	else
-+		ret = original_val | BATTERY_MODE_MASK;
-+
-+	ret = bq20z75_write_word_data(client, BATTERY_MODE_OFFSET, ret);
-+	if (ret < 0)
-+		return ret;
-+
-+	return original_val & BATTERY_MODE_MASK;
-+}
-+
- static int bq20z75_get_battery_capacity(struct i2c_client *client,
- 	int reg_offset, enum power_supply_property psp,
- 	union power_supply_propval *val)
- {
- 	s32 ret;
-+	enum bq20z75_battery_mode mode = BATTERY_MODE_WATTS;
-+
-+	if (power_supply_is_amp_property(psp))
-+		mode = BATTERY_MODE_AMPS;
-+
-+	mode = bq20z75_set_battery_mode(client, mode);
-+	if (mode < 0)
-+		return mode;
- 
- 	ret = bq20z75_read_word_data(client, bq20z75_data[reg_offset].addr);
- 	if (ret < 0)
-@@ -298,6 +355,10 @@ static int bq20z75_get_battery_capacity(struct i2c_client *client,
- 	} else
- 		val->intval = ret;
- 
-+	ret = bq20z75_set_battery_mode(client, mode);
-+	if (ret < 0)
-+		return ret;
-+
- 	return 0;
- }
- 
-@@ -318,11 +379,25 @@ static int bq20z75_get_battery_serial_number(struct i2c_client *client,
- 	return 0;
- }
- 
-+static int bq20z75_get_property_index(struct i2c_client *client,
-+	enum power_supply_property psp)
-+{
-+	int count;
-+	for (count = 0; count < ARRAY_SIZE(bq20z75_data); count++)
-+		if (psp == bq20z75_data[count].psp)
-+			return count;
-+
-+	dev_warn(&client->dev,
-+		"%s: Invalid Property - %d\n", __func__, psp);
-+
-+	return -EINVAL;
-+}
-+
- static int bq20z75_get_property(struct power_supply *psy,
- 	enum power_supply_property psp,
- 	union power_supply_propval *val)
- {
--	int count;
-+	int ps_index;
- 	int ret;
- 	struct bq20z75_info *bq20z75_device = container_of(psy,
- 				struct bq20z75_info, power_supply);
-@@ -343,13 +418,15 @@ static int bq20z75_get_property(struct power_supply *psy,
- 	case POWER_SUPPLY_PROP_ENERGY_NOW:
- 	case POWER_SUPPLY_PROP_ENERGY_FULL:
- 	case POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN:
-+	case POWER_SUPPLY_PROP_CHARGE_NOW:
-+	case POWER_SUPPLY_PROP_CHARGE_FULL:
-+	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
- 	case POWER_SUPPLY_PROP_CAPACITY:
--		for (count = 0; count < ARRAY_SIZE(bq20z75_data); count++) {
--			if (psp == bq20z75_data[count].psp)
--				break;
--		}
-+		ps_index = bq20z75_get_property_index(client, psp);
-+		if (ps_index < 0)
-+			return ps_index;
- 
--		ret = bq20z75_get_battery_capacity(client, count, psp, val);
-+		ret = bq20z75_get_battery_capacity(client, ps_index, psp, val);
- 		if (ret)
- 			return ret;
- 
-@@ -369,12 +446,11 @@ static int bq20z75_get_property(struct power_supply *psy,
- 	case POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG:
- 	case POWER_SUPPLY_PROP_TIME_TO_FULL_AVG:
- 	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
--		for (count = 0; count < ARRAY_SIZE(bq20z75_data); count++) {
--			if (psp == bq20z75_data[count].psp)
--				break;
--		}
-+		ps_index = bq20z75_get_property_index(client, psp);
-+		if (ps_index < 0)
-+			return ps_index;
- 
--		ret = bq20z75_get_battery_property(client, count, psp, val);
-+		ret = bq20z75_get_battery_property(client, ps_index, psp, val);
- 		if (ret)
- 			return ret;
- 
-diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
-index 7d73256..39408ee 100644
---- a/include/linux/power_supply.h
-+++ b/include/linux/power_supply.h
-@@ -213,4 +213,50 @@ extern void power_supply_unregister(struct power_supply *psy);
- /* For APM emulation, think legacy userspace. */
- extern struct class *power_supply_class;
- 
-+static inline bool power_supply_is_amp_property(
-+	enum power_supply_property psp){
-+
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
-+	case POWER_SUPPLY_PROP_CHARGE_EMPTY_DESIGN:
-+	case POWER_SUPPLY_PROP_CHARGE_FULL:
-+	case POWER_SUPPLY_PROP_CHARGE_EMPTY:
-+	case POWER_SUPPLY_PROP_CHARGE_NOW:
-+	case POWER_SUPPLY_PROP_CHARGE_AVG:
-+	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
-+	case POWER_SUPPLY_PROP_CURRENT_MAX:
-+	case POWER_SUPPLY_PROP_CURRENT_NOW:
-+	case POWER_SUPPLY_PROP_CURRENT_AVG:
-+		return 1;
-+	default:
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
-+static inline bool power_supply_is_watt_property(
-+	enum power_supply_property psp){
-+
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN:
-+	case POWER_SUPPLY_PROP_ENERGY_EMPTY_DESIGN:
-+	case POWER_SUPPLY_PROP_ENERGY_FULL:
-+	case POWER_SUPPLY_PROP_ENERGY_EMPTY:
-+	case POWER_SUPPLY_PROP_ENERGY_NOW:
-+	case POWER_SUPPLY_PROP_ENERGY_AVG:
-+	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
-+	case POWER_SUPPLY_PROP_VOLTAGE_MIN:
-+	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
-+	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
-+	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-+	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
-+		return 1;
-+	default:
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
- #endif /* __LINUX_POWER_SUPPLY_H__ */
--- 
-1.7.0.4
 
+----- Original Message ----
+> From: Mikko Vinni
+> To: linux-mmc; Chris Ball
+> Sent: Thu, January 20, 2011 11:04:23 PM
+> Subject: SD card reads corrupted (JMicron card reader)
+> 
+> Hi,
+> 
+> I have an HP Pavilion dv5 laptop, which has an integrated memory card  reader
+> (labeled with "SD*MS/Pro*MMC*XD) and appearing with lspci  as:
+> 
+> 0a:00.1 System peripheral: JMicron Technology Corp. SD/MMC Host  Controller
+> 0a:00.2 SD Host controller: JMicron Technology Corp. Standard SD  Host 
+>Controller
+> 0a:00.3 System peripheral: JMicron Technology Corp. MS Host  Controller
+> 0a:00.4 System peripheral: JMicron Technology Corp. xD Host  Controller
+> 
+> I have mainly used a 1 GB SD card from puremedia, but I have  seen the problem
+> with another card as well. Basically, if I try to read image  files from the 
+>card 
+>
+> using the
+> card reader, the images come out corrupted  (having the card inside a Canon 
+>Ixus 
+>
+> camera and reading the images via a USB  cable works).
+> 
+> The logs don't seem to contain anything  suspicious:
+> 
+> [ 1262.957504] sdhci: Secure Digital Host Controller  Interface driver
+> [ 1262.957511] sdhci: Copyright(c) Pierre Ossman
+> [  1262.962070] sdhci-pci 0000:0a:00.1: SDHCI controller found [197b:2382] (rev 
+>
+> 0)
+> [ 1262.962105] sdhci-pci 0000:0a:00.1: PCI INT A -> GSI 18 (level,  low) -> IRQ 
+>
+> 18
+> [ 1262.962275] sdhci-pci 0000:0a:00.1: setting latency  timer to 64
+> [ 1262.963721] Registered led device: mmc0::
+> [ 1262.964075]  mmc0: SDHCI controller on PCI [0000:0a:00.1] using DMA
+> [ 1262.964110]  sdhci-pci 0000:0a:00.2: SDHCI controller found [197b:2381] (rev 
+>
+> 0)
+> [  1262.964137] sdhci-pci 0000:0a:00.2: PCI INT A -> GSI 18 (level, low) ->  
+>IRQ 
+>
+> 18
+> [ 1262.964158] sdhci-pci 0000:0a:00.2: Refusing to bind to  secondary 
+>interface.
+> [ 1262.964170] sdhci-pci 0000:0a:00.2: PCI INT A  disabled
+> [ 1266.834763] mmc0: new SD card at address 1234
+> [ 1266.924222]  mmcblk0: mmc0:1234 SD01G 972 MiB 
+> [ 1266.925586]  mmcblk0: p1
+> [  2575.746579] mmc0: card 1234 removed
+> [ 3544.629621] loop: module loaded
+> [  4747.394461] mmc0: new SD card at address 1234
+> [ 4747.394793] mmcblk0:  mmc0:1234 SD01G 972 MiB 
+> [ 4747.396090]  mmcblk0: p1
+> [ 5075.523021]  mmc0: card 1234 removed
+> 
+> I transferred some text files to the card and  back to see if there's some 
+> regularity
+> in the corruption, but it varies.  For example, of 100 files of varying sizes 
+> (largest 98KB),
+> at one point  11 files might be corrupted, and after umount/mount maybe 6.
+> 
+> I copied the  memory card file system to a file; loop mounting that file 
+system
+> gives one  stable (but corrupted) view of the files, so I suppose it's not a 
+>file
+> system  (vfat) issue, but something with the hardware.
+> 
+> Currently I am using a  custom 2.6.37 kernel (on 64 bit Arch Linux up to date), 
+>
+> but
+> I have seen  corrupted images coming from the card reader on several previous
+> kernels as  well.
+> 
+> Is there something I could test or some specific information I  should 
+provide?
+> 
+> Here is one example of the corruption I am talking  about:
+> - the source file 49.txt consists of  lines
+> 0049-0001
+> 0049-0002
+> 0049-0003
+> ...
+> 0049-2399
+> 0049-2400
+> 0049-2401
+> 
+> The  file is exactly 24010 bytes long.
+> 
+> After transferring that file to the SD  card and back (via the card reader) and 
+>
+> taking a diff, the differences  are:
+> 
+> @@ -407,1995 +407,1992 @@
+>  0049-0407
+>  0049-0408
+>   0049-0409
+> -0049-0410
+> -0049-0411
+> -0049-0412
+> ... (all lines in between  removed; each line is 10  bytes)
+> -0049-2399
+> -0049-2400
+> -0049-2401
+> +0049-00049-0001
+> +0049-0002
+> +0049-0003
+> ...  (all lines in between  added)
+> +0049-0408
+> +0049-0409
+> +0049-00049-0001
+> +0049-0002
+> +0049-0003
+> ...
+> +0049-0408
+> +0049-0409
+> +0049-00049-0001
+> +0049-0002
+> +0049-0003
+> ...
+> +0049-0407
+> +0049-0408
+> +0049-0409
+> +0049-00049-0001
+> +0049-0002
+> +0049-0003
+> ...
+> +0049-0407
+> +0049-0408
+> +0049-0409
+> +0049-00049-0001
+> +0049-0002
+> +0049-0003
+> ...
+> +0049-0351
+> +0049-0352
+> +0049-0353
+> 
+> Also  the corrupted file is exactly 24010 bytes long. In this case there seems
+> to  be a chunk of 4096 bytes repeating. I'm in no way expert, but if  somebody
+> thinks it's good to see if the other test files also contain similar  chunks of 
+>
+> 4096
+> bytes, I can go through them or post them  here.
+> 
+> 
+> Any help would be  appreciated.
+> 
+> Mikko
+
+
+      
