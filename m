@@ -1,222 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757Ab1AYAZT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 19:25:19 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:31985 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752410Ab1AYAZO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 19:25:14 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:in-reply-to:references:
-	user-agent:mime-version:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=s19uM8qApSNiRls5bGyGHECFvZMEMkGU54wb4zlhCqwv7W96TOQyfdd1voerZC7J7
-	Xs6ovBGGgl14S//zE8wTw==
-Subject: [PATCH v1 6/6] driver: Google Memory Console
-To: Greg KH <greg@kroah.com>, torvalds@linux-foundation.org
-From: Mike Waychison <mikew@google.com>
-Cc: San Mehat <san@google.com>, Aaron Durbin <adurbin@google.com>,
-        Duncan Laurie <dlaurie@google.com>, linux-kernel@vger.kernel.org,
-        Tim Hockin <thockin@google.com>
-Date: Mon, 24 Jan 2011 16:25:05 -0800
-Message-ID: <20110125002505.12637.84140.stgit@mike.mtv.corp.google.com>
-In-Reply-To: <20110125002433.12637.51091.stgit@mike.mtv.corp.google.com>
-References: <20110125002433.12637.51091.stgit@mike.mtv.corp.google.com>
-User-Agent: StGit/0.15
+	id S1752793Ab1AYAZc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 19:25:32 -0500
+Received: from fieldses.org ([174.143.236.118]:41050 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751458Ab1AYAZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 19:25:27 -0500
+Date: Mon, 24 Jan 2011 19:25:18 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: "Kirill A. Shutemov" <kas@openvz.org>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, Neil Brown <neilb@suse.de>,
+        Pavel Emelyanov <xemul@parallels.com>, linux-nfs@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Rob Landley <rlandley@parallels.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        containers@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 00/16] make rpc_pipefs be mountable multiple time
+Message-ID: <20110125002518.GE22575@fieldses.org>
+References: <1295012954-7769-1-git-send-email-kas@openvz.org>
+ <20110124235545.GA793@shutemov.name>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110124235545.GA793@shutemov.name>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the 'memconsole' driver.
+On Tue, Jan 25, 2011 at 01:55:45AM +0200, Kirill A. Shutemov wrote:
+> On Fri, Jan 14, 2011 at 03:48:58PM +0200, Kirill A. Shutemov wrote:
+> > Prepare nfs/sunrpc stack to use multiple instances of rpc_pipefs.
+> > Only for client for now.
+> > 
+> > It's step forwart to get nfs work from container.
+> 
+> Any feedback?
 
-Our firmware gives us access to an in-memory log of the firmware's
-output.   This gives us visibility in a data-center of headless machines
-as to what the firmware is doing.
+I haven't seen any more problems with them, but also haven't looked all
+that closely; I'm assuming Trond will handle them up at some point....
 
-The memory console is found by the driver by finding a header block in
-the EBDA.  The buffer is then copied out, and is currently prepended
-to the kernel's dmesg ring-buffer.
+(Trond, tell me if I assume wrong.)
 
-Signed-off-by: San Mehat <san@google.com>
-Signed-off-by: Mike Waychison <mikew@google.com>
----
- drivers/firmware/google/Kconfig      |    8 ++
- drivers/firmware/google/Makefile     |    1 
- drivers/firmware/google/memconsole.c |  136 ++++++++++++++++++++++++++++++++++
- 3 files changed, 145 insertions(+), 0 deletions(-)
- create mode 100644 drivers/firmware/google/memconsole.c
+--b.
 
-diff --git a/drivers/firmware/google/Kconfig b/drivers/firmware/google/Kconfig
-index 0490a62..7218671 100644
---- a/drivers/firmware/google/Kconfig
-+++ b/drivers/firmware/google/Kconfig
-@@ -28,4 +28,12 @@ config GOOGLE_BOOTLOG
- 	  This enables support for displaying boot log information in dmesg
- 	  as well as logging the kernel shutdown reasons.
- 
-+config GOOGLE_MEMCONSOLE
-+	bool "Firmware Memory Console"
-+	default y
-+	help
-+	  This option enables the kernel to search for a firmware log in
-+	  the EBDA.  If found, this log is prepended to the kernel's
-+	  dmesg logs so they are visible to the user.
-+
- endmenu
-diff --git a/drivers/firmware/google/Makefile b/drivers/firmware/google/Makefile
-index d45e10c..cb8598e 100644
---- a/drivers/firmware/google/Makefile
-+++ b/drivers/firmware/google/Makefile
-@@ -1,3 +1,4 @@
- 
- obj-$(CONFIG_GOOGLE_SMI)		+= gsmi.o
- obj-$(CONFIG_GOOGLE_BOOTLOG)		+= bootlog.o
-+obj-$(CONFIG_GOOGLE_MEMCONSOLE)		+= memconsole.o
-diff --git a/drivers/firmware/google/memconsole.c b/drivers/firmware/google/memconsole.c
-new file mode 100644
-index 0000000..6777a64
---- /dev/null
-+++ b/drivers/firmware/google/memconsole.c
-@@ -0,0 +1,136 @@
-+/*
-+ * memconsole.c
-+ *
-+ * Infrastructure for importing the BIOS memory based console
-+ * into the kernel log ringbuffer.
-+ *
-+ * Copyright 2010 Google Inc. All rights reserved.
-+ */
-+
-+#include <linux/ctype.h>
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/string.h>
-+#include <asm/bios_ebda.h>
-+
-+#define BIOS_MEMCONSOLE_V1_MAGIC	0xDEADBABE
-+#define BIOS_MEMCONSOLE_V2_MAGIC	(('M')|('C'<<8)|('O'<<16)|('N'<<24))
-+
-+struct biosmemcon_ebda {
-+	uint32_t signature;
-+	union {
-+		struct {
-+			uint8_t  enabled;
-+			uint32_t buffer_addr;
-+			uint16_t start;
-+			uint16_t end;
-+			uint16_t num_chars;
-+			uint8_t  wrapped;
-+		} __packed v1;
-+		struct {
-+			uint32_t buffer_addr;
-+			/* Misdocumented as number of pages! */
-+			uint16_t  num_bytes;
-+			uint16_t start;
-+			uint16_t end;
-+		} __packed v2;
-+	} ptr;
-+} __packed;
-+
-+static void __init sanitize_buffer(char *buffer, size_t length) {
-+	size_t cur;
-+
-+	/* sanitize BIOS output by converting non-ascii into space */
-+	for (cur = 0; cur < length; cur++) {
-+		if (!isascii(buffer[cur]) || buffer[cur] == 0)
-+			buffer[cur] = ' ';
-+	}
-+}
-+
-+/*
-+ * Search through the EBDA for the BIOS Memory Console, and
-+ * prepend it to our ring buffer
-+ */
-+static int __init inject_memconsole(void)
-+{
-+	static struct biosmemcon_ebda __initdata hdr = {0};
-+	unsigned int address;
-+	size_t length, cur;
-+	uint32_t *bp;
-+	char *virtp;
-+	int found = 0;
-+
-+	address = get_bios_ebda();
-+	if (!address) {
-+		printk(KERN_INFO "BIOS EBDA non-existent.\n");
-+		return 0;
-+	}
-+
-+	/* EBDA length is byte 0 of EBDA (in KB) */
-+	length = *(uint8_t *)phys_to_virt(address);
-+	length <<= 10; /* convert to bytes */
-+
-+	/*
-+	 * Search through EBDA for BIOS memory console structure
-+	 * note: signature is not necessarily dword-aligned
-+	 */
-+	for (cur = 0; cur < length; cur++) {
-+		bp = phys_to_virt(address + cur);
-+
-+		/* memconsole v1 */
-+		if (*bp == BIOS_MEMCONSOLE_V1_MAGIC) {
-+			memcpy(&hdr, bp, sizeof(hdr));
-+			found = 1;
-+			break;
-+		}
-+
-+		/* memconsole v2 */
-+		if (*bp == BIOS_MEMCONSOLE_V2_MAGIC) {
-+			memcpy(&hdr, bp, sizeof(hdr));
-+			found = 2;
-+			break;
-+		}
-+	}
-+
-+	/*
-+	 * At this point hdr points to the EBDA structure
-+	 * Shift the contents of the kernel ring by the size of
-+	 * the contents in the bios ring.
-+	 */
-+
-+	switch (found) {
-+	case 1:
-+		printk(KERN_INFO "BIOS console v1 EBDA structure found at %p\n",
-+		       bp);
-+		printk(KERN_INFO "BIOS console buffer at 0x%.8x, "
-+		       "start = %d, end = %d, num = %d\n",
-+		       hdr.ptr.v1.buffer_addr, hdr.ptr.v1.start,
-+		       hdr.ptr.v1.end, hdr.ptr.v1.num_chars);
-+
-+		length = hdr.ptr.v1.num_chars;
-+		virtp = phys_to_virt(hdr.ptr.v1.buffer_addr);
-+		sanitize_buffer(virtp, length);
-+		prepend_to_dmesg(virtp, length);
-+
-+		break;
-+	case 2:
-+		printk(KERN_INFO "BIOS console v2 EBDA structure found at %p\n",
-+		       bp);
-+		printk(KERN_INFO "BIOS console buffer at 0x%.8x, "
-+		       "start = %d, end = %d, num_bytes = %d\n",
-+		       hdr.ptr.v2.buffer_addr, hdr.ptr.v2.start,
-+		       hdr.ptr.v2.end, hdr.ptr.v2.num_bytes);
-+
-+		length = hdr.ptr.v2.end - hdr.ptr.v2.start;
-+		virtp = phys_to_virt(hdr.ptr.v2.buffer_addr + hdr.ptr.v2.start);
-+		sanitize_buffer(virtp, length);
-+		prepend_to_dmesg(virtp, length);
-+
-+		break;
-+	case 0:
-+	default:
-+		printk("BIOS console EBDA structure not found!\n");
-+	}
-+	return 0;
-+}
-+device_initcall(inject_memconsole);
-
+> 
+> > Changelog:
+> > 
+> > v3:
+> >  - rebase to the current Linus' tree (52cfd503ad)
+> >  - rework get_rpc_pipefs() once again;
+> >  - solve problem with rmmod sunrpc moudle;
+> >  - free dns cache on killing rpc_pipefs superblock.
+> > 
+> > v2:
+> >  - one of rpc_create() calls was missed initially, fixed;
+> >  - change logic for get_rpc_pipefs(NULL);
+> >  - export get_rpc_pipefs() to be able to use from modules (tnx J. Bruce Field);
+> >  - change "From:" and "Signed-off-by:" addresses.
+> > 
+> > v1:
+> >  - initial revision of the patchset.
+> > 
+> > Kirill A. Shutemov (16):
+> >   sunrpc: mount rpc_pipefs on initialization
+> >   sunrpc: introduce init_rpc_pipefs
+> >   sunrpc: push init_rpc_pipefs up to rpc_create() callers
+> >   sunrpc: tag svc_serv with rpc_pipefs mount point
+> >   sunrpc: get rpc_pipefs mount point for svc_serv from callers
+> >   lockd: get rpc_pipefs mount point from callers
+> >   sunrpc: get rpc_pipefs mount point for rpcb_create[_local] from
+> >     callers
+> >   sunrpc: tag pipefs field of cache_detail with rpc_pipefs mount point
+> >   sunrpc: introduce rpc_pipefs_add_destroy_cb()
+> >   nfs: per-rpc_pipefs dns cache
+> >   Export iterate_mounts symbol to be able to use from sunrpc module.
+> >   sunrpc: introduce get_rpc_pipefs()
+> >   nfs: introduce mount option 'rpcmount'
+> >   sunrpc: make rpc_pipefs be mountable multiple times
+> >   sunrpc: remove global init_rpc_pipefs
+> >   Rework get_rpc_pipefs and introduce put_rpc_pipefs()
+> > 
+> >  fs/lockd/clntlock.c                |    8 +-
+> >  fs/lockd/host.c                    |   15 ++-
+> >  fs/lockd/mon.c                     |   13 ++-
+> >  fs/lockd/svc.c                     |    4 +-
+> >  fs/namespace.c                     |    1 +
+> >  fs/nfs/cache_lib.c                 |   18 +--
+> >  fs/nfs/cache_lib.h                 |    3 +-
+> >  fs/nfs/callback.c                  |    7 +-
+> >  fs/nfs/callback.h                  |    3 +-
+> >  fs/nfs/client.c                    |   45 ++++++-
+> >  fs/nfs/dns_resolve.c               |  137 ++++++++++++++++-----
+> >  fs/nfs/dns_resolve.h               |   15 +--
+> >  fs/nfs/inode.c                     |    9 +--
+> >  fs/nfs/internal.h                  |   10 ++-
+> >  fs/nfs/mount_clnt.c                |    1 +
+> >  fs/nfs/namespace.c                 |    3 +-
+> >  fs/nfs/nfs4namespace.c             |   20 ++--
+> >  fs/nfs/super.c                     |   20 +++
+> >  fs/nfsd/nfs4callback.c             |    5 +
+> >  fs/nfsd/nfssvc.c                   |   20 +++-
+> >  include/linux/lockd/bind.h         |    3 +-
+> >  include/linux/lockd/lockd.h        |    4 +-
+> >  include/linux/nfs_fs_sb.h          |    1 +
+> >  include/linux/sunrpc/cache.h       |    9 +-
+> >  include/linux/sunrpc/clnt.h        |    5 +-
+> >  include/linux/sunrpc/rpc_pipe_fs.h |    7 +-
+> >  include/linux/sunrpc/svc.h         |    9 +-
+> >  net/sunrpc/cache.c                 |   16 ++-
+> >  net/sunrpc/clnt.c                  |   19 ++--
+> >  net/sunrpc/rpc_pipe.c              |  235 ++++++++++++++++++++++++++++++++----
+> >  net/sunrpc/rpcb_clnt.c             |   19 ++-
+> >  net/sunrpc/svc.c                   |   52 +++++---
+> >  32 files changed, 549 insertions(+), 187 deletions(-)
+> > 
+> > -- 
+> > 1.7.3.4
+> > 
+> 
+> -- 
+>  Kirill A. Shutemov
