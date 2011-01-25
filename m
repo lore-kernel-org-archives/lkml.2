@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab1AYR71 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 12:59:27 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:49125 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752424Ab1AYR7U (ORCPT
+	id S1753196Ab1AYR7Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 12:59:24 -0500
+Received: from casper.infradead.org ([85.118.1.10]:59862 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752222Ab1AYR7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Jan 2011 12:59:20 -0500
-Message-Id: <20110125174907.611431020@chello.nl>
+Message-Id: <20110125174907.890366530@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Tue, 25 Jan 2011 18:31:19 +0100
+Date: Tue, 25 Jan 2011 18:31:24 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
@@ -22,68 +22,37 @@ Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         Nick Piggin <npiggin@kernel.dk>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Jeff Dike <jdike@addtoit.com>
-Subject: [PATCH 08/25] um: Preemptible mmu_gather
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Subject: [PATCH 13/25] mutex: Provide mutex_is_contended
 References: <20110125173111.720927511@chello.nl>
-Content-Disposition: inline; filename=peter_zijlstra-um-preemptible_mmu_gather.patch
+Content-Disposition: inline; filename=peter_zijlstra-mutex-provide_mutex_is_contended.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix up the um mmu_gather code to conform to the new API.
+Usable for lock-breaks and such.
 
-Cc: Jeff Dike <jdike@addtoit.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- arch/um/include/asm/tlb.h |   16 ++--------------
- 1 file changed, 2 insertions(+), 14 deletions(-)
+ include/linux/mutex.h |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-Index: linux-2.6/arch/um/include/asm/tlb.h
+Index: linux-2.6/include/linux/mutex.h
 ===================================================================
---- linux-2.6.orig/arch/um/include/asm/tlb.h
-+++ linux-2.6/arch/um/include/asm/tlb.h
-@@ -22,9 +22,6 @@ struct mmu_gather {
- 	unsigned int		fullmm; /* non-zero means full mm flush */
- };
- 
--/* Users of the generic TLB shootdown code must declare this storage space. */
--DECLARE_PER_CPU(struct mmu_gather, mmu_gathers);
--
- static inline void __tlb_remove_tlb_entry(struct mmu_gather *tlb, pte_t *ptep,
- 					  unsigned long address)
- {
-@@ -47,20 +44,13 @@ static inline void init_tlb_gather(struc
- 	}
+--- linux-2.6.orig/include/linux/mutex.h
++++ linux-2.6/include/linux/mutex.h
+@@ -126,6 +126,11 @@ static inline int mutex_is_locked(struct
+ 	return atomic_read(&lock->count) != 1;
  }
  
--/* tlb_gather_mmu
-- *	Return a pointer to an initialized struct mmu_gather.
-- */
--static inline struct mmu_gather *
--tlb_gather_mmu(struct mm_struct *mm, unsigned int full_mm_flush)
-+static inline void
-+tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned int full_mm_flush)
- {
--	struct mmu_gather *tlb = &get_cpu_var(mmu_gathers);
--
- 	tlb->mm = mm;
- 	tlb->fullmm = full_mm_flush;
- 
- 	init_tlb_gather(tlb);
--
--	return tlb;
- }
- 
- extern void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
-@@ -87,8 +77,6 @@ tlb_finish_mmu(struct mmu_gather *tlb, u
- 
- 	/* keep the page table cache within bounds */
- 	check_pgt_cache();
--
--	put_cpu_var(mmu_gathers);
- }
- 
- /* tlb_remove_page
++static inline int mutex_is_contended(struct mutex *lock)
++{
++	return atomic_read(&lock->count) < 0;
++}
++
+ /*
+  * See kernel/mutex.c for detailed documentation of these APIs.
+  * Also see Documentation/mutex-design.txt.
 
 
