@@ -1,53 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335Ab1AYMP2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 07:15:28 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:42605 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751980Ab1AYMPW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753280Ab1AYMPW (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 25 Jan 2011 07:15:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=moecUo3LNedLw3qKoDaECLsSfMp0ZI8OtX6Q9BfSV0V5j9hdfW3SCAThgvVC5V9hV0
-         4nli+vAPeQPnOtbf+GwNndOGt87L2yq1/JHJxsz8PcaEYpXj9ZAkRmLfPwWOT8Zrw7Tx
-         AlVMA3i9FYUJCu8tDazMnzssjRjvpncwl//b0=
-Date: Tue, 25 Jan 2011 15:14:53 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Marek Belisko <marek.belisko@open-nandra.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH resend 05/12] staging: ft1000: Fix coding style in
- get_handshake_usb() function.
-Message-ID: <20110125121453.GD2721@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Marek Belisko <marek.belisko@open-nandra.com>, gregkh@suse.de,
-	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-References: <1295955083-11086-1-git-send-email-marek.belisko@open-nandra.com>
- <1295955083-11086-5-git-send-email-marek.belisko@open-nandra.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295955083-11086-5-git-send-email-marek.belisko@open-nandra.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Received: from bombadil.infradead.org ([18.85.46.34]:51253 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650Ab1AYMPT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 07:15:19 -0500
+Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 8/20]  8: uprobes: mmap and fork
+ hooks.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20101216095848.23751.73144.sendpatchset@localhost6.localdomain6>
+References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
+	 <20101216095848.23751.73144.sendpatchset@localhost6.localdomain6>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 25 Jan 2011 13:15:39 +0100
+Message-ID: <1295957739.28776.717.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 12:31:16PM +0100, Marek Belisko wrote:
->  static u16 get_handshake_usb(struct ft1000_device *ft1000dev, u16 expected_value)
->  {
-> -   u16            handshake;
-> -   int               loopcnt;
-> -   u16            temp;
-> -   u32             status=0;
-> +	u16 handshake, temp;
+On Thu, 2010-12-16 at 15:28 +0530, Srikar Dronamraju wrote:
+> +void uprobe_mmap(struct vm_area_struct *vma)
+> +{
+> +       struct list_head tmp_list;
+> +       struct uprobe *uprobe, *u;
+> +       struct mm_struct *mm;
+> +       struct inode *inode;
+> +
+> +       if (!valid_vma(vma))
+> +               return;
+> +
+> +       INIT_LIST_HEAD(&tmp_list);
+> +
+> +       /*
+> +        * The vma was just allocated and this routine gets called
+> +        * while holding write lock for mmap_sem.  Function called
+> +        * in context of a thread that has a reference to mm.
+> +        * Hence no need to take a reference to mm
+> +        */
+> +       mm = vma->vm_mm;
+> +       up_write(&mm->mmap_sem);
 
-It's better to leave "handshake" and "temp" on seperate lines.  It's in
-CodingStyle.
+Are you very very sure its a good thing to simply drop the mmap_sem
+here? Also, why?
 
-regards,
-dan carpenter
+> +       mutex_lock(&uprobes_mutex);
+> +
+> +       inode = vma->vm_file->f_mapping->host;
+
+Since you just dropped the mmap_sem, what's keeping that vma from going
+away?
+
+> +       add_to_temp_list(vma, inode, &tmp_list);
+> +
+> +       list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
+> +               mm->uprobes_vaddr = vma->vm_start + uprobe->offset;
+> +               install_uprobe(mm, uprobe);
+> +               list_del(&uprobe->pending_list);
+> +       }
+> +       mutex_unlock(&uprobes_mutex);
+> +       down_write(&mm->mmap_sem);
+> +} 
+
 
