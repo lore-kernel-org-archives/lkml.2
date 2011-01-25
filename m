@@ -1,104 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155Ab1AYWVK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 17:21:10 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:3124 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753791Ab1AYWVG convert rfc822-to-8bit (ORCPT
+	id S1754004Ab1AYWUn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 17:20:43 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:52175 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753705Ab1AYWSB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 17:21:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=GXaliGYZp/nMR6OozKx3V+BgpiW+FVrWw/aHtjeXSGOWfC0tFlIU33+9n61ZbLeKcB
-         eB7lvYnI4/Ui+rgDPGdg==
-MIME-Version: 1.0
-In-Reply-To: <4D3F4699.60809@garzik.org>
-References: <20110125002433.12637.51091.stgit@mike.mtv.corp.google.com>
-	<20110125002439.12637.8515.stgit@mike.mtv.corp.google.com>
-	<20110125020658.GA3481@kroah.com>
-	<AANLkTinLoDN_6zG56J7V154jrRc-K+BzAHFO3qS_r8J0@mail.gmail.com>
-	<4D3F4275.50709@garzik.org>
-	<AANLkTim4fG0-F0+E-DHa4=XGdk1rFbRA68nvt9bfURiK@mail.gmail.com>
-	<4D3F4699.60809@garzik.org>
-Date: Tue, 25 Jan 2011 14:21:03 -0800
-Message-ID: <AANLkTinUmB003g3Cb0yUXf7LeTvc=BMWN6MGcGJW0QrJ@mail.gmail.com>
-Subject: Re: [PATCH v1 1/6] Add oops notification chain.
-From: Aaron Durbin <adurbin@google.com>
-To: Jeff Garzik <jeff@garzik.org>
-Cc: Mike Waychison <mikew@google.com>, Greg KH <greg@kroah.com>,
-        torvalds@linux-foundation.org, San Mehat <san@google.com>,
-        Duncan Laurie <dlaurie@google.com>, linux-kernel@vger.kernel.org,
-        Tim Hockin <thockin@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Tue, 25 Jan 2011 17:18:01 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Russell King <rmk@arm.linux.org.uk>,
+        Stuart Swales <stuart.swales.croftnuisk@gmail.com>
+Subject: [PATCH 08/20] adfs: remove the big kernel lock
+Date: Tue, 25 Jan 2011 23:17:22 +0100
+Message-Id: <1295993854-4971-9-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1295993854-4971-1-git-send-email-arnd@arndb.de>
+References: <1295993854-4971-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:021osT6Ew6X5m2fkV7PsXtXOFeujoWp3qRa3XTDs4XL
+ de4P8AmOU9nU9zyBQr+m8nt04U6/uvJA2jy30nYD0zI+6C7MKn
+ WDMqIyVkA3iPQPmAtBfs+YIylRR9VGm96B1WLjmNFNKuR0xbyN
+ YzxzyHW9p7W9MvcCFSEVQtFvWSaeNui++/hCe/uTamyyzOCXGm
+ IwT5eOiqSX5bLTKhKNMPA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 1:54 PM, Jeff Garzik <jeff@garzik.org> wrote:
-> On 01/25/2011 04:43 PM, Aaron Durbin wrote:
->>
->> On Tue, Jan 25, 2011 at 1:36 PM, Jeff Garzik<jeff@garzik.org>  wrote:
->>>
->>> On 01/25/2011 03:01 PM, Mike Waychison wrote:
->>>>
->>>> On Mon, Jan 24, 2011 at 6:06 PM, Greg KH<greg@kroah.com>    wrote:
->>>>>
->>>>> On Mon, Jan 24, 2011 at 04:24:39PM -0800, Mike Waychison wrote:
->>>>>>
->>>>>> From: Aaron Durbin<adurbin@google.com>
->>>>>>
->>>>>> Later firmware patches in this series would like to be able to be
->>>>>> notified whenever an oops occurs on the system, so that it can be
->>>>>> recorded in the boot log.
->>>>>>
->>>>>> This patch introduces a notifier_block called "oops_notifier_list"
->>>>>> so that drivers can register to get called whenever an Oops is
->>>>>> triggered.
->>>>>
->>>>> But we already have a panic notifier list.  Why create a new one?
->>>>> What's wrong with the existing one that doesn't work properly for you?
->>>>
->>>> AFAICT, the panic notifier list doesn't get called on oops.
->>>
->>> Have you tried playing with panic_on_oops ?
->>
->> Yes. We actually run in that setup. However, oops != panic. They are 2
->> distinct events. Sometimes we panic without the oops under certain
->> situations. That is why it is desirable to have 2 distinct events.
->
-> That's a circular statement:  They are distinct events, so it is desirable
-> that they be distinct events?
+According to Russell King, adfs was written to not require the big
+kernel lock, and all inode updates are done under adfs_dir_lock.
 
-I'm sorry. I should have described which events I was talking about.
-They are 2 distinct events in the kernel, and we would look like them
-that way in our non-volatile event log as well. As you are very much
-aware panic() can be called from outside of the oops path; seeing a
-panic doesn't imply an oops (likewise if panic on oops isn't set).
+All other metadata in adfs is read-only and does not require locking.
+The use of the BKL is the result of various pushdowns from the VFS
+operations.
 
->
-> Set a flag, a la oops_in_progress (unfortunately name, as it's called during
-> a panic too).  Call it...  oops_really_in_progress.  Then will the panic
-> notifier list suffice?
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King <rmk@arm.linux.org.uk>
+Cc: Stuart Swales <stuart.swales.croftnuisk@gmail.com>
+---
+ fs/adfs/Kconfig |    1 -
+ fs/adfs/dir.c   |    6 ------
+ fs/adfs/inode.c |    6 ------
+ fs/adfs/super.c |   13 +------------
+ 4 files changed, 1 insertions(+), 25 deletions(-)
 
-It would only appear to work as long as panic on oops isn't set. As I
-mentioned in the previous email we do run with that on, but I think it
-is desirable to keep the 2 paths distinct -- thus the separate
-notifier chain.
+diff --git a/fs/adfs/Kconfig b/fs/adfs/Kconfig
+index 1dd5f34..e55182a 100644
+--- a/fs/adfs/Kconfig
++++ b/fs/adfs/Kconfig
+@@ -1,7 +1,6 @@
+ config ADFS_FS
+ 	tristate "ADFS file system support (EXPERIMENTAL)"
+ 	depends on BLOCK && EXPERIMENTAL
+-	depends on BKL # need to fix
+ 	help
+ 	  The Acorn Disc Filing System is the standard file system of the
+ 	  RiscOS operating system which runs on Acorn's ARM-based Risc PC
+diff --git a/fs/adfs/dir.c b/fs/adfs/dir.c
+index 3b4a764..3d83075 100644
+--- a/fs/adfs/dir.c
++++ b/fs/adfs/dir.c
+@@ -9,7 +9,6 @@
+  *
+  *  Common directory handling for ADFS
+  */
+-#include <linux/smp_lock.h>
+ #include "adfs.h"
+ 
+ /*
+@@ -27,8 +26,6 @@ adfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
+ 	struct adfs_dir dir;
+ 	int ret = 0;
+ 
+-	lock_kernel();	
+-
+ 	if (filp->f_pos >> 32)
+ 		goto out;
+ 
+@@ -70,7 +67,6 @@ free_out:
+ 	ops->free(&dir);
+ 
+ out:
+-	unlock_kernel();
+ 	return ret;
+ }
+ 
+@@ -276,7 +272,6 @@ adfs_lookup(struct inode *dir, struct dentry *dentry, struct nameidata *nd)
+ 	struct object_info obj;
+ 	int error;
+ 
+-	lock_kernel();
+ 	error = adfs_dir_lookup_byname(dir, &dentry->d_name, &obj);
+ 	if (error == 0) {
+ 		error = -EACCES;
+@@ -288,7 +283,6 @@ adfs_lookup(struct inode *dir, struct dentry *dentry, struct nameidata *nd)
+ 		if (inode)
+ 			error = 0;
+ 	}
+-	unlock_kernel();
+ 	d_add(dentry, inode);
+ 	return ERR_PTR(error);
+ }
+diff --git a/fs/adfs/inode.c b/fs/adfs/inode.c
+index 65794b8..09fe401 100644
+--- a/fs/adfs/inode.c
++++ b/fs/adfs/inode.c
+@@ -7,7 +7,6 @@
+  * it under the terms of the GNU General Public License version 2 as
+  * published by the Free Software Foundation.
+  */
+-#include <linux/smp_lock.h>
+ #include <linux/buffer_head.h>
+ #include <linux/writeback.h>
+ #include "adfs.h"
+@@ -316,8 +315,6 @@ adfs_notify_change(struct dentry *dentry, struct iattr *attr)
+ 	unsigned int ia_valid = attr->ia_valid;
+ 	int error;
+ 	
+-	lock_kernel();
+-
+ 	error = inode_change_ok(inode, attr);
+ 
+ 	/*
+@@ -359,7 +356,6 @@ adfs_notify_change(struct dentry *dentry, struct iattr *attr)
+ 	if (ia_valid & (ATTR_SIZE | ATTR_MTIME | ATTR_MODE))
+ 		mark_inode_dirty(inode);
+ out:
+-	unlock_kernel();
+ 	return error;
+ }
+ 
+@@ -374,7 +370,6 @@ int adfs_write_inode(struct inode *inode, struct writeback_control *wbc)
+ 	struct object_info obj;
+ 	int ret;
+ 
+-	lock_kernel();
+ 	obj.file_id	= inode->i_ino;
+ 	obj.name_len	= 0;
+ 	obj.parent_id	= ADFS_I(inode)->parent_id;
+@@ -384,6 +379,5 @@ int adfs_write_inode(struct inode *inode, struct writeback_control *wbc)
+ 	obj.size	= inode->i_size;
+ 
+ 	ret = adfs_dir_update(sb, &obj, wbc->sync_mode == WB_SYNC_ALL);
+-	unlock_kernel();
+ 	return ret;
+ }
+diff --git a/fs/adfs/super.c b/fs/adfs/super.c
+index 2d79540..06d7388 100644
+--- a/fs/adfs/super.c
++++ b/fs/adfs/super.c
+@@ -14,7 +14,6 @@
+ #include <linux/mount.h>
+ #include <linux/seq_file.h>
+ #include <linux/slab.h>
+-#include <linux/smp_lock.h>
+ #include <linux/statfs.h>
+ #include "adfs.h"
+ #include "dir_f.h"
+@@ -120,15 +119,11 @@ static void adfs_put_super(struct super_block *sb)
+ 	int i;
+ 	struct adfs_sb_info *asb = ADFS_SB(sb);
+ 
+-	lock_kernel();
+-
+ 	for (i = 0; i < asb->s_map_size; i++)
+ 		brelse(asb->s_map[i].dm_bh);
+ 	kfree(asb->s_map);
+ 	kfree(asb);
+ 	sb->s_fs_info = NULL;
+-
+-	unlock_kernel();
+ }
+ 
+ static int adfs_show_options(struct seq_file *seq, struct vfsmount *mnt)
+@@ -359,15 +354,11 @@ static int adfs_fill_super(struct super_block *sb, void *data, int silent)
+ 	struct adfs_sb_info *asb;
+ 	struct inode *root;
+ 
+-	lock_kernel();
+-
+ 	sb->s_flags |= MS_NODIRATIME;
+ 
+ 	asb = kzalloc(sizeof(*asb), GFP_KERNEL);
+-	if (!asb) {
+-		unlock_kernel();
++	if (!asb)
+ 		return -ENOMEM;
+-	}
+ 	sb->s_fs_info = asb;
+ 
+ 	/* set default options */
+@@ -485,7 +476,6 @@ static int adfs_fill_super(struct super_block *sb, void *data, int silent)
+ 		adfs_error(sb, "get root inode failed\n");
+ 		goto error;
+ 	}
+-	unlock_kernel();
+ 	return 0;
+ 
+ error_free_bh:
+@@ -493,7 +483,6 @@ error_free_bh:
+ error:
+ 	sb->s_fs_info = NULL;
+ 	kfree(asb);
+-	unlock_kernel();
+ 	return -EINVAL;
+ }
+ 
+-- 
+1.7.1
 
-That being said, we could probably add code to distinguish the
-difference between the 4 states of oops_in_progress and
-oops_really_in_progress and call the panic notifier list at
-oops_enter(). I'm not sure why that would be more desirable than an
-explicit notification mechanism for oops though.
-
-As Mike talked about it might be more desirable to actually pass a
-reason field that indicates the appropriate kernel event. However, the
-naming of some of the variables becomes less clear. Maybe name it
-panic_oops_notifier_list? That way there would only be a single
-notifier chain.
-
--Aaron
