@@ -1,98 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496Ab1AYUb6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 15:31:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41609 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752101Ab1AYUb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 15:31:56 -0500
-Message-ID: <4D3F3308.1050305@redhat.com>
-Date: Tue, 25 Jan 2011 13:31:04 -0700
-From: Eric Blake <eblake@redhat.com>
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Mnenhy/0.8.3 Thunderbird/3.1.7
+	id S1753515Ab1AYUer (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 15:34:47 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37635 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752618Ab1AYUeq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 15:34:46 -0500
 MIME-Version: 1.0
-CC: Mike Frysinger <vapier@gentoo.org>, Arnd Bergmann <arnd@arndb.de>,
-        Paul Eggert <eggert@cs.ucla.edu>, Roland McGrath <roland@redhat.com>,
-        linasvepstas@gmail.com, Chris Metcalf <cmetcalf@tilera.com>,
-        GLIBC Devel <libc-alpha@sourceware.org>, linux-kernel@vger.kernel.org,
-        libc-ports@sourceware.org, linux-api@vger.kernel.org
-Subject: Re: [BUG] Generic syscalls -- chmod vs. fchmodat
-References: <AANLkTikhKHnR+7DskxYqWXduX4=tpfgsfL4sNYq+4QDq@mail.gmail.com> <20110125174515.C1DC2183C19@magilla.sf.frob.com> <201101251921.15184.arnd@arndb.de> <201101251352.03079.vapier@gentoo.org> <4D3F2AD9.8060000@redhat.com>
-In-Reply-To: <4D3F2AD9.8060000@redhat.com>
-X-Enigmail-Version: 1.1.2
-OpenPGP: url=http://people.redhat.com/eblake/eblake.gpg
-Content-Type: multipart/signed; micalg=pgp-sha256;
- protocol="application/pgp-signature";
- boundary="------------enigC65679483EDCD6DE644ED270"
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <20110125134748.GA10051@laptop>
+References: <20110125134748.GA10051@laptop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 26 Jan 2011 06:25:19 +1000
+Message-ID: <AANLkTinU0KYiCd4p=z+=ojbkeEoT2G+CAYvdRU02KJEn@mail.gmail.com>
+Subject: Re: [PATCH 0/2][concept RFC] x86: BIOS-save kernel log to disk upon panic
+To: "Ahmed S. Darwish" <darwish.07@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, X86-ML <x86@kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Willy Tarreau <wtarreau@hera.kernel.org>, Willy Tarreau <w@1wt.eu>,
+        Dirk Hohndel <hohndel@infradead.org>, Dirk.Hohndel@intel.com,
+        IDE-ML <linux-ide@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigC65679483EDCD6DE644ED270
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jan 25, 2011 at 11:47 PM, Ahmed S. Darwish <darwish.07@gmail.com> wrote:
+>
+> I've faced some very early panics in latest kernel. Being a run of the mill
+> x86 laptop, the machine is void of debugging aids like serial ports or
+> network boot.
+>
+> As a possible solution, below patches prototypes the idea of persistently
+> storing the kernel log ring to a hard disk partition using the enhanced BIOS
+> 0x13 services.
 
-On 01/25/2011 12:56 PM, Eric Blake wrote:
->>> Treating the empty string special for AT_FDCWD is rather pointless, b=
-ut
->>> at least consistent.
->=20
-> No, treating an empty string name argument to a *at function as a
-> synonym for AT_FDCWD is a violation of POSIX.
->=20
->> i dont know if the gnulib peeps are on these lists, but i think their =
+Quite frankly, I'm not likely to _ever_ merge anything like this.
 
->> implementations of some of the *at funcs leverage the extended behavio=
-r that=20
->> is available under Linux.  or at least, i'm certain they'll have some =
-insight=20
->> into some of these nuances.
->=20
-> Gnulib has code to explicitly work around bugs in earlier glibc/Linux
-> implementations that mistakenly treated fd, "" the same as fd, "." (at
-> least modern kernels get it right, and when glibc defers to the kernel,=
+Over the years, many people have tried to write things to disk on
+oops. I refuse to take it. No way in hell do I want the situation of
+"the system is screwed, so let's overwrite the disk" to be something
+the kernel I release might do. It's crazy. That disk is a lot more
+important than the kernel, and overwriting it when we might have
+serious memory corruption issues or something is not a thing I feel is
+appropriate.
 
-> those workarounds in gnulib are not needed on newer systems).
+I also don't think that it's safe to use the BIOS routines. That's not
+the environment they have been tested in  - the boot environment is
+very different from the "running kernel" setup. Devices will have been
+possibly remapped, virtual mappings are different, things are just
+very random.
 
-One other thing to point out - this is not the first time glibc has
-added code around *at kernel syscalls in order to provide POSIX
-semantics where the Linux syscall does not.  Remember that both futimens
-and utimensat are implemented on top of the same syscall, and that
-futimens(AT_FDCWD, times) must fail rather than set the times on ".".
-See glibc commit 4286fa41 where glibc had to add code to work around the
-kernel's choice of the syscall utimensat(fd, NULL, times, 0) as being
-the way to implement futimens, in response to
-http://sourceware.org/bugzilla/show_bug.cgi?id=3D10992, which was raised
-because gnulib detected the POSIX compliance bug, in much the same way
-that gnulib is now detecting the chmod("") bug of not failing with
-ENOENT when chmod is incorrectly implemented around the sys_fchmodat
-syscall.
+Some vendors have taken things like this in the past, but I just
+wanted to say that I think it's too damn scary. I _really_ don't see
+the point.
 
---=20
-Eric Blake   eblake@redhat.com    +1-801-349-2682
-Libvirt virtualization library http://libvirt.org
+If you want to do the BIOS services thing, do it for video: copy the
+oops to low RAM, return to real mode, re-run the graphics card POST
+routines to initialize text-mode, and use the BIOS to print out the
+oops.  That is WAY less scary than writing to disk.
 
-
---------------enigC65679483EDCD6DE644ED270
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Public key at http://people.redhat.com/eblake/eblake.gpg
-Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
-
-iQEcBAEBCAAGBQJNPzMJAAoJEKeha0olJ0NqTYgH/1aR1ABvFAD3uF0JBQGwObjG
-8tfV3Ju8nJIFeQcJaFrTvxFdcvTC5t54OYqSTkkSQIFtPZ9sJITQxdOVuw2YB18b
-wRsGe3tsvKC6S31f0jfKDzTm26V5iSKcl+lChBG+H+gSJaBLKqeVyU/ZoHSZOLrQ
-mwR+bNbdmlF2Z+sBY4rC4mYD7M1gYO43Ag8SmUi+flQJfJrxM+xTpvz9UPKXuPg/
-SHlLuy4veJZHt0Zk0MHrCp8QwwxHVb2BmHjqZ/PmCf8gnebtyZveKp493DJ97A8j
-+66XzjWOd7zljoCrn7/JdEl96z25/eKkunGD0swHNXdTqepYjj6C59T7QJogwb0=
-=xcyY
------END PGP SIGNATURE-----
-
---------------enigC65679483EDCD6DE644ED270--
+                              Linus
