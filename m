@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126Ab1AYLyl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 06:54:41 -0500
-Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:60217 "EHLO
-	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752198Ab1AYLyk convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 06:54:40 -0500
-X-Greylist: delayed 496 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Jan 2011 06:54:39 EST
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-References: <AANLkTi=eCOiP7MrUSG4WRMN0kj_+ZWvZ=z7VYDfkshU_@mail.gmail.com><8yad3nlh18e.fsf@huya.qualcomm.com><AANLkTin9fSw5DdqdgCEvtdtc83LFOeA7t0OAUugVmRFD@mail.gmail.com>
- <20110125102652.GB11507@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: Acu8eoCdV0DHmxnGRka9YNLNH/Y0NAACmf4A
-In-Reply-To: <20110125102652.GB11507@n2100.arm.linux.org.uk>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
-Date: Tue, 25 Jan 2011 17:16:19 +0530
-Message-ID: <bb0c3855a121603232d022b4062752a6@mail.gmail.com>
-Subject: RE: questions about arm trustzone
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        sen wang <wangchendu@gmail.com>
-Cc: David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753167Ab1AYLzT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 06:55:19 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:49587 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751940Ab1AYLzR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 06:55:17 -0500
+Subject: Re: [PATCH 1/2 v2] ASoC: Fix codec device id format used by some
+ dai_links
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1295903363-4433-1-git-send-email-lars@metafoo.de>
+References: <1295903363-4433-1-git-send-email-lars@metafoo.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 25 Jan 2011 11:55:12 +0000
+Message-ID: <1295956512.3322.74.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-arm-kernel-bounces@lists.infradead.org [mailto:linux-
-> arm-kernel-bounces@lists.infradead.org] On Behalf Of Russell King -
-> ARM Linux
-> Sent: Tuesday, January 25, 2011 3:57 PM
-> To: sen wang
-> Cc: David Brown; linux-kernel@vger.kernel.org; linux-arm-
-> kernel@lists.infradead.org
-> Subject: Re: questions about arm trustzone
->
-> On Tue, Jan 25, 2011 at 05:19:16PM +0800, sen wang wrote:
-> > It seems linux run in the normal world, and the "scm.c"  is the
-> path
-> > to the monitor mode.
-> > where can I find the example code for monitor and secure world?
->
-> OMAP also uses smc: arch/arm/mach-omap2/omap44xx-smc.S
->
-> There's no interface defined for smc because it's highly vendor and
-> implementation specific.  It's just like a SWI (or svc) where it
-> causes entry via a vector into a priviledged mode, which can be
-> thought of being similar to a branch to a vector with a mode switch.
->
-The code above won't give major details of how the monitor mode is
-implemented.  But as Russell said, it's pretty much vendor specific.
+On Mon, 2011-01-24 at 22:09 +0100, Lars-Peter Clausen wrote:
+> The id part of an I2C device name is created with the "%d-%04x" format string.
+> 
+> So for example for an I2C device which is connected to the adapter with the id 0
+> and has its address set to 0x1a the id part of the devices name would be
+> "0-001a".
+> 
+> Currently some sound board drivers have the id part the codec_name field of
+> their dai_link structures set as if it had been created by a "%d-0x%x" format
+> string. For example "0-0x1a" instead of "0-001a".
+> 
+> As a result there is no match between the codec device and the dai_link and no
+> sound card is instantiated.
+> 
+> This patch fixes it.
+> 
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> 
 
-On OMAP, We have standard API interfaces to enter into monitor
-world. One of the parameter denotes the kind of service, is
-requested.
+Both
 
-Regards,
-Santosh
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+-- 
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
+
