@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808Ab1AYVoV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 16:44:21 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58284
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752618Ab1AYVoU (ORCPT
+	id S1753725Ab1AYVus (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 16:50:48 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:53392 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752880Ab1AYVuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 16:44:20 -0500
-Date: Tue, 25 Jan 2011 13:44:55 -0800 (PST)
-Message-Id: <20110125.134455.115939217.davem@davemloft.net>
-To: piotr@hosowicz.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        kurt.van.dijck@eia.be
-Subject: Re: Something is wrong in your source, David
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4D3F4277.20008@example.com>
-References: <4D3F4277.20008@example.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=utf-8
+	Tue, 25 Jan 2011 16:50:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=rsGONqFvThfrJupalQctdi58vKGQpXjkVLzTiIHvbGtLhRH2xz1lzkkH4kmvSRyoWM
+         zvCe0gdwxBr+aJuDjinWu314UJYhC/XYydyXCvXh4lPHY2El3atT3w6ucIgHOcoXsiII
+         s6VLZhjrRNo3XILqR3kKnoQ3qX8YtPsVYBGpg=
+Date: Tue, 25 Jan 2011 13:50:39 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Mark Lord <kernel@teksavvy.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils ?
+Message-ID: <20110125215039.GB20030@core.coreip.homeip.net>
+References: <20110125045559.GB7850@core.coreip.homeip.net>
+ <4D3E59CA.6070107@teksavvy.com>
+ <4D3E5A91.30207@teksavvy.com>
+ <20110125053117.GD7850@core.coreip.homeip.net>
+ <4D3EB734.5090100@redhat.com>
+ <20110125164803.GA19701@core.coreip.homeip.net>
+ <AANLkTi=1Mh0JrYk5itvef7O7e7pR+YKos-w56W5q4B8B@mail.gmail.com>
+ <20110125205453.GA19896@core.coreip.homeip.net>
+ <20110125210153.GB19896@core.coreip.homeip.net>
+ <AANLkTiknmVaOhvhTXC_5G3m-HDrTJCyqbjOPgnUEFZpA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTiknmVaOhvhTXC_5G3m-HDrTJCyqbjOPgnUEFZpA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p0PLiTrF008381
 
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Date: Tue, 25 Jan 2011 22:36:55 +0100
-
-> Hello David, hello all,
+On Wed, Jan 26, 2011 at 07:20:07AM +1000, Linus Torvalds wrote:
+> On Wed, Jan 26, 2011 at 7:01 AM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+> >
+> > BTW, another issue is that evdev's ioctl returns -EINVAL for unknown
+> > ioctls so applications would have hard time figuring out whether error
+> > returned because of kernel being too old or because they are trying to
+> > retrieve/establish invalid mapping if they had to go only by the error
+> > code.
 > 
-> David, when I apply your source from GIT to Linus source I get this in
-> final part of the build process:
+> So that's just another evdev interface bug.
 
-Please always CC: the appropriate developer list for the subsystem
-where you see the problem, and also make an effort to also contact the
-developer who might be responsible for the sources in question.
+Huh? I do not have lot of options here as far as error codes go. Invalid
+request, invalid data in request - all goes to EINVAL.
 
-I've done this for you.
-
->   (...)
->   LD [M]  drivers/net/wireless/ath/ath9k/ath9k.o
->   LD [M]  drivers/net/wireless/ath/ath9k/ath9k_hw.o
->   LD [M]  drivers/net/wireless/ath/ath9k/ath9k_common.o
->   LD [M]  drivers/net/wireless/ath/ath9k/ath9k_htc.o
->   Building modules, stage 2.
->   MODPOST 2690 modules
-> ERROR: "register_candev" [drivers/net/can/softing/softing.ko]
-> undefined!
-> ERROR: "alloc_candev" [drivers/net/can/softing/softing.ko] undefined!
-> ERROR: "can_bus_off" [drivers/net/can/softing/softing.ko] undefined!
-> ERROR: "close_candev" [drivers/net/can/softing/softing.ko] undefined!
-> ERROR: "free_candev" [drivers/net/can/softing/softing.ko] undefined!
-> ERROR: "unregister_candev" [drivers/net/can/softing/softing.ko]
-> undefined!
-> ERROR: "alloc_can_skb" [drivers/net/can/softing/softing.ko] undefined!
-> ERROR: "open_candev" [drivers/net/can/softing/softing.ko] undefined!
-> ERROR: "can_get_echo_skb" [drivers/net/can/softing/softing.ko]
-> undefined!
-> ERROR: "can_put_echo_skb" [drivers/net/can/softing/softing.ko]
-> undefined!
-> WARNING: modpost: Found 24 section mismatch(es).
-> To see full details build your kernel with:
-> 'make CONFIG_DEBUG_SECTION_MISMATCH=y'
-> make[2]: *** [__modpost] BÅ‚Ä…d 1
-> make[1]: *** [modules] BÅ‚Ä…d 2
-> make[1]: Opuszczenie katalogu
-> `/usr/src/linus/linux-2.6-20110125-2155-pztidm'
-> make: *** [debian/stamp/build/kernel] BÅ‚Ä…d 2
 > 
+> > As far as I can see EINVAL is a proper error for unknown ioctls:
+> >
+> > [dtor@hammer work]$ man 2 ioctl | grep EINVAL
+> >       EINVAL Request or argp is not valid.
 > 
-> -- 
-> TV: "GruchaÅ‚a jest taka, Å¼e cieszy siÄ™ z kaÅ¼dego pchniÄ™cia."
-> NP: Patrick O'Hearn - Beneath the Celestial Sphere
-> NB: 2.6.38-rc2-20110125-1848-ti+
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Yeah, there's some confusion there.
+> 
+> The "unknown ioctl" error code is (for traditional reasons) ENOTTY,
+> but yes, the EINVAL thing admittedly has a lot of legacy use too.
+> 
+> Inside the kernel, the preferred way to say "I don't recognize that
+> ioctl number" is actually ENOIOCTLCMD.  That's exactly so that various
+> nested ioctl handlers can then tell the difference between "I didn't
+> recognize that ioctl" and "I understand what you asked me to do, but
+> your arguments were crap".
+> 
+> vfs_ioctl() will then turn ENOIOCTLCMD to EINVAL to return to user space.
+
+OK, so I can change evdev to employ ENOIOCTLCMD where needed, bit that
+will not change older kernels where such distinction is needed (as never
+kernels do support newer ioctl). And even if I could go back it would
+not help since userspace still sees EINVAL only.
+
+-- 
+Dmitry
