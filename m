@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945Ab1AYRI4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 12:08:56 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:53538 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307Ab1AYRIy (ORCPT
+	id S1753093Ab1AYRJG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 12:09:06 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:56281 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753019Ab1AYRJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 12:08:54 -0500
+	Tue, 25 Jan 2011 12:09:02 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=oCB0t2Z66sHfalgmC0Za+07USdVfkFea/u/2Fvubwcgg2FYxuhK+X2pj+PBMMkndve
-         hIERAWzaYSbk1Is44Ojt2L1lSkgClZ9CSVQQHwnHz1Lz6L6wGb0cNuAJyR8U55A3TBGb
-         q7Ah9jMAyC+OfT6f3E2g2Hm8O7AWn8RRSQEa0=
+        b=B1Ss2Yc6U45VSuebM3yyqdMeMuaz+VpDg0ddC2710q7HhBT/7fvq++WVlQ1AWakET8
+         XYFgS3fNjL5ZB/fqXJc1SmkWNepaUEOuLi5M+oBzg67xKh4nCaVq23GjDfRFxJmB6JeM
+         PUTeRicbsgEGLTs2AifyzuV/2hEd0QncPEGmA=
 MIME-Version: 1.0
-Date: Tue, 25 Jan 2011 22:38:53 +0530
-Message-ID: <AANLkTimA+mnX0MLcwVkeRfbrJfx9T+O8CxrZQ=wFef+u@mail.gmail.com>
-Subject: [PATCH 2.6.37 3/4] edac: correct i82975x error-info reported to edac-core
+Date: Tue, 25 Jan 2011 22:39:01 +0530
+Message-ID: <AANLkTi=-3GBLdM_dP5nb4s_pWR+-1KnN3F6ws1Enh2NP@mail.gmail.com>
+Subject: [PATCH 2.6.37 4/4] edac: i82975x driver revision change
 From: Arvind R <arvino55@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: trivial@kernel.org
@@ -25,121 +25,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: [PATCH 2.6.37 3/4] edac: correct i82975x error-info reported
-to edac-core
+Subject: [PATCH 4/4] edac: i82975x driver revision change
 
-fix the totally wrong info w.r.t page,row,dimm-label previously reported to
-edac-core by i82975x driver
+bump up revision to reflect 3 patches
 
 Signed-off-by: Arvind R. <arvino55@gmail.com>
 ---
- i82975x_edac.c |   53 +++++++++++++++++++++++++++++++++++++----------------
- 1 file changed, 37 insertions(+), 16 deletions(-)
+ i82975x_edac.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 ---
 diff -up a/drivers/edac/i82975x_edac.c b/drivers/edac/i82975x_edac.c
 --- a/drivers/edac/i82975x_edac.c
 +++ b/drivers/edac/i82975x_edac.c
-@@ -278,6 +278,7 @@ static int i82975x_process_error_info(st
- 		struct i82975x_error_info *info, int handle_errors)
- {
- 	int row, multi_chan, chan;
-+	unsigned long offst, page;
+@@ -16,7 +16,7 @@
+ #include <linux/edac.h>
+ #include "edac_core.h"
 
- 	multi_chan = mci->csrows[0].nr_channels - 1;
+-#define I82975X_REVISION	" Ver: 1.0.0 " __DATE__
++#define I82975X_REVISION	" Ver: 1.0.3 " __DATE__
+ #define EDAC_MOD_STR		"i82975x_edac"
 
-@@ -292,17 +293,19 @@ static int i82975x_process_error_info(st
- 		info->errsts = info->errsts2;
- 	}
-
--	chan = info->eap & 1;
--	info->eap >>= 1;
--	if (info->xeap )
--		info->eap |= 0x80000000;
--	info->eap >>= PAGE_SHIFT;
--	row = edac_mc_find_csrow_by_page(mci, info->eap);
-+	page = (unsigned long) info->eap;
-+	if (info->xeap & 1)
-+		page |= 0x100000000ul;
-+	chan = page & 1;
-+	page >>= 1;
-+	offst = page & ((1 << PAGE_SHIFT) - 1);
-+	page >>= PAGE_SHIFT;
-+	row = edac_mc_find_csrow_by_page(mci, page);
-
- 	if (info->errsts & 0x0002)
--		edac_mc_handle_ue(mci, info->eap, 0, row, "i82975x UE");
-+		edac_mc_handle_ue(mci, page, offst , row, "i82975x UE");
- 	else
--		edac_mc_handle_ce(mci, info->eap, 0, info->derrsyn, row,
-+		edac_mc_handle_ce(mci, page, offst, info->derrsyn, row,
- 				multi_chan ? chan : 0,
- 				"i82975x CE");
-
-@@ -352,11 +355,15 @@ static enum dev_type i82975x_dram_type(v
- static void i82975x_init_csrows(struct mem_ctl_info *mci,
- 		struct pci_dev *pdev, void __iomem *mch_window)
- {
-+	static const char *labels[4] = {
-+							"DIMM A1", "DIMM A2",
-+							"DIMM B1", "DIMM B2"
-+						};
- 	struct csrow_info *csrow;
- 	unsigned long last_cumul_size;
- 	u8 value;
- 	u32 cumul_size;
--	int index;
-+	int index, chan;
-
- 	last_cumul_size = 0;
-
-@@ -365,11 +372,7 @@ static void i82975x_init_csrows(struct m
- 	 * The dram row boundary (DRB) reg values are boundary address
- 	 * for each DRAM row with a granularity of 32 or 64MB (single/dual
- 	 * channel operation).  DRB regs are cumulative; therefore DRB7 will
--	 * contain the total memory contained in all eight rows.
--	 *
--	 * FIXME:
--	 *  EDAC currently works for Dual-channel Interleaved configuration.
--	 *  Other configurations, which the chip supports, need fixing/testing.
-+	 * contain the total memory contained in all rows.
- 	 *
- 	 */
-
-@@ -380,8 +383,26 @@ static void i82975x_init_csrows(struct m
- 					((index >= 4) ? 0x80 : 0));
- 		cumul_size = value;
- 		cumul_size <<= (I82975X_DRB_SHIFT - PAGE_SHIFT);
-+		/*
-+		 * Adjust cumul_size w.r.t number of channels
-+		 *
-+		 */
-+		if (csrow->nr_channels > 1)
-+			cumul_size <<= 1;
- 		debugf3("%s(): (%d) cumul_size 0x%x\n", __func__, index,
- 			cumul_size);
-+
-+		/*
-+		 * Initialise dram labels
-+		 * index values:
-+		 *   [0-7] for single-channel; i.e. csrow->nr_channels = 1
-+		 *   [0-3] for dual-channel; i.e. csrow->nr_channels = 2
-+		 */
-+		for (chan = 0; chan < csrow->nr_channels; chan++)
-+			strncpy(csrow->channels[chan].label,
-+					labels[(index >> 1) + (chan * 2)],
-+					EDAC_MC_LABEL_LEN);
-+
- 		if (cumul_size == last_cumul_size)
- 			continue;	/* not populated */
-
-@@ -389,8 +410,8 @@ static void i82975x_init_csrows(struct m
- 		csrow->last_page = cumul_size - 1;
- 		csrow->nr_pages = cumul_size - last_cumul_size;
- 		last_cumul_size = cumul_size;
--		csrow->grain = 1 << 7;	/* I82975X_EAP has 128B resolution */
--		csrow->mtype = MEM_DDR; /* i82975x supports only DDR2 */
-+		csrow->grain = 1 << 6;	/* I82975X_EAP has 64B resolution */
-+		csrow->mtype = MEM_DDR2; /* I82975x supports only DDR2 */
- 		csrow->dtype = i82975x_dram_type(mch_window, index);
- 		csrow->edac_mode = EDAC_SECDED; /* only supported */
- 	}
+ #define i82975x_printk(level, fmt, arg...) \
