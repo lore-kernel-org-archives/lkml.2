@@ -1,56 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559Ab1AYAgf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 19:36:35 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40756 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751529Ab1AYAge (ORCPT
+	id S1752298Ab1AYAiQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 19:38:16 -0500
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:52553 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751446Ab1AYAiP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 19:36:34 -0500
-Subject: Re: [GIT PULL for 38-rc3]  target updates for v4.0.0-rc7
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1295914455.24778.115.camel@haakon2.linux-iscsi.org>
-References: <1295914455.24778.115.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 24 Jan 2011 18:36:30 -0600
-Message-ID: <1295915790.15425.44.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 24 Jan 2011 19:38:15 -0500
+From: Kevin Hilman <khilman@ti.com>
+To: shubhrajyoti@ti.com
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Subject: Re: [PATCH] bh1780gli : Convert to dev pm ops
+Organization: Texas Instruments, Inc.
+References: <1295346162-6800-1-git-send-email-shubhrajyoti@ti.com>
+Date: Mon, 24 Jan 2011 16:38:11 -0800
+In-Reply-To: <1295346162-6800-1-git-send-email-shubhrajyoti@ti.com>
+	(shubhrajyoti@ti.com's message of "Tue, 18 Jan 2011 15:52:42 +0530")
+Message-ID: <87tygx3jik.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-24 at 16:14 -0800, Nicholas A. Bellinger wrote:
-> Hi James and Co,
-> 
-> Here are the latest v4.0.0-rc7 updates for mainline drivers/target/ code
-> rebased against linux-2.6.git -> .38-rc2.  These individual patches have
-> been reviewed on linux-scsi and commited into the upstream LIO kernel
-> tree, so please consider pulling for .38-rc3:
-> 
->    git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-38-rc3
-> 
-> Also at this point, having Linus pull directly from
-> scsi-post-merge-2.6.git/for-38-rcX for mainline target bugfixes +
-> improvements may make more sense.
-> 
-> Linus/Andrew/James, please let me know which you prefer here.
+shubhrajyoti@ti.com writes:
 
-Right at the moment, I'm trying to encourage a few people with
-established areas to experiment with their own git trees in SCSI, but
-the target subsystem, being a newcomer, wouldn't be one of these, so,
-for the time being, patch series over linux-scsi please for review and
-feedback.
+> From: Shubhrajyoti Datta <shubhrajyoti@ti.com>
+>
+> Signed-off-by: Shubhrajyoti Datta <shubhrajyoti@ti.com>
+> ---
+>  drivers/misc/bh1780gli.c |   20 ++++++++++----------
+>  1 files changed, 10 insertions(+), 10 deletions(-)
+>
+> diff --git a/drivers/misc/bh1780gli.c b/drivers/misc/bh1780gli.c
+> index d5f3a3f..07224ae 100644
+> --- a/drivers/misc/bh1780gli.c
+> +++ b/drivers/misc/bh1780gli.c
+> @@ -196,10 +196,11 @@ static int __devexit bh1780_remove(struct i2c_client *client)
+>  }
+>  
+>  #ifdef CONFIG_PM
+> -static int bh1780_suspend(struct i2c_client *client, pm_message_t mesg)
+> +static int bh1780_suspend(struct device *dev)
+>  {
+>  	struct bh1780_data *ddata;
+>  	int state, ret;
+> +	struct i2c_client *client = to_i2c_client(dev);
+>  
+>  	ddata = i2c_get_clientdata(client);
+>  	state = bh1780_read(ddata, BH1780_REG_CONTROL, "CONTROL");
+> @@ -217,14 +218,14 @@ static int bh1780_suspend(struct i2c_client *client, pm_message_t mesg)
+>  	return 0;
+>  }
+>  
+> -static int bh1780_resume(struct i2c_client *client)
+> +static int bh1780_resume(struct device *dev)
+>  {
+>  	struct bh1780_data *ddata;
+>  	int state, ret;
+> +	struct i2c_client *client = to_i2c_client(dev);
+>  
+>  	ddata = i2c_get_clientdata(client);
+>  	state = ddata->power_state;
+> -
+>  	ret = bh1780_write(ddata, BH1780_REG_CONTROL, state,
+>  				"CONTROL");
+>  
+> @@ -233,9 +234,7 @@ static int bh1780_resume(struct i2c_client *client)
+>  
+>  	return 0;
+>  }
+> -#else
+> -#define bh1780_suspend NULL
+> -#define bh1780_resume NULL
+> +static SIMPLE_DEV_PM_OPS(bh1780_pm, bh1780_suspend, bh1780_resume);
 
-James
+Rather, keep the #else here with a NULL pm_ops ptr so you don't need the
+#ifdef below.
 
+Kevin
 
+>  #endif /* CONFIG_PM */
+>  
+>  static const struct i2c_device_id bh1780_id[] = {
+> @@ -247,11 +246,12 @@ static struct i2c_driver bh1780_driver = {
+>  	.probe		= bh1780_probe,
+>  	.remove		= bh1780_remove,
+>  	.id_table	= bh1780_id,
+> -	.suspend	= bh1780_suspend,
+> -	.resume		= bh1780_resume,
+>  	.driver = {
+> -		.name = "bh1780"
+> -	},
+> +		.name = "bh1780",
+> +#ifdef CONFIG_PM
+> +		.pm	= &bh1780_pm,
+> +#endif
+> +},
+>  };
+>  
+>  static int __init bh1780_init(void)
