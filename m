@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176Ab1AYLJl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 06:09:41 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:40874 "EHLO
+	id S1752653Ab1AYLJx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 06:09:53 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50775 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752624Ab1AYLHz (ORCPT
+	with ESMTP id S1751699Ab1AYLHx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 06:07:55 -0500
+	Tue, 25 Jan 2011 06:07:53 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=pio5filowlUylKk5OTq7DrMM3J7PnIvNa6FDlh/2K180OrTCOaMsqcRE49cGDvqLco
-         XawKJnH+qLEScIMgHvaBdEBuKhO2i9Z8f7uBi7G5GDSlrxEo/A/Fd02hpEW2ENBIIA45
-         +Ez0QJ7tX5UYe+jB0R41LGNOAE4OtTPfiQN54=
+        b=iGe8UhHpwClJnObRc+qIy1oTCtT35MXOhDT62I94xkh7G1Y2jzOUrMbwxH+z5HAAp8
+         sdWaugrsGZtPgC1Eaqz1Ii6IxyaU3ndh19aCi/E5on2Cw9t0z/F5lx2ZUleRQ0lSmLs+
+         wKQ/XGNFx6yB8ca1qUex50iaA0p3VOn8OabrM=
 From: Marek Belisko <marek.belisko@open-nandra.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH 05/12] staging: ft1000: Fix coding style.
-Date: Tue, 25 Jan 2011 12:08:10 +0100
-Message-Id: <1295953697-9805-5-git-send-email-marek.belisko@open-nandra.com>
+Subject: [PATCH 04/12] staging: ft1000: Fix coding style.
+Date: Tue, 25 Jan 2011 12:08:09 +0100
+Message-Id: <1295953697-9805-4-git-send-email-marek.belisko@open-nandra.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1295953697-9805-1-git-send-email-marek.belisko@open-nandra.com>
 References: <1295953697-9805-1-git-send-email-marek.belisko@open-nandra.com>
@@ -28,100 +28,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix coding style in get_handshake_usb() function.
+Fix coding style in put_handshake() function.
 
 Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
 ---
- .../staging/ft1000/ft1000-usb/ft1000_download.c    |   73 +++++++++++---------
- 1 files changed, 40 insertions(+), 33 deletions(-)
+ .../staging/ft1000/ft1000-usb/ft1000_download.c    |   29 ++++++++++---------
+ 1 files changed, 15 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
-index 21b42f9..c3f86be 100644
+index 30501f5..21b42f9 100644
 --- a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
 +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
-@@ -274,42 +274,49 @@ static void put_handshake(struct ft1000_device *ft1000dev,u16 handshake_value)
- 
- static u16 get_handshake_usb(struct ft1000_device *ft1000dev, u16 expected_value)
+@@ -255,20 +255,21 @@ static u16 get_handshake(struct ft1000_device *ft1000dev, u16 expected_value)
+ //---------------------------------------------------------------------------
+ static void put_handshake(struct ft1000_device *ft1000dev,u16 handshake_value)
  {
--   u16            handshake;
--   int               loopcnt;
--   u16            temp;
--   u32             status=0;
-+	u16 handshake, temp;
-+	int loopcnt;
-+	u32 status = 0;
- 
- 	struct ft1000_info *pft1000info = netdev_priv(ft1000dev->net);
--   loopcnt = 0;
--   handshake = 0;
--   while (loopcnt < 100)
--   {
--       if (pft1000info->usbboot == 2) {
--           status = ft1000_read_dpram32 (ft1000dev, 0, (u8 *)&(pft1000info->tempbuf[0]), 64);
--           for (temp=0; temp<16; temp++)
--               DEBUG("tempbuf %d = 0x%x\n", temp, pft1000info->tempbuf[temp]);
--           status = ft1000_read_dpram16 (ft1000dev, DWNLD_MAG1_HANDSHAKE_LOC, (u8 *)&handshake, 1);
--           DEBUG("handshake from read_dpram16 = 0x%x\n", handshake);
--           if (pft1000info->dspalive == pft1000info->tempbuf[6])
--               handshake = 0;
--           else {
--               handshake = pft1000info->tempbuf[1];
--               pft1000info->dspalive = pft1000info->tempbuf[6];
--           }
--       }
--       else {
--           status = ft1000_read_dpram16 (ft1000dev, DWNLD_MAG1_HANDSHAKE_LOC, (u8 *)&handshake, 1);
--       }
--       loopcnt++;
--       msleep(10);
--       handshake = ntohs(handshake);
--       if ((handshake == expected_value) || (handshake == HANDSHAKE_RESET_VALUE_USB))
--       {
--           return handshake;
--       }
--   }
-+	loopcnt = 0;
-+	handshake = 0;
+-    u32 tempx;
+-    u16 tempword;
+-    u32 status;
+-
+-
+-
+-        tempx = (u32)handshake_value;
+-        tempx = ntohl(tempx);
+-
+-        tempword = (u16)(tempx & 0xffff);
+-        status = ft1000_write_dpram16 (ft1000dev, DWNLD_MAG1_HANDSHAKE_LOC, tempword, 0);
+-        tempword = (u16)(tempx >> 16);
+-        status = ft1000_write_dpram16 (ft1000dev, DWNLD_MAG1_HANDSHAKE_LOC, tempword, 1);
+-        status = ft1000_write_register(ft1000dev, FT1000_DB_DNLD_TX, FT1000_REG_DOORBELL);
++	u32 tempx;
++	u16 tempword;
++	u32 status;
 +
-+	while (loopcnt < 100) {
-+		if (pft1000info->usbboot == 2) {
-+			status = ft1000_read_dpram32(ft1000dev, 0,
-+					(u8 *)&(pft1000info->tempbuf[0]), 64);
-+			for (temp = 0; temp < 16; temp++) {
-+				DEBUG("tempbuf %d = 0x%x\n", temp,
-+					pft1000info->tempbuf[temp]);
-+			}
-+			status = ft1000_read_dpram16(ft1000dev,
-+						DWNLD_MAG1_HANDSHAKE_LOC,
-+						(u8 *)&handshake, 1);
-+			DEBUG("handshake from read_dpram16 = 0x%x\n",
-+				handshake);
-+			if (pft1000info->dspalive == pft1000info->tempbuf[6]) {
-+				handshake = 0;
-+			} else {
-+				handshake = pft1000info->tempbuf[1];
-+				pft1000info->dspalive =
-+						pft1000info->tempbuf[6];
-+			}
-+		} else {
-+			status = ft1000_read_dpram16(ft1000dev,
-+						DWNLD_MAG1_HANDSHAKE_LOC,
-+						(u8 *)&handshake, 1);
-+		}
- 
--   return HANDSHAKE_TIMEOUT_VALUE;
-+		loopcnt++;
-+		msleep(10);
-+		handshake = ntohs(handshake);
-+		if ((handshake == expected_value) ||
-+		    (handshake == HANDSHAKE_RESET_VALUE_USB))
-+			return handshake;
-+	}
++	tempx = (u32)handshake_value;
++	tempx = ntohl(tempx);
 +
-+	return HANDSHAKE_TIMEOUT_VALUE;
++	tempword = (u16)(tempx & 0xffff);
++	status = ft1000_write_dpram16(ft1000dev, DWNLD_MAG1_HANDSHAKE_LOC,
++					tempword, 0);
++	tempword = (u16)(tempx >> 16);
++	status = ft1000_write_dpram16(ft1000dev, DWNLD_MAG1_HANDSHAKE_LOC,
++					tempword, 1);
++	status = ft1000_write_register(ft1000dev, FT1000_DB_DNLD_TX,
++					FT1000_REG_DOORBELL);
  }
  
- static void put_handshake_usb(struct ft1000_device *ft1000dev,u16 handshake_value)
+ static u16 get_handshake_usb(struct ft1000_device *ft1000dev, u16 expected_value)
 -- 
 1.7.1
 
