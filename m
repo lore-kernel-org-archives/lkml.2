@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab1AYR73 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 12:59:29 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:49147 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752945Ab1AYR7X (ORCPT
+	id S1753275Ab1AYR70 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 12:59:26 -0500
+Received: from casper.infradead.org ([85.118.1.10]:59865 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271Ab1AYR7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 12:59:23 -0500
-Message-Id: <20110125174908.160678240@chello.nl>
+	Tue, 25 Jan 2011 12:59:20 -0500
+Message-Id: <20110125174907.444708632@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Tue, 25 Jan 2011 18:31:29 +0100
+Date: Tue, 25 Jan 2011 18:31:16 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
@@ -23,153 +23,107 @@ Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
         Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: [PATCH 18/25] mm: Rename drop_anon_vma to put_anon_vma
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [PATCH 05/25] s390: preemptible mmu_gather
 References: <20110125173111.720927511@chello.nl>
-Content-Disposition: inline; filename=peter_zijlstra-mm-rename_drop_anon_vma_to_put_anon_vma.patch
+Content-Disposition: inline; filename=martin_schwidefsky-s390-preemptible_mmu_gather.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The normal code pattern used in the kernel is: get/put.
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: Hugh Dickins <hughd@google.com>
+Adapt the stand-alone s390 mmu_gather implementation to the new
+preemptible mmu_gather interface.
+
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <20101126145410.881573395@chello.nl>
 ---
- include/linux/rmap.h |    4 ++--
- mm/ksm.c             |   23 +++++------------------
- mm/migrate.c         |    4 ++--
- mm/rmap.c            |    4 ++--
- 4 files changed, 11 insertions(+), 24 deletions(-)
+ arch/s390/include/asm/tlb.h |   43 +++++++++++++++++++++++++------------------
+ 1 file changed, 25 insertions(+), 18 deletions(-)
 
-Index: linux-2.6/include/linux/rmap.h
+Index: linux-2.6/arch/s390/include/asm/tlb.h
 ===================================================================
---- linux-2.6.orig/include/linux/rmap.h
-+++ linux-2.6/include/linux/rmap.h
-@@ -87,7 +87,7 @@ static inline void get_anon_vma(struct a
- 	atomic_inc(&anon_vma->external_refcount);
+--- linux-2.6.orig/arch/s390/include/asm/tlb.h
++++ linux-2.6/arch/s390/include/asm/tlb.h
+@@ -28,44 +28,50 @@
+ #include <asm/smp.h>
+ #include <asm/tlbflush.h>
+ 
+-#ifndef CONFIG_SMP
+-#define TLB_NR_PTRS	1
+-#else
+-#define TLB_NR_PTRS	508
+-#endif
+-
+ struct mmu_gather {
+ 	struct mm_struct *mm;
+ 	unsigned int fullmm;
+ 	unsigned int nr_ptes;
+ 	unsigned int nr_pxds;
+-	void *array[TLB_NR_PTRS];
++	unsigned int max;
++	void **array;
++	void *local[8];
+ };
+ 
+-DECLARE_PER_CPU(struct mmu_gather, mmu_gathers);
+-
+-static inline struct mmu_gather *tlb_gather_mmu(struct mm_struct *mm,
+-						unsigned int full_mm_flush)
++static inline void __tlb_alloc_page(struct mmu_gather *tlb)
+ {
+-	struct mmu_gather *tlb = &get_cpu_var(mmu_gathers);
++	unsigned long addr = __get_free_pages(GFP_NOWAIT | __GFP_NOWARN, 0);
++
++	if (addr) {
++		tlb->array = (void *) addr;
++		tlb->max = PAGE_SIZE / sizeof(void *);
++	}
++}
+ 
++static inline void tlb_gather_mmu(struct mmu_gather *tlb,
++				  struct mm_struct *mm,
++				  unsigned int full_mm_flush)
++{
+ 	tlb->mm = mm;
++	tlb->max = ARRAY_SIZE(tlb->local);
++	tlb->array = tlb->local;
+ 	tlb->fullmm = full_mm_flush;
+-	tlb->nr_ptes = 0;
+-	tlb->nr_pxds = TLB_NR_PTRS;
+ 	if (tlb->fullmm)
+ 		__tlb_flush_mm(mm);
+-	return tlb;
++	else
++		__tlb_alloc_page(tlb);
++	tlb->nr_ptes = 0;
++	tlb->nr_pxds = tlb->max;
  }
  
--void drop_anon_vma(struct anon_vma *);
-+void put_anon_vma(struct anon_vma *);
- #else
- static inline void anonvma_external_refcount_init(struct anon_vma *anon_vma)
+ static inline void tlb_flush_mmu(struct mmu_gather *tlb,
+ 				 unsigned long start, unsigned long end)
  {
-@@ -102,7 +102,7 @@ static inline void get_anon_vma(struct a
- {
+-	if (!tlb->fullmm && (tlb->nr_ptes > 0 || tlb->nr_pxds < TLB_NR_PTRS))
++	if (!tlb->fullmm && (tlb->nr_ptes > 0 || tlb->nr_pxds < tlb->max))
+ 		__tlb_flush_mm(tlb->mm);
+ 	while (tlb->nr_ptes > 0)
+ 		page_table_free_rcu(tlb->mm, tlb->array[--tlb->nr_ptes]);
+-	while (tlb->nr_pxds < TLB_NR_PTRS)
++	while (tlb->nr_pxds < tlb->max)
+ 		crst_table_free_rcu(tlb->mm, tlb->array[tlb->nr_pxds++]);
  }
  
--static inline void drop_anon_vma(struct anon_vma *anon_vma)
-+static inline void put_anon_vma(struct anon_vma *anon_vma)
- {
- }
- #endif /* CONFIG_KSM */
-Index: linux-2.6/mm/ksm.c
-===================================================================
---- linux-2.6.orig/mm/ksm.c
-+++ linux-2.6/mm/ksm.c
-@@ -301,20 +301,6 @@ static inline int in_stable_tree(struct 
- 	return rmap_item->address & STABLE_FLAG;
+@@ -79,7 +85,8 @@ static inline void tlb_finish_mmu(struct
+ 	/* keep the page table cache within bounds */
+ 	check_pgt_cache();
+ 
+-	put_cpu_var(mmu_gathers);
++	if (tlb->array != tlb->local)
++		free_pages((unsigned long) tlb->array, 0);
  }
  
--static void hold_anon_vma(struct rmap_item *rmap_item,
--			  struct anon_vma *anon_vma)
--{
--	rmap_item->anon_vma = anon_vma;
--	get_anon_vma(anon_vma);
--}
--
--static void ksm_drop_anon_vma(struct rmap_item *rmap_item)
--{
--	struct anon_vma *anon_vma = rmap_item->anon_vma;
--
--	drop_anon_vma(anon_vma);
--}
--
  /*
-  * ksmd, and unmerge_and_remove_all_rmap_items(), must not touch an mm's
-  * page tables after it has passed through ksm_exit() - which, if necessary,
-@@ -397,7 +383,7 @@ static void break_cow(struct rmap_item *
- 	 * It is not an accident that whenever we want to break COW
- 	 * to undo, we also need to drop a reference to the anon_vma.
- 	 */
--	ksm_drop_anon_vma(rmap_item);
-+	put_anon_vma(rmap_item->anon_vma);
- 
- 	down_read(&mm->mmap_sem);
- 	if (ksm_test_exit(mm))
-@@ -466,7 +452,7 @@ static void remove_node_from_stable_tree
- 			ksm_pages_sharing--;
- 		else
- 			ksm_pages_shared--;
--		ksm_drop_anon_vma(rmap_item);
-+		put_anon_vma(rmap_item->anon_vma);
- 		rmap_item->address &= PAGE_MASK;
- 		cond_resched();
- 	}
-@@ -554,7 +540,7 @@ static void remove_rmap_item_from_tree(s
- 		else
- 			ksm_pages_shared--;
- 
--		ksm_drop_anon_vma(rmap_item);
-+		put_anon_vma(rmap_item->anon_vma);
- 		rmap_item->address &= PAGE_MASK;
- 
- 	} else if (rmap_item->address & UNSTABLE_FLAG) {
-@@ -949,7 +935,8 @@ static int try_to_merge_with_ksm_page(st
- 		goto out;
- 
- 	/* Must get reference to anon_vma while still holding mmap_sem */
--	hold_anon_vma(rmap_item, vma->anon_vma);
-+	rmap_item->anon_vma = vma->anon_vma;
-+	get_anon_vma(vma->anon_vma);
- out:
- 	up_read(&mm->mmap_sem);
- 	return err;
-Index: linux-2.6/mm/migrate.c
-===================================================================
---- linux-2.6.orig/mm/migrate.c
-+++ linux-2.6/mm/migrate.c
-@@ -764,7 +764,7 @@ static int unmap_and_move(new_page_t get
- 
- 	/* Drop an anon_vma reference if we took one */
- 	if (anon_vma)
--		drop_anon_vma(anon_vma);
-+		put_anon_vma(anon_vma);
- 
- uncharge:
- 	if (!charge)
-@@ -857,7 +857,7 @@ static int unmap_and_move_huge_page(new_
- 		remove_migration_ptes(hpage, hpage);
- 
- 	if (anon_vma)
--		drop_anon_vma(anon_vma);
-+		put_anon_vma(anon_vma);
- out:
- 	unlock_page(hpage);
- 
-Index: linux-2.6/mm/rmap.c
-===================================================================
---- linux-2.6.orig/mm/rmap.c
-+++ linux-2.6/mm/rmap.c
-@@ -278,7 +278,7 @@ static void anon_vma_unlink(struct anon_
- 	if (empty) {
- 		/* We no longer need the root anon_vma */
- 		if (anon_vma->root != anon_vma)
--			drop_anon_vma(anon_vma->root);
-+			put_anon_vma(anon_vma->root);
- 		anon_vma_free(anon_vma);
- 	}
- }
-@@ -1489,7 +1489,7 @@ int try_to_munlock(struct page *page)
-  * we know we are the last user, nobody else can get a reference and we
-  * can do the freeing without the lock.
-  */
--void drop_anon_vma(struct anon_vma *anon_vma)
-+void put_anon_vma(struct anon_vma *anon_vma)
- {
- 	BUG_ON(atomic_read(&anon_vma->external_refcount) <= 0);
- 	if (atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->root->lock)) {
 
 
