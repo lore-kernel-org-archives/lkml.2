@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497Ab1AYOoA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 09:44:00 -0500
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:43943 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753333Ab1AYOn7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 09:43:59 -0500
-Date: Tue, 25 Jan 2011 09:43:53 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Chuck Lever <chuck.lever@oracle.com>
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: Re: Regression, bisected: NFSv3 BUG when quitting vim in 2.6.38-rc2+.
-Message-ID: <20110125144353.GA3650@elliptictech.com>
-References: <20110124223442.GA3831@elliptictech.com>
- <6D769E5D-F4FA-4E29-AC00-C2B000561ADF@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6D769E5D-F4FA-4E29-AC00-C2B000561ADF@oracle.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753504Ab1AYOpE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 09:45:04 -0500
+Received: from mga09.intel.com ([134.134.136.24]:14849 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753166Ab1AYOpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 09:45:03 -0500
+Message-Id: <b9dded$hokqnl@orsmga002.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,374,1291622400"; 
+   d="scan'208";a="596273915"
+Date: Tue, 25 Jan 2011 14:44:58 +0000
+To: Knut Petersen <Knut_Petersen@t-online.de>
+Subject: Re: [BUG/REGRESSION] DRM / i915 / 2.6.37 and 2.6.38-rc*: DVI output gets disabled/reenabled under load
+Cc: jesse.barnes@intel.com, linux-kernel@vger.kernel.org
+References: <4D3DC997.5040605@t-online.de> <0d30dc$krk6f6@orsmga001.jf.intel.com> <4D3EB90C.9020901@t-online.de> <0d30dc$krt8da@orsmga001.jf.intel.com> <4D3EDACF.8040702@t-online.de>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <4D3EDACF.8040702@t-online.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-01-24 17:53 -0500, Chuck Lever wrote:
-> I think we just fixed this one.  See:
+On Tue, 25 Jan 2011 15:14:39 +0100, Knut Petersen <Knut_Petersen@t-online.de> wrote:
+> Well, I don't know if openSuSE 11.3 is recent enough.
+> Setup: 2 Monitors, attached to VGA1 and DVI1, resolution 1280x1024
 > 
->   http://marc.info/?l=linux-nfs&m=129555110430091&w=2
+> xrandr  --output VGA1 --pos [1..768]
+> ============================
+> Everything ok. Works as expected.
+> 
+> xrandr --output VGA1 --pos 769
 
-Yeah, that seems to fix it.
+Just retested on my PineView netbook:
 
-Thanks,
+$ xrandr --output LVDS1 --mode 1024x600 \
+         --output VGA1 --mode 1920x1080 --right-of LVDS1
+
+is working fine.
+
+The empty backtrace is most bizarre. Do you get a more reliable stacktrace
+if you attach gdb before the crash?
+-Chris
+
 -- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Chris Wilson, Intel Open Source Technology Centre
