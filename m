@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504Ab1AYOpE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 09:45:04 -0500
-Received: from mga09.intel.com ([134.134.136.24]:14849 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753166Ab1AYOpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 09:45:03 -0500
-Message-Id: <b9dded$hokqnl@orsmga002.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,374,1291622400"; 
-   d="scan'208";a="596273915"
-Date: Tue, 25 Jan 2011 14:44:58 +0000
-To: Knut Petersen <Knut_Petersen@t-online.de>
-Subject: Re: [BUG/REGRESSION] DRM / i915 / 2.6.37 and 2.6.38-rc*: DVI output gets disabled/reenabled under load
-Cc: jesse.barnes@intel.com, linux-kernel@vger.kernel.org
-References: <4D3DC997.5040605@t-online.de> <0d30dc$krk6f6@orsmga001.jf.intel.com> <4D3EB90C.9020901@t-online.de> <0d30dc$krt8da@orsmga001.jf.intel.com> <4D3EDACF.8040702@t-online.de>
-From: Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <4D3EDACF.8040702@t-online.de>
+	id S1753554Ab1AYOqK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 09:46:10 -0500
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:42667 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753419Ab1AYOqJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 09:46:09 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tao.ma;
+	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer:X-Identified-User;
+	b=TOpBvPPuAU5EoIbUVhFY6BiaQbLapCpirybz9hI+MbjyNgZ3fw6pJjR6LvTN74m+h3ZRmIf9xZjS2G0Fqt7s7eoR1VeIoWJVRwHsAPh0mTL0K9mRe5Fbjn8p8FNpQpVf;
+From: Tao Ma <tm@tao.ma>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH] block/trivial: Fix comment typo "iff".
+Date: Tue, 25 Jan 2011 22:45:37 +0800
+Message-Id: <1295966737-4111-1-git-send-email-tm@tao.ma>
+X-Mailer: git-send-email 1.7.1
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 221.217.42.200 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Jan 2011 15:14:39 +0100, Knut Petersen <Knut_Petersen@t-online.de> wrote:
-> Well, I don't know if openSuSE 11.3 is recent enough.
-> Setup: 2 Monitors, attached to VGA1 and DVI1, resolution 1280x1024
-> 
-> xrandr  --output VGA1 --pos [1..768]
-> ============================
-> Everything ok. Works as expected.
-> 
-> xrandr --output VGA1 --pos 769
+From: Tao Ma <boyu.mt@taobao.com>
 
-Just retested on my PineView netbook:
+Change "iff" to "if".
 
-$ xrandr --output LVDS1 --mode 1024x600 \
-         --output VGA1 --mode 1920x1080 --right-of LVDS1
+Cc: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+---
+ block/genhd.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-is working fine.
-
-The empty backtrace is most bizarre. Do you get a more reliable stacktrace
-if you attach gdb before the crash?
--Chris
-
+diff --git a/block/genhd.c b/block/genhd.c
+index 6a5b772..4a93d31 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -1403,7 +1403,7 @@ static unsigned long disk_events_poll_jiffies(struct gendisk *disk)
+ 
+ 	/*
+ 	 * If device-specific poll interval is set, always use it.  If
+-	 * the default is being used, poll iff there are events which
++	 * the default is being used, poll if there are events which
+ 	 * can't be monitored asynchronously.
+ 	 */
+ 	if (ev->poll_msecs >= 0)
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+1.7.1
+
