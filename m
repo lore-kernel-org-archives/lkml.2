@@ -1,80 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752988Ab1AYCsL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Jan 2011 21:48:11 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:36812 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949Ab1AYCsJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Jan 2011 21:48:09 -0500
-Subject: Re: [GIT PULL for 38-rc3]  target updates for v4.0.0-rc7
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1295922411.15425.126.camel@mulgrave.site>
-References: <1295914455.24778.115.camel@haakon2.linux-iscsi.org>
-	 <1295915790.15425.44.camel@mulgrave.site>
-	 <1295918871.24778.161.camel@haakon2.linux-iscsi.org>
-	 <1295919523.15425.104.camel@mulgrave.site>
-	 <1295920509.24778.172.camel@haakon2.linux-iscsi.org>
-	 <1295922411.15425.126.camel@mulgrave.site>
-Content-Type: text/plain
-Date: Mon, 24 Jan 2011 18:48:06 -0800
-Message-Id: <1295923686.24778.200.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1752890Ab1AYCx1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Jan 2011 21:53:27 -0500
+Received: from kroah.org ([198.145.64.141]:41880 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751547Ab1AYCx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Jan 2011 21:53:26 -0500
+Date: Tue, 25 Jan 2011 10:06:58 +0800
+From: Greg KH <greg@kroah.com>
+To: Mike Waychison <mikew@google.com>
+Cc: torvalds@linux-foundation.org, San Mehat <san@google.com>,
+        Aaron Durbin <adurbin@google.com>, Duncan Laurie <dlaurie@google.com>,
+        linux-kernel@vger.kernel.org, Tim Hockin <thockin@google.com>
+Subject: Re: [PATCH v1 1/6] Add oops notification chain.
+Message-ID: <20110125020658.GA3481@kroah.com>
+References: <20110125002433.12637.51091.stgit@mike.mtv.corp.google.com>
+ <20110125002439.12637.8515.stgit@mike.mtv.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110125002439.12637.8515.stgit@mike.mtv.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-24 at 20:26 -0600, James Bottomley wrote:
-> On Mon, 2011-01-24 at 17:55 -0800, Nicholas A. Bellinger wrote:
-> > On Mon, 2011-01-24 at 19:38 -0600, James Bottomley wrote:
-> [...]
-> > > Over the list, please, not in a git tree.  What I need is for others to
-> > > review them ... and appearing on the list best encourages that.
-> > > 
-> > 
-> > Yes, but to clarify one item.   All of these patches in for-38-rc3 and
-> > for-jejb branches have already been sent out to linux-scsi incrementally
-> > when they where committed into LIO upstream code.  Are you asking that
-> > the entire patch series be re-sent to linux-scsi against .38-rc2..?
+On Mon, Jan 24, 2011 at 04:24:39PM -0800, Mike Waychison wrote:
+> From: Aaron Durbin <adurbin@google.com>
 > 
-> What I want is for you to tidy them up, make changelogs intelligible,
-> sanity  check them (like merge patches for people who submit one patch
-> per file), run checkpatch, make sure series compiles and integration
-> test them before rolling them up in a batch and sending them on (at an
-> interval of about one or two batches per merge window) ... in essence,
-> what a maintainer does.
+> Later firmware patches in this series would like to be able to be
+> notified whenever an oops occurs on the system, so that it can be
+> recorded in the boot log.
 > 
+> This patch introduces a notifier_block called "oops_notifier_list"
+> so that drivers can register to get called whenever an Oops is
+> triggered.
 
-Yes, this is more-or-less exactly I have been doing for the .38 round. 
+But we already have a panic notifier list.  Why create a new one?
+What's wrong with the existing one that doesn't work properly for you?
 
-This particular series could stand to have a few more minor commit's
-squashed together, and a quick run through checkpatch as well.  But
-other that these small items, the commits have been made tidy, with
-intelligible changelogs + proper authorship with target v4.0.0-rc7
-running in .38-rc2 x86_64 VM, and the bugfixes ready to be included for
-mainline.
+thanks,
 
-Squashing will probably save only 2-3 commits in this particular series,
-but I will get these minor items condensed and produce a followup GIT
-PULL v2 request from scsi-post-merge-2.6.git/for-38-rc3 against
-linus .38-rc2.
-
-Again just to verify, these will be sent out in their entirety to
-linux-scsi.
-
---nab
-
-
-
-
-
+greg k-h
