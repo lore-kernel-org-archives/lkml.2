@@ -1,78 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038Ab1AYIoF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 03:44:05 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:36376 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752898Ab1AYIoE convert rfc822-to-8bit (ORCPT
+	id S1753128Ab1AYIo4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 03:44:56 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:55912 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753008Ab1AYIoz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 03:44:04 -0500
+	Tue, 25 Jan 2011 03:44:55 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=Dw3ojAC4kOK1QlTO8ILLdl/U9i33Bjp1wQ9zAfMg66egl6IWjVPP9WnI0OfTXYJC4l
-         1GXTy6CdNJc6MFspBfyr+IfF4RB1TXhkJXNPVWWMoGchKsQfgfF5Z4qQcVQxuF6Qot0J
-         WGZoJcRqNOBrAhf7qOkdRZM1XSMR10Kplm22g=
+        b=wKa5gShHxYyqrFnx2fmibnthLoRt46DJkx/6VuKF8r39DAjidfrmx3l3HMgPZ5wb5c
+         Bc0sf4p/XEuKTobmtTh6eTRWxngbxmurCR7jxgkK9Ioe1/EB/0gcqzC3OTxYx+NxI16W
+         nJiEh328jKlj4ZKr8lVhuPOh8wYrGkW6DEeP8=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=4HkAnwGVxypjGZHkwTbBrBvKk4ZOPnHG+SVRS@mail.gmail.com>
-References: <1295943748-9699-1-git-send-email-yong.zhang0@gmail.com>
-	<20110125083915.GE13618@cr0.nay.redhat.com>
-	<AANLkTi=4HkAnwGVxypjGZHkwTbBrBvKk4ZOPnHG+SVRS@mail.gmail.com>
-Date: Tue, 25 Jan 2011 16:44:03 +0800
-Message-ID: <AANLkTi=To_JsnqrEz03ia15HSWWNjxNHpa3hSOnmFZ9z@mail.gmail.com>
-Subject: Re: [PATCH] net: NETCONSOLE_DYNAMIC need CONFIGFS_FS=y
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, nab@linux-iscsi.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Kevin Hilman <khilman@deeprootsystems.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <alpine.LFD.2.00.1101121350350.25498@xanadu.home>
+References: <4D2B4CE4.9080309@ahsoftware.de>
+	<alpine.LFD.2.00.1101101722470.9794@xanadu.home>
+	<4D2BFA08.5030104@ahsoftware.de>
+	<AANLkTinR7ih2ZMRMbXmSvoh-rS3LVv+UCvd0rRH_ESzf@mail.gmail.com>
+	<20110111155930.GH11039@n2100.arm.linux.org.uk>
+	<4D2D1942.4050905@ahsoftware.de>
+	<AANLkTimAFp7ORrJLw2d8-i5pK0MZGTyAN5kmRR37ky1v@mail.gmail.com>
+	<alpine.LFD.2.00.1101121314470.25498@xanadu.home>
+	<20110112184258.GH11039@n2100.arm.linux.org.uk>
+	<alpine.LFD.2.00.1101121350350.25498@xanadu.home>
+Date: Tue, 25 Jan 2011 14:14:55 +0530
+Message-ID: <AANLkTikLwTdV2B5Dyp_adCxgWcE-+Wb6uiN5MBfnA1_K@mail.gmail.com>
+Subject: Re: ARM: relocation out of range (when loading a module)
+From: Sachin Verma <imschnvrm@gmail.com>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rabin Vincent <rabin@rab.in>, Alexander Holler <holler@ahsoftware.de>,
+        Dave Martin <dave.martin@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        catalin.marinas@arm.com
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 4:42 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
-> On Tue, Jan 25, 2011 at 4:39 PM, Am√©rico Wang <xiyou.wangcong@gmail.com> wrote:
->> On Tue, Jan 25, 2011 at 04:22:28PM +0800, Yong Zhang wrote:
->>>With CONFIGFS_FS=m && NETCONSOLE_DYNAMIC=y, build error:
->>>
->>>drivers/built-in.o: In function `netconsole_target_put':
->>>build/drivers/net/netconsole.c:133: undefined reference to `config_item_put'
->>>drivers/built-in.o: In function `netconsole_target_get':
->>>build/drivers/net/netconsole.c:127: undefined reference to `config_item_get'
->>>build/drivers/net/netconsole.c:127: undefined reference to `config_item_get'
->>>drivers/built-in.o: In function `netconsole_target_put':
->>>build/drivers/net/netconsole.c:133: undefined reference to `config_item_put'
->>>drivers/built-in.o: In function `drop_netconsole_target':
->>>build/drivers/net/netconsole.c:634: undefined reference to `config_item_put'
->>>drivers/built-in.o: In function `make_netconsole_target':
->>>build/drivers/net/netconsole.c:607: undefined reference to `config_item_init_type_name'
->>>drivers/built-in.o: In function `dynamic_netconsole_init':
->>>build/drivers/net/netconsole.c:109: undefined reference to `config_group_init'
->>>build/drivers/net/netconsole.c:111: undefined reference to `configfs_register_subsystem'
->>>drivers/built-in.o: In function `dynamic_netconsole_exit':
->>>build/drivers/net/netconsole.c:116: undefined reference to `configfs_unregister_subsystem'
->>>
+Hello,
+
+On Thu, Jan 13, 2011 at 12:25 AM, Nicolas Pitre
+<nicolas.pitre@linaro.org> wrote:
+> On Wed, 12 Jan 2011, Russell King - ARM Linux wrote:
+>
+>> Then came along the embedded initrd/initramfs idea which rather buggered
+>> the scheme when large initramfs are embedded into the image.
 >>
->> Yeah, this was reported, another way to fix this is "select CONFIGFS_FS".
->> Using "select" makes you configure NETCONSOLE_DYNAMIC without caring
->> about if you have configured CONFIGFS_FS=y, which seems better.
+>> As the overall feeling at the time was "don't use large initrds" it's
+>> something I've never really cared about - and I'm still of the opinion
+>> that 16MB of compressed initrd/initramfs is rather silly.
 >
-> You mean commit d9f9ab51e55e36379773752ffeaac677b080d469?
-
-That commit show "select CONFIGFS_FS" is the wrong way :(
-
->
-> Thanks,
-> Yong
->
-> --
-> Only stand for myself
+> It is... but we have more than 32MB of RAM total now, and people are
+> running standard distributions on ARM these days, such as Fedora or
+> Ubuntu, including their corresponding initrd that may contain lots of
+> modules, splashscreen data, etc. †So it might be a good idea to think
+> about fixing this limitation before it comes back again.
 >
 
+in fact it is not just the initrd/initramfs size, i am facing issues
+with loading modules on MMU-less envt(Cortex M3).
+I have 128MB of Physical RAM and i am using a 4MB initrd to boot my
+system. when i try to load kernel modules i get relocation errors.
+As MMU-less systems are allowing modules to be loaded anywhere from
+RAM and not from any predefined limits of MODULES_VADDR and
+MODULES_END.
 
+Do you have any pointers on how to tackle this situation for MMU less
+environments?
 
--- 
-Only stand for myself
+Regards,
+Sachin.
