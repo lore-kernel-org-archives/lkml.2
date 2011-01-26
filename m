@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753027Ab1AZQcH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 11:32:07 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59346 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752615Ab1AZQcF (ORCPT
+	id S1753398Ab1AZQeB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 11:34:01 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53031 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752705Ab1AZQeA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 11:32:05 -0500
-Date: Wed, 26 Jan 2011 16:32:04 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Dr. Bernd Feige" <bernd.feige@uniklinik-freiburg.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Linux 2.6.37 x86 ncpfs regression: kernel BUG at
- include/linux/dcache.h:340 with >1366 files in directory
-Message-ID: <20110126163203.GP22723@ZenIV.linux.org.uk>
-References: <1296053700.2684.19.camel@pst15.ukl.uni-freiburg.de>
+	Wed, 26 Jan 2011 11:34:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=sGkIvdle7SFPr+CLPd9z3jO20FJ/JgW9x0eClx+feNHg4B5awzDywRORFdOIlKCHkC
+         tCIK4EgYz/b2aoNWU7bx9Jk+OA1hWnLDmI/Ve4V7rOPtYCQ3wcQzO3rv/8V5F9lIPLhc
+         IHPNuLmISxOfgvdtAxdUr8+K1AfdamlARkoSY=
+Date: Wed, 26 Jan 2011 17:23:12 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel <linux-kernel@vger.kernel.org>,
+        stable@kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Miller <davem@davemloft.net>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf: fix alloc_callchain_buffers()
+Message-ID: <20110126162309.GB1757@nowhere>
+References: <1295980851.3588.351.camel@edumazet-laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1296053700.2684.19.camel@pst15.ukl.uni-freiburg.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1295980851.3588.351.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 26, 2011 at 03:55:00PM +0100, Dr. Bernd Feige wrote:
-> Hi,
+On Tue, Jan 25, 2011 at 07:40:51PM +0100, Eric Dumazet wrote:
+> Commit 927c7a9e92c4 ( perf: Fix race in callchains ) introduced a
+> mismatch in the sizing of struct callchain_cpus_entries.
 > 
-> On 2.6.37 I get the following when listing one of our Novell directories
-> containing 9499 files (no subdirs; note that this works fine on
-> 2.6.36.x):
+> nr_cpu_ids must be used instead of num_possible_cpus(), or we might get
+> out of bound memory accesses on some machines.
+> 
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> CC: Frederic Weisbecker <fweisbec@gmail.com>
+> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> CC: Arnaldo Carvalho de Melo <acme@redhat.com>
+> CC: David Miller <davem@davemloft.net>
+> CC: Stephane Eranian <eranian@google.com>
+> CC: stable@kernel.org
 
-Plain .37?  Not .38-rc1?
-
-> I assumed that the changes to ncpfs in 2.6.37 caused this, but reverting
-> them did not solve the problem. Turning off preemption and group
-> scheduling did not help either. So I'm lost and my spare time is running
-> out, thought I'd report it nonetheless.
-
-3825bdb7ed920845961f32f364454bee5f469abb may be a suspect...
+Good catch, thanks!
