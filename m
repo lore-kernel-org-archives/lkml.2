@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253Ab1AZHXQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 02:23:16 -0500
-Received: from hera.kernel.org ([140.211.167.34]:53366 "EHLO hera.kernel.org"
+	id S1752715Ab1AZHXc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 02:23:32 -0500
+Received: from hera.kernel.org ([140.211.167.34]:53384 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750826Ab1AZHXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 02:23:13 -0500
-Date: Wed, 26 Jan 2011 07:22:38 GMT
+	id S1752725Ab1AZHXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 02:23:30 -0500
+Date: Wed, 26 Jan 2011 07:23:00 GMT
 From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
@@ -18,67 +18,70 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
         fbuihuu@gmail.com, masami.hiramatsu.pt@hitachi.com,
         rostedt@goodmis.org, srikar@linux.vnet.ibm.com, tglx@linutronix.de,
         mingo@elte.hu
-In-Reply-To: <20110113124604.22426.48873.stgit@ltc236.sdl.hitachi.co.jp>
-References: <20110113124604.22426.48873.stgit@ltc236.sdl.hitachi.co.jp>
+In-Reply-To: <20110113124611.22426.10835.stgit@ltc236.sdl.hitachi.co.jp>
+References: <20110113124611.22426.10835.stgit@ltc236.sdl.hitachi.co.jp>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf probe: Enable to put probe inline function call site
-Message-ID: <tip-5069ed86be3c2f28bcdf7fae1374ec0c325aafba@git.kernel.org>
-Git-Commit-ID: 5069ed86be3c2f28bcdf7fae1374ec0c325aafba
+Subject: [tip:perf/core] perf probe: Add --funcs to show available functions in symtab
+Message-ID: <tip-e80711ca8512c8586da0c3e18e2f1caf73c88731@git.kernel.org>
+Git-Commit-ID: e80711ca8512c8586da0c3e18e2f1caf73c88731
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 26 Jan 2011 07:22:38 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 26 Jan 2011 07:23:01 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5069ed86be3c2f28bcdf7fae1374ec0c325aafba
-Gitweb:     http://git.kernel.org/tip/5069ed86be3c2f28bcdf7fae1374ec0c325aafba
+Commit-ID:  e80711ca8512c8586da0c3e18e2f1caf73c88731
+Gitweb:     http://git.kernel.org/tip/e80711ca8512c8586da0c3e18e2f1caf73c88731
 Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Thu, 13 Jan 2011 21:46:05 +0900
+AuthorDate: Thu, 13 Jan 2011 21:46:11 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 24 Jan 2011 10:57:03 -0200
+CommitDate: Mon, 24 Jan 2011 10:57:55 -0200
 
-perf probe: Enable to put probe inline function call site
+perf probe: Add --funcs to show available functions in symtab
 
-Enable to put probe inline function call site. This will increase line-based
-probe-ability.
+Add --funcs to show available functions in symtab.
 
-<Without this patch>
-$ ./perf probe -L schedule:48
-<schedule:48>
-                pre_schedule(rq, prev);
+Originally this feature came from Srikar's uprobes patches
+( http://lkml.org/lkml/2010/8/27/244 )
 
-     50         if (unlikely(!rq->nr_running))
-                        idle_balance(cpu, rq);
+e.g.
+...
+__ablkcipher_walk_complete
+__absent_pages_in_range
+__account_scheduler_latency
+__add_pages
+__alloc_pages_nodemask
+__alloc_percpu
+__alloc_reserved_percpu
+__alloc_skb
+__alloc_workqueue_key
+__any_online_cpu
+__ata_ehi_push_desc
+...
 
-                put_prev_task(rq, prev);
-                next = pick_next_task(rq);
+This also supports symbols in module, e.g.
 
-     56         if (likely(prev != next)) {
-                        sched_info_switch(prev, next);
-                        trace_sched_switch_out(prev, next);
-                        perf_event_task_sched_out(prev, next);
+...
+cleanup_module
+cpuid_maxphyaddr
+emulate_clts
+emulate_instruction
+emulate_int_real
+emulate_invlpg
+emulator_get_dr
+emulator_set_dr
+emulator_task_switch
+emulator_write_emulated
+emulator_write_phys
+fx_init
+...
 
-<With this patch>
-$ ./perf probe -L schedule:48
-<schedule:48>
-     48         pre_schedule(rq, prev);
-
-     50         if (unlikely(!rq->nr_running))
-     51                 idle_balance(cpu, rq);
-
-     53         put_prev_task(rq, prev);
-     54         next = pick_next_task(rq);
-
-     56         if (likely(prev != next)) {
-     57                 sched_info_switch(prev, next);
-     58                 trace_sched_switch_out(prev, next);
-     59                 perf_event_task_sched_out(prev, next);
-
+Original-patch-from: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: 2nddept-manager@sdl.hitachi.co.jp
 Cc: Franck Bui-Huu <fbuihuu@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -86,97 +89,205 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-LKML-Reference: <20110113124604.22426.48873.stgit@ltc236.sdl.hitachi.co.jp>
+LKML-Reference: <20110113124611.22426.10835.stgit@ltc236.sdl.hitachi.co.jp>
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+[ committer note: Add missing elf.h for STB_GLOBAL that broke a RHEL4 build ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/probe-finder.c |   56 ++++++++++++++++++++++++++++++++++-----
- 1 files changed, 48 insertions(+), 8 deletions(-)
+ tools/perf/Documentation/perf-probe.txt |    4 ++
+ tools/perf/builtin-probe.c              |   29 +++++++++++++-
+ tools/perf/util/probe-event.c           |   68 ++++++++++++++++++++++++++++++-
+ tools/perf/util/probe-event.h           |    1 +
+ 4 files changed, 99 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 508c017..69215bf 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -280,6 +280,19 @@ static bool die_compare_name(Dwarf_Die *dw_die, const char *tname)
- 	return name ? (strcmp(tname, name) == 0) : false;
- }
+diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
+index 86b797a..fcc51fe 100644
+--- a/tools/perf/Documentation/perf-probe.txt
++++ b/tools/perf/Documentation/perf-probe.txt
+@@ -73,6 +73,10 @@ OPTIONS
+ 	(Only for --vars) Show external defined variables in addition to local
+ 	variables.
  
-+/* Get callsite line number of inline-function instance */
-+static int die_get_call_lineno(Dwarf_Die *in_die)
-+{
-+	Dwarf_Attribute attr;
-+	Dwarf_Word ret;
++-F::
++--funcs::
++	Show available functions in given module or kernel.
 +
-+	if (!dwarf_attr(in_die, DW_AT_call_line, &attr))
-+		return -ENOENT;
-+
-+	dwarf_formudata(&attr, &ret);
-+	return (int)ret;
-+}
-+
- /* Get type die */
- static Dwarf_Die *die_get_type(Dwarf_Die *vr_die, Dwarf_Die *die_mem)
- {
-@@ -463,27 +476,54 @@ typedef int (* line_walk_handler_t) (const char *fname, int lineno,
- 				     Dwarf_Addr addr, void *data);
- 
- struct __line_walk_param {
-+	const char *fname;
- 	line_walk_handler_t handler;
- 	void *data;
- 	int retval;
+ -f::
+ --force::
+ 	Forcibly add events with existing name.
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index add163c..6cf708a 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -52,6 +52,7 @@ static struct {
+ 	bool show_lines;
+ 	bool show_vars;
+ 	bool show_ext_vars;
++	bool show_funcs;
+ 	bool mod_events;
+ 	int nevents;
+ 	struct perf_probe_event events[MAX_PROBES];
+@@ -221,6 +222,8 @@ static const struct option options[] = {
+ 	OPT__DRY_RUN(&probe_event_dry_run),
+ 	OPT_INTEGER('\0', "max-probes", &params.max_probe_points,
+ 		 "Set how many probe points can be found for a probe."),
++	OPT_BOOLEAN('F', "funcs", &params.show_funcs,
++		    "Show potential probe-able functions."),
+ 	OPT_END()
  };
  
--/* Walk on decl lines in given DIE */
-+static int __die_walk_funclines_cb(Dwarf_Die *in_die, void *data)
-+{
-+	struct __line_walk_param *lw = data;
-+	Dwarf_Addr addr;
-+	int lineno;
-+
-+	if (dwarf_tag(in_die) == DW_TAG_inlined_subroutine) {
-+		lineno = die_get_call_lineno(in_die);
-+		if (lineno > 0 && dwarf_entrypc(in_die, &addr) == 0) {
-+			lw->retval = lw->handler(lw->fname, lineno, addr,
-+						 lw->data);
-+			if (lw->retval != 0)
-+				return DIE_FIND_CB_FOUND;
-+		}
-+	}
-+	return DIE_FIND_CB_SIBLING;
-+}
-+
-+/* Walk on lines of blocks included in given DIE */
- static int __die_walk_funclines(Dwarf_Die *sp_die,
- 				line_walk_handler_t handler, void *data)
- {
--	const char *fname;
-+	struct __line_walk_param lw = {
-+		.handler = handler,
-+		.data = data,
-+		.retval = 0,
-+	};
-+	Dwarf_Die die_mem;
- 	Dwarf_Addr addr;
--	int lineno, ret = 0;
-+	int lineno;
+@@ -246,7 +249,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
+ 		params.max_probe_points = MAX_PROBES;
  
- 	/* Handle function declaration line */
--	fname = dwarf_decl_file(sp_die);
--	if (fname && dwarf_decl_line(sp_die, &lineno) == 0 &&
-+	lw.fname = dwarf_decl_file(sp_die);
-+	if (lw.fname && dwarf_decl_line(sp_die, &lineno) == 0 &&
- 	    dwarf_entrypc(sp_die, &addr) == 0) {
--		ret = handler(fname, lineno, addr, data);
-+		lw.retval = handler(lw.fname, lineno, addr, data);
-+		if (lw.retval != 0)
-+			goto done;
+ 	if ((!params.nevents && !params.dellist && !params.list_events &&
+-	     !params.show_lines))
++	     !params.show_lines && !params.show_funcs))
+ 		usage_with_options(probe_usage, options);
+ 
+ 	/*
+@@ -267,12 +270,36 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
+ 			pr_err(" Error: Don't use --list with --vars.\n");
+ 			usage_with_options(probe_usage, options);
+ 		}
++		if (params.show_funcs) {
++			pr_err("  Error: Don't use --list with --funcs.\n");
++			usage_with_options(probe_usage, options);
++		}
+ 		ret = show_perf_probe_events();
+ 		if (ret < 0)
+ 			pr_err("  Error: Failed to show event list. (%d)\n",
+ 			       ret);
+ 		return ret;
  	}
--
--	return ret;
-+	die_find_child(sp_die, __die_walk_funclines_cb, &lw, &die_mem);
-+done:
-+	return lw.retval;
++	if (params.show_funcs) {
++		if (params.nevents != 0 || params.dellist) {
++			pr_err("  Error: Don't use --funcs with"
++			       " --add/--del.\n");
++			usage_with_options(probe_usage, options);
++		}
++		if (params.show_lines) {
++			pr_err("  Error: Don't use --funcs with --line.\n");
++			usage_with_options(probe_usage, options);
++		}
++		if (params.show_vars) {
++			pr_err("  Error: Don't use --funcs with --vars.\n");
++			usage_with_options(probe_usage, options);
++		}
++		ret = show_available_funcs(params.target_module);
++		if (ret < 0)
++			pr_err("  Error: Failed to show functions."
++			       " (%d)\n", ret);
++		return ret;
++	}
+ 
+ #ifdef DWARF_SUPPORT
+ 	if (params.show_lines) {
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 6e29d9c..859d377 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -31,6 +31,7 @@
+ #include <string.h>
+ #include <stdarg.h>
+ #include <limits.h>
++#include <elf.h>
+ 
+ #undef _GNU_SOURCE
+ #include "util.h"
+@@ -111,7 +112,25 @@ static struct symbol *__find_kernel_function_by_name(const char *name,
+ 						     NULL);
  }
  
- static int __die_walk_culines_cb(Dwarf_Die *sp_die, void *data)
+-const char *kernel_get_module_path(const char *module)
++static struct map *kernel_get_module_map(const char *module)
++{
++	struct rb_node *nd;
++	struct map_groups *grp = &machine.kmaps;
++
++	if (!module)
++		module = "kernel";
++
++	for (nd = rb_first(&grp->maps[MAP__FUNCTION]); nd; nd = rb_next(nd)) {
++		struct map *pos = rb_entry(nd, struct map, rb_node);
++		if (strncmp(pos->dso->short_name + 1, module,
++			    pos->dso->short_name_len - 2) == 0) {
++			return pos;
++		}
++	}
++	return NULL;
++}
++
++static struct dso *kernel_get_module_dso(const char *module)
+ {
+ 	struct dso *dso;
+ 	struct map *map;
+@@ -141,7 +160,13 @@ const char *kernel_get_module_path(const char *module)
+ 		}
+ 	}
+ found:
+-	return dso->long_name;
++	return dso;
++}
++
++const char *kernel_get_module_path(const char *module)
++{
++	struct dso *dso = kernel_get_module_dso(module);
++	return (dso) ? dso->long_name : NULL;
+ }
+ 
+ #ifdef DWARF_SUPPORT
+@@ -1913,3 +1938,42 @@ int del_perf_probe_events(struct strlist *dellist)
+ 	return ret;
+ }
+ 
++/*
++ * If a symbol corresponds to a function with global binding return 0.
++ * For all others return 1.
++ */
++static int filter_non_global_functions(struct map *map __unused,
++					struct symbol *sym)
++{
++	if (sym->binding != STB_GLOBAL)
++		return 1;
++
++	return 0;
++}
++
++int show_available_funcs(const char *module)
++{
++	struct map *map;
++	int ret;
++
++	setup_pager();
++
++	ret = init_vmlinux();
++	if (ret < 0)
++		return ret;
++
++	map = kernel_get_module_map(module);
++	if (!map) {
++		pr_err("Failed to find %s map.\n", (module) ? : "kernel");
++		return -EINVAL;
++	}
++	if (map__load(map, filter_non_global_functions)) {
++		pr_err("Failed to load map.\n");
++		return -EINVAL;
++	}
++	if (!dso__sorted_by_name(map->dso, map->type))
++		dso__sort_by_name(map->dso, map->type);
++
++	dso__fprintf_symbols_by_name(map->dso, map->type, stdout);
++	return 0;
++}
+diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
+index 5accbed..1fb4f18 100644
+--- a/tools/perf/util/probe-event.h
++++ b/tools/perf/util/probe-event.h
+@@ -127,6 +127,7 @@ extern int show_line_range(struct line_range *lr, const char *module);
+ extern int show_available_vars(struct perf_probe_event *pevs, int npevs,
+ 			       int max_probe_points, const char *module,
+ 			       bool externs);
++extern int show_available_funcs(const char *module);
+ 
+ 
+ /* Maximum index number of event-name postfix */
