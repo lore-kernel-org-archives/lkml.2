@@ -1,42 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339Ab1AZXWT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 18:22:19 -0500
-Received: from trent.utfs.org ([194.246.123.103]:59593 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753988Ab1AZXWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 18:22:18 -0500
-Date: Wed, 26 Jan 2011 15:22:14 -0800 (PST)
-From: Christian Kujau <lists@nerdbynature.de>
-To: "Dr. Bernd Feige" <bernd.feige@uniklinik-freiburg.de>
-cc: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-        david@fromorbit.com, npiggin@gmail.com
-Subject: Re: Linux 2.6.37 x86 ncpfs regression: kernel BUG at include/linux/dcache.h:340
- with >1366 files in directory
-In-Reply-To: <1296062778.2674.2.camel@pst15.ukl.uni-freiburg.de>
-Message-ID: <alpine.DEB.2.01.1101261457480.7903@trent.utfs.org>
-References: <1296053700.2684.19.camel@pst15.ukl.uni-freiburg.de>  <20110126163203.GP22723@ZenIV.linux.org.uk>  <1296061412.2684.59.camel@pst15.ukl.uni-freiburg.de> <1296062778.2674.2.camel@pst15.ukl.uni-freiburg.de>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+	id S1754379Ab1AZXav (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 18:30:51 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:25676 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754331Ab1AZXat (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 18:30:49 -0500
+From: Mandeep Singh Baines <msb@chromium.org>
+To: gregkh@suse.de, rjw@sisk.pl, mingo@redhat.com, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        Mandeep Singh Baines <msb@chromium.org>
+Subject: [PATCH 3/6] PM: use appropriate printk priority level
+Date: Wed, 26 Jan 2011 15:29:27 -0800
+Message-Id: <1296084570-31453-4-git-send-email-msb@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <20110125235700.GR8008@google.com>
+References: <20110125235700.GR8008@google.com>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Jan 2011 at 18:26, Dr. Bernd Feige wrote:
-> my apologies. You hit the nail on the head! Of course plain 2.6.37
-> contains 3825bdb7ed920845961f32f364454bee5f469abb - downloaded it again,
-> reverted it, and no "kernel BUG" any more!
+printk()s without a priority level default to KERN_WARNING. To reduce
+noise at KERN_WARNING, this patch set the priority level appriopriately
+for unleveled printks()s. This should be useful to folks that look at
+dmesg warnings closely.
 
-Hasn't there been an earlier 
-attempt[0] to remove 3825bdb7ed920845961f32f364454bee5f469abb back in Nov 
-2010?
+Changed these messages to pr_info. But might be more appropriate as
+pr_debug.
 
-Christian.
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+---
+ drivers/base/power/trace.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-[0] http://www.gossamer-threads.com/lists/linux/kernel/1308598
+diff --git a/drivers/base/power/trace.c b/drivers/base/power/trace.c
+index 9f4258d..c80e138 100644
+--- a/drivers/base/power/trace.c
++++ b/drivers/base/power/trace.c
+@@ -112,7 +112,7 @@ static unsigned int read_magic_time(void)
+ 	unsigned int val;
+ 
+ 	get_rtc_time(&time);
+-	printk("Time: %2d:%02d:%02d  Date: %02d/%02d/%02d\n",
++	pr_info("Time: %2d:%02d:%02d  Date: %02d/%02d/%02d\n",
+ 		time.tm_hour, time.tm_min, time.tm_sec,
+ 		time.tm_mon + 1, time.tm_mday, time.tm_year % 100);
+ 	val = time.tm_year;				/* 100 years */
+@@ -179,7 +179,7 @@ static int show_file_hash(unsigned int value)
+ 		unsigned int hash = hash_string(lineno, file, FILEHASH);
+ 		if (hash != value)
+ 			continue;
+-		printk("  hash matches %s:%u\n", file, lineno);
++		pr_info("  hash matches %s:%u\n", file, lineno);
+ 		match++;
+ 	}
+ 	return match;
+@@ -255,7 +255,7 @@ static int late_resume_init(void)
+ 	val = val / FILEHASH;
+ 	dev = val /* % DEVHASH */;
+ 
+-	printk("  Magic number: %d:%d:%d\n", user, file, dev);
++	pr_info("  Magic number: %d:%d:%d\n", user, file, dev);
+ 	show_file_hash(file);
+ 	show_dev_hash(dev);
+ 	return 0;
 -- 
-BOFH excuse #243:
+1.7.3.1
 
-The computer fleetly, mouse and all.
