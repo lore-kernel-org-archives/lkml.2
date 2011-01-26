@@ -1,183 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205Ab1AZL5s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 06:57:48 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:58602 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134Ab1AZL5r (ORCPT
+	id S1753160Ab1AZMBD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 07:01:03 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:20962 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313Ab1AZMBA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 06:57:47 -0500
-Date: Wed, 26 Jan 2011 13:00:56 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH 1/7] sysdev: Do not register with sysdev when erroring
- on add
-Message-ID: <20110126120056.GA25525@aftab>
-References: <1295882943-11184-1-git-send-email-bp@amd64.org>
- <1295882943-11184-2-git-send-email-bp@amd64.org>
+	Wed, 26 Jan 2011 07:01:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=O0GUNU+a+pdlV3dIkz8dg329SCtQNNeLz73iCY5Pll10S2LNE9/J2sncltfqTJMGc6
+         3owk8YzPrg5G4LBVd2vQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295882943-11184-2-git-send-email-bp@amd64.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110126113740.GA13911@elte.hu>
+References: <201101062000.p06K0ESw011195@hera.kernel.org>
+	<20110126113740.GA13911@elte.hu>
+Date: Wed, 26 Jan 2011 13:00:56 +0100
+Message-ID: <AANLkTintgqOkwo=WRH_9vGwGgXf0XrfU2e++daUOOG=i@mail.gmail.com>
+Subject: Re: perf, x86: Provide a PEBS capable cycle event
+From: Stephane Eranian <eranian@google.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24, 2011 at 10:28:57AM -0500, Borislav Petkov wrote:
-> From: Borislav Petkov <borislav.petkov@amd.com>
-> 
-> When encountering an error while executing the driver's ->add method, we
-> should cancel registration and unwind what we've regged so far. The low
-> level ->add methods do return proper error codes but those aren't looked
-> at in sysdev_driver_register(). Fix that by sharing the unregistering
-> code.
-> 
-> Also, fixup warning messages formatting while at it.
-> 
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+On Wed, Jan 26, 2011 at 12:37 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Linux Kernel Mailing List <linux-kernel@vger.kernel.org> wrote:
+>
+>> Gitweb:     http://git.kernel.org/linus/7639dae0ca11038286bbbcda05f2bef601c1eb8d
+>> Commit:     7639dae0ca11038286bbbcda05f2bef601c1eb8d
+>> Parent:     abe43400579d5de0078c2d3a760e6598e183f871
+>> Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+>> AuthorDate: Tue Dec 14 21:26:40 2010 +0100
+>> Committer:  Ingo Molnar <mingo@elte.hu>
+>> CommitDate: Thu Dec 16 11:36:44 2010 +0100
+>>
+>>     perf, x86: Provide a PEBS capable cycle event
+>>
+>>     Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>>     LKML-Reference: <new-submission>
+>>     Signed-off-by: Ingo Molnar <mingo@elte.hu>
+>> ---
+>>  arch/x86/kernel/cpu/perf_event_intel.c |   26 ++++++++++++++++++++++++++
+>>  1 files changed, 26 insertions(+), 0 deletions(-)
+>
+> btw., precise profiling via PEBS:
+>
+>  perf record -e cycles:p ...
+>
+> works pretty nicely now on Nehalem CPUs and later.
+>
+The problem is that cycles:p is not equivalent to cycles in terms of how
+cycles are counted. cycles counts only unhalted cycles. cycles:p counts
+ALL cycles, event when the CPU is in halted state.
 
-Greg, can I get an ACK/NACK please :) ?
+Thus, in per-thread mode, I believe you, it works.
 
-Also, whether it is ok to go through -tip?
+In system-wide, it all depends on how the kernel is configured w.r.t. to idle
+and what your workload does. If you know you're never going idle on any
+of the monitored CPUs during the measurement, then you're fine.
 
-Thanks.
+Otherwise, you have a distortion. You can get samples from halted CPUs,
+likely pointing to the idle routine.
 
-> ---
->  drivers/base/sys.c |   65 ++++++++++++++++++++++++++++++++++++---------------
->  1 files changed, 46 insertions(+), 19 deletions(-)
-> 
-> diff --git a/drivers/base/sys.c b/drivers/base/sys.c
-> index 1667aaf..f6fb547 100644
-> --- a/drivers/base/sys.c
-> +++ b/drivers/base/sys.c
-> @@ -166,6 +166,36 @@ EXPORT_SYMBOL_GPL(sysdev_class_unregister);
->  
->  static DEFINE_MUTEX(sysdev_drivers_lock);
->  
-> +/*
-> + * @dev != NULL means that we're unwinding because some drv->add()
-> + * failed for some reason. You need to grab sysdev_drivers_lock before
-> + * calling this.
-> + */
-> +static void __sysdev_driver_remove(struct sysdev_class *cls,
-> +				   struct sysdev_driver *drv,
-> +				   struct sys_device *from_dev)
-> +{
-> +	struct sys_device *dev = from_dev;
-> +
-> +	list_del_init(&drv->entry);
-> +	if (!cls)
-> +		return;
-> +
-> +	if (!drv->remove)
-> +		goto kset_put;
-> +
-> +	if (dev)
-> +		list_for_each_entry_continue_reverse(dev, &cls->kset.list,
-> +						     kobj.entry)
-> +			drv->remove(dev);
-> +	else
-> +		list_for_each_entry(dev, &cls->kset.list, kobj.entry)
-> +			drv->remove(dev);
-> +
-> +kset_put:
-> +	kset_put(&cls->kset);
-> +}
-> +
->  /**
->   *	sysdev_driver_register - Register auxillary driver
->   *	@cls:	Device class driver belongs to.
-> @@ -175,14 +205,14 @@ static DEFINE_MUTEX(sysdev_drivers_lock);
->   *	called on each operation on devices of that class. The refcount
->   *	of @cls is incremented.
->   */
-> -
->  int sysdev_driver_register(struct sysdev_class *cls, struct sysdev_driver *drv)
->  {
-> +	struct sys_device *dev = NULL;
->  	int err = 0;
->  
->  	if (!cls) {
-> -		WARN(1, KERN_WARNING "sysdev: invalid class passed to "
-> -			"sysdev_driver_register!\n");
-> +		WARN(1, KERN_WARNING "sysdev: invalid class passed to %s!\n",
-> +			__func__);
->  		return -EINVAL;
->  	}
->  
-> @@ -198,19 +228,27 @@ int sysdev_driver_register(struct sysdev_class *cls, struct sysdev_driver *drv)
->  
->  		/* If devices of this class already exist, tell the driver */
->  		if (drv->add) {
-> -			struct sys_device *dev;
-> -			list_for_each_entry(dev, &cls->kset.list, kobj.entry)
-> -				drv->add(dev);
-> +			list_for_each_entry(dev, &cls->kset.list, kobj.entry) {
-> +				err = drv->add(dev);
-> +				if (err)
-> +					goto unwind;
-> +			}
->  		}
->  	} else {
->  		err = -EINVAL;
->  		WARN(1, KERN_ERR "%s: invalid device class\n", __func__);
->  	}
-> +
-> +	goto unlock;
-> +
-> +unwind:
-> +	__sysdev_driver_remove(cls, drv, dev);
-> +
-> +unlock:
->  	mutex_unlock(&sysdev_drivers_lock);
->  	return err;
->  }
->  
-> -
->  /**
->   *	sysdev_driver_unregister - Remove an auxillary driver.
->   *	@cls:	Class driver belongs to.
-> @@ -220,23 +258,12 @@ void sysdev_driver_unregister(struct sysdev_class *cls,
->  			      struct sysdev_driver *drv)
->  {
->  	mutex_lock(&sysdev_drivers_lock);
-> -	list_del_init(&drv->entry);
-> -	if (cls) {
-> -		if (drv->remove) {
-> -			struct sys_device *dev;
-> -			list_for_each_entry(dev, &cls->kset.list, kobj.entry)
-> -				drv->remove(dev);
-> -		}
-> -		kset_put(&cls->kset);
-> -	}
-> +	__sysdev_driver_remove(cls, drv, NULL);
->  	mutex_unlock(&sysdev_drivers_lock);
->  }
-> -
->  EXPORT_SYMBOL_GPL(sysdev_driver_register);
->  EXPORT_SYMBOL_GPL(sysdev_driver_unregister);
->  
-> -
-> -
->  /**
->   *	sysdev_register - add a system device to the tree
->   *	@sysdev:	device in question
-> -- 
-> 1.7.4.rc2
-> 
-> 
+If your system uses idle=poll, then you are okay. Otherwise, the problem
+mentioned above applies.
 
--- 
-Regards/Gruss,
-Boris.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+> Could we perhaps make perf record and perf top default to cycles:p on x86, and
+> silently fall back to regular cycles events if the CPU does not support this event
+> type?
+>
+> That would make our profiles more precise by default - without users having to do
+> anything funky.
+>
+> Thanks,
+>
+>        Ingo
+>
