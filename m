@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158Ab1AZWHH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 17:07:07 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54013 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752966Ab1AZWHG (ORCPT
+	id S1754285Ab1AZWHu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 17:07:50 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:56957 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753853Ab1AZWHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 17:07:06 -0500
-Date: Wed, 26 Jan 2011 14:06:18 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        balbir@linux.vnet.ibm.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>, stable@kernel.org
-Subject: Re: [PATCH] memsw: handle swapaccount kernel parameter correctly
-Message-Id: <20110126140618.8e09cd23.akpm@linux-foundation.org>
-In-Reply-To: <20110126152158.GA4144@tiehlicka.suse.cz>
-References: <20110126152158.GA4144@tiehlicka.suse.cz>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Jan 2011 17:07:49 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=rDUJnfeyMMytxg1HrYYkn5K1zr20JfJMcWDMBq1qwtTsfXm1MAc6lLDzqMiZR8aTrs
+         P+PslW0+uA+nsSKI9shQrlqpkKR7QxomPEA2aGsWUnUF5deqS6XJcuZoqbt7BxJg8ufL
+         9oQXiGcThhx1r9/OS+/MbJJHI61eY3VQP3Spo=
+Date: Wed, 26 Jan 2011 14:07:41 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils ?
+Message-ID: <20110126220741.GB29484@core.coreip.homeip.net>
+References: <20110125232914.GA20130@core.coreip.homeip.net>
+ <20110126020003.GA23085@core.coreip.homeip.net>
+ <4D403855.4050706@teksavvy.com>
+ <4D405A9D.4070607@redhat.com>
+ <4D4076FD.6070207@teksavvy.com>
+ <20110126194127.GE29268@core.coreip.homeip.net>
+ <4D407A46.4080407@teksavvy.com>
+ <20110126195011.GF29268@core.coreip.homeip.net>
+ <4D4094F3.3020607@teksavvy.com>
+ <4D4096DA.804@teksavvy.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D4096DA.804@teksavvy.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Jan 2011 16:21:58 +0100
-Michal Hocko <mhocko@suse.cz> wrote:
+On Wed, Jan 26, 2011 at 04:49:14PM -0500, Mark Lord wrote:
+> Or perhaps get rid of that unworkable "version number" thing
+> (just freeze it in time with the 2.6.35 value returned),
+> and implement a "get_feature_flags" ioctl or something for going forward.
+> Then you can just turn on new bits in the flags as new features are added.
+>
 
-> I am sorry but the patch which added swapaccount parameter is not
-> correct (we have discussed it https://lkml.org/lkml/2010/11/16/103).
-> I didn't get the way how __setup parameters are handled correctly.
-> The patch bellow fixes that.
-> 
-> I am CCing stable as well because the patch got into .37 kernel.
-> 
-> ---
-> >From 144c2e8aed27d82d48217896ee1f58dbaa7f1f84 Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Wed, 26 Jan 2011 14:12:41 +0100
-> Subject: [PATCH] memsw: handle swapaccount kernel parameter correctly
-> 
-> __setup based kernel command line parameters handled in
-> obsolete_checksetup provides the parameter value including = (more
-> precisely everything right after the parameter name) so we have to check
-> for =0 resp. =1 here. If no value is given then we get an empty string
-> rather then NULL.
+That could be done but I do not expect retire features so far so version
+is about the same. Plus, what guarantees that someone in the future
+won't write a utility that compares exact capability bitmap and refuse
+to work when new ones will be added?
 
-This doesn't provide a description of the bug which just got fixed.
-
->From reading the code I think the current behaviour is
-
-"swapaccount": works OK
-"noswapaccount": works OK
-"swapaccount=0": doesn't do anything
-"swapaccount=1": doesn't do anything
-
-but I might be wrong about that.  Please send a changelog update to
-clarify all this.
-
+-- 
+Dmitry
