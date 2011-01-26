@@ -1,60 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901Ab1AZIs4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 03:48:56 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:54128 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751685Ab1AZIsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 03:48:55 -0500
-Message-ID: <4D3FDFFC.6030304@cn.fujitsu.com>
-Date: Wed, 26 Jan 2011 16:49:00 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1752935Ab1AZIu6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 03:50:58 -0500
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:44325 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752653Ab1AZIu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 03:50:57 -0500
+Date: Wed, 26 Jan 2011 14:07:43 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Linux-mm <linux-mm@kvack.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 4/20]  4: uprobes: Adding and
+ remove a uprobe in a rb tree.
+Message-ID: <20110126083743.GC19725@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
+ <20101216095803.23751.41491.sendpatchset@localhost6.localdomain6>
+ <1295957740.28776.718.camel@laptop>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] compile time initialization for event flags value
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-01-26 16:48:16,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-01-26 16:48:17,
-	Serialize complete at 2011-01-26 16:48:17
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1295957740.28776.718.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-compile time initialization is better than runtime initialization.
+> > +       spin_lock_irqsave(&treelock, flags);
+> > +       while (*p) {
+> > +               parent = *p;
+> > +               u = rb_entry(parent, struct uprobe, rb_node);
+> > +               if (u->inode > uprobe->inode)
+> > +                       p = &(*p)->rb_left;
+> > +               else if (u->inode < uprobe->inode)
+> > +                       p = &(*p)->rb_right;
+> > +               else {
+> > +                       if (u->offset > uprobe->offset)
+> > +                               p = &(*p)->rb_left;
+> > +                       else if (u->offset < uprobe->offset)
+> > +                               p = &(*p)->rb_right;
+> > +                       else {
+> > +                               atomic_inc(&u->ref);
+> 
+> If the lookup can find a 'dead' entry, then why can't we here?
+> 
 
-impact: remove many early_initcall()s and many trace_init_flags_##name()s.
+If a new user of a uprobe comes up as when the last registered user was
+removing the uprobe, we keep the uprobe entry till the new user
+loses interest in that uprobe.
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 18cd068..ff074c8 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -135,8 +135,8 @@ extern struct trace_event_functions exit_syscall_print_funcs;
- 		.class			= &event_class_syscall_enter,	\
- 		.event.funcs            = &enter_syscall_print_funcs,	\
- 		.data			= (void *)&__syscall_meta_##sname,\
--	};								\
--	__TRACE_EVENT_FLAGS(enter_##sname, TRACE_EVENT_FL_CAP_ANY)
-+		.flags			= TRACE_EVENT_FL_CAP_ANY,	\
-+	};
- 
- #define SYSCALL_TRACE_EXIT_EVENT(sname)					\
- 	static struct syscall_metadata					\
-@@ -149,8 +149,8 @@ extern struct trace_event_functions exit_syscall_print_funcs;
- 		.class			= &event_class_syscall_exit,	\
- 		.event.funcs		= &exit_syscall_print_funcs,	\
- 		.data			= (void *)&__syscall_meta_##sname,\
--	};								\
--	__TRACE_EVENT_FLAGS(exit_##sname, TRACE_EVENT_FL_CAP_ANY)
-+		.flags			= TRACE_EVENT_FL_CAP_ANY,	\
-+	};
- 
- #define SYSCALL_METADATA(sname, nb)				\
- 	SYSCALL_TRACE_ENTER_EVENT(sname);			\
+> > +                               goto unlock_return;
+> > +                       }
+> > +               }
+> > +       }
+> > +       u = NULL;
+> > +       rb_link_node(&uprobe->rb_node, parent, p);
+> > +       rb_insert_color(&uprobe->rb_node, &uprobes_tree);
+> > +       atomic_set(&uprobe->ref, 2);
+> > +
+> > +unlock_return:
+> > +       spin_unlock_irqrestore(&treelock, flags);
+> > +       return u;
+> > +} 
+> 
+> It would be nice if you could merge the find and 'acquire' thing, the
+> lookup is basically the same in both cases.
+> 
+> Also, I'm not quite sure on the name of that last function, its not a
+> strict insert and what's the trailing _rb_node about? That lookup isn't
+> called find_uprobe_rb_node() either is it?
+
+Since we already have a install_uprobe, register_uprobe, I thought
+insert_uprobe_rb_node would give context to that function that it was
+only inserting an rb_node but not installing the actual breakpoint.
+I am okay to rename it to insert_uprobe(). 
