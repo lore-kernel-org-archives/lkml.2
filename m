@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893Ab1AZS0j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 13:26:39 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:55675 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752424Ab1AZS0h (ORCPT
+	id S1754030Ab1AZS0q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 13:26:46 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59481 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753328Ab1AZS0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 13:26:37 -0500
-Date: Wed, 26 Jan 2011 12:26:29 -0600
-From: Robert Jennings <rcj@linux.vnet.ibm.com>
-To: Dan Carpenter <error27@gmail.com>, Nitin Gupta <ngupta@vflare.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/7] zram: mark the disk as non-rotating media
-Message-ID: <20110126182629.GA17383@linux.vnet.ibm.com>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Nitin Gupta <ngupta@vflare.org>,
-	Greg Kroah-Hartman <gregkh@suse.de>,
-	Pekka Enberg <penberg@cs.helsinki.fi>, devel@driverdev.osuosl.org,
-	linux-kernel@vger.kernel.org
-References: <20110126172743.GI8446@linux.vnet.ibm.com>
- <20110126175258.GJ8446@linux.vnet.ibm.com>
+	Wed, 26 Jan 2011 13:26:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=bMFCAXYX1IMb2sWll0YCE5XHCo4WYiAUjZOX7Ypu+LmQsEbs0TOUMLXOvg+MhfkAQ9
+         C5ikSS6KnjzK8mwZbAem0I4iegQ8U2+desua1+FzbB86AArkAn1VVQ5W5DwwoFs9TBci
+         G01Di7NWG2y482ZbI70okrvvcLXQXhd1BG39s=
+Date: Wed, 26 Jan 2011 18:19:41 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>, Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] compile time initialization for event flags value
+Message-ID: <20110126171939.GC1757@nowhere>
+References: <4D3FDFFC.6030304@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110126175258.GJ8446@linux.vnet.ibm.com>
+In-Reply-To: <4D3FDFFC.6030304@cn.fujitsu.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Robert Jennings (rcj@linux.vnet.ibm.com) wrote:
-> * Dan Carpenter (error27@gmail.com) wrote:
-> > On Wed, Jan 26, 2011 at 11:27:44AM -0600, Robert Jennings wrote:
-> > > Adding QUEUE_FLAG_NONROT for the in the request_queue flags.  When used
-> >                            ^^^^^^^^^^^^^^
-> > "to the" perhaps?
+On Wed, Jan 26, 2011 at 04:49:00PM +0800, Lai Jiangshan wrote:
+> compile time initialization is better than runtime initialization.
 > 
-> Yeah, that was edited a few times and never re-read.  Thanks.
+> impact: remove many early_initcall()s and many trace_init_flags_##name()s.
 > 
-> > > as a swap device, scan_swap_map will avoid the extra work of optimizing
-> > > for rotating media.
-> > > 
-> > > Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
-> > > ---
-> > >  drivers/staging/zram/zram_drv.c |    1 +
-> > >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> > > index d5e0275..450c618 100644
-> > > --- a/drivers/staging/zram/zram_drv.c
-> > > +++ b/drivers/staging/zram/zram_drv.c
-> > > @@ -593,6 +593,7 @@ static int create_device(struct zram *zram, int device_id)
-> > >  		goto out;
-> > >  	}
-> > >  
-> > > +	zram->queue->queue_flags ^= QUEUE_FLAG_NONROT;
-> > 
-> > QUEUE_FLAG_NONROT is 14.  We want to set the 14 bit.  This won't work.
-> > 
-> > Use queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->queue);
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> ---
+> diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+> index 18cd068..ff074c8 100644
+> --- a/include/linux/syscalls.h
+> +++ b/include/linux/syscalls.h
+> @@ -135,8 +135,8 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+>  		.class			= &event_class_syscall_enter,	\
+>  		.event.funcs            = &enter_syscall_print_funcs,	\
+>  		.data			= (void *)&__syscall_meta_##sname,\
+> -	};								\
+> -	__TRACE_EVENT_FLAGS(enter_##sname, TRACE_EVENT_FL_CAP_ANY)
+> +		.flags			= TRACE_EVENT_FL_CAP_ANY,	\
+> +	};
+>  
+>  #define SYSCALL_TRACE_EXIT_EVENT(sname)					\
+>  	static struct syscall_metadata					\
+> @@ -149,8 +149,8 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+>  		.class			= &event_class_syscall_exit,	\
+>  		.event.funcs		= &exit_syscall_print_funcs,	\
+>  		.data			= (void *)&__syscall_meta_##sname,\
+> -	};								\
+> -	__TRACE_EVENT_FLAGS(exit_##sname, TRACE_EVENT_FL_CAP_ANY)
+> +		.flags			= TRACE_EVENT_FL_CAP_ANY,	\
+> +	};
+>  
+>  #define SYSCALL_METADATA(sname, nb)				\
+>  	SYSCALL_TRACE_ENTER_EVENT(sname);			\
 
-I need to drop this patch entirely.  QUEUE_FLAG_NONROT is set in
-zram_init_device and is unnecessary here.
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
