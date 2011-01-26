@@ -1,123 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753524Ab1AZPUr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 10:20:47 -0500
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:54776 "EHLO e3.ny.us.ibm.com"
+	id S1753421Ab1AZPWE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 10:22:04 -0500
+Received: from cantor.suse.de ([195.135.220.2]:54577 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753230Ab1AZPUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 10:20:45 -0500
-Date: Wed, 26 Jan 2011 20:39:46 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 8/20]  8: uprobes: mmap and fork
- hooks.
-Message-ID: <20110126150946.GK19725@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
- <20101216095848.23751.73144.sendpatchset@localhost6.localdomain6>
- <1295957741.28776.719.camel@laptop>
+	id S1752517Ab1AZPWC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 10:22:02 -0500
+Date: Wed, 26 Jan 2011 16:21:58 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        balbir@linux.vnet.ibm.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>, stable@kernel.org
+Subject: [PATCH] memsw: handle swapaccount kernel parameter correctly
+Message-ID: <20110126152158.GA4144@tiehlicka.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1295957741.28776.719.camel@laptop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2011-01-25 13:15:41]:
+Hi Andrew,
+I am sorry but the patch which added swapaccount parameter is not
+correct (we have discussed it https://lkml.org/lkml/2010/11/16/103).
+I didn't get the way how __setup parameters are handled correctly.
+The patch bellow fixes that.
 
-> On Thu, 2010-12-16 at 15:28 +0530, Srikar Dronamraju wrote:
-> > +static void search_within_subtree(struct rb_node *n, struct inode *inode,
-> > +               struct list_head *tmp_list);
-> > +
-> > +static void add_to_temp_list(struct vm_area_struct *vma, struct inode *inode,
-> > +               struct list_head *tmp_list)
-> > +{
-> > +       struct uprobe *uprobe;
-> > +       struct rb_node *n;
-> > +       unsigned long flags;
-> > +
-> > +       n = uprobes_tree.rb_node;
-> > +       spin_lock_irqsave(&treelock, flags);
-> > +       while (n) {
-> > +               uprobe = rb_entry(n, struct uprobe, rb_node);
-> > +               if (match_inode(uprobe, inode, &n)) {
-> > +                       list_add(&uprobe->pending_list, tmp_list);
-> > +                       search_within_subtree(n, inode, tmp_list);
-> > +                       break;
-> > +               }
-> > +       }
-> > +       spin_unlock_irqrestore(&treelock, flags);
-> > +}
-> > +
-> > +static void __search_within_subtree(struct rb_node *p, struct inode *inode,
-> > +               struct list_head *tmp_list)
-> > +{
-> > +       struct uprobe *uprobe;
-> > +
-> > +       uprobe = rb_entry(p, struct uprobe, rb_node);
-> > +       if (match_inode(uprobe, inode, &p)) {
-> > +               list_add(&uprobe->pending_list, tmp_list);
-> > +               search_within_subtree(p, inode, tmp_list);
-> > +       }
-> > +
-> > +
-> > +}
-> > +
-> > +static void search_within_subtree(struct rb_node *n, struct inode *inode,
-> > +               struct list_head *tmp_list)
-> > +{
-> > +       struct rb_node *p;
-> > +
-> > +       if (p)
-> > +               __search_within_subtree(p, inode, tmp_list);
-> > +
-> > +       p = n->rb_right;
-> > +       if (p)
-> > +               __search_within_subtree(p, inode, tmp_list);
-> > +} 
-> 
-> Whee recursion FTW!, you just blew your kernel stack :-)
-> 
-> Since you sort inode first, offset second, I think you can simply look
-> for the first matching inode entry and simply rb_next() until you don't
-> match.
+I am CCing stable as well because the patch got into .37 kernel.
 
-Agree that we should get rid of recursion.
+---
+>From 144c2e8aed27d82d48217896ee1f58dbaa7f1f84 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Wed, 26 Jan 2011 14:12:41 +0100
+Subject: [PATCH] memsw: handle swapaccount kernel parameter correctly
 
-I dont think we can simply use rb_next() once we have the first
-matching function. There could be a matching inode but a smaller
-offset in left that will be missed by rb_next(). (Unless I have
-misunderstood rb_next() !!!)
+__setup based kernel command line parameters handled in
+obsolete_checksetup provides the parameter value including = (more
+precisely everything right after the parameter name) so we have to check
+for =0 resp. =1 here. If no value is given then we get an empty string
+rather then NULL.
 
-Here are the ways I think we can workaround.
-A. change the match_inode() logic to use rb_first/rb_next.
-This would make negate the benefit we get from rb_trees because we
-have to match every node. Also match_offset might get a little tricky.
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-B. use the current match_inode but change the search_within_subtree
-logic. search_within_subtree() would first find the leftmode node
-within the subtree that still has the same inode. Thereafter it will use
-rb_next().
-
-Do you have any other ideas?
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index db76ef7..cea2be48 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -5013,9 +5013,9 @@ struct cgroup_subsys mem_cgroup_subsys = {
+ static int __init enable_swap_account(char *s)
+ {
+ 	/* consider enabled if no parameter or 1 is given */
+-	if (!s || !strcmp(s, "1"))
++	if (!(*s) || !strcmp(s, "=1"))
+ 		really_do_swap_account = 1;
+-	else if (!strcmp(s, "0"))
++	else if (!strcmp(s, "=0"))
+ 		really_do_swap_account = 0;
+ 	return 1;
+ }
+@@ -5023,7 +5023,7 @@ __setup("swapaccount", enable_swap_account);
+ 
+ static int __init disable_swap_account(char *s)
+ {
+-	enable_swap_account("0");
++	enable_swap_account("=0");
+ 	return 1;
+ }
+ __setup("noswapaccount", disable_swap_account);
+-- 
+1.7.2.3
 
 -- 
-Thanks and Regards
-Srikar
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
