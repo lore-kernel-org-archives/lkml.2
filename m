@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162Ab1AZUO6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 15:14:58 -0500
-Received: from mail1.microsoft.com ([131.107.115.212]:36763 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736Ab1AZUO4 convert rfc822-to-8bit (ORCPT
+	id S1753725Ab1AZUVk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 15:21:40 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:52041 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752647Ab1AZUVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 15:14:56 -0500
-X-Greylist: delayed 305 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Jan 2011 15:14:55 EST
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Dan Carpenter <error27@gmail.com>
-CC: Hank Janssen <hjanssen@microsoft.com>, "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: [PATCH 7/8] staging: hv: Convert camel cased struct fields in
- vmbus_packet_format.h to lower cases
-Thread-Topic: [PATCH 7/8] staging: hv: Convert camel cased struct fields in
- vmbus_packet_format.h to lower cases
-Thread-Index: AQHLvYCLYvLUk9ofREuqc27yRn5vcJPkEe2A//+clQA=
-Date: Wed, 26 Jan 2011 20:09:47 +0000
-Message-ID: <A1F3067C9B68744AA19F6802BAB8FFDC02482D@TK5EX14MBXC227.redmond.corp.microsoft.com>
-References: <1296064206-11372-1-git-send-email-haiyangz@microsoft.com>
- <1296064206-11372-2-git-send-email-haiyangz@microsoft.com>
- <1296064206-11372-3-git-send-email-haiyangz@microsoft.com>
- <1296064206-11372-4-git-send-email-haiyangz@microsoft.com>
- <1296064206-11372-5-git-send-email-haiyangz@microsoft.com>
- <1296064206-11372-6-git-send-email-haiyangz@microsoft.com>
- <1296064206-11372-7-git-send-email-haiyangz@microsoft.com>
- <20110126180400.GS2721@bicker>
-In-Reply-To: <20110126180400.GS2721@bicker>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 26 Jan 2011 15:21:40 -0500
+Date: Wed, 26 Jan 2011 15:21:39 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] PM / Wakeup: Add missing memory barriers
+In-Reply-To: <201101250114.17758.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1101261514280.1879-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Dan Carpenter [mailto:error27@gmail.com]
-> > +	VM_PKT_INVALID				= 0x0,
-> > +	VM_PKT_SYNCH				= 0x1,
-> > +	VM_PKT_ADD_XFER_PAGESET		= 0x2,
-> > +	VM_PKT_RM_XFER_PAGESET		= 0x3,
->                                           ^^^^
-> > +	VM_PKT_ESTABLISH_GPADL			= 0x4,
-> > +	VM_PKT_TEARDOWN_GPADL			= 0x5,
-> > +	VM_PKT_DATA_INBAND			= 0x6,
-> > +	VM_PKT_DATA_USING_XFER_PAGES		= 0x7,
-> > +	VM_PKT_DATA_USING_GPADL			= 0x8,
-> > +	VM_PKT_DATA_USING_GPA_DIRECT		= 0x9,
-> > +	VM_PKT_CANCEL_REQUEST			= 0xa,
-> > +	VM_PKT_COMP			= 0xb,
->                                         ^^^^^^
-> > +	VM_PKT_DATA_USING_ADDITIONAL_PKT	= 0xc,
-> > +	VM_PKT_ADDITIONAL_DATA			= 0xd
-> 
-> 
-> These don't line up with the others.
+On Tue, 25 Jan 2011, Rafael J. Wysocki wrote:
 
-I have corrected and resubmitted them.
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> The memory barrier in wakeup_source_deactivate() is supposed to
+> prevent the callers of pm_wakeup_pending() and pm_get_wakeup_count()
+> from seeing the new value of events_in_progress (0, in particular)
+> and the old value of event_count at the same time.  However, if
+> wakeup_source_deactivate() is executed by CPU0 and, for instance,
+> pm_wakeup_pending() is executed by CPU1, where both processors can
+> reorder operations, the memory barrier in wakeup_source_deactivate()
+> doesn't affect CPU1 which can reorder reads.  In that case CPU1 may
+> very well decide to fetch event_count before it's modified and
+> events_in_progress after it's been updated, so pm_wakeup_pending()
+> may fail to detect a wakeup event.  This issue can be addressed by
+> adding a read memory barrier in pm_wakeup_pending() that will enforce
+> events_in_progress to be read before event_count.
+> 
+> For similar reason, a read memory barrier should be added to
+> pm_get_wakeup_count().
 
-Thanks,
-- Haiyang
+How come this is implemented using memory barriers rather than a lock?  
+Is it because this is potentially a fairly hot path?
+
+New memory barriers are supposed to have comments present in the code, 
+explaining why they are needed.
+
+Ideally you could do away with the need for synchronization entirely.  
+For example, events_in_progress and event_count could be stored as two 
+16-bit values stuffed into a single atomic variable.  Then they could 
+both be read or updated simultaneously.
+
+Alan Stern
 
