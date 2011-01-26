@@ -1,87 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab1AZPFX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 10:05:23 -0500
-Received: from x35.xmailserver.org ([64.71.152.41]:56096 "EHLO
-	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753280Ab1AZPFV (ORCPT
+	id S1753471Ab1AZPFj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 10:05:39 -0500
+Received: from mail09.linbit.com ([212.69.161.110]:50535 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753450Ab1AZPFi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 10:05:21 -0500
-X-AuthUser: davidel@xmailserver.org
-Date: Wed, 26 Jan 2011 07:05:07 -0800 (PST)
-From: Davide Libenzi <davidel@xmailserver.org>
-X-X-Sender: davide@localhost6.localdomain6
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, shawn.bohrer@gmail.com,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        mm-commits@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [patch]
- epoll-fix-compiler-warning-and-optimize-the-non-blocking-path-fix
-In-Reply-To: <20110126102020.GA2244@cmpxchg.org>
-Message-ID: <alpine.DEB.2.00.1101260704050.1889@localhost6.localdomain6>
-References: <201101260021.p0Q0LxsS016458@imap1.linux-foundation.org> <20110126102020.GA2244@cmpxchg.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
-X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
+	Wed, 26 Jan 2011 10:05:38 -0500
+X-Greylist: delayed 597 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Jan 2011 10:05:38 EST
+From: Andreas Gruenbacher <agruen@linbit.com>
+Organization: LINBIT
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH] Export the augmented rbtree helper functions
+Date: Wed, 26 Jan 2011 15:55:36 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.36-rc7+; KDE/4.3.5; i686; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101261555.36259.agruen@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Jan 2011, Johannes Weiner wrote:
+The augmented rbtree helper functions are not exported to modules right now.  
+Could this please still be fixed in 2.6.38?
 
-> The non-blocking ep_poll path optimization introduced skipping over
-> the return value setup.
-> 
-> Initialize it properly, my userspace gets upset by epoll_wait()
-> returning random things.
-> 
-> In addition, remove the reinitialization at the fetch_events label,
-> the return value is garuanteed to be zero when execution reaches
-> there.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Shawn Bohrer <shawn.bohrer@gmail.com>
-> Cc: Davide Libenzi <davidel@xmailserver.org>
+(We have started using augmented rbtrees in the upcoming version of drbd.)
 
-Thank you for posting it. Obvious ACK.
+Thanks,
+Andreas
 
+Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
+---
+ lib/rbtree.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-
-> ---
->  fs/eventpoll.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-> index f7cb6cb..afe4238 100644
-> --- a/fs/eventpoll.c
-> +++ b/fs/eventpoll.c
-> @@ -1147,7 +1147,7 @@ static int ep_send_events(struct eventpoll *ep,
->  static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
->  		   int maxevents, long timeout)
->  {
-> -	int res, eavail, timed_out = 0;
-> +	int res = 0, eavail, timed_out = 0;
->  	unsigned long flags;
->  	long slack = 0;
->  	wait_queue_t wait;
-> @@ -1173,7 +1173,6 @@ static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
->  fetch_events:
->  	spin_lock_irqsave(&ep->lock, flags);
->  
-> -	res = 0;
->  	if (!ep_events_available(ep)) {
->  		/*
->  		 * We don't have any available event to return to the caller.
-> -- 
-> 1.7.3.5
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom policy in Canada: sign http://dissolvethecrtc.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+diff --git a/lib/rbtree.c b/lib/rbtree.c
+index 4693f79..a16be19 100644
+--- a/lib/rbtree.c
++++ b/lib/rbtree.c
+@@ -315,6 +315,7 @@ void rb_augment_insert(struct rb_node *node, rb_augment_f 
+func, void *data)
+ 
+ 	rb_augment_path(node, func, data);
+ }
++EXPORT_SYMBOL(rb_augment_insert);
+ 
+ /*
+  * before removing the node, find the deepest node on the rebalance path
+@@ -340,6 +341,7 @@ struct rb_node *rb_augment_erase_begin(struct rb_node 
+*node)
+ 
+ 	return deepest;
+ }
++EXPORT_SYMBOL(rb_augment_erase_begin);
+ 
+ /*
+  * after removal, update the tree to account for the removed entry
+@@ -350,6 +352,7 @@ void rb_augment_erase_end(struct rb_node *node, 
+rb_augment_f func, void *data)
+ 	if (node)
+ 		rb_augment_path(node, func, data);
+ }
++EXPORT_SYMBOL(rb_augment_erase_end);
+ 
+ /*
+  * This function returns the first node (in sort order) of the tree.
