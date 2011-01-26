@@ -1,106 +1,317 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365Ab1AZN6T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 08:58:19 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:46311 "EHLO mx3.mail.elte.hu"
+	id S1753284Ab1AZOTL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 09:19:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63709 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753098Ab1AZN6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 08:58:18 -0500
-Date: Wed, 26 Jan 2011 14:58:01 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Stephane Eranian <eranian@google.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: perf, x86: Provide a PEBS capable cycle event
-Message-ID: <20110126135801.GA30064@elte.hu>
-References: <201101062000.p06K0ESw011195@hera.kernel.org>
- <20110126113740.GA13911@elte.hu>
- <AANLkTintgqOkwo=WRH_9vGwGgXf0XrfU2e++daUOOG=i@mail.gmail.com>
- <20110126120646.GA20064@elte.hu>
- <AANLkTikjEGMV=ZwiUmFxmQaELG525ntd=Xi8_EXFT9J7@mail.gmail.com>
+	id S1751680Ab1AZOTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 09:19:09 -0500
+Message-ID: <4D402D35.4090206@redhat.com>
+Date: Wed, 26 Jan 2011 12:18:29 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikjEGMV=ZwiUmFxmQaELG525ntd=Xi8_EXFT9J7@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Gerd Hoffmann <kraxel@redhat.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mark Lord <kernel@teksavvy.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils
+ ?
+References: <4D3E59CA.6070107@teksavvy.com> <4D3E5A91.30207@teksavvy.com> <20110125053117.GD7850@core.coreip.homeip.net> <4D3EB734.5090100@redhat.com> <20110125164803.GA19701@core.coreip.homeip.net> <AANLkTi=1Mh0JrYk5itvef7O7e7pR+YKos-w56W5q4B8B@mail.gmail.com> <20110125205453.GA19896@core.coreip.homeip.net> <4D3F4804.6070508@redhat.com> <4D3F4D11.9040302@teksavvy.com> <20110125232914.GA20130@core.coreip.homeip.net> <20110126020003.GA23085@core.coreip.homeip.net> <4D4004F9.6090200@redhat.com> <4D401CC5.4020000@redhat.com>
+In-Reply-To: <4D401CC5.4020000@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Stephane Eranian <eranian@google.com> wrote:
-
-> On Wed, Jan 26, 2011 at 1:06 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > * Stephane Eranian <eranian@google.com> wrote:
-> >
-> >> On Wed, Jan 26, 2011 at 12:37 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >> >
-> >> > * Linux Kernel Mailing List <linux-kernel@vger.kernel.org> wrote:
-> >> >
-> >> >> Gitweb:     http://git.kernel.org/linus/7639dae0ca11038286bbbcda05f2bef601c1eb8d
-> >> >> Commit:     7639dae0ca11038286bbbcda05f2bef601c1eb8d
-> >> >> Parent:     abe43400579d5de0078c2d3a760e6598e183f871
-> >> >> Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-> >> >> AuthorDate: Tue Dec 14 21:26:40 2010 +0100
-> >> >> Committer:  Ingo Molnar <mingo@elte.hu>
-> >> >> CommitDate: Thu Dec 16 11:36:44 2010 +0100
-> >> >>
-> >> >>     perf, x86: Provide a PEBS capable cycle event
-> >> >>
-> >> >>     Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> >> >>     LKML-Reference: <new-submission>
-> >> >>     Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> >> >> ---
-> >> >>  arch/x86/kernel/cpu/perf_event_intel.c |   26 ++++++++++++++++++++++++++
-> >> >>  1 files changed, 26 insertions(+), 0 deletions(-)
-> >> >
-> >> > btw., precise profiling via PEBS:
-> >> >
-> >> >  perf record -e cycles:p ...
-> >> >
-> >> > works pretty nicely now on Nehalem CPUs and later.
-> >> >
-> >> The problem is that cycles:p is not equivalent to cycles in terms of how
-> >> cycles are counted. cycles counts only unhalted cycles. cycles:p counts
-> >> ALL cycles, event when the CPU is in halted state.
-> >
-> > That's not really an issue in practice: it at most can cause a bit larger value for:
-> >
-> >     2.38%       swapper  [kernel.kallsyms]      [k] mwait_idle_with_hints                             ▮
-> >
-> > Which entry exists with regular cycles event _anyway_, because every irq entry ends
-> > up there.
-> >
+Em 26-01-2011 11:08, Gerd Hoffmann escreveu:
+>   Hi,
 > 
-> There is a difference in interpretation. Because now when you get samples in those 
-> idle routines, you cannot tell whether it is because you actually execute code 
-> there or because you were halted (not executing) and now sampling has altered the 
-> behavior of the system in that you wake up from halted state to service a PMU 
-> interrupt.
+>> Btw, I took some time to take analyse the input-kbd stuff.
+>> As said at the README:
+>>
+>>     This is a small collection of input layer utilities.  I wrote them
+>>     mainly for testing and debugging, but maybe others find them useful
+>>     too :-)
+>>     ...
+>>     Gerd Knorr<kraxel@bytesex.org>  [SUSE Labs]
+>>
+>> This is an old testing tool written by Gerd Hoffmann probably used for him
+>> to test the V4L early Remote Controller implementations.
+> 
+> Indeed.
+> 
+>> The last "official" version seems to be this one:
+>>     http://dl.bytesex.org/cvs-snapshots/input-20081014-101501.tar.gz
+> 
+> Just moved the bits to git a few days ago.
+> http://bigendian.kraxel.org/cgit/input/
+> 
+> Code is unchanged since 2008 though.
+> 
+>> Gerd, if you're still maintaining it, it is a good idea to apply Dmitry's
+>> patch:
+>>     http://www.spinics.net/lists/linux-input/msg13728.html
+> 
+> Hmm, doesn't apply cleanly ...
 
-The thing is, most people are not interested in seeing the idle routine entry 
-anyway, so we already exclude it in say 'perf top' output, see the skip_symbols[] 
-array in builtin-top.c.
+I suspect that Dmitry did the patch against the Debian package, based on a 2007
+version of it, as it seems that Debian is using an older version of the package.
 
-So utility seems rather low.
+Anyway, I've ported his patch to be applied over your -git tree, and tested
+on it, with vanilla 2.6.37.
 
-If we contrast it to the utility of having precise PEBS sampling, which dramatically 
-improves *all* profiling data and which improves the reading of annotated profiling 
-output beyond measure, the default path to go here seems rather obvious. Agreed?
+That's the incorrect output result of the old version, with an existing
+NEC extended map:
 
-Thanks,
+$ sudo /tmp/input/input-kbd 2
+/dev/input/event2
+   bustype : BUS_I2C
+   vendor  : 0x0
+   product : 0x0
+   version : 0
+   name    : "i2c IR (i2c IR (EM2820 Winfast "
+   phys    : "i2c-0/0-0030/ir0"
+   bits ev : EV_SYN EV_KEY EV_MSC EV_REP
 
-	Ingo
+bits: KEY_1
+bits: KEY_2
+bits: KEY_3
+bits: KEY_4
+...
+
+And that's the output after applying the patch:
+
+$ sudo ./input-kbd 2
+/dev/input/event2
+   bustype : BUS_I2C
+   vendor  : 0x0
+   product : 0x0
+   version : 0
+   name    : "i2c IR (i2c IR (EM2820 Winfast "
+   phys    : "i2c-0/0-0030/ir0"
+   bits ev : EV_SYN EV_KEY EV_MSC EV_REP
+
+map: 31 keys, size: 31/64
+0x866b00 = 393  # KEY_VIDEO
+0x866b01 =   2  # KEY_1
+0x866b02 =  11  # KEY_0
+0x866b03 = 386  # KEY_TUNER
+
+-
+
+[PATCH] input-kbd - switch to using EVIOCGKEYCODE2 when available
+
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+
+[mchehab@redhat.com: Ported it to the -git version]
+
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+diff --git a/input-kbd.c b/input-kbd.c
+index c432d0d..aaf23b9 100644
+--- a/input-kbd.c
++++ b/input-kbd.c
+@@ -9,9 +9,22 @@
+ 
+ #include "input.h"
+ 
++struct input_keymap_entry_v2 {
++#define KEYMAP_BY_INDEX	(1 << 0)
++	uint8_t  flags;
++	uint8_t  len;
++	uint16_t index;
++	uint32_t keycode;
++	uint8_t  scancode[32];
++};
++
++#ifndef EVIOCGKEYCODE_V2
++#define EVIOCGKEYCODE_V2 _IOR('E', 0x04, struct input_keymap_entry_v2)
++#endif
++
+ struct kbd_entry {
+-	int scancode;
+-	int keycode;
++	unsigned int scancode;
++	unsigned int keycode;
+ };
+ 
+ struct kbd_map {
+@@ -23,7 +36,7 @@ struct kbd_map {
+ 
+ /* ------------------------------------------------------------------ */
+ 
+-static struct kbd_map* kbd_map_read(int fd)
++static struct kbd_map* kbd_map_read(int fd, unsigned int version)
+ {
+ 	struct kbd_entry entry;
+ 	struct kbd_map *map;
+@@ -32,17 +45,35 @@ static struct kbd_map* kbd_map_read(int fd)
+ 	map = malloc(sizeof(*map));
+ 	memset(map,0,sizeof(*map));
+ 	for (map->size = 0; map->size < 65536; map->size++) {
+-		entry.scancode = map->size;
+-		entry.keycode  = KEY_RESERVED;
+-		rc = ioctl(fd, EVIOCGKEYCODE, &entry);
+-		if (rc < 0) {
+-			map->size--;
+-			break;
++		if (version < 0x10001) {
++			entry.scancode = map->size;
++			entry.keycode  = KEY_RESERVED;
++			rc = ioctl(fd, EVIOCGKEYCODE, &entry);
++			if (rc < 0) {
++				map->size--;
++				break;
++			}
++		} else {
++			struct input_keymap_entry_v2 ke = {
++				.index = map->size,
++				.flags = KEYMAP_BY_INDEX,
++				.len = sizeof(uint32_t),
++				.keycode = KEY_RESERVED,
++			};
++
++			rc = ioctl(fd, EVIOCGKEYCODE_V2, &ke);
++			if (rc < 0)
++				break;
++			memcpy(&entry.scancode, ke.scancode,
++				sizeof(entry.scancode));
++			entry.keycode = ke.keycode;
+ 		}
++
+ 		if (map->size >= map->alloc) {
+ 			map->alloc += 64;
+ 			map->map = realloc(map->map, map->alloc * sizeof(entry));
+ 		}
++
+ 		map->map[map->size] = entry;
+ 
+ 		if (KEY_RESERVED != entry.keycode)
+@@ -156,37 +187,25 @@ static void kbd_print_bits(int fd)
+ 	}
+ }
+ 
+-static void show_kbd(int nr)
++static void show_kbd(int fd, unsigned int protocol_version)
+ {
+ 	struct kbd_map *map;
+-	int fd;
+ 
+-	fd = device_open(nr,1);
+-	if (-1 == fd)
+-		return;
+ 	device_info(fd);
+ 
+-	map = kbd_map_read(fd);
+-	if (NULL != map) {
+-		kbd_map_print(stdout,map,0);
+-	} else {
++	map = kbd_map_read(fd, protocol_version);
++	if (map)
++		kbd_map_print(stdout, map, 0);
++	else
+ 		kbd_print_bits(fd);
+-	}
+-
+-	close(fd);
+ }
+ 
+-static int set_kbd(int nr, char *mapfile)
++static int set_kbd(int fd, unsigned int protocol_version, char *mapfile)
+ {
+ 	struct kbd_map *map;
+ 	FILE *fp;
+-	int fd;
+ 
+-	fd = device_open(nr,1);
+-	if (-1 == fd)
+-		return -1;
+-
+-	map = kbd_map_read(fd);
++	map = kbd_map_read(fd, protocol_version);
+ 	if (NULL == map) {
+ 		fprintf(stderr,"device has no map\n");
+ 		close(fd);
+@@ -203,14 +222,12 @@ static int set_kbd(int nr, char *mapfile)
+ 			return -1;
+ 		}
+ 	}
+-	
++
+ 	if (0 != kbd_map_parse(fp,map) ||
+ 	    0 != kbd_map_write(fd,map)) {
+-		close(fd);
+ 		return -1;
+ 	}
+ 
+-	close(fd);
+ 	return 0;
+ }
+ 
+@@ -224,8 +241,10 @@ static int usage(char *prog, int error)
+ 
+ int main(int argc, char *argv[])
+ {
+-	int c,devnr;
++	int c, devnr, fd;
+ 	char *mapfile = NULL;
++	unsigned int protocol_version;
++	int rc = EXIT_FAILURE;
+ 
+ 	for (;;) {
+ 		if (-1 == (c = getopt(argc, argv, "hf:")))
+@@ -245,12 +264,29 @@ int main(int argc, char *argv[])
+ 		usage(argv[0],1);
+ 
+ 	devnr = atoi(argv[optind]);
+-	if (mapfile) {
+-		set_kbd(devnr,mapfile);
+-	} else {
+-		show_kbd(devnr);
++
++	fd = device_open(devnr, 1);
++	if (fd < 0)
++		goto out;
++
++	if (ioctl(fd, EVIOCGVERSION, &protocol_version) < 0) {
++		fprintf(stderr,
++			"Unable to query evdev protocol version: %s\n",
++			strerror(errno));
++		goto out_close;
+ 	}
+-	return 0;
++
++	if (mapfile)
++		set_kbd(fd, protocol_version, mapfile);
++	else
++		show_kbd(fd, protocol_version);
++
++	rc = EXIT_SUCCESS;
++
++out_close:
++	close(fd);
++out:
++	return rc;
+ }
+ 
+ /* ---------------------------------------------------------------------
+diff --git a/input.c b/input.c
+index d57a31e..a9bd5e8 100644
+--- a/input.c
++++ b/input.c
+@@ -101,8 +101,8 @@ int device_open(int nr, int verbose)
+ 		close(fd);
+ 		return -1;
+ 	}
+-	if (EV_VERSION != version) {
+-		fprintf(stderr, "protocol version mismatch (expected %d, got %d)\n",
++	if (EV_VERSION > version) {
++		fprintf(stderr, "protocol version mismatch (expected >= %d, got %d)\n",
+ 			EV_VERSION, version);
+ 		close(fd);
+ 		return -1;
