@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431Ab1AZP3U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 10:29:20 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:58828 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978Ab1AZP3T convert rfc822-to-8bit (ORCPT
+	id S1753518Ab1AZPaB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 10:30:01 -0500
+Received: from smarthost03.mail.zen.net.uk ([212.23.3.142]:46661 "EHLO
+	smarthost03.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751978Ab1AZPaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 10:29:19 -0500
-Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 14/20] 14: uprobes: Handing int3
- and singlestep exception.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20110126151418.GL19725@linux.vnet.ibm.com>
-References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
-	 <20101216095957.23751.57040.sendpatchset@localhost6.localdomain6>
-	 <1295963779.28776.1059.camel@laptop>
-	 <20110126085203.GG19725@linux.vnet.ibm.com>
-	 <1296037031.28776.1146.camel@laptop>
-	 <20110126151418.GL19725@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 26 Jan 2011 16:29:48 +0100
-Message-ID: <1296055788.28776.1222.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 26 Jan 2011 10:30:00 -0500
+Message-ID: <4D403DEB.8040208@cyconix.com>
+Date: Wed, 26 Jan 2011 15:29:47 +0000
+From: Evan Lavelle <sa212+lkml@cyconix.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Kernel deferring driver 'close' call: workaround?
+References: <4D401824.6090109@cyconix.com>	<20110126131703.3033ad87@lxorguk.ukuu.org.uk>	<4D402FDE.2050407@cyconix.com> <20110126143851.711c57df@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110126143851.711c57df@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-Smarthost03-IP: [82.70.243.134]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-26 at 20:44 +0530, Srikar Dronamraju wrote:
-> So it simplifies to 
-> 
->         down_read(&mm->mmap_sem);
->         vma = find_vma(mm, probept);
->         if (valid_vma(vma)) {
->                u = find_uprobe(vma->vm_file->f_mapping->host,
->                                probept - vma->vm_start);
->         }
->         up_read(&mm->mmap_sem); 
+On 26/01/2011 14:38, Alan Cox wrote:
+> On Wed, 26 Jan 2011 14:29:50 +0000
+> Evan Lavelle<sa212+lkml@cyconix.com>  wrote:
+>
+>> On 26/01/2011 13:17, Alan Cox wrote:
+>>
+>>> I imagine the user has a bug in their app. The close method is called on
+>>> the final close of the handle. That means if for example you do something
+>>> like fork off a child process and forget to close the handle then it
+>>> won't actually close down until the final user closes it.
+>>
+>> That was my first reaction, but the strace output only shows an open and
+>> close of two shared libs, open and close for this board, some mmaps from
+>> the driver, and the basic brk/fstat/etc stuff. Unfortunately, I haven't
+>> got the app source, or even the board... :(
+>
+> An mmap reference counts as an open .... it won't be released until the
+> mmaps are gone
 
-Almost, the offset within a file is something like:
+Excellent! Fixed - well done.
 
-  (address - vma->vm_start) + (vma->vm_pgoff << PAGE_SHIFT)
-
-
+-Evan
