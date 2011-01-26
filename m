@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021Ab1AZUCZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 15:02:25 -0500
-Received: from casper.infradead.org ([85.118.1.10]:39755 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752647Ab1AZUCY convert rfc822-to-8bit (ORCPT
+	id S1754052Ab1AZUDo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 15:03:44 -0500
+Received: from pfepa.post.tele.dk ([195.41.46.235]:49549 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752647Ab1AZUDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 15:02:24 -0500
-Subject: Re: [tip:sched/core] sched: Untangle cpu-load and timekeeping code
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, mingo@elte.hu, linux-tip-commits@vger.kernel.org
-In-Reply-To: <20110126122900.GA8387@zhy>
-References: <new-submission>
-	 <tip-18a57c3b43781ea83c3bb21c3add84ba890d5fb3@git.kernel.org>
-	 <20110126122900.GA8387@zhy>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 26 Jan 2011 21:03:03 +0100
-Message-ID: <1296072183.15234.12.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 26 Jan 2011 15:03:42 -0500
+Date: Wed, 26 Jan 2011 21:03:41 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [RFC][PATCH 26/25] mm, arch: Convert ia64, arm, sh to generic
+	tlb
+Message-ID: <20110126200341.GA3507@merkur.ravnborg.org>
+References: <20110125173111.720927511@chello.nl> <1296047601.28776.1162.camel@laptop> <20110126191901.GA3434@merkur.ravnborg.org> <1296070218.15234.9.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1296070218.15234.9.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-26 at 20:29 +0800, Yong Zhang wrote:
-> On Wed, Jan 26, 2011 at 12:14:43PM +0000, tip-bot for Peter Zijlstra wrote:
-> > Commit-ID:  18a57c3b43781ea83c3bb21c3add84ba890d5fb3
-> > Gitweb:     http://git.kernel.org/tip/18a57c3b43781ea83c3bb21c3add84ba890d5fb3
-> > Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > AuthorDate: Tue, 25 Jan 2011 11:30:35 +0100
-> > Committer:  Ingo Molnar <mingo@elte.hu>
-> > CommitDate: Wed, 26 Jan 2011 12:33:23 +0100
+On Wed, Jan 26, 2011 at 08:30:18PM +0100, Peter Zijlstra wrote:
+> On Wed, 2011-01-26 at 20:19 +0100, Sam Ravnborg wrote:
 > > 
-> > sched: Untangle cpu-load and timekeeping code
+> > /* Users of the generic TLB shootdown code must declare this storage space. */
+> > DECLARE_PER_CPU(struct mmu_gather, mmu_gathers);
 > > 
-> > Remove the calc_global_load() call from the timekeeping code and make
-> > it local to the scheduler.
+> > If I understand this correct then this should read:
 > > 
-> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > LKML-Reference: <new-submission>
-> > Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> > ---
-> > +static void calc_global_load(unsigned long __data)
-> >  {
-> >  	long active;
-> >  
-> > -	calc_global_nohz(ticks);
-> > +	calc_global_nohz();
-> >  
-> >  	if (time_before(jiffies, calc_load_update + 10))
-> >  		return;
+> > /*
+> >  * Users of the generic TLB shootdown
+> >  * must define mmu_gathers like this:
+> >  * DEFINE_PER_CPU(struct mmu_gather, mmu_gathers);
+> >  */
+> > 
+> > The main difference is "declare" => "define".
+> > 
+> > If you already updated this in you serie then please ignore this mail. 
 > 
-> We should not do this checking any more. In normal case,
-> it will always return false.
-> If it indeed returns true for some reason, we will lose the
-> timer forever.
+> This series rewrites mmu_gather to remove this per-cpu data :-), see
+> patch #10 which removes the DEFINE_PER_CPU()s after all users are dead.
 
-Its needed for the nohz case, arguably we could move it inside
-calc_global_nohz().
+Thanks again.
+I better read the patch descriptions before asking next time.
+
+	Sam
