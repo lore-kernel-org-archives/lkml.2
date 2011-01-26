@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753553Ab1AZQwS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 11:52:18 -0500
-Received: from mga09.intel.com ([134.134.136.24]:37437 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752517Ab1AZQwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 11:52:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,380,1291622400"; 
-   d="scan'208";a="596683366"
-Date: Wed, 26 Jan 2011 08:52:24 -0800
-From: Andi Kleen <ak@linux.intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/20] hpfs: replace BKL with a global mutex
-Message-ID: <20110126165223.GA6695@tassilo.jf.intel.com>
-References: <1295993854-4971-1-git-send-email-arnd@arndb.de>
- <1295993854-4971-11-git-send-email-arnd@arndb.de>
- <m2ipxc34aq.fsf@linux.intel.com>
- <201101261350.42789.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201101261350.42789.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753581Ab1AZQwj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 11:52:39 -0500
+Received: from casper.infradead.org ([85.118.1.10]:58350 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752993Ab1AZQwi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 11:52:38 -0500
+Subject: Re: [PATCH 16/16] KVM-GST: adjust scheduler cpu power
+From: Peter Zijlstra <peterz@infradead.org>
+To: Glauber Costa <glommer@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
+        Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Avi Kivity <avi@redhat.com>
+In-Reply-To: <1296060386.28776.1312.camel@laptop>
+References: <1295892397-11354-1-git-send-email-glommer@redhat.com>
+	 <1295892397-11354-17-git-send-email-glommer@redhat.com>
+	 <1295893920.28776.468.camel@laptop>
+	 <1295895083.15920.9.camel@mothafucka.localdomain>
+	 <1295898690.28776.472.camel@laptop>
+	 <1295985756.15920.33.camel@mothafucka.localdomain>
+	 <1295986386.28776.1101.camel@laptop>
+	 <1295988455.15920.35.camel@mothafucka.localdomain>
+	 <1295989664.28776.1124.camel@laptop>
+	 <1295990853.15920.37.camel@mothafucka.localdomain>
+	 <1296035871.28776.1132.camel@laptop>
+	 <1296056617.3591.26.camel@mothafucka.localdomain>
+	 <1296060386.28776.1312.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 26 Jan 2011 17:53:22 +0100
+Message-ID: <1296060802.28776.1321.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 26, 2011 at 01:50:42PM +0100, Arnd Bergmann wrote:
-> On Wednesday 26 January 2011, Andi Kleen wrote:
-> > I don't think that's a very good idea, there's danger
-> > of holding it over IO and that would be really bad (as in like MINIX[1])
-> > 
-> > It would be better to do it the i810 way and check for the number of
-> > CPUs at module init time and refuse to run if it's > 1
-> 
-> I don't see much value of one evil over the other, but why not. The code
-> is going away anyway unless someone cleans it up further.
+On Wed, 2011-01-26 at 17:46 +0100, Peter Zijlstra wrote:
+> it uses a per-cpu virt_steal_time() clock which is
+> expected to return steal-time in ns. 
 
-I think it's fine because systems running OS/2 likely only have
-one CPU. This way these guys (if they exist) won't see any regression.
-
--Andi
--- 
-Andi Kleen
-Intel Open Source Technology Center
+This clock should return u64 and wrap on u64 and be provided when
+CONFIG_SCHED_PARAVIRT.
