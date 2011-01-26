@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828Ab1AZTRv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 14:17:51 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:57032 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752920Ab1AZTRu (ORCPT
+	id S1753836Ab1AZTTg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 14:19:36 -0500
+Received: from pfepa.post.tele.dk ([195.41.46.235]:43783 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753027Ab1AZTTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 14:17:50 -0500
-Date: Wed, 26 Jan 2011 11:16:02 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
-Cc: akpm@linux-foundation.org, Richard Purdie <rpurdie@rpsys.net>
-Subject: [PATCH -mmotm] backlight: apple_bl depends on ACPI
-Message-Id: <20110126111602.7bfea64e.randy.dunlap@oracle.com>
-In-Reply-To: <201101260021.p0Q0LxsS016458@imap1.linux-foundation.org>
-References: <201101260021.p0Q0LxsS016458@imap1.linux-foundation.org>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Jan 2011 14:19:34 -0500
+Date: Wed, 26 Jan 2011 20:19:33 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [RFC][PATCH 26/25] mm, arch: Convert ia64, arm, sh to generic
+	tlb
+Message-ID: <20110126191901.GA3434@merkur.ravnborg.org>
+References: <20110125173111.720927511@chello.nl> <1296047601.28776.1162.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1296047601.28776.1162.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+> Index: linux-2.6/include/asm-generic/tlb.h
+> ===================================================================
+> --- linux-2.6.orig/include/asm-generic/tlb.h
+> +++ linux-2.6/include/asm-generic/tlb.h
+> @@ -79,6 +79,10 @@ struct mmu_gather {
+>  				fast_mode  : 1; /* No batching   */
+>  	unsigned int		fullmm;		/* Flush full mm */
+>  
+> +#ifdef CONFIG_HAVE_MMU_GATHER_RANGE
+> +	unsigned long		start, end;
+> +#endif
+> +
+>  	struct mmu_gather_batch *active;
+>  	struct mmu_gather_batch	local;
+>  	struct page		*__pages[8];
 
-apple_bl uses ACPI interfaces (data & code), so it should depend on ACPI.
+Not related to this patch per see.
 
-drivers/video/backlight/apple_bl.c:142: warning: 'struct acpi_device' declared inside parameter list
-drivers/video/backlight/apple_bl.c:142: warning: its scope is only this definition or declaration, which is probably not what you want
-drivers/video/backlight/apple_bl.c:201: warning: 'struct acpi_device' declared inside parameter list
-drivers/video/backlight/apple_bl.c:215: error: variable 'apple_bl_driver' has initializer but incomplete type
-drivers/video/backlight/apple_bl.c:216: error: unknown field 'name' specified in initializer
-drivers/video/backlight/apple_bl.c:216: warning: excess elements in struct initializer
-drivers/video/backlight/apple_bl.c:216: warning: (near initialization for 'apple_bl_driver')
-drivers/video/backlight/apple_bl.c:217: error: unknown field 'ids' specified in initializer
-drivers/video/backlight/apple_bl.c:217: warning: excess elements in struct initializer
-drivers/video/backlight/apple_bl.c:217: warning: (near initialization for 'apple_bl_driver')
-drivers/video/backlight/apple_bl.c:218: error: unknown field 'ops' specified in initializer
-drivers/video/backlight/apple_bl.c:218: error: extra brace group at end of initializer
-drivers/video/backlight/apple_bl.c:218: error: (near initialization for 'apple_bl_driver')
-drivers/video/backlight/apple_bl.c:221: warning: excess elements in struct initializer
-drivers/video/backlight/apple_bl.c:221: warning: (near initialization for 'apple_bl_driver')
-drivers/video/backlight/apple_bl.c:226: error: implicit declaration of function 'acpi_bus_register_driver'
-drivers/video/backlight/apple_bl.c:231: error: implicit declaration of function 'acpi_bus_unregister_driver'
+But if you anyway touch this header could you then fix
+following comment:
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
----
- drivers/video/backlight/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+/* Users of the generic TLB shootdown code must declare this storage space. */
+DECLARE_PER_CPU(struct mmu_gather, mmu_gathers);
 
---- mmotm-2011-0125-1547.orig/drivers/video/backlight/Kconfig
-+++ mmotm-2011-0125-1547/drivers/video/backlight/Kconfig
-@@ -238,10 +238,10 @@ config BACKLIGHT_MAX8925
- 
- config BACKLIGHT_APPLE
-        tristate "Apple Backlight Driver"
--       depends on X86
-+       depends on X86 && ACPI
-        help
-          If you have an Intel-based Apple say Y to enable a driver for its
--	 backlight
-+	 backlight.
- 
- config BACKLIGHT_TOSA
- 	tristate "Sharp SL-6000 Backlight Driver"
+If I understand this correct then this should read:
+
+/*
+ * Users of the generic TLB shootdown
+ * must define mmu_gathers like this:
+ * DEFINE_PER_CPU(struct mmu_gather, mmu_gathers);
+ */
+
+The main difference is "declare" => "define".
+
+If you already updated this in you serie then please ignore this mail.
+
+	Sam
