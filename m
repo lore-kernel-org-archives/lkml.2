@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753125Ab1AZLo1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 06:44:27 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55573 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752720Ab1AZLoZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 06:44:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=KoTlXhyWWUYYN5/hQHCzNkd3VGleACPRo2CDf3G5gb5DVZKYRF4QLLdDtAOZ2WcFOM
-         16ZV86PdCnVoKhV7hGTWvH2hJzjY3KTpVG1VM7bWHCA0zjM9MLNZADkKW+bsaz3Za795
-         KapNaQCAL/tD+TDeJqmPWEQ1C0aMybirxrfxY=
-Date: Wed, 26 Jan 2011 13:44:15 +0200
-From: "Ahmed S. Darwish" <darwish.07@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, X86-ML <x86@kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Willy Tarreau <wtarreau@hera.kernel.org>, Willy Tarreau <w@1wt.eu>,
-        Dirk Hohndel <hohndel@infradead.org>, Dirk.Hohndel@intel.com,
-        IDE-ML <linux-ide@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@infradead.org>,
-        Tejun Heo <tj@kernel.org>, James Bottomley <James.Bottomley@suse.de>,
-        Mark Lord <kernel@teksavvy.com>, Jeff Garzik <jgarzik@pobox.com>
-Subject: Re: [PATCH 0/2][concept RFC] x86: BIOS-save kernel log to disk
-	upon panic
-Message-ID: <20110126114415.GB24527@laptop>
-References: <20110125134748.GA10051@laptop> <20110125140948.GA26762@elte.hu> <20110125150834.GD27510@htj.dyndns.org> <4D3F095E.9000004@zytor.com>
+	id S1753089Ab1AZLsJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 06:48:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64072 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751313Ab1AZLsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 06:48:07 -0500
+Message-ID: <4D4009C4.3080007@redhat.com>
+Date: Wed, 26 Jan 2011 06:47:16 -0500
+From: Ric Wheeler <rwheeler@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D3F095E.9000004@zytor.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: djwong@us.ibm.com
+CC: Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
+        axboe@kernel.dk, tytso@mit.edu, shli@kernel.org, neilb@suse.de,
+        adilger.kernel@dilger.ca, jack@suse.cz, snitzer@redhat.com,
+        linux-kernel@vger.kernel.org, kmannth@us.ibm.com, cmm@us.ibm.com,
+        linux-ext4@vger.kernel.org, hch@lst.de, josef@redhat.com
+Subject: Re: [PATCHSET] Refactor barrier=/nobarrier flags from fs to block
+ layer
+References: <20110126071200.GE32261@tux1.beaverton.ibm.com>
+In-Reply-To: <20110126071200.GE32261@tux1.beaverton.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 09:33:18AM -0800, H. Peter Anvin wrote:
-> On 01/25/2011 07:08 AM, Tejun Heo wrote:
-> 
-> >> All in one, a very intriguing idea IMO, and the hardest bits
-> >> (lowlevel x86 transition) is all implemented already.
-> 
-> Lowlevel x86 transition is not at all the hardest part.  It's
-> detail-oriented but well defined (and, I might add, incompletely
-> implemented -- 64 bits only, not using facilities we already have);
+On 01/26/2011 02:12 AM, Darrick J. Wong wrote:
+> Hello,
 >
+>  From what I can tell, most of the filesystems that know how to issue commands
+> to flush the write cache also have some mechanism for the user to override
+> whether or not the filesystem actually issues those flushes.  Unfortunately,
+> the term "barrier" is obsolete having been changed into flushes in 2.6.36, and
+> many of the filesystems implement the mount options with slightly different
+> syntaxes (barrier=[0|1|none|flush], nobarrier, etc).
 
-Making the transition code applicable to 32-bit CPUs will hopefully be
-quite simple: it's mostly a subset of the posted parts.
+Why remove the mount option? We have been using that term and educating users 
+about how to use it for many, many years.
 
-Since I might use that transition code for a different purpose now, any
-facilities not properly used beside the identity mappings?
+I see no reason to remove mount options at all.
 
-thanks,
+Ric
 
--- 
-Darwish
-http://darwish.07.googlepages.com
+> This patchset adds to the block layer a sysfs knob that an administrator can
+> use to disable flushes, and removes the mount options from the filesystem code.
+> As a starting point, I'm removing the mount options and flush toggle from
+> jbd2/ext4.
+>
+> Anyway, I'm looking for some feedback about refactoring the barrier/flush
+> control knob into the block layer.  It sounds like we want a knob that picks
+> the safest option (issue flushes when supported) unless the administrator
+> decides that it is appropriate to do otherwise.  I suspect that there are good
+> arguments for not having a knob at all, and good arguments for a safe knob.
+> However, since I don't see the barrier options being removed en masse, I'm
+> assuming that we still want a knob somewhere.  Do we need the ignore_fua knob
+> too?  Is this the proper way to deprecate mount options out of filesystems?
+>
+> --D
+
