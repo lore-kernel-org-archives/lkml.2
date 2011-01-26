@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752977Ab1AZLhw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 06:37:52 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:56430 "EHLO mx3.mail.elte.hu"
+	id S1753008Ab1AZLmZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 06:42:25 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:49370 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751313Ab1AZLhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 06:37:51 -0500
-Date: Wed, 26 Jan 2011 12:37:40 +0100
+	id S1751487Ab1AZLmX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 06:42:23 -0500
+Date: Wed, 26 Jan 2011 12:42:03 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: perf, x86: Provide a PEBS capable cycle event
-Message-ID: <20110126113740.GA13911@elte.hu>
-References: <201101062000.p06K0ESw011195@hera.kernel.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>, Len Brown <lenb@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Luming Yu <luming.yu@intel.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-acpi@vger.kernel.org
+Subject: Re: linux-next: Tree for December 20 (acpi_video)
+Message-ID: <20110126114203.GA16754@elte.hu>
+References: <20101220200013.df8fbc88.sfr@canb.auug.org.au>
+ <20101220085340.7ba098b9.randy.dunlap@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201101062000.p06K0ESw011195@hera.kernel.org>
+In-Reply-To: <20101220085340.7ba098b9.randy.dunlap@oracle.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -35,37 +33,24 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Linux Kernel Mailing List <linux-kernel@vger.kernel.org> wrote:
+* Randy Dunlap <randy.dunlap@oracle.com> wrote:
 
-> Gitweb:     http://git.kernel.org/linus/7639dae0ca11038286bbbcda05f2bef601c1eb8d
-> Commit:     7639dae0ca11038286bbbcda05f2bef601c1eb8d
-> Parent:     abe43400579d5de0078c2d3a760e6598e183f871
-> Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-> AuthorDate: Tue Dec 14 21:26:40 2010 +0100
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Thu Dec 16 11:36:44 2010 +0100
+> On Mon, 20 Dec 2010 20:00:13 +1100 Stephen Rothwell wrote:
 > 
->     perf, x86: Provide a PEBS capable cycle event
->     
->     Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
->     LKML-Reference: <new-submission>
->     Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> ---
->  arch/x86/kernel/cpu/perf_event_intel.c |   26 ++++++++++++++++++++++++++
->  1 files changed, 26 insertions(+), 0 deletions(-)
+> > Hi all,
+> > 
+> > [The mirroring on kernel.org is running slowly]
+> > 
+> > Changes since 20101217:
+> 
+> 
+> ERROR: "thermal_cooling_device_register" [drivers/acpi/video.ko] undefined!
+> ERROR: "thermal_cooling_device_unregister" [drivers/acpi/video.ko] undefined!
 
-btw., precise profiling via PEBS:
+This bug has been reported two months ago, one month ago, it has been ignored twice 
+and now the bug has been pushed upstream and it's triggering there as well.
 
-  perf record -e cycles:p ...
-
-works pretty nicely now on Nehalem CPUs and later.
-
-Could we perhaps make perf record and perf top default to cycles:p on x86, and 
-silently fall back to regular cycles events if the CPU does not support this event 
-type?
-
-That would make our profiles more precise by default - without users having to do 
-anything funky.
+What's going on?
 
 Thanks,
 
