@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729Ab1AZI26 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 03:28:58 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:33104 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751383Ab1AZI24 (ORCPT
+	id S1752824Ab1AZI3x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 03:29:53 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:28507 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718Ab1AZI3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 03:28:56 -0500
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "'Chris Ball'" <cjb@laptop.org>, "'Philip Rakity'" <prakity@marvell.com>
-Cc: "'Kyungmin Park'" <kmpark@infradead.org>, <linux-mmc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <andrew.chih.howe.khor@intel.com>,
-        <kok.howg.ewe@intel.com>
-References: <4CD8DE9C.4040505@dsn.okisemi.com> <AANLkTimfnj8GcSwmALjaZUBsiq6ssaVuzVZZsZHRYmiX@mail.gmail.com> <001701cb814c$71926bf0$66f8800a@maildom.okisemi.com> <001201cb90f4$4be8f790$66f8800a@maildom.okisemi.com> <2D50F985-2383-4406-8514-DFE462A5F546@marvell.com> <4D2E0464ABB54FFF9C10583336E27879@hacdom.okisemi.com> <4C4E7DE5-7CF1-4D97-9CAD-F600FCBE477A@marvell.com> <20110119174233.GA30494@void.printf.net>
-Subject: RE: A MMC card transfer issue
-Date: Wed, 26 Jan 2011 17:28:53 +0900
-Message-ID: <F6E8C422FB8A4D78A5BDF7B6ECDA1E00@hacdom.okisemi.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <20110119174233.GA30494@void.printf.net>
-Thread-Index: Acu4AEXBv1AfBxVYRUOVCKr6XMKybQFMkJzQ
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+	Wed, 26 Jan 2011 03:29:52 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=wFMvimsxzfoW44+4M8mm9Kk1yHtHOpL5TEdxw3c057wLMcsxavOrJV+j4vCdMoYU8
+	KHqYlhogxTL5YvUMpQc6g==
+From: Greg Thelen <gthelen@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Greg Thelen <gthelen@google.com>
+Subject: [PATCH] oom: handle overflow in mem_cgroup_out_of_memory()
+Date: Wed, 26 Jan 2011 00:29:15 -0800
+Message-Id: <1296030555-3594-1-git-send-email-gthelen@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 20, 2011 2:43 AM, Chris Ball wrote
-> So, please re-test against 2.6.38-rc1 and let us know whether 
-> you still have problems.  Thanks,
-I have tested the latest "2.6.38-rc2".
-However, the issue remains to be seen.
+mem_cgroup_get_limit() returns a byte limit as a unsigned 64 bit value,
+which is converted to a page count by mem_cgroup_out_of_memory().  Prior
+to this patch the conversion could overflow on 32 bit platforms
+yielding a limit of zero.
 
-Thanks in advance,
------------------------------------------
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
+Signed-off-by: Greg Thelen <gthelen@google.com>
+---
+ mm/oom_kill.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> -----Original Message-----
-> From: Chris Ball [mailto:cjb@laptop.org] 
-> Sent: Thursday, January 20, 2011 2:43 AM
-> To: Philip Rakity
-> Cc: Tomoya MORINAGA; Kyungmin Park; 
-> linux-mmc@vger.kernel.org; linux-kernel@vger.kernel.org; 
-> andrew.chih.howe.khor@intel.com; kok.howg.ewe@intel.com
-> Subject: Re: A MMC card transfer issue
-> 
-> Hi,
-> 
-> On Tue, Jan 18, 2011 at 10:05:04PM -0800, Philip Rakity wrote:
-> > 
-> > For 1 bit transcend cards you need these 2 patches.
-> > 
-> > >From 22113efd00491310da802f3b1a9a66cfcf415fac Mon Sep 17 00:00:00 
-> > >2001
-> > From: Aries Lee <arieslee@jmicron.com>
-> > Date: Wed, 15 Dec 2010 08:14:24 +0100
-> > Subject: [PATCH] mmc: Test bus-width for old MMC devices
-> 
-> Present in 2.6.38-rc1.
-> 
-> > >From 08c82dfad2458f8f9b83126224a85e7ea9e2b046 Mon Sep 17 00:00:00 
-> > >2001
-> > From: Takashi Iwai <tiwai@suse.de>
-> > Date: Wed, 22 Dec 2010 09:59:44 +0100
-> > Subject: [PATCH] mmc: fix mmc_set_bus_width_ddr() call without 
-> > bus-width-test cap
-> 
-> Also present in 2.6.38-rc1.
-> 
-> So, please re-test against 2.6.38-rc1 and let us know whether 
-> you still have problems.  Thanks,
-> 
-> -- 
-> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-> One Laptop Per Child
-> 
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 7dcca55..3fcac51 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -538,7 +538,7 @@ void mem_cgroup_out_of_memory(struct mem_cgroup *mem, gfp_t gfp_mask)
+ 	struct task_struct *p;
+ 
+ 	check_panic_on_oom(CONSTRAINT_MEMCG, gfp_mask, 0, NULL);
+-	limit = mem_cgroup_get_limit(mem) >> PAGE_SHIFT;
++	limit = min(mem_cgroup_get_limit(mem) >> PAGE_SHIFT, (u64)ULONG_MAX);
+ 	read_lock(&tasklist_lock);
+ retry:
+ 	p = select_bad_process(&points, limit, mem, NULL);
+-- 
+1.7.3.1
 
