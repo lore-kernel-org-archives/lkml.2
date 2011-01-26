@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481Ab1AZQmV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 11:42:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53074 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752778Ab1AZQmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 11:42:20 -0500
-Message-ID: <4D404EBF.8020508@redhat.com>
-Date: Wed, 26 Jan 2011 10:41:35 -0600
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	id S1753512Ab1AZQoM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 11:44:12 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:35574 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752615Ab1AZQoK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 11:44:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=E56kNM83uj8tRcslXbboVm/nYZ1/ES6dDs5Vso89skBUnKIhuCQIfA/xF0LWgiTgus
+         W8hadO12zb8bpOl3M/M5H+vwDSipt36pqNBWJlwCBGfic2CTx1UpkMvEQVGrpaDMbIXS
+         FpliW8i/osB0YxufBoHz6rs8XCM+hx8urXeug=
+Date: Wed, 26 Jan 2011 08:44:00 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils ?
+Message-ID: <20110126164359.GA29163@core.coreip.homeip.net>
+References: <20110125053117.GD7850@core.coreip.homeip.net>
+ <4D3EB734.5090100@redhat.com>
+ <20110125164803.GA19701@core.coreip.homeip.net>
+ <AANLkTi=1Mh0JrYk5itvef7O7e7pR+YKos-w56W5q4B8B@mail.gmail.com>
+ <20110125205453.GA19896@core.coreip.homeip.net>
+ <4D3F4804.6070508@redhat.com>
+ <4D3F4D11.9040302@teksavvy.com>
+ <20110125232914.GA20130@core.coreip.homeip.net>
+ <20110126020003.GA23085@core.coreip.homeip.net>
+ <4D403855.4050706@teksavvy.com>
 MIME-Version: 1.0
-To: Ric Wheeler <rwheeler@redhat.com>
-CC: djwong@us.ibm.com, Tejun Heo <tj@kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>, axboe@kernel.dk, tytso@mit.edu,
-        shli@kernel.org, neilb@suse.de, adilger.kernel@dilger.ca, jack@suse.cz,
-        snitzer@redhat.com, linux-kernel@vger.kernel.org, kmannth@us.ibm.com,
-        cmm@us.ibm.com, linux-ext4@vger.kernel.org, hch@lst.de,
-        josef@redhat.com
-Subject: Re: [PATCHSET] Refactor barrier=/nobarrier flags from fs to block
- layer
-References: <20110126071200.GE32261@tux1.beaverton.ibm.com> <4D400A44.6030502@redhat.com>
-In-Reply-To: <4D400A44.6030502@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D403855.4050706@teksavvy.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/26/11 5:49 AM, Ric Wheeler wrote:
-> On 01/26/2011 02:12 AM, Darrick J. Wong wrote:
->> Hello,
->>
->>  From what I can tell, most of the filesystems that know how to issue commands
->> to flush the write cache also have some mechanism for the user to override
->> whether or not the filesystem actually issues those flushes.  Unfortunately,
->> the term "barrier" is obsolete having been changed into flushes in 2.6.36, and
->> many of the filesystems implement the mount options with slightly different
->> syntaxes (barrier=[0|1|none|flush], nobarrier, etc).
->>
->> This patchset adds to the block layer a sysfs knob that an administrator can
->> use to disable flushes, and removes the mount options from the filesystem code.
->> As a starting point, I'm removing the mount options and flush toggle from
->> jbd2/ext4.
->>
->> Anyway, I'm looking for some feedback about refactoring the barrier/flush
->> control knob into the block layer.  It sounds like we want a knob that picks
->> the safest option (issue flushes when supported) unless the administrator
->> decides that it is appropriate to do otherwise.  I suspect that there are good
->> arguments for not having a knob at all, and good arguments for a safe knob.
->> However, since I don't see the barrier options being removed en masse, I'm
->> assuming that we still want a knob somewhere.  Do we need the ignore_fua knob
->> too?  Is this the proper way to deprecate mount options out of filesystems?
->>
->> --D
+On Wed, Jan 26, 2011 at 10:05:57AM -0500, Mark Lord wrote:
+> On 11-01-25 09:00 PM, Dmitry Torokhov wrote:
+> > On Tue, Jan 25, 2011 at 03:29:14PM -0800, Dmitry Torokhov wrote:
+> >> On Tue, Jan 25, 2011 at 05:22:09PM -0500, Mark Lord wrote:
+> >>> On 11-01-25 05:00 PM, Mauro Carvalho Chehab wrote:
+> >>>> Em 25-01-2011 18:54, Dmitry Torokhov escreveu:
+> ..
+> >>>>> That has been done as well; we have 2 new ioctls and kept 2 old ioctls.
+> >>>
+> >>> That's the problem: you did NOT keep the two old ioctls().
+> >>> Those got changed too.. so now we have four NEW ioctls(),
+> >>> none of which backward compatible with userspace.
+> >>>
+> >>
+> >> Please calm down. This, in fact, is not new vs old ioctl problem but
+> >> rather particular driver (or rather set of drivers) implementation
+> >> issue. Even if we drop the new ioctls and convert the RC code to use the
+> >> old ones you'd be observing the same breakage as RC code responds with
+> >> -EINVAL to not-yet-established mappings.
+> >>
+> >> I'll see what can be done for these drivers; I guess we could supply a
+> >> fake KEY_RESERVED entry for not mapped scancodes if there are mapped
+> >> scancodes "above" current one. That should result in the same behavior
+> >> for RCs as before.
+> >>
+> >
+> > I wonder if the patch below is all that is needed...
 > 
-> Just to be clear, I strongly object to remove the mount options.
-
-Agreed, we are just finally, barely starting to win the education battle here.
-Removing or changing the option now will just set us back.  It should at
-LEAST remain as a deprecated option, with the deprecation message pointing
-to crystal-clear documentation.
-
--Eric
-
-> "Barrier" and "poke a control knob in the block" layer are both equally mysterious and meaningless to real users, so I do not see this as a gain,
 > 
-> Ric
+> Nope. Does not work here:
 > 
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> $ lsinput
+> protocol version mismatch (expected 65536, got 65537)
+> 
 
+It would be much more helpful if you tried to test what has been fixed
+(hint: version change wasn't it).
+
+-- 
+Dmitry
