@@ -1,96 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab1AZSaj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 13:30:39 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:42663 "EHLO zene.cmpxchg.org"
+	id S1753437Ab1AZSmr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 13:42:47 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:35173 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753469Ab1AZSah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 13:30:37 -0500
-Date: Wed, 26 Jan 2011 19:30:23 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+	id S1753179Ab1AZSmq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 13:42:46 -0500
+Date: Wed, 26 Jan 2011 12:40:57 -0600
+From: Robert Jennings <rcj@linux.vnet.ibm.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Nitin Gupta <ngupta@vflare.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] oom: handle overflow in mem_cgroup_out_of_memory()
-Message-ID: <20110126183023.GB2401@cmpxchg.org>
-References: <1296030555-3594-1-git-send-email-gthelen@google.com>
- <20110126170713.GA2401@cmpxchg.org>
- <xr93y667lgdm.fsf@gthelen.mtv.corp.google.com>
+Subject: Re: [PATCH 4/7] zram/xvmalloc: free bit block insertion
+ optimization
+Message-ID: <20110126184057.GC17383@linux.vnet.ibm.com>
+Mail-Followup-To: Pekka Enberg <penberg@kernel.org>,
+	Nitin Gupta <ngupta@vflare.org>,
+	Greg Kroah-Hartman <gregkh@suse.de>,
+	Pekka Enberg <penberg@cs.helsinki.fi>, devel@driverdev.osuosl.org,
+	linux-kernel@vger.kernel.org
+References: <20110126172148.GB8446@linux.vnet.ibm.com>
+ <20110126172508.GF8446@linux.vnet.ibm.com>
+ <AANLkTi=eM-e9KU0PedOcXqR8TEVeAuP8Vnna-pxO4pRU@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <xr93y667lgdm.fsf@gthelen.mtv.corp.google.com>
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <AANLkTi=eM-e9KU0PedOcXqR8TEVeAuP8Vnna-pxO4pRU@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 26, 2011 at 09:33:09AM -0800, Greg Thelen wrote:
-> Johannes Weiner <hannes@cmpxchg.org> writes:
+* Pekka Enberg (penberg@kernel.org) wrote:
+> On Wed, Jan 26, 2011 at 7:25 PM, Robert Jennings <rcj@linux.vnet.ibm.com> wrote:
+> > There is no need to set the bits in the first- and second-level indices
+> > to indicate a free page when we know that a free page existed at this
+> > level.
+> >
+> > Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
 > 
-> > On Wed, Jan 26, 2011 at 12:29:15AM -0800, Greg Thelen wrote:
-> >> mem_cgroup_get_limit() returns a byte limit as a unsigned 64 bit value,
-> >> which is converted to a page count by mem_cgroup_out_of_memory().  Prior
-> >> to this patch the conversion could overflow on 32 bit platforms
-> >> yielding a limit of zero.
-> >
-> > Balbir: It can truncate, because the conversion shrinks the required
-> > bits of this 64-bit number by only PAGE_SHIFT (12).  Trying to store
-> > the resulting up to 52 significant bits in a 32-bit integer will cut
-> > up to 20 significant bits off.
-> >
-> >> Signed-off-by: Greg Thelen <gthelen@google.com>
-> >> ---
-> >>  mm/oom_kill.c |    2 +-
-> >>  1 files changed, 1 insertions(+), 1 deletions(-)
-> >> 
-> >> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> >> index 7dcca55..3fcac51 100644
-> >> --- a/mm/oom_kill.c
-> >> +++ b/mm/oom_kill.c
-> >> @@ -538,7 +538,7 @@ void mem_cgroup_out_of_memory(struct mem_cgroup *mem, gfp_t gfp_mask)
-> >>  	struct task_struct *p;
-> >>  
-> >>  	check_panic_on_oom(CONSTRAINT_MEMCG, gfp_mask, 0, NULL);
-> >> -	limit = mem_cgroup_get_limit(mem) >> PAGE_SHIFT;
-> >> +	limit = min(mem_cgroup_get_limit(mem) >> PAGE_SHIFT, (u64)ULONG_MAX);
-> >
-> > I would much prefer using min_t(u64, ...).  To make it really, really
-> > explicit that this is 64-bit arithmetic.  But that is just me, no
-> > correctness issue.
-> >
-> > Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-> 
-> I agree that min_t() is clearer.  Does the following look better?
+> Why is it not necessary? I don't know that part of the code well
+> enough to tell if this patch is safe or not.
 
-Sweet, thank you Greg!
+This change is in a conditional block which is entered only when there is
+an existing data block on the freelist where the insert has taken place.
 
-> Author: Greg Thelen <gthelen@google.com>
-> Date:   Wed Jan 26 00:05:59 2011 -0800
-> 
->     oom: handle truncation in mem_cgroup_out_of_memory()
->     
->     mem_cgroup_get_limit() returns a byte limit as an unsigned 64 bit value.
->     mem_cgroup_out_of_memory() converts this byte limit to an unsigned long
->     page count.  Prior to this patch, the 32 bit version of
->     mem_cgroup_out_of_memory() would silently truncate the most significant
->     20 bits from byte limit when constructing the limit as a page count.
->     For byte limits with the lowest 44 bits set to zero, this truncation
->     would compute a page limit of zero.
->     
->     This patch checks for such large byte limits that cannot be converted to
->     page counts without loosing information.  In such situations, where a 32
->     bit page counter is too small to represent the corresponding byte count,
->     select a maximal page count.
->     
->     Signed-off-by: Greg Thelen <gthelen@google.com>
+The new block is pushed onto the freelist stack and this conditional block
+is updating links in the prior stack head to point to the new stack head.
+After this conditional block the first-/second-level indices are updated
+to indicate that there is a free block at this location.
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+This patch adds an immediate return from the conditional block to avoid
+setting bits again to indicate a free block on this freelist. They would
+already be set because there was an existing free block on this freelist.
 
-That being said, does this have any practical impact at all?  I mean,
-this code runs when the cgroup limit is breached.  But if the number
-of allowed pages (not bytes!) can not fit into 32 bits, it means you
-have a group of processes using more than 16T.  On a 32-bit machine.
+> > ---
+> >  drivers/staging/zram/xvmalloc.c |    2 ++
+> >  1 files changed, 2 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/staging/zram/xvmalloc.c b/drivers/staging/zram/xvmalloc.c
+> > index a507f95..b3622f1 100644
+> > --- a/drivers/staging/zram/xvmalloc.c
+> > +++ b/drivers/staging/zram/xvmalloc.c
+> > @@ -205,6 +205,8 @@ static void insert_block(struct xv_pool *pool, struct page *page, u32 offset,
+> >                nextblock->link.prev_page = page;
+> >                nextblock->link.prev_offset = offset;
+> >                put_ptr_atomic(nextblock, KM_USER1);
+> > +               /* If there was a next page then the free bits are set. */
+> > +               return;
+> >        }
+> >
+> >        __set_bit(slindex % BITS_PER_LONG, &pool->slbitmap[flindex]);
