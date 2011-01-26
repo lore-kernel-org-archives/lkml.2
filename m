@@ -1,81 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753703Ab1AZRFH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 12:05:07 -0500
-Received: from lo.gmane.org ([80.91.229.12]:48512 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752705Ab1AZRFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 12:05:06 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Emil Langrock <emil.langrock@gmx.de>
-Subject: Re: =?utf-8?b?e3BhaW5mdWxseQ==?= =?utf-8?b?QklTRUNURUR9?= Please revert f25c80a4b2: arch/um/drivers: remove duplicate structure field initialization
-Date: Wed, 26 Jan 2011 16:32:33 +0000 (UTC)
-Message-ID: <loom.20110126T170748-626@post.gmane.org>
-References: <4CA09977.80506@panasas.com> <AANLkTim85sH_2o=xCiDuoQrHq_7ZL96Y91xQMGxUP5Fy@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 89.246.164.138 (Mozilla/5.0 (X11; U; Linux i686; en-US) AppleWebKit/534.13 (KHTML, like Gecko) Chrome/9.0.597.45 Safari/534.13)
+	id S1753765Ab1AZRFn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 12:05:43 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:42706 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753584Ab1AZRFm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 12:05:42 -0500
+X-SpamScore: -11
+X-BigFish: VPS-11(zz1432N98dNzz1202hzz8275bhz32i637h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LFN3HA-01-09K-02
+X-M-MSG: 
+Date: Wed, 26 Jan 2011 18:05:32 +0100
+From: Hans Rosenfeld <hans.rosenfeld@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: "hpa@zytor.com" <hpa@zytor.com>, "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>
+Subject: Re: [PATCH 4/4] x86, amd: Support L3 Cache Partitioning on AMD
+ family 0x15 CPUs
+Message-ID: <20110126170532.GG877@escobedo.osrc.amd.com>
+References: <1295881543-572552-1-git-send-email-hans.rosenfeld@amd.com>
+ <1295881543-572552-5-git-send-email-hans.rosenfeld@amd.com>
+ <20110126105637.GA27809@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110126105637.GA27809@elte.hu>
+Organization: Advanced Micro Devices GmbH, Einsteinring 24, 85609 Dornach b.
+ Muenchen; Geschaeftsfuehrer: Andrew Bowd, Alberto Bozzo; Sitz: Dornach,
+ Gemeinde Aschheim, Landkreis Muenchen; Registergericht Muenchen, HRB Nr.
+ 43632
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds <at> linux-foundation.org> writes:
-
-> The real problem is that maintainers often pick random - and not at
-> all stable - points for their development to begin with. They just
-> pick some random "this is where Linus -git tree is today", and do
-> their development on top of that. THAT is the problem - they are
-> unaware that there's some nasty bug in that version.
+On Wed, Jan 26, 2011 at 05:56:37AM -0500, Ingo Molnar wrote:
 > 
-> It's actually made worse by rebasing. A lot of people end up rebasing
-> on top of such a random kernel (again, just because it's the 'most
-> recent'). It's very annoying.
+> * Hans Rosenfeld <hans.rosenfeld@amd.com> wrote:
 > 
-> Not to mention that rebasing easily results in bugs of its own, when
-> you do hit merge conflicts or double-apply something that already got
-> applied (and wasn't seen as a duplicate and merged away automatically,
-> because the code had been further modified since). We had that in the
-> DVB pull request just yesterday.
+> > L3 Cache Partitioning allows selecting which of the 4 L3 subcaches can
+> > be used for evictions by the L2 cache of each compute unit. By writing a
+> > 4-bit hexadecimal mask into the the sysfs file /sys/devices/system/cpu/\
+> > cpuX/cache/index3/subcaches, the user can set the enabled subcaches for
+> > a CPU. The settings are directly read from and written to the hardware,
+> > so there is no way to have contradicting settings for two CPUs belonging
+> > to the same compute unit. Writing will always overwrite any previous
+> > setting for a compute unit.
+> > 
+> > Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
+> > ---
+> >  arch/x86/include/asm/amd_nb.h         |    3 +
+> >  arch/x86/kernel/amd_nb.c              |   55 +++++++++++++++++++++++++
+> >  arch/x86/kernel/cpu/intel_cacheinfo.c |   73 +++++++++++++++++++++++++++-----
+> >  3 files changed, 119 insertions(+), 12 deletions(-)
 > 
-> > So in short this is a call for, possibly, cleaner History in main Kernel.
-> > Please remind me why re-writing history is a bad thing.
+> I have picked up the other 3 patches, but this one causes this build failure:
 > 
-> Rebasing doesn't result in cleaner history. It just results in
-> _incorrect_ history that looks simpler.
-> 
-> To get cleaner history, people should try to keep their tree clean.
-> Not add random patches to random branches, and not start random
-> branches at random points in time that aren't necessarily stable.
+>  arch/x86/kernel/amd_nb.c: In function ?amd_get_subcaches?:
+>  arch/x86/kernel/amd_nb.c:129:36: error: ?struct cpuinfo_x86? has no member named ?compute_unit_id?
+>  arch/x86/kernel/amd_nb.c: In function ?amd_set_subcaches?:
+>  arch/x86/kernel/amd_nb.c:154:28: error: ?struct cpuinfo_x86? has no member named ?compute_unit_id?
+>  arch/x86/kernel/amd_nb.c:155:36: error: ?struct cpuinfo_x86? has no member named ?compute_unit_id?
+>  arch/x86/kernel/amd_nb.c: In function ?amd_get_subcaches?:
+>  arch/x86/kernel/amd_nb.c:130:1: warning: control reaches end of non-void function
 
-I understand what you want to say, but I don't see how you define stable points. 
-Maybe you mean that a stable point is a non-rc release of Linux. This of course 
-sounds like a good idea when you start a complete new development without any 
-dependencies, but think about following events (ordered by time of event):
+Hrmpf. CONFIG_SMP.
 
- * v2.6.37 was released
- * foo starts to code the feature bar
- * foo asks a subtree maintainer to merge his stuff (subtree maintainer doesn't 
-merge it because 2.6.38-rc1 wasn't released yet)
- * v2.6.38-rc1 was released
- * subtree maintainer merges the commit because we need more bar in Linux
- * v2.6.38 was released
- * subtree maintainer asks you to merge his tree with the cool bar feature
- * foo wants to extent the bar feature to superbar and get it in 2.6.40
- * v2.6.39-rc1 gets released with the cool bar feature
- * v2.6.39 gets released with the final and bugfixed bar feature
- * (your merge window - time were foo will not be able to get new patches to the 
-subtree maintainer for v2.6.40-rc1)
- * v2.6.40-rc1 gets released
+Sorry for the noise, fixed patch will follow shortly.
 
-Even if this is a relative small example and the usual problem is more complex - 
-what starting point should be used for his superbar feature? My obvious answer 
-would be 2.6.39-rc1 (but is it really a stable starting point?)
 
-Kind regards,
-Emil Langrock
+Hans
+
+
+-- 
+%SYSTEM-F-ANARCHISM, The operating system has been overthrown
 
