@@ -1,85 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675Ab1AZJ5R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 04:57:17 -0500
-Received: from casper.infradead.org ([85.118.1.10]:37455 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039Ab1AZJ5Q convert rfc822-to-8bit (ORCPT
+	id S1752762Ab1AZJ51 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 04:57:27 -0500
+Received: from mga09.intel.com ([134.134.136.24]:22436 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752701Ab1AZJ5Y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 04:57:16 -0500
-Subject: Re: [PATCH 16/16] KVM-GST: adjust scheduler cpu power
-From: Peter Zijlstra <peterz@infradead.org>
-To: Glauber Costa <glommer@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
-        Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Avi Kivity <avi@redhat.com>
-In-Reply-To: <1295990853.15920.37.camel@mothafucka.localdomain>
-References: <1295892397-11354-1-git-send-email-glommer@redhat.com>
-	 <1295892397-11354-17-git-send-email-glommer@redhat.com>
-	 <1295893920.28776.468.camel@laptop>
-	 <1295895083.15920.9.camel@mothafucka.localdomain>
-	 <1295898690.28776.472.camel@laptop>
-	 <1295985756.15920.33.camel@mothafucka.localdomain>
-	 <1295986386.28776.1101.camel@laptop>
-	 <1295988455.15920.35.camel@mothafucka.localdomain>
-	 <1295989664.28776.1124.camel@laptop>
-	 <1295990853.15920.37.camel@mothafucka.localdomain>
-Content-Type: text/plain; charset="UTF-8"
+	Wed, 26 Jan 2011 04:57:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,379,1291622400"; 
+   d="scan'208";a="596584887"
+From: "Berg, Johannes" <johannes.berg@intel.com>
+To: Bob Liu <lliubbo@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "chrisw@sous-sol.org" <chrisw@sous-sol.org>,
+        "Winkler, Tomas" <tomas.winkler@intel.com>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "gregkh@suse.de" <gregkh@suse.de>
+Date: Wed, 26 Jan 2011 09:56:56 +0000
+Subject: RE: [PATCH] firmware_classs: change val uevent's type to bool
+Thread-Topic: [PATCH] firmware_classs: change val uevent's type to bool
+Thread-Index: Acu9Px2vr085tGJeSkGNolWqSUcRiwAAD/oy
+Message-ID: <C5C86A19469DAE48AAAD0E5F3716E44501D6329793@irsmsx504.ger.corp.intel.com>
+References: <1296036004-15644-1-git-send-email-lliubbo@gmail.com>
+In-Reply-To: <1296036004-15644-1-git-send-email-lliubbo@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
-Date: Wed, 26 Jan 2011 10:57:51 +0100
-Message-ID: <1296035871.28776.1132.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-25 at 19:27 -0200, Glauber Costa wrote:
-> On Tue, 2011-01-25 at 22:07 +0100, Peter Zijlstra wrote:
-> > On Tue, 2011-01-25 at 18:47 -0200, Glauber Costa wrote:
-> > > On Tue, 2011-01-25 at 21:13 +0100, Peter Zijlstra wrote:
-> > > > On Tue, 2011-01-25 at 18:02 -0200, Glauber Costa wrote:
-> > > > 
-> > > > > I fail to see how does clock_task influence cpu power.
-> > > > > If we also have to touch clock_task for better accounting of other
-> > > > > stuff, it is a separate story.
-> > > > > But for cpu_power, I really fail. Please enlighten me.
-> > > > 
-> > > > static void update_rq_clock_task(struct rq *rq, s64 delta)
-> > > > {
-> > > >         s64 irq_delta;
-> > > > 
-> > > >         irq_delta = irq_time_read(cpu_of(rq)) - rq->prev_irq_time;
-> > > > 
-> > > >         if (irq_delta > delta)
-> > > >                 irq_delta = delta;
-> > > > 
-> > > >         rq->prev_irq_time += irq_delta;
-> > > >         delta -= irq_delta;
-> > > >         rq->clock_task += delta;
-> > > > 
-> > > >         if (irq_delta && sched_feat(NONIRQ_POWER))
-> > > >                 sched_rt_avg_update(rq, irq_delta);
-> > > > }
-> > > > 
-> > > > its done through that sched_rt_avg_update() (should probably rename
-> > > > that), it computes a floating average of time not spend on fair tasks.
-> > > > 
-> > > It creates a dependency on CONFIG_IRQ_TIME_ACCOUNTING, though.
-> > > This piece of code is simply compiled out if this option is disabled.
-> > 
-> > We can pull this bit out and make the common bit also available for
-> > paravirt.
-> 
-> scale_rt_power() seems to do the right thing, but all the path leading
-> to it seem to work on rq->clock, rather than rq->clock_task.
+@@ -463,7 +463,8 @@ fw_create_instance(struct firmware *firmware, const char *fw_name,
+        f_dev->parent = device;
+        f_dev->class = &firmware_class;
 
-Not quite, see how rq->clock_task is irq_delta less than the increment
-to rq->clock? You want it to be your steal-time delta less too.
+-       dev_set_uevent_suppress(f_dev, true);
++       if (uevent)
++               dev_set_uevent_suppress(f_dev, true);
 
-> Although I do can experiment with that as well, could you please
-> elaborate on what are your reasons to prefer this over than variations
-> of the method I proposed?
+Everything but this is a no-op basically, but you didn't even describe this change?
 
-Because I want rq->clock_task to not include steal-time.
+johannes
+--------------------------------------------------------------------------------------
+Intel GmbH
+Dornacher Strasse 1
+85622 Feldkirchen/Muenchen, Deutschland 
+Sitz der Gesellschaft: Feldkirchen bei Muenchen
+Geschaeftsfuehrer: Douglas Lusk, Peter Gleissner, Hannes Schwaderer
+Registergericht: Muenchen HRB 47456 
+Ust.-IdNr./VAT Registration No.: DE129385895
+Citibank Frankfurt a.M. (BLZ 502 109 00) 600119052
+
