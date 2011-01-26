@@ -1,101 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753295Ab1AZOuh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 09:50:37 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:22484 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752267Ab1AZOug convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 09:50:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ruNuo/G+V6VLxLUsr4xGvlgqbmrr07oeHGbjSQQ8otuqC7gABqwj/Syf1UBZF4THk7
-         YxLMF2S/nnzO2njDEvcA==
+	id S1753364Ab1AZOw0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 09:52:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56430 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753002Ab1AZOwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 09:52:24 -0500
+Message-ID: <4D403520.1030504@redhat.com>
+Date: Wed, 26 Jan 2011 15:52:16 +0100
+From: Gerd Hoffmann <kraxel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <1296052834.28776.1165.camel@laptop>
-References: <AANLkTikX=tQwYKj9VZhCNudErf4TP-74+Jv3WPvSdUMn@mail.gmail.com>
-	<1295633925.28776.308.camel@laptop>
-	<AANLkTima4Bfe-wRewbEkbrF9MGJmW1D0Cd3B4KynntSk@mail.gmail.com>
-	<1296052834.28776.1165.camel@laptop>
-Date: Wed, 26 Jan 2011 15:50:32 +0100
-Message-ID: <AANLkTik=zGEUqh0AOWDus_bUM4xYxka0Grqn6cRDgz_j@mail.gmail.com>
-Subject: Re: perf_events: question about __perf_event_read()
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, mingo@elte.hu,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mark Lord <kernel@teksavvy.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils
+ ?
+References: <4D3E59CA.6070107@teksavvy.com> <4D3E5A91.30207@teksavvy.com> <20110125053117.GD7850@core.coreip.homeip.net> <4D3EB734.5090100@redhat.com> <20110125164803.GA19701@core.coreip.homeip.net> <AANLkTi=1Mh0JrYk5itvef7O7e7pR+YKos-w56W5q4B8B@mail.gmail.com> <20110125205453.GA19896@core.coreip.homeip.net> <4D3F4804.6070508@redhat.com> <4D3F4D11.9040302@teksavvy.com> <20110125232914.GA20130@core.coreip.homeip.net> <20110126020003.GA23085@core.coreip.homeip.net> <4D4004F9.6090200@redhat.com> <4D401CC5.4020000@redhat.com> <4D402D35.4090206@redhat.com>
+In-Reply-To: <4D402D35.4090206@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yeah, something like that.
+   Hi,
 
-I didn't quite understand why the event->pmu->read() was outside of the
-lock.
+>> Hmm, doesn't apply cleanly ...
+>
+> I suspect that Dmitry did the patch against the Debian package, based on a 2007
+> version of it, as it seems that Debian is using an older version of the package.
 
-Thanks.
+Applied, thanks.
 
-On Wed, Jan 26, 2011 at 3:40 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, 2011-01-21 at 19:25 +0100, Stephane Eranian wrote:
->
->> I remember checking this about a month ago and tip-x86 had
->> some checks in this routine, but now the're gone.
->
-> I did a quick look through history and I couldn't find anything like
-> that, a well...
->
->> I think you need something like:
->>
->> +     if (ctx->is_active)
->> +             update_context_time(ctx);
->>
->> +     if (event->state == PERF_EVENT_STATE_ACTIVE)
->> +             event->pmu->read(event);
->
-> Something like so?
->
-> ---
-> Subject: perf: Fix race in perf_event_read()
-> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Date: Wed Jan 26 15:38:35 CET 2011
->
-> It is quite possible for the event to have been disabled between
-> perf_event_read() sending the IPI and the CPU servicing the IPI and
-> calling __perf_event_read(), hence revalidate the state.
->
-> Reported-by: Stephane Eranian <eranian@google.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> LKML-Reference: <new-submission>
-> ---
->  kernel/perf_event.c |    7 ++++---
->  1 file changed, 4 insertions(+), 3 deletions(-)
->
-> Index: linux-2.6/kernel/perf_event.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/perf_event.c
-> +++ linux-2.6/kernel/perf_event.c
-> @@ -1901,11 +1901,12 @@ static void __perf_event_read(void *info
->                return;
->
->        raw_spin_lock(&ctx->lock);
-> -       update_context_time(ctx);
-> +       if (ctx->is_active)
-> +               update_context_time(ctx);
->        update_event_times(event);
-> +       if (event->state == PERF_EVENT_STATE_ACTIVE)
-> +               event->pmu->read(event);
->        raw_spin_unlock(&ctx->lock);
-> -
-> -       event->pmu->read(event);
->  }
->
->  static inline u64 perf_event_count(struct perf_event *event)
->
->
+cheers,
+   Gerd
+
