@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab1AZPdH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 10:33:07 -0500
-Received: from casper.infradead.org ([85.118.1.10]:43111 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab1AZPdG convert rfc822-to-8bit (ORCPT
+	id S1753535Ab1AZPdR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 10:33:17 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50776 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753424Ab1AZPdN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 10:33:06 -0500
-Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 4/20]  4: uprobes: Adding and
- remove a uprobe in a rb tree.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20110126151842.GM19725@linux.vnet.ibm.com>
-References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
-	 <20101216095803.23751.41491.sendpatchset@localhost6.localdomain6>
-	 <1295963773.28776.1054.camel@laptop>
-	 <20110126084522.GF19725@linux.vnet.ibm.com>
-	 <1296036847.28776.1142.camel@laptop>
-	 <20110126151842.GM19725@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
+	Wed, 26 Jan 2011 10:33:13 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1101261004560.8580@xanadu.home>
+References: <20110125.194532.71125517.davem@davemloft.net> <1296019325-17801-1-git-send-email-thomas@wytron.com.tw>
+ <alpine.LFD.2.00.1101261004560.8580@xanadu.home>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 26 Jan 2011 08:32:52 -0700
+X-Google-Sender-Auth: 9zMMKDbYWOj-hAE3-SlhXcN8bvg
+Message-ID: <AANLkTimCMpB+mOHv+8GMOkFF0qMh+bVxr56_-8r3EOqc@mail.gmail.com>
+Subject: Re: [PATCH v4] smc91x: add devicetree support
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Thomas Chou <thomas@wytron.com.tw>, David Miller <davem@davemloft.net>,
+        lkml <linux-kernel@vger.kernel.org>, nios2-dev@sopc.et.ntust.edu.tw,
+        devicetree-discuss@lists.ozlabs.org, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Date: Wed, 26 Jan 2011 16:33:14 +0100
-Message-ID: <1296055994.28776.1229.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-26 at 20:48 +0530, Srikar Dronamraju wrote:
-> * Peter Zijlstra <peterz@infradead.org> [2011-01-26 11:14:07]:
-> 
-> > On Wed, 2011-01-26 at 14:15 +0530, Srikar Dronamraju wrote:
-> > > 
-> > > 
-> > > Okay, Will do, but Is there a reason for moving the fvalue out of the
-> > > uprobe_consumer? Except for reducing the size of the structure, I am
-> > > unable to see advantage. 
-> > 
-> > That's about it, and its the normal way to do such things in kernel
-> > space.
-> 
-> But the disadvantage would be we wont be able to share the filter
-> functions. Currently i had one patch that implemented the common
-> filter functions that tracers could reuse.
+On Wed, Jan 26, 2011 at 8:17 AM, Nicolas Pitre <nico@fluxnic.net> wrote:
+> On Wed, 26 Jan 2011, Thomas Chou wrote:
+>
+>> Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
+>> ---
+>> v2 specify part numbers in compat as Grant suggested.
+>> v3 more specific part name.
+>> v4 include match table only for OF as David suggested.
+>
+> The smc91x driver relies on many parameters which are platform specific,
+> such as the bus width capabilities, register spacing due to special bus
+> wiring, interrupt signal level, LED configuration, whether or not to
+> configure the chip with a wait state, etc.  Will the device tree support
+> take care of those things?
 
-But you could still do that, just make then use something like:
+Short answer, yes
 
-struct uprobe_simple_consumer {
-	struct uprobe_consumer consumer;
-	unsigned long value;
-};
+In general bindings are written and documented as they are needed.  In
+this specific case,yes the device configuration should be encoded into
+the device tree node.  It is okay for now to not wire up any of that
+configuration if the defaults work for Thomas' platform, but to be
+useful in the long run they do need to be added.
 
+Typically a block or function call is added to the drivers .probe hook
+to decode device tree data if the of_node pointer is set.
 
+g.
 
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
