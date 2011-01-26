@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145Ab1AZVOD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 16:14:03 -0500
-Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:40919 "EHLO
-	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753929Ab1AZVOB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 16:14:01 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEADocQE1R8GBz/2dsb2JhbACkd3S8dw2FQgQ
-Date: Wed, 26 Jan 2011 22:13:59 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: dd diasemi <dd.diasemi@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org
-Subject: Re: [PATCHv3 7/11] WDT: Watchdog timer module of DA9052 device
-	driver
-Message-ID: <20110126211359.GA3790@infomag.iguana.be>
-References: <AANLkTi=AvA-hOa=5vSoZLMQXsXHdWWieFmCCVx7-p+T4@mail.gmail.com>
+	id S1754164Ab1AZVRG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 16:17:06 -0500
+Received: from imr4.ericy.com ([198.24.6.8]:56880 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752802Ab1AZVRF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 16:17:05 -0500
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: torvalds@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fixes for 2.6.38
+Date: Wed, 26 Jan 2011 13:52:24 -0800
+Message-ID: <1296078744-21895-1-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: git-send-email 1.7.3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=AvA-hOa=5vSoZLMQXsXHdWWieFmCCVx7-p+T4@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Linus,
 
-> +static long da9052_wdt_ioctl(struct file *file, unsigned int cmd,
-> +				unsigned long arg)
-> +{
-> +	struct da9052_wdt *wdt = get_wdt_da9052();
-> +	void __user *argp = (void __user *)arg;
-> +	int __user *p = argp;
-> +	unsigned char new_value;
-> +
-> +	switch (cmd) {
-> +
-> +	case WDIOC_GETSUPPORT:
-> +		return copy_to_user(argp, &da9052_wdt_info,
-> +			sizeof(da9052_wdt_info)) ? -EFAULT : 0;
-> +	case WDIOC_GETSTATUS:
-> +	case WDIOC_GETBOOTSTATUS:
-> +		return put_user(0, p);
-> +	case WDIOC_SETOPTIONS:
-> +		if (get_user(new_value, p))
-> +			return -EFAULT;
-> +		if (new_value & DA9052_STROBING_FILTER_ENABLE)
-> +			da9052_sm_set_strobing_filter(wdt, ENABLE);
-> +		if (new_value & DA9052_STROBING_FILTER_DISABLE)
-> +			da9052_sm_set_strobing_filter(wdt, DISABLE);
-> +		if (new_value & DA9052_SET_STROBING_MODE_MANUAL)
-> +			da9052_sm_set_strobing_mode(DA9052_STROBE_MANUAL);
-> +		if (new_value & DA9052_SET_STROBING_MODE_AUTO)
-> +			da9052_sm_set_strobing_mode(DA9052_STROBE_AUTO);
-> +		return 0;
+Please pull hwmon subsystem fixes for Linux 2.6.38 from:
 
-The ioctl WDIOC_SETOPTIONS call is not in line with the watchdog API.
-the supported options are:
-#define	WDIOS_DISABLECARD	0x0001	/* Turn off the watchdog timer */
-#define	WDIOS_ENABLECARD	0x0002	/* Turn on the watchdog timer */
-#define	WDIOS_TEMPPANIC		0x0004	/* Kernel panic on temperature trip */
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-for-linus
 
-Your options are:
-#define DA9052_STROBING_FILTER_ENABLE	0x0001
-#define DA9052_STROBING_FILTER_DISABLE	0x0002
-#define DA9052_SET_STROBING_MODE_MANUAL	0x0004
-#define DA9052_SET_STROBING_MODE_AUTO	0x0008
+Thanks,
+Guenter Roeck
 
-Please explain what you want to do.
+------
 
-Thanks in advance,
-Wim.
+The following changes since commit 1bae4ce27c9c90344f23c65ea6966c50ffeae2f5:
 
+  Linux 2.6.38-rc2 (2011-01-21 19:01:34 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-for-linus
+
+Henrik Rydberg (1):
+      hwmon: (applesmc) Properly initialize lockdep attributes
+
+Kalhan Trisal (1):
+      hwmon: (lis3) turn down the no IRQ message
+
+Luca Tettamanti (1):
+      hwmon: (asus_atk0110) Override interface detection on Sabertooth X58
+
+ drivers/hwmon/applesmc.c     |    1 +
+ drivers/hwmon/asus_atk0110.c |   23 ++++++++++++++++++++++-
+ drivers/hwmon/lis3lv02d.c    |    2 +-
+ 3 files changed, 24 insertions(+), 2 deletions(-)
