@@ -1,33 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226Ab1AZMG6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 07:06:58 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:35384 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239Ab1AZMG5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 07:06:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=kSKjGrXeOJ6yhIqkm47eZzdM91/5abLYBbOQvnttphTZL4Qj1zke74YkzB4MI5GOBc
-         dZEl+zH43Wn8NKCD+6e+eDwu0ZcNjj61EKkEdOLsteFpwhXKdJofC+KXBo5WuInxewWJ
-         ie/073qS7Il0xN1XancipQ756B1sCwsrmRRbg=
+	id S1753278Ab1AZMHG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 07:07:06 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:58602 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753235Ab1AZMHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 07:07:00 -0500
+Date: Wed, 26 Jan 2011 13:06:46 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Stephane Eranian <eranian@google.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: perf, x86: Provide a PEBS capable cycle event
+Message-ID: <20110126120646.GA20064@elte.hu>
+References: <201101062000.p06K0ESw011195@hera.kernel.org>
+ <20110126113740.GA13911@elte.hu>
+ <AANLkTintgqOkwo=WRH_9vGwGgXf0XrfU2e++daUOOG=i@mail.gmail.com>
 MIME-Version: 1.0
-Date: Wed, 26 Jan 2011 15:06:55 +0300
-Message-ID: <AANLkTi=aymKgDwSTLHryFDJhrRjc3TUPYe-KxmyunoV3@mail.gmail.com>
-Subject: allstable git tree is not up to date
-From: Alexander Beregalov <a.beregalov@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTintgqOkwo=WRH_9vGwGgXf0XrfU2e++daUOOG=i@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
 
-It seems the tree was updated 4 days ago
-http://git.kernel.org/?p=linux/kernel/git/hpa/linux-2.6-allstable.git;a=summary
+* Stephane Eranian <eranian@google.com> wrote:
 
-Could you please check
+> On Wed, Jan 26, 2011 at 12:37 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > * Linux Kernel Mailing List <linux-kernel@vger.kernel.org> wrote:
+> >
+> >> Gitweb:     http://git.kernel.org/linus/7639dae0ca11038286bbbcda05f2bef601c1eb8d
+> >> Commit:     7639dae0ca11038286bbbcda05f2bef601c1eb8d
+> >> Parent:     abe43400579d5de0078c2d3a760e6598e183f871
+> >> Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+> >> AuthorDate: Tue Dec 14 21:26:40 2010 +0100
+> >> Committer:  Ingo Molnar <mingo@elte.hu>
+> >> CommitDate: Thu Dec 16 11:36:44 2010 +0100
+> >>
+> >>     perf, x86: Provide a PEBS capable cycle event
+> >>
+> >>     Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> >>     LKML-Reference: <new-submission>
+> >>     Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> >> ---
+> >>  arch/x86/kernel/cpu/perf_event_intel.c |   26 ++++++++++++++++++++++++++
+> >>  1 files changed, 26 insertions(+), 0 deletions(-)
+> >
+> > btw., precise profiling via PEBS:
+> >
+> >  perf record -e cycles:p ...
+> >
+> > works pretty nicely now on Nehalem CPUs and later.
+> >
+> The problem is that cycles:p is not equivalent to cycles in terms of how
+> cycles are counted. cycles counts only unhalted cycles. cycles:p counts
+> ALL cycles, event when the CPU is in halted state.
+
+That's not really an issue in practice: it at most can cause a bit larger value for:
+
+     2.38%       swapper  [kernel.kallsyms]      [k] mwait_idle_with_hints                             ▮
+
+Which entry exists with regular cycles event _anyway_, because every irq entry ends 
+up there.
+
+So the difference is that this entry is now more accurate and correctly displays the 
+amount of time spent in idle.
+
+Is there any reason why we should not regard this as good thing, as a feature in 
+essence?
+
+Thanks,
+
+	Ingo
