@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038Ab1AZWhZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 17:37:25 -0500
-Received: from mga01.intel.com ([192.55.52.88]:62026 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753467Ab1AZWhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 17:37:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,382,1291622400"; 
-   d="scan'208";a="881316857"
-Message-ID: <4D40A223.8020507@intel.com>
-Date: Wed, 26 Jan 2011 14:37:23 -0800
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+	id S1754158Ab1AZWlK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 17:41:10 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:20766 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753564Ab1AZWlH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 17:41:07 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6238"; a="71888053"
+From: David Brown <davidb@codeaurora.org>
+To: Dima Zavin <dmitriyz@google.com>
+Cc: Daniel Walker <dwalker@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 02/11] msm: Generalize timer register mappings
+In-Reply-To: <AANLkTi=UBfBp-VOQ=n_a4sjA9v_dhcv-rXcXiE6zrf23@mail.gmail.com>
+	(Dima Zavin's message of "Wed, 26 Jan 2011 14:12:59 -0800")
+References: <1292384961-8851-1-git-send-email-stepanm@codeaurora.org>
+	<1295468747-22796-1-git-send-email-davidb@codeaurora.org>
+	<1295468747-22796-3-git-send-email-davidb@codeaurora.org>
+	<1295908604.29639.62.camel@c-dwalke-linux.qualcomm.com>
+	<8yaei81kjlc.fsf@huya.qualcomm.com>
+	<AANLkTi=UBfBp-VOQ=n_a4sjA9v_dhcv-rXcXiE6zrf23@mail.gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+X-Hashcash: 1:20:110126:linux-kernel@vger.kernel.org::MyjAHgRwfouFn/zn:0000000000000000000000000000000000J1T
+X-Hashcash: 1:20:110126:dwalker@codeaurora.org::pf4HwhvKyT/cE0cP:0000000000000000000000000000000000000001KJ/
+X-Hashcash: 1:20:110126:linux-arm-msm@vger.kernel.org::+r8tr5Q0isfgde0H:000000000000000000000000000000002SbY
+X-Hashcash: 1:20:110126:dmitriyz@google.com::r+ovYGvco6Ib8rAT:0000000000000000000000000000000000000000006CDV
+X-Hashcash: 1:20:110126:linux-arm-kernel@lists.infradead.org::dLEYICJwLbiwxHR1:00000000000000000000000009otM
+Date: Wed, 26 Jan 2011 14:41:07 -0800
+Message-ID: <8ya7hdr70fw.fsf@huya.qualcomm.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>,
-        "stable-review@kernel.org" <stable-review@kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [34/49] igb: only use vlan_gro_receive if vlans are registered
-References: <20110105230326.876575746@clark.site>
-In-Reply-To: <20110105230326.876575746@clark.site>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/5/2011 3:00 PM, Greg KH wrote:
-> 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
->
-> ------------------
->
-> From: Alexander Duyck<alexander.h.duyck@intel.com>
->
-> commit 31b24b955c3ebbb6f3008a6374e61cf7c05a193c upstream.
->
-> This change makes it so that vlan_gro_receive is only used if vlans have been
-> registered to the adapter structure.  Previously we were just sending all vlan
-> tagged frames in via this function but this results in a null pointer
-> dereference when vlans are not registered.
->
-> [ This fixes bugzilla entry 15582 -Eric Dumazet]
->
-> Signed-off-by: Alexander Duyck<alexander.h.duyck@intel.com>
-> Signed-off-by: Jeff Kirsher<jeffrey.t.kirsher@intel.com>
-> Acked-by: Eric Dumazet<eric.dumazet@gmail.com>
-> Signed-off-by: David S. Miller<davem@davemloft.net>
-> Signed-off-by: Greg Kroah-Hartman<gregkh@suse.de>
->
-> ---
->   drivers/net/igb/igb_main.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> --- a/drivers/net/igb/igb_main.c
-> +++ b/drivers/net/igb/igb_main.c
-> @@ -4560,7 +4560,7 @@ static void igb_receive_skb(struct igb_r
->   	bool vlan_extracted = (adapter->vlgrp&&  (status&  E1000_RXD_STAT_VP));
->
->   	skb_record_rx_queue(skb, ring->queue_index);
-> -	if (vlan_extracted)
-> +	if (vlan_extracted && adapter->vlgrp)
->   		vlan_gro_receive(&ring->napi, adapter->vlgrp,
->   		                 le16_to_cpu(rx_desc->wb.upper.vlan),
->   		                 skb);
->
->
+On Wed, Jan 26 2011, Dima Zavin wrote:
 
-I was just reviewing some history on this and I noticed that this patch 
-appears to be applied to the wrong kernel.  The change isn't needed for 
-2.6.32 as evidenced by the fact that vlan_extracted already includes 
-adapter->vlgrp as part of computing it's value.  However, the change is 
-needed for 2.6.33.  The original bugzilla include the patch for that kernel.
+> On Mon, Jan 24, 2011 at 2:44 PM, David Brown <davidb@codeaurora.org> wrote:
 
-Thanks,
+> To be honest I don't understand why you would want to do this at
+> runtime. You cannot select multiple SoCs in the kernel build anyway,
+> nor would you want to. Trying to have same kernel to boot on ARM v6
+> and ARM v7 would already be freaky enough. On top of that mixing 7201a
+> with all the baggage that it comes with 8x60 just wouldn't make sense.
+> These architectures are so different that it I can't see that ever
+> being useful. When would you ever envision building for multiple of
+> these SoCs at the same time?
 
-Alex
+People (especially distributions) want to be able to build one arm
+kernel rather than multiple ones.  The issues about CPU detection and
+base addresses are being worked on now.
 
+Other targets, especially omap, are already way ahead of MSM in this
+area.
+
+David
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
