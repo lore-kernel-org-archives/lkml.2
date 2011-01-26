@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab1AZHN3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 02:13:29 -0500
-Received: from hera.kernel.org ([140.211.167.34]:32899 "EHLO hera.kernel.org"
+	id S1752677Ab1AZHNw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 02:13:52 -0500
+Received: from hera.kernel.org ([140.211.167.34]:32914 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750809Ab1AZHN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 02:13:28 -0500
-Date: Wed, 26 Jan 2011 07:12:55 GMT
+	id S1750809Ab1AZHNu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 02:13:50 -0500
+Date: Wed, 26 Jan 2011 07:13:19 GMT
 From: tip-bot for Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         mathieu.desnoyers@efficios.com, davem@davemloft.net,
@@ -16,169 +16,317 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         mathieu.desnoyers@efficios.com, davem@davemloft.net,
         fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
         mingo@elte.hu
-In-Reply-To: <20110121203642.725191236@efficios.com>
-References: <20110121203642.725191236@efficios.com>
+In-Reply-To: <20110121203642.884088920@efficios.com>
+References: <20110121203642.884088920@efficios.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] Introduce __u64_aligned and U64_ALIGN() for structure alignment in custom sections
-Message-ID: <tip-3b2c9e246ff913c74d0a11768435845e6106e966@git.kernel.org>
-Git-Commit-ID: 3b2c9e246ff913c74d0a11768435845e6106e966
+Subject: [tip:perf/core] tracing: Fix sparc64 alignment crash with __u64_aligned/U64_ALIGN()
+Message-ID: <tip-46396a566597777d7ffa895a6b613e2985c576ff@git.kernel.org>
+Git-Commit-ID: 46396a566597777d7ffa895a6b613e2985c576ff
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 26 Jan 2011 07:12:57 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 26 Jan 2011 07:13:20 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3b2c9e246ff913c74d0a11768435845e6106e966
-Gitweb:     http://git.kernel.org/tip/3b2c9e246ff913c74d0a11768435845e6106e966
+Commit-ID:  46396a566597777d7ffa895a6b613e2985c576ff
+Gitweb:     http://git.kernel.org/tip/46396a566597777d7ffa895a6b613e2985c576ff
 Author:     Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-AuthorDate: Fri, 21 Jan 2011 15:36:31 -0500
+AuthorDate: Fri, 21 Jan 2011 15:36:32 -0500
 Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Fri, 21 Jan 2011 22:02:52 -0500
+CommitDate: Fri, 21 Jan 2011 22:08:57 -0500
 
-Introduce __u64_aligned and U64_ALIGN() for structure alignment in custom sections
+tracing: Fix sparc64 alignment crash with __u64_aligned/U64_ALIGN()
 
 Problem description:
 
-gcc happily align on 32-byte structures defined statically. Ftrace trace events
-and Tracepoints both statically define structures into custom sections (using
-the "section" attribute), to then assign these to symbols with the linker
-scripts to iterate these sections as an array.
+gcc happily align structures defined statically on 32-byte. Ftrace trace events
+and Tracepoints both statically define structures into sections (using the
+"section" attribute), to then assign these to symbols with the linker scripts to
+iterate the these sections as an array.
 
 However, gcc uses different alignments for these structures when they are
-defined statically than when they are globally visible and/or in an array.
-Therefore iteration on these arrays sees "holes" of padding. gcc is within its
-rights to increase the alignment of the statically defined structures because,
-normally, there should be no other accesses to them than in the local object. We
-are actually iterating on the generated structures as if they were an array
-without letting gcc know anything about it.
+defined statically and when they are globally visible and/or in an array.
+Therefore iteration on these arrays sees "holes" of padding.
 
-This patch introduces __u64_aligned to force gcc to use the u64 type and
-variable alignment, up-aligning or down-aligning the target type if necessary.
-The memory accesses to the target structure are efficient (does not require
-bytewise memory accesses) and the atomic pointer update guarantees required by
-RCU are kept. u64 is considered as the largest type that can generate a trap for
-unaligned accesses (u64 on sparc32 needs to be aligned on 64-bit).
+Use the __u64_aligned for type declarations and variable definitions to ensure
+that gcc:
 
-This alignment should be used for both structure definitions and declarations
-(as *both* the type and variable attribute) when using the "section"
-attribute to generate arrays of structures. Given that gcc only uses the type
-attribute "aligned" as a lower-bound for alignment, the structures should not
-contain types which require alignment larger than that of u64. The "aligned"
-variable attribute, on the other hand, forces gcc to use exactly the specified
-alignment.
+a) iterates on the correctly aligned type. (type attribute)
+b) generates the definitions within the sections with the appropriate alignment.
+   (variable attribute)
 
-Also introduce the linker script U64_ALIGN() macro for specification of custom
-section alignment that matches that of __u64_aligned.
+The Ftrace code introduced the "aligned(4)" variable attribute in commit
+1473e4417c79f12d91ef91a469699bfa911f510f to try to work around this problem that
+showed up on x86_64, but it causes unaligned accesses on sparc64, and is
+generally a bad idea on 64-bit if RCU pointers are contained within the
+structure. Moreover, it did not use the same attribute as type attribute, which
+could cause the iteration on the extern array structure not to match the
+variable definitions for some structure sizes.
 
-Changelog since v2:
-- Drop the "packed" type attribute, because it causes gcc to drop the padding
-  between consecutive "int" and "pointer"/"long" fields, which leads to
-  unaligned accesses on sparc64.
+We should also ensure proper alignment of each Ftrace section in
+include/asm-generic/vmlinux.lds.h.
+
+Moving all STRUCT_ALIGN() for FTRACE_EVENTS() and TRACE_SYSCALLS() into the
+definitions, so the alignment is only done if these infrastructures are
+configured in. Use U64_ALIGN instead of STRUCT_ALIGN.
+
+Also align TRACE_PRINTKS on U64_ALIGN to make sure the beginning of the section
+is aligned on pointer size.
 
 Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-LKML-Reference: <20110121203642.725191236@efficios.com>
+LKML-Reference: <20110121203642.884088920@efficios.com>
 Acked-by: David Miller <davem@davemloft.net>
 CC: Frederic Weisbecker <fweisbec@gmail.com>
 CC: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/asm-generic/vmlinux.lds.h |    6 ++++
- include/linux/align-section.h     |   54 +++++++++++++++++++++++++++++++++++++
- include/linux/compiler.h          |    2 +
- 3 files changed, 62 insertions(+), 0 deletions(-)
+ include/asm-generic/vmlinux.lds.h |   19 ++++++++++---------
+ include/linux/compiler.h          |    6 +++---
+ include/linux/ftrace_event.h      |    2 +-
+ include/linux/syscalls.h          |   12 ++++++------
+ include/trace/ftrace.h            |    8 ++++----
+ include/trace/syscall.h           |    2 +-
+ kernel/trace/trace.h              |    2 +-
+ kernel/trace/trace_export.c       |    2 +-
+ 8 files changed, 27 insertions(+), 26 deletions(-)
 
 diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index 6864933..bdc1688 100644
+index bdc1688..e4af65c 100644
 --- a/include/asm-generic/vmlinux.lds.h
 +++ b/include/asm-generic/vmlinux.lds.h
-@@ -70,6 +70,12 @@
- #define STRUCT_ALIGNMENT 32
- #define STRUCT_ALIGN() . = ALIGN(STRUCT_ALIGNMENT)
- 
-+/*
-+ * Align to a 8 byte boundary. For use with custom section made from structures
-+ * declared and defined with __u64_aligned.
-+ */
-+#define U64_ALIGN() . = ALIGN(8)
-+
- /* The actual configuration determine if the init/exit sections
-  * are handled as text/data or they can be discarded (which
-  * often happens at runtime)
-diff --git a/include/linux/align-section.h b/include/linux/align-section.h
-new file mode 100644
-index 0000000..6822a4a
---- /dev/null
-+++ b/include/linux/align-section.h
-@@ -0,0 +1,54 @@
-+#ifndef _LINUX_ALIGN_SECTION_H
-+#define _LINUX_ALIGN_SECTION_H
-+
-+/*
-+ * __u64_aligned:
-+ *
-+ * __u64_aligned should be used as type and variable attribute for structure
-+ * definitions when using the "section" attribute to generate arrays of
-+ * structures. U64_ALIGN() must be used prior to these section definitions in
-+ * the linker script.
-+ *
-+ * It forces the compiler to use the u64 type alignment, up-aligning or
-+ * down-aligning the target type if necessary. The memory accesses to the target
-+ * structure are efficient (does not require bytewise memory accesses) and the
-+ * atomic pointer update guarantees required by RCU are kept. u64 is considered
-+ * as the largest type that can generate a trap for unaligned accesses (u64 on
-+ * sparc32 needs to be aligned on 64-bit).
-+ *
-+ * Given that gcc only uses the type attribute "aligned" as a lower-bound for
-+ * alignment, the structures should not contain types which require alignment
-+ * larger than that of u64. The "aligned" variable attribute, on the other hand,
-+ * forces gcc to use exactly the specified alignment.
-+ */
-+
-+/*
-+ * Use __u64_aligned as type and variable attribute for custom section structure
-+ * declaration and definition.  It should also be applied to any static or
-+ * extern definition of the structure that would override the definition to
-+ * which the "section" attribute is applied, e.g.
-+ *
-+ * struct custom {
-+ *         unsigned long field;
-+ *         ...
-+ * } __u64_aligned;
-+ *
-+ * extern struct __u64_aligned custom;
-+ * struct custom  __u64_aligned __attribute__((section("__custom")) identifier;
-+ *
-+ * The array can then be defined with:
-+ *
-+ * extern struct custom __start___custom[];
-+ * extern struct custom __stop___custom[];
-+ *
-+ * With linking performed by the linker script:
-+ *
-+ * U64_ALIGN();
-+ * VMLINUX_SYMBOL(__start___custom) = .;
-+ * *(__custom)
-+ * VMLINUX_SYMBOL(__stop___custom) = .;
-+ */
-+
-+#define __u64_aligned	__attribute__((__aligned__(__alignof__(long long))))
-+
-+#endif /* _LINUX_ALIGN_SECTION_H */
-diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-index 320d6c9..5036024 100644
---- a/include/linux/compiler.h
-+++ b/include/linux/compiler.h
-@@ -57,6 +57,8 @@ extern void __chk_io_ptr(const volatile void __iomem *);
- # include <linux/compiler-intel.h>
+@@ -114,7 +114,8 @@
  #endif
  
-+#include <linux/align-section.h>
-+
+ #ifdef CONFIG_TRACE_BRANCH_PROFILING
+-#define LIKELY_PROFILE()	VMLINUX_SYMBOL(__start_annotated_branch_profile) = .; \
++#define LIKELY_PROFILE()	U64_ALIGN();					      \
++				VMLINUX_SYMBOL(__start_annotated_branch_profile) = .; \
+ 				*(_ftrace_annotated_branch)			      \
+ 				VMLINUX_SYMBOL(__stop_annotated_branch_profile) = .;
+ #else
+@@ -122,7 +123,8 @@
+ #endif
+ 
+ #ifdef CONFIG_PROFILE_ALL_BRANCHES
+-#define BRANCH_PROFILE()	VMLINUX_SYMBOL(__start_branch_profile) = .;   \
++#define BRANCH_PROFILE()	U64_ALIGN();				      \
++				VMLINUX_SYMBOL(__start_branch_profile) = .;   \
+ 				*(_ftrace_branch)			      \
+ 				VMLINUX_SYMBOL(__stop_branch_profile) = .;
+ #else
+@@ -130,7 +132,8 @@
+ #endif
+ 
+ #ifdef CONFIG_EVENT_TRACING
+-#define FTRACE_EVENTS()	VMLINUX_SYMBOL(__start_ftrace_events) = .;	\
++#define FTRACE_EVENTS()	U64_ALIGN();					\
++			VMLINUX_SYMBOL(__start_ftrace_events) = .;	\
+ 			*(_ftrace_events)				\
+ 			VMLINUX_SYMBOL(__stop_ftrace_events) = .;
+ #else
+@@ -138,7 +141,8 @@
+ #endif
+ 
+ #ifdef CONFIG_TRACING
+-#define TRACE_PRINTKS() VMLINUX_SYMBOL(__start___trace_bprintk_fmt) = .;      \
++#define TRACE_PRINTKS()  U64_ALIGN();					       \
++			 VMLINUX_SYMBOL(__start___trace_bprintk_fmt) = .;      \
+ 			 *(__trace_printk_fmt) /* Trace_printk fmt' pointer */ \
+ 			 VMLINUX_SYMBOL(__stop___trace_bprintk_fmt) = .;
+ #else
+@@ -146,7 +150,8 @@
+ #endif
+ 
+ #ifdef CONFIG_FTRACE_SYSCALLS
+-#define TRACE_SYSCALLS() VMLINUX_SYMBOL(__start_syscalls_metadata) = .;	\
++#define TRACE_SYSCALLS() U64_ALIGN();					\
++			 VMLINUX_SYMBOL(__start_syscalls_metadata) = .;	\
+ 			 *(__syscalls_metadata)				\
+ 			 VMLINUX_SYMBOL(__stop_syscalls_metadata) = .;
+ #else
+@@ -183,11 +188,7 @@
+ 	LIKELY_PROFILE()		       				\
+ 	BRANCH_PROFILE()						\
+ 	TRACE_PRINTKS()							\
+-									\
+-	STRUCT_ALIGN();							\
+ 	FTRACE_EVENTS()							\
+-									\
+-	STRUCT_ALIGN();							\
+ 	TRACE_SYSCALLS()
+ 
  /*
-  * Generic compiler-dependent macros required for kernel
-  * build go below this comment. Actual compiler/compiler version
+diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+index 5036024..ffd6e7e 100644
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -80,7 +80,7 @@ struct ftrace_branch_data {
+ 		};
+ 		unsigned long miss_hit[2];
+ 	};
+-};
++} __u64_aligned;
+ 
+ /*
+  * Note: DISABLE_BRANCH_PROFILING can be used by special lowlevel code
+@@ -96,7 +96,7 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+ #define __branch_check__(x, expect) ({					\
+ 			int ______r;					\
+ 			static struct ftrace_branch_data		\
+-				__attribute__((__aligned__(4)))		\
++				__u64_aligned				\
+ 				__attribute__((section("_ftrace_annotated_branch"))) \
+ 				______f = {				\
+ 				.func = __func__,			\
+@@ -131,7 +131,7 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+ 	({								\
+ 		int ______r;						\
+ 		static struct ftrace_branch_data			\
+-			__attribute__((__aligned__(4)))			\
++			__u64_aligned					\
+ 			__attribute__((section("_ftrace_branch")))	\
+ 			______f = {					\
+ 				.func = __func__,			\
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 47e3997..481a259 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -196,7 +196,7 @@ struct ftrace_event_call {
+ 	int				perf_refcount;
+ 	struct hlist_head __percpu	*perf_events;
+ #endif
+-};
++} __u64_aligned;
+ 
+ #define __TRACE_EVENT_FLAGS(name, value)				\
+ 	static int __init trace_init_flags_##name(void)			\
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 18cd068..ea7ab85 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -126,9 +126,9 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 
+ #define SYSCALL_TRACE_ENTER_EVENT(sname)				\
+ 	static struct syscall_metadata					\
+-	__attribute__((__aligned__(4))) __syscall_meta_##sname;		\
++	  __u64_aligned __syscall_meta_##sname;				\
+ 	static struct ftrace_event_call __used				\
+-	  __attribute__((__aligned__(4)))				\
++	  __u64_aligned							\
+ 	  __attribute__((section("_ftrace_events")))			\
+ 	  event_enter_##sname = {					\
+ 		.name                   = "sys_enter"#sname,		\
+@@ -140,9 +140,9 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 
+ #define SYSCALL_TRACE_EXIT_EVENT(sname)					\
+ 	static struct syscall_metadata					\
+-	__attribute__((__aligned__(4))) __syscall_meta_##sname;		\
++	  __u64_aligned __syscall_meta_##sname;				\
+ 	static struct ftrace_event_call __used				\
+-	  __attribute__((__aligned__(4)))				\
++	  __u64_aligned							\
+ 	  __attribute__((section("_ftrace_events")))			\
+ 	  event_exit_##sname = {					\
+ 		.name                   = "sys_exit"#sname,		\
+@@ -156,7 +156,7 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 	SYSCALL_TRACE_ENTER_EVENT(sname);			\
+ 	SYSCALL_TRACE_EXIT_EVENT(sname);			\
+ 	static struct syscall_metadata __used			\
+-	  __attribute__((__aligned__(4)))			\
++	  __u64_aligned						\
+ 	  __attribute__((section("__syscalls_metadata")))	\
+ 	  __syscall_meta_##sname = {				\
+ 		.name 		= "sys"#sname,			\
+@@ -172,7 +172,7 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 	SYSCALL_TRACE_ENTER_EVENT(_##sname);			\
+ 	SYSCALL_TRACE_EXIT_EVENT(_##sname);			\
+ 	static struct syscall_metadata __used			\
+-	  __attribute__((__aligned__(4)))			\
++	  __u64_aligned						\
+ 	  __attribute__((section("__syscalls_metadata")))	\
+ 	  __syscall_meta__##sname = {				\
+ 		.name 		= "sys_"#sname,			\
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index e16610c..ee44cf4 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -69,7 +69,7 @@
+ #undef DEFINE_EVENT
+ #define DEFINE_EVENT(template, name, proto, args)	\
+ 	static struct ftrace_event_call	__used		\
+-	__attribute__((__aligned__(4))) event_##name
++	__u64_aligned event_##name;
+ 
+ #undef DEFINE_EVENT_PRINT
+ #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
+@@ -447,7 +447,7 @@ static inline notrace int ftrace_get_offsets_##call(			\
+  * };
+  *
+  * static struct ftrace_event_call __used
+- * __attribute__((__aligned__(4)))
++ * __u64_aligned
+  * __attribute__((section("_ftrace_events"))) event_<call> = {
+  *	.name			= "<call>",
+  *	.class			= event_class_<template>,
+@@ -580,7 +580,7 @@ static struct ftrace_event_class __used event_class_##call = {		\
+ #define DEFINE_EVENT(template, call, proto, args)			\
+ 									\
+ static struct ftrace_event_call __used					\
+-__attribute__((__aligned__(4)))						\
++__u64_aligned								\
+ __attribute__((section("_ftrace_events"))) event_##call = {		\
+ 	.name			= #call,				\
+ 	.class			= &event_class_##template,		\
+@@ -594,7 +594,7 @@ __attribute__((section("_ftrace_events"))) event_##call = {		\
+ static const char print_fmt_##call[] = print;				\
+ 									\
+ static struct ftrace_event_call __used					\
+-__attribute__((__aligned__(4)))						\
++__u64_aligned								\
+ __attribute__((section("_ftrace_events"))) event_##call = {		\
+ 	.name			= #call,				\
+ 	.class			= &event_class_##template,		\
+diff --git a/include/trace/syscall.h b/include/trace/syscall.h
+index 31966a4..69578b3 100644
+--- a/include/trace/syscall.h
++++ b/include/trace/syscall.h
+@@ -29,7 +29,7 @@ struct syscall_metadata {
+ 
+ 	struct ftrace_event_call *enter_event;
+ 	struct ftrace_event_call *exit_event;
+-};
++} __u64_aligned;
+ 
+ #ifdef CONFIG_FTRACE_SYSCALLS
+ extern unsigned long arch_syscall_addr(int nr);
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 9021f8c..6a08891 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -749,7 +749,7 @@ extern const char *__stop___trace_bprintk_fmt[];
+ #undef FTRACE_ENTRY
+ #define FTRACE_ENTRY(call, struct_name, id, tstruct, print)		\
+ 	extern struct ftrace_event_call					\
+-	__attribute__((__aligned__(4))) event_##call;
++	__u64_aligned event_##call;
+ #undef FTRACE_ENTRY_DUP
+ #define FTRACE_ENTRY_DUP(call, struct_name, id, tstruct, print)		\
+ 	FTRACE_ENTRY(call, struct_name, id, PARAMS(tstruct), PARAMS(print))
+diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
+index 4b74d71..a6ebf4e 100644
+--- a/kernel/trace/trace_export.c
++++ b/kernel/trace/trace_export.c
+@@ -162,7 +162,7 @@ struct ftrace_event_class event_class_ftrace_##call = {			\
+ };									\
+ 									\
+ struct ftrace_event_call __used						\
+-__attribute__((__aligned__(4)))						\
++__u64_aligned								\
+ __attribute__((section("_ftrace_events"))) event_##call = {		\
+ 	.name			= #call,				\
+ 	.event.type		= etype,				\
