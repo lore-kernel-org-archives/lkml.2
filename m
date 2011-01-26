@@ -1,52 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab1AZTbr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 14:31:47 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:59510 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753661Ab1AZTbp (ORCPT
+	id S1754014Ab1AZTca (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 14:32:30 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:40874 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753661Ab1AZTc2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 14:31:45 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAL0FQE1Ld/sX/2dsb2JhbAAMhAbNb5EDgSODOHQEhRc
-X-IronPort-AV: E=Sophos;i="4.60,381,1291611600"; 
-   d="scan'208";a="89334381"
-Message-ID: <4D4076A0.9090805@teksavvy.com>
-Date: Wed, 26 Jan 2011 14:31:44 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils
- ?
-References: <20110125053117.GD7850@core.coreip.homeip.net> <4D3EB734.5090100@redhat.com> <20110125164803.GA19701@core.coreip.homeip.net> <AANLkTi=1Mh0JrYk5itvef7O7e7pR+YKos-w56W5q4B8B@mail.gmail.com> <20110125205453.GA19896@core.coreip.homeip.net> <4D3F4804.6070508@redhat.com> <4D3F4D11.9040302@teksavvy.com> <20110125232914.GA20130@core.coreip.homeip.net> <20110126020003.GA23085@core.coreip.homeip.net> <4D403855.4050706@teksavvy.com> <20110126164359.GA29163@core.coreip.homeip.net>
-In-Reply-To: <20110126164359.GA29163@core.coreip.homeip.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Jan 2011 14:32:28 -0500
+Subject: Re: Q: perf_install_in_context/perf_event_enable are racy?
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>, Prasad <prasad@linux.vnet.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <1296068731.15234.6.camel@laptop>
+References: <20110119182141.GA12183@redhat.com>
+	 <20110120193033.GA13924@redhat.com> <1295611905.28776.269.camel@laptop>
+	 <20110121130323.GA12900@elte.hu> <1295617185.28776.273.camel@laptop>
+	 <20110121142616.GA31165@redhat.com> <1295622304.28776.293.camel@laptop>
+	 <20110121204014.GA2870@nowhere> <20110124114234.GA12166@redhat.com>
+	 <20110126175322.GA28617@redhat.com>  <20110126184957.GA32578@redhat.com>
+	 <1296068731.15234.6.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 26 Jan 2011 20:33:03 +0100
+Message-ID: <1296070383.15234.10.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-01-26 11:44 AM, Dmitry Torokhov wrote:
-> On Wed, Jan 26, 2011 at 10:05:57AM -0500, Mark Lord wrote:
-..
->> Nope. Does not work here:
->>
->> $ lsinput
->> protocol version mismatch (expected 65536, got 65537)
->>
+On Wed, 2011-01-26 at 20:05 +0100, Peter Zijlstra wrote:
+> On Wed, 2011-01-26 at 19:49 +0100, Oleg Nesterov wrote:
+> > On 01/26, Oleg Nesterov wrote:
+> > >
+> > > Please see the untested patch below. It doesn't change perf_event_enable(),
+> > > only perf_install_in_context().
+> > 
+> > Forgot to mention... Also, it doesn't try to fix the race with do_exit(),
+> > this needs another change.
+> > 
+> > And, damn, can't resist. This is mostly cosmetic issue, but I feel
+> > discomfort every time I look at task_oncpu_function_call(). It _looks_
+> > obviously wrong, even if the problem doesn't exist in practice. I'll
+> > send the pedantic fix to keep the maintainers busy ;)
 > 
-> It would be much more helpful if you tried to test what has been fixed
-> (hint: version change wasn't it).
+> I've been trying to sit down and work my way through it today, your last
+> suggestion very nearly seemed to make sense, but I kept getting
+> distracted.
+> 
+> FWIW I think perf_event_enable() has the very same issue...
 
-It would be much more helpful if you would revert that which was broken
-in 2.6.36.  (hint: version was part of it).
+Wouldn't something like the below cure things too?
 
-The other part does indeed appear to work with the old binary for input-kbd,
-but the binary for lsinput still fails as above.
 
-Cheers
+---
+ kernel/sched.c |   23 ++++++++++++++++++++++-
+ 1 files changed, 22 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 18d38e4..7eadbcf 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2265,6 +2265,22 @@ void kick_process(struct task_struct *p)
+ EXPORT_SYMBOL_GPL(kick_process);
+ #endif /* CONFIG_SMP */
+ 
++struct task_function_call {
++	struct task_struct *p;
++	void (*func)(void *info);
++	void *info;
++};
++
++void task_function_trampoline(void *data)
++{
++	struct task_function_call *tfc = data;
++
++	if (this_rq()->curr != tfc->p)
++		return;
++
++	tfc->func(tfc->data);
++}
++
+ /**
+  * task_oncpu_function_call - call a function on the cpu on which a task runs
+  * @p:		the task to evaluate
+@@ -2278,11 +2294,16 @@ void task_oncpu_function_call(struct task_struct *p,
+ 			      void (*func) (void *info), void *info)
+ {
+ 	int cpu;
++	struct task_function_call data = {
++		.p = p,
++		.func = func,
++		.info = info,
++	};
+ 
+ 	preempt_disable();
+ 	cpu = task_cpu(p);
+ 	if (task_curr(p))
+-		smp_call_function_single(cpu, func, info, 1);
++		smp_call_function_single(cpu, task_function_trampoline, &data, 1);
+ 	preempt_enable();
+ }
+ 
+
