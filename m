@@ -1,80 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab1AZUbz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 15:31:55 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:52246 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752732Ab1AZUby convert rfc822-to-8bit (ORCPT
+	id S1754117Ab1AZUcX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 15:32:23 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:51132 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752732Ab1AZUcW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 15:31:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=NyZdKIJF1W1T0Qcvnn3bI57MuYGp8msvNkc1+EegP5/QIPH5IyvpWYkSXz2Rm6N8Is
-         ft5OQnMv/XTxCw9EqIHVKaygZdslYDXn4ynuj0074ZSudRraB38MOkhXodk11EkqSiw4
-         fQ7RLyIo/syiXIz/cxYsjzb/tffG6rUmBk5/w=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Tao Ma <tm@tao.ma>
-Subject: Re: 38-rc1: umount+rmmod cause ext4 error.
-Date: Wed, 26 Jan 2011 21:28:25 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc2; KDE/4.4.5; i686; ; )
-Cc: npiggin@gmail.com, Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Theodore Tso <tytso@mit.edu>
-References: <4D368A70.5030103@tao.ma>
-In-Reply-To: <4D368A70.5030103@tao.ma>
+	Wed, 26 Jan 2011 15:32:22 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:references:date:in-reply-to:message-id:
+	user-agent:mime-version:content-type;
+	b=IEFHjvRI2YUKnUFqoKo14YVZjD5nwtw8h+XMbTNtsBFYlGjPr7xunWfmAwKirIgVi
+	f262mdP6uXXEEU9+9GgLg==
+From: Greg Thelen <gthelen@google.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] oom: handle overflow in mem_cgroup_out_of_memory()
+References: <1296030555-3594-1-git-send-email-gthelen@google.com>
+	<20110126170713.GA2401@cmpxchg.org>
+	<xr93y667lgdm.fsf@gthelen.mtv.corp.google.com>
+	<20110126183023.GB2401@cmpxchg.org>
+Date: Wed, 26 Jan 2011 12:32:04 -0800
+In-Reply-To: <20110126183023.GB2401@cmpxchg.org> (Johannes Weiner's message of
+	"Wed, 26 Jan 2011 19:30:23 +0100")
+Message-ID: <xr9362tbl83f.fsf@gthelen.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201101262128.25528.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=27652
-for your bug report, please add your address to the CC list in there, thanks!
+Johannes Weiner <hannes@cmpxchg.org> writes:
 
-On środa, 19 stycznia 2011 o 07:53:36 Tao Ma wrote:
-> Hi Nick and Ted,
-> 	I ran some very basic test with 38-rc1 and my box run into error with
-> the message like:
-> 
-> slab error in kmem_cache_destroy(): cache `ext4_inode_cache': Can't free
-> all objects
-> Pid: 4395, comm: rmmod Not tainted 2.6.38-rc1 #1
-> Call Trace:
->   [<ffffffff820d61dc>] ? kmem_cache_destroy+0x83/0xc7
->   [<ffffffffa0574025>] ? destroy_inodecache+0x15/0x17 [ext4]
->   [<ffffffffa05923d1>] ? ext4_exit_fs+0x109/0x143 [ext4]
->   [<ffffffff8203d194>] ? put_online_cpus+0x56/0x58
->   [<ffffffff8206735a>] ? module_refcount+0x85/0x9d
->   [<ffffffff82067b22>] ? sys_delete_module+0x1b5/0x218
->   [<ffffffff82074fc3>] ? audit_syscall_entry+0x187/0x1ba
->   [<ffffffff82002a6b>] ? system_call_fastpath+0x16/0x1b
-> SLAB: cache with size 888 has lost its name
-> SLAB: cache with size 888 has lost its name
-> SLAB: cache with size 888 has lost its name
-> SLAB: cache with size 888 has lost its name
-> 
-> The reproduce process is simple:just rmmod ext4 immediately after umount
-> an ext4 volume.
-> 
-> I have done some very simple investigation and it seems that with Nick's
-> new ext4_i_callback, even after we do ext4_destroy_inode, it isn't
-> freed. So after we destroy the ext_inode_cache, and when freeing the
-> inode, it errors. Hope it helps. If you have any fixes, I can test it.
-> 
-> Regards,
-> Tao
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> On Wed, Jan 26, 2011 at 09:33:09AM -0800, Greg Thelen wrote:
+>> Johannes Weiner <hannes@cmpxchg.org> writes:
+>> 
+>> > On Wed, Jan 26, 2011 at 12:29:15AM -0800, Greg Thelen wrote:
+>> >> mem_cgroup_get_limit() returns a byte limit as a unsigned 64 bit value,
+>> >> which is converted to a page count by mem_cgroup_out_of_memory().  Prior
+>> >> to this patch the conversion could overflow on 32 bit platforms
+>> >> yielding a limit of zero.
+>> >
+>> > Balbir: It can truncate, because the conversion shrinks the required
+>> > bits of this 64-bit number by only PAGE_SHIFT (12).  Trying to store
+>> > the resulting up to 52 significant bits in a 32-bit integer will cut
+>> > up to 20 significant bits off.
+>> >
+>> >> Signed-off-by: Greg Thelen <gthelen@google.com>
+>> >> ---
+>> >>  mm/oom_kill.c |    2 +-
+>> >>  1 files changed, 1 insertions(+), 1 deletions(-)
+>> >> 
+>> >> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+>> >> index 7dcca55..3fcac51 100644
+>> >> --- a/mm/oom_kill.c
+>> >> +++ b/mm/oom_kill.c
+>> >> @@ -538,7 +538,7 @@ void mem_cgroup_out_of_memory(struct mem_cgroup *mem, gfp_t gfp_mask)
+>> >>  	struct task_struct *p;
+>> >>  
+>> >>  	check_panic_on_oom(CONSTRAINT_MEMCG, gfp_mask, 0, NULL);
+>> >> -	limit = mem_cgroup_get_limit(mem) >> PAGE_SHIFT;
+>> >> +	limit = min(mem_cgroup_get_limit(mem) >> PAGE_SHIFT, (u64)ULONG_MAX);
+>> >
+>> > I would much prefer using min_t(u64, ...).  To make it really, really
+>> > explicit that this is 64-bit arithmetic.  But that is just me, no
+>> > correctness issue.
+>> >
+>> > Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+>> 
+>> I agree that min_t() is clearer.  Does the following look better?
+>
+> Sweet, thank you Greg!
+>
+>> Author: Greg Thelen <gthelen@google.com>
+>> Date:   Wed Jan 26 00:05:59 2011 -0800
+>> 
+>>     oom: handle truncation in mem_cgroup_out_of_memory()
+>>     
+>>     mem_cgroup_get_limit() returns a byte limit as an unsigned 64 bit value.
+>>     mem_cgroup_out_of_memory() converts this byte limit to an unsigned long
+>>     page count.  Prior to this patch, the 32 bit version of
+>>     mem_cgroup_out_of_memory() would silently truncate the most significant
+>>     20 bits from byte limit when constructing the limit as a page count.
+>>     For byte limits with the lowest 44 bits set to zero, this truncation
+>>     would compute a page limit of zero.
+>>     
+>>     This patch checks for such large byte limits that cannot be converted to
+>>     page counts without loosing information.  In such situations, where a 32
+>>     bit page counter is too small to represent the corresponding byte count,
+>>     select a maximal page count.
+>>     
+>>     Signed-off-by: Greg Thelen <gthelen@google.com>
+>
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+>
+> That being said, does this have any practical impact at all?  I mean,
+> this code runs when the cgroup limit is breached.  But if the number
+> of allowed pages (not bytes!) can not fit into 32 bits, it means you
+> have a group of processes using more than 16T.  On a 32-bit machine.
 
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+The value of this patch is up for debate.  I do not have an example
+situation where this truncation causes the wrong thing to happen.  I
+suppose it might be possible for a racing update to
+memory.limit_in_bytes which grows the limit from a reasonable (example:
+100M) limit to a large limit (example 1<<45) could benefit from this
+patch.  I admit that this case seems pathological and may not be likely
+or even worth bothering over.  If neither the memcg nor the oom
+maintainers want the patch, then feel free to drop it.  I just noticed
+the issue and thought it might be worth addressing.
