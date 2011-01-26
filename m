@@ -1,293 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715Ab1AZHXc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 02:23:32 -0500
-Received: from hera.kernel.org ([140.211.167.34]:53384 "EHLO hera.kernel.org"
+	id S1753275Ab1AZHXi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 02:23:38 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:37121 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752725Ab1AZHXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 02:23:30 -0500
-Date: Wed, 26 Jan 2011 07:23:00 GMT
-From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        fbuihuu@gmail.com, masami.hiramatsu.pt@hitachi.com,
-        rostedt@goodmis.org, srikar@linux.vnet.ibm.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        fbuihuu@gmail.com, masami.hiramatsu.pt@hitachi.com,
-        rostedt@goodmis.org, srikar@linux.vnet.ibm.com, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <20110113124611.22426.10835.stgit@ltc236.sdl.hitachi.co.jp>
-References: <20110113124611.22426.10835.stgit@ltc236.sdl.hitachi.co.jp>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf probe: Add --funcs to show available functions in symtab
-Message-ID: <tip-e80711ca8512c8586da0c3e18e2f1caf73c88731@git.kernel.org>
-Git-Commit-ID: e80711ca8512c8586da0c3e18e2f1caf73c88731
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1752917Ab1AZHXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 02:23:36 -0500
+Date: Tue, 25 Jan 2011 23:23:29 -0800
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
+        axboe@kernel.dk, tytso@mit.edu, shli@kernel.org, neilb@suse.de,
+        adilger.kernel@dilger.ca, jack@suse.cz, snitzer@redhat.com,
+        linux-kernel@vger.kernel.org, kmannth@us.ibm.com, cmm@us.ibm.com,
+        linux-ext4@vger.kernel.org, rwheeler@redhat.com, hch@lst.de,
+        josef@redhat.com
+Subject: [PATCH 3/3] ext4: Deprecate barrier= and nobarrier mount options
+Message-ID: <20110126072329.GK27190@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20110126071200.GE32261@tux1.beaverton.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 26 Jan 2011 07:23:01 +0000 (UTC)
+In-Reply-To: <20110126071200.GE32261@tux1.beaverton.ibm.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e80711ca8512c8586da0c3e18e2f1caf73c88731
-Gitweb:     http://git.kernel.org/tip/e80711ca8512c8586da0c3e18e2f1caf73c88731
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Thu, 13 Jan 2011 21:46:11 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 24 Jan 2011 10:57:55 -0200
+As part of migrating the FLUSH/FUA knob to the block layer, remove the support
+code for the barrier-related mount options and remove the conditionals around
+flushes in favor of always issuing the flush.  The block layer will handle
+gracefully the situation where a FLUSH or FUA request is issued to a device
+that doesn't support it.  Modify the option parsing code to print a warning if
+someone tries to use the old mount option.
 
-perf probe: Add --funcs to show available functions in symtab
+Note: The nobarrier bit in the default mount flags is now useless.
 
-Add --funcs to show available functions in symtab.
-
-Originally this feature came from Srikar's uprobes patches
-( http://lkml.org/lkml/2010/8/27/244 )
-
-e.g.
-...
-__ablkcipher_walk_complete
-__absent_pages_in_range
-__account_scheduler_latency
-__add_pages
-__alloc_pages_nodemask
-__alloc_percpu
-__alloc_reserved_percpu
-__alloc_skb
-__alloc_workqueue_key
-__any_online_cpu
-__ata_ehi_push_desc
-...
-
-This also supports symbols in module, e.g.
-
-...
-cleanup_module
-cpuid_maxphyaddr
-emulate_clts
-emulate_instruction
-emulate_int_real
-emulate_invlpg
-emulator_get_dr
-emulator_set_dr
-emulator_task_switch
-emulator_write_emulated
-emulator_write_phys
-fx_init
-...
-
-Original-patch-from: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: 2nddept-manager@sdl.hitachi.co.jp
-Cc: Franck Bui-Huu <fbuihuu@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-LKML-Reference: <20110113124611.22426.10835.stgit@ltc236.sdl.hitachi.co.jp>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-[ committer note: Add missing elf.h for STB_GLOBAL that broke a RHEL4 build ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- tools/perf/Documentation/perf-probe.txt |    4 ++
- tools/perf/builtin-probe.c              |   29 +++++++++++++-
- tools/perf/util/probe-event.c           |   68 ++++++++++++++++++++++++++++++-
- tools/perf/util/probe-event.h           |    1 +
- 4 files changed, 99 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
-index 86b797a..fcc51fe 100644
---- a/tools/perf/Documentation/perf-probe.txt
-+++ b/tools/perf/Documentation/perf-probe.txt
-@@ -73,6 +73,10 @@ OPTIONS
- 	(Only for --vars) Show external defined variables in addition to local
- 	variables.
+ fs/ext4/ext4.h  |    1 -
+ fs/ext4/super.c |   23 ++---------------------
+ 2 files changed, 2 insertions(+), 22 deletions(-)
+
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 0c8d97b..fa4c688 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -893,7 +893,6 @@ struct ext4_inode_info {
+ #define EXT4_MOUNT_XATTR_USER		0x04000	/* Extended user attributes */
+ #define EXT4_MOUNT_POSIX_ACL		0x08000	/* POSIX Access Control Lists */
+ #define EXT4_MOUNT_NO_AUTO_DA_ALLOC	0x10000	/* No auto delalloc mapping */
+-#define EXT4_MOUNT_BARRIER		0x20000 /* Use block barriers */
+ #define EXT4_MOUNT_QUOTA		0x80000 /* Some quota option set */
+ #define EXT4_MOUNT_USRQUOTA		0x100000 /* "old" user quota */
+ #define EXT4_MOUNT_GRPQUOTA		0x200000 /* "old" group quota */
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 7379829..cd8e7b8 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1022,13 +1022,6 @@ static int ext4_show_options(struct seq_file *seq, struct vfsmount *vfs)
+ 			   (unsigned) sbi->s_min_batch_time);
+ 	}
  
-+-F::
-+--funcs::
-+	Show available functions in given module or kernel.
-+
- -f::
- --force::
- 	Forcibly add events with existing name.
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index add163c..6cf708a 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -52,6 +52,7 @@ static struct {
- 	bool show_lines;
- 	bool show_vars;
- 	bool show_ext_vars;
-+	bool show_funcs;
- 	bool mod_events;
- 	int nevents;
- 	struct perf_probe_event events[MAX_PROBES];
-@@ -221,6 +222,8 @@ static const struct option options[] = {
- 	OPT__DRY_RUN(&probe_event_dry_run),
- 	OPT_INTEGER('\0', "max-probes", &params.max_probe_points,
- 		 "Set how many probe points can be found for a probe."),
-+	OPT_BOOLEAN('F', "funcs", &params.show_funcs,
-+		    "Show potential probe-able functions."),
- 	OPT_END()
- };
+-	/*
+-	 * We're changing the default of barrier mount option, so
+-	 * let's always display its mount state so it's clear what its
+-	 * status is.
+-	 */
+-	seq_puts(seq, ",barrier=");
+-	seq_puts(seq, test_opt(sb, BARRIER) ? "1" : "0");
+ 	if (test_opt(sb, JOURNAL_ASYNC_COMMIT))
+ 		seq_puts(seq, ",journal_async_commit");
+ 	else if (test_opt(sb, JOURNAL_CHECKSUM))
+@@ -1701,18 +1694,9 @@ set_qf_format:
+ 			sbi->s_mount_flags |= EXT4_MF_FS_ABORTED;
+ 			break;
+ 		case Opt_nobarrier:
+-			clear_opt(sb, BARRIER);
+-			break;
+ 		case Opt_barrier:
+-			if (args[0].from) {
+-				if (match_int(&args[0], &option))
+-					return 0;
+-			} else
+-				option = 1;	/* No argument, default to 1 */
+-			if (option)
+-				set_opt(sb, BARRIER);
+-			else
+-				clear_opt(sb, BARRIER);
++			ext4_msg(sb, KERN_INFO, "barrier options are "
++				 "deprecated.  Use ignore_flush in sysfs.");
+ 			break;
+ 		case Opt_ignore:
+ 			break;
+@@ -3125,9 +3109,6 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 	sbi->s_min_batch_time = EXT4_DEF_MIN_BATCH_TIME;
+ 	sbi->s_max_batch_time = EXT4_DEF_MAX_BATCH_TIME;
  
-@@ -246,7 +249,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 		params.max_probe_points = MAX_PROBES;
- 
- 	if ((!params.nevents && !params.dellist && !params.list_events &&
--	     !params.show_lines))
-+	     !params.show_lines && !params.show_funcs))
- 		usage_with_options(probe_usage, options);
- 
+-	if ((def_mount_opts & EXT4_DEFM_NOBARRIER) == 0)
+-		set_opt(sb, BARRIER);
+-
  	/*
-@@ -267,12 +270,36 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 			pr_err(" Error: Don't use --list with --vars.\n");
- 			usage_with_options(probe_usage, options);
- 		}
-+		if (params.show_funcs) {
-+			pr_err("  Error: Don't use --list with --funcs.\n");
-+			usage_with_options(probe_usage, options);
-+		}
- 		ret = show_perf_probe_events();
- 		if (ret < 0)
- 			pr_err("  Error: Failed to show event list. (%d)\n",
- 			       ret);
- 		return ret;
- 	}
-+	if (params.show_funcs) {
-+		if (params.nevents != 0 || params.dellist) {
-+			pr_err("  Error: Don't use --funcs with"
-+			       " --add/--del.\n");
-+			usage_with_options(probe_usage, options);
-+		}
-+		if (params.show_lines) {
-+			pr_err("  Error: Don't use --funcs with --line.\n");
-+			usage_with_options(probe_usage, options);
-+		}
-+		if (params.show_vars) {
-+			pr_err("  Error: Don't use --funcs with --vars.\n");
-+			usage_with_options(probe_usage, options);
-+		}
-+		ret = show_available_funcs(params.target_module);
-+		if (ret < 0)
-+			pr_err("  Error: Failed to show functions."
-+			       " (%d)\n", ret);
-+		return ret;
-+	}
- 
- #ifdef DWARF_SUPPORT
- 	if (params.show_lines) {
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 6e29d9c..859d377 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -31,6 +31,7 @@
- #include <string.h>
- #include <stdarg.h>
- #include <limits.h>
-+#include <elf.h>
- 
- #undef _GNU_SOURCE
- #include "util.h"
-@@ -111,7 +112,25 @@ static struct symbol *__find_kernel_function_by_name(const char *name,
- 						     NULL);
- }
- 
--const char *kernel_get_module_path(const char *module)
-+static struct map *kernel_get_module_map(const char *module)
-+{
-+	struct rb_node *nd;
-+	struct map_groups *grp = &machine.kmaps;
-+
-+	if (!module)
-+		module = "kernel";
-+
-+	for (nd = rb_first(&grp->maps[MAP__FUNCTION]); nd; nd = rb_next(nd)) {
-+		struct map *pos = rb_entry(nd, struct map, rb_node);
-+		if (strncmp(pos->dso->short_name + 1, module,
-+			    pos->dso->short_name_len - 2) == 0) {
-+			return pos;
-+		}
-+	}
-+	return NULL;
-+}
-+
-+static struct dso *kernel_get_module_dso(const char *module)
- {
- 	struct dso *dso;
- 	struct map *map;
-@@ -141,7 +160,13 @@ const char *kernel_get_module_path(const char *module)
- 		}
- 	}
- found:
--	return dso->long_name;
-+	return dso;
-+}
-+
-+const char *kernel_get_module_path(const char *module)
-+{
-+	struct dso *dso = kernel_get_module_dso(module);
-+	return (dso) ? dso->long_name : NULL;
- }
- 
- #ifdef DWARF_SUPPORT
-@@ -1913,3 +1938,42 @@ int del_perf_probe_events(struct strlist *dellist)
- 	return ret;
- }
- 
-+/*
-+ * If a symbol corresponds to a function with global binding return 0.
-+ * For all others return 1.
-+ */
-+static int filter_non_global_functions(struct map *map __unused,
-+					struct symbol *sym)
-+{
-+	if (sym->binding != STB_GLOBAL)
-+		return 1;
-+
-+	return 0;
-+}
-+
-+int show_available_funcs(const char *module)
-+{
-+	struct map *map;
-+	int ret;
-+
-+	setup_pager();
-+
-+	ret = init_vmlinux();
-+	if (ret < 0)
-+		return ret;
-+
-+	map = kernel_get_module_map(module);
-+	if (!map) {
-+		pr_err("Failed to find %s map.\n", (module) ? : "kernel");
-+		return -EINVAL;
-+	}
-+	if (map__load(map, filter_non_global_functions)) {
-+		pr_err("Failed to load map.\n");
-+		return -EINVAL;
-+	}
-+	if (!dso__sorted_by_name(map->dso, map->type))
-+		dso__sort_by_name(map->dso, map->type);
-+
-+	dso__fprintf_symbols_by_name(map->dso, map->type, stdout);
-+	return 0;
-+}
-diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
-index 5accbed..1fb4f18 100644
---- a/tools/perf/util/probe-event.h
-+++ b/tools/perf/util/probe-event.h
-@@ -127,6 +127,7 @@ extern int show_line_range(struct line_range *lr, const char *module);
- extern int show_available_vars(struct perf_probe_event *pevs, int npevs,
- 			       int max_probe_points, const char *module,
- 			       bool externs);
-+extern int show_available_funcs(const char *module);
- 
- 
- /* Maximum index number of event-name postfix */
+ 	 * enable delayed allocation by default
+ 	 * Use -o nodelalloc to turn it off
