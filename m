@@ -1,45 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382Ab1AZNKi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 08:10:38 -0500
-Received: from queue01.mail.zen.net.uk ([212.23.3.234]:52951 "EHLO
-	queue01.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753288Ab1AZNKh (ORCPT
+	id S1753347Ab1AZNNe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 08:13:34 -0500
+Received: from casper.infradead.org ([85.118.1.10]:47906 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400Ab1AZNNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 08:10:37 -0500
-X-Greylist: delayed 1320 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Jan 2011 08:10:37 EST
-Message-ID: <4D401824.6090109@cyconix.com>
-Date: Wed, 26 Jan 2011 12:48:36 +0000
-From: Evan Lavelle <sa212+lkml@cyconix.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Lightning/1.0b2 Thunderbird/3.1.7
+	Wed, 26 Jan 2011 08:13:33 -0500
+Date: Wed, 26 Jan 2011 11:13:16 -0200
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Borislav Petkov <bp@alien8.de>, Borislav Petkov <bp@amd64.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/12] perf: Carve out mmap helpers for general use
+Message-ID: <20110126131316.GA2511@ghostprotocols.net>
+References: <1295622575-18607-1-git-send-email-bp@amd64.org>
+ <1295622575-18607-9-git-send-email-bp@amd64.org>
+ <20110121172937.GC15066@ghostprotocols.net>
+ <20110124090410.GA8924@aftab>
+ <20110124123936.GC5932@ghostprotocols.net>
+ <20110126010002.GA10568@liondog.tnic>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Kernel deferring driver 'close' call: workaround?
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-Smarthost01-IP: [82.70.243.134]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110126010002.GA10568@liondog.tnic>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've written a PCIe driver for a specialist card, which can only have a 
-single user ('open' returns EBUSY if the board is already open). A user 
-has complained that they can't do this with the card:
+Em Wed, Jan 26, 2011 at 02:00:02AM +0100, Borislav Petkov escreveu:
+> On Mon, Jan 24, 2011 at 10:39:36AM -0200, Arnaldo Carvalho de Melo wrote:
+> > Em Mon, Jan 24, 2011 at 10:04:10AM +0100, Borislav Petkov escreveu:
+> > I'm digressing, but twatch is an example of a simple "daemon" consuming
+> > perf events where performance is not much of a problem.
 
-1 - open()    // Ok
-2 - close()
-3 - open()    // fails
+> > And provides a prototyping ground when starting to design perf events
+> > consuming daemons :-)
 
-'strace' shows that the 'close' succeeds, but the driver debug output 
-shows that the driver close/release (step 2) is not called before the 
-next open (step 3), so the open fails.
+> Yaay, twatch looks almost like a child's play and even my grandma can
+> profile her system now :).
 
-I appreciate that the kernel may want to defer the driver 'close', even 
-though the open count is only 1. However, I'm surprised that the kernel 
-calls the driver open code at step (3) without first calling the 
-deferred close from step (2).
+> But yeah, I thought about pythonizing the ras thingy too but the
+> reasons against it are that we might run on systems which don't have
+> python, have some obscure/old version of it or we simply don't want to
+> depend on it or any other additional tool for that matter. Generally,
+> we want to run with as low overhead as possible when handling hw error
+> info and be as self-contained as possible.
 
-Is this expected behaviour? If so, can anyone suggest a work-around, at 
-either driver or user level?
+Right, that is why I try to have the python abstractions as close as
+possible to the abstractions a C program, like your RAS thingy should
+use.
 
-Thanks.
+I.e. one can go on introducing the kernel interfaces and testing them
+using python, where you can, for instance, from the python interpreter
+command line, create counters, read its values, i.e. test the kernel
+stuff quickly and easily.
+
+Moving to a C version then becomes easy after the testing phase is over
+and the kernel bits are set in stone.
+
+- Arnaldo
