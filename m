@@ -1,51 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab1AZEQq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 23:16:46 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:65368 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752101Ab1AZEQp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 23:16:45 -0500
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=3P5VWv2PA3R9=UZtwBkUxauhVGyCAzp_XNTBp@mail.gmail.com>
-References: <1295834493-5019-1-git-send-email-ccross@android.com>
- <1295834493-5019-29-git-send-email-ccross@android.com> <AANLkTimKqkKFuKCKPV2jSjUtPqo4tbonwR1iO2rsrK1r@mail.gmail.com>
- <AANLkTi=3P5VWv2PA3R9=UZtwBkUxauhVGyCAzp_XNTBp@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 25 Jan 2011 21:16:24 -0700
-X-Google-Sender-Auth: S-4LLTGHLgrx_vUxlT71u0yn5bA
-Message-ID: <AANLkTimxUyk7NSoKXb0CeQq9it2vnZ4T4mecQyUXC2gG@mail.gmail.com>
-Subject: Re: [PATCH v2 28/28] ARM: tegra: clock: Add forward reference to
- struct clk
-To: Colin Cross <ccross@android.com>
-Cc: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        olof@lixom.net, konkers@android.com,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752817Ab1AZETE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 23:19:04 -0500
+Received: from lo.gmane.org ([80.91.229.12]:40146 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752101Ab1AZETD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 23:19:03 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: WANG Cong <xiyou.wangcong@gmail.com>
+Subject: Re: [PATCH] printk: allow setting DEFAULT_MESSAGE_LEVEL via Kconfig
+Date: Wed, 26 Jan 2011 04:18:50 +0000 (UTC)
+Message-ID: <iho7ba$kmn$1@dough.gmane.org>
+References: <20110125235700.GR8008@google.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 60.247.97.98
+User-Agent: Pan/0.133 (House of Butterflies)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 8:21 PM, Colin Cross <ccross@android.com> wrote:
-> On Tue, Jan 25, 2011 at 7:19 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
->> On Sun, Jan 23, 2011 at 7:01 PM, Colin Cross <ccross@android.com> wrote:
->>> Signed-off-by: Colin Cross <ccross@android.com>
->>
->> Hi Colin,
->>
->> This build warning exists in current mainline.  It should go out to
->> Linus now instead of waiting for 2.6.29.
->>
->> Acked-by: Grant Likely <grant.likely@secretlab.ca>
->>
->> g.
->
-> It will, I just haven't sent it yet.  I have one more patch I'd like
-> to send with it to prevent a possible variable name conflict in
-> 2.6.39.
+On Tue, 25 Jan 2011 15:57:00 -0800, Mandeep Singh Baines wrote:
 
-Cool, thx.
+> We've been burned by regressions/bugs which we later realized could have
+> been triaged quicker if only we'd paid closer attention to dmesg. To
+> make it easier to audit dmesg, we'd like to make DEFAULT_MESSAGE_LEVEL
+> Kconfig-settable. That way we can set it to KERN_NOTICE and audit any
+> messages <= KERN_WARNING.
+> 
 
-g.
+Why? We already have "loglevel=" kernel parameter.
+
