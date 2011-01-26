@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673Ab1AZJa7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 04:30:59 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50759 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039Ab1AZJa5 (ORCPT
+	id S1751953Ab1AZJbk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 04:31:40 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40701 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750907Ab1AZJbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 04:30:57 -0500
+	Wed, 26 Jan 2011 04:31:38 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=UPagMniDvyvItoEX6yByKBLPShEzrCCiYYdGAfEvBGhCnYjeMCBLJ1hfNtCSjwQ4vl
-         pk1hkG7FJ3SFARzrwNHUYLrKwqexK/Ef3Bkxc7Q0w1C2oZChxXIQjXEz2ISxWstNr0OY
-         G8Yfc/LZkBYxX6kFjMPcwJvPJY0363C2I7YeA=
-Date: Wed, 26 Jan 2011 10:30:51 +0100
-From: Tejun Heo <tj@kernel.org>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, axboe@kernel.dk, tytso@mit.edu,
-        shli@kernel.org, neilb@suse.de, adilger.kernel@dilger.ca, jack@suse.cz,
-        snitzer@redhat.com, linux-kernel@vger.kernel.org, kmannth@us.ibm.com,
-        cmm@us.ibm.com, linux-ext4@vger.kernel.org, rwheeler@redhat.com,
-        hch@lst.de, josef@redhat.com
-Subject: Re: [PATCH 1/3] block: Create sysfs knobs to override FLUSH/FUA
- support flags
-Message-ID: <20110126093051.GA12520@htj.dyndns.org>
-References: <20110126071200.GE32261@tux1.beaverton.ibm.com>
- <20110126071626.GI27190@tux1.beaverton.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110126071626.GI27190@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=XTac0B3/ge20D95OCVCGT8x/RCOT28XT56UorsBjHezuqEJE3Bwbwxv38ZMR92V9/i
+         ty7K9NmmjZX2sgF1nZ/ByQ5iDoIG6o7AK/Yxu7CHODFpyn5VgBsDtRiPw8KoIrESp95G
+         tKJBg1v/zzO2+9J6fRynSwpZurvnLaOfLmzKY=
+From: Marek Belisko <marek.belisko@open-nandra.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Marek Belisko <marek.belisko@open-nandra.com>
+Subject: [PATCH] staging: ft1000: Compilation error fix.
+Date: Wed, 26 Jan 2011 10:32:09 +0100
+Message-Id: <1296034329-20797-1-git-send-email-marek.belisko@open-nandra.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 11:16:26PM -0800, Darrick J. Wong wrote:
-> This patch is the first in a series to refactor the barrier= mount options out
-> of the filesystem code.  This patch adds sysfs knobs to disable flush and FUA;
-> of course, the automatic default is the safe choice, i.e. to leave them
-> enabled.  Obviously, only a seasoned administrator should ever be overriding
-> the defaults.
+This compilation error was introduced by coding style fixes
+series patch. Fix for problem (forgot to compile).
 
-Hmmm... wouldn't it be better to just export flush and fua instead of
-ignore_*?  So that the admin can turn things on and off as [s]he seems
-fit?  Also, it might be better to export them in a single attribute,
-say cache_control or something.  Only subset of the combinations make
-sense anyway - none, flush, flush_fua.
+Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+---
+ .../staging/ft1000/ft1000-usb/ft1000_download.c    |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thanks.
-
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
+index 05f3e22..7a930f5 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
+@@ -265,7 +265,7 @@ static void put_handshake(struct ft1000_device *ft1000dev,u16 handshake_value)
+ 
+ static u16 get_handshake_usb(struct ft1000_device *ft1000dev, u16 expected_value)
+ {
+-	u16 handshake
++	u16 handshake;
+ 	int loopcnt;
+ 	u16 temp;
+ 	u32 status = 0;
 -- 
-tejun
+1.7.1
+
