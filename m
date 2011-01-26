@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191Ab1AZUdD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 15:33:03 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:42366 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754112Ab1AZUdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 15:33:00 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] Power management fix for 2.6.38
-Date: Wed, 26 Jan 2011 21:32:31 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc2+; KDE/4.4.4; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+	id S1754197Ab1AZUeL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 15:34:11 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:39754 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752882Ab1AZUeJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 15:34:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=S2sqztxQAYSFg5XjZ18y5fS+t8xI1A8tQ3oTT6pjj28vP2U0hnflhyIUHOUE92mNrV
+         NKaxDCfUxiPJfhU5/EAKMq8rQwaSWohFC1zUnuLwvD7HtCAtYbRSbg0el0+2YkNbm10m
+         EcFtzV7ocLzunQkNQBqVFdsE8B8tcrExxoYUk=
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101262132.31890.rjw@sisk.pl>
+In-Reply-To: <alpine.DEB.2.00.1101261444130.32464@p34.internal.lan>
+References: <alpine.DEB.2.00.1101261444130.32464@p34.internal.lan>
+Date: Wed, 26 Jan 2011 12:34:06 -0800
+Message-ID: <AANLkTikECrLeVGQt6ui0eHVdohgtW7-ksetrsKp4sRNw@mail.gmail.com>
+Subject: Re: 3w-sas 0000:02:00.0: vpd r/w failed.
+From: adam radford <aradford@gmail.com>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Alan Piszcz <ap@solarrain.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, Jan 26, 2011 at 11:45 AM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
+>
+> [475380.769837] 3w-sas 0000:02:00.0: vpd r/w failed.  This is likely a
+> firmware bug on this device.  Contact the card vendor for a firmware update.
+>
 
-Please pull an important power management fix for 2.6.38 (and 2.6.37.y) from:
+Justin,
 
-git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git pm-fixes
+pci_vpd_pci22_wait() uses 'HZ' and time_after() to detect a timeout of
+reading the vpd.
 
-One of the changes we made in 2.6.37 allowed rpm_suspend() to be called from
-interrupt handlers, but forgot to update one code path in there to take that
-into account.
+Do you have your kernel compiled with the following?
 
+-# CONFIG_NO_HZ is not set
+-# CONFIG_ACPI_PROCESSOR is not set
+-# CONFIG_CPU_FREQ is not set
 
- drivers/base/power/runtime.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
-
----------------
-
-Alan Stern (1):
-      PM / Runtime: Don't enable interrupts while running in_interrupt
-
+-Adam
