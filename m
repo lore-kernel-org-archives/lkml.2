@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998Ab1AZThU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 14:37:20 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:36833 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753853Ab1AZThS convert rfc822-to-8bit (ORCPT
+	id S1754081Ab1AZTiN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 14:38:13 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:53206 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753853Ab1AZTiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 14:37:18 -0500
-Subject: Re: Q: perf_install_in_context/perf_event_enable are racy?
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>, Prasad <prasad@linux.vnet.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <1296070383.15234.10.camel@laptop>
-References: <20110119182141.GA12183@redhat.com>
-	 <20110120193033.GA13924@redhat.com> <1295611905.28776.269.camel@laptop>
-	 <20110121130323.GA12900@elte.hu> <1295617185.28776.273.camel@laptop>
-	 <20110121142616.GA31165@redhat.com> <1295622304.28776.293.camel@laptop>
-	 <20110121204014.GA2870@nowhere> <20110124114234.GA12166@redhat.com>
-	 <20110126175322.GA28617@redhat.com>  <20110126184957.GA32578@redhat.com>
-	 <1296068731.15234.6.camel@laptop>  <1296070383.15234.10.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 26 Jan 2011 20:38:03 +0100
-Message-ID: <1296070683.15234.11.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 26 Jan 2011 14:38:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=o4grVlTN9VSvCmRb6/lpuDgQaDizuJdfxkxYrEe4pjP3dk1wY+jbupbTgyJQF/+27z
+         A58V1YbrATZTB/byrXI5fbPNklh+22G2UhMa+0+FA11+uaTvn7lNO8gDvGwphUFxC9IP
+         IuC6Cwp10WtB6ifKNC5Y1Dr7JHca42iRGanxo=
+Date: Wed, 26 Jan 2011 11:38:05 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils ?
+Message-ID: <20110126193804.GD29268@core.coreip.homeip.net>
+References: <20110125164803.GA19701@core.coreip.homeip.net>
+ <AANLkTi=1Mh0JrYk5itvef7O7e7pR+YKos-w56W5q4B8B@mail.gmail.com>
+ <20110125205453.GA19896@core.coreip.homeip.net>
+ <4D3F4804.6070508@redhat.com>
+ <4D3F4D11.9040302@teksavvy.com>
+ <20110125232914.GA20130@core.coreip.homeip.net>
+ <20110126020003.GA23085@core.coreip.homeip.net>
+ <4D403855.4050706@teksavvy.com>
+ <20110126164359.GA29163@core.coreip.homeip.net>
+ <4D4076A0.9090805@teksavvy.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D4076A0.9090805@teksavvy.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-26 at 20:33 +0100, Peter Zijlstra wrote:
+On Wed, Jan 26, 2011 at 02:31:44PM -0500, Mark Lord wrote:
+> On 11-01-26 11:44 AM, Dmitry Torokhov wrote:
+> > On Wed, Jan 26, 2011 at 10:05:57AM -0500, Mark Lord wrote:
+> ..
+> >> Nope. Does not work here:
+> >>
+> >> $ lsinput
+> >> protocol version mismatch (expected 65536, got 65537)
+> >>
+> > 
+> > It would be much more helpful if you tried to test what has been fixed
+> > (hint: version change wasn't it).
+> 
+> It would be much more helpful if you would revert that which was broken
+> in 2.6.36.  (hint: version was part of it).
+> 
 
-> Wouldn't something like the below cure things too?
+No, version change will not be reverted as we do not have a way to
+validate whether new ioctls are supported. The older kernels are
+returning -EINVAL for unknown evdev ioctls so userspace can't know
+if ioctl failed because it is unsupported or because arguments are
+wrong/not applicable for the underlying device.
 
-> +struct task_function_call {
-> +	struct task_struct *p;
-> +	void (*func)(void *info);
-> +	void *info;
-> +};
-> +
-> +void task_function_trampoline(void *data)
-> +{
-> +	struct task_function_call *tfc = data;
-> +
-> +	if (this_rq()->curr != tfc->p)
-> +		return;
-> +
-> +	tfc->func(tfc->data);
-> +}
+> The other part does indeed appear to work with the old binary for input-kbd,
+> but the binary for lsinput still fails as above.
+> 
 
-tfc->info of course ;-)
+Great, then I'' include the fix for RC keytables in my next pull
+request. I guess it should go to stable as well.
+
+Thanks.
+
+-- 
+Dmitry
