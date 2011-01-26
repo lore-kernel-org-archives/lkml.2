@@ -1,89 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509Ab1AZRRs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 12:17:48 -0500
-Received: from casper.infradead.org ([85.118.1.10]:45250 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906Ab1AZRRr convert rfc822-to-8bit (ORCPT
+	id S1753544Ab1AZRUT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 12:20:19 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:41428 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752647Ab1AZRUR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 12:17:47 -0500
-Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 5/20]  5: Uprobes:
- register/unregister probes.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>,
+	Wed, 26 Jan 2011 12:20:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=Ye/oQ7IyTiBVcdxsQERIzt47TrfIjTmsq5R8+8v8exF2IdkgvIY2T++ZgV8URoD/t3
+         rx7xfl6DNnZPrnS+JiuhFNBx5W0y2T1HeQvjL+EPpJ5dVh6AvRwompmhZWTqbvkZXuEM
+         0lqdTRCBazkAW2ZkfN5ycoy9q+qXfySHGrWic=
+Date: Wed, 26 Jan 2011 11:20:06 -0600
+From: Shawn Bohrer <shawn.bohrer@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Davide Libenzi <davidel@xmailserver.org>, Simon Kirby <sim@hostway.ca>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20110126165645.GP19725@linux.vnet.ibm.com>
-References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
-	 <20101216095817.23751.76989.sendpatchset@localhost6.localdomain6>
-	 <1295957744.28776.722.camel@laptop>
-	 <20110126075558.GB19725@linux.vnet.ibm.com>
-	 <1296036708.28776.1138.camel@laptop>
-	 <20110126153036.GN19725@linux.vnet.ibm.com>
-	 <1296056756.28776.1247.camel@laptop>
-	 <20110126165645.GP19725@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 26 Jan 2011 18:12:29 +0100
-Message-ID: <1296061949.28776.1343.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: sys_epoll_wait high CPU load in 2.6.37
+Message-ID: <20110126172006.GA9568@BohrerMBP.rgmadvisors.com>
+References: <20110126000932.GA23089@hostway.ca>
+ <1296026298.2633.19.camel@edumazet-laptop>
+ <1296040578.2899.59.camel@edumazet-laptop>
+ <alpine.DEB.2.00.1101260714280.1889@localhost6.localdomain6>
+ <1296056600.2899.66.camel@edumazet-laptop>
+ <alpine.DEB.2.00.1101260747320.1889@localhost6.localdomain6>
+ <1296057590.2899.73.camel@edumazet-laptop>
+ <1296058409.2899.81.camel@edumazet-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1296058409.2899.81.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-26 at 22:26 +0530, Srikar Dronamraju wrote:
-
-> >  - lookup the vma relating to the address you stored,
-> 
-> We already do this thro get_user_pages in write_opcode().
-
-Ah, I didn't read that far..
-
-> >  - validate that the vma is indeed a map of the right inode
-> 
-> We can add a check in write_opcode( we need to pass the inode to
-> write_opcode).
-
-sure..
-
-> >  - validate that the offset of the probe corresponds with the stored
-> > address
-> 
-> I am not clear on this. We would have derived the address from the
-> offset. So is that we check for
->  (vaddr == vma->vm_start + uprobe->offset)
-
-Sure, but the vma might have changed since you computed the offset -)
-
+On Wed, Jan 26, 2011 at 05:13:29PM +0100, Eric Dumazet wrote:
+> Le mercredi 26 janvier 2011 à 16:59 +0100, Eric Dumazet a écrit :
+> > Le mercredi 26 janvier 2011 à 07:52 -0800, Davide Libenzi a écrit :
 > > 
-> > Otherwise you can race with unmap/map and end up installing the probe in
-> > a random location.
+> > > For "above", I meant the current epoll expire time calculation, which was 
+> > > described above in the message ;)
 > > 
-> > Also, I think the whole thing goes funny if someone maps the same text
-> > twice ;-)
+> > Well, problem was not an overflow, but doing a loop 2.000.000 times ;)
+> > 
+> > > The hint for a timespec_add_ms() was because we must be doing something 
+> > > similar in poll, don't we (/me got no code in front ATM)?
+> > 
+> > Apparently its done differently in poll(), using
+> > poll_select_set_timeout() helper.
+> > 
+> > 
+> > Give me some minutes I'll try to cook an alternate patch
+> > 
 > 
-> I am not sure if we can map the same text twice. If something like
-> this is possible then we would have 2 addresses for each function.
-> So how does the linker know which address to jump to out of the 2 or
-> multiple matching addresses. What would be the usecases for same
-> text being mapped multiple times and both being executable?
+> Here is the alternate patch, using poll_select_set_timeout() helper
+> 
+> Thanks
+> 
+> [PATCH v2] epoll: epoll_wait() should not use timespec_add_ns()
+> 
+> commit 95aac7b1cd224f (epoll: make epoll_wait() use the hrtimer range
+> feature) added a performance regression because it uses
+> timespec_add_ns() with potential very large 'ns' values.
+> 
+> Use poll_select_set_timeout() helper like poll()/select()
+> 
+> Reported-by: Simon Kirby <sim@hostway.ca>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> CC: Shawn Bohrer <shawn.bohrer@gmail.com>
+> CC: Davide Libenzi <davidel@xmailserver.org>
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>  fs/eventpoll.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+> index cc8a9b7..94d887b 100644
+> --- a/fs/eventpoll.c
+> +++ b/fs/eventpoll.c
+> @@ -1125,8 +1125,8 @@ static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
+>  	ktime_t expires, *to = NULL;
+>  
+>  	if (timeout > 0) {
+> -		ktime_get_ts(&end_time);
+> -		timespec_add_ns(&end_time, (u64)timeout * NSEC_PER_MSEC);
+> +		poll_select_set_timeout(&end_time, timeout / MSEC_PER_SEC,
+> +				NSEC_PER_MSEC * (timeout % MSEC_PER_SEC));
+>  		slack = select_estimate_accuracy(&end_time);
+>  		to = &expires;
+>  		*to = timespec_to_ktime(end_time);
 
-You can, if only to wreck your thing, you can call mmap() as often as
-you like (until your virtual memory space runs out) and get many many
-mapping of the same file.
+poll_select_set_timeout() jumps through some extra hoops that
+aren't necessary in the epoll case so I actually like your previous
+patch better.
 
-It doesn't need to make sense to the linker, all it needs to do is
-confuse your code ;-)
+--
+Shawn
