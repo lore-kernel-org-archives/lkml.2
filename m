@@ -1,158 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171Ab1AZUGP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 15:06:15 -0500
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:46514
-	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754148Ab1AZUGI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 15:06:08 -0500
-X-SpamScore: -23
-X-BigFish: VPS-23(zz936eK542N1432N9371Pzz1202hzz8275bh8275dhz2dh95h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Subject: RE: [PATCH 0/8] Basic ARM device tree support
-Date: Wed, 26 Jan 2011 13:04:39 -0700
-In-Reply-To: <20110118195933.13011.56098.stgit@localhost6.localdomain6>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 0/8] Basic ARM device tree support
-Thread-Index: Acu3TlqtqJz01U+qTCG08q+v81ig3QGRO9FA
-References: <20110118195933.13011.56098.stgit@localhost6.localdomain6>
-From: John Linn <John.Linn@xilinx.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Lennert Buijtenhek <buytenh@wantstofly.org>
-X-OriginalArrivalTime: 26 Jan 2011 20:04:39.0709 (UTC) FILETIME=[4398D4D0:01CBBD94]
-X-RCIS-Action: ALLOW
-Message-ID: <00bcd596-2108-4c54-92d3-7fda39e333e3@VA3EHSMHS015.ehs.local>
-X-OriginatorOrg: xilinx.com
+	id S1754145Ab1AZUGE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 15:06:04 -0500
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:52208
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754035Ab1AZUFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 15:05:25 -0500
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: haiyangz@microsoft.com, hjanssen@microsoft.com, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Subject: [PATCH 4/8] staging: hv: Convert camel cased functions in vmbus_drv.c to lower cases
+Date: Wed, 26 Jan 2011 12:12:10 -0800
+Message-Id: <1296072734-11963-4-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.5.5.6
+In-Reply-To: <1296072734-11963-3-git-send-email-haiyangz@microsoft.com>
+References: <1296072734-11963-1-git-send-email-haiyangz@microsoft.com>
+ <1296072734-11963-2-git-send-email-haiyangz@microsoft.com>
+ <1296072734-11963-3-git-send-email-haiyangz@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p0QK6Muj014680
 
-> -----Original Message-----
-> From: Grant Likely [mailto:glikely@secretlab.ca] On Behalf Of Grant Likely
-> Sent: Tuesday, January 18, 2011 1:29 PM
-> To: linux-arm-kernel@lists.infradead.org
-> Cc: Nicolas Pitre; Russell King; Catalin Marinas; devicetree-discuss@lists.ozlabs.org; linux-
-> kernel@vger.kernel.org; Olof Johansson; Jeremy Kerr; John Linn; Lennert Buijtenhek
-> Subject: [PATCH 0/8] Basic ARM device tree support
-> 
-> It's been a while since these patches have been circulated for review.
-> Much has changed since the last posting and there are no longer any
-> ugly hacks or workarounds to it working.  From my viewpoint, these
-> patches are complete and ready to be used.
-> 
-> This patch series allows CONFIG_OF to be enabled on ARM and allows the
-> kernel to accept a dtb pointer from boot firmware instead of atags.
-> If a dtb is passed, then the kernel will use the root 'compatible'
-> property to find a matching machine_desc, and it will use it to obtain
-> the memory layout, initrd location and kernel parameters string.
-> 
-> Only limited device tree support is enabled here.  It does not perform
-> any kind of device registration from device tree data.  That support
-> will be enabled in a later patch set.  Right now those patches depend
-> on the common struct clk patches that Jeremy is working on, so I'm not
-> going to post them yet.  Rather, this series is a stable base that
-> other engineers can use to start working on device tree support for
-> their platforms.
-> 
-> Tested on Versatile (qemu) and nVidia Tegra Harmony.  Kernel compiles
-> an boot with CONFIG_OF both on and off, both with and without passing
-> a device tree blob.
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+---
+ drivers/staging/hv/channel_mgmt.c  |    4 ++--
+ drivers/staging/hv/vmbus_drv.c     |   22 +++++++++++-----------
+ drivers/staging/hv/vmbus_private.h |    6 +++---
+ 3 files changed, 16 insertions(+), 16 deletions(-)
 
-Tested on Xilinx platform.  Did see an issue with loading the device
-tree blob into higher memory.  At address 0 there was no issue.  
+diff --git a/drivers/staging/hv/channel_mgmt.c b/drivers/staging/hv/channel_mgmt.c
+index 0ce8f54..732a457 100644
+--- a/drivers/staging/hv/channel_mgmt.c
++++ b/drivers/staging/hv/channel_mgmt.c
+@@ -391,7 +391,7 @@ static void vmbus_process_offer(struct work_struct *work)
+ 	/*
+ 	 * Start the process of binding this offer to the driver
+ 	 * We need to set the DeviceObject field before calling
+-	 * VmbusChildDeviceAdd()
++	 * vmbus_child_dev_add()
+ 	 */
+ 	newchannel->device_obj = vmbus_child_device_create(
+ 		&newchannel->offermsg.offer.InterfaceType,
+@@ -406,7 +406,7 @@ static void vmbus_process_offer(struct work_struct *work)
+ 	 * binding which eventually invokes the device driver's AddDevice()
+ 	 * method.
+ 	 */
+-	ret = VmbusChildDeviceAdd(newchannel->device_obj);
++	ret = vmbus_child_dev_add(newchannel->device_obj);
+ 	if (ret != 0) {
+ 		DPRINT_ERR(VMBUS,
+ 			   "unable to add child device object (relid %d)",
+diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
+index 99686f0..0c0aadb 100644
+--- a/drivers/staging/hv/vmbus_drv.c
++++ b/drivers/staging/hv/vmbus_drv.c
+@@ -148,17 +148,17 @@ static const struct hv_guid device_id = {
+ static struct hv_device *vmbus_device; /* vmbus root device */
+ 
+ /*
+- * VmbusChildDeviceAdd - Registers the child device with the vmbus
++ * vmbus_child_dev_add - Registers the child device with the vmbus
+  */
+-int VmbusChildDeviceAdd(struct hv_device *child_dev)
++int vmbus_child_dev_add(struct hv_device *child_dev)
+ {
+ 	return vmbus_child_device_register(vmbus_device, child_dev);
+ }
+ 
+ /*
+- * VmbusOnDeviceAdd - Callback when the root bus device is added
++ * vmbus_dev_add - Callback when the root bus device is added
+  */
+-static int VmbusOnDeviceAdd(struct hv_device *dev, void *info)
++static int vmbus_dev_add(struct hv_device *dev, void *info)
+ {
+ 	u32 *irqvector = info;
+ 	int ret;
+@@ -181,9 +181,9 @@ static int VmbusOnDeviceAdd(struct hv_device *dev, void *info)
+ }
+ 
+ /*
+- * VmbusOnDeviceRemove - Callback when the root bus device is removed
++ * vmbus_dev_rm - Callback when the root bus device is removed
+  */
+-static int VmbusOnDeviceRemove(struct hv_device *dev)
++static int vmbus_dev_rm(struct hv_device *dev)
+ {
+ 	int ret = 0;
+ 
+@@ -194,9 +194,9 @@ static int VmbusOnDeviceRemove(struct hv_device *dev)
+ }
+ 
+ /*
+- * VmbusOnCleanup - Perform any cleanup when the driver is removed
++ * vmbus_cleanup - Perform any cleanup when the driver is removed
+  */
+-static void VmbusOnCleanup(struct hv_driver *drv)
++static void vmbus_cleanup(struct hv_driver *drv)
+ {
+ 	/* struct vmbus_driver *driver = (struct vmbus_driver *)drv; */
+ 
+@@ -482,9 +482,9 @@ static int vmbus_bus_init(void)
+ 	memcpy(&driver->deviceType, &device_type, sizeof(struct hv_guid));
+ 
+ 	/* Setup dispatch table */
+-	driver->OnDeviceAdd	= VmbusOnDeviceAdd;
+-	driver->OnDeviceRemove	= VmbusOnDeviceRemove;
+-	driver->OnCleanup	= VmbusOnCleanup;
++	driver->OnDeviceAdd	= vmbus_dev_add;
++	driver->OnDeviceRemove	= vmbus_dev_rm;
++	driver->OnCleanup	= vmbus_cleanup;
+ 
+ 	/* Hypervisor initialization...setup hypercall page..etc */
+ 	ret = hv_init();
+diff --git a/drivers/staging/hv/vmbus_private.h b/drivers/staging/hv/vmbus_private.h
+index e3b0663..0ab404e 100644
+--- a/drivers/staging/hv/vmbus_private.h
++++ b/drivers/staging/hv/vmbus_private.h
+@@ -102,11 +102,11 @@ extern struct VMBUS_CONNECTION vmbus_connection;
+ 
+ /* General vmbus interface */
+ 
+-struct hv_device *vmbus_child_device_create(struct hv_guid *deviceType,
+-					 struct hv_guid *deviceInstance,
++struct hv_device *vmbus_child_device_create(struct hv_guid *type,
++					 struct hv_guid *instance,
+ 					 struct vmbus_channel *channel);
+ 
+-int VmbusChildDeviceAdd(struct hv_device *Device);
++int vmbus_child_dev_add(struct hv_device *device);
+ int vmbus_child_device_register(struct hv_device *root_device_obj,
+ 				struct hv_device *child_device_obj);
+ void vmbus_child_device_unregister(struct hv_device *device_obj);
+-- 
+1.6.3.2
 
-> 
-> I've published this series to a new branch on my git server:
-> 
->   git://git.secretlab.ca/git/linux-2.6 devicetree/arm
-> 
-> The way I've managed the devicetree/test branch in the past has made
-> it hard for other engineers to work with the device tree support, so
-> I'm changing the way I'm handling it.  I will *not* rebase this new
-> branch.  My intention is to keep it in essentially 'merge-ready' state
-> at all times.  ie. I'm only going to put patches into this branch that
-> I consider complete and are required to enable arm device tree
-> support.  ie. core dt infrastructure and dt board support.  Device
-> drivers should be submitted directly to their respective
-> lists/maintainers.  I'll also be soliciting acks from platform
-> maintainers before I pick up board support patches into this branch.
-> 
-> Russell:  I'm not expecting you to merge these now, nor am I asking
-> you to.  I won't do so until I've got a full implementation using the
-> device tree to register devices on the machine and supporting multiple
-> machines.  However, would you mind taking a look at these patches and
-> commenting on the approach?  Particularly the early boot code.
-> Thanks.
-> 
-> Cheers,
-> g.
-> 
-
-Thanks for this patch set.  Device tree on ARM will be a great help to Xilinx.
-
-Tested-by: John Linn <john.linn@xilinx.com>
-
-> 
-> ---
-> The following changes since commit
-> a25cecce88194b2edf38b8c3b1665e9318eb2d22:
-> 
->   Merge branch 'next' of git://git.monstr.eu/linux-2.6-microblaze (2011-01-18 08:06:22 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.secretlab.ca/git/linux-2.6 devicetree/arm
-> 
-> Grant Likely (7):
->       arm/dt: Make __vet_atags also accept a dtb image
->       arm/dt: allow bootmem reservation for device tree blob and initrd
->       arm/dt: consolidate atags setup into setup_machine_atags
->       arm/dt: probe for platforms via the device tree
->       arm/dt: Basic versatile devicetree support
->       arm/tegra: Fix tegra irq_data conversion
->       arm/dt: Basic tegra devicetree support
-> 
-> Jeremy Kerr (1):
->       arm/dt: Allow CONFIG_OF on ARM
-> 
-> 
->  arch/arm/Kconfig                       |    7 ++
->  arch/arm/include/asm/mach/arch.h       |    2 +
->  arch/arm/include/asm/prom.h            |   34 ++++++++++
->  arch/arm/include/asm/setup.h           |    4 +
->  arch/arm/kernel/Makefile               |    1
->  arch/arm/kernel/devtree.c              |  107 ++++++++++++++++++++++++++++++++
->  arch/arm/kernel/head-common.S          |   19 ++++--
->  arch/arm/kernel/head.S                 |    8 +-
->  arch/arm/kernel/setup.c                |   78 +++++++++++++----------
->  arch/arm/mach-tegra/board-harmony.c    |    6 ++
->  arch/arm/mach-tegra/gpio.c             |    4 +
->  arch/arm/mach-versatile/versatile_ab.c |    6 ++
->  arch/arm/mach-versatile/versatile_pb.c |    6 ++
->  arch/arm/mm/init.c                     |   23 +++++++
->  14 files changed, 258 insertions(+), 47 deletions(-)
->  create mode 100644 arch/arm/include/asm/prom.h
->  create mode 100644 arch/arm/kernel/devtree.c
-> 
-> --
-> Signature
-
-
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
