@@ -1,99 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab1AZQTy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 11:19:54 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57686 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751025Ab1AZQTx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 11:19:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=neDWZ/h1dro79YL698bRAmB9G7xM45F2VplFWlZdXKYJOL3J9HrC5gJPUVrB5O7UFy
-         4HUlRht+icY1xlU6Me/CSq5WPt7+tbLPKzUtba0JCboNE35vtCIgh19neNXaMxYzf+BP
-         PWEnTumOVVRQS7u6qLF1CBdTjY8DylBvHI+Oc=
-Subject: Re: sys_epoll_wait high CPU load in 2.6.37
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Davide Libenzi <davidel@xmailserver.org>
-Cc: Simon Kirby <sim@hostway.ca>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Shawn Bohrer <shawn.bohrer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <1296057590.2899.73.camel@edumazet-laptop>
-References: <20110126000932.GA23089@hostway.ca>
-	 <1296026298.2633.19.camel@edumazet-laptop>
-	 <1296040578.2899.59.camel@edumazet-laptop>
-	 <alpine.DEB.2.00.1101260714280.1889@localhost6.localdomain6>
-	 <1296056600.2899.66.camel@edumazet-laptop>
-	 <alpine.DEB.2.00.1101260747320.1889@localhost6.localdomain6>
-	 <1296057590.2899.73.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 26 Jan 2011 17:13:29 +0100
-Message-ID: <1296058409.2899.81.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1752882Ab1AZQ3n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 11:29:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38354 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751685Ab1AZQ3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 11:29:42 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Benjamin LaHaise <bcrl@kvack.org>,
+        linux-aio@kvack.org
+Subject: Re: [PATCH UPDATED 21/32] fs/aio: aio_wq isn't used in memory reclaim path
+References: <1294062595-30097-1-git-send-email-tj@kernel.org>
+	<1294062595-30097-22-git-send-email-tj@kernel.org>
+	<20110126112154.GM12520@htj.dyndns.org>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 26 Jan 2011 11:29:36 -0500
+In-Reply-To: <20110126112154.GM12520@htj.dyndns.org> (Tejun Heo's message of
+	"Wed, 26 Jan 2011 12:21:54 +0100")
+Message-ID: <x491v3zzkzz.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 26 janvier 2011 à 16:59 +0100, Eric Dumazet a écrit :
-> Le mercredi 26 janvier 2011 à 07:52 -0800, Davide Libenzi a écrit :
-> 
-> > For "above", I meant the current epoll expire time calculation, which was 
-> > described above in the message ;)
-> 
-> Well, problem was not an overflow, but doing a loop 2.000.000 times ;)
-> 
-> > The hint for a timespec_add_ms() was because we must be doing something 
-> > similar in poll, don't we (/me got no code in front ATM)?
-> 
-> Apparently its done differently in poll(), using
-> poll_select_set_timeout() helper.
-> 
-> 
-> Give me some minutes I'll try to cook an alternate patch
-> 
+Tejun Heo <tj@kernel.org> writes:
 
-Here is the alternate patch, using poll_select_set_timeout() helper
+> aio_wq isn't used during memory reclaim.  Convert to alloc_workqueue()
+> without WQ_MEM_RECLAIM.  It's possible to use system_wq but given that
+> the number of work items is determined from userland and the work item
+> may block, enforcing strict concurrency limit would be a good idea.
+>
+> Also, move fput_work to system_wq so that aio_wq is used soley to
+> throttle the max concurrency of aio work items and fput_work doesn't
+> interact with other work items.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Benjamin LaHaise <bcrl@kvack.org>
+> Cc: Jeff Moyer <jmoyer@redhat.com>
 
-Thanks
+You actually missed that CC.  ;-)
 
-[PATCH v2] epoll: epoll_wait() should not use timespec_add_ns()
+> Cc: linux-aio@kvack.org
+> ---
+> Patch description updated to describe fput_work change.  If there's no
+> further objection, I'll push it through workqueue#for-2.6.39.  Thanks.
 
-commit 95aac7b1cd224f (epoll: make epoll_wait() use the hrtimer range
-feature) added a performance regression because it uses
-timespec_add_ns() with potential very large 'ns' values.
+Looks good to me, based on not changing existing semantics.
 
-Use poll_select_set_timeout() helper like poll()/select()
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
 
-Reported-by: Simon Kirby <sim@hostway.ca>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Shawn Bohrer <shawn.bohrer@gmail.com>
-CC: Davide Libenzi <davidel@xmailserver.org>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Andrew Morton <akpm@linux-foundation.org>
----
- fs/eventpoll.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index cc8a9b7..94d887b 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -1125,8 +1125,8 @@ static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
- 	ktime_t expires, *to = NULL;
- 
- 	if (timeout > 0) {
--		ktime_get_ts(&end_time);
--		timespec_add_ns(&end_time, (u64)timeout * NSEC_PER_MSEC);
-+		poll_select_set_timeout(&end_time, timeout / MSEC_PER_SEC,
-+				NSEC_PER_MSEC * (timeout % MSEC_PER_SEC));
- 		slack = select_estimate_accuracy(&end_time);
- 		to = &expires;
- 		*to = timespec_to_ktime(end_time);
-
-
+Cheers,
+Jeff
