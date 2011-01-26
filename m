@@ -1,107 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab1AZHXi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 02:23:38 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:37121 "EHLO e8.ny.us.ibm.com"
+	id S1753288Ab1AZHXp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 02:23:45 -0500
+Received: from hera.kernel.org ([140.211.167.34]:53388 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752917Ab1AZHXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 02:23:36 -0500
-Date: Tue, 25 Jan 2011 23:23:29 -0800
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
-        axboe@kernel.dk, tytso@mit.edu, shli@kernel.org, neilb@suse.de,
-        adilger.kernel@dilger.ca, jack@suse.cz, snitzer@redhat.com,
-        linux-kernel@vger.kernel.org, kmannth@us.ibm.com, cmm@us.ibm.com,
-        linux-ext4@vger.kernel.org, rwheeler@redhat.com, hch@lst.de,
-        josef@redhat.com
-Subject: [PATCH 3/3] ext4: Deprecate barrier= and nobarrier mount options
-Message-ID: <20110126072329.GK27190@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20110126071200.GE32261@tux1.beaverton.ibm.com>
+	id S1752725Ab1AZHXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 02:23:43 -0500
+Date: Wed, 26 Jan 2011 07:23:24 GMT
+From: tip-bot for Franck Bui-Huu <fbuihuu@gmail.com>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@redhat.com, fbuihuu@gmail.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, fbuihuu@gmail.com, tglx@linutronix.de
+In-Reply-To: <m3ipxo966i.fsf@gmail.com>
+References: <m3ipxo966i.fsf@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf record: auto detect when stdout is a pipe
+Message-ID: <tip-d7065adb9b4f3384c2615f0a3dbdb6c3aae1eb18@git.kernel.org>
+Git-Commit-ID: d7065adb9b4f3384c2615f0a3dbdb6c3aae1eb18
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20110126071200.GE32261@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-X-Content-Scanned: Fidelis XPS MAILER
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 26 Jan 2011 07:23:25 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As part of migrating the FLUSH/FUA knob to the block layer, remove the support
-code for the barrier-related mount options and remove the conditionals around
-flushes in favor of always issuing the flush.  The block layer will handle
-gracefully the situation where a FLUSH or FUA request is issued to a device
-that doesn't support it.  Modify the option parsing code to print a warning if
-someone tries to use the old mount option.
+Commit-ID:  d7065adb9b4f3384c2615f0a3dbdb6c3aae1eb18
+Gitweb:     http://git.kernel.org/tip/d7065adb9b4f3384c2615f0a3dbdb6c3aae1eb18
+Author:     Franck Bui-Huu <fbuihuu@gmail.com>
+AuthorDate: Sun, 16 Jan 2011 17:14:45 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 24 Jan 2011 10:58:27 -0200
 
-Note: The nobarrier bit in the default mount flags is now useless.
+perf record: auto detect when stdout is a pipe
 
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+This patch gives the ability to 'perf record' to detect when its stdout
+has been redirected to a pipe. There's now no more need to add '-o -'
+switch in this case.
+
+However '-o <path>' option has always precedence, that is if specified
+and stdout has been connected via a pipe then the output will go into
+the specified output.
+
+LKML-Reference: <m3ipxo966i.fsf@gmail.com>
+Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
+ tools/perf/builtin-record.c |   32 ++++++++++++++++++++------------
+ 1 files changed, 20 insertions(+), 12 deletions(-)
 
- fs/ext4/ext4.h  |    1 -
- fs/ext4/super.c |   23 ++---------------------
- 2 files changed, 2 insertions(+), 22 deletions(-)
-
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 0c8d97b..fa4c688 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -893,7 +893,6 @@ struct ext4_inode_info {
- #define EXT4_MOUNT_XATTR_USER		0x04000	/* Extended user attributes */
- #define EXT4_MOUNT_POSIX_ACL		0x08000	/* POSIX Access Control Lists */
- #define EXT4_MOUNT_NO_AUTO_DA_ALLOC	0x10000	/* No auto delalloc mapping */
--#define EXT4_MOUNT_BARRIER		0x20000 /* Use block barriers */
- #define EXT4_MOUNT_QUOTA		0x80000 /* Some quota option set */
- #define EXT4_MOUNT_USRQUOTA		0x100000 /* "old" user quota */
- #define EXT4_MOUNT_GRPQUOTA		0x200000 /* "old" group quota */
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 7379829..cd8e7b8 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -1022,13 +1022,6 @@ static int ext4_show_options(struct seq_file *seq, struct vfsmount *vfs)
- 			   (unsigned) sbi->s_min_batch_time);
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 45a3689..1346d42 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -48,7 +48,7 @@ static unsigned int		user_freq 			= UINT_MAX;
+ static int			freq				=   1000;
+ static int			output;
+ static int			pipe_output			=      0;
+-static const char		*output_name			= "perf.data";
++static const char		*output_name			= NULL;
+ static int			group				=      0;
+ static int			realtime_prio			=      0;
+ static bool			nodelay				=  false;
+@@ -497,18 +497,26 @@ static int __cmd_record(int argc, const char **argv)
+ 		exit(-1);
  	}
  
--	/*
--	 * We're changing the default of barrier mount option, so
--	 * let's always display its mount state so it's clear what its
--	 * status is.
--	 */
--	seq_puts(seq, ",barrier=");
--	seq_puts(seq, test_opt(sb, BARRIER) ? "1" : "0");
- 	if (test_opt(sb, JOURNAL_ASYNC_COMMIT))
- 		seq_puts(seq, ",journal_async_commit");
- 	else if (test_opt(sb, JOURNAL_CHECKSUM))
-@@ -1701,18 +1694,9 @@ set_qf_format:
- 			sbi->s_mount_flags |= EXT4_MF_FS_ABORTED;
- 			break;
- 		case Opt_nobarrier:
--			clear_opt(sb, BARRIER);
--			break;
- 		case Opt_barrier:
--			if (args[0].from) {
--				if (match_int(&args[0], &option))
--					return 0;
--			} else
--				option = 1;	/* No argument, default to 1 */
--			if (option)
--				set_opt(sb, BARRIER);
--			else
--				clear_opt(sb, BARRIER);
-+			ext4_msg(sb, KERN_INFO, "barrier options are "
-+				 "deprecated.  Use ignore_flush in sysfs.");
- 			break;
- 		case Opt_ignore:
- 			break;
-@@ -3125,9 +3109,6 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 	sbi->s_min_batch_time = EXT4_DEF_MIN_BATCH_TIME;
- 	sbi->s_max_batch_time = EXT4_DEF_MAX_BATCH_TIME;
+-	if (!strcmp(output_name, "-"))
+-		pipe_output = 1;
+-	else if (!stat(output_name, &st) && st.st_size) {
+-		if (write_mode == WRITE_FORCE) {
+-			char oldname[PATH_MAX];
+-			snprintf(oldname, sizeof(oldname), "%s.old",
+-				 output_name);
+-			unlink(oldname);
+-			rename(output_name, oldname);
++	if (!output_name) {
++		if (!fstat(STDOUT_FILENO, &st) && S_ISFIFO(st.st_mode))
++			pipe_output = 1;
++		else
++			output_name = "perf.data";
++	}
++	if (output_name) {
++		if (!strcmp(output_name, "-"))
++			pipe_output = 1;
++		else if (!stat(output_name, &st) && st.st_size) {
++			if (write_mode == WRITE_FORCE) {
++				char oldname[PATH_MAX];
++				snprintf(oldname, sizeof(oldname), "%s.old",
++					 output_name);
++				unlink(oldname);
++				rename(output_name, oldname);
++			}
++		} else if (write_mode == WRITE_APPEND) {
++			write_mode = WRITE_FORCE;
+ 		}
+-	} else if (write_mode == WRITE_APPEND) {
+-		write_mode = WRITE_FORCE;
+ 	}
  
--	if ((def_mount_opts & EXT4_DEFM_NOBARRIER) == 0)
--		set_opt(sb, BARRIER);
--
- 	/*
- 	 * enable delayed allocation by default
- 	 * Use -o nodelalloc to turn it off
+ 	flags = O_CREAT|O_RDWR;
