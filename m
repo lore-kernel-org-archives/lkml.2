@@ -1,37 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064Ab1AZAkw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 19:40:52 -0500
-Received: from mail.perches.com ([173.55.12.10]:3362 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753126Ab1AZAkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 19:40:51 -0500
-Subject: Re: [PATCH] printk: allow setting DEFAULT_MESSAGE_LEVEL via Kconfig
-From: Joe Perches <joe@perches.com>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, olofj@chromium.org
-In-Reply-To: <20110125235700.GR8008@google.com>
-References: <20110125235700.GR8008@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 25 Jan 2011 16:40:49 -0800
-Message-ID: <1296002449.6115.9.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754078Ab1AZAr5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 19:47:57 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:46872 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753234Ab1AZAr4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 19:47:56 -0500
+Date: Tue, 25 Jan 2011 19:47:41 -0500
+From: Kyle McMartin <kyle@mcmartin.ca>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, akpm@linux-foundation.org,
+        hannes@cmpxchg.org, ryomov@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: (not so much) Fun with THP
+Message-ID: <20110126004741.GS27353@bombadil.infradead.org>
+References: <0d30dc$krvjbc@orsmga001.jf.intel.com>
+ <20110125175706.GE926@random.random>
+ <1bdc18$jcs0b0@fmsmga002.fm.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1bdc18$jcs0b0@fmsmga002.fm.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-25 at 15:57 -0800, Mandeep Singh Baines wrote:
-> To make it easier to audit dmesg, we'd like to make
-> DEFAULT_MESSAGE_LEVEL Kconfig-settable. That way we can set it to
-> KERN_NOTICE and audit any messages <= KERN_WARNING.
+On Tue, Jan 25, 2011 at 06:52:55PM +0000, Chris Wilson wrote:
+> On Tue, 25 Jan 2011 18:57:06 +0100, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> > On Tue, Jan 25, 2011 at 03:58:30PM +0000, Chris Wilson wrote:
+> > > On the one F15 box I've dared enable THP with, it hasn't succeeded in
+> > > booting (with or without KMS).  First it OOMed during lvm:
+> > 
+> > Sorry, for x86_32 there was some issue, below is all you need, thanks!
+> 
+> Thank you, I was missing the paravirt patch.
 
-Seems sensible, but mightn't it be better to make sure
-that all printks use a specific KERN_<level> rather
-than check that printks without a KERN_<level> are
-emitted at a selectable level?
+Thanks Chris, Andrea,
 
+That explains a bug I've had users seeing which I cannot reproduce
+(since I'm all on 64-bit...)
 
+regards,
+--Kyle
