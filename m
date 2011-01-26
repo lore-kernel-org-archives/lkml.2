@@ -1,117 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397Ab1AZMNj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 07:13:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38743 "EHLO mx1.redhat.com"
+	id S1753404Ab1AZMNw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 07:13:52 -0500
+Received: from hera.kernel.org ([140.211.167.34]:39793 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753345Ab1AZMNh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 07:13:37 -0500
-Subject: Re: [PATCH 01/16] KVM-HDR: register KVM basic header infrastructure
-From: Glauber Costa <glommer@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com
-In-Reply-To: <4D400045.2000405@redhat.com>
-References: <1295892397-11354-1-git-send-email-glommer@redhat.com>
-	 <1295892397-11354-2-git-send-email-glommer@redhat.com>
-	 <4D400045.2000405@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat
-Date: Wed, 26 Jan 2011 10:13:33 -0200
-Message-ID: <1296044013.15920.47.camel@mothafucka.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753328Ab1AZMNi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 07:13:38 -0500
+Date: Wed, 26 Jan 2011 12:13:07 GMT
+From: tip-bot for Venkatesh Pallipadi <venki@google.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, sruffell@digium.com, tglx@linutronix.de,
+        venki@google.com, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, sruffell@digium.com, tglx@linutronix.de,
+        venki@google.com, mingo@elte.hu
+In-Reply-To: <1292980144-28796-5-git-send-email-venki@google.com>
+References: <1292980144-28796-5-git-send-email-venki@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Export ns irqtimes through /proc/stat
+Message-ID: <tip-abb74cefa9c682fb38ba86c17ca3c86fed6cc464@git.kernel.org>
+Git-Commit-ID: abb74cefa9c682fb38ba86c17ca3c86fed6cc464
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 26 Jan 2011 12:13:07 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-26 at 13:06 +0200, Avi Kivity wrote:
-> On 01/24/2011 08:06 PM, Glauber Costa wrote:
-> > KVM, which stands for KVM Virtual Memory (I wanted to call it KVM Virtual Mojito),
-> > is a piece of shared memory that is visible to both the hypervisor and the guest
-> > kernel - but not the guest userspace.
-> >
-> > The basic idea is that the guest can tell the hypervisor about a specific
-> > piece of memory, and what it expects to find in there. This is a generic
-> > abstraction, that goes to userspace (qemu) if KVM (the hypervisor) can't
-> > handle a specific request, thus giving us flexibility in some features
-> > in the future.
-> >
-> > KVM (The hypervisor) can change the contents of this piece of memory at
-> > will. This works well with paravirtual information, and hopefully
-> > normal guest memory - like last update time for the watchdog, for
-> > instance.
-> >
-> > This is basic KVM registration headers. I am keeping headers
-> > separate to facilitate backports to people who wants to backport
-> > the kernel part but not the hypervisor, or the other way around.
-> >
-> > Signed-off-by: Glauber Costa<glommer@redhat.com>
-> > CC: Avi Kivity<avi@redhat.com>
-> > ---
-> >   arch/x86/include/asm/kvm_para.h |   11 +++++++++++
-> >   1 files changed, 11 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-> > index a427bf7..b0b0ee0 100644
-> > --- a/arch/x86/include/asm/kvm_para.h
-> > +++ b/arch/x86/include/asm/kvm_para.h
-> > @@ -21,6 +21,7 @@
-> >    */
-> >   #define KVM_FEATURE_CLOCKSOURCE2        3
-> >   #define KVM_FEATURE_ASYNC_PF		4
-> > +#define KVM_FEATURE_MEMORY_AREA		5
-> >
-> >   /* The last 8 bits are used to indicate how to interpret the flags field
-> >    * in pvclock structure. If no bits are set, all flags are ignored.
-> > @@ -35,6 +36,16 @@
-> >   #define MSR_KVM_SYSTEM_TIME_NEW 0x4b564d01
-> >   #define MSR_KVM_ASYNC_PF_EN 0x4b564d02
-> >
-> > +#define MSR_KVM_REGISTER_MEM_AREA 0x4b564d03
-> > +
-> > +struct kvm_memory_area {
-> > +	__u64 base;
-> > +	__u32 size;
-> > +	__u32 type;
-> > +	__u8  result;
-> > +	__u8  pad[3];
-> > +};
-> > +
-> >   #define KVM_MAX_MMU_OP_BATCH           32
-> 
-> I'm guessing the protocol here is:
-> 
-> - guest fills in ->base/size/type
-> - issues wrmsr
-> - host registers the memory and updates ->result
-> - guest examines ->result
-> 
-> there are two issues with this approach:
-> 
-> - it doesn't lend itself will to live migration.  Extra state must be 
-> maintained in the hypervisor.
-Yes, but can be queried at any time as well. I don't do it in this
-patch, but this is explicitly mentioned in my TODO.
+Commit-ID:  abb74cefa9c682fb38ba86c17ca3c86fed6cc464
+Gitweb:     http://git.kernel.org/tip/abb74cefa9c682fb38ba86c17ca3c86fed6cc464
+Author:     Venkatesh Pallipadi <venki@google.com>
+AuthorDate: Tue, 21 Dec 2010 17:09:03 -0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 26 Jan 2011 12:33:21 +0100
 
-> - it isn't how normal hardware operates
-Since we're trying to go for guest cooperation here, I don't really see
-a need to stay close to hardware here.
+sched: Export ns irqtimes through /proc/stat
 
-> 
-> what's wrong with extending the normal approach of one msr per feature?
+CONFIG_IRQ_TIME_ACCOUNTING adds ns granularity irq time on each CPU.
+This info is already used in scheduler to do proper task chargeback
+(earlier patches). This patch retro-fits this ns granularity
+hardirq and softirq information to /proc/stat irq and softirq fields.
 
-* It's harder to do discovery with MSRs. You can't just rely on getting
-an error before the idts are properly setups. The way I am proposing
-allow us to just try to register a memory area, and get a failure if we
-can't handle it, at any time
-* To overcome the above, we had usually relied on cpuids. This requires
-qemu/userspace cooperation for feature enablement
-* This mechanism just bumps us out to userspace if we can't handle a
-request. As such, it allows for pure guest kernel -> userspace
-communication, that can be used, for instance, to emulate new features
-in older hypervisors one does not want to change. BTW, maybe there is
-value in exiting to userspace even if we stick to the
-one-msr-per-feature approach?
+The update is still done on timer tick, where we look at accumulated
+ns hardirq/softirq time and account the tick to user/system/irq/hardirq/guest
+accordingly.
 
+No new interface added.
 
+Earlier versions looked at adding this as new fields in some /proc
+files. This one seems to be the best in terms of impact to existing
+apps, even though it has somewhat more kernel code than earlier versions.
 
+Tested-by: Shaun Ruffell <sruffell@digium.com>
+Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1292980144-28796-5-git-send-email-venki@google.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched.c |  102 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 102 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index e3fa921..2a3c979 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -1920,8 +1920,40 @@ static void update_rq_clock_task(struct rq *rq, s64 delta)
+ 		sched_rt_avg_update(rq, irq_delta);
+ }
+ 
++static int irqtime_account_hi_update(void)
++{
++	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
++	unsigned long flags;
++	u64 latest_ns;
++	int ret = 0;
++
++	local_irq_save(flags);
++	latest_ns = this_cpu_read(cpu_hardirq_time);
++	if (cputime64_gt(nsecs_to_cputime64(latest_ns), cpustat->irq))
++		ret = 1;
++	local_irq_restore(flags);
++	return ret;
++}
++
++static int irqtime_account_si_update(void)
++{
++	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
++	unsigned long flags;
++	u64 latest_ns;
++	int ret = 0;
++
++	local_irq_save(flags);
++	latest_ns = this_cpu_read(cpu_softirq_time);
++	if (cputime64_gt(nsecs_to_cputime64(latest_ns), cpustat->softirq))
++		ret = 1;
++	local_irq_restore(flags);
++	return ret;
++}
++
+ #else /* CONFIG_IRQ_TIME_ACCOUNTING */
+ 
++#define sched_clock_irqtime	(0)
++
+ static void update_rq_clock_task(struct rq *rq, s64 delta)
+ {
+ 	rq->clock_task += delta;
+@@ -3621,6 +3653,65 @@ void account_system_time(struct task_struct *p, int hardirq_offset,
+ 	__account_system_time(p, cputime, cputime_scaled, target_cputime64);
+ }
+ 
++#ifdef CONFIG_IRQ_TIME_ACCOUNTING
++/*
++ * Account a tick to a process and cpustat
++ * @p: the process that the cpu time gets accounted to
++ * @user_tick: is the tick from userspace
++ * @rq: the pointer to rq
++ *
++ * Tick demultiplexing follows the order
++ * - pending hardirq update
++ * - pending softirq update
++ * - user_time
++ * - idle_time
++ * - system time
++ *   - check for guest_time
++ *   - else account as system_time
++ *
++ * Check for hardirq is done both for system and user time as there is
++ * no timer going off while we are on hardirq and hence we may never get an
++ * opportunity to update it solely in system time.
++ * p->stime and friends are only updated on system time and not on irq
++ * softirq as those do not count in task exec_runtime any more.
++ */
++static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
++						struct rq *rq)
++{
++	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
++	cputime64_t tmp = cputime_to_cputime64(cputime_one_jiffy);
++	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
++
++	if (irqtime_account_hi_update()) {
++		cpustat->irq = cputime64_add(cpustat->irq, tmp);
++	} else if (irqtime_account_si_update()) {
++		cpustat->softirq = cputime64_add(cpustat->softirq, tmp);
++	} else if (user_tick) {
++		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
++	} else if (p == rq->idle) {
++		account_idle_time(cputime_one_jiffy);
++	} else if (p->flags & PF_VCPU) { /* System time or guest time */
++		account_guest_time(p, cputime_one_jiffy, one_jiffy_scaled);
++	} else {
++		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
++					&cpustat->system);
++	}
++}
++
++static void irqtime_account_idle_ticks(int ticks)
++{
++	int i;
++	struct rq *rq = this_rq();
++
++	for (i = 0; i < ticks; i++)
++		irqtime_account_process_tick(current, 0, rq);
++}
++#else
++static void irqtime_account_idle_ticks(int ticks) {}
++static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
++						struct rq *rq) {}
++#endif
++
+ /*
+  * Account for involuntary wait time.
+  * @steal: the cpu time spent in involuntary wait
+@@ -3661,6 +3752,11 @@ void account_process_tick(struct task_struct *p, int user_tick)
+ 	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
+ 	struct rq *rq = this_rq();
+ 
++	if (sched_clock_irqtime) {
++		irqtime_account_process_tick(p, user_tick, rq);
++		return;
++	}
++
+ 	if (user_tick)
+ 		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
+ 	else if ((p != rq->idle) || (irq_count() != HARDIRQ_OFFSET))
+@@ -3686,6 +3782,12 @@ void account_steal_ticks(unsigned long ticks)
+  */
+ void account_idle_ticks(unsigned long ticks)
+ {
++
++	if (sched_clock_irqtime) {
++		irqtime_account_idle_ticks(ticks);
++		return;
++	}
++
+ 	account_idle_time(jiffies_to_cputime(ticks));
+ }
+ 
