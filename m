@@ -1,43 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897Ab1AZTzr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 14:55:47 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49204
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753575Ab1AZTzq (ORCPT
+	id S1753919Ab1AZT7M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 14:59:12 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36419 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753447Ab1AZT7L convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 14:55:46 -0500
-Date: Wed, 26 Jan 2011 11:56:21 -0800 (PST)
-Message-Id: <20110126.115621.104075131.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless-2.6 2011-01-26
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110126184745.GB3084@tuxdriver.com>
-References: <20110126184745.GB3084@tuxdriver.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Jan 2011 14:59:11 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110126194301.GA13541@zod.rchland.ibm.com>
+References: <1296062434-18027-1-git-send-email-grant.likely@secretlab.ca> <20110126194301.GA13541@zod.rchland.ibm.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 26 Jan 2011 12:58:50 -0700
+X-Google-Sender-Auth: cH7BQaMeOhCsyDn7zN2AkWA55Mo
+Message-ID: <AANLkTimmHSxP32WsYL1ZXor1GuZQ6W91gcbmKOyQumK_@mail.gmail.com>
+Subject: Re: [PATCH] dt: Move device tree documentation out of powerpc directory
+To: Josh Boyer <jwboyer@linux.vnet.ibm.com>, Sam Ravnborg <sam@ravnborg.org>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linuxppc-dev@lists.ozlabs.org, benh@kernel.crashing.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Wed, 26 Jan 2011 13:47:46 -0500
+On Wed, Jan 26, 2011 at 12:43 PM, Josh Boyer <jwboyer@linux.vnet.ibm.com> wrote:
+> On Wed, Jan 26, 2011 at 10:20:34AM -0700, Grant Likely wrote:
+>>The device tree is used by more than just PowerPC.  Make the documentation
+>>directory available to all.
+>>
+>>Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+>>---
+>>
+>>Assuming nobody has an issue with this, I'll push it out to Linus for
+>>2.6.38 since it is only a documentation change.
+>>
+>>g.
+>>
+>> .../bindings}/4xx/cpm.txt                          |    0
+>> .../bindings}/4xx/emac.txt                         |    0
+>> .../bindings}/4xx/ndfc.txt                         |    0
+>> .../bindings}/4xx/ppc440spe-adma.txt               |    0
+>> .../bindings}/4xx/reboot.txt                       |    0
+>
+> This should probably be renamed to ...bindings}/powerpc4xx/ in that
+> case.  Similarly for fsl (even more so since they have ARM parts too).
 
-> Dave,
-> 
-> Here is a collection of fixes intended for 2.6.38.  There is a
-> MAINTAINERS fix for iwlwifi, a fix to avoid disabling .11n on iwl4965, a
-> NULL pointer fix for rtlwifi, a powersaving wakeup fix for ath9k, and
-> some others.
-> 
-> Also included is a batch of Bluetooth fixes via Gustavo.  These include
-> a fix for an RFCOMM crash, a HCI blacklist leak fix, and a number of other
-> simple fixes.
-> 
-> Please let me know if there are problems!
+okay, I'll look at reorganizing.
 
-Pulled, thanks John.
+>
+> Also the booting-without-of.txt file is very powerpc specific.  So I
+> would suggest either creating a powerpc/ directory under /bindings or
+> something similar.
+
+Actually, it isn't.  Very little of it is powerpc-specific, and after
+I looked at it I decided that it still made sense to keep it in this
+file and add additional sections for arm, x86, mips and microblaze
+entry.
+
+g.
