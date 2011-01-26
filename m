@@ -1,106 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288Ab1AZHXp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 02:23:45 -0500
-Received: from hera.kernel.org ([140.211.167.34]:53388 "EHLO hera.kernel.org"
+	id S1753207Ab1AZHYS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 02:24:18 -0500
+Received: from hera.kernel.org ([140.211.167.34]:53430 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752725Ab1AZHXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 02:23:43 -0500
-Date: Wed, 26 Jan 2011 07:23:24 GMT
-From: tip-bot for Franck Bui-Huu <fbuihuu@gmail.com>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@redhat.com, fbuihuu@gmail.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, fbuihuu@gmail.com, tglx@linutronix.de
-In-Reply-To: <m3ipxo966i.fsf@gmail.com>
-References: <m3ipxo966i.fsf@gmail.com>
+	id S1752776Ab1AZHYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 02:24:15 -0500
+Date: Wed, 26 Jan 2011 07:23:51 GMT
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
+        peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
+        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <new-submission>
+References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf record: auto detect when stdout is a pipe
-Message-ID: <tip-d7065adb9b4f3384c2615f0a3dbdb6c3aae1eb18@git.kernel.org>
-Git-Commit-ID: d7065adb9b4f3384c2615f0a3dbdb6c3aae1eb18
+Subject: [tip:perf/core] perf tools: Pass the struct opt to the wildcard parsing routine
+Message-ID: <tip-17ea1b70a87e28457821318341bead2b45563092@git.kernel.org>
+Git-Commit-ID: 17ea1b70a87e28457821318341bead2b45563092
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 26 Jan 2011 07:23:25 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 26 Jan 2011 07:23:51 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d7065adb9b4f3384c2615f0a3dbdb6c3aae1eb18
-Gitweb:     http://git.kernel.org/tip/d7065adb9b4f3384c2615f0a3dbdb6c3aae1eb18
-Author:     Franck Bui-Huu <fbuihuu@gmail.com>
-AuthorDate: Sun, 16 Jan 2011 17:14:45 +0100
+Commit-ID:  17ea1b70a87e28457821318341bead2b45563092
+Gitweb:     http://git.kernel.org/tip/17ea1b70a87e28457821318341bead2b45563092
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Mon, 17 Jan 2011 14:40:46 -0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 24 Jan 2011 10:58:27 -0200
+CommitDate: Mon, 24 Jan 2011 10:58:39 -0200
 
-perf record: auto detect when stdout is a pipe
+perf tools: Pass the struct opt to the wildcard parsing routine
 
-This patch gives the ability to 'perf record' to detect when its stdout
-has been redirected to a pipe. There's now no more need to add '-o -'
-switch in this case.
+It is needed because it will call parse_event for each tracepoint
+name that matches, and we pass the perf_evlist via opt->value.
 
-However '-o <path>' option has always precedence, that is if specified
-and stdout has been connected via a pipe then the output will go into
-the specified output.
+Problem introduced in 4503fdd where my assumption about opt being
+always non NULL made me not look at callers of parse_events outside
+builtin-*.c.
 
-LKML-Reference: <m3ipxo966i.fsf@gmail.com>
-Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c |   32 ++++++++++++++++++++------------
- 1 files changed, 20 insertions(+), 12 deletions(-)
+ tools/perf/util/parse-events.c |   20 +++++++++++---------
+ 1 files changed, 11 insertions(+), 9 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 45a3689..1346d42 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -48,7 +48,7 @@ static unsigned int		user_freq 			= UINT_MAX;
- static int			freq				=   1000;
- static int			output;
- static int			pipe_output			=      0;
--static const char		*output_name			= "perf.data";
-+static const char		*output_name			= NULL;
- static int			group				=      0;
- static int			realtime_prio			=      0;
- static bool			nodelay				=  false;
-@@ -497,18 +497,26 @@ static int __cmd_record(int argc, const char **argv)
- 		exit(-1);
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index d3086ce..cf082da 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -446,8 +446,8 @@ parse_single_tracepoint_event(char *sys_name,
+ /* sys + ':' + event + ':' + flags*/
+ #define MAX_EVOPT_LEN	(MAX_EVENT_LENGTH * 2 + 2 + 128)
+ static enum event_result
+-parse_multiple_tracepoint_event(char *sys_name, const char *evt_exp,
+-				char *flags)
++parse_multiple_tracepoint_event(const struct option *opt, char *sys_name,
++				const char *evt_exp, char *flags)
+ {
+ 	char evt_path[MAXPATHLEN];
+ 	struct dirent *evt_ent;
+@@ -480,15 +480,16 @@ parse_multiple_tracepoint_event(char *sys_name, const char *evt_exp,
+ 		if (len < 0)
+ 			return EVT_FAILED;
+ 
+-		if (parse_events(NULL, event_opt, 0))
++		if (parse_events(opt, event_opt, 0))
+ 			return EVT_FAILED;
  	}
  
--	if (!strcmp(output_name, "-"))
--		pipe_output = 1;
--	else if (!stat(output_name, &st) && st.st_size) {
--		if (write_mode == WRITE_FORCE) {
--			char oldname[PATH_MAX];
--			snprintf(oldname, sizeof(oldname), "%s.old",
--				 output_name);
--			unlink(oldname);
--			rename(output_name, oldname);
-+	if (!output_name) {
-+		if (!fstat(STDOUT_FILENO, &st) && S_ISFIFO(st.st_mode))
-+			pipe_output = 1;
-+		else
-+			output_name = "perf.data";
-+	}
-+	if (output_name) {
-+		if (!strcmp(output_name, "-"))
-+			pipe_output = 1;
-+		else if (!stat(output_name, &st) && st.st_size) {
-+			if (write_mode == WRITE_FORCE) {
-+				char oldname[PATH_MAX];
-+				snprintf(oldname, sizeof(oldname), "%s.old",
-+					 output_name);
-+				unlink(oldname);
-+				rename(output_name, oldname);
-+			}
-+		} else if (write_mode == WRITE_APPEND) {
-+			write_mode = WRITE_FORCE;
- 		}
--	} else if (write_mode == WRITE_APPEND) {
--		write_mode = WRITE_FORCE;
- 	}
+ 	return EVT_HANDLED_ALL;
+ }
  
- 	flags = O_CREAT|O_RDWR;
+-static enum event_result parse_tracepoint_event(const char **strp,
+-				    struct perf_event_attr *attr)
++static enum event_result
++parse_tracepoint_event(const struct option *opt, const char **strp,
++		       struct perf_event_attr *attr)
+ {
+ 	const char *evt_name;
+ 	char *flags = NULL, *comma_loc;
+@@ -527,7 +528,7 @@ static enum event_result parse_tracepoint_event(const char **strp,
+ 		return EVT_FAILED;
+ 	if (strpbrk(evt_name, "*?")) {
+ 		*strp += strlen(sys_name) + evt_length + 1; /* 1 == the ':' */
+-		return parse_multiple_tracepoint_event(sys_name, evt_name,
++		return parse_multiple_tracepoint_event(opt, sys_name, evt_name,
+ 						       flags);
+ 	} else {
+ 		return parse_single_tracepoint_event(sys_name, evt_name,
+@@ -737,11 +738,12 @@ parse_event_modifier(const char **strp, struct perf_event_attr *attr)
+  * Symbolic names are (almost) exactly matched.
+  */
+ static enum event_result
+-parse_event_symbols(const char **str, struct perf_event_attr *attr)
++parse_event_symbols(const struct option *opt, const char **str,
++		    struct perf_event_attr *attr)
+ {
+ 	enum event_result ret;
+ 
+-	ret = parse_tracepoint_event(str, attr);
++	ret = parse_tracepoint_event(opt, str, attr);
+ 	if (ret != EVT_FAILED)
+ 		goto modifier;
+ 
+@@ -783,7 +785,7 @@ int parse_events(const struct option *opt, const char *str, int unset __used)
+ 
+ 	for (;;) {
+ 		memset(&attr, 0, sizeof(attr));
+-		ret = parse_event_symbols(&str, &attr);
++		ret = parse_event_symbols(opt, &str, &attr);
+ 		if (ret == EVT_FAILED)
+ 			return -1;
+ 
