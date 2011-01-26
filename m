@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044Ab1AZA0X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 19:26:23 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:44079 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751625Ab1AZA0V (ORCPT
+	id S1753925Ab1AZAak (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 19:30:40 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:55171 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751625Ab1AZAai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 19:26:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=II8qPE9XGtaWk10wr6W+RyDYR47Wd8MJMUBZhmhdLRT7A+eLQ3tsN5n0oIGu6cXmDC
-         mhmeXc3/FD6QqFynX10Gqnhg5TTod3VBw7QUxiYgqqlKrjJKsiCX7j7s4v5mpIrEAiv9
-         xOlYsktUlUa8wBWYiAQ3dVMl9f9G/Qhp652m0=
-Message-ID: <4D3F6A28.1000402@pobox.com>
-Date: Tue, 25 Jan 2011 19:26:16 -0500
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	Tue, 25 Jan 2011 19:30:38 -0500
+X-Sasl-enc: jNhZrEcHvOwr+HJ/Al/WAXNsov+IN4NGM5u/Osacwwo5 1296001837
+Date: Tue, 25 Jan 2011 22:30:34 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        platform-driver-x86@vger.kernel.org,
+        ibm-acpi-devel@lists.sourceforge.net, Dominik Kopp <my@kabelfunk.de>
+Subject: Re: thinkpad-acpi: fn-f4 issues
+Message-ID: <20110126003034.GC25953@khazad-dum.debian.net>
+References: <Pine.LNX.4.64.1101251740380.3737@boston.corp.fedex.com>
+ <20110125151346.GB14803@khazad-dum.debian.net>
+ <AANLkTim9cN8KXx5DVrH_nBzVjnmuYsxOHwP4msBKs=gS@mail.gmail.com>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Randy Dunlap <rdunlap@xenotime.net>, Mark Lord <kernel@teksavvy.com>,
-        "Ahmed S. Darwish" <darwish.07@gmail.com>,
-        James Bottomley <James.Bottomley@suse.de>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, X86-ML <x86@kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Willy Tarreau <wtarreau@hera.kernel.org>, Willy Tarreau <w@1wt.eu>,
-        Dirk Hohndel <hohndel@infradead.org>, Dirk.Hohndel@intel.com,
-        IDE-ML <linux-ide@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH 0/2][concept RFC] x86: BIOS-save kernel log to disk upon
- panic
-References: <20110125134748.GA10051@laptop> <20110125140948.GA26762@elte.hu> <20110125153649.GA11386@laptop> <1295971355.4955.104.camel@mulgrave.site> <20110125170522.GA16285@laptop> <4D3F4A69.7090702@teksavvy.com> <20110125141605.43963105.rdunlap@xenotime.net> <4D3F529D.8060406@pobox.com> <4D3F559C.1050809@zytor.com>
-In-Reply-To: <4D3F559C.1050809@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTim9cN8KXx5DVrH_nBzVjnmuYsxOHwP4msBKs=gS@mail.gmail.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/25/2011 05:58 PM, H. Peter Anvin wrote:
-> "Not perfect" is really not good enough.  You're writing to the disk, so
-> it *has* to be perfect.  That means dealing with having shared IDE/AHCI
-> device and doing the right thing, and the possibility that the kernel
-> has interrupts enabled, yadda yadda.
->
-> In the end you end up with something that looks, again, like kexec/kdump.
+On Wed, 26 Jan 2011, Jeff Chua wrote:
+> > Which thinkpad do you have that need CONFIG_THINKPAD_ACPI_HOTKEY_POLL to
+> > handle Fn+F4?   I don't expect that to be needed on anything newer than a
+> > T32...
+> 
+> X201s which is quite new.
 
-Oh, quite agreed.  It wasn't an endorsement, just a reference :)
+Yay.  Send me dmidecode (XXX-out UUID and serial numbers) and output of of
+acpidump, please.  And check that you have the latest version of the
+firmware installed.
 
-	Jeff
+> thinkpad_acpi: ThinkPad ACPI Extras v0.24
+> thinkpad_acpi: http://ibm-acpi.sf.net/
+> thinkpad_acpi: ThinkPad BIOS 6QET62WW (1.32 ), EC 6QHT31WW-1.12
+> thinkpad_acpi: Lenovo ThinkPad X201s, model 5413FGA
+> thinkpad_acpi: detected a 8-level brightness capable ThinkPad
+> thinkpad_acpi: radio switch found; radios are enabled
+> thinkpad_acpi: possible tablet mode switch found; ThinkPad in laptop mode
+> thinkpad_acpi: rfkill switch tpacpi_bluetooth_sw: radio is blocked
 
+Well, it didn't complain about hotkeys, so it probably got all those that it
+requested, which includes Fn+F4.  When in doubt, please either run the
+driver in debug mode, or check the hotkey_mask in sysfs.
 
+Please check with xev and something like input-events or some other
+input-device snooper whether you get events when you press Fn+F4.  Maybe
+userspace is ignoring it.
 
+It should be something else, since poll mode seems to fix it, but let's get
+the easy stuff out of the way first.
+
+> thinkpad_acpi: volume: disabled as there is no ALSA support in this kernel
+> input: ThinkPad Extra Buttons as /devices/platform/thinkpad_acpi/input/input5
+> 
+> And the volume up/down does not work either even with thinkpad ALSA
+> support enabled.
+
+Check if something in userspace is listening to these keys.  They go over
+the regular keyboard interface.  You don't have volume hotkeys or a mixer,
+you just have two regular keys.  You'll be lucky if you still have a real
+MUTE gate outside of the control of the HDA mixer...
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
