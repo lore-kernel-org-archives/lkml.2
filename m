@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752921Ab1AZHUF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 02:20:05 -0500
-Received: from hera.kernel.org ([140.211.167.34]:55931 "EHLO hera.kernel.org"
+	id S1753045Ab1AZHU3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 02:20:29 -0500
+Received: from hera.kernel.org ([140.211.167.34]:53237 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751594Ab1AZHUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 02:20:03 -0500
-Date: Wed, 26 Jan 2011 07:19:27 GMT
+	id S1752487Ab1AZHU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 02:20:27 -0500
+Date: Wed, 26 Jan 2011 07:19:52 GMT
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
@@ -19,31 +19,38 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
 In-Reply-To: <new-submission>
 References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evlist: Steal mmap reading routine from 'perf top'
-Message-ID: <tip-04391debc3e1195222a4dbb162ace6542dd89c1c@git.kernel.org>
-Git-Commit-ID: 04391debc3e1195222a4dbb162ace6542dd89c1c
+Subject: [tip:perf/core] perf test: Add test for the evlist mmap routines
+Message-ID: <tip-de5fa3a8a05cd60f59622e88cfeb90416760d78e@git.kernel.org>
+Git-Commit-ID: de5fa3a8a05cd60f59622e88cfeb90416760d78e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 26 Jan 2011 07:19:27 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 26 Jan 2011 07:19:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  04391debc3e1195222a4dbb162ace6542dd89c1c
-Gitweb:     http://git.kernel.org/tip/04391debc3e1195222a4dbb162ace6542dd89c1c
+Commit-ID:  de5fa3a8a05cd60f59622e88cfeb90416760d78e
+Gitweb:     http://git.kernel.org/tip/de5fa3a8a05cd60f59622e88cfeb90416760d78e
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Sat, 15 Jan 2011 10:40:59 -0200
+AuthorDate: Sat, 15 Jan 2011 10:42:46 -0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Sat, 22 Jan 2011 19:56:30 -0200
+CommitDate: Sat, 22 Jan 2011 19:56:31 -0200
 
-perf evlist: Steal mmap reading routine from 'perf top'
+perf test: Add test for the evlist mmap routines
 
-Will be used in the upcoming 'perf test' entry for the evlist mmap
-routines.
+This test will generate random numbers of calls to some getpid syscalls,
+then establish an mmap for a group of events that are created to monitor
+these syscalls.
+
+It will receive the events, using mmap, use its PERF_SAMPLE_ID generated
+sample.id field to map back to its respective perf_evsel instance.
+
+Then it checks if the number of syscalls reported as perf events by the
+kernel corresponds to the number of syscalls made.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -55,180 +62,216 @@ Cc: Tom Zanussi <tzanussi@gmail.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-top.c |   56 ++---------------------------------------
- tools/perf/util/evlist.c |   62 ++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/evlist.h |    4 +++
- 3 files changed, 69 insertions(+), 53 deletions(-)
+ tools/perf/builtin-test.c |  171 ++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 169 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index df85c1f..58352ad 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1100,67 +1100,17 @@ static void event__process_sample(const event_t *self,
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 5a50e47..4fd3453 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -7,7 +7,9 @@
  
- static void perf_session__mmap_read_cpu(struct perf_session *self, int cpu)
+ #include "util/cache.h"
+ #include "util/debug.h"
++#include "util/evlist.h"
+ #include "util/parse-options.h"
++#include "util/parse-events.h"
+ #include "util/session.h"
+ #include "util/symbol.h"
+ #include "util/thread.h"
+@@ -238,14 +240,14 @@ out:
+ #include "util/evsel.h"
+ #include <sys/types.h>
+ 
+-static int trace_event__id(const char *event_name)
++static int trace_event__id(const char *evname)
  {
--	struct perf_mmap *md = &evsel_list->mmap[cpu];
--	unsigned int head = perf_mmap__read_head(md);
--	unsigned int old = md->prev;
--	unsigned char *data = md->base + page_size;
- 	struct sample_data sample;
--	int diff;
--
--	/*
--	 * If we're further behind than half the buffer, there's a chance
--	 * the writer will bite our tail and mess up the samples under us.
--	 *
--	 * If we somehow ended up ahead of the head, we got messed up.
--	 *
--	 * In either case, truncate and restart at head.
--	 */
--	diff = head - old;
--	if (diff > md->mask / 2 || diff < 0) {
--		fprintf(stderr, "WARNING: failed to keep up with mmap data.\n");
--
--		/*
--		 * head points to a known good entry, start there.
--		 */
--		old = head;
--	}
--
--	for (; old != head;) {
--		event_t *event = (event_t *)&data[old & md->mask];
--
--		event_t event_copy;
--
--		size_t size = event->header.size;
--
--		/*
--		 * Event straddles the mmap boundary -- header should always
--		 * be inside due to u64 alignment of output.
--		 */
--		if ((old & md->mask) + size != ((old + size) & md->mask)) {
--			unsigned int offset = old;
--			unsigned int len = min(sizeof(*event), size), cpy;
--			void *dst = &event_copy;
--
--			do {
--				cpy = min(md->mask + 1 - (offset & md->mask), len);
--				memcpy(dst, &data[offset & md->mask], cpy);
--				offset += cpy;
--				dst += cpy;
--				len -= cpy;
--			} while (len);
--
--			event = &event_copy;
--		}
-+	event_t *event;
+ 	char *filename;
+ 	int err = -1, fd;
  
-+	while ((event = perf_evlist__read_on_cpu(evsel_list, cpu)) != NULL) {
- 		event__parse_sample(event, self, &sample);
-+
- 		if (event->header.type == PERF_RECORD_SAMPLE)
- 			event__process_sample(event, &sample, self);
- 		else
- 			event__process(event, &sample, self);
--		old += size;
- 	}
--
--	md->prev = old;
+ 	if (asprintf(&filename,
+ 		     "/sys/kernel/debug/tracing/events/syscalls/%s/id",
+-		     event_name) < 0)
++		     evname) < 0)
+ 		return -1;
+ 
+ 	fd = open(filename, O_RDONLY);
+@@ -439,6 +441,167 @@ out_thread_map_delete:
+ 	return err;
  }
  
- static void perf_session__mmap_read(struct perf_session *self)
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index deb82a4..4b3b84c 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -95,3 +95,65 @@ struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id)
- 			return sid->evsel;
- 	return NULL;
- }
-+
-+event_t *perf_evlist__read_on_cpu(struct perf_evlist *evlist, int cpu)
++/*
++ * This test will generate random numbers of calls to some getpid syscalls,
++ * then establish an mmap for a group of events that are created to monitor
++ * the syscalls.
++ *
++ * It will receive the events, using mmap, use its PERF_SAMPLE_ID generated
++ * sample.id field to map back to its respective perf_evsel instance.
++ *
++ * Then it checks if the number of syscalls reported as perf events by
++ * the kernel corresponds to the number of syscalls made.
++ */
++static int test__basic_mmap(void)
 +{
-+	/* XXX Move this to perf.c, making it generally available */
-+	unsigned int page_size = sysconf(_SC_PAGE_SIZE);
-+	struct perf_mmap *md = &evlist->mmap[cpu];
-+	unsigned int head = perf_mmap__read_head(md);
-+	unsigned int old = md->prev;
-+	unsigned char *data = md->base + page_size;
-+	event_t *event = NULL;
-+	int diff;
++	int err = -1;
++	event_t *event;
++	struct thread_map *threads;
++	struct perf_session session;
++	struct cpu_map *cpus;
++	struct perf_evlist *evlist;
++	struct perf_event_attr attr = {
++		.type		= PERF_TYPE_TRACEPOINT,
++		.read_format	= PERF_FORMAT_ID,
++		.sample_type	= PERF_SAMPLE_ID,
++		.watermark	= 0,
++	};
++	cpu_set_t cpu_set;
++	const char *syscall_names[] = { "getsid", "getppid", "getpgrp",
++					"getpgid", };
++	pid_t (*syscalls[])(void) = { (void *)getsid, getppid, getpgrp,
++				      (void*)getpgid };
++#define nsyscalls ARRAY_SIZE(syscall_names)
++	int ids[nsyscalls];
++	unsigned int nr_events[nsyscalls],
++		     expected_nr_events[nsyscalls], i, j;
++	struct perf_evsel *evsels[nsyscalls], *evsel;
++
++	for (i = 0; i < nsyscalls; ++i) {
++		char name[64];
++
++		snprintf(name, sizeof(name), "sys_enter_%s", syscall_names[i]);
++		ids[i] = trace_event__id(name);
++		if (ids[i] < 0) {
++			pr_debug("Is debugfs mounted on /sys/kernel/debug?\n");
++			return -1;
++		}
++		nr_events[i] = 0;
++		expected_nr_events[i] = random() % 257;
++	}
++
++	threads = thread_map__new(-1, getpid());
++	if (threads == NULL) {
++		pr_debug("thread_map__new\n");
++		return -1;
++	}
++
++	cpus = cpu_map__new(NULL);
++	if (threads == NULL) {
++		pr_debug("thread_map__new\n");
++		goto out_free_threads;
++	}
++
++	CPU_ZERO(&cpu_set);
++	CPU_SET(cpus->map[0], &cpu_set);
++	sched_setaffinity(0, sizeof(cpu_set), &cpu_set);
++	if (sched_setaffinity(0, sizeof(cpu_set), &cpu_set) < 0) {
++		pr_debug("sched_setaffinity() failed on CPU %d: %s ",
++			 cpus->map[0], strerror(errno));
++		goto out_free_cpus;
++	}
++
++	evlist = perf_evlist__new();
++	if (threads == NULL) {
++		pr_debug("perf_evlist__new\n");
++		goto out_free_cpus;
++	}
++
++	/* anonymous union fields, can't be initialized above */
++	attr.wakeup_events = 1;
++	attr.sample_period = 1;
 +
 +	/*
-+	 * If we're further behind than half the buffer, there's a chance
-+	 * the writer will bite our tail and mess up the samples under us.
-+	 *
-+	 * If we somehow ended up ahead of the head, we got messed up.
-+	 *
-+	 * In either case, truncate and restart at head.
-+	 */
-+	diff = head - old;
-+	if (diff > md->mask / 2 || diff < 0) {
-+		fprintf(stderr, "WARNING: failed to keep up with mmap data.\n");
++ 	 * FIXME: use evsel->attr.sample_type in event__parse_sample.
++ 	 * 	  This will nicely remove the requirement that we have
++ 	 * 	  all the events with the same sample_type.
++ 	 */
++	session.sample_type = attr.sample_type;
 +
-+		/*
-+		 * head points to a known good entry, start there.
-+		 */
-+		old = head;
-+	}
-+
-+	if (old != head) {
-+		size_t size;
-+
-+		event = (event_t *)&data[old & md->mask];
-+		size = event->header.size;
-+
-+		/*
-+		 * Event straddles the mmap boundary -- header should always
-+		 * be inside due to u64 alignment of output.
-+		 */
-+		if ((old & md->mask) + size != ((old + size) & md->mask)) {
-+			unsigned int offset = old;
-+			unsigned int len = min(sizeof(*event), size), cpy;
-+			void *dst = &evlist->event_copy;
-+
-+			do {
-+				cpy = min(md->mask + 1 - (offset & md->mask), len);
-+				memcpy(dst, &data[offset & md->mask], cpy);
-+				offset += cpy;
-+				dst += cpy;
-+				len -= cpy;
-+			} while (len);
-+
-+			event = &evlist->event_copy;
++	for (i = 0; i < nsyscalls; ++i) {
++		attr.config = ids[i];
++		evsels[i] = perf_evsel__new(&attr, i);
++		if (evsels[i] == NULL) {
++			pr_debug("perf_evsel__new\n");
++			goto out_free_evlist;
 +		}
 +
-+		old += size;
++		perf_evlist__add(evlist, evsels[i]);
++
++		if (perf_evsel__open(evsels[i], cpus, threads, false, false) < 0) {
++			pr_debug("failed to open counter: %s, "
++				 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
++				 strerror(errno));
++			goto out_close_fd;
++		}
 +	}
 +
-+	md->prev = old;
-+	return event;
-+}
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index dbfcc79..2871206 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -3,6 +3,7 @@
- 
- #include <linux/list.h>
- #include "../perf.h"
-+#include "event.h"
- 
- struct pollfd;
- 
-@@ -15,6 +16,7 @@ struct perf_evlist {
- 	int		 nr_entries;
- 	int		 nr_fds;
- 	int		 mmap_len;
-+	event_t		 event_copy;
- 	struct perf_mmap *mmap;
- 	struct pollfd	 *pollfd;
- };
-@@ -32,4 +34,6 @@ void perf_evlist__add_pollfd(struct perf_evlist *evlist, int fd);
- 
- struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id);
- 
-+event_t *perf_evlist__read_on_cpu(struct perf_evlist *self, int cpu);
++	if (perf_evlist__mmap(evlist, cpus, threads, 128, true) < 0) {
++		pr_debug("failed to mmap events: %d (%s)\n", errno,
++			 strerror(errno));
++		goto out_close_fd;
++	}
 +
- #endif /* __PERF_EVLIST_H */
++	for (i = 0; i < nsyscalls; ++i)
++		for (j = 0; j < expected_nr_events[i]; ++j) {
++			int foo = syscalls[i]();
++			++foo;
++		}
++
++	while ((event = perf_evlist__read_on_cpu(evlist, 0)) != NULL) {
++		struct sample_data sample;
++
++		if (event->header.type != PERF_RECORD_SAMPLE) {
++			pr_debug("unexpected %s event\n",
++				 event__get_event_name(event->header.type));
++			goto out_munmap;
++		}
++
++		event__parse_sample(event, &session, &sample);
++		evsel = perf_evlist__id2evsel(evlist, sample.id);
++		if (evsel == NULL) {
++			pr_debug("event with id %" PRIu64
++				 " doesn't map to an evsel\n", sample.id);
++			goto out_munmap;
++		}
++		nr_events[evsel->idx]++;
++	}
++
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		if (nr_events[evsel->idx] != expected_nr_events[evsel->idx]) {
++			pr_debug("expected %d %s events, got %d\n",
++				 expected_nr_events[evsel->idx],
++				 event_name(evsel), nr_events[evsel->idx]);
++			goto out_munmap;
++		}
++	}
++
++	err = 0;
++out_munmap:
++	perf_evlist__munmap(evlist, 1);
++out_close_fd:
++	for (i = 0; i < nsyscalls; ++i)
++		perf_evsel__close_fd(evsels[i], 1, threads->nr);
++out_free_evlist:
++	perf_evlist__delete(evlist);
++out_free_cpus:
++	cpu_map__delete(cpus);
++out_free_threads:
++	thread_map__delete(threads);
++	return err;
++#undef nsyscalls
++}
++
+ static struct test {
+ 	const char *desc;
+ 	int (*func)(void);
+@@ -456,6 +619,10 @@ static struct test {
+ 		.func = test__open_syscall_event_on_all_cpus,
+ 	},
+ 	{
++		.desc = "read samples using the mmap interface",
++		.func = test__basic_mmap,
++	},
++	{
+ 		.func = NULL,
+ 	},
+ };
