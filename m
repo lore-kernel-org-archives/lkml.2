@@ -1,50 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751177Ab1AZFYm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 00:24:42 -0500
-Received: from lo.gmane.org ([80.91.229.12]:41281 "EHLO lo.gmane.org"
+	id S1751383Ab1AZF1k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 00:27:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58753 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750742Ab1AZFYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 00:24:41 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: WANG Cong <xiyou.wangcong@gmail.com>
-Subject: Re: [PATCH] crash_dump: export is_kdump_kernel to modules,
- consolidate elfcorehdr_addr, setup_elfcorehdr and saved_max_pfn
-Date: Wed, 26 Jan 2011 05:24:27 +0000 (UTC)
-Message-ID: <ihob6b$kmn$3@dough.gmane.org>
-References: <20110125161052.GA20105@aepfle.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 60.247.97.98
-User-Agent: Pan/0.133 (House of Butterflies)
+	id S1750742Ab1AZF1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 00:27:39 -0500
+Date: Wed, 26 Jan 2011 00:27:19 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, tytso@mit.edu, djwong@us.ibm.com, shli@kernel.org,
+        neilb@suse.de, adilger.kernel@dilger.ca, jack@suse.cz,
+        linux-kernel@vger.kernel.org, kmannth@us.ibm.com, cmm@us.ibm.com,
+        linux-ext4@vger.kernel.org, rwheeler@redhat.com, hch@lst.de,
+        josef@redhat.com, jmoyer@redhat.com
+Subject: Re: [RFC PATCH 4/3] block: skip elevator initialization for flush
+ requests -- was never BUGGY relative to upstream
+Message-ID: <20110126052719.GA31818@redhat.com>
+References: <1295625598-15203-1-git-send-email-tj@kernel.org>
+ <1295625598-15203-4-git-send-email-tj@kernel.org>
+ <20110125204158.GA3013@redhat.com>
+ <20110125215500.GA6836@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110125215500.GA6836@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Jan 2011 17:10:52 +0100, Olaf Hering wrote:
+On Tue, Jan 25 2011 at  4:55pm -0500,
+Mike Snitzer <snitzer@redhat.com> wrote:
 
-> The Xen PV drivers in a crashed HVM guest can not connect to the dom0
-> backend drivers because both frontend and backend drivers are still in
-> connected state. To run the connection reset function only in case of a
-> crashdump, the is_kdump_kernel() function needs to be available for the
-> PV driver modules.
+> On Tue, Jan 25 2011 at  3:41pm -0500,
+> Mike Snitzer <snitzer@redhat.com> wrote:
 > 
-> Consolidate elfcorehdr_addr, setup_elfcorehdr and saved_max_pfn into
-> kernel/crash_dump.c Also export elfcorehdr_addr to make
-> is_kdump_kernel() usable for modules.
+> > Hi Tejun,
+> > 
+> > On Fri, Jan 21 2011 at 10:59am -0500,
+> > Tejun Heo <tj@kernel.org> wrote:
+> > > 
+> > > * As flush requests are never put on the IO scheduler, request fields
+> > >   used for flush share space with rq->rb_node.  rq->completion_data is
+> > >   moved out of the union.  This increases the request size by one
+> > >   pointer.
+> > > 
+> > >   As rq->elevator_private* are used only by the iosched too, it is
+> > >   possible to reduce the request size further.  However, to do that,
+> > >   we need to modify request allocation path such that iosched data is
+> > >   not allocated for flush requests.
+> > 
+> > I decided to take a crack at using rq->elevator_private* and came up
+> > with the following patch.
+
+...
+
+> It is an interesting duality that:
+> 1) REQ_ELVPRIV is never set because priv=0 is passed to blk_alloc_request
+> 2) yet when blk_free_request() checks rq->cmd_flags REQ_ELVPRIV is set;
+>    resulting in the call to elv_put_request()
+
+Turns out priv=0 was never actually being established in get_request()
+on the kernel I was testing (see below).
+
+> > I know this because in my following get_request() change to _not_ call
+> > elv_set_request() for flush requests hit cfq_put_request()'s
+> > BUG_ON(!cfqq->allocated[rw]).
 > 
-> Leave 'elfcorehdr' as early_param().  This changes powerpc from
-> __setup() to early_param().  It adds an address range check from x86
-> also on ia64 and powerpc.
-> 
+> FYI, here is the backtrace:
 
-Hmm, once we export is_kdump_kernel() I bet some driver will start
-to use it to "fix" kdump problem, which definitely is a wrong approach.
+That backtrace was from a RHEL6 port of your recent flush merge work.
+One RHELism associated with the RHEL6 flush+fua port in general (and now
+this flush merge port) is that bio and request flags are _not_ shared.
 
-I am not familiar with Xen at all, don't know why you have to use
-is_kdump_kernel() in this case. You need to persuade people to believe
-this is a fix not a workaround. :)
+As such I introduced BIO_FLUSH and BIO_FUA flags in RHEL6.  Long story
+short, my 4/3 patch works just fine ontop of your 3 patches that Jens
+just staged for 2.6.39.
 
+So sorry for the noise!  I'm kicking myself for having tainted my patch
+(and your work indirectly) by making an issue out of nothing.
+
+Taking a step back, what do you think of my proposed patch?
+
+Mike
