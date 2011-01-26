@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561Ab1AZSzM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 13:55:12 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:54640 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab1AZSzK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 13:55:10 -0500
-X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=nczvMn_Z4IEA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=2EbY2RAQfYB8fyh7Oh4A:9 a=LL3eiu7QgPDvTTHPuQLFdZSHV9EA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 0/3] [GIT PULL][v2.6.38] tracing: fix unaligned event
- arrays
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <20110126064723.GA15752@elte.hu>
-References: <20110126040459.289776311@goodmis.org>
-	 <20110126064723.GA15752@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 26 Jan 2011 13:55:07 -0500
-Message-ID: <1296068107.10144.71.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753545Ab1AZS5d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 13:57:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40370 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751435Ab1AZS5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 13:57:32 -0500
+Date: Wed, 26 Jan 2011 13:57:29 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Cc: Moyer Jeff Moyer <jmoyer@redhat.com>
+Subject: Re: [PATCH] blkio-throttle: Avoid calling blkiocg_lookup_group() for
+ root group
+Message-ID: <20110126185729.GD6713@redhat.com>
+References: <20110117215606.GI5624@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110117215606.GI5624@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-26 at 07:47 +0100, Ingo Molnar wrote:
-
-> > Mathieu Desnoyers (3):
-> >       Introduce __u64_aligned and U64_ALIGN() for structure alignment in custom sections
-> >       tracing: Fix sparc64 alignment crash with __u64_aligned/U64_ALIGN()
-> >       tracepoints: Use __u64_aligned/U64_ALIGN()
-> > 
-
-> Pulled, thanks a lot Steve!
+On Mon, Jan 17, 2011 at 04:56:06PM -0500, Vivek Goyal wrote:
+> o Jeff Moyer was doing some testing on a RAM backed disk and
+>   blkiocg_lookup_group() showed up high overhead after memcpy(). Similarly
+>   somebody else reported that blkiocg_lookup_group() is eating 6% extra
+>   cpu. Though looking at the code I can't think why the overhead of
+>   this function is so high. One thing is that it is called with very high
+>   frequency (once for every IO).
 > 
-> 	Ingo
+> o For lot of folks blkio controller will be compiled in but they might
+>   not have actually created cgroups. Hence optimize the case of root
+>   cgroup where we can avoid calling blkiocg_lookup_group() if IO is happening
+>   in root group (common case).
+> 
+> Reported-by: Jeff Moyer <jmoyer@redhat.com>
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 
+Hi Jens,
 
-Hi Ingo,
+Do you have any concerns regarding this patch?
 
-We (well Peter really) just discovered that this can cause alignment
-issues with gcc 4.4.4 and 4.4.5 (I unfortunately only tested it with gcc
-4.5.1). We are currently looking into fixing it.
+Thanks
+Vivek
 
-Letting you know so that you don't push this off to Linus ;-)
-
--- Steve
-
-
+> ---
+>  block/blk-throttle.c |   10 +++++++++-
+>  1 file changed, 9 insertions(+), 1 deletion(-)
+> 
+> Index: linux-2.6/block/blk-throttle.c
+> ===================================================================
+> --- linux-2.6.orig/block/blk-throttle.c	2011-01-17 16:23:37.041280712 -0500
+> +++ linux-2.6/block/blk-throttle.c	2011-01-17 16:36:09.362940975 -0500
+> @@ -168,7 +168,15 @@ static struct throtl_grp * throtl_find_a
+>  	 * tree of blkg (instead of traversing through hash list all
+>  	 * the time.
+>  	 */
+> -	tg = tg_of_blkg(blkiocg_lookup_group(blkcg, key));
+> +
+> +	/*
+> +	 * This is the common case when there are no blkio cgroups.
+> + 	 * Avoid lookup in this case
+> + 	 */
+> +	if (blkcg == &blkio_root_cgroup)
+> +		tg = &td->root_tg;
+> +	else
+> +		tg = tg_of_blkg(blkiocg_lookup_group(blkcg, key));
+>  
+>  	/* Fill in device details for root group */
+>  	if (tg && !tg->blkg.dev && bdi->dev && dev_name(bdi->dev)) {
+> 
