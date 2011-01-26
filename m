@@ -1,125 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248Ab1AZLtV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 06:49:21 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54458 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752858Ab1AZLso (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 06:48:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=qBo7hzTAu5VLj0dVDck5pXxAVkeSntZP7LXYejYNSRLKhZJf+095nO1ybkFYfzpvHo
-         5ZuB+I8APlDZDmd2chXyG/T4gzx+PxGgBICARJH3lxHo8ErpLvD9JVe7MDkMcklduFgH
-         Wc6z31HX0Gbc0wbo4pQ17rgGcd+NDdgF5iQAk=
-From: Marek Belisko <marek.belisko@open-nandra.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Marek Belisko <marek.belisko@open-nandra.com>
-Subject: [PATCH 3/5] staging: ft1000: Create common function for buffers check.
-Date: Wed, 26 Jan 2011 12:49:13 +0100
-Message-Id: <1296042555-29145-3-git-send-email-marek.belisko@open-nandra.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1296042555-29145-1-git-send-email-marek.belisko@open-nandra.com>
-References: <1296042555-29145-1-git-send-email-marek.belisko@open-nandra.com>
+	id S1753262Ab1AZLuE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 06:50:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39161 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752858Ab1AZLuC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 06:50:02 -0500
+Message-ID: <4D400A44.6030502@redhat.com>
+Date: Wed, 26 Jan 2011 06:49:24 -0500
+From: Ric Wheeler <rwheeler@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: djwong@us.ibm.com
+CC: Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
+        axboe@kernel.dk, tytso@mit.edu, shli@kernel.org, neilb@suse.de,
+        adilger.kernel@dilger.ca, jack@suse.cz, snitzer@redhat.com,
+        linux-kernel@vger.kernel.org, kmannth@us.ibm.com, cmm@us.ibm.com,
+        linux-ext4@vger.kernel.org, hch@lst.de, josef@redhat.com
+Subject: Re: [PATCHSET] Refactor barrier=/nobarrier flags from fs to block
+ layer
+References: <20110126071200.GE32261@tux1.beaverton.ibm.com>
+In-Reply-To: <20110126071200.GE32261@tux1.beaverton.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Same check was done on three places which make code unreadable.
-Put repeat routine to separate function.
+On 01/26/2011 02:12 AM, Darrick J. Wong wrote:
+> Hello,
+>
+>  From what I can tell, most of the filesystems that know how to issue commands
+> to flush the write cache also have some mechanism for the user to override
+> whether or not the filesystem actually issues those flushes.  Unfortunately,
+> the term "barrier" is obsolete having been changed into flushes in 2.6.36, and
+> many of the filesystems implement the mount options with slightly different
+> syntaxes (barrier=[0|1|none|flush], nobarrier, etc).
+>
+> This patchset adds to the block layer a sysfs knob that an administrator can
+> use to disable flushes, and removes the mount options from the filesystem code.
+> As a starting point, I'm removing the mount options and flush toggle from
+> jbd2/ext4.
+>
+> Anyway, I'm looking for some feedback about refactoring the barrier/flush
+> control knob into the block layer.  It sounds like we want a knob that picks
+> the safest option (issue flushes when supported) unless the administrator
+> decides that it is appropriate to do otherwise.  I suspect that there are good
+> arguments for not having a knob at all, and good arguments for a safe knob.
+> However, since I don't see the barrier options being removed en masse, I'm
+> assuming that we still want a knob somewhere.  Do we need the ignore_fua knob
+> too?  Is this the proper way to deprecate mount options out of filesystems?
+>
+> --D
 
-Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
----
- .../staging/ft1000/ft1000-usb/ft1000_download.c    |   59 ++++++++++----------
- 1 files changed, 29 insertions(+), 30 deletions(-)
+Just to be clear, I strongly object to remove the mount options.
 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
-index b99553b..2537a11 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
-@@ -470,6 +470,17 @@ static u16 hdr_checksum(struct pseudo_hdr *pHdr)
- 	return chksum;
- }
- 
-+static int check_buffers(u16 *buff_w, u16 *buff_r, int len, int offset)
-+{
-+	int i;
-+
-+	for (i = 0; i < len; i++) {
-+		if (buff_w[i] != buff_r[i + offset])
-+			return -1;
-+	}
-+
-+	return 0;
-+}
- 
- //---------------------------------------------------------------------------
- // Function:    write_blk
-@@ -560,43 +571,31 @@ static u32 write_blk (struct ft1000_device *ft1000dev, u16 **pUsFile, u8 **pUcFi
- 	    	       Status = ft1000_read_dpram32 (ft1000dev, dpram, (u8 *)&resultbuffer[0], 64);
- 		       if ( (tempbuffer[31] & 0xfe00) == 0xfe00)
- 		       {
--		           for (i=0; i<28; i++)
--		           {
--			       if (resultbuffer[i] != tempbuffer[i])
--			       {
--			           //NdisMSleep (100);
--                                   DEBUG("FT1000:download:DPRAM write failed 1 during bootloading\n");
--				   msleep(10);
--     	  			   Status = STATUS_FAILURE;
--				   break;
-+				if (check_buffers(tempbuffer, resultbuffer, 28, 0)) {
-+					DEBUG("FT1000:download:DPRAM write failed 1 during bootloading\n");
-+					msleep(10);
-+					Status = STATUS_FAILURE;
-+					break;
- 				}
--			   }
-    			   Status = ft1000_read_dpram32 (ft1000dev, dpram+12, (u8 *)&resultbuffer[0], 64);
--		           for (i=0; i<16; i++)
--		           {
--    			       if (resultbuffer[i] != tempbuffer[i+24])
--    			       {
--                                   //NdisMSleep (100);
--                                   DEBUG("FT1000:download:DPRAM write failed 2 during bootloading\n");
--				   msleep(10);
--				   Status = STATUS_FAILURE;
--				   break;
-+
-+				if (check_buffers(tempbuffer, resultbuffer, 16, 24)) {
-+					DEBUG("FT1000:download:DPRAM write failed 2 during bootloading\n");
-+					msleep(10);
-+					Status = STATUS_FAILURE;
-+					break;
- 				}
--			   }
-+			   
- 			}
- 			else
- 			{
--			    for (i=0; i<32; i++)
--			    {
--    			        if (resultbuffer[i] != tempbuffer[i])
--    			        {
--                                    //NdisMSleep (100);
--                                    DEBUG("FT1000:download:DPRAM write failed 3 during bootloading\n");
--				    msleep(10);
--				    Status = STATUS_FAILURE;
--				    break;
-+				if (check_buffers(tempbuffer, resultbuffer, 32, 0)) {
-+					DEBUG("FT1000:download:DPRAM write failed 3 during bootloading\n");
-+					msleep(10);
-+					Status = STATUS_FAILURE;
-+					break;
- 				}
--			    }
-+			    
- 			}
- 
- 			if (Status == STATUS_SUCCESS)
--- 
-1.7.1
+"Barrier" and "poke a control knob in the block" layer are both equally 
+mysterious and meaningless to real users, so I do not see this as a gain,
+
+Ric
 
