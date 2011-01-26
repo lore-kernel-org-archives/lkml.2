@@ -1,55 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753117Ab1AZPUa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 10:20:30 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:57620 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816Ab1AZPU3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 10:20:29 -0500
-Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 8/20]  8: uprobes: mmap and fork
- hooks.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20110126150946.GK19725@linux.vnet.ibm.com>
-References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
-	 <20101216095848.23751.73144.sendpatchset@localhost6.localdomain6>
-	 <1295957741.28776.719.camel@laptop>
-	 <20110126150946.GK19725@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 26 Jan 2011 16:20:43 +0100
-Message-ID: <1296055243.28776.1209.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753480Ab1AZPUm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 10:20:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3211 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753054Ab1AZPUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 10:20:40 -0500
+Message-ID: <4D403BAE.70908@redhat.com>
+Date: Wed, 26 Jan 2011 10:20:14 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>,
+        ttracy@redhat.com, dshaks@redhat.com,
+        "Nakajima, Jun" <jun.nakajima@intel.com>
+Subject: Re: [RFC -v6 PATCH 7/8] kvm: keep track of which task is running
+ a KVM vcpu
+References: <20110120163127.2568f4fe@annuminas.surriel.com> <20110120163632.021c3f37@annuminas.surriel.com> <4D401B39.4040109@redhat.com>
+In-Reply-To: <4D401B39.4040109@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-26 at 20:39 +0530, Srikar Dronamraju wrote:
-> 
-> B. use the current match_inode but change the search_within_subtree
-> logic. search_within_subtree() would first find the leftmode node
-> within the subtree that still has the same inode. Thereafter it will use
-> rb_next().
-> 
-> Do you have any other ideas? 
+On 01/26/2011 08:01 AM, Avi Kivity wrote:
 
-Look for the right inode but with offset 0, that should get you the
-leftmost matching inode, or the entry left of that (depending on how you
-build the tree), after that you should be able to iterate all probes of
-that inode by using rb_next.
+> Suggest moving the code to vcpu_load(), where it can execute under the
+> protection of vcpu->mutex.
+
+I've made the suggested changes by you and Peter, and
+will re-post the patch series in a bit...
+
+-- 
+All rights reversed
