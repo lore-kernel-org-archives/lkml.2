@@ -1,99 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104Ab1AZBAK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 20:00:10 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:39096 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751720Ab1AZBAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 20:00:08 -0500
-Date: Wed, 26 Jan 2011 02:00:02 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Borislav Petkov <bp@amd64.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 08/12] perf: Carve out mmap helpers for general use
-Message-ID: <20110126010002.GA10568@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Arnaldo Carvalho de Melo <acme@infradead.org>,
-	Borislav Petkov <bp@amd64.org>,
-	"peterz@infradead.org" <peterz@infradead.org>,
-	"mingo@elte.hu" <mingo@elte.hu>,
-	"tony.luck@intel.com" <tony.luck@intel.com>,
-	"rostedt@goodmis.org" <rostedt@goodmis.org>,
-	"fweisbec@gmail.com" <fweisbec@gmail.com>,
-	"linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1295622575-18607-1-git-send-email-bp@amd64.org>
- <1295622575-18607-9-git-send-email-bp@amd64.org>
- <20110121172937.GC15066@ghostprotocols.net>
- <20110124090410.GA8924@aftab>
- <20110124123936.GC5932@ghostprotocols.net>
+	id S1752285Ab1AZBBv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 20:01:51 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:29510 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720Ab1AZBBu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 20:01:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-operating-system
+         :user-agent;
+        b=nuDmlWYr+gCkCco/KoiJSC9XNyXopNSUm8d4VvcljAwb2UkeC/Uxum+iOv1IBKx75p
+         4JDCvuOHsiiNq8FezJiw==
+Date: Tue, 25 Jan 2011 17:01:37 -0800
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Joe Perches <joe@perches.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, olofj@chromium.org
+Subject: Re: [PATCH] printk: allow setting DEFAULT_MESSAGE_LEVEL via Kconfig
+Message-ID: <20110126010137.GS8008@google.com>
+References: <20110125235700.GR8008@google.com>
+ <1296002449.6115.9.camel@Joe-Laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110124123936.GC5932@ghostprotocols.net>
+In-Reply-To: <1296002449.6115.9.camel@Joe-Laptop>
+X-Operating-System: Linux/2.6.32-gg298-generic (x86_64)
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24, 2011 at 10:39:36AM -0200, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Jan 24, 2011 at 10:04:10AM +0100, Borislav Petkov escreveu:
-> > Ok, I see at least one problem with my patch - you've reworked the
-> > mmaping functionality in evlist.c/evsel.c and I should use it too, I
-> > guess. For that, I think you'd want me to apply my stuff ontop of your
-> > perf/core branch, right?
+Joe Perches (joe@perches.com) wrote:
+> On Tue, 2011-01-25 at 15:57 -0800, Mandeep Singh Baines wrote:
+> > To make it easier to audit dmesg, we'd like to make
+> > DEFAULT_MESSAGE_LEVEL Kconfig-settable. That way we can set it to
+> > KERN_NOTICE and audit any messages <= KERN_WARNING.
 > 
-> Right, I hope to have that branch merged by Ingo soon.
->  
-> > Am I missing something else?
+> Seems sensible, but mightn't it be better to make sure
+> that all printks use a specific KERN_<level> rather
+> than check that printks without a KERN_<level> are
+> emitted at a selectable level?
 > 
-> Nope, you're not. Doing that we erode your patchset a bit, reducing its
-> size.
 
-.. which means less work for me, heey, nice! :)
+Can we do both? I was planning sending cleanup patches as well but expected
+that process to take a while. The simplest thing would to set all these
+to KERN_WARNING but that's not correct and leaves me back where I started.
+The correct thing would be to set each printk to an appropriate level.
+Determining appropriate level will take some discussion (so a long term
+project).
 
-> One related experience I'm doing now is to have a perf.so python
-> binding, the setup.py file for it with the list of files needed for this
-> specific binding is at:
 > 
-> http://userweb.kernel.org/~acme/setup.py
-> 
-> A simple tool using the resulting binding is a thread
-> fork/comm/exit/sample watcher, available at:
-> 
-> http://userweb.kernel.org/~acme/twatch
-> 
-> In this process I'm moving functions around so as to reduce the number
-> of tools/perf/util.c files to link into this perf.so python binding,
-> untangling things as much as possible.
-> 
-> The binding proper is:
-> 
-> http://userweb.kernel.org/~acme/python.c
-> 
-> I'm digressing, but twatch is an example of a simple "daemon" consuming
-> perf events where performance is not much of a problem.
-> 
-> And provides a prototyping ground when starting to design perf events
-> consuming daemons :-)
-
-Yaay, twatch looks almost like a child's play and even my grandma can
-profile her system now :).
-
-But yeah, I thought about pythonizing the ras thingy too but the reasons
-against it are that we might run on systems which don't have python,
-have some obscure/old version of it or we simply don't want to depend on
-it or any other additional tool for that matter. Generally, we want to
-run with as low overhead as possible when handling hw error info and be
-as self-contained as possible.
-
--- 
-Regards/Gruss,
-    Boris.
