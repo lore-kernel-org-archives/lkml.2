@@ -1,72 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753295Ab1AZPwg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 10:52:36 -0500
-Received: from x35.xmailserver.org ([64.71.152.41]:53894 "EHLO
-	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751025Ab1AZPwf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 10:52:35 -0500
-X-AuthUser: davidel@xmailserver.org
-Date: Wed, 26 Jan 2011 07:52:23 -0800 (PST)
-From: Davide Libenzi <davidel@xmailserver.org>
-X-X-Sender: davide@localhost6.localdomain6
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Simon Kirby <sim@hostway.ca>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Shawn Bohrer <shawn.bohrer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: sys_epoll_wait high CPU load in 2.6.37
-In-Reply-To: <1296056600.2899.66.camel@edumazet-laptop>
-Message-ID: <alpine.DEB.2.00.1101260747320.1889@localhost6.localdomain6>
-References: <20110126000932.GA23089@hostway.ca>  <1296026298.2633.19.camel@edumazet-laptop>  <1296040578.2899.59.camel@edumazet-laptop>  <alpine.DEB.2.00.1101260714280.1889@localhost6.localdomain6> <1296056600.2899.66.camel@edumazet-laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
-X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
+	id S1753280Ab1AZP5x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 10:57:53 -0500
+Received: from smtp4-g21.free.fr ([212.27.42.4]:37606 "EHLO smtp4-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751435Ab1AZP5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 10:57:52 -0500
+Message-ID: <4D404475.30304@free.fr>
+Date: Wed, 26 Jan 2011 16:57:41 +0100
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463810047-1238437340-1296057151=:1889"
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Louis Rilling <Louis.Rilling@kerlabs.com>
+CC: linux-kernel@vger.kernel.org, Linux Containers <containers@lists.osdl.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        Pavel Emelyanov <xemul@openvz.org>, jamal <hadi@cyberus.ca>
+Subject: Re: [PATCH 0/6] Unshare support for the pid namespace.
+References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com>	<20100617212003.GA4182@redhat.com>	<20100618082033.GD16877@hawkmoon.kerlabs.com>	<20100618111554.GA3252@redhat.com> <20100618160849.GA7404@redhat.com>	<20100618173320.GG16877@hawkmoon.kerlabs.com>	<20100618175541.GA13680@redhat.com>	<20100618212355.GA29478@redhat.com> <20100619190840.GA3424@redhat.com> <m1pqzmqema.fsf_-_@fess.ebiederm.org>
+In-Reply-To: <m1pqzmqema.fsf_-_@fess.ebiederm.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
 
----1463810047-1238437340-1296057151=:1889
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Hi All,
 
-On Wed, 26 Jan 2011, Eric Dumazet wrote:
+I refreshed this patchset on top of linux-next and I would like to 
+resend it for inclusion if nobody is opposed.
+I read the looong thread about this patchset and I am a bit lost with if 
+the patches are right or not.
+I will be glad to contribute to this patchset if that make sense to 
+improve some parts.
 
-> Le mercredi 26 janvier 2011 à 07:31 -0800, Davide Libenzi a écrit :
-> > On Wed, 26 Jan 2011, Eric Dumazet wrote:
-> > 
-> 
-> > > diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-> > > index cc8a9b7..7ec0890 100644
-> > > --- a/fs/eventpoll.c
-> > > +++ b/fs/eventpoll.c
-> > > @@ -1126,7 +1126,9 @@ static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
-> > >  
-> > >  	if (timeout > 0) {
-> > >  		ktime_get_ts(&end_time);
-> > > -		timespec_add_ns(&end_time, (u64)timeout * NSEC_PER_MSEC);
-> > > +		end_time.tv_sec += timeout / MSEC_PER_SEC;
-> > > +		timeout %= MSEC_PER_SEC;
-> > > +		timespec_add_ns(&end_time, timeout * NSEC_PER_MSEC);
-> > >  		slack = select_estimate_accuracy(&end_time);
-> > >  		to = &expires;
-> > >  		*to = timespec_to_ktime(end_time);
-> > 
-> > Yep, we can overflow the timeout, with the calculation above.
-> > A timespec_add_ms()?
-> 
-> Well, given timeout after modulo contains a number between 0 and 999,
-> multiply by 1.000.000 (NSEC_PER_MSEC) cant overflow.
+Can someone enlight me ?
 
-For "above", I meant the current epoll expire time calculation, which was 
-described above in the message ;)
-The hint for a timespec_add_ms() was because we must be doing something 
-similar in poll, don't we (/me got no code in front ATM)?
+Thanks
+   -- Daniel
 
----1463810047-1238437340-1296057151=:1889--
+
+<javascript:void(0);>
