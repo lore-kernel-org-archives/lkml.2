@@ -1,79 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496Ab1AZPKO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 10:10:14 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:52099 "EHLO e6.ny.us.ibm.com"
+	id S1753499Ab1AZPMU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 10:12:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4978 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753386Ab1AZPKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 10:10:12 -0500
-Date: Wed, 26 Jan 2011 20:29:55 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 8/20]  8: uprobes: mmap and fork
- hooks.
-Message-ID: <20110126145955.GJ19725@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
- <20101216095848.23751.73144.sendpatchset@localhost6.localdomain6>
- <1295957739.28776.717.camel@laptop>
- <20110126090346.GH19725@linux.vnet.ibm.com>
- <1296037239.28776.1149.camel@laptop>
+	id S1752267Ab1AZPMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 10:12:19 -0500
+Message-ID: <4D4039CB.6060008@redhat.com>
+Date: Wed, 26 Jan 2011 17:12:11 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1296037239.28776.1149.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+To: Glauber Costa <glommer@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com
+Subject: Re: [PATCH 01/16] KVM-HDR: register KVM basic header infrastructure
+References: <1295892397-11354-1-git-send-email-glommer@redhat.com>	 <1295892397-11354-2-git-send-email-glommer@redhat.com>	 <4D400045.2000405@redhat.com> <1296044013.15920.47.camel@mothafucka.localdomain>
+In-Reply-To: <1296044013.15920.47.camel@mothafucka.localdomain>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2011-01-26 11:20:39]:
+On 01/26/2011 02:13 PM, Glauber Costa wrote:
+> >
+> >  - it doesn't lend itself will to live migration.  Extra state must be
+> >  maintained in the hypervisor.
+> Yes, but can be queried at any time as well. I don't do it in this
+> patch, but this is explicitly mentioned in my TODO.
 
-> On Wed, 2011-01-26 at 14:33 +0530, Srikar Dronamraju wrote:
-> > 
-> > 
-> > I actually dont like to release the write_lock and then reacquire it.
-> > write_opcode, which is called thro install_uprobe, i.e to insert the
-> > actual breakpoint instruction takes a read lock on the mmap_sem.
-> > Hence uprobe_mmap gets called in context with write lock on mmap_sem
-> > held, I had to release it before calling install_uprobe. 
-> 
-> Ah, right, so that's going to give you a head-ache ;-)
-> 
-> The moment you release this mmap_sem, the map you're going to install
-> the probe point in can go away.
-> 
-> The only way to make this work seems to start by holding the mmap_sem
-> for writing and make a breakpoint install function that assumes its
-> taken and doesn't try to acquire it again.
-> 
+Using the existing method (MSRs) takes care of this, which reduces churn.
 
+> >  - it isn't how normal hardware operates
+> Since we're trying to go for guest cooperation here, I don't really see
+> a need to stay close to hardware here.
 
-Yes, this can be done.
-I would have to do something like this in register_uprobe().
+For Linux there is not much difference, since we can easily adapt it.  
+But we don't know the impact on other guests, and we can't refactor 
+them.  Staying close to precedent means it will be easier for other 
+guests to work with a kvm host, if they choose.
 
-list_for_each_entry_safe(mm, tmpmm, &tmp_list, uprobes_list) {
-		down_read(&mm->map_sem);
-                if (!install_uprobe(mm, uprobe))
-                        ret = 0;
-		up_read(&mm->map_sem);
-                list_del(&mm->uprobes_list);
-                mmput(mm);
-}
+> >
+> >  what's wrong with extending the normal approach of one msr per feature?
+>
+> * It's harder to do discovery with MSRs. You can't just rely on getting
+> an error before the idts are properly setups. The way I am proposing
+> allow us to just try to register a memory area, and get a failure if we
+> can't handle it, at any time
 
-Agree that this is much better than what we have now.
+Use cpuid to ensure that you won't get a #GP.
+
+> * To overcome the above, we had usually relied on cpuids. This requires
+> qemu/userspace cooperation for feature enablement
+
+We need that anyway.  The kernel cannot enable features on its own since 
+that breaks live migration.
+
+> * This mechanism just bumps us out to userspace if we can't handle a
+> request. As such, it allows for pure guest kernel ->  userspace
+> communication, that can be used, for instance, to emulate new features
+> in older hypervisors one does not want to change. BTW, maybe there is
+> value in exiting to userspace even if we stick to the
+> one-msr-per-feature approach?
+
+Yes.
+
+I'm not 100% happy with emulating MSRs in userspace, but we can think 
+about a mechanism that allows userspace to designate certain MSRs as 
+handled by userspace.
+
+Before we do that I'd like to see what fraction of MSRs can be usefully 
+emulated in userspace (beyond those that just store a value and ignore it).
+
+-- 
+error compiling committee.c: too many arguments to function
+
