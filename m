@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188Ab1AZXEP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 18:04:15 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:6897 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752824Ab1AZXEO (ORCPT
+	id S1754235Ab1AZXGW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 18:06:22 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:15068 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753328Ab1AZXGU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 18:04:14 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6238"; a="71891034"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] ARM: Fix SMP_ON_UP for non ARM ltd. implementations
-Date: Wed, 26 Jan 2011 15:04:12 -0800
-Message-Id: <1296083052-20034-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.4.rc3
+	Wed, 26 Jan 2011 18:06:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=C8bHH0VJ9g/ZIAAN1xyk4q9Wl8sPYN5tTNSp7XWCfelElgjMM5wd5/3du8C+VsPGQ7
+         +6UXr+6xXaLtbTqDHBYw==
+MIME-Version: 1.0
+In-Reply-To: <iho7ba$kmn$1@dough.gmane.org>
+References: <20110125235700.GR8008@google.com>
+	<iho7ba$kmn$1@dough.gmane.org>
+Date: Wed, 26 Jan 2011 15:05:48 -0800
+Message-ID: <AANLkTikaDpZ=Pjb+m7ixCepywtO1bUN02sfimWBSTha3@mail.gmail.com>
+Subject: Re: [PATCH] printk: allow setting DEFAULT_MESSAGE_LEVEL via Kconfig
+From: Mandeep Baines <msb@google.com>
+To: WANG Cong <xiyou.wangcong@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The SMP_ON_UP checks restrict the feature to ARM limited designs,
-when other implementers support SMP designs. Instead of checking
-for an ARM CPU and ARMv6/v7 just check for a v6 or v7 and then
-rely on the MPIDR for non ARM 11MPCore designs.
+On Tue, Jan 25, 2011 at 8:18 PM, WANG Cong <xiyou.wangcong@gmail.com> wrote:
+>
+> On Tue, 25 Jan 2011 15:57:00 -0800, Mandeep Singh Baines wrote:
+>
+> > We've been burned by regressions/bugs which we later realized could have
+> > been triaged quicker if only we'd paid closer attention to dmesg. To
+> > make it easier to audit dmesg, we'd like to make DEFAULT_MESSAGE_LEVEL
+> > Kconfig-settable. That way we can set it to KERN_NOTICE and audit any
+> > messages <= KERN_WARNING.
+> >
+>
+> Why? We already have "loglevel=" kernel parameter.
+>
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/kernel/head.S |   13 +++++++++----
- 1 files changed, 9 insertions(+), 4 deletions(-)
+loglevel allows you to control which messages go to the console.
 
-diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
-index f17d9a0..ede5b70 100644
---- a/arch/arm/kernel/head.S
-+++ b/arch/arm/kernel/head.S
-@@ -393,20 +393,25 @@ ENDPROC(__turn_mmu_on)
- #ifdef CONFIG_SMP_ON_UP
- __fixup_smp:
- 	mov	r4, #0x00070000
--	orr	r3, r4, #0xff000000	@ mask 0xff070000
--	orr	r4, r4, #0x41000000	@ val 0x41070000
--	and	r0, r9, r3
--	teq	r0, r4			@ ARM CPU and ARMv6/v7?
-+	and	r0, r9, r4
-+	teq	r0, r4			@ ARMv6/v7?
- 	bne	__fixup_smp_on_up	@ no, assume UP
- 
-+	orr	r3, r4, #0xff000000	@ mask 0xff070000
- 	orr	r3, r3, #0x0000ff00
- 	orr	r3, r3, #0x000000f0	@ mask 0xff07fff0
-+	orr	r4, r4, #0x41000000	@ val 0x41070000
- 	orr	r4, r4, #0x0000b000
- 	orr	r4, r4, #0x00000020	@ val 0x4107b020
- 	and	r0, r9, r3
- 	teq	r0, r4			@ ARM 11MPCore?
- 	moveq	pc, lr			@ yes, assume SMP
- 
-+	mov	r4, #0x00070000
-+	and	r0, r9, #0x000f0000
-+	teq	r0, r4			@ ARMv6?
-+	beq	__fixup_smp_on_up	@ yes, assume UP
-+
- 	mrc	p15, 0, r0, c0, c0, 5	@ read MPIDR
- 	tst	r0, #1 << 31
- 	movne	pc, lr			@ bit 31 => SMP
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+DEFAULT_MESSAGE_LEVEL selects the default message levels for printk()s which
+don't specify a message level.
 
+Most printks()s without a message level aren't really warnings and
+just create noise
+if you're trying to look closely at all warnings. Some of this is just
+old code but new
+printk()s without a message level do get committed from time to time.
+
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
