@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235Ab1AZNkg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 08:40:36 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:59816 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400Ab1AZNke convert rfc822-to-8bit (ORCPT
+	id S1753326Ab1AZNnh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 08:43:37 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:50066 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751807Ab1AZNnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 08:40:34 -0500
+	Wed, 26 Jan 2011 08:43:35 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=kCSJ8msFg+3oa+XutMNKXTiNuBHmqy0wzrZ/vvoJZgUpAxH0DZYdQDnHypG/aWSSOg
-         4MHncvsMXvFh5AyzXvlMA/l9OEBVA/B9u5ramGyb+gmlJKxuIip8YsOgg4GA/rC+WhSZ
-         tGNt/RsnA7Hbgol4dyB2DDO1GWPVxFlHKC+Yw=
+        h=date:from:to:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=kReTwa9nEAt+y/7dEZ22DXQ59qh4/K/LshUaZTb7L0K5eMzYJMJaoymQ79JRh4kR6P
+         BH9vYBFiM7U+H1uq9kuvnPVGh2aBC/W3av80gh7Wb+wnPrYMX6UQyB81PzLn8gE697XH
+         FLeTumocOMqBbPNKjI1r9kya9h/1qSPanBx2I=
+Date: Wed, 26 Jan 2011 16:43:18 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Marek Belisko <marek.belisko@open-nandra.com>, gregkh@suse.de,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] staging: ft1000: Fix coding style in
+ write_blk_fifo() function.
+Message-ID: <20110126134318.GO2721@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Marek Belisko <marek.belisko@open-nandra.com>, gregkh@suse.de,
+	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+References: <1296042555-29145-1-git-send-email-marek.belisko@open-nandra.com>
+ <1296042555-29145-4-git-send-email-marek.belisko@open-nandra.com>
+ <20110126130718.GN2721@bicker>
 MIME-Version: 1.0
-In-Reply-To: <1296030555-3594-1-git-send-email-gthelen@google.com>
-References: <1296030555-3594-1-git-send-email-gthelen@google.com>
-Date: Wed, 26 Jan 2011 19:10:34 +0530
-X-Google-Sender-Auth: DK2i77fr9rYG8nNhuz2tNwWxCcU
-Message-ID: <AANLkTikZwbmVr-jvOoyd0WZhfxtHvqK=n1B-zWLr3xDa@mail.gmail.com>
-Subject: Re: [PATCH] oom: handle overflow in mem_cgroup_out_of_memory()
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110126130718.GN2721@bicker>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 26, 2011 at 1:59 PM, Greg Thelen <gthelen@google.com> wrote:
-> mem_cgroup_get_limit() returns a byte limit as a unsigned 64 bit value,
-> which is converted to a page count by mem_cgroup_out_of_memory().  Prior
-> to this patch the conversion could overflow on 32 bit platforms
-> yielding a limit of zero.
->
+On Wed, Jan 26, 2011 at 04:07:18PM +0300, Dan Carpenter wrote:
+> You didn't introduce it but do you know what the code is trying to do
+> here?
+> 
+>         byte_length = word_length * 4;
+> 
+>         if (byte_length % 4)
 
-Why would the overflow occur? Due to the right shift being used with
-unsigned long long? I am afraid I don't have quick access to a 32 bit
-box to test the patch. May be I too drained to understand the problem,
-can you post the corresponding assembly for analysis?
+Actually this check is pointless.  word_length * 4 is always
+aligned at 4 bytes.
 
-Balbir
+regards,
+dan carpenter
+
+
