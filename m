@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408Ab1AZXeb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 18:34:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16420 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754147Ab1AZXe3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 18:34:29 -0500
-Subject: Re: [PATCH] System Wide Capability Bounding Set
-From: Eric Paris <eparis@redhat.com>
-To: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: "Andrew G. Morgan" <morgan@kernel.org>,
-        "Serge E. Hallyn" <serge@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, sgrubb@redhat.com
-Date: Wed, 26 Jan 2011 18:34:14 -0500
-In-Reply-To: <20110124214018.GA8395@hallyn.com>
-References: <1294266337.3237.45.camel@localhost.localdomain>
-	 <20110111220201.GA6446@localhost>
-	 <1295034658.2816.16.camel@localhost.localdomain>
-	 <AANLkTik07sOb8oQThFPLvAnQLXbyPJ+oqtqE2SMX2erk@mail.gmail.com>
-	 <1295645135.3403.31.camel@localhost.localdomain>
-	 <AANLkTinPGMijRFnn8T=fndnCCGAsNq_6qCOzKcuhZE8H@mail.gmail.com>
-	 <20110124214018.GA8395@hallyn.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1296084856.2534.18.camel@localhost.localdomain>
+	id S1754386Ab1AZXku (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 18:40:50 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46936 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754147Ab1AZXkt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 18:40:49 -0500
+Date: Wed, 26 Jan 2011 15:32:40 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Brown <davidb@codeaurora.org>
+Cc: Niranjana Vishwanathapura <nvishwan@codeaurora.org>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] msm: smd: Add smd_pkt driver
+Message-Id: <20110126153240.9cc6c2e2.akpm@linux-foundation.org>
+In-Reply-To: <8yatygweqng.fsf@huya.qualcomm.com>
+References: <1292437675-11561-1-git-send-email-nvishwan@codeaurora.org>
+	<8yatygweqng.fsf@huya.qualcomm.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let me reboot the conversation just a little.  My goal is to be able to
-drop capabilities from a system such that they can never come back.  The
-two capabilities I am most interested in are CAP_SYS_MODULE and
-CAP_SYS_RAWIO.  I want to boot a machine in a manor I control, drop
-those caps, and then give root to an entity that I do not trust.  At the
-moment it is impossible to do this.  Absolutely impossible.  It is
-impossible because the earliest I can drop capabilities is
-in /sbin/init.  Lets assume I patch /sbin/init to drop those two caps
-from the bset, pE, pI, and pP.  One might think they are gone for good,
-but they aren't.
+On Tue, 25 Jan 2011 11:20:51 -0800
+David Brown <davidb@codeaurora.org> wrote:
 
-The way that kernel helper programs get exec'ed is that a task or maybe
-an async event causes the kernel to queue some information on a list.
-That information is removed from the list by a special kthread and a
-userspace program is exec'ed.  The exec rules are going to apply to the
-capability sets associated with the kthread.  Those are compiled into
-the kernel.  I need a way to prevent capabilities from coming back.
+> On Wed, Dec 15 2010, Niranjana Vishwanathapura wrote:
+> 
+> > Add smd_pkt driver which provides device interface
+> > to smd packet ports.
+> >
+> > Signed-off-by: Niranjana Vishwanathapura <nvishwan@codeaurora.org>
+> > ---
+> >  drivers/char/Kconfig       |    8 +
+> >  drivers/char/Makefile      |    2 +
+> >  drivers/char/msm_smd_pkt.c |  466 ++++++++++++++++++++++++++++++++++++++++++++
+> >  3 files changed, 476 insertions(+), 0 deletions(-)
+> >  create mode 100644 drivers/char/msm_smd_pkt.c
+> 
+> Andrew, what's the proper destination for this change?  Should this go
+> into your tree?  Is there anything you want me to do with this change?
+> 
 
-I proposed a global bset (much like we used to have, but without the
-ability for init to add stuff back) and was shot down.
+Looks OK, I grabbed it.
 
-Andrew original proposed a prctl() which would cause the exec call to
-not automatically add capabilities to pE and would rely on filecaps.  I
-claim this is not reasonable since root is going to have control of the
-fcaps.  All that would be needed for root to regain either cap is to
-change the helper program to be an sshd server and add back these 2
-dropped caps in fcaps.
-
-At this point it seems to me like what I must do is add a way for a task
-with enough priv to force caps out of the bset and pI of the kthread
-which upcalls to run userspace programs.  Thus when the kthread runs a
-program it cannot give those privs....
-
-Does this seem reasonable?  What would such an interface look like?
-(This is scarily like the old meaning of CAP_SETPCAP....)
+I read the entire email trying to work out what an "SMD" is.  Failed. 
+Oh well.
 
