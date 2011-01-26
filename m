@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878Ab1AZKYb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 05:24:31 -0500
-Received: from mga01.intel.com ([192.55.52.88]:35941 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752170Ab1AZKYa convert rfc822-to-8bit (ORCPT
+	id S1752936Ab1AZK2c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 05:28:32 -0500
+Received: from nwd2mail11.analog.com ([137.71.25.57]:44915 "EHLO
+	nwd2mail11.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752603Ab1AZK2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 05:24:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,379,1291622400"; 
-   d="scan'208";a="651301127"
-From: "Berg, Johannes" <johannes.berg@intel.com>
-To: Bob Liu <lliubbo@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "chrisw@sous-sol.org" <chrisw@sous-sol.org>,
-        "Winkler, Tomas" <tomas.winkler@intel.com>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "gregkh@suse.de" <gregkh@suse.de>
-Date: Wed, 26 Jan 2011 10:23:39 +0000
-Subject: RE: [PATCH] firmware_classs: change val uevent's type to bool
-Thread-Topic: [PATCH] firmware_classs: change val uevent's type to bool
-Thread-Index: Acu9QExTLrCMp6kaSH6NyTqzIdO01AAAsz0u
-Message-ID: <C5C86A19469DAE48AAAD0E5F3716E44501D6329795@irsmsx504.ger.corp.intel.com>
-References: <1296036004-15644-1-git-send-email-lliubbo@gmail.com>
-	<C5C86A19469DAE48AAAD0E5F3716E44501D6329793@irsmsx504.ger.corp.intel.com>,<AANLkTinzHZorkTpDSv5J9_Q5kO5UUFnZb3CAafyOu2Qe@mail.gmail.com>
-In-Reply-To: <AANLkTinzHZorkTpDSv5J9_Q5kO5UUFnZb3CAafyOu2Qe@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	Wed, 26 Jan 2011 05:28:31 -0500
+X-IronPort-AV: E=Sophos;i="4.60,379,1291611600"; 
+   d="scan'208";a="27823445"
+From: Bob Liu <lliubbo@gmail.com>
+To: linux-kernel@vger.kernel.org
+CC: chrisw@sous-sol.org, tomas.winkler@intel.com, johannes.berg@intel.com,
+        dmitry.torokhov@gmail.com, gregkh@suse.de, Bob Liu <lliubbo@gmail.com>
+Subject: [PATCH V2] firmware_classs: change val uevent's type to bool
+Date: Wed, 26 Jan 2011 18:33:32 +0800
+Message-ID: <1296038012-16656-1-git-send-email-lliubbo@gmail.com>
+X-Mailer: git-send-email 1.6.3.3
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Some place in firmware_class.c using "int uevent" define, but others use "bool
+uevent".
+This patch replace all int uevent define to bool.
 
-________________________________________
-From: Bob Liu [lliubbo@gmail.com]
-Sent: Wednesday, January 26, 2011 11:03
-To: Berg, Johannes
-Cc: linux-kernel@vger.kernel.org; chrisw@sous-sol.org; Winkler, Tomas; dmitry.torokhov@gmail.com; gregkh@suse.de
-Subject: Re: [PATCH] firmware_classs: change val uevent's type to bool
+Changes since V1:
+	johannes: remove no-op
 
-On Wed, Jan 26, 2011 at 5:56 PM, Berg, Johannes <johannes.berg@intel.com> wrote:
-> @@ -463,7 +463,8 @@ fw_create_instance(struct firmware *firmware, const char *fw_name,
->        f_dev->parent = device;
->        f_dev->class = &firmware_class;
->
-> -       dev_set_uevent_suppress(f_dev, true);
-> +       if (uevent)
-> +               dev_set_uevent_suppress(f_dev, true);
->
-> Everything but this is a no-op basically, but you didn't even describe this change?
->
+Signed-off-by: Bob Liu <lliubbo@gmail.com>
+---
+ drivers/base/firmware_class.c |    7 +++----
+ include/linux/firmware.h      |    4 ++--
+ 2 files changed, 5 insertions(+), 6 deletions(-)
 
-
-Hmm.. Sorry for that, but I mentioned that by "fix a place missing
-uevent check".
-I added this check because I think it should be paired with following
-dev_set_uevent_suppress(f_dev, false).
-
-I don't think it should -- if you don't want uevents, then they should _always_ be suppressed, right?
-
-johannes
---------------------------------------------------------------------------------------
-Intel GmbH
-Dornacher Strasse 1
-85622 Feldkirchen/Muenchen, Deutschland 
-Sitz der Gesellschaft: Feldkirchen bei Muenchen
-Geschaeftsfuehrer: Douglas Lusk, Peter Gleissner, Hannes Schwaderer
-Registergericht: Muenchen HRB 47456 
-Ust.-IdNr./VAT Registration No.: DE129385895
-Citibank Frankfurt a.M. (BLZ 502 109 00) 600119052
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 40af43e..8c798ef 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -593,8 +593,7 @@ int
+ request_firmware(const struct firmware **firmware_p, const char *name,
+                  struct device *device)
+ {
+-        int uevent = 1;
+-        return _request_firmware(firmware_p, name, device, uevent, false);
++        return _request_firmware(firmware_p, name, device, true, false);
+ }
+ 
+ /**
+@@ -618,7 +617,7 @@ struct firmware_work {
+ 	struct device *device;
+ 	void *context;
+ 	void (*cont)(const struct firmware *fw, void *context);
+-	int uevent;
++	bool uevent;
+ };
+ 
+ static int request_firmware_work_func(void *arg)
+@@ -661,7 +660,7 @@ static int request_firmware_work_func(void *arg)
+  **/
+ int
+ request_firmware_nowait(
+-	struct module *module, int uevent,
++	struct module *module, bool uevent,
+ 	const char *name, struct device *device, gfp_t gfp, void *context,
+ 	void (*cont)(const struct firmware *fw, void *context))
+ {
+diff --git a/include/linux/firmware.h b/include/linux/firmware.h
+index 53d1e6c..21b3e75 100644
+--- a/include/linux/firmware.h
++++ b/include/linux/firmware.h
+@@ -39,7 +39,7 @@ struct builtin_fw {
+ int request_firmware(const struct firmware **fw, const char *name,
+ 		     struct device *device);
+ int request_firmware_nowait(
+-	struct module *module, int uevent,
++	struct module *module, bool uevent,
+ 	const char *name, struct device *device, gfp_t gfp, void *context,
+ 	void (*cont)(const struct firmware *fw, void *context));
+ 
+@@ -52,7 +52,7 @@ static inline int request_firmware(const struct firmware **fw,
+ 	return -EINVAL;
+ }
+ static inline int request_firmware_nowait(
+-	struct module *module, int uevent,
++	struct module *module, bool uevent,
+ 	const char *name, struct device *device, gfp_t gfp, void *context,
+ 	void (*cont)(const struct firmware *fw, void *context))
+ {
+-- 
+1.6.3.3
 
