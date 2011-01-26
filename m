@@ -1,39 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab1AZSaT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 13:30:19 -0500
-Received: from [123.122.106.155] ([123.122.106.155]:38817 "EHLO enigma.site"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753669Ab1AZS3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 13:29:07 -0500
-From: Coly Li <bosong.ly@taobao.com>
-To: linux-kernel@vger.kernel.org
-Cc: Coly Li <bosong.ly@taobao.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Greg KH <gregkh@suse.de>
-Subject: [PATCH 0/6] use BUG_ON correctly
-Date: Thu, 27 Jan 2011 02:54:49 +0800
-Message-Id: <1296068095-16988-1-git-send-email-bosong.ly@taobao.com>
-X-Mailer: git-send-email 1.7.3.2
+	id S1754108Ab1AZSaj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 13:30:39 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:42663 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753469Ab1AZSah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 13:30:37 -0500
+Date: Wed, 26 Jan 2011 19:30:23 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] oom: handle overflow in mem_cgroup_out_of_memory()
+Message-ID: <20110126183023.GB2401@cmpxchg.org>
+References: <1296030555-3594-1-git-send-email-gthelen@google.com>
+ <20110126170713.GA2401@cmpxchg.org>
+ <xr93y667lgdm.fsf@gthelen.mtv.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <xr93y667lgdm.fsf@gthelen.mtv.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BUG_ON() already uses unlikely() inside its definition if possible,
-therefore code should not use BUG_ON() with explicit unlikely()
-like BUG_ON(unlikely(...)), an explicit unlikely() doesn't make
-things better.
+On Wed, Jan 26, 2011 at 09:33:09AM -0800, Greg Thelen wrote:
+> Johannes Weiner <hannes@cmpxchg.org> writes:
+> 
+> > On Wed, Jan 26, 2011 at 12:29:15AM -0800, Greg Thelen wrote:
+> >> mem_cgroup_get_limit() returns a byte limit as a unsigned 64 bit value,
+> >> which is converted to a page count by mem_cgroup_out_of_memory().  Prior
+> >> to this patch the conversion could overflow on 32 bit platforms
+> >> yielding a limit of zero.
+> >
+> > Balbir: It can truncate, because the conversion shrinks the required
+> > bits of this 64-bit number by only PAGE_SHIFT (12).  Trying to store
+> > the resulting up to 52 significant bits in a 32-bit integer will cut
+> > up to 20 significant bits off.
+> >
+> >> Signed-off-by: Greg Thelen <gthelen@google.com>
+> >> ---
+> >>  mm/oom_kill.c |    2 +-
+> >>  1 files changed, 1 insertions(+), 1 deletions(-)
+> >> 
+> >> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> >> index 7dcca55..3fcac51 100644
+> >> --- a/mm/oom_kill.c
+> >> +++ b/mm/oom_kill.c
+> >> @@ -538,7 +538,7 @@ void mem_cgroup_out_of_memory(struct mem_cgroup *mem, gfp_t gfp_mask)
+> >>  	struct task_struct *p;
+> >>  
+> >>  	check_panic_on_oom(CONSTRAINT_MEMCG, gfp_mask, 0, NULL);
+> >> -	limit = mem_cgroup_get_limit(mem) >> PAGE_SHIFT;
+> >> +	limit = min(mem_cgroup_get_limit(mem) >> PAGE_SHIFT, (u64)ULONG_MAX);
+> >
+> > I would much prefer using min_t(u64, ...).  To make it really, really
+> > explicit that this is 64-bit arithmetic.  But that is just me, no
+> > correctness issue.
+> >
+> > Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+> 
+> I agree that min_t() is clearer.  Does the following look better?
 
-This patch set fixes all incorrect usage of BUG_ON() as the above
-line mentioned.
+Sweet, thank you Greg!
 
-Signed-off-by: Coly Li <bosong.ly@taobao.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg KH <gregkh@suse.de>
----
- drivers/dma/iop-adma.c                           |    6 +++---
- drivers/dma/mv_xor.c                             |    6 +++---
- drivers/dma/ppc4xx/adma.c                        |    8 ++++----
- drivers/scsi/scsi_lib.c                          |    4 ++--
- drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c |   14 +++++++-------
- mm/nommu.c                                       |   10 +++++-----
- 6 files changed, 24 insertions(+), 24 deletions(-)
+> Author: Greg Thelen <gthelen@google.com>
+> Date:   Wed Jan 26 00:05:59 2011 -0800
+> 
+>     oom: handle truncation in mem_cgroup_out_of_memory()
+>     
+>     mem_cgroup_get_limit() returns a byte limit as an unsigned 64 bit value.
+>     mem_cgroup_out_of_memory() converts this byte limit to an unsigned long
+>     page count.  Prior to this patch, the 32 bit version of
+>     mem_cgroup_out_of_memory() would silently truncate the most significant
+>     20 bits from byte limit when constructing the limit as a page count.
+>     For byte limits with the lowest 44 bits set to zero, this truncation
+>     would compute a page limit of zero.
+>     
+>     This patch checks for such large byte limits that cannot be converted to
+>     page counts without loosing information.  In such situations, where a 32
+>     bit page counter is too small to represent the corresponding byte count,
+>     select a maximal page count.
+>     
+>     Signed-off-by: Greg Thelen <gthelen@google.com>
+
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+
+That being said, does this have any practical impact at all?  I mean,
+this code runs when the cgroup limit is breached.  But if the number
+of allowed pages (not bytes!) can not fit into 32 bits, it means you
+have a group of processes using more than 16T.  On a 32-bit machine.
