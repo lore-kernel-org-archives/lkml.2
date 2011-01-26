@@ -1,54 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824Ab1AZI3x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 03:29:53 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:28507 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718Ab1AZI3w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 03:29:52 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=wFMvimsxzfoW44+4M8mm9Kk1yHtHOpL5TEdxw3c057wLMcsxavOrJV+j4vCdMoYU8
-	KHqYlhogxTL5YvUMpQc6g==
-From: Greg Thelen <gthelen@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Greg Thelen <gthelen@google.com>
-Subject: [PATCH] oom: handle overflow in mem_cgroup_out_of_memory()
-Date: Wed, 26 Jan 2011 00:29:15 -0800
-Message-Id: <1296030555-3594-1-git-send-email-gthelen@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	id S1752795Ab1AZIou (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 03:44:50 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:60025 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751685Ab1AZIos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 03:44:48 -0500
+Date: Wed, 26 Jan 2011 08:44:23 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Luca Tettamanti <kronos.it@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] compaction: don't depend on HUGETLB_PAGE
+Message-ID: <20110126084423.GO18984@csn.ul.ie>
+References: <AANLkTikdwZp1r_MD4TH7bsLjzPAtHzq7XWoLZmFwdK=S@mail.gmail.com> <20110122183800.GU9506@random.random>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110122183800.GU9506@random.random>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mem_cgroup_get_limit() returns a byte limit as a unsigned 64 bit value,
-which is converted to a page count by mem_cgroup_out_of_memory().  Prior
-to this patch the conversion could overflow on 32 bit platforms
-yielding a limit of zero.
+On Sat, Jan 22, 2011 at 07:38:00PM +0100, Andrea Arcangeli wrote:
+> Hello,
+> 
+> On Sat, Jan 22, 2011 at 03:48:03PM +0100, Luca Tettamanti wrote:
+> > Hello Andrea,
+> > this commit:
+> > 
+> > commit 5d6892407cab23d4bf2f6de065ca351a53849323
+> > Author: Andrea Arcangeli <aarcange@redhat.com>
+> > Date:   Thu Jan 13 15:47:07 2011 -0800
+> > 
+> >     thp: select CONFIG_COMPACTION if TRANSPARENT_HUGEPAGE enabled
+> > 
+> > causes this warning during the configuration process:
+> > 
+> > warning: (TRANSPARENT_HUGEPAGE) selects COMPACTION which has unmet
+> > direct dependencies (EXPERIMENTAL && HUGETLB_PAGE && MMU)
+> > 
+> > This happens because 'select' does not enable the dependencies of its
+> > target, so when I selected THP it also enabled COMPATION but I don't
+> > have HUGETLBFS (=HUGETLB_PAGE) enabled.
+> > Making THP select HUGETLB_PAGE fixes the warning but I'm not 100% sure
+> > that's correct (does it work without HUGETLBFS?).
+> 
+> Mel, what's your take about this issue?
+> 
 
-Signed-off-by: Greg Thelen <gthelen@google.com>
----
- mm/oom_kill.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+The dependencies were only in the name of being conservative. Hugetlbfs was
+initially the only expected user of compaction so making it depend was meant
+to restrict who might enable it and is not a true dependency. It was marked
+experimental at the start for obvious reasons.
 
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 7dcca55..3fcac51 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -538,7 +538,7 @@ void mem_cgroup_out_of_memory(struct mem_cgroup *mem, gfp_t gfp_mask)
- 	struct task_struct *p;
- 
- 	check_panic_on_oom(CONSTRAINT_MEMCG, gfp_mask, 0, NULL);
--	limit = mem_cgroup_get_limit(mem) >> PAGE_SHIFT;
-+	limit = min(mem_cgroup_get_limit(mem) >> PAGE_SHIFT, (u64)ULONG_MAX);
- 	read_lock(&tasklist_lock);
- retry:
- 	p = select_bad_process(&points, limit, mem, NULL);
+> Luca does the below fix all your .config problems?
+> 
+> ====
+> Subject: compaction: don't depend on HUGETLB_PAGE
+> 
+> From: Andrea Arcangeli <aarcange@redhat.com>
+> 
+> COMPACTION doesn't depend on HUGETLB_PAGE, it doesn't depend on THP
+> either, it is also useful for regular alloc_pages(order > 0) including
+> the very kernel stack during fork (THREAD_ORDER = 1). It's always
+> better to enable COMPACTION.
+> 
+> The warning should be an error because we would end up with MIGRATION
+> not selected, and COMPACTION wouldn't work without migration (despite
+> it seems to build with an inline migrate_pages returning -ENOSYS).
+> 
+> I'd also like to remove EXPERIMENTAL: compaction has been in the
+> kernel for some releases (for full safety the default remains
+> disabled which I think is enough).
+> 
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+
+I think this is reasonable;
+
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+
+> ---
+> 
+> diff --git a/mm/Kconfig b/mm/Kconfig
+> index 3ad483b..e9c0c61 100644
+> --- a/mm/Kconfig
+> +++ b/mm/Kconfig
+> @@ -179,7 +179,7 @@ config SPLIT_PTLOCK_CPUS
+>  config COMPACTION
+>  	bool "Allow for memory compaction"
+>  	select MIGRATION
+> -	depends on EXPERIMENTAL && HUGETLB_PAGE && MMU
+> +	depends on MMU
+>  	help
+>  	  Allows the compaction of memory for the allocation of huge pages.
+>  
+> 
+
 -- 
-1.7.3.1
-
+Mel Gorman
+Linux Technology Center
+IBM Dublin Software Lab
