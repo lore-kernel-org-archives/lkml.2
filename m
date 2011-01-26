@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab1AZPZW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 10:25:22 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:47276 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753295Ab1AZPZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 10:25:21 -0500
-Date: Wed, 26 Jan 2011 20:48:42 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
+	id S1753431Ab1AZP3U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 10:29:20 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:58828 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751978Ab1AZP3T convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 10:29:19 -0500
+Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 14/20] 14: uprobes: Handing int3
+ and singlestep exception.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         SystemTap <systemtap@sources.redhat.com>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andi Kleen <andi@firstfloor.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 4/20]  4: uprobes: Adding and
- remove a uprobe in a rb tree.
-Message-ID: <20110126151842.GM19725@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+In-Reply-To: <20110126151418.GL19725@linux.vnet.ibm.com>
 References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
- <20101216095803.23751.41491.sendpatchset@localhost6.localdomain6>
- <1295963773.28776.1054.camel@laptop>
- <20110126084522.GF19725@linux.vnet.ibm.com>
- <1296036847.28776.1142.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1296036847.28776.1142.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+	 <20101216095957.23751.57040.sendpatchset@localhost6.localdomain6>
+	 <1295963779.28776.1059.camel@laptop>
+	 <20110126085203.GG19725@linux.vnet.ibm.com>
+	 <1296037031.28776.1146.camel@laptop>
+	 <20110126151418.GL19725@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 26 Jan 2011 16:29:48 +0100
+Message-ID: <1296055788.28776.1222.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2011-01-26 11:14:07]:
-
-> On Wed, 2011-01-26 at 14:15 +0530, Srikar Dronamraju wrote:
-> > 
-> > 
-> > Okay, Will do, but Is there a reason for moving the fvalue out of the
-> > uprobe_consumer? Except for reducing the size of the structure, I am
-> > unable to see advantage. 
+On Wed, 2011-01-26 at 20:44 +0530, Srikar Dronamraju wrote:
+> So it simplifies to 
 > 
-> That's about it, and its the normal way to do such things in kernel
-> space.
+>         down_read(&mm->mmap_sem);
+>         vma = find_vma(mm, probept);
+>         if (valid_vma(vma)) {
+>                u = find_uprobe(vma->vm_file->f_mapping->host,
+>                                probept - vma->vm_start);
+>         }
+>         up_read(&mm->mmap_sem); 
 
-But the disadvantage would be we wont be able to share the filter
-functions. Currently i had one patch that implemented the common
-filter functions that tracers could reuse.
+Almost, the offset within a file is something like:
 
--- 
-Thanks and Regards
-Srikar
+  (address - vma->vm_start) + (vma->vm_pgoff << PAGE_SHIFT)
+
+
