@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379Ab1AZXav (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 18:30:51 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:25676 "EHLO
+	id S1754438Ab1AZXbH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 18:31:07 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:4586 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754331Ab1AZXat (ORCPT
+	with ESMTP id S1754330Ab1AZXat (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 26 Jan 2011 18:30:49 -0500
 From: Mandeep Singh Baines <msb@chromium.org>
@@ -12,9 +12,9 @@ To: gregkh@suse.de, rjw@sisk.pl, mingo@redhat.com, akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
         linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         Mandeep Singh Baines <msb@chromium.org>
-Subject: [PATCH 3/6] PM: use appropriate printk priority level
-Date: Wed, 26 Jan 2011 15:29:27 -0800
-Message-Id: <1296084570-31453-4-git-send-email-msb@chromium.org>
+Subject: [PATCH 6/6] taskstats: use appropriate printk priority level
+Date: Wed, 26 Jan 2011 15:29:30 -0800
+Message-Id: <1296084570-31453-7-git-send-email-msb@chromium.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <20110125235700.GR8008@google.com>
 References: <20110125235700.GR8008@google.com>
@@ -28,45 +28,24 @@ noise at KERN_WARNING, this patch set the priority level appriopriately
 for unleveled printks()s. This should be useful to folks that look at
 dmesg warnings closely.
 
-Changed these messages to pr_info. But might be more appropriate as
-pr_debug.
-
 Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
 ---
- drivers/base/power/trace.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ kernel/taskstats.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/base/power/trace.c b/drivers/base/power/trace.c
-index 9f4258d..c80e138 100644
---- a/drivers/base/power/trace.c
-+++ b/drivers/base/power/trace.c
-@@ -112,7 +112,7 @@ static unsigned int read_magic_time(void)
- 	unsigned int val;
+diff --git a/kernel/taskstats.c b/kernel/taskstats.c
+index 3971c6b..9ffea36 100644
+--- a/kernel/taskstats.c
++++ b/kernel/taskstats.c
+@@ -685,7 +685,7 @@ static int __init taskstats_init(void)
+ 		goto err_cgroup_ops;
  
- 	get_rtc_time(&time);
--	printk("Time: %2d:%02d:%02d  Date: %02d/%02d/%02d\n",
-+	pr_info("Time: %2d:%02d:%02d  Date: %02d/%02d/%02d\n",
- 		time.tm_hour, time.tm_min, time.tm_sec,
- 		time.tm_mon + 1, time.tm_mday, time.tm_year % 100);
- 	val = time.tm_year;				/* 100 years */
-@@ -179,7 +179,7 @@ static int show_file_hash(unsigned int value)
- 		unsigned int hash = hash_string(lineno, file, FILEHASH);
- 		if (hash != value)
- 			continue;
--		printk("  hash matches %s:%u\n", file, lineno);
-+		pr_info("  hash matches %s:%u\n", file, lineno);
- 		match++;
- 	}
- 	return match;
-@@ -255,7 +255,7 @@ static int late_resume_init(void)
- 	val = val / FILEHASH;
- 	dev = val /* % DEVHASH */;
- 
--	printk("  Magic number: %d:%d:%d\n", user, file, dev);
-+	pr_info("  Magic number: %d:%d:%d\n", user, file, dev);
- 	show_file_hash(file);
- 	show_dev_hash(dev);
+ 	family_registered = 1;
+-	printk("registered taskstats version %d\n", TASKSTATS_GENL_VERSION);
++	pr_info("registered taskstats version %d\n", TASKSTATS_GENL_VERSION);
  	return 0;
+ err_cgroup_ops:
+ 	genl_unregister_ops(&family, &taskstats_ops);
 -- 
 1.7.3.1
 
