@@ -1,17 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab1AZS3J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 13:29:09 -0500
-Received: from [123.122.106.155] ([123.122.106.155]:38827 "EHLO enigma.site"
+	id S1754119Ab1AZS3n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 13:29:43 -0500
+Received: from [123.122.106.155] ([123.122.106.155]:38837 "EHLO enigma.site"
 	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753537Ab1AZS3G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 13:29:06 -0500
+	id S1754049Ab1AZS3J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 13:29:09 -0500
 From: Coly Li <bosong.ly@taobao.com>
 To: linux-kernel@vger.kernel.org
-Cc: Coly Li <bosong.ly@taobao.com>, Greg KH <gregkh@suse.de>
-Subject: [PATCH 3/6] dma: use BUG_ON correctly in mv_xor.c
-Date: Thu, 27 Jan 2011 02:54:52 +0800
-Message-Id: <1296068095-16988-4-git-send-email-bosong.ly@taobao.com>
+Cc: Coly Li <bosong.ly@taobao.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Greg KH <gregkh@suse.de>
+Subject: [PATCH 6/6] scsi_lib.c: use BUG_ON correctly
+Date: Thu, 27 Jan 2011 02:54:55 +0800
+Message-Id: <1296068095-16988-7-git-send-email-bosong.ly@taobao.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1296068095-16988-1-git-send-email-bosong.ly@taobao.com>
 References: <1296068095-16988-1-git-send-email-bosong.ly@taobao.com>
@@ -19,45 +21,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch mekes BUG_ON() usage correct in drivers/dma/mv_xor.c
+This patch mekes BUG_ON() usage correct in drivers/scsi/scsi_lib.c
 
 Signed-off-by: Coly Li <bosong.ly@taobao.com>
+Cc: Martin K. Petersen<martin.petersen@oracle.com>
 Cc: Greg KH <gregkh@suse.de>
 ---
- drivers/dma/mv_xor.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/scsi/scsi_lib.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/dma/mv_xor.c b/drivers/dma/mv_xor.c
-index a25f5f6..954e334 100644
---- a/drivers/dma/mv_xor.c
-+++ b/drivers/dma/mv_xor.c
-@@ -671,7 +671,7 @@ mv_xor_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
- 	if (unlikely(len < MV_XOR_MIN_BYTE_COUNT))
- 		return NULL;
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 9045c52..7790a51 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -1002,8 +1002,8 @@ int scsi_init_io(struct scsi_cmnd *cmd, gfp_t gfp_mask)
  
--	BUG_ON(unlikely(len > MV_XOR_MAX_BYTE_COUNT));
-+	BUG_ON(len > MV_XOR_MAX_BYTE_COUNT);
+ 		count = blk_rq_map_integrity_sg(rq->q, rq->bio,
+ 						prot_sdb->table.sgl);
+-		BUG_ON(unlikely(count > ivecs));
+-		BUG_ON(unlikely(count > queue_max_integrity_segments(rq->q)));
++		BUG_ON(count > ivecs);
++		BUG_ON(count > queue_max_integrity_segments(rq->q));
  
- 	spin_lock_bh(&mv_chan->lock);
- 	slot_cnt = mv_chan_memcpy_slot_count(len);
-@@ -710,7 +710,7 @@ mv_xor_prep_dma_memset(struct dma_chan *chan, dma_addr_t dest, int value,
- 	if (unlikely(len < MV_XOR_MIN_BYTE_COUNT))
- 		return NULL;
- 
--	BUG_ON(unlikely(len > MV_XOR_MAX_BYTE_COUNT));
-+	BUG_ON(len > MV_XOR_MAX_BYTE_COUNT);
- 
- 	spin_lock_bh(&mv_chan->lock);
- 	slot_cnt = mv_chan_memset_slot_count(len);
-@@ -744,7 +744,7 @@ mv_xor_prep_dma_xor(struct dma_chan *chan, dma_addr_t dest, dma_addr_t *src,
- 	if (unlikely(len < MV_XOR_MIN_BYTE_COUNT))
- 		return NULL;
- 
--	BUG_ON(unlikely(len > MV_XOR_MAX_BYTE_COUNT));
-+	BUG_ON(len > MV_XOR_MAX_BYTE_COUNT);
- 
- 	dev_dbg(mv_chan->device->common.dev,
- 		"%s src_cnt: %d len: dest %x %u flags: %ld\n",
+ 		cmd->prot_sdb = prot_sdb;
+ 		cmd->prot_sdb->table.nents = count;
 -- 
 1.7.3.2
 
