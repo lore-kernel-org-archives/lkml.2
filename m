@@ -1,100 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752977Ab1AZN32 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 08:29:28 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:42794 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751807Ab1AZN30 convert rfc822-to-8bit (ORCPT
+	id S1753267Ab1AZNbG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 08:31:06 -0500
+Received: from blade3.isti.cnr.it ([194.119.192.19]:55148 "EHLO
+	BLADE3.ISTI.CNR.IT" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752732Ab1AZNbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 08:29:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=kiWpfhe2oHMNU2tXaSV13sOnFamC56ZEh0XX3P06QXU4Ppw/EKSXf4NM0Acmkq4QFo
-         tgzXbY/7BNOLbo2oNVyw==
-MIME-Version: 1.0
-In-Reply-To: <20110126120646.GA20064@elte.hu>
-References: <201101062000.p06K0ESw011195@hera.kernel.org>
-	<20110126113740.GA13911@elte.hu>
-	<AANLkTintgqOkwo=WRH_9vGwGgXf0XrfU2e++daUOOG=i@mail.gmail.com>
-	<20110126120646.GA20064@elte.hu>
-Date: Wed, 26 Jan 2011 14:29:21 +0100
-Message-ID: <AANLkTikjEGMV=ZwiUmFxmQaELG525ntd=Xi8_EXFT9J7@mail.gmail.com>
-Subject: Re: perf, x86: Provide a PEBS capable cycle event
-From: Stephane Eranian <eranian@google.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Wed, 26 Jan 2011 08:31:04 -0500
+Date: Wed, 26 Jan 2011 14:29:54 +0100
+From: torn5 <torn5@shiftmail.org>
+Subject: Re: [PATCH 3/3] ext4: Deprecate barrier= and nobarrier mount options
+In-reply-to: <20110126104734.GA23245@quack.suse.cz>
+To: Jan Kara <jack@suse.cz>
+Cc: Tejun Heo <tj@kernel.org>, "Darrick J. Wong" <djwong@us.ibm.com>,
+        Vivek Goyal <vgoyal@redhat.com>, axboe@kernel.dk, tytso@mit.edu,
+        shli@kernel.org, neilb@suse.de, adilger.kernel@dilger.ca,
+        snitzer@redhat.com, linux-kernel@vger.kernel.org, kmannth@us.ibm.com,
+        cmm@us.ibm.com, linux-ext4@vger.kernel.org, rwheeler@redhat.com,
+        hch@lst.de, josef@redhat.com
+Message-id: <4D4021D2.2000407@shiftmail.org>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13)
+ Gecko/20101208 Thunderbird/3.1.7
+X-INSM-ip-source: 155.253.6.254 Auth Done
+References: <20110126071200.GE32261@tux1.beaverton.ibm.com>
+ <20110126072329.GK27190@tux1.beaverton.ibm.com>
+ <20110126093632.GB12520@htj.dyndns.org> <20110126104734.GA23245@quack.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 26, 2011 at 1:06 PM, Ingo Molnar <mingo@elte.hu> wrote:
+On 01/26/2011 11:47 AM, Jan Kara wrote:
+>   Hello,
 >
-> * Stephane Eranian <eranian@google.com> wrote:
->
->> On Wed, Jan 26, 2011 at 12:37 PM, Ingo Molnar <mingo@elte.hu> wrote:
->> >
->> > * Linux Kernel Mailing List <linux-kernel@vger.kernel.org> wrote:
->> >
->> >> Gitweb:     http://git.kernel.org/linus/7639dae0ca11038286bbbcda05f2bef601c1eb8d
->> >> Commit:     7639dae0ca11038286bbbcda05f2bef601c1eb8d
->> >> Parent:     abe43400579d5de0078c2d3a760e6598e183f871
->> >> Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
->> >> AuthorDate: Tue Dec 14 21:26:40 2010 +0100
->> >> Committer:  Ingo Molnar <mingo@elte.hu>
->> >> CommitDate: Thu Dec 16 11:36:44 2010 +0100
->> >>
->> >>     perf, x86: Provide a PEBS capable cycle event
->> >>
->> >>     Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
->> >>     LKML-Reference: <new-submission>
->> >>     Signed-off-by: Ingo Molnar <mingo@elte.hu>
->> >> ---
->> >>  arch/x86/kernel/cpu/perf_event_intel.c |   26 ++++++++++++++++++++++++++
->> >>  1 files changed, 26 insertions(+), 0 deletions(-)
->> >
->> > btw., precise profiling via PEBS:
->> >
->> >  perf record -e cycles:p ...
->> >
->> > works pretty nicely now on Nehalem CPUs and later.
->> >
->> The problem is that cycles:p is not equivalent to cycles in terms of how
->> cycles are counted. cycles counts only unhalted cycles. cycles:p counts
->> ALL cycles, event when the CPU is in halted state.
->
-> That's not really an issue in practice: it at most can cause a bit larger value for:
->
->     2.38%       swapper  [kernel.kallsyms]      [k] mwait_idle_with_hints                             ▮
->
-> Which entry exists with regular cycles event _anyway_, because every irq entry ends
-> up there.
->
+> On Wed 26-01-11 10:36:32, Tejun Heo wrote:
+>   Ted should have a final word about this but I believe it's possible to
+> deprecate the mount options. Maybe with some transition period where
+> deprecation message is shown but the option actually still works.
 
-There is a difference in interpretation. Because now when you get
-samples in those
-idle routines, you cannot tell whether it is because you actually
-execute code there
-or because you were halted (not executing) and now sampling has
-altered the behavior
-of the system in that you wake up from halted state to service a PMU interrupt.
++1 for this from a user.
 
-> So the difference is that this entry is now more accurate and correctly displays the
-> amount of time spent in idle.
->
-> Is there any reason why we should not regard this as good thing, as a feature in
-> essence?
->
-> Thanks,
->
->        Ingo
->
+I'd like to see this moved to blockdev sysfs in the long term.
+
+During the transition period there could be both the old barrier mount
+option (with a deprecated warning upon use) and the sysfs knobs.
+
+Flush and FUA would be delivered to disk only if both the barriers are
+enabled in the mount options (which is also the default) and the sysfs
+are at "noignore" value. Alternatively, the barrier mount option could
+affect the sysfs knobs values upon mount. Eventually the barrier mount
+option would be removed becoming always-on, leaving only the sysfs knobs.
