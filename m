@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab1AZT3S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 14:29:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8414 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753437Ab1AZT3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 14:29:17 -0500
-Message-ID: <4D4075E5.70401@redhat.com>
-Date: Wed, 26 Jan 2011 17:28:37 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Gerd Hoffmann <kraxel@redhat.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mark Lord <kernel@teksavvy.com>,
+	id S1753974Ab1AZT34 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 14:29:56 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:40845 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753392Ab1AZT3y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 14:29:54 -0500
+Subject: Re: [RFC][PATCH 26/25] mm, arch: Convert ia64, arm, sh to generic
+ tlb
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils
- ?
-References: <20110125205453.GA19896@core.coreip.homeip.net> <4D3F4804.6070508@redhat.com> <4D3F4D11.9040302@teksavvy.com> <20110125232914.GA20130@core.coreip.homeip.net> <20110126020003.GA23085@core.coreip.homeip.net> <4D4004F9.6090200@redhat.com> <4D401CC5.4020000@redhat.com> <4D402D35.4090206@redhat.com> <20110126165132.GC29163@core.coreip.homeip.net> <4D4059E5.7050300@redhat.com> <20110126182415.GB29268@core.coreip.homeip.net> <4D4072F9.5060206@redhat.com>
-In-Reply-To: <4D4072F9.5060206@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+In-Reply-To: <20110126191901.GA3434@merkur.ravnborg.org>
+References: <20110125173111.720927511@chello.nl>
+	 <1296047601.28776.1162.camel@laptop>
+	 <20110126191901.GA3434@merkur.ravnborg.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 26 Jan 2011 20:30:18 +0100
+Message-ID: <1296070218.15234.9.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 26-01-2011 17:16, Gerd Hoffmann escreveu:
->   Hi,
+On Wed, 2011-01-26 at 20:19 +0100, Sam Ravnborg wrote:
 > 
->>>> The check should be against concrete version (0x10000 in this case).
-
-Dmitry,
-
-Ok, now I see what you're meaning. Yeah, an absolute version check like
-what you've proposed is better than a relative version check.
-
+> /* Users of the generic TLB shootdown code must declare this storage space. */
+> DECLARE_PER_CPU(struct mmu_gather, mmu_gathers);
 > 
-> Stepping back: what does the version mean?
+> If I understand this correct then this should read:
 > 
-> 0x10000 == 1.0 ?
-> 0x10001 == 1.1 ?
+> /*
+>  * Users of the generic TLB shootdown
+>  * must define mmu_gathers like this:
+>  * DEFINE_PER_CPU(struct mmu_gather, mmu_gathers);
+>  */
 > 
-> Can I expect the interface stay backward compatible if only the minor revision changes, i.e. makes it sense to accept 1.x?
+> The main difference is "declare" => "define".
 > 
-> Will the major revision ever change?  Does it make sense to check the version at all?
+> If you already updated this in you serie then please ignore this mail. 
 
-Gerd,
+This series rewrites mmu_gather to remove this per-cpu data :-), see
+patch #10 which removes the DEFINE_PER_CPU()s after all users are dead.
 
-Dmitry will likely have a better answer for me, but I think you should
-just remove the test. By principle, the interface should always be 
-backward compatible (if it isn't, then we have a regression to fix). 
-You may expect newer features on newer versions, so I understand 
-that the version check is there to just allow userspace to enable 
-new code for newer evdev protocol revisions.
-
-Thanks,
-Mauro
