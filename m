@@ -1,277 +1,724 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045Ab1AZHU3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 02:20:29 -0500
-Received: from hera.kernel.org ([140.211.167.34]:53237 "EHLO hera.kernel.org"
+	id S1753047Ab1AZHU4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 02:20:56 -0500
+Received: from hera.kernel.org ([140.211.167.34]:53255 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752487Ab1AZHU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 02:20:27 -0500
-Date: Wed, 26 Jan 2011 07:19:52 GMT
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
-        peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
-        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <new-submission>
-References: <new-submission>
+	id S1751789Ab1AZHUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 02:20:55 -0500
+Date: Wed, 26 Jan 2011 07:20:17 GMT
+From: tip-bot for Frederic Weisbecker <fweisbec@gmail.com>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
+        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, fweisbec@gmail.com,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1294977121-5700-2-git-send-email-fweisbec@gmail.com>
+References: <1294977121-5700-2-git-send-email-fweisbec@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf test: Add test for the evlist mmap routines
-Message-ID: <tip-de5fa3a8a05cd60f59622e88cfeb90416760d78e@git.kernel.org>
-Git-Commit-ID: de5fa3a8a05cd60f59622e88cfeb90416760d78e
+Subject: [tip:perf/core] perf callchain: Feed callchains into a cursor
+Message-ID: <tip-1b3a0e9592ebf174af934b3908a2bf6a6fa86169@git.kernel.org>
+Git-Commit-ID: 1b3a0e9592ebf174af934b3908a2bf6a6fa86169
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 26 Jan 2011 07:19:53 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 26 Jan 2011 07:20:19 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  de5fa3a8a05cd60f59622e88cfeb90416760d78e
-Gitweb:     http://git.kernel.org/tip/de5fa3a8a05cd60f59622e88cfeb90416760d78e
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Sat, 15 Jan 2011 10:42:46 -0200
+Commit-ID:  1b3a0e9592ebf174af934b3908a2bf6a6fa86169
+Gitweb:     http://git.kernel.org/tip/1b3a0e9592ebf174af934b3908a2bf6a6fa86169
+Author:     Frederic Weisbecker <fweisbec@gmail.com>
+AuthorDate: Fri, 14 Jan 2011 04:51:58 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Sat, 22 Jan 2011 19:56:31 -0200
 
-perf test: Add test for the evlist mmap routines
+perf callchain: Feed callchains into a cursor
 
-This test will generate random numbers of calls to some getpid syscalls,
-then establish an mmap for a group of events that are created to monitor
-these syscalls.
+The callchains are fed with an array of a fixed size.
+As a result we iterate over each callchains three times:
 
-It will receive the events, using mmap, use its PERF_SAMPLE_ID generated
-sample.id field to map back to its respective perf_evsel instance.
+- 1st to resolve symbols
+- 2nd to filter out context boundaries
+- 3rd for the insertion into the tree
 
-Then it checks if the number of syscalls reported as perf events by the
-kernel corresponds to the number of syscalls made.
+This also involves some pairs of memory allocation/deallocation
+everytime we insert a callchain, for the filtered out array of
+addresses and for the array of symbols that comes along.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Instead, feed the callchains through a linked list with persistent
+allocations. It brings several pros like:
+
+- Merge the 1st and 2nd iterations in one. That was possible before
+but in a way that would involve allocating an array slightly taller
+than necessary because we don't know in advance the number of context
+boundaries to filter out.
+
+- Much lesser allocations/deallocations. The linked list keeps
+persistent empty entries for the next usages and is extendable at
+will.
+
+- Makes it easier for multiple sources of callchains to feed a
+stacktrace together. This is deemed to pave the way for cfi based
+callchains wherein traditional frame pointer based kernel
+stacktraces will precede cfi based user ones, producing an overall
+callchain which size is hardly predictable. This requirement
+makes the static array obsolete and makes a linked list based
+iterator a much more flexible fit.
+
+Basic testing on a big perf file containing callchains (~ 176 MB)
+has shown a throughput gain of about 11% with perf report.
+
 Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1294977121-5700-2-git-send-email-fweisbec@gmail.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-test.c |  171 ++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 169 insertions(+), 2 deletions(-)
+ tools/perf/builtin-report.c |   25 +++---
+ tools/perf/util/callchain.c |  204 +++++++++++++++++++++----------------------
+ tools/perf/util/callchain.h |   66 +++++++++++++-
+ tools/perf/util/hist.c      |   13 ++-
+ tools/perf/util/hist.h      |    2 +
+ tools/perf/util/session.c   |   22 +++--
+ tools/perf/util/session.h   |   11 ++-
+ 7 files changed, 204 insertions(+), 139 deletions(-)
 
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 5a50e47..4fd3453 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -7,7 +7,9 @@
- 
- #include "util/cache.h"
- #include "util/debug.h"
-+#include "util/evlist.h"
- #include "util/parse-options.h"
-+#include "util/parse-events.h"
- #include "util/session.h"
- #include "util/symbol.h"
- #include "util/thread.h"
-@@ -238,14 +240,14 @@ out:
- #include "util/evsel.h"
- #include <sys/types.h>
- 
--static int trace_event__id(const char *event_name)
-+static int trace_event__id(const char *evname)
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index c27e31f..c95599a 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -81,18 +81,17 @@ static int perf_session__add_hist_entry(struct perf_session *self,
+ 					struct addr_location *al,
+ 					struct sample_data *data)
  {
- 	char *filename;
- 	int err = -1, fd;
+-	struct map_symbol *syms = NULL;
+ 	struct symbol *parent = NULL;
+-	int err = -ENOMEM;
++	int err = 0;
+ 	struct hist_entry *he;
+ 	struct hists *hists;
+ 	struct perf_event_attr *attr;
  
- 	if (asprintf(&filename,
- 		     "/sys/kernel/debug/tracing/events/syscalls/%s/id",
--		     event_name) < 0)
-+		     evname) < 0)
- 		return -1;
+ 	if ((sort__has_parent || symbol_conf.use_callchain) && data->callchain) {
+-		syms = perf_session__resolve_callchain(self, al->thread,
+-						       data->callchain, &parent);
+-		if (syms == NULL)
+-			return -ENOMEM;
++		err = perf_session__resolve_callchain(self, al->thread,
++						      data->callchain, &parent);
++		if (err)
++			return err;
+ 	}
  
- 	fd = open(filename, O_RDONLY);
-@@ -439,6 +441,167 @@ out_thread_map_delete:
+ 	attr = perf_header__find_attr(data->id, &self->header);
+@@ -101,16 +100,17 @@ static int perf_session__add_hist_entry(struct perf_session *self,
+ 	else
+ 		hists = perf_session__hists_findnew(self, data->id, 0, 0);
+ 	if (hists == NULL)
+-		goto out_free_syms;
++		return -ENOMEM;
++
+ 	he = __hists__add_entry(hists, al, parent, data->period);
+ 	if (he == NULL)
+-		goto out_free_syms;
+-	err = 0;
++		return -ENOMEM;
++
+ 	if (symbol_conf.use_callchain) {
+-		err = callchain_append(he->callchain, data->callchain, syms,
++		err = callchain_append(he->callchain, &self->callchain_cursor,
+ 				       data->period);
+ 		if (err)
+-			goto out_free_syms;
++			return err;
+ 	}
+ 	/*
+ 	 * Only in the newt browser we are doing integrated annotation,
+@@ -119,8 +119,7 @@ static int perf_session__add_hist_entry(struct perf_session *self,
+ 	 */
+ 	if (use_browser > 0)
+ 		err = hist_entry__inc_addr_samples(he, al->addr);
+-out_free_syms:
+-	free(syms);
++
  	return err;
  }
  
-+/*
-+ * This test will generate random numbers of calls to some getpid syscalls,
-+ * then establish an mmap for a group of events that are created to monitor
-+ * the syscalls.
-+ *
-+ * It will receive the events, using mmap, use its PERF_SAMPLE_ID generated
-+ * sample.id field to map back to its respective perf_evsel instance.
-+ *
-+ * Then it checks if the number of syscalls reported as perf events by
-+ * the kernel corresponds to the number of syscalls made.
-+ */
-+static int test__basic_mmap(void)
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index e12d539..53a49e0 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2009-2010, Frederic Weisbecker <fweisbec@gmail.com>
++ * Copyright (C) 2009-2011, Frederic Weisbecker <fweisbec@gmail.com>
+  *
+  * Handle the callchains from the stream in an ad-hoc radix tree and then
+  * sort them in an rbtree.
+@@ -195,26 +195,21 @@ create_child(struct callchain_node *parent, bool inherit_children)
+ }
+ 
+ 
+-struct resolved_ip {
+-	u64		  ip;
+-	struct map_symbol ms;
+-};
+-
+-struct resolved_chain {
+-	u64			nr;
+-	struct resolved_ip	ips[0];
+-};
+-
+-
+ /*
+  * Fill the node with callchain values
+  */
+ static void
+-fill_node(struct callchain_node *node, struct resolved_chain *chain, int start)
++fill_node(struct callchain_node *node, struct callchain_cursor *cursor)
+ {
+-	unsigned int i;
++	struct callchain_cursor_node *cursor_node;
++
++	node->val_nr = cursor->nr - cursor->pos;
++	if (!node->val_nr)
++		pr_warning("Warning: empty node in callchain tree\n");
+ 
+-	for (i = start; i < chain->nr; i++) {
++	cursor_node = callchain_cursor_current(cursor);
++
++	while (cursor_node) {
+ 		struct callchain_list *call;
+ 
+ 		call = zalloc(sizeof(*call));
+@@ -222,23 +217,25 @@ fill_node(struct callchain_node *node, struct resolved_chain *chain, int start)
+ 			perror("not enough memory for the code path tree");
+ 			return;
+ 		}
+-		call->ip = chain->ips[i].ip;
+-		call->ms = chain->ips[i].ms;
++		call->ip = cursor_node->ip;
++		call->ms.sym = cursor_node->sym;
++		call->ms.map = cursor_node->map;
+ 		list_add_tail(&call->list, &node->val);
++
++		callchain_cursor_advance(cursor);
++		cursor_node = callchain_cursor_current(cursor);
+ 	}
+-	node->val_nr = chain->nr - start;
+-	if (!node->val_nr)
+-		pr_warning("Warning: empty node in callchain tree\n");
+ }
+ 
+ static void
+-add_child(struct callchain_node *parent, struct resolved_chain *chain,
+-	  int start, u64 period)
++add_child(struct callchain_node *parent,
++	  struct callchain_cursor *cursor,
++	  u64 period)
+ {
+ 	struct callchain_node *new;
+ 
+ 	new = create_child(parent, false);
+-	fill_node(new, chain, start);
++	fill_node(new, cursor);
+ 
+ 	new->children_hit = 0;
+ 	new->hit = period;
+@@ -250,9 +247,10 @@ add_child(struct callchain_node *parent, struct resolved_chain *chain,
+  * Then create another child to host the given callchain of new branch
+  */
+ static void
+-split_add_child(struct callchain_node *parent, struct resolved_chain *chain,
+-		struct callchain_list *to_split, int idx_parents, int idx_local,
+-		u64 period)
++split_add_child(struct callchain_node *parent,
++		struct callchain_cursor *cursor,
++		struct callchain_list *to_split,
++		u64 idx_parents, u64 idx_local, u64 period)
+ {
+ 	struct callchain_node *new;
+ 	struct list_head *old_tail;
+@@ -277,9 +275,9 @@ split_add_child(struct callchain_node *parent, struct resolved_chain *chain,
+ 	parent->val_nr = idx_local;
+ 
+ 	/* create a new child for the new branch if any */
+-	if (idx_total < chain->nr) {
++	if (idx_total < cursor->nr) {
+ 		parent->hit = 0;
+-		add_child(parent, chain, idx_total, period);
++		add_child(parent, cursor, period);
+ 		parent->children_hit += period;
+ 	} else {
+ 		parent->hit = period;
+@@ -287,36 +285,41 @@ split_add_child(struct callchain_node *parent, struct resolved_chain *chain,
+ }
+ 
+ static int
+-append_chain(struct callchain_node *root, struct resolved_chain *chain,
+-	     unsigned int start, u64 period);
++append_chain(struct callchain_node *root,
++	     struct callchain_cursor *cursor,
++	     u64 period);
+ 
+ static void
+-append_chain_children(struct callchain_node *root, struct resolved_chain *chain,
+-		      unsigned int start, u64 period)
++append_chain_children(struct callchain_node *root,
++		      struct callchain_cursor *cursor,
++		      u64 period)
+ {
+ 	struct callchain_node *rnode;
+ 
+ 	/* lookup in childrens */
+ 	chain_for_each_child(rnode, root) {
+-		unsigned int ret = append_chain(rnode, chain, start, period);
++		unsigned int ret = append_chain(rnode, cursor, period);
+ 
+ 		if (!ret)
+ 			goto inc_children_hit;
+ 	}
+ 	/* nothing in children, add to the current node */
+-	add_child(root, chain, start, period);
++	add_child(root, cursor, period);
+ 
+ inc_children_hit:
+ 	root->children_hit += period;
+ }
+ 
+ static int
+-append_chain(struct callchain_node *root, struct resolved_chain *chain,
+-	     unsigned int start, u64 period)
++append_chain(struct callchain_node *root,
++	     struct callchain_cursor *cursor,
++	     u64 period)
+ {
++	struct callchain_cursor_node *curr_snap = cursor->curr;
+ 	struct callchain_list *cnode;
+-	unsigned int i = start;
++	u64 start = cursor->pos;
+ 	bool found = false;
++	u64 matches;
+ 
+ 	/*
+ 	 * Lookup in the current node
+@@ -324,114 +327,95 @@ append_chain(struct callchain_node *root, struct resolved_chain *chain,
+ 	 * anywhere inside a function.
+ 	 */
+ 	list_for_each_entry(cnode, &root->val, list) {
++		struct callchain_cursor_node *node;
+ 		struct symbol *sym;
+ 
+-		if (i == chain->nr)
++		node = callchain_cursor_current(cursor);
++		if (!node)
+ 			break;
+ 
+-		sym = chain->ips[i].ms.sym;
++		sym = node->sym;
+ 
+ 		if (cnode->ms.sym && sym) {
+ 			if (cnode->ms.sym->start != sym->start)
+ 				break;
+-		} else if (cnode->ip != chain->ips[i].ip)
++		} else if (cnode->ip != node->ip)
+ 			break;
+ 
+ 		if (!found)
+ 			found = true;
+-		i++;
++
++		callchain_cursor_advance(cursor);
+ 	}
+ 
+ 	/* matches not, relay on the parent */
+-	if (!found)
++	if (!found) {
++		cursor->curr = curr_snap;
++		cursor->pos = start;
+ 		return -1;
++	}
++
++	matches = cursor->pos - start;
+ 
+ 	/* we match only a part of the node. Split it and add the new chain */
+-	if (i - start < root->val_nr) {
+-		split_add_child(root, chain, cnode, start, i - start, period);
++	if (matches < root->val_nr) {
++		split_add_child(root, cursor, cnode, start, matches, period);
+ 		return 0;
+ 	}
+ 
+ 	/* we match 100% of the path, increment the hit */
+-	if (i - start == root->val_nr && i == chain->nr) {
++	if (matches == root->val_nr && cursor->pos == cursor->nr) {
+ 		root->hit += period;
+ 		return 0;
+ 	}
+ 
+ 	/* We match the node and still have a part remaining */
+-	append_chain_children(root, chain, i, period);
++	append_chain_children(root, cursor, period);
+ 
+ 	return 0;
+ }
+ 
+-static void filter_context(struct ip_callchain *old, struct resolved_chain *new,
+-			   struct map_symbol *syms)
+-{
+-	int i, j = 0;
+-
+-	for (i = 0; i < (int)old->nr; i++) {
+-		if (old->ips[i] >= PERF_CONTEXT_MAX)
+-			continue;
+-
+-		new->ips[j].ip = old->ips[i];
+-		new->ips[j].ms = syms[i];
+-		j++;
+-	}
+-
+-	new->nr = j;
+-}
+-
+-
+-int callchain_append(struct callchain_root *root, struct ip_callchain *chain,
+-		     struct map_symbol *syms, u64 period)
++int callchain_append(struct callchain_root *root,
++		     struct callchain_cursor *cursor,
++		     u64 period)
+ {
+-	struct resolved_chain *filtered;
+-
+-	if (!chain->nr)
++	if (!cursor->nr)
+ 		return 0;
+ 
+-	filtered = zalloc(sizeof(*filtered) +
+-			  chain->nr * sizeof(struct resolved_ip));
+-	if (!filtered)
+-		return -ENOMEM;
+-
+-	filter_context(chain, filtered, syms);
+-
+-	if (!filtered->nr)
+-		goto end;
++	callchain_cursor_commit(cursor);
+ 
+-	append_chain_children(&root->node, filtered, 0, period);
++	append_chain_children(&root->node, cursor, period);
+ 
+-	if (filtered->nr > root->max_depth)
+-		root->max_depth = filtered->nr;
+-end:
+-	free(filtered);
++	if (cursor->nr > root->max_depth)
++		root->max_depth = cursor->nr;
+ 
+ 	return 0;
+ }
+ 
+ static int
+-merge_chain_branch(struct callchain_node *dst, struct callchain_node *src,
+-		   struct resolved_chain *chain)
++merge_chain_branch(struct callchain_cursor *cursor,
++		   struct callchain_node *dst, struct callchain_node *src)
+ {
++	struct callchain_cursor_node **old_last = cursor->last;
+ 	struct callchain_node *child, *next_child;
+ 	struct callchain_list *list, *next_list;
+-	int old_pos = chain->nr;
++	int old_pos = cursor->nr;
+ 	int err = 0;
+ 
+ 	list_for_each_entry_safe(list, next_list, &src->val, list) {
+-		chain->ips[chain->nr].ip = list->ip;
+-		chain->ips[chain->nr].ms = list->ms;
+-		chain->nr++;
++		callchain_cursor_append(cursor, list->ip,
++					list->ms.map, list->ms.sym);
+ 		list_del(&list->list);
+ 		free(list);
+ 	}
+ 
+-	if (src->hit)
+-		append_chain_children(dst, chain, 0, src->hit);
++	if (src->hit) {
++		callchain_cursor_commit(cursor);
++		append_chain_children(dst, cursor, src->hit);
++	}
+ 
+ 	chain_for_each_child_safe(child, next_child, src) {
+-		err = merge_chain_branch(dst, child, chain);
++		err = merge_chain_branch(cursor, dst, child);
+ 		if (err)
+ 			break;
+ 
+@@ -439,26 +423,38 @@ merge_chain_branch(struct callchain_node *dst, struct callchain_node *src,
+ 		free(child);
+ 	}
+ 
+-	chain->nr = old_pos;
++	cursor->nr = old_pos;
++	cursor->last = old_last;
+ 
+ 	return err;
+ }
+ 
+-int callchain_merge(struct callchain_root *dst, struct callchain_root *src)
++int callchain_merge(struct callchain_cursor *cursor,
++		    struct callchain_root *dst, struct callchain_root *src)
 +{
-+	int err = -1;
-+	event_t *event;
-+	struct thread_map *threads;
-+	struct perf_session session;
-+	struct cpu_map *cpus;
-+	struct perf_evlist *evlist;
-+	struct perf_event_attr attr = {
-+		.type		= PERF_TYPE_TRACEPOINT,
-+		.read_format	= PERF_FORMAT_ID,
-+		.sample_type	= PERF_SAMPLE_ID,
-+		.watermark	= 0,
-+	};
-+	cpu_set_t cpu_set;
-+	const char *syscall_names[] = { "getsid", "getppid", "getpgrp",
-+					"getpgid", };
-+	pid_t (*syscalls[])(void) = { (void *)getsid, getppid, getpgrp,
-+				      (void*)getpgid };
-+#define nsyscalls ARRAY_SIZE(syscall_names)
-+	int ids[nsyscalls];
-+	unsigned int nr_events[nsyscalls],
-+		     expected_nr_events[nsyscalls], i, j;
-+	struct perf_evsel *evsels[nsyscalls], *evsel;
-+
-+	for (i = 0; i < nsyscalls; ++i) {
-+		char name[64];
-+
-+		snprintf(name, sizeof(name), "sys_enter_%s", syscall_names[i]);
-+		ids[i] = trace_event__id(name);
-+		if (ids[i] < 0) {
-+			pr_debug("Is debugfs mounted on /sys/kernel/debug?\n");
-+			return -1;
-+		}
-+		nr_events[i] = 0;
-+		expected_nr_events[i] = random() % 257;
-+	}
-+
-+	threads = thread_map__new(-1, getpid());
-+	if (threads == NULL) {
-+		pr_debug("thread_map__new\n");
-+		return -1;
-+	}
-+
-+	cpus = cpu_map__new(NULL);
-+	if (threads == NULL) {
-+		pr_debug("thread_map__new\n");
-+		goto out_free_threads;
-+	}
-+
-+	CPU_ZERO(&cpu_set);
-+	CPU_SET(cpus->map[0], &cpu_set);
-+	sched_setaffinity(0, sizeof(cpu_set), &cpu_set);
-+	if (sched_setaffinity(0, sizeof(cpu_set), &cpu_set) < 0) {
-+		pr_debug("sched_setaffinity() failed on CPU %d: %s ",
-+			 cpus->map[0], strerror(errno));
-+		goto out_free_cpus;
-+	}
-+
-+	evlist = perf_evlist__new();
-+	if (threads == NULL) {
-+		pr_debug("perf_evlist__new\n");
-+		goto out_free_cpus;
-+	}
-+
-+	/* anonymous union fields, can't be initialized above */
-+	attr.wakeup_events = 1;
-+	attr.sample_period = 1;
-+
-+	/*
-+ 	 * FIXME: use evsel->attr.sample_type in event__parse_sample.
-+ 	 * 	  This will nicely remove the requirement that we have
-+ 	 * 	  all the events with the same sample_type.
-+ 	 */
-+	session.sample_type = attr.sample_type;
-+
-+	for (i = 0; i < nsyscalls; ++i) {
-+		attr.config = ids[i];
-+		evsels[i] = perf_evsel__new(&attr, i);
-+		if (evsels[i] == NULL) {
-+			pr_debug("perf_evsel__new\n");
-+			goto out_free_evlist;
-+		}
-+
-+		perf_evlist__add(evlist, evsels[i]);
-+
-+		if (perf_evsel__open(evsels[i], cpus, threads, false, false) < 0) {
-+			pr_debug("failed to open counter: %s, "
-+				 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
-+				 strerror(errno));
-+			goto out_close_fd;
-+		}
-+	}
-+
-+	if (perf_evlist__mmap(evlist, cpus, threads, 128, true) < 0) {
-+		pr_debug("failed to mmap events: %d (%s)\n", errno,
-+			 strerror(errno));
-+		goto out_close_fd;
-+	}
-+
-+	for (i = 0; i < nsyscalls; ++i)
-+		for (j = 0; j < expected_nr_events[i]; ++j) {
-+			int foo = syscalls[i]();
-+			++foo;
-+		}
-+
-+	while ((event = perf_evlist__read_on_cpu(evlist, 0)) != NULL) {
-+		struct sample_data sample;
-+
-+		if (event->header.type != PERF_RECORD_SAMPLE) {
-+			pr_debug("unexpected %s event\n",
-+				 event__get_event_name(event->header.type));
-+			goto out_munmap;
-+		}
-+
-+		event__parse_sample(event, &session, &sample);
-+		evsel = perf_evlist__id2evsel(evlist, sample.id);
-+		if (evsel == NULL) {
-+			pr_debug("event with id %" PRIu64
-+				 " doesn't map to an evsel\n", sample.id);
-+			goto out_munmap;
-+		}
-+		nr_events[evsel->idx]++;
-+	}
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		if (nr_events[evsel->idx] != expected_nr_events[evsel->idx]) {
-+			pr_debug("expected %d %s events, got %d\n",
-+				 expected_nr_events[evsel->idx],
-+				 event_name(evsel), nr_events[evsel->idx]);
-+			goto out_munmap;
-+		}
-+	}
-+
-+	err = 0;
-+out_munmap:
-+	perf_evlist__munmap(evlist, 1);
-+out_close_fd:
-+	for (i = 0; i < nsyscalls; ++i)
-+		perf_evsel__close_fd(evsels[i], 1, threads->nr);
-+out_free_evlist:
-+	perf_evlist__delete(evlist);
-+out_free_cpus:
-+	cpu_map__delete(cpus);
-+out_free_threads:
-+	thread_map__delete(threads);
-+	return err;
-+#undef nsyscalls
++	return merge_chain_branch(cursor, &dst->node, &src->node);
 +}
 +
- static struct test {
- 	const char *desc;
- 	int (*func)(void);
-@@ -456,6 +619,10 @@ static struct test {
- 		.func = test__open_syscall_event_on_all_cpus,
- 	},
- 	{
-+		.desc = "read samples using the mmap interface",
-+		.func = test__basic_mmap,
-+	},
-+	{
- 		.func = NULL,
- 	},
++int callchain_cursor_append(struct callchain_cursor *cursor,
++			    u64 ip, struct map *map, struct symbol *sym)
+ {
+-	struct resolved_chain *chain;
+-	int err;
++	struct callchain_cursor_node *node = *cursor->last;
+ 
+-	chain = malloc(sizeof(*chain) +
+-		       src->max_depth * sizeof(struct resolved_ip));
+-	if (!chain)
+-		return -ENOMEM;
++	if (!node) {
++		node = calloc(sizeof(*node), 1);
++		if (!node)
++			return -ENOMEM;
+ 
+-	chain->nr = 0;
++		*cursor->last = node;
++	}
+ 
+-	err = merge_chain_branch(&dst->node, &src->node, chain);
++	node->ip = ip;
++	node->map = map;
++	node->sym = sym;
+ 
+-	free(chain);
++	cursor->nr++;
+ 
+-	return err;
++	cursor->last = &node->next;
++
++	return 0;
+ }
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index c15fb8c..d74a19a 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -49,6 +49,27 @@ struct callchain_list {
+ 	struct list_head	list;
  };
+ 
++/*
++ * A callchain cursor is a single linked list that
++ * let one feed a callchain progressively.
++ * It keeps persitent allocated entries to minimize
++ * allocations.
++ */
++struct callchain_cursor_node {
++	u64				ip;
++	struct map			*map;
++	struct symbol			*sym;
++	struct callchain_cursor_node	*next;
++};
++
++struct callchain_cursor {
++	u64				nr;
++	struct callchain_cursor_node	*first;
++	struct callchain_cursor_node	**last;
++	u64				pos;
++	struct callchain_cursor_node	*curr;
++};
++
+ static inline void callchain_init(struct callchain_root *root)
+ {
+ 	INIT_LIST_HEAD(&root->node.brothers);
+@@ -67,9 +88,48 @@ static inline u64 cumul_hits(struct callchain_node *node)
+ }
+ 
+ int register_callchain_param(struct callchain_param *param);
+-int callchain_append(struct callchain_root *root, struct ip_callchain *chain,
+-		     struct map_symbol *syms, u64 period);
+-int callchain_merge(struct callchain_root *dst, struct callchain_root *src);
++int callchain_append(struct callchain_root *root,
++		     struct callchain_cursor *cursor,
++		     u64 period);
++
++int callchain_merge(struct callchain_cursor *cursor,
++		    struct callchain_root *dst, struct callchain_root *src);
+ 
+ bool ip_callchain__valid(struct ip_callchain *chain, const event_t *event);
++
++/*
++ * Initialize a cursor before adding entries inside, but keep
++ * the previously allocated entries as a cache.
++ */
++static inline void callchain_cursor_reset(struct callchain_cursor *cursor)
++{
++	cursor->nr = 0;
++	cursor->last = &cursor->first;
++}
++
++int callchain_cursor_append(struct callchain_cursor *cursor, u64 ip,
++			    struct map *map, struct symbol *sym);
++
++/* Close a cursor writing session. Initialize for the reader */
++static inline void callchain_cursor_commit(struct callchain_cursor *cursor)
++{
++	cursor->curr = cursor->first;
++	cursor->pos = 0;
++}
++
++/* Cursor reading iteration helpers */
++static inline struct callchain_cursor_node *
++callchain_cursor_current(struct callchain_cursor *cursor)
++{
++	if (cursor->pos == cursor->nr)
++		return NULL;
++
++	return cursor->curr;
++}
++
++static inline void callchain_cursor_advance(struct callchain_cursor *cursor)
++{
++	cursor->curr = cursor->curr->next;
++	cursor->pos++;
++}
+ #endif	/* __PERF_CALLCHAIN_H */
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 32f4f1f..a438a06 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -211,7 +211,9 @@ void hist_entry__free(struct hist_entry *he)
+  * collapse the histogram
+  */
+ 
+-static bool collapse__insert_entry(struct rb_root *root, struct hist_entry *he)
++static bool hists__collapse_insert_entry(struct hists *self,
++					 struct rb_root *root,
++					 struct hist_entry *he)
+ {
+ 	struct rb_node **p = &root->rb_node;
+ 	struct rb_node *parent = NULL;
+@@ -226,8 +228,11 @@ static bool collapse__insert_entry(struct rb_root *root, struct hist_entry *he)
+ 
+ 		if (!cmp) {
+ 			iter->period += he->period;
+-			if (symbol_conf.use_callchain)
+-				callchain_merge(iter->callchain, he->callchain);
++			if (symbol_conf.use_callchain) {
++				callchain_cursor_reset(&self->callchain_cursor);
++				callchain_merge(&self->callchain_cursor, iter->callchain,
++						he->callchain);
++			}
+ 			hist_entry__free(he);
+ 			return false;
+ 		}
+@@ -262,7 +267,7 @@ void hists__collapse_resort(struct hists *self)
+ 		next = rb_next(&n->rb_node);
+ 
+ 		rb_erase(&n->rb_node, &self->entries);
+-		if (collapse__insert_entry(&tmp, n))
++		if (hists__collapse_insert_entry(self, &tmp, n))
+ 			hists__inc_nr_entries(self, n);
+ 	}
+ 
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index ee78985..889559b 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -77,6 +77,8 @@ struct hists {
+ 	u64			event_stream;
+ 	u32			type;
+ 	u16			col_len[HISTC_NR_COLS];
++	/* Best would be to reuse the session callchain cursor */
++	struct callchain_cursor	callchain_cursor;
+ };
+ 
+ struct hist_entry *__hists__add_entry(struct hists *self,
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 105f00b..b58a48a 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -242,17 +242,16 @@ static bool symbol__match_parent_regex(struct symbol *sym)
+ 	return 0;
+ }
+ 
+-struct map_symbol *perf_session__resolve_callchain(struct perf_session *self,
+-						   struct thread *thread,
+-						   struct ip_callchain *chain,
+-						   struct symbol **parent)
++int perf_session__resolve_callchain(struct perf_session *self,
++				    struct thread *thread,
++				    struct ip_callchain *chain,
++				    struct symbol **parent)
+ {
+ 	u8 cpumode = PERF_RECORD_MISC_USER;
+ 	unsigned int i;
+-	struct map_symbol *syms = calloc(chain->nr, sizeof(*syms));
++	int err;
+ 
+-	if (!syms)
+-		return NULL;
++	callchain_cursor_reset(&self->callchain_cursor);
+ 
+ 	for (i = 0; i < chain->nr; i++) {
+ 		u64 ip = chain->ips[i];
+@@ -281,12 +280,15 @@ struct map_symbol *perf_session__resolve_callchain(struct perf_session *self,
+ 				*parent = al.sym;
+ 			if (!symbol_conf.use_callchain)
+ 				break;
+-			syms[i].map = al.map;
+-			syms[i].sym = al.sym;
+ 		}
++
++		err = callchain_cursor_append(&self->callchain_cursor,
++					      ip, al.map, al.sym);
++		if (err)
++			return err;
+ 	}
+ 
+-	return syms;
++	return 0;
+ }
+ 
+ static int process_event_synth_stub(event_t *event __used,
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index decd83f..e815468 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -51,7 +51,8 @@ struct perf_session {
+ 	int			cwdlen;
+ 	char			*cwd;
+ 	struct ordered_samples	ordered_samples;
+-	char filename[0];
++	struct callchain_cursor	callchain_cursor;
++	char			filename[0];
+ };
+ 
+ struct perf_event_ops;
+@@ -94,10 +95,10 @@ int __perf_session__process_events(struct perf_session *self,
+ int perf_session__process_events(struct perf_session *self,
+ 				 struct perf_event_ops *event_ops);
+ 
+-struct map_symbol *perf_session__resolve_callchain(struct perf_session *self,
+-						   struct thread *thread,
+-						   struct ip_callchain *chain,
+-						   struct symbol **parent);
++int perf_session__resolve_callchain(struct perf_session *self,
++				    struct thread *thread,
++				    struct ip_callchain *chain,
++				    struct symbol **parent);
+ 
+ bool perf_session__has_traces(struct perf_session *self, const char *msg);
+ 
