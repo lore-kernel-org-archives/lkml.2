@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834Ab1AZKQn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 05:16:43 -0500
-Received: from casper.infradead.org ([85.118.1.10]:47053 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752603Ab1AZKQm convert rfc822-to-8bit (ORCPT
+	id S1752802Ab1AZKSG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 05:18:06 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51289 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159Ab1AZKSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 05:16:42 -0500
-Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 14/20] 14: uprobes: Handing int3
- and singlestep exception.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20110126085203.GG19725@linux.vnet.ibm.com>
-References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
-	 <20101216095957.23751.57040.sendpatchset@localhost6.localdomain6>
-	 <1295963779.28776.1059.camel@laptop>
-	 <20110126085203.GG19725@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 26 Jan 2011 11:17:11 +0100
-Message-ID: <1296037031.28776.1146.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 26 Jan 2011 05:18:04 -0500
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] Add a function to cast error-pointers to a return value
+Date: Wed, 26 Jan 2011 11:17:54 +0100
+Message-Id: <1296037074-1585-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-26 at 14:22 +0530, Srikar Dronamraju wrote:
-> * Peter Zijlstra <peterz@infradead.org> [2011-01-25 14:56:19]:
-> 
-> > On Thu, 2010-12-16 at 15:29 +0530, Srikar Dronamraju wrote:
-> > > +               down_read(&mm->mmap_sem);
-> > > +               for (vma = mm->mmap; vma; vma = vma->vm_next) {
-> > > +                       if (!valid_vma(vma))
-> > > +                               continue;
-> > > +                       if (probept < vma->vm_start || probept > vma->vm_end)
-> > > +                               continue;
-> > > +                       u = find_uprobe(vma->vm_file->f_mapping->host,
-> > > +                                       probept - vma->vm_start);
-> > > +                       if (u)
-> > > +                               break;
-> > > +               }
-> > > +               up_read(&mm->mmap_sem); 
-> > 
-> > One has to ask, what's wrong with find_vma() ?
-> 
-> Are you looking for something like this.
-> 
->        down_read(&mm->mmap_sem);
-> 	for (vma = find_vma(mm, probept); ; vma = vma->vm_next) {
-> 	       if (!valid_vma(vma))
-> 		       continue;
-> 	       u = find_uprobe(vma->vm_file->f_mapping->host,
-> 			       probept - vma->vm_start);
-> 	       if (u)
-> 		       break;
->        }
->        up_read(&mm->mmap_sem); 
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+ include/linux/err.h |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-How could you ever need to iterate here? There is only a single vma that
-covers the probe point, if that doesn't find a uprobe, there isn't any.
+diff --git a/include/linux/err.h b/include/linux/err.h
+index 448afc1..f2edce2 100644
+--- a/include/linux/err.h
++++ b/include/linux/err.h
+@@ -52,6 +52,14 @@ static inline void * __must_check ERR_CAST(const void *ptr)
+ 	return (void *) ptr;
+ }
+ 
++static inline int __must_check PTR_RET(const void *ptr)
++{
++	if (IS_ERR(ptr))
++		return PTR_ERR(ptr);
++	else
++		return 0;
++}
++
+ #endif
+ 
+ #endif /* _LINUX_ERR_H */
+-- 
+1.7.2.3
+
