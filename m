@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280Ab1AZP5x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 10:57:53 -0500
-Received: from smtp4-g21.free.fr ([212.27.42.4]:37606 "EHLO smtp4-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751435Ab1AZP5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 10:57:52 -0500
-Message-ID: <4D404475.30304@free.fr>
-Date: Wed, 26 Jan 2011 16:57:41 +0100
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Louis Rilling <Louis.Rilling@kerlabs.com>
-CC: linux-kernel@vger.kernel.org, Linux Containers <containers@lists.osdl.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>,
-        Pavel Emelyanov <xemul@openvz.org>, jamal <hadi@cyberus.ca>
-Subject: Re: [PATCH 0/6] Unshare support for the pid namespace.
-References: <1276706068-18567-1-git-send-email-louis.rilling@kerlabs.com>	<20100617212003.GA4182@redhat.com>	<20100618082033.GD16877@hawkmoon.kerlabs.com>	<20100618111554.GA3252@redhat.com> <20100618160849.GA7404@redhat.com>	<20100618173320.GG16877@hawkmoon.kerlabs.com>	<20100618175541.GA13680@redhat.com>	<20100618212355.GA29478@redhat.com> <20100619190840.GA3424@redhat.com> <m1pqzmqema.fsf_-_@fess.ebiederm.org>
-In-Reply-To: <m1pqzmqema.fsf_-_@fess.ebiederm.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753370Ab1AZP74 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 10:59:56 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:40077 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752830Ab1AZP7z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 10:59:55 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=G2RXW1KvktxOXOlxjZ94JDQl9MNKXvvxPlaV92xxXHBAKVyX1824/3Hns8i34Ypa1g
+         FgyQC6chWqXewO3GPUxkwvSHkVpPlIdKkogW5d+/ghni3mokagPlb+t2TXMu9/zjB+wa
+         2npnbvZWVWC1S3jR7JNOMeT3lQ5Ve2TlT8m2I=
+Subject: Re: sys_epoll_wait high CPU load in 2.6.37
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Davide Libenzi <davidel@xmailserver.org>
+Cc: Simon Kirby <sim@hostway.ca>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shawn Bohrer <shawn.bohrer@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1101260747320.1889@localhost6.localdomain6>
+References: <20110126000932.GA23089@hostway.ca>
+	 <1296026298.2633.19.camel@edumazet-laptop>
+	 <1296040578.2899.59.camel@edumazet-laptop>
+	 <alpine.DEB.2.00.1101260714280.1889@localhost6.localdomain6>
+	 <1296056600.2899.66.camel@edumazet-laptop>
+	 <alpine.DEB.2.00.1101260747320.1889@localhost6.localdomain6>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 26 Jan 2011 16:59:50 +0100
+Message-ID: <1296057590.2899.73.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Le mercredi 26 janvier 2011 à 07:52 -0800, Davide Libenzi a écrit :
 
-Hi All,
+> For "above", I meant the current epoll expire time calculation, which was 
+> described above in the message ;)
 
-I refreshed this patchset on top of linux-next and I would like to 
-resend it for inclusion if nobody is opposed.
-I read the looong thread about this patchset and I am a bit lost with if 
-the patches are right or not.
-I will be glad to contribute to this patchset if that make sense to 
-improve some parts.
+Well, problem was not an overflow, but doing a loop 2.000.000 times ;)
 
-Can someone enlight me ?
+> The hint for a timespec_add_ms() was because we must be doing something 
+> similar in poll, don't we (/me got no code in front ATM)?
 
-Thanks
-   -- Daniel
+Apparently its done differently in poll(), using
+poll_select_set_timeout() helper.
 
 
-<javascript:void(0);>
+Give me some minutes I'll try to cook an alternate patch
+
+
