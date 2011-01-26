@@ -1,93 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754279Ab1AZWtb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 17:49:31 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37389 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753608Ab1AZWt3 (ORCPT
+	id S1754264Ab1AZWuN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 17:50:13 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:2171 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753608Ab1AZWuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 17:49:29 -0500
-Date: Wed, 26 Jan 2011 14:49:10 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>, olofj@chromium.org
-Subject: Re: [PATCH] printk: allow setting DEFAULT_MESSAGE_LEVEL via Kconfig
-Message-Id: <20110126144910.ce0646ec.akpm@linux-foundation.org>
-In-Reply-To: <20110125235700.GR8008@google.com>
-References: <20110125235700.GR8008@google.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 26 Jan 2011 17:50:11 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6238"; a="72106054"
+Message-ID: <4D40A522.4000808@codeaurora.org>
+Date: Wed, 26 Jan 2011 14:50:10 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Daniel Walker <dwalker@codeaurora.org>
+CC: David Brown <davidb@codeaurora.org>,
+        Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/4] msm: clock: Remove unused code and definitions
+References: <1295927118-27591-1-git-send-email-sboyd@codeaurora.org>	 <1295927118-27591-2-git-send-email-sboyd@codeaurora.org>	 <1295991537.25496.49.camel@c-dwalke-linux.qualcomm.com>	 <4D3F4609.3000808@codeaurora.org>	 <1295992937.25496.75.camel@c-dwalke-linux.qualcomm.com>	 <8ya1v3z8gu6.fsf@huya.qualcomm.com> <1296079382.29801.45.camel@c-dwalke-linux.qualcomm.com>
+In-Reply-To: <1296079382.29801.45.camel@c-dwalke-linux.qualcomm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Jan 2011 15:57:00 -0800
-Mandeep Singh Baines <msb@chromium.org> wrote:
+On 01/26/2011 02:03 PM, Daniel Walker wrote:
+>
+> He's adding stuff too .. So it's not _just_ removal which is what I was
+> getting at.
 
-> We've been burned by regressions/bugs which we later realized could
-> have been triaged quicker if only we'd paid closer attention to
-> dmesg. To make it easier to audit dmesg, we'd like to make
-> DEFAULT_MESSAGE_LEVEL Kconfig-settable. That way we can set it to
-> KERN_NOTICE and audit any messages <= KERN_WARNING.
-> 
-> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-> ---
->  kernel/printk.c   |    2 +-
->  lib/Kconfig.debug |   12 ++++++++++++
->  2 files changed, 13 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/printk.c b/kernel/printk.c
-> index 5ddd291..f91a7fd 100644
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -59,7 +59,7 @@ void asmlinkage __attribute__((weak)) early_printk(const char *fmt, ...)
->  #define __LOG_BUF_LEN	(1 << CONFIG_LOG_BUF_SHIFT)
->  
->  /* printk's without a loglevel use this.. */
-> -#define DEFAULT_MESSAGE_LOGLEVEL 4 /* KERN_WARNING */
-> +#define DEFAULT_MESSAGE_LOGLEVEL CONFIG_DEFAULT_MESSAGE_LOGLEVEL
->  
->  /* We show everything that is MORE important than this.. */
->  #define MINIMUM_CONSOLE_LOGLEVEL 1 /* Minimum loglevel we let people use */
-> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> index 28b42b9..67b42fa 100644
-> --- a/lib/Kconfig.debug
-> +++ b/lib/Kconfig.debug
-> @@ -9,6 +9,18 @@ config PRINTK_TIME
->  	  operations.  This is useful for identifying long delays
->  	  in kernel startup.
->  
-> +config DEFAULT_MESSAGE_LOGLEVEL
-> +	int "Default message log level (1-7)"
-> +	range 1 7
-> +	depends on PRINTK
-> +	default "4"
-> +	help
-> +	  Default log level for printk statements with no specified priority.
-> +
-> +	  This was hard-coded to KERN_WARNING since at least 2.6.10 but folks
-> +	  that are auditing their logs closely may want to set it to a lower
-> +	  priority.
-> +
->  config ENABLE_WARN_DEPRECATED
->  	bool "Enable __deprecated logic"
->  	default y
+I'll split this, no worries.
 
-I'm a bit surprised that this wasn't already tunable at boot-time
-and/or at runtime.
-
-I think it's generally superior to be able to tune this sort of thing
-via kernel boot parameters and/or /proc knobs, rather than requiring a
-recompile.  That might be a problem in this specific case, if we have
-printks which are occurring before __setup() parsing has completed.
-
-
-Poeple often complain that they want things settable in Kconfig because
-for some reason it's all too hard to set the kernel boot command line. 
-Next time someone says this I'll suggest that they fix the problem
-permanently by implementing a CONFIG_CMDLINE string, which gets
-inserted into the kernel boot command line at compile time ;)
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
