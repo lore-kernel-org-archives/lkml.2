@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab1AZS3d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 13:29:33 -0500
-Received: from [123.122.106.155] ([123.122.106.155]:38823 "EHLO enigma.site"
+	id S1754001Ab1AZS3I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 13:29:08 -0500
+Received: from [123.122.106.155] ([123.122.106.155]:38829 "EHLO enigma.site"
 	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754051Ab1AZS3J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 13:29:09 -0500
+	id S1753328Ab1AZS3G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 13:29:06 -0500
 From: Coly Li <bosong.ly@taobao.com>
 To: linux-kernel@vger.kernel.org
-Cc: Coly Li <bosong.ly@taobao.com>, David Howells <dhowells@redhat.com>,
-        Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 1/6] mm: use BUG_ON correctly in nommu.c
-Date: Thu, 27 Jan 2011 02:54:50 +0800
-Message-Id: <1296068095-16988-2-git-send-email-bosong.ly@taobao.com>
+Cc: Coly Li <bosong.ly@taobao.com>, Greg KH <gregkh@suse.de>
+Subject: [PATCH 4/6] dma: use BUG_ON correctly in ppc4xx/adam.c
+Date: Thu, 27 Jan 2011 02:54:53 +0800
+Message-Id: <1296068095-16988-5-git-send-email-bosong.ly@taobao.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1296068095-16988-1-git-send-email-bosong.ly@taobao.com>
 References: <1296068095-16988-1-git-send-email-bosong.ly@taobao.com>
@@ -21,44 +19,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes BUG_ON() usage correct in mm/nommu.c. Since there
-are 2 lines even before 2.6.12, I am not able to find out the original
-author, Cc Andrew as well.
+This patch mekes BUG_ON() usage correct in drivers/dma/ppc4xx/adam.c
 
 Signed-off-by: Coly Li <bosong.ly@taobao.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg KH <gregkh@suse.de>
 ---
- mm/nommu.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/dma/ppc4xx/adma.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/mm/nommu.c b/mm/nommu.c
-index f59e142..eccff36 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -534,16 +534,16 @@ static noinline void validate_nommu_regions(void)
- 		return;
+diff --git a/drivers/dma/ppc4xx/adma.c b/drivers/dma/ppc4xx/adma.c
+index cef5845..a2b62e9 100644
+--- a/drivers/dma/ppc4xx/adma.c
++++ b/drivers/dma/ppc4xx/adma.c
+@@ -2313,7 +2313,7 @@ static struct dma_async_tx_descriptor *ppc440spe_adma_prep_dma_memcpy(
+ 	if (unlikely(!len))
+ 		return NULL;
  
- 	last = rb_entry(lastp, struct vm_region, vm_rb);
--	BUG_ON(unlikely(last->vm_end <= last->vm_start));
--	BUG_ON(unlikely(last->vm_top < last->vm_end));
-+	BUG_ON(last->vm_end <= last->vm_start);
-+	BUG_ON(last->vm_top < last->vm_end);
+-	BUG_ON(unlikely(len > PPC440SPE_ADMA_DMA_MAX_BYTE_COUNT));
++	BUG_ON(len > PPC440SPE_ADMA_DMA_MAX_BYTE_COUNT);
  
- 	while ((p = rb_next(lastp))) {
- 		region = rb_entry(p, struct vm_region, vm_rb);
- 		last = rb_entry(lastp, struct vm_region, vm_rb);
+ 	spin_lock_bh(&ppc440spe_chan->lock);
  
--		BUG_ON(unlikely(region->vm_end <= region->vm_start));
--		BUG_ON(unlikely(region->vm_top < region->vm_end));
--		BUG_ON(unlikely(region->vm_start < last->vm_top));
-+		BUG_ON(region->vm_end <= region->vm_start);
-+		BUG_ON(region->vm_top < region->vm_end);
-+		BUG_ON(region->vm_start < last->vm_top);
+@@ -2354,7 +2354,7 @@ static struct dma_async_tx_descriptor *ppc440spe_adma_prep_dma_memset(
+ 	if (unlikely(!len))
+ 		return NULL;
  
- 		lastp = p;
- 	}
+-	BUG_ON(unlikely(len > PPC440SPE_ADMA_DMA_MAX_BYTE_COUNT));
++	BUG_ON(len > PPC440SPE_ADMA_DMA_MAX_BYTE_COUNT);
+ 
+ 	spin_lock_bh(&ppc440spe_chan->lock);
+ 
+@@ -2397,7 +2397,7 @@ static struct dma_async_tx_descriptor *ppc440spe_adma_prep_dma_xor(
+ 				     dma_dest, dma_src, src_cnt));
+ 	if (unlikely(!len))
+ 		return NULL;
+-	BUG_ON(unlikely(len > PPC440SPE_ADMA_XOR_MAX_BYTE_COUNT));
++	BUG_ON(len > PPC440SPE_ADMA_XOR_MAX_BYTE_COUNT);
+ 
+ 	dev_dbg(ppc440spe_chan->device->common.dev,
+ 		"ppc440spe adma%d: %s src_cnt: %d len: %u int_en: %d\n",
+@@ -2887,7 +2887,7 @@ static struct dma_async_tx_descriptor *ppc440spe_adma_prep_dma_pq(
+ 	ADMA_LL_DBG(prep_dma_pq_dbg(ppc440spe_chan->device->id,
+ 				    dst, src, src_cnt));
+ 	BUG_ON(!len);
+-	BUG_ON(unlikely(len > PPC440SPE_ADMA_XOR_MAX_BYTE_COUNT));
++	BUG_ON(len > PPC440SPE_ADMA_XOR_MAX_BYTE_COUNT);
+ 	BUG_ON(!src_cnt);
+ 
+ 	if (src_cnt == 1 && dst[1] == src[0]) {
 -- 
 1.7.3.2
 
