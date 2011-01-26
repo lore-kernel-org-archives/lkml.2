@@ -1,116 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab1AZH03 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 02:26:29 -0500
-Received: from hera.kernel.org ([140.211.167.34]:52972 "EHLO hera.kernel.org"
+	id S1753182Ab1AZH0v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 02:26:51 -0500
+Received: from hera.kernel.org ([140.211.167.34]:52983 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753186Ab1AZH02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 02:26:28 -0500
-Date: Wed, 26 Jan 2011 07:26:00 GMT
-From: tip-bot for Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@redhat.com, gorcunov@openvz.org, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, gorcunov@openvz.org, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <4d3efb2f.1252d80a.1a80.ffffc83f@mx.google.com>
-References: <4d3efb2f.1252d80a.1a80.ffffc83f@mx.google.com>
+	id S1751789Ab1AZH0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 02:26:50 -0500
+Date: Wed, 26 Jan 2011 07:26:26 GMT
+From: tip-bot for Yinghai Lu <yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        yinghai@kernel.org, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <4D3E23D1.7010405@kernel.org>
+References: <4D3E23D1.7010405@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf: Fix Pentium4 raw event validation
-Message-ID: <tip-3284063535adb5ca02e7ad51d7556193fb8e799e@git.kernel.org>
-Git-Commit-ID: 3284063535adb5ca02e7ad51d7556193fb8e799e
+Subject: [tip:x86/urgent] x86: Remove left over system_64.h
+Message-ID: <tip-9a57c3e487d25f69715705dfeef6eb9e4d666ad7@git.kernel.org>
+Git-Commit-ID: 9a57c3e487d25f69715705dfeef6eb9e4d666ad7
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 26 Jan 2011 07:26:01 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 26 Jan 2011 07:26:26 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3284063535adb5ca02e7ad51d7556193fb8e799e
-Gitweb:     http://git.kernel.org/tip/3284063535adb5ca02e7ad51d7556193fb8e799e
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Tue, 25 Jan 2011 17:32:01 +0200
+Commit-ID:  9a57c3e487d25f69715705dfeef6eb9e4d666ad7
+Gitweb:     http://git.kernel.org/tip/9a57c3e487d25f69715705dfeef6eb9e4d666ad7
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Mon, 24 Jan 2011 17:13:53 -0800
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 26 Jan 2011 08:01:20 +0100
+CommitDate: Wed, 26 Jan 2011 08:05:58 +0100
 
-perf: Fix Pentium4 raw event validation
+x86: Remove left over system_64.h
 
-This patch fixes some issues with raw event validation on
-Pentium 4 (Netburst) based processors.
+Left-over from the x86 merge ...
 
-As I was testing libpfm4 Netburst support, I ran into two
-problems in the p4_validate_raw_event() function:
-
-   - the shared field must be checked ONLY when HT is on
-   - the binding to ESCR register was missing
-
-The second item was causing raw events to not be encoded
-correctly compared to generic PMU events.
-
-With this patch, I can now pass Netburst events to libpfm4
-examples and get meaningful results:
-
-  $ task -e global_power_events:running:u  noploop 1
-  noploop for 1 seconds
-  3,206,304,898 global_power_events:running
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: peterz@infradead.org
-Cc: paulus@samba.org
-Cc: davem@davemloft.net
-Cc: fweisbec@gmail.com
-Cc: perfmon2-devel@lists.sf.net
-Cc: eranian@gmail.com
-Cc: robert.richter@amd.com
-Cc: acme@redhat.com
-Cc: gorcunov@gmail.com
-Cc: ming.m.lin@intel.com
-LKML-Reference: <4d3efb2f.1252d80a.1a80.ffffc83f@mx.google.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+LKML-Reference: <4D3E23D1.7010405@kernel.org>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/kernel/cpu/perf_event_p4.c |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/system_64.h |   22 ----------------------
+ 1 files changed, 0 insertions(+), 22 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
-index e56b9bf..f7a0993 100644
---- a/arch/x86/kernel/cpu/perf_event_p4.c
-+++ b/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -682,7 +682,7 @@ static int p4_validate_raw_event(struct perf_event *event)
- 	 * if an event is shared accross the logical threads
- 	 * the user needs special permissions to be able to use it
- 	 */
--	if (p4_event_bind_map[v].shared) {
-+	if (p4_ht_active() && p4_event_bind_map[v].shared) {
- 		if (perf_paranoid_cpu() && !capable(CAP_SYS_ADMIN))
- 			return -EACCES;
- 	}
-@@ -727,7 +727,8 @@ static int p4_hw_config(struct perf_event *event)
- 		event->hw.config = p4_set_ht_bit(event->hw.config);
- 
- 	if (event->attr.type == PERF_TYPE_RAW) {
+diff --git a/arch/x86/include/asm/system_64.h b/arch/x86/include/asm/system_64.h
+deleted file mode 100644
+index 1159e09..0000000
+--- a/arch/x86/include/asm/system_64.h
++++ /dev/null
+@@ -1,22 +0,0 @@
+-#ifndef _ASM_X86_SYSTEM_64_H
+-#define _ASM_X86_SYSTEM_64_H
 -
-+		struct p4_event_bind *bind;
-+		unsigned int esel;
- 		/*
- 		 * Clear bits we reserve to be managed by kernel itself
- 		 * and never allowed from a user space
-@@ -743,6 +744,13 @@ static int p4_hw_config(struct perf_event *event)
- 		 * bits since we keep additional info here (for cache events and etc)
- 		 */
- 		event->hw.config |= event->attr.config;
-+		bind = p4_config_get_bind(event->attr.config);
-+		if (!bind) {
-+			rc = -EINVAL;
-+			goto out;
-+		}
-+		esel = P4_OPCODE_ESEL(bind->opcode);
-+		event->hw.config |= p4_config_pack_cccr(P4_CCCR_ESEL(esel));
- 	}
- 
- 	rc = x86_setup_perfctr(event);
+-#include <asm/segment.h>
+-#include <asm/cmpxchg.h>
+-
+-
+-static inline unsigned long read_cr8(void)
+-{
+-	unsigned long cr8;
+-	asm volatile("movq %%cr8,%0" : "=r" (cr8));
+-	return cr8;
+-}
+-
+-static inline void write_cr8(unsigned long val)
+-{
+-	asm volatile("movq %0,%%cr8" :: "r" (val) : "memory");
+-}
+-
+-#include <linux/irqflags.h>
+-
+-#endif /* _ASM_X86_SYSTEM_64_H */
