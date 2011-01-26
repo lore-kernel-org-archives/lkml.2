@@ -1,160 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab1AZHQf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 02:16:35 -0500
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:44685 "EHLO e3.ny.us.ibm.com"
+	id S1752925Ab1AZHRI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 02:17:08 -0500
+Received: from hera.kernel.org ([140.211.167.34]:55791 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752631Ab1AZHQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 02:16:32 -0500
-Date: Tue, 25 Jan 2011 23:16:26 -0800
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
-        axboe@kernel.dk, tytso@mit.edu, shli@kernel.org, neilb@suse.de,
-        adilger.kernel@dilger.ca, jack@suse.cz, snitzer@redhat.com,
-        linux-kernel@vger.kernel.org, kmannth@us.ibm.com, cmm@us.ibm.com,
-        linux-ext4@vger.kernel.org, rwheeler@redhat.com, hch@lst.de,
-        josef@redhat.com
-Subject: [PATCH 1/3] block: Create sysfs knobs to override FLUSH/FUA
-	support flags
-Message-ID: <20110126071626.GI27190@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20110126071200.GE32261@tux1.beaverton.ibm.com>
+	id S1752281Ab1AZHRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 02:17:04 -0500
+Date: Wed, 26 Jan 2011 07:16:40 GMT
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
+        peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
+        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <new-submission>
+References: <new-submission>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf record: Use struct perf_mmap and helpers
+Message-ID: <tip-744bd8aa3c8b43447f689a27872fa95e700b8a4f@git.kernel.org>
+Git-Commit-ID: 744bd8aa3c8b43447f689a27872fa95e700b8a4f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20110126071200.GE32261@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-X-Content-Scanned: Fidelis XPS MAILER
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 26 Jan 2011 07:16:41 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is the first in a series to refactor the barrier= mount options out
-of the filesystem code.  This patch adds sysfs knobs to disable flush and FUA;
-of course, the automatic default is the safe choice, i.e. to leave them
-enabled.  Obviously, only a seasoned administrator should ever be overriding
-the defaults.
+Commit-ID:  744bd8aa3c8b43447f689a27872fa95e700b8a4f
+Gitweb:     http://git.kernel.org/tip/744bd8aa3c8b43447f689a27872fa95e700b8a4f
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Wed, 12 Jan 2011 17:07:28 -0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Sat, 22 Jan 2011 19:56:29 -0200
 
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+perf record: Use struct perf_mmap and helpers
+
+Paving the way to using perf_evsel->mmap, do this to reduce the patch
+noise in the next ones.
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
+ tools/perf/builtin-record.c |   25 ++++---------------------
+ 1 files changed, 4 insertions(+), 21 deletions(-)
 
- block/blk-settings.c   |    1 +
- block/blk-sysfs.c      |   66 ++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/blkdev.h |    1 +
- 3 files changed, 68 insertions(+), 0 deletions(-)
-
-diff --git a/block/blk-settings.c b/block/blk-settings.c
-index 36c8c1f..719c990 100644
---- a/block/blk-settings.c
-+++ b/block/blk-settings.c
-@@ -802,6 +802,7 @@ void blk_queue_flush(struct request_queue *q, unsigned int flush)
- 		flush &= ~REQ_FUA;
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index ec43f2e..d89e2f1 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -78,26 +78,9 @@ static off_t			post_processing_offset;
+ static struct perf_session	*session;
+ static const char		*cpu_list;
  
- 	q->flush_flags = flush & (REQ_FLUSH | REQ_FUA);
-+	q->hw_flush_flags = q->flush_flags;
- }
- EXPORT_SYMBOL_GPL(blk_queue_flush);
+-struct mmap_data {
+-	void			*base;
+-	unsigned int		mask;
+-	unsigned int		prev;
+-};
+-
+-static struct mmap_data		mmap_array[MAX_NR_CPUS];
+-
+-static unsigned long mmap_read_head(struct mmap_data *md)
+-{
+-	struct perf_event_mmap_page *pc = md->base;
+-	long head;
+-
+-	head = pc->data_head;
+-	rmb();
+-
+-	return head;
+-}
++static struct perf_mmap		mmap_array[MAX_NR_CPUS];
  
-diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
-index 41fb691..af872a8 100644
---- a/block/blk-sysfs.c
-+++ b/block/blk-sysfs.c
-@@ -31,6 +31,58 @@ queue_var_store(unsigned long *var, const char *page, size_t count)
- 	return count;
- }
- 
-+static ssize_t queue_flushflag_ignore_show(struct request_queue *q, char *page,
-+					   unsigned int which)
-+{
-+	if (!(q->hw_flush_flags & which))
-+		return sprintf(page, "0\n");
-+
-+	if (!(q->flush_flags & which))
-+		return sprintf(page, "1\n");
-+
-+	return sprintf(page, "0\n");
-+}
-+
-+static ssize_t
-+queue_flushflag_ignore_store(struct request_queue *q, const char *page,
-+			     size_t count, unsigned int which)
-+{
-+	unsigned long ignore;
-+	ssize_t ret = queue_var_store(&ignore, page, count);
-+
-+	if (!(q->hw_flush_flags & which))
-+		return -EINVAL;
-+
-+	if (ignore)
-+		q->flush_flags &= ~which;
-+	else
-+		q->flush_flags |= which;
-+
-+	return ret;
-+}
-+
-+static ssize_t queue_ignore_flush_show(struct request_queue *q, char *page)
-+{
-+	return queue_flushflag_ignore_show(q, page, REQ_FLUSH);
-+}
-+
-+static ssize_t queue_ignore_flush_store(struct request_queue *q,
-+					const char *page, size_t count)
-+{
-+	return queue_flushflag_ignore_store(q, page, count, REQ_FLUSH);
-+}
-+
-+static ssize_t queue_ignore_fua_show(struct request_queue *q, char *page)
-+{
-+	return queue_flushflag_ignore_show(q, page, REQ_FUA);
-+}
-+
-+static ssize_t queue_ignore_fua_store(struct request_queue *q,
-+				      const char *page, size_t count)
-+{
-+	return queue_flushflag_ignore_store(q, page, count, REQ_FUA);
-+}
-+
- static ssize_t queue_requests_show(struct request_queue *q, char *page)
+-static void mmap_write_tail(struct mmap_data *md, unsigned long tail)
++static void mmap_write_tail(struct perf_mmap *md, unsigned long tail)
  {
- 	return queue_var_show(q->nr_requests, (page));
-@@ -265,6 +317,18 @@ queue_rq_affinity_store(struct request_queue *q, const char *page, size_t count)
- 	return ret;
+ 	struct perf_event_mmap_page *pc = md->base;
+ 
+@@ -136,9 +119,9 @@ static int process_synthesized_event(event_t *event,
+ 	return 0;
  }
  
-+static struct queue_sysfs_entry queue_ignore_flush_entry = {
-+	.attr = {.name = "ignore_flush", .mode = S_IRUGO | S_IWUSR },
-+	.show = queue_ignore_flush_show,
-+	.store = queue_ignore_flush_store,
-+};
-+
-+static struct queue_sysfs_entry queue_ignore_fua_entry = {
-+	.attr = {.name = "ignore_fua", .mode = S_IRUGO | S_IWUSR },
-+	.show = queue_ignore_fua_show,
-+	.store = queue_ignore_fua_store,
-+};
-+
- static struct queue_sysfs_entry queue_requests_entry = {
- 	.attr = {.name = "nr_requests", .mode = S_IRUGO | S_IWUSR },
- 	.show = queue_requests_show,
-@@ -380,6 +444,8 @@ static struct queue_sysfs_entry queue_random_entry = {
- };
- 
- static struct attribute *default_attrs[] = {
-+	&queue_ignore_flush_entry.attr,
-+	&queue_ignore_fua_entry.attr,
- 	&queue_requests_entry.attr,
- 	&queue_ra_entry.attr,
- 	&queue_max_hw_sectors_entry.attr,
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 8a082a5..daa4e6b 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -368,6 +368,7 @@ struct request_queue
- 	 * for flush operations
- 	 */
- 	unsigned int		flush_flags;
-+	unsigned int		hw_flush_flags;
- 	unsigned int		flush_pending_idx:1;
- 	unsigned int		flush_running_idx:1;
- 	unsigned long		flush_pending_since;
+-static void mmap_read(struct mmap_data *md)
++static void mmap_read(struct perf_mmap *md)
+ {
+-	unsigned int head = mmap_read_head(md);
++	unsigned int head = perf_mmap__read_head(md);
+ 	unsigned int old = md->prev;
+ 	unsigned char *data = md->base + page_size;
+ 	unsigned long size;
