@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753089Ab1AZHSq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 02:18:46 -0500
-Received: from hera.kernel.org ([140.211.167.34]:55878 "EHLO hera.kernel.org"
+	id S1753041Ab1AZHTE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 02:19:04 -0500
+Received: from hera.kernel.org ([140.211.167.34]:55887 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752741Ab1AZHSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 02:18:44 -0500
-Date: Wed, 26 Jan 2011 07:18:11 GMT
+	id S1752882Ab1AZHTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 02:19:00 -0500
+Date: Wed, 26 Jan 2011 07:18:37 GMT
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
@@ -19,28 +19,31 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
 In-Reply-To: <new-submission>
 References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Add missing cpu_map__delete()
-Message-ID: <tip-915fce20ecf8f7ff4189d0fff42b62aebf6a57cc@git.kernel.org>
-Git-Commit-ID: 915fce20ecf8f7ff4189d0fff42b62aebf6a57cc
+Subject: [tip:perf/core] perf test: Check counts on all cpus in test__open_syscall_event_on_all_cpus
+Message-ID: <tip-d2af9687c96f3864178de1860e6d83873aeef224@git.kernel.org>
+Git-Commit-ID: d2af9687c96f3864178de1860e6d83873aeef224
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 26 Jan 2011 07:18:11 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 26 Jan 2011 07:18:37 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  915fce20ecf8f7ff4189d0fff42b62aebf6a57cc
-Gitweb:     http://git.kernel.org/tip/915fce20ecf8f7ff4189d0fff42b62aebf6a57cc
+Commit-ID:  d2af9687c96f3864178de1860e6d83873aeef224
+Gitweb:     http://git.kernel.org/tip/d2af9687c96f3864178de1860e6d83873aeef224
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Fri, 14 Jan 2011 16:19:12 -0200
+AuthorDate: Fri, 14 Jan 2011 16:24:49 -0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Sat, 22 Jan 2011 19:56:30 -0200
 
-perf tools: Add missing cpu_map__delete()
+perf test: Check counts on all cpus in test__open_syscall_event_on_all_cpus
+
+We were bailing out after the first count mismatch, do it in all to see
+if only some CPUs are not getting the expected number of events.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -52,32 +55,41 @@ Cc: Tom Zanussi <tzanussi@gmail.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/cpumap.c |    5 +++++
- tools/perf/util/cpumap.h |    2 +-
- 2 files changed, 6 insertions(+), 1 deletions(-)
+ tools/perf/builtin-test.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
-index 3ccaa10..6893eec 100644
---- a/tools/perf/util/cpumap.c
-+++ b/tools/perf/util/cpumap.c
-@@ -177,3 +177,8 @@ struct cpu_map *cpu_map__dummy_new(void)
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 7287158..7cc6b20 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -408,6 +408,8 @@ static int test__open_syscall_event_on_all_cpus(void)
+ 		goto out_close_fd;
+ 	}
  
- 	return cpus;
- }
++	err = 0;
 +
-+void cpu_map__delete(struct cpu_map *map)
-+{
-+	free(map);
-+}
-diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
-index f7a4f42..072c0a3 100644
---- a/tools/perf/util/cpumap.h
-+++ b/tools/perf/util/cpumap.h
-@@ -8,6 +8,6 @@ struct cpu_map {
+ 	for (cpu = 0; cpu < cpus->nr; ++cpu) {
+ 		unsigned int expected;
  
- struct cpu_map *cpu_map__new(const char *cpu_list);
- struct cpu_map *cpu_map__dummy_new(void);
--void *cpu_map__delete(struct cpu_map *map);
-+void cpu_map__delete(struct cpu_map *map);
+@@ -416,18 +418,18 @@ static int test__open_syscall_event_on_all_cpus(void)
  
- #endif /* __PERF_CPUMAP_H */
+ 		if (perf_evsel__read_on_cpu(evsel, cpu, 0) < 0) {
+ 			pr_debug("perf_evsel__open_read_on_cpu\n");
+-			goto out_close_fd;
++			err = -1;
++			break;
+ 		}
+ 
+ 		expected = nr_open_calls + cpu;
+ 		if (evsel->counts->cpu[cpu].val != expected) {
+ 			pr_debug("perf_evsel__read_on_cpu: expected to intercept %d calls on cpu %d, got %" PRIu64 "\n",
+ 				 expected, cpus->map[cpu], evsel->counts->cpu[cpu].val);
+-			goto out_close_fd;
++			err = -1;
+ 		}
+ 	}
+ 
+-	err = 0;
+ out_close_fd:
+ 	perf_evsel__close_fd(evsel, 1, threads->nr);
+ out_evsel_delete:
