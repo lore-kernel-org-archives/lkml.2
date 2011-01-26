@@ -1,89 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab1AZSY1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 13:24:27 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39942 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753945Ab1AZSYX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 13:24:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=vY2bRlZi7WeRfEAtIB6PI6Yh1zFamyPAhIOfMc8jqHgweppcMV2BXKJp9KwFrcR9Xv
-         E3c7NZG8/VJDh1RJ74tI9k9sulM39wOelt8sIqMjzX7M4gRe1txyMMWLn84wxRqXC7H0
-         68d5sSPQ039pxv/Jfa+dGseRtsdVtWjIYmiKM=
-Date: Wed, 26 Jan 2011 10:24:15 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Gerd Hoffmann <kraxel@redhat.com>, Mark Lord <kernel@teksavvy.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils ?
-Message-ID: <20110126182415.GB29268@core.coreip.homeip.net>
-References: <20110125205453.GA19896@core.coreip.homeip.net>
- <4D3F4804.6070508@redhat.com>
- <4D3F4D11.9040302@teksavvy.com>
- <20110125232914.GA20130@core.coreip.homeip.net>
- <20110126020003.GA23085@core.coreip.homeip.net>
- <4D4004F9.6090200@redhat.com>
- <4D401CC5.4020000@redhat.com>
- <4D402D35.4090206@redhat.com>
- <20110126165132.GC29163@core.coreip.homeip.net>
- <4D4059E5.7050300@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D4059E5.7050300@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753518Ab1AZSXm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 13:23:42 -0500
+Received: from [123.122.106.155] ([123.122.106.155]:43811 "EHLO enigma.site"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751435Ab1AZSXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 13:23:41 -0500
+X-Greylist: delayed 587 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Jan 2011 13:23:41 EST
+From: Coly Li <bosong.ly@taobao.com>
+To: linux-kernel@vger.kernel.org
+Cc: Coly Li <bosong.ly@taobao.com>, Greg KH <gregkh@suse.de>
+Subject: [PATCH 5/6] wl_cfg80211.c: use BUG_ON correctly
+Date: Thu, 27 Jan 2011 02:39:52 +0800
+Message-Id: <1296067193-15879-6-git-send-email-bosong.ly@taobao.com>
+X-Mailer: git-send-email 1.7.3.2
+In-Reply-To: <1296067193-15879-1-git-send-email-bosong.ly@taobao.com>
+References: <1296067193-15879-1-git-send-email-bosong.ly@taobao.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 26, 2011 at 03:29:09PM -0200, Mauro Carvalho Chehab wrote:
-> Em 26-01-2011 14:51, Dmitry Torokhov escreveu:
-> > On Wed, Jan 26, 2011 at 12:18:29PM -0200, Mauro Carvalho Chehab wrote:
-> >> diff --git a/input.c b/input.c
-> >> index d57a31e..a9bd5e8 100644
-> >> --- a/input.c
-> >> +++ b/input.c
-> >> @@ -101,8 +101,8 @@ int device_open(int nr, int verbose)
-> >>  		close(fd);
-> >>  		return -1;
-> >>  	}
-> >> -	if (EV_VERSION != version) {
-> >> -		fprintf(stderr, "protocol version mismatch (expected %d, got %d)\n",
-> >> +	if (EV_VERSION > version) {
-> >> +		fprintf(stderr, "protocol version mismatch (expected >= %d, got %d)\n",
-> >>  			EV_VERSION, version);
-> > 
-> > Please do not do this. It causes check to "float" depending on the
-> > version of kernel headers it was compiled against.
-> > 
-> > The check should be against concrete version (0x10000 in this case).
-> 
-> The idea here is to not prevent it to load if version is 0x10001.
-> This is actually the only change that it is really needed (after applying
-> your KEY_RESERVED patch to 2.6.37) for the tool to work. Reverting it causes
-> the error:
+This patch removes explicit unlikely() when using BUG_ON() in
+wl_cfg80211.c
 
-You did not understand. When comparing against EV_VERSION, if you
-compile on 2.6.32 you are comparing with 0x10000. If you are compiling
-on 2.6.37 you are comparing with 0x10001 as EV_VERSION value changes
-(not the value returned by EVIOCGVERSION, the value of the _define_
-itself).
+Signed-off-by: Coly Li <bosong.ly@taobao.com>
+Cc: Greg KH <gregkh@suse.de>
+---
+ drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
-The proper check is:
-
-#define EVDEV_MIN_VERSION 0x10000
-	if (version < EVDEV_MIN_VERSION) {
-		fprintf(stderr,
-			"protocol version mismatch (need at least %d, got %d)\n",
-			EVDEV_MIN_VERSION, version);
-		...
-	}
-
+diff --git a/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
+index 991463f..35124b1 100644
+--- a/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
++++ b/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
+@@ -673,7 +673,7 @@ wl_dev_iovar_setbuf(struct net_device *dev, s8 * iovar, void *param,
+ 	s32 iolen;
+ 
+ 	iolen = bcm_mkiovar(iovar, param, paramlen, bufptr, buflen);
+-	BUG_ON(unlikely(!iolen));
++	BUG_ON(!iolen);
+ 
+ 	return wl_dev_ioctl(dev, WLC_SET_VAR, bufptr, iolen);
+ }
+@@ -685,7 +685,7 @@ wl_dev_iovar_getbuf(struct net_device *dev, s8 * iovar, void *param,
+ 	s32 iolen;
+ 
+ 	iolen = bcm_mkiovar(iovar, param, paramlen, bufptr, buflen);
+-	BUG_ON(unlikely(!iolen));
++	BUG_ON(!iolen);
+ 
+ 	return wl_dev_ioctl(dev, WLC_GET_VAR, bufptr, buflen);
+ }
+@@ -704,7 +704,7 @@ wl_run_iscan(struct wl_iscan_ctrl *iscan, struct wlc_ssid *ssid, u16 action)
+ 	if (unlikely(!params))
+ 		return -ENOMEM;
+ 	memset(params, 0, params_size);
+-	BUG_ON(unlikely(params_size >= WLC_IOCTL_SMLEN));
++	BUG_ON(params_size >= WLC_IOCTL_SMLEN);
+ 
+ 	wl_iscan_prep(&params->params, ssid);
+ 
+@@ -875,7 +875,7 @@ static s32 wl_dev_intvar_set(struct net_device *dev, s8 *name, s32 val)
+ 
+ 	val = htod32(val);
+ 	len = bcm_mkiovar(name, (char *)(&val), sizeof(val), buf, sizeof(buf));
+-	BUG_ON(unlikely(!len));
++	BUG_ON(!len);
+ 
+ 	err = wl_dev_ioctl(dev, WLC_SET_VAR, buf, len);
+ 	if (unlikely(err)) {
+@@ -899,7 +899,7 @@ wl_dev_intvar_get(struct net_device *dev, s8 *name, s32 *retval)
+ 	len =
+ 	    bcm_mkiovar(name, (char *)(&data_null), 0, (char *)(&var),
+ 			sizeof(var.buf));
+-	BUG_ON(unlikely(!len));
++	BUG_ON(!len);
+ 	err = wl_dev_ioctl(dev, WLC_GET_VAR, &var, len);
+ 	if (unlikely(err)) {
+ 		WL_ERR("error (%d)\n", err);
+@@ -2436,7 +2436,7 @@ wl_dev_bufvar_set(struct net_device *dev, s8 *name, s8 *buf, s32 len)
+ 	u32 buflen;
+ 
+ 	buflen = bcm_mkiovar(name, buf, len, wl->ioctl_buf, WL_IOCTL_LEN_MAX);
+-	BUG_ON(unlikely(!buflen));
++	BUG_ON(!buflen);
+ 
+ 	return wl_dev_ioctl(dev, WLC_SET_VAR, wl->ioctl_buf, buflen);
+ }
+@@ -2450,7 +2450,7 @@ wl_dev_bufvar_get(struct net_device *dev, s8 *name, s8 *buf,
+ 	s32 err = 0;
+ 
+ 	len = bcm_mkiovar(name, NULL, 0, wl->ioctl_buf, WL_IOCTL_LEN_MAX);
+-	BUG_ON(unlikely(!len));
++	BUG_ON(!len);
+ 	err = wl_dev_ioctl(dev, WLC_GET_VAR, (void *)wl->ioctl_buf,
+ 			WL_IOCTL_LEN_MAX);
+ 	if (unlikely(err)) {
 -- 
-Dmitry
+1.7.3.2
+
