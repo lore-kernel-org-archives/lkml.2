@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754491Ab1AZXbg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 18:31:36 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:26145 "EHLO
+	id S1754432Ab1AZXb5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 18:31:57 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:4854 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754471Ab1AZXbd (ORCPT
+	with ESMTP id S1754474Ab1AZXbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 18:31:33 -0500
+	Wed, 26 Jan 2011 18:31:36 -0500
 From: Mandeep Singh Baines <msb@chromium.org>
 To: gregkh@suse.de, rjw@sisk.pl, mingo@redhat.com, akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
         linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         Mandeep Singh Baines <msb@chromium.org>
-Subject: [PATCH 5/6] fs: use appropriate printk priority level
-Date: Wed, 26 Jan 2011 15:29:29 -0800
-Message-Id: <1296084570-31453-6-git-send-email-msb@chromium.org>
+Subject: [PATCH 2/6] arch/x86: use appropriate printk priority level
+Date: Wed, 26 Jan 2011 15:29:26 -0800
+Message-Id: <1296084570-31453-3-git-send-email-msb@chromium.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <20110125235700.GR8008@google.com>
 References: <20110125235700.GR8008@google.com>
@@ -30,51 +30,64 @@ dmesg warnings closely.
 
 Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
 ---
- fs/bio.c         |    2 +-
- fs/namespace.c   |    2 +-
- init/do_mounts.c |    3 ++-
- 3 files changed, 4 insertions(+), 3 deletions(-)
+ arch/x86/kernel/tsc.c       |    9 +++++----
+ arch/x86/platform/efi/efi.c |    2 +-
+ 2 files changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/fs/bio.c b/fs/bio.c
-index 4bd454f..4cf2a52 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -111,7 +111,7 @@ static struct kmem_cache *bio_find_or_create_slab(unsigned int extra_size)
- 	if (!slab)
- 		goto out_unlock;
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index ffe5755..dbf2cbc 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -373,7 +373,7 @@ static unsigned long quick_pit_calibrate(void)
+ 			goto success;
+ 		}
+ 	}
+-	printk("Fast TSC calibration failed\n");
++	printk(KERN_WARNING "Fast TSC calibration failed\n");
+ 	return 0;
  
--	printk("bio: create slab <%s> at %d\n", bslab->name, entry);
-+	printk(KERN_INFO "bio: create slab <%s> at %d\n", bslab->name, entry);
- 	bslab->slab = slab;
- 	bslab->slab_ref = 1;
- 	bslab->slab_size = sz;
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 7b0b953..c81bcd9 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -2594,7 +2594,7 @@ void __init mnt_init(void)
- 	if (!mount_hashtable)
- 		panic("Failed to allocate mount hash table\n");
+ success:
+@@ -395,7 +395,7 @@ success:
+ 	delta += (long)(d2 - d1)/2;
+ 	delta *= PIT_TICK_RATE;
+ 	do_div(delta, i*256*1000);
+-	printk("Fast TSC calibration using PIT\n");
++	printk(KERN_INFO "Fast TSC calibration using PIT\n");
+ 	return delta;
+ }
  
--	printk("Mount-cache hash table entries: %lu\n", HASH_SIZE);
-+	printk(KERN_INFO "Mount-cache hash table entries: %lu\n", HASH_SIZE);
+@@ -518,7 +518,8 @@ unsigned long native_calibrate_tsc(void)
  
- 	for (u = 0; u < HASH_SIZE; u++)
- 		INIT_LIST_HEAD(&mount_hashtable[u]);
-diff --git a/init/do_mounts.c b/init/do_mounts.c
-index 2b54bef..3e01121 100644
---- a/init/do_mounts.c
-+++ b/init/do_mounts.c
-@@ -293,7 +293,8 @@ static int __init do_mount_root(char *name, char *fs, int flags, void *data)
+ 		/* We don't have an alternative source, disable TSC */
+ 		if (!hpet && !ref1 && !ref2) {
+-			printk("TSC: No reference (HPET/PMTIMER) available\n");
++			printk(KERN_WARNING
++			       "TSC: No reference (HPET/PMTIMER) available\n");
+ 			return 0;
+ 		}
  
- 	sys_chdir((const char __user __force *)"/root");
- 	ROOT_DEV = current->fs->pwd.mnt->mnt_sb->s_dev;
--	printk("VFS: Mounted root (%s filesystem)%s on device %u:%u.\n",
-+	printk(KERN_INFO
-+	       "VFS: Mounted root (%s filesystem)%s on device %u:%u.\n",
- 	       current->fs->pwd.mnt->mnt_sb->s_type->name,
- 	       current->fs->pwd.mnt->mnt_sb->s_flags & MS_RDONLY ?
- 	       " readonly" : "", MAJOR(ROOT_DEV), MINOR(ROOT_DEV));
+@@ -1002,7 +1003,7 @@ void __init tsc_init(void)
+ 		return;
+ 	}
+ 
+-	printk("Detected %lu.%03lu MHz processor.\n",
++	printk(KERN_INFO "Detected %lu.%03lu MHz processor.\n",
+ 			(unsigned long)cpu_khz / 1000,
+ 			(unsigned long)cpu_khz % 1000);
+ 
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 0fe27d7..0da6907 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -376,7 +376,7 @@ void __init efi_init(void)
+ 	if (config_tables == NULL)
+ 		printk(KERN_ERR "Could not map EFI Configuration Table!\n");
+ 
+-	printk(KERN_INFO);
++	printk(KERN_INFO " ");
+ 	for (i = 0; i < efi.systab->nr_tables; i++) {
+ 		if (!efi_guidcmp(config_tables[i].guid, MPS_TABLE_GUID)) {
+ 			efi.mps = config_tables[i].table;
 -- 
 1.7.3.1
 
