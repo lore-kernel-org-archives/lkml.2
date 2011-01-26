@@ -1,126 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490Ab1AZPGC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 10:06:02 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:41666 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753370Ab1AZPF7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 10:05:59 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAKHHP01Ld/sX/2dsb2JhbAAMhAbNZJBogSODOHQEhRc
-X-IronPort-AV: E=Sophos;i="4.60,380,1291611600"; 
-   d="scan'208";a="89300288"
-Message-ID: <4D403855.4050706@teksavvy.com>
-Date: Wed, 26 Jan 2011 10:05:57 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Mauro Carvalho Chehab <mchehab@redhat.com>,
+	id S1753496Ab1AZPKO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 10:10:14 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:52099 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753386Ab1AZPKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 10:10:12 -0500
+Date: Wed, 26 Jan 2011 20:29:55 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils
- ?
-References: <4D3E59CA.6070107@teksavvy.com> <4D3E5A91.30207@teksavvy.com> <20110125053117.GD7850@core.coreip.homeip.net> <4D3EB734.5090100@redhat.com> <20110125164803.GA19701@core.coreip.homeip.net> <AANLkTi=1Mh0JrYk5itvef7O7e7pR+YKos-w56W5q4B8B@mail.gmail.com> <20110125205453.GA19896@core.coreip.homeip.net> <4D3F4804.6070508@redhat.com> <4D3F4D11.9040302@teksavvy.com> <20110125232914.GA20130@core.coreip.homeip.net> <20110126020003.GA23085@core.coreip.homeip.net>
-In-Reply-To: <20110126020003.GA23085@core.coreip.homeip.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 8/20]  8: uprobes: mmap and fork
+ hooks.
+Message-ID: <20110126145955.GJ19725@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
+ <20101216095848.23751.73144.sendpatchset@localhost6.localdomain6>
+ <1295957739.28776.717.camel@laptop>
+ <20110126090346.GH19725@linux.vnet.ibm.com>
+ <1296037239.28776.1149.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1296037239.28776.1149.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-01-25 09:00 PM, Dmitry Torokhov wrote:
-> On Tue, Jan 25, 2011 at 03:29:14PM -0800, Dmitry Torokhov wrote:
->> On Tue, Jan 25, 2011 at 05:22:09PM -0500, Mark Lord wrote:
->>> On 11-01-25 05:00 PM, Mauro Carvalho Chehab wrote:
->>>> Em 25-01-2011 18:54, Dmitry Torokhov escreveu:
-..
->>>>> That has been done as well; we have 2 new ioctls and kept 2 old ioctls.
->>>
->>> That's the problem: you did NOT keep the two old ioctls().
->>> Those got changed too.. so now we have four NEW ioctls(),
->>> none of which backward compatible with userspace.
->>>
->>
->> Please calm down. This, in fact, is not new vs old ioctl problem but
->> rather particular driver (or rather set of drivers) implementation
->> issue. Even if we drop the new ioctls and convert the RC code to use the
->> old ones you'd be observing the same breakage as RC code responds with
->> -EINVAL to not-yet-established mappings.
->>
->> I'll see what can be done for these drivers; I guess we could supply a
->> fake KEY_RESERVED entry for not mapped scancodes if there are mapped
->> scancodes "above" current one. That should result in the same behavior
->> for RCs as before.
->>
->
-> I wonder if the patch below is all that is needed...
+* Peter Zijlstra <peterz@infradead.org> [2011-01-26 11:20:39]:
 
-
-Nope. Does not work here:
-
-$ lsinput
-protocol version mismatch (expected 65536, got 65537)
-
-
-
->Input: ir-keymap - return KEY_RESERVED for unknown mappings
->
->Do not respond with -EINVAL to EVIOCGKEYCODE for not-yet-mapped scancodes,
->but rather return KEY_RESERVED.
->
->This fixes breakage with Ubuntu's input-kbd utility that stopped returning
->full keymaps for remote controls.
->
->Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
->---
->
-> drivers/media/IR/ir-keytable.c |   28 +++++++++++++++++-----------
-> 1 files changed, 17 insertions(+), 11 deletions(-)
->
->
->diff --git a/drivers/media/IR/ir-keytable.c b/drivers/media/IR/ir-keytable.c
->index f60107c..c4645d7 100644
->--- a/drivers/media/IR/ir-keytable.c
->+++ b/drivers/media/IR/ir-keytable.c
->@@ -374,21 +374,27 @@ static int ir_getkeycode(struct input_dev *dev,
-> 		index = ir_lookup_by_scancode(rc_tab, scancode);
-> 	}
+> On Wed, 2011-01-26 at 14:33 +0530, Srikar Dronamraju wrote:
+> > 
+> > 
+> > I actually dont like to release the write_lock and then reacquire it.
+> > write_opcode, which is called thro install_uprobe, i.e to insert the
+> > actual breakpoint instruction takes a read lock on the mmap_sem.
+> > Hence uprobe_mmap gets called in context with write lock on mmap_sem
+> > held, I had to release it before calling install_uprobe. 
 > 
->-	if (index >= rc_tab->len) {
->-		if (!(ke->flags & INPUT_KEYMAP_BY_INDEX))
->-			IR_dprintk(1, "unknown key for scancode 0x%04x\n",
->-				   scancode);
->+	if (index < rc_tab->len) {
->+		entry = &rc_tab->scan[index];
->+
->+		ke->index = index;
->+		ke->keycode = entry->keycode;
->+		ke->len = sizeof(entry->scancode);
->+		memcpy(ke->scancode, &entry->scancode, sizeof(entry->scancode));
->+
->+	} else if (!(ke->flags & INPUT_KEYMAP_BY_INDEX)) {
->+		/*
->+		 * We do not really know the valid range of scancodes
->+		 * so let's respond with KEY_RESERVED to anything we
->+		 * do not have mapping for [yet].
->+		 */
->+		ke->index = index;
->+		ke->keycode = KEY_RESERVED;
->+	} else {
-> 		retval = -EINVAL;
-> 		goto out;
-> 	}
+> Ah, right, so that's going to give you a head-ache ;-)
 > 
->-	entry = &rc_tab->scan[index];
->-
->-	ke->index = index;
->-	ke->keycode = entry->keycode;
->-	ke->len = sizeof(entry->scancode);
->-	memcpy(ke->scancode, &entry->scancode, sizeof(entry->scancode));
->-
-> 	retval = 0;
+> The moment you release this mmap_sem, the map you're going to install
+> the probe point in can go away.
 > 
-> out:
+> The only way to make this work seems to start by holding the mmap_sem
+> for writing and make a breakpoint install function that assumes its
+> taken and doesn't try to acquire it again.
+> 
+
+
+Yes, this can be done.
+I would have to do something like this in register_uprobe().
+
+list_for_each_entry_safe(mm, tmpmm, &tmp_list, uprobes_list) {
+		down_read(&mm->map_sem);
+                if (!install_uprobe(mm, uprobe))
+                        ret = 0;
+		up_read(&mm->map_sem);
+                list_del(&mm->uprobes_list);
+                mmput(mm);
+}
+
+Agree that this is much better than what we have now.
