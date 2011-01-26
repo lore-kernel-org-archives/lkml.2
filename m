@@ -1,87 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab1AZSun (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 13:50:43 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:51983 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751435Ab1AZSum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 13:50:42 -0500
-Date: Wed, 26 Jan 2011 12:50:12 -0600
-From: Robert Jennings <rcj@linux.vnet.ibm.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Nitin Gupta <ngupta@vflare.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
+	id S1753585Ab1AZSvI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 13:51:08 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:58006 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752647Ab1AZSvH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 13:51:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=WRmoFz9vmaQnuMdRgv21kQ6M59PtGa+xJ0gZSuOQTQOpMYsOtusxMvZv7rSZv7G0WZ
+         ld1QYCkcdqFzH5rWgC8HTb90AbAEig8vQ7EhieRpeOS0kFp4qJYIFdau1X+TYYaAiiCf
+         B666ZGyWbTJoiwZV+tLGOVaKbAJx1R9v4+428=
+MIME-Version: 1.0
+In-Reply-To: <20110126184057.GC17383@linux.vnet.ibm.com>
+References: <20110126172148.GB8446@linux.vnet.ibm.com>
+	<20110126172508.GF8446@linux.vnet.ibm.com>
+	<AANLkTi=eM-e9KU0PedOcXqR8TEVeAuP8Vnna-pxO4pRU@mail.gmail.com>
+	<20110126184057.GC17383@linux.vnet.ibm.com>
+Date: Wed, 26 Jan 2011 20:51:05 +0200
+X-Google-Sender-Auth: _KKnrC09iniIhxvWDT5FdcU5ktk
+Message-ID: <AANLkTinMwGf2zDE8MEDCFZtUcVKRYLVZVhzzcdj3TYZf@mail.gmail.com>
+Subject: Re: [PATCH 4/7] zram/xvmalloc: free bit block insertion optimization
+From: Pekka Enberg <penberg@kernel.org>
+To: Pekka Enberg <penberg@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Pekka Enberg <penberg@cs.helsinki.fi>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] zram/vmalloc: Correct tunings to enable use with
- 64K pages
-Message-ID: <20110126185012.GD17383@linux.vnet.ibm.com>
-Mail-Followup-To: Pekka Enberg <penberg@kernel.org>,
-	Nitin Gupta <ngupta@vflare.org>,
-	Greg Kroah-Hartman <gregkh@suse.de>,
-	Pekka Enberg <penberg@cs.helsinki.fi>, devel@driverdev.osuosl.org,
-	linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=gehk1_ogsb-A6uWyb0a1Y2GqwKVu4k1p0Z-D1@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+Cc: Robert Jennings <rcj@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pekka Enberg <penberg@kernel.org> wrote:
-> On Wed, Jan 26, 2011 at 7:22 PM, Robert Jennings> <rcj@linux.vnet.ibm.com> wrote:
->> xvmalloc will not currently function with 64K pages.  Newly allocated
->> pages will be inserted at an offset beyond the end of the first-level
->> index.  This tuning is needed to properly size the allocator for 64K
->> pages.
->> 
->> The default 3 byte shift results in a second level list size which can not
->> be indexed using the 64 bits of the flbitmap in the xv_pool structure.
->> The shift must increase to 4 bytes between second level list entries to
->> fit the size of the first level bitmap.
->> 
->> Here are a few statistics for structure sizes on 32- and 64-bit CPUs
->> with 4KB and 64KB page sizes.
->> 
->> bits_per_long              32        64        64
->> page_size               4,096     4,096    65,535
->> xv_align                    4         8         8
->> fl_delta                    3         3         4
->> num_free_lists            508       508     4,094
->> xv_pool size            4,144b    8,216b   66,040b
->> per object overhead        32        64        64
->> zram struct 0.5GB disk    512KB    1024KB      64KB
->> 
->> This patch maintains the current tunings for 4K pages, adds an optimal
->> sizing for 64K pages and adds a safe tuning for any other page sizes.
->> 
->> Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
->> ---
->>  drivers/staging/zram/xvmalloc_int.h |   18 ++++++++++++++++--
->>  1 files changed, 16 insertions(+), 2 deletions(-)
->> 
->> diff --git a/drivers/staging/zram/xvmalloc_int.h b/drivers/staging/zram/xvmalloc_int.h
->> index e23ed5c..051a49b 100644
->> --- a/drivers/staging/zram/xvmalloc_int.h
->> +++ b/drivers/staging/zram/xvmalloc_int.h
-<snip>
->> @@ -27,8 +31,18 @@
->>  #define XV_MIN_ALLOC_SIZE	32
->>  #define XV_MAX_ALLOC_SIZE	(PAGE_SIZE - XV_ALIGN)
->>  
->> -/* Free lists are separated by FL_DELTA bytes */
->> -#define FL_DELTA_SHIFT	3
->> +/*
->> + * Free lists are separated by FL_DELTA bytes
->> + * This value is 3 for 4k pages and 4 for 64k pages, for any
->> + * other page size, a conservative (PAGE_SHIFT - 9) is used.
->> + */
->> +#if PAGE_SHIFT == 12
->> +#define FL_DELTA_SHIFT 3
+On Wed, Jan 26, 2011 at 8:40 PM, Robert Jennings <rcj@linux.vnet.ibm.com> wrote:
+> * Pekka Enberg (penberg@kernel.org) wrote:
+>> On Wed, Jan 26, 2011 at 7:25 PM, Robert Jennings <rcj@linux.vnet.ibm.com> wrote:
+>> > There is no need to set the bits in the first- and second-level indices
+>> > to indicate a free page when we know that a free page existed at this
+>> > level.
+>> >
+>> > Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+>>
+>> Why is it not necessary? I don't know that part of the code well
+>> enough to tell if this patch is safe or not.
 >
-> This is handled by the else branch already, no?
+> This change is in a conditional block which is entered only when there is
+> an existing data block on the freelist where the insert has taken place.
+>
+> The new block is pushed onto the freelist stack and this conditional block
+> is updating links in the prior stack head to point to the new stack head.
+> After this conditional block the first-/second-level indices are updated
+> to indicate that there is a free block at this location.
+>
+> This patch adds an immediate return from the conditional block to avoid
+> setting bits again to indicate a free block on this freelist. They would
+> already be set because there was an existing free block on this freelist.
 
-Yes, it does not need to be there.  I will repost.
+Some of that information could be put in the changelog.
+
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
