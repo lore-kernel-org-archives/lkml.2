@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665Ab1AZIKw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 03:10:52 -0500
-Received: from vwp2514.webpack.hosteurope.de ([87.230.42.24]:48479 "EHLO
-	vwp2514.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751594Ab1AZIKu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 03:10:50 -0500
-Subject: Re: [PATCH] ARM: pxa: fix suspend on PXA3XX
-From: Sven Neumann <s.neumann@raumfeld.com>
-To: Eric Miao <eric.y.miao@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Daniel Mack <daniel@caiaq.de>
-In-Reply-To: <AANLkTinrxiHx6jX9jFzVzjq5FH-W=MLoDThAtRq2a1zZ@mail.gmail.com>
-References: <20110124101701.GE16202@n2100.arm.linux.org.uk>
-	 <1295864750-1238-1-git-send-email-s.neumann@raumfeld.com>
-	 <AANLkTinrxiHx6jX9jFzVzjq5FH-W=MLoDThAtRq2a1zZ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: RAUMFELD GmbH
-Date: Wed, 26 Jan 2011 09:10:47 +0100
-Message-ID: <1296029447.2013.8.camel@sven>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-bounce-key: webpack.hosteurope.de;s.neumann@raumfeld.com;1296029450;e18e6a74;
+	id S1752653Ab1AZIOk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 03:14:40 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:46524 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751383Ab1AZIOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 03:14:39 -0500
+Date: Wed, 26 Jan 2011 08:14:14 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 1/3] When migrate_pages returns 0, all pages must have
+	been released
+Message-ID: <20110126081414.GK18984@csn.ul.ie>
+References: <f60d811fd1abcb68d40ac19af35881d700a97cd2.1295539829.git.minchan.kim@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <f60d811fd1abcb68d40ac19af35881d700a97cd2.1295539829.git.minchan.kim@gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-26 at 05:06 +0800, Eric Miao wrote:
-> How about this instead?
+On Fri, Jan 21, 2011 at 01:17:05AM +0900, Minchan Kim wrote:
+> From: Andrea Arcangeli <aarcange@redhat.com>
 > 
-> diff --git a/arch/arm/mach-pxa/pm.c b/arch/arm/mach-pxa/pm.c
-> index 978e1b2..1807c9a 100644
-> --- a/arch/arm/mach-pxa/pm.c
-> +++ b/arch/arm/mach-pxa/pm.c
-> @@ -33,7 +33,7 @@ int pxa_pm_enter(suspend_state_t state)
->  #endif
+> From: Andrea Arcangeli <aarcange@redhat.com>
 > 
->  	/* skip registers saving for standby */
-> -	if (state != PM_SUSPEND_STANDBY) {
-> +	if (state != PM_SUSPEND_STANDBY && pxa_cpu_pm_fns->save) {
->  		pxa_cpu_pm_fns->save(sleep_save);
->  		/* before sleeping, calculate and save a checksum */
->  		for (i = 0; i < pxa_cpu_pm_fns->save_count - 1; i++)
-> @@ -44,7 +44,7 @@ int pxa_pm_enter(suspend_state_t state)
->  	pxa_cpu_pm_fns->enter(state);
->  	cpu_init();
+> In some cases migrate_pages could return zero while still leaving a
+> few pages in the pagelist (and some caller wouldn't notice it has to
+> call putback_lru_pages after commit
+> cf608ac19c95804dc2df43b1f4f9e068aa9034ab).
 > 
-> -	if (state != PM_SUSPEND_STANDBY) {
-> +	if (state != PM_SUSPEND_STANDBY && pxa_cpu_pm_fns->restore) {
->  		/* after sleeping, validate the checksum */
->  		for (i = 0; i < pxa_cpu_pm_fns->save_count - 1; i++)
->  			checksum += sleep_save[i];
+> Add one missing putback_lru_pages not added by commit
+> cf608ac19c95804dc2df43b1f4f9e068aa9034ab.
 > 
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 
-Not sure if that will work as well. With this change the code is
-skipping more than just the calls to pxa_cpu_pm_fns->save() and
-pxa_cpu_pm_fns->restore(). In particular it doesn't call
-pxa_cpu_pm_fns->enter(state).
+Better late than never;
 
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 
-Thanks,
-Sven
-
-
+-- 
+Mel Gorman
+Linux Technology Center
+IBM Dublin Software Lab
