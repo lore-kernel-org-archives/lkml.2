@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752925Ab1AZKXd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 05:23:33 -0500
-Received: from a.mx.secunet.com ([195.81.216.161]:42165 "EHLO a.mx.secunet.com"
+	id S1752878Ab1AZKYb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 05:24:31 -0500
+Received: from mga01.intel.com ([192.55.52.88]:35941 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752610Ab1AZKXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 05:23:31 -0500
-Date: Wed, 26 Jan 2011 11:23:28 +0100
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Eric Paris <eparis@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: flex_array related problems on selinux policy loading
-Message-ID: <20110126102328.GC3070@secunet.com>
-References: <20110120122659.GD4639@secunet.com>
- <1295537330.9039.583.camel@nimitz>
- <20110121072022.GA3070@secunet.com>
- <1295625455.9039.3326.camel@nimitz>
+	id S1752170Ab1AZKYa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 05:24:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,379,1291622400"; 
+   d="scan'208";a="651301127"
+From: "Berg, Johannes" <johannes.berg@intel.com>
+To: Bob Liu <lliubbo@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "chrisw@sous-sol.org" <chrisw@sous-sol.org>,
+        "Winkler, Tomas" <tomas.winkler@intel.com>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "gregkh@suse.de" <gregkh@suse.de>
+Date: Wed, 26 Jan 2011 10:23:39 +0000
+Subject: RE: [PATCH] firmware_classs: change val uevent's type to bool
+Thread-Topic: [PATCH] firmware_classs: change val uevent's type to bool
+Thread-Index: Acu9QExTLrCMp6kaSH6NyTqzIdO01AAAsz0u
+Message-ID: <C5C86A19469DAE48AAAD0E5F3716E44501D6329795@irsmsx504.ger.corp.intel.com>
+References: <1296036004-15644-1-git-send-email-lliubbo@gmail.com>
+	<C5C86A19469DAE48AAAD0E5F3716E44501D6329793@irsmsx504.ger.corp.intel.com>,<AANLkTinzHZorkTpDSv5J9_Q5kO5UUFnZb3CAafyOu2Qe@mail.gmail.com>
+In-Reply-To: <AANLkTinzHZorkTpDSv5J9_Q5kO5UUFnZb3CAafyOu2Qe@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295625455.9039.3326.camel@nimitz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 26 Jan 2011 10:23:29.0390 (UTC) FILETIME=[134468E0:01CBBD43]
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc'ed Andrew on request.
 
-On Fri, Jan 21, 2011 at 07:57:35AM -0800, Dave Hansen wrote:
-> 
-> My suggestion would be to simply make sure that the code handles 0-sized
-> objects and 0-length arrays OK, and do it in two separate patches.  The
-> ZERO_SIZE_PTR can't be used for both because you need to know which
-> situation you were in and you need different behavior (like in
-> flex_array_put()).
-> 
-> Frankly, I like the idea of just allocating a 'struct flex_array' in any
-> case, and just teaching the code to handle element_size=0 and
-> nr_elements=0.  That way, if you have bugs in the code that does things
-> like flex_array_alloc(elem_size=0, len=5, ...) and then
-> flex_array_get(fa, index=99), you have the potential to detect and
-> report the bugs.  The only way to do that is to remember what you set
-> the length as. 
+________________________________________
+From: Bob Liu [lliubbo@gmail.com]
+Sent: Wednesday, January 26, 2011 11:03
+To: Berg, Johannes
+Cc: linux-kernel@vger.kernel.org; chrisw@sous-sol.org; Winkler, Tomas; dmitry.torokhov@gmail.com; gregkh@suse.de
+Subject: Re: [PATCH] firmware_classs: change val uevent's type to bool
 
-Ok, if we can catch these bugs in an easy way, without a lot of extra
-handling for this a rare case, we should do this.
- 
-> 
-> If you're worried about allocating a whole page, you could easily just
-> kmalloc() a the two integers for the metadata portion of the 'struct
-> flex_array'.
-> 
+On Wed, Jan 26, 2011 at 5:56 PM, Berg, Johannes <johannes.berg@intel.com> wrote:
+> @@ -463,7 +463,8 @@ fw_create_instance(struct firmware *firmware, const char *fw_name,
+>        f_dev->parent = device;
+>        f_dev->class = &firmware_class;
+>
+> -       dev_set_uevent_suppress(f_dev, true);
+> +       if (uevent)
+> +               dev_set_uevent_suppress(f_dev, true);
+>
+> Everything but this is a no-op basically, but you didn't even describe this change?
+>
 
-Yes, I thought a moment on allocating the basic struct flex_array
-in any case. But I immediately stopped thinking about this when I saw that
-I would allocate a whole page that I don't need afterwards. For the moment
-I don't see any sane way to allocate just the metadata as long as the
-struct flex_array has a fixed size.
 
-Btw. why the struct flex_array needs to have page size? If we would make
-flex_array of dynamic size, say metadata plus the maximum size of the array
-in the case that the metadata and the array fit into a single page, and
-metadata plus space for all the base pointers we need to dereference the
-parts, if the metadata and array is beyond page size. With this, the struct
-flex_array would have a reasonable size in any case, even if the array to
-store is small or of zero size.
+Hmm.. Sorry for that, but I mentioned that by "fix a place missing
+uevent check".
+I added this check because I think it should be paired with following
+dev_set_uevent_suppress(f_dev, false).
 
-Steffen
+I don't think it should -- if you don't want uevents, then they should _always_ be suppressed, right?
+
+johannes
+--------------------------------------------------------------------------------------
+Intel GmbH
+Dornacher Strasse 1
+85622 Feldkirchen/Muenchen, Deutschland 
+Sitz der Gesellschaft: Feldkirchen bei Muenchen
+Geschaeftsfuehrer: Douglas Lusk, Peter Gleissner, Hannes Schwaderer
+Registergericht: Muenchen HRB 47456 
+Ust.-IdNr./VAT Registration No.: DE129385895
+Citibank Frankfurt a.M. (BLZ 502 109 00) 600119052
+
