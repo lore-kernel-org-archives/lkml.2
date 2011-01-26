@@ -1,47 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab1AZTQu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 14:16:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21321 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751736Ab1AZTQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 14:16:49 -0500
-Message-ID: <4D4072F9.5060206@redhat.com>
-Date: Wed, 26 Jan 2011 20:16:09 +0100
-From: Gerd Hoffmann <kraxel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Mark Lord <kernel@teksavvy.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils
- ?
-References: <20110125205453.GA19896@core.coreip.homeip.net> <4D3F4804.6070508@redhat.com> <4D3F4D11.9040302@teksavvy.com> <20110125232914.GA20130@core.coreip.homeip.net> <20110126020003.GA23085@core.coreip.homeip.net> <4D4004F9.6090200@redhat.com> <4D401CC5.4020000@redhat.com> <4D402D35.4090206@redhat.com> <20110126165132.GC29163@core.coreip.homeip.net> <4D4059E5.7050300@redhat.com> <20110126182415.GB29268@core.coreip.homeip.net>
-In-Reply-To: <20110126182415.GB29268@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753828Ab1AZTRv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 14:17:51 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:57032 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752920Ab1AZTRu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 14:17:50 -0500
+Date: Wed, 26 Jan 2011 11:16:02 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
+Cc: akpm@linux-foundation.org, Richard Purdie <rpurdie@rpsys.net>
+Subject: [PATCH -mmotm] backlight: apple_bl depends on ACPI
+Message-Id: <20110126111602.7bfea64e.randy.dunlap@oracle.com>
+In-Reply-To: <201101260021.p0Q0LxsS016458@imap1.linux-foundation.org>
+References: <201101260021.p0Q0LxsS016458@imap1.linux-foundation.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-   Hi,
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
->>> The check should be against concrete version (0x10000 in this case).
+apple_bl uses ACPI interfaces (data & code), so it should depend on ACPI.
 
-Stepping back: what does the version mean?
+drivers/video/backlight/apple_bl.c:142: warning: 'struct acpi_device' declared inside parameter list
+drivers/video/backlight/apple_bl.c:142: warning: its scope is only this definition or declaration, which is probably not what you want
+drivers/video/backlight/apple_bl.c:201: warning: 'struct acpi_device' declared inside parameter list
+drivers/video/backlight/apple_bl.c:215: error: variable 'apple_bl_driver' has initializer but incomplete type
+drivers/video/backlight/apple_bl.c:216: error: unknown field 'name' specified in initializer
+drivers/video/backlight/apple_bl.c:216: warning: excess elements in struct initializer
+drivers/video/backlight/apple_bl.c:216: warning: (near initialization for 'apple_bl_driver')
+drivers/video/backlight/apple_bl.c:217: error: unknown field 'ids' specified in initializer
+drivers/video/backlight/apple_bl.c:217: warning: excess elements in struct initializer
+drivers/video/backlight/apple_bl.c:217: warning: (near initialization for 'apple_bl_driver')
+drivers/video/backlight/apple_bl.c:218: error: unknown field 'ops' specified in initializer
+drivers/video/backlight/apple_bl.c:218: error: extra brace group at end of initializer
+drivers/video/backlight/apple_bl.c:218: error: (near initialization for 'apple_bl_driver')
+drivers/video/backlight/apple_bl.c:221: warning: excess elements in struct initializer
+drivers/video/backlight/apple_bl.c:221: warning: (near initialization for 'apple_bl_driver')
+drivers/video/backlight/apple_bl.c:226: error: implicit declaration of function 'acpi_bus_register_driver'
+drivers/video/backlight/apple_bl.c:231: error: implicit declaration of function 'acpi_bus_unregister_driver'
 
-0x10000 == 1.0 ?
-0x10001 == 1.1 ?
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+---
+ drivers/video/backlight/Kconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Can I expect the interface stay backward compatible if only the minor 
-revision changes, i.e. makes it sense to accept 1.x?
-
-Will the major revision ever change?  Does it make sense to check the 
-version at all?
-
-thanks,
-   Gerd
-
+--- mmotm-2011-0125-1547.orig/drivers/video/backlight/Kconfig
++++ mmotm-2011-0125-1547/drivers/video/backlight/Kconfig
+@@ -238,10 +238,10 @@ config BACKLIGHT_MAX8925
+ 
+ config BACKLIGHT_APPLE
+        tristate "Apple Backlight Driver"
+-       depends on X86
++       depends on X86 && ACPI
+        help
+          If you have an Intel-based Apple say Y to enable a driver for its
+-	 backlight
++	 backlight.
+ 
+ config BACKLIGHT_TOSA
+ 	tristate "Sharp SL-6000 Backlight Driver"
