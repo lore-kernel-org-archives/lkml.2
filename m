@@ -1,170 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753139Ab1AZHTB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 02:19:01 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:40615 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752281Ab1AZHS6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 02:18:58 -0500
-Date: Tue, 25 Jan 2011 23:18:33 -0800
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
-        axboe@kernel.dk, tytso@mit.edu, shli@kernel.org, neilb@suse.de,
-        adilger.kernel@dilger.ca, jack@suse.cz, snitzer@redhat.com,
-        linux-kernel@vger.kernel.org, kmannth@us.ibm.com, cmm@us.ibm.com,
-        linux-ext4@vger.kernel.org, rwheeler@redhat.com, hch@lst.de,
-        josef@redhat.com, Mark Fasheh <mfasheh@suse.com>,
-        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com
-Subject: [PATCH 2/3] jbd2: Remove barrier feature conditional flag (or:
-	always issue flushes)
-Message-ID: <20110126071833.GJ27190@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20110126071200.GE32261@tux1.beaverton.ibm.com>
+	id S1752921Ab1AZHUF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 02:20:05 -0500
+Received: from hera.kernel.org ([140.211.167.34]:55931 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751594Ab1AZHUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 02:20:03 -0500
+Date: Wed, 26 Jan 2011 07:19:27 GMT
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
+        peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
+        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <new-submission>
+References: <new-submission>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf evlist: Steal mmap reading routine from 'perf top'
+Message-ID: <tip-04391debc3e1195222a4dbb162ace6542dd89c1c@git.kernel.org>
+Git-Commit-ID: 04391debc3e1195222a4dbb162ace6542dd89c1c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20110126071200.GE32261@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 26 Jan 2011 07:19:27 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As part of migrating the FLUSH/FUA knob to the block layer, remove the journal
-flags and various conditionals in jbd2 that surround flush issue calls in favor
-of always issuing the flush.  The block layer will handle gracefully the
-situation where a FLUSH or FUA request is issued to a device that doesn't
-support it.
+Commit-ID:  04391debc3e1195222a4dbb162ace6542dd89c1c
+Gitweb:     http://git.kernel.org/tip/04391debc3e1195222a4dbb162ace6542dd89c1c
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Sat, 15 Jan 2011 10:40:59 -0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Sat, 22 Jan 2011 19:56:30 -0200
 
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+perf evlist: Steal mmap reading routine from 'perf top'
+
+Will be used in the upcoming 'perf test' entry for the evlist mmap
+routines.
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
+ tools/perf/builtin-top.c |   56 ++---------------------------------------
+ tools/perf/util/evlist.c |   62 ++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/evlist.h |    4 +++
+ 3 files changed, 69 insertions(+), 53 deletions(-)
 
- fs/ext4/fsync.c      |    5 ++---
- fs/ext4/super.c      |    7 -------
- fs/jbd2/checkpoint.c |    3 +--
- fs/jbd2/commit.c     |   10 +++-------
- fs/ocfs2/journal.c   |    4 ----
- include/linux/jbd2.h |    1 -
- 6 files changed, 6 insertions(+), 24 deletions(-)
-
-diff --git a/fs/ext4/fsync.c b/fs/ext4/fsync.c
-index 7829b28..8c99359 100644
---- a/fs/ext4/fsync.c
-+++ b/fs/ext4/fsync.c
-@@ -208,12 +208,11 @@ int ext4_sync_file(struct file *file, int datasync)
- 		 * the journal device.)
- 		 */
- 		if (ext4_should_writeback_data(inode) &&
--		    (journal->j_fs_dev != journal->j_dev) &&
--		    (journal->j_flags & JBD2_BARRIER))
-+		    (journal->j_fs_dev != journal->j_dev))
- 			blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL,
- 					NULL);
- 		ret = jbd2_log_wait_commit(journal, commit_tid);
--	} else if (journal->j_flags & JBD2_BARRIER)
-+	} else
- 		blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL);
- 	return ret;
- }
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 48ce561..7379829 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -3704,10 +3704,6 @@ static void ext4_init_journal_params(struct super_block *sb, journal_t *journal)
- 	journal->j_max_batch_time = sbi->s_max_batch_time;
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index df85c1f..58352ad 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1100,67 +1100,17 @@ static void event__process_sample(const event_t *self,
  
- 	write_lock(&journal->j_state_lock);
--	if (test_opt(sb, BARRIER))
--		journal->j_flags |= JBD2_BARRIER;
--	else
--		journal->j_flags &= ~JBD2_BARRIER;
- 	if (test_opt(sb, DATA_ERR_ABORT))
- 		journal->j_flags |= JBD2_ABORT_ON_SYNCDATA_ERR;
- 	else
-@@ -3899,9 +3895,6 @@ static int ext4_load_journal(struct super_block *sb,
- 			return -EINVAL;
- 	}
- 
--	if (!(journal->j_flags & JBD2_BARRIER))
--		ext4_msg(sb, KERN_INFO, "barriers disabled");
+ static void perf_session__mmap_read_cpu(struct perf_session *self, int cpu)
+ {
+-	struct perf_mmap *md = &evsel_list->mmap[cpu];
+-	unsigned int head = perf_mmap__read_head(md);
+-	unsigned int old = md->prev;
+-	unsigned char *data = md->base + page_size;
+ 	struct sample_data sample;
+-	int diff;
 -
- 	if (!really_read_only && test_opt(sb, UPDATE_JOURNAL)) {
- 		err = jbd2_journal_update_format(journal);
- 		if (err)  {
-diff --git a/fs/jbd2/checkpoint.c b/fs/jbd2/checkpoint.c
-index 6a79fd0..02eb6b9 100644
---- a/fs/jbd2/checkpoint.c
-+++ b/fs/jbd2/checkpoint.c
-@@ -540,8 +540,7 @@ int jbd2_cleanup_journal_tail(journal_t *journal)
- 	 * correctness.  Fortunately jbd2_cleanup_journal_tail()
- 	 * doesn't get called all that often.
- 	 */
--	if ((journal->j_fs_dev != journal->j_dev) &&
--	    (journal->j_flags & JBD2_BARRIER))
-+	if (journal->j_fs_dev != journal->j_dev)
- 		blkdev_issue_flush(journal->j_fs_dev, GFP_KERNEL, NULL);
- 	if (!(journal->j_flags & JBD2_ABORT))
- 		jbd2_journal_update_superblock(journal, 1);
-diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
-index f3ad159..e90ec0d 100644
---- a/fs/jbd2/commit.c
-+++ b/fs/jbd2/commit.c
-@@ -134,8 +134,7 @@ static int journal_submit_commit_record(journal_t *journal,
- 	set_buffer_uptodate(bh);
- 	bh->b_end_io = journal_end_buffer_io_sync;
- 
--	if (journal->j_flags & JBD2_BARRIER &&
--	    !JBD2_HAS_INCOMPAT_FEATURE(journal,
-+	if (!JBD2_HAS_INCOMPAT_FEATURE(journal,
- 				       JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT))
- 		ret = submit_bh(WRITE_SYNC_PLUG | WRITE_FLUSH_FUA, bh);
- 	else
-@@ -686,8 +685,7 @@ start_journal_io:
- 	 * the commit record
- 	 */
- 	if (commit_transaction->t_flushed_data_blocks &&
--	    (journal->j_fs_dev != journal->j_dev) &&
--	    (journal->j_flags & JBD2_BARRIER))
-+	    (journal->j_fs_dev != journal->j_dev))
- 		blkdev_issue_flush(journal->j_fs_dev, GFP_KERNEL, NULL);
- 
- 	/* Done it all: now write the commit record asynchronously. */
-@@ -811,10 +809,8 @@ wait_for_iobuf:
- 	if (!err && !is_journal_aborted(journal))
- 		err = journal_wait_on_commit_record(journal, cbh);
- 	if (JBD2_HAS_INCOMPAT_FEATURE(journal,
--				      JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT) &&
--	    journal->j_flags & JBD2_BARRIER) {
-+				      JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT))
- 		blkdev_issue_flush(journal->j_dev, GFP_KERNEL, NULL);
+-	/*
+-	 * If we're further behind than half the buffer, there's a chance
+-	 * the writer will bite our tail and mess up the samples under us.
+-	 *
+-	 * If we somehow ended up ahead of the head, we got messed up.
+-	 *
+-	 * In either case, truncate and restart at head.
+-	 */
+-	diff = head - old;
+-	if (diff > md->mask / 2 || diff < 0) {
+-		fprintf(stderr, "WARNING: failed to keep up with mmap data.\n");
+-
+-		/*
+-		 * head points to a known good entry, start there.
+-		 */
+-		old = head;
 -	}
+-
+-	for (; old != head;) {
+-		event_t *event = (event_t *)&data[old & md->mask];
+-
+-		event_t event_copy;
+-
+-		size_t size = event->header.size;
+-
+-		/*
+-		 * Event straddles the mmap boundary -- header should always
+-		 * be inside due to u64 alignment of output.
+-		 */
+-		if ((old & md->mask) + size != ((old + size) & md->mask)) {
+-			unsigned int offset = old;
+-			unsigned int len = min(sizeof(*event), size), cpy;
+-			void *dst = &event_copy;
+-
+-			do {
+-				cpy = min(md->mask + 1 - (offset & md->mask), len);
+-				memcpy(dst, &data[offset & md->mask], cpy);
+-				offset += cpy;
+-				dst += cpy;
+-				len -= cpy;
+-			} while (len);
+-
+-			event = &event_copy;
+-		}
++	event_t *event;
  
- 	if (err)
- 		jbd2_journal_abort(journal, err);
-diff --git a/fs/ocfs2/journal.c b/fs/ocfs2/journal.c
-index faa2303..caacabe 100644
---- a/fs/ocfs2/journal.c
-+++ b/fs/ocfs2/journal.c
-@@ -758,10 +758,6 @@ void ocfs2_set_journal_params(struct ocfs2_super *osb)
- 
- 	write_lock(&journal->j_state_lock);
- 	journal->j_commit_interval = commit_interval;
--	if (osb->s_mount_opt & OCFS2_MOUNT_BARRIER)
--		journal->j_flags |= JBD2_BARRIER;
--	else
--		journal->j_flags &= ~JBD2_BARRIER;
- 	write_unlock(&journal->j_state_lock);
++	while ((event = perf_evlist__read_on_cpu(evsel_list, cpu)) != NULL) {
+ 		event__parse_sample(event, self, &sample);
++
+ 		if (event->header.type == PERF_RECORD_SAMPLE)
+ 			event__process_sample(event, &sample, self);
+ 		else
+ 			event__process(event, &sample, self);
+-		old += size;
+ 	}
+-
+-	md->prev = old;
  }
  
-diff --git a/include/linux/jbd2.h b/include/linux/jbd2.h
-index 27e79c2..2c420ce 100644
---- a/include/linux/jbd2.h
-+++ b/include/linux/jbd2.h
-@@ -987,7 +987,6 @@ struct journal_s
- #define JBD2_ACK_ERR	0x004	/* The errno in the sb has been acked */
- #define JBD2_FLUSHED	0x008	/* The journal superblock has been flushed */
- #define JBD2_LOADED	0x010	/* The journal superblock has been loaded */
--#define JBD2_BARRIER	0x020	/* Use IDE barriers */
- #define JBD2_ABORT_ON_SYNCDATA_ERR	0x040	/* Abort the journal on file
- 						 * data write error in ordered
- 						 * mode */
+ static void perf_session__mmap_read(struct perf_session *self)
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index deb82a4..4b3b84c 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -95,3 +95,65 @@ struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id)
+ 			return sid->evsel;
+ 	return NULL;
+ }
++
++event_t *perf_evlist__read_on_cpu(struct perf_evlist *evlist, int cpu)
++{
++	/* XXX Move this to perf.c, making it generally available */
++	unsigned int page_size = sysconf(_SC_PAGE_SIZE);
++	struct perf_mmap *md = &evlist->mmap[cpu];
++	unsigned int head = perf_mmap__read_head(md);
++	unsigned int old = md->prev;
++	unsigned char *data = md->base + page_size;
++	event_t *event = NULL;
++	int diff;
++
++	/*
++	 * If we're further behind than half the buffer, there's a chance
++	 * the writer will bite our tail and mess up the samples under us.
++	 *
++	 * If we somehow ended up ahead of the head, we got messed up.
++	 *
++	 * In either case, truncate and restart at head.
++	 */
++	diff = head - old;
++	if (diff > md->mask / 2 || diff < 0) {
++		fprintf(stderr, "WARNING: failed to keep up with mmap data.\n");
++
++		/*
++		 * head points to a known good entry, start there.
++		 */
++		old = head;
++	}
++
++	if (old != head) {
++		size_t size;
++
++		event = (event_t *)&data[old & md->mask];
++		size = event->header.size;
++
++		/*
++		 * Event straddles the mmap boundary -- header should always
++		 * be inside due to u64 alignment of output.
++		 */
++		if ((old & md->mask) + size != ((old + size) & md->mask)) {
++			unsigned int offset = old;
++			unsigned int len = min(sizeof(*event), size), cpy;
++			void *dst = &evlist->event_copy;
++
++			do {
++				cpy = min(md->mask + 1 - (offset & md->mask), len);
++				memcpy(dst, &data[offset & md->mask], cpy);
++				offset += cpy;
++				dst += cpy;
++				len -= cpy;
++			} while (len);
++
++			event = &evlist->event_copy;
++		}
++
++		old += size;
++	}
++
++	md->prev = old;
++	return event;
++}
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index dbfcc79..2871206 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/list.h>
+ #include "../perf.h"
++#include "event.h"
+ 
+ struct pollfd;
+ 
+@@ -15,6 +16,7 @@ struct perf_evlist {
+ 	int		 nr_entries;
+ 	int		 nr_fds;
+ 	int		 mmap_len;
++	event_t		 event_copy;
+ 	struct perf_mmap *mmap;
+ 	struct pollfd	 *pollfd;
+ };
+@@ -32,4 +34,6 @@ void perf_evlist__add_pollfd(struct perf_evlist *evlist, int fd);
+ 
+ struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id);
+ 
++event_t *perf_evlist__read_on_cpu(struct perf_evlist *self, int cpu);
++
+ #endif /* __PERF_EVLIST_H */
