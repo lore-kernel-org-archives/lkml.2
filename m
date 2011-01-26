@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104Ab1AZGsJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 01:48:09 -0500
-Received: from mga03.intel.com ([143.182.124.21]:62907 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750809Ab1AZGsH convert rfc822-to-8bit (ORCPT
+	id S1752267Ab1AZGtY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 01:49:24 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:61591 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809Ab1AZGtX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 01:48:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,379,1291622400"; 
-   d="scan'208";a="380020052"
-From: "Du, Alek" <alek.du@intel.com>
-To: David Miller <davem@davemloft.net>,
-        "buytenh@secretlab.ca" <buytenh@secretlab.ca>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 26 Jan 2011 14:48:02 +0800
-Subject: RE: [PATCH] langwell_gpio: Fix deprecated refs to irq_desc->chip
- and chip->eoi
-Thread-Topic: [PATCH] langwell_gpio: Fix deprecated refs to irq_desc->chip
- and chip->eoi
-Thread-Index: Acu9Il6+X54P6OJWRyuxU5DRvituqwAAj+9w
-Message-ID: <1865303E0DED764181A9D882DEF65FB685DF499ACF@shsmsx502.ccr.corp.intel.com>
-References: <20110125.222948.112596409.davem@davemloft.net>
-In-Reply-To: <20110125.222948.112596409.davem@davemloft.net>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 26 Jan 2011 01:49:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Jlgpk+E4gsE+sCsR104uU8bwqeVgaNXykUUpmHxiZvWjZYtCm+/0g4Zkdf7qzL9i4x
+         8N03O0NwOyyMJG44rT5/u3wXFIc8UzED5pe73UHSiRHbJS74VoFEH21vRei5ueh4RczP
+         rZ+ENvML5GGO10Fv/jNinc/BzfvRFsFPKjPWw=
 MIME-Version: 1.0
+In-Reply-To: <20110126055610.GA2593@windriver.com>
+References: <1295651224-29823-1-git-send-email-torbenh@gmx.de>
+	<1295651224-29823-2-git-send-email-torbenh@gmx.de>
+	<1295901169.4845.29.camel@work-vm>
+	<alpine.LFD.2.00.1101242254420.31804@localhost6.localdomain6>
+	<1295907672.2274.44.camel@twins>
+	<alpine.LFD.2.00.1101242344090.31804@localhost6.localdomain6>
+	<1295946514.28776.476.camel@laptop>
+	<1295951677.28776.489.camel@laptop>
+	<1295974319.28776.1070.camel@laptop>
+	<20110126055610.GA2593@windriver.com>
+Date: Wed, 26 Jan 2011 14:49:22 +0800
+Message-ID: <AANLkTinGToHk-Rpc0p1s=RfDuXe=r=CuARb4xFfWNnuo@mail.gmail.com>
+Subject: Re: [PATCH 01/18] move do_timer() from kernel/timer.c into kernel/time/timekeeping.c
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, john stultz <johnstul@us.ibm.com>,
+        Torben Hohn <torbenh@gmx.de>, LKML <linux-kernel@vger.kernel.org>,
+        hch@infradead.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Another patch from Feng Tang already covers this and picked up by Andrew Morton.
+On Wed, Jan 26, 2011 at 1:56 PM, Yong Zhang <yong.zhang0@gmail.com> wrote:
+> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Subject: [PATCH] sched: Move the calc_global_load() call into the scheduler
+>
+> Remove the calc_global_load() call from the timekeeping code and make
+> it local to the scheduler.
+>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+> ---
+>  include/linux/sched.h |    2 --
+>  kernel/sched.c        |   34 +++++++++++++++++++++++-----------
+>  kernel/timer.c        |    1 -
+>  3 files changed, 23 insertions(+), 14 deletions(-)
+> +
+> +static __init void start_calc_global_timer()
 
-[patch 04/23] langwell_gpio: modify EOI handling following change of kernel irq subsystem
-
-
-Thanks,
-Alek
------Original Message-----
-From: David Miller [mailto:davem@davemloft.net] 
-Sent: Wednesday, January 26, 2011 2:30 PM
-To: buytenh@secretlab.ca
-Cc: Du, Alek; linux-kernel@vger.kernel.org
-Subject: [PATCH] langwell_gpio: Fix deprecated refs to irq_desc->chip and chip->eoi
-
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- drivers/gpio/langwell_gpio.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/gpio/langwell_gpio.c b/drivers/gpio/langwell_gpio.c
-index d81cc74..a0d0c7b 100644
---- a/drivers/gpio/langwell_gpio.c
-+++ b/drivers/gpio/langwell_gpio.c
-@@ -206,7 +206,7 @@ static void lnw_irq_handler(unsigned irq, struct irq_desc *desc)
- 		/* clear the edge detect status bit */
- 		writel(gedr_v, gedr);
- 	}
--	desc->chip->eoi(irq);
-+	desc->irq_data.chip->irq_eoi(&desc->irq_data);
- }
- 
- static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
--- 
-1.7.3.4
-
+should be
+static __init void start_calc_global_timer(void)
