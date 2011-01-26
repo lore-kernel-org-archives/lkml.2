@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753716Ab1AZTuW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 14:50:22 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:46325 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab1AZTuU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 14:50:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=r3j4E/E5FEmLz7e6h3Fp2kB09sp762fp3nlksiYAb+brDgMVQTV8juVrf5fcaqcYrY
-         O2mhcU1UN9i9nndPH7w4mDt892J4V+sTrYDDBomOTxWfSnndjcu0tVBkMuRdW0eCG81C
-         /GNw8aM5bmDt3aY/OiJiCambkTLAKc8KO3pKg=
-Date: Wed, 26 Jan 2011 11:50:12 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Mark Lord <kernel@teksavvy.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils ?
-Message-ID: <20110126195011.GF29268@core.coreip.homeip.net>
-References: <20110125205453.GA19896@core.coreip.homeip.net>
- <4D3F4804.6070508@redhat.com>
- <4D3F4D11.9040302@teksavvy.com>
- <20110125232914.GA20130@core.coreip.homeip.net>
- <20110126020003.GA23085@core.coreip.homeip.net>
- <4D403855.4050706@teksavvy.com>
- <4D405A9D.4070607@redhat.com>
- <4D4076FD.6070207@teksavvy.com>
- <20110126194127.GE29268@core.coreip.homeip.net>
- <4D407A46.4080407@teksavvy.com>
+	id S1753919Ab1AZTu5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 14:50:57 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:53015 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753342Ab1AZTu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 14:50:56 -0500
+Date: Wed, 26 Jan 2011 13:50:51 -0600
+From: Robert Jennings <rcj@linux.vnet.ibm.com>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Nitin Gupta <ngupta@vflare.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/7] zram: Speed insertion of new pages with cached idx
+Message-ID: <20110126195051.GF17383@linux.vnet.ibm.com>
+Mail-Followup-To: Pekka Enberg <penberg@cs.helsinki.fi>,
+	Nitin Gupta <ngupta@vflare.org>,
+	Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D407A46.4080407@teksavvy.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <AANLkTinF=r_wUw_ZgfcdrFD6nWh3VKwUOjQ+wsbVax0C@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 26, 2011 at 02:47:18PM -0500, Mark Lord wrote:
-> On 11-01-26 02:41 PM, Dmitry Torokhov wrote:
-> >
-> > I do not consider lsinput refusing to work a regression.
+* Pekka Enberg (penberg@cs.helsinki.fi) wrote:
+> On Wed, Jan 26, 2011 at 7:23 PM, Robert Jennings> <rcj@linux.vnet.ibm.com> wrote:
+>> Calculate the first- and second-level indices for new page when the pool
+>> is initialized rather than calculating them on each insertion.
+>> 
+>> Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+>> ---
+>>  drivers/staging/zram/xvmalloc.c     |   13 +++++++++++--
+>>  drivers/staging/zram/xvmalloc_int.h |    4 ++++
+>>  2 files changed, 15 insertions(+), 2 deletions(-)
+>> 
+>> diff --git a/drivers/staging/zram/xvmalloc.c b/drivers/staging/zram/xvmalloc.c
+>> index 3fdbb8a..a507f95 100644
+>> --- a/drivers/staging/zram/xvmalloc.c
+>> +++ b/drivers/staging/zram/xvmalloc.c
+>> @@ -184,8 +184,13 @@ static void insert_block(struct xv_pool *pool, struct page *page, u32 offset,
+>>  	u32 flindex, slindex;
+>>  	struct block_header *nextblock;
+>>  
+>> -	slindex = get_index_for_insert(block->size);
+>> -	flindex = slindex / BITS_PER_LONG;
+>> +	if (block->size >= (PAGE_SIZE - XV_ALIGN)) {
+>> +		slindex = pagesize_slindex;
+>> +		flindex = pagesize_flindex;
+>> +	} else {
+>> +		slindex = get_index_for_insert(block->size);
+>> +		flindex = slindex / BITS_PER_LONG;
+>> +	}
+>>  
+>>  	block->link.prev_page = 0;
+>>  	block->link.prev_offset = 0;
+>> @@ -316,6 +321,10 @@ struct xv_pool *xv_create_pool(void)
+>>  	if (!pool)
+>>  		return NULL;
+>>  
+>> +	/* cache the first/second-level indices for PAGE_SIZE allocations */
+>> +	pagesize_slindex = get_index_for_insert(PAGE_SIZE);
+>> +	pagesize_flindex = pagesize_slindex / BITS_PER_LONG;
 > 
-> Obviously, since you don't use that tool.
-> Those of us who do use it see this as broken userspace compatibility.
-> 
-> Who the hell reviews this crap, anyway?
-> Code like that should never have made it upstream in the first place.
-> 
+> Why is this in xv_create_pool(). AFAICT, it can be called multiple
+> times if there's more than one zram device. Do we really need
+> variables for these? They look like something GCC constant propagation
+> should take care of if they would be defines or static inline
+> functions.
 
-You are more than welcome spend more time on reviews.
-
-Thanks.
-
--- 
-Dmitry
+It should have been a define rather than in xv_create_pool but as I read
+more about GCC constant propagation and look at the get_index_for_insert
+I believe that this patch is unnecessary.  For sizes near PAGE_SIZE
+(>XV_MAX_ALLOC_SIZE) I believe GCC constant propagation should do
+exactly what I though I was trying to do.  I will drop this patch.
+Thank you for your reviews.
