@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008Ab1AZLmZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 06:42:25 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:49370 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751487Ab1AZLmX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 06:42:23 -0500
-Date: Wed, 26 Jan 2011 12:42:03 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Randy Dunlap <randy.dunlap@oracle.com>, Len Brown <lenb@kernel.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Luming Yu <luming.yu@intel.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-acpi@vger.kernel.org
-Subject: Re: linux-next: Tree for December 20 (acpi_video)
-Message-ID: <20110126114203.GA16754@elte.hu>
-References: <20101220200013.df8fbc88.sfr@canb.auug.org.au>
- <20101220085340.7ba098b9.randy.dunlap@oracle.com>
+	id S1753125Ab1AZLo1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 06:44:27 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55573 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752720Ab1AZLoZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 06:44:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=KoTlXhyWWUYYN5/hQHCzNkd3VGleACPRo2CDf3G5gb5DVZKYRF4QLLdDtAOZ2WcFOM
+         16ZV86PdCnVoKhV7hGTWvH2hJzjY3KTpVG1VM7bWHCA0zjM9MLNZADkKW+bsaz3Za795
+         KapNaQCAL/tD+TDeJqmPWEQ1C0aMybirxrfxY=
+Date: Wed, 26 Jan 2011 13:44:15 +0200
+From: "Ahmed S. Darwish" <darwish.07@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, X86-ML <x86@kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Willy Tarreau <wtarreau@hera.kernel.org>, Willy Tarreau <w@1wt.eu>,
+        Dirk Hohndel <hohndel@infradead.org>, Dirk.Hohndel@intel.com,
+        IDE-ML <linux-ide@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@infradead.org>,
+        Tejun Heo <tj@kernel.org>, James Bottomley <James.Bottomley@suse.de>,
+        Mark Lord <kernel@teksavvy.com>, Jeff Garzik <jgarzik@pobox.com>
+Subject: Re: [PATCH 0/2][concept RFC] x86: BIOS-save kernel log to disk
+	upon panic
+Message-ID: <20110126114415.GB24527@laptop>
+References: <20110125134748.GA10051@laptop> <20110125140948.GA26762@elte.hu> <20110125150834.GD27510@htj.dyndns.org> <4D3F095E.9000004@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101220085340.7ba098b9.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4D3F095E.9000004@zytor.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Randy Dunlap <randy.dunlap@oracle.com> wrote:
-
-> On Mon, 20 Dec 2010 20:00:13 +1100 Stephen Rothwell wrote:
+On Tue, Jan 25, 2011 at 09:33:18AM -0800, H. Peter Anvin wrote:
+> On 01/25/2011 07:08 AM, Tejun Heo wrote:
 > 
-> > Hi all,
-> > 
-> > [The mirroring on kernel.org is running slowly]
-> > 
-> > Changes since 20101217:
+> >> All in one, a very intriguing idea IMO, and the hardest bits
+> >> (lowlevel x86 transition) is all implemented already.
 > 
-> 
-> ERROR: "thermal_cooling_device_register" [drivers/acpi/video.ko] undefined!
-> ERROR: "thermal_cooling_device_unregister" [drivers/acpi/video.ko] undefined!
+> Lowlevel x86 transition is not at all the hardest part.  It's
+> detail-oriented but well defined (and, I might add, incompletely
+> implemented -- 64 bits only, not using facilities we already have);
+>
 
-This bug has been reported two months ago, one month ago, it has been ignored twice 
-and now the bug has been pushed upstream and it's triggering there as well.
+Making the transition code applicable to 32-bit CPUs will hopefully be
+quite simple: it's mostly a subset of the posted parts.
 
-What's going on?
+Since I might use that transition code for a different purpose now, any
+facilities not properly used beside the identity mappings?
 
-Thanks,
+thanks,
 
-	Ingo
+-- 
+Darwish
+http://darwish.07.googlepages.com
