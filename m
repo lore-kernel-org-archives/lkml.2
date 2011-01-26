@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab1AZAJg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 19:09:36 -0500
-Received: from netnation.com ([204.174.223.2]:32866 "EHLO peace.netnation.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752381Ab1AZAJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 19:09:35 -0500
-Date: Tue, 25 Jan 2011 16:09:32 -0800
-From: Simon Kirby <sim@hostway.ca>
-To: linux-kernel@vger.kernel.org, Shawn Bohrer <shawn.bohrer@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: sys_epoll_wait high CPU load in 2.6.37
-Message-ID: <20110126000932.GA23089@hostway.ca>
-MIME-Version: 1.0
+	id S1753706Ab1AZAQH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 19:16:07 -0500
+Received: from lo.gmane.org ([80.91.229.12]:50847 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752707Ab1AZAQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 19:16:06 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 10/20] hpfs: replace BKL with a global mutex
+Date: Tue, 25 Jan 2011 16:15:51 -0800
+Message-ID: <m2oc7434g8.fsf@firstfloor.org>
+References: <1295993854-4971-1-git-send-email-arnd@arndb.de>
+	<1295993854-4971-11-git-send-email-arnd@arndb.de>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: jfdmzpr02-ext.jf.intel.com
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+Cancel-Lock: sha1:cl7TDsgqLfqlaIQ8OVB4pEoFwr8=
+Cc: linux-fsdevel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+Arnd Bergmann <arnd@arndb.de> writes:
 
-Since upgrading 2.6.36 -> 2.6.37, dovecot's "anvil" process seems to end
-up taking a lot more time in "top", and "perf top" shows output like this
-(system-wide):
+> This removes the BKL in hpfs in a rather awful
+> way, by replacing it with a mutex that basically
+> serializes the entire file system.
 
-  samples  pcnt function                      DSO
-  _______ _____ _____________________________ __________________________
+I don't think that's a very good idea, there's danger
+of holding it over IO and that would be really bad (as in like MINIX[1])
 
-  2405.00 68.8% sys_epoll_wait                [kernel.kallsyms]
-    33.00  0.9% mail_cache_lookup_iter_next   libdovecot-storage.so.0.0.0
-    30.00  0.9% _raw_spin_lock                [kernel.kallsyms]
-    ...etc...
+It would be better to do it the i810 way and check for the number of
+CPUs at module init time and refuse to run if it's > 1
 
-It only wakes up 5-10 times per second or so (on this box), and does
-stuff like this:
+-Andi
 
-epoll_wait(12, {{EPOLLIN, {u32=19417616, u64=19417616}}}, 25, 2147483647) = 1
-read(29, "PENALTY-GET\t192.168.31.10\n"..., 738) = 26
-write(29, "0 0\n"..., 4)                = 4
-epoll_wait(12, {{EPOLLIN, {u32=19395632, u64=19395632}}}, 25, 2147483647) = 1
-read(18, "LOOKUP\tpop3/192.168.31.10/tshield"..., 668) = 58
-write(18, "0\n"..., 2)                  = 2
-epoll_wait(12, {{EPOLLIN, {u32=19373072, u64=19373072}}}, 25, 2147483647) = 1
-read(7, "CONNECT\t3490\tpop3/192.168.31.10/t"..., 254) = 64
-epoll_wait(12, {{EPOLLIN, {u32=19373072, u64=19373072}}}, 25, 2147483647) = 1
-read(7, "DISCONNECT\t3482\tpop3/192.168.31.1"..., 190) = 62
+[1] showing my age
+-- 
+Andi Kleen
+Intel Open Source Technology Center
 
-Anything obvious here?  anvil talks over UNIX sockets to the rest of
-dovecot, and uses epoll_wait.  So, suspect commits might be:
-
-95aac7b1cd224f568fb83937044cd303ff11b029
-5456f09aaf88731e16dbcea7522cb330b6846415
-or other bits from
- git log v2.6.36..v2.6.37 net/unix/af_unix.c fs/eventpoll.c
-
-I suspect it has something to do with that "infinite value" check removal
-in that first commit.  It doesn't show up easily on a test box, but I can
-try reverting 95aac7b1cd in production if it's not obvious.
-
-Simon-
