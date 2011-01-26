@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771Ab1AZHPT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 02:15:19 -0500
-Received: from hera.kernel.org ([140.211.167.34]:55690 "EHLO hera.kernel.org"
+	id S1752808Ab1AZHPj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 02:15:39 -0500
+Received: from hera.kernel.org ([140.211.167.34]:55714 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752213Ab1AZHPQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 02:15:16 -0500
-Date: Wed, 26 Jan 2011 07:14:30 GMT
+	id S1752213Ab1AZHPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 02:15:37 -0500
+Date: Wed, 26 Jan 2011 07:14:51 GMT
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: eranian@google.com, paulus@samba.org, linux-kernel@vger.kernel.org,
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
         peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
         tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, paulus@samba.org, eranian@google.com,
-        tzanussi@gmail.com, efault@gmx.de, peterz@infradead.org,
-        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
+        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
 In-Reply-To: <new-submission>
 References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evlist: Adopt the pollfd array
-Message-ID: <tip-5c581041cf97aa7980b442de81ddea8273d6dcde@git.kernel.org>
-Git-Commit-ID: 5c581041cf97aa7980b442de81ddea8273d6dcde
+Subject: [tip:perf/core] perf evsel: Support event groups
+Message-ID: <tip-f08199d314458610d4ca52f8e86e0a4ec7a7bc54@git.kernel.org>
+Git-Commit-ID: f08199d314458610d4ca52f8e86e0a4ec7a7bc54
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 26 Jan 2011 07:14:31 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 26 Jan 2011 07:14:52 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5c581041cf97aa7980b442de81ddea8273d6dcde
-Gitweb:     http://git.kernel.org/tip/5c581041cf97aa7980b442de81ddea8273d6dcde
+Commit-ID:  f08199d314458610d4ca52f8e86e0a4ec7a7bc54
+Gitweb:     http://git.kernel.org/tip/f08199d314458610d4ca52f8e86e0a4ec7a7bc54
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 11 Jan 2011 22:30:02 -0200
+AuthorDate: Tue, 11 Jan 2011 23:42:19 -0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Sat, 22 Jan 2011 19:56:28 -0200
 
-perf evlist: Adopt the pollfd array
+perf evsel: Support event groups
 
-Allocating just the space needed for nr_cpus * nr_threads * nr_evsels,
-not the MAX_NR_CPUS and counters.
+The perf_evsel__open now have an extra boolean argument specifying if
+event grouping is desired.
 
-LKML-Reference: <new-submission>
+The first file descriptor created on a CPU becomes the group leader.
+
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Mike Galbraith <efault@gmx.de>
@@ -53,211 +54,146 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
 Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c |   20 +++++++-------------
- tools/perf/builtin-top.c    |   26 +++++++++++---------------
- tools/perf/util/evlist.c    |    9 +++++++++
- tools/perf/util/evlist.h    |    6 ++++++
- 4 files changed, 33 insertions(+), 28 deletions(-)
+ tools/perf/builtin-stat.c |    4 ++--
+ tools/perf/builtin-test.c |    4 ++--
+ tools/perf/util/evsel.c   |   27 +++++++++++++++++----------
+ tools/perf/util/evsel.h   |   10 ++++++----
+ 4 files changed, 27 insertions(+), 18 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 252ace8..1614d89 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -72,9 +72,6 @@ static struct perf_evlist	*evsel_list;
- static long			samples				=      0;
- static u64			bytes_written			=      0;
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index da90902..b5fe522 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -169,7 +169,7 @@ static int create_perf_stat_counter(struct perf_evsel *evsel)
+ 				    PERF_FORMAT_TOTAL_TIME_RUNNING;
  
--static struct pollfd		*event_array;
--
--static int			nr_poll				=      0;
- static int			nr_cpu				=      0;
+ 	if (system_wide)
+-		return perf_evsel__open_per_cpu(evsel, cpus);
++		return perf_evsel__open_per_cpu(evsel, cpus, false);
  
- static int			file_new			=      1;
-@@ -432,9 +429,9 @@ try_again:
- 				exit(-1);
- 			}
+ 	attr->inherit = !no_inherit;
+ 	if (target_pid == -1 && target_tid == -1) {
+@@ -177,7 +177,7 @@ static int create_perf_stat_counter(struct perf_evsel *evsel)
+ 		attr->enable_on_exec = 1;
+ 	}
  
--			event_array[nr_poll].fd = FD(evsel, nr_cpu, thread_index);
--			event_array[nr_poll].events = POLLIN;
--			nr_poll++;
-+			evlist->pollfd[evlist->nr_fds].fd = FD(evsel, nr_cpu, thread_index);
-+			evlist->pollfd[evlist->nr_fds].events = POLLIN;
-+			evlist->nr_fds++;
+-	return perf_evsel__open_per_thread(evsel, threads);
++	return perf_evsel__open_per_thread(evsel, threads, false);
+ }
+ 
+ /*
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 5dcdba6..4282d67 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -289,7 +289,7 @@ static int test__open_syscall_event(void)
+ 		goto out_thread_map_delete;
+ 	}
+ 
+-	if (perf_evsel__open_per_thread(evsel, threads) < 0) {
++	if (perf_evsel__open_per_thread(evsel, threads, false) < 0) {
+ 		pr_debug("failed to open counter: %s, "
+ 			 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
+ 			 strerror(errno));
+@@ -364,7 +364,7 @@ static int test__open_syscall_event_on_all_cpus(void)
+ 		goto out_thread_map_delete;
+ 	}
+ 
+-	if (perf_evsel__open(evsel, cpus, threads) < 0) {
++	if (perf_evsel__open(evsel, cpus, threads, false) < 0) {
+ 		pr_debug("failed to open counter: %s, "
+ 			 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
+ 			 strerror(errno));
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index f5cfed6..da473ec 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -128,7 +128,7 @@ int __perf_evsel__read(struct perf_evsel *evsel,
+ }
+ 
+ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+-			      struct thread_map *threads)
++			      struct thread_map *threads, bool group)
+ {
+ 	int cpu, thread;
+ 
+@@ -137,12 +137,18 @@ static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+ 		return -1;
+ 
+ 	for (cpu = 0; cpu < cpus->nr; cpu++) {
++		int group_fd = -1;
++
+ 		for (thread = 0; thread < threads->nr; thread++) {
+ 			FD(evsel, cpu, thread) = sys_perf_event_open(&evsel->attr,
+ 								     threads->map[thread],
+-								     cpus->map[cpu], -1, 0);
++								     cpus->map[cpu],
++								     group_fd, 0);
+ 			if (FD(evsel, cpu, thread) < 0)
+ 				goto out_close;
++
++			if (group && group_fd == -1)
++				group_fd = FD(evsel, cpu, thread);
  		}
- 
- 		if (filter != NULL) {
-@@ -793,7 +790,7 @@ static int __cmd_record(int argc, const char **argv)
- 		if (hits == samples) {
- 			if (done)
- 				break;
--			err = poll(event_array, nr_poll, -1);
-+			err = poll(evsel_list->pollfd, evsel_list->nr_fds, -1);
- 			waking++;
- 		}
- 
-@@ -948,9 +945,8 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- 		if (perf_header__push_event(pos->attr.config, event_name(pos)))
- 			goto out_free_fd;
- 	}
--	event_array = malloc((sizeof(struct pollfd) * MAX_NR_CPUS *
--			      MAX_COUNTERS * threads->nr));
--	if (!event_array)
-+
-+	if (perf_evlist__alloc_pollfd(evsel_list, cpus->nr, threads->nr) < 0)
- 		goto out_free_fd;
- 
- 	if (user_interval != ULLONG_MAX)
-@@ -968,13 +964,11 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- 	} else {
- 		fprintf(stderr, "frequency and count are zero, aborting\n");
- 		err = -EINVAL;
--		goto out_free_event_array;
-+		goto out_free_fd;
  	}
  
- 	err = __cmd_record(argc, argv);
- 
--out_free_event_array:
--	free(event_array);
- out_free_fd:
- 	thread_map__delete(threads);
- 	threads = NULL;
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 216b62e..1bc4652 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1193,8 +1193,6 @@ static void perf_session__mmap_read_counter(struct perf_session *self,
- 	md->prev = old;
- }
- 
--static struct pollfd *event_array;
--
- static void perf_session__mmap_read(struct perf_session *self)
- {
- 	struct perf_evsel *counter;
-@@ -1212,10 +1210,10 @@ static void perf_session__mmap_read(struct perf_session *self)
- 	}
- }
- 
--int nr_poll;
- int group_fd;
- 
--static void start_counter(int i, struct perf_evsel *evsel)
-+static void start_counter(int i, struct perf_evlist *evlist,
-+			  struct perf_evsel *evsel)
- {
- 	struct xyarray *mmap_array = evsel->priv;
- 	struct mmap_data *mm;
-@@ -1281,9 +1279,9 @@ try_again:
- 		if (group && group_fd == -1)
- 			group_fd = FD(evsel, i, thread_index);
- 
--		event_array[nr_poll].fd = FD(evsel, i, thread_index);
--		event_array[nr_poll].events = POLLIN;
--		nr_poll++;
-+		evlist->pollfd[evlist->nr_fds].fd = FD(evsel, i, thread_index);
-+		evlist->pollfd[evlist->nr_fds].events = POLLIN;
-+		evlist->nr_fds++;
- 
- 		mm = xyarray__entry(mmap_array, i, thread_index);
- 		mm->prev = 0;
-@@ -1316,11 +1314,11 @@ static int __cmd_top(void)
- 	for (i = 0; i < cpus->nr; i++) {
- 		group_fd = -1;
- 		list_for_each_entry(counter, &evsel_list->entries, node)
--			start_counter(i, counter);
-+			start_counter(i, evsel_list, counter);
- 	}
- 
- 	/* Wait for a minimal set of events before starting the snapshot */
--	poll(&event_array[0], nr_poll, 100);
-+	poll(evsel_list->pollfd, evsel_list->nr_fds, 100);
- 
- 	perf_session__mmap_read(session);
- 
-@@ -1345,7 +1343,7 @@ static int __cmd_top(void)
- 		perf_session__mmap_read(session);
- 
- 		if (hits == samples)
--			ret = poll(event_array, nr_poll, 100);
-+			ret = poll(evsel_list->pollfd, evsel_list->nr_fds, 100);
- 	}
- 
- 	return 0;
-@@ -1426,11 +1424,6 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
- 		usage_with_options(top_usage, options);
- 	}
- 
--	event_array = malloc((sizeof(struct pollfd) *
--			      MAX_NR_CPUS * MAX_COUNTERS * threads->nr));
--	if (!event_array)
--		return -ENOMEM;
--
- 	/* CPU and PID are mutually exclusive */
- 	if (target_tid > 0 && cpu_list) {
- 		printf("WARNING: PID switch overriding CPU\n");
-@@ -1480,6 +1473,9 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
- 		pos->attr.sample_period = default_interval;
- 	}
- 
-+	if (perf_evlist__alloc_pollfd(evsel_list, cpus->nr, threads->nr) < 0)
-+		goto out_free_fd;
-+
- 	sym_evsel = list_entry(evsel_list->entries.next, struct perf_evsel, node);
- 
- 	symbol_conf.priv_size = (sizeof(struct sym_entry) +
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 7b4faec..2abf949 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -1,3 +1,4 @@
-+#include <poll.h>
- #include "evlist.h"
- #include "evsel.h"
- #include "util.h"
-@@ -28,6 +29,7 @@ static void perf_evlist__purge(struct perf_evlist *evlist)
- void perf_evlist__delete(struct perf_evlist *evlist)
- {
- 	perf_evlist__purge(evlist);
-+	free(evlist->pollfd);
- 	free(evlist);
- }
- 
-@@ -51,3 +53,10 @@ int perf_evlist__add_default(struct perf_evlist *evlist)
- 	perf_evlist__add(evlist, evsel);
- 	return 0;
- }
-+
-+int perf_evlist__alloc_pollfd(struct perf_evlist *evlist, int ncpus, int nthreads)
-+{
-+	int nfds = ncpus * nthreads * evlist->nr_entries;
-+	evlist->pollfd = malloc(sizeof(struct pollfd) * nfds);
-+	return evlist->pollfd != NULL ? 0 : -ENOMEM;
-+}
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 48db91a..a7d7e12 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -3,9 +3,13 @@
- 
- #include <linux/list.h>
- 
-+struct pollfd;
-+
- struct perf_evlist {
- 	struct list_head entries;
- 	int		 nr_entries;
-+	int		 nr_fds;
-+	struct pollfd	 *pollfd;
+@@ -175,10 +181,9 @@ static struct {
+ 	.threads = { -1, },
  };
  
- struct perf_evsel;
-@@ -16,4 +20,6 @@ void perf_evlist__delete(struct perf_evlist *evlist);
- void perf_evlist__add(struct perf_evlist *evlist, struct perf_evsel *entry);
- int perf_evlist__add_default(struct perf_evlist *evlist);
+-int perf_evsel__open(struct perf_evsel *evsel,
+-		     struct cpu_map *cpus, struct thread_map *threads)
++int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
++		     struct thread_map *threads, bool group)
+ {
+-
+ 	if (cpus == NULL) {
+ 		/* Work around old compiler warnings about strict aliasing */
+ 		cpus = &empty_cpu_map.map;
+@@ -187,15 +192,17 @@ int perf_evsel__open(struct perf_evsel *evsel,
+ 	if (threads == NULL)
+ 		threads = &empty_thread_map.map;
  
-+int perf_evlist__alloc_pollfd(struct perf_evlist *evlist, int ncpus, int nthreads);
-+
- #endif /* __PERF_EVLIST_H */
+-	return __perf_evsel__open(evsel, cpus, threads);
++	return __perf_evsel__open(evsel, cpus, threads, group);
+ }
+ 
+-int perf_evsel__open_per_cpu(struct perf_evsel *evsel, struct cpu_map *cpus)
++int perf_evsel__open_per_cpu(struct perf_evsel *evsel,
++			     struct cpu_map *cpus, bool group)
+ {
+-	return __perf_evsel__open(evsel, cpus, &empty_thread_map.map);
++	return __perf_evsel__open(evsel, cpus, &empty_thread_map.map, group);
+ }
+ 
+-int perf_evsel__open_per_thread(struct perf_evsel *evsel, struct thread_map *threads)
++int perf_evsel__open_per_thread(struct perf_evsel *evsel,
++				struct thread_map *threads, bool group)
+ {
+-	return __perf_evsel__open(evsel, &empty_cpu_map.map, threads);
++	return __perf_evsel__open(evsel, &empty_cpu_map.map, threads, group);
+ }
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index b2d755f..0962b50 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -45,10 +45,12 @@ int perf_evsel__alloc_counts(struct perf_evsel *evsel, int ncpus);
+ void perf_evsel__free_fd(struct perf_evsel *evsel);
+ void perf_evsel__close_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
+ 
+-int perf_evsel__open_per_cpu(struct perf_evsel *evsel, struct cpu_map *cpus);
+-int perf_evsel__open_per_thread(struct perf_evsel *evsel, struct thread_map *threads);
+-int perf_evsel__open(struct perf_evsel *evsel, 
+-		     struct cpu_map *cpus, struct thread_map *threads);
++int perf_evsel__open_per_cpu(struct perf_evsel *evsel,
++			     struct cpu_map *cpus, bool group);
++int perf_evsel__open_per_thread(struct perf_evsel *evsel,
++				struct thread_map *threads, bool group);
++int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
++		     struct thread_map *threads, bool group);
+ 
+ #define perf_evsel__match(evsel, t, c)		\
+ 	(evsel->attr.type == PERF_TYPE_##t &&	\
