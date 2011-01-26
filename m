@@ -1,30 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180Ab1AZJU0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 04:20:26 -0500
-Received: from mail.netpark.at ([217.175.192.133]:58447 "EHLO mail.netpark.at"
+	id S1753046Ab1AZJY4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 04:24:56 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:43208 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752746Ab1AZJUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 04:20:24 -0500
-X-Greylist: delayed 28438 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Jan 2011 04:20:24 EST
-Message-Id: <201101260124.p0Q1O2l5026451@mail.netpark.at>
-Reply-To: <chenguan00000@yahoo.com.hk>
-From: "MR CHEN GUAN" <chen@chenbusiness.com>
-Subject: i have business for you get back to us
-Date: Wed, 26 Jan 2011 02:24:40 +0100
+	id S1752380Ab1AZJYx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 04:24:53 -0500
+Date: Wed, 26 Jan 2011 09:24:28 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Anton Blanchard <anton@samba.org>
+Cc: dwg@au1.ibm.com, akpm@linux-foundation.org, hughd@google.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] hugepage: Allow parallelization of the hugepage
+	fault path
+Message-ID: <20110126092428.GR18984@csn.ul.ie>
+References: <20110125143226.37532ea2@kryten> <20110125143414.1dbb150c@kryten>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 110125-1, 01/25/2011), Outbound message
-X-Antivirus-Status: Clean
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110125143414.1dbb150c@kryten>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am Mr. Chen Guan, Foreign Operations Manager of the Bank of China (Hong Kong). I have a business suggestion for you of $17,300,000 Million USD. Further details Contact me via email (chenguan000000@yahoo.com.hk)
+On Tue, Jan 25, 2011 at 02:34:14PM +1100, Anton Blanchard wrote:
+> From: David Gibson <dwg@au1.ibm.com>
+> 
+> At present, the page fault path for hugepages is serialized by a
+> single mutex.  This is used to avoid spurious out-of-memory conditions
+> when the hugepage pool is fully utilized (two processes or threads can
+> race to instantiate the same mapping with the last hugepage from the
+> pool, the race loser returning VM_FAULT_OOM). This problem is
+> specific to hugepages, because it is normal to want to use every
+> single hugepage in the system - with normal pages we simply assume
+> there will always be a few spare pages which can be used temporarily
+> until the race is resolved.
+> 
+> Unfortunately this serialization also means that clearing of hugepages
+> cannot be parallelized across multiple CPUs, which can lead to very
+> long process startup times when using large numbers of hugepages.
+> 
+> This patch improves the situation by replacing the single mutex with a
+> table of mutexes, selected based on a hash of the address_space and
+> file offset being faulted (or mm and virtual address for MAP_PRIVATE
+> mappings).
+> 
+> From: Anton Blanchard <anton@samba.org>
+> 
+> Forward ported and made a few changes:
+> 
+> - Use the Jenkins hash to scatter the hash, better than using just the
+>   low bits.
+> 
+> - Always round num_fault_mutexes to a power of two to avoid an expensive
+>   modulus in the hash calculation.
+> 
+> I also tested this patch on a 64 thread POWER6 box using a simple parallel
+> fault testcase:
+> 
+> http://ozlabs.org/~anton/junkcode/parallel_fault.c
+> 
+> Command line options:
+> 
+> parallel_fault <nr_threads> <size in kB> <skip in kB>
+> 
+> First the time taken to fault 48GB of 16MB hugepages:
+> # time hugectl --heap ./parallel_fault 1 50331648 16384
+> 11.1 seconds
+> 
+> Now the same test with 64 concurrent threads:
+> # time hugectl --heap ./parallel_fault 64 50331648 16384
+> 8.8 seconds
+> 
+> Hardly any speedup. Finally the 64 concurrent threads test with this patch
+> applied:
+> # time hugectl --heap ./parallel_fault 64 50331648 16384
+> 0.7 seconds
+> 
+> We go from 8.8 seconds to 0.7 seconds, an improvement of 12.6x.
+> 
+> Signed-off-by: David Gibson <dwg@au1.ibm.com>
+> Signed-off-by: Anton Blanchard <anton@samba.org>
+
+I haven't tested this patch yet but typically how I would test it is multiple
+parallel instances of make func from libhugetlbfs. In particular I would
+be looking out for counter corruption. Has something like this been done?
+I know hugetlb_lock protects the counters but the locking in there has turned
+into a bit of a mess so it's easy to miss something.
+
+> ---
+> 
+> Index: powerpc.git/mm/hugetlb.c
+> ===================================================================
+> --- powerpc.git.orig/mm/hugetlb.c	2011-01-25 13:20:49.311405902 +1100
+> +++ powerpc.git/mm/hugetlb.c	2011-01-25 13:45:54.437235053 +1100
+> @@ -21,6 +21,7 @@
+>  #include <linux/rmap.h>
+>  #include <linux/swap.h>
+>  #include <linux/swapops.h>
+> +#include <linux/jhash.h>
+>  
+>  #include <asm/page.h>
+>  #include <asm/pgtable.h>
+> @@ -54,6 +55,13 @@ static unsigned long __initdata default_
+>  static DEFINE_SPINLOCK(hugetlb_lock);
+>  
+>  /*
+> + * Serializes faults on the same logical page.  This is used to
+> + * prevent spurious OOMs when the hugepage pool is fully utilized.
+> + */
+> +static unsigned int num_fault_mutexes;
+> +static struct mutex *htlb_fault_mutex_table;
+> +
+> +/*
+>   * Region tracking -- allows tracking of reservations and instantiated pages
+>   *                    across the pages in a mapping.
+>   */
+> @@ -1764,6 +1772,8 @@ module_exit(hugetlb_exit);
+>  
+>  static int __init hugetlb_init(void)
+>  {
+> +	int i;
+> +
+>  	/* Some platform decide whether they support huge pages at boot
+>  	 * time. On these, such as powerpc, HPAGE_SHIFT is set to 0 when
+>  	 * there is no such support
+> @@ -1790,6 +1800,12 @@ static int __init hugetlb_init(void)
+>  
+>  	hugetlb_register_all_nodes();
+>  
+> +	num_fault_mutexes = roundup_pow_of_two(2 * num_possible_cpus());
+> +	htlb_fault_mutex_table =
+> +		kmalloc(num_fault_mutexes * sizeof(struct mutex), GFP_KERNEL);
+
+and if this fails? It'd be unusual I know but num_possible_cpus() could
+conceivably be large enough to prevent kmalloc() granting the request.
+Do you need to do something similar to profile_init() here instead?
+
+> +	for (i = 0; i < num_fault_mutexes; i++)
+> +		mutex_init(&htlb_fault_mutex_table[i]);
+> +
+>  	return 0;
+>  }
+>  module_init(hugetlb_init);
+> @@ -2616,6 +2632,27 @@ backout_unlocked:
+>  	goto out;
+>  }
+>  
+> +static u32 fault_mutex_hash(struct hstate *h, struct mm_struct *mm,
+> +			    struct vm_area_struct *vma,
+> +			    struct address_space *mapping,
+> +			    unsigned long pagenum, unsigned long address)
+
+pagenum could be anything. Leave it as idx or index because it's easier
+to guess it's the result of vma_hugecache_offset().
+
+> +{
+> +	unsigned long key[2];
+> +	u32 hash;
+> +
+> +	if ((vma->vm_flags & VM_SHARED)) {
+> +		key[0] = (unsigned long)mapping;
+> +		key[1] = pagenum;
+> +	} else {
+> +		key[0] = (unsigned long)mm;
+> +		key[1] = address >> huge_page_shift(h);
+> +	}
+> +
+> +	hash = jhash2((u32 *)&key, sizeof(key)/sizeof(u32), 0);
+> +
+> +	return hash & (num_fault_mutexes - 1);
+> +}
+> +
+>  int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+>  			unsigned long address, unsigned int flags)
+>  {
+> @@ -2624,8 +2661,10 @@ int hugetlb_fault(struct mm_struct *mm,
+>  	int ret;
+>  	struct page *page = NULL;
+>  	struct page *pagecache_page = NULL;
+> -	static DEFINE_MUTEX(hugetlb_instantiation_mutex);
+>  	struct hstate *h = hstate_vma(vma);
+> +	struct address_space *mapping;
+> +	unsigned long idx;
+> +	u32 hash;
+>  
+>  	ptep = huge_pte_offset(mm, address);
+>  	if (ptep) {
+> @@ -2642,12 +2681,16 @@ int hugetlb_fault(struct mm_struct *mm,
+>  	if (!ptep)
+>  		return VM_FAULT_OOM;
+>  
+> +	mapping = vma->vm_file->f_mapping;
+> +	idx = vma_hugecache_offset(h, vma, address);
+> +
+>  	/*
+>  	 * Serialize hugepage allocation and instantiation, so that we don't
+>  	 * get spurious allocation failures if two CPUs race to instantiate
+>  	 * the same page in the page cache.
+>  	 */
+> -	mutex_lock(&hugetlb_instantiation_mutex);
+> +	hash = fault_mutex_hash(h, mm, vma, mapping, idx, address);
+> +	mutex_lock(&htlb_fault_mutex_table[hash]);
+>  	entry = huge_ptep_get(ptep);
+>  	if (huge_pte_none(entry)) {
+>  		ret = hugetlb_no_page(mm, vma, address, ptep, flags);
+> @@ -2716,7 +2759,7 @@ out_page_table_lock:
+>  		unlock_page(page);
+>  
+>  out_mutex:
+> -	mutex_unlock(&hugetlb_instantiation_mutex);
+> +	mutex_unlock(&htlb_fault_mutex_table[hash]);
+>  
+>  	return ret;
+>  }
+> 
+
+I didn't spot anything wrong but I'd be happier if I knew multiple parallel
+"make func" from libhugetlbfs tests were run as well.
+
+-- 
+Mel Gorman
+Linux Technology Center
+IBM Dublin Software Lab
