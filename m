@@ -1,109 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754014Ab1AZTca (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 14:32:30 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:40874 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753661Ab1AZTc2 convert rfc822-to-8bit (ORCPT
+	id S1754031Ab1AZTdJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 14:33:09 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64499 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753661Ab1AZTdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 14:32:28 -0500
-Subject: Re: Q: perf_install_in_context/perf_event_enable are racy?
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>, Prasad <prasad@linux.vnet.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <1296068731.15234.6.camel@laptop>
-References: <20110119182141.GA12183@redhat.com>
-	 <20110120193033.GA13924@redhat.com> <1295611905.28776.269.camel@laptop>
-	 <20110121130323.GA12900@elte.hu> <1295617185.28776.273.camel@laptop>
-	 <20110121142616.GA31165@redhat.com> <1295622304.28776.293.camel@laptop>
-	 <20110121204014.GA2870@nowhere> <20110124114234.GA12166@redhat.com>
-	 <20110126175322.GA28617@redhat.com>  <20110126184957.GA32578@redhat.com>
-	 <1296068731.15234.6.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 26 Jan 2011 20:33:03 +0100
-Message-ID: <1296070383.15234.10.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 26 Jan 2011 14:33:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=C8K2SE0Oc7xZS9R8j6smbv2O63+C7ATnjJtXYz4pVUl1xAvv2aGwN4n9XLG4JXxzaH
+         flwB61Einh70LvflKZN9fo2BYbV+fx6AU14WS7AHeZsEx1+U4bgOirJP9PWoiGeh1+Os
+         71e/MDpMm1LPpMnoqthSR4c54eQhv49qOGE3g=
+Date: Wed, 26 Jan 2011 11:32:59 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Gerd Hoffmann <kraxel@redhat.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Mark Lord <kernel@teksavvy.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils ?
+Message-ID: <20110126193259.GC29268@core.coreip.homeip.net>
+References: <4D3F4D11.9040302@teksavvy.com>
+ <20110125232914.GA20130@core.coreip.homeip.net>
+ <20110126020003.GA23085@core.coreip.homeip.net>
+ <4D4004F9.6090200@redhat.com>
+ <4D401CC5.4020000@redhat.com>
+ <4D402D35.4090206@redhat.com>
+ <20110126165132.GC29163@core.coreip.homeip.net>
+ <4D4059E5.7050300@redhat.com>
+ <20110126182415.GB29268@core.coreip.homeip.net>
+ <4D4072F9.5060206@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D4072F9.5060206@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-26 at 20:05 +0100, Peter Zijlstra wrote:
-> On Wed, 2011-01-26 at 19:49 +0100, Oleg Nesterov wrote:
-> > On 01/26, Oleg Nesterov wrote:
-> > >
-> > > Please see the untested patch below. It doesn't change perf_event_enable(),
-> > > only perf_install_in_context().
-> > 
-> > Forgot to mention... Also, it doesn't try to fix the race with do_exit(),
-> > this needs another change.
-> > 
-> > And, damn, can't resist. This is mostly cosmetic issue, but I feel
-> > discomfort every time I look at task_oncpu_function_call(). It _looks_
-> > obviously wrong, even if the problem doesn't exist in practice. I'll
-> > send the pedantic fix to keep the maintainers busy ;)
+On Wed, Jan 26, 2011 at 08:16:09PM +0100, Gerd Hoffmann wrote: >   Hi,
 > 
-> I've been trying to sit down and work my way through it today, your last
-> suggestion very nearly seemed to make sense, but I kept getting
-> distracted.
+> >>>The check should be against concrete version (0x10000 in this case).
 > 
-> FWIW I think perf_event_enable() has the very same issue...
+> Stepping back: what does the version mean?
+>
 
-Wouldn't something like the below cure things too?
-
-
----
- kernel/sched.c |   23 ++++++++++++++++++++++-
- 1 files changed, 22 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 18d38e4..7eadbcf 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2265,6 +2265,22 @@ void kick_process(struct task_struct *p)
- EXPORT_SYMBOL_GPL(kick_process);
- #endif /* CONFIG_SMP */
+Nothing, it is just a number.
  
-+struct task_function_call {
-+	struct task_struct *p;
-+	void (*func)(void *info);
-+	void *info;
-+};
-+
-+void task_function_trampoline(void *data)
-+{
-+	struct task_function_call *tfc = data;
-+
-+	if (this_rq()->curr != tfc->p)
-+		return;
-+
-+	tfc->func(tfc->data);
-+}
-+
- /**
-  * task_oncpu_function_call - call a function on the cpu on which a task runs
-  * @p:		the task to evaluate
-@@ -2278,11 +2294,16 @@ void task_oncpu_function_call(struct task_struct *p,
- 			      void (*func) (void *info), void *info)
- {
- 	int cpu;
-+	struct task_function_call data = {
-+		.p = p,
-+		.func = func,
-+		.info = info,
-+	};
- 
- 	preempt_disable();
- 	cpu = task_cpu(p);
- 	if (task_curr(p))
--		smp_call_function_single(cpu, func, info, 1);
-+		smp_call_function_single(cpu, task_function_trampoline, &data, 1);
- 	preempt_enable();
- }
- 
+> 0x10000 == 1.0 ?
+> 0x10001 == 1.1 ?
 
+No, not really.
+
+> 
+> Can I expect the interface stay backward compatible if only the
+> minor revision changes, i.e. makes it sense to accept 1.x?
+
+I am not planning on breaking backward compatibility.
+
+> 
+> Will the major revision ever change?  Does it make sense to check
+> the version at all?
+
+It depends. We do not have a clear way to see if new ioctls are
+supported (and I do not consider "try new ioctl and see if data sticks"
+being a good way) so that facilitated protocol version rev-up. So keymap
+manipulating tools might be forced to check protocol version. For the
+rest I think doing EVIOCGVERSION just to check that ioctl is supported
+is an OK way to validate that we are dealing with an event device, but
+that's it.
+
+BTW, maybe we should move lsinput and input-kbd into linuxconsole
+package, together with evtest, fftest, etc?
+
+-- 
+Dmitry
