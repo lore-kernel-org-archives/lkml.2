@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821Ab1AZKDp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 05:03:45 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:60411 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752720Ab1AZKDe convert rfc822-to-8bit (ORCPT
+	id S1752810Ab1AZKGc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 05:06:32 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45589 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752134Ab1AZKGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 05:03:34 -0500
+	Wed, 26 Jan 2011 05:06:31 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=BOU22U+JYd75CTjub94YQw+1Ll3CsPCQIjVZ9UAMPvau0cz4E0WwNSXd6GDwTHpW25
-         tQ/ewusxDFP/jfbR4CxOMWWAucfXsowp20Zl/7is1hrqxNJVgushtsZ6fjY+rcl++SCo
-         g319wauVi36/7mZJhDNkvNPodrbvArUBImxis=
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Y5ypzWBjIJL2XMQnzIz9qrtXZesGO72bibZb3+usBmB/30URSOHbvnY5nr9XDx9CNy
+         56IO6gQbovlc/MurVAzk1ta9oricOkKla10iKXZfcww2m1LEPswChMkZ9CVLwiWcwTt/
+         7/lgrFREXSzIJ024iAsms1RxTav4Bdo4rIBk4=
+Date: Wed, 26 Jan 2011 11:05:37 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: axboe@kernel.dk, tytso@mit.edu, djwong@us.ibm.com, shli@kernel.org,
+        neilb@suse.de, adilger.kernel@dilger.ca, jack@suse.cz,
+        linux-kernel@vger.kernel.org, kmannth@us.ibm.com, cmm@us.ibm.com,
+        linux-ext4@vger.kernel.org, rwheeler@redhat.com, hch@lst.de,
+        josef@redhat.com, jmoyer@redhat.com
+Subject: Re: [KNOWN BUGGY RFC PATCH 4/3] block: skip elevator
+ initialization for flush requests
+Message-ID: <20110126100537.GD12520@htj.dyndns.org>
+References: <1295625598-15203-1-git-send-email-tj@kernel.org>
+ <1295625598-15203-4-git-send-email-tj@kernel.org>
+ <20110125204158.GA3013@redhat.com>
+ <20110126100322.GC12520@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <C5C86A19469DAE48AAAD0E5F3716E44501D6329793@irsmsx504.ger.corp.intel.com>
-References: <1296036004-15644-1-git-send-email-lliubbo@gmail.com>
-	<C5C86A19469DAE48AAAD0E5F3716E44501D6329793@irsmsx504.ger.corp.intel.com>
-Date: Wed, 26 Jan 2011 18:03:32 +0800
-Message-ID: <AANLkTinzHZorkTpDSv5J9_Q5kO5UUFnZb3CAafyOu2Qe@mail.gmail.com>
-Subject: Re: [PATCH] firmware_classs: change val uevent's type to bool
-From: Bob Liu <lliubbo@gmail.com>
-To: "Berg, Johannes" <johannes.berg@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "chrisw@sous-sol.org" <chrisw@sous-sol.org>,
-        "Winkler, Tomas" <tomas.winkler@intel.com>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "gregkh@suse.de" <gregkh@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110126100322.GC12520@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 26, 2011 at 5:56 PM, Berg, Johannes <johannes.berg@intel.com> wrote:
-> @@ -463,7 +463,8 @@ fw_create_instance(struct firmware *firmware, const char *fw_name,
->        f_dev->parent = device;
->        f_dev->class = &firmware_class;
->
-> -       dev_set_uevent_suppress(f_dev, true);
-> +       if (uevent)
-> +               dev_set_uevent_suppress(f_dev, true);
->
-> Everything but this is a no-op basically, but you didn't even describe this change?
->
+On Wed, Jan 26, 2011 at 11:03:22AM +0100, Tejun Heo wrote:
+> Also, it would be great to better describe the lifetime difference
+> between the first and the second unions and why it has be organized
+> this way (rb_node and completion_data can live together but rb_node
+> and flush can't).
 
+Oops, what can't live together are elevator_private* and
+completion_data.
 
-Hmm.. Sorry for that, but I mentioned that by "fix a place missing
-uevent check".
-I added this check because I think it should be paired with following
-dev_set_uevent_suppress(f_dev, false).
+Thanks.
 
 -- 
-Regards,
---Bob
+tejun
