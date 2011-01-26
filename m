@@ -1,346 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312Ab1AZXMG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 18:12:06 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:62687 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754038Ab1AZXME convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 18:12:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=DL0hqqAqO6JyBhJeLseR2tPXAVTyLt4g9KNgebVxxEyIjiUfddfVgO4xJ8kTp8qC+0
-         3ArQI16GPYs8WooUeurxWQkqmBHmZpCTi0KL/MB27i8ZXXOgW1+ELXHw1Z9/w1gcjnKc
-         fDOt3/mtYB3nOkgwi6SMxV50MCGR1TwHumRl0=
-MIME-Version: 1.0
-In-Reply-To: <20110125051015.13762.13429.stgit@localhost6.localdomain6>
-References: <20110125051003.13762.35120.stgit@localhost6.localdomain6>
-	<20110125051015.13762.13429.stgit@localhost6.localdomain6>
-Date: Thu, 27 Jan 2011 08:12:02 +0900
-Message-ID: <AANLkTikHLw0Qg+odOB-bDtBSB-5UbTJ5ZOM-ZAdMqXgh@mail.gmail.com>
-Subject: Re: [PATCH 3/3] Provide control over unmapped pages (v4)
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Balbir Singh <balbir@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kosaki.motohiro@jp.fujitsu.com, cl@linux.com,
-        kamezawa.hiroyu@jp.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754292Ab1AZXNY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 18:13:24 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59056
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753467Ab1AZXNW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 18:13:22 -0500
+Date: Wed, 26 Jan 2011 15:13:56 -0800 (PST)
+Message-Id: <20110126.151356.48484154.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-15
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Balbir,
 
-On Tue, Jan 25, 2011 at 2:10 PM, Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> Changelog v4
-> 1. Add max_unmapped_ratio and use that as the upper limit
-> to check when to shrink the unmapped page cache (Christoph
-> Lameter)
->
-> Changelog v2
-> 1. Use a config option to enable the code (Andrew Morton)
-> 2. Explain the magic tunables in the code or at-least attempt
->   to explain them (General comment)
-> 3. Hint uses of the boot parameter with unlikely (Andrew Morton)
-> 4. Use better names (balanced is not a good naming convention)
->
-> Provide control using zone_reclaim() and a boot parameter. The
-> code reuses functionality from zone_reclaim() to isolate unmapped
-> pages and reclaim them as a priority, ahead of other mapped pages.
-> A new sysctl for max_unmapped_ratio is provided and set to 16,
-> indicating 16% of the total zone pages are unmapped, we start
-> shrinking unmapped page cache.
->
-> Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
-> ---
->  Documentation/kernel-parameters.txt |    8 +++
->  include/linux/mmzone.h              |    5 ++
->  include/linux/swap.h                |   23 ++++++++-
->  init/Kconfig                        |   12 +++++
->  kernel/sysctl.c                     |   11 ++++
->  mm/page_alloc.c                     |   25 ++++++++++
->  mm/vmscan.c                         |   87 +++++++++++++++++++++++++++++++++++
->  7 files changed, 166 insertions(+), 5 deletions(-)
->
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index fee5f57..65a4ee6 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -2500,6 +2500,14 @@ and is between 256 and 4096 characters. It is defined in the file
->                        [X86]
->                        Set unknown_nmi_panic=1 early on boot.
->
-> +       unmapped_page_control
-> +                       [KNL] Available if CONFIG_UNMAPPED_PAGECACHE_CONTROL
-> +                       is enabled. It controls the amount of unmapped memory
-> +                       that is present in the system. This boot option plus
-> +                       vm.min_unmapped_ratio (sysctl) provide granular control
-> +                       over how much unmapped page cache can exist in the system
-> +                       before kswapd starts reclaiming unmapped page cache pages.
-> +
->        usbcore.autosuspend=
->                        [USB] The autosuspend time delay (in seconds) used
->                        for newly-detected USB devices (default 2).  This
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index 2485acc..18f0f09 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -306,7 +306,10 @@ struct zone {
->        /*
->         * zone reclaim becomes active if more unmapped pages exist.
->         */
-> +#if defined(CONFIG_UNMAPPED_PAGE_CONTROL) || defined(CONFIG_NUMA)
->        unsigned long           min_unmapped_pages;
-> +       unsigned long           max_unmapped_pages;
-> +#endif
->  #ifdef CONFIG_NUMA
->        int node;
->        unsigned long           min_slab_pages;
-> @@ -773,6 +776,8 @@ int percpu_pagelist_fraction_sysctl_handler(struct ctl_table *, int,
->                                        void __user *, size_t *, loff_t *);
->  int sysctl_min_unmapped_ratio_sysctl_handler(struct ctl_table *, int,
->                        void __user *, size_t *, loff_t *);
-> +int sysctl_max_unmapped_ratio_sysctl_handler(struct ctl_table *, int,
-> +                       void __user *, size_t *, loff_t *);
->  int sysctl_min_slab_ratio_sysctl_handler(struct ctl_table *, int,
->                        void __user *, size_t *, loff_t *);
->
-> diff --git a/include/linux/swap.h b/include/linux/swap.h
-> index 7b75626..ae62a03 100644
-> --- a/include/linux/swap.h
-> +++ b/include/linux/swap.h
-> @@ -255,19 +255,34 @@ extern int vm_swappiness;
->  extern int remove_mapping(struct address_space *mapping, struct page *page);
->  extern long vm_total_pages;
->
-> +#if defined(CONFIG_UNMAPPED_PAGECACHE_CONTROL) || defined(CONFIG_NUMA)
->  extern int sysctl_min_unmapped_ratio;
-> +extern int sysctl_max_unmapped_ratio;
-> +
->  extern int zone_reclaim(struct zone *, gfp_t, unsigned int);
-> -#ifdef CONFIG_NUMA
-> -extern int zone_reclaim_mode;
-> -extern int sysctl_min_slab_ratio;
->  #else
-> -#define zone_reclaim_mode 0
->  static inline int zone_reclaim(struct zone *z, gfp_t mask, unsigned int order)
->  {
->        return 0;
->  }
->  #endif
->
-> +#if defined(CONFIG_UNMAPPED_PAGECACHE_CONTROL)
-> +extern bool should_reclaim_unmapped_pages(struct zone *zone);
-> +#else
-> +static inline bool should_reclaim_unmapped_pages(struct zone *zone)
-> +{
-> +       return false;
-> +}
-> +#endif
-> +
-> +#ifdef CONFIG_NUMA
-> +extern int zone_reclaim_mode;
-> +extern int sysctl_min_slab_ratio;
-> +#else
-> +#define zone_reclaim_mode 0
-> +#endif
-> +
->  extern int page_evictable(struct page *page, struct vm_area_struct *vma);
->  extern void scan_mapping_unevictable_pages(struct address_space *);
->
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 4f6cdbf..2dfbc09 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -828,6 +828,18 @@ config SCHED_AUTOGROUP
->  config MM_OWNER
->        bool
->
-> +config UNMAPPED_PAGECACHE_CONTROL
-> +       bool "Provide control over unmapped page cache"
-> +       default n
-> +       help
-> +         This option adds support for controlling unmapped page cache
-> +         via a boot parameter (unmapped_page_control). The boot parameter
-> +         with sysctl (vm.min_unmapped_ratio) control the total number
-> +         of unmapped pages in the system. This feature is useful if
-> +         you want to limit the amount of unmapped page cache or want
-> +         to reduce page cache duplication in a virtualized environment.
-> +         If unsure say 'N'
-> +
->  config SYSFS_DEPRECATED
->        bool "enable deprecated sysfs features to support old userspace tools"
->        depends on SYSFS
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index 12e8f26..63dbba6 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -1224,6 +1224,7 @@ static struct ctl_table vm_table[] = {
->                .extra1         = &zero,
->        },
->  #endif
-> +#if defined(CONFIG_UNMAPPED_PAGE_CONTROL) || defined(CONFIG_NUMA)
->        {
->                .procname       = "min_unmapped_ratio",
->                .data           = &sysctl_min_unmapped_ratio,
-> @@ -1233,6 +1234,16 @@ static struct ctl_table vm_table[] = {
->                .extra1         = &zero,
->                .extra2         = &one_hundred,
->        },
-> +       {
-> +               .procname       = "max_unmapped_ratio",
-> +               .data           = &sysctl_max_unmapped_ratio,
-> +               .maxlen         = sizeof(sysctl_max_unmapped_ratio),
-> +               .mode           = 0644,
-> +               .proc_handler   = sysctl_max_unmapped_ratio_sysctl_handler,
-> +               .extra1         = &zero,
-> +               .extra2         = &one_hundred,
-> +       },
-> +#endif
->  #ifdef CONFIG_NUMA
->        {
->                .procname       = "zone_reclaim_mode",
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 7b56473..2ac8549 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1660,6 +1660,9 @@ zonelist_scan:
->                        unsigned long mark;
->                        int ret;
->
-> +                       if (should_reclaim_unmapped_pages(zone))
-> +                               wakeup_kswapd(zone, order, classzone_idx);
-> +
+The ipv6 inetpeer support changes this merge window introduced a
+few regressions, sorry about that, but all of the ones I am aware
+of should be completely fixed here.
 
-Do we really need the check in fastpath?
-There are lost of caller of alloc_pages.
-Many of them are not related to mapped pages.
-Could we move the check into add_to_page_cache_locked?
+We also have a bug fix for an 11 year old TCP bug, that to me is
+the definition of "awesome"
 
->                        mark = zone->watermark[alloc_flags & ALLOC_WMARK_MASK];
->                        if (zone_watermark_ok(zone, order, mark,
->                                    classzone_idx, alloc_flags))
-> @@ -4167,8 +4170,12 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
->
->                zone->spanned_pages = size;
->                zone->present_pages = realsize;
-> +#if defined(CONFIG_UNMAPPED_PAGE_CONTROL) || defined(CONFIG_NUMA)
->                zone->min_unmapped_pages = (realsize*sysctl_min_unmapped_ratio)
->                                                / 100;
-> +               zone->max_unmapped_pages = (realsize*sysctl_max_unmapped_ratio)
-> +                                               / 100;
-> +#endif
->  #ifdef CONFIG_NUMA
->                zone->node = nid;
->                zone->min_slab_pages = (realsize * sysctl_min_slab_ratio) / 100;
-> @@ -5084,6 +5091,7 @@ int min_free_kbytes_sysctl_handler(ctl_table *table, int write,
->        return 0;
->  }
->
-> +#if defined(CONFIG_UNMAPPED_PAGE_CONTROL) || defined(CONFIG_NUMA)
->  int sysctl_min_unmapped_ratio_sysctl_handler(ctl_table *table, int write,
->        void __user *buffer, size_t *length, loff_t *ppos)
->  {
-> @@ -5100,6 +5108,23 @@ int sysctl_min_unmapped_ratio_sysctl_handler(ctl_table *table, int write,
->        return 0;
->  }
->
-> +int sysctl_max_unmapped_ratio_sysctl_handler(ctl_table *table, int write,
-> +       void __user *buffer, size_t *length, loff_t *ppos)
-> +{
-> +       struct zone *zone;
-> +       int rc;
-> +
-> +       rc = proc_dointvec_minmax(table, write, buffer, length, ppos);
-> +       if (rc)
-> +               return rc;
-> +
-> +       for_each_zone(zone)
-> +               zone->max_unmapped_pages = (zone->present_pages *
-> +                               sysctl_max_unmapped_ratio) / 100;
-> +       return 0;
-> +}
-> +#endif
-> +
->  #ifdef CONFIG_NUMA
->  int sysctl_min_slab_ratio_sysctl_handler(ctl_table *table, int write,
->        void __user *buffer, size_t *length, loff_t *ppos)
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 02cc82e..6377411 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -159,6 +159,29 @@ static DECLARE_RWSEM(shrinker_rwsem);
->  #define scanning_global_lru(sc)        (1)
->  #endif
->
-> +#if defined(CONFIG_UNMAPPED_PAGECACHE_CONTROL)
-> +static unsigned long reclaim_unmapped_pages(int priority, struct zone *zone,
-> +                                               struct scan_control *sc);
-> +static int unmapped_page_control __read_mostly;
-> +
-> +static int __init unmapped_page_control_parm(char *str)
-> +{
-> +       unmapped_page_control = 1;
-> +       /*
-> +        * XXX: Should we tweak swappiness here?
-> +        */
-> +       return 1;
-> +}
-> +__setup("unmapped_page_control", unmapped_page_control_parm);
-> +
-> +#else /* !CONFIG_UNMAPPED_PAGECACHE_CONTROL */
-> +static inline unsigned long reclaim_unmapped_pages(int priority,
-> +                               struct zone *zone, struct scan_control *sc)
-> +{
-> +       return 0;
-> +}
-> +#endif
-> +
->  static struct zone_reclaim_stat *get_reclaim_stat(struct zone *zone,
->                                                  struct scan_control *sc)
->  {
-> @@ -2359,6 +2382,12 @@ loop_again:
->                                shrink_active_list(SWAP_CLUSTER_MAX, zone,
->                                                        &sc, priority, 0);
->
-> +                       /*
-> +                        * We do unmapped page reclaim once here and once
-> +                        * below, so that we don't lose out
-> +                        */
-> +                       reclaim_unmapped_pages(priority, zone, &sc);
-> +
->                        if (!zone_watermark_ok_safe(zone, order,
->                                        high_wmark_pages(zone), 0, 0)) {
->                                end_zone = i;
-> @@ -2396,6 +2425,11 @@ loop_again:
->                                continue;
->
->                        sc.nr_scanned = 0;
-> +                       /*
-> +                        * Reclaim unmapped pages upfront, this should be
-> +                        * really cheap
-> +                        */
-> +                       reclaim_unmapped_pages(priority, zone, &sc);
+1) INET peer cache releases ipv6 peers using ipv4 tree root, oops.
+   Based upon a report by Eric Dumazet.
 
-Why should we do by two phase?
-It's not a direct reclaim path. I mean it doesn't need to reclaim tighly
-If we can't reclaim enough, next allocation would wake up kswapd again
-and kswapd try it again.
+2) GRO packet merging bug fix from Michal Schmidt.  If the GRO code
+   gets a linear SKB then a paged one, we merge incorrectly.  This is
+   possible with the SFC driver which packages RX frames dynamically
+   based upon a flow's behavior.
 
-And I have a concern. I already pointed out.
-If memory pressure is heavy and unmappd_pages is more than our
-threshold, this can move inactive's tail pages which are mapped into
-heads by reclaim_unmapped_pages. It can make confusing LRU order so
-working set can be evicted.
+3) /proc/net/tcp optimization regression fix, we walk the listener hash
+   incorrectly such that if there are enough sockets we can loop
+   essentially forever.  Fix from Eric Dumazet.
 
-zone_reclaim is used by only NUMA until now but you are opening it in the world.
-I think it would be a good feature in embedded system, too.
-I hope we care of working set eviction problem.
+4) The ipv6 inetpeer support wants to always attach peers to cached routes
+   only.  This is almost always true, except for some special case situations
+   wrt. local network routes.  Fix by always cloning these routes into
+   RTF_CACHE ones.  Based upon a report by PK <runningdoglackey@yahoo.com>
 
--- 
-Kind regards,
-Minchan Kim
+5) Due to some merging side effects, we ended up undoing a memory clear for
+   the ethtool get-regs request structure.  One change (the original fix)
+   went kmalloc --> kzalloc, the other change did kmalloc --> vmalloc,
+   and this wasn't caught during the merge (my bad).  Luckily Eugene Teo caught
+   it and submitted thsi fix.
+
+6) Like ipv4 ipsec routes, ipv6 ones must propagate the inetpeer binding from
+   the non-ipsec child route.
+
+7) Fix tg3 driver VLAN regressions reported by Eric Dumazet by converting over
+   to the new VLAN driver interface framework.  From Matt Carlson.
+
+8) Fix a TCP bug that causes erroneous resets to be emitted on the
+   final "data + FIN" packet.  This bug dates back to January, 2000 :-)
+   Fix from Jerry Chu.
+
+9) Revert a set of ipv6 interface address semantic changes from last
+   January that have broken several things, in particular the "disable_ipv6"
+   sysctl.
+
+10) at91_can driver chip bug errata handling from Marc Kleine-Budde.
+
+11) New softing CAN driver from Kurt Van Dijck.
+
+12) arp_ioctl() locking regression fix from Eric Dumazet based upon a report
+    by Jamie Heilman.
+
+13) atm idt77105 driver copies wrong stats back to userspace, fix from
+    Vasiliy Kulikov.
+
+14) Work cancelling fixup in pch_gbe from Tejun Heo.
+
+15) CNIC endianness bug fix from Michael Chan, based upon a report by Breno
+    Leitao.
+
+16) BNX2 driver barks in logs about AER even on platforms where AER isn't even
+    supported, fix from Michael Chan.
+
+17) cxgb4 driver need to call netif_carrier_off() after registering the device,
+    not before.
+
+18) bonding crashes because it performs pskb_may_pull() potentially on shared
+    SKBs, fix from Neil Horman.
+
+19) All packet schedulers that can drop previously enqueued packets over-estimate
+    their stats because the rules concerning bstats updates keep up from being
+    able to undo the increment at drop time.  This makes accurate rate estimation
+    et al. basically impossible.  Fix this by creating a helper function and
+    doing the bstats increment at dequeue instead of enqueue time, this way the
+    dropped frames do not accidently get into the state.  From Eric Dumazet.
+
+20) Various bluetooth regression and memory leak fixes from Alexander Holler,
+    Gustavo F. Padovan, David Sterba, Johan Hedberg, and Lukas Turek.
+
+21) EEPROM reading fix for older iwlwifi devices from Wey-Yi Guy.
+
+22) Disable PARPD on ath9k wireless, it is causing regressions in both
+    connectivity and performance.  From Luis R. Rodriguez.
+
+23) Missing dev_alloc_skb() error checking in rtlwifi, from Jesper Juhl.
+
+24) ieee80211_beacon_get_tim() crash fix from Felix Fietkau.
+
+Please pull, thanks a lot!
+
+The following changes since commit c723fdab8aa728dc2bf0da6a0de8bb9c3f588d84:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/sfrench/cifs-2.6 (2011-01-25 14:23:54 +1000)
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
+
+Alexander Holler (1):
+      Bluetooth: ath3k: reduce memory usage
+
+David S. Miller (7):
+      Merge branch 'master' of master.kernel.org:/.../torvalds/linux-2.6
+      inetpeer: Use correct AVL tree base pointer in inet_getpeer().
+      Merge branch 'can/at91_can-for-net-2.6' of git://git.pengutronix.de/git/mkl/linux-2.6
+      ipv6: Always clone offlink routes.
+      ipv6: Revert 'administrative down' address handling changes.
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6
+      xfrm6: Don't forget to propagate peer into ipsec route.
+
+David Sterba (1):
+      Bluetooth: l2cap: fix misuse of logical operation in place of bitop
+
+Dimitris Michailidis (1):
+      cxgb4: fix reported state of interfaces without link
+
+Eric Dumazet (3):
+      net_sched: accurate bytes/packets stats/rates
+      net: arp_ioctl() must hold RTNL
+      tcp: fix bug in listening_get_next()
+
+Eugene Teo (1):
+      net: clear heap allocation for ethtool_get_regs()
+
+Felix Fietkau (2):
+      ath9k: add missing ps wakeup/restore calls
+      mac80211: fix a crash in ieee80211_beacon_get_tim on change_interface
+
+Greg Kroah-Hartman (1):
+      rt2x00: add device id for windy31 usb device
+
+Jerry Chu (1):
+      TCP: fix a bug that triggers large number of TCP RST by mistake
+
+Jesper Dangaard Brouer (1):
+      textsearch: doc - fix spelling in lib/textsearch.c.
+
+Jesper Juhl (2):
+      rtlwifi: Fix possible NULL dereference
+      USB NET KL5KUSB101: Fix mem leak in error path of kaweth_download_firmware()
+
+Johan Hedberg (6):
+      Bluetooth: Fix leaking blacklist when unregistering a hci device
+      Revert "Bluetooth: Update sec_level/auth_type for already existing connections"
+      Bluetooth: Fix MITM protection requirement preservation
+      Bluetooth: Create a unified auth_type evaluation function
+      Bluetooth: Fix authentication request for L2CAP raw sockets
+      Bluetooth: Fix race condition with conn->sec_level
+
+John Fastabend (1):
+      dcbnl: make get_app handling symmetric for IEEE and CEE DCBx
+
+Kurt Van Dijck (2):
+      can: add driver for Softing card
+      can: add driver for Softing card
+
+Luis R. Rodriguez (1):
+      ath9k_hw: disabled PAPRD for AR9003
+
+Luká¨ Turek (1):
+      Bluetooth: Never deallocate a session when some DLC points to it
+
+Marc Kleine-Budde (3):
+      can: at91_can: clean up usage of AT91_MB_RX_FIRST and AT91_MB_RX_NUM
+      can: at91_can: don't use mailbox 0
+      can: at91_can: make can_id of mailbox 0 configurable
+
+Matt Carlson (1):
+      tg3: Use new VLAN code
+
+Michael Chan (3):
+      bnx2: Always set ETH_FLAG_TXVLAN
+      cnic: Fix big endian bug
+      bnx2: Eliminate AER error messages on systems not supporting it
+
+Michal Schmidt (1):
+      GRO: fix merging a paged skb after non-paged skbs
+
+Neil Horman (1):
+      bonding: Ensure that we unshare skbs prior to calling pskb_may_pull
+
+Nicolas de Pesloüan (1):
+      bonding: update documentation - alternate configuration.
+
+Reinette Chatre (1):
+      MAINTAINERS: remove Reinette Chatre as iwlwifi maintainer
+
+Tejun Heo (1):
+      pch_gbe: don't use flush_scheduled_work()
+
+Vasiliy Kulikov (1):
+      atm: idt77105: fix fetch_stats() result
+
+Wey-Yi Guy (1):
+      iwlwifi: don't read sku information from EEPROM for 4965
+
+ Documentation/ABI/testing/sysfs-platform-at91 |   25 +
+ Documentation/networking/bonding.txt          |   83 ++-
+ MAINTAINERS                                   |    1 -
+ drivers/atm/idt77105.c                        |    2 +-
+ drivers/bluetooth/ath3k.c                     |   75 +--
+ drivers/net/bnx2.c                            |   21 +-
+ drivers/net/bnx2.h                            |    1 +
+ drivers/net/bonding/bond_3ad.c                |    4 +
+ drivers/net/bonding/bond_alb.c                |    4 +
+ drivers/net/bonding/bond_main.c               |    4 +
+ drivers/net/can/Kconfig                       |    2 +
+ drivers/net/can/Makefile                      |    1 +
+ drivers/net/can/at91_can.c                    |  138 +++-
+ drivers/net/can/softing/Kconfig               |   30 +
+ drivers/net/can/softing/Makefile              |    6 +
+ drivers/net/can/softing/softing.h             |  167 +++++
+ drivers/net/can/softing/softing_cs.c          |  359 ++++++++++
+ drivers/net/can/softing/softing_fw.c          |  691 +++++++++++++++++++
+ drivers/net/can/softing/softing_main.c        |  893 +++++++++++++++++++++++++
+ drivers/net/can/softing/softing_platform.h    |   40 ++
+ drivers/net/cnic.c                            |   12 +-
+ drivers/net/cxgb4/cxgb4_main.c                |    3 +-
+ drivers/net/pch_gbe/pch_gbe_main.c            |    2 +-
+ drivers/net/tg3.c                             |   95 +---
+ drivers/net/tg3.h                             |    3 -
+ drivers/net/usb/kaweth.c                      |    1 +
+ drivers/net/wireless/ath/ath9k/hw.c           |    6 +-
+ drivers/net/wireless/ath/ath9k/hw.h           |    1 +
+ drivers/net/wireless/ath/ath9k/main.c         |    8 +-
+ drivers/net/wireless/ath/ath9k/xmit.c         |    2 -
+ drivers/net/wireless/iwlwifi/iwl-4965.c       |    1 +
+ drivers/net/wireless/iwlwifi/iwl-agn-eeprom.c |   11 +-
+ drivers/net/wireless/rt2x00/rt73usb.c         |    1 +
+ drivers/net/wireless/rtlwifi/pci.c            |   11 +-
+ include/net/bluetooth/hci_core.h              |    1 +
+ include/net/sch_generic.h                     |    8 +-
+ lib/textsearch.c                              |   10 +-
+ net/bluetooth/hci_conn.c                      |   16 +-
+ net/bluetooth/hci_core.c                      |    4 +
+ net/bluetooth/hci_event.c                     |    9 +-
+ net/bluetooth/l2cap.c                         |   84 +--
+ net/bluetooth/rfcomm/core.c                   |    3 +-
+ net/core/dev.c                                |    3 +-
+ net/core/ethtool.c                            |    2 +-
+ net/core/skbuff.c                             |    8 +-
+ net/dcb/dcbnl.c                               |   13 +-
+ net/ipv4/arp.c                                |   11 +-
+ net/ipv4/inetpeer.c                           |    2 +-
+ net/ipv4/tcp_input.c                          |    2 +-
+ net/ipv4/tcp_ipv4.c                           |    1 -
+ net/ipv6/addrconf.c                           |   81 +--
+ net/ipv6/route.c                              |    9 +-
+ net/ipv6/xfrm6_policy.c                       |    6 +
+ net/mac80211/tx.c                             |    3 +
+ net/sched/sch_cbq.c                           |    3 +-
+ net/sched/sch_drr.c                           |    2 +-
+ net/sched/sch_dsmark.c                        |    2 +-
+ net/sched/sch_fifo.c                          |    5 +-
+ net/sched/sch_hfsc.c                          |    2 +-
+ net/sched/sch_htb.c                           |   12 +-
+ net/sched/sch_multiq.c                        |    2 +-
+ net/sched/sch_netem.c                         |    3 +-
+ net/sched/sch_prio.c                          |    2 +-
+ net/sched/sch_red.c                           |   11 +-
+ net/sched/sch_sfq.c                           |    5 +-
+ net/sched/sch_tbf.c                           |    2 +-
+ net/sched/sch_teql.c                          |    3 +-
+ 67 files changed, 2650 insertions(+), 384 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-platform-at91
+ create mode 100644 drivers/net/can/softing/Kconfig
+ create mode 100644 drivers/net/can/softing/Makefile
+ create mode 100644 drivers/net/can/softing/softing.h
+ create mode 100644 drivers/net/can/softing/softing_cs.c
+ create mode 100644 drivers/net/can/softing/softing_fw.c
+ create mode 100644 drivers/net/can/softing/softing_main.c
+ create mode 100644 drivers/net/can/softing/softing_platform.h
