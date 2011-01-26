@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812Ab1AZKUL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 05:20:11 -0500
-Received: from casper.infradead.org ([85.118.1.10]:47118 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752170Ab1AZKUK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 05:20:10 -0500
-Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 8/20]  8: uprobes: mmap and fork
- hooks.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20110126090346.GH19725@linux.vnet.ibm.com>
-References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
-	 <20101216095848.23751.73144.sendpatchset@localhost6.localdomain6>
-	 <1295957739.28776.717.camel@laptop>
-	 <20110126090346.GH19725@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 26 Jan 2011 11:20:39 +0100
-Message-ID: <1296037239.28776.1149.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752977Ab1AZKU3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 05:20:29 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:33471 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752647Ab1AZKU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 05:20:28 -0500
+Date: Wed, 26 Jan 2011 11:20:20 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: akpm@linux-foundation.org
+Cc: shawn.bohrer@gmail.com, davidel@xmailserver.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, mm-commits@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch]
+ epoll-fix-compiler-warning-and-optimize-the-non-blocking-path-fix
+Message-ID: <20110126102020.GA2244@cmpxchg.org>
+References: <201101260021.p0Q0LxsS016458@imap1.linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201101260021.p0Q0LxsS016458@imap1.linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-26 at 14:33 +0530, Srikar Dronamraju wrote:
-> 
-> 
-> I actually dont like to release the write_lock and then reacquire it.
-> write_opcode, which is called thro install_uprobe, i.e to insert the
-> actual breakpoint instruction takes a read lock on the mmap_sem.
-> Hence uprobe_mmap gets called in context with write lock on mmap_sem
-> held, I had to release it before calling install_uprobe. 
+The non-blocking ep_poll path optimization introduced skipping over
+the return value setup.
 
-Ah, right, so that's going to give you a head-ache ;-)
+Initialize it properly, my userspace gets upset by epoll_wait()
+returning random things.
 
-The moment you release this mmap_sem, the map you're going to install
-the probe point in can go away.
+In addition, remove the reinitialization at the fetch_events label,
+the return value is garuanteed to be zero when execution reaches
+there.
 
-The only way to make this work seems to start by holding the mmap_sem
-for writing and make a breakpoint install function that assumes its
-taken and doesn't try to acquire it again.
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Shawn Bohrer <shawn.bohrer@gmail.com>
+Cc: Davide Libenzi <davidel@xmailserver.org>
+---
+ fs/eventpoll.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index f7cb6cb..afe4238 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -1147,7 +1147,7 @@ static int ep_send_events(struct eventpoll *ep,
+ static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
+ 		   int maxevents, long timeout)
+ {
+-	int res, eavail, timed_out = 0;
++	int res = 0, eavail, timed_out = 0;
+ 	unsigned long flags;
+ 	long slack = 0;
+ 	wait_queue_t wait;
+@@ -1173,7 +1173,6 @@ static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
+ fetch_events:
+ 	spin_lock_irqsave(&ep->lock, flags);
+ 
+-	res = 0;
+ 	if (!ep_events_available(ep)) {
+ 		/*
+ 		 * We don't have any available event to return to the caller.
+-- 
+1.7.3.5
