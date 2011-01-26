@@ -1,106 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab1AZReF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 12:34:05 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:57035 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736Ab1AZReE (ORCPT
+	id S1753428Ab1AZRmj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 12:42:39 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:60455 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752097Ab1AZRme convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 12:34:04 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:references:date:in-reply-to:message-id:
-	user-agent:mime-version:content-type;
-	b=Qcw5LWQaZ35dDa2Xms5c1sZckwmrNpERE/u3PEODnMHqUbn50xvmq081mAJG8o2Qg
-	WoL8cvS9YKr7EzS/uiXZA==
-From: Greg Thelen <gthelen@google.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] oom: handle overflow in mem_cgroup_out_of_memory()
-References: <1296030555-3594-1-git-send-email-gthelen@google.com>
-	<20110126170713.GA2401@cmpxchg.org>
-Date: Wed, 26 Jan 2011 09:33:09 -0800
-In-Reply-To: <20110126170713.GA2401@cmpxchg.org> (Johannes Weiner's message of
-	"Wed, 26 Jan 2011 18:07:13 +0100")
-Message-ID: <xr93y667lgdm.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Wed, 26 Jan 2011 12:42:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=haz5SeIvQZZY2+4EzwLcfIH46eEfUNB1F19FXb1FWpHgCz2cRCDUbot6Ho1q/FJSXw
+         G1U7sgJptp2ycg92NeWq341WqQ/lmBIaB6vbgMqDqI0J1Qo7Wax2CudsPVmNuZBJoGMF
+         PU/5lX55EYBT/wzK/9kDEfi88yzDkySFTHQ6g=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20110126172317.GD8446@linux.vnet.ibm.com>
+References: <20110126172148.GB8446@linux.vnet.ibm.com>
+	<20110126172317.GD8446@linux.vnet.ibm.com>
+Date: Wed, 26 Jan 2011 19:42:33 +0200
+X-Google-Sender-Auth: I54H_LBr2QVw0Wo5Mly1CaP8nYE
+Message-ID: <AANLkTikLCJXhVG9FRmmYznRG+9Gz4U8m-SoeasZyPy39@mail.gmail.com>
+Subject: Re: [PATCH 2/7] zram: Prevent overflow in logical block size
+From: Pekka Enberg <penberg@kernel.org>
+To: Nitin Gupta <ngupta@vflare.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Johannes Weiner <hannes@cmpxchg.org> writes:
-
-> On Wed, Jan 26, 2011 at 12:29:15AM -0800, Greg Thelen wrote:
->> mem_cgroup_get_limit() returns a byte limit as a unsigned 64 bit value,
->> which is converted to a page count by mem_cgroup_out_of_memory().  Prior
->> to this patch the conversion could overflow on 32 bit platforms
->> yielding a limit of zero.
+On Wed, Jan 26, 2011 at 7:23 PM, Robert Jennings <rcj@linux.vnet.ibm.com> wrote:
+> On a 64K page kernel, the value PAGE_SIZE passed to
+> blk_queue_logical_block_size would overflow the logical block size
+> argument (resulting in setting it to 0).
 >
-> Balbir: It can truncate, because the conversion shrinks the required
-> bits of this 64-bit number by only PAGE_SHIFT (12).  Trying to store
-> the resulting up to 52 significant bits in a 32-bit integer will cut
-> up to 20 significant bits off.
+> Take the minimum of PAGE_SIZE or 4096 and use this for the block device
+> logical block size.
 >
->> Signed-off-by: Greg Thelen <gthelen@google.com>
->> ---
->>  mm/oom_kill.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->> 
->> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
->> index 7dcca55..3fcac51 100644
->> --- a/mm/oom_kill.c
->> +++ b/mm/oom_kill.c
->> @@ -538,7 +538,7 @@ void mem_cgroup_out_of_memory(struct mem_cgroup *mem, gfp_t gfp_mask)
->>  	struct task_struct *p;
->>  
->>  	check_panic_on_oom(CONSTRAINT_MEMCG, gfp_mask, 0, NULL);
->> -	limit = mem_cgroup_get_limit(mem) >> PAGE_SHIFT;
->> +	limit = min(mem_cgroup_get_limit(mem) >> PAGE_SHIFT, (u64)ULONG_MAX);
+> Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+> ---
+>  drivers/staging/zram/zram_drv.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
 >
-> I would much prefer using min_t(u64, ...).  To make it really, really
-> explicit that this is 64-bit arithmetic.  But that is just me, no
-> correctness issue.
+> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> index d0e9e02..d5e0275 100644
+> --- a/drivers/staging/zram/zram_drv.c
+> +++ b/drivers/staging/zram/zram_drv.c
+> @@ -621,7 +621,8 @@ static int create_device(struct zram *zram, int device_id)
+>         * and n*PAGE_SIZED sized I/O requests.
+>         */
+>        blk_queue_physical_block_size(zram->disk->queue, PAGE_SIZE);
+> -       blk_queue_logical_block_size(zram->disk->queue, PAGE_SIZE);
+> +       blk_queue_logical_block_size(zram->disk->queue,
+> +                       (unsigned short) min_t(unsigned int, PAGE_SIZE, 4096));
+
+I don't get it. No architecture supports PAGE_SIZE less than 4K so
+that expression always ends up being 4096, no?
+
+>        blk_queue_io_min(zram->disk->queue, PAGE_SIZE);
+>        blk_queue_io_opt(zram->disk->queue, PAGE_SIZE);
 >
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-
-I agree that min_t() is clearer.  Does the following look better?
-
-Author: Greg Thelen <gthelen@google.com>
-Date:   Wed Jan 26 00:05:59 2011 -0800
-
-    oom: handle truncation in mem_cgroup_out_of_memory()
-    
-    mem_cgroup_get_limit() returns a byte limit as an unsigned 64 bit value.
-    mem_cgroup_out_of_memory() converts this byte limit to an unsigned long
-    page count.  Prior to this patch, the 32 bit version of
-    mem_cgroup_out_of_memory() would silently truncate the most significant
-    20 bits from byte limit when constructing the limit as a page count.
-    For byte limits with the lowest 44 bits set to zero, this truncation
-    would compute a page limit of zero.
-    
-    This patch checks for such large byte limits that cannot be converted to
-    page counts without loosing information.  In such situations, where a 32
-    bit page counter is too small to represent the corresponding byte count,
-    select a maximal page count.
-    
-    Signed-off-by: Greg Thelen <gthelen@google.com>
-
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 7dcca55..0164060 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -538,7 +538,7 @@ void mem_cgroup_out_of_memory(struct mem_cgroup *mem, gfp_t gfp_mask)
- 	struct task_struct *p;
- 
- 	check_panic_on_oom(CONSTRAINT_MEMCG, gfp_mask, 0, NULL);
--	limit = mem_cgroup_get_limit(mem) >> PAGE_SHIFT;
-+	limit = min_t(u64, mem_cgroup_get_limit(mem) >> PAGE_SHIFT, ULONG_MAX);
- 	read_lock(&tasklist_lock);
- retry:
- 	p = select_bad_process(&points, limit, mem, NULL);
+> --
+> 1.6.0.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
