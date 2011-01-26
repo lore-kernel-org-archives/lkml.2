@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753843Ab1AZRX1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 12:23:27 -0500
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:56233 "EHLO e3.ny.us.ibm.com"
+	id S1753785Ab1AZRYA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 12:24:00 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:56464 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753695Ab1AZRXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 12:23:25 -0500
-Date: Wed, 26 Jan 2011 11:23:18 -0600
+	id S1753522Ab1AZRX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 12:23:58 -0500
+Date: Wed, 26 Jan 2011 11:23:55 -0600
 From: Robert Jennings <rcj@linux.vnet.ibm.com>
 To: Nitin Gupta <ngupta@vflare.org>
 Cc: Greg Kroah-Hartman <gregkh@suse.de>, Pekka Enberg <penberg@cs.helsinki.fi>,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/7] zram: Prevent overflow in logical block size
-Message-ID: <20110126172317.GD8446@linux.vnet.ibm.com>
+Subject: [PATCH 3/7] zram: Speed insertion of new pages with cached idx
+Message-ID: <20110126172354.GE8446@linux.vnet.ibm.com>
 Mail-Followup-To: Nitin Gupta <ngupta@vflare.org>,
 	Greg Kroah-Hartman <gregkh@suse.de>,
 	Pekka Enberg <penberg@cs.helsinki.fi>, devel@driverdev.osuosl.org,
@@ -28,32 +28,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On a 64K page kernel, the value PAGE_SIZE passed to
-blk_queue_logical_block_size would overflow the logical block size
-argument (resulting in setting it to 0).
-
-Take the minimum of PAGE_SIZE or 4096 and use this for the block device
-logical block size.
+Calculate the first- and second-level indices for new page when the pool
+is initialized rather than calculating them on each insertion.
 
 Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
 ---
- drivers/staging/zram/zram_drv.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ drivers/staging/zram/xvmalloc.c     |   13 +++++++++++--
+ drivers/staging/zram/xvmalloc_int.h |    4 ++++
+ 2 files changed, 15 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index d0e9e02..d5e0275 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -621,7 +621,8 @@ static int create_device(struct zram *zram, int device_id)
- 	 * and n*PAGE_SIZED sized I/O requests.
- 	 */
- 	blk_queue_physical_block_size(zram->disk->queue, PAGE_SIZE);
--	blk_queue_logical_block_size(zram->disk->queue, PAGE_SIZE);
-+	blk_queue_logical_block_size(zram->disk->queue,
-+			(unsigned short) min_t(unsigned int, PAGE_SIZE, 4096));
- 	blk_queue_io_min(zram->disk->queue, PAGE_SIZE);
- 	blk_queue_io_opt(zram->disk->queue, PAGE_SIZE);
+diff --git a/drivers/staging/zram/xvmalloc.c b/drivers/staging/zram/xvmalloc.c
+index 3fdbb8a..a507f95 100644
+--- a/drivers/staging/zram/xvmalloc.c
++++ b/drivers/staging/zram/xvmalloc.c
+@@ -184,8 +184,13 @@ static void insert_block(struct xv_pool *pool, struct page *page, u32 offset,
+ 	u32 flindex, slindex;
+ 	struct block_header *nextblock;
  
+-	slindex = get_index_for_insert(block->size);
+-	flindex = slindex / BITS_PER_LONG;
++	if (block->size >= (PAGE_SIZE - XV_ALIGN)) {
++		slindex = pagesize_slindex;
++		flindex = pagesize_flindex;
++	} else {
++		slindex = get_index_for_insert(block->size);
++		flindex = slindex / BITS_PER_LONG;
++	}
+ 
+ 	block->link.prev_page = 0;
+ 	block->link.prev_offset = 0;
+@@ -316,6 +321,10 @@ struct xv_pool *xv_create_pool(void)
+ 	if (!pool)
+ 		return NULL;
+ 
++	/* cache the first/second-level indices for PAGE_SIZE allocations */
++	pagesize_slindex = get_index_for_insert(PAGE_SIZE);
++	pagesize_flindex = pagesize_slindex / BITS_PER_LONG;
++
+ 	spin_lock_init(&pool->lock);
+ 
+ 	return pool;
+diff --git a/drivers/staging/zram/xvmalloc_int.h b/drivers/staging/zram/xvmalloc_int.h
+index 051a49b..68db384 100644
+--- a/drivers/staging/zram/xvmalloc_int.h
++++ b/drivers/staging/zram/xvmalloc_int.h
+@@ -52,6 +52,10 @@
+ 
+ /* End of user params */
+ 
++/* Cache of the first/second-level indices for PAGE_SIZE allocations */
++static u32 pagesize_slindex;
++static u32 pagesize_flindex;
++
+ enum blockflags {
+ 	BLOCK_FREE,
+ 	PREV_FREE,
 -- 
 1.6.0.2
 
