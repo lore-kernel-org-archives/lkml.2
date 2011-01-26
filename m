@@ -1,48 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795Ab1AZCxS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Jan 2011 21:53:18 -0500
-Received: from kroah.org ([198.145.64.141]:52907 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752626Ab1AZCw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Jan 2011 21:52:59 -0500
-Date: Wed, 26 Jan 2011 10:48:31 +0800
-From: Greg KH <greg@kroah.com>
-To: Aaron Durbin <adurbin@google.com>
-Cc: Jeff Garzik <jeff@garzik.org>, Mike Waychison <mikew@google.com>,
-        torvalds@linux-foundation.org, San Mehat <san@google.com>,
-        Duncan Laurie <dlaurie@google.com>, linux-kernel@vger.kernel.org,
-        Tim Hockin <thockin@google.com>
-Subject: Re: [PATCH v1 1/6] Add oops notification chain.
-Message-ID: <20110126024831.GD28283@kroah.com>
-References: <20110125002433.12637.51091.stgit@mike.mtv.corp.google.com>
- <20110125002439.12637.8515.stgit@mike.mtv.corp.google.com>
- <20110125020658.GA3481@kroah.com>
- <AANLkTinLoDN_6zG56J7V154jrRc-K+BzAHFO3qS_r8J0@mail.gmail.com>
- <4D3F4275.50709@garzik.org>
- <AANLkTim4fG0-F0+E-DHa4=XGdk1rFbRA68nvt9bfURiK@mail.gmail.com>
- <4D3F4699.60809@garzik.org>
- <AANLkTinUmB003g3Cb0yUXf7LeTvc=BMWN6MGcGJW0QrJ@mail.gmail.com>
+	id S1752687Ab1AZDAI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Jan 2011 22:00:08 -0500
+Received: from snt0-omc1-s46.snt0.hotmail.com ([65.54.61.83]:52361 "EHLO
+	snt0-omc1-s46.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752381Ab1AZDAG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Jan 2011 22:00:06 -0500
+X-Greylist: delayed 369 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Jan 2011 22:00:06 EST
+Message-ID: <SNT125-W309F6FAD7F81E225652F01C3FF0@phx.gbl>
+X-Originating-IP: [71.112.243.235]
+From: Yuhong Bao <yuhongbao_386@hotmail.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: Note on Outlook and line-wrapping
+Date: Tue, 25 Jan 2011 18:53:55 -0800
+Importance: Normal
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinUmB003g3Cb0yUXf7LeTvc=BMWN6MGcGJW0QrJ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 26 Jan 2011 02:53:56.0231 (UTC) FILETIME=[4602F970:01CBBD04]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 02:21:03PM -0800, Aaron Durbin wrote:
-> As Mike talked about it might be more desirable to actually pass a
-> reason field that indicates the appropriate kernel event. However, the
-> naming of some of the variables becomes less clear. Maybe name it
-> panic_oops_notifier_list? That way there would only be a single
-> notifier chain.
 
-Yes, I think that's the better thing to do here instead of adding more
-notifier chains.  It would just start to get even messier than it
-currently is :)
+In Outlook and OE, there is an option to change the number of characters line-wrapping occurs at.
+For example, in Outlook 2003, go to Tools->Options. In the Mail Formats tab, click the Internet Formats button.
+Notice the "Automatically wrap text at xx characters option", where xx is a textbox that can be changed.
 
-thanks,
-
-greg k-h
+Yuhong Bao
+ 		 	   		  
