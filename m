@@ -1,95 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab1AZK2c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 05:28:32 -0500
-Received: from nwd2mail11.analog.com ([137.71.25.57]:44915 "EHLO
-	nwd2mail11.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752603Ab1AZK2b (ORCPT
+	id S1752732Ab1AZKkS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 05:40:18 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38918 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751352Ab1AZKkP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 05:28:31 -0500
-X-IronPort-AV: E=Sophos;i="4.60,379,1291611600"; 
-   d="scan'208";a="27823445"
-From: Bob Liu <lliubbo@gmail.com>
-To: linux-kernel@vger.kernel.org
-CC: chrisw@sous-sol.org, tomas.winkler@intel.com, johannes.berg@intel.com,
-        dmitry.torokhov@gmail.com, gregkh@suse.de, Bob Liu <lliubbo@gmail.com>
-Subject: [PATCH V2] firmware_classs: change val uevent's type to bool
-Date: Wed, 26 Jan 2011 18:33:32 +0800
-Message-ID: <1296038012-16656-1-git-send-email-lliubbo@gmail.com>
-X-Mailer: git-send-email 1.6.3.3
+	Wed, 26 Jan 2011 05:40:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=SfszGxyGLhV+bBdl5Yze+XK01jFF8PVtcNFpSAY66wNGuLB/pqi+Bqx+sw+0+l/xL1
+         5GmnwxP0KC5P4lx+YyxnUYz1wzfJgnEYCnJzwqweIADM7OejqvrL3NeCBnfM3q+/68EN
+         +JaC6SFutIfevLppYBEWpvLotIiTdiT1rP+Zk=
+Date: Wed, 26 Jan 2011 11:40:08 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
+        lenb@kernel.org, linux-acpi@vger.kernel.org, cpufreq@vger.kernel.org
+Subject: Re: [PATCHSET] workqueue: update workqueue users - replace
+ create_workqueue()
+Message-ID: <20110126104008.GG12520@htj.dyndns.org>
+References: <1294062595-30097-1-git-send-email-tj@kernel.org>
+ <20110125142921.GB27510@htj.dyndns.org>
+ <20110125162654.GA4795@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110125162654.GA4795@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some place in firmware_class.c using "int uevent" define, but others use "bool
-uevent".
-This patch replace all int uevent define to bool.
+On Tue, Jan 25, 2011 at 11:26:54AM -0500, Dave Jones wrote:
+> On Tue, Jan 25, 2011 at 03:29:21PM +0100, Tejun Heo wrote:
+>  > Hello,
+>  > 
+>  > There was no response for the following patches and I'm planning on
+>  > routing them through workqueue#for-2.6.39.  If you have an objection
+>  > or want to take the patch through a different tree, please let me
+>  > know.
+>  > ..
+>  >  0007-cpufreq-use-system_wq-instead-of-dedicated-workqueue.patch
+> 
+> Feel free to add my 
+> Signed-off-by: Dave Jones <davej@redhat.com> 
+> to this.
+> 
+> I looked it over, and didn't see anything objectionable.
 
-Changes since V1:
-	johannes: remove no-op
+As the patch is going through wq tree, I added Acked-by instead of
+Signed-off-by.
 
-Signed-off-by: Bob Liu <lliubbo@gmail.com>
----
- drivers/base/firmware_class.c |    7 +++----
- include/linux/firmware.h      |    4 ++--
- 2 files changed, 5 insertions(+), 6 deletions(-)
+Thank you.
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 40af43e..8c798ef 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -593,8 +593,7 @@ int
- request_firmware(const struct firmware **firmware_p, const char *name,
-                  struct device *device)
- {
--        int uevent = 1;
--        return _request_firmware(firmware_p, name, device, uevent, false);
-+        return _request_firmware(firmware_p, name, device, true, false);
- }
- 
- /**
-@@ -618,7 +617,7 @@ struct firmware_work {
- 	struct device *device;
- 	void *context;
- 	void (*cont)(const struct firmware *fw, void *context);
--	int uevent;
-+	bool uevent;
- };
- 
- static int request_firmware_work_func(void *arg)
-@@ -661,7 +660,7 @@ static int request_firmware_work_func(void *arg)
-  **/
- int
- request_firmware_nowait(
--	struct module *module, int uevent,
-+	struct module *module, bool uevent,
- 	const char *name, struct device *device, gfp_t gfp, void *context,
- 	void (*cont)(const struct firmware *fw, void *context))
- {
-diff --git a/include/linux/firmware.h b/include/linux/firmware.h
-index 53d1e6c..21b3e75 100644
---- a/include/linux/firmware.h
-+++ b/include/linux/firmware.h
-@@ -39,7 +39,7 @@ struct builtin_fw {
- int request_firmware(const struct firmware **fw, const char *name,
- 		     struct device *device);
- int request_firmware_nowait(
--	struct module *module, int uevent,
-+	struct module *module, bool uevent,
- 	const char *name, struct device *device, gfp_t gfp, void *context,
- 	void (*cont)(const struct firmware *fw, void *context));
- 
-@@ -52,7 +52,7 @@ static inline int request_firmware(const struct firmware **fw,
- 	return -EINVAL;
- }
- static inline int request_firmware_nowait(
--	struct module *module, int uevent,
-+	struct module *module, bool uevent,
- 	const char *name, struct device *device, gfp_t gfp, void *context,
- 	void (*cont)(const struct firmware *fw, void *context))
- {
 -- 
-1.6.3.3
-
+tejun
