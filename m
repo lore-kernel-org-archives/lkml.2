@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752977Ab1AZKU3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 05:20:29 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:33471 "EHLO zene.cmpxchg.org"
+	id S1752925Ab1AZKXd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 05:23:33 -0500
+Received: from a.mx.secunet.com ([195.81.216.161]:42165 "EHLO a.mx.secunet.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752647Ab1AZKU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 05:20:28 -0500
-Date: Wed, 26 Jan 2011 11:20:20 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: akpm@linux-foundation.org
-Cc: shawn.bohrer@gmail.com, davidel@xmailserver.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, mm-commits@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch]
- epoll-fix-compiler-warning-and-optimize-the-non-blocking-path-fix
-Message-ID: <20110126102020.GA2244@cmpxchg.org>
-References: <201101260021.p0Q0LxsS016458@imap1.linux-foundation.org>
+	id S1752610Ab1AZKXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 05:23:31 -0500
+Date: Wed, 26 Jan 2011 11:23:28 +0100
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Eric Paris <eparis@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: flex_array related problems on selinux policy loading
+Message-ID: <20110126102328.GC3070@secunet.com>
+References: <20110120122659.GD4639@secunet.com>
+ <1295537330.9039.583.camel@nimitz>
+ <20110121072022.GA3070@secunet.com>
+ <1295625455.9039.3326.camel@nimitz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201101260021.p0Q0LxsS016458@imap1.linux-foundation.org>
+In-Reply-To: <1295625455.9039.3326.camel@nimitz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 26 Jan 2011 10:23:29.0390 (UTC) FILETIME=[134468E0:01CBBD43]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The non-blocking ep_poll path optimization introduced skipping over
-the return value setup.
+Cc'ed Andrew on request.
 
-Initialize it properly, my userspace gets upset by epoll_wait()
-returning random things.
+On Fri, Jan 21, 2011 at 07:57:35AM -0800, Dave Hansen wrote:
+> 
+> My suggestion would be to simply make sure that the code handles 0-sized
+> objects and 0-length arrays OK, and do it in two separate patches.  The
+> ZERO_SIZE_PTR can't be used for both because you need to know which
+> situation you were in and you need different behavior (like in
+> flex_array_put()).
+> 
+> Frankly, I like the idea of just allocating a 'struct flex_array' in any
+> case, and just teaching the code to handle element_size=0 and
+> nr_elements=0.  That way, if you have bugs in the code that does things
+> like flex_array_alloc(elem_size=0, len=5, ...) and then
+> flex_array_get(fa, index=99), you have the potential to detect and
+> report the bugs.  The only way to do that is to remember what you set
+> the length as. 
 
-In addition, remove the reinitialization at the fetch_events label,
-the return value is garuanteed to be zero when execution reaches
-there.
-
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Shawn Bohrer <shawn.bohrer@gmail.com>
-Cc: Davide Libenzi <davidel@xmailserver.org>
----
- fs/eventpoll.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index f7cb6cb..afe4238 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -1147,7 +1147,7 @@ static int ep_send_events(struct eventpoll *ep,
- static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
- 		   int maxevents, long timeout)
- {
--	int res, eavail, timed_out = 0;
-+	int res = 0, eavail, timed_out = 0;
- 	unsigned long flags;
- 	long slack = 0;
- 	wait_queue_t wait;
-@@ -1173,7 +1173,6 @@ static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
- fetch_events:
- 	spin_lock_irqsave(&ep->lock, flags);
+Ok, if we can catch these bugs in an easy way, without a lot of extra
+handling for this a rare case, we should do this.
  
--	res = 0;
- 	if (!ep_events_available(ep)) {
- 		/*
- 		 * We don't have any available event to return to the caller.
--- 
-1.7.3.5
+> 
+> If you're worried about allocating a whole page, you could easily just
+> kmalloc() a the two integers for the metadata portion of the 'struct
+> flex_array'.
+> 
+
+Yes, I thought a moment on allocating the basic struct flex_array
+in any case. But I immediately stopped thinking about this when I saw that
+I would allocate a whole page that I don't need afterwards. For the moment
+I don't see any sane way to allocate just the metadata as long as the
+struct flex_array has a fixed size.
+
+Btw. why the struct flex_array needs to have page size? If we would make
+flex_array of dynamic size, say metadata plus the maximum size of the array
+in the case that the metadata and the array fit into a single page, and
+metadata plus space for all the base pointers we need to dereference the
+parts, if the metadata and array is beyond page size. With this, the struct
+flex_array would have a reasonable size in any case, even if the array to
+store is small or of zero size.
+
+Steffen
