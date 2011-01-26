@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab1AZVRG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 16:17:06 -0500
-Received: from imr4.ericy.com ([198.24.6.8]:56880 "EHLO imr4.ericy.com"
+	id S1754126Ab1AZV1c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 16:27:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48460 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752802Ab1AZVRF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 16:17:05 -0500
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: torvalds@linux-foundation.org
-CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 2.6.38
-Date: Wed, 26 Jan 2011 13:52:24 -0800
-Message-ID: <1296078744-21895-1-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: git-send-email 1.7.3.1
+	id S1753292Ab1AZV1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 16:27:31 -0500
+Date: Wed, 26 Jan 2011 22:19:31 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>, Prasad <prasad@linux.vnet.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: Q: perf_install_in_context/perf_event_enable are racy?
+Message-ID: <20110126211931.GA6778@redhat.com>
+References: <20110121130323.GA12900@elte.hu> <1295617185.28776.273.camel@laptop> <20110121142616.GA31165@redhat.com> <1295622304.28776.293.camel@laptop> <20110121204014.GA2870@nowhere> <20110124114234.GA12166@redhat.com> <20110126175322.GA28617@redhat.com> <20110126184957.GA32578@redhat.com> <1296068731.15234.6.camel@laptop> <1296070383.15234.10.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1296070383.15234.10.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 01/26, Peter Zijlstra wrote:
+>
+> On Wed, 2011-01-26 at 20:05 +0100, Peter Zijlstra wrote:
+> > On Wed, 2011-01-26 at 19:49 +0100, Oleg Nesterov wrote:
+> > > On 01/26, Oleg Nesterov wrote:
+> > > >
+> > > > Please see the untested patch below. It doesn't change perf_event_enable(),
+> > > > only perf_install_in_context().
+> > >
+> > > Forgot to mention... Also, it doesn't try to fix the race with do_exit(),
+> > > this needs another change.
+> > >
+> > > And, damn, can't resist. This is mostly cosmetic issue, but I feel
+> > > discomfort every time I look at task_oncpu_function_call(). It _looks_
+> > > obviously wrong, even if the problem doesn't exist in practice. I'll
+> > > send the pedantic fix to keep the maintainers busy ;)
+> >
+> > I've been trying to sit down and work my way through it today, your last
+> > suggestion very nearly seemed to make sense, but I kept getting
+> > distracted.
+> >
+> > FWIW I think perf_event_enable() has the very same issue...
 
-Please pull hwmon subsystem fixes for Linux 2.6.38 from:
+Yes, yes, note the "doesn't change perf_event_enable()" above.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-for-linus
+In fact, I _suspect_ perf_event_enable() has more problems, but
+I need to recheck.
 
-Thanks,
-Guenter Roeck
+> +void task_function_trampoline(void *data)
+> +{
+> +	struct task_function_call *tfc = data;
+> +
+> +	if (this_rq()->curr != tfc->p)
+> +		return;
 
-------
+Yes, I was thinking about checking rq->curr too, but this doesn't
+really help. This closes the race with "prev", but we have the similar
+race with "next".
 
-The following changes since commit 1bae4ce27c9c90344f23c65ea6966c50ffeae2f5:
+__perf_install_in_context() should not set ->task_ctx before next
+does perf_event_context_sched_in(). Otherwise it will do nothing,
+it checks cpuctx->task_ctx == ctx.
 
-  Linux 2.6.38-rc2 (2011-01-21 19:01:34 -0800)
+Oleg.
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-for-linus
-
-Henrik Rydberg (1):
-      hwmon: (applesmc) Properly initialize lockdep attributes
-
-Kalhan Trisal (1):
-      hwmon: (lis3) turn down the no IRQ message
-
-Luca Tettamanti (1):
-      hwmon: (asus_atk0110) Override interface detection on Sabertooth X58
-
- drivers/hwmon/applesmc.c     |    1 +
- drivers/hwmon/asus_atk0110.c |   23 ++++++++++++++++++++++-
- drivers/hwmon/lis3lv02d.c    |    2 +-
- 3 files changed, 24 insertions(+), 2 deletions(-)
