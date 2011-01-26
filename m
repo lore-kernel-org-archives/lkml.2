@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754421Ab1AZXbG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 18:31:06 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:4587 "EHLO
+	id S1754507Ab1AZXbi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 18:31:38 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:4838 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754326Ab1AZXat (ORCPT
+	with ESMTP id S1754464Ab1AZXbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 18:30:49 -0500
+	Wed, 26 Jan 2011 18:31:33 -0500
 From: Mandeep Singh Baines <msb@chromium.org>
 To: gregkh@suse.de, rjw@sisk.pl, mingo@redhat.com, akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
         linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         Mandeep Singh Baines <msb@chromium.org>
-Subject: [PATCH 4/6] TTY: use appropriate printk priority level
-Date: Wed, 26 Jan 2011 15:29:28 -0800
-Message-Id: <1296084570-31453-5-git-send-email-msb@chromium.org>
+Subject: [PATCH 1/6] mm/page_alloc: use appropriate printk priority level
+Date: Wed, 26 Jan 2011 15:29:25 -0800
+Message-Id: <1296084570-31453-2-git-send-email-msb@chromium.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <20110125235700.GR8008@google.com>
 References: <20110125235700.GR8008@google.com>
@@ -30,50 +30,77 @@ dmesg warnings closely.
 
 Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
 ---
- drivers/tty/vt/vt.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+ mm/page_alloc.c |   27 +++++++++++++++------------
+ 1 files changed, 15 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-index 76407ec..511d80e 100644
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -2158,7 +2158,7 @@ static int do_con_write(struct tty_struct *tty, const unsigned char *buf, int co
- 	currcons = vc->vc_num;
- 	if (!vc_cons_allocated(currcons)) {
- 	    /* could this happen? */
--		printk_once("con_write: tty %d not allocated\n", currcons+1);
-+		printk_once(KERN_WARNING "con_write: tty %d not allocated\n", currcons+1);
- 	    release_console_sem();
- 	    return 0;
- 	}
-@@ -2940,7 +2940,7 @@ static int __init con_init(void)
- 	gotoxy(vc, vc->vc_x, vc->vc_y);
- 	csi_J(vc, 0);
- 	update_screen(vc);
--	printk("Console: %s %s %dx%d",
-+	pr_info("Console: %s %s %dx%d",
- 		vc->vc_can_do_color ? "colour" : "mono",
- 		display_desc, vc->vc_cols, vc->vc_rows);
- 	printable = 1;
-@@ -3103,7 +3103,7 @@ static int bind_con_driver(const struct consw *csw, int first, int last,
- 			clear_buffer_attributes(vc);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 90c1439..234c704 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -3129,14 +3129,14 @@ void build_all_zonelists(void *data)
+ 	else
+ 		page_group_by_mobility_disabled = 0;
+ 
+-	printk("Built %i zonelists in %s order, mobility grouping %s.  "
+-		"Total pages: %ld\n",
++	printk(KERN_INFO "Built %i zonelists in %s order, mobility grouping %s."
++		"  Total pages: %ld\n",
+ 			nr_online_nodes,
+ 			zonelist_order_name[current_zonelist_order],
+ 			page_group_by_mobility_disabled ? "off" : "on",
+ 			vm_total_pages);
+ #ifdef CONFIG_NUMA
+-	printk("Policy zone: %s\n", zone_names[policy_zone]);
++	printk(KERN_INFO "Policy zone: %s\n", zone_names[policy_zone]);
+ #endif
+ }
+ 
+@@ -4700,33 +4700,36 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
+ 	find_zone_movable_pfns_for_nodes(zone_movable_pfn);
+ 
+ 	/* Print out the zone ranges */
+-	printk("Zone PFN ranges:\n");
++	printk(KERN_INFO "Zone PFN ranges:\n");
+ 	for (i = 0; i < MAX_NR_ZONES; i++) {
+ 		if (i == ZONE_MOVABLE)
+ 			continue;
+-		printk("  %-8s ", zone_names[i]);
++		printk(KERN_INFO "  %-8s ", zone_names[i]);
+ 		if (arch_zone_lowest_possible_pfn[i] ==
+ 				arch_zone_highest_possible_pfn[i])
+ 			printk("empty\n");
+ 		else
+-			printk("%0#10lx -> %0#10lx\n",
++			printk(KERN_INFO "%0#10lx -> %0#10lx\n",
+ 				arch_zone_lowest_possible_pfn[i],
+ 				arch_zone_highest_possible_pfn[i]);
  	}
  
--	printk("Console: switching ");
-+	pr_info("Console: switching ");
- 	if (!deflt)
- 		printk("consoles %d-%d ", first+1, last+1);
- 	if (j >= 0) {
-@@ -3804,7 +3804,8 @@ void do_unblank_screen(int leaving_gfx)
- 		return;
- 	if (!vc_cons_allocated(fg_console)) {
- 		/* impossible */
--		printk("unblank_screen: tty %d not allocated ??\n", fg_console+1);
-+		pr_warning("unblank_screen: tty %d not allocated ??\n",
-+			   fg_console+1);
- 		return;
+ 	/* Print out the PFNs ZONE_MOVABLE begins at in each node */
+-	printk("Movable zone start PFN for each node\n");
++	printk(KERN_INFO "Movable zone start PFN for each node\n");
+ 	for (i = 0; i < MAX_NUMNODES; i++) {
+ 		if (zone_movable_pfn[i])
+-			printk("  Node %d: %lu\n", i, zone_movable_pfn[i]);
++			printk(KERN_INFO "  Node %d: %lu\n", i,
++			       zone_movable_pfn[i]);
  	}
- 	vc = vc_cons[fg_console].d;
+ 
+ 	/* Print out the early_node_map[] */
+-	printk("early_node_map[%d] active PFN ranges\n", nr_nodemap_entries);
++	printk(KERN_INFO "early_node_map[%d] active PFN ranges\n",
++	       nr_nodemap_entries);
+ 	for (i = 0; i < nr_nodemap_entries; i++)
+-		printk("  %3d: %0#10lx -> %0#10lx\n", early_node_map[i].nid,
+-						early_node_map[i].start_pfn,
+-						early_node_map[i].end_pfn);
++		printk(KERN_INFO "  %3d: %0#10lx -> %0#10lx\n",
++		       early_node_map[i].nid,
++		       early_node_map[i].start_pfn,
++		       early_node_map[i].end_pfn);
+ 
+ 	/* Initialise every node */
+ 	mminit_verify_pageflags_layout();
 -- 
 1.7.3.1
 
