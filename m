@@ -1,200 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858Ab1AZJIM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 04:08:12 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:50403 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752698Ab1AZJIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 04:08:10 -0500
-Date: Wed, 26 Jan 2011 09:07:45 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Anton Blanchard <anton@samba.org>
-Cc: dwg@au1.ibm.com, akpm@linux-foundation.org, hughd@google.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] hugepage: Protect region tracking lists with its
-	own spinlock
-Message-ID: <20110126090744.GQ18984@csn.ul.ie>
-References: <20110125143226.37532ea2@kryten>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110125143226.37532ea2@kryten>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1752949Ab1AZJJj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 04:09:39 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:37386 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752487Ab1AZJJh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 04:09:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=Mt6ScBy2KQQgUz9DISjDOFcZ4dOnPojeAr15lgp2dBf9uQ5pk2LawF6mKoSvLt+kuZ
+         qe/A6kk8rS8CY7uNW6wUeeyMJOH0457sAFAcd6bgpVeyvRCkWi9O3B9aTeeFu1rJi8jm
+         7E5+MUD8cWGyFjC9zoqjuGQ1VY+mockkrJr4c=
+From: "Cho, Yu-Chen" <acho@novell.com>
+To: marcel@holtmann.org, padovan@profusion.mobi,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: acho@novell.com, jlee@novell.com
+Subject: [PATCH] add Atheros BT AR9285 fw supported
+Date: Wed, 26 Jan 2011 17:10:59 +0800
+Message-Id: <edc8dae4f78c3c93397e1bd34a7e2337c4aaeb88.1296032839.git.acho@novell.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 02:32:26PM +1100, Anton Blanchard wrote:
-> 
-> In preparation for creating a hash of spinlocks to replace the global
-> hugetlb_instantiation_mutex, protect the region tracking code with
-> its own spinlock.
-> 
-> Signed-off-by: Anton Blanchard <anton@samba.org> 
-> ---
-> 
-> The old code locked it with either:
-> 
-> 	down_write(&mm->mmap_sem);
-> or
-> 	down_read(&mm->mmap_sem);
-> 	mutex_lock(&hugetlb_instantiation_mutex);
-> 
-> I chose to keep things simple and wrap everything with a single lock.
-> Do we need the parallelism the old code had in the down_write case?
-> 
-> 
-> Index: powerpc.git/mm/hugetlb.c
-> ===================================================================
-> --- powerpc.git.orig/mm/hugetlb.c	2011-01-07 12:50:52.090440484 +1100
-> +++ powerpc.git/mm/hugetlb.c	2011-01-07 12:52:03.922704453 +1100
-> @@ -56,16 +56,6 @@ static DEFINE_SPINLOCK(hugetlb_lock);
->  /*
->   * Region tracking -- allows tracking of reservations and instantiated pages
->   *                    across the pages in a mapping.
-> - *
-> - * The region data structures are protected by a combination of the mmap_sem
-> - * and the hugetlb_instantion_mutex.  To access or modify a region the caller
-> - * must either hold the mmap_sem for write, or the mmap_sem for read and
-> - * the hugetlb_instantiation mutex:
-> - *
-> - * 	down_write(&mm->mmap_sem);
-> - * or
-> - * 	down_read(&mm->mmap_sem);
-> - * 	mutex_lock(&hugetlb_instantiation_mutex);
->   */
->  struct file_region {
->  	struct list_head link;
+Add the btusb.c blacklist [03f0:311d] for Atheros AR9285 Malbec BT
+and add to ath3k.c ath3-1.fw (md5:1211fa34c09e10ba48381586b7c3883d)
+supported this device.
 
-A new comment is needed to explain how region_lock is protecting the
-region lists.
+Signed-off-by: Cho, Yu-Chen <acho@novell.com>
+---
+ drivers/bluetooth/ath3k.c |    2 ++
+ drivers/bluetooth/btusb.c |    3 +++
+ 2 files changed, 5 insertions(+), 0 deletions(-)
 
-Otherwise, nothing jumps out as being bad. It does not appear functionality
-or locking has really changed.  The mutex + mmap_sem is still in place
-so the spinlock is redundant for protecting the region lists presumably
-until the next patch.
-
-> @@ -73,10 +63,14 @@ struct file_region {
->  	long to;
->  };
->  
-> +static DEFINE_SPINLOCK(region_lock);
-> +
->  static long region_add(struct list_head *head, long f, long t)
->  {
->  	struct file_region *rg, *nrg, *trg;
->  
-> +	spin_lock(&region_lock);
-> +
->  	/* Locate the region we are either in or before. */
->  	list_for_each_entry(rg, head, link)
->  		if (f <= rg->to)
-> @@ -106,6 +100,7 @@ static long region_add(struct list_head
->  	}
->  	nrg->from = f;
->  	nrg->to = t;
-> +	spin_unlock(&region_lock);
->  	return 0;
->  }
->  
-> @@ -114,6 +109,8 @@ static long region_chg(struct list_head
->  	struct file_region *rg, *nrg;
->  	long chg = 0;
->  
-> +	spin_lock(&region_lock);
-> +
->  	/* Locate the region we are before or in. */
->  	list_for_each_entry(rg, head, link)
->  		if (f <= rg->to)
-> @@ -124,14 +121,17 @@ static long region_chg(struct list_head
->  	 * size such that we can guarantee to record the reservation. */
->  	if (&rg->link == head || t < rg->from) {
->  		nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
-> -		if (!nrg)
-> -			return -ENOMEM;
-> +		if (!nrg) {
-> +			chg = -ENOMEM;
-> +			goto out;
-> +		}
->  		nrg->from = f;
->  		nrg->to   = f;
->  		INIT_LIST_HEAD(&nrg->link);
->  		list_add(&nrg->link, rg->link.prev);
->  
-> -		return t - f;
-> +		chg = t - f;
-> +		goto out;
->  	}
->  
->  	/* Round our left edge to the current segment if it encloses us. */
-> @@ -144,7 +144,7 @@ static long region_chg(struct list_head
->  		if (&rg->link == head)
->  			break;
->  		if (rg->from > t)
-> -			return chg;
-> +			goto out;
->  
->  		/* We overlap with this area, if it extends futher than
->  		 * us then we must extend ourselves.  Account for its
-> @@ -155,6 +155,9 @@ static long region_chg(struct list_head
->  		}
->  		chg -= rg->to - rg->from;
->  	}
-> +out:
-> +
-> +	spin_unlock(&region_lock);
->  	return chg;
->  }
->  
-> @@ -163,12 +166,16 @@ static long region_truncate(struct list_
->  	struct file_region *rg, *trg;
->  	long chg = 0;
->  
-> +	spin_lock(&region_lock);
-> +
->  	/* Locate the region we are either in or before. */
->  	list_for_each_entry(rg, head, link)
->  		if (end <= rg->to)
->  			break;
-> -	if (&rg->link == head)
-> -		return 0;
-> +	if (&rg->link == head) {
-> +		chg = 0;
-> +		goto out;
-> +	}
->  
->  	/* If we are in the middle of a region then adjust it. */
->  	if (end > rg->from) {
-> @@ -185,6 +192,9 @@ static long region_truncate(struct list_
->  		list_del(&rg->link);
->  		kfree(rg);
->  	}
-> +
-> +out:
-> +	spin_unlock(&region_lock);
->  	return chg;
->  }
->  
-> @@ -193,6 +203,8 @@ static long region_count(struct list_hea
->  	struct file_region *rg;
->  	long chg = 0;
->  
-> +	spin_lock(&region_lock);
-> +
->  	/* Locate each segment we overlap with, and count that overlap. */
->  	list_for_each_entry(rg, head, link) {
->  		int seg_from;
-> @@ -209,6 +221,7 @@ static long region_count(struct list_hea
->  		chg += seg_to - seg_from;
->  	}
->  
-> +	spin_unlock(&region_lock);
->  	return chg;
->  }
->  
-> 
-
+diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+index 949ed09..5b494b8 100644
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -39,6 +39,8 @@ static struct usb_device_id ath3k_table[] = {
+ 	/* Atheros AR3011 with sflash firmware*/
+ 	{ USB_DEVICE(0x0CF3, 0x3002) },
+ 
++	/* Atheros AR9285 Malbec with sflash firmware */
++	{ USB_DEVICE(0x03F0, 0x311D) },
+ 	{ }	/* Terminating entry */
+ };
+ 
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index 1da773f..4cefa91 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -102,6 +102,9 @@ static struct usb_device_id blacklist_table[] = {
+ 	/* Atheros 3011 with sflash firmware */
+ 	{ USB_DEVICE(0x0cf3, 0x3002), .driver_info = BTUSB_IGNORE },
+ 
++	/* Atheros AR9285 Malbec with sflash firmware */
++	{ USB_DEVICE(0x03f0, 0x311d), .driver_info = BTUSB_IGNORE },
++
+ 	/* Broadcom BCM2035 */
+ 	{ USB_DEVICE(0x0a5c, 0x2035), .driver_info = BTUSB_WRONG_SCO_MTU },
+ 	{ USB_DEVICE(0x0a5c, 0x200a), .driver_info = BTUSB_WRONG_SCO_MTU },
 -- 
-Mel Gorman
-Linux Technology Center
-IBM Dublin Software Lab
+1.7.1
+
