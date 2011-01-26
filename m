@@ -1,107 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754214Ab1AZW5J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 17:57:09 -0500
-Received: from xenotime.net ([72.52.115.56]:59868 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753328Ab1AZW5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 17:57:07 -0500
-Date: Wed, 26 Jan 2011 14:57:03 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>, olofj@chromium.org
-Subject: Re: [PATCH] printk: allow setting DEFAULT_MESSAGE_LEVEL via Kconfig
-Message-Id: <20110126145703.a0f5add5.rdunlap@xenotime.net>
-In-Reply-To: <20110126144910.ce0646ec.akpm@linux-foundation.org>
-References: <20110125235700.GR8008@google.com>
-	<20110126144910.ce0646ec.akpm@linux-foundation.org>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754188Ab1AZXEP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 18:04:15 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:6897 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752824Ab1AZXEO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 18:04:14 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6238"; a="71891034"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] ARM: Fix SMP_ON_UP for non ARM ltd. implementations
+Date: Wed, 26 Jan 2011 15:04:12 -0800
+Message-Id: <1296083052-20034-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Jan 2011 14:49:10 -0800 Andrew Morton wrote:
+The SMP_ON_UP checks restrict the feature to ARM limited designs,
+when other implementers support SMP designs. Instead of checking
+for an ARM CPU and ARMv6/v7 just check for a v6 or v7 and then
+rely on the MPIDR for non ARM 11MPCore designs.
 
-> On Tue, 25 Jan 2011 15:57:00 -0800
-> Mandeep Singh Baines <msb@chromium.org> wrote:
-> 
-> > We've been burned by regressions/bugs which we later realized could
-> > have been triaged quicker if only we'd paid closer attention to
-> > dmesg. To make it easier to audit dmesg, we'd like to make
-> > DEFAULT_MESSAGE_LEVEL Kconfig-settable. That way we can set it to
-> > KERN_NOTICE and audit any messages <= KERN_WARNING.
-> > 
-> > Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-> > ---
-> >  kernel/printk.c   |    2 +-
-> >  lib/Kconfig.debug |   12 ++++++++++++
-> >  2 files changed, 13 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/kernel/printk.c b/kernel/printk.c
-> > index 5ddd291..f91a7fd 100644
-> > --- a/kernel/printk.c
-> > +++ b/kernel/printk.c
-> > @@ -59,7 +59,7 @@ void asmlinkage __attribute__((weak)) early_printk(const char *fmt, ...)
-> >  #define __LOG_BUF_LEN	(1 << CONFIG_LOG_BUF_SHIFT)
-> >  
-> >  /* printk's without a loglevel use this.. */
-> > -#define DEFAULT_MESSAGE_LOGLEVEL 4 /* KERN_WARNING */
-> > +#define DEFAULT_MESSAGE_LOGLEVEL CONFIG_DEFAULT_MESSAGE_LOGLEVEL
-> >  
-> >  /* We show everything that is MORE important than this.. */
-> >  #define MINIMUM_CONSOLE_LOGLEVEL 1 /* Minimum loglevel we let people use */
-> > diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> > index 28b42b9..67b42fa 100644
-> > --- a/lib/Kconfig.debug
-> > +++ b/lib/Kconfig.debug
-> > @@ -9,6 +9,18 @@ config PRINTK_TIME
-> >  	  operations.  This is useful for identifying long delays
-> >  	  in kernel startup.
-> >  
-> > +config DEFAULT_MESSAGE_LOGLEVEL
-> > +	int "Default message log level (1-7)"
-> > +	range 1 7
-> > +	depends on PRINTK
-> > +	default "4"
-> > +	help
-> > +	  Default log level for printk statements with no specified priority.
-> > +
-> > +	  This was hard-coded to KERN_WARNING since at least 2.6.10 but folks
-> > +	  that are auditing their logs closely may want to set it to a lower
-> > +	  priority.
-> > +
-> >  config ENABLE_WARN_DEPRECATED
-> >  	bool "Enable __deprecated logic"
-> >  	default y
-> 
-> I'm a bit surprised that this wasn't already tunable at boot-time
-> and/or at runtime.
-
-
-As WANG Cong replied:
-
-Why? We already have "loglevel=" kernel parameter.
-
-
-> I think it's generally superior to be able to tune this sort of thing
-> via kernel boot parameters and/or /proc knobs, rather than requiring a
-> recompile.  That might be a problem in this specific case, if we have
-> printks which are occurring before __setup() parsing has completed.
-> 
-> 
-> Poeple often complain that they want things settable in Kconfig because
-> for some reason it's all too hard to set the kernel boot command line. 
-> Next time someone says this I'll suggest that they fix the problem
-> permanently by implementing a CONFIG_CMDLINE string, which gets
-> inserted into the kernel boot command line at compile time ;)
-
-
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ arch/arm/kernel/head.S |   13 +++++++++----
+ 1 files changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
+index f17d9a0..ede5b70 100644
+--- a/arch/arm/kernel/head.S
++++ b/arch/arm/kernel/head.S
+@@ -393,20 +393,25 @@ ENDPROC(__turn_mmu_on)
+ #ifdef CONFIG_SMP_ON_UP
+ __fixup_smp:
+ 	mov	r4, #0x00070000
+-	orr	r3, r4, #0xff000000	@ mask 0xff070000
+-	orr	r4, r4, #0x41000000	@ val 0x41070000
+-	and	r0, r9, r3
+-	teq	r0, r4			@ ARM CPU and ARMv6/v7?
++	and	r0, r9, r4
++	teq	r0, r4			@ ARMv6/v7?
+ 	bne	__fixup_smp_on_up	@ no, assume UP
+ 
++	orr	r3, r4, #0xff000000	@ mask 0xff070000
+ 	orr	r3, r3, #0x0000ff00
+ 	orr	r3, r3, #0x000000f0	@ mask 0xff07fff0
++	orr	r4, r4, #0x41000000	@ val 0x41070000
+ 	orr	r4, r4, #0x0000b000
+ 	orr	r4, r4, #0x00000020	@ val 0x4107b020
+ 	and	r0, r9, r3
+ 	teq	r0, r4			@ ARM 11MPCore?
+ 	moveq	pc, lr			@ yes, assume SMP
+ 
++	mov	r4, #0x00070000
++	and	r0, r9, #0x000f0000
++	teq	r0, r4			@ ARMv6?
++	beq	__fixup_smp_on_up	@ yes, assume UP
++
+ 	mrc	p15, 0, r0, c0, c0, 5	@ read MPIDR
+ 	tst	r0, #1 << 31
+ 	movne	pc, lr			@ bit 31 => SMP
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
