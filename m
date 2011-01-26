@@ -1,65 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab1AZRxG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 12:53:06 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:45687 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752097Ab1AZRxE (ORCPT
+	id S1753911Ab1AZRxa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 12:53:30 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:51481 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752097Ab1AZRx3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 12:53:04 -0500
-Date: Wed, 26 Jan 2011 11:52:58 -0600
-From: Robert Jennings <rcj@linux.vnet.ibm.com>
-To: Dan Carpenter <error27@gmail.com>
-Cc: Nitin Gupta <ngupta@vflare.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
+	Wed, 26 Jan 2011 12:53:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=VnlwAx3Sb6mv9gxBieuN66Dk7hc9Pe0dzXdD8mgomGGqftNcZrqfUMj+9C78vZ9aQj
+         gaqYfBg42vvxqGdiiA31E9tH7+1eY1FA6DQLGNHBbLZT0CZFDIzZinSteW/kqOpP+DPu
+         s94EC3TEB95L5q9RHuOnRUlutDvbOhoB/0/4M=
+MIME-Version: 1.0
+In-Reply-To: <20110126172354.GE8446@linux.vnet.ibm.com>
+References: <20110126172148.GB8446@linux.vnet.ibm.com>
+	<20110126172354.GE8446@linux.vnet.ibm.com>
+Date: Wed, 26 Jan 2011 19:53:28 +0200
+X-Google-Sender-Auth: Xjei5EtYmzB227V4OqnLsM095oE
+Message-ID: <AANLkTinF=r_wUw_ZgfcdrFD6nWh3VKwUOjQ+wsbVax0C@mail.gmail.com>
+Subject: Re: [PATCH 3/7] zram: Speed insertion of new pages with cached idx
+From: Pekka Enberg <penberg@kernel.org>
+To: Nitin Gupta <ngupta@vflare.org>, Greg Kroah-Hartman <gregkh@suse.de>,
         Pekka Enberg <penberg@cs.helsinki.fi>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/7] zram: mark the disk as non-rotating media
-Message-ID: <20110126175258.GJ8446@linux.vnet.ibm.com>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Nitin Gupta <ngupta@vflare.org>,
-	Greg Kroah-Hartman <gregkh@suse.de>,
-	Pekka Enberg <penberg@cs.helsinki.fi>, devel@driverdev.osuosl.org,
-	linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110126172743.GI8446@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Dan Carpenter (error27@gmail.com) wrote:
-> On Wed, Jan 26, 2011 at 11:27:44AM -0600, Robert Jennings wrote:
-> > Adding QUEUE_FLAG_NONROT for the in the request_queue flags.  When used
->                            ^^^^^^^^^^^^^^
-> "to the" perhaps?
+On Wed, Jan 26, 2011 at 7:23 PM, Robert Jennings <rcj@linux.vnet.ibm.com> wrote:
+> Calculate the first- and second-level indices for new page when the pool
+> is initialized rather than calculating them on each insertion.
+>
+> Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+> ---
+>  drivers/staging/zram/xvmalloc.c     |   13 +++++++++++--
+>  drivers/staging/zram/xvmalloc_int.h |    4 ++++
+>  2 files changed, 15 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/staging/zram/xvmalloc.c b/drivers/staging/zram/xvmalloc.c
+> index 3fdbb8a..a507f95 100644
+> --- a/drivers/staging/zram/xvmalloc.c
+> +++ b/drivers/staging/zram/xvmalloc.c
+> @@ -184,8 +184,13 @@ static void insert_block(struct xv_pool *pool, struct page *page, u32 offset,
+>        u32 flindex, slindex;
+>        struct block_header *nextblock;
+>
+> -       slindex = get_index_for_insert(block->size);
+> -       flindex = slindex / BITS_PER_LONG;
+> +       if (block->size >= (PAGE_SIZE - XV_ALIGN)) {
+> +               slindex = pagesize_slindex;
+> +               flindex = pagesize_flindex;
+> +       } else {
+> +               slindex = get_index_for_insert(block->size);
+> +               flindex = slindex / BITS_PER_LONG;
+> +       }
+>
+>        block->link.prev_page = 0;
+>        block->link.prev_offset = 0;
+> @@ -316,6 +321,10 @@ struct xv_pool *xv_create_pool(void)
+>        if (!pool)
+>                return NULL;
+>
+> +       /* cache the first/second-level indices for PAGE_SIZE allocations */
+> +       pagesize_slindex = get_index_for_insert(PAGE_SIZE);
+> +       pagesize_flindex = pagesize_slindex / BITS_PER_LONG;
 
-Yeah, that was edited a few times and never re-read.  Thanks.
+Why is this in xv_create_pool(). AFAICT, it can be called multiple
+times if there's more than one zram device. Do we really need
+variables for these? They look like something GCC constant propagation
+should take care of if they would be defines or static inline
+functions.
 
-> > as a swap device, scan_swap_map will avoid the extra work of optimizing
-> > for rotating media.
-> > 
-> > Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
-> > ---
-> >  drivers/staging/zram/zram_drv.c |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> > index d5e0275..450c618 100644
-> > --- a/drivers/staging/zram/zram_drv.c
-> > +++ b/drivers/staging/zram/zram_drv.c
-> > @@ -593,6 +593,7 @@ static int create_device(struct zram *zram, int device_id)
-> >  		goto out;
-> >  	}
-> >  
-> > +	zram->queue->queue_flags ^= QUEUE_FLAG_NONROT;
-> 
-> QUEUE_FLAG_NONROT is 14.  We want to set the 14 bit.  This won't work.
-> 
-> Use queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->queue);
+> +
+>        spin_lock_init(&pool->lock);
+>
+>        return pool;
+> diff --git a/drivers/staging/zram/xvmalloc_int.h b/drivers/staging/zram/xvmalloc_int.h
+> index 051a49b..68db384 100644
+> --- a/drivers/staging/zram/xvmalloc_int.h
+> +++ b/drivers/staging/zram/xvmalloc_int.h
+> @@ -52,6 +52,10 @@
+>
+>  /* End of user params */
+>
+> +/* Cache of the first/second-level indices for PAGE_SIZE allocations */
+> +static u32 pagesize_slindex;
+> +static u32 pagesize_flindex;
 
-I'll correct this.  Thank you.
+This doesn't look right. You shouldn't put variable declarations in
+header files.
 
--Rob Jennings
+> +
+>  enum blockflags {
+>        BLOCK_FREE,
+>        PREV_FREE,
+> --
+> 1.6.0.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
