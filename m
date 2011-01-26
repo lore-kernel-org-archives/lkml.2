@@ -1,140 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145Ab1AZUGE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 15:06:04 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:52208
-	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754035Ab1AZUFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 15:05:25 -0500
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: haiyangz@microsoft.com, hjanssen@microsoft.com, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org
-Subject: [PATCH 4/8] staging: hv: Convert camel cased functions in vmbus_drv.c to lower cases
-Date: Wed, 26 Jan 2011 12:12:10 -0800
-Message-Id: <1296072734-11963-4-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.5.5.6
-In-Reply-To: <1296072734-11963-3-git-send-email-haiyangz@microsoft.com>
-References: <1296072734-11963-1-git-send-email-haiyangz@microsoft.com>
- <1296072734-11963-2-git-send-email-haiyangz@microsoft.com>
- <1296072734-11963-3-git-send-email-haiyangz@microsoft.com>
+	id S1754186Ab1AZUGZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 15:06:25 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40241 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754173Ab1AZUGU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 15:06:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=BJSuUNqmaoT1fde8GuoVtNL7L8OXxSSremqNQDMG251FkjM3aFqSfcml7dBvPKx0Vq
+         4AZUm5QpaBhj1tS8qX8+lnyEanlrsuuyS6YSZnvoszsvK07bNr43yGAqR0SB0mC0+ipM
+         ZapACGacv0+Gjy/0dfePbX/nmKbTohQxj0fXs=
+MIME-Version: 1.0
+In-Reply-To: <76a04784-ace0-4be7-9dd7-a16e91803dc8@i25g2000prd.googlegroups.com>
+References: <76a04784-ace0-4be7-9dd7-a16e91803dc8@i25g2000prd.googlegroups.com>
+Date: Wed, 26 Jan 2011 12:05:49 -0800
+Message-ID: <AANLkTimgOUS0syw2VF=t8PbLi5Xa5CBX6zzMhJFx_CCZ@mail.gmail.com>
+Subject: Re: [tup] Tup with Linux kernel modules
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
+To: tup-users@googlegroups.com
+Cc: "marekfridrich@yahoo.com" <marekfridrich@yahoo.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
----
- drivers/staging/hv/channel_mgmt.c  |    4 ++--
- drivers/staging/hv/vmbus_drv.c     |   22 +++++++++++-----------
- drivers/staging/hv/vmbus_private.h |    6 +++---
- 3 files changed, 16 insertions(+), 16 deletions(-)
+On Wed, Jan 26, 2011 at 11:59 AM, mcgrof <mcgrof@gmail.com> wrote:
+> Just curious if anyone has used tup to build the Linux kernel.
+>
+> http://gittup.org/tup/make_vs_tup.html
 
-diff --git a/drivers/staging/hv/channel_mgmt.c b/drivers/staging/hv/channel_mgmt.c
-index 0ce8f54..732a457 100644
---- a/drivers/staging/hv/channel_mgmt.c
-+++ b/drivers/staging/hv/channel_mgmt.c
-@@ -391,7 +391,7 @@ static void vmbus_process_offer(struct work_struct *work)
- 	/*
- 	 * Start the process of binding this offer to the driver
- 	 * We need to set the DeviceObject field before calling
--	 * VmbusChildDeviceAdd()
-+	 * vmbus_child_dev_add()
- 	 */
- 	newchannel->device_obj = vmbus_child_device_create(
- 		&newchannel->offermsg.offer.InterfaceType,
-@@ -406,7 +406,7 @@ static void vmbus_process_offer(struct work_struct *work)
- 	 * binding which eventually invokes the device driver's AddDevice()
- 	 * method.
- 	 */
--	ret = VmbusChildDeviceAdd(newchannel->device_obj);
-+	ret = vmbus_child_dev_add(newchannel->device_obj);
- 	if (ret != 0) {
- 		DPRINT_ERR(VMBUS,
- 			   "unable to add child device object (relid %d)",
-diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
-index 99686f0..0c0aadb 100644
---- a/drivers/staging/hv/vmbus_drv.c
-+++ b/drivers/staging/hv/vmbus_drv.c
-@@ -148,17 +148,17 @@ static const struct hv_guid device_id = {
- static struct hv_device *vmbus_device; /* vmbus root device */
- 
- /*
-- * VmbusChildDeviceAdd - Registers the child device with the vmbus
-+ * vmbus_child_dev_add - Registers the child device with the vmbus
-  */
--int VmbusChildDeviceAdd(struct hv_device *child_dev)
-+int vmbus_child_dev_add(struct hv_device *child_dev)
- {
- 	return vmbus_child_device_register(vmbus_device, child_dev);
- }
- 
- /*
-- * VmbusOnDeviceAdd - Callback when the root bus device is added
-+ * vmbus_dev_add - Callback when the root bus device is added
-  */
--static int VmbusOnDeviceAdd(struct hv_device *dev, void *info)
-+static int vmbus_dev_add(struct hv_device *dev, void *info)
- {
- 	u32 *irqvector = info;
- 	int ret;
-@@ -181,9 +181,9 @@ static int VmbusOnDeviceAdd(struct hv_device *dev, void *info)
- }
- 
- /*
-- * VmbusOnDeviceRemove - Callback when the root bus device is removed
-+ * vmbus_dev_rm - Callback when the root bus device is removed
-  */
--static int VmbusOnDeviceRemove(struct hv_device *dev)
-+static int vmbus_dev_rm(struct hv_device *dev)
- {
- 	int ret = 0;
- 
-@@ -194,9 +194,9 @@ static int VmbusOnDeviceRemove(struct hv_device *dev)
- }
- 
- /*
-- * VmbusOnCleanup - Perform any cleanup when the driver is removed
-+ * vmbus_cleanup - Perform any cleanup when the driver is removed
-  */
--static void VmbusOnCleanup(struct hv_driver *drv)
-+static void vmbus_cleanup(struct hv_driver *drv)
- {
- 	/* struct vmbus_driver *driver = (struct vmbus_driver *)drv; */
- 
-@@ -482,9 +482,9 @@ static int vmbus_bus_init(void)
- 	memcpy(&driver->deviceType, &device_type, sizeof(struct hv_guid));
- 
- 	/* Setup dispatch table */
--	driver->OnDeviceAdd	= VmbusOnDeviceAdd;
--	driver->OnDeviceRemove	= VmbusOnDeviceRemove;
--	driver->OnCleanup	= VmbusOnCleanup;
-+	driver->OnDeviceAdd	= vmbus_dev_add;
-+	driver->OnDeviceRemove	= vmbus_dev_rm;
-+	driver->OnCleanup	= vmbus_cleanup;
- 
- 	/* Hypervisor initialization...setup hypercall page..etc */
- 	ret = hv_init();
-diff --git a/drivers/staging/hv/vmbus_private.h b/drivers/staging/hv/vmbus_private.h
-index e3b0663..0ab404e 100644
---- a/drivers/staging/hv/vmbus_private.h
-+++ b/drivers/staging/hv/vmbus_private.h
-@@ -102,11 +102,11 @@ extern struct VMBUS_CONNECTION vmbus_connection;
- 
- /* General vmbus interface */
- 
--struct hv_device *vmbus_child_device_create(struct hv_guid *deviceType,
--					 struct hv_guid *deviceInstance,
-+struct hv_device *vmbus_child_device_create(struct hv_guid *type,
-+					 struct hv_guid *instance,
- 					 struct vmbus_channel *channel);
- 
--int VmbusChildDeviceAdd(struct hv_device *Device);
-+int vmbus_child_dev_add(struct hv_device *device);
- int vmbus_child_device_register(struct hv_device *root_device_obj,
- 				struct hv_device *child_device_obj);
- void vmbus_child_device_unregister(struct hv_device *device_obj);
--- 
-1.6.3.2
+Check gittup http://gittup.org/gittup/
 
+This is a Gentoo-like distributive that uses Tup tool. The distro
+includes kernel/gcc/glib/zlib/binutils/ncurses/openssh/openssl/mplayer/...
+and some other projects.
+
+> Looks sexy.
+
+And it is *very* fast for incremental builds. Just a short snippet
+from the gittup page:
+
+[marf@captainfalcon gittup]$ vi nethack/src/spell.c
+[marf@captainfalcon gittup]$ vi busybox/coreutils/ls.c
+[marf@captainfalcon gittup]$ time tup upd -j2
+Executing Commands
+[    0/9    ] busybox/coreutils/CC ls.c
+[    1/9    ] nethack/CC src/spell.c
+[    2/9    ] busybox/coreutils/LD built-in.o
+[    3/9    ] busybox/LD busybox
+[    4/9    ] nethack/LD nethack
+[    5/9    ] initrd/bin/CP busybox
+[    6/9    ] initrd/bin/CP nethack
+[    7/9    ] initrd/MKINITRD
+[    8/9    ] initrd/GZIP initrd
+[    9/9    ]
+
+real    0m1.571s
+user    0m1.888s
+sys     0m0.269s
+
+Rebuilding whole system in 1.5 sec, isn't it cool?
