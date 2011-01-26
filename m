@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753153Ab1AZL24 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 06:28:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8163 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751807Ab1AZL2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 06:28:54 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1295887497-20198-7-git-send-email-roberto.sassu@polito.it>
-References: <1295887497-20198-7-git-send-email-roberto.sassu@polito.it> <1295887497-20198-1-git-send-email-roberto.sassu@polito.it>
-To: Roberto Sassu <roberto.sassu@polito.it>
-Cc: dhowells@redhat.com, linux-security-module@vger.kernel.org,
-        keyrings@linux-nfs.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jmorris@namei.org,
-        zohar@linux.vnet.ibm.com, safford@watson.ibm.com, ramunno@polito.it,
-        tyhicks@linux.vnet.ibm.com, kirkland@canonical.com
-Subject: Re: [RFC][PATCH v3 6/6] eCryptfs: added support for the encrypted key type
-Date: Wed, 26 Jan 2011 11:28:36 +0000
-Message-ID: <6901.1296041316@redhat.com>
+	id S1753230Ab1AZLbQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 06:31:16 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39680 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753163Ab1AZLbO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 06:31:14 -0500
+Date: Wed, 26 Jan 2011 11:29:08 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Ralf Baechle <ralf@linux-mips.org>, Kyle McMartin <kyle@redhat.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Randy Dunlap <randy.dunlap@oracle.com>, x86@kernel.org,
+        linux-arch@vger.kernel.org, netdev@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] kconfig: unify GENERIC_ISA_DMA and ISA_DMA_API
+Message-ID: <20110126112908.GD2562@n2100.arm.linux.org.uk>
+References: <alpine.DEB.2.00.1101251706040.9641@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1101251706040.9641@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Roberto Sassu <roberto.sassu@polito.it> wrote:
+On Tue, Jan 25, 2011 at 05:06:28PM -0800, David Rientjes wrote:
+> CONFIG_GENERIC_ISA_DMA and CONFIG_ISA_DMA_API usually have dependencies
+> on one another depending on the architecture and generic kernel code uses
+> either to determine whether an ISA-style DMA API is configured.
 
->  	(*auth_tok_key) = request_key(&key_type_user, sig, NULL);
->  	if (!(*auth_tok_key) || IS_ERR(*auth_tok_key)) {
-> -		printk(KERN_ERR "Could not find key with description: [%s]\n",
-> -		       sig);
-> -		rc = process_request_key_err(PTR_ERR(*auth_tok_key));
-> -		goto out;
-> +		(*auth_tok_key) = ecryptfs_get_encrypted_key(sig);
-> +		if (!(*auth_tok_key) || IS_ERR(*auth_tok_key)) {
-> +			printk(KERN_ERR "Could not find key with description: [%s]\n",
-> +			      sig);
-> +			rc = process_request_key_err(PTR_ERR(*auth_tok_key));
-> +			goto out;
-> +		}
->  	}
->  	(*auth_tok) = ecryptfs_get_key_payload_data(*auth_tok_key);
->  	if (ecryptfs_verify_version((*auth_tok)->version)) {
+Wrong.
 
-You need some locking here, even if it's only use of the RCU read lock.
-Encrypted-type keys have an update method and so may change under you.
+GENERIC_ISA_DMA enables support for the standard ISA DMA allocator found
+in kernel/dma.c
 
-David
----
+ISA_DMA_API says that a platform supports the ISA DMA interfaces.
+
+An architecture can provide the ISA DMA interfaces, but not use the
+standard ISA DMA allocator found in kernel/dma.c.  Such as the one in
+arch/arm/kernel/dma.c.
+
+So on ARM, we have platforms where ISA_DMA_API=y but GENERIC_ISA_DMA=n.
+
+> This patch unifies both options and consolidates them into a single
+> option: CONFIG_GENERIC_ISA_DMA.  It is also a prerequisite for a 1% text
+> savings for a future x86 patch that allows these options to be disabled
+> on that architecture when CONFIG_ZONE_DMA also becomes configurable.
+
+NAK.  This is wrong.
