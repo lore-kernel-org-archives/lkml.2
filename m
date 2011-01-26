@@ -1,314 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040Ab1AZRIs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 12:08:48 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:28855 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736Ab1AZRIr (ORCPT
+	id S1753370Ab1AZRLi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 12:11:38 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54094 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752097Ab1AZRLh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 12:08:47 -0500
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h)
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LFN3ME-01-0J6-02
-X-M-MSG: 
-From: Hans Rosenfeld <hans.rosenfeld@amd.com>
-To: <mingo@elte.hu>
-CC: <hpa@zytor.com>, <tglx@linutronix.de>, <Andreas.Herrmann3@amd.com>,
-        <linux-kernel@vger.kernel.org>, <x86@kernel.org>,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>
-Subject: [PATCH 4/4] x86, amd: Support L3 Cache Partitioning on AMD family 0x15 CPUs
-Date: Wed, 26 Jan 2011 18:08:36 +0100
-Message-ID: <1296061716-185599-1-git-send-email-hans.rosenfeld@amd.com>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <20110126105637.GA27809@elte.hu>
-References: <20110126105637.GA27809@elte.hu>
+	Wed, 26 Jan 2011 12:11:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=PQrg/aG/VcEXqlYm1mQn6oQrWhIpaGv/3XDVkvPWz8DkpPMynkEOomkf/p9hrUx+pO
+         hhAlHbkm7EMwmP8anhYDBx8Pg9QQQJp/D5nx+hCjqZa3Pz3V/1PrJS4TQCAAZgtW6Jcd
+         EmXBdHq+d8lPGGuJNnXq8MDrJCOFQCc4XOTag=
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+In-Reply-To: <20110122010830.GK23596@mail.wantstofly.org>
+References: <20110122010830.GK23596@mail.wantstofly.org>
+From: Ian Molton <ian@mnementh.co.uk>
+Date: Wed, 26 Jan 2011 17:11:16 +0000
+X-Google-Sender-Auth: _ps7bxsqMgbaqiHnkAW-Ejc1lZk
+Message-ID: <AANLkTikU=nMVrBKTtTFuR7_JKF9ULj+myq3zpYsfFbXA@mail.gmail.com>
+Subject: Re: [PATCH] mfd: Fix ASIC3 build with GENERIC_HARDIRQS_NO_DEPRECATED
+To: Lennert Buytenhek <buytenh@wantstofly.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-L3 Cache Partitioning allows selecting which of the 4 L3 subcaches can
-be used for evictions by the L2 cache of each compute unit. By writing a
-4-bit hexadecimal mask into the the sysfs file /sys/devices/system/cpu/\
-cpuX/cache/index3/subcaches, the user can set the enabled subcaches for
-a CPU. The settings are directly read from and written to the hardware,
-so there is no way to have contradicting settings for two CPUs belonging
-to the same compute unit. Writing will always overwrite any previous
-setting for a compute unit.
+Acked-by: Ian Molton <ian@mnementh.co.uk>
 
-Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
----
- arch/x86/include/asm/amd_nb.h         |    3 +
- arch/x86/kernel/amd_nb.c              |   57 ++++++++++++++++++++++++
- arch/x86/kernel/cpu/intel_cacheinfo.c |   77 +++++++++++++++++++++++++++-----
- 3 files changed, 125 insertions(+), 12 deletions(-)
+:)
 
-diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
-index 3e70700..423f11c 100644
---- a/arch/x86/include/asm/amd_nb.h
-+++ b/arch/x86/include/asm/amd_nb.h
-@@ -18,6 +18,8 @@ extern int amd_cache_northbridges(void);
- extern void amd_flush_garts(void);
- extern int amd_numa_init(unsigned long start_pfn, unsigned long end_pfn);
- extern int amd_scan_nodes(void);
-+extern int amd_get_subcaches(int);
-+extern int amd_set_subcaches(int, int);
- 
- #ifdef CONFIG_NUMA_EMU
- extern void amd_fake_nodes(const struct bootnode *nodes, int nr_nodes);
-@@ -38,6 +40,7 @@ extern struct amd_northbridge_info amd_northbridges;
- 
- #define AMD_NB_GART			0x1
- #define AMD_NB_L3_INDEX_DISABLE		0x2
-+#define AMD_NB_L3_PARTITIONING		0x4
- 
- #ifdef CONFIG_AMD_NB
- 
-diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
-index 4ae9a96..63310de 100644
---- a/arch/x86/kernel/amd_nb.c
-+++ b/arch/x86/kernel/amd_nb.c
-@@ -95,6 +95,10 @@ int amd_cache_northbridges(void)
- 	if (boot_cpu_data.x86 == 0x15)
- 		amd_northbridges.flags |= AMD_NB_L3_INDEX_DISABLE;
- 
-+	/* L3 cache partitioning is supported on family 0x15 */
-+	if (boot_cpu_data.x86 == 0x15)
-+		amd_northbridges.flags |= AMD_NB_L3_PARTITIONING;
-+
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(amd_cache_northbridges);
-@@ -112,6 +116,59 @@ int __init early_is_amd_nb(u32 device)
- 	return 0;
- }
- 
-+#ifdef CONFIG_SMP
-+int amd_get_subcaches(int cpu)
-+{
-+	struct pci_dev *link = node_to_amd_nb(amd_get_nb_id(cpu))->link;
-+	unsigned int mask;
-+
-+	if (!amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
-+		return 0;
-+
-+	pci_read_config_dword(link, 0x1d4, &mask);
-+
-+	return (mask >> (4 * cpu_data(cpu).compute_unit_id)) & 0xf;
-+}
-+
-+int amd_set_subcaches(int cpu, int mask)
-+{
-+	static unsigned int reset, ban;
-+	unsigned int reg;
-+	struct amd_northbridge *nb = node_to_amd_nb(amd_get_nb_id(cpu));
-+
-+	if (!amd_nb_has_feature(AMD_NB_L3_PARTITIONING) || mask > 0xf)
-+		return -EINVAL;
-+
-+	/* if necessary, collect reset state of L3 partitioning and BAN mode */
-+	if (reset == 0) {
-+		pci_read_config_dword(nb->link, 0x1d4, &reset);
-+		pci_read_config_dword(nb->misc, 0x1b8, &ban);
-+		ban &= 0x180000;
-+	}
-+
-+	/* deactivate BAN mode if any subcaches are to be disabled */
-+	if (mask != 0xf) {
-+		pci_read_config_dword(nb->misc, 0x1b8, &reg);
-+		pci_write_config_dword(nb->misc, 0x1b8, reg & ~0x180000);
-+	}
-+
-+	mask <<= 4 * cpu_data(cpu).compute_unit_id;
-+	mask |= (0xf ^ (1 << cpu_data(cpu).compute_unit_id)) << 26;
-+
-+	pci_write_config_dword(nb->link, 0x1d4, mask);
-+
-+	/* reset BAN mode if L3 partitioning returned to reset state */
-+	pci_read_config_dword(nb->link, 0x1d4, &reg);
-+	if (reg == reset) {
-+		pci_read_config_dword(nb->misc, 0x1b8, &reg);
-+		reg &= ~0x180000;
-+		pci_write_config_dword(nb->misc, 0x1b8, reg | ban);
-+	}
-+
-+	return 0;
-+}
-+#endif
-+
- int amd_cache_gart(void)
- {
-        int i;
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index ec2c19a..8455213 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -304,8 +304,9 @@ amd_cpuid4(int leaf, union _cpuid4_leaf_eax *eax,
- 
- struct _cache_attr {
- 	struct attribute attr;
--	ssize_t (*show)(struct _cpuid4_info *, char *);
--	ssize_t (*store)(struct _cpuid4_info *, const char *, size_t count);
-+	ssize_t (*show)(struct _cpuid4_info *, char *, unsigned int);
-+	ssize_t (*store)(struct _cpuid4_info *, const char *, size_t count,
-+			 unsigned int);
- };
- 
- #ifdef CONFIG_AMD_NB
-@@ -400,7 +401,8 @@ static ssize_t show_cache_disable(struct _cpuid4_info *this_leaf, char *buf,
- 
- #define SHOW_CACHE_DISABLE(slot)					\
- static ssize_t								\
--show_cache_disable_##slot(struct _cpuid4_info *this_leaf, char *buf)	\
-+show_cache_disable_##slot(struct _cpuid4_info *this_leaf, char *buf,	\
-+			  unsigned int cpu)				\
- {									\
- 	return show_cache_disable(this_leaf, buf, slot);		\
- }
-@@ -512,7 +514,8 @@ static ssize_t store_cache_disable(struct _cpuid4_info *this_leaf,
- #define STORE_CACHE_DISABLE(slot)					\
- static ssize_t								\
- store_cache_disable_##slot(struct _cpuid4_info *this_leaf,		\
--			   const char *buf, size_t count)		\
-+			   const char *buf, size_t count,		\
-+			   unsigned int cpu)				\
- {									\
- 	return store_cache_disable(this_leaf, buf, count, slot);	\
- }
-@@ -524,6 +527,43 @@ static struct _cache_attr cache_disable_0 = __ATTR(cache_disable_0, 0644,
- static struct _cache_attr cache_disable_1 = __ATTR(cache_disable_1, 0644,
- 		show_cache_disable_1, store_cache_disable_1);
- 
-+#ifdef CONFIG_SMP
-+static ssize_t
-+show_subcaches(struct _cpuid4_info *this_leaf, char *buf, unsigned int cpu)
-+{
-+	if (!this_leaf->l3 ||
-+	    !amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
-+		return -EINVAL;
-+
-+	return sprintf(buf, "%x\n", amd_get_subcaches(cpu));
-+}
-+
-+static ssize_t
-+store_subcaches(struct _cpuid4_info *this_leaf, const char *buf, size_t count,
-+		unsigned int cpu)
-+{
-+	unsigned long val;
-+
-+	if (!capable(CAP_SYS_ADMIN))
-+		return -EPERM;
-+
-+	if (!this_leaf->l3 ||
-+	    !amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
-+		return -EINVAL;
-+
-+	if (strict_strtoul(buf, 16, &val) < 0)
-+		return -EINVAL;
-+
-+	if (amd_set_subcaches(cpu, val))
-+		return -EINVAL;
-+
-+	return count;
-+}
-+
-+static struct _cache_attr subcaches =
-+	__ATTR(subcaches, 0644, show_subcaches, store_subcaches);
-+#endif
-+
- #else	/* CONFIG_AMD_NB */
- #define amd_init_l3_cache(x, y)
- #endif /* CONFIG_AMD_NB */
-@@ -870,8 +910,8 @@ static DEFINE_PER_CPU(struct _index_kobject *, ici_index_kobject);
- #define INDEX_KOBJECT_PTR(x, y)		(&((per_cpu(ici_index_kobject, x))[y]))
- 
- #define show_one_plus(file_name, object, val)				\
--static ssize_t show_##file_name						\
--			(struct _cpuid4_info *this_leaf, char *buf)	\
-+static ssize_t show_##file_name(struct _cpuid4_info *this_leaf, char *buf, \
-+				unsigned int cpu)			\
- {									\
- 	return sprintf(buf, "%lu\n", (unsigned long)this_leaf->object + val); \
- }
-@@ -882,7 +922,8 @@ show_one_plus(physical_line_partition, ebx.split.physical_line_partition, 1);
- show_one_plus(ways_of_associativity, ebx.split.ways_of_associativity, 1);
- show_one_plus(number_of_sets, ecx.split.number_of_sets, 1);
- 
--static ssize_t show_size(struct _cpuid4_info *this_leaf, char *buf)
-+static ssize_t show_size(struct _cpuid4_info *this_leaf, char *buf,
-+			 unsigned int cpu)
- {
- 	return sprintf(buf, "%luK\n", this_leaf->size / 1024);
- }
-@@ -906,17 +947,20 @@ static ssize_t show_shared_cpu_map_func(struct _cpuid4_info *this_leaf,
- 	return n;
- }
- 
--static inline ssize_t show_shared_cpu_map(struct _cpuid4_info *leaf, char *buf)
-+static inline ssize_t show_shared_cpu_map(struct _cpuid4_info *leaf, char *buf,
-+					  unsigned int cpu)
- {
- 	return show_shared_cpu_map_func(leaf, 0, buf);
- }
- 
--static inline ssize_t show_shared_cpu_list(struct _cpuid4_info *leaf, char *buf)
-+static inline ssize_t show_shared_cpu_list(struct _cpuid4_info *leaf, char *buf,
-+					   unsigned int cpu)
- {
- 	return show_shared_cpu_map_func(leaf, 1, buf);
- }
- 
--static ssize_t show_type(struct _cpuid4_info *this_leaf, char *buf)
-+static ssize_t show_type(struct _cpuid4_info *this_leaf, char *buf,
-+			 unsigned int cpu)
- {
- 	switch (this_leaf->eax.split.type) {
- 	case CACHE_TYPE_DATA:
-@@ -974,6 +1018,9 @@ static struct attribute ** __cpuinit amd_l3_attrs(void)
- 	if (amd_nb_has_feature(AMD_NB_L3_INDEX_DISABLE))
- 		n += 2;
- 
-+	if (amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
-+		n += 1;
-+
- 	attrs = kzalloc(n * sizeof (struct attribute *), GFP_KERNEL);
- 	if (attrs == NULL)
- 		return attrs = default_attrs;
-@@ -986,6 +1033,12 @@ static struct attribute ** __cpuinit amd_l3_attrs(void)
- 		attrs[n++] = &cache_disable_1.attr;
- 	}
- 
-+#ifdef CONFIG_SMP
-+	if (amd_nb_has_feature(AMD_NB_L3_PARTITIONING)) {
-+		attrs[n++] = &subcaches.attr;
-+	}
-+#endif
-+
- 	return attrs;
- }
- #endif
-@@ -998,7 +1051,7 @@ static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
- 
- 	ret = fattr->show ?
- 		fattr->show(CPUID4_INFO_IDX(this_leaf->cpu, this_leaf->index),
--			buf) :
-+			buf, this_leaf->cpu) :
- 		0;
- 	return ret;
- }
-@@ -1012,7 +1065,7 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
- 
- 	ret = fattr->store ?
- 		fattr->store(CPUID4_INFO_IDX(this_leaf->cpu, this_leaf->index),
--			buf, count) :
-+			buf, count, this_leaf->cpu) :
- 		0;
- 	return ret;
- }
 -- 
-1.5.6.5
+Ian Molton
+Linux, Automotive, and other hacking:
+http://www.mnementh.co.uk/
 
 
+
+On 22 January 2011 01:08, Lennert Buytenhek <buytenh@wantstofly.org> wrote:
+> Signed-off-by: Lennert Buytenhek <buytenh@secretlab.ca>
+>
+> diff --git a/drivers/mfd/asic3.c b/drivers/mfd/asic3.c
+> index 6a1f940..c45e630 100644
+> --- a/drivers/mfd/asic3.c
+> +++ b/drivers/mfd/asic3.c
+> @@ -143,9 +143,9 @@ static void asic3_irq_demux(unsigned int irq, struct irq_desc *desc)
+>        unsigned long flags;
+>        struct asic3 *asic;
+>
+> -       desc->chip->ack(irq);
+> +       desc->irq_data.chip->irq_ack(&desc->irq_data);
+>
+> -       asic = desc->handler_data;
+> +       asic = get_irq_data(irq);
+>
+>        for (iter = 0 ; iter < MAX_ASIC_ISR_LOOPS; iter++) {
+>                u32 status;
+> --
+>
