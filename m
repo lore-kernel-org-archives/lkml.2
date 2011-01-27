@@ -1,127 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751994Ab1A0V7d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 16:59:33 -0500
-Received: from mail4.comsite.net ([205.238.176.238]:63435 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512Ab1A0V7c (ORCPT
+	id S1752754Ab1A0WBy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 17:01:54 -0500
+Received: from cobra.newdream.net ([66.33.216.30]:41233 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426Ab1A0WBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 16:59:32 -0500
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
-Subject: Re: [PATCH 2/2] consolidate writes in smp_call_funtion_interrupt
-From: Milton Miller <miltonm@bga.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Anton Blanchard <anton@samba.org>, xiaoguangrong@cn.fujitsu.com,
-        mingo@elte.hu, jaxboe@fusionio.com, npiggin@gmail.com,
-        rusty@rustcorp.com.au, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        benh@kernel.crashing.org, linux-kernel@vger.kernel.org
-References: <20110112150740.77dde58c@kryten>
-	 <1295288253.30950.280.camel@laptop>
-	 <smp-call-function-peter-reply@mdm.bga.com>
-	 <smp-call-function-move-writes@mdm.bga.com>
-	 <1296145360.15234.234.camel@laptop>
-In-Reply-To: <1296145360.15234.234.camel@laptop>
-Message-ID: <smp-call-function-list-race@mdm.bga.com>
-Date: Thu, 27 Jan 2011 15:59:31 -0600
-X-Originating-IP: 71.22.127.106
+	Thu, 27 Jan 2011 17:01:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
+	:subject:message-id:mime-version:content-type; q=dns; s=
+	newdream.net; b=uCi7CX7Q5Bud2dUsYf7CXmwCShQmy1lFCj5a7r/a6ftY59TI
+	LcUaVGDw1NQWZQHwTkGyE9e5z89sX9uqHg4Qhz/Y4aMb46udM2KIYLdV+9YPbBUy
+	0AUbnoRlfcxJFe4SjByyZPZ5zRPfGd9h1r03qo61nu3Q5SPY/2C6WS43a6c=
+Date: Thu, 27 Jan 2011 14:02:24 -0800 (PST)
+From: Sage Weil <sage@newdream.net>
+To: torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
+Subject: [GIT PULL] Ceph fixes for 2.6.38-rc3
+Message-ID: <Pine.LNX.4.64.1101271358210.24057@cobra.newdream.net>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Jan 2011 about 17:22:40 +0100, Peter Zijlstra wrote:
-> On Tue, 2011-01-18 at 15:06 -0600, Milton Miller wrote:
-> > Index: common/kernel/smp.c
-> > =====================================================================
-> > --- common.orig/kernel/smp.c	2011-01-17 20:16:18.000000000 -0600
-> > +++ common/kernel/smp.c	2011-01-17 20:17:50.000000000 -0600
-> > @@ -193,6 +193,7 @@ void generic_smp_call_function_interrupt
-> >  	 */
-> >  	list_for_each_entry_rcu(data, &call_function.queue, csd.list) {
-> >  		int refs;
-> > +		void (*func) (void *info);
-> >  
-> >  		/*
-> >  		 * Since we walk the list without any locks, we might
-> > @@ -212,24 +213,32 @@ void generic_smp_call_function_interrupt
-> >  		if (atomic_read(&data->refs) == 0)
-> >  			continue;
-> >  
-> > +		func = data->csd.func;			/* for later warn */
-> >  		data->csd.func(data->csd.info);
-> >  
-> > +		/*
-> > +		 * If the cpu mask is not still set then it enabled interrupts,
-> > +		 * we took another smp interrupt, and executed the function
-> > +		 * twice on this cpu.  In theory that copy decremented refs.
-> > +		 */
-> > +		if (!cpumask_test_and_clear_cpu(cpu, data->cpumask)) {
-> > +			WARN(1, "%pS enabled interrupts and double executed\n",
-> > +			     func);
-> > +			continue;
-> > +		}
-> > +
-> >  		refs = atomic_dec_return(&data->refs);
-> >  		WARN_ON(refs < 0);
-> >  
-> >  		if (refs)
-> >  			continue;
-> >  
-> > +		WARN_ON(!cpumask_empty(data->cpumask));
-> > +
-> > +		raw_spin_lock(&call_function.lock);
-> > +		list_del_rcu(&data->csd.list);
-> > +		raw_spin_unlock(&call_function.lock);
-> > +
-> >  		csd_unlock(&data->csd);
-> >  	}
-> >  
-> 
-> 
-> So after this we have:
-> 
-> list_for_each_entry_rcu()
-> rbd
->   !->cpumask			  ->cpumask = 
-> rmb				wmb
->   !->refs			  ->refs =
->   ->func()			wmb
-> mb				  list_add_rcu()
->   ->refs--
->   if (!->refs)
->     list_del_rcu()
-> 
-> So even if we see it as an old-ref, when we see a valid cpumask, valid
-> ref, we execute the function clear our cpumask bit and decrement the ref
-> and delete the entry, even though it might not yet be added?
-> 
-> 
-> (old-ref)
-> 				->cpumask =
->   if (!->cpumask)
-> 				->refs = 
->   if (!->refs)
-> 
->   ->func()
->   ->refs--
->   if (!->refs)
->     list_del_rcu()
-> 				list_add_rcu()
-> 
-> Then what happens?
+Hi Linus,
 
-The item remains on the queue unlocked.  If we are lucky all entries
-after it are serviced before we try to reuse it.  If not, when we
-do the list_add_rcu while still in the list all entries after it
-get lost from the service queue and will hang.
+Please pull the following Ceph fixes from
 
-This is a further scenerio exposed by the lock removal.  Good spotting.
+  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
 
-A simple fix would be to add to the queue before setting refs.  I can
-try to work on that tomorrow, hopefully the test machine is available.
+There is an xattr search/sort fix, a number of clustered MDS fixes (for a 
+sync hang, dup flushes, misdirected/lost request), and a fix for the 
+norbytes option with lets users avoid EOVERFLOW on 32-bit systems.
 
-The next question is can/should we use the lock & unlock to put the
-entry on the queue in place of the wmb() between setting cpu mask and
-setting refs?  We still need the rmb() in _interrupt.
+Thanks!
+sage
 
-milton
+
+Sage Weil (6):
+      ceph: fix xattr rbtree search
+      ceph: fix cap_wanted_delay_{min,max} mount option initialization
+      ceph: fix erroneous cap flush to non-auth mds
+      ceph: fix flushing of caps vs cap import
+      ceph: avoid immediate cap check after import
+      ceph: avoid picking MDS that is not active
+
+Yehuda Sadeh (1):
+      ceph: fix getattr on directory when using norbytes
+
+ fs/ceph/caps.c       |   43 +++++++++++++++++++++++++++++++++++++------
+ fs/ceph/inode.c      |   10 +++++-----
+ fs/ceph/mds_client.c |   10 +++++++---
+ fs/ceph/super.c      |    2 ++
+ fs/ceph/xattr.c      |    3 +++
+ 5 files changed, 54 insertions(+), 14 deletions(-)
