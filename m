@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510Ab1A0NQE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 08:16:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752958Ab1A0NQC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 08:16:02 -0500
-Message-ID: <4D417006.4030201@redhat.com>
-Date: Thu, 27 Jan 2011 15:15:50 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1753166Ab1A0NS7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 08:18:59 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:12747 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000Ab1A0NS6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 08:18:58 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6238"; a="71972840"
+From: "Tanya Brokhman" <tlinder@codeaurora.org>
+To: "'Greg KH'" <greg@kroah.com>
+Cc: <gregkh@suse.de>, <linux-usb@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>,
+        "'David Brownell'" <dbrownell@users.sourceforge.net>,
+        <linux-kernel@vger.kernel.org>
+References: <1290084400-25440-1-git-send-email-tlinder@codeaurora.org> <20101118145623.GB16565@kroah.com>
+In-Reply-To: <20101118145623.GB16565@kroah.com>
+Subject: RE: [PATCH v4 1/4] usb gadget: Add usb_endpoint_descriptor to be part of the struct usb_ep
+Date: Thu, 27 Jan 2011 15:18:47 +0200
+Message-ID: <000001cbbe24$bd64a1a0$382de4e0$@org>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 1/3] KVM: fix rcu usage warning in kvm_arch_vcpu_ioctl_set_sregs()
-References: <4D2D5AA6.9080804@cn.fujitsu.com> <4D3673A7.4090402@cn.fujitsu.com> <20110119181347.GA13142@amt.cnet> <4D37A603.4040602@cn.fujitsu.com> <20110120152736.GA3922@amt.cnet>
-In-Reply-To: <20110120152736.GA3922@amt.cnet>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: AcuHML9tHfFkJEChSLyIPhXyPNJNLg1ZPkQw
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2011 05:27 PM, Marcelo Tosatti wrote:
-> >  Before patch:
-> >
-> >  real    5m6.493s
-> >  user    3m57.847s
-> >  sys     9m7.115s
-> >
-> >  real    5m1.750s
-> >  user    4m0.109s
-> >  sys     9m10.192s
-> >
-> >
-> >  After patch:
-> >  real    5m0.140s
-> >  user    3m57.956s
-> >  sys     8m58.339s
-> >
-> >  real    4m56.314s
-> >  user    4m0.303s
-> >  sys     8m55.774s
->
-> Nice. One disadvantageous side effect for the kvm_vcpu_kick path
-> is that it can race with make_all_cpus_request, which is possibly
-> doing unrelated, slower work (IPI'ing other vcpus, waiting for
-> response).
+> On Thu, Nov 18, 2010 at 02:46:38PM +0200, Tatyana Brokhman wrote:
+> > Change usb_ep_enable() prototype to use endpoint descriptor from
+> usb_ep.
+> > This optimization spares the FDs from saving the endpoint chosen
+> > descriptor.
+> 
+> Why is this a good thing to do?
+> 
 
-I think we're fine here.  The kvm_vcpu_kick() check is
+Because the FDs don't modify the ep descriptor, just pass it through
+different functions so there is no need for the FD to save a copy of the
+chosen ep descriptor.
 
-  	me = get_cpu();
-  	if (cpu != me&&  (unsigned)cpu<  nr_cpu_ids&&  cpu_online(cpu))
--		if (atomic_xchg(&vcpu->guest_mode, 0))
-+		if (kvm_vcpu_exiting_guest_mode(vcpu) == IN_GUEST_MODE)
-  			smp_send_reschedule(cpu);
-  	put_cpu();
+> > This optimization is not full though. To fully exploit this
+> > change one needs to update all the UDCs as well since in the current
+> > implementation each of them saves the endpoint descriptor in it's
+> > internal (and extended) endpoint structure.
+> 
+> Do you do that optimization later on in this patch series?
+> 
+ 
+No, we don't because we don't have the ability to test all the UDCs. Right
+now the UDCs weren't modified and there is a code duplication. Meaning the
+ep descriptor is saved both in the usb_ep structure and in the UDCs internal
+ep structure. It's not very "clean" but nothing is broken.
+
+> > +++ b/include/linux/usb/gadget.h
+> > @@ -131,20 +131,22 @@ struct usb_ep_ops {
+> >   * @maxpacket:The maximum packet size used on this endpoint.  The
+> initial
+> >   *	value can sometimes be reduced (hardware allowing), according to
+> >   *      the endpoint descriptor used to configure the endpoint.
+> > - * @driver_data:for use by the gadget driver.  all other fields are
+> > - *	read-only to gadget drivers.
+> > + * @driver_data:for use by the gadget driver.
+> 
+> Why did you change the "all other fields..." portion?
+
+Because the FD updates the usb_ep->desc field as well (with the value
+returned from ep_choose()).
+
+Sorry for the late response and the bad quoting (the email is a bit old). My
+reply was delayed because our intention was to release the UT I mentioned
+with the next version but unfortunately getting legal approval is taking
+longer than we expected.
+
+Best regards,
+Tanya Brokhman
+Consultant for Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
 
 
-even if it did race, ->mode becomes EXITING_GUEST_MODE and we still 
-avoid the IPI.  Note that make_all_cpus_request() cleverly checks for != 
-OUTSIDE_GUEST_MODE, so if it loses the race with kvm_vcpu_kick(), it 
-still sends the IPI to be sure the vcpu loop sees vcpu->requests in time.
 
-> Looks ok, but lets wait for more careful reviews before applying.
-
-Patches applied.
-
--- 
-error compiling committee.c: too many arguments to function
 
