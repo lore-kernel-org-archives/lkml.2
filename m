@@ -1,84 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752395Ab1A0QSx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 11:18:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60664 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751216Ab1A0QSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 11:18:52 -0500
-Date: Thu, 27 Jan 2011 17:10:47 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>, Prasad <prasad@linux.vnet.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: Q: perf_install_in_context/perf_event_enable are racy?
-Message-ID: <20110127161047.GB25060@redhat.com>
-References: <20110121204014.GA2870@nowhere> <20110124114234.GA12166@redhat.com> <20110126175322.GA28617@redhat.com> <20110126184957.GA32578@redhat.com> <1296068731.15234.6.camel@laptop> <1296070383.15234.10.camel@laptop> <20110126211931.GA6778@redhat.com> <20110126213317.GA7403@redhat.com> <1296124337.15234.71.camel@laptop> <1296131387.15234.142.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296131387.15234.142.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752128Ab1A0QWI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 11:22:08 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:48929 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751740Ab1A0QWH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 11:22:07 -0500
+Subject: Re: [PATCH 2/2] consolidate writes in smp_call_funtion_interrupt
+From: Peter Zijlstra <peterz@infradead.org>
+To: Milton Miller <miltonm@bga.com>
+Cc: Anton Blanchard <anton@samba.org>, xiaoguangrong@cn.fujitsu.com,
+        mingo@elte.hu, jaxboe@fusionio.com, npiggin@gmail.com,
+        rusty@rustcorp.com.au, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        benh@kernel.crashing.org, linux-kernel@vger.kernel.org
+In-Reply-To: <smp-call-function-move-writes@mdm.bga.com>
+References: <20110112150740.77dde58c@kryten>
+	 <1295288253.30950.280.camel@laptop>
+	 <smp-call-function-peter-reply@mdm.bga.com>
+	 <smp-call-function-move-writes@mdm.bga.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 27 Jan 2011 17:22:40 +0100
+Message-ID: <1296145360.15234.234.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27, Peter Zijlstra wrote:
->
-> +void task_function_trampoline(void *data)
-> +{
-> +	struct task_function_call *tfc = data;
-> +	struct task_struct *p = tfc->p;
-> +	struct rq *rq = this_rq();
+On Tue, 2011-01-18 at 15:06 -0600, Milton Miller wrote:
+
+> Index: common/kernel/smp.c
+> ===================================================================
+> --- common.orig/kernel/smp.c	2011-01-17 20:16:18.000000000 -0600
+> +++ common/kernel/smp.c	2011-01-17 20:17:50.000000000 -0600
+> @@ -193,6 +193,7 @@ void generic_smp_call_function_interrupt
+>  	 */
+>  	list_for_each_entry_rcu(data, &call_function.queue, csd.list) {
+>  		int refs;
+> +		void (*func) (void *info);
+>  
+>  		/*
+>  		 * Since we walk the list without any locks, we might
+> @@ -212,24 +213,32 @@ void generic_smp_call_function_interrupt
+>  		if (atomic_read(&data->refs) == 0)
+>  			continue;
+>  
+> +		func = data->csd.func;			/* for later warn */
+>  		data->csd.func(data->csd.info);
+>  
+> +		/*
+> +		 * If the cpu mask is not still set then it enabled interrupts,
+> +		 * we took another smp interrupt, and executed the function
+> +		 * twice on this cpu.  In theory that copy decremented refs.
+> +		 */
+> +		if (!cpumask_test_and_clear_cpu(cpu, data->cpumask)) {
+> +			WARN(1, "%pS enabled interrupts and double executed\n",
+> +			     func);
+> +			continue;
+> +		}
 > +
-> +#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
-> +	if (rq->in_ctxsw)
-> +		return;
-> +#endif
+>  		refs = atomic_dec_return(&data->refs);
+>  		WARN_ON(refs < 0);
+>  
+>  		if (refs)
+>  			continue;
+>  
+> +		WARN_ON(!cpumask_empty(data->cpumask));
 > +
-> +	if (rq->curr != p)
-> +		return;
+> +		raw_spin_lock(&call_function.lock);
+> +		list_del_rcu(&data->csd.list);
+> +		raw_spin_unlock(&call_function.lock);
+> +
+>  		csd_unlock(&data->csd);
+>  	}
+>  
 
-Yes, I think this should solve the problem.
 
->  prepare_task_switch(struct rq *rq, struct task_struct *prev,
->  		    struct task_struct *next)
->  {
-> +#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
-> +	rq->in_ctxsw = 1;
-> +#endif
-> +	sched_info_switch(prev, next);
-> +	perf_event_task_sched_out(prev, next);
->  	fire_sched_out_preempt_notifiers(prev, next);
->  	prepare_lock_switch(rq, next);
->  	prepare_arch_switch(next);
-> +	trace_sched_switch(prev, next);
->  }
+So after this we have:
 
-Yes, I was wondering why schedule() calls perf_event_task_sched_out().
-This way the code looks more symmetrical/understandable.
+list_for_each_entry_rcu()
+rbd
+  !->cpumask			  ->cpumask = 
+rmb				wmb
+  !->refs			  ->refs =
+  ->func()			wmb
+mb				  list_add_rcu()
+  ->refs--
+  if (!->refs)
+    list_del_rcu()
 
->  /**
-> @@ -2823,6 +2860,7 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
->  	perf_event_task_sched_in(current);
->  #ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
->  	local_irq_enable();
-> +	rq->in_ctxsw = 0;
+So even if we see it as an old-ref, when we see a valid cpumask, valid
+ref, we execute the function clear our cpumask bit and decrement the ref
+and delete the entry, even though it might not yet be added?
 
-If we think that context_switch finishes here, probably it would be
-more clean to clear ->in_ctxsw before local_irq_enable().
 
->  #endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
->  	finish_lock_switch(rq, prev);
+(old-ref)
+				->cpumask =
+  if (!->cpumask)
+				->refs = 
+  if (!->refs)
 
-But, otoh, maybe finish_lock_switch() can clear in_ctxsw, it already
-checks __ARCH_WANT_INTERRUPTS_ON_CTXSW. Likewise, perhaps it can be
-set in prepare_lock_switch() which enables irqs.
+  ->func()
+  ->refs--
+  if (!->refs)
+    list_del_rcu()
+				list_add_rcu()
 
-But this is cosmetic and up to you.
-
-Oleg.
-
+Then what happens?
