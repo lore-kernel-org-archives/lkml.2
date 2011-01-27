@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522Ab1A0ATu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 19:19:50 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:60829 "EHLO
+	id S1754541Ab1A0AVA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 19:21:00 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:62484 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754376Ab1A0ATs (ORCPT
+	with ESMTP id S1754424Ab1A0AU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 19:19:48 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6238"; a="71900150"
-From: David Brown <davidb@codeaurora.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Niranjana Vishwanathapura <nvishwan@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] msm: smd: Add smd_pkt driver
-In-Reply-To: <20110126153240.9cc6c2e2.akpm@linux-foundation.org> (Andrew
-	Morton's message of "Wed, 26 Jan 2011 15:32:40 -0800")
-References: <1292437675-11561-1-git-send-email-nvishwan@codeaurora.org>
-	<8yatygweqng.fsf@huya.qualcomm.com>
-	<20110126153240.9cc6c2e2.akpm@linux-foundation.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-X-Hashcash: 1:20:110127:linux-arm-kernel@lists.infradead.org::Y9HAD9L55Qoqzhby:00000000000000000000000007hVY
-X-Hashcash: 1:20:110127:nvishwan@codeaurora.org::F0qlavg/DbrjKniF:000000000000000000000000000000000000004OmE
-X-Hashcash: 1:20:110127:linux-kernel@vger.kernel.org::U0kBtBE0GiGkKIFx:0000000000000000000000000000000009Q0e
-X-Hashcash: 1:20:110127:linux-arm-msm@vger.kernel.org::RUm3DVkrVw66BJN/:00000000000000000000000000000000Bwyc
-X-Hashcash: 1:20:110127:akpm@linux-foundation.org::8Liz/yrFPzkz5tfs:000000000000000000000000000000000000BinD
-Date: Wed, 26 Jan 2011 16:19:48 -0800
-Message-ID: <8yavd1b5haz.fsf@huya.qualcomm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 26 Jan 2011 19:20:58 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6238"; a="71900276"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Saravana Kannan <skannan@codeaurora.org>
+Subject: [PATCHv2 0/5] MSM: clock debugfs and cleanups
+Date: Wed, 26 Jan 2011 16:20:51 -0800
+Message-Id: <1296087656-3693-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 26 2011, Andrew Morton wrote:
+These patches were previously posted as part of a larger series.
+I've refreshed these against the latest msm for-next branch.
+They cleanup debugfs and the clock code and add support for
+some proc_comm clocks.
 
-> On Tue, 25 Jan 2011 11:20:51 -0800
-> David Brown <davidb@codeaurora.org> wrote:
->
->> On Wed, Dec 15 2010, Niranjana Vishwanathapura wrote:
->> 
->> > Add smd_pkt driver which provides device interface
->> > to smd packet ports.
->
-> Looks OK, I grabbed it.
->
-> I read the entire email trying to work out what an "SMD" is.  Failed. 
-> Oh well.
+Changes since v2:
+ * Fix build breakage on 7x00
+ * Split patch 1 in half
 
-Looks like it's time for me to send another round of the "people outside
-our company probably don't know what our acronyms stand for" email.
+Matt Wagantall (1):
+  msm: clock: Move debugfs code from clock.c to clock-debug.c
 
-Thanks,
-David
+Stephen Boyd (4):
+  msm: clock: Remove unused code and definitions
+  msm: clock: Remove 7x30 and pcom includes from clock.h
+  msm: clock: Invert debugfs directory layout
+  msm: clock: Add support for more proc_comm clocks
+
+ arch/arm/mach-msm/Makefile          |    3 +
+ arch/arm/mach-msm/board-msm8x60.c   |    4 -
+ arch/arm/mach-msm/clock-debug.c     |  131 +++++++++++++++++++++++++++++++
+ arch/arm/mach-msm/clock-pcom.c      |    1 +
+ arch/arm/mach-msm/clock-pcom.h      |    4 +-
+ arch/arm/mach-msm/clock.c           |  148 ++---------------------------------
+ arch/arm/mach-msm/clock.h           |   52 ++----------
+ arch/arm/mach-msm/devices-msm7x00.c |    1 +
+ arch/arm/mach-msm/devices-msm7x30.c |    3 +
+ arch/arm/mach-msm/devices-qsd8x50.c |    7 ++
+ 10 files changed, 165 insertions(+), 189 deletions(-)
+ create mode 100644 arch/arm/mach-msm/clock-debug.c
 
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
