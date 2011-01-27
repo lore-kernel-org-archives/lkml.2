@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252Ab1A0NeT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 08:34:19 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62352 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752961Ab1A0NeS (ORCPT
+	id S1753335Ab1A0NoJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 08:44:09 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:62317 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937Ab1A0NoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 08:34:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ja3bENF/OiZCaKokaSdTthQq9hF9bxdiTE/tZUblweqkHYSyHZa4Mi1/iwFLF+b61o
-         dLUO7IplhQkiigpRuKKklpcFlp1ieNsX4eGuBQwfbDODIoB9/DQ71gKxpeL/6MVmZQlr
-         Bom5RD1BgHWC/05DBSFnOOneSsrkjpKrG7gZc=
-Date: Thu, 27 Jan 2011 14:34:12 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Roland McGrath <roland@redhat.com>
-Cc: oleg@redhat.com, linux-kernel@vger.kernel.org, rjw@sisk.pl,
-        jan.kratochvil@redhat.com
-Subject: Re: [PATCH 2/4] ptrace: remove the extra wake_up_process() from
- ptrace_detach()
-Message-ID: <20110127133412.GC24925@htj.dyndns.org>
-References: <1293016398-18001-1-git-send-email-tj@kernel.org>
- <1293016398-18001-3-git-send-email-tj@kernel.org>
- <20110117221340.E6A4F180996@magilla.sf.frob.com>
+	Thu, 27 Jan 2011 08:44:07 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH v2] x25: remove the BKL
+Date: Thu, 27 Jan 2011 14:43:39 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Andrew Hendry <andrew.hendry@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-x25@vger.kernel.org, netdev@vger.kernel.org
+References: <1295993854-4971-1-git-send-email-arnd@arndb.de> <201101271338.39295.arnd@arndb.de> <1296134447.2614.5.camel@edumazet-laptop>
+In-Reply-To: <1296134447.2614.5.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110117221340.E6A4F180996@magilla.sf.frob.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201101271443.40007.arnd@arndb.de>
+X-Provags-ID: V02:K0:b9CqMmCAGvJnXhLh5ts722S0EHrl7pHu9dDbMmT3uPn
+ QIoGlIJVpc2YOmJs6R9g8lhH/MxmqRoml/LFr5VdZwUH4UF5rF
+ g2UN1JTomyshtYKpKrybGPkTAfJWAtvqS2GHssvB0Evr19NFoz
+ oy9I9nrAi6AdAwJyDJwNVcqENYxAmXbKW2WdQ5XGTYivZ/OSO9
+ fRcW2SxJyhSZ8Nfmhgdag==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thursday 27 January 2011, Eric Dumazet wrote:
+> Le jeudi 27 janvier 2011 à 13:38 +0100, Arnd Bergmann a écrit :
+> > diff --git a/net/x25/x25_out.c b/net/x25/x25_out.c
+> > index d00649f..f1a6ff1 100644
+> > --- a/net/x25/x25_out.c
+> > +++ b/net/x25/x25_out.c
+> > @@ -68,8 +68,11 @@ int x25_output(struct sock *sk, struct sk_buff *skb)
+> >               frontlen = skb_headroom(skb);
+> >  
+> >               while (skb->len > 0) {
+> > -                     if ((skbn = sock_alloc_send_skb(sk, frontlen + max_len,
+> > -                                                     noblock, &err)) == NULL){
+> > +                     release_sock(sk);
+> > +                     skbn = sock_alloc_send_skb(sk, frontlen + max_len,
+> > +                                                1, &err);
+> > +                     lock_sock(sk);
+> > +                     if (!skbn) {
+> >                               if (err == -EWOULDBLOCK && noblock){
+> >                                       kfree_skb(skb);
+> >                                       return sent;
+> 
+> This part looks strange :
+> 
+> noblock variable became "const 1 : NOBLOCK"
+> 
+> Why releasing socket if you dont block in sock_alloc_send_skb() ?
 
-On Mon, Jan 17, 2011 at 02:13:40PM -0800, Roland McGrath wrote:
-> Of course I agree that the current code is wrong here.  But I'm still not
-> at all clear on what practical compatibility problems it introduces.  This
-> change is OK if and only if we are really making the only area clean and
-> well-defined in the same release cycle.
+Leftover from an earlier version of the patch, thanks for catching this!
 
-I don't follow what you meant by the above sentence.  Can you please
-clarify a bit?
+Originally, I wrote this as
 
-> It doesn't really matter that the old behavior was ill-defined and
-> unreliable in absolute terms, because the practical userland
-> experience of it in real-world cases is what userland has grown to
-> expect.  We can't break any such expectations until we have a clear
-> answer about how to solve the problems correctly.
+	long timeo = sock_sndtimeo(sk, noblock)
+	do {
+		skbn = sock_alloc_send_skb(sk, frontlen + max_len, 1, &err);
+		if (skbn)
+			break;
 
-It's slightly more serious than that.  Calling wake_up_process()
-unconditionally can cause a quite serious failure.  It wakes up a
-process in any state and there are code paths which aren't prepared to
-be woken up unless certain conditions are met.  A safer choice can be
-changing it to wake up only tasks in interruptible sleep.
+		release_sock(sk);
+		timeo = sock_wait_for_wmem(sk, timeo);
+		lock_sock(sk);
+	} while (timeo);
 
-I have very difficult time imagining what real user visible
-implication it would have in negative and noticeable manner, so while
-I do agree that we should proceed carefully, I think it would be
-better to take the chance and remove the erratic behavior.  We have
-release cycles and testing at multiple layers after all.  If we find
-out that it breaks something in serious manner, we can always revert.
+Then I forgot to flip it back after I noticed that other protocols also just
+call release_sock/lock_sock around sock_alloc_send_skb.
 
-Thank you.
+I think I'd better go over the whole series and see if there are more things
+that got slightly broken...
 
--- 
-tejun
+	Arnd
