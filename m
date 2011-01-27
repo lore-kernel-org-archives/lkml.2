@@ -1,97 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501Ab1A0Fn4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 00:43:56 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:33485 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764Ab1A0Fnz (ORCPT
+	id S1751237Ab1A0Fr6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 00:47:58 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54277 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764Ab1A0Fr4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 00:43:55 -0500
-MIME-version: 1.0
-Content-type: multipart/mixed; boundary="Boundary_(ID_IagkMlEi2Tgl5TRpDbbxWA)"
-Date: Thu, 27 Jan 2011 00:43:54 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Sachin Verma <imschnvrm@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rabin Vincent <rabin@rab.in>, Alexander Holler <holler@ahsoftware.de>,
-        Dave Martin <dave.martin@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        catalin.marinas@arm.com
-Subject: Re: ARM: relocation out of range (when loading a module)
-In-reply-to: <AANLkTikLwTdV2B5Dyp_adCxgWcE-+Wb6uiN5MBfnA1_K@mail.gmail.com>
-Message-id: <alpine.LFD.2.00.1101270030220.8580@xanadu.home>
-References: <4D2B4CE4.9080309@ahsoftware.de>
- <alpine.LFD.2.00.1101101722470.9794@xanadu.home>
- <4D2BFA08.5030104@ahsoftware.de>
- <AANLkTinR7ih2ZMRMbXmSvoh-rS3LVv+UCvd0rRH_ESzf@mail.gmail.com>
- <20110111155930.GH11039@n2100.arm.linux.org.uk>
- <4D2D1942.4050905@ahsoftware.de>
- <AANLkTimAFp7ORrJLw2d8-i5pK0MZGTyAN5kmRR37ky1v@mail.gmail.com>
- <alpine.LFD.2.00.1101121314470.25498@xanadu.home>
- <20110112184258.GH11039@n2100.arm.linux.org.uk>
- <alpine.LFD.2.00.1101121350350.25498@xanadu.home>
- <AANLkTikLwTdV2B5Dyp_adCxgWcE-+Wb6uiN5MBfnA1_K@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Thu, 27 Jan 2011 00:47:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=uIEtx/4qRSe+bBa3lbyxHBEQuWoeTNsVrWzMc0znTJHZVzCWthyGxG8siEnkLv/SVY
+         Eng7JwCNmwBhsDGDYuHT1ryPB17bUC/y2KMe50NqtZLRhGBuxHBZgTtP/kQ9DvWU2ieo
+         CMX+namit4PreRm5OsFhN9Z4th6g8FRA5p2sA=
+MIME-Version: 1.0
+In-Reply-To: <1295993854-4971-16-git-send-email-arnd@arndb.de>
+References: <1295993854-4971-1-git-send-email-arnd@arndb.de>
+	<1295993854-4971-16-git-send-email-arnd@arndb.de>
+Date: Thu, 27 Jan 2011 16:47:55 +1100
+Message-ID: <AANLkTinKO=HM1BqDdFkdcCAGz85co64Ma79qomw6PDPp@mail.gmail.com>
+Subject: Re: [PATCH 15/20] ufs: remove the BKL
+From: Nick Piggin <npiggin@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, Nick Bowler <nbowler@elliptictech.com>,
+        Evgeniy Dushistov <dushistov@mail.ru>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Really great work in removing BKL, Arnd. It's awesome
+work and I'm sure a lot of it was pretty thankless along
+the way.
 
---Boundary_(ID_IagkMlEi2Tgl5TRpDbbxWA)
-Content-type: TEXT/PLAIN; charset=ISO-8859-1
-Content-transfer-encoding: 8BIT
+On Wed, Jan 26, 2011 at 9:17 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> This introduces a new per-superblock mutex in UFS to replace
+> the big kernel lock. I have been careful to avoid nested
+> calls to lock_ufs and to get the lock order right with
+> respect to other mutexes, in particular lock_super.
 
-On Tue, 25 Jan 2011, Sachin Verma wrote:
-
-> Hello,
-> 
-> On Thu, Jan 13, 2011 at 12:25 AM, Nicolas Pitre
-> <nicolas.pitre@linaro.org> wrote:
-> > On Wed, 12 Jan 2011, Russell King - ARM Linux wrote:
-> >
-> >> As the overall feeling at the time was "don't use large initrds" it's
-> >> something I've never really cared about - and I'm still of the opinion
-> >> that 16MB of compressed initrd/initramfs is rather silly.
-> >
-> > It is... but we have more than 32MB of RAM total now, and people are
-> > running standard distributions on ARM these days, such as Fedora or
-> > Ubuntu, including their corresponding initrd that may contain lots of
-> > modules, splashscreen data, etc.  So it might be a good idea to think
-> > about fixing this limitation before it comes back again.
-> >
-> 
-> in fact it is not just the initrd/initramfs size, i am facing issues
-> with loading modules on MMU-less envt(Cortex M3).
-> I have 128MB of Physical RAM and i am using a 4MB initrd to boot my
-> system. when i try to load kernel modules i get relocation errors.
-> As MMU-less systems are allowing modules to be loaded anywhere from
-> RAM and not from any predefined limits of MODULES_VADDR and
-> MODULES_END.
-> 
-> Do you have any pointers on how to tackle this situation for MMU less
-> environments?
-
-The MMU-less kernel should still favor allocations close to the kernel 
-text for modules, and anything else away from the kernel going 
-downwards.
-
-Otherwise a veneer should be created by the module symbol resolver such 
-that if the branch distance to reach, say, printk is too large, then the 
-following code would have to be dynamically generated right next to the 
-module:
-
-	ldr	pc, [pc, #-4]
-	.word	<far_away_symbol>
-
-Then, in your module, you patch the branch relocation for printk so that 
-it branches to the code above instead, and then store the address of 
-printk at the location represented by the .word directive.
+When I looked at removing bkl from minix a long time ago,
+I was a bit worried about reclaim and fs/io recursion in some
+of the filesystems with bkl.
 
 
-Nicolas
+> @@ -436,7 +439,8 @@ int ufs_getfrag_block(struct inode *inode, sector_t fragment, struct buffer_head
+>        ret = 0;
+>        bh = NULL;
+>
+> -       lock_kernel();
+> +       if (needs_lock)
+> +               lock_ufs(sb);
+>
+>        UFSD("ENTER, ino %lu, fragment %llu\n", inode->i_ino, (unsigned long long)fragment);
+>        if (fragment >
 
---Boundary_(ID_IagkMlEi2Tgl5TRpDbbxWA)--
+[...]
+
+> @@ -55,16 +54,16 @@ static struct dentry *ufs_lookup(struct inode * dir, struct dentry *dentry, stru
+>        if (dentry->d_name.len > UFS_MAXNAMLEN)
+>                return ERR_PTR(-ENAMETOOLONG);
+>
+> -       lock_kernel();
+> +       lock_ufs(dir->i_sb);
+>        ino = ufs_inode_by_name(dir, &dentry->d_name);
+>        if (ino) {
+>                inode = ufs_iget(dir->i_sb, ino);
+>                if (IS_ERR(inode)) {
+> -                       unlock_kernel();
+> +                       unlock_ufs(dir->i_sb);
+>                        return ERR_CAST(inode);
+>                }
+>        }
+> -       unlock_kernel();
+> +       unlock_ufs(dir->i_sb);
+>        d_add(dentry, inode);
+>        return NULL;
+>  }
+
+versus
+
+1405static struct inode *ufs_alloc_inode(struct super_block *sb)
+1406{
+1407        struct ufs_inode_info *ei;
+1408        ei = (struct ufs_inode_info
+*)kmem_cache_alloc(ufs_inode_cachep, GFP_KERNEL);
+1409        if (!ei)
+1410                return NULL;
+1411        ei->vfs_inode.i_version = 1;
+1412        return &ei->vfs_inode;
+1413}
+
+So, get_block can be called for .writepage in page reclaim,
+which takes the lock. ufs_lookup takes the lock and winds
+up calling ufs_alloc_inode. And ufs_alloc_inode does
+GFP_KERNEL, which can enter reclaim with __GFP_FS
+set.
+
+I didn't look through all your filesystem conversions, but it is
+something tricky to watch out for I think.
+
+Changing everything to GFP_NOFS may be an option, for
+such crufty old filesystems...
