@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564Ab1A0T10 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 14:27:26 -0500
-Received: from casper.infradead.org ([85.118.1.10]:59391 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482Ab1A0T1Z convert rfc822-to-8bit (ORCPT
+	id S1752877Ab1A0Tju (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 14:39:50 -0500
+Received: from caiajhbdcbbj.dreamhost.com ([208.97.132.119]:57968 "EHLO
+	homiemail-a2.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752681Ab1A0Tjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 14:27:25 -0500
-Subject: Re: One (possible) x86 get_user_pages bug
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Jan Beulich <JBeulich@novell.com>, Xiaowei Yang <xiaowei.yang@huawei.com>,
-        Nick Piggin <npiggin@kernel.dk>, fanhenglong@huawei.com,
-        Kaushik Barde <kbarde@huawei.com>, Kenneth Lee <liguozhu@huawei.com>,
-        linqaingmin <linqiangmin@huawei.com>, wangzhenguo@huawei.com,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Avi Kivity <avi@redhat.com>
-In-Reply-To: <4D41B90D.5000305@goop.org>
-References: <4D416D9A.9010603@huawei.com>
-	 <4D419416020000780002ECB7@vpn.id2.novell.com>  <4D41B90D.5000305@goop.org>
+	Thu, 27 Jan 2011 14:39:45 -0500
+Subject: [PATCH 2/2] USB: tools: Add a Makefile
+From: Davidlohr Bueso <dave@gnu.org>
+To: Michal Nazarewicz <m.nazarewicz@samsung.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 27 Jan 2011 20:27:56 +0100
-Message-ID: <1296156476.15234.246.camel@laptop>
+Date: Thu, 27 Jan 2011 16:39:34 -0300
+Message-ID: <1296157174.2113.6.camel@offworld>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-27 at 10:27 -0800, Jeremy Fitzhardinge wrote:
-> 
-> So is there some way we can preserve the current scheme's benefits while
-> making it a bit more general?  (If anyone else has non-IPI-based
-> shootdown, it would be s390; is there some inspiration there?  An
-> instruction perhaps?) 
+I originally sent this in several months ago, but never got around to correcting the changes, so... here it is.
 
-Well, you can provide a xen gupf implementation based on rcu freed
-page-tables like powerpc, sparc and s390 have.
+From: Davidlohr Bueso <dave@gnu.org>
 
-But you'll have to change the mmu_gather implementation of xen and use
-the get_page_unless_zero() thing mentioned before (or use
-page_cache_get_speculative()).
+Build USB tools easier.
 
-But I see no need to change the x86 implementation, if the architecture
-ever changes the way it does tlb invalidation we need to change more
-than just the gupf implementation.
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+---
+ tools/usb/Makefile |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
+ create mode 100644 tools/usb/Makefile
+
+diff --git a/tools/usb/Makefile b/tools/usb/Makefile
+new file mode 100644
+index 0000000..3995509
+--- /dev/null
++++ b/tools/usb/Makefile
+@@ -0,0 +1,13 @@
++# Makefile for building 'usbtest'
++
++CC = $(CROSS_COMPILE)gcc
++PTHREAD_LIBS = -lpthread
++WARNINGS = -Wall -Wextra
++CFLAGS = $(WARNINGS) -g $(PTHREAD_LIBS)
++
++all: testusb ffs-test
++%: %.c
++	$(CC) $(CFLAGS) -o $@ $^
++
++clean:
++	$(RM) testusb ffs-test
+-- 
+1.7.1
+
+
 
 
