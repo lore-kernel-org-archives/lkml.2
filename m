@@ -1,105 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237Ab1A0ONL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 09:13:11 -0500
-Received: from mx5.sophos.com ([213.31.172.35]:49249 "EHLO mx5.sophos.com"
+	id S1753293Ab1A0OPF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 09:15:05 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:40413 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752882Ab1A0ONJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 09:13:09 -0500
-X-Greylist: delayed 413 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Jan 2011 09:13:09 EST
-Date: Thu, 27 Jan 2011 14:06:10 +0000
-From: Douglas Leeder <douglas.leeder@sophos.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1752929Ab1A0OPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 09:15:04 -0500
+Date: Thu, 27 Jan 2011 15:14:51 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [patch 2/3] memcg: prevent endless loop on huge page charge
+Message-ID: <20110127141451.GA14512@cmpxchg.org>
+References: <20110121153431.191134dd.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110121154430.70d45f15.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110127103438.GC2401@cmpxchg.org>
+ <20110127134645.GA14309@cmpxchg.org>
+ <20110127140024.GR14750@redhat.com>
 MIME-Version: 1.0
-To: <Trond.Myklebust@netapp.com>, <linux-nfs@vger.kernel.org>
-CC: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>, <douglas.leeder@gmail.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: kernel BUG while mv files onto an nfs mount with Linus' linux-2.6
- git tree
-X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 27/01/2011 14:06:11,
-	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 27/01/2011 14:06:11,
-	Serialize complete at 27/01/2011 14:06:11
-X-TNEFEvaluated: 1
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Message-ID: <1c30423a-57bf-44bb-aa2e-4d658f829474@uk-exch1.green.sophos>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110127140024.GR14750@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Gleb,
 
-I got the following kernel BUG while moving files onto an nfs mount,
-while running Linus' linux-2.6 git tree (2.6.38-rc2) under VirtualBox.
+On Thu, Jan 27, 2011 at 04:00:24PM +0200, Gleb Natapov wrote:
+> On Thu, Jan 27, 2011 at 02:46:45PM +0100, Johannes Weiner wrote:
+> > The charging code can encounter a charge size that is bigger than a
+> > regular page in two situations: one is a batched charge to fill the
+> > per-cpu stocks, the other is a huge page charge.
+> > 
+> > This code is distributed over two functions, however, and only the
+> > outer one is aware of huge pages.  In case the charging fails, the
+> > inner function will tell the outer function to retry if the charge
+> > size is bigger than regular pages--assuming batched charging is the
+> > only case.  And the outer function will retry forever charging a huge
+> > page.
+> > 
+> > This patch makes sure the inner function can distinguish between batch
+> > charging and a single huge page charge.  It will only signal another
+> > attempt if batch charging failed, and go into regular reclaim when it
+> > is called on behalf of a huge page.
+> > 
+> Yeah, that is exactly the case I am debugging right now. Came up with
+> different solution: pass page_size to __mem_cgroup_do_charge() and
+> compare csize with page_size (not CHARGE_SIZE). Not sure which solution
+> it more correct.
 
-The mv command is now stuck in the D+ state.
-
-Attempting to ls the mount results in ls being stuck in the D+ state.
-
-The nfs server is an Ubuntu 10.04 box running Ubuntu kernel.
-(2.6.32-28-generic-pae #55-Ubuntu SMP Mon Jan 10 22:34:08 UTC 2011)
-
-I would be happy to provide any more information that is required.
-
-kernel BUG at fs/nfs/nfs3xdr.c:1338!
-invalid opcode: 0000 [#1] SMP
-last sysfs file: /sys/devices/virtual/bdi/0:21/uevent
-Modules linked in: nfsd exportfs nfs lockd fscache nfs_acl auth_rpcgss
-sunrpc psmouse i2c_piix4 serio_raw sr_mod pcnet32 mii
-476034]
-Pid: 3214, comm: mv Not tainted 2.6.38-rc2-custom3dlcl #3 /VirtualBox
-EIP: 0060:[<d8a0d9e8>] EFLAGS: 00010282 CPU: 0
-EIP is at nfs3_xdr_enc_setacl3args+0xb8/0xc0 [nfs]
-EAX: ffffffea EBX: d623bd90 ECX: 00000000 EDX: d623bbd8
-ESI: d623bcac EDI: 00000084 EBP: d623bc88 ESP: d623bc70
-  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-Process mv (pid: 3214, ti=d623a000 task=d7770ca0 task.ti=d623a000)
-Stack:
-  d6d651a0 00000001 00000000 d623bcac d5ea8000 d8a0d930 d623bcd4 d88d8f16
-  d1828820 d623bcb0 d88d9be7 d1828824 d182884c d7553880 00000000 d1828888
-  d5ea8004 d18289d4 d5ea8004 d623bd10 d5d8d000 d5d8d35c d7553880 d5ea8000
-Call Trace:
-  [<d8a0d930>] ? nfs3_xdr_enc_setacl3args+0x0/0xc0 [nfs]
-  [<d88d8f16>] rpcauth_wrap_req+0x76/0xb0 [sunrpc]
-  [<d88d9be7>] ? unx_marshal+0x47/0xc0 [sunrpc]
-  [<d88d0f7f>] call_transmit+0x14f/0x250 [sunrpc]
-  [<d88d8227>] __rpc_execute+0x67/0x200 [sunrpc]
-  [<c0166d6e>] ? wake_up_bit+0x5e/0x70
-  [<d88d7b92>] ? rpc_make_runnable+0x72/0xa0 [sunrpc]
-  [<d88d83f8>] rpc_execute+0x38/0x40 [sunrpc]
-  [<d88d1d04>] rpc_run_task+0xa4/0xe0 [sunrpc]
-  [<d88d1e3e>] rpc_call_sync+0x3e/0x60 [sunrpc]
-  [<d8a0f4c0>] nfs3_proc_setacls+0x150/0x2e0 [nfs]
-  [<c016ae01>] ? __run_hrtimer+0xa1/0x1c0
-  [<c025c317>] ? posix_acl_alloc+0x17/0x30
-  [<d8a0fdaf>] nfs3_proc_setacl+0x5f/0x100 [nfs]
-  [<c025c48c>] ? posix_acl_from_xattr+0x6c/0x100
-  [<d8a0ff02>] nfs3_setxattr+0x52/0xa0 [nfs]
-  [<d8a0feb0>] ? nfs3_setxattr+0x0/0xa0 [nfs]
-  [<c0237ef1>] __vfs_setxattr_noperm+0x41/0x120
-  [<c030a67c>] ? cap_inode_setxattr+0x2c/0x60
-  [<c0238061>] vfs_setxattr+0x91/0xa0
-  [<c0238128>] setxattr+0xb8/0x110
-  [<c01f8695>] ? handle_pte_fault+0x85/0x920
-  [<c01307cc>] ? kmap_atomic_prot+0x4c/0x100
-  [<c01f8fdc>] ? handle_mm_fault+0xac/0x140
-  [<c05bc772>] ? do_page_fault+0x1b2/0x450
-  [<c02d0500>] ? ext4_listxattr+0x0/0x240
-  [<c023783a>] ? vfs_listxattr+0x3a/0x70
-  [<c0238218>] sys_fsetxattr+0x98/0xb0
-  [<c010301f>] sysenter_do_call+0x12/0x28
-Code: 59 f2 ff 85 c0 78 20 83 c4 0c 5b 5e 5f 5d c3 8d 74 26 00 8b 43 10
-31 c9 8b 53 18 89 04 24 89 f0 e8 0e 38 ed ff eb 80 0f 0b eb fe <0f> 0b
-eb fe 8d 74 26 00 55 89 e5 83 ec 08 89 1c 24 89 74 24 04
-EIP: [<d8a0d9e8>] nfs3_xdr_enc_setacl3args+0xb8/0xc0 [nfs] SS:ESP
-0068:d623bc70
----[ end trace 69c4fc2ce1ae740d ]---
-
---
-Douglas Leeder, Senior Software Engineer
-
-Sophos Limited, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
-Company Reg No 2096520. VAT Reg No GB 991 2418 08.
+I guess it makes no difference, but using CHARGE_SIZE gets away
+without adding another parameter to __mem_cgroup_do_charge().
