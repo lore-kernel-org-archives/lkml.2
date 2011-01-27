@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab1A0PAf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 10:00:35 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:45169 "HELO
+	id S1752774Ab1A0PBV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 10:01:21 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:47628 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752679Ab1A0PAb (ORCPT
+	with SMTP id S1752059Ab1A0PAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 10:00:31 -0500
+	Thu, 27 Jan 2011 10:00:32 -0500
 X-Authenticated: #911537
-X-Provags-ID: V01U2FsdGVkX196bwxpkD96k0eCOLkPJTubg8QJEcDjl75qGNhfuL
-	jNtpkxQiIPeXMy
-Subject: [PATCH v2 19/20] xtensa: switch do_timer() to xtime_update()
+X-Provags-ID: V01U2FsdGVkX1/3+2YFRfz3E/hF3opuYExV4NtQGoJK+5couec5So
+	b5YmT4XrbxzVi/
+Subject: [PATCH v2 17/20] parisc: switch do_timer() to xtime_update()
 To: LKML <linux-kernel@vger.kernel.org>
 From: Torben Hohn <torbenh@gmx.de>
-Cc: Chris Zankel <chris@zankel.net>, Peter Zijlstra <peterz@infradead.org>,
-        johnstul@us.ibm.com, hch@infradead.org, yong.zhang0@gmail.com,
+Cc: hch@infradead.org, Peter Zijlstra <peterz@infradead.org>,
+        johnstul@us.ibm.com, Helge Deller <deller@gmx.de>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Kyle McMartin <kyle@mcmartin.ca>, yong.zhang0@gmail.com,
         Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 27 Jan 2011 16:00:27 +0100
-Message-ID: <20110127150027.23248.61798.stgit@localhost>
+Date: Thu, 27 Jan 2011 16:00:17 +0100
+Message-ID: <20110127150017.23248.22559.stgit@localhost>
 In-Reply-To: <20110127145741.23248.68098.stgit@localhost>
 References: <20110127145741.23248.68098.stgit@localhost>
 User-Agent: StGit/0.15
@@ -31,34 +33,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 xtime_update() takes the xtime_lock itself.
 
-set_linux_timer() does not need to be protected by a lock.
-
-Cc: Chris Zankel <chris@zankel.net>
+Cc: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Helge Deller <deller@gmx.de>
+Cc: James E.J. Bottomley <jejb@parisc-linux.org>
 Signed-off-by: Torben Hohn <torbenh@gmx.de>
 ---
- arch/xtensa/kernel/time.c |    6 +-----
- 1 files changed, 1 insertions(+), 5 deletions(-)
+ arch/parisc/kernel/time.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/arch/xtensa/kernel/time.c b/arch/xtensa/kernel/time.c
-index 19df764..f3e5eb4 100644
---- a/arch/xtensa/kernel/time.c
-+++ b/arch/xtensa/kernel/time.c
-@@ -96,16 +96,12 @@ again:
- 		update_process_times(user_mode(get_irq_regs()));
- #endif
- 
--		write_seqlock(&xtime_lock);
--
--		do_timer(1); /* Linux handler in kernel/timer.c */
-+		xtime_update(1); /* Linux handler in kernel/time/timekeeping */
- 
- 		/* Note that writing CCOMPARE clears the interrupt. */
- 
- 		next += CCOUNT_PER_JIFFY;
- 		set_linux_timer(next);
--
--		write_sequnlock(&xtime_lock);
+diff --git a/arch/parisc/kernel/time.c b/arch/parisc/kernel/time.c
+index 05511cc..72ec318 100644
+--- a/arch/parisc/kernel/time.c
++++ b/arch/parisc/kernel/time.c
+@@ -163,9 +163,7 @@ irqreturn_t __irq_entry timer_interrupt(int irq, void *dev_id)
  	}
  
- 	/* Allow platform to do something useful (Wdog). */
+ 	if (cpu == 0) {
+-		write_seqlock(&xtime_lock);
+-		do_timer(ticks_elapsed);
+-		write_sequnlock(&xtime_lock);
++		xtime_update(ticks_elapsed);
+ 	}
+ 
+ 	return IRQ_HANDLED;
 
