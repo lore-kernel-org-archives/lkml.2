@@ -1,111 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462Ab1A0Bkj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 20:40:39 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39155 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754259Ab1A0Bkh (ORCPT
+	id S1754507Ab1A0Bns (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 20:43:48 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:20529 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754317Ab1A0Bnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 20:40:37 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 27 Jan 2011 10:34:31 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg Thelen <gthelen@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUGFIX] memcg: fix res_counter_read_u64 lock aware (Was Re:
- [PATCH] oom: handle overflow in mem_cgroup_out_of_memory()
-Message-Id: <20110127103431.04432944.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110126170824.ef2ab571.akpm@linux-foundation.org>
-References: <1296030555-3594-1-git-send-email-gthelen@google.com>
-	<20110126170713.GA2401@cmpxchg.org>
-	<xr93y667lgdm.fsf@gthelen.mtv.corp.google.com>
-	<20110126183023.GB2401@cmpxchg.org>
-	<xr9362tbl83f.fsf@gthelen.mtv.corp.google.com>
-	<20110126142909.0b710a0c.akpm@linux-foundation.org>
-	<20110127092434.df18c7a6.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110127095342.3d81cf5f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110126170824.ef2ab571.akpm@linux-foundation.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 26 Jan 2011 20:43:47 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAHNcQE1Ld/sX/2dsb2JhbAAMhAbNQJBpgSODOHQEhRc
+X-IronPort-AV: E=Sophos;i="4.60,383,1291611600"; 
+   d="scan'208";a="89371136"
+Message-ID: <4D40CDCF.4010301@teksavvy.com>
+Date: Wed, 26 Jan 2011 20:43:43 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Christoph Hellwig <hch@infradead.org>, Alex Elder <aelder@sgi.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: xfs: very slow after mount, very slow at umount
+References: <4D40C8D1.8090202@teksavvy.com>
+In-Reply-To: <4D40C8D1.8090202@teksavvy.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Jan 2011 17:08:24 -0800
-Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> On Thu, 27 Jan 2011 09:53:42 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On 11-01-26 08:22 PM, Mark Lord wrote:
+> Alex / Christoph,
 > 
-> > res_counter_read_u64 reads u64 value without lock. It's dangerous
-> > in 32bit environment. This patch adds lock.
-> > 
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > ---
-> >  include/linux/res_counter.h |   13 ++++++++++++-
-> >  kernel/res_counter.c        |    2 +-
-> >  2 files changed, 13 insertions(+), 2 deletions(-)
-> > 
-> > Index: mmotm-0125/include/linux/res_counter.h
-> > ===================================================================
-> > --- mmotm-0125.orig/include/linux/res_counter.h
-> > +++ mmotm-0125/include/linux/res_counter.h
-> > @@ -68,7 +68,18 @@ struct res_counter {
-> >   * @pos:     and the offset.
-> >   */
-> >  
-> > -u64 res_counter_read_u64(struct res_counter *counter, int member);
-> > +u64 res_counter_read_u64_locked(struct res_counter *counter, int member);
-> > +
-> > +static inline u64 res_counter_read_u64(struct res_counter *counter, int member)
-> > +{
-> > +	unsigned long flags;
-> > +	u64 ret;
-> > +
-> > +	spin_lock_irqsave(&counter->lock, flags);
-> > +	ret = res_counter_read_u64_locked(counter, member);
-> > +	spin_unlock_irqrestore(&counter->lock, flags);
-> > +	return ret;
-> > +}
-> >  
-> >  ssize_t res_counter_read(struct res_counter *counter, int member,
-> >  		const char __user *buf, size_t nbytes, loff_t *pos,
-> > Index: mmotm-0125/kernel/res_counter.c
-> > ===================================================================
-> > --- mmotm-0125.orig/kernel/res_counter.c
-> > +++ mmotm-0125/kernel/res_counter.c
-> > @@ -126,7 +126,7 @@ ssize_t res_counter_read(struct res_coun
-> >  			pos, buf, s - buf);
-> >  }
-> >  
-> > -u64 res_counter_read_u64(struct res_counter *counter, int member)
-> > +u64 res_counter_read_u64_locked(struct res_counter *counter, int member)
-> >  {
-> >  	return *res_counter_member(counter, member);
-> >  }
+> My mythtv box here uses XFS on a 2TB drive for storing recordings and videos.
+> It is behaving rather strangely though, and has gotten worse recently.
+> Here is what I see happening:
 > 
-> We don't need the lock on 64-bit platforms!
+> The drive mounts fine at boot, but the very first attempt to write a new file
+> to the filesystem suffers from a very very long pause, 30-60 seconds, during which
+> time the disk activity light is fully "on".
 > 
-> And there's zero benefit to inlining the spin_lock/unlock(), given that
-> the function will always be making a function call anyway.
+> This happens only on the first new file write after mounting.
+>>From then on, the filesystem is fast and responsive as expected.
+> If I umount the filesystem, and then mount it again,
+> the exact same behaviour can be observed.
 > 
-> See i_size_read() for inspiration.
+> This of course screws up mythtv, as it causes me to lose the first 30-60
+> seconds of the first recording it attempts after booting.  So as a workaround
+> I now have a startup script to create, sync, and delete a 64MB file before
+> starting mythtv.  This still takes 30-60 seconds, but it all happens and
+> finishes before mythtv has a real-time need to write to the filesystem.
 > 
+> The 2TB drive is fine -- zero errors, no events in the SMART logs,
+> and I've disabled the silly WD head-unload logic on it.
+> 
+> What's happening here?  Why the big long burst of activity?
+> I've only just noticed this behaviour in the past few weeks,
+> running 2.6.35 and more recently 2.6.37.
+> 
+> * * *
+> 
+> The other issue is something I notice at umount time.
+> I have a second big drive used as a backup device for the drive discussed above.
+> I use "mirrordir" (similar to rsync) to clone directories/files from the main
+> drive to the backup drive.  After mirrordir finishes, I then "umount /backup".
+> The umount promptly hangs, disk light on solid, for 30-60 seconds, then finishes.
+> 
+> If I type "sync" just before doing the umount, sync takes about 1 second,
+> and the umount finishes instantly.
+> 
+> Huh? What's happening there?
+> 
+> System is running 2.6.37 from kernel.org, but similar behaviour
+> has been there under 2.6.35 and 2.6.34.  Dunno about earlier.
+> 
+> I can query any info you need from the filesystem.
 
-seq_counter can't be used for res_counter because I don't want to update
-seq_counter at changing ->usae of res_counter. So, I'd like to just add
-spinlock for this time.
 
-I wonder making memcg's counter to use 32bit and record usage in the number
-of pages may be a simple way...
+Thinking about it some more:  the first problem very much appears as if
+it is due to a filesystem check happening on the already-mounted filesystem,
+if that makes any kind of sense (?).
 
-Thanks,
--Kame
+Because.. running xfs_check on the umounted drive takes about the same 30-60
+seconds,
+with the disk activity light fully "on".
 
+The other thought that came to mind:  this behaviour has only been noticed recently,
+probably because I have recently added about 1000 new files (hundreds of MB each)
+to the videos/ directory on that filesystem.  Whereas before, it had fewer
+than 500 (multi-GB) files in total.
+
+So if it really is doing some kind of internal filesystem check, then the time
+required has only recently become 3X larger than before.. so the behaviour may
+not be new/recent, but now is very noticeable.
+
+I wonder what is really happening?
+
+Cheers
