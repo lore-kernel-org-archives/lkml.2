@@ -1,258 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290Ab1A0Miq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 07:38:46 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:49911 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752782Ab1A0Mio (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 07:38:44 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andrew Hendry <andrew.hendry@gmail.com>
-Subject: [PATCH v2] x25: remove the BKL
-Date: Thu, 27 Jan 2011 13:38:38 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-x25@vger.kernel.org,
-        netdev@vger.kernel.org
-References: <1295993854-4971-1-git-send-email-arnd@arndb.de> <AANLkTim=d4Tok-ri1BozZUfBFS=rofaodN8ZBA5AjKKd@mail.gmail.com> <201101271317.01502.arnd@arndb.de>
-In-Reply-To: <201101271317.01502.arnd@arndb.de>
+	id S1753059Ab1A0Mqw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 07:46:52 -0500
+Received: from a.mx.secunet.com ([195.81.216.161]:47264 "EHLO a.mx.secunet.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750921Ab1A0Mqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 07:46:50 -0500
+Date: Thu, 27 Jan 2011 13:46:47 +0100
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Eric Paris <eparis@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: flex_array related problems on selinux policy loading
+Message-ID: <20110127124647.GF3070@secunet.com>
+References: <20110120122659.GD4639@secunet.com>
+ <1295537330.9039.583.camel@nimitz>
+ <20110121072022.GA3070@secunet.com>
+ <1295625455.9039.3326.camel@nimitz>
+ <20110126130407.GD3070@secunet.com>
+ <1296058526.7567.57.camel@nimitz>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101271338.39295.arnd@arndb.de>
-X-Provags-ID: V02:K0:bq91+GN/Imwj6HsMvEB1NBdMEtqTp7LAWezFTZca+gz
- ilPMVZwFJP1X0PL3DJ3BlIgieJ0RZhRw4ZX7MEKENHC3Lun3Q9
- wQPaig2QJKgFCvfYiJxM5j1NzCqi6FvmbI6Yet7UhcXYcpLXOl
- zaBvjociYNvBMnjMkQa5kpb/dXSM1ezPSojuAnAVnMX+j+MG1L
- EeXXP7ECdOWaShb5OTSPQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1296058526.7567.57.camel@nimitz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 27 Jan 2011 12:46:47.0877 (UTC) FILETIME=[42C72750:01CBBE20]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This replaces all instances of lock_kernel in x25
-with lock_sock, taking care to release the socket
-lock around sleeping functions (sock_alloc_send_skb
-and skb_recv_datagram). It is not clear whether
-this is a correct solution, but it seem to be what
-other protocols do in the same situation.
+On Wed, Jan 26, 2011 at 08:15:26AM -0800, Dave Hansen wrote:
+> On Wed, 2011-01-26 at 14:04 +0100, Steffen Klassert wrote:
+> > Another thing came to my mind. An atempt to do a zero size allocation
+> > always succeed on kmalloc. If we want to allocate our metadata even in
+> > this case, we should be aware that this allocation _can_ fail. So
+> > flex_array_alloc would not show the same behaviour as kmalloc on zero
+> > size allocations.
+> 
+> I think that's just fine.
+> 
+> You have to check for and handle those allocation failures anyway.  
 
-Compile-tested only.
+If we just return a pointer to the user that notifies that this was a
+zerro size allocation, we would not need to allocate anything (like
+kmalloc does), so we can't get allocation failures.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Andrew Hendry <andrew.hendry@gmail.com>
-Cc: linux-x25@vger.kernel.org
-Cc: netdev@vger.kernel.org
----
-v2: fix possible NULL-pointer dereference in x25_sendmsg
+> Can
+> you think of places in the kernel where we have known-zero-sized
+> allocations that don't check kmalloc() returns?
 
- net/x25/Kconfig   |    1 -
- net/x25/af_x25.c  |   58 ++++++++++++++++------------------------------------
- net/x25/x25_out.c |    7 ++++-
- 3 files changed, 23 insertions(+), 43 deletions(-)
+Usually, if somebody allocates memory he just checks if he got a
+NULL pointer. I've never seen somebody checking for ZERO_SIZE_PTR.
 
-diff --git a/net/x25/Kconfig b/net/x25/Kconfig
-index 2196e55..e6759c9 100644
---- a/net/x25/Kconfig
-+++ b/net/x25/Kconfig
-@@ -5,7 +5,6 @@
- config X25
- 	tristate "CCITT X.25 Packet Layer (EXPERIMENTAL)"
- 	depends on EXPERIMENTAL
--	depends on BKL # should be fixable
- 	---help---
- 	  X.25 is a set of standardized network protocols, similar in scope to
- 	  frame relay; the one physical line from your box to the X.25 network
-diff --git a/net/x25/af_x25.c b/net/x25/af_x25.c
-index ad96ee9..4680b1e 100644
---- a/net/x25/af_x25.c
-+++ b/net/x25/af_x25.c
-@@ -40,7 +40,6 @@
- #include <linux/errno.h>
- #include <linux/kernel.h>
- #include <linux/sched.h>
--#include <linux/smp_lock.h>
- #include <linux/timer.h>
- #include <linux/string.h>
- #include <linux/net.h>
-@@ -432,15 +431,6 @@ void x25_destroy_socket_from_timer(struct sock *sk)
- 	sock_put(sk);
- }
- 
--static void x25_destroy_socket(struct sock *sk)
--{
--	sock_hold(sk);
--	lock_sock(sk);
--	__x25_destroy_socket(sk);
--	release_sock(sk);
--	sock_put(sk);
--}
--
- /*
-  *	Handling for system calls applied via the various interfaces to a
-  *	X.25 socket object.
-@@ -647,18 +637,19 @@ static int x25_release(struct socket *sock)
- 	struct sock *sk = sock->sk;
- 	struct x25_sock *x25;
- 
--	lock_kernel();
- 	if (!sk)
--		goto out;
-+		return 0;
- 
- 	x25 = x25_sk(sk);
- 
-+	sock_hold(sk);
-+	lock_sock(sk);
- 	switch (x25->state) {
- 
- 		case X25_STATE_0:
- 		case X25_STATE_2:
- 			x25_disconnect(sk, 0, 0, 0);
--			x25_destroy_socket(sk);
-+			__x25_destroy_socket(sk);
- 			goto out;
- 
- 		case X25_STATE_1:
-@@ -678,7 +669,8 @@ static int x25_release(struct socket *sock)
- 
- 	sock_orphan(sk);
- out:
--	unlock_kernel();
-+	release_sock(sk);
-+	sock_put(sk);
- 	return 0;
- }
- 
-@@ -1085,7 +1077,7 @@ static int x25_sendmsg(struct kiocb *iocb, struct socket *sock,
- 	size_t size;
- 	int qbit = 0, rc = -EINVAL;
- 
--	lock_kernel();
-+	lock_sock(sk);
- 	if (msg->msg_flags & ~(MSG_DONTWAIT|MSG_OOB|MSG_EOR|MSG_CMSG_COMPAT))
- 		goto out;
- 
-@@ -1148,7 +1140,9 @@ static int x25_sendmsg(struct kiocb *iocb, struct socket *sock,
- 
- 	size = len + X25_MAX_L2_LEN + X25_EXT_MIN_LEN;
- 
-+	release_sock(sk);
- 	skb = sock_alloc_send_skb(sk, size, noblock, &rc);
-+	lock_sock(sk);
- 	if (!skb)
- 		goto out;
- 	X25_SKB_CB(skb)->flags = msg->msg_flags;
-@@ -1231,26 +1225,10 @@ static int x25_sendmsg(struct kiocb *iocb, struct socket *sock,
- 			len++;
- 	}
- 
--	/*
--	 * lock_sock() is currently only used to serialize this x25_kick()
--	 * against input-driven x25_kick() calls. It currently only blocks
--	 * incoming packets for this socket and does not protect against
--	 * any other socket state changes and is not called from anywhere
--	 * else. As x25_kick() cannot block and as long as all socket
--	 * operations are BKL-wrapped, we don't need take to care about
--	 * purging the backlog queue in x25_release().
--	 *
--	 * Using lock_sock() to protect all socket operations entirely
--	 * (and making the whole x25 stack SMP aware) unfortunately would
--	 * require major changes to {send,recv}msg and skb allocation methods.
--	 * -> 2.5 ;)
--	 */
--	lock_sock(sk);
- 	x25_kick(sk);
--	release_sock(sk);
- 	rc = len;
- out:
--	unlock_kernel();
-+	release_sock(sk);
- 	return rc;
- out_kfree_skb:
- 	kfree_skb(skb);
-@@ -1271,7 +1249,7 @@ static int x25_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	unsigned char *asmptr;
- 	int rc = -ENOTCONN;
- 
--	lock_kernel();
-+	lock_sock(sk);
- 	/*
- 	 * This works for seqpacket too. The receiver has ordered the queue for
- 	 * us! We do one quick check first though
-@@ -1300,8 +1278,10 @@ static int x25_recvmsg(struct kiocb *iocb, struct socket *sock,
- 		msg->msg_flags |= MSG_OOB;
- 	} else {
- 		/* Now we can treat all alike */
-+		release_sock(sk);
- 		skb = skb_recv_datagram(sk, flags & ~MSG_DONTWAIT,
- 					flags & MSG_DONTWAIT, &rc);
-+		lock_sock(sk);
- 		if (!skb)
- 			goto out;
- 
-@@ -1338,14 +1318,12 @@ static int x25_recvmsg(struct kiocb *iocb, struct socket *sock,
- 
- 	msg->msg_namelen = sizeof(struct sockaddr_x25);
- 
--	lock_sock(sk);
- 	x25_check_rbuf(sk);
--	release_sock(sk);
- 	rc = copied;
- out_free_dgram:
- 	skb_free_datagram(sk, skb);
- out:
--	unlock_kernel();
-+	release_sock(sk);
- 	return rc;
- }
- 
-@@ -1581,18 +1559,18 @@ out_cud_release:
- 
- 		case SIOCX25CALLACCPTAPPRV: {
- 			rc = -EINVAL;
--			lock_kernel();
-+			lock_sock(sk);
- 			if (sk->sk_state != TCP_CLOSE)
- 				break;
- 			clear_bit(X25_ACCPT_APPRV_FLAG, &x25->flags);
--			unlock_kernel();
-+			release_sock(sk);
- 			rc = 0;
- 			break;
- 		}
- 
- 		case SIOCX25SENDCALLACCPT:  {
- 			rc = -EINVAL;
--			lock_kernel();
-+			lock_sock(sk);
- 			if (sk->sk_state != TCP_ESTABLISHED)
- 				break;
- 			/* must call accptapprv above */
-@@ -1600,7 +1578,7 @@ out_cud_release:
- 				break;
- 			x25_write_internal(sk, X25_CALL_ACCEPTED);
- 			x25->state = X25_STATE_3;
--			unlock_kernel();
-+			release_sock(sk);
- 			rc = 0;
- 			break;
- 		}
-diff --git a/net/x25/x25_out.c b/net/x25/x25_out.c
-index d00649f..f1a6ff1 100644
---- a/net/x25/x25_out.c
-+++ b/net/x25/x25_out.c
-@@ -68,8 +68,11 @@ int x25_output(struct sock *sk, struct sk_buff *skb)
- 		frontlen = skb_headroom(skb);
- 
- 		while (skb->len > 0) {
--			if ((skbn = sock_alloc_send_skb(sk, frontlen + max_len,
--							noblock, &err)) == NULL){
-+			release_sock(sk);
-+			skbn = sock_alloc_send_skb(sk, frontlen + max_len,
-+						   1, &err);
-+			lock_sock(sk);
-+			if (!skbn) {
- 				if (err == -EWOULDBLOCK && noblock){
- 					kfree_skb(skb);
- 					return sent;
+> 
+> > As most potential flex_array users convert their code
+> > from kmalloc, the behaviour of flex_array_alloc should be the same as of
+> > kmalloc. Showing a different behaviour here will produce pitfalls for
+> > potential new users. Also, to tell a user that we can not allocate memory
+> > for him, if the wants to allocate 0 byte (nothing) is quite odd. This
+> > user could easily continue processing, even if we can not allocate our
+> > metadata in this moment.
+> 
+> This doesn't have to be a one to one, direct, replacement for kmalloc().
+> As long as it's close enough not to confuse people or normally cause
+> problems, I think it's fine.
+
+Indeed, it does not have to be one to one. But if we do it different,
+we should document the difference somewere at least. I'll do that
+once I have an updated patch and I know how the difference will be.
+
+Steffen
