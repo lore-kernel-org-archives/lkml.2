@@ -1,91 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753016Ab1A0Ttv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 14:49:51 -0500
-Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:33005 "EHLO
-	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752628Ab1A0Ttu (ORCPT
+	id S1753199Ab1A0TwH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 14:52:07 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:42992 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752516Ab1A0TwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 14:49:50 -0500
-X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Jan 2011 14:49:50 EST
-Message-ID: <4D41CA16.8070001@hardwarefreak.com>
-Date: Thu, 27 Jan 2011 13:40:06 -0600
-From: Stan Hoeppner <stan@hardwarefreak.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Mark Lord <kernel@teksavvy.com>
-CC: Justin Piszcz <jpiszcz@lucidpixels.com>,
-        Christoph Hellwig <hch@infradead.org>, Alex Elder <aelder@sgi.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: xfs: very slow after mount, very slow at umount
-References: <4D40C8D1.8090202@teksavvy.com> <20110127033011.GH21311@dastard>	<4D40EB2F.2050809@teksavvy.com> <4D418B57.1000501@teksavvy.com>	<alpine.DEB.2.00.1101271040000.31246@p34.internal.lan> <4D419765.4070805@teksavvy.com>
-In-Reply-To: <4D419765.4070805@teksavvy.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 27 Jan 2011 14:52:05 -0500
+Subject: Re: [PATCH RESEND 0/4] Fix kconfig breakage wrt to CONFIGFS_FS
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-netdev <netdev@vger.kernel.org>,
+        Joel Becker <jlbec@evilplan.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Americo Wang <xiyou.wangcong@gmail.com>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20110127194157.GA7565@elte.hu>
+References: <1296155430-3796-1-git-send-email-nab@linux-iscsi.org>
+	 <20110127194157.GA7565@elte.hu>
+Content-Type: text/plain
+Date: Thu, 27 Jan 2011 11:52:01 -0800
+Message-Id: <1296157921.14831.174.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Lord put forth on 1/27/2011 10:03 AM:
-> On 11-01-27 10:40 AM, Justin Piszcz wrote:
->>
->>
->> On Thu, 27 Jan 2011, Mark Lord wrote:
-> ..
->>> Can you recommend a good set of mkfs.xfs parameters to suit the characteristics
->>> of this system?  Eg. Only a few thousand active inodes, and nearly all files are
->>> in the 600MB -> 20GB size range.  The usage pattern it must handle is up to
->>> six concurrent streaming writes at the same time as up to three streaming reads,
->>> with no significant delays permitted on the reads.
->>>
->>> That's the kind of workload that I find XFS handles nicely,
->>> and EXT4 has given me trouble with in the past.
-> ..
->> I did a load of benchmarks a long time ago testing every mkfs.xfs option there
->> was, and I found that most of the time (if not all), the defaults were the best.
-> ..
+On Thu, 2011-01-27 at 20:41 +0100, Ingo Molnar wrote:
+> * Nicholas A. Bellinger <nab@linux-iscsi.org> wrote:
 > 
-> I am concerned with fragmentation on the very special workload in this case.
-> I'd really like the 20GB files, written over a 1-2 hour period, to consist
-> of a very few very large extents, as much as possible.
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> > 
+> > Hi Linus,
+> > 
+> > The following four patches are to address recent Kconfig CONFIGFS_FS ->
+> > 'select SYSFS' change for GFS2_FS, and 'depends && SYSFS && CONFIGFS_FS'
+> > breakage for NETCONSOLE_DYNAMIC, DLM, and OCFS2_FS in .38-rc2.
+> > 
+> > Please review and consider pulling from:
+> > 
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-linus-v2
+> 
+> I had the original for-linus branch tested rather extensively, and that one had no 
+> problems. What's different in -v2?
+> 
 
-For XFS that's actually not a special case workload but an average one.  XFS was
-conceived at SGI for use on large supercomputers where typical single file
-datasets are extremely large, i.e. hundreds of GB.  Also note that the real time
-sub volume feature was created for almost exactly your purpose:  streaming
-record/playback of raw A/V data for broadcast (i.e. television).  In your case
-it's compressed, not raw A/V data.  I'm not recommending you use the real time
-feature however, as it's overkill for MythTV and not necessary.
+Hi Ingo,
 
-> Rather than hundreds or thousands of "tiny" MB sized extents.
-> I wonder what the best mkfs.xfs parameters might be to encourage that?
+The extra code is in patch #1 that fixes an additional GFS2_FS warning
+reported by Randy that appeared after the initial CONFIGFS_FS -> 'select
+SYSFS' conversion.
 
-You need to use the mkfs.xfs defaults for any single drive filesystem, and trust
-the allocator to do the right thing.  XFS uses variable size extents and the
-size is chosen dynamically--you don't have direct or indirect control of the
-extent size chosen for a given file or set of files AFAIK.
+This patch for GFS2_FS was in scsi-post-merge-2.6.git/for-linus, but was
+not included in the shortlog/stat to Linus.  So considering my current
+(poor) record with Kconfig changes in mainline, I figured that sending
+them out to the list one more time for review would make the most
+sense.  ;)
 
-As Dave Chinner is fond of pointing out, it's those who don't know enough about
-XFS and choose custom settings that most often get themselves into trouble (as
-you've already done once).  :)
+Thanks,
 
-The defaults exist for a reason, and they weren't chosen willy nilly.  The vast
-bulk of XFS' configurability exists for tuning maximum performance on large to
-very large RAID arrays.  There isn't much, if any, additional performance to be
-gained with parameter tweaks on a single drive XFS filesystem.
+--nab
 
-A brief explanation of agcount:  the filesystem is divided into agcount regions
-called allocation groups, or AGs.  The allocator writes to all AGs in parallel
-to increase performance.  With extremely fast storage (SSD, large high RPM RAID)
-this increases throughput as the storage can often sink writes faster than a
-serial writer can push data.  In your case, you have a single slow spindle with
-over 7,000 AGs.  Thus, the allocator is writing to over 7,000 locations on that
-single disk simultaneously, or, at least, it's trying to.  Thus, the poor head
-on that drive is being whipped all over the place without actually getting much
-writing done.  To add insults to injury, this is one of these low RPM low head
-performance "green" drives correct?
 
-Trust the defaults.  If they give you problems (unlikely) then we can't talk. ;)
-
--- 
-Stan
