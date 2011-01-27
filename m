@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab1A0XqZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 18:46:25 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60089 "EHLO
+	id S1754173Ab1A0Xr6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 18:47:58 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60120 "EHLO
 	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752564Ab1A0XqY (ORCPT
+	with ESMTP id S1752564Ab1A0Xr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 18:46:24 -0500
+	Thu, 27 Jan 2011 18:47:57 -0500
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 28 Jan 2011 08:40:21 +0900
+Date: Fri, 28 Jan 2011 08:41:55 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+Cc: Gleb Natapov <gleb@redhat.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
         "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
         "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [patch] memcg: prevent endless loop with huge pages and
- near-limit group
-Message-Id: <20110128084021.df6e7a3a.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110127104014.GD2401@cmpxchg.org>
+Subject: Re: [patch 2/3] memcg: prevent endless loop on huge page charge
+Message-Id: <20110128084155.4189b4ff.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110127141451.GA14512@cmpxchg.org>
 References: <20110121153431.191134dd.kamezawa.hiroyu@jp.fujitsu.com>
 	<20110121154430.70d45f15.kamezawa.hiroyu@jp.fujitsu.com>
 	<20110127103438.GC2401@cmpxchg.org>
-	<20110127104014.GD2401@cmpxchg.org>
+	<20110127134645.GA14309@cmpxchg.org>
+	<20110127140024.GR14750@redhat.com>
+	<20110127141451.GA14512@cmpxchg.org>
 Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
@@ -33,106 +34,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Jan 2011 11:40:14 +0100
+On Thu, 27 Jan 2011 15:14:51 +0100
 Johannes Weiner <hannes@cmpxchg.org> wrote:
 
-> This is a patch I sent to Andrea ages ago in response to a RHEL
-> bugzilla.  Not sure why it did not reach mainline...  But it fixes one
-> issue you described in 4/7, namely looping around a not exceeded limit
-> with a huge page that won't fit anymore.
+> Hi Gleb,
 > 
-> ---
-> From: Johannes Weiner <hannes@cmpxchg.org>
-> Subject: [patch] memcg: prevent endless loop with huge pages and near-limit group
+> On Thu, Jan 27, 2011 at 04:00:24PM +0200, Gleb Natapov wrote:
+> > On Thu, Jan 27, 2011 at 02:46:45PM +0100, Johannes Weiner wrote:
+> > > The charging code can encounter a charge size that is bigger than a
+> > > regular page in two situations: one is a batched charge to fill the
+> > > per-cpu stocks, the other is a huge page charge.
+> > > 
+> > > This code is distributed over two functions, however, and only the
+> > > outer one is aware of huge pages.  In case the charging fails, the
+> > > inner function will tell the outer function to retry if the charge
+> > > size is bigger than regular pages--assuming batched charging is the
+> > > only case.  And the outer function will retry forever charging a huge
+> > > page.
+> > > 
+> > > This patch makes sure the inner function can distinguish between batch
+> > > charging and a single huge page charge.  It will only signal another
+> > > attempt if batch charging failed, and go into regular reclaim when it
+> > > is called on behalf of a huge page.
+> > > 
+> > Yeah, that is exactly the case I am debugging right now. Came up with
+> > different solution: pass page_size to __mem_cgroup_do_charge() and
+> > compare csize with page_size (not CHARGE_SIZE). Not sure which solution
+> > it more correct.
 > 
-> If reclaim after a failed charging was unsuccessful, the limits are
-> checked again, just in case they settled by means of other tasks.
+> I guess it makes no difference, but using CHARGE_SIZE gets away
+> without adding another parameter to __mem_cgroup_do_charge().
 > 
-> This is all fine as long as every charge is of size PAGE_SIZE, because
-> in that case, being below the limit means having at least PAGE_SIZE
-> bytes available.
-> 
-> But with transparent huge pages, we may end up in an endless loop
-> where charging and reclaim fail, but we keep going because the limits
-> are not yet exceeded, although not allowing for a huge page.
-> 
-> Fix this up by explicitely checking for enough room, not just whether
-> we are within limits.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
+My new one is similar to this ;)
 
-Okay, seems to have the same concept as mine. 
+Thanks,
 -Kame
 
-> ---
->  include/linux/res_counter.h |   12 ++++++++++++
->  mm/memcontrol.c             |   20 +++++++++++---------
->  2 files changed, 23 insertions(+), 9 deletions(-)
-> 
-> diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
-> index fcb9884..03212e4 100644
-> --- a/include/linux/res_counter.h
-> +++ b/include/linux/res_counter.h
-> @@ -182,6 +182,18 @@ static inline bool res_counter_check_under_limit(struct res_counter *cnt)
->  	return ret;
->  }
->  
-> +static inline bool res_counter_check_room(struct res_counter *cnt,
-> +					  unsigned long room)
-> +{
-> +	bool ret;
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&cnt->lock, flags);
-> +	ret = cnt->limit - cnt->usage >= room;
-> +	spin_unlock_irqrestore(&cnt->lock, flags);
-> +	return ret;
-> +}
-> +
->  static inline bool res_counter_check_under_soft_limit(struct res_counter *cnt)
->  {
->  	bool ret;
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index d572102..8fa4be3 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1111,6 +1111,15 @@ static bool mem_cgroup_check_under_limit(struct mem_cgroup *mem)
->  	return false;
->  }
->  
-> +static bool mem_cgroup_check_room(struct mem_cgroup *mem, unsigned long room)
-> +{
-> +	if (!res_counter_check_room(&mem->res, room))
-> +		return false;
-> +	if (!do_swap_account)
-> +		return true;
-> +	return res_counter_check_room(&mem->memsw, room);
-> +}
-> +
->  static unsigned int get_swappiness(struct mem_cgroup *memcg)
->  {
->  	struct cgroup *cgrp = memcg->css.cgroup;
-> @@ -1844,16 +1853,9 @@ static int __mem_cgroup_do_charge(struct mem_cgroup *mem, gfp_t gfp_mask,
->  	if (!(gfp_mask & __GFP_WAIT))
->  		return CHARGE_WOULDBLOCK;
->  
-> -	ret = mem_cgroup_hierarchical_reclaim(mem_over_limit, NULL,
-> +	mem_cgroup_hierarchical_reclaim(mem_over_limit, NULL,
->  					gfp_mask, flags);
-> -	/*
-> -	 * try_to_free_mem_cgroup_pages() might not give us a full
-> -	 * picture of reclaim. Some pages are reclaimed and might be
-> -	 * moved to swap cache or just unmapped from the cgroup.
-> -	 * Check the limit again to see if the reclaim reduced the
-> -	 * current usage of the cgroup before giving up
-> -	 */
-> -	if (ret || mem_cgroup_check_under_limit(mem_over_limit))
-> +	if (mem_cgroup_check_room(mem_over_limit, csize))
->  		return CHARGE_RETRY;
->  
->  	/*
-> -- 
-> 1.7.3.5
-> 
+
 
