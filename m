@@ -1,46 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205Ab1A0QAI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 11:00:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20723 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751740Ab1A0QAH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 11:00:07 -0500
-Date: Thu, 27 Jan 2011 16:52:02 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>, Prasad <prasad@linux.vnet.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: Q: perf_install_in_context/perf_event_enable are racy?
-Message-ID: <20110127155202.GA25060@redhat.com>
-References: <1295622304.28776.293.camel@laptop> <20110121204014.GA2870@nowhere> <20110124114234.GA12166@redhat.com> <20110126175322.GA28617@redhat.com> <20110126184957.GA32578@redhat.com> <1296068731.15234.6.camel@laptop> <1296070383.15234.10.camel@laptop> <20110126211931.GA6778@redhat.com> <20110126213317.GA7403@redhat.com> <1296124337.15234.71.camel@laptop>
+	id S1752476Ab1A0QBJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 11:01:09 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:48636 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751812Ab1A0QBH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 11:01:07 -0500
+Date: Thu, 27 Jan 2011 11:01:06 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Robert Morell <rmorell@nvidia.com>
+cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Benoit Goby <benoit@android.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
+        Oliver Neukum <oliver@neukum.org>, Olof Johansson <olof@lixom.net>,
+        Erik Gilling <konkers@android.com>, Colin Cross <ccross@android.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 1/3] USB: HCD: Add usb_hcd prefix to exported functions
+In-Reply-To: <1296097609-32302-2-git-send-email-rmorell@nvidia.com>
+Message-ID: <Pine.LNX.4.44L0.1101271100410.2090-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296124337.15234.71.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27, Peter Zijlstra wrote:
->
-> On Wed, 2011-01-26 at 22:33 +0100, Oleg Nesterov wrote:
-> >
-> > This is what I had in mind initially but I didn't dare to add the
-> > new member into rq, it is only needed for perf.
->
-> Right, but its a weakness in the task_oncpu_function_call()
-> implementation, wouldn't any user run into this problem eventually?
+On Wed, 26 Jan 2011, Robert Morell wrote:
 
-I think that other users are fine, they do not try to change ctx.
+> The convention is to prefix symbols exported from the USB HCD core with
+> "usb_hcd".  This change makes unmap_urb_setup_for_dma() and
+> unmap_urb_for_dma() consistent with that.
+> 
+> Signed-off-by: Robert Morell <rmorell@nvidia.com>
 
-OTOH, probably your change in task_oncpu_function_call() makes sense
-anyway, this way func() can never have some other subtle problems
-witht context_switch in progress.
-
-Oleg.
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
