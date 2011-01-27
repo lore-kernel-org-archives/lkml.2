@@ -1,43 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754003Ab1A0EpL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 23:45:11 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50763
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753093Ab1A0EpJ (ORCPT
+	id S1753797Ab1A0EyI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 23:54:08 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:13817 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752430Ab1A0EyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 23:45:09 -0500
-Date: Wed, 26 Jan 2011 20:45:44 -0800 (PST)
-Message-Id: <20110126.204544.112604235.davem@davemloft.net>
-To: tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, dhowells@redhat.com,
-        x86@kernel.org, benh@kernel.crashing.org, rth@twiddle.net,
-        tony.luck@intel.com, heiko.carstens@de.ibm.com, lethal@linux-sh.org,
-        chris@zankel.net
-Subject: Re: [patch 6/6] rwsem: Move duplicate function prototypes to
- linux/rwsem.h
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110126195833.970840140@linutronix.de>
-References: <20110126195810.247325792@linutronix.de>
-	<20110126195833.970840140@linutronix.de>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Wed, 26 Jan 2011 23:54:07 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAPuIQE1Ld/sX/2dsb2JhbAAMhAjMXZBggSODOHQEhRg
+X-IronPort-AV: E=Sophos;i="4.60,384,1291611600"; 
+   d="scan'208";a="89380849"
+Message-ID: <4D40FA69.2040608@teksavvy.com>
+Date: Wed, 26 Jan 2011 23:54:01 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Dave Chinner <david@fromorbit.com>
+CC: Christoph Hellwig <hch@infradead.org>, Alex Elder <aelder@sgi.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: xfs: very slow after mount, very slow at umount
+References: <4D40C8D1.8090202@teksavvy.com> <4D40CDCF.4010301@teksavvy.com> <20110127034314.GI21311@dastard> <4D40EC2D.5020507@teksavvy.com>
+In-Reply-To: <4D40EC2D.5020507@teksavvy.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 26 Jan 2011 20:06:06 -0000
-
-> All architecture specific rwsem headers carry the same function
-> prototypes. Just x86 adds asmregparm, which is an empty define on all
-> other architectures. S390 has a stale rwsem_downgrade_write()
-> prototype.
+On 11-01-26 10:53 PM, Mark Lord wrote:
+> On 11-01-26 10:43 PM, Dave Chinner wrote:
+>> On Wed, Jan 26, 2011 at 08:43:43PM -0500, Mark Lord wrote:
+>>> On 11-01-26 08:22 PM, Mark Lord wrote:
+> ..
+>>> Thinking about it some more:  the first problem very much appears as if
+>>> it is due to a filesystem check happening on the already-mounted filesystem,
+>>> if that makes any kind of sense (?).
+>>
+>> Not to me.  You can check this simply by looking at the output of
+>> top while the problem is occurring...
 > 
-> Remove the duplicates and add the prototypes to linux/rwsem.h
+> Top doesn't show anything interesting, since disk I/O uses practically zero CPU.
 > 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+>>> running xfs_check on the umounted drive takes about the same 30-60 seconds,
+>>> with the disk activity light fully "on".
+>>
+>> Well, yeah - XFS check reads all the metadata in the filesystem, so
+>> of course it's going to thrash your disk when it is run. The fact it
+>> takes the same length of time as whatever problem you are having is
+>> likely to be coincidental.
+> 
+> I find it interesting that the mount takes zero-time,
+> as if it never actually reads much from the filesystem.
+> Something has to eventually read the metadata etc.
+> 
+>>> The other thought that came to mind:  this behaviour has only been
+>>> noticed recently, probably because I have recently added about
+>>> 1000 new files (hundreds of MB each) to the videos/ directory on
+>>> that filesystem.  Whereas before, it had fewer than 500 (multi-GB)
+>>> files in total.
+>>>
+>>> So if it really is doing some kind of internal filesystem check,
+>>> then the time required has only recently become 3X larger than
+>>> before.. so the behaviour may not be new/recent, but now is very
+>>> noticeable.
+>>
+>> Where does that 3x figure come from?
+> 
+> Well, it used to have about 500 files/subdirs on it,
+> and now it has somewhat over 1500 files/subdirs.
+> That's a ballpark estimate of 3X the amount of meta data.
+> 
+> All of these files are at least large (hundreds of MB),
+> and a lot are huge (many GB) in size.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+I've rebuilt the kernel with the various config options to enable blktrace
+and XFS_DEBUG, but in the meanwhile we have also watched and deleted
+a few GB of recordings.
+
+The result is that the mysterious first-write delay has vanished, for now,
+so there's nothing to trace.
+
+I think I'll pick up an extra 2TB drive, so that next time
+it surfaces I can simply bit-clone the filesystem or something,
+to preserve the buggered state for further examination.
+
+The second issue is probably still there, and I'll blktrace that instead.
+But it will have to wait a spell -- I've run out of time here right now.
+
+Cheers
