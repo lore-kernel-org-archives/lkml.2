@@ -1,70 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947Ab1A0WHH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 17:07:07 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:29916 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598Ab1A0WHF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 17:07:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=FqgVBKFFulSaRuIrBvbgz6FTzfQ85VZ6Wb0LSbG4UqJYSRFrXQAPMBHTQyLNnEuZLV
-         1a9RrRJFys542aPIO3lQ==
+	id S1753260Ab1A0WJd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 17:09:33 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:34724 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751426Ab1A0WJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 17:09:31 -0500
+Message-ID: <4D41ED13.5020105@free.fr>
+Date: Thu, 27 Jan 2011 23:09:23 +0100
+From: matthieu castet <castet.matthieu@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr; rv:1.8.1.23) Gecko/20090823 SeaMonkey/1.1.18
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=o5o2_4Ur2GTS=0XSoYqFMYqSF99aU9N_wxWuu@mail.gmail.com>
-References: <1295834493-5019-1-git-send-email-ccross@android.com>
-	<1295834493-5019-19-git-send-email-ccross@android.com>
-	<4D41D7C2.3080608@codeaurora.org>
-	<AANLkTi=o5o2_4Ur2GTS=0XSoYqFMYqSF99aU9N_wxWuu@mail.gmail.com>
-Date: Thu, 27 Jan 2011 14:07:01 -0800
-X-Google-Sender-Auth: mXtHHec4JWhm9q_b5hJUdgd8Pc4
-Message-ID: <AANLkTimZcg7Q-Tc=P7zf7=RQsyKJg_amWogP2Jafgxu0@mail.gmail.com>
-Subject: Re: [PATCH v2 18/28] ARM: tegra: add CPU_IDLE driver
-From: Colin Cross <ccross@android.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-tegra@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        konkers@android.com, Gary King <gking@nvidia.com>,
-        linux-kernel@vger.kernel.org, olof@lixom.net,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Linux Kernel list <linux-kernel@vger.kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>, linux-security-module@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        Kees Cook <kees.cook@canonical.com>
+Subject: [PATCH] NX protection for kernel data : fix xen boot
+Content-Type: multipart/mixed;
+ boundary="------------060001060106090509030006"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 27, 2011 at 1:51 PM, Colin Cross <ccross@android.com> wrote:
-> On Thu, Jan 27, 2011 at 12:38 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->> On 01/23/2011 06:01 PM, Colin Cross wrote:
->>>
->>> +static int __init tegra_cpuidle_debug_init(void)
->>> +{
->>> +     struct dentry *dir;
->>> +     struct dentry *d;
->>> +
->>> +     dir = debugfs_create_dir("cpuidle", NULL);
->>> +     if (!dir)
->>> +             return -ENOMEM;
->>> +
->>> +     d = debugfs_create_file("lp2", S_IRUGO, dir, NULL,
->>> +             &tegra_lp2_debug_ops);
->>> +     if (!d)
->>> +             return -ENOMEM;
->>> +
->>> +     return 0;
->>> +}
->>> +#endif
->>> +
->>> +late_initcall(tegra_cpuidle_debug_init);
->>
->> Will this compile with CONFIG_DEBUG_FS=n?
->
-> Yes.  All debugfs ops return ERR_PTR(-ENODEV) if CONFIG_DEBUG_FS=n, so
-> tegra_cpuidle_debug_init will do nothing and return 0.
->
+This is a multi-part message in MIME format.
+--------------060001060106090509030006
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Oops no, it will not compile.  Will fix.
+I think it should be applied before 2.6.38 release, because without
+this patch xen doesn't boot on x86_32 with CONFIG_DEBUG_RODATA.
+
+
+--------------060001060106090509030006
+Content-Type: text/x-diff;
+ name="0001-NX-protection-for-kernel-data-fix-xen-boot.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+ filename="0001-NX-protection-for-kernel-data-fix-xen-boot.patch"
+
+>From 08f54ec4007ab0df231d81ed436632aa7f605feb Mon Sep 17 00:00:00 2001
+From: Matthieu CASTET <castet.matthieu@free.fr>
+Date: Thu, 20 Jan 2011 21:11:45 +0100
+Subject: [PATCH] NX protection for kernel data : fix xen boot
+
+Xen want page table pages read only.
+
+But the initial page table (from head_*.S) live in .data or .bss.
+
+That was broken by 64edc8ed5ffae999d8d413ba006850e9e34166cb.
+Revert the problematic part as it is only a protection and
+not really needed.
+
+Signed-off-by: Matthieu CASTET <castet.matthieu@free.fr>
+Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/mm/pageattr.c |    8 --------
+ 1 files changed, 0 insertions(+), 8 deletions(-)
+
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index 2ad6c48..951eb4a 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -256,7 +256,6 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
+ 				   unsigned long pfn)
+ {
+ 	pgprot_t forbidden = __pgprot(0);
+-	pgprot_t required = __pgprot(0);
+ 
+ 	/*
+ 	 * The BIOS area between 640k and 1Mb needs to be executable for
+@@ -286,12 +285,6 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
+ 	if (within(pfn, __pa((unsigned long)__start_rodata) >> PAGE_SHIFT,
+ 		   __pa((unsigned long)__end_rodata) >> PAGE_SHIFT))
+ 		pgprot_val(forbidden) |= _PAGE_RW;
+-	/*
+-	 * .data and .bss should always be writable.
+-	 */
+-	if (within(address, (unsigned long)_sdata, (unsigned long)_edata) ||
+-	    within(address, (unsigned long)__bss_start, (unsigned long)__bss_stop))
+-		pgprot_val(required) |= _PAGE_RW;
+ 
+ #if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
+ 	/*
+@@ -331,7 +324,6 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
+ #endif
+ 
+ 	prot = __pgprot(pgprot_val(prot) & ~pgprot_val(forbidden));
+-	prot = __pgprot(pgprot_val(prot) | pgprot_val(required));
+ 
+ 	return prot;
+ }
+-- 
+1.7.2.3
+
+
+--------------060001060106090509030006--
