@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666Ab1A0QBt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 11:01:49 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:48662 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752539Ab1A0QBs (ORCPT
+	id S1752586Ab1A0QDy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 11:03:54 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:18606 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751291Ab1A0QDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 11:01:48 -0500
-Date: Thu, 27 Jan 2011 11:01:47 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Robert Morell <rmorell@nvidia.com>
-cc: David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Benoit Goby <benoit@android.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
-        Oliver Neukum <oliver@neukum.org>, Olof Johansson <olof@lixom.net>,
-        Erik Gilling <konkers@android.com>, Colin Cross <ccross@android.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 2/3] USB: HCD: Add driver hooks for (un)?map_urb_for_dma
-In-Reply-To: <1296097609-32302-3-git-send-email-rmorell@nvidia.com>
-Message-ID: <Pine.LNX.4.44L0.1101271101310.2090-100000@iolanthe.rowland.org>
+	Thu, 27 Jan 2011 11:03:53 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAAQmQU1Ld/sX/2dsb2JhbAAMhAjMcJBfgSODOHQEhRc
+X-IronPort-AV: E=Sophos;i="4.60,386,1291611600"; 
+   d="scan'208";a="89426373"
+Message-ID: <4D419765.4070805@teksavvy.com>
+Date: Thu, 27 Jan 2011 11:03:49 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+CC: Stan Hoeppner <stan@hardwarefreak.com>,
+        Christoph Hellwig <hch@infradead.org>, xfs@oss.sgi.com,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alex Elder <aelder@sgi.com>
+Subject: Re: xfs: very slow after mount, very slow at umount
+References: <4D40C8D1.8090202@teksavvy.com> <20110127033011.GH21311@dastard> <4D40EB2F.2050809@teksavvy.com> <4D418B57.1000501@teksavvy.com> <alpine.DEB.2.00.1101271040000.31246@p34.internal.lan>
+In-Reply-To: <alpine.DEB.2.00.1101271040000.31246@p34.internal.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Jan 2011, Robert Morell wrote:
-
-> Provide optional hooks for the host controller driver to override the
-> default DMA mapping and unmapping routines.  In general, these shouldn't
-> be necessary unless the host controller has special DMA requirements,
-> such as alignment contraints.  If these are not specified, the
-> general usb_hcd_(un)?map_urb_for_dma functions will be used instead.
-> Also, pass the status to unmap_urb_for_dma so it can know whether the
-> DMA buffer has been overwritten.
+On 11-01-27 10:40 AM, Justin Piszcz wrote:
 > 
-> Finally, add a flag to be used by these implementations if they
-> allocated a temporary buffer so it can be freed properly when unmapping.
 > 
-> Signed-off-by: Robert Morell <rmorell@nvidia.com>
+> On Thu, 27 Jan 2011, Mark Lord wrote:
+..
+>> Can you recommend a good set of mkfs.xfs parameters to suit the characteristics
+>> of this system?  Eg. Only a few thousand active inodes, and nearly all files are
+>> in the 600MB -> 20GB size range.  The usage pattern it must handle is up to
+>> six concurrent streaming writes at the same time as up to three streaming reads,
+>> with no significant delays permitted on the reads.
+>>
+>> That's the kind of workload that I find XFS handles nicely,
+>> and EXT4 has given me trouble with in the past.
+..
+> I did a load of benchmarks a long time ago testing every mkfs.xfs option there
+> was, and I found that most of the time (if not all), the defaults were the best.
+..
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+I am concerned with fragmentation on the very special workload in this case.
+I'd really like the 20GB files, written over a 1-2 hour period, to consist
+of a very few very large extents, as much as possible.
 
+Rather than hundreds or thousands of "tiny" MB sized extents.
+I wonder what the best mkfs.xfs parameters might be to encourage that?
+
+Cheers
