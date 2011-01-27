@@ -1,43 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480Ab1A0Nzx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 08:55:53 -0500
+	id S1753558Ab1A0Nz6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 08:55:58 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:47979 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753214Ab1A0Nzu (ORCPT
+	with ESMTP id S1753496Ab1A0Nz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 08:55:50 -0500
+	Thu, 27 Jan 2011 08:55:56 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ghkNWpegzxd4RqbIb/N9t+sTLYLP7iRydtwI1Fxc54kiG4VflVtPV3SsGvJQUchImz
-         DcYAM2TGe1p4StNYCJZAPdplRqzCq/94L2qjrQFg/Kog4acdrH7J4+AZE3bLuMTHLsjL
-         NvaoyH8UuXz4ho/OuCs61xGqPU3Qs8DOiCz60=
+        b=U2WiDP+JyoAK15nwTy8BdvMQ37fleCEn4PS2nZKHGR3fE/kqepiYf5qVdZlmXxEBta
+         LBi6XRlOgglzpwzU27oiivPHxN/7fzqAJksfkQa75QNo/wfwW7/W9i0cVSsdq4WYPoXc
+         gSuuC5bHYuanLhoP8L7Ay5IAVfWomkN40Iaao=
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         akpm@linux-foundation.org
 Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Mikael Starvik <starvik@axis.com>, David Howells <dhowells@redhat.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        "Luck, Tony" <tony.luck@intel.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Kyle McMartin <kyle@mcmartin.ca>, Matthew Wilcox <matthew@wil.cx>,
-        Grant Grundler <grundler@parisc-linux.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Kazumoto Kojima <kkojima@rr.iij4u.or.jp>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Zankel <chris@zankel.net>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Subject: [PATCH -mm 1/6] asm-generic: convert little-endian bitops macros to static inline functions
-Date: Thu, 27 Jan 2011 22:56:18 +0900
-Message-Id: <1296136583-13815-2-git-send-email-akinobu.mita@gmail.com>
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH -mm 2/6] powerpc: convert little-endian bitops macros to static inline functions
+Date: Thu, 27 Jan 2011 22:56:19 +0900
+Message-Id: <1296136583-13815-3-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1296136583-13815-1-git-send-email-akinobu.mita@gmail.com>
 References: <1296136583-13815-1-git-send-email-akinobu.mita@gmail.com>
@@ -46,9 +30,9 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 (This patch is intended to be folded into the patch in -mm:
-asm-generic-change-little-endian-bitops-to-take-any-pointer-types.patch)
+powerpc-introduce-little-endian-bitops.patch)
 
-The little-endian bitops on asm-generic are written as preprocessor
+The little-endian bitops on powerpc are written as preprocessor
 macros with the cast to "unsigned long *".
 This means that even non-pointers will be accepted without an error, and
 that is a Very Bad Thing.
@@ -58,73 +42,21 @@ with proper prototypes.
 
 Suggested-by: "H. Peter Anvin" <hpa@zytor.com>
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Cc: Mikael Starvik <starvik@axis.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
-Cc: "Luck, Tony" <tony.luck@intel.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Kyle McMartin <kyle@mcmartin.ca>
-Cc: Matthew Wilcox <matthew@wil.cx>
-Cc: Grant Grundler <grundler@parisc-linux.org>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: Kazumoto Kojima <kkojima@rr.iij4u.or.jp>
-Cc: Hirokazu Takata <takata@linux-m32r.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Chris Zankel <chris@zankel.net>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@lists.ozlabs.org
 ---
- include/asm-generic/bitops/le.h |   73 +++++++++++++++++++++++++++------------
- 1 files changed, 51 insertions(+), 22 deletions(-)
+ arch/powerpc/include/asm/bitops.h |   43 +++++++++++++++++++++++++------------
+ 1 files changed, 29 insertions(+), 14 deletions(-)
 
-diff --git a/include/asm-generic/bitops/le.h b/include/asm-generic/bitops/le.h
-index 7644a15..946a21b 100644
---- a/include/asm-generic/bitops/le.h
-+++ b/include/asm-generic/bitops/le.h
-@@ -8,12 +8,23 @@
+diff --git a/arch/powerpc/include/asm/bitops.h b/arch/powerpc/include/asm/bitops.h
+index fe67024..2e56187 100644
+--- a/arch/powerpc/include/asm/bitops.h
++++ b/arch/powerpc/include/asm/bitops.h
+@@ -288,20 +288,35 @@ static __inline__ int test_bit_le(unsigned long nr,
+ 	return (tmp[nr >> 3] >> (nr & 7)) & 1;
+ }
  
- #define BITOP_LE_SWIZZLE	0
- 
--#define find_next_zero_bit_le(addr, size, offset) \
--	find_next_zero_bit((unsigned long *)(addr), size, offset)
--#define find_next_bit_le(addr, size, offset) \
--	find_next_bit((unsigned long *)(addr), size, offset)
--#define find_first_zero_bit_le(addr, size) \
--	find_first_zero_bit((unsigned long *)(addr), size)
-+static inline unsigned long find_next_zero_bit_le(const void *addr,
-+		unsigned long size, unsigned long offset)
-+{
-+	return find_next_zero_bit(addr, size, offset);
-+}
-+
-+static inline unsigned long find_next_bit_le(const void *addr,
-+		unsigned long size, unsigned long offset)
-+{
-+	return find_next_bit(addr, size, offset);
-+}
-+
-+static inline unsigned long find_first_zero_bit_le(const void *addr,
-+		unsigned long size)
-+{
-+	return find_first_zero_bit(addr, size);
-+}
- 
- #elif defined(__BIG_ENDIAN)
- 
-@@ -31,21 +42,39 @@ extern unsigned long find_next_bit_le(const void *addr,
- #error "Please fix <asm/byteorder.h>"
- #endif
- 
--#define test_bit_le(nr, addr) \
--	test_bit((nr) ^ BITOP_LE_SWIZZLE, (unsigned long *)(addr))
 -#define __set_bit_le(nr, addr) \
 -	__set_bit((nr) ^ BITOP_LE_SWIZZLE, (unsigned long *)(addr))
 -#define __clear_bit_le(nr, addr) \
@@ -139,11 +71,6 @@ index 7644a15..946a21b 100644
 -	__test_and_set_bit((nr) ^ BITOP_LE_SWIZZLE, (unsigned long *)(addr))
 -#define __test_and_clear_bit_le(nr, addr) \
 -	__test_and_clear_bit((nr) ^ BITOP_LE_SWIZZLE, (unsigned long *)(addr))
-+static inline int test_bit_le(int nr, const void *addr)
-+{
-+	return test_bit(nr ^ BITOP_LE_SWIZZLE, addr);
-+}
-+
 +static inline void __set_bit_le(int nr, void *addr)
 +{
 +	__set_bit(nr ^ BITOP_LE_SWIZZLE, addr);
@@ -174,7 +101,8 @@ index 7644a15..946a21b 100644
 +	return __test_and_clear_bit(nr ^ BITOP_LE_SWIZZLE, addr);
 +}
  
- #endif /* _ASM_GENERIC_BITOPS_LE_H_ */
+ #define find_first_zero_bit_le(addr, size) \
+ 	find_next_zero_bit_le((addr), (size), 0)
 -- 
 1.7.3.4
 
