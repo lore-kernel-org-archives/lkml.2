@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735Ab1A0RFT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 12:05:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11441 "EHLO mx1.redhat.com"
+	id S1752763Ab1A0RHm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 12:07:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41406 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751269Ab1A0RFS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 12:05:18 -0500
-Date: Thu, 27 Jan 2011 17:57:12 +0100
+	id S1751269Ab1A0RHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 12:07:41 -0500
+Date: Thu, 27 Jan 2011 17:59:24 +0100
 From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Peter Zijlstra <peterz@infradead.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Alan Stern <stern@rowland.harvard.edu>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>, Prasad <prasad@linux.vnet.ibm.com>,
         Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
 Subject: Re: Q: perf_install_in_context/perf_event_enable are racy?
-Message-ID: <20110127165712.GC25060@redhat.com>
-References: <20110120193033.GA13924@redhat.com> <1295611905.28776.269.camel@laptop> <20110121130323.GA12900@elte.hu> <1295617185.28776.273.camel@laptop> <20110121142616.GA31165@redhat.com> <1295622304.28776.293.camel@laptop> <20110121204014.GA2870@nowhere> <20110124114234.GA12166@redhat.com> <20110126175322.GA28617@redhat.com> <1296134077.15234.161.camel@laptop>
+Message-ID: <20110127165923.GA28172@redhat.com>
+References: <20110126175322.GA28617@redhat.com> <20110126184957.GA32578@redhat.com> <1296068731.15234.6.camel@laptop> <1296070383.15234.10.camel@laptop> <20110126211931.GA6778@redhat.com> <20110126213317.GA7403@redhat.com> <1296124337.15234.71.camel@laptop> <1296131387.15234.142.camel@laptop> <20110127161047.GB25060@redhat.com> <1296145674.15234.238.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1296134077.15234.161.camel@laptop>
+In-Reply-To: <1296145674.15234.238.camel@laptop>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,36 +28,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 01/27, Peter Zijlstra wrote:
 >
-> Right, so the fact of introducing extra scheduling makes me feel
-> uncomfortable... the whole purpose is to observe without perturbing (as
-> much as possible).
-
-Yes, agreed.
-
-Well, otoh the patch removes the code which sets ->task_ctx from
-__perf_install_in_context() and __perf_event_enable(), and perhaps
-we could simplify the things further, but anyway I agree.
-
-> Should I think suffice to get the ctx in sync with the task state, we've
-> got the following cases:
->  1) task is in the middle of scheduling in
->  2) task is in the middle of scheduling out
->  3) task is running
+> On Thu, 2011-01-27 at 17:10 +0100, Oleg Nesterov wrote:
+> > >  #ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
+> > >       local_irq_enable();
+> > > +     rq->in_ctxsw = 0;
+> >
+> > If we think that context_switch finishes here, probably it would be
+> > more clean to clear ->in_ctxsw before local_irq_enable().
 >
-> Without __ARCH_WANT_INTERRUPT_ON_CTXSW everything is boring and works,
-> 1: the IPI will be delayed until 3, 2: the IPI finds another task and
-> the next schedule in will sort things.
+> It must in fact be done before,
+
+Yes, I alredy realized this when I was reading another email from you.
+
+> > But, otoh, maybe finish_lock_switch() can clear in_ctxsw, it already
+> > checks __ARCH_WANT_INTERRUPTS_ON_CTXSW. Likewise, perhaps it can be
+> > set in prepare_lock_switch() which enables irqs.
+> >
+> > But this is cosmetic and up to you.
 >
-> With, however, things are more interesting. 2 seems to be adequately
-> covered by the patch I just send, the IPI will bail and the next
-> sched-in of the relevant task will pick matters up. 1 otoh doesn't seem
-> covered, the IPI will bail, leaving us stranded.
+> Can't do because of the above thing..
 
-Hmm, yes... Strangely, I missed that when I was thinking about in_ctxsw.
-
-Perhaps, we can change task_oncpu_function_call() so that it returns
--EAGAIN in case it hits in_ctxsw != 0? If the caller sees -EAGAIN, it
-should always retry even if !ctx->is_active.
+Right.
 
 Oleg.
 
