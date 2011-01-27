@@ -1,100 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462Ab1A0BJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 20:09:28 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42560 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561Ab1A0BJ1 (ORCPT
+	id S1754374Ab1A0BW2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 20:22:28 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:29979 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754257Ab1A0BW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 20:09:27 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
-Message-ID: <4D40C687.2020202@np.css.fujitsu.com>
-Date: Thu, 27 Jan 2011 10:12:39 +0900
-From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+	Wed, 26 Jan 2011 20:22:27 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAMNXQE1Ld/sX/2dsb2JhbAAMhAbNPJBogSODOHQEhRc
+X-IronPort-AV: E=Sophos;i="4.60,383,1291611600"; 
+   d="scan'208";a="89369819"
+Message-ID: <4D40C8D1.8090202@teksavvy.com>
+Date: Wed, 26 Jan 2011 20:22:25 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: Andi Kleen <andi@firstfloor.org>,
-        =?UTF-8?B?QUtQTeOAgA==?= <akpm@linux-foundation.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Huang Ying <ying.huang@intel.com>, LKLM <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] Avoid unmapping THP when it is failed to be split.
-References: <4D3E6377.6060803@np.css.fujitsu.com> <20110125220118.GJ926@random.random>
-In-Reply-To: <20110125220118.GJ926@random.random>
+To: Christoph Hellwig <hch@infradead.org>, Alex Elder <aelder@sgi.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: xfs: very slow after mount, very slow at umount
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Andrea
+Alex / Christoph,
 
-(2011/01/26 7:01), Andrea Arcangeli wrote:
-> On Tue, Jan 25, 2011 at 02:45:27PM +0900, Jin Dongming wrote:
->> If the THP is failed to be split,
->>    1. The processes using the poisoned page could not be collected.
->>       (Because page_mapped_in_vma() in collect_procs_anon() always
->>        returns NULL.)
-> 
-> page_mapped_in_vma is only called after split_huge_page without
-> requiring this change.
-> 
->>    2. The poisoned page could not be unmapped.
->>       (If CONFIG_DEBUG_VM is "y", VM_BUG_ON(PageTransHuge(page))
->>        in try_to_unmap() will be called, and system panic will be
->>        caused.)
-> 
-> This is more reasonable argument for the change because at times
-> collect_procs may fail kmalloc or for other reasons kill may be set to
-> 1 without split_huge_page having run.
-> 
->>    3. The processes using the poisoned page could not be killed, too.
->>       (Because no process is collected in 1.)
-> 
-> I don't see the point of the change for 1.
-> 
+My mythtv box here uses XFS on a 2TB drive for storing recordings and videos.
+It is behaving rather strangely though, and has gotten worse recently.
+Here is what I see happening:
 
-I am sorry for my poor description.
+The drive mounts fine at boot, but the very first attempt to write a new file
+to the filesystem suffers from a very very long pause, 30-60 seconds, during which
+time the disk activity light is fully "on".
 
->> So if splitting THP is failed, it is better to stop unmapping
->> rather than causing panic. System might servive if the page is freed
->> later.
-> 
-> Splitting THP can't fail unless the page is freed under
-> split_huge_page (like if the process quits while you're calling
-> split_huge_page and in turn the anon_vma was already unusable).
-> 
+This happens only on the first new file write after mounting.
+>From then on, the filesystem is fast and responsive as expected.
+If I umount the filesystem, and then mount it again,
+the exact same behaviour can be observed.
 
-Basically I agree with you.
+This of course screws up mythtv, as it causes me to lose the first 30-60
+seconds of the first recording it attempts after booting.  So as a workaround
+I now have a startup script to create, sync, and delete a 64MB file before
+starting mythtv.  This still takes 30-60 seconds, but it all happens and
+finishes before mythtv has a real-time need to write to the filesystem.
 
-But this patch could do the following things.
-    1st, as your comment for point 2, this patch could avoid
-         unexpected failure which is not the real failure of
-         split_huge_page().
-    2nd, from the result of failure of split_huge_page(), 
-         the operations after it is not meaningful any more or
-         unexpected.
-    3rd, this patch can reduce the account of patches after it.
+The 2TB drive is fine -- zero errors, no events in the SMART logs,
+and I've disabled the silly WD head-unload logic on it.
 
-So I will modify the description like following.
-  1. Describe the result of failure of split_huge_page() clearly.
-  2. Add the reason why move split_huge_page() here.
+What's happening here?  Why the big long burst of activity?
+I've only just noticed this behaviour in the past few weeks,
+running 2.6.35 and more recently 2.6.37.
 
-How do you think about it?
+* * *
 
-> Patch looks good but just for point 2.
+The other issue is something I notice at umount time.
+I have a second big drive used as a backup device for the drive discussed above.
+I use "mirrordir" (similar to rsync) to clone directories/files from the main
+drive to the backup drive.  After mirrordir finishes, I then "umount /backup".
+The umount promptly hangs, disk light on solid, for 30-60 seconds, then finishes.
 
-Thanks.
+If I type "sync" just before doing the umount, sync takes about 1 second,
+and the umount finishes instantly.
 
-Best Regards,
-Jin Dongming
+Huh? What's happening there?
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+System is running 2.6.37 from kernel.org, but similar behaviour
+has been there under 2.6.35 and 2.6.34.  Dunno about earlier.
 
+I can query any info you need from the filesystem.
 
+Thanks
+-ml
