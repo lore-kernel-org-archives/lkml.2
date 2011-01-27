@@ -1,124 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab1A0ETU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 23:19:20 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:4903 "EHLO
+	id S1753670Ab1A0EWq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 23:22:46 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:40124 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752672Ab1A0ETT convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752808Ab1A0EWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 23:19:19 -0500
+	Wed, 26 Jan 2011 23:22:44 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Y/7E7Xq6npfJdL233X8JDKPAsOPQMx6wuElpPm0R/L4nk8Sd/ZEsu+PCeXGLBD908K
-         14Clf8AfpUxcCM9cRHbw==
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-operating-system
+         :user-agent;
+        b=L7EPNZfUu8fXbx7sEq7KNhtcqEkMk/+VTdt/uB7WWfjoON7ipEMDp7ZE9iv/hyU0qB
+         I/oYokLQQahBYs5TF+EQ==
+Date: Wed, 26 Jan 2011 20:22:28 -0800
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Ryan Mallon <ryan@bluewatersys.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>, gregkh@suse.de, rjw@sisk.pl,
+        mingo@redhat.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 1/6] mm/page_alloc: use appropriate printk priority
+ level
+Message-ID: <20110127042228.GX8008@google.com>
+References: <20110125235700.GR8008@google.com>
+ <1296084570-31453-2-git-send-email-msb@chromium.org>
+ <4D40BD00.1090408@bluewatersys.com>
 MIME-Version: 1.0
-In-Reply-To: <E1PhSO8-0005yN-Dp@pomaz-ex.szeredi.hu>
-References: <E1PftfG-0007w1-Ek@pomaz-ex.szeredi.hu>
-	<20110120124043.GA4347@infradead.org>
-	<E1PfvGx-00086O-IA@pomaz-ex.szeredi.hu>
-	<alpine.LSU.2.00.1101212014330.4301@sister.anvils>
-	<E1PhSO8-0005yN-Dp@pomaz-ex.szeredi.hu>
-Date: Wed, 26 Jan 2011 20:19:15 -0800
-Message-ID: <AANLkTimBR=CuMpWE2juJG2jsLsTqK=tc00sRrEjhkHg=@mail.gmail.com>
-Subject: Re: [PATCH] mm: prevent concurrent unmap_mapping_range() on the same inode
-From: Hugh Dickins <hughd@google.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: hch@infradead.org, akpm@linux-foundation.org, gurudas.pai@oracle.com,
-        lkml20101129@newton.leun.net, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D40BD00.1090408@bluewatersys.com>
+X-Operating-System: Linux/2.6.32-gg298-generic (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24, 2011 at 11:47 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> On Fri, 21 Jan 2011, Hugh Dickins wrote:
->> On Thu, 20 Jan 2011, Miklos Szeredi wrote:
->> > On Thu, 20 Jan 2011, Christoph Hellwig wrote:
->> > > On Thu, Jan 20, 2011 at 01:30:58PM +0100, Miklos Szeredi wrote:
->> > > >
->> > > > Truncate and hole punching already serialize with i_mutex.  Other
->> > > > callers of unmap_mapping_range() do not, and it's difficult to get
->> > > > i_mutex protection for all callers.  In particular ->d_revalidate(),
->> > > > which calls invalidate_inode_pages2_range() in fuse, may be called
->> > > > with or without i_mutex.
->> > >
->> > >
->> > > Which I think is mostly a fuse problem.  I really hate bloating the
->> > > generic inode (into which the address_space is embedded) with another
->> > > mutex for deficits in rather special case filesystems.
->> >
->> > As Hugh pointed out unmap_mapping_range() has grown a varied set of
->> > callers, which are difficult to fix up wrt i_mutex.  Fuse was just an
->> > example.
->> >
->> > I don't like the bloat either, but this is the best I could come up
->> > with for fixing this problem generally.  If you have a better idea,
->> > please share it.
->>
->> If we start from the point that this is mostly a fuse problem (I expect
->> that a thorough audit will show up a few other filesystems too, but
->> let's start from this point): you cite ->d_revalidate as a particular
->> problem, but can we fix up its call sites so that it is always called
->> either with, or much preferably without, i_mutex held?  Though actually
->> I couldn't find where ->d_revalidate() is called while holding i_mutex.
->
-> lookup_one_len
-> lookup_hash
->  __lookup_hash
->    do_revalidate
->     d_revalidate
+Ryan Mallon (ryan@bluewatersys.com) wrote:
+> On 01/27/2011 12:29 PM, Mandeep Singh Baines wrote:
+> > printk()s without a priority level default to KERN_WARNING. To reduce
+> > noise at KERN_WARNING, this patch set the priority level appriopriately
+> > for unleveled printks()s. This should be useful to folks that look at
+> > dmesg warnings closely.
+> > 
+> > Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+> > ---
+> 
+> > @@ -4700,33 +4700,36 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
+> >  	find_zone_movable_pfns_for_nodes(zone_movable_pfn);
+> >  
+> >  	/* Print out the zone ranges */
+> > -	printk("Zone PFN ranges:\n");
+> > +	printk(KERN_INFO "Zone PFN ranges:\n");
+> >  	for (i = 0; i < MAX_NR_ZONES; i++) {
+> >  		if (i == ZONE_MOVABLE)
+> >  			continue;
+> > -		printk("  %-8s ", zone_names[i]);
+> > +		printk(KERN_INFO "  %-8s ", zone_names[i]);
+> >  		if (arch_zone_lowest_possible_pfn[i] ==
+> >  				arch_zone_highest_possible_pfn[i])
+> >  			printk("empty\n");
+> 
+> Should be printk(KERN_CONT ... (or pr_cont).
+> 
+> >  		else
+> > -			printk("%0#10lx -> %0#10lx\n",
+> > +			printk(KERN_INFO "%0#10lx -> %0#10lx\n",
+> >  				arch_zone_lowest_possible_pfn[i],
+> >  				arch_zone_highest_possible_pfn[i]);
+> 
+> The printk above doesn't have a trailing newline so this should be
+> printk(KERN_CONT ...
+> 
+> There are a couple of other places in this patch series that also need
+> to be fixed in a similar manner.
+> 
 
-Right, thanks.
+D'oh. Good catch;)
 
->
-> I don't see an easy way to get rid of i_mutex for lookup_one_len() and
-> lookup_hash().
->
->> Failing that, can fuse down_write i_alloc_sem before calling
->> invalidate_inode_pages2(_range), to achieve the same exclusion?
->> The setattr truncation path takes i_alloc_sem as well as i_mutex,
->> though I'm not certain of its full coverage.
->
-> Yeah, fuse could use i_alloc_sem or a private mutex, but that would
-> leave the other uses of unmap_mapping_range() to sort this out for
-> themsevels.
+The KERN_INFO here was unintentional. I had intended to leave it out.
+The code I was looking at as a reference was just omitting KERN_ for
+continuations. But I take it that the convention is to use KERN_CONT.
+I'll fixup the patch series to use that.
 
-I had wanted to propose that for now you modify just fuse to use
-i_alloc_sem for serialization there, and I provide a patch to
-unmap_mapping_range() to give safety to whatever other cases there are
-(I'm now sure there are other cases, but also sure that I cannot
-safely identify them all and fix them correctly at source myself -
-even if I found time to do the patches, they'd need at least a release
-cycle to bed in with BUG_ONs).
+I tried to use pr_ wherever the file was already using it or where I was
+changing all printk()s. For files with many printk()s I just continued
+using printk() to keep the patch small and also to avoid mixing printk
+with pr_. However, if it is preferrable, I'm happy to replace all printk()s
+with pr_ in the files I touch in the series.
 
-I've spent quite a while on it, but not succeeded: even if I could get
-around the restart_addr issue, we're stuck with the deadly embrace
-when two are in unmap_mapping_range(), each repeatedly yielding to the
-other, each having to start over again.  Anything I came up with was
-inferior to the two alternatives you have proposed: your original
-wait_on_bit patch, or your current unmap_mutex patch.
-
-Your wait_on_bit patch doesn't bloat (and may be attractive to
-enterprise distros seeking binary compatibility), but several of us
-agreed with Andrew's comments:
-
-> I do think this was premature optimisation.  The open-coded lock is
-> hidden from lockdep so we won't find out if this introduces potential
-> deadlocks.  It would be better to add a new mutex at least temporarily,
-> then look at replacing it with a MiklosLock later on, when the code is
-> bedded in.
->
-> At which time, replacing mutexes with MiklosLocks becomes part of a
-> general "shrink the address_space" exercise in which there's no reason
-> to exclusively concentrate on that new mutex!
-
-It really does seem a mutex too far; but we may let Peter do away with
-all that lock breaking when/if his preemptibility patches go in, and
-could cut it out at that time.  I don't see a good alternative.
-
-Hugh
+> ~Ryan
+> 
+> -- 
+> Bluewater Systems Ltd - ARM Technology Solution Centre
+> 
+> Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+> ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+> http://www.bluewatersys.com	New Zealand
+> Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+> Fax:   +64 3 3779135			  USA 1800 261 2934
