@@ -1,84 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754543Ab1A0BbR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 20:31:17 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:23100 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753561Ab1A0BbP (ORCPT
+	id S1754462Ab1A0Bkj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 20:40:39 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39155 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754259Ab1A0Bkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 20:31:15 -0500
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "'Philip Rakity'" <prakity@marvell.com>
-Cc: "'Chris Ball'" <cjb@laptop.org>, "'Kyungmin Park'" <kmpark@infradead.org>,
-        <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <andrew.chih.howe.khor@intel.com>, <kok.howg.ewe@intel.com>,
-        "'Toshiharu Okada'" <toshiharu-linux@dsn.okisemi.com>
-References: <4CD8DE9C.4040505@dsn.okisemi.com> <AANLkTimfnj8GcSwmALjaZUBsiq6ssaVuzVZZsZHRYmiX@mail.gmail.com> <001701cb814c$71926bf0$66f8800a@maildom.okisemi.com> <001201cb90f4$4be8f790$66f8800a@maildom.okisemi.com> <2D50F985-2383-4406-8514-DFE462A5F546@marvell.com> <4D2E0464ABB54FFF9C10583336E27879@hacdom.okisemi.com> <4C4E7DE5-7CF1-4D97-9CAD-F600FCBE477A@marvell.com> <20110119174233.GA30494@void.printf.net> <F6E8C422FB8A4D78A5BDF7B6ECDA1E00@hacdom.okisemi.com> <D8E7AFC5-6B9E-414E-81A8-292FCD2F6E3C@marvell.com> <629816F753974155B62FF8FA718A26CA@hacdom.okisemi.com> <6076934B-27C2-4766-B101-793C7447C71C@marvell.com>
-Subject: RE: A MMC card transfer issue
-Date: Thu, 27 Jan 2011 10:31:13 +0900
-Message-ID: <0F933C1424BF45E3BD2E13358BD3C89E@hacdom.okisemi.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+	Wed, 26 Jan 2011 20:40:37 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 27 Jan 2011 10:34:31 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg Thelen <gthelen@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [BUGFIX] memcg: fix res_counter_read_u64 lock aware (Was Re:
+ [PATCH] oom: handle overflow in mem_cgroup_out_of_memory()
+Message-Id: <20110127103431.04432944.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110126170824.ef2ab571.akpm@linux-foundation.org>
+References: <1296030555-3594-1-git-send-email-gthelen@google.com>
+	<20110126170713.GA2401@cmpxchg.org>
+	<xr93y667lgdm.fsf@gthelen.mtv.corp.google.com>
+	<20110126183023.GB2401@cmpxchg.org>
+	<xr9362tbl83f.fsf@gthelen.mtv.corp.google.com>
+	<20110126142909.0b710a0c.akpm@linux-foundation.org>
+	<20110127092434.df18c7a6.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110127095342.3d81cf5f.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110126170824.ef2ab571.akpm@linux-foundation.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
-Thread-Index: Acu9vgyvaZxGXq+VT9eBBSUDjufEQQAAc3mw
-In-Reply-To: <6076934B-27C2-4766-B101-793C7447C71C@marvell.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philip,
+On Wed, 26 Jan 2011 17:08:24 -0800
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-> which MMC driver are you using.
-Could you teach me how to get the information ?
+> On Thu, 27 Jan 2011 09:53:42 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> 
+> > res_counter_read_u64 reads u64 value without lock. It's dangerous
+> > in 32bit environment. This patch adds lock.
+> > 
+> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > ---
+> >  include/linux/res_counter.h |   13 ++++++++++++-
+> >  kernel/res_counter.c        |    2 +-
+> >  2 files changed, 13 insertions(+), 2 deletions(-)
+> > 
+> > Index: mmotm-0125/include/linux/res_counter.h
+> > ===================================================================
+> > --- mmotm-0125.orig/include/linux/res_counter.h
+> > +++ mmotm-0125/include/linux/res_counter.h
+> > @@ -68,7 +68,18 @@ struct res_counter {
+> >   * @pos:     and the offset.
+> >   */
+> >  
+> > -u64 res_counter_read_u64(struct res_counter *counter, int member);
+> > +u64 res_counter_read_u64_locked(struct res_counter *counter, int member);
+> > +
+> > +static inline u64 res_counter_read_u64(struct res_counter *counter, int member)
+> > +{
+> > +	unsigned long flags;
+> > +	u64 ret;
+> > +
+> > +	spin_lock_irqsave(&counter->lock, flags);
+> > +	ret = res_counter_read_u64_locked(counter, member);
+> > +	spin_unlock_irqrestore(&counter->lock, flags);
+> > +	return ret;
+> > +}
+> >  
+> >  ssize_t res_counter_read(struct res_counter *counter, int member,
+> >  		const char __user *buf, size_t nbytes, loff_t *pos,
+> > Index: mmotm-0125/kernel/res_counter.c
+> > ===================================================================
+> > --- mmotm-0125.orig/kernel/res_counter.c
+> > +++ mmotm-0125/kernel/res_counter.c
+> > @@ -126,7 +126,7 @@ ssize_t res_counter_read(struct res_coun
+> >  			pos, buf, s - buf);
+> >  }
+> >  
+> > -u64 res_counter_read_u64(struct res_counter *counter, int member)
+> > +u64 res_counter_read_u64_locked(struct res_counter *counter, int member)
+> >  {
+> >  	return *res_counter_member(counter, member);
+> >  }
+> 
+> We don't need the lock on 64-bit platforms!
+> 
+> And there's zero benefit to inlining the spin_lock/unlock(), given that
+> the function will always be making a function call anyway.
+> 
+> See i_size_read() for inspiration.
+> 
 
-> you need to have the driver or the low level code enable this QUIRK.
-BTW, Is the above permanent treatment?
-I think modifying kernel source code isn't preferred.
+seq_counter can't be used for res_counter because I don't want to update
+seq_counter at changing ->usae of res_counter. So, I'd like to just add
+spinlock for this time.
+
+I wonder making memcg's counter to use 32bit and record usage in the number
+of pages may be a simple way...
 
 Thanks,
------------------------------------------
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
-
-> -----Original Message-----
-> From: Philip Rakity [mailto:prakity@marvell.com] 
-> Sent: Thursday, January 27, 2011 10:04 AM
-> To: Tomoya MORINAGA
-> Cc: Chris Ball; Kyungmin Park; linux-mmc@vger.kernel.org; 
-> linux-kernel@vger.kernel.org; 
-> andrew.chih.howe.khor@intel.com; kok.howg.ewe@intel.com
-> Subject: Re: A MMC card transfer issue
-> 
-> 
-> yes
-> 
-> you need to have the driver or the low level code enable this QUIRK.
-> 
-> which mmc driver are you using.
-> 
-> On Jan 26, 2011, at 5:00 PM, Tomoya MORINAGA wrote:
-> 
-> > Hi Philip,
-> > 
-> > On Thursday, January 27, 2011 12:42 AM, Philip Rakity wrote:
-> >> Did you define the CAP for BUS WIDTH ? 
-> >> 
-> >> MMC_CAP_BUS_WIDTH_TEST
-> >> 
-> >> in the driver or the platform driver ?
-> > 
-> > Let me make the above meaning clear.
-> > 
-> > I don't modify kernel source code "drivers/mmc" at all Is the above 
-> > mean I must modify something kernel source code ?
-> > 
-> > Thanks,
-> > -----------------------------------------
-> > Tomoya MORINAGA
-> > OKI SEMICONDUCTOR CO., LTD.
-> > 
-> 
+-Kame
 
