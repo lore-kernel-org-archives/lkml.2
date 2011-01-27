@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780Ab1A0S30 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 13:29:26 -0500
-Received: from hera.kernel.org ([140.211.167.34]:49053 "EHLO hera.kernel.org"
+	id S1752792Ab1A0S37 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 13:29:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7596 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751726Ab1A0S3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 13:29:25 -0500
-Date: Thu, 27 Jan 2011 18:29:00 GMT
-From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@redhat.com, yinghai@kernel.org, a.p.zijlstra@chello.nl,
-        acme@ghostprotocols.net, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, yinghai@kernel.org,
-        a.p.zijlstra@chello.nl, acme@ghostprotocols.net, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <4D3A16F9.109@kernel.org>
-References: <4D3A16F9.109@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] x86, perf: Change two init functions to static
-Message-ID: <tip-dda99116969142cc41e945a1047a419b937536af@git.kernel.org>
-Git-Commit-ID: dda99116969142cc41e945a1047a419b937536af
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1751726Ab1A0S36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 13:29:58 -0500
+Date: Thu, 27 Jan 2011 23:59:44 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH 1/3] tty: move hvc drivers to drivers/tty/hvc/
+Message-ID: <20110127182916.GA4688@amit-x200.redhat.com>
+References: <20110120174910.GA30124@kroah.com>
+ <1295546625-30681-1-git-send-email-gregkh@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 27 Jan 2011 18:29:01 +0000 (UTC)
+In-Reply-To: <1295546625-30681-1-git-send-email-gregkh@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  dda99116969142cc41e945a1047a419b937536af
-Gitweb:     http://git.kernel.org/tip/dda99116969142cc41e945a1047a419b937536af
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Fri, 21 Jan 2011 15:30:01 -0800
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 27 Jan 2011 19:23:07 +0100
+On (Thu) Jan 20 2011 [10:03:43], Greg Kroah-Hartman wrote:
+> As requested by Arnd Bergmann, the hvc drivers are now
+> moved to the drivers/tty/hvc/ directory.  The virtio_console.c driver
+> was also moved, as it required the hvc_console.h file to be able to be
+> built, and it really is a hvc driver.
 
-x86, perf: Change two init functions to static
+I just saw this now as a result of this patch entering mainline.  I
+would have liked to be CC'ed to the patches.  Also, I don't like the
+move of the virtio_console.c file to drivers/tty/hvc.  virtio_console.c
+is not only an hvc driver; one of its functions is to hook some ports to
+hvc, but it's mostly a generic driver these days.
 
-init_hw_perf_events() is called via early_initcall now.
-x86_pmu_event_init is x86_pmu member function.
+(I also note the MAINTAINERS entry was ignored and not updated in the
+3rd patch of this series.)
 
-So we can change them to static.
+Can you please move it back?
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-LKML-Reference: <4D3A16F9.109@kernel.org>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/cpu/perf_event.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+I could perhaps think of a way of splitting the file so the hvc bits can
+be moved to drivers/tty/hvc/ and having the core stay in drivers/char/,
+but that'll have to wait for the next cycle.
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 9d977a2..4d98789 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1389,7 +1389,7 @@ static void __init pmu_check_apic(void)
- 	pr_info("no hardware sampling interrupt available.\n");
- }
- 
--int __init init_hw_perf_events(void)
-+static int __init init_hw_perf_events(void)
- {
- 	struct event_constraint *c;
- 	int err;
-@@ -1608,7 +1608,7 @@ out:
- 	return ret;
- }
- 
--int x86_pmu_event_init(struct perf_event *event)
-+static int x86_pmu_event_init(struct perf_event *event)
- {
- 	struct pmu *tmp;
- 	int err;
+		Amit
