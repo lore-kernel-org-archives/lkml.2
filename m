@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753768Ab1A0McP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 07:32:15 -0500
+	id S1754625Ab1A0Md5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 07:33:57 -0500
 Received: from perceval.ideasonboard.com ([95.142.166.194]:59797 "EHLO
 	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753330Ab1A0Mat (ORCPT
+	with ESMTP id S1753183Ab1A0Mak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 07:30:49 -0500
+	Thu, 27 Jan 2011 07:30:40 -0500
 From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 To: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
         alsa-devel@alsa-project.org
 Cc: sakari.ailus@maxwell.research.nokia.com,
         broonie@opensource.wolfsonmicro.com, clemens@ladisch.de
-Subject: [PATCH v8 10/12] v4l: Add a media_device pointer to the v4l2_device structure
-Date: Thu, 27 Jan 2011 13:30:35 +0100
-Message-Id: <1296131437-29954-11-git-send-email-laurent.pinchart@ideasonboard.com>
+Subject: [PATCH v8 04/12] media: Entity graph traversal
+Date: Thu, 27 Jan 2011 13:30:29 +0100
+Message-Id: <1296131437-29954-5-git-send-email-laurent.pinchart@ideasonboard.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1296131437-29954-1-git-send-email-laurent.pinchart@ideasonboard.com>
 References: <1296131437-29954-1-git-send-email-laurent.pinchart@ideasonboard.com>
@@ -22,113 +22,228 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pointer will later be used to register/unregister media entities
-when registering/unregistering a v4l2_subdev or a video_device.
+From: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
 
-With the introduction of media devices, device drivers need to store a
-pointer to a driver-specific structure in the device's drvdata.
-v4l2_device can't claim ownership of the drvdata anymore.
+Add media entity graph traversal. The traversal follows enabled links by
+depth first. Traversing graph backwards is prevented by comparing the next
+possible entity in the graph with the previous one. Multiply connected
+graphs are thus not supported.
 
-To maintain compatibility with drivers that rely on v4l2_device storing
-a pointer to itself in the device's drvdata, v4l2_device_register() will
-keep doing so if the drvdata is NULL.
-
+Signed-off-by: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
 Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Vimarsh Zutshi <vimarsh.zutshi@nokia.com>
 ---
- Documentation/video4linux/v4l2-framework.txt |   17 ++++++++++++-----
- drivers/media/video/v4l2-device.c            |   13 +++++++------
- include/media/v4l2-device.h                  |    4 ++++
- 3 files changed, 23 insertions(+), 11 deletions(-)
+ Documentation/media-framework.txt |   42 +++++++++++++
+ drivers/media/media-entity.c      |  115 +++++++++++++++++++++++++++++++++++++
+ include/media/media-entity.h      |   15 +++++
+ 3 files changed, 172 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/video4linux/v4l2-framework.txt b/Documentation/video4linux/v4l2-framework.txt
-index 4db1def..aeb2a22 100644
---- a/Documentation/video4linux/v4l2-framework.txt
-+++ b/Documentation/video4linux/v4l2-framework.txt
-@@ -83,11 +83,17 @@ You must register the device instance:
- 
- 	v4l2_device_register(struct device *dev, struct v4l2_device *v4l2_dev);
- 
--Registration will initialize the v4l2_device struct and link dev->driver_data
--to v4l2_dev. If v4l2_dev->name is empty then it will be set to a value derived
--from dev (driver name followed by the bus_id, to be precise). If you set it
--up before calling v4l2_device_register then it will be untouched. If dev is
--NULL, then you *must* setup v4l2_dev->name before calling v4l2_device_register.
-+Registration will initialize the v4l2_device struct. If the dev->driver_data
-+field is NULL, it will be linked to v4l2_dev. Drivers that use the media
-+device framework in addition to the V4L2 framework need to set
-+dev->driver_data manually to point to the driver-specific device structure
-+that embed the struct v4l2_device instance. This is achieved by a
-+dev_set_drvdata() call before registering the V4L2 device instance.
+diff --git a/Documentation/media-framework.txt b/Documentation/media-framework.txt
+index b252cf9..88fe379 100644
+--- a/Documentation/media-framework.txt
++++ b/Documentation/media-framework.txt
+@@ -216,3 +216,45 @@ Links have flags that describe the link capabilities and state.
+ 	modified at runtime. If MEDIA_LNK_FL_IMMUTABLE is set, then
+ 	MEDIA_LNK_FL_ENABLED must also be set since an immutable link is always
+ 	enabled.
 +
-+If v4l2_dev->name is empty then it will be set to a value derived from dev
-+(driver name followed by the bus_id, to be precise). If you set it up before
-+calling v4l2_device_register then it will be untouched. If dev is NULL, then
-+you *must* setup v4l2_dev->name before calling v4l2_device_register.
- 
- You can use v4l2_device_set_name() to set the name based on a driver name and
- a driver-global atomic_t instance. This will generate names like ivtv0, ivtv1,
-@@ -108,6 +114,7 @@ You unregister with:
- 
- 	v4l2_device_unregister(struct v4l2_device *v4l2_dev);
- 
-+If the dev->driver_data field points to v4l2_dev, it will be reset to NULL.
- Unregistering will also automatically unregister all subdevs from the device.
- 
- If you have a hotpluggable device (e.g. a USB device), then when a disconnect
-diff --git a/drivers/media/video/v4l2-device.c b/drivers/media/video/v4l2-device.c
-index 97e84df..5c16a12 100644
---- a/drivers/media/video/v4l2-device.c
-+++ b/drivers/media/video/v4l2-device.c
-@@ -47,9 +47,8 @@ int v4l2_device_register(struct device *dev, struct v4l2_device *v4l2_dev)
- 	if (!v4l2_dev->name[0])
- 		snprintf(v4l2_dev->name, sizeof(v4l2_dev->name), "%s %s",
- 			dev->driver->name, dev_name(dev));
--	if (dev_get_drvdata(dev))
--		v4l2_warn(v4l2_dev, "Non-NULL drvdata on register\n");
--	dev_set_drvdata(dev, v4l2_dev);
-+	if (!dev_get_drvdata(dev))
-+		dev_set_drvdata(dev, v4l2_dev);
- 	return 0;
++
++Graph traversal
++---------------
++
++The media framework provides APIs to iterate over entities in a graph.
++
++To iterate over all entities belonging to a media device, drivers can use the
++media_device_for_each_entity macro, defined in include/media/media-device.h.
++
++	struct media_entity *entity;
++
++	media_device_for_each_entity(entity, mdev) {
++		/* entity will point to each entity in turn */
++		...
++	}
++
++Drivers might also need to iterate over all entities in a graph that can be
++reached only through enabled links starting at a given entity. The media
++framework provides a depth-first graph traversal API for that purpose.
++
++Note that graphs with cycles (whether directed or undirected) are *NOT*
++supported by the graph traversal API. To prevent infinite loops, the graph
++traversal code limits the maximum depth to MEDIA_ENTITY_ENUM_MAX_DEPTH,
++currently defined as 16.
++
++Drivers initiate a graph traversal by calling
++
++	media_entity_graph_walk_start(struct media_entity_graph *graph,
++				      struct media_entity *entity);
++
++The graph structure, provided by the caller, is initialized to start graph
++traversal at the given entity.
++
++Drivers can then retrieve the next entity by calling
++
++	media_entity_graph_walk_next(struct media_entity_graph *graph);
++
++When the graph traversal is complete the function will return NULL.
++
++Graph traversal can be interrupted at any moment. No cleanup function call is
++required and the graph structure can be freed normally.
+diff --git a/drivers/media/media-entity.c b/drivers/media/media-entity.c
+index e4ba2bc..a805f20 100644
+--- a/drivers/media/media-entity.c
++++ b/drivers/media/media-entity.c
+@@ -84,6 +84,121 @@ media_entity_cleanup(struct media_entity *entity)
  }
- EXPORT_SYMBOL_GPL(v4l2_device_register);
-@@ -72,10 +71,12 @@ EXPORT_SYMBOL_GPL(v4l2_device_set_name);
+ EXPORT_SYMBOL_GPL(media_entity_cleanup);
  
- void v4l2_device_disconnect(struct v4l2_device *v4l2_dev)
- {
--	if (v4l2_dev->dev) {
-+	if (v4l2_dev->dev == NULL)
++/* -----------------------------------------------------------------------------
++ * Graph traversal
++ */
++
++static struct media_entity *
++media_entity_other(struct media_entity *entity, struct media_link *link)
++{
++	if (link->source->entity == entity)
++		return link->sink->entity;
++	else
++		return link->source->entity;
++}
++
++/* push an entity to traversal stack */
++static void stack_push(struct media_entity_graph *graph,
++		       struct media_entity *entity)
++{
++	if (graph->top == MEDIA_ENTITY_ENUM_MAX_DEPTH - 1) {
++		WARN_ON(1);
 +		return;
++	}
++	graph->top++;
++	graph->stack[graph->top].link = 0;
++	graph->stack[graph->top].entity = entity;
++}
 +
-+	if (dev_get_drvdata(v4l2_dev->dev) == v4l2_dev)
- 		dev_set_drvdata(v4l2_dev->dev, NULL);
--		v4l2_dev->dev = NULL;
--	}
-+	v4l2_dev->dev = NULL;
++static struct media_entity *stack_pop(struct media_entity_graph *graph)
++{
++	struct media_entity *entity;
++
++	entity = graph->stack[graph->top].entity;
++	graph->top--;
++
++	return entity;
++}
++
++#define stack_peek(en)	((en)->stack[(en)->top - 1].entity)
++#define link_top(en)	((en)->stack[(en)->top].link)
++#define stack_top(en)	((en)->stack[(en)->top].entity)
++
++/**
++ * media_entity_graph_walk_start - Start walking the media graph at a given entity
++ * @graph: Media graph structure that will be used to walk the graph
++ * @entity: Starting entity
++ *
++ * This function initializes the graph traversal structure to walk the entities
++ * graph starting at the given entity. The traversal structure must not be
++ * modified by the caller during graph traversal. When done the structure can
++ * safely be freed.
++ */
++void media_entity_graph_walk_start(struct media_entity_graph *graph,
++				   struct media_entity *entity)
++{
++	graph->top = 0;
++	graph->stack[graph->top].entity = NULL;
++	stack_push(graph, entity);
++}
++EXPORT_SYMBOL_GPL(media_entity_graph_walk_start);
++
++/**
++ * media_entity_graph_walk_next - Get the next entity in the graph
++ * @graph: Media graph structure
++ *
++ * Perform a depth-first traversal of the given media entities graph.
++ *
++ * The graph structure must have been previously initialized with a call to
++ * media_entity_graph_walk_start().
++ *
++ * Return the next entity in the graph or NULL if the whole graph have been
++ * traversed.
++ */
++struct media_entity *
++media_entity_graph_walk_next(struct media_entity_graph *graph)
++{
++	if (stack_top(graph) == NULL)
++		return NULL;
++
++	/*
++	 * Depth first search. Push entity to stack and continue from
++	 * top of the stack until no more entities on the level can be
++	 * found.
++	 */
++	while (link_top(graph) < stack_top(graph)->num_links) {
++		struct media_entity *entity = stack_top(graph);
++		struct media_link *link = &entity->links[link_top(graph)];
++		struct media_entity *next;
++
++		/* The link is not enabled so we do not follow. */
++		if (!(link->flags & MEDIA_LNK_FL_ENABLED)) {
++			link_top(graph)++;
++			continue;
++		}
++
++		/* Get the entity in the other end of the link . */
++		next = media_entity_other(entity, link);
++
++		/* Was it the entity we came here from? */
++		if (next == stack_peek(graph)) {
++			link_top(graph)++;
++			continue;
++		}
++
++		/* Push the new entity to stack and start over. */
++		link_top(graph)++;
++		stack_push(graph, next);
++	}
++
++	return stack_pop(graph);
++}
++EXPORT_SYMBOL_GPL(media_entity_graph_walk_next);
++
++/* -----------------------------------------------------------------------------
++ * Links management
++ */
++
+ static struct media_link *media_entity_add_link(struct media_entity *entity)
+ {
+ 	if (entity->num_links >= entity->max_links) {
+diff --git a/include/media/media-entity.h b/include/media/media-entity.h
+index 7cf9135..b82f824 100644
+--- a/include/media/media-entity.h
++++ b/include/media/media-entity.h
+@@ -113,10 +113,25 @@ static inline u32 media_entity_subtype(struct media_entity *entity)
+ 	return entity->type & MEDIA_ENT_SUBTYPE_MASK;
  }
- EXPORT_SYMBOL_GPL(v4l2_device_disconnect);
  
-diff --git a/include/media/v4l2-device.h b/include/media/v4l2-device.h
-index b16f307..759db73 100644
---- a/include/media/v4l2-device.h
-+++ b/include/media/v4l2-device.h
-@@ -21,6 +21,7 @@
- #ifndef _V4L2_DEVICE_H
- #define _V4L2_DEVICE_H
++#define MEDIA_ENTITY_ENUM_MAX_DEPTH	16
++
++struct media_entity_graph {
++	struct {
++		struct media_entity *entity;
++		int link;
++	} stack[MEDIA_ENTITY_ENUM_MAX_DEPTH];
++	int top;
++};
++
+ int media_entity_init(struct media_entity *entity, u16 num_pads,
+ 		struct media_pad *pads, u16 extra_links);
+ void media_entity_cleanup(struct media_entity *entity);
+ int media_entity_create_link(struct media_entity *source, u16 source_pad,
+ 		struct media_entity *sink, u16 sink_pad, u32 flags);
  
-+#include <media/media-device.h>
- #include <media/v4l2-subdev.h>
- 
- /* Each instance of a V4L2 device should create the v4l2_device struct,
-@@ -39,6 +40,9 @@ struct v4l2_device {
- 	   Note: dev might be NULL if there is no parent device
- 	   as is the case with e.g. ISA devices. */
- 	struct device *dev;
-+#if defined(CONFIG_MEDIA_CONTROLLER)
-+	struct media_device *mdev;
-+#endif
- 	/* used to keep track of the registered subdevs */
- 	struct list_head subdevs;
- 	/* lock this struct; can be used by the driver as well if this
++void media_entity_graph_walk_start(struct media_entity_graph *graph,
++		struct media_entity *entity);
++struct media_entity *
++media_entity_graph_walk_next(struct media_entity_graph *graph);
++
+ #endif
 -- 
 1.7.3.4
 
