@@ -1,120 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740Ab1A0NVL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 08:21:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43669 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753513Ab1A0NVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 08:21:09 -0500
-Message-ID: <4D417135.7050903@redhat.com>
-Date: Thu, 27 Jan 2011 15:20:53 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1753064Ab1A0NXW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 08:23:22 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40952 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269Ab1A0NXV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 08:23:21 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Z9mHTx17hHrP2DbWAQBeR3cpoFoc1ngrqqZN3YIxcLksODM0vWl17OUgFB0vD1/c1P
+         /Un40pkLXkQWqr05Dg1PVTpt/31yy37pO5HXlDUSRO2Yd0XJcbShVX1krW8VV43c1E2H
+         mYlpkcXABe2L5WKLf8zu178kEjrXLH/Ae9H5A=
+Date: Thu, 27 Jan 2011 14:23:15 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Roland McGrath <roland@redhat.com>
+Cc: oleg@redhat.com, jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [PATCHSET RFC] ptrace,signal: clean transition between STOPPED
+ and TRACED
+Message-ID: <20110127132315.GB24925@htj.dyndns.org>
+References: <1293199257-11255-1-git-send-email-tj@kernel.org>
+ <20110118021133.C14FA1807B7@magilla.sf.frob.com>
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>,
-        ttracy@redhat.com, "Nakajima, Jun" <jun.nakajima@intel.com>
-Subject: Re: [RFC -v7 PATCH 0/7] directed yield for Pause Loop Exiting
-References: <20110126165657.2ddd2ac9@annuminas.surriel.com>
-In-Reply-To: <20110126165657.2ddd2ac9@annuminas.surriel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110118021133.C14FA1807B7@magilla.sf.frob.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/26/2011 11:56 PM, Rik van Riel wrote:
-> When running SMP virtual machines, it is possible for one VCPU to be
-> spinning on a spinlock, while the VCPU that holds the spinlock is not
-> currently running, because the host scheduler preempted it to run
-> something else.
->
-> Both Intel and AMD CPUs have a feature that detects when a virtual
-> CPU is spinning on a lock and will trap to the host.
->
-> The current KVM code sleeps for a bit whenever that happens, which
-> results in eg. a 64 VCPU Windows guest taking forever and a bit to
-> boot up.  This is because the VCPU holding the lock is actually
-> running and not sleeping, so the pause is counter-productive.
->
-> In other workloads a pause can also be counter-productive, with
-> spinlock detection resulting in one guest giving up its CPU time
-> to the others.  Instead of spinning, it ends up simply not running
-> much at all.
->
-> This patch series aims to fix that, by having a VCPU that spins
-> give the remainder of its timeslice to another VCPU in the same
-> guest before yielding the CPU - one that is runnable but got
-> preempted, hopefully the lock holder.
->
-> v7:
-> - move the vcpu to pid mapping to inside the vcpu->mutex
-> - rename ->yield to ->skip
-> - merge patch 5 into patch 4
-> v6:
-> - implement yield_task_fair in a way that works with task groups,
->    this allows me to actually get a performance improvement!
-> - fix another race Avi pointed out, the code should be good now
-> v5:
-> - fix the race condition Avi pointed out, by tracking vcpu->pid
-> - also allows us to yield to vcpu tasks that got preempted while in qemu
->    userspace
-> v4:
-> - change to newer version of Mike Galbraith's yield_to implementation
-> - chainsaw out some code from Mike that looked like a great idea, but
->    turned out to give weird interactions in practice
-> v3:
-> - more cleanups
-> - change to Mike Galbraith's yield_to implementation
-> - yield to spinning VCPUs, this seems to work better in some
->    situations and has little downside potential
-> v2:
-> - make lots of cleanups and improvements suggested
-> - do not implement timeslice scheduling or fairness stuff
->    yet, since it is not entirely clear how to do that right
->    (suggestions welcome)
->
->
-> Benchmark results:
->
-> Two 4-CPU KVM guests are pinned to the same 4 physical CPUs.
->
-> One guest runs the AMQP performance test, the other guest runs
-> 0, 2 or 4 infinite loops, for CPU overcommit factors of 0, 1.5
-> and 4.
->
-> The AMQP perftest is run 30 times, with message payloads of 8 and 16 bytes.
->
-> size8	no overcommit	1.5x overcommit		2x overcommit
->
-> no PLE	223801		135137			104951
-> PLE	224135		141105			118744
->
-> size16	no overcommit	1.5x overcommit		2x overcommit
->
-> no PLE	222424		126175			105299
-> PLE	222534		138082			132945
->
-> Note: this is with the KVM guests NOT running inside cgroups.  There
-> seems to be a CPU load balancing issue with cgroup fair group scheduling,
-> which often results in one guest getting only 80% CPU time and the other
-> guest 320%.  That will have to be fixed to get meaningful results with
-> cgroups.
->
-> CPU time division between the AMQP guest and the infinite loop guest
-> were not exactly fair, but the guests got close to the same amount
-> of CPU time in each test run.
->
-> There is a substantial amount of randomness in CPU time division between
-> guests, but the performance improvement is consistent between multiple
-> runs.
+Hello, sorry about the delay.
 
-The kvm bits look fine; I'll be happy to apply them after the scheduler 
-changes are accepted into tip.git.
+On Mon, Jan 17, 2011 at 06:11:33PM -0800, Roland McGrath wrote:
+> > 1. When attaching to a STOPPED task or a traced task stops for group
+> >    stop, the tracee now enters TRACED instead of STOPPED.  This is
+> >    visible via fs/proc but, more importantly, SIGCONT is ignored if a
+> >    task is TRACED.
+> 
+> That is probably OK, but I'm still not entirely sure about it.
+> 
+> >    This may, for example, affect the operation of strace but given how
+> >    strace always need to issue further ptrace operations on trap to
+> >    determine what's going on, I doubt it would actually be worse.
+> 
+> I'm not clear on what effect on strace you have in mind.
+
+I was trying to imagine a case where this could cause a problem.  If
+there is a program which PTRACE_ATTACH's and then immediately follows
+with SIGCONT and expects it to be processed, the end result wouldn't
+be what it expects, but I don't think this is an actual problem we
+need to worry about.
+
+> > 2. The transition between STOPPED and TRACED involves a short window
+> >    of RUNNING inbetween.  On attach, the transition is hidden from the
+> >    tracer using GROUP_STOP_TRAPPING but it still is visible to other
+> >    threads in the tracer's group.  IOW, if another thread performs
+> >    WNOHANG wait(2) on the tracee while attach is in progress, the
+> >    wait(2) may fail even if the tracee is known to be in stopped state
+> >    before.
+> > 
+> >    The same problem exists the other direction during detach.
+> >    Currently, the code doesn't try to hide this transition even from
+> >    the tracer.  IOW, if the tracer attaches to a stopped task,
+> >    detaches, reattaches and then performs WNOHANG wait(2), the wait(2)
+> >    may fail.  However, given the previous behavior where the tracee is
+> >    always woken up by wake_up_process() on detach, this is highly
+> >    unlikely to cause any problem.
+> 
+> This seems more problematic to me.  I don't like that start/stop window
+> at all.
+
+Which case are you worried about?  Another thread doing WNOHANG
+wait(2) or the same ptracer trying to re-attach immediately after
+detaching?  Or both?
+
+> Saying "wait may fail" is not sufficiently precise to be helpful.  Please
+> be more clear.  If "fail" means ECHILD, that is unacceptable.  If "fail"
+> means a WNOHANG wait returns 0 when userland already "knows" that the
+> thread is topped, that might be more acceptable.
+
+It's the latter.  The only thing which changes is that the task might
+not be in the exact expected state for brief amount of time.
+
+For the initial STOPPED -> TRACED transition, the race window doesn't
+exist for the ptracer itself.  It's only visible if someone else than
+the ptrace does the wait(2) which is a pretty convoluted use case to
+begin with.
+
+For TRACED -> STOPPED -> TRACED transition (attach right after
+detach), it is visible to the ptracer but again I don't think this is
+even remotely reasonable use case.  Plus, it never worked.  We've been
+issuing SIGCONT unconditionally on TRACED -> STOPPED anyway.
+
+Thank you.
 
 -- 
-error compiling committee.c: too many arguments to function
-
+tejun
