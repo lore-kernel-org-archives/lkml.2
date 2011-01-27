@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142Ab1A0Xl4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 18:41:56 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:38974 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753654Ab1A0Xlz (ORCPT
+	id S1753940Ab1A0XnN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 18:43:13 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39717 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752750Ab1A0XnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 18:41:55 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtAEAAOPQU15LN5mgWdsb2JhbACkfBYBARYiJIgrtDsNhUIE
-Date: Fri, 28 Jan 2011 10:41:52 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Mark Lord <kernel@teksavvy.com>
-Cc: Stan Hoeppner <stan@hardwarefreak.com>,
-        Christoph Hellwig <hch@infradead.org>, Alex Elder <aelder@sgi.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: xfs: very slow after mount, very slow at umount
-Message-ID: <20110127234152.GN21311@dastard>
-References: <4D40C8D1.8090202@teksavvy.com>
- <20110127033011.GH21311@dastard>
- <4D40EB2F.2050809@teksavvy.com>
- <4D418B57.1000501@teksavvy.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D418B57.1000501@teksavvy.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 27 Jan 2011 18:43:11 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 28 Jan 2011 08:37:03 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH] memsw: Deprecate noswapaccount kernel parameter and
+ schedule it for removal
+Message-Id: <20110128083703.a154050b.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110127104759.GA4301@tiehlicka.suse.cz>
+References: <20110126152158.GA4144@tiehlicka.suse.cz>
+	<20110126140618.8e09cd23.akpm@linux-foundation.org>
+	<20110127082320.GA15500@tiehlicka.suse.cz>
+	<20110127180330.78585085.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110127092951.GA8036@tiehlicka.suse.cz>
+	<20110127184827.a8927595.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110127104759.GA4301@tiehlicka.suse.cz>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 27, 2011 at 10:12:23AM -0500, Mark Lord wrote:
-> On 11-01-27 12:30 AM, Stan Hoeppner wrote:
-> > Mark Lord put forth on 1/26/2011 9:49 PM:
-> > 
-> >> agcount=7453
-> > 
-> > That's probably a bit high Mark, and very possibly the cause of your problems.
-> > :)  Unless the disk array backing this filesystem has something like 400-800
-> > striped disk drives.  You said it's a single 2TB drive right?
-> > 
-> > The default agcount for a single drive filesystem is 4 allocation groups.  For
-> > mdraid (of any number of disks/configuration) it's 16 allocation groups.
-> > 
-> > Why/how did you end up with 7452 allocation groups?  That can definitely cause
-> > some performance issues due to massively excessive head seeking, and possibly
-> > all manner of weirdness.
-> 
-> This is great info, exactly the kind of feedback I was hoping for!
-> 
-> The filesystem is about a year old now, and I probably used agsize=nnnnn
-> when creating it or something.
-> 
-> So if this resulted in what you consider to be many MANY too MANY ags,
-> then I can imagine the first new file write wanting to go out and read
-> in all of the ag data to determine the "best fit" or something.
-> Which might explain some of the delay.
-> 
-> Once I get the new 2TB drive, I'll re-run mkfs.xfs and then copy everything
-> over onto a fresh xfs filesystem.
-> 
-> Can you recommend a good set of mkfs.xfs parameters to suit the characteristics
-> of this system? 
+On Thu, 27 Jan 2011 11:47:59 +0100
+Michal Hocko <mhocko@suse.cz> wrote:
 
-http://xfs.org/index.php/XFS_FAQ#Q:_I_want_to_tune_my_XFS_filesystems_for_.3Csomething.3E
+> On Thu 27-01-11 18:48:27, KAMEZAWA Hiroyuki wrote:
+> > Could you try to write a patch for feature-removal-schedule.txt
+> > and tries to remove noswapaccount and do clean up all ?
+> > (And add warning to noswapaccount will be removed.....in 2.6.40)
+> 
+> Sure, no problem. What do you think about the following patch?
+> ---
+> From a597421909a3291886345565c73102117a52301e Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Thu, 27 Jan 2011 11:41:01 +0100
+> Subject: [PATCH] memsw: Deprecate noswapaccount kernel parameter and schedule it for removal
+> 
+> noswapaccount couldn't be used to control memsw for both on/off cases so
+> we have added swapaccount[=0|1] parameter. This way we can turn the
+> feature in two ways noswapaccount resp. swapaccount=0. We have kept the
+> original noswapaccount but I think we should remove it after some time
+> as it just makes more command line parameters without any advantages and
+> also the code to handle parameters is uglier if we want both parameters.
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> Requested-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-And perhaps you want to consider the allocsize mount option, though
-that shouldn't be necessary for 2.6.38+...
+Nice!. Thank you.
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Cheers,
+Maybe other discussion as 2.6.40 is too early or some may happen.
+But Ack from me, at least.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
