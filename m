@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972Ab1A0JaD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 04:30:03 -0500
-Received: from cantor.suse.de ([195.135.220.2]:55592 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752899Ab1A0JaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 04:30:00 -0500
-Date: Thu, 27 Jan 2011 10:29:51 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>, stable@kernel.org
-Subject: Re: [PATCH] memsw: handle swapaccount kernel parameter correctly
-Message-ID: <20110127092951.GA8036@tiehlicka.suse.cz>
-References: <20110126152158.GA4144@tiehlicka.suse.cz>
- <20110126140618.8e09cd23.akpm@linux-foundation.org>
- <20110127082320.GA15500@tiehlicka.suse.cz>
- <20110127180330.78585085.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1753985Ab1A0JdO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 04:33:14 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46231 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753846Ab1A0JdL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 04:33:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=V7o2faHcoKpUXceRjKs4D3E+0MSvgjHgpG4UTKYKHzEPelf/PgSB5rmVrmTEG/K+Mj
+         DfFO/vmA2j0aP3mf88dZ0oCiB/K1NtG1VEymurg5dCpOzeXgwXuUMhU6mKY8wLUPf+6K
+         /u6c1dv/fZL4Tj+drVNMMfRdzy5qIdGTLyje0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110127180330.78585085.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110125150430.GF13051@sirena.org.uk>
+References: <AANLkTinAYrGV1k357Bn8trtxafZDoYozG7LDcm3KNBSt@mail.gmail.com> <20110125150430.GF13051@sirena.org.uk>
+From: halli manjunatha <manjunatha_halli@ti.com>
+Date: Thu, 27 Jan 2011 15:02:43 +0530
+X-Google-Sender-Auth: 58QAWurM2KHlNgDV02PL2rjQORU
+Message-ID: <AANLkTi=J6mC7yWL9DF91Tp4+67QpAVK8vTMVVmsfJNyw@mail.gmail.com>
+Subject: Re: [GIT PULL] TI WL 128x FM V4L2 driver
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-media <linux-media@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 27-01-11 18:03:30, KAMEZAWA Hiroyuki wrote:
-> On Thu, 27 Jan 2011 09:23:20 +0100
-> Michal Hocko <mhocko@suse.cz> wrote:
-[...]
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index db76ef7..cea2be48 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -5013,9 +5013,9 @@ struct cgroup_subsys mem_cgroup_subsys = {
-> >  static int __init enable_swap_account(char *s)
-> >  {
-> >  	/* consider enabled if no parameter or 1 is given */
-> > -	if (!s || !strcmp(s, "1"))
-> > +	if (!(*s) || !strcmp(s, "=1"))
-> >  		really_do_swap_account = 1;
-> > -	else if (!strcmp(s, "0"))
-> > +	else if (!strcmp(s, "=0"))
-> >  		really_do_swap_account = 0;
-> >  	return 1;
-> >  }
-> 
-> Hmm, usual callser of __setup() includes '=' to parameter name, as
-> 
-> mm/hugetlb.c:__setup("hugepages=", hugetlb_nrpages_setup);
-> mm/hugetlb.c:__setup("default_hugepagesz=", hugetlb_default_setup);
-> 
-> How about moving "=" to __setup() ?
+Hi Mark,
 
-I have considered that as well but then we couldn't use swapaccount
-parameter without any value because the parameter parsing matches the
-whole string. 
-I found it better to have consistent [no]swapaccount with the =0|1
-extension rather than keeping = in the setup like other users.
+This is completely independent of WL 127X driver, instead this driver
+works on top of the shared transport line discipline driver (which is
+at driver/misc/ti-st in mainline).
 
-Sounds reasonable?
+
+On Tue, Jan 25, 2011 at 8:34 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Tue, Jan 25, 2011 at 11:18:18AM +0530, halli manjunatha wrote:
+>
+>> This is TI WL128x FM V4L2 driver and it introduces ?wl128x? folder
+>> under the ?drivers/media/radio?. This driver enables support for FM RX
+>> and TX for Texas Instrument's WL128x (also compatible with WL127x)
+>
+> How does this all interact with the existing wl1273 driver that's now in
+> mainline?
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
+
+
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Regards
+Manjunatha Halli
