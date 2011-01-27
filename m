@@ -1,89 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754250Ab1A0Xu2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 18:50:28 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36126 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753411Ab1A0Xu1 (ORCPT
+	id S1754130Ab1A0XxU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 18:53:20 -0500
+Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:56278 "EHLO
+	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752947Ab1A0XxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 18:50:27 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 28 Jan 2011 08:44:26 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [patch 3/3] memcg: never OOM when charging huge pages
-Message-Id: <20110128084426.b30d6736.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110127134703.GB14309@cmpxchg.org>
-References: <20110121153431.191134dd.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110121154430.70d45f15.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110127103438.GC2401@cmpxchg.org>
-	<20110127134703.GB14309@cmpxchg.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 27 Jan 2011 18:53:19 -0500
+Message-ID: <4D42056E.2050505@hardwarefreak.com>
+Date: Thu, 27 Jan 2011 17:53:18 -0600
+From: Stan Hoeppner <stan@hardwarefreak.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: david@lang.hm
+CC: Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        Christoph Hellwig <hch@infradead.org>,
+        Justin Piszcz <jpiszcz@lucidpixels.com>, Alex Elder <aelder@sgi.com>,
+        Mark Lord <kernel@teksavvy.com>
+Subject: Re: xfs: very slow after mount, very slow at umount
+References: <4D40C8D1.8090202@teksavvy.com> <20110127033011.GH21311@dastard>	<4D40EB2F.2050809@teksavvy.com> <4D418B57.1000501@teksavvy.com>	<alpine.DEB.2.00.1101271040000.31246@p34.internal.lan>	<4D419765.4070805@teksavvy.com>	<4D41CA16.8070001@hardwarefreak.com> <alpine.DEB.2.00.1101271209370.17579@asgard.lang.hm>
+In-Reply-To: <alpine.DEB.2.00.1101271209370.17579@asgard.lang.hm>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Jan 2011 14:47:03 +0100
-Johannes Weiner <hannes@cmpxchg.org> wrote:
+david@lang.hm put forth on 1/27/2011 2:11 PM:
 
-> Huge page coverage should obviously have less priority than the
-> continued execution of a process.
-> 
-> Never kill a process when charging it a huge page fails.  Instead,
-> give up after the first failed reclaim attempt and fall back to
-> regular pages.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> how do I understand how to setup things on multi-disk systems? the documentation
+> I've found online is not that helpful, and in some ways contradictory.
 
-Ah, I missed this. I'll merge this patch into my series. 
-Thank you for pointing out.
+Visit http://xfs.org  There you will find:
 
-But what I have to point out here is khugepaged lock-up issue needs
-another fix for khugepaged itself. It should skip hopeless memcg.
-I think I can send patches, today.
+Users guide:
+http://xfs.org/docs/xfsdocs-xml-dev/XFS_User_Guide//tmp/en-US/html/index.html
 
-Thanks,
--Kame
+File system structure:
+http://xfs.org/docs/xfsdocs-xml-dev/XFS_Filesystem_Structure//tmp/en-US/html/index.html
 
+Training labs:
+http://xfs.org/docs/xfsdocs-xml-dev/XFS_Labs/tmp/en-US/html/index.html
 
-> ---
->  mm/memcontrol.c |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 17c4e36..2945649 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1890,6 +1890,13 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
->  	int csize = max(CHARGE_SIZE, (unsigned long) page_size);
->  
->  	/*
-> +	 * Do not OOM on huge pages.  Fall back to regular pages after
-> +	 * the first failed reclaim attempt.
-> +	 */
-> +	if (page_size > PAGE_SIZE)
-> +		oom = false;
-> +
-> +	/*
->  	 * Unlike gloval-vm's OOM-kill, we're not in memory shortage
->  	 * in system level. So, allow to go ahead dying process in addition to
->  	 * MEMDIE process.
-> -- 
-> 1.7.3.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> If there really are good rules for how to do this, it would be very helpful if
+> you could just give mkfs.xfs the information about your system (this partition
+> is on a 16 drive raid6 array) and have it do the right thing.
 
+If your disk array is built upon Linux mdraid, recent versions of mkfs.xfs will
+read the parameters and automatically make the filesystem accordingly, properly.
+
+mxfs.fxs will not do this for PCIe/x hardware RAID arrays or external FC/iSCSI
+based SAN arrays as there is no standard place to acquire the RAID configuration
+information for such systems.  For these you will need to configure mkfs.xfs
+manually.
+
+At minimum you will want to specify stripe width (sw) which needs to match the
+hardware stripe width.  For RAID0 sw=[#of_disks].  For RAID 10, sw=[#disks/2].
+For RAID5 sw=[#disks-1].  For RAID6 sw=[#disks-2].
+
+You'll want at minimum agcount=16 for striped hardware arrays.  Depending on the
+number and spindle speed of the disks, the total size of the array, the
+characteristics of the RAID controller (big or small cache), you may want to
+increase agcount.  Experimentation may be required to find the optimum
+parameters for a given hardware RAID array.  Typically all other parameters may
+be left at defaults.
+
+Picking the perfect mkfs.xfs parameters for a hardware RAID array can be
+somewhat of a black art, mainly because no two vendor arrays act or perform
+identically.
+
+Systems of a caliber requiring XFS should be thoroughly tested before going into
+production.  Testing _with your workload_ of multiple parameters should be
+performed to identify those yielding best performance.
+
+-- 
+Stan
