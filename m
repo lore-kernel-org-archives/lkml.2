@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793Ab1A0O76 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 09:59:58 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:35298 "HELO
+	id S1752680Ab1A0O7p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 09:59:45 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:52644 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752539Ab1A0O74 (ORCPT
+	with SMTP id S1752586Ab1A0O7m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 09:59:56 -0500
+	Thu, 27 Jan 2011 09:59:42 -0500
 X-Authenticated: #911537
-X-Provags-ID: V01U2FsdGVkX19JgjsH0XJJAq3EQUkVgqtzw9yA4PMRoSWScSW5/l
-	C4g/l3o/6GdW8d
-Subject: [PATCH v2 12/20] h8300: switch do_timer() to xtime_update()
+X-Provags-ID: V01U2FsdGVkX19p87d56yBp+ywjb9TQAZj7T8DG4N5WEQJ0mtXiQA
+	c5ZCZYxUP3KtbV
+Subject: [PATCH v2 09/20] cris/arch-v10: switch do_timer() to xtime_update()
 To: LKML <linux-kernel@vger.kernel.org>
 From: Torben Hohn <torbenh@gmx.de>
-Cc: Yoshinori Sato <ysato@users.sourceforge.jp>,
+Cc: hch@infradead.org, Jesper Nilsson <jesper.nilsson@axis.com>,
         Peter Zijlstra <peterz@infradead.org>, johnstul@us.ibm.com,
-        hch@infradead.org, yong.zhang0@gmail.com,
+        Mikael Starvik <starvik@axis.com>, yong.zhang0@gmail.com,
         Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 27 Jan 2011 15:59:51 +0100
-Message-ID: <20110127145951.23248.92727.stgit@localhost>
+Date: Thu, 27 Jan 2011 15:59:36 +0100
+Message-ID: <20110127145936.23248.16192.stgit@localhost>
 In-Reply-To: <20110127145741.23248.68098.stgit@localhost>
 References: <20110127145741.23248.68098.stgit@localhost>
 User-Agent: StGit/0.15
@@ -30,36 +30,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xtime_update() takes the xtime_lock itself.
+this code failed to take the xtime_lock, which must be held
+when calling do_timer().
 
+use the safe version xtime_update()
 
-Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
+Cc: Mikael Starvik <starvik@axis.com>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
 Signed-off-by: Torben Hohn <torbenh@gmx.de>
 ---
- arch/h8300/kernel/time.c         |    4 +---
- arch/h8300/kernel/timer/timer8.c |    2 +-
- 2 files changed, 2 insertions(+), 4 deletions(-)
+ arch/cris/arch-v10/kernel/time.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/h8300/kernel/time.c b/arch/h8300/kernel/time.c
-index 165005a..32263a1 100644
---- a/arch/h8300/kernel/time.c
-+++ b/arch/h8300/kernel/time.c
-@@ -35,9 +35,7 @@ void h8300_timer_tick(void)
- {
- 	if (current->pid)
- 		profile_tick(CPU_PROFILING);
--	write_seqlock(&xtime_lock);
--	do_timer(1);
--	write_sequnlock(&xtime_lock);
-+	xtime_update(1);
- 	update_process_times(user_mode(get_irq_regs()));
- }
- 
-diff --git a/arch/h8300/kernel/timer/timer8.c b/arch/h8300/kernel/timer/timer8.c
-index 3946c0f..7a1533f 100644
---- a/arch/h8300/kernel/timer/timer8.c
-+++ b/arch/h8300/kernel/timer/timer8.c
-@@ -61,7 +61,7 @@
+diff --git a/arch/cris/arch-v10/kernel/time.c b/arch/cris/arch-v10/kernel/time.c
+index 00eb36f..20c85b5 100644
+--- a/arch/cris/arch-v10/kernel/time.c
++++ b/arch/cris/arch-v10/kernel/time.c
+@@ -140,7 +140,7 @@ stop_watchdog(void)
  
  /*
   * timer_interrupt() needs to keep up the real-time clock,
@@ -67,5 +54,14 @@ index 3946c0f..7a1533f 100644
 + * as well as call the "xtime_update()" routine every clocktick
   */
  
- static irqreturn_t timer_interrupt(int irq, void *dev_id)
+ //static unsigned short myjiff; /* used by our debug routine print_timestamp */
+@@ -176,7 +176,7 @@ timer_interrupt(int irq, void *dev_id)
+ 
+ 	/* call the real timer interrupt handler */
+ 
+-	do_timer(1);
++	xtime_update(1);
+ 	
+         cris_do_profile(regs); /* Save profiling information */
+         return IRQ_HANDLED;
 
