@@ -1,99 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496Ab1A0OqE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 09:46:04 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:36050 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677Ab1A0OqB (ORCPT
+	id S1752105Ab1A0OrS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 09:47:18 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:57260 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab1A0OrQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 09:46:01 -0500
-From: Stefan Bader <stefan.bader@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@kernel.org,
-        kernel-team@lists.ubuntu.com
-Subject: [2.6.32+drm33-longterm] Linux 2.6.32.28+drm33.13
-Date: Thu, 27 Jan 2011 15:45:57 +0100
-Message-Id: <1296139557-14743-1-git-send-email-stefan.bader@canonical.com>
-X-Mailer: git-send-email 1.7.0.4
-To: linux-kernel@vger.kernel.org
-To: stable@kernel.org
-To: kernel-team@lists.ubuntu.com
+	Thu, 27 Jan 2011 09:47:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=Vrms3eRhbSkFP/F+RVKYJjg4y15sMHd7uqsNAX6z4WeRfW1RJTwdlzRDWJL0z1MCyi
+         56c3331PoGDRVq3J3aoJ+xB9peDvC5N51QCLAgYVaIswu3CFYtVqT6chGUNIv/Cxd9BN
+         lD8kbH8SWUl9TfYZoELOfKkeOGlJ2M5X673V8=
+MIME-Version: 1.0
+In-Reply-To: <1296029447.2013.8.camel@sven>
+References: <20110124101701.GE16202@n2100.arm.linux.org.uk>
+ <1295864750-1238-1-git-send-email-s.neumann@raumfeld.com> <AANLkTinrxiHx6jX9jFzVzjq5FH-W=MLoDThAtRq2a1zZ@mail.gmail.com>
+ <1296029447.2013.8.camel@sven>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Thu, 27 Jan 2011 22:46:54 +0800
+Message-ID: <AANLkTimUg=y49H6THn5s7f7v418W68fhAsMLZGnDqabF@mail.gmail.com>
+Subject: Re: [PATCH] ARM: pxa: fix suspend on PXA3XX
+To: Sven Neumann <s.neumann@raumfeld.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Daniel Mack <daniel@caiaq.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am announcing the release of the 2.6.32.28+drm33.13 longterm tree.
+On Wed, Jan 26, 2011 at 4:10 PM, Sven Neumann <s.neumann@raumfeld.com> wrote:
+> On Wed, 2011-01-26 at 05:06 +0800, Eric Miao wrote:
+>> How about this instead?
+>>
+>> diff --git a/arch/arm/mach-pxa/pm.c b/arch/arm/mach-pxa/pm.c
+>> index 978e1b2..1807c9a 100644
+>> --- a/arch/arm/mach-pxa/pm.c
+>> +++ b/arch/arm/mach-pxa/pm.c
+>> @@ -33,7 +33,7 @@ int pxa_pm_enter(suspend_state_t state)
+>>  #endif
+>>
+>>       /* skip registers saving for standby */
+>> -     if (state != PM_SUSPEND_STANDBY) {
+>> +     if (state != PM_SUSPEND_STANDBY && pxa_cpu_pm_fns->save) {
+>>               pxa_cpu_pm_fns->save(sleep_save);
+>>               /* before sleeping, calculate and save a checksum */
+>>               for (i = 0; i < pxa_cpu_pm_fns->save_count - 1; i++)
+>> @@ -44,7 +44,7 @@ int pxa_pm_enter(suspend_state_t state)
+>>       pxa_cpu_pm_fns->enter(state);
+>>       cpu_init();
+>>
+>> -     if (state != PM_SUSPEND_STANDBY) {
+>> +     if (state != PM_SUSPEND_STANDBY && pxa_cpu_pm_fns->restore) {
+>>               /* after sleeping, validate the checksum */
+>>               for (i = 0; i < pxa_cpu_pm_fns->save_count - 1; i++)
+>>                       checksum += sleep_save[i];
+>>
+>
+> Not sure if that will work as well. With this change the code is
+> skipping more than just the calls to pxa_cpu_pm_fns->save() and
+> pxa_cpu_pm_fns->restore(). In particular it doesn't call
+> pxa_cpu_pm_fns->enter(state).
+>
 
-This tree is based on 2.6.32 and generally has all of the stable updates
-applied. Except those to the DRM subsystem, which was based on 2.6.33 and
-took updates from that upstream stable as long as that existed. It will
-continue to add patches to the DRM subsystem as long as they are valid
-according to the stable update rules (Documentation/stable_kernel_rules.txt).
-DRM patches for this tree should be sent to kernel-team@lists.ubuntu.com.
+Nah, that ->enable() is called if the checksum is incorrect. Please compare
+with the original code?
 
-This release updates the DRM subsystem only.
-
-The updated 2.6.32.y-drm33.z tree can be found at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git
-and can be browsed through git web via:
-  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=summary
-
--Stefan
-
-------
-
-* drm/ttm: Clear the ghost cpu_writers flag on ttm_buffer_object_transfer.
-* drm/kms: remove spaces from connector names (v2)
-* Linux 2.6.32.28+drm33.13
-
- Makefile                          |    2 +-
- drivers/gpu/drm/drm_crtc.c        |   10 +++++-----
- drivers/gpu/drm/ttm/ttm_bo_util.c |    1 +
- 3 files changed, 7 insertions(+), 6 deletions(-)
-
-diff --git a/Makefile b/Makefile
-index ba75a67..f792613 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,7 +1,7 @@
- VERSION = 2
- PATCHLEVEL = 6
- SUBLEVEL = 32
--EXTRAVERSION = .28+drm33.12
-+EXTRAVERSION = .28+drm33.13
- NAME = Man-Eating Seals of Antiquity
-
- # *DOCUMENTATION*
-diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
-index d91fb8c..81ba0e6 100644
---- a/drivers/gpu/drm/drm_crtc.c
-+++ b/drivers/gpu/drm/drm_crtc.c
-@@ -153,12 +153,12 @@ static struct drm_conn_prop_enum_list drm_connector_enum_list[] =
- 	{ DRM_MODE_CONNECTOR_SVIDEO, "SVIDEO", 0 },
- 	{ DRM_MODE_CONNECTOR_LVDS, "LVDS", 0 },
- 	{ DRM_MODE_CONNECTOR_Component, "Component", 0 },
--	{ DRM_MODE_CONNECTOR_9PinDIN, "9-pin DIN", 0 },
--	{ DRM_MODE_CONNECTOR_DisplayPort, "DisplayPort", 0 },
--	{ DRM_MODE_CONNECTOR_HDMIA, "HDMI Type A", 0 },
--	{ DRM_MODE_CONNECTOR_HDMIB, "HDMI Type B", 0 },
-+	{ DRM_MODE_CONNECTOR_9PinDIN, "DIN", 0 },
-+	{ DRM_MODE_CONNECTOR_DisplayPort, "DP", 0 },
-+	{ DRM_MODE_CONNECTOR_HDMIA, "HDMI-A", 0 },
-+	{ DRM_MODE_CONNECTOR_HDMIB, "HDMI-B", 0 },
- 	{ DRM_MODE_CONNECTOR_TV, "TV", 0 },
--	{ DRM_MODE_CONNECTOR_eDP, "Embedded DisplayPort", 0 },
-+	{ DRM_MODE_CONNECTOR_eDP, "eDP", 0 },
- };
-
- static struct drm_prop_enum_list drm_encoder_enum_list[] =
-diff --git a/drivers/gpu/drm/ttm/ttm_bo_util.c b/drivers/gpu/drm/ttm/ttm_bo_util.c
-index 5ca37a5..cf619c4 100644
---- a/drivers/gpu/drm/ttm/ttm_bo_util.c
-+++ b/drivers/gpu/drm/ttm/ttm_bo_util.c
-@@ -326,6 +326,7 @@ static int ttm_buffer_object_transfer(struct ttm_buffer_object *bo,
- 	INIT_LIST_HEAD(&fbo->lru);
- 	INIT_LIST_HEAD(&fbo->swap);
- 	fbo->vm_node = NULL;
-+	atomic_set(&fbo->cpu_writers, 0);
-
- 	fbo->sync_obj = driver->sync_obj_ref(bo->sync_obj);
- 	if (fbo->mem.mm_node)
+>
+> Thanks,
+> Sven
+>
+>
+>
