@@ -1,592 +1,345 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab1A0Oiy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 09:38:54 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:2615 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753240Ab1A0Oiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 09:38:52 -0500
-Subject: [PATCH] NFS: debug prints fixed and optimized
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 27 Jan 2011 17:38:19 +0300
-Message-ID: <20110127143526.20463.28966.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1753511Ab1A0OmD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 09:42:03 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:39232 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752941Ab1A0OmA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 09:42:00 -0500
+X-Sasl-enc: 7jjYAQX+hxL/Bb2HtpxA4hYwTfu97yVT470Ackmk+IsM 1296139318
+Subject: Re: [autofs] [RFC 00/20] Proposal for remaining BKL users
+From: Ian Kent <raven@themaw.net>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, autofs@linux.kernel.org,
+        linux-cifs@vger.kernel.org, linux-x25@vger.kernel.org,
+        netdev@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-fsdevel@vger.kernel.org
+In-Reply-To: <1295994174-5043-1-git-send-email-arnd@arndb.de>
+References: <1295994174-5043-1-git-send-email-arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 27 Jan 2011 22:41:52 +0800
+Message-ID: <1296139312.2726.11.camel@perseus>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kernel version v2.6.38-rc2 is affected.
+On Tue, 2011-01-25 at 23:22 +0100, Arnd Bergmann wrote:
+> I've gone through all the code in the kernel that
+> uses the big kernel lock and come up with a solution
+> that seems at least half-reasonable for each of them.
+> 
+> The decisions are somewhat arbitrary, but here is
+> what I'd suggest we do:
+> 
+> * Remove in 2.6.39:
+>    i830, autofs3, smbfs
 
-This patch fixes silly debug print bug in nfs4_remote_referral_mount() (maybe
-somewhere else too):
+Yes please, ack to removing autofs v3.
 
-"dprintk("--> nfs4_referral_get_sb()\n");"
-was printed instead of
-"dprintk("--> nfs4_remote_referral_mount()\n");"
+It is worth keeping in mind that if people are using the v3 protocol and
+there is a problem using it then a bug should be logged against the
+autofs4 module so it can be fixed. It's likely there will be a problem
+or two because of the huge amount change that has occurred over time.
+The same goes for the v4 protocol, since the testing done nowadays is
+with the v5 protocol. The v2 protocol might work with the autofs4 module
+since the code is still present but I'm not keen on trying to fix any
+problems that might arise and think we should discourage its use. In any
+case v2 users should few and far between.
 
-It also reduces code size by replacing all this function names in debug prints
-containing "<--" or "-->" to "%s" specifier and "__func__" argument.
+> 
+> * Move to staging now, kill in 2.6.41 (or later):
+>    appletalk, hpfs
+> 
+> * Work around in an ugly way, but keep alive:
+>    * ufs, ipx, i810, cx25721
+> 
+> * Fix properly:
+>    * usbip, go7007, adfs, x25
+> 
+> Some of the patches are rather tricky and I haven't
+> really done much proper testing, so I'd much prefer
+> the maintainers to pick up the patches and do the
+> necessary testing where possible, or even come up
+> with a better solution.
+> 
+> Arnd Bergmann (20):
+>   drm/i810: remove the BKL
+>   drm: remove i830 driver
+>   staging/usbip: convert to kthread
+>   staging/cx25721: serialize access to devlist
+>   staging/go7007: remove the BKL
+>   staging: Remove autofs3
+>   staging: remove smbfs
+>   adfs: remove the big kernel lock
+>   hpfs: rename big kernel lock to hpfs_lock
+>   hpfs: replace BKL with a global mutex
+>   hpfs: move to drivers/staging
+>   x25: remove the BKL
+>   appletalk: move to staging
+>   staging/appletalk: remove the BKL
+>   ufs: remove the BKL
+>   ipx: remove the BKL
+>   tracing: don't trace the BKL
+>   rtmutex-tester: remove BKL tests
+>   drivers: remove extraneous includes of smp_lock.h
+>   BKL: That's all, folks
+> 
+>  MAINTAINERS                                        |   11 +-
+>  drivers/gpu/drm/Kconfig                            |   47 +-
+>  drivers/gpu/drm/Makefile                           |    1 -
+>  drivers/gpu/drm/i810/i810_dma.c                    |   18 +-
+>  drivers/gpu/drm/i810/i810_drv.c                    |    6 +-
+>  drivers/gpu/drm/i830/Makefile                      |    8 -
+>  drivers/gpu/drm/i830/i830_dma.c                    | 1560 ---------
+>  drivers/gpu/drm/i830/i830_drv.c                    |  107 -
+>  drivers/gpu/drm/i830/i830_drv.h                    |  295 --
+>  drivers/gpu/drm/i830/i830_irq.c                    |  186 --
+>  drivers/net/Makefile                               |    1 -
+>  drivers/net/appletalk/Makefile                     |    7 -
+>  drivers/scsi/megaraid/megaraid_sas_fp.c            |    1 -
+>  drivers/scsi/megaraid/megaraid_sas_fusion.c        |    1 -
+>  drivers/staging/Kconfig                            |    8 +-
+>  drivers/staging/Makefile                           |    4 +-
+>  drivers/{net => staging}/appletalk/Kconfig         |    1 -
+>  {net => drivers/staging}/appletalk/Makefile        |    7 +-
+>  {net => drivers/staging}/appletalk/aarp.c          |    2 +-
+>  .../linux => drivers/staging/appletalk}/atalk.h    |    0
+>  {net => drivers/staging}/appletalk/atalk_proc.c    |    2 +-
+>  drivers/{net => staging}/appletalk/cops.c          |    2 +-
+>  drivers/{net => staging}/appletalk/cops.h          |    0
+>  drivers/{net => staging}/appletalk/cops_ffdrv.h    |    0
+>  drivers/{net => staging}/appletalk/cops_ltdrv.h    |    0
+>  {net => drivers/staging}/appletalk/ddp.c           |   44 +-
+>  {net => drivers/staging}/appletalk/dev.c           |    0
+>  drivers/{net => staging}/appletalk/ipddp.c         |    2 +-
+>  drivers/{net => staging}/appletalk/ipddp.h         |    0
+>  drivers/{net => staging}/appletalk/ltpc.c          |    2 +-
+>  drivers/{net => staging}/appletalk/ltpc.h          |    0
+>  .../staging}/appletalk/sysctl_net_atalk.c          |    2 +-
+>  drivers/staging/autofs/Kconfig                     |   22 -
+>  drivers/staging/autofs/Makefile                    |    7 -
+>  drivers/staging/autofs/TODO                        |    8 -
+>  drivers/staging/autofs/autofs_i.h                  |  165 -
+>  drivers/staging/autofs/dirhash.c                   |  260 --
+>  drivers/staging/autofs/init.c                      |   52 -
+>  drivers/staging/autofs/inode.c                     |  288 --
+>  drivers/staging/autofs/root.c                      |  648 ----
+>  drivers/staging/autofs/symlink.c                   |   26 -
+>  drivers/staging/autofs/waitq.c                     |  205 --
+>  drivers/staging/cx25821/Kconfig                    |    1 -
+>  drivers/staging/cx25821/cx25821-alsa.c             |    2 +
+>  drivers/staging/cx25821/cx25821-core.c             |   16 +-
+>  drivers/staging/cx25821/cx25821-video.c            |    9 +-
+>  drivers/staging/cx25821/cx25821.h                  |    3 +-
+>  drivers/staging/easycap/easycap.h                  |    1 -
+>  drivers/staging/easycap/easycap_ioctl.c            |    1 -
+>  drivers/staging/go7007/Kconfig                     |    1 -
+>  drivers/staging/go7007/s2250-loader.c              |    3 -
+>  {fs => drivers/staging}/hpfs/Kconfig               |    5 +-
+>  {fs => drivers/staging}/hpfs/Makefile              |    0
+>  drivers/staging/hpfs/TODO                          |    5 +
+>  {fs => drivers/staging}/hpfs/alloc.c               |    0
+>  {fs => drivers/staging}/hpfs/anode.c               |    0
+>  {fs => drivers/staging}/hpfs/buffer.c              |    0
+>  {fs => drivers/staging}/hpfs/dentry.c              |    0
+>  {fs => drivers/staging}/hpfs/dir.c                 |   23 +-
+>  {fs => drivers/staging}/hpfs/dnode.c               |    0
+>  {fs => drivers/staging}/hpfs/ea.c                  |    0
+>  {fs => drivers/staging}/hpfs/file.c                |    9 +-
+>  {fs => drivers/staging}/hpfs/hpfs.h                |    0
+>  {fs => drivers/staging}/hpfs/hpfs_fn.h             |   36 +
+>  {fs => drivers/staging}/hpfs/inode.c               |    9 +-
+>  {fs => drivers/staging}/hpfs/map.c                 |    0
+>  {fs => drivers/staging}/hpfs/name.c                |    0
+>  {fs => drivers/staging}/hpfs/namei.c               |   49 +-
+>  {fs => drivers/staging}/hpfs/super.c               |   21 +-
+>  drivers/staging/smbfs/Kconfig                      |   56 -
+>  drivers/staging/smbfs/Makefile                     |   18 -
+>  drivers/staging/smbfs/TODO                         |    8 -
+>  drivers/staging/smbfs/cache.c                      |  208 --
+>  drivers/staging/smbfs/dir.c                        |  699 ----
+>  drivers/staging/smbfs/file.c                       |  456 ---
+>  drivers/staging/smbfs/getopt.c                     |   64 -
+>  drivers/staging/smbfs/getopt.h                     |   14 -
+>  drivers/staging/smbfs/inode.c                      |  854 -----
+>  drivers/staging/smbfs/ioctl.c                      |   68 -
+>  drivers/staging/smbfs/proc.c                       | 3502 --------------------
+>  drivers/staging/smbfs/proto.h                      |   89 -
+>  drivers/staging/smbfs/request.c                    |  817 -----
+>  drivers/staging/smbfs/request.h                    |   70 -
+>  drivers/staging/smbfs/smb.h                        |  118 -
+>  drivers/staging/smbfs/smb_debug.h                  |   34 -
+>  drivers/staging/smbfs/smb_fs.h                     |  153 -
+>  drivers/staging/smbfs/smb_fs_i.h                   |   37 -
+>  drivers/staging/smbfs/smb_fs_sb.h                  |  100 -
+>  drivers/staging/smbfs/smb_mount.h                  |   65 -
+>  drivers/staging/smbfs/smbfs.txt                    |    8 -
+>  drivers/staging/smbfs/smbiod.c                     |  343 --
+>  drivers/staging/smbfs/smbno.h                      |  363 --
+>  drivers/staging/smbfs/sock.c                       |  385 ---
+>  drivers/staging/smbfs/symlink.c                    |   67 -
+>  drivers/staging/usbip/Kconfig                      |    2 +-
+>  drivers/staging/usbip/stub.h                       |    4 +-
+>  drivers/staging/usbip/stub_dev.c                   |   13 +-
+>  drivers/staging/usbip/stub_rx.c                    |   13 +-
+>  drivers/staging/usbip/stub_tx.c                    |   14 +-
+>  drivers/staging/usbip/usbip_common.c               |  105 -
+>  drivers/staging/usbip/usbip_common.h               |   20 +-
+>  drivers/staging/usbip/usbip_event.c                |   31 +-
+>  drivers/staging/usbip/vhci.h                       |    4 +-
+>  drivers/staging/usbip/vhci_hcd.c                   |   10 +-
+>  drivers/staging/usbip/vhci_rx.c                    |   16 +-
+>  drivers/staging/usbip/vhci_sysfs.c                 |    9 +-
+>  drivers/staging/usbip/vhci_tx.c                    |   14 +-
+>  drivers/target/target_core_device.c                |    1 -
+>  drivers/target/target_core_fabric_lib.c            |    1 -
+>  drivers/target/target_core_file.c                  |    1 -
+>  drivers/target/target_core_hba.c                   |    1 -
+>  drivers/target/target_core_iblock.c                |    1 -
+>  drivers/target/target_core_pscsi.c                 |    1 -
+>  drivers/target/target_core_rd.c                    |    1 -
+>  drivers/target/target_core_tpg.c                   |    1 -
+>  drivers/target/target_core_transport.c             |    1 -
+>  drivers/tty/n_hdlc.c                               |    1 -
+>  drivers/tty/n_r3964.c                              |    1 -
+>  drivers/tty/pty.c                                  |    1 -
+>  drivers/tty/tty_io.c                               |    1 -
+>  drivers/tty/tty_ldisc.c                            |    2 -
+>  drivers/tty/vt/selection.c                         |    1 -
+>  drivers/tty/vt/vc_screen.c                         |    1 -
+>  drivers/tty/vt/vt.c                                |    1 -
+>  drivers/tty/vt/vt_ioctl.c                          |    1 -
+>  fs/Kconfig                                         |    1 -
+>  fs/Makefile                                        |    1 -
+>  fs/adfs/Kconfig                                    |    1 -
+>  fs/adfs/dir.c                                      |    6 -
+>  fs/adfs/inode.c                                    |    6 -
+>  fs/adfs/super.c                                    |   13 +-
+>  fs/compat_ioctl.c                                  |    1 -
+>  fs/ufs/Kconfig                                     |    1 -
+>  fs/ufs/inode.c                                     |   78 +-
+>  fs/ufs/namei.c                                     |   35 +-
+>  fs/ufs/super.c                                     |   55 +-
+>  fs/ufs/truncate.c                                  |    5 +-
+>  fs/ufs/ufs.h                                       |    6 +-
+>  include/drm/Kbuild                                 |    1 -
+>  include/drm/i830_drm.h                             |  342 --
+>  include/linux/Kbuild                               |    1 -
+>  include/linux/hardirq.h                            |    9 +-
+>  include/linux/smp_lock.h                           |   65 -
+>  include/trace/events/bkl.h                         |   61 -
+>  init/Kconfig                                       |    5 -
+>  kernel/rtmutex-tester.c                            |   39 +-
+>  kernel/sched.c                                     |    7 -
+>  lib/Makefile                                       |    1 -
+>  lib/kernel_lock.c                                  |  143 -
+>  net/Kconfig                                        |    1 -
+>  net/Makefile                                       |    1 -
+>  net/ipx/Kconfig                                    |    1 -
+>  net/ipx/af_ipx.c                                   |   52 +-
+>  net/socket.c                                       |    1 -
+>  net/x25/Kconfig                                    |    1 -
+>  net/x25/af_x25.c                                   |   61 +-
+>  net/x25/x25_out.c                                  |    7 +-
+>  157 files changed, 356 insertions(+), 13722 deletions(-)
+>  delete mode 100644 drivers/gpu/drm/i830/Makefile
+>  delete mode 100644 drivers/gpu/drm/i830/i830_dma.c
+>  delete mode 100644 drivers/gpu/drm/i830/i830_drv.c
+>  delete mode 100644 drivers/gpu/drm/i830/i830_drv.h
+>  delete mode 100644 drivers/gpu/drm/i830/i830_irq.c
+>  delete mode 100644 drivers/net/appletalk/Makefile
+>  rename drivers/{net => staging}/appletalk/Kconfig (98%)
+>  rename {net => drivers/staging}/appletalk/Makefile (56%)
+>  rename {net => drivers/staging}/appletalk/aarp.c (99%)
+>  rename {include/linux => drivers/staging/appletalk}/atalk.h (100%)
+>  rename {net => drivers/staging}/appletalk/atalk_proc.c (99%)
+>  rename drivers/{net => staging}/appletalk/cops.c (99%)
+>  rename drivers/{net => staging}/appletalk/cops.h (100%)
+>  rename drivers/{net => staging}/appletalk/cops_ffdrv.h (100%)
+>  rename drivers/{net => staging}/appletalk/cops_ltdrv.h (100%)
+>  rename {net => drivers/staging}/appletalk/ddp.c (98%)
+>  rename {net => drivers/staging}/appletalk/dev.c (100%)
+>  rename drivers/{net => staging}/appletalk/ipddp.c (99%)
+>  rename drivers/{net => staging}/appletalk/ipddp.h (100%)
+>  rename drivers/{net => staging}/appletalk/ltpc.c (99%)
+>  rename drivers/{net => staging}/appletalk/ltpc.h (100%)
+>  rename {net => drivers/staging}/appletalk/sysctl_net_atalk.c (98%)
+>  delete mode 100644 drivers/staging/autofs/Kconfig
+>  delete mode 100644 drivers/staging/autofs/Makefile
+>  delete mode 100644 drivers/staging/autofs/TODO
+>  delete mode 100644 drivers/staging/autofs/autofs_i.h
+>  delete mode 100644 drivers/staging/autofs/dirhash.c
+>  delete mode 100644 drivers/staging/autofs/init.c
+>  delete mode 100644 drivers/staging/autofs/inode.c
+>  delete mode 100644 drivers/staging/autofs/root.c
+>  delete mode 100644 drivers/staging/autofs/symlink.c
+>  delete mode 100644 drivers/staging/autofs/waitq.c
+>  rename {fs => drivers/staging}/hpfs/Kconfig (80%)
+>  rename {fs => drivers/staging}/hpfs/Makefile (100%)
+>  create mode 100644 drivers/staging/hpfs/TODO
+>  rename {fs => drivers/staging}/hpfs/alloc.c (100%)
+>  rename {fs => drivers/staging}/hpfs/anode.c (100%)
+>  rename {fs => drivers/staging}/hpfs/buffer.c (100%)
+>  rename {fs => drivers/staging}/hpfs/dentry.c (100%)
+>  rename {fs => drivers/staging}/hpfs/dir.c (97%)
+>  rename {fs => drivers/staging}/hpfs/dnode.c (100%)
+>  rename {fs => drivers/staging}/hpfs/ea.c (100%)
+>  rename {fs => drivers/staging}/hpfs/file.c (97%)
+>  rename {fs => drivers/staging}/hpfs/hpfs.h (100%)
+>  rename {fs => drivers/staging}/hpfs/hpfs_fn.h (91%)
+>  rename {fs => drivers/staging}/hpfs/inode.c (98%)
+>  rename {fs => drivers/staging}/hpfs/map.c (100%)
+>  rename {fs => drivers/staging}/hpfs/name.c (100%)
+>  rename {fs => drivers/staging}/hpfs/namei.c (96%)
+>  rename {fs => drivers/staging}/hpfs/super.c (98%)
+>  delete mode 100644 drivers/staging/smbfs/Kconfig
+>  delete mode 100644 drivers/staging/smbfs/Makefile
+>  delete mode 100644 drivers/staging/smbfs/TODO
+>  delete mode 100644 drivers/staging/smbfs/cache.c
+>  delete mode 100644 drivers/staging/smbfs/dir.c
+>  delete mode 100644 drivers/staging/smbfs/file.c
+>  delete mode 100644 drivers/staging/smbfs/getopt.c
+>  delete mode 100644 drivers/staging/smbfs/getopt.h
+>  delete mode 100644 drivers/staging/smbfs/inode.c
+>  delete mode 100644 drivers/staging/smbfs/ioctl.c
+>  delete mode 100644 drivers/staging/smbfs/proc.c
+>  delete mode 100644 drivers/staging/smbfs/proto.h
+>  delete mode 100644 drivers/staging/smbfs/request.c
+>  delete mode 100644 drivers/staging/smbfs/request.h
+>  delete mode 100644 drivers/staging/smbfs/smb.h
+>  delete mode 100644 drivers/staging/smbfs/smb_debug.h
+>  delete mode 100644 drivers/staging/smbfs/smb_fs.h
+>  delete mode 100644 drivers/staging/smbfs/smb_fs_i.h
+>  delete mode 100644 drivers/staging/smbfs/smb_fs_sb.h
+>  delete mode 100644 drivers/staging/smbfs/smb_mount.h
+>  delete mode 100644 drivers/staging/smbfs/smbfs.txt
+>  delete mode 100644 drivers/staging/smbfs/smbiod.c
+>  delete mode 100644 drivers/staging/smbfs/smbno.h
+>  delete mode 100644 drivers/staging/smbfs/sock.c
+>  delete mode 100644 drivers/staging/smbfs/symlink.c
+>  delete mode 100644 include/drm/i830_drm.h
+>  delete mode 100644 include/linux/smp_lock.h
+>  delete mode 100644 include/trace/events/bkl.h
+>  delete mode 100644 lib/kernel_lock.c
+> 
+> [re-sent to mailing lists, due to overly long
+>  Cc list getting rejected by vger]
+> 
+> Cc: autofs@linux.kernel.org
+> Cc: dri-devel@lists.freedesktop.org
+> Cc: linux-cifs@vger.kernel.org
+> Cc: linux-fsdevel@vger.kernel.org
+> Cc: linux-x25@vger.kernel.org
+> Cc: netdev@vger.kernel.org
+> 
+> 
+> _______________________________________________
+> autofs mailing list
+> autofs@linux.kernel.org
+> http://linux.kernel.org/mailman/listinfo/autofs
 
-Replace done by sed with following regexp:
-
-sed -i 's@\(.*<\?-->\? \+\)[^%,(,\]\+\(.\+"\)@\1%s\2, __func__@g' fs/nfs/*.c
-
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-
----
- fs/nfs/client.c    |   66 ++++++++++++++++++++++++++--------------------------
- fs/nfs/getroot.c   |    8 +++---
- fs/nfs/namespace.c |    8 +++---
- fs/nfs/nfs4proc.c  |    4 ++-
- fs/nfs/super.c     |   34 +++++++++++++--------------
- 5 files changed, 60 insertions(+), 60 deletions(-)
-
-diff --git a/fs/nfs/client.c b/fs/nfs/client.c
-index 192f2f8..496b161 100644
---- a/fs/nfs/client.c
-+++ b/fs/nfs/client.c
-@@ -272,7 +272,7 @@ static void pnfs_init_server(struct nfs_server *server)
-  */
- static void nfs_free_client(struct nfs_client *clp)
- {
--	dprintk("--> nfs_free_client(%u)\n", clp->rpc_ops->version);
-+	dprintk("--> %s(%u)\n", __func__, clp->rpc_ops->version);
- 
- 	nfs4_shutdown_client(clp);
- 
-@@ -288,7 +288,7 @@ static void nfs_free_client(struct nfs_client *clp)
- 	kfree(clp->cl_hostname);
- 	kfree(clp);
- 
--	dprintk("<-- nfs_free_client()\n");
-+	dprintk("<-- %s()\n", __func__);
- }
- 
- /*
-@@ -299,7 +299,7 @@ void nfs_put_client(struct nfs_client *clp)
- 	if (!clp)
- 		return;
- 
--	dprintk("--> nfs_put_client({%d})\n", atomic_read(&clp->cl_count));
-+	dprintk("--> %s({%d})\n", __func__, atomic_read(&clp->cl_count));
- 
- 	if (atomic_dec_and_lock(&clp->cl_count, &nfs_client_lock)) {
- 		list_del(&clp->cl_share_link);
-@@ -486,7 +486,7 @@ static struct nfs_client *nfs_get_client(const struct nfs_client_initdata *cl_in
- 	struct nfs_client *clp, *new = NULL;
- 	int error;
- 
--	dprintk("--> nfs_get_client(%s,v%u)\n",
-+	dprintk("--> %s(%s,v%u)\n", __func__,
- 		cl_init->hostname ?: "", cl_init->rpc_ops->version);
- 
- 	/* see if the client already exists */
-@@ -504,7 +504,7 @@ static struct nfs_client *nfs_get_client(const struct nfs_client_initdata *cl_in
- 		new = nfs_alloc_client(cl_init);
- 	} while (!IS_ERR(new));
- 
--	dprintk("--> nfs_get_client() = %ld [failed]\n", PTR_ERR(new));
-+	dprintk("--> %s() = %ld [failed]\n", __func__, PTR_ERR(new));
- 	return new;
- 
- 	/* install a new client and return with it unready */
-@@ -512,7 +512,7 @@ install_client:
- 	clp = new;
- 	list_add(&clp->cl_share_link, &nfs_client_list);
- 	spin_unlock(&nfs_client_lock);
--	dprintk("--> nfs_get_client() = %p [new]\n", clp);
-+	dprintk("--> %s() = %p [new]\n", __func__, clp);
- 	return clp;
- 
- 	/* found an existing client
-@@ -539,7 +539,7 @@ found_client:
- 
- 	BUG_ON(clp->cl_cons_state != NFS_CS_READY);
- 
--	dprintk("--> nfs_get_client() = %p [share]\n", clp);
-+	dprintk("--> %s() = %p [share]\n", __func__, clp);
- 	return clp;
- }
- 
-@@ -775,7 +775,7 @@ static int nfs_init_client(struct nfs_client *clp,
- 
- 	if (clp->cl_cons_state == NFS_CS_READY) {
- 		/* the client is already initialised */
--		dprintk("<-- nfs_init_client() = 0 [already %p]\n", clp);
-+		dprintk("<-- %s() = 0 [already %p]\n", __func__, clp);
- 		return 0;
- 	}
- 
-@@ -792,7 +792,7 @@ static int nfs_init_client(struct nfs_client *clp,
- 
- error:
- 	nfs_mark_client_ready(clp, error);
--	dprintk("<-- nfs_init_client() = xerror %d\n", error);
-+	dprintk("<-- %s() = xerror %d\n", __func__, error);
- 	return error;
- }
- 
-@@ -813,7 +813,7 @@ static int nfs_init_server(struct nfs_server *server,
- 	struct nfs_client *clp;
- 	int error;
- 
--	dprintk("--> nfs_init_server()\n");
-+	dprintk("--> %s()\n", __func__);
- 
- #ifdef CONFIG_NFS_V3
- 	if (data->version == 3)
-@@ -823,7 +823,7 @@ static int nfs_init_server(struct nfs_server *server,
- 	/* Allocate or find a client reference we can use */
- 	clp = nfs_get_client(&cl_init);
- 	if (IS_ERR(clp)) {
--		dprintk("<-- nfs_init_server() = error %ld\n", PTR_ERR(clp));
-+		dprintk("<-- %s() = error %ld\n", __func__, PTR_ERR(clp));
- 		return PTR_ERR(clp);
- 	}
- 
-@@ -876,13 +876,13 @@ static int nfs_init_server(struct nfs_server *server,
- 	server->namelen  = data->namlen;
- 	/* Create a client RPC handle for the NFSv3 ACL management interface */
- 	nfs_init_server_aclclient(server);
--	dprintk("<-- nfs_init_server() = 0 [new %p]\n", clp);
-+	dprintk("<-- %s() = 0 [new %p]\n", __func__, clp);
- 	return 0;
- 
- error:
- 	server->nfs_client = NULL;
- 	nfs_put_client(clp);
--	dprintk("<-- nfs_init_server() = xerror %d\n", error);
-+	dprintk("<-- %s() = xerror %d\n", __func__, error);
- 	return error;
- }
- 
-@@ -951,7 +951,7 @@ static int nfs_probe_fsinfo(struct nfs_server *server, struct nfs_fh *mntfh, str
- 	struct nfs_client *clp = server->nfs_client;
- 	int error;
- 
--	dprintk("--> nfs_probe_fsinfo()\n");
-+	dprintk("--> %s()\n", __func__);
- 
- 	if (clp->rpc_ops->set_capabilities != NULL) {
- 		error = clp->rpc_ops->set_capabilities(server, mntfh);
-@@ -978,7 +978,7 @@ static int nfs_probe_fsinfo(struct nfs_server *server, struct nfs_fh *mntfh, str
- 			server->namelen = pathinfo.max_namelen;
- 	}
- 
--	dprintk("<-- nfs_probe_fsinfo() = 0\n");
-+	dprintk("<-- %s() = 0\n", __func__);
- 	return 0;
- 
- out_error:
-@@ -1065,7 +1065,7 @@ static struct nfs_server *nfs_alloc_server(void)
-  */
- void nfs_free_server(struct nfs_server *server)
- {
--	dprintk("--> nfs_free_server()\n");
-+	dprintk("--> %s()\n", __func__);
- 
- 	nfs_server_remove_lists(server);
- 	unset_pnfs_layoutdriver(server);
-@@ -1084,7 +1084,7 @@ void nfs_free_server(struct nfs_server *server)
- 	bdi_destroy(&server->backing_dev_info);
- 	kfree(server);
- 	nfs_release_automount_timer();
--	dprintk("<-- nfs_free_server()\n");
-+	dprintk("<-- %s()\n", __func__);
- }
- 
- /*
-@@ -1322,7 +1322,7 @@ static int nfs4_init_client(struct nfs_client *clp,
- 
- 	if (clp->cl_cons_state == NFS_CS_READY) {
- 		/* the client is initialised already */
--		dprintk("<-- nfs4_init_client() = 0 [already %p]\n", clp);
-+		dprintk("<-- %s() = 0 [already %p]\n", __func__, clp);
- 		return 0;
- 	}
- 
-@@ -1353,7 +1353,7 @@ static int nfs4_init_client(struct nfs_client *clp,
- 
- error:
- 	nfs_mark_client_ready(clp, error);
--	dprintk("<-- nfs4_init_client() = xerror %d\n", error);
-+	dprintk("<-- %s() = xerror %d\n", __func__, error);
- 	return error;
- }
- 
-@@ -1380,7 +1380,7 @@ static int nfs4_set_client(struct nfs_server *server,
- 	struct nfs_client *clp;
- 	int error;
- 
--	dprintk("--> nfs4_set_client()\n");
-+	dprintk("--> %s()\n", __func__);
- 
- 	/* Allocate or find a client reference we can use */
- 	clp = nfs_get_client(&cl_init);
-@@ -1394,13 +1394,13 @@ static int nfs4_set_client(struct nfs_server *server,
- 		goto error_put;
- 
- 	server->nfs_client = clp;
--	dprintk("<-- nfs4_set_client() = 0 [new %p]\n", clp);
-+	dprintk("<-- %s() = 0 [new %p]\n", __func__, clp);
- 	return 0;
- 
- error_put:
- 	nfs_put_client(clp);
- error:
--	dprintk("<-- nfs4_set_client() = xerror %d\n", error);
-+	dprintk("<-- %s() = xerror %d\n", __func__, error);
- 	return error;
- }
- 
-@@ -1484,7 +1484,7 @@ static int nfs4_init_server(struct nfs_server *server,
- 	struct rpc_timeout timeparms;
- 	int error;
- 
--	dprintk("--> nfs4_init_server()\n");
-+	dprintk("--> %s()\n", __func__);
- 
- 	nfs_init_timeout_values(&timeparms, data->nfs_server.protocol,
- 			data->timeo, data->retrans);
-@@ -1525,7 +1525,7 @@ static int nfs4_init_server(struct nfs_server *server,
- 
- error:
- 	/* Done */
--	dprintk("<-- nfs4_init_server() = %d\n", error);
-+	dprintk("<-- %s() = %d\n", __func__, error);
- 	return error;
- }
- 
-@@ -1539,7 +1539,7 @@ struct nfs_server *nfs4_create_server(const struct nfs_parsed_mount_data *data,
- 	struct nfs_server *server;
- 	int error;
- 
--	dprintk("--> nfs4_create_server()\n");
-+	dprintk("--> %s()\n", __func__);
- 
- 	server = nfs_alloc_server();
- 	if (!server)
-@@ -1554,12 +1554,12 @@ struct nfs_server *nfs4_create_server(const struct nfs_parsed_mount_data *data,
- 	if (error < 0)
- 		goto error;
- 
--	dprintk("<-- nfs4_create_server() = %p\n", server);
-+	dprintk("<-- %s() = %p\n", __func__, server);
- 	return server;
- 
- error:
- 	nfs_free_server(server);
--	dprintk("<-- nfs4_create_server() = error %d\n", error);
-+	dprintk("<-- %s() = error %d\n", __func__, error);
- 	return ERR_PTR(error);
- }
- 
-@@ -1573,7 +1573,7 @@ struct nfs_server *nfs4_create_referral_server(struct nfs_clone_mount *data,
- 	struct nfs_server *server, *parent_server;
- 	int error;
- 
--	dprintk("--> nfs4_create_referral_server()\n");
-+	dprintk("--> %s()\n", __func__);
- 
- 	server = nfs_alloc_server();
- 	if (!server)
-@@ -1607,12 +1607,12 @@ struct nfs_server *nfs4_create_referral_server(struct nfs_clone_mount *data,
- 	if (error < 0)
- 		goto error;
- 
--	dprintk("<-- nfs_create_referral_server() = %p\n", server);
-+	dprintk("<-- %s() = %p\n", __func__, server);
- 	return server;
- 
- error:
- 	nfs_free_server(server);
--	dprintk("<-- nfs4_create_referral_server() = error %d\n", error);
-+	dprintk("<-- %s() = error %d\n", __func__, error);
- 	return ERR_PTR(error);
- }
- 
-@@ -1629,7 +1629,7 @@ struct nfs_server *nfs_clone_server(struct nfs_server *source,
- 	struct nfs_fattr *fattr_fsinfo;
- 	int error;
- 
--	dprintk("--> nfs_clone_server(,%llx:%llx,)\n",
-+	dprintk("--> %s(,%llx:%llx,)\n", __func__,
- 		(unsigned long long) fattr->fsid.major,
- 		(unsigned long long) fattr->fsid.minor);
- 
-@@ -1677,13 +1677,13 @@ struct nfs_server *nfs_clone_server(struct nfs_server *source,
- 	server->mount_time = jiffies;
- 
- 	nfs_free_fattr(fattr_fsinfo);
--	dprintk("<-- nfs_clone_server() = %p\n", server);
-+	dprintk("<-- %s() = %p\n", __func__, server);
- 	return server;
- 
- out_free_server:
- 	nfs_free_fattr(fattr_fsinfo);
- 	nfs_free_server(server);
--	dprintk("<-- nfs_clone_server() = error %d\n", error);
-+	dprintk("<-- %s() = error %d\n", __func__, error);
- 	return ERR_PTR(error);
- }
- 
-diff --git a/fs/nfs/getroot.c b/fs/nfs/getroot.c
-index b5ffe8f..ca076ce 100644
---- a/fs/nfs/getroot.c
-+++ b/fs/nfs/getroot.c
-@@ -131,7 +131,7 @@ int nfs4_get_rootfh(struct nfs_server *server, struct nfs_fh *mntfh)
- 	struct nfs_fsinfo fsinfo;
- 	int ret = -ENOMEM;
- 
--	dprintk("--> nfs4_get_rootfh()\n");
-+	dprintk("--> %s()\n", __func__);
- 
- 	fsinfo.fattr = nfs_alloc_fattr();
- 	if (fsinfo.fattr == NULL)
-@@ -162,7 +162,7 @@ int nfs4_get_rootfh(struct nfs_server *server, struct nfs_fh *mntfh)
- 	memcpy(&server->fsid, &fsinfo.fattr->fsid, sizeof(server->fsid));
- out:
- 	nfs_free_fattr(fsinfo.fattr);
--	dprintk("<-- nfs4_get_rootfh() = %d\n", ret);
-+	dprintk("<-- %s() = %d\n", __func__, ret);
- 	return ret;
- }
- 
-@@ -177,7 +177,7 @@ struct dentry *nfs4_get_root(struct super_block *sb, struct nfs_fh *mntfh)
- 	struct inode *inode;
- 	int error;
- 
--	dprintk("--> nfs4_get_root()\n");
-+	dprintk("--> %s()\n", __func__);
- 
- 	/* get the info about the server and filesystem */
- 	error = nfs4_server_capabilities(server, mntfh);
-@@ -226,7 +226,7 @@ struct dentry *nfs4_get_root(struct super_block *sb, struct nfs_fh *mntfh)
- 
- out:
- 	nfs_free_fattr(fattr);
--	dprintk("<-- nfs4_get_root()\n");
-+	dprintk("<-- %s()\n", __func__);
- 	return ret;
- }
- 
-diff --git a/fs/nfs/namespace.c b/fs/nfs/namespace.c
-index f32b860..f1782c0 100644
---- a/fs/nfs/namespace.c
-+++ b/fs/nfs/namespace.c
-@@ -117,7 +117,7 @@ struct vfsmount *nfs_d_automount(struct path *path)
- 	struct nfs_fattr *fattr = NULL;
- 	int err;
- 
--	dprintk("--> nfs_d_automount()\n");
-+	dprintk("--> %s()\n", __func__);
- 
- 	mnt = ERR_PTR(-ESTALE);
- 	if (IS_ROOT(path->dentry))
-@@ -158,7 +158,7 @@ out:
- 	nfs_free_fattr(fattr);
- 	nfs_free_fhandle(fh);
- out_nofree:
--	dprintk("<-- nfs_follow_mountpoint() = %p\n", mnt);
-+	dprintk("<-- %s() = %p\n", __func__, mnt);
- 	return mnt;
- }
- 
-@@ -230,7 +230,7 @@ static struct vfsmount *nfs_do_submount(const struct vfsmount *mnt_parent,
- 	char *page = (char *) __get_free_page(GFP_USER);
- 	char *devname;
- 
--	dprintk("--> nfs_do_submount()\n");
-+	dprintk("--> %s()\n", __func__);
- 
- 	dprintk("%s: submounting on %s/%s\n", __func__,
- 			dentry->d_parent->d_name.name,
-@@ -247,6 +247,6 @@ free_page:
- out:
- 	dprintk("%s: done\n", __func__);
- 
--	dprintk("<-- nfs_do_submount() = %p\n", mnt);
-+	dprintk("<-- %s() = %p\n", __func__, mnt);
- 	return mnt;
- }
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 9d992b0..79a84ef 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -5032,7 +5032,7 @@ int nfs4_proc_destroy_session(struct nfs4_session *session)
- 	int status = 0;
- 	struct rpc_message msg;
- 
--	dprintk("--> nfs4_proc_destroy_session\n");
-+	dprintk("--> %s\n", __func__);
- 
- 	/* session is still being setup */
- 	if (session->clp->cl_cons_state != NFS_CS_READY)
-@@ -5049,7 +5049,7 @@ int nfs4_proc_destroy_session(struct nfs4_session *session)
- 			"Got error %d from the server on DESTROY_SESSION. "
- 			"Session has been destroyed regardless...\n", status);
- 
--	dprintk("<-- nfs4_proc_destroy_session\n");
-+	dprintk("<-- %s\n", __func__);
- 	return status;
- }
- 
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index b68c860..4f89d5b 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -2415,7 +2415,7 @@ nfs_xdev_mount(struct file_system_type *fs_type, int flags,
- 	};
- 	int error;
- 
--	dprintk("--> nfs_xdev_mount()\n");
-+	dprintk("--> %s()\n", __func__);
- 
- 	/* create a new volume representation */
- 	server = nfs_clone_server(NFS_SB(data->sb), data->fh, data->fattr);
-@@ -2466,13 +2466,13 @@ nfs_xdev_mount(struct file_system_type *fs_type, int flags,
- 	/* clone any lsm security options from the parent to the new sb */
- 	security_sb_clone_mnt_opts(data->sb, s);
- 
--	dprintk("<-- nfs_xdev_mount() = 0\n");
-+	dprintk("<-- %s() = 0\n", __func__);
- 	return mntroot;
- 
- out_err_nosb:
- 	nfs_free_server(server);
- out_err_noserver:
--	dprintk("<-- nfs_xdev_mount() = %d [error]\n", error);
-+	dprintk("<-- %s() = %d [error]\n", __func__, error);
- 	return ERR_PTR(error);
- 
- error_splat_super:
-@@ -2480,7 +2480,7 @@ error_splat_super:
- 		bdi_unregister(&server->backing_dev_info);
- error_splat_bdi:
- 	deactivate_locked_super(s);
--	dprintk("<-- nfs_xdev_mount() = %d [splat]\n", error);
-+	dprintk("<-- %s() = %d [splat]\n", __func__, error);
- 	return ERR_PTR(error);
- }
- 
-@@ -2917,7 +2917,7 @@ static int nfs4_try_mount(int flags, const char *dev_name,
- 	struct vfsmount *root_mnt;
- 	int error;
- 
--	dfprintk(MOUNT, "--> nfs4_try_mount()\n");
-+	dfprintk(MOUNT, "--> %s()\n", __func__);
- 
- 	export_path = data->nfs_server.export_path;
- 	data->nfs_server.export_path = "/";
-@@ -2932,7 +2932,7 @@ static int nfs4_try_mount(int flags, const char *dev_name,
- 	error = nfs_follow_remote_path(root_mnt, export_path, mnt);
- 
- out:
--	dfprintk(MOUNT, "<-- nfs4_try_mount() = %d%s\n", error,
-+	dfprintk(MOUNT, "<-- %s() = %d%s\n", __func__, error,
- 			error != 0 ? " [error]" : "");
- 	return error;
- }
-@@ -2964,7 +2964,7 @@ out:
- 	kfree(data->fscache_uniq);
- out_free_data:
- 	kfree(data);
--	dprintk("<-- nfs4_get_sb() = %d%s\n", error,
-+	dprintk("<-- %s() = %d%s\n", __func__, error,
- 			error != 0 ? " [error]" : "");
- 	return error;
- }
-@@ -2998,7 +2998,7 @@ nfs4_xdev_mount(struct file_system_type *fs_type, int flags,
- 	};
- 	int error;
- 
--	dprintk("--> nfs4_xdev_mount()\n");
-+	dprintk("--> %s()\n", __func__);
- 
- 	/* create a new volume representation */
- 	server = nfs_clone_server(NFS_SB(data->sb), data->fh, data->fattr);
-@@ -3048,13 +3048,13 @@ nfs4_xdev_mount(struct file_system_type *fs_type, int flags,
- 
- 	security_sb_clone_mnt_opts(data->sb, s);
- 
--	dprintk("<-- nfs4_xdev_mount() = 0\n");
-+	dprintk("<-- %s() = 0\n", __func__);
- 	return mntroot;
- 
- out_err_nosb:
- 	nfs_free_server(server);
- out_err_noserver:
--	dprintk("<-- nfs4_xdev_mount() = %d [error]\n", error);
-+	dprintk("<-- %s() = %d [error]\n", __func__, error);
- 	return ERR_PTR(error);
- 
- error_splat_super:
-@@ -3062,7 +3062,7 @@ error_splat_super:
- 		bdi_unregister(&server->backing_dev_info);
- error_splat_bdi:
- 	deactivate_locked_super(s);
--	dprintk("<-- nfs4_xdev_mount() = %d [splat]\n", error);
-+	dprintk("<-- %s() = %d [splat]\n", __func__, error);
- 	return ERR_PTR(error);
- }
- 
-@@ -3081,7 +3081,7 @@ nfs4_remote_referral_mount(struct file_system_type *fs_type, int flags,
- 	};
- 	int error = -ENOMEM;
- 
--	dprintk("--> nfs4_referral_get_sb()\n");
-+	dprintk("--> %s()\n", __func__);
- 
- 	mntfh = nfs_alloc_fhandle();
- 	if (mntfh == NULL)
-@@ -3136,7 +3136,7 @@ nfs4_remote_referral_mount(struct file_system_type *fs_type, int flags,
- 	security_sb_clone_mnt_opts(data->sb, s);
- 
- 	nfs_free_fhandle(mntfh);
--	dprintk("<-- nfs4_referral_get_sb() = 0\n");
-+	dprintk("<-- %s() = 0\n", __func__);
- 	return mntroot;
- 
- out_err_nosb:
-@@ -3144,7 +3144,7 @@ out_err_nosb:
- out_err_noserver:
- 	nfs_free_fhandle(mntfh);
- out_err_nofh:
--	dprintk("<-- nfs4_referral_get_sb() = %d [error]\n", error);
-+	dprintk("<-- %s() = %d [error]\n", __func__, error);
- 	return ERR_PTR(error);
- 
- error_splat_super:
-@@ -3153,7 +3153,7 @@ error_splat_super:
- error_splat_bdi:
- 	deactivate_locked_super(s);
- 	nfs_free_fhandle(mntfh);
--	dprintk("<-- nfs4_referral_get_sb() = %d [splat]\n", error);
-+	dprintk("<-- %s() = %d [splat]\n", __func__, error);
- 	return ERR_PTR(error);
- }
- 
-@@ -3169,7 +3169,7 @@ static int nfs4_referral_get_sb(struct file_system_type *fs_type,
- 	struct vfsmount *root_mnt;
- 	int error;
- 
--	dprintk("--> nfs4_referral_get_sb()\n");
-+	dprintk("--> %s()\n", __func__);
- 
- 	export_path = data->mnt_path;
- 	data->mnt_path = "/";
-@@ -3184,7 +3184,7 @@ static int nfs4_referral_get_sb(struct file_system_type *fs_type,
- 
- 	error = nfs_follow_remote_path(root_mnt, export_path, mnt);
- out:
--	dprintk("<-- nfs4_referral_get_sb() = %d%s\n", error,
-+	dprintk("<-- %s() = %d%s\n", __func__, error,
- 			error != 0 ? " [error]" : "");
- 	return error;
- }
 
