@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab1A0Aal (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 19:30:41 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34802 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754372Ab1A0Aaj (ORCPT
+	id S1754560Ab1A0Abq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 19:31:46 -0500
+Received: from mail.bluewatersys.com ([202.124.120.130]:39706 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752974Ab1A0Abo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 19:30:39 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 27 Jan 2011 09:24:34 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg Thelen <gthelen@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] oom: handle overflow in mem_cgroup_out_of_memory()
-Message-Id: <20110127092434.df18c7a6.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110126142909.0b710a0c.akpm@linux-foundation.org>
-References: <1296030555-3594-1-git-send-email-gthelen@google.com>
-	<20110126170713.GA2401@cmpxchg.org>
-	<xr93y667lgdm.fsf@gthelen.mtv.corp.google.com>
-	<20110126183023.GB2401@cmpxchg.org>
-	<xr9362tbl83f.fsf@gthelen.mtv.corp.google.com>
-	<20110126142909.0b710a0c.akpm@linux-foundation.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 26 Jan 2011 19:31:44 -0500
+Message-ID: <4D40BD00.1090408@bluewatersys.com>
+Date: Thu, 27 Jan 2011 13:32:00 +1300
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Mandeep Singh Baines <msb@chromium.org>
+CC: gregkh@suse.de, rjw@sisk.pl, mingo@redhat.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 1/6] mm/page_alloc: use appropriate printk priority level
+References: <20110125235700.GR8008@google.com> <1296084570-31453-2-git-send-email-msb@chromium.org>
+In-Reply-To: <1296084570-31453-2-git-send-email-msb@chromium.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Jan 2011 14:29:09 -0800
-Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> On Wed, 26 Jan 2011 12:32:04 -0800
-> Greg Thelen <gthelen@google.com> wrote:
+On 01/27/2011 12:29 PM, Mandeep Singh Baines wrote:
+> printk()s without a priority level default to KERN_WARNING. To reduce
+> noise at KERN_WARNING, this patch set the priority level appriopriately
+> for unleveled printks()s. This should be useful to folks that look at
+> dmesg warnings closely.
 > 
-> > > That being said, does this have any practical impact at all?  I mean,
-> > > this code runs when the cgroup limit is breached.  But if the number
-> > > of allowed pages (not bytes!) can not fit into 32 bits, it means you
-> > > have a group of processes using more than 16T.  On a 32-bit machine.
-> > 
-> > The value of this patch is up for debate.  I do not have an example
-> > situation where this truncation causes the wrong thing to happen.  I
-> > suppose it might be possible for a racing update to
-> > memory.limit_in_bytes which grows the limit from a reasonable (example:
-> > 100M) limit to a large limit (example 1<<45) could benefit from this
-> > patch.  I admit that this case seems pathological and may not be likely
-> > or even worth bothering over.  If neither the memcg nor the oom
-> > maintainers want the patch, then feel free to drop it.  I just noticed
-> > the issue and thought it might be worth addressing.
-> 
-> Ah.  I was scratching my head over that.
-> 
-> In zillions of places the kernel assumes that a 32-bit kernel has less
-> than 2^32 pages of memory, so the code as it stands is, umm, idiomatic.
-> 
+> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+> ---
 
-I think we can assume that. 
+> @@ -4700,33 +4700,36 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
+>  	find_zone_movable_pfns_for_nodes(zone_movable_pfn);
+>  
+>  	/* Print out the zone ranges */
+> -	printk("Zone PFN ranges:\n");
+> +	printk(KERN_INFO "Zone PFN ranges:\n");
+>  	for (i = 0; i < MAX_NR_ZONES; i++) {
+>  		if (i == ZONE_MOVABLE)
+>  			continue;
+> -		printk("  %-8s ", zone_names[i]);
+> +		printk(KERN_INFO "  %-8s ", zone_names[i]);
+>  		if (arch_zone_lowest_possible_pfn[i] ==
+>  				arch_zone_highest_possible_pfn[i])
+>  			printk("empty\n");
 
-> But afaict the only way the patch makes a real-world difference is if
-> res_counter_read_u64() is busted?
-> 
-> And, as you point out, res_counter_read_u64() is indeed busted on
-> 32-bit machines.  It has 25 callsites in mm/memcontrol.c - has anyone
-> looked at the implications of this?  What happens in all those
-> callsites if the counter is read during a count rollover?
-> 
+Should be printk(KERN_CONT ... (or pr_cont).
 
-I'll review. Against the roll-over, I think we just need to take lock.
-So, res_counter_read_u64() implementation was wrong. It should take lock.
-Please give me time.
+>  		else
+> -			printk("%0#10lx -> %0#10lx\n",
+> +			printk(KERN_INFO "%0#10lx -> %0#10lx\n",
+>  				arch_zone_lowest_possible_pfn[i],
+>  				arch_zone_highest_possible_pfn[i]);
 
+The printk above doesn't have a trailing newline so this should be
+printk(KERN_CONT ...
 
-THanks,
--Kame
+There are a couple of other places in this patch series that also need
+to be fixed in a similar manner.
 
+~Ryan
 
+-- 
+Bluewater Systems Ltd - ARM Technology Solution Centre
 
-
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+Fax:   +64 3 3779135			  USA 1800 261 2934
