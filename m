@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754334Ab1A0Knv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 05:43:51 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:56466 "EHLO
-	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753741Ab1A0Knt (ORCPT
+	id S1754282Ab1A0KrX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 05:47:23 -0500
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:57624 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753741Ab1A0KrW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 05:43:49 -0500
-Date: Thu, 27 Jan 2011 10:43:43 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Mike Waychison <mikew@google.com>
-Cc: Greg KH <greg@kroah.com>, torvalds@linux-foundation.org,
-        San Mehat <san@google.com>, Aaron Durbin <adurbin@google.com>,
-        Duncan Laurie <dlaurie@google.com>, linux-kernel@vger.kernel.org,
-        Tim Hockin <thockin@google.com>
-Subject: Re: [PATCH v1 3/6] driver: Google EFI SMI
-Message-ID: <20110127104343.5931161e@lxorguk.ukuu.org.uk>
-In-Reply-To: <AANLkTi=rO5QOVjNNWkekOb0WXzKX2CUpgvEryL0cemzB@mail.gmail.com>
-References: <20110125002433.12637.51091.stgit@mike.mtv.corp.google.com>
-	<20110125002449.12637.35623.stgit@mike.mtv.corp.google.com>
-	<20110125031752.GA9846@kroah.com>
-	<AANLkTi=XhRX-=k8UmmQFshP6fgF_q2c-9gEHuH0mWu0a@mail.gmail.com>
-	<20110126024608.GB28283@kroah.com>
-	<AANLkTi=rO5QOVjNNWkekOb0WXzKX2CUpgvEryL0cemzB@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Jan 2011 05:47:22 -0500
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFIhi0PEiUl
+X-RZG-CLASS-ID: mo00
+Date: Thu, 27 Jan 2011 11:47:13 +0100
+From: Olaf Hering <olaf@aepfle.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] crash_dump: export is_kdump_kernel to modules,
+ consolidate elfcorehdr_addr, setup_elfcorehdr and saved_max_pfn
+Message-ID: <20110127104713.GA31360@aepfle.de>
+References: <20110125161052.GA20105@aepfle.de>
+ <20110126160426.796b0669.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110126160426.796b0669.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I understand that type widths change in a compat setting.  So what?
-> Code in each environment is written to it's own namespace anyhow.
+On Wed, Jan 26, Andrew Morton wrote:
 
-So you ned up with a pile of extra crap in the kernel to handle 32bit
-userspace on 64bit and the like. If instead the structs are carefully
-laid out this doesn't occur.
+> On Tue, 25 Jan 2011 17:10:52 +0100
+> Olaf Hering <olaf@aepfle.de> wrote:
 
-> Here's what *I* think *you* think about __u32 vs u32 vs uint32_t.
-> Correct me if I'm totally off-base here:
+> > --- /dev/null
+> > +++ linux-2.6.38.rc/kernel/crash_dump.c
+> > @@ -0,0 +1,33 @@
+> > +#include <linux/crash_dump.h>
+> > +#include <linux/init.h>
+> > +#include <linux/module.h>
+> > +
+> > +/*
+> > + * If we have booted due to a crash, max_pfn will be a very low value. We need
+> > + * to know the amount of memory that the previous kernel used.
+> > + */
+> > +unsigned long saved_max_pfn;
+> > +
+> > +/*
+> > + * stores the physical address of elf header of crash image
+> > + *
+> > + * Note: elfcorehdr_addr is not just limited to vmcore. It is also used by
+> > + * is_kdump_kernel() to determine if we are booting after a panic. Hence put
+> > + * it under CONFIG_CRASH_DUMP and not CONFIG_PROC_VMCORE.
+> > + */
+> > +unsigned long long elfcorehdr_addr = ELFCORE_ADDR_MAX;
+> > +EXPORT_SYMBOL_GPL(elfcorehdr_addr);
+> > +
+> > +/*
+> > + * elfcorehdr= specifies the location of elf core header stored by the crashed
+> > + * kernel. This option will be passed by kexec loader to the capture kernel.
+> > + */
+> > +static int __init setup_elfcorehdr(char *arg)
+> > +{
+> > +	char *end;
+> > +	if (!arg)
+> > +		return -EINVAL;
+> > +	elfcorehdr_addr = memparse(arg, &end);
+> > +	return end > arg ? 0 : -EINVAL;
+> > +}
+> > +early_param("elfcorehdr", setup_elfcorehdr);
+> 
+> Please check that this file is #including everything it needs.  Just
+> looking at it I'd expect a build error with CONFIG_KEXEC=n,
+> CONFIG_CRASH_DUMP=y due to a missed ELFCORE_ADDR_MAX definition.
 
-And the __aligned_ ones for things like u64 in ioctls and structs...
+I'm not sure what you mean?  ELFCORE_ADDR_MAX is in linux/crash_dump.h
+defined unconditionally. I dont see the relation to CONFIG_KEXEC.
 
-It's also a style and consistency thing, its trivialto use the same style
-as the rest of the kernel, it's trivial to tweak and it helps keep
-coherency of style, even if you are sitting at the keyboard mumbling
-"bunch of morons if you ask me" while doing it ;)
-
-> I believe the above is non-sense because there is no concerted effort
-> to ever let userland include kernel headers in any meaningful way.
-
-Where do you think the library headers are distilled from ?
-
-> Well, personally I like ioctls and system calls.  They don't bloat the
-> system with unneeded crud and abstractions that aren't very useful.
-> So what if you can't easily interface with them from a bare shell.
-> That's what userland utilities are for anyhow.
-
-ioctl has its place and I would agree with you on this one the interface
-is essentially structure based so there isn't really that much you can do
-about it anyway beyond getting the structures right.
-
-(and the less the rest of the world has to know about EFI SMI internals
-the better)
-
-> I'm not sure if you are trying to suggest that there is a better way
-> to solve these problems without actually saying so.  We could probably
-> use a different interface, sure.
-
-sysfs stuff only really helps for unsynchronized queries, ioctl is
-read-modify-write which is a property sysfs lacks.
-
-Alan
+Olaf
