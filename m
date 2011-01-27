@@ -1,110 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501Ab1A0GLq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 01:11:46 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:21009 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab1A0GLp convert rfc822-to-8bit (ORCPT
+	id S1751609Ab1A0GMm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 01:12:42 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:48944 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750835Ab1A0GMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 01:11:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=jE6ZeXvCIjbG63bkJFDfcAvptNqPvdsJNQyBUraZHhUUKSmQa9tnBM7hcXL7NQWk4k
-         wWuG3rKInBMVg5Xjuj3Q==
+	Thu, 27 Jan 2011 01:12:41 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=coly.li;
+	h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=lAlecjYDdh7tcdXDTzKgk9Aqv9Oyq837LX1Bqp52pI9Kzm+j8BmYe1SjLQ8NzDUj6zV5dp71UCQWeVRCns6sbriyYxo500cDM7u1KYzXOL6RB5N6wpHCGozSFAHVoAa9;
+Message-ID: <4D4112F1.70804@coly.li>
+Date: Thu, 27 Jan 2011 14:38:41 +0800
+From: Coly Li <i@coly.li>
+Reply-To: i@coly.li
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; zh-CN; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20110126112624.GC2562@n2100.arm.linux.org.uk>
-References: <1295014231.7901.41.camel@e102109-lin.cambridge.arm.com>
-	<20110114154919.GE15996@n2100.arm.linux.org.uk>
-	<1295022193.7901.56.camel@e102109-lin.cambridge.arm.com>
-	<20110114163520.GH15996@n2100.arm.linux.org.uk>
-	<1295024327.7901.70.camel@e102109-lin.cambridge.arm.com>
-	<20110114173050.GJ15996@n2100.arm.linux.org.uk>
-	<20110114184759.GN15996@n2100.arm.linux.org.uk>
-	<AANLkTi=J2A1Qv6NGB1bsMr6d+1VFV26KEBQ=NJ=791s0@mail.gmail.com>
-	<AANLkTimd44_FjnJUCNwz412Ned5S_+YcyHjfitus3vLQ@mail.gmail.com>
-	<AANLkTimZ9itumf=QZPD55+JA5cUOWKgwuA1_5=XsdPsP@mail.gmail.com>
-	<20110126112624.GC2562@n2100.arm.linux.org.uk>
-Date: Wed, 26 Jan 2011 22:11:43 -0800
-X-Google-Sender-Auth: Moq0qn0UNyx78xdglA5ziDw1D-U
-Message-ID: <AANLkTim2fPySEMFn+ckrVAvJj8ZXEvBoZpgmZAKOWf=9@mail.gmail.com>
-Subject: Re: [PATCH] ARM: vfp: Fix up exception location in Thumb mode
-From: Colin Cross <ccross@android.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Yong Zhang <yong.zhang0@gmail.com>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Greg KH <gregkh@suse.de>
+Subject: Re: [PATCH 0/6] use BUG_ON correctly
+References: <1296067193-15879-1-git-send-email-bosong.ly@taobao.com>	<AANLkTikq2YttapeLKkSeM-MrPoBdvPR32-oL6BdBOKdf@mail.gmail.com>	<4D410EF8.3070508@coly.li> <AANLkTi=NCoMNAnVrcs7D8xccK0928oG_W5Bp2sSVabWH@mail.gmail.com>
+In-Reply-To: <AANLkTi=NCoMNAnVrcs7D8xccK0928oG_W5Bp2sSVabWH@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Identified-User: {1390:box585.bluehost.com:colyli:coly.li} {sentby:smtp auth 114.251.86.0 authed with i@coly.li}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 26, 2011 at 3:26 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Tue, Jan 25, 2011 at 03:33:24PM -0800, Colin Cross wrote:
->> I think there is an additional change needed to
->> __und_usr_unknown/do_undefinstr.  do_undefinstr, which gets called
->> directly in __und_usr as well as by mov pc, lr, expects regs->ARM_pc
->> to be the fault address, and not the next PC, and gets called for 2 or
->> 4 byte instructions.
+On 2011å¹´01æœˆ27æ—¥ 14:07, Yong Zhang Wrote:
+> On Thu, Jan 27, 2011 at 2:21 PM, Coly Li<i@coly.li>  wrote:
+>> On 2011å¹´01æœˆ27æ—¥ 10:02, Yong Zhang Wrote:
+>>>
+>>> On Thu, Jan 27, 2011 at 2:39 AM, Coly Li<bosong.ly@taobao.com>    wrote:
+>>>>
+>>>> BUG_ON() already uses unlikely() inside its definition if possible,
+>>>
+>>> It's true for asm-generic/bug.h.
+>>>
+>>> But for archs which has defined HAVE_ARCH_BUG,
+>>> unlikely() is not always included in it.
+>>>
+>>
+>> IMHO, if this condition happens, it should be a bug of the arch
+>> implementation,
 >
-> It expects it to be the next PC:
->
-> asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
-> {
->        unsigned int correction = thumb_mode(regs) ? 2 : 4;
->        unsigned int instr;
->        siginfo_t info;
->        void __user *pc;
->
->        /*
->         * According to the ARM ARM, PC is 2 or 4 bytes ahead,
->         * depending whether we're in Thumb mode or not.
->         * Correct this offset.
->         */
->        regs->ARM_pc -= correction;
->
-> We expect the PC to be pointing at the next instruction to be executed.
-> This is the value of the PC saved by the CPU when entering the exception.
-> We correct the PC by four bytes for ARM mode to point at the previously
-> executed instruction.
->
-> For 16-bit Thumb mode, the PC is again pointing at the next instruction
-> to be executed, and this is the value saved by the CPU.  So we correct
-> the PC by two bytes as that is the Thumb instruction size.
->
-> The problem comes with T2, where we advance the saved PC by two bytes
-> if the instruction was 32-bit such that it again points at the next
-> instruction to be executed.  This is where the problem comes in because
-> we have two different chunks of code with completely different
-> expectations.
-
-All do_undefinstr will do with the correction is subtract it off so
-that pc points to the faulting instruction instead of the next
-instruction, and calls any registered handlers.  VFP_bounce sometimes
-subtracts off 4 (it doesn't care about T2 mode there, because T2 VFP
-instructions are all 32 bit), and sometimes leaves pc pointing at the
-next instruction.  If both were modified to expect the faulting
-instruction's pc, do_undefinstr would leave pc unmodified, and
-VFP_bounce would add 4 in the opposite cases from where it subtracts 4
-now.
-
-iwmmxt_task_enable and crunch_task_enable can also get called from __und_usr.
-
-Currently, iwmmxt_task_enable will either end up in do_undefinstr
-through mov pc, lr, or it will subtract 4 from the pc register value
-and return through ret_from_exception.  With the change above, it
-would not need to modify the pc value at all.
-
-crunch_task_enable is based on iwmmxt_task_enable, and works exactly the same.
-
-> Maybe we need to pass in the correction factor to do_undefinstr instead.
+> So that means we should fix that first :)
 >
 
-That just makes it even more complicated, the correction factor has to
-be tracked through every code path.
+Could you please to identify a piece of kernel code which provides an example as the condition you mentioned ?
+So I can have a look firstly.
 
-RFC patch to follow.
+-- 
+Coly Li
