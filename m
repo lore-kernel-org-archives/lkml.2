@@ -1,208 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943Ab1A0JMR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 04:12:17 -0500
-Received: from www.tglx.de ([62.245.132.106]:54568 "EHLO www.tglx.de"
+	id S1753926Ab1A0JTu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 04:19:50 -0500
+Received: from mga09.intel.com ([134.134.136.24]:15424 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753892Ab1A0JMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 04:12:13 -0500
-Date: Thu, 27 Jan 2011 14:41:47 +0530
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: David Gibson <david@gibson.dropbear.id.au>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-kernel@vger.kernel.org, sodaville@linutronix.de,
-        devicetree-discuss@lists.ozlabs.org, x86@kernel.org
-Subject: Re: [PATCH TIP 03/14] x86/dtb: Add a device tree for CE4100
-Message-ID: <20110127091147.GA9770@www.tglx.de>
-References: <1295843342-1122-1-git-send-email-bigeasy@linutronix.de> <1295843342-1122-4-git-send-email-bigeasy@linutronix.de> <20110127050027.GB23443@yookeroo>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110127050027.GB23443@yookeroo>
-User-Agent: Mutt/1.4.2.2i
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+	id S1753755Ab1A0JTs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 04:19:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,385,1291622400"; 
+   d="scan'208";a="596943723"
+From: Yin Kangkai <kangkai.yin@intel.com>
+To: linux-usb@vger.kernel.org
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-kernel@vger.kernel.org, Yin Kangkai <kangkai.yin@intel.com>
+Subject: [PATCH] USB: EHCI: fix scheduling while atomic during suspend
+Date: Thu, 27 Jan 2011 17:18:59 +0800
+Message-Id: <1296119939-28732-1-git-send-email-kangkai.yin@intel.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* David Gibson | 2011-01-27 15:00:27 [+1000]:
+There is a msleep with spin lock held during ehci pci suspend, which will
+cause kernel BUG: scheduling while atomic. Fix that.
 
->> +	soc@0 {
->> +		#address-cells = <1>;
->> +		#size-cells = <1>;
->> +		compatible = "intel,ce4100-immr";
->> +		ranges;
->
->IMMR is probably not the name you want.  I'm guessing you're taking
->this by anology with the IMMR thingies in Freescale chips.  However in
->that case the name is coming from the IMMR register which can
->physically relocate the batch of IOs represented by the node.  You
->should probably name it something appropriate to your chip instead.
+[  184.139620] BUG: scheduling while atomic: kworker/u:11/416/0x00000002
+[  184.139632] 4 locks held by kworker/u:11/416:
+[  184.139640]  #0:  (events_unbound){+.+.+.}, at: [<c104ddd4>] process_one_work+0x1b3/0x4cb
+[  184.139669]  #1:  ((&entry->work)){+.+.+.}, at: [<c104ddd4>] process_one_work+0x1b3/0x4cb
+[  184.139686]  #2:  (&__lockdep_no_validate__){+.+.+.}, at: [<c127cde3>] __device_suspend+0x2c/0x154
+[  184.139706]  #3:  (&(&ehci->lock)->rlock){-.-...}, at: [<c132f3d8>] ehci_pci_suspend+0x35/0x7b
+[  184.139725] Modules linked in: serio_raw pegasus joydev mrst_gfx(C) battery
+[  184.139748] irq event stamp: 52
+[  184.139753] hardirqs last  enabled at (51): [<c14fdaac>] mutex_lock_nested+0x258/0x293
+[  184.139766] hardirqs last disabled at (52): [<c14fe7b4>] _raw_spin_lock_irqsave+0xf/0x3e
+[  184.139777] softirqs last  enabled at (0): [<c10371c1>] copy_process+0x3d2/0x109d
+[  184.139789] softirqs last disabled at (0): [<  (null)>]   (null)
+[  184.139802] Pid: 416, comm: kworker/u:11 Tainted: G         C  2.6.37-6.3-adaptation-oaktrail #37
+[  184.139809] Call Trace:
+[  184.139820]  [<c102eeff>] __schedule_bug+0x5e/0x65
+[  184.139829]  [<c14fbca5>] schedule+0xac/0xc4c
+[  184.139840]  [<c11d4845>] ? string+0x37/0x8b
+[  184.139853]  [<c1044f21>] ? lock_timer_base+0x1f/0x3e
+[  184.139863]  [<c14fe7da>] ? _raw_spin_lock_irqsave+0x35/0x3e
+[  184.139876]  [<c1061590>] ? trace_hardirqs_off+0xb/0xd
+[  184.139885]  [<c14fccdc>] schedule_timeout+0x283/0x2d9
+[  184.139896]  [<c104516f>] ? process_timeout+0x0/0xa
+[  184.139906]  [<c14fcd47>] schedule_timeout_uninterruptible+0x15/0x17
+[  184.139916]  [<c104566a>] msleep+0x10/0x16
+[  184.139926]  [<c132f316>] ehci_adjust_port_wakeup_flags+0x69/0xf6
+[  184.139937]  [<c132f3eb>] ehci_pci_suspend+0x48/0x7b
+[  184.139946]  [<c1326587>] suspend_common+0x52/0xbb
+[  184.139956]  [<c1326625>] hcd_pci_suspend+0x26/0x28
+[  184.139967]  [<c11e7182>] pci_pm_suspend+0x5f/0xd0
+[  184.139976]  [<c127ca3a>] pm_op+0x5d/0xf0
+[  184.139986]  [<c127ceac>] __device_suspend+0xf5/0x154
+[  184.139996]  [<c127d2c8>] async_suspend+0x16/0x3a
+[  184.140006]  [<c1058f54>] async_run_entry_fn+0x89/0x111
+[  184.140016]  [<c104deb6>] process_one_work+0x295/0x4cb
+[  184.140026]  [<c1058ecb>] ? async_run_entry_fn+0x0/0x111
+[  184.140036]  [<c104e3d0>] worker_thread+0x17f/0x298
+[  184.140045]  [<c104e251>] ? worker_thread+0x0/0x298
+[  184.140055]  [<c105277f>] kthread+0x64/0x69
+[  184.140064]  [<c105271b>] ? kthread+0x0/0x69
+[  184.140075]  [<c1002efa>] kernel_thread_helper+0x6/0x1a
 
-I though IMMR stands for "internel memory mapped regisgters". The spec
-does not say anything about a name. In fact there are just devices
-popping up. Some of them are part of a group but lapic or the primary
-ioapic are just there.
-Let me look, maybe I find something more appropriate. Would -soc be
-better?
+Signed-off-by: Yin Kangkai <kangkai.yin@intel.com>
+---
+ drivers/usb/host/ehci-au1xxx.c |    2 +-
+ drivers/usb/host/ehci-hub.c    |   11 ++++++++++-
+ drivers/usb/host/ehci-pci.c    |    2 +-
+ 3 files changed, 12 insertions(+), 3 deletions(-)
 
->
->> +		ioapic1: pic@fec00000 {
->
->The name should be "interrupt-controller" rather than pic.
-okay.
+diff --git a/drivers/usb/host/ehci-au1xxx.c b/drivers/usb/host/ehci-au1xxx.c
+index 2baf8a8..a869e3c 100644
+--- a/drivers/usb/host/ehci-au1xxx.c
++++ b/drivers/usb/host/ehci-au1xxx.c
+@@ -227,8 +227,8 @@ static int ehci_hcd_au1xxx_drv_suspend(struct device *dev)
+ 	 * mark HW unaccessible.  The PM and USB cores make sure that
+ 	 * the root hub is either suspended or stopped.
+ 	 */
+-	spin_lock_irqsave(&ehci->lock, flags);
+ 	ehci_prepare_ports_for_controller_suspend(ehci, device_may_wakeup(dev));
++	spin_lock_irqsave(&ehci->lock, flags);
+ 	ehci_writel(ehci, 0, &ehci->regs->intr_enable);
+ 	(void)ehci_readl(ehci, &ehci->regs->intr_enable);
+ 
+diff --git a/drivers/usb/host/ehci-hub.c b/drivers/usb/host/ehci-hub.c
+index 86f0815..a16c94a 100644
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -111,14 +111,19 @@ static void ehci_adjust_port_wakeup_flags(struct ehci_hcd *ehci,
+ {
+ 	int		port;
+ 	u32		temp;
++	unsigned long	flags;
++
++	spin_lock_irqsave(&ehci->lock, flags);
+ 
+ 	/* If remote wakeup is enabled for the root hub but disabled
+ 	 * for the controller, we must adjust all the port wakeup flags
+ 	 * when the controller is suspended or resumed.  In all other
+ 	 * cases they don't need to be changed.
+ 	 */
+-	if (!ehci_to_hcd(ehci)->self.root_hub->do_remote_wakeup || do_wakeup)
++	if (!ehci_to_hcd(ehci)->self.root_hub->do_remote_wakeup || do_wakeup) {
++		spin_unlock_irqrestore(&ehci->lock, flags);
+ 		return;
++	}
+ 
+ 	/* clear phy low-power mode before changing wakeup flags */
+ 	if (ehci->has_hostpc) {
+@@ -131,7 +136,9 @@ static void ehci_adjust_port_wakeup_flags(struct ehci_hcd *ehci,
+ 			temp = ehci_readl(ehci, hostpc_reg);
+ 			ehci_writel(ehci, temp & ~HOSTPC_PHCD, hostpc_reg);
+ 		}
++		spin_unlock_irqrestore(&ehci->lock, flags);
+ 		msleep(5);
++		spin_lock_irqsave(&ehci->lock, flags);
+ 	}
+ 
+ 	port = HCS_N_PORTS(ehci->hcs_params);
+@@ -170,6 +177,8 @@ static void ehci_adjust_port_wakeup_flags(struct ehci_hcd *ehci,
+ 	/* Does the root hub have a port wakeup pending? */
+ 	if (!suspending && (ehci_readl(ehci, &ehci->regs->status) & STS_PCD))
+ 		usb_hcd_resume_root_hub(ehci_to_hcd(ehci));
++
++	spin_unlock_irqrestore(&ehci->lock, flags);
+ }
+ 
+ static int ehci_bus_suspend (struct usb_hcd *hcd)
+diff --git a/drivers/usb/host/ehci-pci.c b/drivers/usb/host/ehci-pci.c
+index c84add2..b59d538 100644
+--- a/drivers/usb/host/ehci-pci.c
++++ b/drivers/usb/host/ehci-pci.c
+@@ -380,8 +380,8 @@ static int ehci_pci_suspend(struct usb_hcd *hcd, bool do_wakeup)
+ 	 * mark HW unaccessible.  The PM and USB cores make sure that
+ 	 * the root hub is either suspended or stopped.
+ 	 */
+-	spin_lock_irqsave (&ehci->lock, flags);
+ 	ehci_prepare_ports_for_controller_suspend(ehci, do_wakeup);
++	spin_lock_irqsave (&ehci->lock, flags);
+ 	ehci_writel(ehci, 0, &ehci->regs->intr_enable);
+ 	(void)ehci_readl(ehci, &ehci->regs->intr_enable);
+ 
+-- 
+1.7.2.3
 
->> +
->> +			isa@0 {
->> +				#address-cells = <2>;
->> +				#size-cells = <1>;
->> +				compatible = "isa";
->> +				ranges = <1 0 0 0 0 0x100>;
->> +
->> +				rtc@70 {
->> +					compatible = "intel,ce4100-rtc", "motorola,mc146818";
->> +					interrupts = <8 3>;
->> +					interrupt-parent = <&ioapic1>;
->> +					ctrl-reg = <2>;
->> +					freq-reg = <0x26>;
->> +					reg = <1 0x70 2>;
->> +				};
->
->Is the rtc really wired directly to the ioapic without going through
->the cascaded i8259 which usually inhabits isa busses?
-I don't see it anywhere in the spec describing like that but that is the
-way it behaves. In the non-apic mode it goes through the cascaded i8259.
-Once we are in apic mode, the i8259 is switched off and the rtc's
-interrupt apears on ioapic. If the entry for pin 8 on ioapic is not
-configured, then the interrupt does not appear.
-The spec says that the rtc is part of the legacy cluster which contains
-all the "legacy" devices like i8259 or rtc. The uart for instance is not
-part of it. This legacy cluster is behind PCI, behind the isa bridge.
-And I belive this device is also in-core.
-
->> +			};
->> +
->> +			/* Secondary IO-APIC */
->> +			ioapic2: pic@bffff000 {
->> +				#interrupt-cells = <2>;
->> +				compatible = "intel,ioapic-ce4100", "intel,ioapic";
->> +				interrupt-controller;
->> +				reg = <0x100 0x0 0x0 0x0 0x0>;
->> +				assigned-addresses = <0x02000000 0x0 0xbffff000 0x0 0x1000>;
->
->If this is a cascaded interrupt controller, then it should have an
->interrupts and interrupt-parent property to point at the correct
->cascade interrupt on the master ioapic.
-No, it is not cascaded. It is the second ioapic (interrupt controller).
-This ioapic communicates via the apic bus with the lapic in order to
-generate an interrupt. The primary ioapic is not involved.
-
->
->> +			};
->> +
->> +			pci@av {
->> +				#address-cells = <3>;
->> +				#interrupt-cells = <1>;
->> +				#size-cells = <2>;
->> +				compatible = "intel,ce4100-pci";
->> +				device_type = "pci";
->> +				bus-range = <1 1>;
->> +				ranges = <0x2000000 0 0xdffe0000 0x2000000 0 0xdffe0000 0 0x1000>;
->> +
->> +				interrupt-map-mask = <0xffffff 0x0 0x0 0x0>;
->> +				interrupt-map = <
->> +					/* GFX: 0x2E5B */
->> +					0x11000 0x0 0x0 0x0 &ioapic2 0 0x1
->> +					/* ***** FIXME ****** Compositing Engine: 0x2E72 */
->> +					/* 0x11100 0x0 0x0 0x1 &ioapic2 0 0x1 */
->> +					/* MFD: 0x2E5C */
->> +					0x11800 0x0 0x0 0x0 &ioapic2 2 0x1
->> +					/* TS Prefilter: 0x2E5D */
->> +					0x12000 0x0 0x0 0x0 &ioapic2 4 0x1
->> +					/* TS Demux: 0x2E5E */
->> +					0x12100 0x0 0x0 0x0 &ioapic2 5 0x1
->> +					/* ***** FIXME ***** Audio DSP: 0x2E5F */
->> +					/* 0x13000 0x0 0x0 0x1 &ioapic2 0 0x1 */
->> +					/* Audio Interfaces: 0x2E60 */
->> +					0x13200 0x0 0x0 0x0 &ioapic2 8 0x1
->> +					/* VDC: 0x2E61 */
->> +					0x14000 0x0 0x0 0x0 &ioapic2 9 0x1
->> +					/* DPE: 0x2E62 */
->> +					0x14100 0x0 0x0 0x0 &ioapic2 10 0x1
->> +					/* HDMI Tx: 0x2E63 */
->> +					0x14200 0x0 0x0 0x0 &ioapic2 11 0x1
->> +					/* SEC: 0x2E64 */
->> +					0x14800 0x0 0x0 0x0 &ioapic2 12 0x1
->> +					/* EXP: 0x2E65 */
->> +					0x15000 0x0 0x0 0x0 &ioapic2 13 0x1
->> +					/* UART0/1: 0x2E66 */
->> +					0x15800 0x0 0x0 0x0 &ioapic2 14 0x1
->> +					/* GPIO: 0x2E67 */
->> +					0x15900 0x0 0x0 0x0 &ioapic2 15 0x1
->> +					/* I2C0/1/2: 0x2E68 */
->> +					0x15a00 0x0 0x0 0x0 &ioapic2 16 0x1
->> +					/* Smart Card 0/1: 0x2E69 */
->> +					0x15b00 0x0 0x0 0x0 &ioapic2 15 0x1
->> +					/* SPI: 0x2E6A */
->> +					0x15c00 0x0 0x0 0x0 &ioapic2 15 0x1
->> +					/* MSPOD: 0x2E6B */
->> +					0x15d00 0x0 0x0 0x0 &ioapic2 19 0x1
->> +					/* IR: 0x2E6C */
->> +					0x15e00 0x0 0x0 0x0 &ioapic2 16 0x1
->> +					/* **** FIXME ***** DFX: 0x2E6D */
->> +					/* 0x15f00 0x0 0x0 0x1 &ioapic2 0x0 0x1 */
->> +					/* Gig Ethernet: 0x2E6E */
->> +					0x16000 0x0 0x0 0x0 &ioapic2 21 0x1
->> +					/* IEEE1588 and Clock Recovery Unit: 0x2E6F */
->> +					0x16100 0x0 0x0 0x0 &ioapic2 3 0x1
->> +					/* USB0: 0x2E70 */
->> +					0x16800 0x0 0x0 0x0 &ioapic2 22 0x3
->> +					/* USB1: 0x2E70 */
->> +					0x16900 0x0 0x0 0x0 &ioapic2 22 0x3
->> +					/* SATA: 0x2E71 */
->> +					0x17000 0x0 0x0 0x0 &ioapic2 23 0x3
->
->Are all these interrupt map entries representing on-board PCI devices
->that have their interrupts wired direct to the APIC, instead of via
->the PCI INTA..D lines?  
-To some degree yes. There are three modes in which the system can
-operate. The legacy mode where all devices end up sharing one interrupt
-line, the multi mode which uses the interrupt pin (INTA..D) are used and
-the inetrrupt is also routed to the legacy pic. In APIC mode (which is
-used) each device is routed directly to the ioapic.
-However, all of these devices are in-core, there is no external PCI bus
-where you can plug in cards. This internal PCI bus looks more or less
-like an emulated PCI bus.
-
->If so, it might be better to create device
->nodes for those devices with interrupts and interrupt-parent
->properties giving their interrupt routing, leaving the PCI bus's
->interrupt-map to describe only the routing for slotted PCI devices
->with their INTA..D wired with the rest of the PCI lines.
-The INTA..D information is not part of the address and I hoped to get
-away with this. There are no slotted pci devies.
-So if I come up with nodes for the devices then I would need the reg
-property and a compatible property.
-
->
->> +					>;
->> +
->> +				i2c-controller@15a00,0,0 {
->
->Uh.. that unit address does not look right.  The encoding of PCI
->3-cell addresses into a unit address string is not simply comma
->separated cells.  I forget the details, so you'll need to check the OF
->PCI binding.
-
-Grant wrote [0]:
-|You'll also note that I added ',0,0' to the end of the address.
-|That's because the node address reflects the parent bus address format
-|which uses 3 cells in this case.
-
-I try to look that part up in the pci binding.
-
-[0]
-http://www.mail-archive.com/devicetree-discuss@lists.ozlabs.org/msg02806.html
-
-Sebastian
