@@ -1,130 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab1A0IX2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 03:23:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:32774 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751358Ab1A0IX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 03:23:27 -0500
-Date: Thu, 27 Jan 2011 09:23:20 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        balbir@linux.vnet.ibm.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>, stable@kernel.org
-Subject: Re: [PATCH] memsw: handle swapaccount kernel parameter correctly
-Message-ID: <20110127082320.GA15500@tiehlicka.suse.cz>
-References: <20110126152158.GA4144@tiehlicka.suse.cz>
- <20110126140618.8e09cd23.akpm@linux-foundation.org>
+	id S1753057Ab1A0IXr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 03:23:47 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:60528 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818Ab1A0IXq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 03:23:46 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: David Rientjes <rientjes@google.com>
+Subject: Re: [patch 4/4] x86: allow CONFIG_ISA_DMA_API to be disabled
+Date: Thu, 27 Jan 2011 09:23:37 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc2+; KDE/4.5.1; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Adam Belay <abelay@mit.edu>, Bjorn Helgaas <bjorn.helgaas@hp.com>,
+        Russell King <linux@arm.linux.org.uk>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+References: <alpine.DEB.2.00.1101261912200.7809@chino.kir.corp.google.com> <alpine.DEB.2.00.1101261914060.7809@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1101261914060.7809@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110126140618.8e09cd23.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101270923.37476.arnd@arndb.de>
+X-Provags-ID: V02:K0:MN0ZKXFSVK+4dgafS5lrRX17JJ0KposnXUjltAfMxj9
+ AclgvaHp3k30Fk+76mz9s2Q2ZFmOzvugq++NTYj6QQBf/wP86M
+ SX+N6WxBTbL01Qe1YamzIZrwtyRS6KTsav9ZmZriThD9DFv4oH
+ 82Mn2kMgo3t+JqNc80wqpZgdSWIwF5P+cD1imQkbYqS0edOedO
+ g3lpSCzP+wmTIweGZO9cA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 26-01-11 14:06:18, Andrew Morton wrote:
-> On Wed, 26 Jan 2011 16:21:58 +0100
-> Michal Hocko <mhocko@suse.cz> wrote:
+On Thursday 27 January 2011 04:14:54 David Rientjes wrote:
 > 
-> > I am sorry but the patch which added swapaccount parameter is not
-> > correct (we have discussed it https://lkml.org/lkml/2010/11/16/103).
-> > I didn't get the way how __setup parameters are handled correctly.
-> > The patch bellow fixes that.
-> > 
-> > I am CCing stable as well because the patch got into .37 kernel.
-> > 
-> > ---
-> > >From 144c2e8aed27d82d48217896ee1f58dbaa7f1f84 Mon Sep 17 00:00:00 2001
-> > From: Michal Hocko <mhocko@suse.cz>
-> > Date: Wed, 26 Jan 2011 14:12:41 +0100
-> > Subject: [PATCH] memsw: handle swapaccount kernel parameter correctly
-> > 
-> > __setup based kernel command line parameters handled in
-> > obsolete_checksetup provides the parameter value including = (more
-> > precisely everything right after the parameter name) so we have to check
-> > for =0 resp. =1 here. If no value is given then we get an empty string
-> > rather then NULL.
+> Not all 64-bit systems require ISA-style DMA, so allow it to be
+> configurable.  x86 utilizes the generic ISA DMA allocator from
+> kernel/dma.c, so require it only when CONFIG_ISA_DMA_API is enabled.
 > 
-> This doesn't provide a description of the bug which just got fixed.
-> 
-> From reading the code I think the current behaviour is
-> 
-> "swapaccount": works OK
+> Disabling CONFIG_ISA_DMA_API is dependent on x86_64 since those machines
+> do not have ISA slots and benefit the most from disabling the option (and
+> on CONFIG_EXPERT as required by H. Peter Anvin).
 
-Not really because the original test was !s || s="1" but as I am writing
-in the commit message we are getting an empty string rather than NULL in
-no parameter value case..
-So noswapaccount is actually the only thing that is working.
+But the x86_64 machines can also run 32 bit kernel, and I would expect
+that they don't need ISA DMA in that configuration either.
 
-> "noswapaccount": works OK
-> "swapaccount=0": doesn't do anything
-> "swapaccount=1": doesn't do anything
-> 
-> but I might be wrong about that.  Please send a changelog update to
-> clarify all this.
+I think it would make sense to let the CONFIG_EXPERT user disable
+DMA for 32 bit as well.
 
-Sorry for not being specific enough. What about somthing like this:
----
->From 317dec3d13ef7f11e8f2699331bc32fcd6a8ea0e Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Wed, 26 Jan 2011 14:12:41 +0100
-Subject: [PATCH] memsw: handle swapaccount kernel parameter correctly
-
-__setup based kernel command line parameters handlers which are handled in
-obsolete_checksetup are provided with the parameter value including =
-(more precisely everything right after the parameter name).
-
-This means that the current implementation of swapaccount[=1|0] doesn't
-work at all because if there is a value for the parameter then we are
-testing for "0" resp. "1" but we are getting "=0" resp. "=1" and if
-there is no parameter value we are getting an empty string rather than
-NULL.
-
-The original noswapccount parameter, which doesn't care about the value,
-works correctly.
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/memcontrol.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index db76ef7..cea2be48 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -5013,9 +5013,9 @@ struct cgroup_subsys mem_cgroup_subsys = {
- static int __init enable_swap_account(char *s)
- {
- 	/* consider enabled if no parameter or 1 is given */
--	if (!s || !strcmp(s, "1"))
-+	if (!(*s) || !strcmp(s, "=1"))
- 		really_do_swap_account = 1;
--	else if (!strcmp(s, "0"))
-+	else if (!strcmp(s, "=0"))
- 		really_do_swap_account = 0;
- 	return 1;
- }
-@@ -5023,7 +5023,7 @@ __setup("swapaccount", enable_swap_account);
- 
- static int __init disable_swap_account(char *s)
- {
--	enable_swap_account("0");
-+	enable_swap_account("=0");
- 	return 1;
- }
- __setup("noswapaccount", disable_swap_account);
--- 
-1.7.2.3
-
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+	Arnd
