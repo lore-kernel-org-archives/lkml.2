@@ -1,62 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab1A0MPY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 07:15:24 -0500
-Received: from a.mx.secunet.com ([195.81.216.161]:41324 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753846Ab1A0MPX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 07:15:23 -0500
-Date: Thu, 27 Jan 2011 13:15:18 +0100
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Eric Paris <eparis@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: flex_array related problems on selinux policy loading
-Message-ID: <20110127121518.GE3070@secunet.com>
-References: <20110120122659.GD4639@secunet.com>
- <1295537330.9039.583.camel@nimitz>
- <20110121072022.GA3070@secunet.com>
- <1295625455.9039.3326.camel@nimitz>
- <20110126102328.GC3070@secunet.com>
- <1296058216.7567.21.camel@nimitz>
+	id S1752872Ab1A0MRM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 07:17:12 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:57976 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752213Ab1A0MRK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 07:17:10 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Andrew Hendry <andrew.hendry@gmail.com>
+Subject: Re: [PATCH 12/20] x25: remove the BKL
+Date: Thu, 27 Jan 2011 13:17:01 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-x25@vger.kernel.org,
+        netdev@vger.kernel.org
+References: <1295993854-4971-1-git-send-email-arnd@arndb.de> <1295993854-4971-13-git-send-email-arnd@arndb.de> <AANLkTim=d4Tok-ri1BozZUfBFS=rofaodN8ZBA5AjKKd@mail.gmail.com>
+In-Reply-To: <AANLkTim=d4Tok-ri1BozZUfBFS=rofaodN8ZBA5AjKKd@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296058216.7567.21.camel@nimitz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 27 Jan 2011 12:15:19.0861 (UTC) FILETIME=[DD6EC650:01CBBE1B]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101271317.01502.arnd@arndb.de>
+X-Provags-ID: V02:K0:EjQHhW4wgxHznJ7Ahf3hk2gbjyr14P3cWnl/QkchG88
+ JBbL+4YKq+kFUtnAm7kpSHZWW6/mbrqD2yHAHsn2I7BkjRXgPa
+ Mqz0Gl7c0Uvz5it3DfT0GLjXDkKGxvwnpb2J1M6pfvHFPhXJyB
+ PGfwLbwp7ABfDaKB2slqFujn8t9TZelUw9ATQBQsrYWGFFAJ/j
+ DM0rq3ot3WbrYODL9spdA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 26, 2011 at 08:10:16AM -0800, Dave Hansen wrote:
-> > 
-> > Btw. why the struct flex_array needs to have page size?
+On Thursday 27 January 2011, Andrew Hendry wrote:
+> Left it running and put about 3.0G through x.25, it was running fine
+> until after about 20 hours.
+> I was stopping the test programs and hit this.
 > 
-> It was designed as an alternative to _large_ allocations and we didn't
-> expect people to want to use it for small things.  But, it doesn't
-> _need_ to stay that way, we just did it like that for simplicity.
+> Jan 27 20:18:34 jaunty kernel: [80403.945790] PGD 1d8b00067 PUD 1ddec3067 PMD 0
+
+Is there no long above this about what problem was hit? There
+is normally one saying things like "Bug: unable to handle ..."
+
+Well, nevermind. It seems I could figure it out anyway:
+
+> Jan 27 20:18:34 jaunty kernel: [80403.946083] RAX: 0000000000000080 RBX: ffff880228dbfd70 RCX: ffff880228dbfce4
+> Jan 27 20:18:34 jaunty kernel: [80403.946096] RDX: 00000000fffffe00 RSI: 0000000000000000 RDI: ffff8801ba89f050
+> Jan 27 20:18:34 jaunty kernel: [80403.946109] RBP: ffff880228dbfd18 R08: ffff88022aa91000 R09: 0000000000000000
+> Jan 27 20:18:34 jaunty kernel: [80403.946482] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8801ba89f000
+> Jan 27 20:18:34 jaunty kernel: [80403.946495] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
+> ...
+>
+> If i have done it right, x25_sendmsg+0x1a7/0x530 is the skb_reserve
+> which gets inlined here.
+> (af_x25.c)
+>         /* Build a packet */
+>         SOCK_DEBUG(sk, "x25_sendmsg: sendto: building packet.\n");
 > 
-
-Ok, I thought that. In case of selinux, the informations on how big
-the array will be comes from the userspace. In the most cases, people
-use big selinux policies like the selinux reference policy, these
-arrays are quite big. But if somebody uses just a dummy policy, the
-arrays are small or empty in some cases.
-
-> > If we would make
-> > flex_array of dynamic size, say metadata plus the maximum size of the array
-> > in the case that the metadata and the array fit into a single page, and
-> > metadata plus space for all the base pointers we need to dereference the
-> > parts, if the metadata and array is beyond page size. With this, the struct
-> > flex_array would have a reasonable size in any case, even if the array to
-> > store is small or of zero size.
+>         if ((msg->msg_flags & MSG_OOB) && len > 32)
+>                 len = 32;
 > 
-> Sounds like a good idea to me.  Done right, it should only really affect
-> the allocation path since we use kmalloc() already, and we can still
-> plain kfree() it.
+>         size = len + X25_MAX_L2_LEN + X25_EXT_MIN_LEN;
 > 
+>         release_sock(sk);
+>         skb = sock_alloc_send_skb(sk, size, noblock, &rc);
+>         lock_sock(sk);
+> 
+>         X25_SKB_CB(skb)->flags = msg->msg_flags;
 
-So lets do it like that. I'll propose another patch, may take some days.
 
-Steffen
+ok.
+
+> objdump -dS show it at 2197 here.
+> 
+> static inline void skb_reserve(struct sk_buff *skb, int len)
+> {
+>         skb->data += len;
+>         skb->tail += len;
+>     2197:       41 83 87 b4 00 00 00    addl   $0x16,0xb4(%r15) <---
+>     219e:       16
+>     219f:       41 89 47 28             mov    %eax,0x28(%r15)
+>     21a3:       49 8b 87 c8 00 00 00    mov    0xc8(%r15),%rax
+>     21aa:       48 83 c0 16             add    $0x16,%rax
+>         skb_reserve(skb, X25_MAX_L2_LEN + X25_EXT_MIN_LEN);
+> 
+> But im not sure where to go from there...
+ 
+It's pretty clear that %r15 is the skb in this, and from the registers in the dump,
+you can see that it's NULL. skb has just been returned from sock_alloc_send_skb,
+which means that this function failed.
+
+And indeed:
+
+> > @@ -1148,9 +1140,10 @@ static int x25_sendmsg(struct kiocb *iocb, struct socket *sock,
+> >
+> >        size = len + X25_MAX_L2_LEN + X25_EXT_MIN_LEN;
+> >
+> > +       release_sock(sk);
+> >        skb = sock_alloc_send_skb(sk, size, noblock, &rc);
+> > -       if (!skb)
+> > -               goto out;
+> > +       lock_sock(sk);
+> > +
+> >        X25_SKB_CB(skb)->flags = msg->msg_flags;
+
+I accidentally removed the error handling in my patch. No idea how that
+happened, it certainly wasn't intentional. Thanks a lot for the thorough
+testing and the detailed bug report!
+
+I'll follow up with a fixed patch that puts the error path back in.
+
+	Arnd
