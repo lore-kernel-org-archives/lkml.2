@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635Ab1A0K5Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 05:57:25 -0500
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:38201 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754581Ab1A0K5Y (ORCPT
+	id S1754643Ab1A0K5m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 05:57:42 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42845 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754397Ab1A0K5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 05:57:24 -0500
-To: Nick Piggin <npiggin@gmail.com>
-CC: ak@linux.intel.com, arnd@arndb.de, linux-kernel@vger.kernel.org
-In-reply-to: <AANLkTi=VY5QR7qF512nDB1dMneBQFSRh2NPmt0fckph_@mail.gmail.com>
-	(message from Nick Piggin on Thu, 27 Jan 2011 16:01:07 +1100)
-Subject: Re: [PATCH 10/20] hpfs: replace BKL with a global mutex
-References: <1295993854-4971-1-git-send-email-arnd@arndb.de>
-	<1295993854-4971-11-git-send-email-arnd@arndb.de>
-	<m2ipxc34aq.fsf@linux.intel.com>
-	<201101261350.42789.arnd@arndb.de>
-	<20110126165223.GA6695@tassilo.jf.intel.com> <AANLkTi=VY5QR7qF512nDB1dMneBQFSRh2NPmt0fckph_@mail.gmail.com>
-Message-Id: <E1PiPXR-0003dx-9z@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Thu, 27 Jan 2011 11:57:17 +0100
+	Thu, 27 Jan 2011 05:57:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=bppmfUJtB/bV7t+31ptP2Fzz1BsOCZfnVQEwhfyRfTRrO3aJavlsyalL0qLhTY6KM/
+         +9HzTY86DdDh9kSPKLPq8MGNZrfX4bL/0GrQAi+IrR3JNAXELqeSNevBKXq4T4FNtKzv
+         wMpi4PrNY6NgG7++Hvw1t0mdiL/44CmUSh0pg=
+Date: Thu, 27 Jan 2011 11:57:26 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-api@vger.kernel.org, netdev@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        John Stultz <john.stultz@linaro.org>, Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Mike Frysinger <vapier@gentoo.org>, Paul Mackerras <paulus@samba.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH V10 07/15] posix_clocks: add clock_adjtime for powerpc
+Message-ID: <c2677b1d527f30525c7d55d65ec9da995638c0bf.1296124770.git.richard.cochran@omicron.at>
+References: <cover.1296124770.git.richard.cochran@omicron.at>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1296124770.git.richard.cochran@omicron.at>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Jan 2011, Nick Piggin wrote:
-> On Thu, Jan 27, 2011 at 3:52 AM, Andi Kleen <ak@linux.intel.com> wrote:
-> > On Wed, Jan 26, 2011 at 01:50:42PM +0100, Arnd Bergmann wrote:
-> >> On Wednesday 26 January 2011, Andi Kleen wrote:
-> >> > I don't think that's a very good idea, there's danger
-> >> > of holding it over IO and that would be really bad (as in like MINIX[1])
-> >> >
-> >> > It would be better to do it the i810 way and check for the number of
-> >> > CPUs at module init time and refuse to run if it's > 1
-> >>
-> >> I don't see much value of one evil over the other, but why not. The code
-> >> is going away anyway unless someone cleans it up further.
-> >
-> > I think it's fine because systems running OS/2 likely only have
-> > one CPU. This way these guys (if they exist) won't see any regression.
-> 
-> It would be really neat if there was a project to destage a lot of
-> these old filesystems and implement read-only support with fuse
-> implementations (not that I'm volunteering :P).
+This patch adds the clock_adjtime system call to the powerpc architecture.
 
-I did that using UML + fuse.  It's pretty neat, UML boots fast when it
-doesn't need a big userspace, so the mount is done in a few hundred
-milliseconds, and performance isn't horrible.  And you get support for
-*all* the filesystems in a single 3MB executable.
+Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
+---
+ arch/powerpc/include/asm/systbl.h |    1 +
+ arch/powerpc/include/asm/unistd.h |    3 ++-
+ 2 files changed, 3 insertions(+), 1 deletions(-)
 
-The big drawback is that UML is not portable to lots of architectures
-(x86 and ppc are the only ones it works on, I think).
+diff --git a/arch/powerpc/include/asm/systbl.h b/arch/powerpc/include/asm/systbl.h
+index aa0f1eb..6a1152c 100644
+--- a/arch/powerpc/include/asm/systbl.h
++++ b/arch/powerpc/include/asm/systbl.h
+@@ -348,3 +348,4 @@ COMPAT_SYS_SPU(sendmsg)
+ COMPAT_SYS_SPU(recvmsg)
+ COMPAT_SYS_SPU(recvmmsg)
+ SYSCALL_SPU(accept4)
++COMPAT_SYS_SPU(clock_adjtime)
+diff --git a/arch/powerpc/include/asm/unistd.h b/arch/powerpc/include/asm/unistd.h
+index 6151937..386de07 100644
+--- a/arch/powerpc/include/asm/unistd.h
++++ b/arch/powerpc/include/asm/unistd.h
+@@ -367,10 +367,11 @@
+ #define __NR_recvmsg		342
+ #define __NR_recvmmsg		343
+ #define __NR_accept4		344
++#define __NR_clock_adjtime	345
+ 
+ #ifdef __KERNEL__
+ 
+-#define __NR_syscalls		345
++#define __NR_syscalls		346
+ 
+ #define __NR__exit __NR_exit
+ #define NR_syscalls	__NR_syscalls
+-- 
+1.7.0.4
 
-Thanks,
-Miklos
