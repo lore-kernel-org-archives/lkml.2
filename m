@@ -1,141 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751077Ab1A0FHl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 00:07:41 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53088 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703Ab1A0FHk (ORCPT
+	id S1751185Ab1A0FS3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 00:18:29 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:65364 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835Ab1A0FS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 00:07:40 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 27 Jan 2011 14:01:32 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Subject: [PATCH] memcg: fix ugly initialization of return value is in caller
-Message-Id: <20110127140132.35f4285e.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Jan 2011 00:18:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=J3kRGsjw8zLwrZ+0b0/FJjzhD4pgVjzEmTkzkSolUJxKdlgtADJvJu/emGdrddRr+z
+         GgzvskEDQ8qzv1zx7sW7UNweAzpWf+OA99qqUb41LCDys6n9kgEoU2aXy560O9mUEvUB
+         C+1X2vXdPhx2mBmQ20lQ/bfc25SIVWfNobvls=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTi=or1Ya21Am8Dr4KVHgqkwvNxFwgn407=wxRfVa@mail.gmail.com>
+References: <cover.1290852958.git.npiggin@kernel.dk>
+	<d44ddcf1d1e0813b3ce2b3872c7c702a31b62894.1290852959.git.npiggin@kernel.dk>
+	<AANLkTi=pj-pLYVSrU+6+BtioCWLod2ueZecNaap619fw@mail.gmail.com>
+	<AANLkTik3ScP5rvR2bOXOEEH8SNZGg+xO6Gy32CW3XmU6@mail.gmail.com>
+	<AANLkTinVP=OuJ-3u9pHdDuuKJoVrP4Unr5Dx1x=qHtXC@mail.gmail.com>
+	<AANLkTimUjC8B0=nn5+yDshzp0hy6Zk1wxYHWEZbk83Tf@mail.gmail.com>
+	<AANLkTi=or1Ya21Am8Dr4KVHgqkwvNxFwgn407=wxRfVa@mail.gmail.com>
+Date: Thu, 27 Jan 2011 16:18:25 +1100
+Message-ID: <AANLkTinmaojfNDYk1i4jMP33MmEQDur9XZvFp=qhV01e@mail.gmail.com>
+Subject: Re: [PATCH 17/46] fs: Use rename lock and RCU for multi-step operations
+From: Nick Piggin <npiggin@gmail.com>
+To: Yehuda Sadeh Weinraub <yehudasa@gmail.com>
+Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sage Weil <sage@newdream.net>,
+        ceph-devel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on  mm-of-the-moment snapshot 2011-01-25-15-47
-==
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+On Wed, Jan 26, 2011 at 9:10 AM, Yehuda Sadeh Weinraub
+<yehudasa@gmail.com> wrote:
+> On Wed, Jan 19, 2011 at 2:32 PM, Nick Piggin <npiggin@gmail.com> wrote:
+>> On Thu, Jan 20, 2011 at 9:27 AM, Yehuda Sadeh Weinraub
+>> <yehudasa@gmail.com> wrote:
+>>> On Tue, Jan 18, 2011 at 2:42 PM, Nick Piggin <npiggin@gmail.com> wrote:
+>>>> On Wed, Jan 19, 2011 at 9:32 AM, Yehuda Sadeh Weinraub
+>>>
+>>>>> There's an issue with ceph as it references the
+>>>>> dentry->d_parent(->d_inode) at dentry_release(), so setting
+>>>>> dentry->d_parent to NULL here doesn't work with ceph. Though there is
+>>>>> some workaround for it, we would like to be sure that this one is
+>>>>> really required so that we don't exacerbate the ugliness. The
+>>>>> workaround is to keep a pointer to the parent inode in the private
+>>>>> dentry structure, which will be referenced only at the .release()
+>>>>> callback. This is clearly not ideal.
+>>>>
+>>>> Hmm, I'll have to think about it. Probably we can check for
+>>>> d_count == 0 rather than parent != NULL I think?
+>>>>
+>>>
+>>> That'll solve ceph's problem, don't know about how'd affect other
+>>> stuff. We'll need to know whether this is the solution, or whether
+>>> we'd need to introduce some other band aid fix.
+>>
+>> No I think it will work fine. Basically we just need to know whether
+>> we have been deleted, and if so then we restart rather than walking
+>> back up the parent.
+>>
+>> I'll send a patch in a few days. For the meantime, it's a rathe
+>> small window for ceph to worry about. So we'll have something
+>> before -rc2 which should be OK.
+>>
+>
+> I guess that it's a bit late for -rc2, should we assume that it'll be on -rc3?
 
-This patch is for removing initialization of vaiable in caller of
-memory cgroup function. Actually, it's return value of memcg function
-but it's initialized in caller.
+Yeah, I'm sorry I've been travelling and a bit disconnected.
 
-Some memory cgroup uses following style to bring the result
-of start function to the end function for avoiding races.
+NFS folk are having a similar problem and looks like similar
+proposed fix will do it.
 
-   mem_cgroup_start_A(&(*ptr))
-   /* Something very complicated can happen here. */
-   mem_cgroup_end_A(*ptr)
+http://marc.info/?l=linux-fsdevel&m=129599823927039&w=2
 
-In some calls, *ptr should be initialized to NULL be caller. But
-it's ugly. This patch fixes that *ptr is initialized by _start
-function.
+So I think it is the best way to go to restore behaviour back to what
+filesystems already expect, to avoid more surprises in future.
 
-Changelog:
- - removed unnecessary comments.
-
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |    8 ++++++--
- mm/memory.c     |    2 +-
- mm/migrate.c    |    2 +-
- mm/swapfile.c   |    2 +-
- 4 files changed, 9 insertions(+), 5 deletions(-)
-
-Index: mmotm-0125/mm/memcontrol.c
-===================================================================
---- mmotm-0125.orig/mm/memcontrol.c
-+++ mmotm-0125/mm/memcontrol.c
-@@ -2413,7 +2413,7 @@ int mem_cgroup_cache_charge(struct page 
- 
- 	/* shmem */
- 	if (PageSwapCache(page)) {
--		struct mem_cgroup *mem = NULL;
-+		struct mem_cgroup *mem;
- 
- 		ret = mem_cgroup_try_charge_swapin(mm, page, gfp_mask, &mem);
- 		if (!ret)
-@@ -2439,6 +2439,8 @@ int mem_cgroup_try_charge_swapin(struct 
- 	struct mem_cgroup *mem;
- 	int ret;
- 
-+	*ptr = NULL;
-+
- 	if (mem_cgroup_disabled())
- 		return 0;
- 
-@@ -2854,6 +2856,8 @@ int mem_cgroup_prepare_migration(struct 
- 	enum charge_type ctype;
- 	int ret = 0;
- 
-+	*ptr = NULL;
-+
- 	VM_BUG_ON(PageTransHuge(page));
- 	if (mem_cgroup_disabled())
- 		return 0;
-@@ -2996,7 +3000,7 @@ int mem_cgroup_shmem_charge_fallback(str
- 			    struct mm_struct *mm,
- 			    gfp_t gfp_mask)
- {
--	struct mem_cgroup *mem = NULL;
-+	struct mem_cgroup *mem;
- 	int ret;
- 
- 	if (mem_cgroup_disabled())
-Index: mmotm-0125/mm/migrate.c
-===================================================================
---- mmotm-0125.orig/mm/migrate.c
-+++ mmotm-0125/mm/migrate.c
-@@ -623,7 +623,7 @@ static int unmap_and_move(new_page_t get
- 	struct page *newpage = get_new_page(page, private, &result);
- 	int remap_swapcache = 1;
- 	int charge = 0;
--	struct mem_cgroup *mem = NULL;
-+	struct mem_cgroup *mem;
- 	struct anon_vma *anon_vma = NULL;
- 
- 	if (!newpage)
-Index: mmotm-0125/mm/memory.c
-===================================================================
---- mmotm-0125.orig/mm/memory.c
-+++ mmotm-0125/mm/memory.c
-@@ -2707,7 +2707,7 @@ static int do_swap_page(struct mm_struct
- 	swp_entry_t entry;
- 	pte_t pte;
- 	int locked;
--	struct mem_cgroup *ptr = NULL;
-+	struct mem_cgroup *ptr;
- 	int exclusive = 0;
- 	int ret = 0;
- 
-Index: mmotm-0125/mm/swapfile.c
-===================================================================
---- mmotm-0125.orig/mm/swapfile.c
-+++ mmotm-0125/mm/swapfile.c
-@@ -880,7 +880,7 @@ unsigned int count_swap_pages(int type, 
- static int unuse_pte(struct vm_area_struct *vma, pmd_t *pmd,
- 		unsigned long addr, swp_entry_t entry, struct page *page)
- {
--	struct mem_cgroup *ptr = NULL;
-+	struct mem_cgroup *ptr;
- 	spinlock_t *ptl;
- 	pte_t *pte;
- 	int ret = 1;
-
+Thanks,
+Nick
