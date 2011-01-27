@@ -1,112 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751874Ab1A0Qb6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 11:31:58 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53541 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751376Ab1A0Qb5 (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Thu, 27 Jan 2011 11:31:57 -0500
-Date: Thu, 27 Jan 2011 11:30:47 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: matthieu castet <castet.matthieu@free.fr>, "hpa@zytor.com" <hpa@zytor.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Cc: Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        Kees Cook <kees.cook@canonical.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "sliakh.lkml@gmail.com" <sliakh.lkml@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jiang@cs.ncsu.edu" <jiang@cs.ncsu.edu>,
-        Stefan Bader <stefan.bader@canonical.com>, konrad@kernel.org
-Subject: Was: [tip:x86/security] x86: Add NX protection for kernel data.
- Is: don't set RW on RO regions in .bss
-Message-ID: <20110127163046.GA8339@dumpdata.com>
-References: <1295537856.14780.54.camel@zakaz.uk.xensource.com>
- <20110120190531.GA9687@dumpdata.com>
- <4D3899AB.60207@free.fr>
- <20110120210436.GA1810@dumpdata.com>
- <20110120211939.GA32262@dumpdata.com>
- <20110120215556.GA29700@dumpdata.com>
- <4D39FDA2.2000305@free.fr>
- <20110122051134.GA6905@dumpdata.com>
- <4D3C3ADB.1020609@free.fr>
- <20110124153109.GA970@dumpdata.com>
+	id S1752608Ab1A0Qjq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 11:39:46 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:45521 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751913Ab1A0Qjo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 11:39:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=UDi54Pv2wpXVFm7LjibjeJCOVAcAVfAxO1ccc26ZAKOb8azdcr5c0bjiBGKpKm2odD
+         qctwOe2F++sTYQkqCfcyEbtrFnn9IvRSUUn4LeyA9Z4/OYB5FUkcaechTo9P5WL3j+AI
+         mq2u32tCEep3Kp3fCmLbsf6XZYafRPMKfEDwI=
+Date: Thu, 27 Jan 2011 08:39:31 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils ?
+Message-ID: <20110127163931.GA1825@core.coreip.homeip.net>
+References: <20110125205453.GA19896@core.coreip.homeip.net>
+ <4D3F4804.6070508@redhat.com>
+ <4D3F4D11.9040302@teksavvy.com>
+ <20110125232914.GA20130@core.coreip.homeip.net>
+ <20110126020003.GA23085@core.coreip.homeip.net>
+ <4D403855.4050706@teksavvy.com>
+ <4D40C3D7.90608@teksavvy.com>
+ <4D40C551.4020907@teksavvy.com>
+ <20110127021227.GA29709@core.coreip.homeip.net>
+ <4D40E41D.2030003@teksavvy.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110124153109.GA970@dumpdata.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4D40E41D.2030003@teksavvy.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Ok, what give you the attached patch.
+On Wed, Jan 26, 2011 at 10:18:53PM -0500, Mark Lord wrote:
+> On 11-01-26 09:12 PM, Dmitry Torokhov wrote:
+> > On Wed, Jan 26, 2011 at 08:07:29PM -0500, Mark Lord wrote:
+> >> On 11-01-26 08:01 PM, Mark Lord wrote:
+> >>> On 11-01-26 10:05 AM, Mark Lord wrote:
+> >>>> On 11-01-25 09:00 PM, Dmitry Torokhov wrote:
+> >>> ..
+> >>>>> I wonder if the patch below is all that is needed...
+> >>>>
+> >>>> Nope. Does not work here:
+> >>>>
+> >>>> $ lsinput
+> >>>> protocol version mismatch (expected 65536, got 65537)
+> >>>>
+> >>>
+> >>> Heh.. I just noticed something *new* in the bootlogs on my system:
+> >>>
+> >>> kernel: Registered IR keymap rc-rc5-tv
+> >>> udevd-event[6438]: run_program: '/usr/bin/ir-keytable' abnormal exit
+> >>> kernel: input: i2c IR (Hauppauge) as /devices/virtual/rc/rc0/input7
+> >>> kernel: ir-keytable[6439]: segfault at 8 ip 00000000004012d2 sp 00007fff6d43ca60
+> >>> error 4 in ir-keytable[400000+7000]
+> >>> kernel: rc0: i2c IR (Hauppauge) as /devices/virtual/rc/rc0
+> >>> kernel: ir-kbd-i2c: i2c IR (Hauppauge) detected at i2c-0/0-0018/ir0 [ivtv i2c
+> >>> driver #0]
+> >>>
+> >>> That's udev invoking ir-keyboard when the ir-kbd-i2c kernel module is loaded,
+> >>> and that is also ir-keyboard (userspace) segfaulting when run.
+> >>
+> >> Note: I tried to capture an strace of ir-keyboard segfaulting during boot
+> >> (as above), but doing so kills the system (hangs on boot).
+> >>
+> >> The command from udev was: /usr/bin/ir-keytable -a /etc/rc_maps.cfg -s rc0
 > > 
-> > I don't know if I should give the printk or not. 
+> > Does it die when you try to invoke the command by hand? Can you see where?
 > 
-> I would say get rid of the printk. It does not really help the users. Here is an excerpt of
-> 2.6.38-rc2 with this patch:
 > 
->    7.247448] NX-protecting the kernel data: 2412k
-> [    7.252489] RO page for 0xc15a0000 in bss/data.
-> [    7.253052] RO page for 0xc15a1000 in bss/data.
-> [    7.253052] RO page for 0xc15a3000 in bss/data.
-> [    7.365104] mv used greatest stack depth: 6616 bytes left
+> No, it does not seem to segfault when I unload/reload ir-kbd-i2c
+> and then invoke it by hand with the same parameters.
+> Quite possibly the environment is different when udev invokes it,
+> and my strace attempt with udev killed the system, so no info there.
 > 
-> So Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> 
-> (I tested on baremetal x86,x86_64 and Xen x86 and x86_64)
 
-Matthieu,
+Hmm, what about compiling with debug and getting a core then?
 
-I can send a patch for rc3 that would get rid of the "if within(.._sdata"
-(since if we get rid of the printk it does not do anything) - but I
-would much prefer if you did it since you are much familiar with
-this patch and know the ramifications.
-
-This being in the x86 generic code it should go through the tip
-probably, I think?
-
-P.S.
-[I trimmed down the CC and moved some folks to the To field]
-> > 
-> > 
-> > Matthieu
-> 
-> 
-> > diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-> > index 8b830ca..eec93c5 100644
-> > --- a/arch/x86/mm/pageattr.c
-> > +++ b/arch/x86/mm/pageattr.c
-> > @@ -256,7 +256,6 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
-> >  				   unsigned long pfn)
-> >  {
-> >  	pgprot_t forbidden = __pgprot(0);
-> > -	pgprot_t required = __pgprot(0);
-> >  
-> >  	/*
-> >  	 * The BIOS area between 640k and 1Mb needs to be executable for
-> > @@ -283,11 +282,13 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
-> >  		   __pa((unsigned long)__end_rodata) >> PAGE_SHIFT))
-> >  		pgprot_val(forbidden) |= _PAGE_RW;
-> >  	/*
-> > -	 * .data and .bss should always be writable.
-> > +	 * .data and .bss should always be writable, but xen won't like
-> > +	 * if we make page table rw (that live in .data or .bss)
-> >  	 */
-> >  	if (within(address, (unsigned long)_sdata, (unsigned long)_edata) ||
-> >  	    within(address, (unsigned long)__bss_start, (unsigned long)__bss_stop))
-> > -		pgprot_val(required) |= _PAGE_RW;
-> > +		if ((pgprot_val(prot) & _PAGE_RW) == 0)
-> > +			printk(KERN_INFO "RO page for 0x%lx in bss/data.\n", address);
-> >  
-> >  #if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
-> >  	/*
-> > @@ -327,7 +328,6 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
-> >  #endif
-> >  
-> >  	prot = __pgprot(pgprot_val(prot) & ~pgprot_val(forbidden));
-> > -	prot = __pgprot(pgprot_val(prot) | pgprot_val(required));
-> >  
-> >  	return prot;
-> >  }
+-- 
+Dmitry
