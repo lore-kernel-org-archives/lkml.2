@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab1A0MdU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 07:33:20 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:59797 "EHLO
+	id S1754603Ab1A0Mdf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 07:33:35 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:59804 "EHLO
 	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753240Ab1A0Mao (ORCPT
+	with ESMTP id S1753176Ab1A0Man (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 07:30:44 -0500
+	Thu, 27 Jan 2011 07:30:43 -0500
 From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 To: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
         alsa-devel@alsa-project.org
 Cc: sakari.ailus@maxwell.research.nokia.com,
         broonie@opensource.wolfsonmicro.com, clemens@ladisch.de
-Subject: [PATCH v8 08/12] media: Links setup
-Date: Thu, 27 Jan 2011 13:30:33 +0100
-Message-Id: <1296131437-29954-9-git-send-email-laurent.pinchart@ideasonboard.com>
+Subject: [PATCH v8 07/12] media: Entities, pads and links enumeration
+Date: Thu, 27 Jan 2011 13:30:32 +0100
+Message-Id: <1296131437-29954-8-git-send-email-laurent.pinchart@ideasonboard.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1296131437-29954-1-git-send-email-laurent.pinchart@ideasonboard.com>
 References: <1296131437-29954-1-git-send-email-laurent.pinchart@ideasonboard.com>
@@ -22,79 +22,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create the following ioctl and implement it at the media device level to
-setup links.
+Create the following two ioctls and implement them at the media device
+level to enumerate entities, pads and links.
 
-- MEDIA_IOC_SETUP_LINK: Modify the properties of a given link
+- MEDIA_IOC_ENUM_ENTITIES: Enumerate entities and their properties
+- MEDIA_IOC_ENUM_LINKS: Enumerate all pads and links for a given entity
 
-The only property that can currently be modified is the ENABLED link
-flag to enable/disable a link. Links marked with the IMMUTABLE link flag
-can not be enabled or disabled.
+Entity IDs can be non-contiguous. Userspace applications should
+enumerate entities using the MEDIA_ENT_ID_FLAG_NEXT flag. When the flag
+is set in the entity ID, the MEDIA_IOC_ENUM_ENTITIES will return the
+next entity with an ID bigger than the requested one.
 
-Enabling or disabling a link has effects on entities' use count. Those
-changes are automatically propagated through the graph.
+Only forward links that originate at one of the entity's source pads are
+returned during the enumeration process.
 
 Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
 Signed-off-by: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
 ---
- Documentation/DocBook/media-entities.tmpl          |    2 +
- Documentation/DocBook/v4l/media-controller.xml     |    1 +
- Documentation/DocBook/v4l/media-ioc-setup-link.xml |   90 +++++++++++
- Documentation/media-framework.txt                  |   42 ++++++
- drivers/media/media-device.c                       |   45 ++++++
- drivers/media/media-entity.c                       |  155 ++++++++++++++++++++
- include/linux/media.h                              |    1 +
- include/media/media-device.h                       |    3 +
- include/media/media-entity.h                       |   17 ++
- 9 files changed, 356 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/DocBook/v4l/media-ioc-setup-link.xml
+ Documentation/DocBook/media-entities.tmpl          |    8 +
+ Documentation/DocBook/v4l/media-controller.xml     |    2 +
+ .../DocBook/v4l/media-ioc-device-info.xml          |    3 +-
+ .../DocBook/v4l/media-ioc-enum-entities.xml        |  308 ++++++++++++++++++++
+ Documentation/DocBook/v4l/media-ioc-enum-links.xml |  202 +++++++++++++
+ drivers/media/media-device.c                       |  123 ++++++++
+ include/linux/media.h                              |   85 ++++++
+ include/media/media-entity.h                       |   24 +--
+ 8 files changed, 731 insertions(+), 24 deletions(-)
+ create mode 100644 Documentation/DocBook/v4l/media-ioc-enum-entities.xml
+ create mode 100644 Documentation/DocBook/v4l/media-ioc-enum-links.xml
 
 diff --git a/Documentation/DocBook/media-entities.tmpl b/Documentation/DocBook/media-entities.tmpl
-index 6e7dae4..679c585 100644
+index 6af3375..6e7dae4 100644
 --- a/Documentation/DocBook/media-entities.tmpl
 +++ b/Documentation/DocBook/media-entities.tmpl
-@@ -94,6 +94,7 @@
+@@ -92,6 +92,8 @@
+ <!ENTITY VIDIOC-UNSUBSCRIBE-EVENT "<link linkend='vidioc-subscribe-event'><constant>VIDIOC_UNSUBSCRIBE_EVENT</constant></link>">
+ 
  <!ENTITY MEDIA-IOC-DEVICE-INFO "<link linkend='media-ioc-device-info'><constant>MEDIA_IOC_DEVICE_INFO</constant></link>">
- <!ENTITY MEDIA-IOC-ENUM-ENTITIES "<link linkend='media-ioc-enum-entities'><constant>MEDIA_IOC_ENUM_ENTITIES</constant></link>">
- <!ENTITY MEDIA-IOC-ENUM-LINKS "<link linkend='media-ioc-enum-links'><constant>MEDIA_IOC_ENUM_LINKS</constant></link>">
-+<!ENTITY MEDIA-IOC-SETUP-LINK "<link linkend='media-ioc-setup-link'><constant>MEDIA_IOC_SETUP_LINK</constant></link>">
++<!ENTITY MEDIA-IOC-ENUM-ENTITIES "<link linkend='media-ioc-enum-entities'><constant>MEDIA_IOC_ENUM_ENTITIES</constant></link>">
++<!ENTITY MEDIA-IOC-ENUM-LINKS "<link linkend='media-ioc-enum-links'><constant>MEDIA_IOC_ENUM_LINKS</constant></link>">
  
  <!-- Types -->
  <!ENTITY v4l2-std-id "<link linkend='v4l2-std-id'>v4l2_std_id</link>">
-@@ -342,6 +343,7 @@
+@@ -188,6 +190,10 @@
+ <!ENTITY v4l2-window "struct&nbsp;<link linkend='v4l2-window'>v4l2_window</link>">
+ 
+ <!ENTITY media-device-info "struct&nbsp;<link linkend='media-device-info'>media_device_info</link>">
++<!ENTITY media-entity-desc "struct&nbsp;<link linkend='media-entity-desc'>media_entity_desc</link>">
++<!ENTITY media-links-enum "struct&nbsp;<link linkend='media-links-enum'>media_links_enum</link>">
++<!ENTITY media-pad-desc "struct&nbsp;<link linkend='media-pad-desc'>media_pad_desc</link>">
++<!ENTITY media-link-desc "struct&nbsp;<link linkend='media-link-desc'>media_link_desc</link>">
+ 
+ <!-- Error Codes -->
+ <!ENTITY EACCES "<errorcode>EACCES</errorcode> error code">
+@@ -334,6 +340,8 @@
+ <!ENTITY sub-media-close SYSTEM "v4l/media-func-close.xml">
+ <!ENTITY sub-media-ioctl SYSTEM "v4l/media-func-ioctl.xml">
  <!ENTITY sub-media-ioc-device-info SYSTEM "v4l/media-ioc-device-info.xml">
- <!ENTITY sub-media-ioc-enum-entities SYSTEM "v4l/media-ioc-enum-entities.xml">
- <!ENTITY sub-media-ioc-enum-links SYSTEM "v4l/media-ioc-enum-links.xml">
-+<!ENTITY sub-media-ioc-setup-link SYSTEM "v4l/media-ioc-setup-link.xml">
++<!ENTITY sub-media-ioc-enum-entities SYSTEM "v4l/media-ioc-enum-entities.xml">
++<!ENTITY sub-media-ioc-enum-links SYSTEM "v4l/media-ioc-enum-links.xml">
  
  <!-- Function Reference -->
  <!ENTITY close SYSTEM "v4l/func-close.xml">
 diff --git a/Documentation/DocBook/v4l/media-controller.xml b/Documentation/DocBook/v4l/media-controller.xml
-index 2c4fd2b..2dc25e1 100644
+index a46b786..2c4fd2b 100644
 --- a/Documentation/DocBook/v4l/media-controller.xml
 +++ b/Documentation/DocBook/v4l/media-controller.xml
-@@ -85,4 +85,5 @@
+@@ -83,4 +83,6 @@
+   &sub-media-ioctl;
+   <!-- All ioctls go here. -->
    &sub-media-ioc-device-info;
-   &sub-media-ioc-enum-entities;
-   &sub-media-ioc-enum-links;
-+  &sub-media-ioc-setup-link;
++  &sub-media-ioc-enum-entities;
++  &sub-media-ioc-enum-links;
  </appendix>
-diff --git a/Documentation/DocBook/v4l/media-ioc-setup-link.xml b/Documentation/DocBook/v4l/media-ioc-setup-link.xml
+diff --git a/Documentation/DocBook/v4l/media-ioc-device-info.xml b/Documentation/DocBook/v4l/media-ioc-device-info.xml
+index 278a312..1f32373 100644
+--- a/Documentation/DocBook/v4l/media-ioc-device-info.xml
++++ b/Documentation/DocBook/v4l/media-ioc-device-info.xml
+@@ -27,7 +27,8 @@
+       <varlistentry>
+ 	<term><parameter>fd</parameter></term>
+ 	<listitem>
+-	  <para>&fd;</para>
++	  <para>File descriptor returned by
++	  <link linkend='media-func-open'><function>open()</function></link>.</para>
+ 	</listitem>
+       </varlistentry>
+       <varlistentry>
+diff --git a/Documentation/DocBook/v4l/media-ioc-enum-entities.xml b/Documentation/DocBook/v4l/media-ioc-enum-entities.xml
 new file mode 100644
-index 0000000..09ab3d2
+index 0000000..13d0cc4
 --- /dev/null
-+++ b/Documentation/DocBook/v4l/media-ioc-setup-link.xml
-@@ -0,0 +1,90 @@
-+<refentry id="media-ioc-setup-link">
++++ b/Documentation/DocBook/v4l/media-ioc-enum-entities.xml
+@@ -0,0 +1,308 @@
++<refentry id="media-ioc-enum-entities">
 +  <refmeta>
-+    <refentrytitle>ioctl MEDIA_IOC_SETUP_LINK</refentrytitle>
++    <refentrytitle>ioctl MEDIA_IOC_ENUM_ENTITIES</refentrytitle>
 +    &manvol;
 +  </refmeta>
 +
 +  <refnamediv>
-+    <refname>MEDIA_IOC_SETUP_LINK</refname>
-+    <refpurpose>Modify the properties of a link</refpurpose>
++    <refname>MEDIA_IOC_ENUM_ENTITIES</refname>
++    <refpurpose>Enumerate entities and their properties</refpurpose>
 +  </refnamediv>
 +
 +  <refsynopsisdiv>
@@ -103,7 +132,321 @@ index 0000000..09ab3d2
 +	<funcdef>int <function>ioctl</function></funcdef>
 +	<paramdef>int <parameter>fd</parameter></paramdef>
 +	<paramdef>int <parameter>request</parameter></paramdef>
-+	<paramdef>struct media_link_desc *<parameter>argp</parameter></paramdef>
++	<paramdef>struct media_entity_desc *<parameter>argp</parameter></paramdef>
++      </funcprototype>
++    </funcsynopsis>
++  </refsynopsisdiv>
++
++  <refsect1>
++    <title>Arguments</title>
++
++    <variablelist>
++      <varlistentry>
++	<term><parameter>fd</parameter></term>
++	<listitem>
++	  <para>File descriptor returned by
++	  <link linkend='media-func-open'><function>open()</function></link>.</para>
++	</listitem>
++      </varlistentry>
++      <varlistentry>
++	<term><parameter>request</parameter></term>
++	<listitem>
++	  <para>MEDIA_IOC_ENUM_ENTITIES</para>
++	</listitem>
++      </varlistentry>
++      <varlistentry>
++	<term><parameter>argp</parameter></term>
++	<listitem>
++	  <para></para>
++	</listitem>
++      </varlistentry>
++    </variablelist>
++  </refsect1>
++
++  <refsect1>
++    <title>Description</title>
++    <para>To query the attributes of an entity, applications set the id field
++    of a &media-entity-desc; structure and call the MEDIA_IOC_ENUM_ENTITIES
++    ioctl with a pointer to this structure. The driver fills the rest of the
++    structure or returns an &EINVAL; when the id is invalid.</para>
++    <para>Entities can be enumerated by or'ing the id with the
++    <constant>MEDIA_ENT_ID_FLAG_NEXT</constant> flag. The driver will return
++    information about the entity with the smallest id strictly larger than the
++    requested one ('next entity'), or the &EINVAL; if there is none.</para>
++    <para>Entity IDs can be non-contiguous. Applications must
++    <emphasis>not</emphasis> try to enumerate entities by calling
++    MEDIA_IOC_ENUM_ENTITIES with increasing id's until they get an error.</para>
++    <para>Two or more entities that share a common non-zero
++    <structfield>group_id</structfield> value are considered as logically
++    grouped. Groups are used to report
++    <itemizedlist>
++      <listitem>ALSA, VBI and video nodes that carry the same media
++      stream</listitem>
++      <listitem>lens and flash controllers associated with a sensor</listitem>
++    </itemizedlist>
++    </para>
++
++    <table pgwide="1" frame="none" id="media-entity-desc">
++      <title>struct <structname>media_entity_desc</structname></title>
++      <tgroup cols="5">
++	<colspec colname="c1" />
++	<colspec colname="c2" />
++	<colspec colname="c3" />
++	<colspec colname="c4" />
++	<colspec colname="c5" />
++	<tbody valign="top">
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>id</structfield></entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Entity id, set by the application. When the id is or'ed with
++	    <constant>MEDIA_ENT_ID_FLAG_NEXT</constant>, the driver clears the
++	    flag and returns the first entity with a larger id.</entry>
++	  </row>
++	  <row>
++	    <entry>char</entry>
++	    <entry><structfield>name</structfield>[32]</entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Entity name as an UTF-8 NULL-terminated string.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>type</structfield></entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Entity type, see <xref linkend="media-entity-type" /> for details.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>revision</structfield></entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Entity revision in a driver/hardware specific format.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>flags</structfield></entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Entity flags, see <xref linkend="media-entity-flag" /> for details.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>group_id</structfield></entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Entity group ID</entry>
++	  </row>
++	  <row>
++	    <entry>__u16</entry>
++	    <entry><structfield>pads</structfield></entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Number of pads</entry>
++	  </row>
++	  <row>
++	    <entry>__u16</entry>
++	    <entry><structfield>links</structfield></entry>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>Total number of outbound links. Inbound links are not counted
++	    in this field.</entry>
++	  </row>
++	  <row>
++	    <entry>union</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry>struct</entry>
++	    <entry><structfield>v4l</structfield></entry>
++	    <entry></entry>
++	    <entry>Valid for V4L sub-devices and nodes only.</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>__u32</entry>
++	    <entry><structfield>major</structfield></entry>
++	    <entry>V4L device node major number. For V4L sub-devices with no
++	    device node, set by the driver to 0.</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>__u32</entry>
++	    <entry><structfield>minor</structfield></entry>
++	    <entry>V4L device node minor number. For V4L sub-devices with no
++	    device node, set by the driver to 0.</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry>struct</entry>
++	    <entry><structfield>fb</structfield></entry>
++	    <entry></entry>
++	    <entry>Valid for frame buffer nodes only.</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>__u32</entry>
++	    <entry><structfield>major</structfield></entry>
++	    <entry>Frame buffer device node major number.</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>__u32</entry>
++	    <entry><structfield>minor</structfield></entry>
++	    <entry>Frame buffer device node minor number.</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry>struct</entry>
++	    <entry><structfield>alsa</structfield></entry>
++	    <entry></entry>
++	    <entry>Valid for ALSA devices only.</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>__u32</entry>
++	    <entry><structfield>card</structfield></entry>
++	    <entry>ALSA card number</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>__u32</entry>
++	    <entry><structfield>device</structfield></entry>
++	    <entry>ALSA device number</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry></entry>
++	    <entry>__u32</entry>
++	    <entry><structfield>subdevice</structfield></entry>
++	    <entry>ALSA sub-device number</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry>int</entry>
++	    <entry><structfield>dvb</structfield></entry>
++	    <entry></entry>
++	    <entry>DVB card number</entry>
++	  </row>
++	  <row>
++	    <entry></entry>
++	    <entry>__u8</entry>
++	    <entry><structfield>raw</structfield>[180]</entry>
++	    <entry></entry>
++	    <entry></entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
++
++    <table frame="none" pgwide="1" id="media-entity-type">
++      <title>Media entity types</title>
++      <tgroup cols="2">
++        <colspec colname="c1"/>
++        <colspec colname="c2"/>
++	<tbody valign="top">
++	  <row>
++	    <entry><constant>MEDIA_ENT_T_DEVNODE</constant></entry>
++	    <entry>Unknown device node</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENT_T_DEVNODE_V4L</constant></entry>
++	    <entry>V4L video, radio or vbi device node</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENT_T_DEVNODE_FB</constant></entry>
++	    <entry>Frame buffer device node</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENT_T_DEVNODE_ALSA</constant></entry>
++	    <entry>ALSA card</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENT_T_DEVNODE_DVB</constant></entry>
++	    <entry>DVB card</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENT_T_V4L2_SUBDEV</constant></entry>
++	    <entry>Unknown V4L sub-device</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENT_T_V4L2_SUBDEV_SENSOR</constant></entry>
++	    <entry>Video sensor</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENT_T_V4L2_SUBDEV_FLASH</constant></entry>
++	    <entry>Flash controller</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_ENT_T_V4L2_SUBDEV_LENS</constant></entry>
++	    <entry>Lens controller</entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
++
++    <table frame="none" pgwide="1" id="media-entity-flag">
++      <title>Media entity flags</title>
++      <tgroup cols="2">
++        <colspec colname="c1"/>
++        <colspec colname="c2"/>
++	<tbody valign="top">
++	  <row>
++	    <entry><constant>MEDIA_ENT_FL_DEFAULT</constant></entry>
++	    <entry>Default entity for its type. Used to discover the default
++	    audio, VBI and video devices, the default camera sensor, ...</entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
++  </refsect1>
++
++  <refsect1>
++    &return-value;
++
++    <variablelist>
++      <varlistentry>
++	<term><errorcode>EINVAL</errorcode></term>
++	<listitem>
++	  <para>The &media-entity-desc; <structfield>id</structfield> references
++	  a non-existing entity.</para>
++	</listitem>
++      </varlistentry>
++    </variablelist>
++  </refsect1>
++</refentry>
+diff --git a/Documentation/DocBook/v4l/media-ioc-enum-links.xml b/Documentation/DocBook/v4l/media-ioc-enum-links.xml
+new file mode 100644
+index 0000000..daf0360
+--- /dev/null
++++ b/Documentation/DocBook/v4l/media-ioc-enum-links.xml
+@@ -0,0 +1,202 @@
++<refentry id="media-ioc-enum-links">
++  <refmeta>
++    <refentrytitle>ioctl MEDIA_IOC_ENUM_LINKS</refentrytitle>
++    &manvol;
++  </refmeta>
++
++  <refnamediv>
++    <refname>MEDIA_IOC_ENUM_LINKS</refname>
++    <refpurpose>Enumerate all pads and links for a given entity</refpurpose>
++  </refnamediv>
++
++  <refsynopsisdiv>
++    <funcsynopsis>
++      <funcprototype>
++	<funcdef>int <function>ioctl</function></funcdef>
++	<paramdef>int <parameter>fd</parameter></paramdef>
++	<paramdef>int <parameter>request</parameter></paramdef>
++	<paramdef>struct media_links_enum *<parameter>argp</parameter></paramdef>
 +      </funcprototype>
 +    </funcsynopsis>
 +  </refsynopsisdiv>
@@ -137,19 +480,141 @@ index 0000000..09ab3d2
 +  <refsect1>
 +    <title>Description</title>
 +
-+    <para>To change link properties applications fill a &media-link-desc; with
-+    link identification information (source and sink pad) and the new requested
-+    link flags. They then call the MEDIA_IOC_SETUP_LINK ioctl with a pointer to
-+    that structure.</para>
-+    <para>The only configurable property is the <constant>ENABLED</constant>
-+    link flag to enable/disable a link. Links marked with the
-+    <constant>IMMUTABLE</constant> link flag can not be enabled or disabled.
-+    </para>
-+    <para>Link configuration has no side effect on other links. If an enabled
-+    link at the sink pad prevents the link from being enabled, the driver
-+    returns with an &EBUSY;.</para>
-+    <para>If the specified link can't be found the driver returns with an
-+    &EINVAL;.</para>
++    <para>To enumerate pads and/or links for a given entity, applications set
++    the entity field of a &media-links-enum; structure and initialize the
++    &media-pad-desc; and &media-link-desc; structure arrays pointed by the
++    <structfield>pads</structfield> and <structfield>links</structfield> fields.
++    They then call the MEDIA_IOC_ENUM_LINKS ioctl with a pointer to this
++    structure.</para>
++    <para>If the <structfield>pads</structfield> field is not NULL, the driver
++    fills the <structfield>pads</structfield> array with information about the
++    entity's pads. The array must have enough room to store all the entity's
++    pads. The number of pads can be retrieved with the &MEDIA-IOC-ENUM-ENTITIES;
++    ioctl.</para>
++    <para>If the <structfield>links</structfield> field is not NULL, the driver
++    fills the <structfield>links</structfield> array with information about the
++    entity's outbound links. The array must have enough room to store all the
++    entity's outbound links. The number of outbound links can be retrieved with
++    the &MEDIA-IOC-ENUM-ENTITIES; ioctl.</para>
++    <para>Only forward links that originate at one of the entity's source pads
++    are returned during the enumeration process.</para>
++
++    <table pgwide="1" frame="none" id="media-links-enum">
++      <title>struct <structname>media_links_enum</structname></title>
++      <tgroup cols="3">
++        &cs-str;
++	<tbody valign="top">
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>entity</structfield></entry>
++	    <entry>Entity id, set by the application.</entry>
++	  </row>
++	  <row>
++	    <entry>struct &media-pad-desc;</entry>
++	    <entry>*<structfield>pads</structfield></entry>
++	    <entry>Pointer to a pads array allocated by the application. Ignored
++	    if NULL.</entry>
++	  </row>
++	  <row>
++	    <entry>struct &media-link-desc;</entry>
++	    <entry>*<structfield>links</structfield></entry>
++	    <entry>Pointer to a links array allocated by the application. Ignored
++	    if NULL.</entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
++
++    <table pgwide="1" frame="none" id="media-pad-desc">
++      <title>struct <structname>media_pad_desc</structname></title>
++      <tgroup cols="3">
++        &cs-str;
++	<tbody valign="top">
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>entity</structfield></entry>
++	    <entry>ID of the entity this pad belongs to.</entry>
++	  </row>
++	  <row>
++	    <entry>__u16</entry>
++	    <entry><structfield>index</structfield></entry>
++	    <entry>0-based pad index.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>flags</structfield></entry>
++	    <entry>Pad flags, see <xref linkend="media-pad-flag" /> for more details.</entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
++
++    <table frame="none" pgwide="1" id="media-pad-flag">
++      <title>Media pad flags</title>
++      <tgroup cols="2">
++        <colspec colname="c1"/>
++        <colspec colname="c2"/>
++	<tbody valign="top">
++	  <row>
++	    <entry><constant>MEDIA_PAD_FL_INPUT</constant></entry>
++	    <entry>Input pad, relative to the entity. Input pads sink data and
++	    are targets of links.</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_PAD_FL_OUTPUT</constant></entry>
++	    <entry>Output pad, relative to the entity. Output pads source data
++	    and are origins of links.</entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
++
++    <table pgwide="1" frame="none" id="media-link-desc">
++      <title>struct <structname>media_links_enum</structname></title>
++      <tgroup cols="3">
++        &cs-str;
++	<tbody valign="top">
++	  <row>
++	    <entry>struct &media-pad-desc;</entry>
++	    <entry><structfield>source</structfield></entry>
++	    <entry>Pad at the origin of this link.</entry>
++	  </row>
++	  <row>
++	    <entry>struct &media-pad-desc;</entry>
++	    <entry><structfield>sink</structfield></entry>
++	    <entry>Pad at the target of this link.</entry>
++	  </row>
++	  <row>
++	    <entry>__u32</entry>
++	    <entry><structfield>flags</structfield></entry>
++	    <entry>Link flags, see <xref linkend="media-link-flag" /> for more details.</entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
++
++    <table frame="none" pgwide="1" id="media-link-flag">
++      <title>Media link flags</title>
++      <tgroup cols="2">
++        <colspec colname="c1"/>
++        <colspec colname="c2"/>
++	<tbody valign="top">
++	  <row>
++	    <entry><constant>MEDIA_LNK_FL_ENABLED</constant></entry>
++	    <entry>The link is enabled and can be used to transfer media data.
++	    When two or more links target a sink pad, only one of them can be
++	    enabled at a time.</entry>
++	  </row>
++	  <row>
++	    <entry><constant>MEDIA_LNK_FL_IMMUTABLE</constant></entry>
++	    <entry>The link enabled state can't be modified at runtime. An
++	    immutable link is always enabled.</entry>
++	  </row>
++	</tbody>
++      </tgroup>
++    </table>
++    <para>One and only one of <constant>MEDIA_PAD_FL_INPUT</constant> and
++    <constant>MEDIA_PAD_FL_OUTPUT</constant> must be set for every pad.</para>
 +  </refsect1>
 +
 +  <refsect1>
@@ -157,380 +622,287 @@ index 0000000..09ab3d2
 +
 +    <variablelist>
 +      <varlistentry>
-+	<term><errorcode>EBUSY</errorcode></term>
-+	<listitem>
-+	  <para>The link properties can't be changed because the link is
-+	  currently busy. This can be caused, for instance, by an active media
-+	  stream (audio or video) on the link. The ioctl shouldn't be retried if
-+	  no other action is performed before to fix the problem.</para>
-+	</listitem>
-+      </varlistentry>
-+      <varlistentry>
 +	<term><errorcode>EINVAL</errorcode></term>
 +	<listitem>
-+	  <para>The &media-link-desc; references a non-existing link, or the
-+	  link is immutable and an attempt to modify its configuration was made.
-+	  </para>
++	  <para>The &media-links-enum; <structfield>id</structfield> references
++	  a non-existing entity.</para>
 +	</listitem>
 +      </varlistentry>
 +    </variablelist>
 +  </refsect1>
 +</refentry>
-diff --git a/Documentation/media-framework.txt b/Documentation/media-framework.txt
-index 9017a41..634845e 100644
---- a/Documentation/media-framework.txt
-+++ b/Documentation/media-framework.txt
-@@ -259,6 +259,16 @@ When the graph traversal is complete the function will return NULL.
- Graph traversal can be interrupted at any moment. No cleanup function call is
- required and the graph structure can be freed normally.
- 
-+Helper functions can be used to find a link between two given pads, or a pad
-+connected to another pad through an enabled link
-+
-+	media_entity_find_link(struct media_pad *source,
-+			       struct media_pad *sink);
-+
-+	media_entity_remote_source(struct media_pad *pad);
-+
-+Refer to the kerneldoc documentation for more information.
-+
- 
- Use count and power handling
- ----------------------------
-@@ -271,3 +281,35 @@ track the number of users of every entity for power management needs.
- The use_count field is owned by media drivers and must not be touched by entity
- drivers. Access to the field must be protected by the media device graph_mutex
- lock.
-+
-+
-+Links setup
-+-----------
-+
-+Link properties can be modified at runtime by calling
-+
-+	media_entity_setup_link(struct media_link *link, u32 flags);
-+
-+The flags argument contains the requested new link flags.
-+
-+The only configurable property is the ENABLED link flag to enable/disable a
-+link. Links marked with the IMMUTABLE link flag can not be enabled or disabled.
-+
-+When a link is enabled or disabled, the media framework calls the
-+link_setup operation for the two entities at the source and sink of the link,
-+in that order. If the second link_setup call fails, another link_setup call is
-+made on the first entity to restore the original link flags.
-+
-+Media device drivers can be notified of link setup operations by setting the
-+media_device::link_notify pointer to a callback function. If provided, the
-+notification callback will be called before enabling and after disabling
-+links.
-+
-+Entity drivers must implement the link_setup operation if any of their links
-+is non-immutable. The operation must either configure the hardware or store
-+the configuration information to be applied later.
-+
-+Link configuration must not have any side effect on other links. If an enabled
-+link at a sink pad prevents another link at the same pad from being disabled,
-+the link_setup operation must return -EBUSY and can't implicitly disable the
-+first enabled link.
 diff --git a/drivers/media/media-device.c b/drivers/media/media-device.c
-index 1f46acb..719deba 100644
+index 5c745be..1f46acb 100644
 --- a/drivers/media/media-device.c
 +++ b/drivers/media/media-device.c
-@@ -172,6 +172,44 @@ static long media_device_enum_links(struct media_device *mdev,
- 	return 0;
+@@ -61,6 +61,117 @@ static int media_device_get_info(struct media_device *dev,
+ 	return copy_to_user(__info, &info, sizeof(*__info));
  }
  
-+static long media_device_setup_link(struct media_device *mdev,
-+				    struct media_link_desc __user *_ulink)
++static struct media_entity *find_entity(struct media_device *mdev, u32 id)
 +{
-+	struct media_link *link = NULL;
-+	struct media_link_desc ulink;
-+	struct media_entity *source;
-+	struct media_entity *sink;
-+	int ret;
++	struct media_entity *entity;
++	int next = id & MEDIA_ENT_ID_FLAG_NEXT;
 +
-+	if (copy_from_user(&ulink, _ulink, sizeof(ulink)))
++	id &= ~MEDIA_ENT_ID_FLAG_NEXT;
++
++	spin_lock(&mdev->lock);
++
++	media_device_for_each_entity(entity, mdev) {
++		if ((entity->id == id && !next) ||
++		    (entity->id > id && next)) {
++			spin_unlock(&mdev->lock);
++			return entity;
++		}
++	}
++
++	spin_unlock(&mdev->lock);
++
++	return NULL;
++}
++
++static long media_device_enum_entities(struct media_device *mdev,
++				       struct media_entity_desc __user *uent)
++{
++	struct media_entity *ent;
++	struct media_entity_desc u_ent;
++
++	if (copy_from_user(&u_ent.id, &uent->id, sizeof(u_ent.id)))
 +		return -EFAULT;
 +
-+	/* Find the source and sink entities and link.
-+	 */
-+	source = find_entity(mdev, ulink.source.entity);
-+	sink = find_entity(mdev, ulink.sink.entity);
++	ent = find_entity(mdev, u_ent.id);
 +
-+	if (source == NULL || sink == NULL)
++	if (ent == NULL)
 +		return -EINVAL;
 +
-+	if (ulink.source.index >= source->num_pads ||
-+	    ulink.sink.index >= sink->num_pads)
-+		return -EINVAL;
++	u_ent.id = ent->id;
++	u_ent.name[0] = '\0';
++	if (ent->name)
++		strlcpy(u_ent.name, ent->name, sizeof(u_ent.name));
++	u_ent.type = ent->type;
++	u_ent.revision = ent->revision;
++	u_ent.flags = ent->flags;
++	u_ent.group_id = ent->group_id;
++	u_ent.pads = ent->num_pads;
++	u_ent.links = ent->num_links - ent->num_backlinks;
++	u_ent.v4l.major = ent->v4l.major;
++	u_ent.v4l.minor = ent->v4l.minor;
++	if (copy_to_user(uent, &u_ent, sizeof(u_ent)))
++		return -EFAULT;
++	return 0;
++}
 +
-+	link = media_entity_find_link(&source->pads[ulink.source.index],
-+				      &sink->pads[ulink.sink.index]);
-+	if (link == NULL)
-+		return -EINVAL;
++static void media_device_kpad_to_upad(const struct media_pad *kpad,
++				      struct media_pad_desc *upad)
++{
++	upad->entity = kpad->entity->id;
++	upad->index = kpad->index;
++	upad->flags = kpad->flags;
++}
 +
-+	/* Setup the link on both entities. */
-+	ret = __media_entity_setup_link(link, ulink.flags);
++static long media_device_enum_links(struct media_device *mdev,
++				    struct media_links_enum __user *ulinks)
++{
++	struct media_entity *entity;
++	struct media_links_enum links;
 +
-+	if (copy_to_user(_ulink, &ulink, sizeof(ulink)))
++	if (copy_from_user(&links, ulinks, sizeof(links)))
 +		return -EFAULT;
 +
-+	return ret;
++	entity = find_entity(mdev, links.entity);
++	if (entity == NULL)
++		return -EINVAL;
++
++	if (links.pads) {
++		unsigned int p;
++
++		for (p = 0; p < entity->num_pads; p++) {
++			struct media_pad_desc pad;
++			media_device_kpad_to_upad(&entity->pads[p], &pad);
++			if (copy_to_user(&links.pads[p], &pad, sizeof(pad)))
++				return -EFAULT;
++		}
++	}
++
++	if (links.links) {
++		struct media_link_desc __user *ulink;
++		unsigned int l;
++
++		for (l = 0, ulink = links.links; l < entity->num_links; l++) {
++			struct media_link_desc link;
++
++			/* Ignore backlinks. */
++			if (entity->links[l].source->entity != entity)
++				continue;
++
++			media_device_kpad_to_upad(entity->links[l].source,
++						  &link.source);
++			media_device_kpad_to_upad(entity->links[l].sink,
++						  &link.sink);
++			link.flags = entity->links[l].flags;
++			if (copy_to_user(ulink, &link, sizeof(*ulink)))
++				return -EFAULT;
++			ulink++;
++		}
++	}
++	if (copy_to_user(ulinks, &links, sizeof(*ulinks)))
++		return -EFAULT;
++	return 0;
 +}
 +
  static long media_device_ioctl(struct file *filp, unsigned int cmd,
  			       unsigned long arg)
  {
-@@ -197,6 +235,13 @@ static long media_device_ioctl(struct file *filp, unsigned int cmd,
- 		mutex_unlock(&dev->graph_mutex);
+@@ -74,6 +185,18 @@ static long media_device_ioctl(struct file *filp, unsigned int cmd,
+ 				(struct media_device_info __user *)arg);
  		break;
  
-+	case MEDIA_IOC_SETUP_LINK:
++	case MEDIA_IOC_ENUM_ENTITIES:
++		ret = media_device_enum_entities(dev,
++				(struct media_entity_desc __user *)arg);
++		break;
++
++	case MEDIA_IOC_ENUM_LINKS:
 +		mutex_lock(&dev->graph_mutex);
-+		ret = media_device_setup_link(dev,
-+				(struct media_link_desc __user *)arg);
++		ret = media_device_enum_links(dev,
++				(struct media_links_enum __user *)arg);
 +		mutex_unlock(&dev->graph_mutex);
 +		break;
 +
  	default:
  		ret = -ENOIOCTLCMD;
  	}
-diff --git a/drivers/media/media-entity.c b/drivers/media/media-entity.c
-index fe6bfd2..d703ce8 100644
---- a/drivers/media/media-entity.c
-+++ b/drivers/media/media-entity.c
-@@ -306,3 +306,158 @@ media_entity_create_link(struct media_entity *source, u16 source_pad,
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(media_entity_create_link);
-+
-+static int __media_entity_setup_link_notify(struct media_link *link, u32 flags)
-+{
-+	const u32 mask = MEDIA_LNK_FL_ENABLED;
-+	int ret;
-+
-+	/* Notify both entities. */
-+	ret = media_entity_call(link->source->entity, link_setup,
-+				link->source, link->sink, flags);
-+	if (ret < 0 && ret != -ENOIOCTLCMD)
-+		return ret;
-+
-+	ret = media_entity_call(link->sink->entity, link_setup,
-+				link->sink, link->source, flags);
-+	if (ret < 0 && ret != -ENOIOCTLCMD) {
-+		media_entity_call(link->source->entity, link_setup,
-+				  link->source, link->sink, link->flags);
-+		return ret;
-+	}
-+
-+	link->flags = (link->flags & ~mask) | (flags & mask);
-+	link->reverse->flags = link->flags;
-+
-+	return 0;
-+}
-+
-+/**
-+ * __media_entity_setup_link - Configure a media link
-+ * @link: The link being configured
-+ * @flags: Link configuration flags
-+ *
-+ * The bulk of link setup is handled by the two entities connected through the
-+ * link. This function notifies both entities of the link configuration change.
-+ *
-+ * If the link is immutable or if the current and new configuration are
-+ * identical, return immediately.
-+ *
-+ * The user is expected to hold link->source->parent->mutex. If not,
-+ * media_entity_setup_link() should be used instead.
-+ */
-+int __media_entity_setup_link(struct media_link *link, u32 flags)
-+{
-+	struct media_device *mdev;
-+	struct media_entity *source, *sink;
-+	int ret = -EBUSY;
-+
-+	if (link == NULL)
-+		return -EINVAL;
-+
-+	if (link->flags & MEDIA_LNK_FL_IMMUTABLE)
-+		return link->flags == flags ? 0 : -EINVAL;
-+
-+	if (link->flags == flags)
-+		return 0;
-+
-+	source = link->source->entity;
-+	sink = link->sink->entity;
-+
-+	mdev = source->parent;
-+
-+	if ((flags & MEDIA_LNK_FL_ENABLED) && mdev->link_notify) {
-+		ret = mdev->link_notify(link->source, link->sink,
-+					MEDIA_LNK_FL_ENABLED);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	ret = __media_entity_setup_link_notify(link, flags);
-+	if (ret < 0)
-+		goto err;
-+
-+	if (!(flags & MEDIA_LNK_FL_ENABLED) && mdev->link_notify)
-+		mdev->link_notify(link->source, link->sink, 0);
-+
-+	return 0;
-+
-+err:
-+	if ((flags & MEDIA_LNK_FL_ENABLED) && mdev->link_notify)
-+		mdev->link_notify(link->source, link->sink, 0);
-+
-+	return ret;
-+}
-+
-+int media_entity_setup_link(struct media_link *link, u32 flags)
-+{
-+	int ret;
-+
-+	mutex_lock(&link->source->entity->parent->graph_mutex);
-+	ret = __media_entity_setup_link(link, flags);
-+	mutex_unlock(&link->source->entity->parent->graph_mutex);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(media_entity_setup_link);
-+
-+/**
-+ * media_entity_find_link - Find a link between two pads
-+ * @source: Source pad
-+ * @sink: Sink pad
-+ *
-+ * Return a pointer to the link between the two entities. If no such link
-+ * exists, return NULL.
-+ */
-+struct media_link *
-+media_entity_find_link(struct media_pad *source, struct media_pad *sink)
-+{
-+	struct media_link *link;
-+	unsigned int i;
-+
-+	for (i = 0; i < source->entity->num_links; ++i) {
-+		link = &source->entity->links[i];
-+
-+		if (link->source->entity == source->entity &&
-+		    link->source->index == source->index &&
-+		    link->sink->entity == sink->entity &&
-+		    link->sink->index == sink->index)
-+			return link;
-+	}
-+
-+	return NULL;
-+}
-+EXPORT_SYMBOL_GPL(media_entity_find_link);
-+
-+/**
-+ * media_entity_remote_source - Find the source pad at the remote end of a link
-+ * @pad: Sink pad at the local end of the link
-+ *
-+ * Search for a remote source pad connected to the given sink pad by iterating
-+ * over all links originating or terminating at that pad until an enabled link
-+ * is found.
-+ *
-+ * Return a pointer to the pad at the remote end of the first found enabled
-+ * link, or NULL if no enabled link has been found.
-+ */
-+struct media_pad *media_entity_remote_source(struct media_pad *pad)
-+{
-+	unsigned int i;
-+
-+	for (i = 0; i < pad->entity->num_links; i++) {
-+		struct media_link *link = &pad->entity->links[i];
-+
-+		if (!(link->flags & MEDIA_LNK_FL_ENABLED))
-+			continue;
-+
-+		if (link->source == pad)
-+			return link->sink;
-+
-+		if (link->sink == pad)
-+			return link->source;
-+	}
-+
-+	return NULL;
-+
-+}
-+EXPORT_SYMBOL_GPL(media_entity_remote_source);
 diff --git a/include/linux/media.h b/include/linux/media.h
-index 64c0313..2f67ed2 100644
+index 4c52f08..64c0313 100644
 --- a/include/linux/media.h
 +++ b/include/linux/media.h
-@@ -126,5 +126,6 @@ struct media_links_enum {
- #define MEDIA_IOC_DEVICE_INFO		_IOWR('M', 1, struct media_device_info)
- #define MEDIA_IOC_ENUM_ENTITIES		_IOWR('M', 2, struct media_entity_desc)
- #define MEDIA_IOC_ENUM_LINKS		_IOWR('M', 3, struct media_links_enum)
-+#define MEDIA_IOC_SETUP_LINK		_IOWR('M', 4, struct media_link_desc)
+@@ -40,6 +40,91 @@ struct media_device_info {
+ 	__u32 reserved[31];
+ };
  
- #endif /* __LINUX_MEDIA_H */
-diff --git a/include/media/media-device.h b/include/media/media-device.h
-index 260d59c..ad93e66 100644
---- a/include/media/media-device.h
-+++ b/include/media/media-device.h
-@@ -73,6 +73,9 @@ struct media_device {
- 	spinlock_t lock;
- 	/* Serializes graph operations. */
- 	struct mutex graph_mutex;
++#define MEDIA_ENT_ID_FLAG_NEXT		(1 << 31)
 +
-+	int (*link_notify)(struct media_pad *source,
-+			   struct media_pad *sink, u32 flags);
- };
- 
- /* media_devnode to media_device */
-diff --git a/include/media/media-entity.h b/include/media/media-entity.h
-index 0954490..60fc7bd 100644
---- a/include/media/media-entity.h
-+++ b/include/media/media-entity.h
-@@ -39,6 +39,12 @@ struct media_pad {
- 	unsigned long flags;		/* Pad flags (MEDIA_PAD_FL_*) */
- };
- 
-+struct media_entity_operations {
-+	int (*link_setup)(struct media_entity *entity,
-+			  const struct media_pad *local,
-+			  const struct media_pad *remote, u32 flags);
++#define MEDIA_ENT_TYPE_SHIFT		16
++#define MEDIA_ENT_TYPE_MASK		0x00ff0000
++#define MEDIA_ENT_SUBTYPE_MASK		0x0000ffff
++
++#define MEDIA_ENT_T_DEVNODE		(1 << MEDIA_ENT_TYPE_SHIFT)
++#define MEDIA_ENT_T_DEVNODE_V4L		(MEDIA_ENT_T_DEVNODE + 1)
++#define MEDIA_ENT_T_DEVNODE_FB		(MEDIA_ENT_T_DEVNODE + 2)
++#define MEDIA_ENT_T_DEVNODE_ALSA	(MEDIA_ENT_T_DEVNODE + 3)
++#define MEDIA_ENT_T_DEVNODE_DVB		(MEDIA_ENT_T_DEVNODE + 4)
++
++#define MEDIA_ENT_T_V4L2_SUBDEV		(2 << MEDIA_ENT_TYPE_SHIFT)
++#define MEDIA_ENT_T_V4L2_SUBDEV_SENSOR	(MEDIA_ENT_T_V4L2_SUBDEV + 1)
++#define MEDIA_ENT_T_V4L2_SUBDEV_FLASH	(MEDIA_ENT_T_V4L2_SUBDEV + 2)
++#define MEDIA_ENT_T_V4L2_SUBDEV_LENS	(MEDIA_ENT_T_V4L2_SUBDEV + 3)
++
++#define MEDIA_ENT_FL_DEFAULT		(1 << 0)
++
++struct media_entity_desc {
++	__u32 id;
++	char name[32];
++	__u32 type;
++	__u32 revision;
++	__u32 flags;
++	__u32 group_id;
++	__u16 pads;
++	__u16 links;
++
++	__u32 reserved[4];
++
++	union {
++		/* Node specifications */
++		struct {
++			__u32 major;
++			__u32 minor;
++		} v4l;
++		struct {
++			__u32 major;
++			__u32 minor;
++		} fb;
++		struct {
++			__u32 card;
++			__u32 device;
++			__u32 subdevice;
++		} alsa;
++		int dvb;
++
++		/* Sub-device specifications */
++		/* Nothing needed yet */
++		__u8 raw[184];
++	};
 +};
 +
- struct media_entity {
- 	struct list_head list;
- 	struct media_device *parent;	/* Media device this entity belongs to*/
-@@ -59,6 +65,8 @@ struct media_entity {
- 	struct media_pad *pads;		/* Pads array (num_pads elements) */
- 	struct media_link *links;	/* Links array (max_links elements)*/
- 
-+	const struct media_entity_operations *ops;	/* Entity operations */
++#define MEDIA_PAD_FL_INPUT		(1 << 0)
++#define MEDIA_PAD_FL_OUTPUT		(1 << 1)
 +
- 	int use_count;			/* Use count for the entity. */
- 
- 	union {
-@@ -108,6 +116,11 @@ int media_entity_init(struct media_entity *entity, u16 num_pads,
- void media_entity_cleanup(struct media_entity *entity);
- int media_entity_create_link(struct media_entity *source, u16 source_pad,
- 		struct media_entity *sink, u16 sink_pad, u32 flags);
-+int __media_entity_setup_link(struct media_link *link, u32 flags);
-+int media_entity_setup_link(struct media_link *link, u32 flags);
-+struct media_link *media_entity_find_link(struct media_pad *source,
-+		struct media_pad *sink);
-+struct media_pad *media_entity_remote_source(struct media_pad *pad);
- 
- struct media_entity *media_entity_get(struct media_entity *entity);
- void media_entity_put(struct media_entity *entity);
-@@ -117,4 +130,8 @@ void media_entity_graph_walk_start(struct media_entity_graph *graph,
- struct media_entity *
- media_entity_graph_walk_next(struct media_entity_graph *graph);
- 
-+#define media_entity_call(entity, operation, args...)			\
-+	(((entity)->ops && (entity)->ops->operation) ?			\
-+	 (entity)->ops->operation((entity) , ##args) : -ENOIOCTLCMD)
++struct media_pad_desc {
++	__u32 entity;		/* entity ID */
++	__u16 index;		/* pad index */
++	__u32 flags;		/* pad flags */
++	__u32 reserved[2];
++};
 +
- #endif
++#define MEDIA_LNK_FL_ENABLED		(1 << 0)
++#define MEDIA_LNK_FL_IMMUTABLE		(1 << 1)
++
++struct media_link_desc {
++	struct media_pad_desc source;
++	struct media_pad_desc sink;
++	__u32 flags;
++	__u32 reserved[2];
++};
++
++struct media_links_enum {
++	__u32 entity;
++	/* Should have enough room for pads elements */
++	struct media_pad_desc __user *pads;
++	/* Should have enough room for links elements */
++	struct media_link_desc __user *links;
++	__u32 reserved[4];
++};
++
+ #define MEDIA_IOC_DEVICE_INFO		_IOWR('M', 1, struct media_device_info)
++#define MEDIA_IOC_ENUM_ENTITIES		_IOWR('M', 2, struct media_entity_desc)
++#define MEDIA_IOC_ENUM_LINKS		_IOWR('M', 3, struct media_links_enum)
+ 
+ #endif /* __LINUX_MEDIA_H */
+diff --git a/include/media/media-entity.h b/include/media/media-entity.h
+index 114541a..0954490 100644
+--- a/include/media/media-entity.h
++++ b/include/media/media-entity.h
+@@ -24,29 +24,7 @@
+ #define _MEDIA_ENTITY_H
+ 
+ #include <linux/list.h>
+-
+-#define MEDIA_ENT_TYPE_SHIFT		16
+-#define MEDIA_ENT_TYPE_MASK		0x00ff0000
+-#define MEDIA_ENT_SUBTYPE_MASK		0x0000ffff
+-
+-#define MEDIA_ENT_T_DEVNODE		(1 << MEDIA_ENTITY_TYPE_SHIFT)
+-#define MEDIA_ENT_T_DEVNODE_V4L		(MEDIA_ENTITY_T_DEVNODE + 1)
+-#define MEDIA_ENT_T_DEVNODE_FB		(MEDIA_ENTITY_T_DEVNODE + 2)
+-#define MEDIA_ENT_T_DEVNODE_ALSA	(MEDIA_ENTITY_T_DEVNODE + 3)
+-#define MEDIA_ENT_T_DEVNODE_DVB		(MEDIA_ENTITY_T_DEVNODE + 4)
+-
+-#define MEDIA_ENT_T_V4L2_SUBDEV		(2 << MEDIA_ENTITY_TYPE_SHIFT)
+-#define MEDIA_ENT_T_V4L2_SUBDEV_SENSOR	(MEDIA_ENTITY_T_V4L2_SUBDEV + 1)
+-#define MEDIA_ENT_T_V4L2_SUBDEV_FLASH	(MEDIA_ENTITY_T_V4L2_SUBDEV + 2)
+-#define MEDIA_ENT_T_V4L2_SUBDEV_LENS	(MEDIA_ENTITY_T_V4L2_SUBDEV + 3)
+-
+-#define MEDIA_ENT_FL_DEFAULT		(1 << 0)
+-
+-#define MEDIA_LNK_FL_ENABLED		(1 << 0)
+-#define MEDIA_LNK_FL_IMMUTABLE		(1 << 1)
+-
+-#define MEDIA_PAD_FL_INPUT		(1 << 0)
+-#define MEDIA_PAD_FL_OUTPUT		(1 << 1)
++#include <linux/media.h>
+ 
+ struct media_link {
+ 	struct media_pad *source;	/* Source pad */
 -- 
 1.7.3.4
 
