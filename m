@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751843Ab1A0P3l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 10:29:41 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:46355 "EHLO mgw2.diku.dk"
+	id S1751953Ab1A0P3t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 10:29:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54890 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751429Ab1A0P3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 10:29:39 -0500
-From: Julia Lawall <julia@diku.dk>
-To: Tony Lindgren <tony@atomide.com>
-Cc: kernel-janitors@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] arch/arm/mach-omap2/dma.c: Convert IS_ERR result to PTR_ERR
-Date: Thu, 27 Jan 2011 16:49:06 +0100
-Message-Id: <1296143347-17508-1-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.1
+	id S1751482Ab1A0P3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 10:29:48 -0500
+Date: Thu, 27 Jan 2011 17:29:26 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Christoph Hellwig <hch@lst.de>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] virtio_blk: allow re-reading config space at runtime
+Message-ID: <20110127152926.GA4898@redhat.com>
+References: <20110114160137.GA18721@lst.de>
+ <201101181138.50421.rusty@rustcorp.com.au>
+ <20110118122751.GA27997@lst.de>
+ <201101190956.10137.rusty@rustcorp.com.au>
+ <20110118235401.GA16219@lst.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110118235401.GA16219@lst.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This code elsewhere returns a negative constant to an indicate an error,
-while IS_ERR returns the result of a >= operation.
+On Wed, Jan 19, 2011 at 12:54:01AM +0100, Christoph Hellwig wrote:
+> On Wed, Jan 19, 2011 at 09:56:09AM +1030, Rusty Russell wrote:
+> > > I don't think we have much choice.  We're getting called from irq
+> > > context, so we'll need to allocate memory to offload things.  That's
+> > > unless we keep a thread around that we just need to wake up, which
+> > > would be a huge waste of ressources.
+> > 
+> > Yes, but can we keep a workqueue struct around?
+> 
+> We can keep one around, but we can't prevent the virtio core code from
+> calling us again while it's still in use.
 
-The semantic patch that fixes this problem is as follows:
-(http://coccinelle.lip6.fr/)
+Yes but in that specific situation (double schedule before
+it runs once) discarding one change notification
+would not hurt at all.
 
-// <smpl>
-@@
-expression x;
-@@
-
- if (...) { ...
-- return IS_ERR(x);
-+ return PTR_ERR(x);
-}
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
- arch/arm/mach-omap2/dma.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff -u -p a/arch/arm/mach-omap2/dma.c b/arch/arm/mach-omap2/dma.c
---- a/arch/arm/mach-omap2/dma.c
-+++ b/arch/arm/mach-omap2/dma.c
-@@ -264,7 +264,7 @@ static int __init omap2_system_dma_init_
- 	if (IS_ERR(od)) {
- 		pr_err("%s: Cant build omap_device for %s:%s.\n",
- 			__func__, name, oh->name);
--		return IS_ERR(od);
-+		return PTR_ERR(od);
- 	}
- 
- 	mem = platform_get_resource(&od->pdev, IORESOURCE_MEM, 0);
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
