@@ -1,819 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab1A0NNK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 08:13:10 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:36538 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752958Ab1A0NNI (ORCPT
+	id S1753530Ab1A0NNO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 08:13:14 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:63244 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752958Ab1A0NNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 08:13:08 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6238"; a="72189789"
-From: Tatyana Brokhman <tlinder@codeaurora.org>
-To: gregkh@suse.de
-Cc: linux-arm-msm@vger.kernel.org, Tatyana Brokhman <tlinder@codeaurora.org>,
-        linux-usb@vger.kernel.org (open list:USB GADGET/PERIPH...),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v5 2/5] usb: Add usb_endpoint_descriptor to be part of the struct usb_ep
-Date: Thu, 27 Jan 2011 15:12:42 +0200
-Message-Id: <1296133964-31370-1-git-send-email-tlinder@codeaurora.org>
-X-Mailer: git-send-email 1.6.3.3
+	Thu, 27 Jan 2011 08:13:11 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nick Piggin <npiggin@gmail.com>
+Subject: Re: [PATCH 15/20] ufs: remove the BKL
+Date: Thu, 27 Jan 2011 14:13:00 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Nick Bowler <nbowler@elliptictech.com>,
+        Evgeniy Dushistov <dushistov@mail.ru>
+References: <1295993854-4971-1-git-send-email-arnd@arndb.de> <1295993854-4971-16-git-send-email-arnd@arndb.de> <AANLkTinKO=HM1BqDdFkdcCAGz85co64Ma79qomw6PDPp@mail.gmail.com>
+In-Reply-To: <AANLkTinKO=HM1BqDdFkdcCAGz85co64Ma79qomw6PDPp@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101271413.01204.arnd@arndb.de>
+X-Provags-ID: V02:K0:IAy6x7pwIzxo0f1jUiNopJ4t03m55+qlwKiuABsL07z
+ 5fGeYG2s575hQtyabI/gsPIx0cd8uBVXULB4mxpAgRgr1VyoV8
+ BKQAudj5WHf31Dj5kD4DN7S/mb5wDuHSpmvH+ob6k7PkYXWrUr
+ P2y79bqzGnlsQ5cld4iNCtp2zZhav6J14DcrI/FCL8peu5HtBP
+ e803Mu0ybErIlNC3HVrRg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change usb_ep_enable() prototype to use endpoint descriptor from usb_ep.
-This optimization spares the FDs from saving the endpoint chosen
-descriptor. This optimization is not full though. To fully exploit this
-change one needs to update all the UDCs as well since in the current
-implementation each of them saves the endpoint descriptor in it's
-internal (and extended) endpoint structure.
+On Thursday 27 January 2011, Nick Piggin wrote:
+> On Wed, Jan 26, 2011 at 9:17 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > This introduces a new per-superblock mutex in UFS to replace
+> > the big kernel lock. I have been careful to avoid nested
+> > calls to lock_ufs and to get the lock order right with
+> > respect to other mutexes, in particular lock_super.
+> 
+> When I looked at removing bkl from minix a long time ago,
+> I was a bit worried about reclaim and fs/io recursion in some
+> of the filesystems with bkl.
 
-Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
+Thanks for looking at this, you certainly understand these interactions
+much better than me!
+
+> > @@ -436,7 +439,8 @@ int ufs_getfrag_block(struct inode *inode, sector_t fragment, struct buffer_head
+> >        ret = 0;
+> >        bh = NULL;
+> >
+> > -       lock_kernel();
+> > +       if (needs_lock)
+> > +               lock_ufs(sb);
+> >
+> >        UFSD("ENTER, ino %lu, fragment %llu\n", inode->i_ino, (unsigned long long)fragment);
+> >        if (fragment >
+
+
+> So, get_block can be called for .writepage in page reclaim,
+> which takes the lock. ufs_lookup takes the lock and winds
+> up calling ufs_alloc_inode. And ufs_alloc_inode does
+> GFP_KERNEL, which can enter reclaim with __GFP_FS
+> set.
+
+This is one path that I did not consider. My initial thought when you
+mentioned it was that this is still fine because ufs_getfrag_block can be
+called with the lock held by the current task, but you are of course
+right that this won't work when we are called by the writeback task.
+
+> I didn't look through all your filesystem conversions, but it is
+> something tricky to watch out for I think.
+
+The only other one where I added locks is isofs, and I'm pretty sure that's
+fine because it's read-only and does not do writeback. HPFS with Andi's suggested
+solution of making it UP-only is of course also fine.
+ 
+> Changing everything to GFP_NOFS may be an option, for
+> such crufty old filesystems...
+
+Yes. All performance optimizations in UFS are pointless anyway as long as we
+do most of the disk I/O under a global mutex. The patch below converts all
+allocations that are done under a lock in UFS to GFP_NOFS. If nobody comes
+up with a better solution, I'll fold that into my other patch.
+
+	Arnd
 ---
- drivers/usb/gadget/dbgp.c           |    8 +++++---
- drivers/usb/gadget/f_acm.c          |    9 ++++-----
- drivers/usb/gadget/f_audio.c        |    5 ++---
- drivers/usb/gadget/f_ecm.c          |   17 ++++++++---------
- drivers/usb/gadget/f_eem.c          |   10 +++++-----
- drivers/usb/gadget/f_fs.c           |    3 ++-
- drivers/usb/gadget/f_hid.c          |    5 ++---
- drivers/usb/gadget/f_loopback.c     |   14 ++++++--------
- drivers/usb/gadget/f_mass_storage.c |    3 ++-
- drivers/usb/gadget/f_obex.c         |    6 +++---
- drivers/usb/gadget/f_phonet.c       |    9 ++++-----
- drivers/usb/gadget/f_rndis.c        |   15 +++++++--------
- drivers/usb/gadget/f_serial.c       |    4 ++--
- drivers/usb/gadget/f_sourcesink.c   |   10 ++++------
- drivers/usb/gadget/f_subset.c       |    8 ++++----
- drivers/usb/gadget/f_uvc.c          |    6 ++++--
- drivers/usb/gadget/file_storage.c   |    3 ++-
- drivers/usb/gadget/gmidi.c          |    6 ++++--
- drivers/usb/gadget/inode.c          |    6 ++++--
- drivers/usb/gadget/printer.c        |   26 ++++++++++++++------------
- drivers/usb/gadget/u_ether.c        |   12 ++++++------
- drivers/usb/gadget/u_ether.h        |    4 ----
- drivers/usb/gadget/u_serial.c       |    4 ++--
- drivers/usb/gadget/u_serial.h       |    2 --
- include/linux/usb/gadget.h          |   16 +++++++---------
- 25 files changed, 103 insertions(+), 108 deletions(-)
 
-diff --git a/drivers/usb/gadget/dbgp.c b/drivers/usb/gadget/dbgp.c
-index e5ac8a3..3458c61 100644
---- a/drivers/usb/gadget/dbgp.c
-+++ b/drivers/usb/gadget/dbgp.c
-@@ -173,7 +173,9 @@ fail_1:
- 
- static int __enable_ep(struct usb_ep *ep, struct usb_endpoint_descriptor *desc)
- {
--	int err = usb_ep_enable(ep, desc);
-+	int err;
-+	ep->desc = desc;
-+	err = usb_ep_enable(ep);
- 	ep->driver_data = dbgp.gadget;
- 	return err;
- }
-@@ -268,8 +270,8 @@ static int __init dbgp_configure_endpoints(struct usb_gadget *gadget)
- 	dbgp.serial->in = dbgp.i_ep;
- 	dbgp.serial->out = dbgp.o_ep;
- 
--	dbgp.serial->in_desc = &i_desc;
--	dbgp.serial->out_desc = &o_desc;
-+	dbgp.serial->in->desc = &i_desc;
-+	dbgp.serial->out->desc = &o_desc;
- 
- 	if (gserial_setup(gadget, 1) < 0) {
- 		stp = 3;
-diff --git a/drivers/usb/gadget/f_acm.c b/drivers/usb/gadget/f_acm.c
-index bd6226c..d04b4a6 100644
---- a/drivers/usb/gadget/f_acm.c
-+++ b/drivers/usb/gadget/f_acm.c
-@@ -62,7 +62,6 @@ struct f_acm {
- 	struct acm_ep_descs		hs;
- 
- 	struct usb_ep			*notify;
--	struct usb_endpoint_descriptor	*notify_desc;
- 	struct usb_request		*notify_req;
- 
- 	struct usb_cdc_line_coding	port_line_coding;	/* 8-N-1 etc */
-@@ -405,11 +404,11 @@ static int acm_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 			usb_ep_disable(acm->notify);
- 		} else {
- 			VDBG(cdev, "init acm ctrl interface %d\n", intf);
--			acm->notify_desc = ep_choose(cdev->gadget,
-+			acm->notify->desc = ep_choose(cdev->gadget,
- 					acm->hs.notify,
- 					acm->fs.notify);
- 		}
--		usb_ep_enable(acm->notify, acm->notify_desc);
-+		usb_ep_enable(acm->notify);
- 		acm->notify->driver_data = acm;
- 
- 	} else if (intf == acm->data_id) {
-@@ -418,9 +417,9 @@ static int acm_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 			gserial_disconnect(&acm->port);
- 		} else {
- 			DBG(cdev, "activate acm ttyGS%d\n", acm->port_num);
--			acm->port.in_desc = ep_choose(cdev->gadget,
-+			acm->port.in->desc = ep_choose(cdev->gadget,
- 					acm->hs.in, acm->fs.in);
--			acm->port.out_desc = ep_choose(cdev->gadget,
-+			acm->port.out->desc = ep_choose(cdev->gadget,
- 					acm->hs.out, acm->fs.out);
- 		}
- 		gserial_connect(&acm->port, acm->port_num);
-diff --git a/drivers/usb/gadget/f_audio.c b/drivers/usb/gadget/f_audio.c
-index 00975ed..da562c4 100644
---- a/drivers/usb/gadget/f_audio.c
-+++ b/drivers/usb/gadget/f_audio.c
-@@ -279,7 +279,6 @@ struct f_audio {
- 
- 	/* endpoints handle full and/or high speeds */
- 	struct usb_ep			*out_ep;
--	struct usb_endpoint_descriptor	*out_desc;
- 
- 	spinlock_t			lock;
- 	struct f_audio_buf *copy_buf;
-@@ -575,7 +574,7 @@ static int f_audio_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 
- 	if (intf == 1) {
- 		if (alt == 1) {
--			usb_ep_enable(out_ep, audio->out_desc);
-+			usb_ep_enable(out_ep);
- 			out_ep->driver_data = audio;
- 			audio->copy_buf = f_audio_buffer_alloc(audio_buf_size);
- 			if (IS_ERR(audio->copy_buf))
-@@ -775,7 +774,7 @@ int __init audio_bind_config(struct usb_configuration *c)
- 	audio->card.func.set_alt = f_audio_set_alt;
- 	audio->card.func.setup = f_audio_setup;
- 	audio->card.func.disable = f_audio_disable;
--	audio->out_desc = &as_out_ep_desc;
-+	audio->out_ep->desc = &as_out_ep_desc;
- 
- 	control_selector_init(audio);
- 
-diff --git a/drivers/usb/gadget/f_ecm.c b/drivers/usb/gadget/f_ecm.c
-index 544257a..7c996f2 100644
---- a/drivers/usb/gadget/f_ecm.c
-+++ b/drivers/usb/gadget/f_ecm.c
-@@ -68,7 +68,6 @@ struct f_ecm {
- 	struct ecm_ep_descs		hs;
- 
- 	struct usb_ep			*notify;
--	struct usb_endpoint_descriptor	*notify_desc;
- 	struct usb_request		*notify_req;
- 	u8				notify_state;
- 	bool				is_open;
-@@ -466,11 +465,11 @@ static int ecm_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 			usb_ep_disable(ecm->notify);
- 		} else {
- 			VDBG(cdev, "init ecm ctrl %d\n", intf);
--			ecm->notify_desc = ep_choose(cdev->gadget,
-+			ecm->notify->desc = ep_choose(cdev->gadget,
- 					ecm->hs.notify,
- 					ecm->fs.notify);
- 		}
--		usb_ep_enable(ecm->notify, ecm->notify_desc);
-+		usb_ep_enable(ecm->notify);
- 		ecm->notify->driver_data = ecm;
- 
- 	/* Data interface has two altsettings, 0 and 1 */
-@@ -483,11 +482,11 @@ static int ecm_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 			gether_disconnect(&ecm->port);
- 		}
- 
--		if (!ecm->port.in) {
-+		if (!ecm->port.in_ep->desc) {
- 			DBG(cdev, "init ecm\n");
--			ecm->port.in = ep_choose(cdev->gadget,
-+			ecm->port.in_ep->desc = ep_choose(cdev->gadget,
- 					ecm->hs.in, ecm->fs.in);
--			ecm->port.out = ep_choose(cdev->gadget,
-+			ecm->port.out_ep->desc = ep_choose(cdev->gadget,
- 					ecm->hs.out, ecm->fs.out);
- 		}
- 
-@@ -549,7 +548,7 @@ static void ecm_disable(struct usb_function *f)
- 	if (ecm->notify->driver_data) {
- 		usb_ep_disable(ecm->notify);
- 		ecm->notify->driver_data = NULL;
--		ecm->notify_desc = NULL;
-+		ecm->notify->desc = NULL;
- 	}
- }
- 
-@@ -723,9 +722,9 @@ fail:
- 	/* we might as well release our claims on endpoints */
- 	if (ecm->notify)
- 		ecm->notify->driver_data = NULL;
--	if (ecm->port.out)
-+	if (ecm->port.out_ep->desc)
- 		ecm->port.out_ep->driver_data = NULL;
--	if (ecm->port.in)
-+	if (ecm->port.in_ep->desc)
- 		ecm->port.in_ep->driver_data = NULL;
- 
- 	ERROR(cdev, "%s: can't bind, err %d\n", f->name, status);
-diff --git a/drivers/usb/gadget/f_eem.c b/drivers/usb/gadget/f_eem.c
-index 95dd466..099f98f 100644
---- a/drivers/usb/gadget/f_eem.c
-+++ b/drivers/usb/gadget/f_eem.c
-@@ -176,11 +176,11 @@ static int eem_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 			gether_disconnect(&eem->port);
- 		}
- 
--		if (!eem->port.in) {
-+		if (!eem->port.in_ep->desc) {
- 			DBG(cdev, "init eem\n");
--			eem->port.in = ep_choose(cdev->gadget,
-+			eem->port.in_ep->desc = ep_choose(cdev->gadget,
- 					eem->hs.in, eem->fs.in);
--			eem->port.out = ep_choose(cdev->gadget,
-+			eem->port.out_ep->desc = ep_choose(cdev->gadget,
- 					eem->hs.out, eem->fs.out);
- 		}
- 
-@@ -289,9 +289,9 @@ fail:
- 		usb_free_descriptors(f->descriptors);
- 
- 	/* we might as well release our claims on endpoints */
--	if (eem->port.out)
-+	if (eem->port.out_ep->desc)
- 		eem->port.out_ep->driver_data = NULL;
--	if (eem->port.in)
-+	if (eem->port.in_ep->desc)
- 		eem->port.in_ep->driver_data = NULL;
- 
- 	ERROR(cdev, "%s: can't bind, err %d\n", f->name, status);
-diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-index 1499f9e..037ef86 100644
---- a/drivers/usb/gadget/f_fs.c
-+++ b/drivers/usb/gadget/f_fs.c
-@@ -1536,7 +1536,8 @@ static int ffs_func_eps_enable(struct ffs_function *func)
- 		ds = ep->descs[ep->descs[1] ? 1 : 0];
- 
- 		ep->ep->driver_data = ep;
--		ret = usb_ep_enable(ep->ep, ds);
-+		ep->ep->desc = ds;
-+		ret = usb_ep_enable(ep->ep);
- 		if (likely(!ret)) {
- 			epfile->ep = ep;
- 			epfile->in = usb_endpoint_dir_in(ds);
-diff --git a/drivers/usb/gadget/f_hid.c b/drivers/usb/gadget/f_hid.c
-index 598e7e2..12879b6 100644
---- a/drivers/usb/gadget/f_hid.c
-+++ b/drivers/usb/gadget/f_hid.c
-@@ -416,7 +416,6 @@ static int hidg_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- {
- 	struct usb_composite_dev		*cdev = f->config->cdev;
- 	struct f_hidg				*hidg = func_to_hidg(f);
--	const struct usb_endpoint_descriptor	*ep_desc;
- 	int status = 0;
- 
- 	VDBG(cdev, "hidg_set_alt intf:%d alt:%d\n", intf, alt);
-@@ -426,9 +425,9 @@ static int hidg_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 		if (hidg->in_ep->driver_data != NULL)
- 			usb_ep_disable(hidg->in_ep);
- 
--		ep_desc = ep_choose(f->config->cdev->gadget,
-+		hidg->in_ep->desc = ep_choose(f->config->cdev->gadget,
- 				hidg->hs_in_ep_desc, hidg->fs_in_ep_desc);
--		status = usb_ep_enable(hidg->in_ep, ep_desc);
-+		status = usb_ep_enable(hidg->in_ep);
- 		if (status < 0) {
- 			ERROR(cdev, "Enable endpoint FAILED!\n");
- 			goto fail;
-diff --git a/drivers/usb/gadget/f_loopback.c b/drivers/usb/gadget/f_loopback.c
-index b37960f..34e3cca 100644
---- a/drivers/usb/gadget/f_loopback.c
-+++ b/drivers/usb/gadget/f_loopback.c
-@@ -250,26 +250,24 @@ static int
- enable_loopback(struct usb_composite_dev *cdev, struct f_loopback *loop)
- {
- 	int					result = 0;
--	const struct usb_endpoint_descriptor	*src, *sink;
- 	struct usb_ep				*ep;
- 	struct usb_request			*req;
- 	unsigned				i;
- 
--	src = ep_choose(cdev->gadget,
--			&hs_loop_source_desc, &fs_loop_source_desc);
--	sink = ep_choose(cdev->gadget,
--			&hs_loop_sink_desc, &fs_loop_sink_desc);
--
- 	/* one endpoint writes data back IN to the host */
- 	ep = loop->in_ep;
--	result = usb_ep_enable(ep, src);
-+	ep->desc = ep_choose(cdev->gadget,
-+			&hs_loop_source_desc, &fs_loop_source_desc);
-+	result = usb_ep_enable(ep);
- 	if (result < 0)
- 		return result;
- 	ep->driver_data = loop;
- 
- 	/* one endpoint just reads OUT packets */
- 	ep = loop->out_ep;
--	result = usb_ep_enable(ep, sink);
-+	ep->desc = ep_choose(cdev->gadget,
-+			&hs_loop_sink_desc, &fs_loop_sink_desc);
-+	result = usb_ep_enable(ep);
- 	if (result < 0) {
- fail0:
- 		ep = loop->in_ep;
-diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index b5dbb23..07a524e 100644
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -2355,7 +2355,8 @@ static int enable_endpoint(struct fsg_common *common, struct usb_ep *ep,
- 	int	rc;
- 
- 	ep->driver_data = common;
--	rc = usb_ep_enable(ep, d);
-+	ep->desc = (struct usb_endpoint_descriptor *)d;
-+	rc = usb_ep_enable(ep);
- 	if (rc)
- 		ERROR(common, "can't enable %s, result %d\n", ep->name, rc);
- 	return rc;
-diff --git a/drivers/usb/gadget/f_obex.c b/drivers/usb/gadget/f_obex.c
-index 8f8c643..a6dbda0 100644
---- a/drivers/usb/gadget/f_obex.c
-+++ b/drivers/usb/gadget/f_obex.c
-@@ -227,11 +227,11 @@ static int obex_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 			gserial_disconnect(&obex->port);
- 		}
- 
--		if (!obex->port.in_desc) {
-+		if (!obex->port.in->desc) {
- 			DBG(cdev, "init obex ttyGS%d\n", obex->port_num);
--			obex->port.in_desc = ep_choose(cdev->gadget,
-+			obex->port.in->desc = ep_choose(cdev->gadget,
- 					obex->hs.obex_in, obex->fs.obex_in);
--			obex->port.out_desc = ep_choose(cdev->gadget,
-+			obex->port.out->desc = ep_choose(cdev->gadget,
- 					obex->hs.obex_out, obex->fs.obex_out);
- 		}
- 
-diff --git a/drivers/usb/gadget/f_phonet.c b/drivers/usb/gadget/f_phonet.c
-index 3c6e1a0..c6c27df 100644
---- a/drivers/usb/gadget/f_phonet.c
-+++ b/drivers/usb/gadget/f_phonet.c
-@@ -422,17 +422,16 @@ static int pn_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 		spin_lock(&port->lock);
- 		__pn_reset(f);
- 		if (alt == 1) {
--			struct usb_endpoint_descriptor *out, *in;
- 			int i;
- 
--			out = ep_choose(gadget,
-+			fp->out_ep->desc = ep_choose(gadget,
- 					&pn_hs_sink_desc,
- 					&pn_fs_sink_desc);
--			in = ep_choose(gadget,
-+			fp->in_ep->desc = ep_choose(gadget,
- 					&pn_hs_source_desc,
- 					&pn_fs_source_desc);
--			usb_ep_enable(fp->out_ep, out);
--			usb_ep_enable(fp->in_ep, in);
-+			usb_ep_enable(fp->out_ep);
-+			usb_ep_enable(fp->in_ep);
- 
- 			port->usb = fp;
- 			fp->out_ep->driver_data = fp;
-diff --git a/drivers/usb/gadget/f_rndis.c b/drivers/usb/gadget/f_rndis.c
-index 882484a..2066f7c 100644
---- a/drivers/usb/gadget/f_rndis.c
-+++ b/drivers/usb/gadget/f_rndis.c
-@@ -92,7 +92,6 @@ struct f_rndis {
- 	struct rndis_ep_descs		hs;
- 
- 	struct usb_ep			*notify;
--	struct usb_endpoint_descriptor	*notify_desc;
- 	struct usb_request		*notify_req;
- 	atomic_t			notify_count;
- };
-@@ -487,11 +486,11 @@ static int rndis_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 			usb_ep_disable(rndis->notify);
- 		} else {
- 			VDBG(cdev, "init rndis ctrl %d\n", intf);
--			rndis->notify_desc = ep_choose(cdev->gadget,
-+			rndis->notify->desc = ep_choose(cdev->gadget,
- 					rndis->hs.notify,
- 					rndis->fs.notify);
- 		}
--		usb_ep_enable(rndis->notify, rndis->notify_desc);
-+		usb_ep_enable(rndis->notify);
- 		rndis->notify->driver_data = rndis;
- 
- 	} else if (intf == rndis->data_id) {
-@@ -502,11 +501,11 @@ static int rndis_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 			gether_disconnect(&rndis->port);
- 		}
- 
--		if (!rndis->port.in) {
-+		if (!rndis->port.in_ep->desc) {
- 			DBG(cdev, "init rndis\n");
--			rndis->port.in = ep_choose(cdev->gadget,
-+			rndis->port.in_ep->desc = ep_choose(cdev->gadget,
- 					rndis->hs.in, rndis->fs.in);
--			rndis->port.out = ep_choose(cdev->gadget,
-+			rndis->port.out_ep->desc = ep_choose(cdev->gadget,
- 					rndis->hs.out, rndis->fs.out);
- 		}
- 
-@@ -739,9 +738,9 @@ fail:
- 	/* we might as well release our claims on endpoints */
- 	if (rndis->notify)
- 		rndis->notify->driver_data = NULL;
--	if (rndis->port.out)
-+	if (rndis->port.out_ep->desc)
- 		rndis->port.out_ep->driver_data = NULL;
--	if (rndis->port.in)
-+	if (rndis->port.in_ep->desc)
- 		rndis->port.in_ep->driver_data = NULL;
- 
- 	ERROR(cdev, "%s: can't bind, err %d\n", f->name, status);
-diff --git a/drivers/usb/gadget/f_serial.c b/drivers/usb/gadget/f_serial.c
-index 490b00b..a9ce626 100644
---- a/drivers/usb/gadget/f_serial.c
-+++ b/drivers/usb/gadget/f_serial.c
-@@ -138,9 +138,9 @@ static int gser_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 		gserial_disconnect(&gser->port);
- 	} else {
- 		DBG(cdev, "activate generic ttyGS%d\n", gser->port_num);
--		gser->port.in_desc = ep_choose(cdev->gadget,
-+		gser->port.in->desc = ep_choose(cdev->gadget,
- 				gser->hs.in, gser->fs.in);
--		gser->port.out_desc = ep_choose(cdev->gadget,
-+		gser->port.out->desc = ep_choose(cdev->gadget,
- 				gser->hs.out, gser->fs.out);
- 	}
- 	gserial_connect(&gser->port, gser->port_num);
-diff --git a/drivers/usb/gadget/f_sourcesink.c b/drivers/usb/gadget/f_sourcesink.c
-index e403a53..0ffddd3 100644
---- a/drivers/usb/gadget/f_sourcesink.c
-+++ b/drivers/usb/gadget/f_sourcesink.c
-@@ -343,15 +343,12 @@ static int
- enable_source_sink(struct usb_composite_dev *cdev, struct f_sourcesink *ss)
- {
- 	int					result = 0;
--	const struct usb_endpoint_descriptor	*src, *sink;
- 	struct usb_ep				*ep;
- 
--	src = ep_choose(cdev->gadget, &hs_source_desc, &fs_source_desc);
--	sink = ep_choose(cdev->gadget, &hs_sink_desc, &fs_sink_desc);
--
- 	/* one endpoint writes (sources) zeroes IN (to the host) */
- 	ep = ss->in_ep;
--	result = usb_ep_enable(ep, src);
-+	ep->desc = ep_choose(cdev->gadget, &hs_source_desc, &fs_source_desc);
-+	result = usb_ep_enable(ep);
- 	if (result < 0)
- 		return result;
- 	ep->driver_data = ss;
-@@ -367,7 +364,8 @@ fail:
- 
- 	/* one endpoint reads (sinks) anything OUT (from the host) */
- 	ep = ss->out_ep;
--	result = usb_ep_enable(ep, sink);
-+	ep->desc = ep_choose(cdev->gadget, &hs_sink_desc, &fs_sink_desc);
-+	result = usb_ep_enable(ep);
- 	if (result < 0)
- 		goto fail;
- 	ep->driver_data = ss;
-diff --git a/drivers/usb/gadget/f_subset.c b/drivers/usb/gadget/f_subset.c
-index 8675ca4..aecaed1 100644
---- a/drivers/usb/gadget/f_subset.c
-+++ b/drivers/usb/gadget/f_subset.c
-@@ -243,9 +243,9 @@ static int geth_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 	}
- 
- 	DBG(cdev, "init + activate cdc subset\n");
--	geth->port.in = ep_choose(cdev->gadget,
-+	geth->port.in_ep->desc = ep_choose(cdev->gadget,
- 			geth->hs.in, geth->fs.in);
--	geth->port.out = ep_choose(cdev->gadget,
-+	geth->port.out_ep->desc = ep_choose(cdev->gadget,
- 			geth->hs.out, geth->fs.out);
- 
- 	net = gether_connect(&geth->port);
-@@ -334,9 +334,9 @@ geth_bind(struct usb_configuration *c, struct usb_function *f)
- 
- fail:
- 	/* we might as well release our claims on endpoints */
--	if (geth->port.out)
-+	if (geth->port.out_ep->desc)
- 		geth->port.out_ep->driver_data = NULL;
--	if (geth->port.in)
-+	if (geth->port.in_ep->desc)
- 		geth->port.in_ep->driver_data = NULL;
- 
- 	ERROR(cdev, "%s: can't bind, err %d\n", f->name, status);
-diff --git a/drivers/usb/gadget/f_uvc.c b/drivers/usb/gadget/f_uvc.c
-index be446b7..df74d03 100644
---- a/drivers/usb/gadget/f_uvc.c
-+++ b/drivers/usb/gadget/f_uvc.c
-@@ -262,8 +262,10 @@ uvc_function_set_alt(struct usb_function *f, unsigned interface, unsigned alt)
- 		if (uvc->state != UVC_STATE_CONNECTED)
- 			return 0;
- 
--		if (uvc->video.ep)
--			usb_ep_enable(uvc->video.ep, &uvc_streaming_ep);
-+		if (uvc->video.ep) {
-+			uvc->video.ep->desc = &uvc_streaming_ep;
-+			usb_ep_enable(uvc->video.ep);
-+		}
- 
- 		memset(&v4l2_event, 0, sizeof(v4l2_event));
- 		v4l2_event.type = UVC_EVENT_STREAMON;
-diff --git a/drivers/usb/gadget/file_storage.c b/drivers/usb/gadget/file_storage.c
-index a6eacb5..70a144e 100644
---- a/drivers/usb/gadget/file_storage.c
-+++ b/drivers/usb/gadget/file_storage.c
-@@ -2742,7 +2742,8 @@ static int enable_endpoint(struct fsg_dev *fsg, struct usb_ep *ep,
- 	int	rc;
- 
- 	ep->driver_data = fsg;
--	rc = usb_ep_enable(ep, d);
-+	ep->desc = d;
-+	rc = usb_ep_enable(ep);
- 	if (rc)
- 		ERROR(fsg, "can't enable %s, result %d\n", ep->name, rc);
- 	return rc;
-diff --git a/drivers/usb/gadget/gmidi.c b/drivers/usb/gadget/gmidi.c
-index 0ab7e14..1d0435f 100644
---- a/drivers/usb/gadget/gmidi.c
-+++ b/drivers/usb/gadget/gmidi.c
-@@ -537,14 +537,16 @@ static int set_gmidi_config(struct gmidi_device *dev, gfp_t gfp_flags)
- 	struct usb_ep *ep;
- 	unsigned i;
- 
--	err = usb_ep_enable(dev->in_ep, &bulk_in_desc);
-+	dev->in_ep->desc = &bulk_in_desc;
-+	err = usb_ep_enable(dev->in_ep);
- 	if (err) {
- 		ERROR(dev, "can't start %s: %d\n", dev->in_ep->name, err);
- 		goto fail;
- 	}
- 	dev->in_ep->driver_data = dev;
- 
--	err = usb_ep_enable(dev->out_ep, &bulk_out_desc);
-+	dev->out_ep->desc = &bulk_out_desc;
-+	err = usb_ep_enable(dev->out_ep);
- 	if (err) {
- 		ERROR(dev, "can't start %s: %d\n", dev->out_ep->name, err);
- 		goto fail;
-diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
-index 3ed73f4..565e201 100644
---- a/drivers/usb/gadget/inode.c
-+++ b/drivers/usb/gadget/inode.c
-@@ -828,14 +828,16 @@ ep_config (struct file *fd, const char __user *buf, size_t len, loff_t *ptr)
- 	switch (data->dev->gadget->speed) {
- 	case USB_SPEED_LOW:
- 	case USB_SPEED_FULL:
--		value = usb_ep_enable (ep, &data->desc);
-+		ep->desc = &data->desc;
-+		value = usb_ep_enable(ep);
- 		if (value == 0)
- 			data->state = STATE_EP_ENABLED;
- 		break;
- #ifdef	CONFIG_USB_GADGET_DUALSPEED
- 	case USB_SPEED_HIGH:
- 		/* fails if caller didn't provide that descriptor... */
--		value = usb_ep_enable (ep, &data->hs_desc);
-+		ep->desc = &data->hs_desc;
-+		value = usb_ep_enable(ep);
- 		if (value == 0)
- 			data->state = STATE_EP_ENABLED;
- 		break;
-diff --git a/drivers/usb/gadget/printer.c b/drivers/usb/gadget/printer.c
-index 2fc8636..5769ded 100644
---- a/drivers/usb/gadget/printer.c
-+++ b/drivers/usb/gadget/printer.c
-@@ -89,8 +89,7 @@ struct printer_dev {
- 	u8			config;
- 	s8			interface;
- 	struct usb_ep		*in_ep, *out_ep;
--	const struct usb_endpoint_descriptor
--				*in, *out;
-+
- 	struct list_head	rx_reqs;	/* List of free RX structs */
- 	struct list_head	rx_reqs_active;	/* List of Active RX xfers */
- 	struct list_head	rx_buffers;	/* List of completed xfers */
-@@ -895,19 +894,20 @@ set_printer_interface(struct printer_dev *dev)
- {
- 	int			result = 0;
- 
--	dev->in = ep_desc(dev->gadget, &hs_ep_in_desc, &fs_ep_in_desc);
-+	dev->in_ep->desc = ep_desc(dev->gadget, &hs_ep_in_desc, &fs_ep_in_desc);
- 	dev->in_ep->driver_data = dev;
- 
--	dev->out = ep_desc(dev->gadget, &hs_ep_out_desc, &fs_ep_out_desc);
-+	dev->out_ep->desc = ep_desc(dev->gadget, &hs_ep_out_desc,
-+				    &fs_ep_out_desc);
- 	dev->out_ep->driver_data = dev;
- 
--	result = usb_ep_enable(dev->in_ep, dev->in);
-+	result = usb_ep_enable(dev->in_ep);
- 	if (result != 0) {
- 		DBG(dev, "enable %s --> %d\n", dev->in_ep->name, result);
- 		goto done;
- 	}
- 
--	result = usb_ep_enable(dev->out_ep, dev->out);
-+	result = usb_ep_enable(dev->out_ep);
- 	if (result != 0) {
- 		DBG(dev, "enable %s --> %d\n", dev->in_ep->name, result);
- 		goto done;
-@@ -918,8 +918,8 @@ done:
- 	if (result != 0) {
- 		(void) usb_ep_disable(dev->in_ep);
- 		(void) usb_ep_disable(dev->out_ep);
--		dev->in = NULL;
--		dev->out = NULL;
-+		dev->in_ep->desc = NULL;
-+		dev->out_ep->desc = NULL;
- 	}
- 
- 	/* caller is responsible for cleanup on error */
-@@ -933,12 +933,14 @@ static void printer_reset_interface(struct printer_dev *dev)
- 
- 	DBG(dev, "%s\n", __func__);
- 
--	if (dev->in)
-+	if (dev->in_ep->desc)
- 		usb_ep_disable(dev->in_ep);
- 
--	if (dev->out)
-+	if (dev->out_ep->desc)
- 		usb_ep_disable(dev->out_ep);
- 
-+	dev->in_ep->desc = NULL;
-+	dev->out_ep->desc = NULL;
- 	dev->interface = -1;
- }
- 
-@@ -1104,9 +1106,9 @@ static void printer_soft_reset(struct printer_dev *dev)
- 		list_add(&req->list, &dev->tx_reqs);
- 	}
- 
--	if (usb_ep_enable(dev->in_ep, dev->in))
-+	if (usb_ep_enable(dev->in_ep))
- 		DBG(dev, "Failed to enable USB in_ep\n");
--	if (usb_ep_enable(dev->out_ep, dev->out))
-+	if (usb_ep_enable(dev->out_ep))
- 		DBG(dev, "Failed to enable USB out_ep\n");
- 
- 	wake_up_interruptible(&dev->rx_wait);
-diff --git a/drivers/usb/gadget/u_ether.c b/drivers/usb/gadget/u_ether.c
-index 1eda968..975f684 100644
---- a/drivers/usb/gadget/u_ether.c
-+++ b/drivers/usb/gadget/u_ether.c
-@@ -693,8 +693,8 @@ static int eth_stop(struct net_device *net)
- 		usb_ep_disable(link->out_ep);
- 		if (netif_carrier_ok(net)) {
- 			DBG(dev, "host still using in/out endpoints\n");
--			usb_ep_enable(link->in_ep, link->in);
--			usb_ep_enable(link->out_ep, link->out);
-+			usb_ep_enable(link->in_ep);
-+			usb_ep_enable(link->out_ep);
- 		}
- 	}
- 	spin_unlock_irqrestore(&dev->lock, flags);
-@@ -871,7 +871,7 @@ struct net_device *gether_connect(struct gether *link)
- 		return ERR_PTR(-EINVAL);
- 
- 	link->in_ep->driver_data = dev;
--	result = usb_ep_enable(link->in_ep, link->in);
-+	result = usb_ep_enable(link->in_ep);
- 	if (result != 0) {
- 		DBG(dev, "enable %s --> %d\n",
- 			link->in_ep->name, result);
-@@ -879,7 +879,7 @@ struct net_device *gether_connect(struct gether *link)
- 	}
- 
- 	link->out_ep->driver_data = dev;
--	result = usb_ep_enable(link->out_ep, link->out);
-+	result = usb_ep_enable(link->out_ep);
- 	if (result != 0) {
- 		DBG(dev, "enable %s --> %d\n",
- 			link->out_ep->name, result);
-@@ -969,7 +969,7 @@ void gether_disconnect(struct gether *link)
- 	}
- 	spin_unlock(&dev->req_lock);
- 	link->in_ep->driver_data = NULL;
--	link->in = NULL;
-+	link->in_ep->desc = NULL;
- 
- 	usb_ep_disable(link->out_ep);
- 	spin_lock(&dev->req_lock);
-@@ -984,7 +984,7 @@ void gether_disconnect(struct gether *link)
- 	}
- 	spin_unlock(&dev->req_lock);
- 	link->out_ep->driver_data = NULL;
--	link->out = NULL;
-+	link->out_ep->desc = NULL;
- 
- 	/* finish forgetting about this USB link episode */
- 	dev->header_len = 0;
-diff --git a/drivers/usb/gadget/u_ether.h b/drivers/usb/gadget/u_ether.h
-index b56e1e7..c966440 100644
---- a/drivers/usb/gadget/u_ether.h
-+++ b/drivers/usb/gadget/u_ether.h
-@@ -52,10 +52,6 @@ struct gether {
- 	struct usb_ep			*in_ep;
- 	struct usb_ep			*out_ep;
- 
--	/* descriptors match device speed at gether_connect() time */
--	struct usb_endpoint_descriptor	*in;
--	struct usb_endpoint_descriptor	*out;
--
- 	bool				is_zlp_ok;
- 
- 	u16				cdc_filter;
-diff --git a/drivers/usb/gadget/u_serial.c b/drivers/usb/gadget/u_serial.c
-index 40f7716..a8aa469 100644
---- a/drivers/usb/gadget/u_serial.c
-+++ b/drivers/usb/gadget/u_serial.c
-@@ -1247,12 +1247,12 @@ int gserial_connect(struct gserial *gser, u8 port_num)
- 	port = ports[port_num].port;
- 
- 	/* activate the endpoints */
--	status = usb_ep_enable(gser->in, gser->in_desc);
-+	status = usb_ep_enable(gser->in);
- 	if (status < 0)
- 		return status;
- 	gser->in->driver_data = port;
- 
--	status = usb_ep_enable(gser->out, gser->out_desc);
-+	status = usb_ep_enable(gser->out);
- 	if (status < 0)
- 		goto fail_out;
- 	gser->out->driver_data = port;
-diff --git a/drivers/usb/gadget/u_serial.h b/drivers/usb/gadget/u_serial.h
-index 300f0ed..9b0fe64 100644
---- a/drivers/usb/gadget/u_serial.h
-+++ b/drivers/usb/gadget/u_serial.h
-@@ -35,8 +35,6 @@ struct gserial {
- 
- 	struct usb_ep			*in;
- 	struct usb_ep			*out;
--	struct usb_endpoint_descriptor	*in_desc;
--	struct usb_endpoint_descriptor	*out_desc;
- 
- 	/* REVISIT avoid this CDC-ACM support harder ... */
- 	struct usb_cdc_line_coding port_line_coding;	/* 9600-8-N-1 etc */
-diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
-index 006412c..500ae91 100644
---- a/include/linux/usb/gadget.h
-+++ b/include/linux/usb/gadget.h
-@@ -131,8 +131,9 @@ struct usb_ep_ops {
-  * @maxpacket:The maximum packet size used on this endpoint.  The initial
-  *	value can sometimes be reduced (hardware allowing), according to
-  *      the endpoint descriptor used to configure the endpoint.
-- * @driver_data:for use by the gadget driver.  all other fields are
-- *	read-only to gadget drivers.
-+ * @driver_data:for use by the gadget driver.
-+ * @desc: endpoint descriptor.  This pointer is set before the endpoint is
-+ *	enabled and remains valid until the endpoint is disabled.
-  *
-  * the bus controller driver lists all the general purpose endpoints in
-  * gadget->ep_list.  the control endpoint (gadget->ep0) is not in that list,
-@@ -145,6 +146,7 @@ struct usb_ep {
- 	const struct usb_ep_ops	*ops;
- 	struct list_head	ep_list;
- 	unsigned		maxpacket:16;
-+	const struct usb_endpoint_descriptor	*desc;
- };
- 
- /*-------------------------------------------------------------------------*/
-@@ -153,11 +155,8 @@ struct usb_ep {
-  * usb_ep_enable - configure endpoint, making it usable
-  * @ep:the endpoint being configured.  may not be the endpoint named "ep0".
-  *	drivers discover endpoints through the ep_list of a usb_gadget.
-- * @desc:descriptor for desired behavior.  caller guarantees this pointer
-- *	remains valid until the endpoint is disabled; the data byte order
-- *	is little-endian (usb-standard).
-  *
-- * when configurations are set, or when interface settings change, the driver
-+ * When configurations are set, or when interface settings change, the driver
-  * will enable or disable the relevant endpoints.  while it is enabled, an
-  * endpoint may be used for i/o until the driver receives a disconnect() from
-  * the host or until the endpoint is disabled.
-@@ -172,10 +171,9 @@ struct usb_ep {
-  *
-  * returns zero, or a negative error code.
-  */
--static inline int usb_ep_enable(struct usb_ep *ep,
--				const struct usb_endpoint_descriptor *desc)
-+static inline int usb_ep_enable(struct usb_ep *ep)
- {
--	return ep->ops->enable(ep, desc);
-+	return ep->ops->enable(ep, ep->desc);
- }
- 
- /**
--- 
-1.6.3.3
+ fs/ufs/super.c |    8 ++++----
+ fs/ufs/util.c  |    2 +-
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
---
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+diff --git a/fs/ufs/super.c b/fs/ufs/super.c
+index e4e06ef..7693d62 100644
+--- a/fs/ufs/super.c
++++ b/fs/ufs/super.c
+@@ -539,7 +539,7 @@ static int ufs_read_cylinder_structures(struct super_block *sb)
+ 	 */
+ 	size = uspi->s_cssize;
+ 	blks = (size + uspi->s_fsize - 1) >> uspi->s_fshift;
+-	base = space = kmalloc(size, GFP_KERNEL);
++	base = space = kmalloc(size, GFP_NOFS);
+ 	if (!base)
+ 		goto failed; 
+ 	sbi->s_csp = (struct ufs_csum *)space;
+@@ -564,7 +564,7 @@ static int ufs_read_cylinder_structures(struct super_block *sb)
+ 	 * Read cylinder group (we read only first fragment from block
+ 	 * at this time) and prepare internal data structures for cg caching.
+ 	 */
+-	if (!(sbi->s_ucg = kmalloc (sizeof(struct buffer_head *) * uspi->s_ncg, GFP_KERNEL)))
++	if (!(sbi->s_ucg = kmalloc (sizeof(struct buffer_head *) * uspi->s_ncg, GFP_NOFS)))
+ 		goto failed;
+ 	for (i = 0; i < uspi->s_ncg; i++) 
+ 		sbi->s_ucg[i] = NULL;
+@@ -582,7 +582,7 @@ static int ufs_read_cylinder_structures(struct super_block *sb)
+ 		ufs_print_cylinder_stuff(sb, (struct ufs_cylinder_group *) sbi->s_ucg[i]->b_data);
+ 	}
+ 	for (i = 0; i < UFS_MAX_GROUP_LOADED; i++) {
+-		if (!(sbi->s_ucpi[i] = kmalloc (sizeof(struct ufs_cg_private_info), GFP_KERNEL)))
++		if (!(sbi->s_ucpi[i] = kmalloc (sizeof(struct ufs_cg_private_info), GFP_NOFS)))
+ 			goto failed;
+ 		sbi->s_cgno[i] = UFS_CGNO_EMPTY;
+ 	}
+@@ -1415,7 +1415,7 @@ static struct kmem_cache * ufs_inode_cachep;
+ static struct inode *ufs_alloc_inode(struct super_block *sb)
+ {
+ 	struct ufs_inode_info *ei;
+-	ei = (struct ufs_inode_info *)kmem_cache_alloc(ufs_inode_cachep, GFP_KERNEL);
++	ei = (struct ufs_inode_info *)kmem_cache_alloc(ufs_inode_cachep, GFP_NOFS);
+ 	if (!ei)
+ 		return NULL;
+ 	ei->vfs_inode.i_version = 1;
+diff --git a/fs/ufs/util.c b/fs/ufs/util.c
+index d2c36d5..95425b5 100644
+--- a/fs/ufs/util.c
++++ b/fs/ufs/util.c
+@@ -27,7 +27,7 @@ struct ufs_buffer_head * _ubh_bread_ (struct ufs_sb_private_info * uspi,
+ 	if (count > UFS_MAXFRAG)
+ 		return NULL;
+ 	ubh = (struct ufs_buffer_head *)
+-		kmalloc (sizeof (struct ufs_buffer_head), GFP_KERNEL);
++		kmalloc (sizeof (struct ufs_buffer_head), GFP_NOFS);
+ 	if (!ubh)
+ 		return NULL;
+ 	ubh->fragment = fragment;
