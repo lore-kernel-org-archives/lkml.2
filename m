@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105Ab1A0OrS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 09:47:18 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:57260 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751374Ab1A0OrQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 09:47:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=Vrms3eRhbSkFP/F+RVKYJjg4y15sMHd7uqsNAX6z4WeRfW1RJTwdlzRDWJL0z1MCyi
-         56c3331PoGDRVq3J3aoJ+xB9peDvC5N51QCLAgYVaIswu3CFYtVqT6chGUNIv/Cxd9BN
-         lD8kbH8SWUl9TfYZoELOfKkeOGlJ2M5X673V8=
-MIME-Version: 1.0
-In-Reply-To: <1296029447.2013.8.camel@sven>
-References: <20110124101701.GE16202@n2100.arm.linux.org.uk>
- <1295864750-1238-1-git-send-email-s.neumann@raumfeld.com> <AANLkTinrxiHx6jX9jFzVzjq5FH-W=MLoDThAtRq2a1zZ@mail.gmail.com>
- <1296029447.2013.8.camel@sven>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Thu, 27 Jan 2011 22:46:54 +0800
-Message-ID: <AANLkTimUg=y49H6THn5s7f7v418W68fhAsMLZGnDqabF@mail.gmail.com>
-Subject: Re: [PATCH] ARM: pxa: fix suspend on PXA3XX
-To: Sven Neumann <s.neumann@raumfeld.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Daniel Mack <daniel@caiaq.de>
-Content-Type: text/plain; charset=UTF-8
+	id S1751436Ab1A0Otu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 09:49:50 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:53686 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809Ab1A0Ott convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:6:1>);
+	Thu, 27 Jan 2011 09:49:49 -0500
+Message-Id: <4D419416020000780002ECB7@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Thu, 27 Jan 2011 14:49:42 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Xiaowei Yang" <xiaowei.yang@huawei.com>,
+        "Nick Piggin" <npiggin@kernel.dk>
+Cc: "Peter Zijlstra" <a.p.zijlstra@chello.nl>, <fanhenglong@huawei.com>,
+        "Kaushik Barde" <kbarde@huawei.com>,
+        "Kenneth Lee" <liguozhu@huawei.com>,
+        "linqaingmin" <linqiangmin@huawei.com>, <wangzhenguo@huawei.com>,
+        "Wu Fengguang" <fengguang.wu@intel.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: One (possible) x86 get_user_pages bug
+References: <4D416D9A.9010603@huawei.com>
+In-Reply-To: <4D416D9A.9010603@huawei.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 26, 2011 at 4:10 PM, Sven Neumann <s.neumann@raumfeld.com> wrote:
-> On Wed, 2011-01-26 at 05:06 +0800, Eric Miao wrote:
->> How about this instead?
->>
->> diff --git a/arch/arm/mach-pxa/pm.c b/arch/arm/mach-pxa/pm.c
->> index 978e1b2..1807c9a 100644
->> --- a/arch/arm/mach-pxa/pm.c
->> +++ b/arch/arm/mach-pxa/pm.c
->> @@ -33,7 +33,7 @@ int pxa_pm_enter(suspend_state_t state)
->>  #endif
->>
->>       /* skip registers saving for standby */
->> -     if (state != PM_SUSPEND_STANDBY) {
->> +     if (state != PM_SUSPEND_STANDBY && pxa_cpu_pm_fns->save) {
->>               pxa_cpu_pm_fns->save(sleep_save);
->>               /* before sleeping, calculate and save a checksum */
->>               for (i = 0; i < pxa_cpu_pm_fns->save_count - 1; i++)
->> @@ -44,7 +44,7 @@ int pxa_pm_enter(suspend_state_t state)
->>       pxa_cpu_pm_fns->enter(state);
->>       cpu_init();
->>
->> -     if (state != PM_SUSPEND_STANDBY) {
->> +     if (state != PM_SUSPEND_STANDBY && pxa_cpu_pm_fns->restore) {
->>               /* after sleeping, validate the checksum */
->>               for (i = 0; i < pxa_cpu_pm_fns->save_count - 1; i++)
->>                       checksum += sleep_save[i];
->>
->
-> Not sure if that will work as well. With this change the code is
-> skipping more than just the calls to pxa_cpu_pm_fns->save() and
-> pxa_cpu_pm_fns->restore(). In particular it doesn't call
-> pxa_cpu_pm_fns->enter(state).
->
+>>> On 27.01.11 at 14:05, Xiaowei Yang <xiaowei.yang@huawei.com> wrote:
+> We created a scenario to reproduce the bug:
+> ----------------------------------------------------------------
+> // proc1/proc1.2 are 2 threads sharing one page table.
+> // proc1 is the parent of proc2.
+> 
+> proc1               proc2          proc1.2
+> ...                 ...            // in gup_pte_range()
+> ...                 ...            pte = gup_get_pte()
+> ...                 ...            page1 = pte_page(pte)  // (1)
+> do_wp_page(page1)   ...            ...
+> ...                 exit_map()     ...
+> ...                 ...            get_page(page1)        // (2)
+> -----------------------------------------------------------------
+> 
+> do_wp_page() and exit_map() cause page1 to be released into free list 
+> before get_page() in proc1.2 is called. The longer the delay between 
+> (1)&(2), the easier the BUG_ON shows.
 
-Nah, that ->enable() is called if the checksum is incorrect. Please compare
-with the original code?
+The scenario indeed seems to apply independent of virtualization,
+but the window obviously can be unbounded unless running
+native.
 
->
-> Thanks,
-> Sven
->
->
->
+However, going through all the comments in gup.c again I wonder
+whether pv Xen guests don't violate the major assumption: There
+is talk about interrupts being off preventing (or sufficiently
+deferring) remote CPUs doing TLB flushes. In pv Xen guests,
+however, non-local TLB flushes do not happen by sending IPIs -
+the hypercall interface gets used instead. If that's indeed the
+case, I would have expected quite a few bug reports, but I'm
+unaware of any - Nick, am I overlooking something here?
+
+Jan
+
