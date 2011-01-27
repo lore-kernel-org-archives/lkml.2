@@ -1,77 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529Ab1A0OvK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 09:51:10 -0500
-Received: from router-fw.net-space.pl ([89.174.63.77]:42159 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809Ab1A0OvJ (ORCPT
+	id S1751684Ab1A0Oys (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 09:54:48 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:8676 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751042Ab1A0Oyq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 09:51:09 -0500
-Date: Thu, 27 Jan 2011 15:48:43 +0100
-From: Daniel Kiper <dkiper@net-space.pl>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, x86@kernel.org,
-        xen-devel@lists.xensource.com, jeremy@goop.org, konrad.wilk@oracle.com,
-        mingo@redhat.com, mingo@elte.hu
-Subject: [PATCH] xen: convert p2m to a 3 level tree - partial revert
-Message-ID: <20110127144843.GA23746@router-fw-old.local.net-space.pl>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.3.28i
+	Thu, 27 Jan 2011 09:54:46 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAJsVQU1Ld/sX/2dsb2JhbAAMhAjMWpBigSODOHQEhRc
+X-IronPort-AV: E=Sophos;i="4.60,386,1291611600"; 
+   d="scan'208";a="89415130"
+Message-ID: <4D418732.70107@teksavvy.com>
+Date: Thu, 27 Jan 2011 09:54:42 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils
+ ?
+References: <20110125205453.GA19896@core.coreip.homeip.net> <4D3F4804.6070508@redhat.com> <4D3F4D11.9040302@teksavvy.com> <20110125232914.GA20130@core.coreip.homeip.net> <20110126020003.GA23085@core.coreip.homeip.net> <4D403855.4050706@teksavvy.com> <4D40C3D7.90608@teksavvy.com> <4D40C551.4020907@teksavvy.com> <20110127021227.GA29709@core.coreip.homeip.net> <4D40E41D.2030003@teksavvy.com> <20110127063815.GA29924@core.coreip.homeip.net>
+In-Reply-To: <20110127063815.GA29924@core.coreip.homeip.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 11-01-27 01:38 AM, Dmitry Torokhov wrote:
+..
+> BTW, I wonder what package ir-keytable is coming from? Ubuntu seems to
+> have v4l-utils at 0.8.1-2 and you say yours is 0.8.2...
+..
 
-Durning work on Xen memory hotplug I discoverd that
-2.6.38-rc2 does not boot on domU. After some investigation
-it appeared that 58e05027b530ff081ecea68e38de8d59db8f87e0
-commit changed CONFIG_XEN_MAX_DOMAIN_MEMORY constant value
-to 128. This change does not allow to boot kernel on domU
-with small memory size (I could confirm that it is even
-not possible to boot kernel on domU with 2 GiB). Guest
-crash silently without any warning. Durning further
-research I found out that there is another commit published
-recently (8e1b4cf2108488ccfb9a3e7ed7cd85a435e01d4b) which attempts
-to fix this issue, however, it does not work on my platform.
-I decided to reenable CONFIG_XEN_MAX_DOMAIN_MEMORY option in
-kernel config and enable users to choose resonable values for
-their machines until better fix will be published. I think this
-solution is good because allow users to boot domU with newest
-kernel and allow developers to continue their work without
-time presure which could lead to new bugs.
+I downloaded/built/installed it from the link you gave earlier in this thread.
 
-This patch applies cleanly to current Linus' kernel tree.
-
-Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
----
- arch/x86/xen/Kconfig |   11 +++++++----
- 1 files changed, 7 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
-index 5b54892..a234b9a 100644
---- a/arch/x86/xen/Kconfig
-+++ b/arch/x86/xen/Kconfig
-@@ -29,12 +29,15 @@ config XEN_PVHVM
- 	depends on X86_LOCAL_APIC
- 
- config XEN_MAX_DOMAIN_MEMORY
--       int
--       default 128
-+       int "Maximum allowed size of a domain in gigabytes"
-+       default 8 if X86_32
-+       default 32 if X86_64
-        depends on XEN
-        help
--         This only affects the sizing of some bss arrays, the unused
--         portions of which are freed.
-+         The pseudo-physical to machine address array is sized
-+         according to the maximum possible memory size of a Xen
-+         domain.  This array uses 1 page per gigabyte, so there's no
-+         need to be too stingy here.
- 
- config XEN_SAVE_RESTORE
-        bool
--- 
-1.5.6.5
+Cheers
