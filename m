@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439Ab1A0TKm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 14:10:42 -0500
-Received: from nm23-vm0.bullet.mail.ne1.yahoo.com ([98.138.91.57]:29511 "HELO
-	nm23-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753381Ab1A0TKj (ORCPT
+	id S1753496Ab1A0TKq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 14:10:46 -0500
+Received: from nm13-vm0.bullet.mail.ne1.yahoo.com ([98.138.91.48]:42578 "HELO
+	nm13-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753445Ab1A0TKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 14:10:39 -0500
-X-Yahoo-Newman-Id: 860533.77493.bm@omp1020.mail.ne1.yahoo.com
+	Thu, 27 Jan 2011 14:10:43 -0500
+X-Yahoo-Newman-Id: 623930.17902.bm@omp1014.mail.ne1.yahoo.com
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: EpTsGdkVM1mRPZfBNalTNhoKbGqAt6yqVfX9Sufn8FEPWwo
- r1_Oh9r_3AykyCKPbmbM1.Xg_NaLoYWdoSNQTunwqJXpqnV2SLBhA0HFKUhI
- 5f_Z42dda.Z0T6V1sTc5l1VaVr3dOSwFulUofF36SK0DboUJkUMyPzlvLeNI
- TZPnik_NbI811Fr9X83LONHTW1BHENlrQ2FncVujdxT9QidRYnP.rLn2RwDT
- _eEKM4G.HTYAsqusISkVw9q5fqt3n1QLWWQ7QV2oOzwUXGbqqTdF0wElORXG
- Rk.cX
+X-YMail-OSG: sd30To8VM1mxpivDsrvqwChyf87AtGGhjqLERaJEhIqWq_2
+ LMwH2CTKzGNxMrJGzlzeu8NCVB8ZNDYDo7qMhGHgUfJU1NTZKaS79.Ec9cmh
+ R6WGSMSBF_mP6ZlOGZrWEipKlMuWDHoXNcYOv8j4HoIms4UgA5_AoiHi_8VB
+ 83QtWavDG78Y.bcwzikGgq2A7GJVTjB9h3nPUaCA8RbJoW9i1jPSe8dpCNy9
+ JVIrv4kjn9gIg1_X4QybZWSAgN2aTI8RSVXeevRN386Q_uhXyTC3hZK4-
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
@@ -28,9 +27,9 @@ Cc: linux-kernel <linux-kernel@vger.kernel.org>,
         David Miller <davem@davemloft.net>,
         Andrew Morton <akpm@linux-foundation.org>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3/4] dlm: Make DLM use select CONFIGFS_FS
-Date: Thu, 27 Jan 2011 11:10:29 -0800
-Message-Id: <1296155430-3796-4-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 4/4] ocfs2: Make OCFS2_FS use select CONFIGFS_FS
+Date: Thu, 27 Jan 2011 11:10:30 -0800
+Message-Id: <1296155430-3796-5-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1296155430-3796-1-git-send-email-nab@linux-iscsi.org>
 References: <1296155430-3796-1-git-send-email-nab@linux-iscsi.org>
@@ -45,23 +44,22 @@ Convert 'depends && SYSFS && CONFIGFS_FS' to 'select CONFIGFS_FS'
 Reported-by: Joel Becker <jlbec@evilplan.org>
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- fs/dlm/Kconfig |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ fs/ocfs2/Kconfig |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/fs/dlm/Kconfig b/fs/dlm/Kconfig
-index 1897eb1..4f65a50 100644
---- a/fs/dlm/Kconfig
-+++ b/fs/dlm/Kconfig
-@@ -1,7 +1,7 @@
- menuconfig DLM
- 	tristate "Distributed Lock Manager (DLM)"
--	depends on EXPERIMENTAL && INET
--	depends on SYSFS && CONFIGFS_FS && (IPV6 || IPV6=n)
-+	depends on EXPERIMENTAL && INET && (IPV6 || IPV6=n)
+diff --git a/fs/ocfs2/Kconfig b/fs/ocfs2/Kconfig
+index 77a8de5..bb03131 100644
+--- a/fs/ocfs2/Kconfig
++++ b/fs/ocfs2/Kconfig
+@@ -1,6 +1,7 @@
+ config OCFS2_FS
+ 	tristate "OCFS2 file system support"
+-	depends on NET && SYSFS && CONFIGFS_FS
++	depends on NET
 +	select CONFIGFS_FS
- 	select IP_SCTP
- 	help
- 	A general purpose distributed lock manager for kernel or userspace
+ 	select JBD2
+ 	select CRC32
+ 	select QUOTA
 -- 
 1.7.3.5
 
