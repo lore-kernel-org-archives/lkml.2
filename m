@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab1A0XyE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 18:54:04 -0500
-Received: from claw.goop.org ([74.207.240.146]:54029 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752762Ab1A0XyC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 18:54:02 -0500
-Message-ID: <4D420597.9000305@goop.org>
-Date: Thu, 27 Jan 2011 15:53:59 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Nick Piggin <npiggin@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH 6/6] x86/ticketlock: make __ticket_spin_trylock common
-References: <cover.1295909908.git.jeremy.fitzhardinge@citrix.com>	<4086953399116e4d9a14f9fa1aa8cf33aaef753d.1295909909.git.jeremy.fitzhardinge@citrix.com>	<AANLkTimnpm8YdxgnqekMZUbYN=ZAdVy=C1HkY3uHNS2h@mail.gmail.com>	<4D3E2A80.1000203@goop.org> <AANLkTikcUnSYuRkSJivhavsBa+9TdaaHTNNWX7hRdE-J@mail.gmail.com>
-In-Reply-To: <AANLkTikcUnSYuRkSJivhavsBa+9TdaaHTNNWX7hRdE-J@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754282Ab1A0Xzl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 18:55:41 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45958 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752960Ab1A0Xzk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 18:55:40 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 28 Jan 2011 08:49:28 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [patch 3/3] memcg: never OOM when charging huge pages
+Message-Id: <20110128084928.8ffb68e1.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110128084540.3a5511ba.nishimura@mxp.nes.nec.co.jp>
+References: <20110121153431.191134dd.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110121154430.70d45f15.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110127103438.GC2401@cmpxchg.org>
+	<20110127134703.GB14309@cmpxchg.org>
+	<20110128084540.3a5511ba.nishimura@mxp.nes.nec.co.jp>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/24/2011 05:58 PM, Nick Piggin wrote:
->>
->> The C version can't take advantage of the fact that the cmpxchg directly
->> sets the flags, so it ends up re-comparing the old and swapped-out
->> values to set the return.  And it doesn't re-use the same sete to set
->> the return value in the quick failed-to-acquire path.
-> Hm.
+On Fri, 28 Jan 2011 08:45:40 +0900
+Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
 
-Adding a "cmpxchg_flag" which does its own sete and returns a boolean
-"success" flag, the whole thing goes to:
+> On Thu, 27 Jan 2011 14:47:03 +0100
+> Johannes Weiner <hannes@cmpxchg.org> wrote:
+> 
+> > Huge page coverage should obviously have less priority than the
+> > continued execution of a process.
+> > 
+> > Never kill a process when charging it a huge page fails.  Instead,
+> > give up after the first failed reclaim attempt and fall back to
+> > regular pages.
+> > 
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > ---
+> >  mm/memcontrol.c |    7 +++++++
+> >  1 files changed, 7 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index 17c4e36..2945649 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -1890,6 +1890,13 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
+> >  	int csize = max(CHARGE_SIZE, (unsigned long) page_size);
+> >  
+> >  	/*
+> > +	 * Do not OOM on huge pages.  Fall back to regular pages after
+> > +	 * the first failed reclaim attempt.
+> > +	 */
+> > +	if (page_size > PAGE_SIZE)
+> > +		oom = false;
+> > +
+> > +	/*
+> >  	 * Unlike gloval-vm's OOM-kill, we're not in memory shortage
+> >  	 * in system level. So, allow to go ahead dying process in addition to
+> >  	 * MEMDIE process.
+> > -- 
+> > 1.7.3.5
+> > 
+> __mem_cgroup_try_charge() has "oom" switch already, so I prefer making callers
+> use the switch properly by themselves.
+> 
 
-__ticket_spin_trylock:
-        movw    (%rdi), %ax     # lock_2(D)->D.5950.tickets, old
-        xorl    %edx, %edx      # D.13949
-        movzbl  %ah, %ecx       # old, tmp69
-        cmpb    %al, %cl        # old, tmp69
-        jne     .L5     #,
-        leal    256(%rax), %edx #, D.13951
-        lock; cmpxchgw %dx,(%rdi); sete %al     # D.13951,* lock, __ret
-        movzbl  %al, %edx       # __ret, D.13949
-.L5:
-        movl    %edx, %eax      # D.13949,
-        ret
+Okay, will do.
 
-
-
-
-The eax/edx shuffle is a bit unfortunate I can't see it hurting very much.
-
-
->> It might be worth having a generic cmpxchg() variant which returns a
->> succeed/fail flag rather than the fetched value, to avoid comparison in
->> this case - since many (most?) cmpxchg() callers end up doing that
->> comparison.
->>
->> How performance critical is trylock?  I guess the ones in fs/dcache.c
->> are the ones looming large in your mind.
-> Well they are on on the reclaim/free path rather than the _hottest_
-> paths, but yes they are performance critical.
-
-I think that code looks pretty reasonable.
-
-    J
+-Kame
 
