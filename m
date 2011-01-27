@@ -1,114 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754549Ab1A0BoW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 20:44:22 -0500
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:37277 "HELO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752504Ab1A0BoU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 20:44:20 -0500
-From: Philip Rakity <prakity@marvell.com>
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-CC: Chris Ball <cjb@laptop.org>, Kyungmin Park <kmpark@infradead.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andrew.chih.howe.khor@intel.com" <andrew.chih.howe.khor@intel.com>,
-        "kok.howg.ewe@intel.com" <kok.howg.ewe@intel.com>,
-        Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-Date: Wed, 26 Jan 2011 17:43:46 -0800
-Subject: Re: A MMC card transfer issue
-Thread-Topic: A MMC card transfer issue
-Thread-Index: Acu9w6P1+2TiySnISgioHiDvlKCG6w==
-Message-ID: <7BDF62B4-A11A-4CB4-9F80-F2206C2655F9@marvell.com>
-References: <4CD8DE9C.4040505@dsn.okisemi.com>
- <AANLkTimfnj8GcSwmALjaZUBsiq6ssaVuzVZZsZHRYmiX@mail.gmail.com>
- <001701cb814c$71926bf0$66f8800a@maildom.okisemi.com>
- <001201cb90f4$4be8f790$66f8800a@maildom.okisemi.com>
- <2D50F985-2383-4406-8514-DFE462A5F546@marvell.com>
- <4D2E0464ABB54FFF9C10583336E27879@hacdom.okisemi.com>
- <4C4E7DE5-7CF1-4D97-9CAD-F600FCBE477A@marvell.com>
- <20110119174233.GA30494@void.printf.net>
- <F6E8C422FB8A4D78A5BDF7B6ECDA1E00@hacdom.okisemi.com>
- <D8E7AFC5-6B9E-414E-81A8-292FCD2F6E3C@marvell.com>
- <629816F753974155B62FF8FA718A26CA@hacdom.okisemi.com>
- <6076934B-27C2-4766-B101-793C7447C71C@marvell.com>
- <0F933C1424BF45E3BD2E13358BD3C89E@hacdom.okisemi.com>
-In-Reply-To: <0F933C1424BF45E3BD2E13358BD3C89E@hacdom.okisemi.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1754556Ab1A0Bpw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 20:45:52 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38652 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752504Ab1A0Bpv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 20:45:51 -0500
+Date: Wed, 26 Jan 2011 17:45:13 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Daniel Lezcano <daniel.lezcano@free.fr>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cgroup : remove the ns_cgroup
+Message-Id: <20110126174513.c2a20fff.akpm@linux-foundation.org>
+In-Reply-To: <4D40C5A3.4070703@cn.fujitsu.com>
+References: <1295948388-15108-1-git-send-email-daniel.lezcano@free.fr>
+	<20110126161837.43830756.akpm@linux-foundation.org>
+	<4D40C5A3.4070703@cn.fujitsu.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 27 Jan 2011 09:08:51 +0800 Li Zefan <lizf@cn.fujitsu.com> wrote:
 
-There is no good answer.  
-
-Doing this patch for 2.6.20 or so a long time ago had problems because some controllers did not work.  The failures were equally unpleasant.
-
-The failure you see today is at least not a regression since 1 bit did not work before.  
-
-We hope that developers who know their h/w works add the CAP. 
-
-
-On Jan 26, 2011, at 5:31 PM, Tomoya MORINAGA wrote:
-
-> Hi Philip,
+> Andrew Morton wrote:
+> > On Tue, 25 Jan 2011 10:39:48 +0100
+> > Daniel Lezcano <daniel.lezcano@free.fr> wrote:
+> > 
+> >> This patch removes the ns_cgroup as suggested in the following thread:
+> > 
+> > I had this patch queued up in September last year, but dropped it.  Why
+> > did I do that?
 > 
->> which MMC driver are you using.
-> Could you teach me how to get the information ?
+> Because you wanted to wait for some time for users (if any) to notice this
+> coming change.
 > 
->> you need to have the driver or the low level code enable this QUIRK.
-> BTW, Is the above permanent treatment?
-> I think modifying kernel source code isn't preferred.
+> Author: Daniel Lezcano <daniel.lezcano@free.fr>
+> Date:   Wed Oct 27 15:33:38 2010 -0700
 > 
-> Thanks,
-> -----------------------------------------
-> Tomoya MORINAGA
-> OKI SEMICONDUCTOR CO., LTD.
-> 
->> -----Original Message-----
->> From: Philip Rakity [mailto:prakity@marvell.com] 
->> Sent: Thursday, January 27, 2011 10:04 AM
->> To: Tomoya MORINAGA
->> Cc: Chris Ball; Kyungmin Park; linux-mmc@vger.kernel.org; 
->> linux-kernel@vger.kernel.org; 
->> andrew.chih.howe.khor@intel.com; kok.howg.ewe@intel.com
->> Subject: Re: A MMC card transfer issue
->> 
->> 
->> yes
->> 
->> you need to have the driver or the low level code enable this QUIRK.
->> 
->> which mmc driver are you using.
->> 
->> On Jan 26, 2011, at 5:00 PM, Tomoya MORINAGA wrote:
->> 
->>> Hi Philip,
->>> 
->>> On Thursday, January 27, 2011 12:42 AM, Philip Rakity wrote:
->>>> Did you define the CAP for BUS WIDTH ? 
->>>> 
->>>> MMC_CAP_BUS_WIDTH_TEST
->>>> 
->>>> in the driver or the platform driver ?
->>> 
->>> Let me make the above meaning clear.
->>> 
->>> I don't modify kernel source code "drivers/mmc" at all Is the above 
->>> mean I must modify something kernel source code ?
->>> 
->>> Thanks,
->>> -----------------------------------------
->>> Tomoya MORINAGA
->>> OKI SEMICONDUCTOR CO., LTD.
->>> 
->> 
-> 
+>     cgroup: notify ns_cgroup deprecated
+>     
+>     The ns_cgroup will be removed very soon.  Let's warn, for this version,
+>     ns_cgroup is deprecated.
+>     
+>     Make ns_cgroup and clone_children exclusive.  If the clone_children is set
+>     and the ns_cgroup is mounted, let's fail with EINVAL when the ns_cgroup
+>     subsys is created (a printk will help the user to understand why the
+>     creation fails).
+>     
+>     Update the feature remove schedule file with the deprecated ns_cgroup.
+>     
+>     Signed-off-by: Daniel Lezcano <daniel.lezcano@free.fr>
+>     Acked-by: Paul Menage <menage@google.com>
+>     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+>     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+
+ooh, that was clever of me.
+
+Here is the text which was missing from the changelog:
+
+  This is a userspace-visible change.  Commit 45531757b45c ("cgroup:
+  notify ns_cgroup deprecated") (merged into 2.6.27) caused the kernel
+  to emit a printk warning users that the feature is planned for
+  removal.  Since that time we have heard from XXX users who were
+  affected by this.
+
+Please provide XXX.
+
+How do we know that 2.6.37->2.6.38 is long enough?  Will any major
+distros be released containing this warning in that timeframe?  I doubt
+it.
 
