@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008Ab1A0Tmv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 14:42:51 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:47803 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482Ab1A0Tmu (ORCPT
+	id S1753137Ab1A0TpI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 14:45:08 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:26463 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751648Ab1A0TpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 14:42:50 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=U7jHPoWG8IQW9Z+UpQMM9i293pXG2+qGhN7WXcata253+IOcj91KYamFcs8+vtP6/s
-         NtigxeXj1ONYhOuYN1uW7LYQZPxzZQML7QUpR7dGeMqCmNXQn7SRbxqYat6sZggF1SUa
-         CT/VIgV0gdi20QpgTMXIE3typMrbd5CpW7di0=
+	Thu, 27 Jan 2011 14:45:05 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6239"; a="72232137"
+Message-ID: <4D41CB40.20903@codeaurora.org>
+Date: Thu, 27 Jan 2011 11:45:04 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-In-Reply-To: <20110127145931.23248.33917.stgit@localhost>
-References: <20110127145741.23248.68098.stgit@localhost> <20110127145931.23248.33917.stgit@localhost>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Thu, 27 Jan 2011 14:42:29 -0500
-X-Google-Sender-Auth: lN3wiSeajS-dD2YroFwtVpWSeyU
-Message-ID: <AANLkTi=us5cofeeqaN1jbcnaP8mRR_Cnhf+qE4Y4-QA+@mail.gmail.com>
-Subject: Re: [PATCH v2 08/20] blackfin: switch from do_timer() to xtime_update()
-To: Torben Hohn <torbenh@gmx.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        johnstul@us.ibm.com, hch@infradead.org, yong.zhang0@gmail.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+To: Colin Cross <ccross@android.com>
+CC: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        olof@lixom.net, konkers@android.com,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 15/28] ARM: tegra: irq: Add debugfs file to show wake
+ irqs
+References: <1295834493-5019-1-git-send-email-ccross@android.com> <1295834493-5019-16-git-send-email-ccross@android.com>
+In-Reply-To: <1295834493-5019-16-git-send-email-ccross@android.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 27, 2011 at 09:59, Torben Hohn wrote:
-> xtime_update() takes the xtime_lock itself.
+On 01/23/2011 06:01 PM, Colin Cross wrote:
+>
+> +static int __init tegra_irq_debug_init(void)
+> +{
+> +	struct dentry *d;
+> +
+> +	d = debugfs_create_file("wake_irq", S_IRUGO, NULL, NULL,
+> +		&tegra_wake_irq_debug_fops);
+> +	if (!d) {
+> +		pr_info("Failed to create suspend_mode debug file\n");
 
-looks straightforward enough ...
-Acked-by: Mike Frysinger <vapier@gentoo.org>
--mike
+Does this want to be a pr_err()?
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
