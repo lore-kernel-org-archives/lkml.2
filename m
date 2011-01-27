@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808Ab1A0FtT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 00:49:19 -0500
-Received: from lo.gmane.org ([80.91.229.12]:59347 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751185Ab1A0FtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 00:49:18 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: WANG Cong <xiyou.wangcong@gmail.com>
-Subject: Re: [PATCH] printk: allow setting DEFAULT_MESSAGE_LEVEL via Kconfig
-Date: Thu, 27 Jan 2011 05:49:04 +0000 (UTC)
-Message-ID: <ihr10g$qmm$2@dough.gmane.org>
-References: <20110125235700.GR8008@google.com>
-	<iho7ba$kmn$1@dough.gmane.org>
-	<AANLkTikaDpZ=Pjb+m7ixCepywtO1bUN02sfimWBSTha3@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S1751293Ab1A0Fzq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 00:55:46 -0500
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:54274 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750835Ab1A0Fzp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 00:55:45 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=coly.li;
+	h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=schnXI0hrbkbgCNKu9GVOIFO/Y10we8LSsGQdjnoqXPd4woqUKBxrAY0XKZjD679n1RNMB4a/ipP/F2Ol4TbW0bhQAkHH1jylQx9beYjXYBci5h7STV81xkZZerpSqhf;
+Message-ID: <4D410EF8.3070508@coly.li>
+Date: Thu, 27 Jan 2011 14:21:44 +0800
+From: Coly Li <i@coly.li>
+Reply-To: i@coly.li
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; zh-CN; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Yong Zhang <yong.zhang0@gmail.com>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Greg KH <gregkh@suse.de>
+Subject: Re: [PATCH 0/6] use BUG_ON correctly
+References: <1296067193-15879-1-git-send-email-bosong.ly@taobao.com> <AANLkTikq2YttapeLKkSeM-MrPoBdvPR32-oL6BdBOKdf@mail.gmail.com>
+In-Reply-To: <AANLkTikq2YttapeLKkSeM-MrPoBdvPR32-oL6BdBOKdf@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 60.247.97.98
-User-Agent: Pan/0.133 (House of Butterflies)
+X-Identified-User: {1390:box585.bluehost.com:colyli:coly.li} {sentby:smtp auth 114.251.86.0 authed with i@coly.li}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Jan 2011 15:05:48 -0800, Mandeep Baines wrote:
+On 2011年01月27日 10:02, Yong Zhang Wrote:
+> On Thu, Jan 27, 2011 at 2:39 AM, Coly Li<bosong.ly@taobao.com>  wrote:
+>> BUG_ON() already uses unlikely() inside its definition if possible,
+>
+> It's true for asm-generic/bug.h.
+>
+> But for archs which has defined HAVE_ARCH_BUG,
+> unlikely() is not always included in it.
+>
 
-> On Tue, Jan 25, 2011 at 8:18 PM, WANG Cong <xiyou.wangcong@gmail.com>
-> wrote:
->>
->> On Tue, 25 Jan 2011 15:57:00 -0800, Mandeep Singh Baines wrote:
->>
->> > We've been burned by regressions/bugs which we later realized could
->> > have been triaged quicker if only we'd paid closer attention to
->> > dmesg. To make it easier to audit dmesg, we'd like to make
->> > DEFAULT_MESSAGE_LEVEL Kconfig-settable. That way we can set it to
->> > KERN_NOTICE and audit any messages <= KERN_WARNING.
->> >
->> >
->> Why? We already have "loglevel=" kernel parameter.
->>
->>
-> loglevel allows you to control which messages go to the console.
-> 
-> DEFAULT_MESSAGE_LEVEL selects the default message levels for printk()s
-> which don't specify a message level.
+IMHO, if this condition happens, it should be a bug of the arch implementation, unless unlikely() is not really supported.
 
+Coly
 
-I think you should fix them instead.
-
-> 
-> Most printks()s without a message level aren't really warnings and just
-> create noise
-> if you're trying to look closely at all warnings. Some of this is just
-> old code but new
-> printk()s without a message level do get committed from time to time.
-> 
-
-IIRC, checkpatch.pl will complain about this.
-
-
+-- 
+Coly Li
