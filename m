@@ -1,67 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629Ab1A0MFd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 07:05:33 -0500
-Received: from ch1outboundpool.messaging.microsoft.com ([157.55.116.160]:32750
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754368Ab1A0MFb (ORCPT
+	id S1754702Ab1A0MFo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 07:05:44 -0500
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:60819 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754637Ab1A0MFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 07:05:31 -0500
-X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Jan 2011 07:05:31 EST
-X-SpamScore: -11
-X-BigFish: VPS-11(zz1432N98dNzz1202hzz8275bhz32i637h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LFOJJV-02-3ME-02
-X-M-MSG: 
-Date: Thu, 27 Jan 2011 12:50:17 +0100
-From: Hans Rosenfeld <hans.rosenfeld@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: "hpa@zytor.com" <hpa@zytor.com>, "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-Subject: Re: [PATCH 4/4] x86, amd: Support L3 Cache Partitioning on AMD
- family 0x15 CPUs
-Message-ID: <20110127115017.GH877@escobedo.osrc.amd.com>
-References: <20110126105637.GA27809@elte.hu>
- <1296061716-185599-1-git-send-email-hans.rosenfeld@amd.com>
- <20110126205608.GA14361@elte.hu>
+	Thu, 27 Jan 2011 07:05:42 -0500
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Thu, 27 Jan 2011 13:06:03 +0100
+To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Ping Cheng <pingc@wacom.com>,
+        Jiri Kosina <jkosina@suse.cz>, Chris Bagwell <chris@cnpbagwell.com>,
+        Rafi Rubin <rafi@seas.upenn.edu>, Stephane Chatty <chatty@lii-enac.fr>,
+        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/2] input: mt: Add method to extract the MT slot state
+Message-ID: <20110127120603.GB15626@polaris.bitmath.org>
+References: <1296124547-3323-1-git-send-email-benjamin.tissoires@enac.fr>
+ <1296124547-3323-2-git-send-email-benjamin.tissoires@enac.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110126205608.GA14361@elte.hu>
-Organization: Advanced Micro Devices GmbH, Einsteinring 24, 85609 Dornach b.
- Muenchen; Geschaeftsfuehrer: Andrew Bowd, Alberto Bozzo; Sitz: Dornach,
- Gemeinde Aschheim, Landkreis Muenchen; Registergericht Muenchen, HRB Nr.
- 43632
+In-Reply-To: <1296124547-3323-2-git-send-email-benjamin.tissoires@enac.fr>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+X-Originating-IP: 83.248.192.164
+X-Scan-Result: No virus found in message 1PiQbJ-0004MB-5H.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PiQbJ-0004MB-5H 515efe5b33b7557dcd905b0a4c7fa4ba
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 26, 2011 at 03:56:08PM -0500, Ingo Molnar wrote:
-> * Hans Rosenfeld <hans.rosenfeld@amd.com> wrote:
-> > +#ifdef CONFIG_SMP
-> > +int amd_get_subcaches(int cpu)
+Hi Benjamin,
+
+On Thu, Jan 27, 2011 at 11:35:46AM +0100, Benjamin Tissoires wrote:
+> This patch adds the function input_mt_get_abs_value(), which may be
+
+Ehm, input_mt_get_absinfo?
+
+> used to extract the current state of the MT slots.
 > 
-> Well, sprinkling it with CONFIG_SMP is pretty ugly. Also, there's no fundamental 
-> reason why this shouldnt work with UP. Yes, it makes most sense on SMP but such code 
-> should be SMP-invariant.
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 
-True, it is pretty ugly. And while the feature is pretty useless for UP,
-it would still work for compute_unit_id 0 in that case.
+I had rather re-add this myself, thanks.
 
-The problem is that cpuinfo_x86.compute_unit_id etc. don't exist unless
-CONFIG_SMP is enabled. I don't think there is any reason why this should
-be that way, but changing this just for this particular L3 feature seems
-too intrusive. Do you really want me to do that?
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+> ---
+>  drivers/input/input-mt.c |   32 ++++++++++++++++++++++++++++++++
+>  include/linux/input/mt.h |    1 +
+>  2 files changed, 33 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/input/input-mt.c b/drivers/input/input-mt.c
+> index c48c81f..5b95e38 100644
+> --- a/drivers/input/input-mt.c
+> +++ b/drivers/input/input-mt.c
+> @@ -168,3 +168,35 @@ void input_mt_report_pointer_emulation(struct input_dev *dev, bool use_count)
+>  	}
+>  }
+>  EXPORT_SYMBOL(input_mt_report_pointer_emulation);
+> +
+> +/**
+> + * input_mt_get_absinfo - retrieve MT state variables from a device slot
+> + * @dev: input device which state is being queried
+> + * @code: ABS code to retrieve
+> + * @slot: slot to retrieve from
+> + *
+> + * Return the ABS state of the given MT slot. If code is not an MT
+> + * event, the corresponding ABS event is returned.
+> + *
+> + * This function may be called by anyone interested in extracting the
+> + * current MT state. Used by evdev handlers.
+> + */
+> +struct input_absinfo input_mt_get_absinfo(struct input_dev *dev, unsigned int code, int slot)
 
+Why return the struct? Give it a pointer instead, so the return value
+can be used for errors.
 
-Hans
+Also, I wonder about the usefulness of extracting the absinfo here -
+only the value depends on the slot argument, and absinfo does not
+require the same lock protection. Why not keep the layout from the
+original patch?
 
+> +{
+> +	unsigned int mtmap = code > ABS_MT_FIRST ? code - ABS_MT_FIRST : 0;
 
--- 
-%SYSTEM-F-ANARCHISM, The operating system has been overthrown
+Should rather return -EINVAL on bad argument.
 
+> +	unsigned long flags;
+> +	struct input_absinfo retval;
+> +
+> +	spin_lock_irqsave(&dev->event_lock, flags);
+> +	if (!mtmap)
+> +		retval = dev->absinfo[code];
+> +	else if (slot >= 0 && slot < dev->mtsize) {
+> +		retval = dev->absinfo[code];
+> +		retval.value = dev->mt[slot].abs[mtmap];
+
+Please use input_mt_get_value().
+
+> +	} else
+> +		retval.value = 0;
+> +	spin_unlock_irqrestore(&dev->event_lock, flags);
+> +
+> +	return retval;
+> +}
+> +EXPORT_SYMBOL(input_mt_get_absinfo);
+> diff --git a/include/linux/input/mt.h b/include/linux/input/mt.h
+> index b3ac06a..a71a27f 100644
+> --- a/include/linux/input/mt.h
+> +++ b/include/linux/input/mt.h
+> @@ -54,4 +54,5 @@ void input_mt_report_slot_state(struct input_dev *dev,
+>  void input_mt_report_finger_count(struct input_dev *dev, int count);
+>  void input_mt_report_pointer_emulation(struct input_dev *dev, bool use_count);
+>  
+> +struct input_absinfo input_mt_get_absinfo(struct input_dev *dev, unsigned int code, int slot);
+>  #endif
+
+Thanks,
+Henrik
