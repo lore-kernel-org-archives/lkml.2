@@ -1,61 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963Ab1A0TmZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 14:42:25 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52075 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752395Ab1A0TmX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 14:42:23 -0500
-Date: Thu, 27 Jan 2011 20:41:57 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-netdev <netdev@vger.kernel.org>,
-        Joel Becker <jlbec@evilplan.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Americo Wang <xiyou.wangcong@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH RESEND 0/4] Fix kconfig breakage wrt to CONFIGFS_FS
-Message-ID: <20110127194157.GA7565@elte.hu>
-References: <1296155430-3796-1-git-send-email-nab@linux-iscsi.org>
+	id S1753008Ab1A0Tmv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 14:42:51 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:47803 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482Ab1A0Tmu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 14:42:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=U7jHPoWG8IQW9Z+UpQMM9i293pXG2+qGhN7WXcata253+IOcj91KYamFcs8+vtP6/s
+         NtigxeXj1ONYhOuYN1uW7LYQZPxzZQML7QUpR7dGeMqCmNXQn7SRbxqYat6sZggF1SUa
+         CT/VIgV0gdi20QpgTMXIE3typMrbd5CpW7di0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296155430-3796-1-git-send-email-nab@linux-iscsi.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110127145931.23248.33917.stgit@localhost>
+References: <20110127145741.23248.68098.stgit@localhost> <20110127145931.23248.33917.stgit@localhost>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Thu, 27 Jan 2011 14:42:29 -0500
+X-Google-Sender-Auth: lN3wiSeajS-dD2YroFwtVpWSeyU
+Message-ID: <AANLkTi=us5cofeeqaN1jbcnaP8mRR_Cnhf+qE4Y4-QA+@mail.gmail.com>
+Subject: Re: [PATCH v2 08/20] blackfin: switch from do_timer() to xtime_update()
+To: Torben Hohn <torbenh@gmx.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        johnstul@us.ibm.com, hch@infradead.org, yong.zhang0@gmail.com,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 27, 2011 at 09:59, Torben Hohn wrote:
+> xtime_update() takes the xtime_lock itself.
 
-* Nicholas A. Bellinger <nab@linux-iscsi.org> wrote:
-
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
-> 
-> Hi Linus,
-> 
-> The following four patches are to address recent Kconfig CONFIGFS_FS ->
-> 'select SYSFS' change for GFS2_FS, and 'depends && SYSFS && CONFIGFS_FS'
-> breakage for NETCONSOLE_DYNAMIC, DLM, and OCFS2_FS in .38-rc2.
-> 
-> Please review and consider pulling from:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-linus-v2
-
-I had the original for-linus branch tested rather extensively, and that one had no 
-problems. What's different in -v2?
-
-Thanks,
-
-	Ingo
+looks straightforward enough ...
+Acked-by: Mike Frysinger <vapier@gentoo.org>
+-mike
