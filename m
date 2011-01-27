@@ -1,55 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab1A0I1X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 03:27:23 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:53346 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972Ab1A0I1W (ORCPT
+	id S1753674Ab1A0Ipm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 03:45:42 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:29491 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751338Ab1A0Ipl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 03:27:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=OwluNg294trP/YlTPDx+0FCSu493zt/fkAM6q5z6/bFgLsLEtIAiVV5NlyH515ZGSl
-         5zARGZOsmEUK67ZAJ9/mSThr12wV25TF1jG+0zQnmpyFwBfjzB6QKRbcjoA2CVWffeM7
-         Qq5fmcwNcG6JF0pCjV/fcXF40W7W95nKxPebM=
-Date: Thu, 27 Jan 2011 10:27:19 +0200
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>, olofj@chromium.org
-Subject: Re: [PATCH] printk: allow setting DEFAULT_MESSAGE_LEVEL via Kconfig
-Message-ID: <20110127082718.GA4748@p183.telecom.by>
-References: <20110125235700.GR8008@google.com>
- <20110126144910.ce0646ec.akpm@linux-foundation.org>
- <20110126145703.a0f5add5.rdunlap@xenotime.net>
- <20110126151017.ed9e627c.akpm@linux-foundation.org>
+	Thu, 27 Jan 2011 03:45:41 -0500
+Message-ID: <29E928B8732A4CB19946EEA9F004FACB@hacdom.okisemi.com>
+From: "Toshiharu Okada" <toshiharu-linux@dsn.okisemi.com>
+To: "David Miller" <davem@davemloft.net>
+Cc: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <qi.wang@intel.com>, <yong.y.wang@intel.com>,
+        <andrew.chih.howe.khor@intel.com>, <joel.clark@intel.com>,
+        <kok.howg.ewe@intel.com>
+References: <4D3D0373.30003@dsn.okisemi.com> <20110125.133240.59688304.davem@davemloft.net>
+Subject: Re: [PATCH] pch_gbe: Fix the issue that the receiving data is not normal.
+Date: Thu, 27 Jan 2011 17:45:35 +0900
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110126151017.ed9e627c.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.5931
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 26, 2011 at 03:10:17PM -0800, Andrew Morton wrote:
-> On Wed, 26 Jan 2011 14:57:03 -0800
-> Randy Dunlap <rdunlap@xenotime.net> wrote:
-> 
-> > > I'm a bit surprised that this wasn't already tunable at boot-time
-> > > and/or at runtime.
-> > 
-> > 
-> > As WANG Cong replied:
-> > 
-> > Why? We already have "loglevel=" kernel parameter.
-> 
-> That's different.
-> 
-> Mandeep's patch addresses printks which didn't have a facility level. 
+Hi David
 
-For those, we have ignore_loglevel kernel parameter.
+Thank you for your comment.
+I will confirm them  and will submit the patch modified.
+
+Best regards
+Toshiharu Okada(OKI semiconductor)
+----- Original Message ----- 
+From: "David Miller" <davem@davemloft.net>
+To: <toshiharu-linux@dsn.okisemi.com>
+Cc: <netdev@vger.kernel.org>; <linux-kernel@vger.kernel.org>; 
+<qi.wang@intel.com>; <yong.y.wang@intel.com>; 
+<andrew.chih.howe.khor@intel.com>; <joel.clark@intel.com>; 
+<kok.howg.ewe@intel.com>
+Sent: Wednesday, January 26, 2011 6:32 AM
+Subject: Re: [PATCH] pch_gbe: Fix the issue that the receiving data is not 
+normal.
+
+
+From: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
+Date: Mon, 24 Jan 2011 13:43:31 +0900
+
+> This PCH_GBE driver had an issue that the receiving data is not normal.
+> This driver had not removed correctly the padding data
+> which the DMA include in receiving data.
+>
+> This patch fixed this issue.
+>
+> Signed-off-by: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
+
+There are bugs in these changes:
+
+>  if (skb_copy_flag) { /* recycle  skb */
+>  struct sk_buff *new_skb;
+>  new_skb =
+> -     netdev_alloc_skb(netdev,
+> -      length + NET_IP_ALIGN);
+> +     netdev_alloc_skb(netdev, length);
+>  if (new_skb) {
+>  if (!skb_padding_flag) {
+>  skb_reserve(new_skb,
+> - NET_IP_ALIGN);
+> + PCH_GBE_DMA_PADDING);
+>  }
+>  memcpy(new_skb->data, skb->data,
+>  length);
+
+If "!skb_padding_flag" then you will write past the end of the SKB
+data in that memcpy.
+
+You cannot allocate only "length" then proceed to reserve 
+PCH_GBE_DMA_PADDING
+and then add "length" worth of data on top of that.  In such a cause you
+must allocate at least "length + PCH_GBE_DMA_PADDING".
+
+Furthermore you _MUST_ respect NET_IP_ALIGN.  Some platforms set this value
+to "0", because otherwise performance suffers greatly.
+
+There are two seperate issues, removing the padding bytes provided by
+the device, and aligning the IP headers as wanted by the cpu
+architecutre.  Therefore they should be handled seperately, and we
+therefore should still see references to NET_IP_ALIGN in your patch.
+--
+To unsubscribe from this list: send the line "unsubscribe netdev" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
