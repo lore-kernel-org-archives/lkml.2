@@ -1,48 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792Ab1A0S37 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 13:29:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7596 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751726Ab1A0S36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 13:29:58 -0500
-Date: Thu, 27 Jan 2011 23:59:44 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH 1/3] tty: move hvc drivers to drivers/tty/hvc/
-Message-ID: <20110127182916.GA4688@amit-x200.redhat.com>
-References: <20110120174910.GA30124@kroah.com>
- <1295546625-30681-1-git-send-email-gregkh@suse.de>
+	id S1752555Ab1A0Sdl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 13:33:41 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:47147 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482Ab1A0Sdj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 13:33:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=mf+sEIj2LM3LJv9LAxcVFJXPXX+Nl9TGihnUlxrzjdgZfbTDcIhFxGxhRYTGhHgzv/
+         5lmpYNA2+ZCG4PU4/RlqjpK2RgFzJOoyCYWXBu5egzQwL3YSvgdqyAA2d6v+N858OB94
+         alzXyrypo41Z1smPOhLmn9isbUzUEtnt79P9s=
+Date: Thu, 27 Jan 2011 20:33:28 +0200
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: skb_split in tcp_retransmit_skb question
+Message-ID: <20110127183327.GB4153@swordfish.minsk.epam.com>
+References: <20110127152057.GA4153@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VrqPEDrXMn8OVzN4"
 Content-Disposition: inline
-In-Reply-To: <1295546625-30681-1-git-send-email-gregkh@suse.de>
+In-Reply-To: <20110127152057.GA4153@swordfish.minsk.epam.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Thu) Jan 20 2011 [10:03:43], Greg Kroah-Hartman wrote:
-> As requested by Arnd Bergmann, the hvc drivers are now
-> moved to the drivers/tty/hvc/ directory.  The virtio_console.c driver
-> was also moved, as it required the hvc_console.h file to be able to be
-> built, and it really is a hvc driver.
 
-I just saw this now as a result of this patch entering mainline.  I
-would have liked to be CC'ed to the patches.  Also, I don't like the
-move of the virtio_console.c file to drivers/tty/hvc.  virtio_console.c
-is not only an hvc driver; one of its functions is to hook some ports to
-hvc, but it's mostly a generic driver these days.
+--VrqPEDrXMn8OVzN4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-(I also note the MAINTAINERS entry was ignored and not updated in the
-3rd patch of this series.)
+On (01/27/11 17:20), Sergey Senozhatsky wrote:
+> Hello,
+>=20
+> Suppose we have the following scenario:
+>=20
+> tcp_write_timer ->
+>  tcp_retransmit_skb
+>=20
+> in tcp_retransmit_skb we have `if (skb->len > cur_mss)' evaluted to true,=
+ which leads
+> to tcp_fragment(sk, skb, cur_mss, cur_mss) call. tcp_fragment calls skb_s=
+plit(skb, buff, len)
+> which, in turn, calls skb_split_no_header(skb, skb1, len, pos), where we =
+have
+> `skb_shinfo(skb)->nr_frags++' while in `for (i =3D 0; i < nfrags; i++)' l=
+oop.
 
-Can you please move it back?
+Sorry for the noise. Alexey has pointed out that we have=20
+skb_shinfo(skb)->nr_frags =3D 0 in skb_split_no_header. Have no idea how di=
+d I miss it.=20
 
-I could perhaps think of a way of splitting the file so the hvc bits can
-be moved to drivers/tty/hvc/ and having the core stay in drivers/char/,
-but that'll have to wait for the next cycle.
+Thanks,
 
-		Amit
+	Sergey
+
+--VrqPEDrXMn8OVzN4
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iJwEAQECAAYFAk1BuncACgkQfKHnntdSXjRytwP/Wdjy9/P8mmMfzIknxb7s3jrO
+bFmBB4QcETA/j0ZndGhjU/PGngFMnloh+Oh1kPZ9FQplewyqoDiBj+Bk19uVB9bm
+273Rs5pjH99plbxFeWGPqRAGvvBrOvl6RvXHXPezlU8lynZgls/XgG+yPW1gkMKo
+tLhNmaWUky+Ts0sxVd0=
+=v8rH
+-----END PGP SIGNATURE-----
+
+--VrqPEDrXMn8OVzN4--
