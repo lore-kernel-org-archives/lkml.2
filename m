@@ -1,90 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab1A0KV5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 05:21:57 -0500
-Received: from casper.infradead.org ([85.118.1.10]:49070 "EHLO
+	id S1754078Ab1A0KXM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 05:23:12 -0500
+Received: from casper.infradead.org ([85.118.1.10]:49113 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754003Ab1A0KVz convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753545Ab1A0KXL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 05:21:55 -0500
-Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 13/20] 13: x86: x86 specific probe
- handling
+	Thu, 27 Jan 2011 05:23:11 -0500
+Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 5/20]  5: Uprobes:
+ register/unregister probes.
 From: Peter Zijlstra <peterz@infradead.org>
 To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         SystemTap <systemtap@sources.redhat.com>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Roland McGrath <roland@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20110127094041.GR19725@linux.vnet.ibm.com>
+In-Reply-To: <20110127100157.GS19725@linux.vnet.ibm.com>
 References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
-	 <20101216095947.23751.75003.sendpatchset@localhost6.localdomain6>
-	 <1295963783.28776.1061.camel@laptop>
-	 <20110127094041.GR19725@linux.vnet.ibm.com>
+	 <20101216095817.23751.76989.sendpatchset@localhost6.localdomain6>
+	 <1295957744.28776.722.camel@laptop>
+	 <20110126075558.GB19725@linux.vnet.ibm.com>
+	 <1296036708.28776.1138.camel@laptop>
+	 <20110126153036.GN19725@linux.vnet.ibm.com>
+	 <1296056756.28776.1247.camel@laptop>
+	 <20110126165645.GP19725@linux.vnet.ibm.com>
+	 <1296061949.28776.1343.camel@laptop>
+	 <20110127100157.GS19725@linux.vnet.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Thu, 27 Jan 2011 11:22:13 +0100
-Message-ID: <1296123733.15234.53.camel@laptop>
+Date: Thu, 27 Jan 2011 11:23:37 +0100
+Message-ID: <1296123817.15234.57.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-27 at 15:10 +0530, Srikar Dronamraju wrote:
-> * Peter Zijlstra <peterz@infradead.org> [2011-01-25 14:56:22]:
-> 
-> > On Thu, 2010-12-16 at 15:29 +0530, Srikar Dronamraju wrote:
+On Thu, 2011-01-27 at 15:31 +0530, Srikar Dronamraju wrote:
+> > > >  - validate that the vma is indeed a map of the right inode
 > > > 
-> > > +void arch_uprobe_enable_sstep(struct pt_regs *regs)
-> > > +{
-> > > +       /*
-> > > +        * Enable single-stepping by
-> > > +        * - Set TF on stack
-> > > +        * - Set TIF_SINGLESTEP: Guarantees that TF is set when
-> > > +        *      returning to user mode.
-> > > +        *  - Indicate that TF is set by us.
-> > > +        */
-> > > +       regs->flags |= X86_EFLAGS_TF;
-> > > +       set_thread_flag(TIF_SINGLESTEP);
-> > > +       set_thread_flag(TIF_FORCED_TF);
-> > > +}
-> > > +
-> > > +void arch_uprobe_disable_sstep(struct pt_regs *regs)
-> > > +{
-> > > +       /* Disable single-stepping by clearing what we set */
-> > > +       clear_thread_flag(TIF_SINGLESTEP);
-> > > +       clear_thread_flag(TIF_FORCED_TF);
-> > > +       regs->flags &= ~X86_EFLAGS_TF;
-> > > +} 
+> > > We can add a check in write_opcode( we need to pass the inode to
+> > > write_opcode).
 > > 
-> > Why not use the code from arch/x86/kernel/step.c?
+> > sure..
+> > 
+> > > >  - validate that the offset of the probe corresponds with the stored
+> > > > address
+> > > 
+> > > I am not clear on this. We would have derived the address from the
+> > > offset. So is that we check for
+> > >  (vaddr == vma->vm_start + uprobe->offset)
+> > 
+> > Sure, but the vma might have changed since you computed the offset -)
 > 
-> user_enable_single_step and user_disable_single_step that are
-> defined in arch/x86/kernel/step.c cant be called in interrupt context.
+> If the vma has changed then it would fail the 2nd validation i.e vma
+> corresponds to the uprobe inode right. If the vma was unmapped and
+> mapped back at the same place, then I guess we are okay to probe.
 
-Right, because of is_setting_trap_flag()..
+It can be unmapped and mapped back slightly different. A map of the same
+file doesn't need to mean its in the exact same location or has the
+exact same pgoffset.
 
-> Initially we were looking at enabling/disabling singlestep in
-> interrupt context. Even now we disable singlestep in post notifier in
-> interrupt context.
-> 
-> Though  arch/x86/kernel/step.c has a static function
-> enable_single_step which is identical to arch_uprobe_enable_sstep;
-> there is no equivalent function for arch_uprobe_disable_sstep.
 
-Its not even close to identical, its very careful to deal with user-mode
-already doing single step.
-
-But I'll leave this to the x86 people who actually know the intricacies
-of the single step cruft, I was just wondering why you weren't using (or
-extending) the existing code.
