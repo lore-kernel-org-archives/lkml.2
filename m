@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200Ab1A0Nzm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 08:55:42 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47979 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752902Ab1A0Nzk (ORCPT
+	id S1753358Ab1A0Nzs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 08:55:48 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:42398 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753214Ab1A0Nzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 08:55:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=cvT0r64dnb/ZWikaTcYoaUoibuCLSEpQT9A6Er39Uz8SCdGMQ6CxhNbWkRHsJYGm9v
-         3aIZZmSO9Y1Pnh3Tp1UcCXGKLCT3GMhjQdUT0nVMXtXE65xKnwrP3kEqinfnazeOZ4nA
-         zBeNzHAeM46GZ2P9LcBk96iNSSnP6jy2uQXf8=
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>
-Subject: [PATCH -mm 0/6] convert little-endian bitops macros to inline functions
-Date: Thu, 27 Jan 2011 22:56:17 +0900
-Message-Id: <1296136583-13815-1-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.3.4
+	Thu, 27 Jan 2011 08:55:45 -0500
+X-Sasl-enc: q8f7E1xvvr2gApq7w8Iqo2aRBvx0NDyAIO2wEQk8lwjq 1296136544
+Date: Thu, 27 Jan 2011 11:55:40 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Dominik Kopp <my@kabelfunk.de>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, platform-driver-x86@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jeff Chua <jeff.chua.linux@gmail.com>,
+        ibm-acpi-devel@lists.sourceforge.net
+Subject: Re: [ibm-acpi-devel] thinkpad-acpi: fn-f4 issues
+Message-ID: <20110127135540.GA18579@khazad-dum.debian.net>
+References: <Pine.LNX.4.64.1101251740380.3737@boston.corp.fedex.com>
+ <20110125151346.GB14803@khazad-dum.debian.net>
+ <4D3F3AFF.7020407@kabelfunk.de>
+ <20110125231651.GB25953@khazad-dum.debian.net>
+ <4D409953.7020205@kabelfunk.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D409953.7020205@kabelfunk.de>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The little-endian bitops patch series has been added to the -mm tree.
-This additional patch series converts all little-endian bitops macros
-to static inline functions with proper prototypes.
+On Wed, 26 Jan 2011, Dominik Kopp wrote:
+> Am 26.01.2011 00:16, schrieb Henrique de Moraes Holschuh:
+> >The driver IS asking for Fn+F4 events. Please send me the output of
+> >acpidump, gzipped.
+> acpidump attached.
+> >In the meanwhile, check if the input device is producing events when
+> >you're pressing Fn+f4.  It could well be sending KEY_SUSPEND, but if
+> >there's nobody listening...
+> >
+> do you mean xev?
+> if yes: they are producing KeyPress and KeyRelease events (but nothing else)
 
-Akinobu Mita (6):
-  asm-generic: convert little-endian bitops macros to static inline
-    functions
-  powerpc: convert little-endian bitops macros to static inline
-    functions
-  s390: convert little-endian bitops macros to static inline functions
-  arm: convert little-endian bitops macros to static inline functions
-  m68k: convert little-endian bitops macros to static inline functions
-  m68knommu: convert little-endian bitops macros to static inline
-    functions
+So, not a driver bug.  Take it up with your userspace distro...
 
- arch/arm/include/asm/bitops.h     |   70 +++++++++++++++++++++++++----------
- arch/m68k/include/asm/bitops_mm.h |   41 +++++++++++++++------
- arch/m68k/include/asm/bitops_no.h |   12 ++++--
- arch/powerpc/include/asm/bitops.h |   43 +++++++++++++++-------
- arch/s390/include/asm/bitops.h    |   48 +++++++++++++++++-------
- include/asm-generic/bitops/le.h   |   73 ++++++++++++++++++++++++++-----------
- 6 files changed, 201 insertions(+), 86 deletions(-)
+>     state 0x0, keycode 150 (keysym 0x1008ff2f, XF86Sleep), same_screen YES,
+
+It is even mapped to the correct X keysim...
 
 -- 
-1.7.3.4
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
