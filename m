@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386Ab1A0Kkt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 05:40:49 -0500
-Received: from casper.infradead.org ([85.118.1.10]:57920 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754237Ab1A0Kks convert rfc822-to-8bit (ORCPT
+	id S1754334Ab1A0Knv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 05:43:51 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:56466 "EHLO
+	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753741Ab1A0Knt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 05:40:48 -0500
-Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 5/20]  5: Uprobes:
- register/unregister probes.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20110127102527.GT19725@linux.vnet.ibm.com>
-References: <20101216095817.23751.76989.sendpatchset@localhost6.localdomain6>
-	 <1295957744.28776.722.camel@laptop>
-	 <20110126075558.GB19725@linux.vnet.ibm.com>
-	 <1296036708.28776.1138.camel@laptop>
-	 <20110126153036.GN19725@linux.vnet.ibm.com>
-	 <1296056756.28776.1247.camel@laptop>
-	 <20110126165645.GP19725@linux.vnet.ibm.com>
-	 <1296061949.28776.1343.camel@laptop>
-	 <20110127100157.GS19725@linux.vnet.ibm.com>
-	 <1296123817.15234.57.camel@laptop>
-	 <20110127102527.GT19725@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 27 Jan 2011 11:41:17 +0100
-Message-ID: <1296124877.15234.76.camel@laptop>
+	Thu, 27 Jan 2011 05:43:49 -0500
+Date: Thu, 27 Jan 2011 10:43:43 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Mike Waychison <mikew@google.com>
+Cc: Greg KH <greg@kroah.com>, torvalds@linux-foundation.org,
+        San Mehat <san@google.com>, Aaron Durbin <adurbin@google.com>,
+        Duncan Laurie <dlaurie@google.com>, linux-kernel@vger.kernel.org,
+        Tim Hockin <thockin@google.com>
+Subject: Re: [PATCH v1 3/6] driver: Google EFI SMI
+Message-ID: <20110127104343.5931161e@lxorguk.ukuu.org.uk>
+In-Reply-To: <AANLkTi=rO5QOVjNNWkekOb0WXzKX2CUpgvEryL0cemzB@mail.gmail.com>
+References: <20110125002433.12637.51091.stgit@mike.mtv.corp.google.com>
+	<20110125002449.12637.35623.stgit@mike.mtv.corp.google.com>
+	<20110125031752.GA9846@kroah.com>
+	<AANLkTi=XhRX-=k8UmmQFshP6fgF_q2c-9gEHuH0mWu0a@mail.gmail.com>
+	<20110126024608.GB28283@kroah.com>
+	<AANLkTi=rO5QOVjNNWkekOb0WXzKX2CUpgvEryL0cemzB@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-27 at 15:55 +0530, Srikar Dronamraju wrote:
-> 
-> 
-> If its not at the exact same location, then our third validation of
-> checking that (vaddr == vma->vm_start + uprobe->offset)  should fail
-> right?
-> 
-> Also should it be (vaddr == uprobe->offset + vma->vm_start -
-> vma->pgoff << PAGE_SHIFT) ?
+> I understand that type widths change in a compat setting.  So what?
+> Code in each environment is written to it's own namespace anyhow.
 
-Yeah, although I just realized that ->offset should be a u64, since
-pgoff is a unsigned long, we can have files up to 44 bit (assuming the
-page-size is 12bits).
+So you ned up with a pile of extra crap in the kernel to handle 32bit
+userspace on 64bit and the like. If instead the structs are carefully
+laid out this doesn't occur.
 
-But yes, this matches the validation I mentioned.
+> Here's what *I* think *you* think about __u32 vs u32 vs uint32_t.
+> Correct me if I'm totally off-base here:
+
+And the __aligned_ ones for things like u64 in ioctls and structs...
+
+It's also a style and consistency thing, its trivialto use the same style
+as the rest of the kernel, it's trivial to tweak and it helps keep
+coherency of style, even if you are sitting at the keyboard mumbling
+"bunch of morons if you ask me" while doing it ;)
+
+> I believe the above is non-sense because there is no concerted effort
+> to ever let userland include kernel headers in any meaningful way.
+
+Where do you think the library headers are distilled from ?
+
+> Well, personally I like ioctls and system calls.  They don't bloat the
+> system with unneeded crud and abstractions that aren't very useful.
+> So what if you can't easily interface with them from a bare shell.
+> That's what userland utilities are for anyhow.
+
+ioctl has its place and I would agree with you on this one the interface
+is essentially structure based so there isn't really that much you can do
+about it anyway beyond getting the structures right.
+
+(and the less the rest of the world has to know about EFI SMI internals
+the better)
+
+> I'm not sure if you are trying to suggest that there is a better way
+> to solve these problems without actually saying so.  We could probably
+> use a different interface, sure.
+
+sysfs stuff only really helps for unsynchronized queries, ioctl is
+read-modify-write which is a property sysfs lacks.
+
+Alan
