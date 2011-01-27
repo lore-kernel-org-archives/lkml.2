@@ -1,345 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab1A0OmD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 09:42:03 -0500
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:39232 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752941Ab1A0OmA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 09:42:00 -0500
-X-Sasl-enc: 7jjYAQX+hxL/Bb2HtpxA4hYwTfu97yVT470Ackmk+IsM 1296139318
-Subject: Re: [autofs] [RFC 00/20] Proposal for remaining BKL users
-From: Ian Kent <raven@themaw.net>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, autofs@linux.kernel.org,
-        linux-cifs@vger.kernel.org, linux-x25@vger.kernel.org,
-        netdev@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-fsdevel@vger.kernel.org
-In-Reply-To: <1295994174-5043-1-git-send-email-arnd@arndb.de>
-References: <1295994174-5043-1-git-send-email-arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 27 Jan 2011 22:41:52 +0800
-Message-ID: <1296139312.2726.11.camel@perseus>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+	id S1753551Ab1A0Omm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 09:42:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2122 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752941Ab1A0Omi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 09:42:38 -0500
+From: Steve Grubb <sgrubb@redhat.com>
+Organization: Red Hat
+To: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+Subject: Re: [PATCH] System Wide Capability Bounding Set
+Date: Thu, 27 Jan 2011 09:42:07 -0500
+User-Agent: KMail/1.13.5 (Linux/2.6.35.10-74.fc14.x86_64; KDE/4.5.5; x86_64; ; )
+Cc: Eric Paris <eparis@redhat.com>, "Andrew G. Morgan" <morgan@kernel.org>,
+        "Serge E. Hallyn" <serge@canonical.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+References: <1294266337.3237.45.camel@localhost.localdomain> <1296084856.2534.18.camel@localhost.localdomain> <20110127140255.GB2935@localhost>
+In-Reply-To: <20110127140255.GB2935@localhost>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201101270942.07689.sgrubb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-25 at 23:22 +0100, Arnd Bergmann wrote:
-> I've gone through all the code in the kernel that
-> uses the big kernel lock and come up with a solution
-> that seems at least half-reasonable for each of them.
-> 
-> The decisions are somewhat arbitrary, but here is
-> what I'd suggest we do:
-> 
-> * Remove in 2.6.39:
->    i830, autofs3, smbfs
+Hi Serge,
 
-Yes please, ack to removing autofs v3.
-
-It is worth keeping in mind that if people are using the v3 protocol and
-there is a problem using it then a bug should be logged against the
-autofs4 module so it can be fixed. It's likely there will be a problem
-or two because of the huge amount change that has occurred over time.
-The same goes for the v4 protocol, since the testing done nowadays is
-with the v5 protocol. The v2 protocol might work with the autofs4 module
-since the code is still present but I'm not keen on trying to fix any
-problems that might arise and think we should discourage its use. In any
-case v2 users should few and far between.
-
-> 
-> * Move to staging now, kill in 2.6.41 (or later):
->    appletalk, hpfs
-> 
-> * Work around in an ugly way, but keep alive:
->    * ufs, ipx, i810, cx25721
-> 
-> * Fix properly:
->    * usbip, go7007, adfs, x25
-> 
-> Some of the patches are rather tricky and I haven't
-> really done much proper testing, so I'd much prefer
-> the maintainers to pick up the patches and do the
-> necessary testing where possible, or even come up
-> with a better solution.
-> 
-> Arnd Bergmann (20):
->   drm/i810: remove the BKL
->   drm: remove i830 driver
->   staging/usbip: convert to kthread
->   staging/cx25721: serialize access to devlist
->   staging/go7007: remove the BKL
->   staging: Remove autofs3
->   staging: remove smbfs
->   adfs: remove the big kernel lock
->   hpfs: rename big kernel lock to hpfs_lock
->   hpfs: replace BKL with a global mutex
->   hpfs: move to drivers/staging
->   x25: remove the BKL
->   appletalk: move to staging
->   staging/appletalk: remove the BKL
->   ufs: remove the BKL
->   ipx: remove the BKL
->   tracing: don't trace the BKL
->   rtmutex-tester: remove BKL tests
->   drivers: remove extraneous includes of smp_lock.h
->   BKL: That's all, folks
-> 
->  MAINTAINERS                                        |   11 +-
->  drivers/gpu/drm/Kconfig                            |   47 +-
->  drivers/gpu/drm/Makefile                           |    1 -
->  drivers/gpu/drm/i810/i810_dma.c                    |   18 +-
->  drivers/gpu/drm/i810/i810_drv.c                    |    6 +-
->  drivers/gpu/drm/i830/Makefile                      |    8 -
->  drivers/gpu/drm/i830/i830_dma.c                    | 1560 ---------
->  drivers/gpu/drm/i830/i830_drv.c                    |  107 -
->  drivers/gpu/drm/i830/i830_drv.h                    |  295 --
->  drivers/gpu/drm/i830/i830_irq.c                    |  186 --
->  drivers/net/Makefile                               |    1 -
->  drivers/net/appletalk/Makefile                     |    7 -
->  drivers/scsi/megaraid/megaraid_sas_fp.c            |    1 -
->  drivers/scsi/megaraid/megaraid_sas_fusion.c        |    1 -
->  drivers/staging/Kconfig                            |    8 +-
->  drivers/staging/Makefile                           |    4 +-
->  drivers/{net => staging}/appletalk/Kconfig         |    1 -
->  {net => drivers/staging}/appletalk/Makefile        |    7 +-
->  {net => drivers/staging}/appletalk/aarp.c          |    2 +-
->  .../linux => drivers/staging/appletalk}/atalk.h    |    0
->  {net => drivers/staging}/appletalk/atalk_proc.c    |    2 +-
->  drivers/{net => staging}/appletalk/cops.c          |    2 +-
->  drivers/{net => staging}/appletalk/cops.h          |    0
->  drivers/{net => staging}/appletalk/cops_ffdrv.h    |    0
->  drivers/{net => staging}/appletalk/cops_ltdrv.h    |    0
->  {net => drivers/staging}/appletalk/ddp.c           |   44 +-
->  {net => drivers/staging}/appletalk/dev.c           |    0
->  drivers/{net => staging}/appletalk/ipddp.c         |    2 +-
->  drivers/{net => staging}/appletalk/ipddp.h         |    0
->  drivers/{net => staging}/appletalk/ltpc.c          |    2 +-
->  drivers/{net => staging}/appletalk/ltpc.h          |    0
->  .../staging}/appletalk/sysctl_net_atalk.c          |    2 +-
->  drivers/staging/autofs/Kconfig                     |   22 -
->  drivers/staging/autofs/Makefile                    |    7 -
->  drivers/staging/autofs/TODO                        |    8 -
->  drivers/staging/autofs/autofs_i.h                  |  165 -
->  drivers/staging/autofs/dirhash.c                   |  260 --
->  drivers/staging/autofs/init.c                      |   52 -
->  drivers/staging/autofs/inode.c                     |  288 --
->  drivers/staging/autofs/root.c                      |  648 ----
->  drivers/staging/autofs/symlink.c                   |   26 -
->  drivers/staging/autofs/waitq.c                     |  205 --
->  drivers/staging/cx25821/Kconfig                    |    1 -
->  drivers/staging/cx25821/cx25821-alsa.c             |    2 +
->  drivers/staging/cx25821/cx25821-core.c             |   16 +-
->  drivers/staging/cx25821/cx25821-video.c            |    9 +-
->  drivers/staging/cx25821/cx25821.h                  |    3 +-
->  drivers/staging/easycap/easycap.h                  |    1 -
->  drivers/staging/easycap/easycap_ioctl.c            |    1 -
->  drivers/staging/go7007/Kconfig                     |    1 -
->  drivers/staging/go7007/s2250-loader.c              |    3 -
->  {fs => drivers/staging}/hpfs/Kconfig               |    5 +-
->  {fs => drivers/staging}/hpfs/Makefile              |    0
->  drivers/staging/hpfs/TODO                          |    5 +
->  {fs => drivers/staging}/hpfs/alloc.c               |    0
->  {fs => drivers/staging}/hpfs/anode.c               |    0
->  {fs => drivers/staging}/hpfs/buffer.c              |    0
->  {fs => drivers/staging}/hpfs/dentry.c              |    0
->  {fs => drivers/staging}/hpfs/dir.c                 |   23 +-
->  {fs => drivers/staging}/hpfs/dnode.c               |    0
->  {fs => drivers/staging}/hpfs/ea.c                  |    0
->  {fs => drivers/staging}/hpfs/file.c                |    9 +-
->  {fs => drivers/staging}/hpfs/hpfs.h                |    0
->  {fs => drivers/staging}/hpfs/hpfs_fn.h             |   36 +
->  {fs => drivers/staging}/hpfs/inode.c               |    9 +-
->  {fs => drivers/staging}/hpfs/map.c                 |    0
->  {fs => drivers/staging}/hpfs/name.c                |    0
->  {fs => drivers/staging}/hpfs/namei.c               |   49 +-
->  {fs => drivers/staging}/hpfs/super.c               |   21 +-
->  drivers/staging/smbfs/Kconfig                      |   56 -
->  drivers/staging/smbfs/Makefile                     |   18 -
->  drivers/staging/smbfs/TODO                         |    8 -
->  drivers/staging/smbfs/cache.c                      |  208 --
->  drivers/staging/smbfs/dir.c                        |  699 ----
->  drivers/staging/smbfs/file.c                       |  456 ---
->  drivers/staging/smbfs/getopt.c                     |   64 -
->  drivers/staging/smbfs/getopt.h                     |   14 -
->  drivers/staging/smbfs/inode.c                      |  854 -----
->  drivers/staging/smbfs/ioctl.c                      |   68 -
->  drivers/staging/smbfs/proc.c                       | 3502 --------------------
->  drivers/staging/smbfs/proto.h                      |   89 -
->  drivers/staging/smbfs/request.c                    |  817 -----
->  drivers/staging/smbfs/request.h                    |   70 -
->  drivers/staging/smbfs/smb.h                        |  118 -
->  drivers/staging/smbfs/smb_debug.h                  |   34 -
->  drivers/staging/smbfs/smb_fs.h                     |  153 -
->  drivers/staging/smbfs/smb_fs_i.h                   |   37 -
->  drivers/staging/smbfs/smb_fs_sb.h                  |  100 -
->  drivers/staging/smbfs/smb_mount.h                  |   65 -
->  drivers/staging/smbfs/smbfs.txt                    |    8 -
->  drivers/staging/smbfs/smbiod.c                     |  343 --
->  drivers/staging/smbfs/smbno.h                      |  363 --
->  drivers/staging/smbfs/sock.c                       |  385 ---
->  drivers/staging/smbfs/symlink.c                    |   67 -
->  drivers/staging/usbip/Kconfig                      |    2 +-
->  drivers/staging/usbip/stub.h                       |    4 +-
->  drivers/staging/usbip/stub_dev.c                   |   13 +-
->  drivers/staging/usbip/stub_rx.c                    |   13 +-
->  drivers/staging/usbip/stub_tx.c                    |   14 +-
->  drivers/staging/usbip/usbip_common.c               |  105 -
->  drivers/staging/usbip/usbip_common.h               |   20 +-
->  drivers/staging/usbip/usbip_event.c                |   31 +-
->  drivers/staging/usbip/vhci.h                       |    4 +-
->  drivers/staging/usbip/vhci_hcd.c                   |   10 +-
->  drivers/staging/usbip/vhci_rx.c                    |   16 +-
->  drivers/staging/usbip/vhci_sysfs.c                 |    9 +-
->  drivers/staging/usbip/vhci_tx.c                    |   14 +-
->  drivers/target/target_core_device.c                |    1 -
->  drivers/target/target_core_fabric_lib.c            |    1 -
->  drivers/target/target_core_file.c                  |    1 -
->  drivers/target/target_core_hba.c                   |    1 -
->  drivers/target/target_core_iblock.c                |    1 -
->  drivers/target/target_core_pscsi.c                 |    1 -
->  drivers/target/target_core_rd.c                    |    1 -
->  drivers/target/target_core_tpg.c                   |    1 -
->  drivers/target/target_core_transport.c             |    1 -
->  drivers/tty/n_hdlc.c                               |    1 -
->  drivers/tty/n_r3964.c                              |    1 -
->  drivers/tty/pty.c                                  |    1 -
->  drivers/tty/tty_io.c                               |    1 -
->  drivers/tty/tty_ldisc.c                            |    2 -
->  drivers/tty/vt/selection.c                         |    1 -
->  drivers/tty/vt/vc_screen.c                         |    1 -
->  drivers/tty/vt/vt.c                                |    1 -
->  drivers/tty/vt/vt_ioctl.c                          |    1 -
->  fs/Kconfig                                         |    1 -
->  fs/Makefile                                        |    1 -
->  fs/adfs/Kconfig                                    |    1 -
->  fs/adfs/dir.c                                      |    6 -
->  fs/adfs/inode.c                                    |    6 -
->  fs/adfs/super.c                                    |   13 +-
->  fs/compat_ioctl.c                                  |    1 -
->  fs/ufs/Kconfig                                     |    1 -
->  fs/ufs/inode.c                                     |   78 +-
->  fs/ufs/namei.c                                     |   35 +-
->  fs/ufs/super.c                                     |   55 +-
->  fs/ufs/truncate.c                                  |    5 +-
->  fs/ufs/ufs.h                                       |    6 +-
->  include/drm/Kbuild                                 |    1 -
->  include/drm/i830_drm.h                             |  342 --
->  include/linux/Kbuild                               |    1 -
->  include/linux/hardirq.h                            |    9 +-
->  include/linux/smp_lock.h                           |   65 -
->  include/trace/events/bkl.h                         |   61 -
->  init/Kconfig                                       |    5 -
->  kernel/rtmutex-tester.c                            |   39 +-
->  kernel/sched.c                                     |    7 -
->  lib/Makefile                                       |    1 -
->  lib/kernel_lock.c                                  |  143 -
->  net/Kconfig                                        |    1 -
->  net/Makefile                                       |    1 -
->  net/ipx/Kconfig                                    |    1 -
->  net/ipx/af_ipx.c                                   |   52 +-
->  net/socket.c                                       |    1 -
->  net/x25/Kconfig                                    |    1 -
->  net/x25/af_x25.c                                   |   61 +-
->  net/x25/x25_out.c                                  |    7 +-
->  157 files changed, 356 insertions(+), 13722 deletions(-)
->  delete mode 100644 drivers/gpu/drm/i830/Makefile
->  delete mode 100644 drivers/gpu/drm/i830/i830_dma.c
->  delete mode 100644 drivers/gpu/drm/i830/i830_drv.c
->  delete mode 100644 drivers/gpu/drm/i830/i830_drv.h
->  delete mode 100644 drivers/gpu/drm/i830/i830_irq.c
->  delete mode 100644 drivers/net/appletalk/Makefile
->  rename drivers/{net => staging}/appletalk/Kconfig (98%)
->  rename {net => drivers/staging}/appletalk/Makefile (56%)
->  rename {net => drivers/staging}/appletalk/aarp.c (99%)
->  rename {include/linux => drivers/staging/appletalk}/atalk.h (100%)
->  rename {net => drivers/staging}/appletalk/atalk_proc.c (99%)
->  rename drivers/{net => staging}/appletalk/cops.c (99%)
->  rename drivers/{net => staging}/appletalk/cops.h (100%)
->  rename drivers/{net => staging}/appletalk/cops_ffdrv.h (100%)
->  rename drivers/{net => staging}/appletalk/cops_ltdrv.h (100%)
->  rename {net => drivers/staging}/appletalk/ddp.c (98%)
->  rename {net => drivers/staging}/appletalk/dev.c (100%)
->  rename drivers/{net => staging}/appletalk/ipddp.c (99%)
->  rename drivers/{net => staging}/appletalk/ipddp.h (100%)
->  rename drivers/{net => staging}/appletalk/ltpc.c (99%)
->  rename drivers/{net => staging}/appletalk/ltpc.h (100%)
->  rename {net => drivers/staging}/appletalk/sysctl_net_atalk.c (98%)
->  delete mode 100644 drivers/staging/autofs/Kconfig
->  delete mode 100644 drivers/staging/autofs/Makefile
->  delete mode 100644 drivers/staging/autofs/TODO
->  delete mode 100644 drivers/staging/autofs/autofs_i.h
->  delete mode 100644 drivers/staging/autofs/dirhash.c
->  delete mode 100644 drivers/staging/autofs/init.c
->  delete mode 100644 drivers/staging/autofs/inode.c
->  delete mode 100644 drivers/staging/autofs/root.c
->  delete mode 100644 drivers/staging/autofs/symlink.c
->  delete mode 100644 drivers/staging/autofs/waitq.c
->  rename {fs => drivers/staging}/hpfs/Kconfig (80%)
->  rename {fs => drivers/staging}/hpfs/Makefile (100%)
->  create mode 100644 drivers/staging/hpfs/TODO
->  rename {fs => drivers/staging}/hpfs/alloc.c (100%)
->  rename {fs => drivers/staging}/hpfs/anode.c (100%)
->  rename {fs => drivers/staging}/hpfs/buffer.c (100%)
->  rename {fs => drivers/staging}/hpfs/dentry.c (100%)
->  rename {fs => drivers/staging}/hpfs/dir.c (97%)
->  rename {fs => drivers/staging}/hpfs/dnode.c (100%)
->  rename {fs => drivers/staging}/hpfs/ea.c (100%)
->  rename {fs => drivers/staging}/hpfs/file.c (97%)
->  rename {fs => drivers/staging}/hpfs/hpfs.h (100%)
->  rename {fs => drivers/staging}/hpfs/hpfs_fn.h (91%)
->  rename {fs => drivers/staging}/hpfs/inode.c (98%)
->  rename {fs => drivers/staging}/hpfs/map.c (100%)
->  rename {fs => drivers/staging}/hpfs/name.c (100%)
->  rename {fs => drivers/staging}/hpfs/namei.c (96%)
->  rename {fs => drivers/staging}/hpfs/super.c (98%)
->  delete mode 100644 drivers/staging/smbfs/Kconfig
->  delete mode 100644 drivers/staging/smbfs/Makefile
->  delete mode 100644 drivers/staging/smbfs/TODO
->  delete mode 100644 drivers/staging/smbfs/cache.c
->  delete mode 100644 drivers/staging/smbfs/dir.c
->  delete mode 100644 drivers/staging/smbfs/file.c
->  delete mode 100644 drivers/staging/smbfs/getopt.c
->  delete mode 100644 drivers/staging/smbfs/getopt.h
->  delete mode 100644 drivers/staging/smbfs/inode.c
->  delete mode 100644 drivers/staging/smbfs/ioctl.c
->  delete mode 100644 drivers/staging/smbfs/proc.c
->  delete mode 100644 drivers/staging/smbfs/proto.h
->  delete mode 100644 drivers/staging/smbfs/request.c
->  delete mode 100644 drivers/staging/smbfs/request.h
->  delete mode 100644 drivers/staging/smbfs/smb.h
->  delete mode 100644 drivers/staging/smbfs/smb_debug.h
->  delete mode 100644 drivers/staging/smbfs/smb_fs.h
->  delete mode 100644 drivers/staging/smbfs/smb_fs_i.h
->  delete mode 100644 drivers/staging/smbfs/smb_fs_sb.h
->  delete mode 100644 drivers/staging/smbfs/smb_mount.h
->  delete mode 100644 drivers/staging/smbfs/smbfs.txt
->  delete mode 100644 drivers/staging/smbfs/smbiod.c
->  delete mode 100644 drivers/staging/smbfs/smbno.h
->  delete mode 100644 drivers/staging/smbfs/sock.c
->  delete mode 100644 drivers/staging/smbfs/symlink.c
->  delete mode 100644 include/drm/i830_drm.h
->  delete mode 100644 include/linux/smp_lock.h
->  delete mode 100644 include/trace/events/bkl.h
->  delete mode 100644 lib/kernel_lock.c
-> 
-> [re-sent to mailing lists, due to overly long
->  Cc list getting rejected by vger]
-> 
-> Cc: autofs@linux.kernel.org
-> Cc: dri-devel@lists.freedesktop.org
-> Cc: linux-cifs@vger.kernel.org
-> Cc: linux-fsdevel@vger.kernel.org
-> Cc: linux-x25@vger.kernel.org
-> Cc: netdev@vger.kernel.org
-> 
-> 
-> _______________________________________________
-> autofs mailing list
-> autofs@linux.kernel.org
-> http://linux.kernel.org/mailman/listinfo/autofs
+On Thursday, January 27, 2011 09:02:55 am Serge E. Hallyn wrote:
+> What is the attack vector you're actually envisioning?  Does some
+> trojan come in and overwrite a program which which it hopes the
+> kernel will execute?  Or is there just an existing vuln in such
+> a program?  Are there other ways we can address these?  Can we find
+> a way to classify the kernel-spawned userspace programs?  Perhaps
+> based on the selinux context assigned to the program, we can assign
+> some level of trust that noone could have modified the source?
 
 
+I think that what is causing the confusion is that we are considering a different 
+threat model than the normal, historic view. The way its normally viewed, if you have 
+root, you can do anything you want to a machine. The threat model revolves around 
+becoming root on a machine and defense rests on splitting root so a complete system 
+compromise might not occur.
+
+Today, people want to have multi-tenant hosting using virtual machines whereby they 
+give away root control of the guest VM. If you were renting system space, you would 
+expect root access. That would make a nice juicy hacking target because you don't know 
+who else is sharing the physical machine with you and they might have something in 
+their VM worth stealing.
+
+So, the threat model becomes how do we prevent one guest from attacking another? We 
+have sVirt which prevents resource based attacks from occurring. Its pretty effective 
+for that. However, what if the bad guy wants to start attacking the hypervisor 
+directly in effort to start attacking the host OS? 
+
+They need to be able to run arbitrary code in ring 0 of the VM. That means the hosting 
+provider might want to eliminate some capabilities from the whole kernel so that they 
+have some assurance that a root user cannot get arbitrary code running in ring 0 
+without knowing a kernel level exploit. Also assume that the root user has no control 
+over the kernel or modules or initrd which are kept on a read only partition enforced 
+by the hypervisor. And the hosting provider will make kernel updates as kernel 
+security releases are made.
+
+This kind of turns around some of the threat modeling that people have always made. 
+There are not a whole lot of changes that need to be made. I think there was one other 
+patch that we needed to prevent arbitrary code injection. Eric's initial patch was 
+overly generous in my opinion. It allowed further modification of the global bounding 
+set after boot had finished and could probably be used for mischief as pointed out. 
+Perhaps the setting should be immutable after any change to it - which is really how 
+its intended to be used. Or maybe even only a subset of the bounding set is modifiable.
+
+Using a wrapper program is a NOGO because the admin renting the machine would be able 
+to overwrite the wrapper and then they have arbitrary code running with full privs and 
+we trust it will do the right thing. We need all modification to the running kernel out 
+of reach from root in that VM.
+
+-Steve
