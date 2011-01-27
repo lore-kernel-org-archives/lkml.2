@@ -1,63 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386Ab1A0A4e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 19:56:34 -0500
-Received: from void.printf.net ([89.145.121.20]:46444 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752504Ab1A0A4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 19:56:33 -0500
-From: Chris Ball <cjb@laptop.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: MMC fixes for 2.6.38-rc3
-Date: Wed, 26 Jan 2011 20:00:11 -0500
-Message-ID: <m3lj27i2jo.fsf@pullcord.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.0.60 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754429Ab1A0A7w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 19:59:52 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43149 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753561Ab1A0A7v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 19:59:51 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 27 Jan 2011 09:53:42 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [BUGFIX] memcg: fix res_counter_read_u64 lock aware (Was Re:
+ [PATCH] oom: handle overflow in mem_cgroup_out_of_memory()
+Message-Id: <20110127095342.3d81cf5f.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110127092434.df18c7a6.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1296030555-3594-1-git-send-email-gthelen@google.com>
+	<20110126170713.GA2401@cmpxchg.org>
+	<xr93y667lgdm.fsf@gthelen.mtv.corp.google.com>
+	<20110126183023.GB2401@cmpxchg.org>
+	<xr9362tbl83f.fsf@gthelen.mtv.corp.google.com>
+	<20110126142909.0b710a0c.akpm@linux-foundation.org>
+	<20110127092434.df18c7a6.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, 27 Jan 2011 09:24:34 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote: > 
+> 
+> I'll review. Against the roll-over, I think we just need to take lock.
+> So, res_counter_read_u64() implementation was wrong. It should take lock.
+> Please give me time.
+> 
 
-Please pull from:
+As far as I can see usages of return value of res_counter_read_u64()
+in memcontrol.c, all values are handle in u64 and no >> PAGE_SHIFT
+to 'int' is not done. I'll see usage of u64 return value to
+functions in other files from memcontrol.c
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
+But, at least, this patch is required, I think. There are races.
 
-for five small fixes to MMC host controller drivers.  These have been
-tested in linux-next.  Thanks.
+==
+res_counter_read_u64 reads u64 value without lock. It's dangerous
+in 32bit environment. This patch adds lock.
 
-The following changes since commit 6663050edd9c2e8b1e1f55c09459144d84c045f0:
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ include/linux/res_counter.h |   13 ++++++++++++-
+ kernel/res_counter.c        |    2 +-
+ 2 files changed, 13 insertions(+), 2 deletions(-)
 
-  Merge branch 'fixes' of master.kernel.org:/home/rmk/linux-2.6-arm (2011-01-26 09:04:18 +1000)
+Index: mmotm-0125/include/linux/res_counter.h
+===================================================================
+--- mmotm-0125.orig/include/linux/res_counter.h
++++ mmotm-0125/include/linux/res_counter.h
+@@ -68,7 +68,18 @@ struct res_counter {
+  * @pos:     and the offset.
+  */
+ 
+-u64 res_counter_read_u64(struct res_counter *counter, int member);
++u64 res_counter_read_u64_locked(struct res_counter *counter, int member);
++
++static inline u64 res_counter_read_u64(struct res_counter *counter, int member)
++{
++	unsigned long flags;
++	u64 ret;
++
++	spin_lock_irqsave(&counter->lock, flags);
++	ret = res_counter_read_u64_locked(counter, member);
++	spin_unlock_irqrestore(&counter->lock, flags);
++	return ret;
++}
+ 
+ ssize_t res_counter_read(struct res_counter *counter, int member,
+ 		const char __user *buf, size_t nbytes, loff_t *pos,
+Index: mmotm-0125/kernel/res_counter.c
+===================================================================
+--- mmotm-0125.orig/kernel/res_counter.c
++++ mmotm-0125/kernel/res_counter.c
+@@ -126,7 +126,7 @@ ssize_t res_counter_read(struct res_coun
+ 			pos, buf, s - buf);
+ }
+ 
+-u64 res_counter_read_u64(struct res_counter *counter, int member)
++u64 res_counter_read_u64_locked(struct res_counter *counter, int member)
+ {
+ 	return *res_counter_member(counter, member);
+ }
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
-
-Jaehoon Chung (1):
-      mmc: sdhci-s3c: add platform_8bit_width() hook
-
-Jamie Iles (1):
-      mmc: jz4740: don't treat NULL clk as an error
-
-Jesper Juhl (1):
-      mmc: ushc: Remove duplicate include of usb.h
-
-Russell King - ARM Linux (1):
-      mmc: mmci: don't read command response when invalid
-
-Sonic Zhang (1):
-      mmc: bfin_sdh: fix alloc size for private data
-
- drivers/mmc/host/bfin_sdh.c   |    2 +-
- drivers/mmc/host/jz4740_mmc.c |    5 +++--
- drivers/mmc/host/mmci.c       |   10 +++++-----
- drivers/mmc/host/sdhci-s3c.c  |   36 ++++++++++++++++++++++++++++++++++++
- drivers/mmc/host/ushc.c       |    1 -
- 5 files changed, 45 insertions(+), 9 deletions(-)
-
--- 
-Chris Ball   <cjb@laptop.org>
-One Laptop Per Child
