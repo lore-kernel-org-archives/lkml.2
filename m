@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287Ab1A0Mar (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 07:30:47 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:59804 "EHLO
+	id S1753379Ab1A0Maw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 07:30:52 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:59797 "EHLO
 	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753213Ab1A0Mal (ORCPT
+	with ESMTP id S1753221Ab1A0Mav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 07:30:41 -0500
+	Thu, 27 Jan 2011 07:30:51 -0500
 From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 To: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
         alsa-devel@alsa-project.org
 Cc: sakari.ailus@maxwell.research.nokia.com,
         broonie@opensource.wolfsonmicro.com, clemens@ladisch.de
-Subject: [PATCH v8 05/12] media: Entity use count
-Date: Thu, 27 Jan 2011 13:30:30 +0100
-Message-Id: <1296131437-29954-6-git-send-email-laurent.pinchart@ideasonboard.com>
+Subject: [PATCH v8 12/12] v4l: Make v4l2_subdev inherit from media_entity
+Date: Thu, 27 Jan 2011 13:30:37 +0100
+Message-Id: <1296131437-29954-13-git-send-email-laurent.pinchart@ideasonboard.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1296131437-29954-1-git-send-email-laurent.pinchart@ideasonboard.com>
 References: <1296131437-29954-1-git-send-email-laurent.pinchart@ideasonboard.com>
@@ -22,174 +22,263 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to the wide differences between drivers regarding power management
-needs, the media controller does not implement power management.
-However, the media_entity structure includes a use_count field that
-media drivers can use to track the number of users of every entity for
-power management needs.
+V4L2 subdevices are media entities. As such they need to inherit from
+(include) the media_entity structure.
 
-The use_count field is owned by media drivers and must not be touched by
-entity drivers. Access to the field must be protected by the media
-device graph_mutex lock.
+When registering/unregistering the subdevice, the media entity is
+automatically registered/unregistered. The entity is acquired on device
+open and released on device close.
 
 Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
 ---
- Documentation/media-framework.txt |   13 ++++++++++
- drivers/media/media-device.c      |    1 +
- drivers/media/media-entity.c      |   46 +++++++++++++++++++++++++++++++++++++
- include/media/media-device.h      |    4 +++
- include/media/media-entity.h      |    5 ++++
- 5 files changed, 69 insertions(+), 0 deletions(-)
+ Documentation/video4linux/v4l2-framework.txt |   23 ++++++++++++++
+ drivers/media/video/v4l2-device.c            |   39 ++++++++++++++++++++----
+ drivers/media/video/v4l2-subdev.c            |   41 ++++++++++++++++++++++++-
+ include/media/v4l2-subdev.h                  |   10 ++++++
+ 4 files changed, 104 insertions(+), 9 deletions(-)
 
-diff --git a/Documentation/media-framework.txt b/Documentation/media-framework.txt
-index 88fe379..9017a41 100644
---- a/Documentation/media-framework.txt
-+++ b/Documentation/media-framework.txt
-@@ -258,3 +258,16 @@ When the graph traversal is complete the function will return NULL.
+diff --git a/Documentation/video4linux/v4l2-framework.txt b/Documentation/video4linux/v4l2-framework.txt
+index f231bc20..d0fb880 100644
+--- a/Documentation/video4linux/v4l2-framework.txt
++++ b/Documentation/video4linux/v4l2-framework.txt
+@@ -268,6 +268,26 @@ A sub-device driver initializes the v4l2_subdev struct using:
+ Afterwards you need to initialize subdev->name with a unique name and set the
+ module owner. This is done for you if you use the i2c helper functions.
  
- Graph traversal can be interrupted at any moment. No cleanup function call is
- required and the graph structure can be freed normally.
++If integration with the media framework is needed, you must initialize the
++media_entity struct embedded in the v4l2_subdev struct (entity field) by
++calling media_entity_init():
 +
++	struct media_pad *pads = &my_sd->pads;
++	int err;
 +
-+Use count and power handling
-+----------------------------
++	err = media_entity_init(&sd->entity, npads, pads, 0);
 +
-+Due to the wide differences between drivers regarding power management needs,
-+the media controller does not implement power management. However, the
-+media_entity structure includes a use_count field that media drivers can use to
-+track the number of users of every entity for power management needs.
++The pads array must have been previously initialized. There is no need to
++manually set the struct media_entity type and name fields, but the revision
++field must be initialized if needed.
 +
-+The use_count field is owned by media drivers and must not be touched by entity
-+drivers. Access to the field must be protected by the media device graph_mutex
-+lock.
-diff --git a/drivers/media/media-device.c b/drivers/media/media-device.c
-index b8a3ace..e4c2157 100644
---- a/drivers/media/media-device.c
-+++ b/drivers/media/media-device.c
-@@ -73,6 +73,7 @@ int __must_check media_device_register(struct media_device *mdev)
- 	mdev->entity_id = 1;
- 	INIT_LIST_HEAD(&mdev->entities);
- 	spin_lock_init(&mdev->lock);
-+	mutex_init(&mdev->graph_mutex);
++A reference to the entity will be automatically acquired/released when the
++subdev device node (if any) is opened/closed.
++
++Don't forget to cleanup the media entity before the sub-device is destroyed:
++
++	media_entity_cleanup(&sd->entity);
++
+ A device (bridge) driver needs to register the v4l2_subdev with the
+ v4l2_device:
  
- 	/* Register the device node. */
- 	mdev->devnode.fops = &media_device_fops;
-diff --git a/drivers/media/media-entity.c b/drivers/media/media-entity.c
-index a805f20..fe6bfd2 100644
---- a/drivers/media/media-entity.c
-+++ b/drivers/media/media-entity.c
-@@ -23,6 +23,7 @@
- #include <linux/module.h>
- #include <linux/slab.h>
- #include <media/media-entity.h>
-+#include <media/media-device.h>
+@@ -277,6 +297,9 @@ This can fail if the subdev module disappeared before it could be registered.
+ After this function was called successfully the subdev->dev field points to
+ the v4l2_device.
  
- /**
-  * media_entity_init - Initialize a media entity
-@@ -196,6 +197,51 @@ media_entity_graph_walk_next(struct media_entity_graph *graph)
- EXPORT_SYMBOL_GPL(media_entity_graph_walk_next);
- 
- /* -----------------------------------------------------------------------------
-+ * Module use count
-+ */
++If the v4l2_device parent device has a non-NULL mdev field, the sub-device
++entity will be automatically registered with the media device.
 +
-+/*
-+ * media_entity_get - Get a reference to the parent module
-+ * @entity: The entity
-+ *
-+ * Get a reference to the parent media device module.
-+ *
-+ * The function will return immediately if @entity is NULL.
-+ *
-+ * Return a pointer to the entity on success or NULL on failure.
-+ */
-+struct media_entity *media_entity_get(struct media_entity *entity)
+ You can unregister a sub-device using:
+ 
+ 	v4l2_device_unregister_subdev(sd);
+diff --git a/drivers/media/video/v4l2-device.c b/drivers/media/video/v4l2-device.c
+index 5c16a12..69cb429 100644
+--- a/drivers/media/video/v4l2-device.c
++++ b/drivers/media/video/v4l2-device.c
+@@ -116,8 +116,11 @@ void v4l2_device_unregister(struct v4l2_device *v4l2_dev)
+ EXPORT_SYMBOL_GPL(v4l2_device_unregister);
+ 
+ int v4l2_device_register_subdev(struct v4l2_device *v4l2_dev,
+-						struct v4l2_subdev *sd)
++				struct v4l2_subdev *sd)
+ {
++#if defined(CONFIG_MEDIA_CONTROLLER)
++	struct media_entity *entity = &sd->entity;
++#endif
+ 	struct video_device *vdev;
+ 	int err;
+ 
+@@ -135,7 +138,16 @@ int v4l2_device_register_subdev(struct v4l2_device *v4l2_dev,
+ 	err = v4l2_ctrl_add_handler(v4l2_dev->ctrl_handler, sd->ctrl_handler);
+ 	if (err)
+ 		return err;
+-
++#if defined(CONFIG_MEDIA_CONTROLLER)
++	/* Register the entity. */
++	if (v4l2_dev->mdev) {
++		err = media_device_register_entity(v4l2_dev->mdev, entity);
++		if (err < 0) {
++			module_put(sd->owner);
++			return err;
++		}
++	}
++#endif
+ 	sd->v4l2_dev = v4l2_dev;
+ 	spin_lock(&v4l2_dev->lock);
+ 	list_add_tail(&sd->list, &v4l2_dev->subdevs);
+@@ -150,26 +162,39 @@ int v4l2_device_register_subdev(struct v4l2_device *v4l2_dev,
+ 	if (sd->flags & V4L2_SUBDEV_FL_HAS_DEVNODE) {
+ 		err = __video_register_device(vdev, VFL_TYPE_SUBDEV, -1, 1,
+ 					      sd->owner);
+-		if (err < 0)
++		if (err < 0) {
+ 			v4l2_device_unregister_subdev(sd);
++			return err;
++		}
+ 	}
+-
+-	return err;
++#if defined(CONFIG_MEDIA_CONTROLLER)
++	entity->v4l.major = VIDEO_MAJOR;
++	entity->v4l.minor = vdev->minor;
++#endif
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(v4l2_device_register_subdev);
+ 
+ void v4l2_device_unregister_subdev(struct v4l2_subdev *sd)
+ {
++	struct v4l2_device *v4l2_dev;
++
+ 	/* return if it isn't registered */
+ 	if (sd == NULL || sd->v4l2_dev == NULL)
+ 		return;
+ 
+-	spin_lock(&sd->v4l2_dev->lock);
++	v4l2_dev = sd->v4l2_dev;
++
++	spin_lock(&v4l2_dev->lock);
+ 	list_del(&sd->list);
+-	spin_unlock(&sd->v4l2_dev->lock);
++	spin_unlock(&v4l2_dev->lock);
+ 	sd->v4l2_dev = NULL;
+ 
+ 	module_put(sd->owner);
++#if defined(CONFIG_MEDIA_CONTROLLER)
++	if (v4l2_dev->mdev)
++		media_device_unregister_entity(&sd->entity);
++#endif
+ 	video_unregister_device(&sd->devnode);
+ }
+ EXPORT_SYMBOL_GPL(v4l2_device_unregister_subdev);
+diff --git a/drivers/media/video/v4l2-subdev.c b/drivers/media/video/v4l2-subdev.c
+index fbccefd..a49856a 100644
+--- a/drivers/media/video/v4l2-subdev.c
++++ b/drivers/media/video/v4l2-subdev.c
+@@ -35,7 +35,10 @@ static int subdev_open(struct file *file)
+ {
+ 	struct video_device *vdev = video_devdata(file);
+ 	struct v4l2_subdev *sd = vdev_to_v4l2_subdev(vdev);
+-	struct v4l2_fh *vfh;
++#if defined(CONFIG_MEDIA_CONTROLLER)
++	struct media_entity *entity;
++#endif
++	struct v4l2_fh *vfh = NULL;
+ 	int ret;
+ 
+ 	if (!sd->initialized)
+@@ -61,11 +64,20 @@ static int subdev_open(struct file *file)
+ 		v4l2_fh_add(vfh);
+ 		file->private_data = vfh;
+ 	}
+-
++#if defined(CONFIG_MEDIA_CONTROLLER)
++	if (sd->v4l2_dev->mdev) {
++		entity = media_entity_get(&sd->entity);
++		if (!entity) {
++			ret = -EBUSY;
++			goto err;
++		}
++	}
++#endif
+ 	return 0;
+ 
+ err:
+ 	if (vfh != NULL) {
++		v4l2_fh_del(vfh);
+ 		v4l2_fh_exit(vfh);
+ 		kfree(vfh);
+ 	}
+@@ -75,8 +87,16 @@ err:
+ 
+ static int subdev_close(struct file *file)
+ {
++#if defined(CONFIG_MEDIA_CONTROLLER)
++	struct video_device *vdev = video_devdata(file);
++	struct v4l2_subdev *sd = vdev_to_v4l2_subdev(vdev);
++#endif
+ 	struct v4l2_fh *vfh = file->private_data;
+ 
++#if defined(CONFIG_MEDIA_CONTROLLER)
++	if (sd->v4l2_dev->mdev)
++		media_entity_put(&sd->entity);
++#endif
+ 	if (vfh != NULL) {
+ 		v4l2_fh_del(vfh);
+ 		v4l2_fh_exit(vfh);
+@@ -176,5 +196,22 @@ void v4l2_subdev_init(struct v4l2_subdev *sd, const struct v4l2_subdev_ops *ops)
+ 	sd->dev_priv = NULL;
+ 	sd->host_priv = NULL;
+ 	sd->initialized = 1;
++#if defined(CONFIG_MEDIA_CONTROLLER)
++	sd->entity.name = sd->name;
++	sd->entity.type = MEDIA_ENT_T_V4L2_SUBDEV;
++#endif
+ }
+ EXPORT_SYMBOL(v4l2_subdev_init);
++
++#if defined(CONFIG_MEDIA_CONTROLLER)
++int v4l2_subdev_set_power(struct media_entity *entity, int power)
 +{
-+	if (entity == NULL)
-+		return NULL;
++	struct v4l2_subdev *sd = media_entity_to_v4l2_subdev(entity);
 +
-+	if (entity->parent->dev &&
-+	    !try_module_get(entity->parent->dev->driver->owner))
-+		return NULL;
++	dev_dbg(entity->parent->dev,
++		"%s power%s\n", entity->name, power ? "on" : "off");
 +
-+	return entity;
++	return v4l2_subdev_call(sd, core, s_power, power);
 +}
-+EXPORT_SYMBOL_GPL(media_entity_get);
-+
-+/*
-+ * media_entity_put - Release the reference to the parent module
-+ * @entity: The entity
-+ *
-+ * Release the reference count acquired by media_entity_get().
-+ *
-+ * The function will return immediately if @entity is NULL.
-+ */
-+void media_entity_put(struct media_entity *entity)
-+{
-+	if (entity == NULL)
-+		return;
-+
-+	if (entity->parent->dev)
-+		module_put(entity->parent->dev->driver->owner);
-+}
-+EXPORT_SYMBOL_GPL(media_entity_put);
-+
-+/* -----------------------------------------------------------------------------
-  * Links management
++EXPORT_SYMBOL_GPL(v4l2_subdev_set_power);
++#endif
+diff --git a/include/media/v4l2-subdev.h b/include/media/v4l2-subdev.h
+index 68cbe48..7d55b0c 100644
+--- a/include/media/v4l2-subdev.h
++++ b/include/media/v4l2-subdev.h
+@@ -21,6 +21,7 @@
+ #ifndef _V4L2_SUBDEV_H
+ #define _V4L2_SUBDEV_H
+ 
++#include <media/media-entity.h>
+ #include <media/v4l2-common.h>
+ #include <media/v4l2-dev.h>
+ #include <media/v4l2-mediabus.h>
+@@ -437,6 +438,9 @@ struct v4l2_subdev_ops {
+    stand-alone or embedded in a larger struct.
   */
- 
-diff --git a/include/media/media-device.h b/include/media/media-device.h
-index 0b1ecf5..260d59c 100644
---- a/include/media/media-device.h
-+++ b/include/media/media-device.h
-@@ -25,6 +25,7 @@
- 
- #include <linux/device.h>
- #include <linux/list.h>
-+#include <linux/mutex.h>
- #include <linux/spinlock.h>
- 
- #include <media/media-devnode.h>
-@@ -42,6 +43,7 @@
-  * @entity_id:	ID of the next entity to be registered
-  * @entities:	List of registered entities
-  * @lock:	Entities list lock
-+ * @graph_mutex: Entities graph operation lock
-  *
-  * This structure represents an abstract high-level media device. It allows easy
-  * access to entities and provides basic media device-level support. The
-@@ -69,6 +71,8 @@ struct media_device {
- 
- 	/* Protects the entities list */
- 	spinlock_t lock;
-+	/* Serializes graph operations. */
-+	struct mutex graph_mutex;
+ struct v4l2_subdev {
++#if defined(CONFIG_MEDIA_CONTROLLER)
++	struct media_entity entity;
++#endif
+ 	struct list_head list;
+ 	struct module *owner;
+ 	u32 flags;
+@@ -458,6 +462,8 @@ struct v4l2_subdev {
+ 	unsigned int nevents;
  };
  
- /* media_devnode to media_device */
-diff --git a/include/media/media-entity.h b/include/media/media-entity.h
-index b82f824..114541a 100644
---- a/include/media/media-entity.h
-+++ b/include/media/media-entity.h
-@@ -81,6 +81,8 @@ struct media_entity {
- 	struct media_pad *pads;		/* Pads array (num_pads elements) */
- 	struct media_link *links;	/* Links array (max_links elements)*/
++#define media_entity_to_v4l2_subdev(ent) \
++	container_of(ent, struct v4l2_subdev, entity)
+ #define vdev_to_v4l2_subdev(vdev) \
+ 	container_of(vdev, struct v4l2_subdev, devnode)
  
-+	int use_count;			/* Use count for the entity. */
-+
- 	union {
- 		/* Node specifications */
- 		struct {
-@@ -129,6 +131,9 @@ void media_entity_cleanup(struct media_entity *entity);
- int media_entity_create_link(struct media_entity *source, u16 source_pad,
- 		struct media_entity *sink, u16 sink_pad, u32 flags);
+@@ -486,6 +492,10 @@ static inline void *v4l2_get_subdev_hostdata(const struct v4l2_subdev *sd)
+ void v4l2_subdev_init(struct v4l2_subdev *sd,
+ 		      const struct v4l2_subdev_ops *ops);
  
-+struct media_entity *media_entity_get(struct media_entity *entity);
-+void media_entity_put(struct media_entity *entity);
++#if defined(CONFIG_MEDIA_CONTROLLER)
++int v4l2_subdev_set_power(struct media_entity *entity, int power);
++#endif
 +
- void media_entity_graph_walk_start(struct media_entity_graph *graph,
- 		struct media_entity *entity);
- struct media_entity *
+ /* Call an ops of a v4l2_subdev, doing the right checks against
+    NULL pointers.
+ 
 -- 
 1.7.3.4
 
