@@ -1,261 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480Ab1A0VT4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 16:19:56 -0500
-Received: from charybdis-ext.suse.de ([195.135.221.2]:50595 "EHLO
-	nat.nue.novell.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752626Ab1A0VTz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 16:19:55 -0500
-From: "Rafael J. Wysocki" <rjw@novell.com>
-Organization: Novell Inc.
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH 1/3] PM / Wakeup: Add missing memory barriers
-Date: Thu, 27 Jan 2011 22:19:54 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc2+; KDE/4.4.4; x86_64; ; )
-Cc: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <Pine.LNX.4.44L0.1101271335480.2090-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1101271335480.2090-100000@iolanthe.rowland.org>
+	id S1753397Ab1A0VWw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 16:22:52 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28232 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752763Ab1A0VWv (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Thu, 27 Jan 2011 16:22:51 -0500
+Date: Thu, 27 Jan 2011 16:20:01 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: dri-devel@lists.freedesktop.org, thomas@shipmail.org, airlied@linux.ie,
+        linux-kernel@vger.kernel.org, Alex Deucher <alexdeucher@gmail.com>,
+        Jerome Glisse <jglisse@redhat.com>
+Cc: konrad@darnok.org
+Subject: Re: [PATCH 4/5] radeon/ttm/PCIe: Use dma_addr if TTM has set it.
+Message-ID: <20110127212001.GC4542@dumpdata.com>
+References: <1294420304-24811-1-git-send-email-konrad.wilk@oracle.com>
+ <1294420304-24811-5-git-send-email-konrad.wilk@oracle.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101272219.54303.rjw@novell.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294420304-24811-5-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 27, 2011, Alan Stern wrote:
-> On Wed, 26 Jan 2011, Rafael J. Wysocki wrote:
+On Fri, Jan 07, 2011 at 12:11:43PM -0500, Konrad Rzeszutek Wilk wrote:
+> If the TTM layer has used the DMA API to setup pages that are
+> TTM_PAGE_FLAG_DMA32 (look at patch titled: "ttm: Utilize the dma_addr_t
+> array for pages that are to in DMA32 pool."), lets use it
+> when programming the GART in the PCIe type cards.
 > 
-> > > Ideally you could do away with the need for synchronization entirely.  
-> > > For example, events_in_progress and event_count could be stored as two 
-> > > 16-bit values stuffed into a single atomic variable.  Then they could 
-> > > both be read or updated simultaneously.
-> > 
-> > OK, the patch below appears to work for me.  Can you have a look at it, please?
-> > 
-> > Rafael
-> > 
-> > 
-> > ---
-> >  drivers/base/power/wakeup.c |   82 +++++++++++++++++++++++++++++++-------------
-> >  1 file changed, 58 insertions(+), 24 deletions(-)
-> > 
-> > Index: linux-2.6/drivers/base/power/wakeup.c
-> > ===================================================================
-> > --- linux-2.6.orig/drivers/base/power/wakeup.c
-> > +++ linux-2.6/drivers/base/power/wakeup.c
-> > @@ -24,12 +24,48 @@
-> >   */
-> >  bool events_check_enabled;
-> >  
-> > -/* The counter of registered wakeup events. */
-> > -static atomic_t event_count = ATOMIC_INIT(0);
-> > -/* A preserved old value of event_count. */
-> > +#define EVENT_COUNT_BITS	(sizeof(atomic_t) * 4)
+> This patch skips doing the pci_map_page (and pci_unmap_page) if
+> there is a DMA addresses passed in for that page. If the dma_address
+> is zero (or DMA_ERROR_CODE), then we continue on with our old
+> behaviour.
+
+Hey Jerome,
+
+I should have CC-ed you earlier but missed that and instead just
+CC-ed the mailing list. I was wondering what your thoughts are
+about this patchset? Thomas took a look at the patchset and he is OK
+but more eyes never hurt.
+
+FYI, for clarity I hadn't made the old calls that got moved due
+to adding of "{" checkpatch.pl compliant. It complains about it being
+past 80 characters. I can naturally fix that up, but thought
+that it might detract from the nature of the patch.
+
+
 > 
-> This should be sizeof(int), since atomic_t variables store int values.  
-> In principle, the atomic_t might include other things along with the 
-> stored value (it used to, on some architectures).
-
-OK
-
-> > +#define MAX_EVENT_COUNT		((1 << EVENT_COUNT_BITS) - 1)
-> > +
-> > +/* Combined counters of registered wakeup events and events in progress. */
-> > +static atomic_t combined_event_count = ATOMIC_INIT(0);
-> > +
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  drivers/gpu/drm/radeon/radeon.h      |    4 ++-
+>  drivers/gpu/drm/radeon/radeon_gart.c |   36 ++++++++++++++++++++++++---------
+>  drivers/gpu/drm/radeon/radeon_ttm.c  |    5 +++-
+>  3 files changed, 33 insertions(+), 12 deletions(-)
 > 
-> Comment here, explaining that this is needed so that the in_progress 
-> and count parts can be operated on simultaneously.
-
-OK
-
-> > +static unsigned int split_counters(unsigned int *inpr, unsigned int *cnt)
-> > +{
-> > +	unsigned int comb = atomic_read(&combined_event_count);
-> > +
-> > +	*inpr = (comb >> EVENT_COUNT_BITS);
-> > +	*cnt = comb & MAX_EVENT_COUNT;
-> 
-> The inpr part is bounded, whereas the cnt part increments without 
-> limit.  Therefore inpr should occupy the lower bits and cnt should 
-> occupy the upper bits, where overflow isn't an issue.
-
-Well, it wouldn't matter if merge_counters() weren't buggy (cnt should have
-been masked before applying the | in there).  Plus the simplifications below
-require inpr to be the lower bits, right?
-
-> > +	return comb;
-> > +}
-> > +
-> > +static unsigned int merge_counters(unsigned int inpr, unsigned int cnt)
-> > +{
-> > +	return (inpr << EVENT_COUNT_BITS) | cnt;
-> > +}
-> > +
-> > +static void update_events_in_progress(void)
-> > +{
-> > +	unsigned int cnt, inpr, old, new;
-> > +
-> > +	do {
-> > +		old = split_counters(&inpr, &cnt);
-> > +		new = merge_counters(inpr + 1, cnt);
-> > +	} while (atomic_cmpxchg(&combined_event_count, old, new) != old);
-> > +}
-> 
-> Just atomic_inc(&combined_event_count) -- after inpr has been moved to 
-> the lower bits.
-
-OK
-
-> > +
-> > +static void update_counters(void)
-> > +{
-> > +	unsigned int cnt, inpr, old, new;
-> > +
-> > +	do {
-> > +		old = split_counters(&inpr, &cnt);
-> > +		new = merge_counters(inpr - 1, cnt + 1);
-> > +	} while (atomic_cmpxchg(&combined_event_count, old, new) != old);
-> > +}
-> 
-> Just atomic_add(MAX_EVENT_COUNT, &combined_event_count).
-
-Right.
-
-> The rest looks fine.
-
-OK
-
-Updated patch is appended.
-
-Thanks,
-Rafael
-
----
- drivers/base/power/wakeup.c |   61 ++++++++++++++++++++++++++++----------------
- 1 file changed, 39 insertions(+), 22 deletions(-)
-
-Index: linux-2.6/drivers/base/power/wakeup.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/wakeup.c
-+++ linux-2.6/drivers/base/power/wakeup.c
-@@ -24,12 +24,26 @@
-  */
- bool events_check_enabled;
- 
--/* The counter of registered wakeup events. */
--static atomic_t event_count = ATOMIC_INIT(0);
--/* A preserved old value of event_count. */
-+/*
-+ * Combined counters of registered wakeup events and wakeup events in progress.
-+ * They need to be modified together atomically, so it's better to use one
-+ * atomic variable to hold them both.
-+ */
-+static atomic_t combined_event_count = ATOMIC_INIT(0);
-+
-+#define IN_PROGRESS_BITS	(sizeof(int) * 4)
-+#define MAX_IN_PROGRESS		((1 << IN_PROGRESS_BITS) - 1)
-+
-+static void split_counters(unsigned int *cnt, unsigned int *inpr)
-+{
-+	unsigned int comb = atomic_read(&combined_event_count);
-+
-+	*cnt = (comb >> IN_PROGRESS_BITS);
-+	*inpr = comb & MAX_IN_PROGRESS;
-+}
-+
-+/* A preserved old value of the events counter. */
- static unsigned int saved_count;
--/* The counter of wakeup events being processed. */
--static atomic_t events_in_progress = ATOMIC_INIT(0);
- 
- static DEFINE_SPINLOCK(events_lock);
- 
-@@ -333,7 +347,8 @@ static void wakeup_source_activate(struc
- 	ws->timer_expires = jiffies;
- 	ws->last_time = ktime_get();
- 
--	atomic_inc(&events_in_progress);
-+	/* Increment the counter of events in progress. */
-+	atomic_inc(&combined_event_count);
- }
- 
- /**
-@@ -420,14 +435,10 @@ static void wakeup_source_deactivate(str
- 	del_timer(&ws->timer);
- 
- 	/*
--	 * event_count has to be incremented before events_in_progress is
--	 * modified, so that the callers of pm_check_wakeup_events() and
--	 * pm_save_wakeup_count() don't see the old value of event_count and
--	 * events_in_progress equal to zero at the same time.
-+	 * Increment the counter of registered wakeup events and decrement the
-+	 * couter of wakeup events in progress simultaneously.
- 	 */
--	atomic_inc(&event_count);
--	smp_mb__before_atomic_dec();
--	atomic_dec(&events_in_progress);
-+	atomic_add(MAX_IN_PROGRESS, &combined_event_count);
- }
- 
- /**
-@@ -582,8 +593,10 @@ bool pm_wakeup_pending(void)
- 
- 	spin_lock_irqsave(&events_lock, flags);
- 	if (events_check_enabled) {
--		ret = ((unsigned int)atomic_read(&event_count) != saved_count)
--			|| atomic_read(&events_in_progress);
-+		unsigned int cnt, inpr;
-+
-+		split_counters(&cnt, &inpr);
-+		ret = (cnt != saved_count || inpr > 0);
- 		events_check_enabled = !ret;
- 	}
- 	spin_unlock_irqrestore(&events_lock, flags);
-@@ -605,19 +618,22 @@ bool pm_wakeup_pending(void)
-  */
- bool pm_get_wakeup_count(unsigned int *count)
- {
--	bool ret;
-+	unsigned int cnt, inpr;
- 
- 	if (capable(CAP_SYS_ADMIN))
- 		events_check_enabled = false;
- 
--	while (atomic_read(&events_in_progress) && !signal_pending(current)) {
-+	for (;;) {
-+		split_counters(&cnt, &inpr);
-+		if (inpr == 0 || signal_pending(current))
-+			break;
- 		pm_wakeup_update_hit_counts();
- 		schedule_timeout_interruptible(msecs_to_jiffies(TIMEOUT));
- 	}
- 
--	ret = !atomic_read(&events_in_progress);
--	*count = atomic_read(&event_count);
--	return ret;
-+	split_counters(&cnt, &inpr);
-+	*count = cnt;
-+	return !inpr;
- }
- 
- /**
-@@ -631,11 +647,12 @@ bool pm_get_wakeup_count(unsigned int *c
-  */
- bool pm_save_wakeup_count(unsigned int count)
- {
-+	unsigned int cnt, inpr;
- 	bool ret = false;
- 
- 	spin_lock_irq(&events_lock);
--	if (count == (unsigned int)atomic_read(&event_count)
--	    && !atomic_read(&events_in_progress)) {
-+	split_counters(&cnt, &inpr);
-+	if (cnt == count && inpr == 0) {
- 		saved_count = count;
- 		events_check_enabled = true;
- 		ret = true;
+> diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
+> index 73f600d..c9bbab9 100644
+> --- a/drivers/gpu/drm/radeon/radeon.h
+> +++ b/drivers/gpu/drm/radeon/radeon.h
+> @@ -317,6 +317,7 @@ struct radeon_gart {
+>  	union radeon_gart_table		table;
+>  	struct page			**pages;
+>  	dma_addr_t			*pages_addr;
+> +	bool				*ttm_alloced;
+>  	bool				ready;
+>  };
+>  
+> @@ -329,7 +330,8 @@ void radeon_gart_fini(struct radeon_device *rdev);
+>  void radeon_gart_unbind(struct radeon_device *rdev, unsigned offset,
+>  			int pages);
+>  int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
+> -		     int pages, struct page **pagelist);
+> +		     int pages, struct page **pagelist,
+> +		     dma_addr_t *dma_addr);
+>  
+>  
+>  /*
+> diff --git a/drivers/gpu/drm/radeon/radeon_gart.c b/drivers/gpu/drm/radeon/radeon_gart.c
+> index e65b903..4a5ac4b 100644
+> --- a/drivers/gpu/drm/radeon/radeon_gart.c
+> +++ b/drivers/gpu/drm/radeon/radeon_gart.c
+> @@ -149,8 +149,9 @@ void radeon_gart_unbind(struct radeon_device *rdev, unsigned offset,
+>  	p = t / (PAGE_SIZE / RADEON_GPU_PAGE_SIZE);
+>  	for (i = 0; i < pages; i++, p++) {
+>  		if (rdev->gart.pages[p]) {
+> -			pci_unmap_page(rdev->pdev, rdev->gart.pages_addr[p],
+> -				       PAGE_SIZE, PCI_DMA_BIDIRECTIONAL);
+> +			if (!rdev->gart.ttm_alloced[p])
+> +				pci_unmap_page(rdev->pdev, rdev->gart.pages_addr[p],
+> +				       		PAGE_SIZE, PCI_DMA_BIDIRECTIONAL);
+>  			rdev->gart.pages[p] = NULL;
+>  			rdev->gart.pages_addr[p] = rdev->dummy_page.addr;
+>  			page_base = rdev->gart.pages_addr[p];
+> @@ -165,7 +166,7 @@ void radeon_gart_unbind(struct radeon_device *rdev, unsigned offset,
+>  }
+>  
+>  int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
+> -		     int pages, struct page **pagelist)
+> +		     int pages, struct page **pagelist, dma_addr_t *dma_addr)
+>  {
+>  	unsigned t;
+>  	unsigned p;
+> @@ -180,15 +181,22 @@ int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
+>  	p = t / (PAGE_SIZE / RADEON_GPU_PAGE_SIZE);
+>  
+>  	for (i = 0; i < pages; i++, p++) {
+> -		/* we need to support large memory configurations */
+> -		/* assume that unbind have already been call on the range */
+> -		rdev->gart.pages_addr[p] = pci_map_page(rdev->pdev, pagelist[i],
+> +		/* On TTM path, we only use the DMA API if TTM_PAGE_FLAG_DMA32
+> +		 * is requested. */
+> +		if (dma_addr[i] != DMA_ERROR_CODE) {
+> +			rdev->gart.ttm_alloced[p] = true;
+> +			rdev->gart.pages_addr[p] = dma_addr[i];
+> +		} else {
+> +			/* we need to support large memory configurations */
+> +			/* assume that unbind have already been call on the range */
+> +			rdev->gart.pages_addr[p] = pci_map_page(rdev->pdev, pagelist[i],
+>  							0, PAGE_SIZE,
+>  							PCI_DMA_BIDIRECTIONAL);
+> -		if (pci_dma_mapping_error(rdev->pdev, rdev->gart.pages_addr[p])) {
+> -			/* FIXME: failed to map page (return -ENOMEM?) */
+> -			radeon_gart_unbind(rdev, offset, pages);
+> -			return -ENOMEM;
+> +			if (pci_dma_mapping_error(rdev->pdev, rdev->gart.pages_addr[p])) {
+> +				/* FIXME: failed to map page (return -ENOMEM?) */
+> +				radeon_gart_unbind(rdev, offset, pages);
+> +				return -ENOMEM;
+> +			}
+>  		}
+>  		rdev->gart.pages[p] = pagelist[i];
+>  		page_base = rdev->gart.pages_addr[p];
+> @@ -251,6 +259,12 @@ int radeon_gart_init(struct radeon_device *rdev)
+>  		radeon_gart_fini(rdev);
+>  		return -ENOMEM;
+>  	}
+> +	rdev->gart.ttm_alloced = kzalloc(sizeof(bool) *
+> +					rdev->gart.num_cpu_pages, GFP_KERNEL);
+> +	if (rdev->gart.ttm_alloced == NULL) {
+> +		radeon_gart_fini(rdev);
+> +		return -ENOMEM;
+> +	}
+>  	/* set GART entry to point to the dummy page by default */
+>  	for (i = 0; i < rdev->gart.num_cpu_pages; i++) {
+>  		rdev->gart.pages_addr[i] = rdev->dummy_page.addr;
+> @@ -267,6 +281,8 @@ void radeon_gart_fini(struct radeon_device *rdev)
+>  	rdev->gart.ready = false;
+>  	kfree(rdev->gart.pages);
+>  	kfree(rdev->gart.pages_addr);
+> +	kfree(rdev->gart.ttm_alloced);
+>  	rdev->gart.pages = NULL;
+>  	rdev->gart.pages_addr = NULL;
+> +	rdev->gart.ttm_alloced = NULL;
+>  }
+> diff --git a/drivers/gpu/drm/radeon/radeon_ttm.c b/drivers/gpu/drm/radeon/radeon_ttm.c
+> index 6f156e9..ca04505 100644
+> --- a/drivers/gpu/drm/radeon/radeon_ttm.c
+> +++ b/drivers/gpu/drm/radeon/radeon_ttm.c
+> @@ -647,6 +647,7 @@ struct radeon_ttm_backend {
+>  	unsigned long			num_pages;
+>  	struct page			**pages;
+>  	struct page			*dummy_read_page;
+> +	dma_addr_t			*dma_addrs;
+>  	bool				populated;
+>  	bool				bound;
+>  	unsigned			offset;
+> @@ -662,6 +663,7 @@ static int radeon_ttm_backend_populate(struct ttm_backend *backend,
+>  
+>  	gtt = container_of(backend, struct radeon_ttm_backend, backend);
+>  	gtt->pages = pages;
+> +	gtt->dma_addrs = dma_addrs;
+>  	gtt->num_pages = num_pages;
+>  	gtt->dummy_read_page = dummy_read_page;
+>  	gtt->populated = true;
+> @@ -674,6 +676,7 @@ static void radeon_ttm_backend_clear(struct ttm_backend *backend)
+>  
+>  	gtt = container_of(backend, struct radeon_ttm_backend, backend);
+>  	gtt->pages = NULL;
+> +	gtt->dma_addrs = NULL;
+>  	gtt->num_pages = 0;
+>  	gtt->dummy_read_page = NULL;
+>  	gtt->populated = false;
+> @@ -694,7 +697,7 @@ static int radeon_ttm_backend_bind(struct ttm_backend *backend,
+>  		     gtt->num_pages, bo_mem, backend);
+>  	}
+>  	r = radeon_gart_bind(gtt->rdev, gtt->offset,
+> -			     gtt->num_pages, gtt->pages);
+> +			     gtt->num_pages, gtt->pages, gtt->dma_addrs);
+>  	if (r) {
+>  		DRM_ERROR("failed to bind %lu pages at 0x%08X\n",
+>  			  gtt->num_pages, gtt->offset);
+> -- 
+> 1.7.1
