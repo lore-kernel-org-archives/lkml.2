@@ -1,79 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551Ab1A0Omm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 09:42:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2122 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752941Ab1A0Omi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 09:42:38 -0500
-From: Steve Grubb <sgrubb@redhat.com>
-Organization: Red Hat
-To: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Subject: Re: [PATCH] System Wide Capability Bounding Set
-Date: Thu, 27 Jan 2011 09:42:07 -0500
-User-Agent: KMail/1.13.5 (Linux/2.6.35.10-74.fc14.x86_64; KDE/4.5.5; x86_64; ; )
-Cc: Eric Paris <eparis@redhat.com>, "Andrew G. Morgan" <morgan@kernel.org>,
-        "Serge E. Hallyn" <serge@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-References: <1294266337.3237.45.camel@localhost.localdomain> <1296084856.2534.18.camel@localhost.localdomain> <20110127140255.GB2935@localhost>
-In-Reply-To: <20110127140255.GB2935@localhost>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101270942.07689.sgrubb@redhat.com>
+	id S1753496Ab1A0OqE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 09:46:04 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:36050 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677Ab1A0OqB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 09:46:01 -0500
+From: Stefan Bader <stefan.bader@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@kernel.org,
+        kernel-team@lists.ubuntu.com
+Subject: [2.6.32+drm33-longterm] Linux 2.6.32.28+drm33.13
+Date: Thu, 27 Jan 2011 15:45:57 +0100
+Message-Id: <1296139557-14743-1-git-send-email-stefan.bader@canonical.com>
+X-Mailer: git-send-email 1.7.0.4
+To: linux-kernel@vger.kernel.org
+To: stable@kernel.org
+To: kernel-team@lists.ubuntu.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Serge,
+I am announcing the release of the 2.6.32.28+drm33.13 longterm tree.
 
-On Thursday, January 27, 2011 09:02:55 am Serge E. Hallyn wrote:
-> What is the attack vector you're actually envisioning?  Does some
-> trojan come in and overwrite a program which which it hopes the
-> kernel will execute?  Or is there just an existing vuln in such
-> a program?  Are there other ways we can address these?  Can we find
-> a way to classify the kernel-spawned userspace programs?  Perhaps
-> based on the selinux context assigned to the program, we can assign
-> some level of trust that noone could have modified the source?
+This tree is based on 2.6.32 and generally has all of the stable updates
+applied. Except those to the DRM subsystem, which was based on 2.6.33 and
+took updates from that upstream stable as long as that existed. It will
+continue to add patches to the DRM subsystem as long as they are valid
+according to the stable update rules (Documentation/stable_kernel_rules.txt).
+DRM patches for this tree should be sent to kernel-team@lists.ubuntu.com.
 
+This release updates the DRM subsystem only.
 
-I think that what is causing the confusion is that we are considering a different 
-threat model than the normal, historic view. The way its normally viewed, if you have 
-root, you can do anything you want to a machine. The threat model revolves around 
-becoming root on a machine and defense rests on splitting root so a complete system 
-compromise might not occur.
+The updated 2.6.32.y-drm33.z tree can be found at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git
+and can be browsed through git web via:
+  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=summary
 
-Today, people want to have multi-tenant hosting using virtual machines whereby they 
-give away root control of the guest VM. If you were renting system space, you would 
-expect root access. That would make a nice juicy hacking target because you don't know 
-who else is sharing the physical machine with you and they might have something in 
-their VM worth stealing.
+-Stefan
 
-So, the threat model becomes how do we prevent one guest from attacking another? We 
-have sVirt which prevents resource based attacks from occurring. Its pretty effective 
-for that. However, what if the bad guy wants to start attacking the hypervisor 
-directly in effort to start attacking the host OS? 
+------
 
-They need to be able to run arbitrary code in ring 0 of the VM. That means the hosting 
-provider might want to eliminate some capabilities from the whole kernel so that they 
-have some assurance that a root user cannot get arbitrary code running in ring 0 
-without knowing a kernel level exploit. Also assume that the root user has no control 
-over the kernel or modules or initrd which are kept on a read only partition enforced 
-by the hypervisor. And the hosting provider will make kernel updates as kernel 
-security releases are made.
+* drm/ttm: Clear the ghost cpu_writers flag on ttm_buffer_object_transfer.
+* drm/kms: remove spaces from connector names (v2)
+* Linux 2.6.32.28+drm33.13
 
-This kind of turns around some of the threat modeling that people have always made. 
-There are not a whole lot of changes that need to be made. I think there was one other 
-patch that we needed to prevent arbitrary code injection. Eric's initial patch was 
-overly generous in my opinion. It allowed further modification of the global bounding 
-set after boot had finished and could probably be used for mischief as pointed out. 
-Perhaps the setting should be immutable after any change to it - which is really how 
-its intended to be used. Or maybe even only a subset of the bounding set is modifiable.
+ Makefile                          |    2 +-
+ drivers/gpu/drm/drm_crtc.c        |   10 +++++-----
+ drivers/gpu/drm/ttm/ttm_bo_util.c |    1 +
+ 3 files changed, 7 insertions(+), 6 deletions(-)
 
-Using a wrapper program is a NOGO because the admin renting the machine would be able 
-to overwrite the wrapper and then they have arbitrary code running with full privs and 
-we trust it will do the right thing. We need all modification to the running kernel out 
-of reach from root in that VM.
+diff --git a/Makefile b/Makefile
+index ba75a67..f792613 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,7 +1,7 @@
+ VERSION = 2
+ PATCHLEVEL = 6
+ SUBLEVEL = 32
+-EXTRAVERSION = .28+drm33.12
++EXTRAVERSION = .28+drm33.13
+ NAME = Man-Eating Seals of Antiquity
 
--Steve
+ # *DOCUMENTATION*
+diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+index d91fb8c..81ba0e6 100644
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -153,12 +153,12 @@ static struct drm_conn_prop_enum_list drm_connector_enum_list[] =
+ 	{ DRM_MODE_CONNECTOR_SVIDEO, "SVIDEO", 0 },
+ 	{ DRM_MODE_CONNECTOR_LVDS, "LVDS", 0 },
+ 	{ DRM_MODE_CONNECTOR_Component, "Component", 0 },
+-	{ DRM_MODE_CONNECTOR_9PinDIN, "9-pin DIN", 0 },
+-	{ DRM_MODE_CONNECTOR_DisplayPort, "DisplayPort", 0 },
+-	{ DRM_MODE_CONNECTOR_HDMIA, "HDMI Type A", 0 },
+-	{ DRM_MODE_CONNECTOR_HDMIB, "HDMI Type B", 0 },
++	{ DRM_MODE_CONNECTOR_9PinDIN, "DIN", 0 },
++	{ DRM_MODE_CONNECTOR_DisplayPort, "DP", 0 },
++	{ DRM_MODE_CONNECTOR_HDMIA, "HDMI-A", 0 },
++	{ DRM_MODE_CONNECTOR_HDMIB, "HDMI-B", 0 },
+ 	{ DRM_MODE_CONNECTOR_TV, "TV", 0 },
+-	{ DRM_MODE_CONNECTOR_eDP, "Embedded DisplayPort", 0 },
++	{ DRM_MODE_CONNECTOR_eDP, "eDP", 0 },
+ };
+
+ static struct drm_prop_enum_list drm_encoder_enum_list[] =
+diff --git a/drivers/gpu/drm/ttm/ttm_bo_util.c b/drivers/gpu/drm/ttm/ttm_bo_util.c
+index 5ca37a5..cf619c4 100644
+--- a/drivers/gpu/drm/ttm/ttm_bo_util.c
++++ b/drivers/gpu/drm/ttm/ttm_bo_util.c
+@@ -326,6 +326,7 @@ static int ttm_buffer_object_transfer(struct ttm_buffer_object *bo,
+ 	INIT_LIST_HEAD(&fbo->lru);
+ 	INIT_LIST_HEAD(&fbo->swap);
+ 	fbo->vm_node = NULL;
++	atomic_set(&fbo->cpu_writers, 0);
+
+ 	fbo->sync_obj = driver->sync_obj_ref(bo->sync_obj);
+ 	if (fbo->mem.mm_node)
