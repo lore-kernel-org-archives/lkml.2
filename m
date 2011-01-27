@@ -1,214 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330Ab1A0UMO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 15:12:14 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:19241 "EHLO
+	id S1752963Ab1A0UNd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 15:13:33 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:37454 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752752Ab1A0UMN (ORCPT
+	with ESMTP id S1751482Ab1A0UNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 15:12:13 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6239"; a="72018081"
+	Thu, 27 Jan 2011 15:13:32 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6239"; a="72018201"
 From: Stepan Moskovchenko <stepanm@codeaurora.org>
 To: davidb@codeaurora.org
 Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org,
         Stepan Moskovchenko <stepanm@codeaurora.org>
-Subject: [PATCHv2] msm: serial: Add MSM8960 serial support
-Date: Thu, 27 Jan 2011 12:12:07 -0800
-Message-Id: <1296159127-13945-1-git-send-email-stepanm@codeaurora.org>
+Subject: [PATCH] msm: Clean up useless ifdefs
+Date: Thu, 27 Jan 2011 12:13:22 -0800
+Message-Id: <1296159202-13980-1-git-send-email-stepanm@codeaurora.org>
 X-Mailer: git-send-email 1.7.3.5
-In-Reply-To: <1295663921-32723-1-git-send-email-stepanm@codeaurora.org>
-References: <1295663921-32723-1-git-send-email-stepanm@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the device definitions and platform data to support
-the console serial port on MSM8960 Simulator and RUMI3
-targets.
+Remove ifdefs that do nothing, either from having the code
+between them previously removed, or from having been
+accidentally added to the wrong file.
 
-Change-Id: I6681a446ed1e1fce62bb52af879110228e907c5e
+Change-Id: I94aac2cb24e23ba7f8b4b158ce6653dc3b786989
 Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
 ---
-V2: Minor cosmetic changes
-* Change the order of some fields based on Russell's rules
-* Update copyright header
+ arch/arm/mach-msm/board-halibut.c               |    2 --
+ arch/arm/mach-msm/board-mahimahi.c              |    2 --
+ arch/arm/mach-msm/board-msm7x27.c               |    8 --------
+ arch/arm/mach-msm/board-msm7x30.c               |    6 ------
+ arch/arm/mach-msm/board-qsd8x50.c               |    4 ----
+ arch/arm/mach-msm/board-sapphire.c              |    2 --
+ arch/arm/mach-msm/board-trout.c                 |    2 --
+ arch/arm/mach-msm/include/mach/msm_iomap-7x00.h |    6 ------
+ 8 files changed, 0 insertions(+), 32 deletions(-)
 
- arch/arm/mach-msm/Makefile          |    2 +-
- arch/arm/mach-msm/board-msm8960.c   |   22 +++++++++
- arch/arm/mach-msm/devices-msm8960.c |   85 +++++++++++++++++++++++++++++++++++
- arch/arm/mach-msm/devices.h         |    3 +
- 4 files changed, 111 insertions(+), 1 deletions(-)
- create mode 100644 arch/arm/mach-msm/devices-msm8960.c
-
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index e3e38064..57b3062 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -25,7 +25,7 @@ obj-$(CONFIG_MACH_HALIBUT) += board-halibut.o devices-msm7x00.o
- obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o
- obj-$(CONFIG_ARCH_QSD8X50) += board-qsd8x50.o devices-qsd8x50.o
- obj-$(CONFIG_ARCH_MSM8X60) += board-msm8x60.o
--obj-$(CONFIG_ARCH_MSM8960) += board-msm8960.o
-+obj-$(CONFIG_ARCH_MSM8960) += board-msm8960.o devices-msm8960.o
-
- obj-$(CONFIG_ARCH_MSM7X30) += gpiomux-v1.o gpiomux.o
- obj-$(CONFIG_ARCH_QSD8X50) += gpiomux-8x50.o gpiomux-v1.o gpiomux.o
-diff --git a/arch/arm/mach-msm/board-msm8960.c b/arch/arm/mach-msm/board-msm8960.c
-index 2b09573..ef80f46 100644
---- a/arch/arm/mach-msm/board-msm8960.c
-+++ b/arch/arm/mach-msm/board-msm8960.c
-@@ -27,6 +27,8 @@
- #include <mach/board.h>
- #include <mach/msm_iomap.h>
-
-+#include "devices.h"
-+
- static void __init msm8960_map_io(void)
- {
- 	msm_map_msm8960_io();
-@@ -54,15 +56,35 @@ static void __init msm8960_init_irq(void)
- 	}
+diff --git a/arch/arm/mach-msm/board-halibut.c b/arch/arm/mach-msm/board-halibut.c
+index 75dabb1..18a3c97 100644
+--- a/arch/arm/mach-msm/board-halibut.c
++++ b/arch/arm/mach-msm/board-halibut.c
+@@ -93,8 +93,6 @@ static void __init halibut_map_io(void)
  }
-
-+static struct platform_device *sim_devices[] __initdata = {
-+	&msm8960_device_uart_gsbi2,
-+};
-+
-+static struct platform_device *rumi3_devices[] __initdata = {
-+	&msm8960_device_uart_gsbi5,
-+};
-+
-+static void __init msm8960_sim_init(void)
-+{
-+	platform_add_devices(sim_devices, ARRAY_SIZE(sim_devices));
-+}
-+
-+static void __init msm8960_rumi3_init(void)
-+{
-+	platform_add_devices(rumi3_devices, ARRAY_SIZE(rumi3_devices));
-+}
-+
- MACHINE_START(MSM8960_SIM, "QCT MSM8960 SIMULATOR")
- 	.map_io = msm8960_map_io,
- 	.init_irq = msm8960_init_irq,
- 	.timer = &msm_timer,
-+	.init_machine = msm8960_sim_init,
+ 
+ MACHINE_START(HALIBUT, "Halibut Board (QCT SURF7200A)")
+-#ifdef CONFIG_MSM_DEBUG_UART
+-#endif
+ 	.boot_params	= 0x10000100,
+ 	.fixup		= halibut_fixup,
+ 	.map_io		= halibut_map_io,
+diff --git a/arch/arm/mach-msm/board-mahimahi.c b/arch/arm/mach-msm/board-mahimahi.c
+index ef3ebf2..7a9a03e 100644
+--- a/arch/arm/mach-msm/board-mahimahi.c
++++ b/arch/arm/mach-msm/board-mahimahi.c
+@@ -74,8 +74,6 @@ static void __init mahimahi_map_io(void)
+ extern struct sys_timer msm_timer;
+ 
+ MACHINE_START(MAHIMAHI, "mahimahi")
+-#ifdef CONFIG_MSM_DEBUG_UART
+-#endif
+ 	.boot_params	= 0x20000100,
+ 	.fixup		= mahimahi_fixup,
+ 	.map_io		= mahimahi_map_io,
+diff --git a/arch/arm/mach-msm/board-msm7x27.c b/arch/arm/mach-msm/board-msm7x27.c
+index e7a76ef..16d7580 100644
+--- a/arch/arm/mach-msm/board-msm7x27.c
++++ b/arch/arm/mach-msm/board-msm7x27.c
+@@ -130,8 +130,6 @@ static void __init msm7x2x_map_io(void)
+ }
+ 
+ MACHINE_START(MSM7X27_SURF, "QCT MSM7x27 SURF")
+-#ifdef CONFIG_MSM_DEBUG_UART
+-#endif
+ 	.boot_params	= PHYS_OFFSET + 0x100,
+ 	.map_io		= msm7x2x_map_io,
+ 	.init_irq	= msm7x2x_init_irq,
+@@ -140,8 +138,6 @@ MACHINE_START(MSM7X27_SURF, "QCT MSM7x27 SURF")
  MACHINE_END
-
- MACHINE_START(MSM8960_RUMI3, "QCT MSM8960 RUMI3")
- 	.map_io = msm8960_map_io,
- 	.init_irq = msm8960_init_irq,
- 	.timer = &msm_timer,
-+	.init_machine = msm8960_rumi3_init,
+ 
+ MACHINE_START(MSM7X27_FFA, "QCT MSM7x27 FFA")
+-#ifdef CONFIG_MSM_DEBUG_UART
+-#endif
+ 	.boot_params	= PHYS_OFFSET + 0x100,
+ 	.map_io		= msm7x2x_map_io,
+ 	.init_irq	= msm7x2x_init_irq,
+@@ -150,8 +146,6 @@ MACHINE_START(MSM7X27_FFA, "QCT MSM7x27 FFA")
  MACHINE_END
-
-diff --git a/arch/arm/mach-msm/devices-msm8960.c b/arch/arm/mach-msm/devices-msm8960.c
-new file mode 100644
-index 0000000..d9e1f26
---- /dev/null
-+++ b/arch/arm/mach-msm/devices-msm8960.c
-@@ -0,0 +1,85 @@
-+/* Copyright (c) 2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/platform_device.h>
-+
-+#include <linux/dma-mapping.h>
-+#include <mach/irqs-8960.h>
-+#include <mach/board.h>
-+
-+#include "devices.h"
-+
-+#define MSM_GSBI2_PHYS		0x16100000
-+#define MSM_UART2DM_PHYS	(MSM_GSBI2_PHYS + 0x40000)
-+
-+#define MSM_GSBI5_PHYS		0x16400000
-+#define MSM_UART5DM_PHYS	(MSM_GSBI5_PHYS + 0x40000)
-+
-+static struct resource resources_uart_gsbi2[] = {
-+	{
-+		.start	= GSBI2_UARTDM_IRQ,
-+		.end	= GSBI2_UARTDM_IRQ,
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+	{
-+		.start	= MSM_UART2DM_PHYS,
-+		.end	= MSM_UART2DM_PHYS + PAGE_SIZE - 1,
-+		.name	= "uart_resource",
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	{
-+		.start	= MSM_GSBI2_PHYS,
-+		.end	= MSM_GSBI2_PHYS + PAGE_SIZE - 1,
-+		.name	= "gsbi_resource",
-+		.flags	= IORESOURCE_MEM,
-+	},
-+};
-+
-+struct platform_device msm8960_device_uart_gsbi2 = {
-+	.name	= "msm_serial",
-+	.id	= 0,
-+	.num_resources	= ARRAY_SIZE(resources_uart_gsbi2),
-+	.resource	= resources_uart_gsbi2,
-+};
-+
-+static struct resource resources_uart_gsbi5[] = {
-+	{
-+		.start	= GSBI5_UARTDM_IRQ,
-+		.end	= GSBI5_UARTDM_IRQ,
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+	{
-+		.start	= MSM_UART5DM_PHYS,
-+		.end	= MSM_UART5DM_PHYS + PAGE_SIZE - 1,
-+		.name	= "uart_resource",
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	{
-+		.start	= MSM_GSBI5_PHYS,
-+		.end	= MSM_GSBI5_PHYS + PAGE_SIZE - 1,
-+		.name	= "gsbi_resource",
-+		.flags	= IORESOURCE_MEM,
-+	},
-+};
-+
-+struct platform_device msm8960_device_uart_gsbi5 = {
-+	.name	= "msm_serial",
-+	.id	= 0,
-+	.num_resources	= ARRAY_SIZE(resources_uart_gsbi5),
-+	.resource	= resources_uart_gsbi5,
-+};
-diff --git a/arch/arm/mach-msm/devices.h b/arch/arm/mach-msm/devices.h
-index 87c70bf..e2643b3 100644
---- a/arch/arm/mach-msm/devices.h
-+++ b/arch/arm/mach-msm/devices.h
-@@ -22,6 +22,9 @@ extern struct platform_device msm_device_uart1;
- extern struct platform_device msm_device_uart2;
- extern struct platform_device msm_device_uart3;
-
-+extern struct platform_device msm8960_device_uart_gsbi2;
-+extern struct platform_device msm8960_device_uart_gsbi5;
-+
- extern struct platform_device msm_device_sdc1;
- extern struct platform_device msm_device_sdc2;
- extern struct platform_device msm_device_sdc3;
---
+ 
+ MACHINE_START(MSM7X25_SURF, "QCT MSM7x25 SURF")
+-#ifdef CONFIG_MSM_DEBUG_UART
+-#endif
+ 	.boot_params	= PHYS_OFFSET + 0x100,
+ 	.map_io		= msm7x2x_map_io,
+ 	.init_irq	= msm7x2x_init_irq,
+@@ -160,8 +154,6 @@ MACHINE_START(MSM7X25_SURF, "QCT MSM7x25 SURF")
+ MACHINE_END
+ 
+ MACHINE_START(MSM7X25_FFA, "QCT MSM7x25 FFA")
+-#ifdef CONFIG_MSM_DEBUG_UART
+-#endif
+ 	.boot_params	= PHYS_OFFSET + 0x100,
+ 	.map_io		= msm7x2x_map_io,
+ 	.init_irq	= msm7x2x_init_irq,
+diff --git a/arch/arm/mach-msm/board-msm7x30.c b/arch/arm/mach-msm/board-msm7x30.c
+index 0707cc0..dc9fac1 100644
+--- a/arch/arm/mach-msm/board-msm7x30.c
++++ b/arch/arm/mach-msm/board-msm7x30.c
+@@ -105,8 +105,6 @@ static void __init msm7x30_map_io(void)
+ }
+ 
+ MACHINE_START(MSM7X30_SURF, "QCT MSM7X30 SURF")
+-#ifdef CONFIG_MSM_DEBUG_UART
+-#endif
+ 	.boot_params = PHYS_OFFSET + 0x100,
+ 	.map_io = msm7x30_map_io,
+ 	.init_irq = msm7x30_init_irq,
+@@ -115,8 +113,6 @@ MACHINE_START(MSM7X30_SURF, "QCT MSM7X30 SURF")
+ MACHINE_END
+ 
+ MACHINE_START(MSM7X30_FFA, "QCT MSM7X30 FFA")
+-#ifdef CONFIG_MSM_DEBUG_UART
+-#endif
+ 	.boot_params = PHYS_OFFSET + 0x100,
+ 	.map_io = msm7x30_map_io,
+ 	.init_irq = msm7x30_init_irq,
+@@ -125,8 +121,6 @@ MACHINE_START(MSM7X30_FFA, "QCT MSM7X30 FFA")
+ MACHINE_END
+ 
+ MACHINE_START(MSM7X30_FLUID, "QCT MSM7X30 FLUID")
+-#ifdef CONFIG_MSM_DEBUG_UART
+-#endif
+ 	.boot_params = PHYS_OFFSET + 0x100,
+ 	.map_io = msm7x30_map_io,
+ 	.init_irq = msm7x30_init_irq,
+diff --git a/arch/arm/mach-msm/board-qsd8x50.c b/arch/arm/mach-msm/board-qsd8x50.c
+index 29ef683..b464d48 100644
+--- a/arch/arm/mach-msm/board-qsd8x50.c
++++ b/arch/arm/mach-msm/board-qsd8x50.c
+@@ -195,8 +195,6 @@ static void __init qsd8x50_init(void)
+ }
+ 
+ MACHINE_START(QSD8X50_SURF, "QCT QSD8X50 SURF")
+-#ifdef CONFIG_MSM_DEBUG_UART
+-#endif
+ 	.boot_params = PHYS_OFFSET + 0x100,
+ 	.map_io = qsd8x50_map_io,
+ 	.init_irq = qsd8x50_init_irq,
+@@ -205,8 +203,6 @@ MACHINE_START(QSD8X50_SURF, "QCT QSD8X50 SURF")
+ MACHINE_END
+ 
+ MACHINE_START(QSD8X50A_ST1_5, "QCT QSD8X50A ST1.5")
+-#ifdef CONFIG_MSM_DEBUG_UART
+-#endif
+ 	.boot_params = PHYS_OFFSET + 0x100,
+ 	.map_io = qsd8x50_map_io,
+ 	.init_irq = qsd8x50_init_irq,
+diff --git a/arch/arm/mach-msm/board-sapphire.c b/arch/arm/mach-msm/board-sapphire.c
+index 8919ffb..6781ca8 100644
+--- a/arch/arm/mach-msm/board-sapphire.c
++++ b/arch/arm/mach-msm/board-sapphire.c
+@@ -105,8 +105,6 @@ static void __init sapphire_map_io(void)
+ 
+ MACHINE_START(SAPPHIRE, "sapphire")
+ /* Maintainer: Brian Swetland <swetland@google.com> */
+-#ifdef CONFIG_MSM_DEBUG_UART
+-#endif
+ 	.boot_params    = PHYS_OFFSET + 0x100,
+ 	.fixup          = sapphire_fixup,
+ 	.map_io         = sapphire_map_io,
+diff --git a/arch/arm/mach-msm/board-trout.c b/arch/arm/mach-msm/board-trout.c
+index 73f1460..8448687 100644
+--- a/arch/arm/mach-msm/board-trout.c
++++ b/arch/arm/mach-msm/board-trout.c
+@@ -92,8 +92,6 @@ static void __init trout_map_io(void)
+ }
+ 
+ MACHINE_START(TROUT, "HTC Dream")
+-#ifdef CONFIG_MSM_DEBUG_UART
+-#endif
+ 	.boot_params	= 0x10000100,
+ 	.fixup		= trout_fixup,
+ 	.map_io		= trout_map_io,
+diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-7x00.h b/arch/arm/mach-msm/include/mach/msm_iomap-7x00.h
+index 1e75ed7..8f99d97 100644
+--- a/arch/arm/mach-msm/include/mach/msm_iomap-7x00.h
++++ b/arch/arm/mach-msm/include/mach/msm_iomap-7x00.h
+@@ -126,10 +126,4 @@
+ #define MSM_AD5_SIZE          (SZ_1M*13)
+ 
+ 
+-#if defined(CONFIG_ARCH_MSM7X30)
+-#define MSM_GCC_BASE          IOMEM(0xF8009000)
+-#define MSM_GCC_PHYS          0xC0182000
+-#define MSM_GCC_SIZE          SZ_4K
+-#endif
+-
+ #endif
+-- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
