@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286Ab1A0PD1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 10:03:27 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:47836 "HELO
+	id S1751872Ab1A0O7H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 09:59:07 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:46874 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751913Ab1A0O7U (ORCPT
+	with SMTP id S1751734Ab1A0O7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 09:59:20 -0500
+	Thu, 27 Jan 2011 09:59:04 -0500
 X-Authenticated: #911537
-X-Provags-ID: V01U2FsdGVkX1+aDAAJXema8EqBLku76dfSCQdNybrNQwt3vsAaeY
-	+6LGlxbVjVcAXm
-Subject: [PATCH v2 04/20] provide xtime_update() which does not require the
-	caller to hold xtime_lock
+X-Provags-ID: V01U2FsdGVkX1+/ZLdCDR6/6N1buaVzX1mWH5cFjWEqjvAb9lEaS1
+	hVYciDE+QaS6Xx
+Subject: [PATCH v2 02/20] move get_jiffies_64 to kernel/time/jiffies.c
 To: LKML <linux-kernel@vger.kernel.org>
 From: Torben Hohn <torbenh@gmx.de>
 Cc: Peter Zijlstra <peterz@infradead.org>, johnstul@us.ibm.com,
         Thomas Gleixner <tglx@linutronix.de>, yong.zhang0@gmail.com,
         hch@infradead.org
-Date: Thu, 27 Jan 2011 15:59:10 +0100
-Message-ID: <20110127145910.23248.21379.stgit@localhost>
+Date: Thu, 27 Jan 2011 15:59:00 +0100
+Message-ID: <20110127145900.23248.73352.stgit@localhost>
 In-Reply-To: <20110127145741.23248.68098.stgit@localhost>
 References: <20110127145741.23248.68098.stgit@localhost>
 User-Agent: StGit/0.15
@@ -30,50 +29,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-like do_timer().
-this change avoids having this code sequence all over the place:
-
-seq_writelock( &xtime_lock );
-do_timer();
-seq_writeunlock( &xtime_lock );
+in order to make the xtime_lock local to kernel/time
+all users of this lock need to be moved there.
 
 Signed-off-by: Torben Hohn <torbenh@gmx.de>
 ---
- include/linux/sched.h     |    1 +
- kernel/time/timekeeping.c |   13 +++++++++++++
- 2 files changed, 14 insertions(+), 0 deletions(-)
+ kernel/time.c         |   17 -----------------
+ kernel/time/jiffies.c |   17 +++++++++++++++++
+ 2 files changed, 17 insertions(+), 17 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 738ec15..c0b0bb7 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2045,6 +2045,7 @@ extern void release_uids(struct user_namespace *ns);
- #include <asm/current.h>
- 
- extern void do_timer(unsigned long ticks);
-+extern void xtime_update(unsigned long ticks);
- 
- extern int wake_up_state(struct task_struct *tsk, unsigned int state);
- extern int wake_up_process(struct task_struct *tsk);
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 6085fa5..8dd6e38 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -978,3 +978,16 @@ void get_xtime_and_monotonic_offset(struct timespec *xts, struct timespec *tom)
- 			*tom = wall_to_monotonic;
- 	} while (read_seqretry(&xtime_lock, seq));
+diff --git a/kernel/time.c b/kernel/time.c
+index 55337a8..9c72ba5 100644
+--- a/kernel/time.c
++++ b/kernel/time.c
+@@ -693,23 +693,6 @@ unsigned long nsecs_to_jiffies(u64 n)
+ 	return (unsigned long)nsecs_to_jiffies64(n);
  }
-+
-+/**
-+ * xtime_update() - advances the timekeeping infrastructure
-+ * @ticks:	number of ticks, that have elapsed since the last call.
-+ *
-+ * this function needs to be called with interrupts disabled.
-+ */
-+void xtime_update(unsigned long ticks)
+ 
+-#if (BITS_PER_LONG < 64)
+-u64 get_jiffies_64(void)
+-{
+-	unsigned long seq;
+-	u64 ret;
+-
+-	do {
+-		seq = read_seqbegin(&xtime_lock);
+-		ret = jiffies_64;
+-	} while (read_seqretry(&xtime_lock, seq));
+-	return ret;
+-}
+-EXPORT_SYMBOL(get_jiffies_64);
+-#endif
+-
+-EXPORT_SYMBOL(jiffies);
+-
+ /*
+  * Add two timespec values and do a safety check for overflow.
+  * It's assumed that both values are valid (>= 0)
+diff --git a/kernel/time/jiffies.c b/kernel/time/jiffies.c
+index 5404a84..54441c4 100644
+--- a/kernel/time/jiffies.c
++++ b/kernel/time/jiffies.c
+@@ -64,6 +64,23 @@ struct clocksource clocksource_jiffies = {
+ 	.shift		= JIFFIES_SHIFT,
+ };
+ 
++#if (BITS_PER_LONG < 64)
++u64 get_jiffies_64(void)
 +{
-+	write_seqlock(&xtime_lock);
-+	do_timer(ticks);
-+	write_sequnlock(&xtime_lock);
++	unsigned long seq;
++	u64 ret;
++
++	do {
++		seq = read_seqbegin(&xtime_lock);
++		ret = jiffies_64;
++	} while (read_seqretry(&xtime_lock, seq));
++	return ret;
 +}
++EXPORT_SYMBOL(get_jiffies_64);
++#endif
++
++EXPORT_SYMBOL(jiffies);
++
+ static int __init init_jiffies_clocksource(void)
+ {
+ 	return clocksource_register(&clocksource_jiffies);
 
