@@ -1,158 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237Ab1A0MtV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 07:49:21 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48866 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752812Ab1A0MtU convert rfc822-to-8bit (ORCPT
+	id S1753105Ab1A0M5n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 07:57:43 -0500
+Received: from nm26-vm1.bullet.mail.ac4.yahoo.com ([98.139.52.243]:40486 "HELO
+	nm26-vm1.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752243Ab1A0M5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 07:49:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=fNJUTR/Zk+d/sa1AGEhjhwwbECFkMkCTVad1Xr77ooa84LKtqzXNKtFKgqdPhIzhjT
-         ceZrGKsO3ePRujNVPI+NpaMC5UqFz9CbDHpeJtl43BUN1BU3G0HbcmHpoFOw21pKhEpY
-         NMUyClOtJcD9OxyP5QjqlpeNOLXfVzjUjYlno=
+	Thu, 27 Jan 2011 07:57:40 -0500
+X-Greylist: delayed 389 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Jan 2011 07:57:40 EST
+X-Yahoo-Newman-Property: ymail-5
+X-Yahoo-Newman-Id: 624553.46540.bm@omp1052.mail.ac4.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type;
+  b=rr+wjGnquo6C9q3SlZbgYIG0Kj9GCWFLoyYGqfDMLbWQnvbxXoRjgpnoJP6L0OG6FAsx6bfyW5Q9yujWmO0P8qrmIjhS5IndGT39zPScP1X7QnYDq1bknNPkOb43iESiXwJEf96Z5vSP5scxPnpYfd4CBDaSMVWg2M1MeEbH/fA=;
+Message-ID: <513567.89196.qm@web55903.mail.re3.yahoo.com>
+X-YMail-OSG: Uqj0j.kVM1lHPCn6Czw8vzhCru9cWp8lpmJOvw72Cu6aYKO
+ 2Wvlv2icX9kmVeOYe8ZBgpEear0L0ia2oxX7m66Py6xwUZRhjijdH6EBTHY3
+ JeoQjI3rH7xDZ9igNMOPW2pAFzYRcKIXuNhFfkLoLRs2mSNrAGdX.kQbyx6Z
+ LIgKJ8GkvjTp.4DVbpdbY7KtBCLx0Xf1w8MzegLKKRVUnPs8Ly3DBdIGaOwi
+ S.EfZtLJMEE8_w_cVOBcN.iPJD0RLyCdlj1Z5XFkSLAk2rPu3ng8nX71vI3i
+ KCixIyneJiJHBwIloDDNCGAf.Y2wJZb.VO_5xgUGrcYM2vU1Xanf8suIW2WT
+ u5YZkKFam.DpbO6S4cvLvqmF_ZZaDDFL8PYv8.a5OBVR5t09T3h7sC82TPlI
+ oCaag9aisqOU-
+X-Mailer: YahooMailRC/555 YahooMailWebService/0.8.107.285259
+Date: Thu, 27 Jan 2011 04:51:10 -0800 (PST)
+From: Eugene Markow <ejmarkow@yahoo.com>
+Subject: Syslog-NG Fails as of Kernel 2.6.38-rc1
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20110127120603.GB15626@polaris.bitmath.org>
-References: <1296124547-3323-1-git-send-email-benjamin.tissoires@enac.fr>
-	<1296124547-3323-2-git-send-email-benjamin.tissoires@enac.fr>
-	<20110127120603.GB15626@polaris.bitmath.org>
-Date: Thu, 27 Jan 2011 13:49:18 +0100
-X-Google-Sender-Auth: yYYBR1-5K5vM3ctXsHX2Gw73QEg
-Message-ID: <AANLkTim7DbxhEO7vHPFcC1PFf=d2mSEyL+wurzUQa0pg@mail.gmail.com>
-Subject: Re: [RFC 1/2] input: mt: Add method to extract the MT slot state
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Ping Cheng <pingc@wacom.com>,
-        Jiri Kosina <jkosina@suse.cz>, Chris Bagwell <chris@cnpbagwell.com>,
-        Rafi Rubin <rafi@seas.upenn.edu>, Stephane Chatty <chatty@lii-enac.fr>,
-        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik,
+The following appears in dmesg from kernels 2.6.38-rc1 to 2.6.38-rc2-git5 (Not 
+an issue in 2.6.37 stable):
 
-On Thu, Jan 27, 2011 at 13:06, Henrik Rydberg <rydberg@euromail.se> wrote:
-> Hi Benjamin,
->
-> On Thu, Jan 27, 2011 at 11:35:46AM +0100, Benjamin Tissoires wrote:
->> This patch adds the function input_mt_get_abs_value(), which may be
->
-> Ehm, input_mt_get_absinfo?
+----------
+WARNING: at kernel/printk.c:430 do_syslog+0xeb/0x5e0()
+Hardware name: Compaq Presario CQ50 Notebook PC
+Attempt to access syslog with CAP_SYS_ADMIN but no CAP_SYSLOG (deprecated and 
+denied).
+Modules linked in: ntfs arc4 ecb joydev snd_seq_oss snd_seq_midi_event snd_seq 
+snd_seq_device asix usbnet snd_hda_codec_hdmi snd_hda_codec_conexant snd_pcm_oss 
+snd_mixer_oss snd_hda_intel ath5k ath snd_hda_codec mac80211 snd_hwdep hp_wmi 
+sparse_keymap snd_pcm cfg80211 snd_timer coretemp snd soundcore uhci_hcd 
+ehci_hcd psmouse snd_page_alloc rfkill fuse battery r8169 wmi usbcore evdev 
+processor sg iTCO_wdt mii thermal iTCO_vendor_support serio_raw ac pcspkr 
+i2c_i801 i915 drm_kms_helper drm i2c_algo_bit button i2c_core video intel_agp 
+intel_gtt rtc_cmos rtc_core rtc_lib ext4 mbcache jbd2 crc16 sr_mod sd_mod cdrom 
+ahci libahci libata scsi_mod
+Pid: 2753, comm: syslog-ng Tainted: G        W   2.6.38-rc2-git5-ARCHMOD #1
+Call Trace:
+ [<ffffffff8103c6eb>] ? warn_slowpath_common+0x7b/0xc0
+ [<ffffffff8116ef10>] ? kmsg_release+0x0/0x20
+ [<ffffffff8103c7e5>] ? warn_slowpath_fmt+0x45/0x50
+ [<ffffffff8103d95b>] ? do_syslog+0xeb/0x5e0
+ [<ffffffff8111825c>] ? do_lookup+0xdc/0x2c0
+ [<ffffffff8116ef10>] ? kmsg_release+0x0/0x20
+ [<ffffffff8116ef30>] ? kmsg_open+0x0/0x20
+ [<ffffffff811639cd>] ? proc_reg_open+0xad/0x1e0
+ [<ffffffff81163920>] ? proc_reg_open+0x0/0x1e0
+ [<ffffffff811097c5>] ? __dentry_open+0x115/0x370
+ [<ffffffff8111555c>] ? path_get+0xc/0x40
+ [<ffffffff81119bd0>] ? finish_open+0xe0/0x1a0
+ [<ffffffff81119391>] ? do_path_lookup+0x81/0x160
+ [<ffffffff8111a2f1>] ? do_filp_open+0x271/0x790
+ [<ffffffff81124c8d>] ? __destroy_inode+0x1d/0x90
+ [<ffffffff8110f9e0>] ? cp_new_stat+0xe0/0x100
+ [<ffffffff81127466>] ? alloc_fd+0x46/0x150
+ [<ffffffff8110aa84>] ? do_sys_open+0x64/0x110
+ [<ffffffff81002d8f>] ? system_call_fastpath+0x16/0x1b
+---[ end trace a7919e7f17c0a727 ]---
+----------
 
-In fact, the idea was to put this on the table again ;). I have no
-idea of what is the right think to do in such case.
-So I'll take all comments.
+Furthermore, during the bootup process, I'm getting:
 
->
->> used to extract the current state of the MT slots.
->>
->> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
->
-> I had rather re-add this myself, thanks.
 
-That was my question. Plus I had a subliminal message in which I
-intend you to take the drive on this work. ;)
+----------
+::Starting Syslg-NG            [BUSY]
+Error opening file for reading: filename '/proc/kmsg', error='Operation not 
+permitted (1)'
+Error initializing source driver: source='src', id='src#2'
+Error initializing message pipline;
+                    [FAIL]
+----------
 
->
->> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
->> ---
->>  drivers/input/input-mt.c |   32 ++++++++++++++++++++++++++++++++
->>  include/linux/input/mt.h |    1 +
->>  2 files changed, 33 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/input/input-mt.c b/drivers/input/input-mt.c
->> index c48c81f..5b95e38 100644
->> --- a/drivers/input/input-mt.c
->> +++ b/drivers/input/input-mt.c
->> @@ -168,3 +168,35 @@ void input_mt_report_pointer_emulation(struct input_dev *dev, bool use_count)
->>       }
->>  }
->>  EXPORT_SYMBOL(input_mt_report_pointer_emulation);
->> +
->> +/**
->> + * input_mt_get_absinfo - retrieve MT state variables from a device slot
->> + * @dev: input device which state is being queried
->> + * @code: ABS code to retrieve
->> + * @slot: slot to retrieve from
->> + *
->> + * Return the ABS state of the given MT slot. If code is not an MT
->> + * event, the corresponding ABS event is returned.
->> + *
->> + * This function may be called by anyone interested in extracting the
->> + * current MT state. Used by evdev handlers.
->> + */
->> +struct input_absinfo input_mt_get_absinfo(struct input_dev *dev, unsigned int code, int slot)
->
-> Why return the struct? Give it a pointer instead, so the return value
-> can be used for errors.
+System info:
 
-Quick and dirty think. Maybe the old implementation is better.
+Linux Galicja 2.6.38-rc2-git5-ARCHMOD #1 PREEMPT Wed Jan 26 21:45:43 CET 2011 
+x86_64 Genuine Intel(R) CPU 575 @ 2.00GHz GenuineIntel GNU/Linux
+ 
+Gnu C                     4.5.2
+Gnu make               3.81
+binutils                    2.21.0.20101217
+util-linux                  2.18
+mount                     support
+module-init-tools      3.12
+e2fsprogs                1.41.14
+jfsutils                    1.1.14
+reiserfsprogs           3.6.21
+xfsprogs                 3.1.4
+pcmciautils             017
+PPP                       2.4.5
+Linux C Library        2.12.2
+Dynamic linker (ldd) 2.12.2
+Linux C++ Library    6.0.14
+Procps                    3.2.8
+Net-tools                 1.60
+Kbd                        1.15.2
+Sh-utils                   8.9
+wireless-tools          29
+Modules Loaded         ipv6 xt_HL iptable_mangle ipt_REJECT ipt_LOG xt_limit 
+xt_tcpudp xt_state iptable_filter ipt_MASQUERADE iptable_nat nf_nat 
+nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 ip_tables x_tables ntfs 
+snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device arc4 joydev 
+snd_hda_codec_hdmi ecb asix usbnet snd_hda_codec_conexant snd_pcm_oss 
+snd_mixer_oss ath5k snd_hda_intel ath snd_hda_codec snd_hwdep mac80211 snd_pcm 
+snd_timer cfg80211 snd hp_wmi soundcore sparse_keymap uhci_hcd ehci_hcd 
+snd_page_alloc coretemp iTCO_wdt battery fuse wmi processor thermal ac rfkill 
+psmouse usbcore iTCO_vendor_support sg r8169 mii evdev pcspkr i2c_i801 serio_raw 
+i915 drm_kms_helper drm i2c_algo_bit button i2c_core video intel_agp intel_gtt 
+rtc_cmos rtc_core rtc_lib ext4 mbcache jbd2 crc16 sr_mod sd_mod cdrom ahci 
+libahci libata scsi_mod
 
->
-> Also, I wonder about the usefulness of extracting the absinfo here -
-> only the value depends on the slot argument, and absinfo does not
-> require the same lock protection. Why not keep the layout from the
-> original patch?
 
-same above
+I wish to be personally CC'ed the answers/comments posted to the list in 
+response to my posting.
 
->
->> +{
->> +     unsigned int mtmap = code > ABS_MT_FIRST ? code - ABS_MT_FIRST : 0;
->
-> Should rather return -EINVAL on bad argument.
+Thanks,
 
-I did not know how to handle the original code:
-"unsigned int mtmap = input_mt_abs_map[code];"
+Eugene Markow
 
-Now I know.
 
->
->> +     unsigned long flags;
->> +     struct input_absinfo retval;
->> +
->> +     spin_lock_irqsave(&dev->event_lock, flags);
->> +     if (!mtmap)
->> +             retval = dev->absinfo[code];
->> +     else if (slot >= 0 && slot < dev->mtsize) {
->> +             retval = dev->absinfo[code];
->> +             retval.value = dev->mt[slot].abs[mtmap];
->
-> Please use input_mt_get_value().
-
-This is a problem when working with code that was send 6 months ago.
-
->
->> +     } else
->> +             retval.value = 0;
->> +     spin_unlock_irqrestore(&dev->event_lock, flags);
->> +
->> +     return retval;
->> +}
->> +EXPORT_SYMBOL(input_mt_get_absinfo);
->> diff --git a/include/linux/input/mt.h b/include/linux/input/mt.h
->> index b3ac06a..a71a27f 100644
->> --- a/include/linux/input/mt.h
->> +++ b/include/linux/input/mt.h
->> @@ -54,4 +54,5 @@ void input_mt_report_slot_state(struct input_dev *dev,
->>  void input_mt_report_finger_count(struct input_dev *dev, int count);
->>  void input_mt_report_pointer_emulation(struct input_dev *dev, bool use_count);
->>
->> +struct input_absinfo input_mt_get_absinfo(struct input_dev *dev, unsigned int code, int slot);
->>  #endif
->
-> Thanks,
-> Henrik
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+      
