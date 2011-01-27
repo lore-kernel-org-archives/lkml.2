@@ -1,80 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628Ab1A0Q12 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 11:27:28 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:40667 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751375Ab1A0Q10 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 11:27:26 -0500
-Date: Thu, 27 Jan 2011 11:27:25 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tatyana Brokhman <tlinder@codeaurora.org>
-cc: gregkh@suse.de, <linux-arm-msm@vger.kernel.org>,
-        "open list:USB GADGET/PERIPH..." <linux-usb@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7 1/5] usb: Adding SuperSpeed support to dummy_hcd
-In-Reply-To: <1296133918-31099-1-git-send-email-tlinder@codeaurora.org>
-Message-ID: <Pine.LNX.4.44L0.1101271116470.2090-100000@iolanthe.rowland.org>
+	id S1751874Ab1A0Qb6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 11:31:58 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:53541 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376Ab1A0Qb5 (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Thu, 27 Jan 2011 11:31:57 -0500
+Date: Thu, 27 Jan 2011 11:30:47 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: matthieu castet <castet.matthieu@free.fr>, "hpa@zytor.com" <hpa@zytor.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+Cc: Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        Kees Cook <kees.cook@canonical.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "sliakh.lkml@gmail.com" <sliakh.lkml@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jiang@cs.ncsu.edu" <jiang@cs.ncsu.edu>,
+        Stefan Bader <stefan.bader@canonical.com>, konrad@kernel.org
+Subject: Was: [tip:x86/security] x86: Add NX protection for kernel data.
+ Is: don't set RW on RO regions in .bss
+Message-ID: <20110127163046.GA8339@dumpdata.com>
+References: <1295537856.14780.54.camel@zakaz.uk.xensource.com>
+ <20110120190531.GA9687@dumpdata.com>
+ <4D3899AB.60207@free.fr>
+ <20110120210436.GA1810@dumpdata.com>
+ <20110120211939.GA32262@dumpdata.com>
+ <20110120215556.GA29700@dumpdata.com>
+ <4D39FDA2.2000305@free.fr>
+ <20110122051134.GA6905@dumpdata.com>
+ <4D3C3ADB.1020609@free.fr>
+ <20110124153109.GA970@dumpdata.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110124153109.GA970@dumpdata.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Jan 2011, Tatyana Brokhman wrote:
+> > Ok, what give you the attached patch.
+> > 
+> > I don't know if I should give the printk or not. 
+> 
+> I would say get rid of the printk. It does not really help the users. Here is an excerpt of
+> 2.6.38-rc2 with this patch:
+> 
+>    7.247448] NX-protecting the kernel data: 2412k
+> [    7.252489] RO page for 0xc15a0000 in bss/data.
+> [    7.253052] RO page for 0xc15a1000 in bss/data.
+> [    7.253052] RO page for 0xc15a3000 in bss/data.
+> [    7.365104] mv used greatest stack depth: 6616 bytes left
+> 
+> So Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> 
+> (I tested on baremetal x86,x86_64 and Xen x86 and x86_64)
 
-> This patch adds SS support to the dummy hcd module. It may be used to test
-> SS device when no (SS) HW is available.
-> USB 3.0 hub includes 2 hubs - HS and SS ones.
-> This patch adds support for a SS hub in the dummy_hcd module. Thus, when
-> dummy_hcd enabled it will register 2 root hubs (SS and HS).
+Matthieu,
 
-Getting there.  A few spots could still use some attention.
+I can send a patch for rc3 that would get rid of the "if within(.._sdata"
+(since if we get rid of the printk it does not do anything) - but I
+would much prefer if you did it since you are much familiar with
+this patch and know the ramifications.
 
-Also, you might try running this patch through checkpatch.pl and fixing 
-any complaints it makes.
+This being in the x86 generic code it should go through the tip
+probably, I think?
 
-
-> @@ -343,7 +431,13 @@ dummy_enable (struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
->  	dum = ep_to_dummy (ep);
->  	if (!dum->driver || !is_enabled (dum))
->  		return -ESHUTDOWN;
-> -	max = le16_to_cpu(desc->wMaxPacketSize) & 0x3ff;
-> +	max = le16_to_cpu(desc->wMaxPacketSize) ;
-> +	/*
-> +	 * For HS/FS devices only bits 0..9 of the wMaxPacketSize represent the
-> +	 * maximum packet size
-> +	 */
-> +	if (dum->gadget.speed < USB_SPEED_SUPER)
-> +		max &= 0x3ff;
-
-Strictly speaking, both the old and the new code are wrong.  For all
-devices, regardless of speed, we should say:
-
-	max = le16_to_cpu(desc->wMaxPacketSize) & 0x7ff;
-
-In other words, the speed is contained in bits 0..10 (not 0..9).
-
-
-> @@ -1352,6 +1559,10 @@ static void dummy_timer (unsigned long _dum)
->  	case USB_SPEED_HIGH:
->  		total = 512/*bytes*/ * 13/*packets*/ * 8/*uframes*/;
->  		break;
-> +	case USB_SPEED_SUPER:
-> +		/* 400MBps = 400*(2^20)/1000 bytes per milisec */
-> +		total = (400 << 20) / 1000;
-> +		break;
-
-Ugh.  For one thing, SuperSpeed runs at 500 million bytes/s, not 400
-million.  For another, 400 << 20 isn't equal to 400 million.
-
-Don't try to be too clever.  Realizing that this is only an 
-approximation anyway, just say:
-
-		/* Bus speed is 500000 bytes/ms, so use a little less */
-		total = 490000;
-
-Alan Stern
-
+P.S.
+[I trimmed down the CC and moved some folks to the To field]
+> > 
+> > 
+> > Matthieu
+> 
+> 
+> > diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+> > index 8b830ca..eec93c5 100644
+> > --- a/arch/x86/mm/pageattr.c
+> > +++ b/arch/x86/mm/pageattr.c
+> > @@ -256,7 +256,6 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
+> >  				   unsigned long pfn)
+> >  {
+> >  	pgprot_t forbidden = __pgprot(0);
+> > -	pgprot_t required = __pgprot(0);
+> >  
+> >  	/*
+> >  	 * The BIOS area between 640k and 1Mb needs to be executable for
+> > @@ -283,11 +282,13 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
+> >  		   __pa((unsigned long)__end_rodata) >> PAGE_SHIFT))
+> >  		pgprot_val(forbidden) |= _PAGE_RW;
+> >  	/*
+> > -	 * .data and .bss should always be writable.
+> > +	 * .data and .bss should always be writable, but xen won't like
+> > +	 * if we make page table rw (that live in .data or .bss)
+> >  	 */
+> >  	if (within(address, (unsigned long)_sdata, (unsigned long)_edata) ||
+> >  	    within(address, (unsigned long)__bss_start, (unsigned long)__bss_stop))
+> > -		pgprot_val(required) |= _PAGE_RW;
+> > +		if ((pgprot_val(prot) & _PAGE_RW) == 0)
+> > +			printk(KERN_INFO "RO page for 0x%lx in bss/data.\n", address);
+> >  
+> >  #if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
+> >  	/*
+> > @@ -327,7 +328,6 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
+> >  #endif
+> >  
+> >  	prot = __pgprot(pgprot_val(prot) & ~pgprot_val(forbidden));
+> > -	prot = __pgprot(pgprot_val(prot) | pgprot_val(required));
+> >  
+> >  	return prot;
+> >  }
