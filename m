@@ -1,75 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008Ab1A0S4z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 13:56:55 -0500
-Received: from mga09.intel.com ([134.134.136.24]:60685 "EHLO mga09.intel.com"
+	id S1752962Ab1A0S7h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 13:59:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32226 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752626Ab1A0S4v convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 13:56:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,387,1291622400"; 
-   d="scan'208";a="597093634"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
-CC: Dave Jones <davej@redhat.com>, "Ahmed S. Darwish" <darwish.07@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        X86-ML <x86@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Willy Tarreau <wtarreau@hera.kernel.org>, Willy Tarreau <w@1wt.eu>,
-        Dirk Hohndel <hohndel@infradead.org>,
-        "Hohndel, Dirk" <dirk.hohndel@intel.com>,
-        IDE-ML <linux-ide@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@infradead.org>,
-        Tejun Heo <tj@kernel.org>, James Bottomley <James.Bottomley@suse.de>,
-        Mark Lord <kernel@teksavvy.com>, Jeff Garzik <jgarzik@pobox.com>,
-        Eric Biederman <ebiederm@xmission.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Haren Myneni <hbabu@us.ibm.com>,
-        FBDEV-ML <linux-fbdev@vger.kernel.org>
-Date: Thu, 27 Jan 2011 10:56:39 -0800
-Subject: RE: [PATCH 0/2][concept RFC] x86: BIOS-save kernel log to disk	upon
- panic
-Thread-Topic: [PATCH 0/2][concept RFC] x86: BIOS-save kernel log to disk
-	upon panic
-Thread-Index: Acu+PsTMUp458TMIT8SOjxPyNP2IwwAFKoSA
-Message-ID: <987664A83D2D224EAE907B061CE93D53019438F230@orsmsx505.amr.corp.intel.com>
-References: <AANLkTinU0KYiCd4p=z+=ojbkeEoT2G+CAYvdRU02KJEn@mail.gmail.com>
- <20110126124954.GC24527@laptop>
- <987664A83D2D224EAE907B061CE93D53019438EABF@orsmsx505.amr.corp.intel.com>
- <20110126231620.GA14807@redhat.com>
- <987664A83D2D224EAE907B061CE93D53019438EB02@orsmsx505.amr.corp.intel.com>
- <20110126233033.GB14807@redhat.com>
- <987664A83D2D224EAE907B061CE93D53019438EBB6@orsmsx505.amr.corp.intel.com>
- <4D40F7F1.3020509@zytor.com> <20110127120039.GD20279@elte.hu>
- <4D4197CB.9070201@zytor.com> <20110127162429.GB26437@elte.hu>
-In-Reply-To: <20110127162429.GB26437@elte.hu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1751967Ab1A0S7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 13:59:35 -0500
+Message-ID: <4D41C071.2090201@redhat.com>
+Date: Thu, 27 Jan 2011 16:58:57 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Mark Lord <kernel@teksavvy.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils
+ ?
+References: <4D3F4D11.9040302@teksavvy.com> <20110125232914.GA20130@core.coreip.homeip.net> <20110126020003.GA23085@core.coreip.homeip.net> <4D403855.4050706@teksavvy.com> <4D40C3D7.90608@teksavvy.com> <4D40C551.4020907@teksavvy.com> <20110127021227.GA29709@core.coreip.homeip.net> <4D40E41D.2030003@teksavvy.com> <20110127063815.GA29924@core.coreip.homeip.net> <4D414928.80801@redhat.com> <20110127172128.GA19672@core.coreip.homeip.net>
+In-Reply-To: <20110127172128.GA19672@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Yeah, i've done it countless times and it's very painful indeed - but the 
-> alternative "losing context" would be even worse to me. Can we do both - i.e. have 
-> the barcode on the screen alongside the oops itself? (although at that point they'll 
-> be taking screen real estate from each other - degrading the information in *both* 
-> venues.)
->
-> Keyboard 'oops scrolling' driver with 'flip to barcode output' key? :-)
+Em 27-01-2011 15:21, Dmitry Torokhov escreveu:
+> On Thu, Jan 27, 2011 at 08:30:00AM -0200, Mauro Carvalho Chehab wrote:
+>>
+>> On my tests here, this is working fine, with Fedora and RHEL 6, on my
+>> usual test devices, so I don't believe that the tool itself is broken, 
+>> nor I think that the issue is due to the fix patch.
+>>
+>> I remember that when Kay added a persistence utility tool that opens a V4L
+>> device in order to read some capabilities, this caused a race condition
+>> into a number of drivers that use to register the video device too early.
+>> The result is that udev were opening the device before the end of the
+>> register process, causing OOPS and other problems.
+> 
+> Well, this is quite possible. The usev ruls in the v4l-utils reads:
+> 
+> ACTION=="add", SUBSYSTEM=="rc", RUN+="/usr/bin/ir-keytable -a /etc/rc_maps.cfg -s $name"
+> 
+> So we act when we add RC device to the system. The corresponding input
+> device has not been registered yet (and will not be for some time
+> because before creating input ddevice we invoke request_module() to load
+> initial rc map module) so the tool runs simultaneously with kernel
+> registering input device and it could very well be it can't find
+> something it really wants.
+> 
+> This would explain why Mark sees the segfault only when invoked via
+> udev but not when ran manually.
+> 
+> However I still do not understand why Mark does not see the same issue
+> without the patch. Like I said, maybe if Mark could recompile with
+> debug data and us a core we'd see what is going on.
 
-If we can make the screen scroll, or guarantee that a hot key will switch to
-the barcode view, then those look like good solutions. Sharing space on a
-non-scrollable view sounds like a poor choice. Perhaps better to have a
-command line option to say which to provide (default = text).
+Race conditions are hard to track... probably the new code added some delay,
+and this allowed the request_module() to finish his job.
 
--Tony
+> BTW, that means that we need to redo udev rules. 
+
+If there's a race condition, then the proper fix is to lock the driver
+until it is ready to receive a fops. Maybe we'll need a mutex to preventing
+opening the device until it is completely initialized.
+
+It is hard to tell, as Mark didn't provide us yet the dmesg info (at least
+on the emails I was c/c), so I don't even know what device he has, and what
+drivers are used.
+
+> Maybe we should split
+> the utility into 2 parts - one dealing with rcX device and for keymap
+> setting reuse udev's existing utility that adjusts maps on ann input
+> devices, not for RCs only.
+
+It could be done, but then we'll need to pollute the existing input tools
+with RC-specific stuff. For IR, there are some additional steps, like
+the need to select the IR protocol, otherwise the keytable is useless.
+Also, the keytable and persistent info is provided via /sys/class/rc/rc?/uevent.
+So, the tool need to first read the RC class, check what keytable should be
+associated with that device (based on a custom file), and load the proper
+table.
+
+Also, I'm currently working on a way to map media keys for remote controllers 
+into X11 (basically, mapping them into the keyspace between 8-255, passing 
+through Xorg evdev.c, and then mapping back into some X11 symbols). This way,
+we don't need to violate the X11 protocol. (Yeah, I know this is hacky, but
+while X11 cannot pass the full evdev keycode, at least the Remote Controllers
+will work). This probably means that we may need to add some DBus logic
+inside ir-keytable, when called via udev, to allow it to announce to X11.
+
+Regards,
+Mauro
