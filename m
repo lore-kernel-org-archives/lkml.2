@@ -1,100 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674Ab1A0Ipm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 03:45:42 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:29491 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751338Ab1A0Ipl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 03:45:41 -0500
-Message-ID: <29E928B8732A4CB19946EEA9F004FACB@hacdom.okisemi.com>
-From: "Toshiharu Okada" <toshiharu-linux@dsn.okisemi.com>
-To: "David Miller" <davem@davemloft.net>
-Cc: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <qi.wang@intel.com>, <yong.y.wang@intel.com>,
-        <andrew.chih.howe.khor@intel.com>, <joel.clark@intel.com>,
-        <kok.howg.ewe@intel.com>
-References: <4D3D0373.30003@dsn.okisemi.com> <20110125.133240.59688304.davem@davemloft.net>
-Subject: Re: [PATCH] pch_gbe: Fix the issue that the receiving data is not normal.
-Date: Thu, 27 Jan 2011 17:45:35 +0900
+	id S1753703Ab1A0Iut (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 03:50:49 -0500
+Received: from smtp1-g21.free.fr ([212.27.42.1]:55870 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752243Ab1A0Ius (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 03:50:48 -0500
+Message-ID: <4D4131DE.3080309@free.fr>
+Date: Thu, 27 Jan 2011 09:50:38 +0100
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, libvir-list@redhat.com
+Subject: Re: [PATCH] cgroup : remove the ns_cgroup
+References: <1295948388-15108-1-git-send-email-daniel.lezcano@free.fr>	<20110126161837.43830756.akpm@linux-foundation.org>	<4D40C5A3.4070703@cn.fujitsu.com> <20110126174513.c2a20fff.akpm@linux-foundation.org>
+In-Reply-To: <20110126174513.c2a20fff.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5931
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David
-
-Thank you for your comment.
-I will confirm them  and will submit the patch modified.
-
-Best regards
-Toshiharu Okada(OKI semiconductor)
------ Original Message ----- 
-From: "David Miller" <davem@davemloft.net>
-To: <toshiharu-linux@dsn.okisemi.com>
-Cc: <netdev@vger.kernel.org>; <linux-kernel@vger.kernel.org>; 
-<qi.wang@intel.com>; <yong.y.wang@intel.com>; 
-<andrew.chih.howe.khor@intel.com>; <joel.clark@intel.com>; 
-<kok.howg.ewe@intel.com>
-Sent: Wednesday, January 26, 2011 6:32 AM
-Subject: Re: [PATCH] pch_gbe: Fix the issue that the receiving data is not 
-normal.
-
-
-From: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-Date: Mon, 24 Jan 2011 13:43:31 +0900
-
-> This PCH_GBE driver had an issue that the receiving data is not normal.
-> This driver had not removed correctly the padding data
-> which the DMA include in receiving data.
+On 01/27/2011 02:45 AM, Andrew Morton wrote:
+> On Thu, 27 Jan 2011 09:08:51 +0800 Li Zefan<lizf@cn.fujitsu.com>  wrote:
 >
-> This patch fixed this issue.
+>> Andrew Morton wrote:
+>>> On Tue, 25 Jan 2011 10:39:48 +0100
+>>> Daniel Lezcano<daniel.lezcano@free.fr>  wrote:
+>>>
+>>>> This patch removes the ns_cgroup as suggested in the following thread:
+>>> I had this patch queued up in September last year, but dropped it.  Why
+>>> did I do that?
+>> Because you wanted to wait for some time for users (if any) to notice this
+>> coming change.
+>>
+>> Author: Daniel Lezcano<daniel.lezcano@free.fr>
+>> Date:   Wed Oct 27 15:33:38 2010 -0700
+>>
+>>      cgroup: notify ns_cgroup deprecated
+>>
+>>      The ns_cgroup will be removed very soon.  Let's warn, for this version,
+>>      ns_cgroup is deprecated.
+>>
+>>      Make ns_cgroup and clone_children exclusive.  If the clone_children is set
+>>      and the ns_cgroup is mounted, let's fail with EINVAL when the ns_cgroup
+>>      subsys is created (a printk will help the user to understand why the
+>>      creation fails).
+>>
+>>      Update the feature remove schedule file with the deprecated ns_cgroup.
+>>
+>>      Signed-off-by: Daniel Lezcano<daniel.lezcano@free.fr>
+>>      Acked-by: Paul Menage<menage@google.com>
+>>      Signed-off-by: Andrew Morton<akpm@linux-foundation.org>
+>>      Signed-off-by: Linus Torvalds<torvalds@linux-foundation.org>
+> ooh, that was clever of me.
 >
-> Signed-off-by: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
+> Here is the text which was missing from the changelog:
+>
+>    This is a userspace-visible change.  Commit 45531757b45c ("cgroup:
+>    notify ns_cgroup deprecated") (merged into 2.6.27) caused the kernel
+>    to emit a printk warning users that the feature is planned for
+>    removal.  Since that time we have heard from XXX users who were
+>    affected by this.
+>
+> Please provide XXX.
 
-There are bugs in these changes:
+Ok, AFAIK nobody makes use of the ns_cgroup except the LXC userspace 
+tools which I maintain and where
+the backward compatibility with the ns_cgroup and the clone_children 
+flag is already implemented.
+Since today nobody seems to be affected by this.
 
->  if (skb_copy_flag) { /* recycle  skb */
->  struct sk_buff *new_skb;
->  new_skb =
-> -     netdev_alloc_skb(netdev,
-> -      length + NET_IP_ALIGN);
-> +     netdev_alloc_skb(netdev, length);
->  if (new_skb) {
->  if (!skb_padding_flag) {
->  skb_reserve(new_skb,
-> - NET_IP_ALIGN);
-> + PCH_GBE_DMA_PADDING);
->  }
->  memcpy(new_skb->data, skb->data,
->  length);
+I Cc'ed the libvirt mailing list.
 
-If "!skb_padding_flag" then you will write past the end of the SKB
-data in that memcpy.
+> How do we know that 2.6.37->2.6.38 is long enough?  Will any major
+> distros be released containing this warning in that timeframe?  I doubt
+> it.
 
-You cannot allocate only "length" then proceed to reserve 
-PCH_GBE_DMA_PADDING
-and then add "length" worth of data on top of that.  In such a cause you
-must allocate at least "length + PCH_GBE_DMA_PADDING".
-
-Furthermore you _MUST_ respect NET_IP_ALIGN.  Some platforms set this value
-to "0", because otherwise performance suffers greatly.
-
-There are two seperate issues, removing the padding bytes provided by
-the device, and aligning the IP headers as wanted by the cpu
-architecutre.  Therefore they should be handled seperately, and we
-therefore should still see references to NET_IP_ALIGN in your patch.
---
-To unsubscribe from this list: send the line "unsubscribe netdev" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Hmm, maybe it is too short but I don't think someone will complain about 
+this feature removal.
+Google chromium is using the namespaces, hence a lot of cgroup is 
+created on the system. The vsftpd and some pam modules uses the 
+namespaces too.
+I won't be surprised if one of these applications fails with 'clone' 
+returning EEXIST ...
 
