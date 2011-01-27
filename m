@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199Ab1A0TwH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 14:52:07 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:42992 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752516Ab1A0TwF (ORCPT
+	id S1753183Ab1A0Txg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 14:53:36 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55477 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482Ab1A0Txf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 14:52:05 -0500
-Subject: Re: [PATCH RESEND 0/4] Fix kconfig breakage wrt to CONFIGFS_FS
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-netdev <netdev@vger.kernel.org>,
-        Joel Becker <jlbec@evilplan.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Americo Wang <xiyou.wangcong@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110127194157.GA7565@elte.hu>
-References: <1296155430-3796-1-git-send-email-nab@linux-iscsi.org>
-	 <20110127194157.GA7565@elte.hu>
-Content-Type: text/plain
-Date: Thu, 27 Jan 2011 11:52:01 -0800
-Message-Id: <1296157921.14831.174.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Jan 2011 14:53:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=wc34AXK5ep/Xnc7U2cRvCDPycfvCgT1u4wzyZDhr6+MMje/iQ9cJttZ7egYbAwFQqW
+         rtbZ5aL6kWtKFjPvRHAPd9jv4O0rQ7NCRT2x/gD6PJ6N9klAM5q2//CMyaop8bK/H7tk
+         N7JjCtEn+aUkVfG4Uf5I5CuCHUUEmvUHzuzZs=
+Date: Thu, 27 Jan 2011 11:53:25 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils ?
+Message-ID: <20110127195325.GB29910@core.coreip.homeip.net>
+References: <4D3F4D11.9040302@teksavvy.com>
+ <20110125232914.GA20130@core.coreip.homeip.net>
+ <20110126020003.GA23085@core.coreip.homeip.net>
+ <4D403855.4050706@teksavvy.com>
+ <4D40C3D7.90608@teksavvy.com>
+ <4D40C551.4020907@teksavvy.com>
+ <20110127021227.GA29709@core.coreip.homeip.net>
+ <4D40E41D.2030003@teksavvy.com>
+ <20110127163931.GA1825@core.coreip.homeip.net>
+ <4D41B5A0.70704@teksavvy.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D41B5A0.70704@teksavvy.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-27 at 20:41 +0100, Ingo Molnar wrote:
-> * Nicholas A. Bellinger <nab@linux-iscsi.org> wrote:
+On Thu, Jan 27, 2011 at 01:12:48PM -0500, Mark Lord wrote:
+> On 11-01-27 11:39 AM, Dmitry Torokhov wrote:
+> > On Wed, Jan 26, 2011 at 10:18:53PM -0500, Mark Lord wrote:
+> >> No, it does not seem to segfault when I unload/reload ir-kbd-i2c
+> >> and then invoke it by hand with the same parameters.
+> >> Quite possibly the environment is different when udev invokes it,
+> >> and my strace attempt with udev killed the system, so no info there.
+> >>
+> > 
+> > Hmm, what about compiling with debug and getting a core then?
 > 
-> > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> > 
-> > Hi Linus,
-> > 
-> > The following four patches are to address recent Kconfig CONFIGFS_FS ->
-> > 'select SYSFS' change for GFS2_FS, and 'depends && SYSFS && CONFIGFS_FS'
-> > breakage for NETCONSOLE_DYNAMIC, DLM, and OCFS2_FS in .38-rc2.
-> > 
-> > Please review and consider pulling from:
-> > 
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-linus-v2
-> 
-> I had the original for-linus branch tested rather extensively, and that one had no 
-> problems. What's different in -v2?
+> Sure.  debug is easy, -g, but you'll have to tell me how to get it
+> do produce a core dump.
 > 
 
-Hi Ingo,
+See if adjusting /etc/security/limits.conf will enable it to dump core.
+Otherwise you'll have to stick 'ulimit -c unlimited' somewhere...
 
-The extra code is in patch #1 that fixes an additional GFS2_FS warning
-reported by Randy that appeared after the initial CONFIGFS_FS -> 'select
-SYSFS' conversion.
-
-This patch for GFS2_FS was in scsi-post-merge-2.6.git/for-linus, but was
-not included in the shortlog/stat to Linus.  So considering my current
-(poor) record with Kconfig changes in mainline, I figured that sending
-them out to the list one more time for review would make the most
-sense.  ;)
-
-Thanks,
-
---nab
-
-
+-- 
+Dmitry
