@@ -1,58 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab1A0Nzs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 08:55:48 -0500
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:42398 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753214Ab1A0Nzp (ORCPT
+	id S1753688Ab1A0N4E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 08:56:04 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:53846 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753496Ab1A0N4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 08:55:45 -0500
-X-Sasl-enc: q8f7E1xvvr2gApq7w8Iqo2aRBvx0NDyAIO2wEQk8lwjq 1296136544
-Date: Thu, 27 Jan 2011 11:55:40 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Dominik Kopp <my@kabelfunk.de>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, platform-driver-x86@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jeff Chua <jeff.chua.linux@gmail.com>,
-        ibm-acpi-devel@lists.sourceforge.net
-Subject: Re: [ibm-acpi-devel] thinkpad-acpi: fn-f4 issues
-Message-ID: <20110127135540.GA18579@khazad-dum.debian.net>
-References: <Pine.LNX.4.64.1101251740380.3737@boston.corp.fedex.com>
- <20110125151346.GB14803@khazad-dum.debian.net>
- <4D3F3AFF.7020407@kabelfunk.de>
- <20110125231651.GB25953@khazad-dum.debian.net>
- <4D409953.7020205@kabelfunk.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D409953.7020205@kabelfunk.de>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 27 Jan 2011 08:56:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=iksXEfgttr4BvTXEx4vZhk3tuUENoX48OuTvT9yG4BHI8GIjCcvFjsdZvTtQu2QsaE
+         pXF+p0b+NSO640wt2rlAwflJe0kDu7J0ok6GObR5G761IiZjaFsvCU6Sz2SWAFSLL60t
+         UVxNB/gttMOYqvOwJT02xUFnl/yq3VU0loo3Y=
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [PATCH -mm 3/6] s390: convert little-endian bitops macros to static inline functions
+Date: Thu, 27 Jan 2011 22:56:20 +0900
+Message-Id: <1296136583-13815-4-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1296136583-13815-1-git-send-email-akinobu.mita@gmail.com>
+References: <1296136583-13815-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Jan 2011, Dominik Kopp wrote:
-> Am 26.01.2011 00:16, schrieb Henrique de Moraes Holschuh:
-> >The driver IS asking for Fn+F4 events. Please send me the output of
-> >acpidump, gzipped.
-> acpidump attached.
-> >In the meanwhile, check if the input device is producing events when
-> >you're pressing Fn+f4.  It could well be sending KEY_SUSPEND, but if
-> >there's nobody listening...
-> >
-> do you mean xev?
-> if yes: they are producing KeyPress and KeyRelease events (but nothing else)
+(This patch is intended to be folded into the patch in -mm:
+s390-introduce-little-endian-bitops.patch)
 
-So, not a driver bug.  Take it up with your userspace distro...
+The little-endian bitops on s390 are written as preprocessor
+macros with the cast to "unsigned long *".
+This means that even non-pointers will be accepted without an error, and
+that is a Very Bad Thing.
 
->     state 0x0, keycode 150 (keysym 0x1008ff2f, XF86Sleep), same_screen YES,
+This converts the little-endian bitops macros to static inline functions
+with proper prototypes.
 
-It is even mapped to the correct X keysim...
+Suggested-by: "H. Peter Anvin" <hpa@zytor.com>
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+---
+ arch/s390/include/asm/bitops.h |   48 ++++++++++++++++++++++++++++-----------
+ 1 files changed, 34 insertions(+), 14 deletions(-)
 
+diff --git a/arch/s390/include/asm/bitops.h b/arch/s390/include/asm/bitops.h
+index 6528b22..e1c8f3a 100644
+--- a/arch/s390/include/asm/bitops.h
++++ b/arch/s390/include/asm/bitops.h
+@@ -742,20 +742,40 @@ static inline int sched_find_first_bit(unsigned long *b)
+  *    23 22 21 20 19 18 17 16 31 30 29 28 27 26 25 24
+  */
+ 
+-#define __set_bit_le(nr, addr)	\
+-	__set_bit((nr)^(__BITOPS_WORDSIZE - 8), (unsigned long *)(addr))
+-#define __clear_bit_le(nr, addr)	\
+-	__clear_bit((nr)^(__BITOPS_WORDSIZE - 8), (unsigned long *)(addr))
+-#define __test_and_set_bit_le(nr, addr)	\
+-	__test_and_set_bit((nr)^(__BITOPS_WORDSIZE - 8), (unsigned long *)(addr))
+-#define test_and_set_bit_le(nr, addr)	\
+-	test_and_set_bit((nr)^(__BITOPS_WORDSIZE - 8), (unsigned long *)(addr))
+-#define __test_and_clear_bit_le(nr, addr)	\
+-	__test_and_clear_bit((nr)^(__BITOPS_WORDSIZE - 8), (unsigned long *)(addr))
+-#define test_and_clear_bit_le(nr, addr)	\
+-	test_and_clear_bit((nr)^(__BITOPS_WORDSIZE - 8), (unsigned long *)(addr))
+-#define test_bit_le(nr, addr)	\
+-	test_bit((nr)^(__BITOPS_WORDSIZE - 8), (unsigned long *)(addr))
++static inline void __set_bit_le(unsigned long nr, void *addr)
++{
++	__set_bit(nr ^ (__BITOPS_WORDSIZE - 8), addr);
++}
++
++static inline void __clear_bit_le(unsigned long nr, void *addr)
++{
++	__clear_bit(nr ^ (__BITOPS_WORDSIZE - 8), addr);
++}
++
++static inline int __test_and_set_bit_le(unsigned long nr, void *addr)
++{
++	return __test_and_set_bit(nr ^ (__BITOPS_WORDSIZE - 8), addr);
++}
++
++static inline int test_and_set_bit_le(unsigned long nr, void *addr)
++{
++	return test_and_set_bit(nr ^ (__BITOPS_WORDSIZE - 8), addr);
++}
++
++static inline int __test_and_clear_bit_le(unsigned long nr, void *addr)
++{
++	return __test_and_clear_bit(nr ^ (__BITOPS_WORDSIZE - 8), addr);
++}
++
++static inline int test_and_clear_bit_le(unsigned long nr, void *addr)
++{
++	return test_and_clear_bit(nr ^ (__BITOPS_WORDSIZE - 8), addr);
++}
++
++static inline int test_bit_le(unsigned long nr, const void *addr)
++{
++	return test_bit(nr ^ (__BITOPS_WORDSIZE - 8), addr);
++}
+ 
+ static inline int find_first_zero_bit_le(void *vaddr, unsigned int size)
+ {
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+1.7.3.4
+
