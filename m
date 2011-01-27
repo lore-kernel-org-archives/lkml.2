@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763Ab1A0RHm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 12:07:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41406 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751269Ab1A0RHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 12:07:41 -0500
-Date: Thu, 27 Jan 2011 17:59:24 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
+	id S1752752Ab1A0RKy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 12:10:54 -0500
+Received: from casper.infradead.org ([85.118.1.10]:34022 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab1A0RKx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 12:10:53 -0500
+Subject: Re: Q: perf_install_in_context/perf_event_enable are racy?
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Oleg Nesterov <oleg@redhat.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Alan Stern <stern@rowland.harvard.edu>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>, Prasad <prasad@linux.vnet.ibm.com>,
         Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: Q: perf_install_in_context/perf_event_enable are racy?
-Message-ID: <20110127165923.GA28172@redhat.com>
-References: <20110126175322.GA28617@redhat.com> <20110126184957.GA32578@redhat.com> <1296068731.15234.6.camel@laptop> <1296070383.15234.10.camel@laptop> <20110126211931.GA6778@redhat.com> <20110126213317.GA7403@redhat.com> <1296124337.15234.71.camel@laptop> <1296131387.15234.142.camel@laptop> <20110127161047.GB25060@redhat.com> <1296145674.15234.238.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296145674.15234.238.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110127165712.GC25060@redhat.com>
+References: <20110120193033.GA13924@redhat.com>
+	 <1295611905.28776.269.camel@laptop> <20110121130323.GA12900@elte.hu>
+	 <1295617185.28776.273.camel@laptop> <20110121142616.GA31165@redhat.com>
+	 <1295622304.28776.293.camel@laptop> <20110121204014.GA2870@nowhere>
+	 <20110124114234.GA12166@redhat.com> <20110126175322.GA28617@redhat.com>
+	 <1296134077.15234.161.camel@laptop>  <20110127165712.GC25060@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 27 Jan 2011 18:11:34 +0100
+Message-ID: <1296148294.15234.242.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27, Peter Zijlstra wrote:
->
-> On Thu, 2011-01-27 at 17:10 +0100, Oleg Nesterov wrote:
-> > >  #ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
-> > >       local_irq_enable();
-> > > +     rq->in_ctxsw = 0;
-> >
-> > If we think that context_switch finishes here, probably it would be
-> > more clean to clear ->in_ctxsw before local_irq_enable().
->
-> It must in fact be done before,
+On Thu, 2011-01-27 at 17:57 +0100, Oleg Nesterov wrote:
+> 
+> > With, however, things are more interesting. 2 seems to be adequately
+> > covered by the patch I just send, the IPI will bail and the next
+> > sched-in of the relevant task will pick matters up. 1 otoh doesn't seem
+> > covered, the IPI will bail, leaving us stranded.
+> 
+> Hmm, yes... Strangely, I missed that when I was thinking about in_ctxsw.
+> 
+> Perhaps, we can change task_oncpu_function_call() so that it returns
+> -EAGAIN in case it hits in_ctxsw != 0? If the caller sees -EAGAIN, it
+> should always retry even if !ctx->is_active.
 
-Yes, I alredy realized this when I was reading another email from you.
-
-> > But, otoh, maybe finish_lock_switch() can clear in_ctxsw, it already
-> > checks __ARCH_WANT_INTERRUPTS_ON_CTXSW. Likewise, perhaps it can be
-> > set in prepare_lock_switch() which enables irqs.
-> >
-> > But this is cosmetic and up to you.
->
-> Can't do because of the above thing..
-
-Right.
-
-Oleg.
-
+That would be very easy to do, we can pass a return value through the
+task_function_call structure.
