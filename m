@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609Ab1A0Xlb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 18:41:31 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:18179 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751874Ab1A0Xla convert rfc822-to-8bit (ORCPT
+	id S1754142Ab1A0Xl4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 18:41:56 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:38974 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753654Ab1A0Xlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 18:41:30 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=L8BGWuRD250gtisRzjur280zCUxjX/cczfytWGjMGQ3TaHG/3z3t36ZlVktM1+qX26
-         rKBYmQCVBjI3mmNBWi8Q==
+	Thu, 27 Jan 2011 18:41:55 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtAEAAOPQU15LN5mgWdsb2JhbACkfBYBARYiJIgrtDsNhUIE
+Date: Fri, 28 Jan 2011 10:41:52 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: Stan Hoeppner <stan@hardwarefreak.com>,
+        Christoph Hellwig <hch@infradead.org>, Alex Elder <aelder@sgi.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: xfs: very slow after mount, very slow at umount
+Message-ID: <20110127234152.GN21311@dastard>
+References: <4D40C8D1.8090202@teksavvy.com>
+ <20110127033011.GH21311@dastard>
+ <4D40EB2F.2050809@teksavvy.com>
+ <4D418B57.1000501@teksavvy.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimT_t-3smsaQUrtisFdkODfoOoroQ93tQ9PByBq@mail.gmail.com>
-References: <20110125002433.12637.51091.stgit@mike.mtv.corp.google.com>
- <20110125002449.12637.35623.stgit@mike.mtv.corp.google.com>
- <20110125031752.GA9846@kroah.com> <AANLkTi=XhRX-=k8UmmQFshP6fgF_q2c-9gEHuH0mWu0a@mail.gmail.com>
- <20110126024608.GB28283@kroah.com> <AANLkTi=rO5QOVjNNWkekOb0WXzKX2CUpgvEryL0cemzB@mail.gmail.com>
- <AANLkTimT_t-3smsaQUrtisFdkODfoOoroQ93tQ9PByBq@mail.gmail.com>
-From: Mike Waychison <mikew@google.com>
-Date: Thu, 27 Jan 2011 15:41:06 -0800
-Message-ID: <AANLkTim27Y+TKa54jhC1VuqXzjEzX150ysGoUKNJrBmk@mail.gmail.com>
-Subject: Re: [PATCH v1 3/6] driver: Google EFI SMI
-To: Greg KH <greg@kroah.com>
-Cc: torvalds@linux-foundation.org, San Mehat <san@google.com>,
-        Aaron Durbin <adurbin@google.com>, Duncan Laurie <dlaurie@google.com>,
-        linux-kernel@vger.kernel.org, Tim Hockin <thockin@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D418B57.1000501@teksavvy.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 26, 2011 at 5:22 PM, Mike Waychison <mikew@google.com> wrote:
-> On Wed, Jan 26, 2011 at 3:58 PM, Mike Waychison <mikew@google.com> wrote:
->> On Tue, Jan 25, 2011 at 6:46 PM, Greg KH <greg@kroah.com> wrote:
->>> So, let me ask, what specifically are you wanting to import/export
->>> to/from the kernel here?  Have you thought about other kernel/user apis
->>> instead of ioctls?  What is forcing you to use ioctls?
->>
->> I'm not sure if you are trying to suggest that there is a better way
->> to solve these problems without actually saying so.  We could probably
->> use a different interface, sure.
->>
->
-> Well, I managed to find efivars.c, and it seems like I can probably
-> massage it to do what I want as several of the calls I'd like to
-> export to userland mirror portions of the EFI runtime services page.
-> That won't take care of all of the firmware calls I'd like to export,
-> but it's a start.
->
+On Thu, Jan 27, 2011 at 10:12:23AM -0500, Mark Lord wrote:
+> On 11-01-27 12:30 AM, Stan Hoeppner wrote:
+> > Mark Lord put forth on 1/26/2011 9:49 PM:
+> > 
+> >> agcount=7453
+> > 
+> > That's probably a bit high Mark, and very possibly the cause of your problems.
+> > :)  Unless the disk array backing this filesystem has something like 400-800
+> > striped disk drives.  You said it's a single 2TB drive right?
+> > 
+> > The default agcount for a single drive filesystem is 4 allocation groups.  For
+> > mdraid (of any number of disks/configuration) it's 16 allocation groups.
+> > 
+> > Why/how did you end up with 7452 allocation groups?  That can definitely cause
+> > some performance issues due to massively excessive head seeking, and possibly
+> > all manner of weirdness.
+> 
+> This is great info, exactly the kind of feedback I was hoping for!
+> 
+> The filesystem is about a year old now, and I probably used agsize=nnnnn
+> when creating it or something.
+> 
+> So if this resulted in what you consider to be many MANY too MANY ags,
+> then I can imagine the first new file write wanting to go out and read
+> in all of the ag data to determine the "best fit" or something.
+> Which might explain some of the delay.
+> 
+> Once I get the new 2TB drive, I'll re-run mkfs.xfs and then copy everything
+> over onto a fresh xfs filesystem.
+> 
+> Can you recommend a good set of mkfs.xfs parameters to suit the characteristics
+> of this system? 
 
-I've spent the last few hours looking at efivars.c and working out how
-I can refactor it to reuse all the kobject bits it uses.  Does anybody
-use this thing though?
+http://xfs.org/index.php/XFS_FAQ#Q:_I_want_to_tune_my_XFS_filesystems_for_.3Csomething.3E
 
-I can't believe I was just lectured for crappy ABI when this thing
-takes a binary packed struct on write() and process it:
-   - without regard to write length, and
-   - in a way that isn't compatible across compat (both DataSize and
-Status are unsigned long!).
+And perhaps you want to consider the allocsize mount option, though
+that shouldn't be necessary for 2.6.38+...
 
-struct efi_variable {
-        efi_char16_t  VariableName[1024/sizeof(efi_char16_t)];
-        efi_guid_t    VendorGuid;
-        unsigned long DataSize;
-        __u8          Data[1024];
-        efi_status_t  Status;
-        __u32         Attributes;
-} __attribute__((packed));
+Cheers,
 
-:(
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
