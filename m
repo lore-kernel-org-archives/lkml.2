@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586Ab1A0QDy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 11:03:54 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:18606 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751291Ab1A0QDx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 11:03:53 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAAQmQU1Ld/sX/2dsb2JhbAAMhAjMcJBfgSODOHQEhRc
-X-IronPort-AV: E=Sophos;i="4.60,386,1291611600"; 
-   d="scan'208";a="89426373"
-Message-ID: <4D419765.4070805@teksavvy.com>
-Date: Thu, 27 Jan 2011 11:03:49 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-CC: Stan Hoeppner <stan@hardwarefreak.com>,
-        Christoph Hellwig <hch@infradead.org>, xfs@oss.sgi.com,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alex Elder <aelder@sgi.com>
-Subject: Re: xfs: very slow after mount, very slow at umount
-References: <4D40C8D1.8090202@teksavvy.com> <20110127033011.GH21311@dastard> <4D40EB2F.2050809@teksavvy.com> <4D418B57.1000501@teksavvy.com> <alpine.DEB.2.00.1101271040000.31246@p34.internal.lan>
-In-Reply-To: <alpine.DEB.2.00.1101271040000.31246@p34.internal.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752485Ab1A0QHg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 11:07:36 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:41355 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847Ab1A0QHf convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:6:1>);
+	Thu, 27 Jan 2011 11:07:35 -0500
+Message-Id: <4D41A651020000780002ED36@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Thu, 27 Jan 2011 16:07:29 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Xiaowei Yang" <xiaowei.yang@huawei.com>,
+        "Nick Piggin" <npiggin@kernel.dk>
+Cc: "Peter Zijlstra" <a.p.zijlstra@chello.nl>, <fanhenglong@huawei.com>,
+        "Kaushik Barde" <kbarde@huawei.com>,
+        "Kenneth Lee" <liguozhu@huawei.com>,
+        "linqaingmin" <linqiangmin@huawei.com>, <wangzhenguo@huawei.com>,
+        "Wu Fengguang" <fengguang.wu@intel.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: One (possible) x86 get_user_pages bug
+References: <4D416D9A.9010603@huawei.com>
+In-Reply-To: <4D416D9A.9010603@huawei.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-01-27 10:40 AM, Justin Piszcz wrote:
+>>> On 27.01.11 at 14:05, Xiaowei Yang <xiaowei.yang@huawei.com> wrote:
+> We created a scenario to reproduce the bug:
+> ----------------------------------------------------------------
+> // proc1/proc1.2 are 2 threads sharing one page table.
+> // proc1 is the parent of proc2.
 > 
+> proc1               proc2          proc1.2
+> ...                 ...            // in gup_pte_range()
+> ...                 ...            pte = gup_get_pte()
+> ...                 ...            page1 = pte_page(pte)  // (1)
+> do_wp_page(page1)   ...            ...
+> ...                 exit_map()     ...
+> ...                 ...            get_page(page1)        // (2)
+> -----------------------------------------------------------------
 > 
-> On Thu, 27 Jan 2011, Mark Lord wrote:
-..
->> Can you recommend a good set of mkfs.xfs parameters to suit the characteristics
->> of this system?  Eg. Only a few thousand active inodes, and nearly all files are
->> in the 600MB -> 20GB size range.  The usage pattern it must handle is up to
->> six concurrent streaming writes at the same time as up to three streaming reads,
->> with no significant delays permitted on the reads.
->>
->> That's the kind of workload that I find XFS handles nicely,
->> and EXT4 has given me trouble with in the past.
-..
-> I did a load of benchmarks a long time ago testing every mkfs.xfs option there
-> was, and I found that most of the time (if not all), the defaults were the best.
-..
+> do_wp_page() and exit_map() cause page1 to be released into free list 
+> before get_page() in proc1.2 is called. The longer the delay between 
+> (1)&(2), the easier the BUG_ON shows.
 
-I am concerned with fragmentation on the very special workload in this case.
-I'd really like the 20GB files, written over a 1-2 hour period, to consist
-of a very few very large extents, as much as possible.
+Other than responded initially, I don't this can happen outside
+of Xen: do_wp_page() won't reach page_cache_release() when
+gup_pte_range() is running for the same mm on another CPU,
+since it can't get past ptep_clear_flush() (waiting for the CPU
+in get_user_pages_fast() to re-enable interrupts).
 
-Rather than hundreds or thousands of "tiny" MB sized extents.
-I wonder what the best mkfs.xfs parameters might be to encourage that?
+> An experimental patch is made to prevent the PTE being modified in the 
+> middle of gup_pte_range(). The BUG_ON disappears afterward.
+> 
+> However, from the comments embedded in gup.c, it seems deliberate to 
+> avoid the lock in the fast path. The question is: if so, how to avoid 
+> the above scenario?
 
-Cheers
+Nick, based on your doing of the initial implementation, would
+you be able to estimate whether disabling get_user_pages_fast()
+altogether for Xen would be performing measurably worse than
+adding the locks (but continuing to avoid acquiring mm->mmap_sem)
+as suggested by Xiaowei? That's of course only if the latter is correct
+at all, of which I haven't fully convinced myself yet.
+
+Jan
+
