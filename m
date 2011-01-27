@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751185Ab1A0FS3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 00:18:29 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:65364 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835Ab1A0FS2 (ORCPT
+	id S1751328Ab1A0Flr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 00:41:47 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:36651 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866Ab1A0Flp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 00:18:28 -0500
+	Thu, 27 Jan 2011 00:41:45 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=J3kRGsjw8zLwrZ+0b0/FJjzhD4pgVjzEmTkzkSolUJxKdlgtADJvJu/emGdrddRr+z
-         GgzvskEDQ8qzv1zx7sW7UNweAzpWf+OA99qqUb41LCDys6n9kgEoU2aXy560O9mUEvUB
-         C+1X2vXdPhx2mBmQ20lQ/bfc25SIVWfNobvls=
+        d=google.com; s=beta;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=C9ztY/ZItuR/GYPL1BN0xkC56T/F7sxZsQrEbDwGOFPJzGstgjeH6TM79C5iaf39dN
+         tbw+IPqPZ1UkqkQhRI3w==
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=or1Ya21Am8Dr4KVHgqkwvNxFwgn407=wxRfVa@mail.gmail.com>
-References: <cover.1290852958.git.npiggin@kernel.dk>
-	<d44ddcf1d1e0813b3ce2b3872c7c702a31b62894.1290852959.git.npiggin@kernel.dk>
-	<AANLkTi=pj-pLYVSrU+6+BtioCWLod2ueZecNaap619fw@mail.gmail.com>
-	<AANLkTik3ScP5rvR2bOXOEEH8SNZGg+xO6Gy32CW3XmU6@mail.gmail.com>
-	<AANLkTinVP=OuJ-3u9pHdDuuKJoVrP4Unr5Dx1x=qHtXC@mail.gmail.com>
-	<AANLkTimUjC8B0=nn5+yDshzp0hy6Zk1wxYHWEZbk83Tf@mail.gmail.com>
-	<AANLkTi=or1Ya21Am8Dr4KVHgqkwvNxFwgn407=wxRfVa@mail.gmail.com>
-Date: Thu, 27 Jan 2011 16:18:25 +1100
-Message-ID: <AANLkTinmaojfNDYk1i4jMP33MmEQDur9XZvFp=qhV01e@mail.gmail.com>
-Subject: Re: [PATCH 17/46] fs: Use rename lock and RCU for multi-step operations
-From: Nick Piggin <npiggin@gmail.com>
-To: Yehuda Sadeh Weinraub <yehudasa@gmail.com>
-Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sage Weil <sage@newdream.net>,
-        ceph-devel@vger.kernel.org
+Date: Wed, 26 Jan 2011 21:41:40 -0800
+Message-ID: <AANLkTim6zcdn8FgUTa7OO=_4B3x5CiHxWr_g=uR0m4zX@mail.gmail.com>
+Subject: [GIT PULL] ARM Tegra fixes for 2.6.38
+From: Colin Cross <ccross@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-main <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Linux Tegra Mailing List <linux-tegra@vger.kernel.org>,
+        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>
 Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 26, 2011 at 9:10 AM, Yehuda Sadeh Weinraub
-<yehudasa@gmail.com> wrote:
-> On Wed, Jan 19, 2011 at 2:32 PM, Nick Piggin <npiggin@gmail.com> wrote:
->> On Thu, Jan 20, 2011 at 9:27 AM, Yehuda Sadeh Weinraub
->> <yehudasa@gmail.com> wrote:
->>> On Tue, Jan 18, 2011 at 2:42 PM, Nick Piggin <npiggin@gmail.com> wrote:
->>>> On Wed, Jan 19, 2011 at 9:32 AM, Yehuda Sadeh Weinraub
->>>
->>>>> There's an issue with ceph as it references the
->>>>> dentry->d_parent(->d_inode) at dentry_release(), so setting
->>>>> dentry->d_parent to NULL here doesn't work with ceph. Though there is
->>>>> some workaround for it, we would like to be sure that this one is
->>>>> really required so that we don't exacerbate the ugliness. The
->>>>> workaround is to keep a pointer to the parent inode in the private
->>>>> dentry structure, which will be referenced only at the .release()
->>>>> callback. This is clearly not ideal.
->>>>
->>>> Hmm, I'll have to think about it. Probably we can check for
->>>> d_count == 0 rather than parent != NULL I think?
->>>>
->>>
->>> That'll solve ceph's problem, don't know about how'd affect other
->>> stuff. We'll need to know whether this is the solution, or whether
->>> we'd need to introduce some other band aid fix.
->>
->> No I think it will work fine. Basically we just need to know whether
->> we have been deleted, and if so then we restart rather than walking
->> back up the parent.
->>
->> I'll send a patch in a few days. For the meantime, it's a rathe
->> small window for ceph to worry about. So we'll have something
->> before -rc2 which should be OK.
->>
->
-> I guess that it's a bit late for -rc2, should we assume that it'll be on -rc3?
+Hi Linus,
+Please pull fixes for the Tegra machine from:
 
-Yeah, I'm sorry I've been travelling and a bit disconnected.
-
-NFS folk are having a similar problem and looks like similar
-proposed fix will do it.
-
-http://marc.info/?l=linux-fsdevel&m=129599823927039&w=2
-
-So I think it is the best way to go to restore behaviour back to what
-filesystems already expect, to avoid more surprises in future.
+  http://android.git.kernel.org/kernel/tegra.git for-linus
 
 Thanks,
-Nick
+Colin
+
+The following changes since commit 1bae4ce27c9c90344f23c65ea6966c50ffeae2f5:
+
+  Linux 2.6.38-rc2 (2011-01-21 19:01:34 -0800)
+
+are available in the git repository at:
+  http://android.git.kernel.org/kernel/tegra.git for-linus
+
+Colin Cross (2):
+      ARM: tegra: irq: Rename gic pointers to avoid conflicts
+      ARM: tegra: clock: Add forward reference to struct clk
+
+Grant Likely (1):
+      arm/tegra: Fix tegra irq_data conversion
+
+ arch/arm/mach-tegra/gpio.c                |    4 ++--
+ arch/arm/mach-tegra/include/mach/clk.h    |    2 ++
+ arch/arm/mach-tegra/include/mach/clkdev.h |    2 ++
+ arch/arm/mach-tegra/irq.c                 |   18 +++++++++---------
+ 4 files changed, 15 insertions(+), 11 deletions(-)
