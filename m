@@ -1,65 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529Ab1A0Bal (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 20:30:41 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:54081 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754494Ab1A0Bak (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 20:30:40 -0500
-Date: Wed, 26 Jan 2011 17:30:19 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Tejun Heo <tj@kernel.org>, Marcus Meissner <meissner@suse.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Eugene Teo <eugeneteo@kernel.org>, Joe Perches <joe@perches.com>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>, Len Brown <len.brown@intel.com>,
-        Changli Gao <xiaosuo@gmail.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>
-Subject: Re: [PATCH] use %pK for /proc/kallsyms and /proc/modules
-Message-ID: <20110127013019.GJ4981@outflux.net>
-References: <20110125181058.GA25670@outflux.net>
- <20110126155706.0188fe02.akpm@linux-foundation.org>
- <20110127002936.GG4981@outflux.net>
- <20110126164650.ef5bd302.akpm@linux-foundation.org>
+	id S1754543Ab1A0BbR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 20:31:17 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:23100 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753561Ab1A0BbP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 20:31:15 -0500
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "'Philip Rakity'" <prakity@marvell.com>
+Cc: "'Chris Ball'" <cjb@laptop.org>, "'Kyungmin Park'" <kmpark@infradead.org>,
+        <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <andrew.chih.howe.khor@intel.com>, <kok.howg.ewe@intel.com>,
+        "'Toshiharu Okada'" <toshiharu-linux@dsn.okisemi.com>
+References: <4CD8DE9C.4040505@dsn.okisemi.com> <AANLkTimfnj8GcSwmALjaZUBsiq6ssaVuzVZZsZHRYmiX@mail.gmail.com> <001701cb814c$71926bf0$66f8800a@maildom.okisemi.com> <001201cb90f4$4be8f790$66f8800a@maildom.okisemi.com> <2D50F985-2383-4406-8514-DFE462A5F546@marvell.com> <4D2E0464ABB54FFF9C10583336E27879@hacdom.okisemi.com> <4C4E7DE5-7CF1-4D97-9CAD-F600FCBE477A@marvell.com> <20110119174233.GA30494@void.printf.net> <F6E8C422FB8A4D78A5BDF7B6ECDA1E00@hacdom.okisemi.com> <D8E7AFC5-6B9E-414E-81A8-292FCD2F6E3C@marvell.com> <629816F753974155B62FF8FA718A26CA@hacdom.okisemi.com> <6076934B-27C2-4766-B101-793C7447C71C@marvell.com>
+Subject: RE: A MMC card transfer issue
+Date: Thu, 27 Jan 2011 10:31:13 +0900
+Message-ID: <0F933C1424BF45E3BD2E13358BD3C89E@hacdom.okisemi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110126164650.ef5bd302.akpm@linux-foundation.org>
-Organization: Canonical
-X-HELO: www.outflux.net
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+Thread-Index: Acu9vgyvaZxGXq+VT9eBBSUDjufEQQAAc3mw
+In-Reply-To: <6076934B-27C2-4766-B101-793C7447C71C@marvell.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 26, 2011 at 04:46:50PM -0800, Andrew Morton wrote:
-> On Wed, 26 Jan 2011 16:29:36 -0800
-> Kees Cook <kees.cook@canonical.com> wrote:
+Hi Philip,
+
+> which MMC driver are you using.
+Could you teach me how to get the information ?
+
+> you need to have the driver or the low level code enable this QUIRK.
+BTW, Is the above permanent treatment?
+I think modifying kernel source code isn't preferred.
+
+Thanks,
+-----------------------------------------
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD.
+
+> -----Original Message-----
+> From: Philip Rakity [mailto:prakity@marvell.com] 
+> Sent: Thursday, January 27, 2011 10:04 AM
+> To: Tomoya MORINAGA
+> Cc: Chris Ball; Kyungmin Park; linux-mmc@vger.kernel.org; 
+> linux-kernel@vger.kernel.org; 
+> andrew.chih.howe.khor@intel.com; kok.howg.ewe@intel.com
+> Subject: Re: A MMC card transfer issue
 > 
-> > > > Note that this changes %x to %p, so some legitimately 0 values in
-> > > > /proc/kallsyms would have changed from 00000000 to "(null)". To avoid
-> > > > this, "(null)" is not used when using the "K" format. Anything parsing
-> > > > such addresses should have no problem with this change. (Thanks to Joe
-> > > > Perches for the suggestion.)
-> > > 
-> > > OK, so what applications did this patch just break?
+> 
+> yes
+> 
+> you need to have the driver or the low level code enable this QUIRK.
+> 
+> which mmc driver are you using.
+> 
+> On Jan 26, 2011, at 5:00 PM, Tomoya MORINAGA wrote:
+> 
+> > Hi Philip,
 > > 
-> > I'm not aware of any breakage as a result of this yet.
+> > On Thursday, January 27, 2011 12:42 AM, Philip Rakity wrote:
+> >> Did you define the CAP for BUS WIDTH ? 
+> >> 
+> >> MMC_CAP_BUS_WIDTH_TEST
+> >> 
+> >> in the driver or the platform driver ?
+> > 
+> > Let me make the above meaning clear.
+> > 
+> > I don't modify kernel source code "drivers/mmc" at all Is the above 
+> > mean I must modify something kernel source code ?
+> > 
+> > Thanks,
+> > -----------------------------------------
+> > Tomoya MORINAGA
+> > OKI SEMICONDUCTOR CO., LTD.
+> > 
 > 
-> There will be some - there always are :( But users will only see
-> problems if they've set kptr_restrict.
 
-If something can parse "null", "00000001" through "99999999", and _not_
-"00000000", I will happily giggle at them. :)
-
-> 
-> Which they shall do.  How come we defaulted kptr_restrict to "true"?
-
-Because that's the correct value! :) Unprivileged userspace doesn't need to
-see kernel addresses by default, that's for CAP_SYSLOG.
-
--Kees
-
--- 
-Kees Cook
-Ubuntu Security Team
