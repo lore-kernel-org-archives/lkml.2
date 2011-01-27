@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480Ab1A0Uu2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 15:50:28 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:33336 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab1A0Uu1 (ORCPT
+	id S1753383Ab1A0Uwj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 15:52:39 -0500
+Received: from verro.fugedabout.it ([78.46.95.7]:47385 "EHLO
+	verro.fugedabout.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501Ab1A0Uwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 15:50:27 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6239"; a="72022106"
-From: David Brown <davidb@codeaurora.org>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: Stepan Moskovchenko <stepanm@codeaurora.org>,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] msm: Clean up useless ifdefs
-In-Reply-To: <1296161064.28965.10.camel@c-dwalke-linux.qualcomm.com> (Daniel
-	Walker's message of "Thu, 27 Jan 2011 12:44:24 -0800")
-References: <1296159202-13980-1-git-send-email-stepanm@codeaurora.org>
-	<1296161064.28965.10.camel@c-dwalke-linux.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-X-Hashcash: 1:20:110127:stepanm@codeaurora.org::XRFkfgC8BK2eOhjn:0000000000000000000000000000000000000000RhA
-X-Hashcash: 1:20:110127:linux-arm-kernel@lists.infradead.org::6wrdI9jkQacTgaKr:000000000000000000000000034od
-X-Hashcash: 1:20:110127:dwalker@codeaurora.org::phA2uLxPxN9eqnbC:0000000000000000000000000000000000000004UlQ
-X-Hashcash: 1:20:110127:linux-kernel@vger.kernel.org::aWgb+wWssaiPyk4W:0000000000000000000000000000000005e2V
-X-Hashcash: 1:20:110127:linux-arm-msm@vger.kernel.org::31ajI+14QiOG5SqT:00000000000000000000000000000000GL3R
-Date: Thu, 27 Jan 2011 12:50:25 -0800
-Message-ID: <8yaoc723wby.fsf@huya.qualcomm.com>
+	Thu, 27 Jan 2011 15:52:37 -0500
+Message-ID: <4D41DB09.5050802@fabbione.net>
+Date: Thu, 27 Jan 2011 21:52:25 +0100
+From: "Fabio M. Di NItto" <fabbione@fabbione.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: David Miller <davem@davemloft.net>
+CC: fdinitto@redhat.com, akpm@linux-foundation.org, rdunlap@xenotime.net,
+        jmorris@namei.org, kees.cook@canonical.com, mingo@elte.hu,
+        namhyung@gmail.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] console: allow to retain boot console via boot option
+ keep_bootcon
+References: <20110119161918.1f827080.akpm@linux-foundation.org>	<4D37D18D.9060402@redhat.com>	<4D4182A7.5050503@redhat.com> <20110127.124752.71123363.davem@davemloft.net>
+In-Reply-To: <20110127.124752.71123363.davem@davemloft.net>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 27 2011, Daniel Walker wrote:
+On 01/27/2011 09:47 PM, David Miller wrote:
+> From: "Fabio M. Di Nitto" <fdinitto@redhat.com>
+> Date: Thu, 27 Jan 2011 15:35:19 +0100
+> 
+>> According to kernel/print.k:
+>>
+>>>         /*
+>>>          * By unregistering the bootconsoles after we enable the real console
+>>>          * we get the "console xxx enabled" message on all the consoles -
+>>>          * boot consoles, real consoles, etc - this is to ensure that end
+>>>          * users know there might be something in the kernel's log buffer that
+>>>          * went to the bootconsole (that they do not see on the real console)
+>>>          */
+>>
+>> but my understanding, and please correct if I am wrong, is that when we
+>> load or initialize modules such as fbcon (I made this patch debugging a
+>> crash in atyfb), a console is indeed registered and bootconsole disable,
+>> while in reality the real console is not there yet (in my case fbcon was
+>> loaded but not atyfb yet).
+>> At a later stage, once atyfb is loaded, it registers with fbcon and then
+>> the console output starts again.
+> 
+> It's not exactly "fbcon", it's the "VT" driver.
 
-> On Thu, 2011-01-27 at 12:13 -0800, Stepan Moskovchenko wrote:
->> Remove ifdefs that do nothing, either from having the code
->> between them previously removed, or from having been
->> accidentally added to the wrong file.
->> 
->> Change-Id: I94aac2cb24e23ba7f8b4b158ce6653dc3b786989
->> Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
->
-> You need to drop the Change-Id: ..
+Thanks for the clarification. I spotted both VT and fbcon (as they are
+the only two that register as console driver effectively) and of course
+picked the wrong one ;)
 
-If there aren't any other concerns raised, I can pull these off when I
-pull in these changes.  But, yes, in generall, they shouldn't be
-present.
+> That loads, and nothing has attached to VT yet to provide the actual
+> console hookup.
 
-David
+at least I got this part right...
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> 
+> "fbcon" waits until a usable driver registers before it hooks itself
+> into the "VT" layer.
+> 
+> So this is why we have this large gap of time with no console output.
+> It's because VT registers before it actually is able to provide
+> console output services, and frankly that's a bug. :-)
+
+Ok, I have no idea how complex and delicate that code is, but I'll try
+to see if we can actually fix VT to behave as fbcon rather than adding
+this patch as workaround.
+
+Thanks
+Fabio
