@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657Ab1A0Quv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 11:50:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3298 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752023Ab1A0Qut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 11:50:49 -0500
-From: Steve Grubb <sgrubb@redhat.com>
-Organization: Red Hat
-To: "Andrew G. Morgan" <morgan@kernel.org>
-Subject: Re: [PATCH] System Wide Capability Bounding Set
-Date: Thu, 27 Jan 2011 11:50:16 -0500
-User-Agent: KMail/1.13.5 (Linux/2.6.35.10-74.fc14.x86_64; KDE/4.5.5; x86_64; ; )
-Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
-        "Serge E. Hallyn" <serge@canonical.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        linux-security-module@vger.kernel.org
-References: <1294266337.3237.45.camel@localhost.localdomain> <201101270942.07689.sgrubb@redhat.com> <AANLkTi=k5QeE_-iNuW3-M5K3BnBtRxk-QYO5624HKrpE@mail.gmail.com>
-In-Reply-To: <AANLkTi=k5QeE_-iNuW3-M5K3BnBtRxk-QYO5624HKrpE@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101271150.17120.sgrubb@redhat.com>
+	id S1752691Ab1A0Qz7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 11:55:59 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:43962 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752522Ab1A0Qz6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 11:55:58 -0500
+Subject: Re: One (possible) x86 get_user_pages bug
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Jan Beulich <JBeulich@novell.com>
+Cc: Xiaowei Yang <xiaowei.yang@huawei.com>, Nick Piggin <npiggin@kernel.dk>,
+        fanhenglong@huawei.com, Kaushik Barde <kbarde@huawei.com>,
+        Kenneth Lee <liguozhu@huawei.com>,
+        linqaingmin <linqiangmin@huawei.com>, wangzhenguo@huawei.com,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <4D41A651020000780002ED36@vpn.id2.novell.com>
+References: <4D416D9A.9010603@huawei.com>
+	 <4D41A651020000780002ED36@vpn.id2.novell.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 27 Jan 2011 17:56:43 +0100
+Message-ID: <1296147403.15234.241.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 27, 2011 11:35:13 am Andrew G. Morgan wrote:
-> > Today, people want to have multi-tenant hosting using virtual
-> > machines whereby they give away root control of the guest VM.
-> > If you were renting system space, you would expect root access.
-> > That would make a nice juicy hacking target because you don't know
-> > who else is sharing the physical machine with you and they might
-> > have something in their VM worth stealing.
+On Thu, 2011-01-27 at 16:07 +0000, Jan Beulich wrote:
 > 
-> Which root filesystem (/) do kernel helpers run in in such a virtual setup?
+> Nick, based on your doing of the initial implementation, would
+> you be able to estimate whether disabling get_user_pages_fast()
+> altogether for Xen would be performing measurably worse than
+> adding the locks (but continuing to avoid acquiring mm->mmap_sem)
+> as suggested by Xiaowei? That's of course only if the latter is correct
+> at all, of which I haven't fully convinced myself yet. 
 
-I would assume that root in the VM could umount and mount anything. Or bind mount over 
-it. We really want any change to a global bounding set done before initrd finishes 
-doing its thing. This way there is no chance for mischief by the time control is 
-turned over to /sbin/init - which root controls.
-
--Steve
+Also, I don't think taking the pte_lock is sufficient in your case..
+since x86 mmu_gather frees the page tables themselves too, your
+dereference of the pgd/pud/pmd will be subject to the same deref after
+free problems.
