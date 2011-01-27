@@ -1,249 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625Ab1A0Md5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 07:33:57 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:59797 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753183Ab1A0Mak (ORCPT
+	id S1754674Ab1A0MeZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 07:34:25 -0500
+Received: from vamos2c.informatik.uni-erlangen.de ([131.188.42.15]:42657 "EHLO
+	vamos2c.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754541Ab1A0MeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 07:30:40 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org
-Cc: sakari.ailus@maxwell.research.nokia.com,
-        broonie@opensource.wolfsonmicro.com, clemens@ladisch.de
-Subject: [PATCH v8 04/12] media: Entity graph traversal
-Date: Thu, 27 Jan 2011 13:30:29 +0100
-Message-Id: <1296131437-29954-5-git-send-email-laurent.pinchart@ideasonboard.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1296131437-29954-1-git-send-email-laurent.pinchart@ideasonboard.com>
-References: <1296131437-29954-1-git-send-email-laurent.pinchart@ideasonboard.com>
+	Thu, 27 Jan 2011 07:34:21 -0500
+X-Greylist: delayed 2290 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Jan 2011 07:34:21 EST
+From: Reinhard Tartler <Reinhard.Tartler@informatik.uni-erlangen.de>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: vamos@i4.informatik.uni-erlangen.de, Julia Lawall <julia@diku.dk>
+Subject: [ANNOUNCE] undertaker 1.0
+Organization: Uni Erlangen, Informatik 4, Lehrstuhl =?utf-8?Q?f=C3=BCr?=
+ Betriebs- und verteilte Systeme
+X-Url: http://www4.informatik.uni-erlangen.de/~tartler
+Mail-Followup-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	vamos@i4.informatik.uni-erlangen.de, Julia Lawall <julia@diku.dk>
+Date: Thu, 27 Jan 2011 12:56:07 +0100
+Message-ID: <87y666tvag.fsf@faui44a.informatik.uni-erlangen.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
 
-Add media entity graph traversal. The traversal follows enabled links by
-depth first. Traversing graph backwards is prevented by comparing the next
-possible entity in the graph with the previous one. Multiply connected
-graphs are thus not supported.
+The VAMOS team is pleased to announce the first release of undertaker 1.0.
+The undertaker tool is a result of the VAMOS[1] research project.
+Please visit our project site at:
 
-Signed-off-by: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Vimarsh Zutshi <vimarsh.zutshi@nokia.com>
----
- Documentation/media-framework.txt |   42 +++++++++++++
- drivers/media/media-entity.c      |  115 +++++++++++++++++++++++++++++++++++++
- include/media/media-entity.h      |   15 +++++
- 3 files changed, 172 insertions(+), 0 deletions(-)
+http://vamos.informatik.uni-erlangen.de/trac/undertaker
 
-diff --git a/Documentation/media-framework.txt b/Documentation/media-framework.txt
-index b252cf9..88fe379 100644
---- a/Documentation/media-framework.txt
-+++ b/Documentation/media-framework.txt
-@@ -216,3 +216,45 @@ Links have flags that describe the link capabilities and state.
- 	modified at runtime. If MEDIA_LNK_FL_IMMUTABLE is set, then
- 	MEDIA_LNK_FL_ENABLED must also be set since an immutable link is always
- 	enabled.
-+
-+
-+Graph traversal
-+---------------
-+
-+The media framework provides APIs to iterate over entities in a graph.
-+
-+To iterate over all entities belonging to a media device, drivers can use the
-+media_device_for_each_entity macro, defined in include/media/media-device.h.
-+
-+	struct media_entity *entity;
-+
-+	media_device_for_each_entity(entity, mdev) {
-+		/* entity will point to each entity in turn */
-+		...
-+	}
-+
-+Drivers might also need to iterate over all entities in a graph that can be
-+reached only through enabled links starting at a given entity. The media
-+framework provides a depth-first graph traversal API for that purpose.
-+
-+Note that graphs with cycles (whether directed or undirected) are *NOT*
-+supported by the graph traversal API. To prevent infinite loops, the graph
-+traversal code limits the maximum depth to MEDIA_ENTITY_ENUM_MAX_DEPTH,
-+currently defined as 16.
-+
-+Drivers initiate a graph traversal by calling
-+
-+	media_entity_graph_walk_start(struct media_entity_graph *graph,
-+				      struct media_entity *entity);
-+
-+The graph structure, provided by the caller, is initialized to start graph
-+traversal at the given entity.
-+
-+Drivers can then retrieve the next entity by calling
-+
-+	media_entity_graph_walk_next(struct media_entity_graph *graph);
-+
-+When the graph traversal is complete the function will return NULL.
-+
-+Graph traversal can be interrupted at any moment. No cleanup function call is
-+required and the graph structure can be freed normally.
-diff --git a/drivers/media/media-entity.c b/drivers/media/media-entity.c
-index e4ba2bc..a805f20 100644
---- a/drivers/media/media-entity.c
-+++ b/drivers/media/media-entity.c
-@@ -84,6 +84,121 @@ media_entity_cleanup(struct media_entity *entity)
- }
- EXPORT_SYMBOL_GPL(media_entity_cleanup);
- 
-+/* -----------------------------------------------------------------------------
-+ * Graph traversal
-+ */
-+
-+static struct media_entity *
-+media_entity_other(struct media_entity *entity, struct media_link *link)
-+{
-+	if (link->source->entity == entity)
-+		return link->sink->entity;
-+	else
-+		return link->source->entity;
-+}
-+
-+/* push an entity to traversal stack */
-+static void stack_push(struct media_entity_graph *graph,
-+		       struct media_entity *entity)
-+{
-+	if (graph->top == MEDIA_ENTITY_ENUM_MAX_DEPTH - 1) {
-+		WARN_ON(1);
-+		return;
-+	}
-+	graph->top++;
-+	graph->stack[graph->top].link = 0;
-+	graph->stack[graph->top].entity = entity;
-+}
-+
-+static struct media_entity *stack_pop(struct media_entity_graph *graph)
-+{
-+	struct media_entity *entity;
-+
-+	entity = graph->stack[graph->top].entity;
-+	graph->top--;
-+
-+	return entity;
-+}
-+
-+#define stack_peek(en)	((en)->stack[(en)->top - 1].entity)
-+#define link_top(en)	((en)->stack[(en)->top].link)
-+#define stack_top(en)	((en)->stack[(en)->top].entity)
-+
-+/**
-+ * media_entity_graph_walk_start - Start walking the media graph at a given entity
-+ * @graph: Media graph structure that will be used to walk the graph
-+ * @entity: Starting entity
-+ *
-+ * This function initializes the graph traversal structure to walk the entities
-+ * graph starting at the given entity. The traversal structure must not be
-+ * modified by the caller during graph traversal. When done the structure can
-+ * safely be freed.
-+ */
-+void media_entity_graph_walk_start(struct media_entity_graph *graph,
-+				   struct media_entity *entity)
-+{
-+	graph->top = 0;
-+	graph->stack[graph->top].entity = NULL;
-+	stack_push(graph, entity);
-+}
-+EXPORT_SYMBOL_GPL(media_entity_graph_walk_start);
-+
-+/**
-+ * media_entity_graph_walk_next - Get the next entity in the graph
-+ * @graph: Media graph structure
-+ *
-+ * Perform a depth-first traversal of the given media entities graph.
-+ *
-+ * The graph structure must have been previously initialized with a call to
-+ * media_entity_graph_walk_start().
-+ *
-+ * Return the next entity in the graph or NULL if the whole graph have been
-+ * traversed.
-+ */
-+struct media_entity *
-+media_entity_graph_walk_next(struct media_entity_graph *graph)
-+{
-+	if (stack_top(graph) == NULL)
-+		return NULL;
-+
-+	/*
-+	 * Depth first search. Push entity to stack and continue from
-+	 * top of the stack until no more entities on the level can be
-+	 * found.
-+	 */
-+	while (link_top(graph) < stack_top(graph)->num_links) {
-+		struct media_entity *entity = stack_top(graph);
-+		struct media_link *link = &entity->links[link_top(graph)];
-+		struct media_entity *next;
-+
-+		/* The link is not enabled so we do not follow. */
-+		if (!(link->flags & MEDIA_LNK_FL_ENABLED)) {
-+			link_top(graph)++;
-+			continue;
-+		}
-+
-+		/* Get the entity in the other end of the link . */
-+		next = media_entity_other(entity, link);
-+
-+		/* Was it the entity we came here from? */
-+		if (next == stack_peek(graph)) {
-+			link_top(graph)++;
-+			continue;
-+		}
-+
-+		/* Push the new entity to stack and start over. */
-+		link_top(graph)++;
-+		stack_push(graph, next);
-+	}
-+
-+	return stack_pop(graph);
-+}
-+EXPORT_SYMBOL_GPL(media_entity_graph_walk_next);
-+
-+/* -----------------------------------------------------------------------------
-+ * Links management
-+ */
-+
- static struct media_link *media_entity_add_link(struct media_entity *entity)
- {
- 	if (entity->num_links >= entity->max_links) {
-diff --git a/include/media/media-entity.h b/include/media/media-entity.h
-index 7cf9135..b82f824 100644
---- a/include/media/media-entity.h
-+++ b/include/media/media-entity.h
-@@ -113,10 +113,25 @@ static inline u32 media_entity_subtype(struct media_entity *entity)
- 	return entity->type & MEDIA_ENT_SUBTYPE_MASK;
- }
- 
-+#define MEDIA_ENTITY_ENUM_MAX_DEPTH	16
-+
-+struct media_entity_graph {
-+	struct {
-+		struct media_entity *entity;
-+		int link;
-+	} stack[MEDIA_ENTITY_ENUM_MAX_DEPTH];
-+	int top;
-+};
-+
- int media_entity_init(struct media_entity *entity, u16 num_pads,
- 		struct media_pad *pads, u16 extra_links);
- void media_entity_cleanup(struct media_entity *entity);
- int media_entity_create_link(struct media_entity *source, u16 source_pad,
- 		struct media_entity *sink, u16 sink_pad, u32 flags);
- 
-+void media_entity_graph_walk_start(struct media_entity_graph *graph,
-+		struct media_entity *entity);
-+struct media_entity *
-+media_entity_graph_walk_next(struct media_entity_graph *graph);
-+
- #endif
+What is undertaker?
+-------------------
+
+The undertaker is a tool for static code analysis for code with C
+preprocessor directives, which can be used in various modes. The most
+prominent one checks every single preprocessor block within the file
+whether it can be selected or deselected, which in many cases is a great
+asset for code maintenance.
+
+Some preprocessor blocks are only seemingly conditional. In many cases,
+it turns out that additional constraints from the project's configuration
+model causes such conditional blocks to be in fact unconditionally selected
+or unselected. We call such block "dead" and "undead" conditional blocks.
+
+Undertaker provides tools to extract the configuration model from
+the Linux configuration tooling Kconfig and to perform this check on whole
+source trees.
+
+We have already performed a check on the v2.6.38-rc1 tree and provide
+easy access to the results via an online interface[2]. There is also a cpio
+archive with the report files.
+
+What undertaker is not?
+-----------------------
+
+It isn't an automatic patch generator. Because of peculiarities in the
+Kconfig semantics, (ignored) coding guidelines and simply engineering
+issues, the reports might contain false negatives. Note that our
+philosophy is that we prefer false negatives over false positives, i.e.,
+we prefer to miss reports than reports that are no issue at all.
+
+What else can i do with undertaker?
+-----------------------------------
+
+You can extract boolean formulas (with or without model) for a given
+line of sourcecode in a file or for a given symbol. There is also an
+integration for emacs for interactive browsing of block and symbol
+preconditions.
+
+Additional uses are currently under development.
+
+[1] http://www4.informatik.uni-erlangen.de/Research/VAMOS/
+[2] http://www4.informatik.uni-erlangen.de/Research/VAMOS/linux-trees/
+
 -- 
-1.7.3.4
-
+Reinhard Tartler                     Department of Computer Science IV
+Martensstr 1, 91058 Erlangen Germany, University of Erlangen-Nuremberg
+            http://www4.informatik.uni-erlangen.de/~tartler
