@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab1A0AuJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 19:50:09 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:58378 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561Ab1A0AuI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 19:50:08 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6238"; a="72120252"
-Subject: Re: [PATCH] msm: smd: Add smd_pkt driver
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Brown <davidb@codeaurora.org>,
-        Niranjana Vishwanathapura <nvishwan@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <20110126153240.9cc6c2e2.akpm@linux-foundation.org>
-References: <1292437675-11561-1-git-send-email-nvishwan@codeaurora.org>
-	 <8yatygweqng.fsf@huya.qualcomm.com>
-	 <20110126153240.9cc6c2e2.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 26 Jan 2011 16:49:39 -0800
-Message-ID: <1296089379.29801.52.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754386Ab1A0A4e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 19:56:34 -0500
+Received: from void.printf.net ([89.145.121.20]:46444 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752504Ab1A0A4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 19:56:33 -0500
+From: Chris Ball <cjb@laptop.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: MMC fixes for 2.6.38-rc3
+Date: Wed, 26 Jan 2011 20:00:11 -0500
+Message-ID: <m3lj27i2jo.fsf@pullcord.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.0.60 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-26 at 15:32 -0800, Andrew Morton wrote:
-> On Tue, 25 Jan 2011 11:20:51 -0800
-> David Brown <davidb@codeaurora.org> wrote:
-> 
-> > On Wed, Dec 15 2010, Niranjana Vishwanathapura wrote:
-> > 
-> > > Add smd_pkt driver which provides device interface
-> > > to smd packet ports.
-> > >
-> > > Signed-off-by: Niranjana Vishwanathapura <nvishwan@codeaurora.org>
-> > > ---
-> > >  drivers/char/Kconfig       |    8 +
-> > >  drivers/char/Makefile      |    2 +
-> > >  drivers/char/msm_smd_pkt.c |  466 ++++++++++++++++++++++++++++++++++++++++++++
-> > >  3 files changed, 476 insertions(+), 0 deletions(-)
-> > >  create mode 100644 drivers/char/msm_smd_pkt.c
-> > 
-> > Andrew, what's the proper destination for this change?  Should this go
-> > into your tree?  Is there anything you want me to do with this change?
-> > 
-> 
-> Looks OK, I grabbed it.
-> 
-> I read the entire email trying to work out what an "SMD" is.  Failed. 
-> Oh well.
+Hi Linus,
 
-+       bool "MSM Shared Memory Driver (SMD)"
-+       help
-+         Support for the shared memory interface between the apps
-+         processor and the baseband processor.  Provides access to
-+         the "shared heap", as well as virtual serial channels
-+         used to communicate with various services on the baseband
-+         processor.
+Please pull from:
 
-It's an an interface from the cpu running Linux, and the other processor
-that co-exists with the one running Linux. They need to communicate for
-certain reasons .. I _think_ something like sending a text message is
-sent by communicating over this interface, or getting the phone to dial
-a number, along with many other things.
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
 
-Thats my take on it anyway.
+for five small fixes to MMC host controller drivers.  These have been
+tested in linux-next.  Thanks.
 
-Daniel
+The following changes since commit 6663050edd9c2e8b1e1f55c09459144d84c045f0:
+
+  Merge branch 'fixes' of master.kernel.org:/home/rmk/linux-2.6-arm (2011-01-26 09:04:18 +1000)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
+
+Jaehoon Chung (1):
+      mmc: sdhci-s3c: add platform_8bit_width() hook
+
+Jamie Iles (1):
+      mmc: jz4740: don't treat NULL clk as an error
+
+Jesper Juhl (1):
+      mmc: ushc: Remove duplicate include of usb.h
+
+Russell King - ARM Linux (1):
+      mmc: mmci: don't read command response when invalid
+
+Sonic Zhang (1):
+      mmc: bfin_sdh: fix alloc size for private data
+
+ drivers/mmc/host/bfin_sdh.c   |    2 +-
+ drivers/mmc/host/jz4740_mmc.c |    5 +++--
+ drivers/mmc/host/mmci.c       |   10 +++++-----
+ drivers/mmc/host/sdhci-s3c.c  |   36 ++++++++++++++++++++++++++++++++++++
+ drivers/mmc/host/ushc.c       |    1 -
+ 5 files changed, 45 insertions(+), 9 deletions(-)
 
 -- 
-
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Chris Ball   <cjb@laptop.org>
+One Laptop Per Child
