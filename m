@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078Ab1A0KXM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 05:23:12 -0500
-Received: from casper.infradead.org ([85.118.1.10]:49113 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753545Ab1A0KXL convert rfc822-to-8bit (ORCPT
+	id S1754016Ab1A0K3L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 05:29:11 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:36053 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753741Ab1A0K3K convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 05:23:11 -0500
+	Thu, 27 Jan 2011 05:29:10 -0500
 Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 5/20]  5: Uprobes:
  register/unregister probes.
 From: Peter Zijlstra <peterz@infradead.org>
@@ -38,8 +38,8 @@ References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
 	 <20110127100157.GS19725@linux.vnet.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Thu, 27 Jan 2011 11:23:37 +0100
-Message-ID: <1296123817.15234.57.camel@laptop>
+Date: Thu, 27 Jan 2011 11:29:36 +0100
+Message-ID: <1296124176.15234.67.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
@@ -47,28 +47,33 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, 2011-01-27 at 15:31 +0530, Srikar Dronamraju wrote:
-> > > >  - validate that the vma is indeed a map of the right inode
-> > > 
-> > > We can add a check in write_opcode( we need to pass the inode to
-> > > write_opcode).
-> > 
-> > sure..
-> > 
-> > > >  - validate that the offset of the probe corresponds with the stored
-> > > > address
-> > > 
-> > > I am not clear on this. We would have derived the address from the
-> > > offset. So is that we check for
-> > >  (vaddr == vma->vm_start + uprobe->offset)
-> > 
-> > Sure, but the vma might have changed since you computed the offset -)
 > 
-> If the vma has changed then it would fail the 2nd validation i.e vma
-> corresponds to the uprobe inode right. If the vma was unmapped and
-> mapped back at the same place, then I guess we are okay to probe.
+> > You can, if only to wreck your thing, you can call mmap() as often as
+> > you like (until your virtual memory space runs out) and get many many
+> > mapping of the same file.
+> > 
+> > It doesn't need to make sense to the linker, all it needs to do is
+> > confuse your code ;-)
+> 
+> Currently if there are multiple mappings of the same executable
+> code, only one mapped area would have the breakpoint inserted.
 
-It can be unmapped and mapped back slightly different. A map of the same
-file doesn't need to mean its in the exact same location or has the
-exact same pgoffset.
+Right, so you could use it to make debugging harder..
 
+> If the code were to execute from some other mapping, then it would
+> work as if there are no probes.  However if the code from the
+> mapping that had the breakpoint executes then we would see the
+> probes.
+> 
+> If we want to insert breakpoints in each of the maps then we
+> would have to extend mm->uprobes_vaddr.
+> 
+> Do you have any other ideas to tackle this?
 
+Supposing I can get my preemptible mmu patches anywhere.. you could
+simply call install_uprobe() while holding the i_mmap_mutex ;-)
+
+> Infact do you think we should be handling this case?
+
+I'm really not sure how often this would happen, but dealing with it
+sure makes me feel better..
