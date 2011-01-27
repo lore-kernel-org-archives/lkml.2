@@ -1,113 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754435Ab1A0BaX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 20:30:23 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46864 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561Ab1A0BaW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 20:30:22 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 27 Jan 2011 10:24:18 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+	id S1754529Ab1A0Bal (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 20:30:41 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:54081 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754494Ab1A0Bak (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 20:30:40 -0500
+Date: Wed, 26 Jan 2011 17:30:19 -0800
+From: Kees Cook <kees.cook@canonical.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg Thelen <gthelen@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUGFIX] memcg: fix res_counter_read_u64 lock aware (Was Re:
- [PATCH] oom: handle overflow in mem_cgroup_out_of_memory()
-Message-Id: <20110127102418.fc200c96.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110126170824.ef2ab571.akpm@linux-foundation.org>
-References: <1296030555-3594-1-git-send-email-gthelen@google.com>
-	<20110126170713.GA2401@cmpxchg.org>
-	<xr93y667lgdm.fsf@gthelen.mtv.corp.google.com>
-	<20110126183023.GB2401@cmpxchg.org>
-	<xr9362tbl83f.fsf@gthelen.mtv.corp.google.com>
-	<20110126142909.0b710a0c.akpm@linux-foundation.org>
-	<20110127092434.df18c7a6.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110127095342.3d81cf5f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110126170824.ef2ab571.akpm@linux-foundation.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Tejun Heo <tj@kernel.org>, Marcus Meissner <meissner@suse.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Eugene Teo <eugeneteo@kernel.org>, Joe Perches <joe@perches.com>,
+        Bjorn Helgaas <bjorn.helgaas@hp.com>, Len Brown <len.brown@intel.com>,
+        Changli Gao <xiaosuo@gmail.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>
+Subject: Re: [PATCH] use %pK for /proc/kallsyms and /proc/modules
+Message-ID: <20110127013019.GJ4981@outflux.net>
+References: <20110125181058.GA25670@outflux.net>
+ <20110126155706.0188fe02.akpm@linux-foundation.org>
+ <20110127002936.GG4981@outflux.net>
+ <20110126164650.ef5bd302.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110126164650.ef5bd302.akpm@linux-foundation.org>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Jan 2011 17:08:24 -0800
-Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> On Thu, 27 Jan 2011 09:53:42 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On Wed, Jan 26, 2011 at 04:46:50PM -0800, Andrew Morton wrote:
+> On Wed, 26 Jan 2011 16:29:36 -0800
+> Kees Cook <kees.cook@canonical.com> wrote:
 > 
-> > res_counter_read_u64 reads u64 value without lock. It's dangerous
-> > in 32bit environment. This patch adds lock.
+> > > > Note that this changes %x to %p, so some legitimately 0 values in
+> > > > /proc/kallsyms would have changed from 00000000 to "(null)". To avoid
+> > > > this, "(null)" is not used when using the "K" format. Anything parsing
+> > > > such addresses should have no problem with this change. (Thanks to Joe
+> > > > Perches for the suggestion.)
+> > > 
+> > > OK, so what applications did this patch just break?
 > > 
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > ---
-> >  include/linux/res_counter.h |   13 ++++++++++++-
-> >  kernel/res_counter.c        |    2 +-
-> >  2 files changed, 13 insertions(+), 2 deletions(-)
-> > 
-> > Index: mmotm-0125/include/linux/res_counter.h
-> > ===================================================================
-> > --- mmotm-0125.orig/include/linux/res_counter.h
-> > +++ mmotm-0125/include/linux/res_counter.h
-> > @@ -68,7 +68,18 @@ struct res_counter {
-> >   * @pos:     and the offset.
-> >   */
-> >  
-> > -u64 res_counter_read_u64(struct res_counter *counter, int member);
-> > +u64 res_counter_read_u64_locked(struct res_counter *counter, int member);
-> > +
-> > +static inline u64 res_counter_read_u64(struct res_counter *counter, int member)
-> > +{
-> > +	unsigned long flags;
-> > +	u64 ret;
-> > +
-> > +	spin_lock_irqsave(&counter->lock, flags);
-> > +	ret = res_counter_read_u64_locked(counter, member);
-> > +	spin_unlock_irqrestore(&counter->lock, flags);
-> > +	return ret;
-> > +}
-> >  
-> >  ssize_t res_counter_read(struct res_counter *counter, int member,
-> >  		const char __user *buf, size_t nbytes, loff_t *pos,
-> > Index: mmotm-0125/kernel/res_counter.c
-> > ===================================================================
-> > --- mmotm-0125.orig/kernel/res_counter.c
-> > +++ mmotm-0125/kernel/res_counter.c
-> > @@ -126,7 +126,7 @@ ssize_t res_counter_read(struct res_coun
-> >  			pos, buf, s - buf);
-> >  }
-> >  
-> > -u64 res_counter_read_u64(struct res_counter *counter, int member)
-> > +u64 res_counter_read_u64_locked(struct res_counter *counter, int member)
-> >  {
-> >  	return *res_counter_member(counter, member);
-> >  }
+> > I'm not aware of any breakage as a result of this yet.
 > 
-> We don't need the lock on 64-bit platforms!
+> There will be some - there always are :( But users will only see
+> problems if they've set kptr_restrict.
+
+If something can parse "null", "00000001" through "99999999", and _not_
+"00000000", I will happily giggle at them. :)
+
 > 
-All res_counter function doesn't handle 32/64 bit differences. So, I did 
-in this style for now.
+> Which they shall do.  How come we defaulted kptr_restrict to "true"?
 
-> And there's zero benefit to inlining the spin_lock/unlock(), given that
-> the function will always be making a function call anyway.
-> 
-Ok.
+Because that's the correct value! :) Unprivileged userspace doesn't need to
+see kernel addresses by default, that's for CAP_SYSLOG.
 
-> See i_size_read() for inspiration.
-> 
+-Kees
 
-I hate res_counter ;) I'll update patch.
-
-Thanks,
--Kame
-
-
-
+-- 
+Kees Cook
+Ubuntu Security Team
