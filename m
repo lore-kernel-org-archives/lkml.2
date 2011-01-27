@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119Ab1A0Xgq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 18:36:46 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50184 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754052Ab1A0Xgo (ORCPT
+	id S1754087Ab1A0XkG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 18:40:06 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:38357 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753965Ab1A0XkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 18:36:44 -0500
-Date: Thu, 27 Jan 2011 15:36:42 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [RFC] mm: Make vm_acct_memory scalable for large memory
- allocations
-Message-Id: <20110127153642.f022b51c.akpm@linux-foundation.org>
-In-Reply-To: <1296082319.2712.100.camel@schen9-DESK>
-References: <1296082319.2712.100.camel@schen9-DESK>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Jan 2011 18:40:04 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtAEAAOPQU15LN5mgWdsb2JhbACkfBYBARYiJLxmDYVCBA
+Date: Fri, 28 Jan 2011 10:39:29 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Alex Elder <aelder@sgi.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: xfs: very slow after mount, very slow at umount
+Message-ID: <20110127233929.GM21311@dastard>
+References: <4D40C8D1.8090202@teksavvy.com>
+ <20110127033011.GH21311@dastard>
+ <4D40EB2F.2050809@teksavvy.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D40EB2F.2050809@teksavvy.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Jan 2011 14:51:59 -0800
-Tim Chen <tim.c.chen@linux.intel.com> wrote:
-
-> During testing of concurrent malloc/free by multiple processes on a 8
-> socket NHM-EX machine (8cores/socket, 64 cores total), I noticed that
-> malloc of large memory (e.g. 32MB) did not scale well.  A test patch
-> included here increased 32MB mallocs/free with 64 concurrent processes
-> from 69K operations/sec to 4066K operations/sec on 2.6.37 kernel, and
-> eliminated the cpu cycles contending for spin_lock in the vm_commited_as
-> percpu_counter.
-
-This seems like a pretty dumb test case.  We have 64 cores sitting in a
-loop "allocating" 32MB of memory, not actually using that memory and
-then freeing it up again.
-
-Any not-completely-insane application would actually _use_ the memory. 
-Which involves pagefaults, page allocations and much memory traffic
-modifying the page contents.
-
-Do we actually care?
-
-> Spin lock contention occurs when vm_acct_memory increments/decrements
-> the percpu_counter vm_committed_as by the number of pages being
-> used/freed. Theoretically vm_committed_as is a percpu_counter and should
-> streamline the concurrent update by using the local counter in
-> vm_commited_as.  However, if the update is greater than
-> percpu_counter_batch limit, then it will overflow into the global count
-> in vm_commited_as.  Currently percpu_counter_batch is non-configurable
-> and hardcoded to 2*num_online_cpus.  So any update of vm_commited_as by
-> more than 256 pages will cause overflow in my test scenario which has
-> 128 logical cpus. 
+On Wed, Jan 26, 2011 at 10:49:03PM -0500, Mark Lord wrote:
+> On 11-01-26 10:30 PM, Dave Chinner wrote:
+> > [Please cc xfs@oss.sgi.com on XFS bug reports. Added.]
+> >
+> > On Wed, Jan 26, 2011 at 08:22:25PM -0500, Mark Lord wrote:
+> >> Alex / Christoph,
+> >>
+> >> My mythtv box here uses XFS on a 2TB drive for storing recordings and videos.
+> >> It is behaving rather strangely though, and has gotten worse recently.
+> >> Here is what I see happening:
+> >>
+> >> The drive mounts fine at boot, but the very first attempt to write a new file
+> >> to the filesystem suffers from a very very long pause, 30-60 seconds, during which
+> >> time the disk activity light is fully "on".
+> >
+> > Please post the output of xfs_info <mtpt> so we can see what you
+> > filesystem configuration is.
 > 
-> In the patch, I have set an enlargement multiplication factor for
-> vm_commited_as's batch limit. I limit the sum of all local counters up
-> to 5% of the total pages before overflowing into the global counter.
-> This will avoid the frequent contention of the spin_lock in
-> vm_commited_as. Some additional work will need to be done to make
-> setting of this multiplication factor cpu hotplug aware.  Advise on
-> better approaches are welcomed.
+>    /dev/sdb1 on /var/lib/mythtv type xfs
+> (rw,noatime,allocsize=64M,logbufs=8,largeio)
 > 
-> ...
-> 
-> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-> diff --git a/include/linux/percpu_counter.h b/include/linux/percpu_counter.h
-> index 46f6ba5..5a892d8 100644
-> --- a/include/linux/percpu_counter.h
-> +++ b/include/linux/percpu_counter.h
-> @@ -21,6 +21,7 @@ struct percpu_counter {
->  #ifdef CONFIG_HOTPLUG_CPU
->  	struct list_head list;	/* All percpu_counters are on a list */
->  #endif
-> +	u32 multibatch;
->  	s32 __percpu *counters;
->  };
+>    [~] xfs_info /var/lib/mythtv
+>    meta-data=/dev/sdb1              isize=256    agcount=7453, agsize=65536 blks
+>             =                       sectsz=512   attr=2
+>    data     =                       bsize=4096   blocks=488378638, imaxpct=5
+>             =                       sunit=0      swidth=0 blks
+>    naming   =version 2              bsize=4096   ascii-ci=0
+>    log      =internal               bsize=4096   blocks=32768, version=2
+>             =                       sectsz=512   sunit=0 blks, lazy-count=0
+>    realtime =none                   extsz=4096   blocks=0, rtextents=0
 
-I dunno.  Wouldn't it be better to put a `batch' field into
-percpu_counter and then make the global percpu_counter_batch just go
-away?
+7453 AGs means that the first write coud cause up to ~7500 disk
+reads to occur as the AGF headers are read in to find where the
+best free space extent for allocation lies.
 
-That would require modifying each counter's `batch' at cpuhotplug time,
-while somehow retaining the counter's user's intent.  So perhaps the
-counter would need two fields - original_batch and operating_batch or
-similar.
+That'll be your problem.
 
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
