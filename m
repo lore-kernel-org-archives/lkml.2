@@ -1,88 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191Ab1A0KcN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 05:32:13 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:45100 "EHLO e5.ny.us.ibm.com"
+	id S1754200Ab1A0Ker (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 05:34:47 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:38008 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753883Ab1A0KcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 05:32:12 -0500
-Date: Thu, 27 Jan 2011 15:55:27 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 5/20]  5: Uprobes:
- register/unregister probes.
-Message-ID: <20110127102527.GT19725@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20101216095817.23751.76989.sendpatchset@localhost6.localdomain6>
- <1295957744.28776.722.camel@laptop>
- <20110126075558.GB19725@linux.vnet.ibm.com>
- <1296036708.28776.1138.camel@laptop>
- <20110126153036.GN19725@linux.vnet.ibm.com>
- <1296056756.28776.1247.camel@laptop>
- <20110126165645.GP19725@linux.vnet.ibm.com>
- <1296061949.28776.1343.camel@laptop>
- <20110127100157.GS19725@linux.vnet.ibm.com>
- <1296123817.15234.57.camel@laptop>
+	id S1753923Ab1A0Kep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 05:34:45 -0500
+Date: Thu, 27 Jan 2011 11:34:38 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [PATCH 4/7] memcg : fix charge function of THP allocation.
+Message-ID: <20110127103438.GC2401@cmpxchg.org>
+References: <20110121153431.191134dd.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110121154430.70d45f15.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1296123817.15234.57.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+In-Reply-To: <20110121154430.70d45f15.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2011-01-27 11:23:37]:
-
-> On Thu, 2011-01-27 at 15:31 +0530, Srikar Dronamraju wrote:
-> > > > >  - validate that the vma is indeed a map of the right inode
-> > > > 
-> > > > We can add a check in write_opcode( we need to pass the inode to
-> > > > write_opcode).
-> > > 
-> > > sure..
-> > > 
-> > > > >  - validate that the offset of the probe corresponds with the stored
-> > > > > address
-> > > > 
-> > > > I am not clear on this. We would have derived the address from the
-> > > > offset. So is that we check for
-> > > >  (vaddr == vma->vm_start + uprobe->offset)
-> > > 
-> > > Sure, but the vma might have changed since you computed the offset -)
-> > 
-> > If the vma has changed then it would fail the 2nd validation i.e vma
-> > corresponds to the uprobe inode right. If the vma was unmapped and
-> > mapped back at the same place, then I guess we are okay to probe.
+On Fri, Jan 21, 2011 at 03:44:30PM +0900, KAMEZAWA Hiroyuki wrote:
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > 
-> It can be unmapped and mapped back slightly different. A map of the same
-> file doesn't need to mean its in the exact same location or has the
-> exact same pgoffset.
+> When THP is used, Hugepage size charge can happen. It's not handled
+> correctly in mem_cgroup_do_charge(). For example, THP can fallback
+> to small page allocation when HUGEPAGE allocation seems difficult
+> or busy, but memory cgroup doesn't understand it and continue to
+> try HUGEPAGE charging. And the worst thing is memory cgroup
+> believes 'memory reclaim succeeded' if limit - usage > PAGE_SIZE.
 > 
+> By this, khugepaged etc...can goes into inifinite reclaim loop
+> if tasks in memcg are busy.
 > 
+> After this patch 
+>  - Hugepage allocation will fail if 1st trial of page reclaim fails.
+>  - distinguish THP allocaton from Bached allocation. 
 
-If its not at the exact same location, then our third validation of
-checking that (vaddr == vma->vm_start + uprobe->offset)  should fail
-right?
+This does too many things at once.  Can you split this into more
+patches where each one has a single objective?  Thanks.
 
-Also should it be (vaddr == uprobe->offset + vma->vm_start -
-vma->pgoff << PAGE_SHIFT) ?
-
--- 
-Thanks and Regards
-Srikar
+	Hannes
