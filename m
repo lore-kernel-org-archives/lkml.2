@@ -1,132 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab1A0N5H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 08:57:07 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47979 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752937Ab1A0N4D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 08:56:03 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=UWbSenII1TcTyltYt7x+i2ShUkT4TWEmNvzhBzSX8UDm1eZEOClZPdzb8ygMY7I//g
-         FaZt2r7NmukjrUPyyhIm+WzW6Wn0GcR7vnTQ76tBDLUJsd2BvtmnkcS24jM43hMhK6vb
-         Pgj1rj+kMz8CSUCj1Cr6dpvf7sRuYmhXoNjqg=
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH -mm 4/6] arm: convert little-endian bitops macros to static inline functions
-Date: Thu, 27 Jan 2011 22:56:21 +0900
-Message-Id: <1296136583-13815-5-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1296136583-13815-1-git-send-email-akinobu.mita@gmail.com>
-References: <1296136583-13815-1-git-send-email-akinobu.mita@gmail.com>
+	id S1753287Ab1A0OAi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 09:00:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8395 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752995Ab1A0OAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 09:00:37 -0500
+Date: Thu, 27 Jan 2011 16:00:24 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [patch 2/3] memcg: prevent endless loop on huge page charge
+Message-ID: <20110127140024.GR14750@redhat.com>
+References: <20110121153431.191134dd.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110121154430.70d45f15.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110127103438.GC2401@cmpxchg.org>
+ <20110127134645.GA14309@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110127134645.GA14309@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(This patch is intended to be folded into the patch in -mm:
-arm-introduce-little-endian-bitops.patch)
+On Thu, Jan 27, 2011 at 02:46:45PM +0100, Johannes Weiner wrote:
+> The charging code can encounter a charge size that is bigger than a
+> regular page in two situations: one is a batched charge to fill the
+> per-cpu stocks, the other is a huge page charge.
+> 
+> This code is distributed over two functions, however, and only the
+> outer one is aware of huge pages.  In case the charging fails, the
+> inner function will tell the outer function to retry if the charge
+> size is bigger than regular pages--assuming batched charging is the
+> only case.  And the outer function will retry forever charging a huge
+> page.
+> 
+> This patch makes sure the inner function can distinguish between batch
+> charging and a single huge page charge.  It will only signal another
+> attempt if batch charging failed, and go into regular reclaim when it
+> is called on behalf of a huge page.
+> 
+Yeah, that is exactly the case I am debugging right now. Came up with
+different solution: pass page_size to __mem_cgroup_do_charge() and
+compare csize with page_size (not CHARGE_SIZE). Not sure which solution
+it more correct.
 
-The little-endian bitops on arm are written as preprocessor
-macros with the cast to "unsigned long *".
-This means that even non-pointers will be accepted without an error, and
-that is a Very Bad Thing.
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> ---
+>  mm/memcontrol.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 8fa4be3..17c4e36 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1847,7 +1847,7 @@ static int __mem_cgroup_do_charge(struct mem_cgroup *mem, gfp_t gfp_mask,
+>  	} else
+>  		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
+>  
+> -	if (csize > PAGE_SIZE) /* change csize and retry */
+> +	if (csize == CHARGE_SIZE) /* retry without batching */
+>  		return CHARGE_RETRY;
+>  
+>  	if (!(gfp_mask & __GFP_WAIT))
+> -- 
+> 1.7.3.5
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom policy in Canada: sign http://dissolvethecrtc.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-This converts the little-endian bitops macros to static inline functions
-with proper prototypes.
-
-Suggested-by: "H. Peter Anvin" <hpa@zytor.com>
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
----
- arch/arm/include/asm/bitops.h |   70 +++++++++++++++++++++++++++++------------
- 1 files changed, 50 insertions(+), 20 deletions(-)
-
-diff --git a/arch/arm/include/asm/bitops.h b/arch/arm/include/asm/bitops.h
-index 56d6b54..f530d59 100644
---- a/arch/arm/include/asm/bitops.h
-+++ b/arch/arm/include/asm/bitops.h
-@@ -303,26 +303,56 @@ static inline int fls(int x)
- #include <asm-generic/bitops/hweight.h>
- #include <asm-generic/bitops/lock.h>
- 
--#define __set_bit_le(nr, p)			\
--	__set_bit(WORD_BITOFF_TO_LE(nr), (unsigned long *)(p))
--#define __clear_bit_le(nr, p)			\
--	__clear_bit(WORD_BITOFF_TO_LE(nr), (unsigned long *)(p))
--#define __test_and_set_bit_le(nr, p)			\
--		__test_and_set_bit(WORD_BITOFF_TO_LE(nr), (unsigned long *)(p))
--#define test_and_set_bit_le(nr, p)          \
--		test_and_set_bit(WORD_BITOFF_TO_LE(nr), (unsigned long *)(p))
--#define __test_and_clear_bit_le(nr, p)			\
--		__test_and_clear_bit(WORD_BITOFF_TO_LE(nr), (unsigned long *)(p))
--#define test_and_clear_bit_le(nr, p)	\
--		test_and_clear_bit(WORD_BITOFF_TO_LE(nr), (unsigned long *)(p))
--#define test_bit_le(nr, p)			\
--		test_bit(WORD_BITOFF_TO_LE(nr), (unsigned long *)(p))
--#define find_first_zero_bit_le(p, sz)		\
--		_find_first_zero_bit_le(p, sz)
--#define find_next_zero_bit_le(p, sz, off)	\
--		_find_next_zero_bit_le(p, sz, off)
--#define find_next_bit_le(p, sz, off) \
--		_find_next_bit_le((unsigned long *)(p), sz, off)
-+static inline void __set_bit_le(int nr, void *addr)
-+{
-+	__set_bit(WORD_BITOFF_TO_LE(nr), addr);
-+}
-+
-+static inline void __clear_bit_le(int nr, void *addr)
-+{
-+	__clear_bit(WORD_BITOFF_TO_LE(nr), addr);
-+}
-+
-+static inline int __test_and_set_bit_le(int nr, void *addr)
-+{
-+	return __test_and_set_bit(WORD_BITOFF_TO_LE(nr), addr);
-+}
-+
-+static inline int test_and_set_bit_le(int nr, void *addr)
-+{
-+	return test_and_set_bit(WORD_BITOFF_TO_LE(nr), addr);
-+}
-+
-+static inline int __test_and_clear_bit_le(int nr, void *addr)
-+{
-+	return __test_and_clear_bit(WORD_BITOFF_TO_LE(nr), addr);
-+}
-+
-+static inline int test_and_clear_bit_le(int nr, void *addr)
-+{
-+	return test_and_clear_bit(WORD_BITOFF_TO_LE(nr), addr);
-+}
-+
-+static inline int test_bit_le(int nr, const void *addr)
-+{
-+	return test_bit(WORD_BITOFF_TO_LE(nr), addr);
-+}
-+
-+static inline int find_first_zero_bit_le(const void *p, unsigned size)
-+{
-+	return _find_first_zero_bit_le(p, size);
-+}
-+
-+static inline int find_next_zero_bit_le(const void *p, int size, int offset)
-+{
-+	return _find_next_zero_bit_le(p, size, offset);
-+}
-+
-+static inline int find_next_bit_le(const void *p, int size, int offset)
-+{
-+	return _find_next_bit_le(p, size, offset);
-+}
-+
- /*
-  * Ext2 is defined to use little-endian byte ordering.
-  */
--- 
-1.7.3.4
-
+--
+			Gleb.
