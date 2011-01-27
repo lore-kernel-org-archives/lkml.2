@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513Ab1A0APN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 19:15:13 -0500
-Received: from mail.perches.com ([173.55.12.10]:3396 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754376Ab1A0APM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 19:15:12 -0500
-Subject: Re: [PATCH] use %pK for /proc/kallsyms and /proc/modules
-From: Joe Perches <joe@perches.com>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Tejun Heo <tj@kernel.org>, Marcus Meissner <meissner@suse.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Eugene Teo <eugeneteo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>, Len Brown <len.brown@intel.com>,
-        Changli Gao <xiaosuo@gmail.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>
-In-Reply-To: <20110125181058.GA25670@outflux.net>
-References: <20110125181058.GA25670@outflux.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 26 Jan 2011 16:15:09 -0800
-Message-ID: <1296087309.2448.33.camel@Joe-Laptop>
+	id S1754502Ab1A0AQx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 19:16:53 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42524 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754376Ab1A0AQw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Jan 2011 19:16:52 -0500
+Date: Wed, 26 Jan 2011 16:16:48 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Daniel Lezcano <daniel.lezcano@free.fr>
+Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cgroup : remove the ns_cgroup
+Message-Id: <20110126161648.39af9576.akpm@linux-foundation.org>
+In-Reply-To: <1295948388-15108-1-git-send-email-daniel.lezcano@free.fr>
+References: <1295948388-15108-1-git-send-email-daniel.lezcano@free.fr>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-01-25 at 10:10 -0800, Kees Cook wrote:
-> Note that when compiling with -Wformat, these harmless warnings will
-> be emitted, and can be ignored:
->   warning: '0' flag used with ‘%p’ gnu_printf format
+On Tue, 25 Jan 2011 10:39:48 +0100
+Daniel Lezcano <daniel.lezcano@free.fr> wrote:
 
-> diff --git a/kernel/kallsyms.c b/kernel/kallsyms.c
-[]
-> @@ -477,11 +477,11 @@ static int s_show(struct seq_file *m, void *p)
->  		 */
->  		type = iter->exported ? toupper(iter->type) :
->  					tolower(iter->type);
-> -		seq_printf(m, "%0*lx %c %s\t[%s]\n",
-> +		seq_printf(m, "%0*pK %c %s\t[%s]\n",
->  			   (int)(2 * sizeof(void *)),
->  			   iter->value, type, iter->name, iter->module_name);
+> The ns_cgroup is an annoying cgroup at the namespace / cgroup frontier
+> and leads to some problems:
+> 
+>         * cgroup creation is out-of-control
+>         * cgroup name can conflict when pids are looping
+>         * it is not possible to have a single process handling
+>         a lot of namespaces without falling in a exponential creation time
+>         * we may want to create a namespace without creating a cgroup
+> 
+>         The ns_cgroup was replaced by a compatibility flag 'clone_children',
+>         where a newly created cgroup will copy the parent cgroup values.
+>         The userspace has to manually create a cgroup and add a task to
+>         the 'tasks' file.
+> 
+> This patch removes the ns_cgroup as suggested in the following thread:
+> 
+> https://lists.linux-foundation.org/pipermail/containers/2009-June/018616.html
+> 
+> The 'cgroup_clone' function is removed because it is no longer used.
+> 
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@free.fr>
+> Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+> Cc: Eric W. Biederman <ebiederm@xmission.com>
+> Cc: Jamal Hadi Salim <hadi@cyberus.ca>
+> Reviewed-by: Li Zefan <lizf@cn.fujitsu.com>
+> Acked-by: Paul Menage <menage@google.com>
+> Acked-by: Matt Helsley <matthltc@us.ibm.com>
+>
+> ...
+>
+>  22 files changed, 4 insertions(+), 287 deletions(-)
 
-You can change this to
+I didn't see that one coming.
 
-		seq_printf(m, "%pK %c %s\t[%s]\n",
-  			   iter->value, type, iter->name, iter->module_name);
+This change is userspace-visible, is it not?  What are the implications
+of this?  There's some discussion in that nearly-two-year-old thread
+regarding making provision for back-compatibility but I'm not seeing
+such things in this patch?
 
-as that's the normal size.
-
-Presto.  No warnings.  Same output.
-
->  	} else
-> -		seq_printf(m, "%0*lx %c %s\n",
-> +		seq_printf(m, "%0*pK %c %s\n",
->  			   (int)(2 * sizeof(void *)),
-
-Here too.
 
