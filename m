@@ -1,89 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753703Ab1A0Iut (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 03:50:49 -0500
-Received: from smtp1-g21.free.fr ([212.27.42.1]:55870 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752243Ab1A0Ius (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 03:50:48 -0500
-Message-ID: <4D4131DE.3080309@free.fr>
-Date: Thu, 27 Jan 2011 09:50:38 +0100
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1753797Ab1A0IzY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 03:55:24 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60133 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338Ab1A0IzX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 03:55:23 -0500
+Date: Thu, 27 Jan 2011 08:54:38 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Colin Cross <ccross@google.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        linux-sh <linux-sh@vger.kernel.org>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Richard Zhao <linuxzsc@gmail.com>
+Subject: Re: Locking in the clk API
+Message-ID: <20110127085438.GA25239@n2100.arm.linux.org.uk>
+References: <201101111016.42819.jeremy.kerr@canonical.com> <20110111091607.GI12552@n2100.arm.linux.org.uk> <201101111744.59712.jeremy.kerr@canonical.com> <20110111103929.GN24920@pengutronix.de> <AANLkTinHL9X_bqMPR=W8Va01O4xngUnpGCkCiE3xEdiQ@mail.gmail.com> <4D386ABF.9060908@fluff.org> <20110120190822.GK6335@n2100.arm.linux.org.uk> <4D3932B4.8010904@codeaurora.org> <20110121094042.GD13235@n2100.arm.linux.org.uk> <4D40F5CC.6080809@codeaurora.org>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, libvir-list@redhat.com
-Subject: Re: [PATCH] cgroup : remove the ns_cgroup
-References: <1295948388-15108-1-git-send-email-daniel.lezcano@free.fr>	<20110126161837.43830756.akpm@linux-foundation.org>	<4D40C5A3.4070703@cn.fujitsu.com> <20110126174513.c2a20fff.akpm@linux-foundation.org>
-In-Reply-To: <20110126174513.c2a20fff.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D40F5CC.6080809@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2011 02:45 AM, Andrew Morton wrote:
-> On Thu, 27 Jan 2011 09:08:51 +0800 Li Zefan<lizf@cn.fujitsu.com>  wrote:
->
->> Andrew Morton wrote:
->>> On Tue, 25 Jan 2011 10:39:48 +0100
->>> Daniel Lezcano<daniel.lezcano@free.fr>  wrote:
->>>
->>>> This patch removes the ns_cgroup as suggested in the following thread:
->>> I had this patch queued up in September last year, but dropped it.  Why
->>> did I do that?
->> Because you wanted to wait for some time for users (if any) to notice this
->> coming change.
->>
->> Author: Daniel Lezcano<daniel.lezcano@free.fr>
->> Date:   Wed Oct 27 15:33:38 2010 -0700
->>
->>      cgroup: notify ns_cgroup deprecated
->>
->>      The ns_cgroup will be removed very soon.  Let's warn, for this version,
->>      ns_cgroup is deprecated.
->>
->>      Make ns_cgroup and clone_children exclusive.  If the clone_children is set
->>      and the ns_cgroup is mounted, let's fail with EINVAL when the ns_cgroup
->>      subsys is created (a printk will help the user to understand why the
->>      creation fails).
->>
->>      Update the feature remove schedule file with the deprecated ns_cgroup.
->>
->>      Signed-off-by: Daniel Lezcano<daniel.lezcano@free.fr>
->>      Acked-by: Paul Menage<menage@google.com>
->>      Signed-off-by: Andrew Morton<akpm@linux-foundation.org>
->>      Signed-off-by: Linus Torvalds<torvalds@linux-foundation.org>
-> ooh, that was clever of me.
->
-> Here is the text which was missing from the changelog:
->
->    This is a userspace-visible change.  Commit 45531757b45c ("cgroup:
->    notify ns_cgroup deprecated") (merged into 2.6.27) caused the kernel
->    to emit a printk warning users that the feature is planned for
->    removal.  Since that time we have heard from XXX users who were
->    affected by this.
->
-> Please provide XXX.
+On Wed, Jan 26, 2011 at 08:34:20PM -0800, Saravana Kannan wrote:
+> I'm not too familiar with serial/tty, does anyone know if the  
+> .set_termios needs to be atmoic? If not, we could just change  
+> cpm_uart/cpm_uart_core.c to use mutex instead of spinlock.
 
-Ok, AFAIK nobody makes use of the ns_cgroup except the LXC userspace 
-tools which I maintain and where
-the backward compatibility with the ns_cgroup and the clone_children 
-flag is already implemented.
-Since today nobody seems to be affected by this.
+The locking is there to protect against the interrupt handler accessing
+the port->* stuff (which seems to have been forgotten by the cpm driver).
 
-I Cc'ed the libvirt mailing list.
-
-> How do we know that 2.6.37->2.6.38 is long enough?  Will any major
-> distros be released containing this warning in that timeframe?  I doubt
-> it.
-
-Hmm, maybe it is too short but I don't think someone will complain about 
-this feature removal.
-Google chromium is using the namespaces, hence a lot of cgroup is 
-created on the system. The vsftpd and some pam modules uses the 
-namespaces too.
-I won't be surprised if one of these applications fails with 'clone' 
-returning EEXIST ...
-
+I don't see any reason why clk_set_rate() needs to be under the spinlock
+there - we need the reprogramming of the baud rate within the spinlock
+on 8250 because of DLAB bit hiding the data registers.  It's also a good
+idea that it _is_ within the spinlock along with uart_update_timeout()
+to ensure timeouts and the baud rate are updated together.
