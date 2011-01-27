@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab1A0Jyw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 04:54:52 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50803 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754052Ab1A0Jyu (ORCPT
+	id S1753883Ab1A0KEM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 05:04:12 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:55367 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752715Ab1A0KEK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 04:54:50 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 27 Jan 2011 18:48:27 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>, stable@kernel.org
-Subject: Re: [PATCH] memsw: handle swapaccount kernel parameter correctly
-Message-Id: <20110127184827.a8927595.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110127092951.GA8036@tiehlicka.suse.cz>
-References: <20110126152158.GA4144@tiehlicka.suse.cz>
-	<20110126140618.8e09cd23.akpm@linux-foundation.org>
-	<20110127082320.GA15500@tiehlicka.suse.cz>
-	<20110127180330.78585085.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110127092951.GA8036@tiehlicka.suse.cz>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Jan 2011 05:04:10 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110126173241.GD1757@nowhere>
+References: <AANLkTi=hQpCVJWZ_Op4mhnehufcBg2=h_=q4xXD66tGb@mail.gmail.com>
+	<20110126173241.GD1757@nowhere>
+Date: Thu, 27 Jan 2011 11:04:09 +0100
+Message-ID: <AANLkTikEvEyMZgmCozw_yt1enRJ2+GTvd02BY30hUJt0@mail.gmail.com>
+Subject: Re: [PATCH 2/2] tracing, perf : add cpu hotplug trace events
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-hotplug@vger.kernel.org,
+        rostedt@goodmis.org, amit.kucheria@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Jan 2011 10:29:51 +0100
-Michal Hocko <mhocko@suse.cz> wrote:
+On 26 January 2011 18:32, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Tue, Jan 25, 2011 at 09:54:59AM +0100, Vincent Guittot wrote:
+>> Please find below a new proposal for adding trace events for cpu hotplug.
+>> The goal is to measure the latency of each part (kernel, architecture)
+>> and also to trace the cpu hotplug activity with other power events. I
+>> have tested these traces events on an arm platform.
+>>
+>> Subject: [PATCH 1/2] add cpu hotplug tracepoints
+>>
+>> this patch adds new events for cpu hotplug tracing
+>>  * plug/unplug sequence
+>>  * core and architecture latency measurements
+>>
+>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> ---
+>>  kernel/cpu.c |   17 +++++++++++++++++
+>>  1 files changed, 17 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/kernel/cpu.c b/kernel/cpu.c
+>> index 156cc55..f04e9cf 100644
+>> --- a/kernel/cpu.c
+>> +++ b/kernel/cpu.c
+>> @@ -16,6 +16,9 @@
+>>  #include <linux/mutex.h>
+>>  #include <linux/gfp.h>
+>>
+>> +#define CREATE_TRACE_POINTS
+>> +#include <trace/events/cpu_hotplug.h>
+>> +
+>>  #ifdef CONFIG_SMP
+>>  /* Serializes the updates to cpu_online_mask, cpu_present_mask */
+>>  static DEFINE_MUTEX(cpu_add_remove_lock);
+>> @@ -200,7 +203,9 @@ static int __ref take_cpu_down(void *_param)
+>>       int err;
+>>
+>>       /* Ensure this CPU doesn't handle any more interrupts. */
+>> +     trace_cpu_hotplug_arch_disable_start((unsigned int)(param->hcpu));
+>>       err = __cpu_disable();
+>> +     trace_cpu_hotplug_arch_disable_end((unsigned int)(param->hcpu));
+>
+> You should create a cpu var instead of doing that not very beautiful cast
+> twice.
+>
 
-> On Thu 27-01-11 18:03:30, KAMEZAWA Hiroyuki wrote:
-> > On Thu, 27 Jan 2011 09:23:20 +0100
-> > Michal Hocko <mhocko@suse.cz> wrote:
-> [...]
-> > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > > index db76ef7..cea2be48 100644
-> > > --- a/mm/memcontrol.c
-> > > +++ b/mm/memcontrol.c
-> > > @@ -5013,9 +5013,9 @@ struct cgroup_subsys mem_cgroup_subsys = {
-> > >  static int __init enable_swap_account(char *s)
-> > >  {
-> > >  	/* consider enabled if no parameter or 1 is given */
-> > > -	if (!s || !strcmp(s, "1"))
-> > > +	if (!(*s) || !strcmp(s, "=1"))
-> > >  		really_do_swap_account = 1;
-> > > -	else if (!strcmp(s, "0"))
-> > > +	else if (!strcmp(s, "=0"))
-> > >  		really_do_swap_account = 0;
-> > >  	return 1;
-> > >  }
-> > 
-> > Hmm, usual callser of __setup() includes '=' to parameter name, as
-> > 
-> > mm/hugetlb.c:__setup("hugepages=", hugetlb_nrpages_setup);
-> > mm/hugetlb.c:__setup("default_hugepagesz=", hugetlb_default_setup);
-> > 
-> > How about moving "=" to __setup() ?
-> 
-> I have considered that as well but then we couldn't use swapaccount
-> parameter without any value because the parameter parsing matches the
-> whole string. 
-> I found it better to have consistent [no]swapaccount with the =0|1
-> extension rather than keeping = in the setup like other users.
-> 
-> Sounds reasonable?
+OK
 
-Hmm. ok for this time.
+> Probably we should eventually rename arch_disable into just disable.
+>
+> And same for die, because otherwise the name is quite long.
+>
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+If we remove the arch extension of these names, we will have
+trace_cpu_hotplug_arch_up for __cpu_up (trace_cpu_hotplug_up is
+already used) and trace_cpu_hotplug_disable for __cpu_disable. would
+that be acceptable ?
 
-
-Could you try to write a patch for feature-removal-schedule.txt
-and tries to remove noswapaccount and do clean up all ?
-(And add warning to noswapaccount will be removed.....in 2.6.40)
-
-
-Thanks,
--Kame
-
-
-
-
+> Other than that, looks all good to me.
+>
+> Thanks.
+>
