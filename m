@@ -1,104 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754413Ab1A0KsJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 05:48:09 -0500
-Received: from cantor.suse.de ([195.135.220.2]:58027 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754122Ab1A0KsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 05:48:07 -0500
-Date: Thu, 27 Jan 2011 11:47:59 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: [PATCH] memsw: Deprecate noswapaccount kernel parameter and
- schedule it for removal
-Message-ID: <20110127104759.GA4301@tiehlicka.suse.cz>
-References: <20110126152158.GA4144@tiehlicka.suse.cz>
- <20110126140618.8e09cd23.akpm@linux-foundation.org>
- <20110127082320.GA15500@tiehlicka.suse.cz>
- <20110127180330.78585085.kamezawa.hiroyu@jp.fujitsu.com>
- <20110127092951.GA8036@tiehlicka.suse.cz>
- <20110127184827.a8927595.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1754440Ab1A0Kxt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 05:53:49 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:46461 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754055Ab1A0Kxr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 05:53:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=c2nCqs36fI32gtfsqeg9ZC6wdxrsBfgV+l1Cynlw+GUuAzUVKD6UFurbw+p+VgBLBs
+         /NOWd00yzFi3luBcnavTHns+Jpau+ag0tEguuxBHEWwjn9dACESiKPE4YwUK+9eysRs2
+         5X4RYN972XEXpgKDt7sTzaego8T1AD62Rl3jc=
+Date: Thu, 27 Jan 2011 11:53:31 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-api@vger.kernel.org, netdev@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        John Stultz <john.stultz@linaro.org>, Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Mike Frysinger <vapier@gentoo.org>, Paul Mackerras <paulus@samba.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH V10 00/15] ptp: IEEE 1588 hardware clock support
+Message-ID: <cover.1296124770.git.richard.cochran@omicron.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110127184827.a8927595.kamezawa.hiroyu@jp.fujitsu.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 27-01-11 18:48:27, KAMEZAWA Hiroyuki wrote:
-> Could you try to write a patch for feature-removal-schedule.txt
-> and tries to remove noswapaccount and do clean up all ?
-> (And add warning to noswapaccount will be removed.....in 2.6.40)
+Here is version 10 of the PHC patch series. We missed the boat for
+2.6.38, but I hope this can be merged for the next one.
 
-Sure, no problem. What do you think about the following patch?
----
->From a597421909a3291886345565c73102117a52301e Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Thu, 27 Jan 2011 11:41:01 +0100
-Subject: [PATCH] memsw: Deprecate noswapaccount kernel parameter and schedule it for removal
+Reviewers: I think its done. How can I get this merged?
 
-noswapaccount couldn't be used to control memsw for both on/off cases so
-we have added swapaccount[=0|1] parameter. This way we can turn the
-feature in two ways noswapaccount resp. swapaccount=0. We have kept the
-original noswapaccount but I think we should remove it after some time
-as it just makes more command line parameters without any advantages and
-also the code to handle parameters is uglier if we want both parameters.
+Arch maintainers (arm, blackfin, powerpc, x86): I have added you on
+CC in the hope of getting your acks for the new syscall.
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Requested-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- Documentation/feature-removal-schedule.txt |   16 ++++++++++++++++
- mm/memcontrol.c                            |    1 +
- 2 files changed, 17 insertions(+), 0 deletions(-)
+Thanks,
+Richard
 
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index b959659..b3f35e5 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -603,3 +603,19 @@ Why:	The adm9240, w83792d and w83793 hardware monitoring drivers have
- Who:	Jean Delvare <khali@linux-fr.org>
- 
- ----------------------------
-+
-+What:	noswapaccount kernel command line parameter
-+When:	2.6.40
-+Why:	The original implementation of memsw feature enabled by
-+	CONFIG_CGROUP_MEM_RES_CTLR_SWAP could be disabled by the noswapaccount
-+	kernel parameter (introduced in 2.6.29-rc1). Later on, this decision
-+	turned out to be not ideal because we cannot have the feature compiled
-+	in and disabled by default and let only interested to enable it
-+	(e.g. general distribution kernels might need it). Therefore we have
-+	added swapaccount[=0|1] parameter (introduced in 2.6.37) which provides
-+	the both possibilities. If we remove noswapaccount we will have
-+	less command line parameters with the same functionality and we
-+	can also cleanup the parameter handling a bit ().
-+Who:	Michal Hocko <mhocko@suse.cz>
-+
-+----------------------------
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index cea2be48..0387287 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -5023,6 +5023,7 @@ __setup("swapaccount", enable_swap_account);
- 
- static int __init disable_swap_account(char *s)
- {
-+	printk_once("noswapaccount is deprecated and will be removed in 2.6.40. Use swapaccount=0 instead\n");
- 	enable_swap_account("=0");
- 	return 1;
- }
--- 
-1.7.2.3
+* Patch ChangeLog
+** v10
+*** posix clocks
+    - removed the (previously implied) default functions from the k_clocks
+    - made the ts parameter 'const' in clock_set functions
+*** ptp hardware clocks
+    - updated to changed PPS kernel API
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+* Introduction
+
+  The aim of this patch set is to add support for PTP Hardware Clocks
+  (PHCs) into the Linux kernel.
+
+  The first eleven patches provide infrastructure supporting dynamic
+  POSIX clock devices. This new code will be useful for other kinds of
+  new clocks, not just PHCs.
+
+  The last four patches implement the PHC code.
+
+  Support for obtaining timestamps from a PHC already exists via the
+  SO_TIMESTAMPING socket option, integrated in kernel version 2.6.30.
+  This patch set completes the picture by allow user space programs to
+  adjust the PHC and to control its ancillary features.
+
+* Previous Discussions
+
+  This patch set previously appeared on the netdev list. Since V5 of
+  the character device patch set, the discussion has moved to the
+  lkml.
+
+  - IEEE 1588 hardware clock support [V5]
+    http://lkml.org/lkml/2010/8/16/90
+
+  - POSIX clock tuning syscall with static clock ids
+    http://lkml.org/lkml/2010/8/23/49
+
+  - POSIX clock tuning syscall with dynamic clock ids
+    http://lkml.org/lkml/2010/9/3/119
+
+  - IEEE 1588 hardware clock support [V6]
+    http://lkml.org/lkml/2010/9/23/310
+
+  - Dynamic clock devices [RFC]
+    http://lkml.org/lkml/2010/11/4/290
+
+  - IEEE 1588 hardware clock support [V7]
+    http://lkml.org/lkml/2010/12/16/195
+
+  - IEEE 1588 hardware clock support [V8]
+    http://lkml.org/lkml/2010/12/31/128
+
+  - IEEE 1588 hardware clock support [V9]
+    http://lkml.org/lkml/2011/1/13/65
+
+
+John Stultz (1):
+  time: Introduce timekeeping_inject_offset
+
+Richard Cochran (14):
+  time: Correct the *settime* parameters
+  ntp: add ADJ_SETOFFSET mode bit
+  posix clocks: introduce a syscall for clock tuning.
+  posix_clocks: add clock_adjtime for arm
+  posix_clocks: add clock_adjtime for blackfin
+  posix_clocks: add clock_adjtime for powerpc
+  posix_clocks: add clock_adjtime for x86
+  posix clocks: cleanup the CLOCK_DISPTACH macro
+  posix clocks: remove useless default methods
+  posix clocks: introduce dynamic clocks
+  ptp: Added a brand new class driver for ptp clocks.
+  ptp: Added a clock that uses the eTSEC found on the MPC85xx.
+  ptp: Added a clock driver for the IXP46x.
+  ptp: Added a clock driver for the National Semiconductor PHYTER.
+
+ Documentation/ABI/testing/sysfs-ptp             |   98 +++
+ Documentation/powerpc/dts-bindings/fsl/tsec.txt |   57 ++
+ Documentation/ptp/ptp.txt                       |   89 +++
+ Documentation/ptp/testptp.c                     |  352 +++++++++
+ Documentation/ptp/testptp.mk                    |   33 +
+ arch/arm/include/asm/unistd.h                   |    1 +
+ arch/arm/kernel/calls.S                         |    1 +
+ arch/arm/mach-ixp4xx/include/mach/ixp46x_ts.h   |   78 ++
+ arch/blackfin/include/asm/unistd.h              |    3 +-
+ arch/blackfin/mach-common/entry.S               |    1 +
+ arch/powerpc/boot/dts/mpc8313erdb.dts           |   14 +
+ arch/powerpc/boot/dts/mpc8572ds.dts             |   14 +
+ arch/powerpc/boot/dts/p2020ds.dts               |   14 +
+ arch/powerpc/boot/dts/p2020rdb.dts              |   14 +
+ arch/powerpc/include/asm/systbl.h               |    1 +
+ arch/powerpc/include/asm/unistd.h               |    3 +-
+ arch/x86/ia32/ia32entry.S                       |    1 +
+ arch/x86/include/asm/unistd_32.h                |    3 +-
+ arch/x86/include/asm/unistd_64.h                |    2 +
+ arch/x86/kernel/syscall_table_32.S              |    1 +
+ drivers/Kconfig                                 |    2 +
+ drivers/Makefile                                |    1 +
+ drivers/char/mmtimer.c                          |    3 +-
+ drivers/net/Makefile                            |    1 +
+ drivers/net/arm/ixp4xx_eth.c                    |  192 +++++-
+ drivers/net/gianfar_ptp.c                       |  448 +++++++++++
+ drivers/net/gianfar_ptp_reg.h                   |  113 +++
+ drivers/net/phy/Kconfig                         |   29 +
+ drivers/net/phy/Makefile                        |    1 +
+ drivers/net/phy/dp83640.c                       |  896 +++++++++++++++++++++++
+ drivers/net/phy/dp83640_reg.h                   |  261 +++++++
+ drivers/ptp/Kconfig                             |   53 ++
+ drivers/ptp/Makefile                            |    7 +
+ drivers/ptp/ptp_chardev.c                       |  144 ++++
+ drivers/ptp/ptp_clock.c                         |  315 ++++++++
+ drivers/ptp/ptp_ixp46x.c                        |  332 +++++++++
+ drivers/ptp/ptp_private.h                       |   85 +++
+ drivers/ptp/ptp_sysfs.c                         |  226 ++++++
+ include/linux/Kbuild                            |    1 +
+ include/linux/posix-clock.h                     |  150 ++++
+ include/linux/posix-timers.h                    |   28 +-
+ include/linux/ptp_clock.h                       |   79 ++
+ include/linux/ptp_clock_kernel.h                |  141 ++++
+ include/linux/security.h                        |    9 +-
+ include/linux/syscalls.h                        |    2 +
+ include/linux/time.h                            |    8 +-
+ include/linux/timex.h                           |    3 +-
+ kernel/compat.c                                 |  136 +++--
+ kernel/posix-cpu-timers.c                       |    6 +
+ kernel/posix-timers.c                           |  245 ++++---
+ kernel/time.c                                   |    2 +-
+ kernel/time/Makefile                            |    3 +-
+ kernel/time/ntp.c                               |   11 +
+ kernel/time/posix-clock-syscalls.h              |   39 +
+ kernel/time/posix-clock.c                       |  432 +++++++++++
+ kernel/time/timekeeping.c                       |   38 +-
+ security/commoncap.c                            |    2 +-
+ security/security.c                             |    2 +-
+ 58 files changed, 5062 insertions(+), 164 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-ptp
+ create mode 100644 Documentation/ptp/ptp.txt
+ create mode 100644 Documentation/ptp/testptp.c
+ create mode 100644 Documentation/ptp/testptp.mk
+ create mode 100644 arch/arm/mach-ixp4xx/include/mach/ixp46x_ts.h
+ create mode 100644 drivers/net/gianfar_ptp.c
+ create mode 100644 drivers/net/gianfar_ptp_reg.h
+ create mode 100644 drivers/net/phy/dp83640.c
+ create mode 100644 drivers/net/phy/dp83640_reg.h
+ create mode 100644 drivers/ptp/Kconfig
+ create mode 100644 drivers/ptp/Makefile
+ create mode 100644 drivers/ptp/ptp_chardev.c
+ create mode 100644 drivers/ptp/ptp_clock.c
+ create mode 100644 drivers/ptp/ptp_ixp46x.c
+ create mode 100644 drivers/ptp/ptp_private.h
+ create mode 100644 drivers/ptp/ptp_sysfs.c
+ create mode 100644 include/linux/posix-clock.h
+ create mode 100644 include/linux/ptp_clock.h
+ create mode 100644 include/linux/ptp_clock_kernel.h
+ create mode 100644 kernel/time/posix-clock-syscalls.h
+ create mode 100644 kernel/time/posix-clock.c
+
