@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464Ab1A0S1d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 13:27:33 -0500
-Received: from claw.goop.org ([74.207.240.146]:50711 "EHLO claw.goop.org"
+	id S1752608Ab1A0S2g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 13:28:36 -0500
+Received: from hera.kernel.org ([140.211.167.34]:49029 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752063Ab1A0S1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 13:27:32 -0500
-Message-ID: <4D41B90D.5000305@goop.org>
-Date: Thu, 27 Jan 2011 10:27:25 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1751805Ab1A0S2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 13:28:35 -0500
+Date: Thu, 27 Jan 2011 18:28:04 GMT
+From: tip-bot for Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, acme@redhat.com,
+        hpa@zytor.com, mingo@redhat.com, eric.dumazet@gmail.com,
+        a.p.zijlstra@chello.nl, davem@davemloft.net, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
+        a.p.zijlstra@chello.nl, davem@davemloft.net, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1295980851.3588.351.camel@edumazet-laptop>
+References: <1295980851.3588.351.camel@edumazet-laptop>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf: Fix alloc_callchain_buffers()
+Message-ID: <tip-88d4f0db7fa8785859c1d637f9aac210932b6216@git.kernel.org>
+Git-Commit-ID: 88d4f0db7fa8785859c1d637f9aac210932b6216
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@novell.com>
-CC: Xiaowei Yang <xiaowei.yang@huawei.com>, Nick Piggin <npiggin@kernel.dk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, fanhenglong@huawei.com,
-        Kaushik Barde <kbarde@huawei.com>, Kenneth Lee <liguozhu@huawei.com>,
-        linqaingmin <linqiangmin@huawei.com>, wangzhenguo@huawei.com,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Avi Kivity <avi@redhat.com>
-Subject: Re: One (possible) x86 get_user_pages bug
-References: <4D416D9A.9010603@huawei.com> <4D419416020000780002ECB7@vpn.id2.novell.com>
-In-Reply-To: <4D419416020000780002ECB7@vpn.id2.novell.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 27 Jan 2011 18:28:05 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2011 06:49 AM, Jan Beulich wrote:
-> However, going through all the comments in gup.c again I wonder
-> whether pv Xen guests don't violate the major assumption: There
-> is talk about interrupts being off preventing (or sufficiently
-> deferring) remote CPUs doing TLB flushes. In pv Xen guests,
-> however, non-local TLB flushes do not happen by sending IPIs -
-> the hypercall interface gets used instead
+Commit-ID:  88d4f0db7fa8785859c1d637f9aac210932b6216
+Gitweb:     http://git.kernel.org/tip/88d4f0db7fa8785859c1d637f9aac210932b6216
+Author:     Eric Dumazet <eric.dumazet@gmail.com>
+AuthorDate: Tue, 25 Jan 2011 19:40:51 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 27 Jan 2011 19:21:50 +0100
 
-Yes, I was aware of that synchronization mechanism, and I think I'd
-convinced myself we were OK.  But I can't think was that reasoning was -
-perhaps it was something as simple as "gupf isn't used under Xen" (which
-may have been true at the time, but isn't now).
+perf: Fix alloc_callchain_buffers()
 
-As clever as it is, the whole "disable interrupts -> hold off IPI ->
-prevent TLB flush -> delay freeing" chain seems pretty fragile.  I guess
-its OK if we assume that x86 will forever have IPI-based cross-cpu TLB
-flushes, but one could imagine some kind of "remote tlb shootdown using
-bus transaction" appearing in the architecture.
+Commit 927c7a9e92c4 ("perf: Fix race in callchains") introduced
+a mismatch in the sizing of struct callchain_cpus_entries.
 
-And even just considering virtualization, having non-IPI-based tlb
-shootdown is a measurable performance win, since a hypervisor can
-optimise away a cross-VCPU shootdown if it knows no physical TLB
-contains the target VCPU's entries.  I can imagine the KVM folks could
-get some benefit from that as well.
+nr_cpu_ids must be used instead of num_possible_cpus(), or we
+might get out of bound memory accesses on some machines.
 
-So is there some way we can preserve the current scheme's benefits while
-making it a bit more general?  (If anyone else has non-IPI-based
-shootdown, it would be s390; is there some inspiration there?  An
-instruction perhaps?)
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: David Miller <davem@davemloft.net>
+Cc: Stephane Eranian <eranian@google.com>
+CC: stable@kernel.org
+LKML-Reference: <1295980851.3588.351.camel@edumazet-laptop>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/perf_event.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-    J
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 126a302..852ae8c 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -1999,8 +1999,7 @@ static int alloc_callchain_buffers(void)
+ 	 * accessed from NMI. Use a temporary manual per cpu allocation
+ 	 * until that gets sorted out.
+ 	 */
+-	size = sizeof(*entries) + sizeof(struct perf_callchain_entry *) *
+-		num_possible_cpus();
++	size = offsetof(struct callchain_cpus_entries, cpu_entries[nr_cpu_ids]);
+ 
+ 	entries = kzalloc(size, GFP_KERNEL);
+ 	if (!entries)
