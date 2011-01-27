@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab1A0Ln6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 06:43:58 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55702 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754078Ab1A0Ln5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 06:43:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <20110127095441.GA1338@opensource.wolfsonmicro.com>
-References: <AANLkTinAYrGV1k357Bn8trtxafZDoYozG7LDcm3KNBSt@mail.gmail.com>
- <20110125150430.GF13051@sirena.org.uk> <AANLkTi=J6mC7yWL9DF91Tp4+67QpAVK8vTMVVmsfJNyw@mail.gmail.com>
- <20110127095441.GA1338@opensource.wolfsonmicro.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Thu, 27 Jan 2011 13:43:36 +0200
-X-Google-Sender-Auth: pNYBSSSfHGdtL5JKa87oJEqcjPI
-Message-ID: <AANLkTi=DWsZBtL9Wd1G_H4tC=iS9=05zdV0H00F_1Gcq@mail.gmail.com>
-Subject: Re: [GIT PULL] TI WL 128x FM V4L2 driver
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: halli manjunatha <manjunatha_halli@ti.com>,
-        linux-media <linux-media@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754649Ab1A0LyL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 06:54:11 -0500
+Received: from [114.251.86.0] ([114.251.86.0]:25970 "EHLO enigma.site"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754637Ab1A0LyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 06:54:08 -0500
+From: Coly Li <bosong.ly@taobao.com>
+To: linux-kernel@vger.kernel.org
+Cc: Coly Li <bosong.ly@taobao.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Greg KH <gregkh@suse.de>
+Subject: [PATCH 0/6] use BUG_ON correctly, v2
+Date: Thu, 27 Jan 2011 20:12:29 +0800
+Message-Id: <1296130356-29896-1-git-send-email-bosong.ly@taobao.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 27, 2011 at 11:54 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> > So what happens when both
-drivers are in the system?  It sounds like
-> you've got two different drivers for the same hardware. There must be
-> some redundancy there if nothing else.
+Most of BUG_ON() implementations use unlikely() internally for better
+branch prediction results. The following method to use BUG_ON() with
+an explicit unlikely() doesn't make things better and is unwelcome:
+	BUG_ON(unlikely(condition));
+Source code should use BUG_ON() just with condition code.
 
-Not really;
+For arch dependent BUG_ON() implementations, they should use unlikely()
+internally if they are able to.
 
-TI's 127x/128x devices are built of completely separate hardware
-cores, with completely separate and independent drivers.
+This patch set does two things,
+1) Remove all explicit unlikey() where kernel code uses BUG_ON().
+2) Fix arch dependent BUG_ON() implementations if they don't use
+   unlikely() internally.
 
-You can use one, a subset, or all of the cores (/drivers) together on
-the same time.
+The difference between v2 and v1 patch set are,
+1) Remove the fix of mm/nommu.c, because it's in mm-tree already.
+2) Add unlikely() inside the BUG_ON() implementations of MIPS and PPC.
 
-The mainline wl12xx driver you refer to is a mac80211 SDIO/SPI WLAN
-driver that has nothing to do with Manjunatha's FM driver.
+Signed-off-by: Coly Li <bosong.ly@taobao.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg KH <gregkh@suse.de>
+---
+ arch/mips/include/asm/bug.h                      |    2 +-
+ arch/powerpc/include/asm/bug.h                   |    4 +++-
+ drivers/dma/iop-adma.c                           |    6 +++---
+ drivers/dma/mv_xor.c                             |    6 +++---
+ drivers/dma/ppc4xx/adma.c                        |    8 ++++----
+ drivers/scsi/scsi_lib.c                          |    4 ++--
+ drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c |   14 +++++++-------
+ 7 files changed, 23 insertions(+), 21 deletions(-)
