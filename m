@@ -1,46 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137Ab1A0TpI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 14:45:08 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:26463 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751648Ab1A0TpF (ORCPT
+	id S1753016Ab1A0Ttv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 14:49:51 -0500
+Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:33005 "EHLO
+	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752628Ab1A0Ttu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 14:45:05 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6239"; a="72232137"
-Message-ID: <4D41CB40.20903@codeaurora.org>
-Date: Thu, 27 Jan 2011 11:45:04 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Thu, 27 Jan 2011 14:49:50 -0500
+X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Jan 2011 14:49:50 EST
+Message-ID: <4D41CA16.8070001@hardwarefreak.com>
+Date: Thu, 27 Jan 2011 13:40:06 -0600
+From: Stan Hoeppner <stan@hardwarefreak.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Colin Cross <ccross@android.com>
-CC: linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        olof@lixom.net, konkers@android.com,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 15/28] ARM: tegra: irq: Add debugfs file to show wake
- irqs
-References: <1295834493-5019-1-git-send-email-ccross@android.com> <1295834493-5019-16-git-send-email-ccross@android.com>
-In-Reply-To: <1295834493-5019-16-git-send-email-ccross@android.com>
+To: Mark Lord <kernel@teksavvy.com>
+CC: Justin Piszcz <jpiszcz@lucidpixels.com>,
+        Christoph Hellwig <hch@infradead.org>, Alex Elder <aelder@sgi.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: xfs: very slow after mount, very slow at umount
+References: <4D40C8D1.8090202@teksavvy.com> <20110127033011.GH21311@dastard>	<4D40EB2F.2050809@teksavvy.com> <4D418B57.1000501@teksavvy.com>	<alpine.DEB.2.00.1101271040000.31246@p34.internal.lan> <4D419765.4070805@teksavvy.com>
+In-Reply-To: <4D419765.4070805@teksavvy.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2011 06:01 PM, Colin Cross wrote:
->
-> +static int __init tegra_irq_debug_init(void)
-> +{
-> +	struct dentry *d;
-> +
-> +	d = debugfs_create_file("wake_irq", S_IRUGO, NULL, NULL,
-> +		&tegra_wake_irq_debug_fops);
-> +	if (!d) {
-> +		pr_info("Failed to create suspend_mode debug file\n");
+Mark Lord put forth on 1/27/2011 10:03 AM:
+> On 11-01-27 10:40 AM, Justin Piszcz wrote:
+>>
+>>
+>> On Thu, 27 Jan 2011, Mark Lord wrote:
+> ..
+>>> Can you recommend a good set of mkfs.xfs parameters to suit the characteristics
+>>> of this system?  Eg. Only a few thousand active inodes, and nearly all files are
+>>> in the 600MB -> 20GB size range.  The usage pattern it must handle is up to
+>>> six concurrent streaming writes at the same time as up to three streaming reads,
+>>> with no significant delays permitted on the reads.
+>>>
+>>> That's the kind of workload that I find XFS handles nicely,
+>>> and EXT4 has given me trouble with in the past.
+> ..
+>> I did a load of benchmarks a long time ago testing every mkfs.xfs option there
+>> was, and I found that most of the time (if not all), the defaults were the best.
+> ..
+> 
+> I am concerned with fragmentation on the very special workload in this case.
+> I'd really like the 20GB files, written over a 1-2 hour period, to consist
+> of a very few very large extents, as much as possible.
 
-Does this want to be a pr_err()?
+For XFS that's actually not a special case workload but an average one.  XFS was
+conceived at SGI for use on large supercomputers where typical single file
+datasets are extremely large, i.e. hundreds of GB.  Also note that the real time
+sub volume feature was created for almost exactly your purpose:  streaming
+record/playback of raw A/V data for broadcast (i.e. television).  In your case
+it's compressed, not raw A/V data.  I'm not recommending you use the real time
+feature however, as it's overkill for MythTV and not necessary.
+
+> Rather than hundreds or thousands of "tiny" MB sized extents.
+> I wonder what the best mkfs.xfs parameters might be to encourage that?
+
+You need to use the mkfs.xfs defaults for any single drive filesystem, and trust
+the allocator to do the right thing.  XFS uses variable size extents and the
+size is chosen dynamically--you don't have direct or indirect control of the
+extent size chosen for a given file or set of files AFAIK.
+
+As Dave Chinner is fond of pointing out, it's those who don't know enough about
+XFS and choose custom settings that most often get themselves into trouble (as
+you've already done once).  :)
+
+The defaults exist for a reason, and they weren't chosen willy nilly.  The vast
+bulk of XFS' configurability exists for tuning maximum performance on large to
+very large RAID arrays.  There isn't much, if any, additional performance to be
+gained with parameter tweaks on a single drive XFS filesystem.
+
+A brief explanation of agcount:  the filesystem is divided into agcount regions
+called allocation groups, or AGs.  The allocator writes to all AGs in parallel
+to increase performance.  With extremely fast storage (SSD, large high RPM RAID)
+this increases throughput as the storage can often sink writes faster than a
+serial writer can push data.  In your case, you have a single slow spindle with
+over 7,000 AGs.  Thus, the allocator is writing to over 7,000 locations on that
+single disk simultaneously, or, at least, it's trying to.  Thus, the poor head
+on that drive is being whipped all over the place without actually getting much
+writing done.  To add insults to injury, this is one of these low RPM low head
+performance "green" drives correct?
+
+Trust the defaults.  If they give you problems (unlikely) then we can't talk. ;)
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Stan
