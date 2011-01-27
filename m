@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404Ab1A0MJa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 07:09:30 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:44172 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752243Ab1A0MJ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 07:09:28 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Thu, 27 Jan 2011 13:09:45 +0100
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Ping Cheng <pingc@wacom.com>,
-        Jiri Kosina <jkosina@suse.cz>, Chris Bagwell <chris@cnpbagwell.com>,
-        Rafi Rubin <rafi@seas.upenn.edu>, Stephane Chatty <chatty@lii-enac.fr>,
-        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 2/2] input: evdev: Add EVIOC mechanism to extract the MT
- slot state
-Message-ID: <20110127120945.GC15626@polaris.bitmath.org>
-References: <1296124547-3323-1-git-send-email-benjamin.tissoires@enac.fr>
- <1296124547-3323-3-git-send-email-benjamin.tissoires@enac.fr>
+	id S1754221Ab1A0MPY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 07:15:24 -0500
+Received: from a.mx.secunet.com ([195.81.216.161]:41324 "EHLO a.mx.secunet.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753846Ab1A0MPX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 07:15:23 -0500
+Date: Thu, 27 Jan 2011 13:15:18 +0100
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Eric Paris <eparis@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: flex_array related problems on selinux policy loading
+Message-ID: <20110127121518.GE3070@secunet.com>
+References: <20110120122659.GD4639@secunet.com>
+ <1295537330.9039.583.camel@nimitz>
+ <20110121072022.GA3070@secunet.com>
+ <1295625455.9039.3326.camel@nimitz>
+ <20110126102328.GC3070@secunet.com>
+ <1296058216.7567.21.camel@nimitz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1296124547-3323-3-git-send-email-benjamin.tissoires@enac.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 83.248.192.164
-X-Scan-Result: No virus found in message 1PiQen-0002Ur-Af.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PiQen-0002Ur-Af cd6203726fdb8693c16bd366b794d0e9
+In-Reply-To: <1296058216.7567.21.camel@nimitz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 27 Jan 2011 12:15:19.0861 (UTC) FILETIME=[DD6EC650:01CBBE1B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 27, 2011 at 11:35:47AM +0100, Benjamin Tissoires wrote:
-> This patch adds the ability to extract the MT slot state sequentially
-> via EVIOCGABS. The slot parameter is first selected by calling
-> EVIOCSABS with ABS_MT_SLOT as argument, followed by a set of EVIOCGABS
-> calls. The slot selection is local to the evdev client handler, and
-> does not affect the actual input state.
+On Wed, Jan 26, 2011 at 08:10:16AM -0800, Dave Hansen wrote:
+> > 
+> > Btw. why the struct flex_array needs to have page size?
+> 
+> It was designed as an alternative to _large_ allocations and we didn't
+> expect people to want to use it for small things.  But, it doesn't
+> _need_ to stay that way, we just did it like that for simplicity.
+> 
 
-Ok - it seemed like a reasonable idea at the time, but..
+Ok, I thought that. In case of selinux, the informations on how big
+the array will be comes from the userspace. In the most cases, people
+use big selinux policies like the selinux reference policy, these
+arrays are quite big. But if somebody uses just a dummy policy, the
+arrays are small or empty in some cases.
 
-> @@ -767,9 +769,10 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
->  			if (size < sizeof(struct input_absinfo))
->  				abs.resolution = 0;
->  
-> -			/* We can't change number of reserved MT slots */
-> -			if (t == ABS_MT_SLOT)
-> -				return -EINVAL;
-> +			if (t == ABS_MT_SLOT) {
-> +				client->slot = abs.value;
-> +				return 0;
-> +			}
+> > If we would make
+> > flex_array of dynamic size, say metadata plus the maximum size of the array
+> > in the case that the metadata and the array fit into a single page, and
+> > metadata plus space for all the base pointers we need to dereference the
+> > parts, if the metadata and array is beyond page size. With this, the struct
+> > flex_array would have a reasonable size in any case, even if the array to
+> > store is small or of zero size.
+> 
+> Sounds like a good idea to me.  Done right, it should only really affect
+> the allocation path since we use kmalloc() already, and we can still
+> plain kfree() it.
+> 
 
-...this just does not look right. Perhaps there should really be a
-different ioctl to retrieve the slot values instead. Dmitry?
+So lets do it like that. I'll propose another patch, may take some days.
 
-Thanks,
-Henrik
+Steffen
