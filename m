@@ -1,50 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753507Ab1A0U5Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 15:57:24 -0500
-Received: from mail.bluewatersys.com ([202.124.120.130]:52598 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752892Ab1A0U5X (ORCPT
+	id S1753512Ab1A0VHY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 16:07:24 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:59928 "EHLO
+	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752564Ab1A0VHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 15:57:23 -0500
-Message-ID: <4D41DC42.3070603@bluewatersys.com>
-Date: Fri, 28 Jan 2011 09:57:38 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Alexey Dobriyan <adobriyan@gmail.com>
-CC: Mandeep Singh Baines <msb@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>, olofj@chromium.org
-Subject: Re: [PATCH] printk: allow setting DEFAULT_MESSAGE_LEVEL via Kconfig
-References: <20110125235700.GR8008@google.com> <20110126144910.ce0646ec.akpm@linux-foundation.org> <20110126145703.a0f5add5.rdunlap@xenotime.net> <20110126151017.ed9e627c.akpm@linux-foundation.org> <20110127082718.GA4748@p183.telecom.by> <20110127155754.GB8520@google.com> <4D41D963.6020509@bluewatersys.com> <20110127205357.GA4731@p183.telecom.by>
-In-Reply-To: <20110127205357.GA4731@p183.telecom.by>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 27 Jan 2011 16:07:22 -0500
+Date: Thu, 27 Jan 2011 21:07:29 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Saravana Kannan <skannan@codeaurora.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        linux-sh <linux-sh@vger.kernel.org>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Colin Cross <ccross@google.com>, Ben Dooks <ben-linux@fluff.org>,
+        Uwe =?ISO-8859-14?B?S2xlaW5lLUv2bmln?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Richard Zhao <linuxzsc@gmail.com>
+Subject: Re: Locking in the clk API
+Message-ID: <20110127210729.79eef2c1@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110127204354.GB1597@n2100.arm.linux.org.uk>
+References: <201101111744.59712.jeremy.kerr@canonical.com>
+	<20110111103929.GN24920@pengutronix.de>
+	<AANLkTinHL9X_bqMPR=W8Va01O4xngUnpGCkCiE3xEdiQ@mail.gmail.com>
+	<4D386ABF.9060908@fluff.org>
+	<20110120190822.GK6335@n2100.arm.linux.org.uk>
+	<4D3932B4.8010904@codeaurora.org>
+	<20110121094042.GD13235@n2100.arm.linux.org.uk>
+	<4D40F5CC.6080809@codeaurora.org>
+	<20110127085438.GA25239@n2100.arm.linux.org.uk>
+	<4D41D5EC.6030405@codeaurora.org>
+	<20110127204354.GB1597@n2100.arm.linux.org.uk>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2011 09:53 AM, Alexey Dobriyan wrote:
-> On Fri, Jan 28, 2011 at 09:45:23AM +1300, Ryan Mallon wrote:
->> Why not make printk prefix messages that have no log level with
->> "[NO_LOG_LEVEL]" or similar? That way the can easily be grepped out, and
->> it provides and incentive for people to fix them :-).
+> > For internal tree purposes, does .set_termios need to be atomic? Can it  
+> > grab mutexes instead of spinlock?
 > 
-> Because printk("foo"); ... printk("\n"); is legit.
+> I think I already answered that question above where I said "protect
+> against the interrupt handler accessing the port->* stuff".
 
-It should be fixed to KERN_CONT should it not?
+I'm not sure you answered it correctly however as the locking nowdays is
+a bit different.
 
-~Ryan
+Architecturally the termios handling doesn't need a spin lock nor is it
+called under one. In fact it's vital this is the case because of USB.
 
--- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
+I see nothing in the 2.6.37 cpm_uart code that isn't trivially fixable.
+There is already a mutex protecting termios serialization so all you seem
+to need to do is call clk_set_rate after rather than before dropping the
+lock surely ?
 
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
+Oh if you are looking at the cpm_uart code and care about it the following
+in the code isn't safe as tty could possibly go NULL and be freed under
+you.
+
+     struct tty_struct *tty = port->state->port.tty;
+
+and you ought to be doing
+
+	tty = tty_port_tty_get(&port->state->port);
+
+	if (tty)
+		blah;
+	tty_kref_put(tty);	/* put NULL is a no-op anyway */
+
+
+probably in the main irq handler and pass tty to the helpers that need it.
+
+
+Alan
