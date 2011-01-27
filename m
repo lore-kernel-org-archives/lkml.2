@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335Ab1A0NoJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 08:44:09 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:62317 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752937Ab1A0NoH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 08:44:07 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH v2] x25: remove the BKL
-Date: Thu, 27 Jan 2011 14:43:39 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Andrew Hendry <andrew.hendry@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-x25@vger.kernel.org, netdev@vger.kernel.org
-References: <1295993854-4971-1-git-send-email-arnd@arndb.de> <201101271338.39295.arnd@arndb.de> <1296134447.2614.5.camel@edumazet-laptop>
-In-Reply-To: <1296134447.2614.5.camel@edumazet-laptop>
+	id S1753137Ab1A0Nqy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 08:46:54 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:50125 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752872Ab1A0Nqx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 08:46:53 -0500
+Date: Thu, 27 Jan 2011 14:46:45 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: [patch 2/3] memcg: prevent endless loop on huge page charge
+Message-ID: <20110127134645.GA14309@cmpxchg.org>
+References: <20110121153431.191134dd.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110121154430.70d45f15.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110127103438.GC2401@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201101271443.40007.arnd@arndb.de>
-X-Provags-ID: V02:K0:b9CqMmCAGvJnXhLh5ts722S0EHrl7pHu9dDbMmT3uPn
- QIoGlIJVpc2YOmJs6R9g8lhH/MxmqRoml/LFr5VdZwUH4UF5rF
- g2UN1JTomyshtYKpKrybGPkTAfJWAtvqS2GHssvB0Evr19NFoz
- oy9I9nrAi6AdAwJyDJwNVcqENYxAmXbKW2WdQ5XGTYivZ/OSO9
- fRcW2SxJyhSZ8Nfmhgdag==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110127103438.GC2401@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 27 January 2011, Eric Dumazet wrote:
-> Le jeudi 27 janvier 2011 à 13:38 +0100, Arnd Bergmann a écrit :
-> > diff --git a/net/x25/x25_out.c b/net/x25/x25_out.c
-> > index d00649f..f1a6ff1 100644
-> > --- a/net/x25/x25_out.c
-> > +++ b/net/x25/x25_out.c
-> > @@ -68,8 +68,11 @@ int x25_output(struct sock *sk, struct sk_buff *skb)
-> >               frontlen = skb_headroom(skb);
-> >  
-> >               while (skb->len > 0) {
-> > -                     if ((skbn = sock_alloc_send_skb(sk, frontlen + max_len,
-> > -                                                     noblock, &err)) == NULL){
-> > +                     release_sock(sk);
-> > +                     skbn = sock_alloc_send_skb(sk, frontlen + max_len,
-> > +                                                1, &err);
-> > +                     lock_sock(sk);
-> > +                     if (!skbn) {
-> >                               if (err == -EWOULDBLOCK && noblock){
-> >                                       kfree_skb(skb);
-> >                                       return sent;
-> 
-> This part looks strange :
-> 
-> noblock variable became "const 1 : NOBLOCK"
-> 
-> Why releasing socket if you dont block in sock_alloc_send_skb() ?
+The charging code can encounter a charge size that is bigger than a
+regular page in two situations: one is a batched charge to fill the
+per-cpu stocks, the other is a huge page charge.
 
-Leftover from an earlier version of the patch, thanks for catching this!
+This code is distributed over two functions, however, and only the
+outer one is aware of huge pages.  In case the charging fails, the
+inner function will tell the outer function to retry if the charge
+size is bigger than regular pages--assuming batched charging is the
+only case.  And the outer function will retry forever charging a huge
+page.
 
-Originally, I wrote this as
+This patch makes sure the inner function can distinguish between batch
+charging and a single huge page charge.  It will only signal another
+attempt if batch charging failed, and go into regular reclaim when it
+is called on behalf of a huge page.
 
-	long timeo = sock_sndtimeo(sk, noblock)
-	do {
-		skbn = sock_alloc_send_skb(sk, frontlen + max_len, 1, &err);
-		if (skbn)
-			break;
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/memcontrol.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-		release_sock(sk);
-		timeo = sock_wait_for_wmem(sk, timeo);
-		lock_sock(sk);
-	} while (timeo);
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 8fa4be3..17c4e36 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1847,7 +1847,7 @@ static int __mem_cgroup_do_charge(struct mem_cgroup *mem, gfp_t gfp_mask,
+ 	} else
+ 		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
+ 
+-	if (csize > PAGE_SIZE) /* change csize and retry */
++	if (csize == CHARGE_SIZE) /* retry without batching */
+ 		return CHARGE_RETRY;
+ 
+ 	if (!(gfp_mask & __GFP_WAIT))
+-- 
+1.7.3.5
 
-Then I forgot to flip it back after I noticed that other protocols also just
-call release_sock/lock_sock around sock_alloc_send_skb.
-
-I think I'd better go over the whole series and see if there are more things
-that got slightly broken...
-
-	Arnd
