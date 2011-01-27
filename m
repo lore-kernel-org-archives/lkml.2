@@ -1,81 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499Ab1A0CMg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Jan 2011 21:12:36 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:35442 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754257Ab1A0CMe (ORCPT
+	id S1754462Ab1A0CT6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Jan 2011 21:19:58 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58558 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752504Ab1A0CT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Jan 2011 21:12:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=X+Lvm525qS4Q2F7GAdX5VoRMHxnayIE+ftERhxuPN9yqFtpYuHL8eKOeQYGb1WCMCp
-         4LOGOkFKYKVgjgye2rYS7xO8YKcEizY0sWtVqklShx0t24XsQcbDIOTEbUJZPpVBgA4+
-         XXWrolbiy5iT3m7Slva0rm8JaNfrSUJ+WrT04=
-Date: Wed, 26 Jan 2011 18:12:27 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Mark Lord <kernel@teksavvy.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils ?
-Message-ID: <20110127021227.GA29709@core.coreip.homeip.net>
-References: <20110125164803.GA19701@core.coreip.homeip.net>
- <AANLkTi=1Mh0JrYk5itvef7O7e7pR+YKos-w56W5q4B8B@mail.gmail.com>
- <20110125205453.GA19896@core.coreip.homeip.net>
- <4D3F4804.6070508@redhat.com>
- <4D3F4D11.9040302@teksavvy.com>
- <20110125232914.GA20130@core.coreip.homeip.net>
- <20110126020003.GA23085@core.coreip.homeip.net>
- <4D403855.4050706@teksavvy.com>
- <4D40C3D7.90608@teksavvy.com>
- <4D40C551.4020907@teksavvy.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D40C551.4020907@teksavvy.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 26 Jan 2011 21:19:57 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 27 Jan 2011 11:13:50 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg Thelen <gthelen@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
+Subject: Re: [BUGFIX v2] memcg: fix res_counter_read_u64 lock aware (Was Re:
+ [PATCH] oom: handle overflow in mem_cgroup_out_of_memory()
+Message-Id: <20110127111350.cc5b3111.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110126175722.01b0db3a.akpm@linux-foundation.org>
+References: <1296030555-3594-1-git-send-email-gthelen@google.com>
+	<20110126170713.GA2401@cmpxchg.org>
+	<xr93y667lgdm.fsf@gthelen.mtv.corp.google.com>
+	<20110126183023.GB2401@cmpxchg.org>
+	<xr9362tbl83f.fsf@gthelen.mtv.corp.google.com>
+	<20110126142909.0b710a0c.akpm@linux-foundation.org>
+	<20110127092434.df18c7a6.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110127095342.3d81cf5f.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110127104339.0f580bac.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110126175722.01b0db3a.akpm@linux-foundation.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 26, 2011 at 08:07:29PM -0500, Mark Lord wrote:
-> On 11-01-26 08:01 PM, Mark Lord wrote:
-> > On 11-01-26 10:05 AM, Mark Lord wrote:
-> >> On 11-01-25 09:00 PM, Dmitry Torokhov wrote:
-> > ..
-> >>> I wonder if the patch below is all that is needed...
-> >>
-> >> Nope. Does not work here:
-> >>
-> >> $ lsinput
-> >> protocol version mismatch (expected 65536, got 65537)
-> >>
-> > 
-> > Heh.. I just noticed something *new* in the bootlogs on my system:
-> > 
-> > kernel: Registered IR keymap rc-rc5-tv
-> > udevd-event[6438]: run_program: '/usr/bin/ir-keytable' abnormal exit
-> > kernel: input: i2c IR (Hauppauge) as /devices/virtual/rc/rc0/input7
-> > kernel: ir-keytable[6439]: segfault at 8 ip 00000000004012d2 sp 00007fff6d43ca60
-> > error 4 in ir-keytable[400000+7000]
-> > kernel: rc0: i2c IR (Hauppauge) as /devices/virtual/rc/rc0
-> > kernel: ir-kbd-i2c: i2c IR (Hauppauge) detected at i2c-0/0-0018/ir0 [ivtv i2c
-> > driver #0]
-> > 
-> > That's udev invoking ir-keyboard when the ir-kbd-i2c kernel module is loaded,
-> > and that is also ir-keyboard (userspace) segfaulting when run.
-> 
-> Note: I tried to capture an strace of ir-keyboard segfaulting during boot
-> (as above), but doing so kills the system (hangs on boot).
-> 
-> The command from udev was: /usr/bin/ir-keytable -a /etc/rc_maps.cfg -s rc0
+On Wed, 26 Jan 2011 17:57:22 -0800
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-Does it die when you try to invoke the command by hand? Can you see
-where?
+> On Thu, 27 Jan 2011 10:43:39 +0900 KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> 
+> > --- mmotm-0125.orig/kernel/res_counter.c
+> > +++ mmotm-0125/kernel/res_counter.c
+> > @@ -126,10 +126,24 @@ ssize_t res_counter_read(struct res_coun
+> >  			pos, buf, s - buf);
+> >  }
+> >  
+> > +#if BITS_PER_LONG == 32
+> > +u64 res_counter_read_u64(struct res_counter *counter, int member)
+> > +{
+> > +	unsigned long flags;
+> > +	u64 ret;
+> > +
+> > +	spin_lock_irqsave(&counter->lock, flags);
+> > +	ret = *res_counter_member(counter, member);
+> > +	spin_unlock_irqrestore(&counter->lock, flags);
+> > +
+> > +	return ret;
+> > +}
+> > +#else
+> >  u64 res_counter_read_u64(struct res_counter *counter, int member)
+> >  {
+> >  	return *res_counter_member(counter, member);
+> >  }
+> > +#endif
+> 
+> _irqsave is only needed if the lock will be taken from irq context. 
+> Does that happen?
+> 
+I just obey current desing of res_counter, as bugfix.
+This counter is designed to be safe against irq context.
+Adding CC: to Balbir.
 
--- 
-Dmitry
+To be honest, it has never happened since res_counter is introduced. I imagine
+there was a big plan when this counter was designed. But I think it will 
+be never called other than memcg because cpu, blkio controller haven't
+use res_counter, finally. And memcg tends to use per-cpu counter because of
+performance.
+
+If I need to remove irq flags from this function, I'll do in another patch
+which changes total design of res_counter and make it not safe agaisnt irq context.
+
+Thanks,
+-Kame
+
