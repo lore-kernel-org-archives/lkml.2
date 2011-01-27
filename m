@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359Ab1A0Ui3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 15:38:29 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:15036 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752564Ab1A0Ui1 (ORCPT
+	id S1753317Ab1A0UmN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 15:42:13 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:35440 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752691Ab1A0UmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 15:38:27 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6239"; a="72238307"
-Message-ID: <4D41D7C2.3080608@codeaurora.org>
-Date: Thu, 27 Jan 2011 12:38:26 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Colin Cross <ccross@android.com>
-CC: linux-tegra@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        konkers@android.com, Gary King <gking@nvidia.com>,
-        linux-kernel@vger.kernel.org, olof@lixom.net,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 18/28] ARM: tegra: add CPU_IDLE driver
-References: <1295834493-5019-1-git-send-email-ccross@android.com> <1295834493-5019-19-git-send-email-ccross@android.com>
-In-Reply-To: <1295834493-5019-19-git-send-email-ccross@android.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 27 Jan 2011 15:42:12 -0500
+Subject: Re: [alsa-devel] [PATCH] ASoC: DaVinci: fix kernel panic due to
+ uninitialized platform_data
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        davinci-linux-open-source@linux.davincidsp.com,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <1296136063-31625-1-git-send-email-prakash.pm@ti.com>
+References: <1296136063-31625-1-git-send-email-prakash.pm@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 27 Jan 2011 20:42:06 +0000
+Message-ID: <1296160926.3376.56.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/23/2011 06:01 PM, Colin Cross wrote:
->
-> +static int __init tegra_cpuidle_debug_init(void)
-> +{
-> +	struct dentry *dir;
-> +	struct dentry *d;
-> +
-> +	dir = debugfs_create_dir("cpuidle", NULL);
-> +	if (!dir)
-> +		return -ENOMEM;
-> +
-> +	d = debugfs_create_file("lp2", S_IRUGO, dir, NULL,
-> +		&tegra_lp2_debug_ops);
-> +	if (!d)
-> +		return -ENOMEM;
-> +
-> +	return 0;
-> +}
-> +#endif
-> +
-> +late_initcall(tegra_cpuidle_debug_init);
+On Thu, 2011-01-27 at 19:17 +0530, Manjunathappa, Prakash wrote:
+> This patch fixes the Kernel panic issue on accessing davinci_vc in
+> cq93vc_probe function. struct davinci_vc is part of platform device's
+> private driver data(codec->dev->p->driver_data) and this is populated
+> by DaVinci Voice Codec MFD driver.
+> 
+> Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
+> ---
+> This patch applies to Linus's tree at [1].
+> 
+> [1] http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+> ---
+>  sound/soc/codecs/cq93vc.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/sound/soc/codecs/cq93vc.c b/sound/soc/codecs/cq93vc.c
+> index 46dbfd0..347a567 100644
+> --- a/sound/soc/codecs/cq93vc.c
+> +++ b/sound/soc/codecs/cq93vc.c
+> @@ -153,7 +153,7 @@ static int cq93vc_resume(struct snd_soc_codec *codec)
+>  
+>  static int cq93vc_probe(struct snd_soc_codec *codec)
+>  {
+> -	struct davinci_vc *davinci_vc = codec->dev->platform_data;
+> +	struct davinci_vc *davinci_vc = snd_soc_codec_get_drvdata(codec);
+>  
+>  	davinci_vc->cq93vc.codec = codec;
+>  	codec->control_data = davinci_vc;
 
-Will this compile with CONFIG_DEBUG_FS=n?
-
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
 
