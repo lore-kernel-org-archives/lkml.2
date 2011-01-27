@@ -1,64 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317Ab1A0UmN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 15:42:13 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:35440 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752691Ab1A0UmM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 15:42:12 -0500
-Subject: Re: [alsa-devel] [PATCH] ASoC: DaVinci: fix kernel panic due to
- uninitialized platform_data
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        davinci-linux-open-source@linux.davincidsp.com,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        stable@kernel.org, linux-arm-kernel@lists.infradead.org
-In-Reply-To: <1296136063-31625-1-git-send-email-prakash.pm@ti.com>
-References: <1296136063-31625-1-git-send-email-prakash.pm@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 27 Jan 2011 20:42:06 +0000
-Message-ID: <1296160926.3376.56.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753394Ab1A0Uno (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 15:43:44 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43597 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753077Ab1A0Unn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 15:43:43 -0500
+MIME-Version: 1.0
+In-Reply-To: <AANLkTim6zcdn8FgUTa7OO=_4B3x5CiHxWr_g=uR0m4zX@mail.gmail.com>
+References: <AANLkTim6zcdn8FgUTa7OO=_4B3x5CiHxWr_g=uR0m4zX@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 28 Jan 2011 06:42:51 +1000
+Message-ID: <AANLkTino3tzfri0MiPpMArsB8VGiKZh2aP85tv+psBbZ@mail.gmail.com>
+Subject: Re: [GIT PULL] ARM Tegra fixes for 2.6.38
+To: Colin Cross <ccross@google.com>
+Cc: linux-main <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Linux Tegra Mailing List <linux-tegra@vger.kernel.org>,
+        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-27 at 19:17 +0530, Manjunathappa, Prakash wrote:
-> This patch fixes the Kernel panic issue on accessing davinci_vc in
-> cq93vc_probe function. struct davinci_vc is part of platform device's
-> private driver data(codec->dev->p->driver_data) and this is populated
-> by DaVinci Voice Codec MFD driver.
-> 
-> Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
-> ---
-> This patch applies to Linus's tree at [1].
-> 
-> [1] http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
-> ---
->  sound/soc/codecs/cq93vc.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/sound/soc/codecs/cq93vc.c b/sound/soc/codecs/cq93vc.c
-> index 46dbfd0..347a567 100644
-> --- a/sound/soc/codecs/cq93vc.c
-> +++ b/sound/soc/codecs/cq93vc.c
-> @@ -153,7 +153,7 @@ static int cq93vc_resume(struct snd_soc_codec *codec)
->  
->  static int cq93vc_probe(struct snd_soc_codec *codec)
->  {
-> -	struct davinci_vc *davinci_vc = codec->dev->platform_data;
-> +	struct davinci_vc *davinci_vc = snd_soc_codec_get_drvdata(codec);
->  
->  	davinci_vc->cq93vc.codec = codec;
->  	codec->control_data = davinci_vc;
+On Thu, Jan 27, 2011 at 3:41 PM, Colin Cross <ccross@google.com> wrote:
+>
+> Please pull fixes for the Tegra machine from:
+>
+>  http://android.git.kernel.org/kernel/tegra.git for-linus
 
-Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
--- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
+I don't do http fetching. My life is too short. If there isn't a
+native git server, make one.
 
+               Linus
