@@ -1,115 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753016Ab1A0TAW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 14:00:22 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:55464 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751958Ab1A0TAU (ORCPT
+	id S1753183Ab1A0TA6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 14:00:58 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:59508 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752797Ab1A0TA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 14:00:20 -0500
-Date: Thu, 27 Jan 2011 14:00:17 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@novell.com>
-cc: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] PM / Wakeup: Add missing memory barriers
-In-Reply-To: <201101262353.21043.rjw@novell.com>
-Message-ID: <Pine.LNX.4.44L0.1101271335480.2090-100000@iolanthe.rowland.org>
+	Thu, 27 Jan 2011 14:00:56 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6239"; a="72226413"
+From: David Brown <davidb@codeaurora.org>
+To: Julia Lawall <julia@diku.dk>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, kernel-janitors@vger.kernel.org,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] drivers/staging/msm/lcdc.c: Convert IS_ERR result to PTR_ERR
+In-Reply-To: <1296143347-17508-2-git-send-email-julia@diku.dk> (Julia Lawall's
+	message of "Thu, 27 Jan 2011 16:49:07 +0100")
+References: <1296143347-17508-2-git-send-email-julia@diku.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+X-Hashcash: 1:20:110127:adharmap@codeaurora.org::85KihSOhpkvEUSUo:000000000000000000000000000000000000000Kph
+X-Hashcash: 1:20:110127:gregkh@suse.de::y5KuLXb6Oje84Q3T:0002Fx9
+X-Hashcash: 1:20:110127:linux-kernel@vger.kernel.org::fXwGC/GsFppOoM+e:0000000000000000000000000000000001k4+
+X-Hashcash: 1:20:110127:stepanm@codeaurora.org::Tn8nafp3A44fF6gs:0000000000000000000000000000000000000001SSP
+X-Hashcash: 1:20:110127:julia@diku.dk::TdA7F9bApisL4om7:000029Ny
+X-Hashcash: 1:20:110127:kernel-janitors@vger.kernel.org::BM581gpxcVpnFh2R:0000000000000000000000000000009ouV
+X-Hashcash: 1:20:110127:devel@driverdev.osuosl.org::iKb0GKawL14ol6uB:000000000000000000000000000000000008w/h
+X-Hashcash: 1:20:110127:dwalker@codeaurora.org::wtjX2VZCCOuk1kPi:000000000000000000000000000000000000000HiDS
+Date: Thu, 27 Jan 2011 11:00:55 -0800
+Message-ID: <8yabp325fyw.fsf@huya.qualcomm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Jan 2011, Rafael J. Wysocki wrote:
+On Thu, Jan 27 2011, Julia Lawall wrote:
 
-> > Ideally you could do away with the need for synchronization entirely.  
-> > For example, events_in_progress and event_count could be stored as two 
-> > 16-bit values stuffed into a single atomic variable.  Then they could 
-> > both be read or updated simultaneously.
-> 
-> OK, the patch below appears to work for me.  Can you have a look at it, please?
-> 
-> Rafael
-> 
-> 
-> ---
->  drivers/base/power/wakeup.c |   82 +++++++++++++++++++++++++++++++-------------
->  1 file changed, 58 insertions(+), 24 deletions(-)
-> 
-> Index: linux-2.6/drivers/base/power/wakeup.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/base/power/wakeup.c
-> +++ linux-2.6/drivers/base/power/wakeup.c
-> @@ -24,12 +24,48 @@
->   */
->  bool events_check_enabled;
->  
-> -/* The counter of registered wakeup events. */
-> -static atomic_t event_count = ATOMIC_INIT(0);
-> -/* A preserved old value of event_count. */
-> +#define EVENT_COUNT_BITS	(sizeof(atomic_t) * 4)
+> This code elsewhere returns a negative constant to an indicate an error,
+> while IS_ERR returns the result of a >= operation.
+>
+> The semantic patch that fixes this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+>
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-This should be sizeof(int), since atomic_t variables store int values.  
-In principle, the atomic_t might include other things along with the 
-stored value (it used to, on some architectures).
+Acked-by: David Brown <davidb@codeaurora.org>
 
-> +#define MAX_EVENT_COUNT		((1 << EVENT_COUNT_BITS) - 1)
-> +
-> +/* Combined counters of registered wakeup events and events in progress. */
-> +static atomic_t combined_event_count = ATOMIC_INIT(0);
-> +
-
-Comment here, explaining that this is needed so that the in_progress 
-and count parts can be operated on simultaneously.
-
-> +static unsigned int split_counters(unsigned int *inpr, unsigned int *cnt)
-> +{
-> +	unsigned int comb = atomic_read(&combined_event_count);
-> +
-> +	*inpr = (comb >> EVENT_COUNT_BITS);
-> +	*cnt = comb & MAX_EVENT_COUNT;
-
-The inpr part is bounded, whereas the cnt part increments without 
-limit.  Therefore inpr should occupy the lower bits and cnt should 
-occupy the upper bits, where overflow isn't an issue.
-
-> +	return comb;
-> +}
-> +
-> +static unsigned int merge_counters(unsigned int inpr, unsigned int cnt)
-> +{
-> +	return (inpr << EVENT_COUNT_BITS) | cnt;
-> +}
-> +
-> +static void update_events_in_progress(void)
-> +{
-> +	unsigned int cnt, inpr, old, new;
-> +
-> +	do {
-> +		old = split_counters(&inpr, &cnt);
-> +		new = merge_counters(inpr + 1, cnt);
-> +	} while (atomic_cmpxchg(&combined_event_count, old, new) != old);
-> +}
-
-Just atomic_inc(&combined_event_count) -- after inpr has been moved to 
-the lower bits.
-
-> +
-> +static void update_counters(void)
-> +{
-> +	unsigned int cnt, inpr, old, new;
-> +
-> +	do {
-> +		old = split_counters(&inpr, &cnt);
-> +		new = merge_counters(inpr - 1, cnt + 1);
-> +	} while (atomic_cmpxchg(&combined_event_count, old, new) != old);
-> +}
-
-Just atomic_add(MAX_EVENT_COUNT, &combined_event_count).
-
-The rest looks fine.
-
-Alan Stern
-
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
