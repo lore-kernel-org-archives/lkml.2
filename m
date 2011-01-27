@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317Ab1A0Mas (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 07:30:48 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:59797 "EHLO
+	id S1753409Ab1A0May (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 07:30:54 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:59804 "EHLO
 	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753221Ab1A0Mam (ORCPT
+	with ESMTP id S1753334Ab1A0Mau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 07:30:42 -0500
+	Thu, 27 Jan 2011 07:30:50 -0500
 From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 To: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
         alsa-devel@alsa-project.org
 Cc: sakari.ailus@maxwell.research.nokia.com,
         broonie@opensource.wolfsonmicro.com, clemens@ladisch.de
-Subject: [PATCH v8 06/12] media: Media device information query
-Date: Thu, 27 Jan 2011 13:30:31 +0100
-Message-Id: <1296131437-29954-7-git-send-email-laurent.pinchart@ideasonboard.com>
+Subject: [PATCH v8 11/12] v4l: Make video_device inherit from media_entity
+Date: Thu, 27 Jan 2011 13:30:36 +0100
+Message-Id: <1296131437-29954-12-git-send-email-laurent.pinchart@ideasonboard.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1296131437-29954-1-git-send-email-laurent.pinchart@ideasonboard.com>
 References: <1296131437-29954-1-git-send-email-laurent.pinchart@ideasonboard.com>
@@ -22,657 +22,232 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create the following ioctl and implement it at the media device level to
-query device information.
+V4L2 devices are media entities. As such they need to inherit from
+(include) the media_entity structure.
 
-- MEDIA_IOC_DEVICE_INFO: Query media device information
-
-The ioctl and its data structure are defined in the new kernel header
-linux/media.h available to userspace applications.
+When registering/unregistering the device, the media entity is
+automatically registered/unregistered. The entity is acquired on device
+open and released on device close.
 
 Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
 ---
- Documentation/DocBook/media-entities.tmpl          |   12 ++
- Documentation/DocBook/v4l/media-controller.xml     |   10 ++
- Documentation/DocBook/v4l/media-func-close.xml     |   59 +++++++++
- Documentation/DocBook/v4l/media-func-ioctl.xml     |  116 +++++++++++++++++
- Documentation/DocBook/v4l/media-func-open.xml      |   94 ++++++++++++++
- .../DocBook/v4l/media-ioc-device-info.xml          |  132 ++++++++++++++++++++
- drivers/media/media-device.c                       |   57 +++++++++
- include/linux/Kbuild                               |    1 +
- include/linux/media.h                              |   45 +++++++
- 9 files changed, 526 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/DocBook/v4l/media-func-close.xml
- create mode 100644 Documentation/DocBook/v4l/media-func-ioctl.xml
- create mode 100644 Documentation/DocBook/v4l/media-func-open.xml
- create mode 100644 Documentation/DocBook/v4l/media-ioc-device-info.xml
- create mode 100644 include/linux/media.h
+ Documentation/video4linux/v4l2-framework.txt |   38 ++++++++++++++++++--
+ drivers/media/video/v4l2-dev.c               |   49 +++++++++++++++++++++++--
+ include/media/v4l2-dev.h                     |    7 ++++
+ 3 files changed, 87 insertions(+), 7 deletions(-)
 
-diff --git a/Documentation/DocBook/media-entities.tmpl b/Documentation/DocBook/media-entities.tmpl
-index 61d6f11..6af3375 100644
---- a/Documentation/DocBook/media-entities.tmpl
-+++ b/Documentation/DocBook/media-entities.tmpl
-@@ -11,6 +11,10 @@
- <!ENTITY func-select "<link linkend='func-select'><function>select()</function></link>">
- <!ENTITY func-write "<link linkend='func-write'><function>write()</function></link>">
+diff --git a/Documentation/video4linux/v4l2-framework.txt b/Documentation/video4linux/v4l2-framework.txt
+index aeb2a22..f231bc20 100644
+--- a/Documentation/video4linux/v4l2-framework.txt
++++ b/Documentation/video4linux/v4l2-framework.txt
+@@ -71,6 +71,10 @@ sub-device instances, the video_device struct stores V4L2 device node data
+ and in the future a v4l2_fh struct will keep track of filehandle instances
+ (this is not yet implemented).
  
-+<!ENTITY media-func-close "<link linkend='media-func-close'><function>close()</function></link>">
-+<!ENTITY media-func-ioctl "<link linkend='media-func-ioctl'><function>ioctl()</function></link>">
-+<!ENTITY media-func-open "<link linkend='media-func-open'><function>open()</function></link>">
++The V4L2 framework also optionally integrates with the media framework. If a
++driver sets the struct v4l2_device mdev field, sub-devices and video nodes
++will automatically appear in the media framework as entities.
 +
- <!-- Ioctls -->
- <!ENTITY VIDIOC-CROPCAP "<link linkend='vidioc-cropcap'><constant>VIDIOC_CROPCAP</constant></link>">
- <!ENTITY VIDIOC-DBG-G-CHIP-IDENT "<link linkend='vidioc-dbg-g-chip-ident'><constant>VIDIOC_DBG_G_CHIP_IDENT</constant></link>">
-@@ -87,6 +91,8 @@
- <!ENTITY VIDIOC-TRY-FMT "<link linkend='vidioc-g-fmt'><constant>VIDIOC_TRY_FMT</constant></link>">
- <!ENTITY VIDIOC-UNSUBSCRIBE-EVENT "<link linkend='vidioc-subscribe-event'><constant>VIDIOC_UNSUBSCRIBE_EVENT</constant></link>">
  
-+<!ENTITY MEDIA-IOC-DEVICE-INFO "<link linkend='media-ioc-device-info'><constant>MEDIA_IOC_DEVICE_INFO</constant></link>">
-+
- <!-- Types -->
- <!ENTITY v4l2-std-id "<link linkend='v4l2-std-id'>v4l2_std_id</link>">
+ struct v4l2_device
+ ------------------
+@@ -84,11 +88,14 @@ You must register the device instance:
+ 	v4l2_device_register(struct device *dev, struct v4l2_device *v4l2_dev);
  
-@@ -181,6 +187,8 @@
- <!ENTITY v4l2-vbi-format "struct&nbsp;<link linkend='v4l2-vbi-format'>v4l2_vbi_format</link>">
- <!ENTITY v4l2-window "struct&nbsp;<link linkend='v4l2-window'>v4l2_window</link>">
+ Registration will initialize the v4l2_device struct. If the dev->driver_data
+-field is NULL, it will be linked to v4l2_dev. Drivers that use the media
+-device framework in addition to the V4L2 framework need to set
++field is NULL, it will be linked to v4l2_dev.
++
++Drivers that want integration with the media device framework need to set
+ dev->driver_data manually to point to the driver-specific device structure
+ that embed the struct v4l2_device instance. This is achieved by a
+-dev_set_drvdata() call before registering the V4L2 device instance.
++dev_set_drvdata() call before registering the V4L2 device instance. They must
++also set the struct v4l2_device mdev field to point to a properly initialized
++and registered media_device instance.
  
-+<!ENTITY media-device-info "struct&nbsp;<link linkend='media-device-info'>media_device_info</link>">
-+
- <!-- Error Codes -->
- <!ENTITY EACCES "<errorcode>EACCES</errorcode> error code">
- <!ENTITY EAGAIN "<errorcode>EAGAIN</errorcode> error code">
-@@ -322,6 +330,10 @@
- <!ENTITY sub-media-indices SYSTEM "media-indices.tmpl">
+ If v4l2_dev->name is empty then it will be set to a value derived from dev
+ (driver name followed by the bus_id, to be precise). If you set it up before
+@@ -532,6 +539,21 @@ If you use v4l2_ioctl_ops, then you should set either .unlocked_ioctl or
+ The v4l2_file_operations struct is a subset of file_operations. The main
+ difference is that the inode argument is omitted since it is never used.
  
- <!ENTITY sub-media-controller SYSTEM "v4l/media-controller.xml">
-+<!ENTITY sub-media-open SYSTEM "v4l/media-func-open.xml">
-+<!ENTITY sub-media-close SYSTEM "v4l/media-func-close.xml">
-+<!ENTITY sub-media-ioctl SYSTEM "v4l/media-func-ioctl.xml">
-+<!ENTITY sub-media-ioc-device-info SYSTEM "v4l/media-ioc-device-info.xml">
++If integration with the media framework is needed, you must initialize the
++media_entity struct embedded in the video_device struct (entity field) by
++calling media_entity_init():
++
++	struct media_pad *pad = &my_vdev->pad;
++	int err;
++
++	err = media_entity_init(&vdev->entity, 1, pad, 0);
++
++The pads array must have been previously initialized. There is no need to
++manually set the struct media_entity type and name fields.
++
++A reference to the entity will be automatically acquired/released when the
++video device is opened/closed.
++
+ v4l2_file_operations and locking
+ --------------------------------
  
- <!-- Function Reference -->
- <!ENTITY close SYSTEM "v4l/func-close.xml">
-diff --git a/Documentation/DocBook/v4l/media-controller.xml b/Documentation/DocBook/v4l/media-controller.xml
-index f89228d..a46b786 100644
---- a/Documentation/DocBook/v4l/media-controller.xml
-+++ b/Documentation/DocBook/v4l/media-controller.xml
-@@ -74,3 +74,13 @@
-     pad to a sink pad.</para>
-   </section>
- </chapter>
-+
-+<appendix id="media-user-func">
-+  <title>Function Reference</title>
-+  <!-- Keep this alphabetically sorted. -->
-+  &sub-media-open;
-+  &sub-media-close;
-+  &sub-media-ioctl;
-+  <!-- All ioctls go here. -->
-+  &sub-media-ioc-device-info;
-+</appendix>
-diff --git a/Documentation/DocBook/v4l/media-func-close.xml b/Documentation/DocBook/v4l/media-func-close.xml
-new file mode 100644
-index 0000000..be149c8
---- /dev/null
-+++ b/Documentation/DocBook/v4l/media-func-close.xml
-@@ -0,0 +1,59 @@
-+<refentry id="media-func-close">
-+  <refmeta>
-+    <refentrytitle>media close()</refentrytitle>
-+    &manvol;
-+  </refmeta>
-+
-+  <refnamediv>
-+    <refname>media-close</refname>
-+    <refpurpose>Close a media device</refpurpose>
-+  </refnamediv>
-+
-+  <refsynopsisdiv>
-+    <funcsynopsis>
-+      <funcsynopsisinfo>#include &lt;unistd.h&gt;</funcsynopsisinfo>
-+      <funcprototype>
-+	<funcdef>int <function>close</function></funcdef>
-+	<paramdef>int <parameter>fd</parameter></paramdef>
-+      </funcprototype>
-+    </funcsynopsis>
-+  </refsynopsisdiv>
-+
-+  <refsect1>
-+    <title>Arguments</title>
-+
-+    <variablelist>
-+      <varlistentry>
-+	<term><parameter>fd</parameter></term>
-+	<listitem>
-+	  <para>&fd;</para>
-+	</listitem>
-+      </varlistentry>
-+    </variablelist>
-+  </refsect1>
-+
-+  <refsect1>
-+    <title>Description</title>
-+
-+    <para>Closes the media device. Resources associated with the file descriptor
-+    are freed. The device configuration remain unchanged.</para>
-+  </refsect1>
-+
-+  <refsect1>
-+    <title>Return Value</title>
-+
-+    <para><function>close</function> returns 0 on success. On error, -1 is
-+    returned, and <varname>errno</varname> is set appropriately. Possible error
-+    codes are:</para>
-+
-+    <variablelist>
-+      <varlistentry>
-+	<term><errorcode>EBADF</errorcode></term>
-+	<listitem>
-+	  <para><parameter>fd</parameter> is not a valid open file descriptor.
-+	  </para>
-+	</listitem>
-+      </varlistentry>
-+    </variablelist>
-+  </refsect1>
-+</refentry>
-diff --git a/Documentation/DocBook/v4l/media-func-ioctl.xml b/Documentation/DocBook/v4l/media-func-ioctl.xml
-new file mode 100644
-index 0000000..bda8604
---- /dev/null
-+++ b/Documentation/DocBook/v4l/media-func-ioctl.xml
-@@ -0,0 +1,116 @@
-+<refentry id="media-func-ioctl">
-+  <refmeta>
-+    <refentrytitle>media ioctl()</refentrytitle>
-+    &manvol;
-+  </refmeta>
-+
-+  <refnamediv>
-+    <refname>media-ioctl</refname>
-+    <refpurpose>Control a media device</refpurpose>
-+  </refnamediv>
-+
-+  <refsynopsisdiv>
-+    <funcsynopsis>
-+      <funcsynopsisinfo>#include &lt;sys/ioctl.h&gt;</funcsynopsisinfo>
-+      <funcprototype>
-+	<funcdef>int <function>ioctl</function></funcdef>
-+	<paramdef>int <parameter>fd</parameter></paramdef>
-+	<paramdef>int <parameter>request</parameter></paramdef>
-+	<paramdef>void *<parameter>argp</parameter></paramdef>
-+      </funcprototype>
-+    </funcsynopsis>
-+  </refsynopsisdiv>
-+
-+  <refsect1>
-+    <title>Arguments</title>
-+
-+    <variablelist>
-+      <varlistentry>
-+	<term><parameter>fd</parameter></term>
-+	<listitem>
-+	  <para>&fd;</para>
-+	</listitem>
-+      </varlistentry>
-+      <varlistentry>
-+	<term><parameter>request</parameter></term>
-+	<listitem>
-+	  <para>Media ioctl request code as defined in the media.h header file,
-+	  for example MEDIA_IOC_SETUP_LINK.</para>
-+	</listitem>
-+      </varlistentry>
-+      <varlistentry>
-+	<term><parameter>argp</parameter></term>
-+	<listitem>
-+	  <para>Pointer to a request-specific structure.</para>
-+	</listitem>
-+      </varlistentry>
-+    </variablelist>
-+  </refsect1>
-+
-+  <refsect1>
-+    <title>Description</title>
-+    <para>The <function>ioctl()</function> function manipulates media device
-+    parameters. The argument <parameter>fd</parameter> must be an open file
-+    descriptor.</para>
-+    <para>The ioctl <parameter>request</parameter> code specifies the media
-+    function to be called. It has encoded in it whether the argument is an
-+    input, output or read/write parameter, and the size of the argument
-+    <parameter>argp</parameter> in bytes.</para>
-+    <para>Macros and structures definitions specifying media ioctl requests and
-+    their parameters are located in the media.h header file. All media ioctl
-+    requests, their respective function and parameters are specified in
-+    <xref linkend="media-user-func" />.</para>
-+  </refsect1>
-+
-+  <refsect1>
-+    <title>Return Value</title>
-+
-+    <para><function>ioctl()</function> returns <returnvalue>0</returnvalue> on
-+    success. On failure, <returnvalue>-1</returnvalue> is returned, and the
-+    <varname>errno</varname> variable is set appropriately. Generic error codes
-+    are listed below, and request-specific error codes are listed in the
-+    individual requests descriptions.</para>
-+    <para>When an ioctl that takes an output or read/write parameter fails,
-+    the parameter remains unmodified.</para>
-+
-+    <variablelist>
-+      <varlistentry>
-+	<term><errorcode>EBADF</errorcode></term>
-+	<listitem>
-+	  <para><parameter>fd</parameter> is not a valid open file descriptor.
-+	  </para>
-+	</listitem>
-+      </varlistentry>
-+      <varlistentry>
-+	<term><errorcode>EFAULT</errorcode></term>
-+	<listitem>
-+	  <para><parameter>argp</parameter> references an inaccessible memory
-+	  area.</para>
-+	</listitem>
-+      </varlistentry>
-+      <varlistentry>
-+	<term><errorcode>EINVAL</errorcode></term>
-+	<listitem>
-+	  <para>The <parameter>request</parameter> or the data pointed to by
-+	  <parameter>argp</parameter> is not valid. This is a very common error
-+	  code, see the individual ioctl requests listed in
-+	  <xref linkend="media-user-func" /> for actual causes.</para>
-+	</listitem>
-+      </varlistentry>
-+      <varlistentry>
-+	<term><errorcode>ENOMEM</errorcode></term>
-+	<listitem>
-+	  <para>Insufficient kernel memory was available to complete the
-+	  request.</para>
-+	</listitem>
-+      </varlistentry>
-+      <varlistentry>
-+	<term><errorcode>ENOTTY</errorcode></term>
-+	<listitem>
-+	  <para><parameter>fd</parameter> is  not  associated  with  a character
-+	  special device.</para>
-+	</listitem>
-+      </varlistentry>
-+    </variablelist>
-+  </refsect1>
-+</refentry>
-diff --git a/Documentation/DocBook/v4l/media-func-open.xml b/Documentation/DocBook/v4l/media-func-open.xml
-new file mode 100644
-index 0000000..f7df034
---- /dev/null
-+++ b/Documentation/DocBook/v4l/media-func-open.xml
-@@ -0,0 +1,94 @@
-+<refentry id="media-func-open">
-+  <refmeta>
-+    <refentrytitle>media open()</refentrytitle>
-+    &manvol;
-+  </refmeta>
-+
-+  <refnamediv>
-+    <refname>media-open</refname>
-+    <refpurpose>Open a media device</refpurpose>
-+  </refnamediv>
-+
-+  <refsynopsisdiv>
-+    <funcsynopsis>
-+      <funcsynopsisinfo>#include &lt;fcntl.h&gt;</funcsynopsisinfo>
-+      <funcprototype>
-+	<funcdef>int <function>open</function></funcdef>
-+	<paramdef>const char *<parameter>device_name</parameter></paramdef>
-+	<paramdef>int <parameter>flags</parameter></paramdef>
-+      </funcprototype>
-+    </funcsynopsis>
-+  </refsynopsisdiv>
-+
-+  <refsect1>
-+    <title>Arguments</title>
-+
-+    <variablelist>
-+      <varlistentry>
-+	<term><parameter>device_name</parameter></term>
-+	<listitem>
-+	  <para>Device to be opened.</para>
-+	</listitem>
-+      </varlistentry>
-+      <varlistentry>
-+	<term><parameter>flags</parameter></term>
-+	<listitem>
-+	  <para>Open flags. Access mode must be either <constant>O_RDONLY</constant>
-+	  or <constant>O_RDWR</constant>. Other flags have no effect.</para>
-+	</listitem>
-+      </varlistentry>
-+    </variablelist>
-+  </refsect1>
-+  <refsect1>
-+    <title>Description</title>
-+    <para>To open a media device applications call <function>open()</function>
-+    with the desired device name. The function has no side effects; the device
-+    configuration remain unchanged.</para>
-+    <para>When the device is opened in read-only mode, attemps to modify its
-+    configuration will result in an error, and <varname>errno</varname> will be
-+    set to <errorcode>EBADF</errorcode>.</para>
-+  </refsect1>
-+  <refsect1>
-+    <title>Return Value</title>
-+
-+    <para><function>open</function> returns the new file descriptor on success.
-+    On error, -1 is returned, and <varname>errno</varname> is set appropriately.
-+    Possible error codes are:</para>
-+
-+    <variablelist>
-+      <varlistentry>
-+	<term><errorcode>EACCES</errorcode></term>
-+	<listitem>
-+	  <para>The requested access to the file is not allowed.</para>
-+	</listitem>
-+      </varlistentry>
-+      <varlistentry>
-+	<term><errorcode>EMFILE</errorcode></term>
-+	<listitem>
-+	  <para>The  process  already  has  the  maximum number of files open.
-+	  </para>
-+	</listitem>
-+      </varlistentry>
-+      <varlistentry>
-+	<term><errorcode>ENFILE</errorcode></term>
-+	<listitem>
-+	  <para>The system limit on the total number of open files has been
-+	  reached.</para>
-+	</listitem>
-+      </varlistentry>
-+      <varlistentry>
-+	<term><errorcode>ENOMEM</errorcode></term>
-+	<listitem>
-+	  <para>Insufficient kernel memory was available.</para>
-+	</listitem>
-+      </varlistentry>
-+      <varlistentry>
-+	<term><errorcode>ENXIO</errorcode></term>
-+	<listitem>
-+	  <para>No device corresponding to this device special file exists.
-+	  </para>
-+	</listitem>
-+      </varlistentry>
-+    </variablelist>
-+  </refsect1>
-+</refentry>
-diff --git a/Documentation/DocBook/v4l/media-ioc-device-info.xml b/Documentation/DocBook/v4l/media-ioc-device-info.xml
-new file mode 100644
-index 0000000..278a312
---- /dev/null
-+++ b/Documentation/DocBook/v4l/media-ioc-device-info.xml
-@@ -0,0 +1,132 @@
-+<refentry id="media-ioc-device-info">
-+  <refmeta>
-+    <refentrytitle>ioctl MEDIA_IOC_DEVICE_INFO</refentrytitle>
-+    &manvol;
-+  </refmeta>
-+
-+  <refnamediv>
-+    <refname>MEDIA_IOC_DEVICE_INFO</refname>
-+    <refpurpose>Query device information</refpurpose>
-+  </refnamediv>
-+
-+  <refsynopsisdiv>
-+    <funcsynopsis>
-+      <funcprototype>
-+	<funcdef>int <function>ioctl</function></funcdef>
-+	<paramdef>int <parameter>fd</parameter></paramdef>
-+	<paramdef>int <parameter>request</parameter></paramdef>
-+	<paramdef>struct media_device_info *<parameter>argp</parameter></paramdef>
-+      </funcprototype>
-+    </funcsynopsis>
-+  </refsynopsisdiv>
-+
-+  <refsect1>
-+    <title>Arguments</title>
-+
-+    <variablelist>
-+      <varlistentry>
-+	<term><parameter>fd</parameter></term>
-+	<listitem>
-+	  <para>&fd;</para>
-+	</listitem>
-+      </varlistentry>
-+      <varlistentry>
-+	<term><parameter>request</parameter></term>
-+	<listitem>
-+	  <para>MEDIA_IOC_DEVICE_INFO</para>
-+	</listitem>
-+      </varlistentry>
-+      <varlistentry>
-+	<term><parameter>argp</parameter></term>
-+	<listitem>
-+	  <para></para>
-+	</listitem>
-+      </varlistentry>
-+    </variablelist>
-+  </refsect1>
-+
-+  <refsect1>
-+    <title>Description</title>
-+
-+    <para>All media devices must support the <constant>MEDIA_IOC_DEVICE_INFO</constant>
-+    ioctl. To query device information, applications call the ioctl with a
-+    pointer to a &media-device-info;. The driver fills the structure and returns
-+    the information to the application.
-+    The ioctl never fails.</para>
-+
-+    <table pgwide="1" frame="none" id="media-device-info">
-+      <title>struct <structname>media_device_info</structname></title>
-+      <tgroup cols="3">
-+	&cs-str;
-+	<tbody valign="top">
-+	  <row>
-+	    <entry>char</entry>
-+	    <entry><structfield>driver</structfield>[16]</entry>
-+	    <entry><para>Name of the driver implementing the media API as a
-+	    NUL-terminated ASCII string. The driver version is stored in the
-+	    <structfield>driver_version</structfield> field.</para>
-+	    <para>Driver specific applications can use this information to
-+	    verify the driver identity. It is also useful to work around
-+	    known bugs, or to identify drivers in error reports.</para></entry>
-+	  </row>
-+	  <row>
-+	    <entry>char</entry>
-+	    <entry><structfield>model</structfield>[32]</entry>
-+	    <entry>Device model name as a NUL-terminated UTF-8 string. The
-+	    device version is stored in the <structfield>device_version</structfield>
-+	    field and is not be appended to the model name.</entry>
-+	  </row>
-+	  <row>
-+	    <entry>char</entry>
-+	    <entry><structfield>serial</structfield>[40]</entry>
-+	    <entry>Serial number as a NUL-terminated ASCII string.</entry>
-+	  </row>
-+	  <row>
-+	    <entry>char</entry>
-+	    <entry><structfield>bus_info</structfield>[32]</entry>
-+	    <entry>Location of the device in the system as a NUL-terminated
-+	    ASCII string. This includes the bus type name (PCI, USB, ...) and a
-+	    bus-specific identifier.</entry>
-+	  </row>
-+	  <row>
-+	    <entry>__u32</entry>
-+	    <entry><structfield>media_version</structfield></entry>
-+	    <entry>Media API version, formatted with the
-+	    <constant>KERNEL_VERSION()</constant> macro.</entry>
-+	  </row>
-+	  <row>
-+	    <entry>__u32</entry>
-+	    <entry><structfield>hw_revision</structfield></entry>
-+	    <entry>Hardware device revision in a driver-specific format.</entry>
-+	  </row>
-+	  <row>
-+	    <entry>__u32</entry>
-+	    <entry><structfield>media_version</structfield></entry>
-+	    <entry>Media device driver version, formatted with the
-+	    <constant>KERNEL_VERSION()</constant> macro. Together with the
-+	    <structfield>driver</structfield> field this identifies a particular
-+	    driver.</entry>
-+	  </row>
-+	  <row>
-+	    <entry>__u32</entry>
-+	    <entry><structfield>reserved</structfield>[31]</entry>
-+	    <entry>Reserved for future extensions. Drivers and applications must
-+	    set this array to zero.</entry>
-+	  </row>
-+	</tbody>
-+      </tgroup>
-+    </table>
-+    <para>The <structfield>serial</structfield> and <structfield>bus_info</structfield>
-+    fields can be used to distinguish between multiple instances of otherwise
-+    identical hardware. The serial number takes precedence when provided and can
-+    be assumed to be unique. If the serial number is an empty string, the
-+    <structfield>bus_info</structfield> field can be used instead. The
-+    <structfield>bus_info</structfield> field is guaranteed to be unique, but
-+    can vary across reboots or device unplug/replug.</para>
-+  </refsect1>
-+
-+  <refsect1>
-+    <title>Return value</title>
-+    <para>This function doesn't return specific error codes.</para>
-+  </refsect1>
-+</refentry>
-diff --git a/drivers/media/media-device.c b/drivers/media/media-device.c
-index e4c2157..5c745be 100644
---- a/drivers/media/media-device.c
-+++ b/drivers/media/media-device.c
-@@ -22,13 +22,70 @@
+@@ -561,6 +583,9 @@ for you.
+ 		return err;
+ 	}
  
- #include <linux/types.h>
- #include <linux/ioctl.h>
-+#include <linux/media.h>
++If the v4l2_device parent device has a non-NULL mdev field, the video device
++entity will be automatically registered with the media device.
++
+ Which device is registered depends on the type argument. The following
+ types exist:
  
- #include <media/media-device.h>
- #include <media/media-devnode.h>
- #include <media/media-entity.h>
+@@ -636,6 +661,13 @@ release, of course) will return an error as well.
+ When the last user of the video device node exits, then the vdev->release()
+ callback is called and you can do the final cleanup there.
  
-+/* -----------------------------------------------------------------------------
-+ * Userspace API
-+ */
++Don't forget to cleanup the media entity associated with the video device if
++it has been initialized:
 +
-+static int media_device_open(struct file *filp)
-+{
-+	return 0;
-+}
++	media_entity_cleanup(&vdev->entity);
 +
-+static int media_device_close(struct file *filp)
-+{
-+	return 0;
-+}
++This can be done from the release callback.
 +
-+static int media_device_get_info(struct media_device *dev,
-+				 struct media_device_info __user *__info)
-+{
-+	struct media_device_info info;
-+
-+	memset(&info, 0, sizeof(info));
-+
-+	strlcpy(info.driver, dev->dev->driver->name, sizeof(info.driver));
-+	strlcpy(info.model, dev->model, sizeof(info.model));
-+	strlcpy(info.serial, dev->serial, sizeof(info.serial));
-+	strlcpy(info.bus_info, dev->bus_info, sizeof(info.bus_info));
-+
-+	info.media_version = MEDIA_API_VERSION;
-+	info.hw_revision = dev->hw_revision;
-+	info.driver_version = dev->driver_version;
-+
-+	return copy_to_user(__info, &info, sizeof(*__info));
-+}
-+
-+static long media_device_ioctl(struct file *filp, unsigned int cmd,
-+			       unsigned long arg)
-+{
-+	struct media_devnode *devnode = media_devnode_data(filp);
-+	struct media_device *dev = to_media_device(devnode);
-+	long ret;
-+
-+	switch (cmd) {
-+	case MEDIA_IOC_DEVICE_INFO:
-+		ret = media_device_get_info(dev,
-+				(struct media_device_info __user *)arg);
-+		break;
-+
-+	default:
-+		ret = -ENOIOCTLCMD;
+ 
+ video_device helper functions
+ -----------------------------
+diff --git a/drivers/media/video/v4l2-dev.c b/drivers/media/video/v4l2-dev.c
+index f22bd41..f91348f 100644
+--- a/drivers/media/video/v4l2-dev.c
++++ b/drivers/media/video/v4l2-dev.c
+@@ -303,6 +303,9 @@ static int v4l2_mmap(struct file *filp, struct vm_area_struct *vm)
+ static int v4l2_open(struct inode *inode, struct file *filp)
+ {
+ 	struct video_device *vdev;
++#if defined(CONFIG_MEDIA_CONTROLLER)
++	struct media_entity *entity = NULL;
++#endif
+ 	int ret = 0;
+ 
+ 	/* Check if the video device is available */
+@@ -316,6 +319,16 @@ static int v4l2_open(struct inode *inode, struct file *filp)
+ 	/* and increase the device refcount */
+ 	video_get(vdev);
+ 	mutex_unlock(&videodev_lock);
++#if defined(CONFIG_MEDIA_CONTROLLER)
++	if (vdev->v4l2_dev && vdev->v4l2_dev->mdev) {
++		entity = media_entity_get(&vdev->entity);
++		if (!entity) {
++			ret = -EBUSY;
++			video_put(vdev);
++			return ret;
++		}
 +	}
++#endif
+ 	if (vdev->fops->open) {
+ 		if (vdev->lock && mutex_lock_interruptible(vdev->lock)) {
+ 			ret = -ERESTARTSYS;
+@@ -331,8 +344,13 @@ static int v4l2_open(struct inode *inode, struct file *filp)
+ 
+ err:
+ 	/* decrease the refcount in case of an error */
+-	if (ret)
++	if (ret) {
++#if defined(CONFIG_MEDIA_CONTROLLER)
++		if (vdev->v4l2_dev && vdev->v4l2_dev->mdev)
++			media_entity_put(entity);
++#endif
+ 		video_put(vdev);
++	}
+ 	return ret;
+ }
+ 
+@@ -349,7 +367,10 @@ static int v4l2_release(struct inode *inode, struct file *filp)
+ 		if (vdev->lock)
+ 			mutex_unlock(vdev->lock);
+ 	}
+-
++#if defined(CONFIG_MEDIA_CONTROLLER)
++	if (vdev->v4l2_dev && vdev->v4l2_dev->mdev)
++		media_entity_put(&vdev->entity);
++#endif
+ 	/* decrease the refcount unconditionally since the release()
+ 	   return value is ignored. */
+ 	video_put(vdev);
+@@ -586,12 +607,27 @@ int __video_register_device(struct video_device *vdev, int type, int nr,
+ 	if (nr != -1 && nr != vdev->num && warn_if_nr_in_use)
+ 		printk(KERN_WARNING "%s: requested %s%d, got %s\n", __func__,
+ 			name_base, nr, video_device_node_name(vdev));
+-
+-	/* Part 5: Activate this minor. The char device can now be used. */
++#if defined(CONFIG_MEDIA_CONTROLLER)
++	/* Part 5: Register the entity. */
++	if (vdev->v4l2_dev && vdev->v4l2_dev->mdev) {
++		vdev->entity.type = MEDIA_ENT_T_DEVNODE_V4L;
++		vdev->entity.name = vdev->name;
++		vdev->entity.v4l.major = VIDEO_MAJOR;
++		vdev->entity.v4l.minor = vdev->minor;
++		ret = media_device_register_entity(vdev->v4l2_dev->mdev,
++			&vdev->entity);
++		if (ret < 0)
++			printk(KERN_WARNING
++			       "%s: media_device_register_entity failed\n",
++			       __func__);
++	}
++#endif
++	/* Part 6: Activate this minor. The char device can now be used. */
+ 	set_bit(V4L2_FL_REGISTERED, &vdev->flags);
+ 	mutex_lock(&videodev_lock);
+ 	video_device[vdev->minor] = vdev;
+ 	mutex_unlock(&videodev_lock);
 +
-+	return ret;
-+}
+ 	return 0;
+ 
+ cleanup:
+@@ -619,6 +655,11 @@ void video_unregister_device(struct video_device *vdev)
+ 	if (!vdev || !video_is_registered(vdev))
+ 		return;
+ 
++#if defined(CONFIG_MEDIA_CONTROLLER)
++	if (vdev->v4l2_dev && vdev->v4l2_dev->mdev)
++		media_device_unregister_entity(&vdev->entity);
++#endif
 +
- static const struct media_file_operations media_device_fops = {
- 	.owner = THIS_MODULE,
-+	.open = media_device_open,
-+	.ioctl = media_device_ioctl,
-+	.release = media_device_close,
+ 	mutex_lock(&videodev_lock);
+ 	/* This must be in a critical section to prevent a race with v4l2_open.
+ 	 * Once this bit has been cleared video_get may never be called again.
+diff --git a/include/media/v4l2-dev.h b/include/media/v4l2-dev.h
+index 4fe6831..51b2c51 100644
+--- a/include/media/v4l2-dev.h
++++ b/include/media/v4l2-dev.h
+@@ -16,6 +16,8 @@
+ #include <linux/mutex.h>
+ #include <linux/videodev2.h>
+ 
++#include <media/media-entity.h>
++
+ #define VIDEO_MAJOR	81
+ 
+ #define VFL_TYPE_GRABBER	0
+@@ -55,6 +57,9 @@ struct v4l2_file_operations {
+ 
+ struct video_device
+ {
++#if defined(CONFIG_MEDIA_CONTROLLER)
++	struct media_entity entity;
++#endif
+ 	/* device ops */
+ 	const struct v4l2_file_operations *fops;
+ 
+@@ -100,6 +105,8 @@ struct video_device
+ 	struct mutex *lock;
  };
  
- /* -----------------------------------------------------------------------------
-diff --git a/include/linux/Kbuild b/include/linux/Kbuild
-index 97319a8..26e0a7f 100644
---- a/include/linux/Kbuild
-+++ b/include/linux/Kbuild
-@@ -228,6 +228,7 @@ header-y += magic.h
- header-y += major.h
- header-y += map_to_7segment.h
- header-y += matroxfb.h
-+header-y += media.h
- header-y += mempolicy.h
- header-y += meye.h
- header-y += mii.h
-diff --git a/include/linux/media.h b/include/linux/media.h
-new file mode 100644
-index 0000000..4c52f08
---- /dev/null
-+++ b/include/linux/media.h
-@@ -0,0 +1,45 @@
-+/*
-+ * Multimedia device API
-+ *
-+ * Copyright (C) 2010 Nokia Corporation
-+ *
-+ * Contacts: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-+ *	     Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#ifndef __LINUX_MEDIA_H
-+#define __LINUX_MEDIA_H
-+
-+#include <linux/ioctl.h>
-+#include <linux/types.h>
-+#include <linux/version.h>
-+
-+#define MEDIA_API_VERSION	KERNEL_VERSION(0, 1, 0)
-+
-+struct media_device_info {
-+	char driver[16];
-+	char model[32];
-+	char serial[40];
-+	char bus_info[32];
-+	__u32 media_version;
-+	__u32 hw_revision;
-+	__u32 driver_version;
-+	__u32 reserved[31];
-+};
-+
-+#define MEDIA_IOC_DEVICE_INFO		_IOWR('M', 1, struct media_device_info)
-+
-+#endif /* __LINUX_MEDIA_H */
++#define media_entity_to_video_device(entity) \
++	container_of(entity, struct video_device, entity)
+ /* dev to video-device */
+ #define to_video_device(cd) container_of(cd, struct video_device, dev)
+ 
 -- 
 1.7.3.4
 
