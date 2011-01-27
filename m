@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668Ab1A0Lyg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 06:54:36 -0500
-Received: from [114.251.86.0] ([114.251.86.0]:25994 "EHLO enigma.site"
+	id S1754663Ab1A0Lyr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 06:54:47 -0500
+Received: from [114.251.86.0] ([114.251.86.0]:25839 "EHLO enigma.site"
 	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754594Ab1A0LyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754556Ab1A0LyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 Jan 2011 06:54:05 -0500
 From: Coly Li <bosong.ly@taobao.com>
 To: linux-kernel@vger.kernel.org
 Cc: Coly Li <bosong.ly@taobao.com>, Greg KH <gregkh@suse.de>
-Subject: [PATCH 6/7] wl_cfg80211.c: use BUG_ON correctly
-Date: Thu, 27 Jan 2011 20:12:35 +0800
-Message-Id: <1296130356-29896-7-git-send-email-bosong.ly@taobao.com>
+Subject: [PATCH 5/7] dma: use BUG_ON correctly in ppc4xx/adam.c
+Date: Thu, 27 Jan 2011 20:12:34 +0800
+Message-Id: <1296130356-29896-6-git-send-email-bosong.ly@taobao.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1296130356-29896-1-git-send-email-bosong.ly@taobao.com>
 References: <1296130356-29896-1-git-send-email-bosong.ly@taobao.com>
@@ -19,82 +19,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes explicit unlikely() when using BUG_ON() in
-wl_cfg80211.c
+This patch makes BUG_ON() usage correct in drivers/dma/ppc4xx/adam.c
 
 Signed-off-by: Coly Li <bosong.ly@taobao.com>
 Cc: Greg KH <gregkh@suse.de>
 ---
- drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/dma/ppc4xx/adma.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
-index 991463f..35124b1 100644
---- a/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
-+++ b/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
-@@ -673,7 +673,7 @@ wl_dev_iovar_setbuf(struct net_device *dev, s8 * iovar, void *param,
- 	s32 iolen;
+diff --git a/drivers/dma/ppc4xx/adma.c b/drivers/dma/ppc4xx/adma.c
+index cef5845..a2b62e9 100644
+--- a/drivers/dma/ppc4xx/adma.c
++++ b/drivers/dma/ppc4xx/adma.c
+@@ -2313,7 +2313,7 @@ static struct dma_async_tx_descriptor *ppc440spe_adma_prep_dma_memcpy(
+ 	if (unlikely(!len))
+ 		return NULL;
  
- 	iolen = bcm_mkiovar(iovar, param, paramlen, bufptr, buflen);
--	BUG_ON(unlikely(!iolen));
-+	BUG_ON(!iolen);
+-	BUG_ON(unlikely(len > PPC440SPE_ADMA_DMA_MAX_BYTE_COUNT));
++	BUG_ON(len > PPC440SPE_ADMA_DMA_MAX_BYTE_COUNT);
  
- 	return wl_dev_ioctl(dev, WLC_SET_VAR, bufptr, iolen);
- }
-@@ -685,7 +685,7 @@ wl_dev_iovar_getbuf(struct net_device *dev, s8 * iovar, void *param,
- 	s32 iolen;
+ 	spin_lock_bh(&ppc440spe_chan->lock);
  
- 	iolen = bcm_mkiovar(iovar, param, paramlen, bufptr, buflen);
--	BUG_ON(unlikely(!iolen));
-+	BUG_ON(!iolen);
+@@ -2354,7 +2354,7 @@ static struct dma_async_tx_descriptor *ppc440spe_adma_prep_dma_memset(
+ 	if (unlikely(!len))
+ 		return NULL;
  
- 	return wl_dev_ioctl(dev, WLC_GET_VAR, bufptr, buflen);
- }
-@@ -704,7 +704,7 @@ wl_run_iscan(struct wl_iscan_ctrl *iscan, struct wlc_ssid *ssid, u16 action)
- 	if (unlikely(!params))
- 		return -ENOMEM;
- 	memset(params, 0, params_size);
--	BUG_ON(unlikely(params_size >= WLC_IOCTL_SMLEN));
-+	BUG_ON(params_size >= WLC_IOCTL_SMLEN);
+-	BUG_ON(unlikely(len > PPC440SPE_ADMA_DMA_MAX_BYTE_COUNT));
++	BUG_ON(len > PPC440SPE_ADMA_DMA_MAX_BYTE_COUNT);
  
- 	wl_iscan_prep(&params->params, ssid);
+ 	spin_lock_bh(&ppc440spe_chan->lock);
  
-@@ -875,7 +875,7 @@ static s32 wl_dev_intvar_set(struct net_device *dev, s8 *name, s32 val)
+@@ -2397,7 +2397,7 @@ static struct dma_async_tx_descriptor *ppc440spe_adma_prep_dma_xor(
+ 				     dma_dest, dma_src, src_cnt));
+ 	if (unlikely(!len))
+ 		return NULL;
+-	BUG_ON(unlikely(len > PPC440SPE_ADMA_XOR_MAX_BYTE_COUNT));
++	BUG_ON(len > PPC440SPE_ADMA_XOR_MAX_BYTE_COUNT);
  
- 	val = htod32(val);
- 	len = bcm_mkiovar(name, (char *)(&val), sizeof(val), buf, sizeof(buf));
--	BUG_ON(unlikely(!len));
-+	BUG_ON(!len);
+ 	dev_dbg(ppc440spe_chan->device->common.dev,
+ 		"ppc440spe adma%d: %s src_cnt: %d len: %u int_en: %d\n",
+@@ -2887,7 +2887,7 @@ static struct dma_async_tx_descriptor *ppc440spe_adma_prep_dma_pq(
+ 	ADMA_LL_DBG(prep_dma_pq_dbg(ppc440spe_chan->device->id,
+ 				    dst, src, src_cnt));
+ 	BUG_ON(!len);
+-	BUG_ON(unlikely(len > PPC440SPE_ADMA_XOR_MAX_BYTE_COUNT));
++	BUG_ON(len > PPC440SPE_ADMA_XOR_MAX_BYTE_COUNT);
+ 	BUG_ON(!src_cnt);
  
- 	err = wl_dev_ioctl(dev, WLC_SET_VAR, buf, len);
- 	if (unlikely(err)) {
-@@ -899,7 +899,7 @@ wl_dev_intvar_get(struct net_device *dev, s8 *name, s32 *retval)
- 	len =
- 	    bcm_mkiovar(name, (char *)(&data_null), 0, (char *)(&var),
- 			sizeof(var.buf));
--	BUG_ON(unlikely(!len));
-+	BUG_ON(!len);
- 	err = wl_dev_ioctl(dev, WLC_GET_VAR, &var, len);
- 	if (unlikely(err)) {
- 		WL_ERR("error (%d)\n", err);
-@@ -2436,7 +2436,7 @@ wl_dev_bufvar_set(struct net_device *dev, s8 *name, s8 *buf, s32 len)
- 	u32 buflen;
- 
- 	buflen = bcm_mkiovar(name, buf, len, wl->ioctl_buf, WL_IOCTL_LEN_MAX);
--	BUG_ON(unlikely(!buflen));
-+	BUG_ON(!buflen);
- 
- 	return wl_dev_ioctl(dev, WLC_SET_VAR, wl->ioctl_buf, buflen);
- }
-@@ -2450,7 +2450,7 @@ wl_dev_bufvar_get(struct net_device *dev, s8 *name, s8 *buf,
- 	s32 err = 0;
- 
- 	len = bcm_mkiovar(name, NULL, 0, wl->ioctl_buf, WL_IOCTL_LEN_MAX);
--	BUG_ON(unlikely(!len));
-+	BUG_ON(!len);
- 	err = wl_dev_ioctl(dev, WLC_GET_VAR, (void *)wl->ioctl_buf,
- 			WL_IOCTL_LEN_MAX);
- 	if (unlikely(err)) {
+ 	if (src_cnt == 1 && dst[1] == src[0]) {
 -- 
 1.7.3.2
 
