@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763Ab1A1AYz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 19:24:55 -0500
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:33746 "EHLO
-	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752205Ab1A1AYy (ORCPT
+	id S1754317Ab1A1A03 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 19:26:29 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:63197 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753522Ab1A1A01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 19:24:54 -0500
-X-Spam-ASN: 
-Date: Fri, 28 Jan 2011 03:24:43 +0300
-From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-To: uClibc <uclibc@uclibc.org>, linux-kernel@vger.kernel.org
-Subject: timerfd incompatibility on mips
-Message-ID: <20110128032443.6f8b877e@apollo.gnet>
-Organization: LVK
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA256;
- boundary="Sig_/.8ayL6L1T_J7gagpYNVW9sH"; protocol="application/pgp-signature"
-X-AV-Checked: ClamAV using ClamSMTP
+	Thu, 27 Jan 2011 19:26:27 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 24.130.172.179
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+OTSA0LBoQxcxwiBUDEZ8j
+Date: Thu, 27 Jan 2011 16:26:21 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Jarkko Nikula <jhnikula@gmail.com>
+Cc: Julia Lawall <julia@diku.dk>, Russell King <linux@arm.linux.org.uk>,
+        linux-omap@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] arch/arm/mach-omap2/dma.c: Convert IS_ERR result
+ to PTR_ERR
+Message-ID: <20110128002620.GR23412@atomide.com>
+References: <1296143347-17508-1-git-send-email-julia@diku.dk>
+ <20110127210225.07de155f.jhnikula@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110127210225.07de155f.jhnikula@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/.8ayL6L1T_J7gagpYNVW9sH
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+* Jarkko Nikula <jhnikula@gmail.com> [110127 11:03]:
+> On Thu, 27 Jan 2011 16:49:06 +0100
+> Julia Lawall <julia@diku.dk> wrote:
+> 
+> > diff -u -p a/arch/arm/mach-omap2/dma.c b/arch/arm/mach-omap2/dma.c
+> > --- a/arch/arm/mach-omap2/dma.c
+> > +++ b/arch/arm/mach-omap2/dma.c
+> > @@ -264,7 +264,7 @@ static int __init omap2_system_dma_init_
+> >  	if (IS_ERR(od)) {
+> >  		pr_err("%s: Cant build omap_device for %s:%s.\n",
+> >  			__func__, name, oh->name);
+> > -		return IS_ERR(od);
+> > +		return PTR_ERR(od);
+> >  	}
+> >  
+> FWIW,
+> 
+> Acked-by: Jarkko Nikula <jhnikula@gmail.com>
 
-Hi!
+Thanks, will queue as a fix during the -rc cycle.
 
-I've just found a problem with TFD_NONBLOCK flag that can be passed to
-timerfd_create.
-
-<uclibc>/libc/sysdeps/linux/common/sys/timerfd.h which is installed
-to /usr/include/sys/timerfd.h defines TFD_NONBLOCK as 04000 ie 0x800.
-BTW glibc/eglibc headers do the same thing.
-
-<linux>/include/linux/timerfd.h declares it as O_NONBLOCK which is
-defined in fcntl.h. Usually O_NONBLOCK is 0x800 too but some
-architectures including MIPS it redefine it:
-
-arch/mips/include/asm/fcntl.h:#define O_NONBLOCK	0x0080
-arch/alpha/include/asm/fcntl.h:#define O_NONBLOCK	00004
-arch/sparc/include/asm/fcntl.h:#define O_NONBLOCK	0x4000
-arch/parisc/include/asm/fcntl.h:#define O_NONBLOCK	000200004
-
-My tests show that kernel thinks that TFD_NONBLOCK is 0x80 on MIPS. I
-get what I want when I pass 0x80 and EINVAL when I pass 0x800. I don't
-know why there are such uncertain things in Linux. Probably the problem
-should be fixed in the kernel.
-
-Right now one cannot use timerfd_create(..., TFD_NONBLOCK) on MIPS but
-can use timerfd_create(..., O_NONBLOCK) instead.
-
---=20
-  Alexander
-
---Sig_/.8ayL6L1T_J7gagpYNVW9sH
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBCAAGBQJNQgzMAAoJEElrwznyooJbnVAIAIx6imdpBv6X6Bd+cUtPNWmi
-Y/kC1gVXH0MyxjxQG6QtVfLJEh0H1pF3BF7rBBArwTD7ARsnDWlgqEwq+TaIcfbn
-Z0xZfp8zW6iWN8lEuO9GxcSWxn2aiN7fylO/tRUFl/6JFrZrkNe039q1e27jEUxw
-5H37ZNmKFMWaT2/X+9vaU62KFn4+FEG5zPIdO4wN2x3e1ZjvJ9ahXualiQVOFut4
-u7BcUZN/UMEgt9QluorwkVlmbhNttadfU0/jfGPpilTIa1wYrZKQ4zPUjivn28z5
-a8haVQy03zCkI13dSPE5wBfNBJUxcKuRQS/tDtpMQMoiqBqo207YKot7qwnkrpg=
-=cW0p
------END PGP SIGNATURE-----
-
---Sig_/.8ayL6L1T_J7gagpYNVW9sH--
+Tony
