@@ -1,44 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702Ab1A1PpD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 10:45:03 -0500
-Received: from mail.perches.com ([173.55.12.10]:3470 "EHLO mail.perches.com"
+	id S1754817Ab1A1PqL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 10:46:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49398 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752349Ab1A1PpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 10:45:02 -0500
-Subject: Re: [PATCH 12/15] staging: ath6kl: Convert A_UINT8 is_amsdu and
- is_acl_data_frame to A_BOOL
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <error27@gmail.com>
-Cc: Vipin Mehta <vmehta@atheros.com>, devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <20110128114214.GD20606@bicker>
-References: <cover.1296186677.git.joe@perches.com>
-	 <3a5cf32b0de8cd3153d385e2198d7aa4c787697e.1296186677.git.joe@perches.com>
-	 <20110128114214.GD20606@bicker>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 28 Jan 2011 07:45:00 -0800
-Message-ID: <1296229500.2448.229.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752349Ab1A1PqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 10:46:10 -0500
+Date: Fri, 28 Jan 2011 15:45:51 +0000
+From: "Daniel P. Berrange" <berrange@redhat.com>
+To: Daniel Lezcano <daniel.lezcano@free.fr>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        libvir-list@redhat.com
+Subject: Re: [PATCH] cgroup : remove the ns_cgroup
+Message-ID: <20110128154551.GM26309@redhat.com>
+Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
+References: <1295948388-15108-1-git-send-email-daniel.lezcano@free.fr>
+ <20110126161837.43830756.akpm@linux-foundation.org>
+ <4D40C5A3.4070703@cn.fujitsu.com>
+ <20110126174513.c2a20fff.akpm@linux-foundation.org>
+ <4D4131DE.3080309@free.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4D4131DE.3080309@free.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-28 at 14:42 +0300, Dan Carpenter wrote:
-> On Thu, Jan 27, 2011 at 08:04:29PM -0800, Joe Perches wrote:
-> > -                A_UINT8 is_amsdu, tid, is_acl_data_frame;
-> > +                A_BOOL is_amsdu;
-> > +                A_UINT8 tid;
-> > +                A_BOOL is_acl_data_frame;
+On Thu, Jan 27, 2011 at 09:50:38AM +0100, Daniel Lezcano wrote:
+> On 01/27/2011 02:45 AM, Andrew Morton wrote:
+> >On Thu, 27 Jan 2011 09:08:51 +0800 Li Zefan<lizf@cn.fujitsu.com>  wrote:
+> >
+> >>Andrew Morton wrote:
+> >>>On Tue, 25 Jan 2011 10:39:48 +0100
+> >>>Daniel Lezcano<daniel.lezcano@free.fr>  wrote:
+> >>>
+> >>>>This patch removes the ns_cgroup as suggested in the following thread:
+> >>>I had this patch queued up in September last year, but dropped it.  Why
+> >>>did I do that?
+> >>Because you wanted to wait for some time for users (if any) to notice this
+> >>coming change.
+> >>
+> >>Author: Daniel Lezcano<daniel.lezcano@free.fr>
+> >>Date:   Wed Oct 27 15:33:38 2010 -0700
+> >>
+> >>     cgroup: notify ns_cgroup deprecated
+> >>
+> >>     The ns_cgroup will be removed very soon.  Let's warn, for this version,
+> >>     ns_cgroup is deprecated.
+> >>
+> >>     Make ns_cgroup and clone_children exclusive.  If the clone_children is set
+> >>     and the ns_cgroup is mounted, let's fail with EINVAL when the ns_cgroup
+> >>     subsys is created (a printk will help the user to understand why the
+> >>     creation fails).
+> >>
+> >>     Update the feature remove schedule file with the deprecated ns_cgroup.
+> >>
+> >>     Signed-off-by: Daniel Lezcano<daniel.lezcano@free.fr>
+> >>     Acked-by: Paul Menage<menage@google.com>
+> >>     Signed-off-by: Andrew Morton<akpm@linux-foundation.org>
+> >>     Signed-off-by: Linus Torvalds<torvalds@linux-foundation.org>
+> >ooh, that was clever of me.
+> >
+> >Here is the text which was missing from the changelog:
+> >
+> >   This is a userspace-visible change.  Commit 45531757b45c ("cgroup:
+> >   notify ns_cgroup deprecated") (merged into 2.6.27) caused the kernel
+> >   to emit a printk warning users that the feature is planned for
+> >   removal.  Since that time we have heard from XXX users who were
+> >   affected by this.
+> >
+> >Please provide XXX.
 > 
-> Just use bool for bool and u8 for u8.  It's not reasonable for everyone
-> to rename basic types for every driver.  (Unless Atheros bool really is
-> different from other people's bool then it would be totally reasonable).
+> Ok, AFAIK nobody makes use of the ns_cgroup except the LXC userspace
+> tools which I maintain and where
+> the backward compatibility with the ns_cgroup and the clone_children
+> flag is already implemented.
+> Since today nobody seems to be affected by this.
+> 
+> I Cc'ed the libvirt mailing list.
 
-That's a whole set of later patches.
-No worries, they're coming.
-At this point, doing a straight rename causes some defects.
+Removing 'ns_cgroup' won't impact libvirt's container
+support in any negative way, so fine by me.
 
-
+Regards,
+Daniel
