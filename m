@@ -1,96 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab1A1Biv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 20:38:51 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:52839 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753819Ab1A1Biu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 20:38:50 -0500
-Date: Fri, 28 Jan 2011 01:38:24 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1101280136570.8640@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754507Ab1A1BsG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 20:48:06 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:6057 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753863Ab1A1BsB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 20:48:01 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6239"; a="72275229"
+Message-ID: <4D422051.4090407@codeaurora.org>
+Date: Thu, 27 Jan 2011 17:48:01 -0800
+From: Michael Bohan <mbohan@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-2054926818-1296178704=:8640"
+To: Paul Menage <menage@google.com>
+CC: Bryan Huntsman <bryanh@codeaurora.org>, Colin Cross <ccross@android.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] cgroup: Set CGRP_RELEASABLE when adding to a cgroup
+References: <AANLkTi=6nwDCdzDz7E2EaAw2pf3KUVjmKMRqGfz5zVhP@mail.gmail.com> <1290577024-12347-1-git-send-email-ccross@android.com> <4D42192C.9000701@codeaurora.org> <AANLkTin7B51maXHRH+FNmZ14bmWmEp9P2=2QTNqgq_Fi@mail.gmail.com>
+In-Reply-To: <AANLkTin7B51maXHRH+FNmZ14bmWmEp9P2=2QTNqgq_Fi@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On 1/27/2011 5:30 PM, Paul Menage wrote:
+> On Thu, Jan 27, 2011 at 5:17 PM, Bryan Huntsman<bryanh@codeaurora.org>  wrote:
+>>
+>> Tested-by: Mike Bohan<mbohan@codeaurora.org>
+>>
+>> I'm responding on Mike's behalf and adding him to this thread.  This
+>> patch improves launch time of a test app from ~700ms to ~250ms on MSM,
+>> with much lower variance across tests.  We also see UI latency
+>> improvements, but have not quantified the gains.
+>>
+>
+> Is this attached to the wrong patch? I'd thought that it was the other
+> patch (removing the rcu_synchronize()) that's the performance booster.
+> This one is more about preserving the semantics of the notification
+> API.
 
---29444707-2054926818-1296178704=:8640
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+You are correct. "[PATCH 2/2] cgroup: Remove call to synchronize_rcu in 
+cgroup_attach_task" improved the performance.
 
+To be more correct, I tested this patch (eg. "cgroup: Set 
+CGRP_RELEASABLE when adding to a cgroup") to the degree that it didn't 
+appear to cause any stability or functional regressions when performing 
+the simple benchmark procedure described above. I did also test "[PATCH 
+2/2] cgroup: Remove call to synchronize_rcu in cgroup_attach_task" 
+independently of this patch to verify that it alone improved the 
+performance.
 
-Hi Linus,
+Thanks,
+Mike
 
-radeon and nouveau fixes only, a couple of regressions, one evergreen 
-GPU hang under load, and one big endian fix.
-
-Dave.
-
-The following changes since commit 6663050edd9c2e8b1e1f55c09459144d84c045f0:
-
-  Merge branch 'fixes' of master.kernel.org:/home/rmk/linux-2.6-arm (2011-01-26 09:04:18 +1000)
-
-are available in the git repository at:
-
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
-
-Alex Deucher (4):
-      drm/radeon/kms: only enable HDMI mode if radeon audio is enabled
-      drm/radeon/kms: clean up some magic numbers
-      drm/radeon/kms: fix r6xx+ scanout on BE systems
-      drm/radeon/kms: re-emit full context state for evergreen blits
-
-Ben Skeggs (6):
-      drm/nouveau: remove dead function definition
-      drm/nouveau: probe for adt7473 before f75375
-      drm/nvc0: fix incorrect TPC register setup
-      drm/nvc0: implement irq handler for whatever's at 0x14xxxx
-      drm/nvc0/grctx: correct an off-by-one
-      drm/nv50: fix regression on IGPs
-
-Dave Airlie (2):
-      Merge branch 'drm-nouveau-next' of git://git.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes
-      Merge branch 'drm-nouveau-next' of git://git.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes
-
-Francisco Jerez (2):
-      drm/nouveau: Workaround incorrect DCB entry on a GeForce3 Ti 200.
-      drm/nv50: Fix race with PFIFO during PGRAPH context destruction.
-
-Jerome Glisse (1):
-      radeon/kms: fix dp displayport mode validation
-
-Marek Ol¨ák (1):
-      drm/radeon/kms: release CMASK access in preclose_kms
-
- drivers/gpu/drm/nouveau/nouveau_bios.c      |   15 ++++++++++
- drivers/gpu/drm/nouveau/nouveau_drv.h       |    3 --
- drivers/gpu/drm/nouveau/nouveau_temp.c      |    2 +-
- drivers/gpu/drm/nouveau/nv50_graph.c        |    3 ++
- drivers/gpu/drm/nouveau/nv50_vm.c           |    5 ---
- drivers/gpu/drm/nouveau/nvc0_graph.c        |   23 ++++++++++++++-
- drivers/gpu/drm/nouveau/nvc0_grctx.c        |    2 +-
- drivers/gpu/drm/radeon/atombios_crtc.c      |   17 +++++++++++
- drivers/gpu/drm/radeon/atombios_dp.c        |    4 +-
- drivers/gpu/drm/radeon/evergreen_blit_kms.c |   39 ++++++++++++++++++++++----
- drivers/gpu/drm/radeon/r100.c               |   10 +++---
- drivers/gpu/drm/radeon/r300.c               |    7 +++-
- drivers/gpu/drm/radeon/r420.c               |    2 +-
- drivers/gpu/drm/radeon/r520.c               |    4 +-
- drivers/gpu/drm/radeon/r600_reg.h           |    6 +++-
- drivers/gpu/drm/radeon/radeon_encoders.c    |    6 ++--
- drivers/gpu/drm/radeon/radeon_kms.c         |    2 +
- drivers/gpu/drm/radeon/radeon_reg.h         |    2 +
- drivers/gpu/drm/radeon/rs400.c              |   15 ++++++----
- drivers/gpu/drm/radeon/rv515.c              |   10 +++---
- 20 files changed, 132 insertions(+), 45 deletions(-)
---29444707-2054926818-1296178704=:8640--
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
