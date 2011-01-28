@@ -1,149 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754832Ab1A1Ez3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 23:55:29 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51487 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754772Ab1A1Ez2 (ORCPT
+	id S1751268Ab1A1FAp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 00:00:45 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:44436 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891Ab1A1FAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 23:55:28 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 28 Jan 2011 13:49:02 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Subject: Re: [BUGFIX][PATCH 1/4] memcg: fix limit estimation at reclaim for
- hugepage
-Message-Id: <20110128134902.5845b507.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110128134019.27abcfe2.nishimura@mxp.nes.nec.co.jp>
-References: <20110128122229.6a4c74a2.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110128122449.e4bb0e5f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110128134019.27abcfe2.nishimura@mxp.nes.nec.co.jp>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 28 Jan 2011 00:00:44 -0500
+Date: Fri, 28 Jan 2011 10:23:53 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 8/20]  8: uprobes: mmap and fork
+ hooks.
+Message-ID: <20110128045353.GU19725@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
+ <20101216095848.23751.73144.sendpatchset@localhost6.localdomain6>
+ <1295957741.28776.719.camel@laptop>
+ <1295985926.10144.61.camel@gandalf.stny.rr.com>
+ <20110126090643.GI19725@linux.vnet.ibm.com>
+ <1296147837.10144.79.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1296147837.10144.79.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Jan 2011 13:40:19 +0900
-Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+* Steven Rostedt <rostedt@goodmis.org> [2011-01-27 12:03:57]:
 
-> On Fri, 28 Jan 2011 12:24:49 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Wed, 2011-01-26 at 14:36 +0530, Srikar Dronamraju wrote:
 > 
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > > Not to mention that p is uninitialized. Did this code ever work?
 > > 
-> > Current memory cgroup's code tends to assume page_size == PAGE_SIZE
-> > and arrangement for THP is not enough yet.
-> > 
-> > This is one of fixes for supporing THP. This adds
-> > mem_cgroup_check_margin() and checks whether there are required amount of
-> > free resource after memory reclaim. By this, THP page allocation
-> > can know whether it really succeeded or not and avoid infinite-loop
-> > and hangup.
-> > 
-> > Total fixes for do_charge()/reclaim memory will follow this patch.
-> > 
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > I think the original patch that I sent had p initialized. I think it got
+> > dropped off by Peter when he replied. Please do confirm.
 > 
-> This patch looks good to me, but some nitpicks.
 > 
-> > ---
-> >  include/linux/res_counter.h |   11 +++++++++++
-> >  mm/memcontrol.c             |   25 ++++++++++++++++++++++++-
-> >  2 files changed, 35 insertions(+), 1 deletion(-)
-> > 
-> > Index: mmotm-0125/include/linux/res_counter.h
-> > ===================================================================
-> > --- mmotm-0125.orig/include/linux/res_counter.h
-> > +++ mmotm-0125/include/linux/res_counter.h
-> > @@ -182,6 +182,17 @@ static inline bool res_counter_check_und
-> >  	return ret;
-> >  }
-> >  
-> > +static inline s64 res_counter_check_margin(struct res_counter *cnt)
+> > +static void search_within_subtree(struct rb_node *n, struct inode *inode,
+> > +               struct list_head *tmp_list)
 > > +{
-> > +	s64 ret;
-> > +	unsigned long flags;
+> > +       struct rb_node *p;
 > > +
-> > +	spin_lock_irqsave(&cnt->lock, flags);
-> > +	ret = cnt->limit - cnt->usage;
-> > +	spin_unlock_irqrestore(&cnt->lock, flags);
-> > +	return ret;
+> > +       if (p)
+> > +               __search_within_subtree(p, inode, tmp_list);
+> > +
+> > +       p = n->rb_right;
+> > +       if (p)
+> > +               __search_within_subtree(p, inode, tmp_list);
 > > +}
 > > +
-> >  static inline bool res_counter_check_under_soft_limit(struct res_counter *cnt)
-> >  {
-> >  	bool ret;
-> > Index: mmotm-0125/mm/memcontrol.c
-> > ===================================================================
-> > --- mmotm-0125.orig/mm/memcontrol.c
-> > +++ mmotm-0125/mm/memcontrol.c
-> > @@ -1111,6 +1111,22 @@ static bool mem_cgroup_check_under_limit
-> >  	return false;
-> >  }
-> >  
-> > +static s64  mem_cgroup_check_margin(struct mem_cgroup *mem)
-> > +{
-> > +	s64 mem_margin;
-> > +
-> > +	if (do_swap_account) {
-> > +		s64 memsw_margin;
-> > +
-> > +		mem_margin = res_counter_check_margin(&mem->res);
-> > +		memsw_margin = res_counter_check_margin(&mem->memsw);
-> > +		if (mem_margin > memsw_margin)
-> > +			mem_margin = memsw_margin;
-> > +	} else
-> > +		mem_margin = res_counter_check_margin(&mem->res);
-> > +	return mem_margin;
-> > +}
-> > +
-> How about
-> 
-> 	mem_margin = res_counter_check_margin(&mem->res);
-> 	if (do_swap_account)
-> 		memsw_margin = res_counter_check_margin(&mem->memsw);
-> 	else
-> 		memsw_margin = RESOURCE_MAX;
-> 
-> 	return min(mem_margin, memsw_margin);
-> 
-> ?
-> I think using min() makes it more clear what this function does.
-> 
-
-Ok.
-
-> >  static unsigned int get_swappiness(struct mem_cgroup *memcg)
-> >  {
-> >  	struct cgroup *cgrp = memcg->css.cgroup;
-> > @@ -1853,7 +1869,14 @@ static int __mem_cgroup_do_charge(struct
-> >  	 * Check the limit again to see if the reclaim reduced the
-> >  	 * current usage of the cgroup before giving up
-> >  	 */
-> > -	if (ret || mem_cgroup_check_under_limit(mem_over_limit))
-> > +	if (mem_cgroup_check_margin(mem_over_limit) >= csize)
-> > +		return CHARGE_RETRY;
-> > +
-> > +	/*
-> > + 	 * If the charge size is a PAGE_SIZE, it's not hopeless while
-> > + 	 * we can reclaim a page.
-> > + 	 */
-> > +	if (csize == PAGE_SIZE && ret)
-> >  		return CHARGE_RETRY;
-> >  
-> >  	/*
 > > 
-> checkpatch complains some whitespace warnings.
+> The above is from the original patch. 'p' does not look initialized to
+> me.
 > 
-will fix soon.
 
--Kame
+> -- Steve
+> 
+> 
 
+Here is the extract from the original patch at
+https://lkml.org/lkml/2010/12/16/74 that I sent to LKML and I dont see
+p being uninitialized. 
+
++
++static void search_within_subtree(struct rb_node *n, struct inode *inode,
++		struct list_head *tmp_list)
++{
++	struct rb_node *p;
++
++	p = n->rb_left;
++	if (p)
++		__search_within_subtree(p, inode, tmp_list);
++
++	p = n->rb_right;
++	if (p)
++		__search_within_subtree(p, inode, tmp_list);
++}
++
+
+However I have already agreed to remove this recursion and replace it
+with a rb_next() logic.
+
+-- 
+Thanks and Regards
+Srikar
