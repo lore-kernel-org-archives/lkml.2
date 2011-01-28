@@ -1,138 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872Ab1A1RS7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 12:18:59 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:34038 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753964Ab1A1RS5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 12:18:57 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Fri, 28 Jan 2011 18:18:52 +0100
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] hid-multitouch: work on default classes and renaming
- of classes
-Message-ID: <20110128171852.GA2586@polaris.bitmath.org>
-References: <1296230680-2871-1-git-send-email-benjamin.tissoires@enac.fr>
+	id S1755143Ab1A1RUE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 12:20:04 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:49144 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754798Ab1A1RUC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 12:20:02 -0500
+Date: Fri, 28 Jan 2011 18:19:32 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Franck Bui-Huu <fbuihuu@gmail.com>, Han Pingtian <phan@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [GIT PULL 0/4] perf/core improvements and fix
+Message-ID: <20110128171932.GA7402@elte.hu>
+References: <1296234783-17491-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1296230680-2871-1-git-send-email-benjamin.tissoires@enac.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 83.248.192.164
-X-Scan-Result: No virus found in message 1PirxO-00040C-BN.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PirxO-00040C-BN cc438e87a81e5724f70912d20bd882f1
+In-Reply-To: <1296234783-17491-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
 
-> The safest quirk for a device (the one that works out of the box for
-> most of them) is the MT_QUIRK_NOT_SEEN_MEANS_UP. Indeed, it does not
-> make any assumption on the device. When adding a new device, we can
-> easily test it against MT_CLS_DEFAULT, and then optimize it with other
-> quirks: that's why no device use MT_CLS_DEFAULT right now.
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+
+> Hi Ingo,
 > 
-> This patch introduce also MT_CLS_DUAL_DEFAULT which has the same purpose
-> than MT_CLS_DEFAULT, but for dual touch panels.
-
-But it is used anywhere?
- 
-> Finally, the patch renames MT_CLS_DUAL1 to MT_CLS_DUAL_INRANGE_CONTACTID
-> and MT_CLS_DUAL2 to MT_CLS_DUAL_INRANGE_CONTACTNUMBER for better
-> readability.
+>         Please consider pulling from:
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-> ---
-
-The patch description and the content lacks a certain
-distinctness. Please single out janitory actions into a separate
-patch, or, if possible, skip it altogether.
-
->  drivers/hid/hid-multitouch.c |   25 +++++++++++++++----------
->  1 files changed, 15 insertions(+), 10 deletions(-)
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
 > 
-> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> index 07d3183..ffe2a76 100644
-> --- a/drivers/hid/hid-multitouch.c
-> +++ b/drivers/hid/hid-multitouch.c
-> @@ -24,6 +24,7 @@
->  
->  
->  MODULE_AUTHOR("Stephane Chatty <chatty@enac.fr>");
-> +MODULE_AUTHOR("Benjamin Tissoires <benjamin.tissoires@gmail.com>");
-
-Adding this is fine, based on your prior contributions. Perhaps it
-should be motivated as such in a separate patch instead.
-
->  MODULE_DESCRIPTION("HID multitouch panels");
->  MODULE_LICENSE("GPL");
->  
-> @@ -65,10 +66,11 @@ struct mt_class {
->  };
->  
->  /* classes of device behavior */
-> -#define MT_CLS_DEFAULT	1
-> -#define MT_CLS_DUAL1	2
-> -#define MT_CLS_DUAL2	3
-> -#define MT_CLS_CYPRESS	4
-> +#define MT_CLS_DEFAULT				1
-> +#define MT_CLS_DUAL_DEFAULT			2
-> +#define MT_CLS_DUAL_INRANGE_CONTACTID		3
-> +#define MT_CLS_DUAL_INRANGE_CONTACTNUMBER	4
-> +#define MT_CLS_CYPRESS				10
-
-There is no need to change the numbering for unchanged names.
-
->  
->  /*
->   * these device-dependent functions determine what slot corresponds
-> @@ -104,13 +106,16 @@ static int find_slot_from_contactid(struct mt_device *td)
->  
->  struct mt_class mt_classes[] = {
->  	{ .name = MT_CLS_DEFAULT,
-> -		.quirks = MT_QUIRK_VALID_IS_INRANGE,
-> +		.quirks = MT_QUIRK_NOT_SEEN_MEANS_UP,
->  		.maxcontacts = 10 },
-> -	{ .name = MT_CLS_DUAL1,
-> +	{ .name = MT_CLS_DUAL_DEFAULT,
-> +		.quirks = MT_QUIRK_NOT_SEEN_MEANS_UP,
-> +		.maxcontacts = 2 },
-> +	{ .name = MT_CLS_DUAL_INRANGE_CONTACTID,
->  		.quirks = MT_QUIRK_VALID_IS_INRANGE |
->  			MT_QUIRK_SLOT_IS_CONTACTID,
->  		.maxcontacts = 2 },
-> -	{ .name = MT_CLS_DUAL2,
-> +	{ .name = MT_CLS_DUAL_INRANGE_CONTACTNUMBER,
->  		.quirks = MT_QUIRK_VALID_IS_INRANGE |
->  			MT_QUIRK_SLOT_IS_CONTACTNUMBER,
->  		.maxcontacts = 2 },
-> @@ -466,15 +471,15 @@ static const struct hid_device_id mt_devices[] = {
->  			USB_DEVICE_ID_CYPRESS_TRUETOUCH) },
->  
->  	/* GeneralTouch panel */
-> -	{ .driver_data = MT_CLS_DUAL2,
-> +	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTNUMBER,
->  		HID_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
->  			USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS) },
->  
->  	/* PixCir-based panels */
-> -	{ .driver_data = MT_CLS_DUAL1,
-> +	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTID,
->  		HID_USB_DEVICE(USB_VENDOR_ID_HANVON,
->  			USB_DEVICE_ID_HANVON_MULTITOUCH) },
-> -	{ .driver_data = MT_CLS_DUAL1,
-> +	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTID,
->  		HID_USB_DEVICE(USB_VENDOR_ID_CANDO,
->  			USB_DEVICE_ID_CANDO_PIXCIR_MULTI_TOUCH) },
->  
-> -- 
-> 1.7.3.4
+> Regards,
 > 
+> - Arnaldo
+> 
+> Han Pingtian (1):
+>   perf test: Fix return values checking
+> 
+> Masami Hiramatsu (3):
+>   perf tools: Add strfilter for general purpose string filter
+>   perf probe: Add variable filter support
+>   perf probe: Add filters support for available functions
+> 
+>  tools/perf/Documentation/perf-probe.txt |   15 +++
+>  tools/perf/Makefile                     |    2 +
+>  tools/perf/builtin-probe.c              |   43 +++++++-
+>  tools/perf/builtin-test.c               |    6 +-
+>  tools/perf/util/probe-event.c           |   89 ++++++++------
+>  tools/perf/util/probe-event.h           |    5 +-
+>  tools/perf/util/strfilter.c             |  200 +++++++++++++++++++++++++++++++
+>  tools/perf/util/strfilter.h             |   48 ++++++++
+>  8 files changed, 366 insertions(+), 42 deletions(-)
+>  create mode 100644 tools/perf/util/strfilter.c
+>  create mode 100644 tools/perf/util/strfilter.h
 
-Thanks,
-Henrik
+Pulled, thanks a lot Arnaldo!
+
+	Ingo
