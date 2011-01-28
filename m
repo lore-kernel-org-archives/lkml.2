@@ -1,39 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104Ab1A1Ila (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 03:41:30 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:41195 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755045Ab1A1Il3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 03:41:29 -0500
-Date: Fri, 28 Jan 2011 09:41:21 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
+	id S1755119Ab1A1InB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 03:43:01 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45246 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754932Ab1A1InA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 03:43:00 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 28 Jan 2011 17:36:55 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: Minchan Kim <minchan.kim@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
         Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
 Subject: Re: [BUGFIX][PATCH 1/4] memcg: fix limit estimation at reclaim for
  hugepage
-Message-ID: <20110128084121.GE2213@cmpxchg.org>
-References: <20110128122229.6a4c74a2.kamezawa.hiroyu@jp.fujitsu.com>
- <20110128122449.e4bb0e5f.kamezawa.hiroyu@jp.fujitsu.com>
- <20110128134019.27abcfe2.nishimura@mxp.nes.nec.co.jp>
- <20110128135839.d53422e8.kamezawa.hiroyu@jp.fujitsu.com>
- <AANLkTikCjKCtjhRH-ZVsEQN-Luz==8g8e60uxhCTeD2w@mail.gmail.com>
- <20110128081723.GD2213@cmpxchg.org>
- <AANLkTinikUM09bXbLZ5zU1gdgfdPZSQmbycbbeSyGk59@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+Message-Id: <20110128173655.7c1d9ebd.kamezawa.hiroyu@jp.fujitsu.com>
 In-Reply-To: <AANLkTinikUM09bXbLZ5zU1gdgfdPZSQmbycbbeSyGk59@mail.gmail.com>
+References: <20110128122229.6a4c74a2.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110128122449.e4bb0e5f.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110128134019.27abcfe2.nishimura@mxp.nes.nec.co.jp>
+	<20110128135839.d53422e8.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTikCjKCtjhRH-ZVsEQN-Luz==8g8e60uxhCTeD2w@mail.gmail.com>
+	<20110128081723.GD2213@cmpxchg.org>
+	<AANLkTinikUM09bXbLZ5zU1gdgfdPZSQmbycbbeSyGk59@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 28, 2011 at 05:25:58PM +0900, Minchan Kim wrote:
+On Fri, 28 Jan 2011 17:25:58 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
+
 > Hi Hannes,
 > 
 > On Fri, Jan 28, 2011 at 5:17 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
@@ -62,35 +67,66 @@ On Fri, Jan 28, 2011 at 05:25:58PM +0900, Minchan Kim wrote:
 > >> reclaiming and loop forever by below part.
 > >>
 > >> @@ -1854,9 +1858,6 @@ static int __mem_cgroup_do_charge(struct
-> >>       } else
-> >>               mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
+> >> Â  Â  Â  } else
+> >> Â  Â  Â  Â  Â  Â  Â  mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
 > >>
-> >> -     if (csize > PAGE_SIZE) /* change csize and retry */
-> >> -             return CHARGE_RETRY;
+> >> - Â  Â  if (csize > PAGE_SIZE) /* change csize and retry */
+> >> - Â  Â  Â  Â  Â  Â  return CHARGE_RETRY;
 > >> -
-> >>       if (!(gfp_mask & __GFP_WAIT))
-> >>               return CHARGE_WOULDBLOCK;
+> >> Â  Â  Â  if (!(gfp_mask & __GFP_WAIT))
+> >> Â  Â  Â  Â  Â  Â  Â  return CHARGE_WOULDBLOCK;
 > >>
 > >> Am I missing something?
 > >
-> > No, you are correct.  But I am not sure the order really matters in
+> > No, you are correct. Â But I am not sure the order really matters in
 > > theory: you have two endless loops that need independent fixing.
 > 
 > That's why I ask a question.
 > Two endless loop?
 > 
 > One is what I mentioned. The other is what?
+> Maybe this patch solve the other.
+> But I can't guess it by only this description. Stupid..
+> 
+> Please open my eyes.
+> 
 
-The other is
+One is.
 
-1. huge page charge, fail
-2. reclaim
-3. limit is ok, retry at 1.
+  if (csize > PAGE_SIZE)
+	return CHARGE_RETRY;
 
-The problem is that the limit will be okay for regular pages, but not
-huge pages.
+By this, reclaim will never be called.
 
-Currently, this code is never reached due to the endless loop you
-already spotted.
 
-HTH
+Another is a check after memory reclaim.
+==
+       ret = mem_cgroup_hierarchical_reclaim(mem_over_limit, NULL,
+                                        gfp_mask, flags);
+        /*
+         * try_to_free_mem_cgroup_pages() might not give us a full
+         * picture of reclaim. Some pages are reclaimed and might be
+         * moved to swap cache or just unmapped from the cgroup.
+         * Check the limit again to see if the reclaim reduced the
+         * current usage of the cgroup before giving up
+         */
+        if (ret || mem_cgroup_check_under_limit(mem_over_limit))
+                return CHARGE_RETRY;
+==
+
+ret != 0 if one page is reclaimed. Then, khupaged will retry charge and 
+cannot get enough room, reclaim, one page -> again. SO, in busy memcg,
+HPAGE_SIZE allocation never fails.
+
+Even if khupaged luckly allocates HPAGE_SIZE, because khugepaged walks vmas
+one by one and try to collapse each pmd, under mmap_sem(), this seems a hang by
+khugepaged, infinite loop.
+
+
+Thanks,
+-Kame
+
+
+
+
+
