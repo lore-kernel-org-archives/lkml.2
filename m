@@ -1,81 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675Ab1A1OdF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 09:33:05 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:45960 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754151Ab1A1OdE (ORCPT
+	id S1754715Ab1A1OgJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 09:36:09 -0500
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:37260 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754518Ab1A1OgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 09:33:04 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAGxiQk1Ld/sX/2dsb2JhbAAMhAjNAZB1gSODOHQEhRg
-X-IronPort-AV: E=Sophos;i="4.60,392,1291611600"; 
-   d="scan'208";a="89557769"
-Message-ID: <4D42D39E.4080304@teksavvy.com>
-Date: Fri, 28 Jan 2011 09:33:02 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Stan Hoeppner <stan@hardwarefreak.com>,
-        Justin Piszcz <jpiszcz@lucidpixels.com>,
-        Christoph Hellwig <hch@infradead.org>, Alex Elder <aelder@sgi.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: xfs: very slow after mount, very slow at umount
-References: <4D40C8D1.8090202@teksavvy.com> <20110127033011.GH21311@dastard> <4D40EB2F.2050809@teksavvy.com> <4D418B57.1000501@teksavvy.com> <alpine.DEB.2.00.1101271040000.31246@p34.internal.lan> <4D419765.4070805@teksavvy.com> <4D41CA16.8070001@hardwarefreak.com> <4D41EA04.7010506@teksavvy.com> <20110128001735.GO21311@dastard> <4D421A68.9000607@teksavvy.com> <20110128073119.GV21311@dastard>
-In-Reply-To: <20110128073119.GV21311@dastard>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 28 Jan 2011 09:36:07 -0500
+Subject: Re: [PATCH 2/2] net/netlabel: Avoid call to genlmsg_cancel
+From: Paul Moore <paul.moore@hp.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: kernel-janitors@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1296224232-8115-2-git-send-email-julia@diku.dk>
+References: <1296224232-8115-2-git-send-email-julia@diku.dk>
+Content-Type: text/plain; charset="us-ascii"
+Organization: Hewlett Packard
+Date: Fri, 28 Jan 2011 09:36:04 -0500
+Message-ID: <1296225364.5511.6.camel@sifl>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-01-28 02:31 AM, Dave Chinner wrote:
->
-> A simple google search turns up discussions like this:
+On Fri, 2011-01-28 at 15:17 +0100, Julia Lawall wrote:
+> genlmsg_cancel subtracts some constants from its second argument before
+> calling nlmsg_cancel.  nlmsg_cancel then calls nlmsg_trim on the same
+> arguments.  nlmsg_trim tests for NULL before doing any computation, but a
+> NULL second argument to genlmsg_cancel is no longer NULL due to the initial
+> subtraction.  Nothing else happens in this execution, so the call to
+> genlmsg_cancel is simply unnecessary in this case.
 > 
-> http://oss.sgi.com/archives/xfs/2009-01/msg01161.html
-
-"in the long term we still expect fragmentation to degrade the performance of
-XFS file systems"
-Other than that, no hints there about how changing agcount affects things.
-
-
-> Configuring XFS filesystems for optimal performance has always been
-> a black art because it requires you to understand your storage, your
-> application workload(s) and XFS from the ground up.  Most people
-> can't even tick one of those boxes, let alone all three....
-
-Well, I've got 2/3 of those down just fine, thanks.
-But it's the "XFS" part that is still the "black art" part,
-because so little is written about *how* it works
-(as opposed to how it is laid out on disk).
-
-Again, that's only a minor complaint -- XFS is way better documented
-than the alternatives, and also works way better than the others I've
-tried here on this workload.
-
->>> Why 8 AGs and not the default?
->>
->> How AGs are used is not really explained anywhere I've looked,
->> so I am guessing at what they do and how the system might respond
->> to different values there (that documentation thing again).
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
 > 
-> Section 5.1 of this 1996 whitepaper tells you what allocation groups
-> are and the general allocation strategy around them:
+> // <smpl>
+> @@
+> expression data;
+> @@
 > 
-> http://oss.sgi.com/projects/xfs/papers/xfs_usenix/index.html
+> if (data == NULL) { ...
+> * genlmsg_cancel(..., data);
+>   ...
+>   return ...;
+> }
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-Looks a bit dated:  "Allocation groups are typically 0.5 to 4 gigabytes in size."
-But it does suggest that "processes running concurrently can allocate space
-in the file system concurrently without interfering with each other".
+In all of the cases below, these functions are called multiple times to
+generate data chunks (additional netlink attributes) which are appended
+to an existing skbuff.  I believe that the calls to genlmsg_cancel() are
+still needed to help cleanup in the case where the functions fail on the
+Nth call.
 
-Dunno if that's still true today, but it sounds pretty close to what I was
-theorizing about how it might work.
+If I'm wrong, feel free to enlighten me.
 
-> start to see what I mean about tuning XFS really being a "black art"?
+> ---
+>  net/netlabel/netlabel_cipso_v4.c  |    2 +-
+>  net/netlabel/netlabel_mgmt.c      |    4 ++--
+>  net/netlabel/netlabel_unlabeled.c |    2 +-
+>  3 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/net/netlabel/netlabel_cipso_v4.c b/net/netlabel/netlabel_cipso_v4.c
+> index 5f14c84..0a1f77b 100644
+> --- a/net/netlabel/netlabel_cipso_v4.c
+> +++ b/net/netlabel/netlabel_cipso_v4.c
+> @@ -635,7 +635,7 @@ static int netlbl_cipsov4_listall_cb(struct cipso_v4_doi *doi_def, void *arg)
+>  			   cb_arg->seq, &netlbl_cipsov4_gnl_family,
+>  			   NLM_F_MULTI, NLBL_CIPSOV4_C_LISTALL);
+>  	if (data == NULL)
+> -		goto listall_cb_failure;
+> +		return ret_val;
+>  
+>  	ret_val = nla_put_u32(cb_arg->skb, NLBL_CIPSOV4_A_DOI, doi_def->doi);
+>  	if (ret_val != 0)
+> diff --git a/net/netlabel/netlabel_mgmt.c b/net/netlabel/netlabel_mgmt.c
+> index 998e85e..daaa01d 100644
+> --- a/net/netlabel/netlabel_mgmt.c
+> +++ b/net/netlabel/netlabel_mgmt.c
+> @@ -452,7 +452,7 @@ static int netlbl_mgmt_listall_cb(struct netlbl_dom_map *entry, void *arg)
+>  			   cb_arg->seq, &netlbl_mgmt_gnl_family,
+>  			   NLM_F_MULTI, NLBL_MGMT_C_LISTALL);
+>  	if (data == NULL)
+> -		goto listall_cb_failure;
+> +		return ret_val;
+>  
+>  	ret_val = netlbl_mgmt_listentry(cb_arg->skb, entry);
+>  	if (ret_val != 0)
+> @@ -617,7 +617,7 @@ static int netlbl_mgmt_protocols_cb(struct sk_buff *skb,
+>  			   &netlbl_mgmt_gnl_family, NLM_F_MULTI,
+>  			   NLBL_MGMT_C_PROTOCOLS);
+>  	if (data == NULL)
+> -		goto protocols_cb_failure;
+> +		return ret_val;
+>  
+>  	ret_val = nla_put_u32(skb, NLBL_MGMT_A_PROTOCOL, protocol);
+>  	if (ret_val != 0)
+> diff --git a/net/netlabel/netlabel_unlabeled.c b/net/netlabel/netlabel_unlabeled.c
+> index e2b0a68..b5d3945 100644
+> --- a/net/netlabel/netlabel_unlabeled.c
+> +++ b/net/netlabel/netlabel_unlabeled.c
+> @@ -1141,7 +1141,7 @@ static int netlbl_unlabel_staticlist_gen(u32 cmd,
+>  			   cb_arg->seq, &netlbl_unlabel_gnl_family,
+>  			   NLM_F_MULTI, cmd);
+>  	if (data == NULL)
+> -		goto list_cb_failure;
+> +		return ret_val;
+>  
+>  	if (iface->ifindex > 0) {
+>  		dev = dev_get_by_index(&init_net, iface->ifindex);
+> 
 
-No, I've seen that "black" (aka. undefined, undocumented) part from the start.  :)
-Thanks for chipping in here, though -- it's been really useful.
+-- 
+paul moore
+linux @ hp
 
-Cheers!
+
