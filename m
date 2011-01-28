@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab1A1Edr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 23:33:47 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:65481 "EHLO
+	id S1754893Ab1A1EeO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 23:34:14 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:33765 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754733Ab1A1Edp (ORCPT
+	with ESMTP id S1754788Ab1A1Edr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 23:33:45 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=tgpPXHRaFucA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=xDTOUkD8CWc6uH9sUDgA:9 a=Qo7xYTygUzUySyZRAh4A:7 a=u4Pp2iQZBCaVXkDdBbwUkwh86boA:4 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Thu, 27 Jan 2011 23:33:47 -0500
+X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=hmvib4FNHO4A:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=sqFdJYbxHO_ElygKPz0A:9 a=tdiBwGw4tEo29lwBVd8A:7 a=wOW82lm90AoO72dZ4rqE7RLsYvAA:4 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110128043344.249936586@goodmis.org>
+Message-Id: <20110128043344.489199520@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 27 Jan 2011 23:21:22 -0500
+Date: Thu, 27 Jan 2011 23:21:23 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
@@ -20,161 +20,131 @@ Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Lai Jiangshan <laijs@cn.fujitsu.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [RFC][PATCH 04/12] tracing/filter: Call synchronize_sched() just once for system filters
+Subject: [RFC][PATCH 05/12] tracing/filter: Allocate the preds in an array
 References: <20110128042118.561146147@goodmis.org>
-Content-Disposition: inline; filename=0004-tracing-filter-Call-synchronize_sched-just-once-for-.patch
+Content-Disposition: inline; filename=0005-tracing-filter-Allocate-the-preds-in-an-array.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-By separating out the reseting of the filter->n_preds to zero from
-the reallocation of preds for the filter, we can reset groups of
-filters first, call synchronize_sched() just once, and then reallocate
-each of the filters in the system group.
+Currently we allocate an array of pointers to filter_preds, and then
+allocate a separate filter_pred for each item in the array.
+This adds slight overhead in the filters as it needs to derefernce
+twice to get to the op condition.
+
+Allocating the preds themselves in a single array removes a dereference
+as well as helps on the cache footprint.
 
 Cc: Tom Zanussi <tzanussi@gmail.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_events_filter.c |   80 ++++++++++++++++++++++++++++-------
- 1 files changed, 64 insertions(+), 16 deletions(-)
+ kernel/trace/trace.h               |    2 +-
+ kernel/trace/trace_events_filter.c |   31 +++++++++----------------------
+ 2 files changed, 10 insertions(+), 23 deletions(-)
 
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 441fc1b..254d04a 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -663,7 +663,7 @@ struct ftrace_event_field {
+ struct event_filter {
+ 	int			n_preds;	/* Number assigned */
+ 	int			a_preds;	/* allocated */
+-	struct filter_pred	**preds;
++	struct filter_pred	*preds;
+ 	char			*filter_string;
+ };
+ 
 diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index 932f605..1c14cf2 100644
+index 1c14cf2..8c560eb 100644
 --- a/kernel/trace/trace_events_filter.c
 +++ b/kernel/trace/trace_events_filter.c
-@@ -570,17 +570,28 @@ static void __free_preds(struct event_filter *filter)
- 	filter->n_preds = 0;
- }
- 
-+static void reset_preds(struct event_filter *filter)
-+{
-+	struct filter_pred *pred;
-+	int n_preds = filter->n_preds;
-+	int i;
-+
-+	filter->n_preds = 0;
-+	if (!filter->preds)
-+		return;
-+
-+	for (i = 0; i < n_preds; i++) {
-+		pred = filter->preds[i];
-+		pred->fn = filter_pred_none;
-+	}
-+}
-+
- static void filter_disable_preds(struct ftrace_event_call *call)
+@@ -362,7 +362,7 @@ int filter_match_preds(struct event_filter *filter, void *rec)
  {
- 	struct event_filter *filter = call->filter;
--	int i;
+ 	int match = -1, top = 0, val1 = 0, val2 = 0;
+ 	int stack[MAX_FILTER_PRED];
+-	struct filter_pred **preds;
++	struct filter_pred *preds;
+ 	struct filter_pred *pred;
+ 	int n_preds = ACCESS_ONCE(filter->n_preds);
+ 	int i;
+@@ -377,7 +377,7 @@ int filter_match_preds(struct event_filter *filter, void *rec)
+ 	preds = rcu_dereference_sched(filter->preds);
  
- 	call->flags &= ~TRACE_EVENT_FL_FILTERED;
--	if (filter->preds) {
--		for (i = 0; i < filter->n_preds; i++)
--			filter->preds[i]->fn = filter_pred_none;
--	}
--	filter->n_preds = 0;
-+	reset_preds(filter);
- }
- 
- static void __free_filter(struct event_filter *filter)
-@@ -620,15 +631,18 @@ static int __alloc_preds(struct event_filter *filter, int n_preds)
+ 	for (i = 0; i < n_preds; i++) {
+-		pred = preds[i];
++		pred = &preds[i];
+ 		if (!pred->pop_n) {
+ 			match = pred->fn(pred, rec);
+ 			stack[top++] = match;
+@@ -559,10 +559,8 @@ static void __free_preds(struct event_filter *filter)
+ 	int i;
  
  	if (filter->preds) {
- 		if (filter->a_preds < n_preds) {
--			/* We need to reallocate */
--			filter->n_preds = 0;
- 			/*
--			 * It is possible that the filter is currently
--			 * being used. We need to zero out the number
--			 * of preds, wait on preemption and then free
--			 * the preds.
-+			 * We need to reallocate.
-+			 * We should have already have zeroed out
-+			 * the pred count and called synchronized_sched()
-+			 * to make sure no one is using the preds.
- 			 */
- 			synchronize_sched();
-+			if (WARN_ON_ONCE(filter->n_preds)) {
-+				/* We need to reset it now */
-+				filter->n_preds = 0;
-+				synchronize_sched();
-+			}
- 			__free_preds(filter);
- 		}
+-		for (i = 0; i < filter->a_preds; i++) {
+-			if (filter->preds[i])
+-				filter_free_pred(filter->preds[i]);
+-		}
++		for (i = 0; i < filter->a_preds; i++)
++			kfree(filter->preds[i].field_name);
+ 		kfree(filter->preds);
+ 		filter->preds = NULL;
  	}
-@@ -1267,6 +1281,7 @@ static int replace_preds(struct ftrace_event_call *call,
- 			return err;
- 	}
+@@ -572,7 +570,6 @@ static void __free_preds(struct event_filter *filter)
  
-+	n_preds = 0;
- 	list_for_each_entry(elt, &ps->postfix, list) {
- 		if (elt->op == OP_NONE) {
- 			if (!operand1)
-@@ -1327,6 +1342,30 @@ static int replace_system_preds(struct event_subsystem *system,
- 		/* try to see if the filter can be applied */
- 		err = replace_preds(call, filter, ps, filter_string, true);
- 		if (err)
-+			goto fail;
-+	}
-+
-+	/* set all filter pred counts to zero */
-+	list_for_each_entry(call, &ftrace_events, list) {
-+		struct event_filter *filter = call->filter;
-+
-+		if (strcmp(call->class->system, system->name) != 0)
-+			continue;
-+
-+		reset_preds(filter);
-+	}
-+
-+	/*
-+	 * Since some of the preds may be used under preemption
-+	 * we need to wait for them to finish before we may
-+	 * reallocate them.
-+	 */
-+	synchronize_sched();
-+
-+	list_for_each_entry(call, &ftrace_events, list) {
-+		struct event_filter *filter = call->filter;
-+
-+		if (strcmp(call->class->system, system->name) != 0)
- 			continue;
+ static void reset_preds(struct event_filter *filter)
+ {
+-	struct filter_pred *pred;
+ 	int n_preds = filter->n_preds;
+ 	int i;
  
- 		/* really apply the filter */
-@@ -1341,11 +1380,13 @@ static int replace_system_preds(struct event_subsystem *system,
- 		fail = false;
- 	}
+@@ -580,10 +577,8 @@ static void reset_preds(struct event_filter *filter)
+ 	if (!filter->preds)
+ 		return;
  
--	if (fail) {
--		parse_error(ps, FILT_ERR_BAD_SUBSYS_FILTER, 0);
--		return -EINVAL;
+-	for (i = 0; i < n_preds; i++) {
+-		pred = filter->preds[i];
+-		pred->fn = filter_pred_none;
 -	}
-+	if (fail)
-+		goto fail;
-+
- 	return 0;
-+ fail:
-+	parse_error(ps, FILT_ERR_BAD_SUBSYS_FILTER, 0);
-+	return -EINVAL;
++	for (i = 0; i < n_preds; i++)
++		filter->preds[i].fn = filter_pred_none;
  }
  
- int apply_event_filter(struct ftrace_event_call *call, char *filter_string)
-@@ -1380,6 +1421,13 @@ int apply_event_filter(struct ftrace_event_call *call, char *filter_string)
- 		goto out;
+ static void filter_disable_preds(struct ftrace_event_call *call)
+@@ -659,19 +654,11 @@ static int __alloc_preds(struct event_filter *filter, int n_preds)
+ 		return -EINVAL;
+ 
+ 	for (i = 0; i < n_preds; i++) {
+-		pred = filter->preds[i];
+-		if (!pred)
+-			pred = kzalloc(sizeof(*pred), GFP_KERNEL);
+-		if (!pred)
+-			goto oom;
++		pred = &filter->preds[i];
+ 		pred->fn = filter_pred_none;
+-		filter->preds[i] = pred;
  	}
  
-+	/*
-+	 * Make sure all the pred counts are zero so that
-+	 * no task is using it when we reallocate the preds array.
-+	 */
-+	reset_preds(call->filter);
-+	synchronize_sched();
-+
- 	err = replace_preds(call, call->filter, ps, filter_string, false);
+ 	return 0;
+- oom:
+-	__free_preds(filter);
+-	return -ENOMEM;
+ }
+ 
+ static int init_filter(struct ftrace_event_call *call)
+@@ -731,8 +718,8 @@ static int filter_add_pred_fn(struct filter_parse_state *ps,
+ 	}
+ 
+ 	idx = filter->n_preds;
+-	filter_clear_pred(filter->preds[idx]);
+-	err = filter_set_pred(filter->preds[idx], pred, fn);
++	filter_clear_pred(&filter->preds[idx]);
++	err = filter_set_pred(&filter->preds[idx], pred, fn);
  	if (err)
- 		append_filter_err(ps, call->filter);
+ 		return err;
+ 
 -- 
 1.7.2.3
 
