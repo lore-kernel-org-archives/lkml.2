@@ -1,113 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755095Ab1A1Ihb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 03:37:31 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:52689 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755015Ab1A1Iha convert rfc822-to-8bit (ORCPT
+	id S1755114Ab1A1Ihd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 03:37:33 -0500
+Received: from casper.infradead.org ([85.118.1.10]:49418 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755015Ab1A1Ihc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 03:37:30 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=btPZOSrAQZVtmU5/OzVTVcukoauHwochvxuf0NB0IVwFlL3mYLZmTlQ2KK1928j947
-         t16/J7yjTp4BHG8qfm1FDI3cSOt/PjjjxHnEEpC/Y1P9h+nD9uY05C1DQGSKyqF61CZ9
-         VweFA+HRi0eP4cUcyUqU6hqgFRlXNnFcXCARU=
-MIME-Version: 1.0
-In-Reply-To: <20110128172438.6c49d4ea.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110128122229.6a4c74a2.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110128122449.e4bb0e5f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110128134019.27abcfe2.nishimura@mxp.nes.nec.co.jp>
-	<20110128135839.d53422e8.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTikCjKCtjhRH-ZVsEQN-Luz==8g8e60uxhCTeD2w@mail.gmail.com>
-	<20110128172438.6c49d4ea.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Fri, 28 Jan 2011 17:37:29 +0900
-Message-ID: <AANLkTimmOhbWKMek+9UgTZOU7-17A3H3pMZF-pGQ5v7P@mail.gmail.com>
-Subject: Re: [BUGFIX][PATCH 1/4] memcg: fix limit estimation at reclaim for hugepage
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 28 Jan 2011 03:37:32 -0500
+Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 13/20] 13: x86: x86 specific probe
+ handling
+From: Peter Zijlstra <peterz@infradead.org>
+To: Roland McGrath <roland@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20110128062316.9515018099A@magilla.sf.frob.com>
+References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
+	 <20101216095947.23751.75003.sendpatchset@localhost6.localdomain6>
+	 <1295963783.28776.1061.camel@laptop>
+	 <20110127094041.GR19725@linux.vnet.ibm.com>
+	 <1296123733.15234.53.camel@laptop>
+	 <20110127191146.DB22F180999@magilla.sf.frob.com>
+	 <20110128045721.GV19725@linux.vnet.ibm.com>
+	 <20110128062316.9515018099A@magilla.sf.frob.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Fri, 28 Jan 2011 09:36:38 +0100
+Message-ID: <1296203798.15234.249.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 28, 2011 at 5:24 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Fri, 28 Jan 2011 17:04:16 +0900
-> Minchan Kim <minchan.kim@gmail.com> wrote:
->
->> Hi Kame,
->>
->> On Fri, Jan 28, 2011 at 1:58 PM, KAMEZAWA Hiroyuki
->> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
->> > How about this ?
->> > ==
->> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> >
->> > Current memory cgroup's code tends to assume page_size == PAGE_SIZE
->> > and arrangement for THP is not enough yet.
->> >
->> > This is one of fixes for supporing THP. This adds
->> > mem_cgroup_check_margin() and checks whether there are required amount of
->> > free resource after memory reclaim. By this, THP page allocation
->> > can know whether it really succeeded or not and avoid infinite-loop
->> > and hangup.
->> >
->> > Total fixes for do_charge()/reclaim memory will follow this patch.
->>
->> If this patch is only related to THP, I think patch order isn't good.
->> Before applying [2/4], huge page allocation will retry without
->> reclaiming and loop forever by below part.
->>
->> @@ -1854,9 +1858,6 @@ static int __mem_cgroup_do_charge(struct
->>       } else
->>               mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
->>
->> -     if (csize > PAGE_SIZE) /* change csize and retry */
->> -             return CHARGE_RETRY;
->> -
->>       if (!(gfp_mask & __GFP_WAIT))
->>               return CHARGE_WOULDBLOCK;
->>
->> Am I missing something?
->>
->
-> You're right. But
->  - This patch oder doesn't affect bi-sect of the bug. because
->   2 bugs seems to be the same.
->  - This patch implements a leaf function for the real fix.
->
-> Then, I think patch order is not problem here.
->
-> Thank you for pointing out.
+On Thu, 2011-01-27 at 22:23 -0800, Roland McGrath wrote:
+> > Uprobes doesn't request/handle block-step for now. So can we postpone
+> > your suggested changes till uprobes needs to handle block-step?
+> 
+> That's not the issue.  The way the hardware works is that if the bit is set
+> in the MSR, then the TF eflags bit means block-step instead of single-step.
+> So if PTRACE_SINGLEBLOCK has been used (i.e. user_enable_block_step), then
+> this can interfere with your use of single-step.  You need to do the work
+> in the else branch of step.c:enable_step to ensure that the hardware is not
+> left in the state where it will do block-step instead of single-step when
+> uprobes wants a single-step done. 
 
-Okay. I understand Hannes and your opinion.
-In my opinion, my suggestion can enhance the patch readability in this
-series as just only my viewpoint. :)
-Anyway, I don't mind it.
+And reset the hardware back to block step when done, and provide the
+actual break blockstep would have.
 
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Suppose you hit a breakpoint on the return path while the user it
+debugging in blockstep mode, that should all just work.
 
-Thanks!!
-
->
-> Thanks,
-> -Kame
->
->
->
->
->
-
-
-
--- 
-Kind regards,
-Minchan Kim
+So there you trap on the return, switch to single step to execute the
+return out of line, when done you need to actually break to userspace
+since its the end of a block, as well as reset block mode.
