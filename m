@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655Ab1A1P1I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 10:27:08 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:50495 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752063Ab1A1P1H (ORCPT
+	id S1754774Ab1A1P1d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 10:27:33 -0500
+Received: from service87.mimecast.com ([94.185.240.25]:44280 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752063Ab1A1P1c convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 10:27:07 -0500
-Date: Fri, 28 Jan 2011 10:27:05 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Yin Kangkai <kangkai.yin@intel.com>
-cc: linux-usb@vger.kernel.org, <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, <stable@kernel.org>
-Subject: Re: [PATCH v2] USB: EHCI: fix scheduling while atomic during suspend
-In-Reply-To: <1296187475-8161-1-git-send-email-kangkai.yin@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1101281026010.2089-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 28 Jan 2011 10:27:32 -0500
+Subject: [GIT PULL] kmemleak fixes
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Organization: ARM Limited
+Date: Fri, 28 Jan 2011 15:27:19 +0000
+Message-ID: <1296228439.1799.100.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1
+X-OriginalArrivalTime: 28 Jan 2011 15:27:26.0003 (UTC) FILETIME=[DDF63830:01CBBEFF]
+X-MC-Unique: 111012815272713501
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Jan 2011, Yin Kangkai wrote:
+Hi Linus,
 
-> There is a msleep with spin lock held during ehci pci suspend, which will
-> cause kernel BUG: scheduling while atomic. Fix that.
+I have two fixes for kmemleak. I would be grateful if you can merge them
+(tested on both 2.6.37 and 2.6.38-rc2). Thanks.
 
-> v2:
->  - move spin_lock_irqsave to a smaller scope.
-> 
-> CC: Alan Stern <stern@rowland.harvard.edu>
-> CC: David Brownell <dbrownell@users.sourceforge.net>
-> CC: Greg Kroah-Hartman <gregkh@suse.de>
-> CC: stable@kernel.org
-> Signed-off-by: Yin Kangkai <kangkai.yin@intel.com>
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+The following changes since commit 3c0eee3fe6a3a1c745379547c7e7c904aa64f6d5:
+
+  Linux 2.6.37 (2011-01-04 16:50:19 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-2.6-cm.git for-linus
+
+Catalin Marinas (1):
+      kmemleak: Allow kmemleak metadata allocations to fail
+
+Jesper Juhl (1):
+      kmemleak: remove memset by using kzalloc
+
+ mm/kmemleak-test.c |    6 ++----
+ mm/kmemleak.c      |   13 ++++++++-----
+ 2 files changed, 10 insertions(+), 9 deletions(-)
+
+
 
