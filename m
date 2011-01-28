@@ -1,113 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047Ab1A1HPg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 02:15:36 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33509 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752395Ab1A1HPf convert rfc822-to-8bit (ORCPT
+	id S1753184Ab1A1HVO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 02:21:14 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:60031 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752681Ab1A1HVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 02:15:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=rRTefsPkr3HfMA4P1jfrg9Ms5772URkAVJuS+YP/zkJA8shtaxmzSf2gyKxANpuuTD
-         1N0ELJyoa4T7Y36pT05e3pHbfRwzxM+sQCyV23bnueOvCq9Mh6hCLx1XXtAqZAHALL0k
-         S9ei+jBCgujNy1joam7z3ReLboOM5kRvVVWeY=
-MIME-Version: 1.0
-Date: Fri, 28 Jan 2011 15:15:34 +0800
-Message-ID: <AANLkTinES_gU=MxbSnidorsKDsMnAwzHVx+yntOLCf=f@mail.gmail.com>
-Subject: ext2 write performance regression from 2.6.32
-From: Kyle liu <op.q.liu@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	Fri, 28 Jan 2011 02:21:13 -0500
+Date: Fri, 28 Jan 2011 15:17:31 +0800
+From: Xiaowei Yang <xiaowei.yang@huawei.com>
+Subject: Re: One (possible) x86 get_user_pages bug
+In-reply-to: <AANLkTikhoG4fgXjD9hS9yB+BVqeF3GXtTHiQVMn0n5TS@mail.gmail.com>
+To: Nick Piggin <npiggin@gmail.com>
+Cc: Jan Beulich <JBeulich@novell.com>, Nick Piggin <npiggin@kernel.dk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, fanhenglong@huawei.com,
+        Kaushik Barde <kbarde@huawei.com>, Kenneth Lee <liguozhu@huawei.com>,
+        linqaingmin <linqiangmin@huawei.com>, wangzhenguo@huawei.com,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        linux-kernel@vger.kernel.org
+Message-id: <4D426D8B.3050708@huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9)
+ Gecko/20100317 Thunderbird/3.0.4
+References: <4D416D9A.9010603@huawei.com>
+ <4D41A651020000780002ED36@vpn.id2.novell.com>
+ <AANLkTikhoG4fgXjD9hS9yB+BVqeF3GXtTHiQVMn0n5TS@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 2011-1-28 5:24, Nick Piggin wrote:
+> On Fri, Jan 28, 2011 at 3:07 AM, Jan Beulich<JBeulich@novell.com>  wrote:
+>>>>> On 27.01.11 at 14:05, Xiaowei Yang<xiaowei.yang@huawei.com>  wrote:
+>>> We created a scenario to reproduce the bug:
+>>> ----------------------------------------------------------------
+>>> // proc1/proc1.2 are 2 threads sharing one page table.
+>>> // proc1 is the parent of proc2.
+>>>
+>>> proc1               proc2          proc1.2
+>>> ...                 ...            // in gup_pte_range()
+>>> ...                 ...            pte = gup_get_pte()
+>>> ...                 ...            page1 = pte_page(pte)  // (1)
+>>> do_wp_page(page1)   ...            ...
+>>> ...                 exit_map()     ...
+>>> ...                 ...            get_page(page1)        // (2)
+>>> -----------------------------------------------------------------
+>>>
+>>> do_wp_page() and exit_map() cause page1 to be released into free list
+>>> before get_page() in proc1.2 is called. The longer the delay between
+>>> (1)&(2), the easier the BUG_ON shows.
+>>
+>> Other than responded initially, I don't this can happen outside
+>> of Xen: do_wp_page() won't reach page_cache_release() when
+>> gup_pte_range() is running for the same mm on another CPU,
+>> since it can't get past ptep_clear_flush() (waiting for the CPU
+>> in get_user_pages_fast() to re-enable interrupts).
+>
+> Yeah, this cannot happen on native.
+>
+>
+>>> An experimental patch is made to prevent the PTE being modified in the
+>>> middle of gup_pte_range(). The BUG_ON disappears afterward.
+>>>
+>>> However, from the comments embedded in gup.c, it seems deliberate to
+>>> avoid the lock in the fast path. The question is: if so, how to avoid
+>>> the above scenario?
+>>
+>> Nick, based on your doing of the initial implementation, would
+>> you be able to estimate whether disabling get_user_pages_fast()
+>> altogether for Xen would be performing measurably worse than
+>> adding the locks (but continuing to avoid acquiring mm->mmap_sem)
+>> as suggested by Xiaowei? That's of course only if the latter is correct
+>> at all, of which I haven't fully convinced myself yet.
+>
+> You must have some way to guarantee existence of Linux page
+> tables when you walk them in order to resolve a TLB refill.
+>
+> x86 does this with IPI and hardware fill that is atomic WRT interrupts.
+> So fast gup can disable interrupts to walk page tables, I don't think it
+> is fragile it is absolutely tied to the system ISA (of course that can
+> change, but as Peter said, other things will have to change).
+>
+> Other architectures use RCU for this, so fast gup uses a lockless-
+> pagecache-alike protcol for that.
+>
+> If Xen is not using IPIs for flush, it should use whatever locks or
+> synchronization its TLB refill is using.
 
-Since upgrading 2.6.30->2.6.32, ext2 write performance of SATA/SD/USB
-card is very low (except SSD). The issue is also exist after 2.6.32,
-e.g. 2.6.34, 2.6.35. Write performance of SATA decreased from 115MB/s
-to 80MB/s. Write performance of SDHC decreased from 12MB/s to 3MB/s.
+Thanks everyone! It's very clear now that the problem only occurs on Xen 
+PV kernel which doesn't use IPI to flush TLB so lacks the implicit sync 
+mechanism. For now we can disable the fast path as a temp solution until 
+a better one comes up -- comparing to adding extra locks, the slow path 
+may not be bad, and actually get_user_pages_fast() is not called that 
+much in our environment.
 
-My test tool is iozone  and dd, test file size is 2*RAM size. CPU is
-PowerPC core e500, SATA disk is WD 10000RPM drives, SDHC is Sandisk
-class 10 card.
+However, this issue may raise another concern: could there be other 
+places inside Xen PV kernel which has the same sync problem?
 
-What decrease the performance? Because the sequence of block of
-writing is not continuous.
-Here are some debug info below (in function  mmc_blk_issue_rq).
-major means major device number of the device, pos means the position
-of writing, blocks means the block number need writing.
-
-iozone -Rab result -i0 -r64 -n512m -g512m -f /mnt/ff
-dd if=/dev/zero of=/mnt/ff bs=16K count=32768
-…………..
-major=179, pos=270360, blocks=8
-major=179, pos=278736, blocks=8
-major=179, pos=24, blocks=8
-major=179, pos=8216, blocks=24
-major=0, pos=16424, blocks=8
-major=0, pos=196624, blocks=104
-major=179, pos=204920, blocks=16
-major=0, pos=204936, blocks=128
-…………..
-major=179, pos=1048592, blocks=8
-major=179, pos=1074256, blocks=8
-major=179, pos=1090656, blocks=8
-major=179, pos=16, blocks=8
-major=0, pos=884704, blocks=128
-major=0, pos=884832, blocks=128
-major=0, pos=884960, blocks=128
-major=0, pos=885088, blocks=32
-major=179, pos=1082456, blocks=8
-major=179, pos=1098856, blocks=8
-major=179, pos=24, blocks=8
-major=179, pos=8232, blocks=8
-major=179, pos=204920, blocks=8
-major=0, pos=885120, blocks=128
-………….
-
-Some write are from write_boundary_block, these are necessary. But
-others that major is not zero is from def_blk_aops->blkdev_writepage.
-Before 2.6.32, there is no case happened like this. And why, I have
-already mount filesystem. What are the usage of these data?
-
-Temporarily, I mask all these write operations in do_writepage() below,
-/* no need to write device if the operation is not used to format device */
-if (imajor(mapping->host) && (wbc->sync_mode == WB_SYNC_NONE))
-return 0;
-
-test record below (same behavior to 2.6.30):
-…………
-major=0, pos=23488, blocks=128
-major=0, pos=23616, blocks=128
-major=0, pos=23744, blocks=128
-major=0, pos=23872, blocks=128
-major=0, pos=24000, blocks=128
-major=0, pos=24128, blocks=128
-major=0, pos=24256, blocks=128
-major=0, pos=24384, blocks=128
-major=0, pos=24512, blocks=128
-major=0, pos=24640, blocks=128
-major=179, pos=24768, blocks=8—from write_boundary_block()
-major=0, pos=24784, blocks=128
-major=0, pos=24912, blocks=128
-major=0, pos=25040, blocks=128
-major=0, pos=29136, blocks=128
-major=0, pos=29264, blocks=128
-major=0, pos=29392, blocks=128
-major=0, pos=29520, blocks=128
-…………..
-
-Until now it works fine (except format disk). Data integrity is fine.
-Who can tell me what is the usage of the redundant data. I’m not
-familiar with filesystem.
-
-Thanks.
-
-Best Regards
-Eiji
+Thanks,
+Xiaowei
