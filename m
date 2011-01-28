@@ -1,121 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190Ab1A1LAH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 06:00:07 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64997 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752003Ab1A1LAE (ORCPT
+	id S1754746Ab1A1LQw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 06:16:52 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:47846 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753522Ab1A1LQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 06:00:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=xYSTBJfsVC5g8IUikdATVPr8rw32u4pK2oZhxM5YuXK/OFQ3MSFY6Ms7nJMhrJOYTp
-         fTAz/0ocdX5pCPi8QJyQkbQdciki+bZ+JG53E8MAJWMu8aET2Waf1TKcMeLpXGlfPWoQ
-         lda2ytHFu4NVVZIvrgfISVcOafxZ9EJko0Nnw=
-Date: Fri, 28 Jan 2011 11:59:57 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Roland McGrath <roland@redhat.com>
-Cc: oleg@redhat.com, linux-kernel@vger.kernel.org, rjw@sisk.pl,
-        jan.kratochvil@redhat.com
-Subject: Re: [PATCH 2/4] ptrace: remove the extra wake_up_process() from
- ptrace_detach()
-Message-ID: <20110128105957.GJ24925@htj.dyndns.org>
-References: <1293016398-18001-1-git-send-email-tj@kernel.org>
- <1293016398-18001-3-git-send-email-tj@kernel.org>
- <20110117221340.E6A4F180996@magilla.sf.frob.com>
- <20110127133412.GC24925@htj.dyndns.org>
- <20110128070252.709F8183C1A@magilla.sf.frob.com>
+	Fri, 28 Jan 2011 06:16:50 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqgEAG8xQk15LN5mgWdsb2JhbACkfxYBARYiJLtJDYVCBA
+Date: Fri, 28 Jan 2011 22:16:29 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Eric Sandeen <sandeen@redhat.com>, Ric Wheeler <rwheeler@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
+        axboe@kernel.dk, tytso@mit.edu, shli@kernel.org, neilb@suse.de,
+        adilger.kernel@dilger.ca, jack@suse.cz, snitzer@redhat.com,
+        linux-kernel@vger.kernel.org, kmannth@us.ibm.com, cmm@us.ibm.com,
+        linux-ext4@vger.kernel.org, hch@lst.de, josef@redhat.com
+Subject: Re: [PATCHSET] Refactor barrier=/nobarrier flags from fs to block
+ layer
+Message-ID: <20110128111629.GW21311@dastard>
+References: <20110126071200.GE32261@tux1.beaverton.ibm.com>
+ <4D400A44.6030502@redhat.com>
+ <4D404EBF.8020508@redhat.com>
+ <20110126172413.GG32261@tux1.beaverton.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110128070252.709F8183C1A@magilla.sf.frob.com>
+In-Reply-To: <20110126172413.GG32261@tux1.beaverton.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Roland.
-
-On Thu, Jan 27, 2011 at 11:02:52PM -0800, Roland McGrath wrote:
-> > On Mon, Jan 17, 2011 at 02:13:40PM -0800, Roland McGrath wrote:
-> > > Of course I agree that the current code is wrong here.  But I'm still not
-> > > at all clear on what practical compatibility problems it introduces.  This
-> > > change is OK if and only if we are really making the only area clean and
-> > > well-defined in the same release cycle.
+On Wed, Jan 26, 2011 at 09:24:13AM -0800, Darrick J. Wong wrote:
+> On Wed, Jan 26, 2011 at 10:41:35AM -0600, Eric Sandeen wrote:
+> > On 1/26/11 5:49 AM, Ric Wheeler wrote:
+> > > On 01/26/2011 02:12 AM, Darrick J. Wong wrote:
+> > >> Hello,
+> > >>
+> > >>  From what I can tell, most of the filesystems that know how to issue commands
+> > >> to flush the write cache also have some mechanism for the user to override
+> > >> whether or not the filesystem actually issues those flushes.  Unfortunately,
+> > >> the term "barrier" is obsolete having been changed into flushes in 2.6.36, and
+> > >> many of the filesystems implement the mount options with slightly different
+> > >> syntaxes (barrier=[0|1|none|flush], nobarrier, etc).
+> > >>
+> > >> This patchset adds to the block layer a sysfs knob that an administrator can
+> > >> use to disable flushes, and removes the mount options from the filesystem code.
+> > >> As a starting point, I'm removing the mount options and flush toggle from
+> > >> jbd2/ext4.
+> > >>
+> > >> Anyway, I'm looking for some feedback about refactoring the barrier/flush
+> > >> control knob into the block layer.  It sounds like we want a knob that picks
+> > >> the safest option (issue flushes when supported) unless the administrator
+> > >> decides that it is appropriate to do otherwise.  I suspect that there are good
+> > >> arguments for not having a knob at all, and good arguments for a safe knob.
+> > >> However, since I don't see the barrier options being removed en masse, I'm
+> > >> assuming that we still want a knob somewhere.  Do we need the ignore_fua knob
+> > >> too?  Is this the proper way to deprecate mount options out of filesystems?
+> > >>
+> > >> --D
+> > > 
+> > > Just to be clear, I strongly object to remove the mount options.
 > > 
-> > I don't follow what you meant by the above sentence.  Can you please
-> > clarify a bit?
+> > Agreed, we are just finally, barely starting to win the education battle here.
+> > Removing or changing the option now will just set us back.  It should at
+> > LEAST remain as a deprecated option, with the deprecation message pointing
+> > to crystal-clear documentation.
 > 
-> I think I meant to write "the whole area" rather than "the only area".
-> The point I meant to make is that removing this (wrong) wake-up entirely
-> should only be done when we are also thoroughly cleaning up and verifying
-> everything about the behavior of stopping/resuming in ptrace.  When we get
-> to a clear statement of what all the rules are and we really believe that
-> the new code matches those rules, then fine.  When we are still in the
-> quagmire, no change is better than an incremental change whose subtle
-> ramifications we can't clearly articulate.
-
-Hmm... I'm not sure I quite agree.  We sure should proceed with the
-big picture in mind but procedding gradually is usually the better and
-sometimes the only way to get there.  Unconditional wake up doesn't
-belong anywhere no matter which direction we end up taking.  It's a
-natural step to take.
-
-> > It's slightly more serious than that.  Calling wake_up_process()
-> > unconditionally can cause a quite serious failure.  It wakes up a
-> > process in any state and there are code paths which aren't prepared to
-> > be woken up unless certain conditions are met.  
+> Ok, how about a second proposal:
 > 
-> I understand that.  But I don't recall having seen anyone cite an actual
-> scenario in the real world where it does something problematic.
+> 1. Put the sysfs knob and the toggle code in the block layer, similar to patch
+> #1, only make it a per-bdev toggle so each mount can have its own override
+> parameters.
 
-I don't think it will be easily seen during regular use.  Debugging is
-often pretty slow paced and tasks are usually stopped in well known
-places.  But it does make a pretty decent attack vector for malicious
-users.  I don't think it will take too much effort to come up with a
-proof-of-concept DOS attack exploiting this.  It's plain dangerous to
-do this no matter how unlikely regular users might hit it.
+A sysfs knob just seems wrong for this. What do you do with
+filesystems or block devices that span multiple block devices,
+either via md, dm, mount options (XFS - separate data, log and
+realtime devices) or other means (btrfs w/ multiple devices)? 
 
-> > A safer choice can be changing it to wake up only tasks in interruptible
-> > sleep.
+IMO, the only sane way to control this sort of behaviour is from the
+top down (i.e. from the filesystem) and not from the bottom up (i.e.
+from the lowest level of block devices) because the cache flushes
+are only useful to the filesystem if they are consistently
+implemented from the top of the storage stack to the bottom...
+
+Also, if you allow block devices at the bottom of the stack to be
+configured to ignore flushes dynamically, we need some method to
+inform the upper layers that this has happened. At minimum the
+filesystem needs to log the fact that their crash/power fail
+consistency guarantees have changed - there's no way I'm going to
+assume that users won't do something stupid if there's a knob to
+tweak....
+
+> 2. Add some sort of "nocacheflush" option to the VFS layer to adjust the knob.
+> With this we gain a consistent mount option syntax across all the filesystems,
+> though what it means for a networked fs is questionable.  I guess you could
+> reject the mount option if there's no block device under the fs.  Also, any fs
+> that someday grows an issue-flush feature won't have to add its own option
+> parsing code.
+
+We already have a relatively widely implemented mount option pair -
+barrier/nobarrier is supported by ext3, ext4, btrfs, gfs2, xfs,
+hfsplus and nilfs2 - so I'd suggest that this is the best paaaaaaah
+to take for implementing a generic mount option...
+
+> At umount time, do we undo whatever overrides we set up at mount time?  Seems
+> sane to me, just wanted to run it by everyone.
+
+Does it really matter? The next mount will set it to whatever is
+necessary...
+
+> 3. Change the per-fs option handling code to call the same code as the VFS'
+> nocacheflush option.  Any fs that wants to deprecate its per-fs option handler
+> can do so.  Or they can stay forever.
 > 
-> For ptrace-related purposes, wake_up_state(child, TASK_TRACED|TASK_STOPPED)
-> ought to cover anything that it is doing now that anything could reasonably
-> be relying on.
+> 4. Remove all the flush conditionals from the fs code in favor of letting the
+> block layer handle it.
+>
+> Hopefully "nocacheflush" is a little more obvious.
 
-That probably is something we need to do for -stable, I agree.
+What cache does "nocacheflush" refer to? The page, inode, dentry, or
+buffer caches? Or some other per filesystem cache? Perhaps the MD
+stripe cache? Maybe something else? There are many different caches
+in a storage system even before we consider hardware, so I think
+"nocacheflush" is much more ambiguous than barrier/nobarrier...
 
-> > I have very difficult time imagining what real user visible
-> > implication it would have in negative and noticeable manner, so while
-> > I do agree that we should proceed carefully, I think it would be
-> > better to take the chance and remove the erratic behavior.  We have
-> > release cycles and testing at multiple layers after all.  If we find
-> > out that it breaks something in serious manner, we can always revert.
-> 
-> "Difficult time imagining" and ptrace subtleties unfortunately often go
-> together.
+Just my 2c worth....
 
-But that's the only way forward.  Ptrace sure is complicated, some
-part due to its inherent nature but more because things were
-continuously piled on top of it without proper clean up, but other
-parts of kernel are complicated too and we make changes all the time.
-We have the whole release cycle structure and testing hierarchies
-throughout the ecosystem to enable changes like this.
+Cheers,
 
-> I want to be sure we are doing something right, rather than just
-> being thoroughly unsure that we aren't doing something wrong.
-
-But this is something which is apparently wrong and highly unlikely to
-cause any problem especially because with the patchset an attached
-task is always in traced state on detach and thus always gets
-signal_wake_up().  The only difference is removal of an extra spurious
-unconditional wakeup which may or may not disturb the group stop
-depending on timing.  If we can't change this, I don't know what we
-can.
-
-Thank you.
-
+Dave.
 -- 
-tejun
+Dave Chinner
+david@fromorbit.com
