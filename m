@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab1A1MxN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 07:53:13 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46493 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751393Ab1A1MxM (ORCPT
+	id S1755296Ab1A1Myk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 07:54:40 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:49581 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751393Ab1A1Myi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 07:53:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=JtoNDKe9QjOUoY1lGwi3xhl0H90PbpFjnEjgK0Jjg+a8XywIneNtGx6eBiriFhxk8d
-         kmPMhDvNh90tlyLzwxOKT4weLCnlL/g2xiBjMb2yooj1ZOqr7v/UCkrh+ugIlVC7nc8w
-         PIChrLd9cmYFIH7Iu2mgSE6wWj7BWCeWr/0G8=
-From: Alexander Strakh <cromlehg@gmail.com>
-To: a.zummo@towertech.it
-Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-        Alexander Strakh <cromlehg@gmail.com>,
-        Alexander Strakh <strakh@ispras.ru>
-Subject: [PATCH 1/1] drivers: rtc: Add module_put on error path in rtc_proc_open
-Date: Fri, 28 Jan 2011 16:10:55 +0300
-Message-Id: <1296220255-29069-1-git-send-email-strakh@ispras.ru>
-X-Mailer: git-send-email 1.7.1
+	Fri, 28 Jan 2011 07:54:38 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH V10 01/15] time: Introduce timekeeping_inject_offset
+Date: Fri, 28 Jan 2011 13:54:00 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic; KDE/4.5.1; x86_64; ; )
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Richard Cochran <richard.cochran@omicron.at>,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        Krzysztof Halasa <khc@pm.waw.pl>, Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Mike Frysinger <vapier@gentoo.org>, Paul Mackerras <paulus@samba.org>,
+        Russell King <linux@arm.linux.org.uk>
+References: <cover.1296124770.git.richard.cochran@omicron.at> <201101281305.37370.arnd@arndb.de> <1296218630.15234.334.camel@laptop>
+In-Reply-To: <1296218630.15234.334.camel@laptop>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101281354.01361.arnd@arndb.de>
+X-Provags-ID: V02:K0:BnJST4lGrOPXijtbQxdLJrodN8NPZeNSRhYoLScYx0T
+ or7i5NLa088+0t0udXgqWHtN238e7k4+KCbRwnWl+He23+bhWP
+ hCIYy2Zgot0sFdkQAeeV6HfRv/awYk22PxsuM32W8+OHpMhTbb
+ NPPwO/1hto6AIHHBkH5EVW6w8xvXB5mB27qtcZvC3nqdp1p6bk
+ LcZttGLfLG4hXgn9X7M4Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Strakh <cromlehg@gmail.com>
+On Friday 28 January 2011, Peter Zijlstra wrote:
+> > 
+> > The problem is step 6. The output of git format-patch does not work when
+> > sending with mutt. The easiest solution is to send with git send-email,
+> > which does the same as mutt -H, but gets it right.
+> 
+> I use: formail -s sendmail -t < patches.mbox, but then, I use quilt mail
+> to generate the mbox, not git.
 
-In file drivers/rtc/rtc-proc.c in linux-2.6.37:
-	
-The seq_open function can return -ENOMEM.
+I think in that case, quilt generates the correct 'From' headers both in
+the actual email headers and in the body, so you can use any standard
+email client to send it out.
 
- 86        if (!try_module_get(THIS_MODULE))
- 87                return -ENODEV;
- 88
- 89        return single_open(file, rtc_proc_show, rtc);
-
-In this case before exiting (line 89) from rtc_proc_open 
-the module_put(THIS_MODULE) must be called. 
-
-Found by Linux Device Drivers Verification Project
-
-Signed-off-by: Alexander Strakh <strakh@ispras.ru>
----
- drivers/rtc/rtc-proc.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/rtc/rtc-proc.c b/drivers/rtc/rtc-proc.c
-index c086fc3..242bbf8 100644
---- a/drivers/rtc/rtc-proc.c
-+++ b/drivers/rtc/rtc-proc.c
-@@ -81,12 +81,16 @@ static int rtc_proc_show(struct seq_file *seq, void *offset)
- 
- static int rtc_proc_open(struct inode *inode, struct file *file)
- {
-+	int ret;
- 	struct rtc_device *rtc = PDE(inode)->data;
- 
- 	if (!try_module_get(THIS_MODULE))
- 		return -ENODEV;
- 
--	return single_open(file, rtc_proc_show, rtc);
-+	ret = single_open(file, rtc_proc_show, rtc);
-+	if (ret)
-+		module_put(THIS_MODULE);
-+	return ret;
- }
- 
- static int rtc_proc_release(struct inode *inode, struct file *file)
--- 
-1.7.1
-
+	Arnd
