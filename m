@@ -1,58 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab1A1Wfi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 17:35:38 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:56223 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753773Ab1A1Wfh (ORCPT
+	id S1753287Ab1A1WoU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 17:44:20 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:42588 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751702Ab1A1WoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 17:35:37 -0500
-From: Stefan Weil <weil@mail.berlios.de>
-To: David Airlie <airlied@linux.ie>
-Cc: Stefan Weil <weil@mail.berlios.de>, David Airlie <airlied@linux.ie>,
-        Alex Deucher <alexdeucher@gmail.com>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] radeon: Fix wrong boolean operator
-Date: Fri, 28 Jan 2011 23:35:18 +0100
-Message-Id: <1296254118-7845-1-git-send-email-weil@mail.berlios.de>
-X-Mailer: git-send-email 1.7.2.3
-X-Provags-ID: V02:K0:nj3/w7O6x6rA6g3ImYJ7FmB95qqW3/bItCDn1fRqKeo
- qbBGL+DmPJKAiGP5/+mr9sIApxIgXfNP/hEVnTLKut8GwHfw1h
- /76Fjcpho1wI02t+7iM6maSxhAnp9C03ATuprO+LQcG8ri61ee
- AffrNX+tIkRhwdNfu5xs8BsUBhH4to7lvlbFT88xDgCVfmnKFN
- SEtGi9VF0b94B6RKjcUa3miXYSwd5fsvkwc7WF6TbUI2pQX/ZO
- UE+Gik4QrRCPs
+	Fri, 28 Jan 2011 17:44:19 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=F6KGqoJHg3j7vWwbslZVa6H62h5UZ6AoK9GuJRI3Tu0pwO+XLZS6THw2QUqP7s1thp
+         +8UzGyj/2IPe3HXvGB8ycmrylUuhgYH0dV8yOm89darcE634xlTzHsURpSOmATpVKHfI
+         FRBtaIjS7ks8I6LVfH3o7iShyktdlEq6awMOE=
+MIME-Version: 1.0
+Date: Fri, 28 Jan 2011 22:44:18 +0000
+Message-ID: <AANLkTimKhrCvyzmGsogxWUOsgiek1vnQ17Tjnhm0T=LM@mail.gmail.com>
+Subject: Re: Bash not reacting to Ctrl-C
+From: julie Sullivan <kernelmail.jms@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This error is reported by cppcheck:
-drivers/gpu/drm/radeon/radeon_encoders.c:1066: warning: Mutual exclusion over || always evaluates to true. Did you intend to use && instead?
+(apologies for not replying to original thread, I wasn't subscribed)
 
-It looks like cppcheck is correct, so fix this. No test was run.
+>Might be some Bash assumption or race that works under other OSs but somehow Linux
+>does differently. IIRC Bash is being developed on MacOS-X.
 
-Cc: David Airlie <airlied@linux.ie>
-Cc: Alex Deucher <alexdeucher@gmail.com>
-Cc: dri-devel@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Stefan Weil <weil@mail.berlios.de>
----
- drivers/gpu/drm/radeon/radeon_encoders.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Yep, and I can confirm that this behaviour is the same on MacOS-X too
+(I tested Ingo's
+bash scripts in my break on a machine at work today).
+Ctrl-C is lost about once in every 10 times.
 
-diff --git a/drivers/gpu/drm/radeon/radeon_encoders.c b/drivers/gpu/drm/radeon/radeon_encoders.c
-index 5e90984..d4a5422 100644
---- a/drivers/gpu/drm/radeon/radeon_encoders.c
-+++ b/drivers/gpu/drm/radeon/radeon_encoders.c
-@@ -1063,7 +1063,7 @@ atombios_set_edp_panel_power(struct drm_connector *connector, int action)
- 	if (!ASIC_IS_DCE4(rdev))
- 		return;
- 
--	if ((action != ATOM_TRANSMITTER_ACTION_POWER_ON) ||
-+	if ((action != ATOM_TRANSMITTER_ACTION_POWER_ON) &&
- 	    (action != ATOM_TRANSMITTER_ACTION_POWER_OFF))
- 		return;
- 
--- 
-1.7.2.3
+>See that '^C^C' line? That is where i had to do Ctrl-C twice.
 
+I beat Ingo - I got three '^C's in a row on the Mac a couple of times :-)
+
+Cheers
+Julie
