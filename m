@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410Ab1A1TAx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 14:00:53 -0500
-Received: from mail132.messagelabs.com ([216.82.242.115]:32910 "EHLO
-	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755057Ab1A1TAw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 14:00:52 -0500
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-15.tower-132.messagelabs.com!1296241235!12455190!7
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [216.166.12.180]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] soc: neo1973_wm8753 audio support does not require scoop
-Date: Fri, 28 Jan 2011 12:00:18 -0700
-User-Agent: KMail/1.9.9
-CC: <alsa-devel@alsa-project.org>
+	id S1755328Ab1A1TLG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 14:11:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10827 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755224Ab1A1TLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 14:11:03 -0500
+From: Steve Grubb <sgrubb@redhat.com>
+Organization: Red Hat
+To: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+Subject: Re: [PATCH] System Wide Capability Bounding Set
+Date: Fri, 28 Jan 2011 14:10:29 -0500
+User-Agent: KMail/1.13.5 (Linux/2.6.35.10-74.fc14.x86_64; KDE/4.5.5; x86_64; ; )
+Cc: Eric Paris <eparis@redhat.com>, "Andrew G. Morgan" <morgan@kernel.org>,
+        "Serge E. Hallyn" <serge@canonical.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+References: <1294266337.3237.45.camel@localhost.localdomain> <201101270942.07689.sgrubb@redhat.com> <20110128184901.GA5134@localhost>
+In-Reply-To: <20110128184901.GA5134@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201101281200.18371.hartleys@visionengravers.com>
+Message-Id: <201101281410.29794.sgrubb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver does not use any of the functionality provided by the scoop
-hardware.  Remove the unneeded header.
+On Friday, January 28, 2011 01:49:01 pm Serge E. Hallyn wrote:
+> > Using a wrapper program is a NOGO because the admin renting the machine
+> > would be able  to overwrite the wrapper and then they have arbitrary
+> > code running with full privs and
+> 
+> Not sure I've got this.  Wrapper program in the VM he can over-write,
+> but then he can overwrite the kernel too.
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+No, because the kernel is only read in at boot. After that, /boot can disapear and it 
+won't matter. It can be replaced with something and that won't matter because that's 
+not the real boot partition.
 
----
+> But what we are worried about is the host, so you must mean that.  But if the
+> wrapper program is of type noone_may_write_this_t, then wouldn't finding a way to
+> replace that be as hard as overwriting the host kernel? 
 
-diff --git a/sound/soc/samsung/neo1973_wm8753.c b/sound/soc/samsung/neo1973_wm8753.c
-index c7a2451..c5b3113 100644
---- a/sound/soc/samsung/neo1973_wm8753.c
-+++ b/sound/soc/samsung/neo1973_wm8753.c
-@@ -24,7 +24,6 @@
- #include <sound/tlv.h>
- 
- #include <asm/mach-types.h>
--#include <asm/hardware/scoop.h>
- #include <mach/regs-clock.h>
- #include <mach/regs-gpio.h>
- #include <mach/hardware.h>
+No, because we aren't taking away the ability to mount or unmount. Not to mention that 
+root can replace his selinux policy so that next boot it doesn't define 
+noone_may_write_this_t. He might even put selinux in his VM in permissive.
+
+> Which, of course, still remains as a viable attack vector for the guest admin,
+> whether you have this bounding set or not.
+
+No, with the bounding set, any external call the kernel makes has the bounding set 
+applied. This means we don't have to further restrict root in unnatural ways.
+
+> In other words, we have to accept that the TCB is always not just the
+> kernel, but some user-space too.  And yes, the wrapper program here
+> would be part of the TCB.
+
+If you give someone root access in the VM, they probably want to set things up their 
+way. So, we really would like it if all the security mechanism were inside where they 
+can't be easily tampered with.
+
+-Steve
