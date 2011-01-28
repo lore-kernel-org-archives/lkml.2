@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab1A1ORA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 09:17:00 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:56218 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751278Ab1A1OQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 09:16:58 -0500
-Date: Fri, 28 Jan 2011 15:16:53 +0100 (CET)
-From: Julia Lawall <julia@diku.dk>
-To: Johannes Berg <johannes@sipsolutions.net>
+	id S1754494Ab1A1OUR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 09:20:17 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:48038 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752454Ab1A1OUQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 09:20:16 -0500
+Subject: Re: [PATCH 1/2] net/wireless/nl80211.c: Avoid call to
+ genlmsg_cancel
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Julia Lawall <julia@diku.dk>
 Cc: kernel-janitors@vger.kernel.org,
         "John W. Linville" <linville@tuxdriver.com>,
         "David S. Miller" <davem@davemloft.net>,
         linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] net/wireless/nl80211.c: Avoid call to genlmsg_cancel
-In-Reply-To: <1296223267.5118.7.camel@jlt3.sipsolutions.net>
-Message-ID: <Pine.LNX.4.64.1101281515410.8546@pc-004.diku.dk>
+In-Reply-To: <Pine.LNX.4.64.1101281515410.8546@pc-004.diku.dk>
 References: <1296224232-8115-1-git-send-email-julia@diku.dk>
- <1296223267.5118.7.camel@jlt3.sipsolutions.net>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	 <1296223267.5118.7.camel@jlt3.sipsolutions.net>
+	 <Pine.LNX.4.64.1101281515410.8546@pc-004.diku.dk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 28 Jan 2011 15:20:05 +0100
+Message-ID: <1296224405.5118.8.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Jan 2011, Johannes Berg wrote:
+On Fri, 2011-01-28 at 15:16 +0100, Julia Lawall wrote:
 
-> On Fri, 2011-01-28 at 15:17 +0100, Julia Lawall wrote:
+> > But why did you call the label differently? :)
 > 
-> > diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
-> > index 9b62710..864ddfb 100644
-> > --- a/net/wireless/nl80211.c
-> > +++ b/net/wireless/nl80211.c
-> > @@ -2718,7 +2718,7 @@ static int nl80211_get_mesh_config(struct sk_buff *skb,
-> >  	hdr = nl80211hdr_put(msg, info->snd_pid, info->snd_seq, 0,
-> >  			     NL80211_CMD_GET_MESH_CONFIG);
-> >  	if (!hdr)
-> > -		goto nla_put_failure;
-> > +		goto out;
-> 
-> 
-> > @@ -2954,7 +2955,7 @@ static int nl80211_get_reg(struct sk_buff *skb, struct genl_info *info)
-> >  	hdr = nl80211hdr_put(msg, info->snd_pid, info->snd_seq, 0,
-> >  			     NL80211_CMD_GET_REG);
-> >  	if (!hdr)
-> > -		goto nla_put_failure;
-> > +		goto put_failure;
-> >  
-> >  	NLA_PUT_STRING(msg, NL80211_ATTR_REG_ALPHA2,
-> >  		cfg80211_regdomain->alpha2);
-> 
-> Seems fine. Actually, since the message is freed anyhow, the call to
-> genlmsg_cancel is *completely* unnecessary, I just put it in to make it
-> nest better and not rely on it not having side effects.
-> 
-> But why did you call the label differently? :)
+> Because out is already used in this case, and I didn't want to change all 
+> of the other occurrences of nla_put_failure.  It's a bit sloppy though, 
+> because this code is the actual nla_put_failure.  I can change it if you 
+> prefer.
 
-Because out is already used in this case, and I didn't want to change all 
-of the other occurrences of nla_put_failure.  It's a bit sloppy though, 
-because this code is the actual nla_put_failure.  I can change it if you 
-prefer.
+Oh, and I could've seen that from the patch itself too, I just missed
+it, sorry.
 
-julia
+johannes
+
