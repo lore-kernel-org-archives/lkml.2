@@ -1,62 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404Ab1A1Bg3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 20:36:29 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:26892 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752715Ab1A1Bg2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 20:36:28 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAMesQU1Ld/sX/2dsb2JhbAAMhAjNIJBcgSODOHQEhRc
-X-IronPort-AV: E=Sophos;i="4.60,388,1291611600"; 
-   d="scan'208";a="89495020"
-Message-ID: <4D421D9A.50007@teksavvy.com>
-Date: Thu, 27 Jan 2011 20:36:26 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	id S1754244Ab1A1Biv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 20:38:51 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:52839 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753819Ab1A1Biu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 20:38:50 -0500
+Date: Fri, 28 Jan 2011 01:38:24 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1101280136570.8640@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Stan Hoeppner <stan@hardwarefreak.com>,
-        Justin Piszcz <jpiszcz@lucidpixels.com>,
-        Christoph Hellwig <hch@infradead.org>, Alex Elder <aelder@sgi.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: xfs: very slow after mount, very slow at umount
-References: <4D40C8D1.8090202@teksavvy.com> <20110127033011.GH21311@dastard> <4D40EB2F.2050809@teksavvy.com> <4D418B57.1000501@teksavvy.com> <alpine.DEB.2.00.1101271040000.31246@p34.internal.lan> <4D419765.4070805@teksavvy.com> <4D41CA16.8070001@hardwarefreak.com> <4D41EA04.7010506@teksavvy.com> <20110128001735.GO21311@dastard> <4D421A68.9000607@teksavvy.com>
-In-Reply-To: <4D421A68.9000607@teksavvy.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-2054926818-1296178704=:8640"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-01-27 08:22 PM, Mark Lord wrote:
-> On 11-01-27 07:17 PM, Dave Chinner wrote:
->>
->> In my experience with XFS, most people who tweak mkfs parameters end
->> up with some kind of problem they can't explain and don't know how
->> to solve. And they are typically problems that would not have
->> occurred had they simply used the defaults in the first place. What
->> you've done is a perfect example of this.
-> 
-> Maybe.  But what I read from the paragraph above,
-> is that the documentation could perhaps explain things better,
-> and then people other than the coders might understand how
-> best to tweak it.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--29444707-2054926818-1296178704=:8640
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
 
-By the way, the documentation is excellent, for a developer who
-wants to work on the codebase.  It describes the data structures
-and layouts etc.. better than perhaps any other Linux filesystem.
+Hi Linus,
 
-But it doesn't seem to describe the algorithms, such as how it
-decides where to store a recording stream.
+radeon and nouveau fixes only, a couple of regressions, one evergreen 
+GPU hang under load, and one big endian fix.
 
-I'm not complaining, far from it.  XFS is simply wonderful,
-and my DVR literally couldn't work without it.
+Dave.
 
-But I am as technical as you are, and I like to experiment and
-understand the technology I use.  That's partly why we both work
-on the Linux kernel.
+The following changes since commit 6663050edd9c2e8b1e1f55c09459144d84c045f0:
 
-Cheers
+  Merge branch 'fixes' of master.kernel.org:/home/rmk/linux-2.6-arm (2011-01-26 09:04:18 +1000)
+
+are available in the git repository at:
+
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
+
+Alex Deucher (4):
+      drm/radeon/kms: only enable HDMI mode if radeon audio is enabled
+      drm/radeon/kms: clean up some magic numbers
+      drm/radeon/kms: fix r6xx+ scanout on BE systems
+      drm/radeon/kms: re-emit full context state for evergreen blits
+
+Ben Skeggs (6):
+      drm/nouveau: remove dead function definition
+      drm/nouveau: probe for adt7473 before f75375
+      drm/nvc0: fix incorrect TPC register setup
+      drm/nvc0: implement irq handler for whatever's at 0x14xxxx
+      drm/nvc0/grctx: correct an off-by-one
+      drm/nv50: fix regression on IGPs
+
+Dave Airlie (2):
+      Merge branch 'drm-nouveau-next' of git://git.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes
+      Merge branch 'drm-nouveau-next' of git://git.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes
+
+Francisco Jerez (2):
+      drm/nouveau: Workaround incorrect DCB entry on a GeForce3 Ti 200.
+      drm/nv50: Fix race with PFIFO during PGRAPH context destruction.
+
+Jerome Glisse (1):
+      radeon/kms: fix dp displayport mode validation
+
+Marek Ol¨ák (1):
+      drm/radeon/kms: release CMASK access in preclose_kms
+
+ drivers/gpu/drm/nouveau/nouveau_bios.c      |   15 ++++++++++
+ drivers/gpu/drm/nouveau/nouveau_drv.h       |    3 --
+ drivers/gpu/drm/nouveau/nouveau_temp.c      |    2 +-
+ drivers/gpu/drm/nouveau/nv50_graph.c        |    3 ++
+ drivers/gpu/drm/nouveau/nv50_vm.c           |    5 ---
+ drivers/gpu/drm/nouveau/nvc0_graph.c        |   23 ++++++++++++++-
+ drivers/gpu/drm/nouveau/nvc0_grctx.c        |    2 +-
+ drivers/gpu/drm/radeon/atombios_crtc.c      |   17 +++++++++++
+ drivers/gpu/drm/radeon/atombios_dp.c        |    4 +-
+ drivers/gpu/drm/radeon/evergreen_blit_kms.c |   39 ++++++++++++++++++++++----
+ drivers/gpu/drm/radeon/r100.c               |   10 +++---
+ drivers/gpu/drm/radeon/r300.c               |    7 +++-
+ drivers/gpu/drm/radeon/r420.c               |    2 +-
+ drivers/gpu/drm/radeon/r520.c               |    4 +-
+ drivers/gpu/drm/radeon/r600_reg.h           |    6 +++-
+ drivers/gpu/drm/radeon/radeon_encoders.c    |    6 ++--
+ drivers/gpu/drm/radeon/radeon_kms.c         |    2 +
+ drivers/gpu/drm/radeon/radeon_reg.h         |    2 +
+ drivers/gpu/drm/radeon/rs400.c              |   15 ++++++----
+ drivers/gpu/drm/radeon/rv515.c              |   10 +++---
+ 20 files changed, 132 insertions(+), 45 deletions(-)
+--29444707-2054926818-1296178704=:8640--
