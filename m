@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632Ab1A1KqH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 05:46:07 -0500
-Received: from brother.balabit.com ([195.70.62.219]:37917 "EHLO
-	lists.balabit.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752885Ab1A1KqF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 05:46:05 -0500
-X-Greylist: delayed 1466 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Jan 2011 05:46:05 EST
-Subject: Re: Syslog-NG Fails as of Kernel 2.6.38-rc1
-From: Gergely Nagy <algernon@balabit.hu>
-To: linux-kernel@vger.kernel.org
-In-Reply-To: <ihu3lv$921$4@dough.gmane.org>
-References: <513567.89196.qm@web55903.mail.re3.yahoo.com>
-	 <ihu3lv$921$4@dough.gmane.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 28 Jan 2011 11:21:36 +0100
-Message-ID: <1296210096.24341.23.camel@moria>
-Mime-Version: 1.0
+	id S1754657Ab1A1KwX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 05:52:23 -0500
+Received: from smtp.nokia.com ([147.243.128.26]:63620 "EHLO mgw-da02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751963Ab1A1KwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 05:52:22 -0500
+Message-ID: <4D42A033.9030906@maxwell.research.nokia.com>
+Date: Fri, 28 Jan 2011 12:53:39 +0200
+From: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101123 SeaMonkey/2.0.11
+MIME-Version: 1.0
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
+        clemens@ladisch.de
+Subject: Re: [PATCH v8 03/12] media: Entities, pads and links
+References: <1296131437-29954-1-git-send-email-laurent.pinchart@ideasonboard.com> <1296131437-29954-4-git-send-email-laurent.pinchart@ideasonboard.com>
+In-Reply-To: <1296131437-29954-4-git-send-email-laurent.pinchart@ideasonboard.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > The following appears in dmesg from kernels 2.6.38-rc1 to
-> > 2.6.38-rc2-git5 (Not an issue in 2.6.37 stable):
+Hi Laurent,
 
-[...]
+Thanks for the patches!
 
-> > ----------
-> > ::Starting Syslg-NG            [BUSY] Error opening file for reading:
-> > filename '/proc/kmsg', error='Operation not permitted (1)'
-> > Error initializing source driver: source='src', id='src#2' Error
-> > initializing message pipline;
-> >                     [FAIL]
+I've got one comment that I should have made long time ago... Pads are
+inputs or outputs... or: are they sinks or sources? I recall that it was
+agreed on some occasion that sink and source are much less ambiguous and
+they should be used instead.
 
-The problem is, that syslog-ng doesn't have the CAP_SYSLOG capability,
-only CAP_SYS_ADMIN, which was enough pre-2.6.38. In 2.6.38+ however, one
-needs CAP_SYSLOG (it was split out from CAP_SYS_ADMIN).
+So we'd have MEDIA_PAD_FL_{SINK,SOURCE}, for example. Currently the
+source and documentation is using input/output and source/sink
+interchangeably. I think sink and source should be used all the time.
 
-Which pretty much means that any userspace code that was using
-CAP_SYS_ADMIN to access /proc/kmsg will have to be updated to use
-CAP_SYSLOG (either instead, or in addition to CAP_SYS_ADMIN) in order to
-work on new kernels.
+What do you think?
 
-I find that quite unfortunate, to be honest, as older applications that
-aren't upgraded along with the kernel will simply break.
+Regards,
 
 -- 
-|8]
-
-
+Sakari Ailus
+sakari.ailus@maxwell.research.nokia.com
