@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab1A1Daz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 22:30:55 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46732 "EHLO
+	id S1754706Ab1A1DcL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 22:32:11 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46762 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754610Ab1A1Day (ORCPT
+	with ESMTP id S1754610Ab1A1DcJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 22:30:54 -0500
+	Thu, 27 Jan 2011 22:32:09 -0500
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 28 Jan 2011 12:24:49 +0900
+Date: Fri, 28 Jan 2011 12:26:08 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
@@ -16,9 +16,9 @@ Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
         "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
         "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Subject: [BUGFIX][PATCH 1/4] memcg: fix limit estimation at reclaim for
- hugepage
-Message-Id: <20110128122449.e4bb0e5f.kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [BUGFIX][PATCH 2/4] memcg: fix charge path for THP and allow early
+ retirement
+Message-Id: <20110128122608.cf9be26b.kamezawa.hiroyu@jp.fujitsu.com>
 In-Reply-To: <20110128122229.6a4c74a2.kamezawa.hiroyu@jp.fujitsu.com>
 References: <20110128122229.6a4c74a2.kamezawa.hiroyu@jp.fujitsu.com>
 Organization: FUJITSU Co. LTD.
@@ -32,86 +32,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Current memory cgroup's code tends to assume page_size == PAGE_SIZE
-and arrangement for THP is not enough yet.
+When THP is used, Hugepage size charge can happen. It's not handled
+correctly in mem_cgroup_do_charge(). For example, THP can fallback
+to small page allocation when HUGEPAGE allocation seems difficult
+or busy, but memory cgroup doesn't understand it and continue to
+try HUGEPAGE charging. And the worst thing is memory cgroup
+believes 'memory reclaim succeeded' if limit - usage > PAGE_SIZE.
 
-This is one of fixes for supporing THP. This adds
-mem_cgroup_check_margin() and checks whether there are required amount of
-free resource after memory reclaim. By this, THP page allocation
-can know whether it really succeeded or not and avoid infinite-loop
-and hangup.
+By this, khugepaged etc...can goes into inifinite reclaim loop
+if tasks in memcg are busy.
 
-Total fixes for do_charge()/reclaim memory will follow this patch.
+After this patch 
+ - Hugepage allocation will fail if 1st trial of page reclaim fails.
+
+Changelog:
+ - make changes small. removed renaming codes.
 
 Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- include/linux/res_counter.h |   11 +++++++++++
- mm/memcontrol.c             |   25 ++++++++++++++++++++++++-
- 2 files changed, 35 insertions(+), 1 deletion(-)
+ mm/memcontrol.c |   28 ++++++++++++++++++++++++----
+ 1 file changed, 24 insertions(+), 4 deletions(-)
 
-Index: mmotm-0125/include/linux/res_counter.h
-===================================================================
---- mmotm-0125.orig/include/linux/res_counter.h
-+++ mmotm-0125/include/linux/res_counter.h
-@@ -182,6 +182,17 @@ static inline bool res_counter_check_und
- 	return ret;
- }
- 
-+static inline s64 res_counter_check_margin(struct res_counter *cnt)
-+{
-+	s64 ret;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&cnt->lock, flags);
-+	ret = cnt->limit - cnt->usage;
-+	spin_unlock_irqrestore(&cnt->lock, flags);
-+	return ret;
-+}
-+
- static inline bool res_counter_check_under_soft_limit(struct res_counter *cnt)
- {
- 	bool ret;
 Index: mmotm-0125/mm/memcontrol.c
 ===================================================================
 --- mmotm-0125.orig/mm/memcontrol.c
 +++ mmotm-0125/mm/memcontrol.c
-@@ -1111,6 +1111,22 @@ static bool mem_cgroup_check_under_limit
- 	return false;
- }
+@@ -1827,10 +1827,14 @@ enum {
+ 	CHARGE_OK,		/* success */
+ 	CHARGE_RETRY,		/* need to retry but retry is not bad */
+ 	CHARGE_NOMEM,		/* we can't do more. return -ENOMEM */
++	CHARGE_NEED_BREAK,	/* big size allocation failure */
+ 	CHARGE_WOULDBLOCK,	/* GFP_WAIT wasn't set and no enough res. */
+ 	CHARGE_OOM_DIE,		/* the current is killed because of OOM */
+ };
  
-+static s64  mem_cgroup_check_margin(struct mem_cgroup *mem)
-+{
-+	s64 mem_margin;
-+
-+	if (do_swap_account) {
-+		s64 memsw_margin;
-+
-+		mem_margin = res_counter_check_margin(&mem->res);
-+		memsw_margin = res_counter_check_margin(&mem->memsw);
-+		if (mem_margin > memsw_margin)
-+			mem_margin = memsw_margin;
-+	} else
-+		mem_margin = res_counter_check_margin(&mem->res);
-+	return mem_margin;
-+}
-+
- static unsigned int get_swappiness(struct mem_cgroup *memcg)
++/*
++ * Now we have 3 charge size as PAGE_SIZE, HPAGE_SIZE and batched allcation.
++ */
+ static int __mem_cgroup_do_charge(struct mem_cgroup *mem, gfp_t gfp_mask,
+ 				int csize, bool oom_check)
  {
- 	struct cgroup *cgrp = memcg->css.cgroup;
-@@ -1853,7 +1869,14 @@ static int __mem_cgroup_do_charge(struct
- 	 * Check the limit again to see if the reclaim reduced the
- 	 * current usage of the cgroup before giving up
- 	 */
--	if (ret || mem_cgroup_check_under_limit(mem_over_limit))
-+	if (mem_cgroup_check_margin(mem_over_limit) >= csize)
-+		return CHARGE_RETRY;
-+
-+	/*
-+ 	 * If the charge size is a PAGE_SIZE, it's not hopeless while
-+ 	 * we can reclaim a page.
-+ 	 */
-+	if (csize == PAGE_SIZE && ret)
+@@ -1854,9 +1858,6 @@ static int __mem_cgroup_do_charge(struct
+ 	} else
+ 		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
+ 
+-	if (csize > PAGE_SIZE) /* change csize and retry */
+-		return CHARGE_RETRY;
+-
+ 	if (!(gfp_mask & __GFP_WAIT))
+ 		return CHARGE_WOULDBLOCK;
+ 
+@@ -1880,6 +1881,13 @@ static int __mem_cgroup_do_charge(struct
  		return CHARGE_RETRY;
  
  	/*
++	 * if request size is larger than PAGE_SIZE, it's not OOM
++	 * and caller will do retry in smaller size.
++	 */
++	if (csize != PAGE_SIZE)
++		return CHARGE_NEED_BREAK;
++
++	/*
+ 	 * At task move, charge accounts can be doubly counted. So, it's
+ 	 * better to wait until the end of task_move if something is going on.
+ 	 */
+@@ -1997,10 +2005,22 @@ again:
+ 		case CHARGE_OK:
+ 			break;
+ 		case CHARGE_RETRY: /* not in OOM situation but retry */
+-			csize = page_size;
+ 			css_put(&mem->css);
+ 			mem = NULL;
+ 			goto again;
++		case CHARGE_NEED_BREAK: /* page_size > PAGE_SIZE */
++			css_put(&mem->css);
++			/*
++			 * We'll come here in 2 caes, batched-charge and
++			 * hugetlb alloc. batched-charge can do retry
++			 * with smaller page size. hugepage should return
++			 * NOMEM. This doesn't mean OOM.
++			 */
++			if (page_size > PAGE_SIZE)
++				goto nomem;
++			csize = page_size;
++			mem = NULL;
++			goto again;
+ 		case CHARGE_WOULDBLOCK: /* !__GFP_WAIT */
+ 			css_put(&mem->css);
+ 			goto nomem;
 
