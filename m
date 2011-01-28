@@ -1,116 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654Ab1A1OcU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 09:32:20 -0500
-Received: from astoria.ccjclearline.com ([64.235.106.9]:44656 "EHLO
-	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753699Ab1A1OcT (ORCPT
+	id S1754675Ab1A1OdF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 09:33:05 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:45960 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754151Ab1A1OdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 09:32:19 -0500
-Date: Fri, 28 Jan 2011 09:32:04 -0500 (EST)
-From: "Robert P. J. Day" <rpjday@crashcourse.ca>
-X-X-Sender: rpjday@localhost6.localdomain6
-To: Chris Wilson <chris@chris-wilson.co.uk>
-cc: dri-devel@lists.freedesktop.org, Len Brown <len.brown@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
-Subject: Re: has the i915 "black screen" boot issue returned? [BISECTED]
-In-Reply-To: <849307$bbh907@azsmga001.ch.intel.com>
-Message-ID: <alpine.DEB.2.00.1101280928170.2760@localhost6.localdomain6>
-References: <alpine.DEB.2.00.1101260634300.10774@localhost6.localdomain6> <b9dded$hp9kfu@orsmga002.jf.intel.com> <alpine.DEB.2.00.1101270641490.2923@localhost6.localdomain6> <b9dded$hpa5rf@orsmga002.jf.intel.com> <alpine.DEB.2.00.1101270710510.17636@localhost6.localdomain6>
- <1bdc18$jdgfni@fmsmga002.fm.intel.com> <alpine.DEB.2.00.1101270840380.2736@localhost6.localdomain6> <0d30dc$ksovh8@orsmga001.jf.intel.com> <alpine.DEB.2.00.1101270854420.4898@localhost6.localdomain6> <b7da2f$q8lpcn@fmsmga001.fm.intel.com>
- <alpine.DEB.2.00.1101271634260.2761@localhost6.localdomain6> <alpine.DEB.2.00.1101271730400.2583@localhost6.localdomain6> <849307$bbem1h@azsmga001.ch.intel.com> <alpine.DEB.2.00.1101280421430.2739@localhost6.localdomain6> <0d30dc$kt3gd6@orsmga001.jf.intel.com>
- <alpine.DEB.2.00.1101280850550.2796@localhost6.localdomain6> <849307$bbh907@azsmga001.ch.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 28 Jan 2011 09:33:04 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAGxiQk1Ld/sX/2dsb2JhbAAMhAjNAZB1gSODOHQEhRg
+X-IronPort-AV: E=Sophos;i="4.60,392,1291611600"; 
+   d="scan'208";a="89557769"
+Message-ID: <4D42D39E.4080304@teksavvy.com>
+Date: Fri, 28 Jan 2011 09:33:02 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - crashcourse.ca
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+To: Dave Chinner <david@fromorbit.com>
+CC: Stan Hoeppner <stan@hardwarefreak.com>,
+        Justin Piszcz <jpiszcz@lucidpixels.com>,
+        Christoph Hellwig <hch@infradead.org>, Alex Elder <aelder@sgi.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: xfs: very slow after mount, very slow at umount
+References: <4D40C8D1.8090202@teksavvy.com> <20110127033011.GH21311@dastard> <4D40EB2F.2050809@teksavvy.com> <4D418B57.1000501@teksavvy.com> <alpine.DEB.2.00.1101271040000.31246@p34.internal.lan> <4D419765.4070805@teksavvy.com> <4D41CA16.8070001@hardwarefreak.com> <4D41EA04.7010506@teksavvy.com> <20110128001735.GO21311@dastard> <4D421A68.9000607@teksavvy.com> <20110128073119.GV21311@dastard>
+In-Reply-To: <20110128073119.GV21311@dastard>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Jan 2011, Chris Wilson wrote:
-
-> On Fri, 28 Jan 2011 08:53:59 -0500 (EST), "Robert P. J. Day" <rpjday@crashcourse.ca> wrote:
-> > so the culprit appears to be:
-> >
-> > b705120e4198315f4ae043de06c62f65e0851fd3 is the first bad commit
-> > commit b705120e4198315f4ae043de06c62f65e0851fd3
-> > Author: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
-> > Date:   Sun Jan 23 18:17:17 2011 +0000
-> >
-> >     drm/i915: Use consistent mappings for OpRegion between ACPI and i915
-> >
-> >     The opregion is a shared memory region between ACPI and the graphics
-> >     driver. As the ACPI mapping has been changed to cachable in commit
-> >     6d5bbf00d251cc73223a71422d69e069dc2e0b8d, mapping the intel opregion
-> >     non-cachable now fails. As no bus-master hardware is involved in the
-> >     opregion, cachable map should do no harm.
-> >
-> >     Tested on a Fujitsu Lifebook P8010.
-> >
-> >     Signed-off-by: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
-> >     [ickle: convert to acpi_os_ioremap for consistency]
-> >     Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-> >
-> >
-> >   thoughts?  once again, the salient output from "lspci -v":
+On 11-01-28 02:31 AM, Dave Chinner wrote:
 >
-> Indeed looks like using ioremap_cache is not as safe as was assumed. Does
->
-> diff --git a/include/linux/acpi_io.h b/include/linux/acpi_io.h
-> index 7180013..42108ab 100644
-> --- a/include/linux/acpi_io.h
-> +++ b/include/linux/acpi_io.h
-> @@ -7,7 +7,7 @@
->  static inline void __iomem *acpi_os_ioremap(acpi_physical_address phys,
->                                             acpi_size size)
->  {
-> -       return ioremap_cache(phys, size);
-> +       return ioremap_wc(phys, size);
->  }
->
->  int acpi_os_map_generic_address(struct acpi_generic_address *addr);
+> A simple google search turns up discussions like this:
+> 
+> http://oss.sgi.com/archives/xfs/2009-01/msg01161.html
 
-  that didn't appear to make a difference.  same black screen issue.
-BTW, here's an excerpt from /var/log/dmesg for a *successful* boot (i
-just rebooted to 8a327f23):
+"in the long term we still expect fragmentation to degrade the performance of
+XFS file systems"
+Other than that, no hints there about how changing agcount affects things.
 
-...
-[   24.037114] intel ips 0000:00:1f.6: failed to get i915 symbols, graphics turbo disabled
-...
-[   27.155660] i915 0000:00:02.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-[   27.155665] i915 0000:00:02.0: setting latency timer to 64
-[   27.217407] mtrr: no more MTRRs available
-[   27.217411] [drm] MTRR allocation failed.  Graphics performance may suffer.
-[   27.217848] ioremap error for 0xb3752000-0xb3755000, requested 0x10, got 0x0
-[   27.217933] i915 0000:00:02.0: irq 42 for MSI/MSI-X
-[   27.217938] [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
-[   27.217940] [drm] Driver supports precise vblank timestamp query.
-...
 
-if any of that is of any use.
+> Configuring XFS filesystems for optimal performance has always been
+> a black art because it requires you to understand your storage, your
+> application workload(s) and XFS from the ground up.  Most people
+> can't even tick one of those boxes, let alone all three....
 
-> fix your boot issue or do we need to go back to using uncached:
->
-> +       return ioremap(phys, size);
+Well, I've got 2/3 of those down just fine, thanks.
+But it's the "XFS" part that is still the "black art" part,
+because so little is written about *how* it works
+(as opposed to how it is laid out on disk).
 
-  is that the next change you want me to try?
+Again, that's only a minor complaint -- XFS is way better documented
+than the alternatives, and also works way better than the others I've
+tried here on this workload.
 
-rday
+>>> Why 8 AGs and not the default?
+>>
+>> How AGs are used is not really explained anywhere I've looked,
+>> so I am guessing at what they do and how the system might respond
+>> to different values there (that documentation thing again).
+> 
+> Section 5.1 of this 1996 whitepaper tells you what allocation groups
+> are and the general allocation strategy around them:
+> 
+> http://oss.sgi.com/projects/xfs/papers/xfs_usenix/index.html
 
--- 
+Looks a bit dated:  "Allocation groups are typically 0.5 to 4 gigabytes in size."
+But it does suggest that "processes running concurrently can allocate space
+in the file system concurrently without interfering with each other".
 
-========================================================================
-Robert P. J. Day                               Waterloo, Ontario, CANADA
-                        http://crashcourse.ca
+Dunno if that's still true today, but it sounds pretty close to what I was
+theorizing about how it might work.
 
-Twitter:                                       http://twitter.com/rpjday
-LinkedIn:                               http://ca.linkedin.com/in/rpjday
-========================================================================
+> start to see what I mean about tuning XFS really being a "black art"?
+
+No, I've seen that "black" (aka. undefined, undocumented) part from the start.  :)
+Thanks for chipping in here, though -- it's been really useful.
+
+Cheers!
