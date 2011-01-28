@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592Ab1A1FhR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 00:37:17 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:60062 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220Ab1A1FhQ (ORCPT
+	id S1751964Ab1A1Fkx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 00:40:53 -0500
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:38176 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751418Ab1A1Fkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 00:37:16 -0500
-X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=mqxvRrgu12IA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=viPnuUhvq8mc9a2Po1IA:9 a=kFjuDuR1DJDOYXuwFdR6um2TwFAA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC][PATCH 08/12] tracing/filter: Optimize short ciruit check
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-In-Reply-To: <20110128043345.224997318@goodmis.org>
-References: <20110128042118.561146147@goodmis.org>
-	 <20110128043345.224997318@goodmis.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 28 Jan 2011 00:37:13 -0500
-Message-ID: <1296193033.10144.98.camel@gandalf.stny.rr.com>
+	Fri, 28 Jan 2011 00:40:52 -0500
+Date: Fri, 28 Jan 2011 14:36:54 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [BUGFIX][PATCH 1/4] memcg: fix limit estimation at reclaim for
+ hugepage
+Message-Id: <20110128143654.1aec8f8d.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20110128135839.d53422e8.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110128122229.6a4c74a2.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110128122449.e4bb0e5f.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110128134019.27abcfe2.nishimura@mxp.nes.nec.co.jp>
+	<20110128135839.d53422e8.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-27 at 23:21 -0500, Steven Rostedt wrote:
+On Fri, 28 Jan 2011 13:58:39 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-> diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-> index 2677924..afe59ab 100644
-> --- a/kernel/trace/trace_events_filter.c
-> +++ b/kernel/trace/trace_events_filter.c
-> @@ -426,9 +426,15 @@ int filter_match_preds(struct event_filter *filter, void *rec)
->  					       pred->parent, &move);
->  			continue;
->  		case MOVE_UP_FROM_LEFT:
-> -			/* Check for short circuits */
-> -			if ((match && pred->op == OP_OR) ||
-> -			    (!match && pred->op == OP_AND)) {
-> +			/*
-> +			 * Check for short circuits.
-> +			 *
-> +			 * Optimization: !!match == (pred->op == OP_OR)
-> +			 *   is the same as:
-> +			 * if ((match && pred->op == OP_OR) ||
-> +			 *     (!match && pred->op == OP_AND))
-> +			 */
-> +			if (!!match == (pred->op == OP_OR))
+> How about this ?
+> ==
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> Current memory cgroup's code tends to assume page_size == PAGE_SIZE
+> and arrangement for THP is not enough yet.
+> 
+> This is one of fixes for supporing THP. This adds
+> mem_cgroup_check_margin() and checks whether there are required amount of
+> free resource after memory reclaim. By this, THP page allocation
+> can know whether it really succeeded or not and avoid infinite-loop
+> and hangup.
+> 
+> Total fixes for do_charge()/reclaim memory will follow this patch.
+> 
+> Changelog v1->v2:
+>  - style fix.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-+                                                             {
+Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 
-Bah! I tested these in quilt and when I pulled them into git, I must
-have accidentally deleted the '{' in the patch :-p
-
-Thanks goodness this was only a RFC ;)
-
-/me goes to rebase
-
--- Steve
-
->  				if (pred == root)
->  					break;
->  				pred = get_pred_parent(pred, preds,
-
-
+Thanks,
+Daisuke Nishimura.
