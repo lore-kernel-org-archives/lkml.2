@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755422Ab1A1SfB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 13:35:01 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:42421 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755385Ab1A1Se7 (ORCPT
+	id S1755407Ab1A1Sgz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 13:36:55 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:57772 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753199Ab1A1Sgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 13:34:59 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Fri, 28 Jan 2011 19:34:13 +0100
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Ping Cheng <pingc@wacom.com>,
-        Jiri Kosina <jkosina@suse.cz>, Chris Bagwell <chris@cnpbagwell.com>,
-        Rafi Rubin <rafi@seas.upenn.edu>, Stephane Chatty <chatty@lii-enac.fr>,
-        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 1/2] input: mt: Add method to extract the MT slot state
-Message-ID: <20110128183413.GA2553@polaris.bitmath.org>
-References: <1296124547-3323-1-git-send-email-benjamin.tissoires@enac.fr>
- <1296124547-3323-2-git-send-email-benjamin.tissoires@enac.fr>
- <20110127120603.GB15626@polaris.bitmath.org>
- <AANLkTim7DbxhEO7vHPFcC1PFf=d2mSEyL+wurzUQa0pg@mail.gmail.com>
- <20110128173355.GD2586@polaris.bitmath.org>
- <AANLkTikM-DguswOb6Hv5jgkrirfFf+MHTJgK_Xk45gz5@mail.gmail.com>
+	Fri, 28 Jan 2011 13:36:54 -0500
+Date: Fri, 28 Jan 2011 13:36:50 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Anca Emanuel <anca.emanuel@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Tejun Heo <tj@kernel.org>, roland@redhat.com, oleg@redhat.com,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCHSET] ptrace,signal: group stop / ptrace updates
+Message-ID: <20110128183650.GA26633@Krystal>
+References: <1296227324-25295-1-git-send-email-tj@kernel.org> <20110128165455.GA18194@elte.hu> <alpine.LFD.2.00.1101281839390.31804@localhost6.localdomain6> <AANLkTinm53a1BzLu6JCBdgOpkHw9MOg2H4gD7xiRyvOh@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTikM-DguswOb6Hv5jgkrirfFf+MHTJgK_Xk45gz5@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 83.248.192.164
-X-Scan-Result: No virus found in message 1Pit8I-0003jm-BB.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1Pit8I-0003jm-BB 7cbc2c90bdfeb785a3ffee0ed0de48b0
+In-Reply-To: <AANLkTinm53a1BzLu6JCBdgOpkHw9MOg2H4gD7xiRyvOh@mail.gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 13:29:41 up 65 days, 23:32,  1 user,  load average: 0.19, 0.09,
+	0.05
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Thanks for the patches, Benjamin, perhaps they do need a bit of
-> > rewrite or a new ioctl. We will see what happens.
+* Anca Emanuel (anca.emanuel@gmail.com) wrote:
+> On Fri, Jan 28, 2011 at 7:41 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > On Fri, 28 Jan 2011, Ingo Molnar wrote:
+> >> See that '^C^C' line? That is where i had to do Ctrl-C twice.
+> >>
+> >> It only fails here about once every 10 times, so it's very rare. I have a stock F14
+> >> system running on that box, with the very latest .38 based kernel.
 > >
+> > Tripped over the refuse ^C thing today twice. Had to kill a kernel
+> > build from another shell. It just happily displayed ^C and never
+> > stopped. That happens once in a while and I have no idea either how to
+> > debug that.
 > 
-> Today  I found a bug in these 2 patches: they send garbage with
-> devices that use protocol A.
-> This is definitely a bad idea to send the input_absinfo.
+> cc: Mathieu
 > 
-> In addition to that, using the original behavior (which seems better)
-> does not seems to add sth in regard to input_mt_get_value.
-> It would just add some guards that can be resumed in just a test:
-> (code >= ABS_MT_FIRST && code <= ABS_MT_LAST && dev->mt &&
-> 	slot >= 0 && slot < dev->mtsize)
-> 
-> Henrik, if you want to introduce the new IOCTL, feel free, I don't
-> need it right now.
+> Use lttng ?
 
-Ok - for the record, neither of us actually re-initiated this thing,
-so it still falls into the nice-to-have category. The good thing is
-there is now a clear path on how to proceed.
+Heh :) I'm sure Ingo and Thomas have their own tools for that ;) There is
+one extra thing in the LTTng instrumentation that can help solve this problem:
+the "input subsystem" instrumentation (enabled with ltt-armall -i). You can then
+get a dump of:
 
-Thanks Benjamin.
+- Your keystrokes (you can then grep for your ctrl-c input)
+- Read/poll/select system calls (so you know when your terminal receives the
+  input).
+- Signals sent/delivered
 
-Henrik
+Some of these are already instrumented in the mainline kernel, so you might get
+away without the input subsystem instrumentation.
+
+If I had to take a wild guess, my bet would be to take a look in the area of
+signal delivery, but you never know, maybe it's a userspace bug in the X
+terminal emulator code that is causing this weirdness.
+
+Hope this helps,
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
