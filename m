@@ -1,77 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755152Ab1A1IxY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 03:53:24 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:33233 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755131Ab1A1IxX (ORCPT
+	id S1755154Ab1A1I5H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 03:57:07 -0500
+Received: from h1047321.serverkompetenz.net ([85.214.67.163]:38166 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755131Ab1A1I5F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 03:53:23 -0500
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "'Greg KH'" <gregkh@suse.de>
-Cc: <linux-kernel@vger.kernel.org>, <alan@lxorguk.ukuu.org.uk>,
-        <qi.wang@intel.com>, <yong.y.wang@intel.com>, <joel.clark@intel.com>,
-        <kok.howg.ewe@intel.com>,
-        "'Toshiharu Okada'" <toshiharu-linux@dsn.okisemi.com>
-References: <1292992394-3264-1-git-send-email-tomoya-linux@dsn.okisemi.com> <20101222044424.GC19006@suse.de> <9E719661EAC44CEBAE5E5E0ABD51B4E0@hacdom.okisemi.com> <20110112030402.GA6884@suse.de>
-Subject: RE: [PATCH] pch_phub: add new device ML7213
-Date: Fri, 28 Jan 2011 17:53:19 +0900
-Message-ID: <07EA96EA612148509DA906049ABCDB25@hacdom.okisemi.com>
+	Fri, 28 Jan 2011 03:57:05 -0500
+Message-ID: <4D4284D7.8000200@ahsoftware.de>
+Date: Fri, 28 Jan 2011 09:56:55 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <20110112030402.GA6884@suse.de>
-Thread-Index: AcuyBgHNsWM6zvUhT8SxGCvZCw2X0AMwkkYQ
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+To: =?UTF-8?B?Um9nw6lyaW8gQnJpdG8=?= <rbrito@ime.usp.br>
+CC: linux-kernel@vger.kernel.org,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>
+Subject: Re: [PATCH 02/02] ath3k: Avoid duplication of code
+References: <20110127232453.GA3531@ime.usp.br>
+In-Reply-To: <20110127232453.GA3531@ime.usp.br>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Hello Rogério,
 
-On Wednesday, January 12, 2011 12:04 PM: Greg KH wrote:
-> It is in my "to apply" queue.
-It seems our pch_phub patch is not updated to upstream.
-Have you reviewed this patch ? or Still in your queue ?
+Am 28.01.2011 00:24, schrieb Rogério Brito:
 
-Thanks in advance,
------------------------------------------
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
- 
+> The resuting code has some redundancy and the compiler can potentially
+> produce better code if we omit a function call that is unconditionally
+> executed in
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@suse.de] 
-> Sent: Wednesday, January 12, 2011 12:04 PM
-> To: Tomoya MORINAGA
-> Cc: linux-kernel@vger.kernel.org; alan@lxorguk.ukuu.org.uk; 
-> qi.wang@intel.com; yong.y.wang@intel.com; 
-> joel.clark@intel.com; kok.howg.ewe@intel.com; Toshiharu Okada
-> Subject: Re: [PATCH] pch_phub: add new device ML7213
-> 
-> On Wed, Jan 12, 2011 at 10:59:35AM +0900, Tomoya MORINAGA wrote:
-> > Hi Greg,
-> > 
-> > On Wednesday, December 22, 2010 1:44 PM, Greg KH wrote:
-> > > Put the device type here in the device table, so you 
-> don't have to 
-> > > check for it again in the probe function.  That way you can save 
-> > > some code and keep things simpler and more obvious in the future 
-> > > when adding new device ids, that you also have to pick 
-> the type for 
-> > > it.
-> > 
-> > Have you reviewed our "v2 patch" which is modified for the above?
-> 
-> It is in my "to apply" queue.  The hollidays here kept me 
-> from working on kernel things for 2 weeks, and now the merge 
-> window is happening, but after .38-rc1 is out, I will get to 
-> the patch.
-> 
-> thanks for your patience,
-> 
-> greg k-h
-> 
+
+> diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+> index a126e61..d51c5a3 100644
+> --- a/drivers/bluetooth/ath3k.c
+> +++ b/drivers/bluetooth/ath3k.c
+> @@ -116,13 +116,10 @@ static int ath3k_probe(struct usb_interface *intf,
+>   		return -EIO;
+>   	}
+>
+> -	if (ath3k_load_firmware(udev, firmware)) {
+> -		release_firmware(firmware);
+> -		return -EIO;
+> -	}
+> +	ret = ath3k_load_firmware(udev, firmware);
+>   	release_firmware(firmware);
+>
+> -	return 0;
+> +	return ret ? -EIO : 0;
+>   }
+
+Looks nice, but doesn't compile. I assume you should at least try to 
+compile the stuff you want to change. ;)
+
+Regards,
+
+Alexander
 
