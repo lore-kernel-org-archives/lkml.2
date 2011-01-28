@@ -1,120 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734Ab1A1KRk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 05:17:40 -0500
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:48493 "EHLO
-	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754265Ab1A1KRi (ORCPT
+	id S1754329Ab1A1K3c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 05:29:32 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:51544 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751963Ab1A1K3b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 05:17:38 -0500
-X-Spam-ASN: 
-Date: Fri, 28 Jan 2011 13:17:27 +0300
-From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-To: Davide Libenzi <davidel@xmailserver.org>
-Cc: uClibc <uclibc@uclibc.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: timerfd incompatibility on mips
-Message-ID: <20110128131727.69c6c397@apollo.gnet>
-In-Reply-To: <alpine.DEB.2.00.1101271744160.30861@localhost6.localdomain6>
-References: <20110128032443.6f8b877e@apollo.gnet>
-	<alpine.DEB.2.00.1101271651250.30861@localhost6.localdomain6>
-	<20110128042433.7f4758f2@apollo.gnet>
-	<alpine.DEB.2.00.1101271744160.30861@localhost6.localdomain6>
-Organization: LVK
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	Fri, 28 Jan 2011 05:29:31 -0500
+Subject: Re: [PATCH] a patch to fix the cpu-offline-online problem caused
+ by pm_idle
+From: Peter Zijlstra <peterz@infradead.org>
+To: Luming Yu <luming.yu@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, tglx <tglx@linutronix.de>
+In-Reply-To: <AANLkTikQs1UcfBGf_6shNVtdDSzR+8XzUKcx0amFZXey@mail.gmail.com>
+References: <AANLkTinaOQpuJis5HgK316ANxpDS8eZ8Q0S4a44POrp0@mail.gmail.com>
+	 <1295894492.28776.470.camel@laptop>
+	 <AANLkTimq3jmza-t5iL10wgLLycwdDkJ3mznLQsKHM_Kf@mail.gmail.com>
+	 <1295946736.28776.479.camel@laptop>
+	 <AANLkTikQs1UcfBGf_6shNVtdDSzR+8XzUKcx0amFZXey@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 28 Jan 2011 11:30:19 +0100
+Message-ID: <1296210619.15234.263.camel@laptop>
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA256;
- boundary="Sig_/S=Pwf6j3KjhFyCPIkgLMMpB"; protocol="application/pgp-signature"
-X-AV-Checked: ClamAV using ClamSMTP
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/S=Pwf6j3KjhFyCPIkgLMMpB
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+> We have seen an extremely slow system under the CPU-OFFLINE-ONLIE test
+> on a 4-sockets NHM-EX system.
 
-=D0=92 Thu, 27 Jan 2011 17:49:39 -0800 (PST)
-Davide Libenzi <davidel@xmailserver.org> =D0=BF=D0=B8=D1=88=D0=B5=D1=82:
+Slow is OK, cpu-hotplug isn't performance critical by any means.
 
-> On Fri, 28 Jan 2011, Alexander Gordeev wrote:
->=20
-> > =D0=92 Thu, 27 Jan 2011 16:53:39 -0800 (PST)
-> > Davide Libenzi <davidel@xmailserver.org> =D0=BF=D0=B8=D1=88=D0=B5=D1=82:
-> >=20
-> > > On Fri, 28 Jan 2011, Alexander Gordeev wrote:
-> > >=20
-> > > > Hi!
-> > > >=20
-> > > > I've just found a problem with TFD_NONBLOCK flag that can be passed=
- to
-> > > > timerfd_create.
-> > > >=20
-> > > > <uclibc>/libc/sysdeps/linux/common/sys/timerfd.h which is installed
-> > > > to /usr/include/sys/timerfd.h defines TFD_NONBLOCK as 04000 ie 0x80=
-0.
-> > > > BTW glibc/eglibc headers do the same thing.
-> > > >=20
-> > > > <linux>/include/linux/timerfd.h declares it as O_NONBLOCK which is
-> > > > defined in fcntl.h. Usually O_NONBLOCK is 0x800 too but some
-> > > > architectures including MIPS it redefine it:
-> > > >=20
-> > > > arch/mips/include/asm/fcntl.h:#define O_NONBLOCK	0x0080
-> > > > arch/alpha/include/asm/fcntl.h:#define O_NONBLOCK	00004
-> > > > arch/sparc/include/asm/fcntl.h:#define O_NONBLOCK	0x4000
-> > > > arch/parisc/include/asm/fcntl.h:#define O_NONBLOCK	000200004
-> > > >=20
-> > > > My tests show that kernel thinks that TFD_NONBLOCK is 0x80 on MIPS.=
- I
-> > > > get what I want when I pass 0x80 and EINVAL when I pass 0x800. I do=
-n't
-> > > > know why there are such uncertain things in Linux. Probably the pro=
-blem
-> > > > should be fixed in the kernel.
-> > > >=20
-> > > > Right now one cannot use timerfd_create(..., TFD_NONBLOCK) on MIPS =
-but
-> > > > can use timerfd_create(..., O_NONBLOCK) instead.
-> > >=20
-> > > Ther kernel definition (include/linux/timerfd.h) maps it directly to=
-=20
-> > > O_NONBLOCK, but I am noticing that glibc bolt in the value.
-> > > I don't think this is a kernel fix.
-> >=20
-> > Yes, but linux/timerfd.h is not installed so timerfd.h from *libc
-> > cannot include it. So adding it to include/linux/Kbuild would be a
-> > first step to make them not hard-code the value. Right?
->=20
-> Glibc seems to wrap many files with their own definition.
-> I am not sure why they are actually doing it, but they must have a valid=
-=20
-> reason.
-> It probably makes sense to just un-bolt the values from sys/timerfd.h and=
-=20
-> link them to O_* values from fcntl.h.
+> The test case of off-line-on-line a cpu 1000 times and its performance
+> is dominated by IPI and ipi_handler performance. On NHM-EX, Sending
+> IPI not through broadcast is very slow. Needs to wake up processor by
+> IPI from deep-c-state also incurs heavy weight delay in set_mtrr
+> synchronization in stop_machinecontext. NHM-EX's c3-stop-APIC timer
+> adds more trouble to the problem. If I understand the problem
+> correctly, We probably need to tweak IPI code in upstream to get a
+> clean solution for NHM-EX's slow IPI delivery problem to get
+> reschedule tick processed without any delay on CPU which was in deep c state.
+> But it needs more time. So A quick fix is provided to make the test pass.
 
-Great! This is probably the simplest solution. Hope they'll use it.
+If its slow but working, the test is broken, I don't see a reason to do
+anything to the kernel, let alone the below.
 
-However, I'm still curious why the value O_NONBLOCK value is
-architecture-specific?
+> Without the patch the current CPU Office Online feature would not work
+> reliably,
 
---=20
-  Alexander
+But you just said it was slow, that means its reliable, just not fast.
 
---Sig_/S=Pwf6j3KjhFyCPIkgLMMpB
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+>  since it currently unnecessarily implicitly interact with
+> CPU power management.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+daft statement at best, because if not for some misguided power
+management purpose, what are you actually unplugging cpus for?
+(misguided because unplug doesn't actually safe more power than simply
+idling the cpu).
 
-iQEcBAEBCAAGBQJNQpe3AAoJEElrwznyooJbUpAH/2cpRasyo6EBOpbrbJwafnOz
-XVzY6sP+JnQEJJW0uMon4KU8Tug/kD3pIa0gqH6s41FnjnbWXjAW0iOZKo9WrkFu
-lPumCKp97TAwxYo13xLcddLMqBWHq+i/hHlv3LExm+nt7ESwlvPjmDyE2xlFcSnf
-rQIrM2R+0QQvL19eVeVsI7a1icclK2RVs6dK7Od8PbPf7mfEZPSiiBjW5Kr0rDnt
-4ugKBq0i4mDz5qpMAbUFFofWQR4AVA+IKYWvioxpQsQRBGqjOaNL1E3qg+QZtE30
-L9y4L2RkAkH4tAi0kqKBJzCRVx4ja7PWYvRIg8nN4dDGKCrGbfpwexKX25yLT8Y=
-=ViR4
------END PGP SIGNATURE-----
+> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> index 083e99d..832bbdc 100644
+> --- a/arch/x86/kernel/smpboot.c
+> +++ b/arch/x86/kernel/smpboot.c
+> @@ -83,6 +83,7 @@ DEFINE_PER_CPU(int, cpu_state) = { 0 };
+>  * for idle threads.
+>  */
+>  #ifdef CONFIG_HOTPLUG_CPU
+> +static struct notifier_block pm_idle_cpu_notifier;
+>  /*
+>   * Needed only for CONFIG_HOTPLUG_CPU because __cpuinitdata is
+>   * removed after init for !CONFIG_HOTPLUG_CPU.
+> @@ -1162,6 +1163,7 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
+>                 uv_system_init();
+>  
+>         set_mtrr_aps_delayed_init();
+> +       register_hotcpu_notifier(&pm_idle_cpu_notifier);
+>  out:
+>         preempt_enable();
+>  }
+> @@ -1469,6 +1471,42 @@ void native_play_dead(void)
+>         hlt_play_dead();
+>  }
+>  
+> +static void (*pm_idle_saved)(void);
+> +
+> +static inline void save_pm_idle(void)
+> +{
+> +       pm_idle_saved = pm_idle;
+> +       pm_idle = default_idle;
+> +       cpu_idle_wait();
+> +}
+> +
+> +static inline void restore_pm_idle(void)
+> +{
+> +       pm_idle = pm_idle_saved;
+> +       cpu_idle_wait();
+> +}
 
---Sig_/S=Pwf6j3KjhFyCPIkgLMMpB--
+So you flip the pm_idle pointer protected unter hotplug mutex, but
+that's not serialized against module loading, so what happens if you
+concurrently load a module that sets another idle policy?
+
+Your changelog is vague at best, so what exactly is the purpose here? We
+flip to default_idle(), which uses HLT, which is C1. Then you run
+cpu_idle_wait(), which will IPI all cpus, all these CPUs (except one)
+could have been in deep C states (C3+) so you get your slow wakeup
+anyway. 
+
+There-after you do the normal stop-machine hot-plug dance, which again
+will IPI all cpus once, then you flip it back to the saved pm_idle
+handler and again IPI all cpus.
+
+You do this unconditionally, so:
+  - you don't avoid a slow C3 wakup
+  - you make a hotplug do 3 ipi round-trips instead of 1
+
+Could you please explain wtf you're doing any why?
+
+
+
+
