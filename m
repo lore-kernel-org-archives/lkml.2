@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986Ab1A1Ftd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 00:49:33 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58007 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884Ab1A1Ftc (ORCPT
+	id S1753320Ab1A1Ftw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 00:49:52 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39084 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931Ab1A1Ftv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 00:49:32 -0500
+	Fri, 28 Jan 2011 00:49:51 -0500
 X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
-Message-ID: <4D4259B0.6040902@np.css.fujitsu.com>
-Date: Fri, 28 Jan 2011 14:52:48 +0900
+Message-ID: <4D4259C3.8050105@np.css.fujitsu.com>
+Date: Fri, 28 Jan 2011 14:53:07 +0900
 From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
 User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
 MIME-Version: 1.0
@@ -18,88 +18,140 @@ CC: =?ISO-2022-JP?B?QUtQTRskQiEhGyhC?= <akpm@linux-foundation.org>,
         Huang Ying <ying.huang@intel.com>,
         Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
         LKLM <linux-kernel@vger.kernel.org>
-Subject: [PATCH -v2 1/3] Fix splitting poisoned THP.
+Subject: [PATCH -v2 2/3] Fix the wrong reported address of poisoned THP.
 Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The poisoned THP is now split with split_huge_page()
-in collect_procs_anon(). If kmalloc() is failed in collect_procs(),
-split_huge_page() could not be called. And the work
-after split_huge_page() for collecting the processes using
-poisoned page will not be done, too. So the processes using
-the poisoned page could not be killed.
+When the tail page of THP is poisoned, the head page will be
+poisoned too. And the wrong address, address of head page, will
+be sent with sigbus always.
 
-The condition becomes worse when CONFIG_DEBUG_VM == "Y".
-Because the poisoned THP could not be split, system panic will be
-caused by VM_BUG_ON(PageTransHuge(page)) in try_to_unmap().
+So when the poisoned page is used by Guest OS which is running
+on KVM, after the address changing(hva->gpa) by qemu,
+the unexpected process on Guest OS will be killed by sigbus.
 
-This patch does:
-  1. move split_huge_page() to the place before collect_procs().
-     This can be sure the failure of splitting THP is caused by itself.
-  2. when splitting THP is failed, stop the operations after it.
-     This can avoid unexpected system panic or non sense works.
+What we expected is that the process using the poisoned tail
+page could be killed on Guest OS, but not that the process
+using the healthy head page is killed.
+
+Since it is not good to poison the healthy page, avoid poisoning other
+than the page which is really poisoned.
+  (While we poison all pages in a huge page in case of hugetlb,
+   we can do this for THP thanks to split_huge_page().)
+
+Here we fix two parts:
+  1. Isolate the poisoned page only to make sure
+     the reported address is the address of poisoned page.
+  2. make the poisoned page work as the poisoned regular page.
 
 -v2
-   Make the description clearly.
-   Add PageTransHuge() checking for THP before split_huge_page().
+   Abbreviate the description.
+   Remove the checking of PageHuge() after split_huge_page().
 
 Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
 Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 ---
- mm/memory-failure.c |   30 ++++++++++++++++++++++++++++--
- 1 files changed, 28 insertions(+), 2 deletions(-)
+ mm/huge_memory.c    |    7 ++++++-
+ mm/memory-failure.c |   27 ++++++++++++++++++++++-----
+ 2 files changed, 28 insertions(+), 6 deletions(-)
 
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index e187454..aa18b21 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1162,7 +1162,12 @@ static void __split_huge_page_refcount(struct page *page)
+ 		/* after clearing PageTail the gup refcount can be released */
+ 		smp_mb();
+ 
+-		page_tail->flags &= ~PAGE_FLAGS_CHECK_AT_PREP;
++		/*
++		 * remain hwpoison flag of the poisoned tail page:
++		 *   fix for the unsuitable process killed on Guest Machine(KVM)
++		 *   by the memory-failure.
++		 */
++		page_tail->flags &= ~PAGE_FLAGS_CHECK_AT_PREP | __PG_HWPOISON;
+ 		page_tail->flags |= (page->flags &
+ 				     ((1L << PG_referenced) |
+ 				      (1L << PG_swapbacked) |
 diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 548fbd7..2fa5f94 100644
+index 2fa5f94..c526469 100644
 --- a/mm/memory-failure.c
 +++ b/mm/memory-failure.c
-@@ -386,8 +386,6 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
- 	struct task_struct *tsk;
- 	struct anon_vma *av;
+@@ -854,6 +854,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+ 	int ret;
+ 	int kill = 1;
+ 	struct page *hpage = compound_head(p);
++	struct page *ppage;
  
--	if (!PageHuge(page) && unlikely(split_huge_page(page)))
--		return;
- 	read_lock(&tasklist_lock);
- 	av = page_lock_anon_vma(page);
- 	if (av == NULL)	/* Not actually mapped anymore */
-@@ -896,6 +894,34 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+ 	if (PageReserved(p) || PageSlab(p))
+ 		return SWAP_SUCCESS;
+@@ -894,6 +895,14 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
  		}
  	}
  
-+	if (PageTransHuge(hpage)) {
-+		/*
-+		 * Verify that this isn't a hugetlbfs head page, the check for
-+		 * PageAnon is just for avoid tripping a split_huge_page internal
-+		 * debug check, as split_huge_page refuses to deal with anything
-+		 * that isn't an anon page. PageAnon can't go away from under us
-+		 * because we hold a refcount on the hpage, without a refcount
-+		 * on the hpage. split_huge_page can't be safely called
-+		 * in the first place, having a refcount on the tail isn't enough
-+		 * to be safe.
-+		 */
-+		if (!PageHuge(hpage) && PageAnon(hpage)) {
-+			if (unlikely(split_huge_page(hpage))) {
-+				/*
-+				 * FIXME: if splitting THP is failed, it is better
-+				 * to stop the following operation rather than
-+				 * causing panic by unmapping. System might survive
-+				 * if the page is freed later.
-+				 */
-+				printk(KERN_INFO
-+					"MCE %#lx: failed to split THP\n", pfn);
++	/*
++	 * ppage: poisoned page
++	 *   if p is regular page(4k page)
++	 *        ppage == real poisoned page;
++	 *   else p is hugetlb or THP, ppage == head page.
++	 */
++	ppage = hpage;
 +
-+				BUG_ON(!PageHWPoison(p));
-+				return SWAP_FAIL;
-+			}
-+		}
-+	}
+ 	if (PageTransHuge(hpage)) {
+ 		/*
+ 		 * Verify that this isn't a hugetlbfs head page, the check for
+@@ -919,6 +928,8 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+ 				BUG_ON(!PageHWPoison(p));
+ 				return SWAP_FAIL;
+ 			}
++			/* THP is split, so ppage should be the real poisoned page. */
++			ppage = p;
+ 		}
+ 	}
+ 
+@@ -931,12 +942,18 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+ 	 * there's nothing that can be done.
+ 	 */
+ 	if (kill)
+-		collect_procs(hpage, &tokill);
++		collect_procs(ppage, &tokill);
+ 
+-	ret = try_to_unmap(hpage, ttu);
++	if (hpage != ppage)
++		lock_page_nosync(ppage);
 +
++	ret = try_to_unmap(ppage, ttu);
+ 	if (ret != SWAP_SUCCESS)
+ 		printk(KERN_ERR "MCE %#lx: failed to unmap page (mapcount=%d)\n",
+-				pfn, page_mapcount(hpage));
++				pfn, page_mapcount(ppage));
++
++	if (hpage != ppage)
++		unlock_page(ppage);
+ 
  	/*
- 	 * First collect all the processes that have the page
- 	 * mapped in dirty form.  This has to be done before try_to_unmap,
+ 	 * Now that the dirty bit has been propagated to the
+@@ -947,7 +964,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+ 	 * use a more force-full uncatchable kill to prevent
+ 	 * any accesses to the poisoned memory.
+ 	 */
+-	kill_procs_ao(&tokill, !!PageDirty(hpage), trapno,
++	kill_procs_ao(&tokill, !!PageDirty(ppage), trapno,
+ 		      ret != SWAP_SUCCESS, p, pfn);
+ 
+ 	return ret;
+@@ -1090,7 +1107,7 @@ int __memory_failure(unsigned long pfn, int trapno, int flags)
+ 	 * For error on the tail page, we should set PG_hwpoison
+ 	 * on the head page to show that the hugepage is hwpoisoned
+ 	 */
+-	if (PageTail(p) && TestSetPageHWPoison(hpage)) {
++	if (PageHuge(p) && PageTail(p) && TestSetPageHWPoison(hpage)) {
+ 		action_result(pfn, "hugepage already hardware poisoned",
+ 				IGNORED);
+ 		unlock_page(hpage);
 -- 
 1.7.2.2
 
