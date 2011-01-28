@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab1A1PAs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 10:00:48 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:44235 "EHLO e9.ny.us.ibm.com"
+	id S1753186Ab1A1PCP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 10:02:15 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:34519 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752892Ab1A1PAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 10:00:47 -0500
-Date: Fri, 28 Jan 2011 09:00:42 -0600
+	id S1751731Ab1A1PCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 10:02:12 -0500
+Date: Fri, 28 Jan 2011 09:01:55 -0600
 From: Robert Jennings <rcj@linux.vnet.ibm.com>
 To: Nitin Gupta <ngupta@vflare.org>
 Cc: Greg Kroah-Hartman <gregkh@suse.de>,
         Robert Jennings <rcj@linux.vnet.ibm.com>,
         Pekka Enberg <penberg@cs.helsinki.fi>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 6/7] zram: Return zero'd pages on new reads
-Message-ID: <20110128150042.GG2062@linux.vnet.ibm.com>
+Subject: [PATCH 7/7] zram/xvmalloc: combine duplicate block delete code
+Message-ID: <20110128150155.GH2062@linux.vnet.ibm.com>
 Mail-Followup-To: Nitin Gupta <ngupta@vflare.org>,
 	Greg Kroah-Hartman <gregkh@suse.de>,
 	Pekka Enberg <penberg@cs.helsinki.fi>, devel@driverdev.osuosl.org,
@@ -30,41 +30,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently zram will do nothing to the page in the bvec when that page
-has not been previously written.  This allows random data to leak to
-user space.  That can be seen by doing the following:
+This patch eliminates duplicate code.  The remove_block_head function
+is a special case of remove_block which can be contained in remove_block
+without confusion.
 
- ## Load the module and create a 256Mb zram device called /dev/zram0
- # modprobe zram
- # echo $((256*1024*1024)) > /sys/class/block/zram0/disksize
+The portion of code in remove_block_head which was noted as "DEBUG ONLY"
+is now mandatory.  Doing this provides consistent management of the double
+linked list of blocks under a freelist and makes this consolidation
+of delete block code safe.  The first and last blocks will have NULL
+pointers in their previous and next page pointers respectively.
 
- ## Initialize the device by writing zero to the first block
- # dd if=/dev/zero of=/dev/zram0 bs=512 count=1
-
- ## Read ~256Mb of memory into a file and hope for something interesting
- # dd if=/dev/zram0 of=file
-
-This patch will treat an unwritten page as a zero-filled page.  If a
-page is read before a write has occurred the data returned is all 0's.
+Additionally, any time a block is removed from a free list the next and
+previous pointers will be set to NULL to avoid misuse outside xvmalloc.
 
 Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
 ---
- drivers/staging/zram/zram_drv.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/staging/zram/xvmalloc.c |   73 ++++++++++++++++----------------------
+ 1 files changed, 31 insertions(+), 42 deletions(-)
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index c67060c..86066fd 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -238,7 +238,7 @@ static int zram_read(struct zram *zram, struct bio *bio)
- 		if (unlikely(!zram->table[index].page)) {
- 			pr_debug("Read before write: sector=%lu, size=%u",
- 				(ulong)(bio->bi_sector), bio->bi_size);
--			/* Do nothing */
-+			handle_zero_page(page);
- 			continue;
- 		}
+diff --git a/drivers/staging/zram/xvmalloc.c b/drivers/staging/zram/xvmalloc.c
+index 0560e9d..fc4a3df 100644
+--- a/drivers/staging/zram/xvmalloc.c
++++ b/drivers/staging/zram/xvmalloc.c
+@@ -213,54 +213,14 @@ static void insert_block(struct xv_pool *pool, struct page *page, u32 offset,
+ }
  
+ /*
+- * Remove block from head of freelist. Index 'slindex' identifies the freelist.
+- */
+-static void remove_block_head(struct xv_pool *pool,
+-			struct block_header *block, u32 slindex)
+-{
+-	struct block_header *tmpblock;
+-	u32 flindex = slindex / BITS_PER_LONG;
+-
+-	pool->freelist[slindex].page = block->link.next_page;
+-	pool->freelist[slindex].offset = block->link.next_offset;
+-	block->link.prev_page = NULL;
+-	block->link.prev_offset = 0;
+-
+-	if (!pool->freelist[slindex].page) {
+-		__clear_bit(slindex % BITS_PER_LONG, &pool->slbitmap[flindex]);
+-		if (!pool->slbitmap[flindex])
+-			__clear_bit(flindex, &pool->flbitmap);
+-	} else {
+-		/*
+-		 * DEBUG ONLY: We need not reinitialize freelist head previous
+-		 * pointer to 0 - we never depend on its value. But just for
+-		 * sanity, lets do it.
+-		 */
+-		tmpblock = get_ptr_atomic(pool->freelist[slindex].page,
+-				pool->freelist[slindex].offset, KM_USER1);
+-		tmpblock->link.prev_page = NULL;
+-		tmpblock->link.prev_offset = 0;
+-		put_ptr_atomic(tmpblock, KM_USER1);
+-	}
+-}
+-
+-/*
+  * Remove block from freelist. Index 'slindex' identifies the freelist.
+  */
+ static void remove_block(struct xv_pool *pool, struct page *page, u32 offset,
+ 			struct block_header *block, u32 slindex)
+ {
+-	u32 flindex;
++	u32 flindex = slindex / BITS_PER_LONG;
+ 	struct block_header *tmpblock;
+ 
+-	if (pool->freelist[slindex].page == page
+-	   && pool->freelist[slindex].offset == offset) {
+-		remove_block_head(pool, block, slindex);
+-		return;
+-	}
+-
+-	flindex = slindex / BITS_PER_LONG;
+-
+ 	if (block->link.prev_page) {
+ 		tmpblock = get_ptr_atomic(block->link.prev_page,
+ 				block->link.prev_offset, KM_USER1);
+@@ -276,6 +236,35 @@ static void remove_block(struct xv_pool *pool, struct page *page, u32 offset,
+ 		tmpblock->link.prev_offset = block->link.prev_offset;
+ 		put_ptr_atomic(tmpblock, KM_USER1);
+ 	}
++
++	/* Is this block is at the head of the freelist? */
++	if (pool->freelist[slindex].page == page
++	   && pool->freelist[slindex].offset == offset) {
++
++		pool->freelist[slindex].page = block->link.next_page;
++		pool->freelist[slindex].offset = block->link.next_offset;
++
++		if (pool->freelist[slindex].page) {
++			struct block_header *tmpblock;
++			tmpblock = get_ptr_atomic(pool->freelist[slindex].page,
++					pool->freelist[slindex].offset,
++					KM_USER1);
++			tmpblock->link.prev_page = NULL;
++			tmpblock->link.prev_offset = 0;
++			put_ptr_atomic(tmpblock, KM_USER1);
++		} else {
++			/* This freelist bucket is empty */
++			__clear_bit(slindex % BITS_PER_LONG,
++				    &pool->slbitmap[flindex]);
++			if (!pool->slbitmap[flindex])
++				__clear_bit(flindex, &pool->flbitmap);
++		}
++	}
++
++	block->link.prev_page = NULL;
++	block->link.prev_offset = 0;
++	block->link.next_page = NULL;
++	block->link.next_offset = 0;
+ }
+ 
+ /*
+@@ -384,7 +373,7 @@ int xv_malloc(struct xv_pool *pool, u32 size, struct page **page,
+ 
+ 	block = get_ptr_atomic(*page, *offset, KM_USER0);
+ 
+-	remove_block_head(pool, block, index);
++	remove_block(pool, *page, *offset, block, index);
+ 
+ 	/* Split the block if required */
+ 	tmpoffset = *offset + size + XV_ALIGN;
 -- 
 1.7.0.4
 
