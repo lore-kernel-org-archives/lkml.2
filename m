@@ -1,39 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389Ab1A1OWX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 09:22:23 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:20349 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752418Ab1A1OWW (ORCPT
+	id S1754592Ab1A1O2u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 09:28:50 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:41891 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753859Ab1A1O2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 09:22:22 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBABNgQk1Ld/sX/2dsb2JhbAAMhAjNB5B0gSODOHQEhRg
-X-IronPort-AV: E=Sophos;i="4.60,392,1291611600"; 
-   d="scan'208";a="89555764"
-Message-ID: <4D42D11A.5040201@teksavvy.com>
-Date: Fri, 28 Jan 2011 09:22:18 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: David Rees <drees76@gmail.com>
-CC: Dave Chinner <david@fromorbit.com>, Stan Hoeppner <stan@hardwarefreak.com>,
-        Justin Piszcz <jpiszcz@lucidpixels.com>,
-        Christoph Hellwig <hch@infradead.org>, Alex Elder <aelder@sgi.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: xfs: very slow after mount, very slow at umount
-References: <4D40C8D1.8090202@teksavvy.com> <20110127033011.GH21311@dastard> <4D40EB2F.2050809@teksavvy.com> <4D418B57.1000501@teksavvy.com> <alpine.DEB.2.00.1101271040000.31246@p34.internal.lan> <4D419765.4070805@teksavvy.com> <4D41CA16.8070001@hardwarefreak.com> <4D41EA04.7010506@teksavvy.com> <20110128001735.GO21311@dastard> <4D421A68.9000607@teksavvy.com> <AANLkTinO1JsX_3NDHS=ew5u2C7VcCHT1Y1Yabnz=RQLO@mail.gmail.com>
-In-Reply-To: <AANLkTinO1JsX_3NDHS=ew5u2C7VcCHT1Y1Yabnz=RQLO@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 28 Jan 2011 09:28:49 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=AlKY2pELOfUA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=D19gQVrFAAAA:8 a=b8VgSBC0AAAA:8 a=BS46hPYfh4gMF02818UA:9 a=l4In0M-jXrdeTY1uE6gKkGD3OLEA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 8/20]  8: uprobes: mmap and fork
+ hooks.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        SystemTap <systemtap@sources.redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1296223077.10144.106.camel@gandalf.stny.rr.com>
+References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
+	 <20101216095848.23751.73144.sendpatchset@localhost6.localdomain6>
+	 <1295957741.28776.719.camel@laptop>
+	 <1295985926.10144.61.camel@gandalf.stny.rr.com>
+	 <20110126090643.GI19725@linux.vnet.ibm.com>
+	 <1296147837.10144.79.camel@gandalf.stny.rr.com>
+	 <20110128045353.GU19725@linux.vnet.ibm.com>
+	 <1296223077.10144.106.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 28 Jan 2011 09:28:46 -0500
+Message-ID: <1296224926.10144.109.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-01-27 11:14 PM, David Rees wrote:
->
-> As suggested before - why are you messing with AGs instead of allocsize?
+On Fri, 2011-01-28 at 08:57 -0500, Steven Rostedt wrote:
+> On Fri, 2011-01-28 at 10:23 +0530, Srikar Dronamraju wrote:
+> 
+> > Here is the extract from the original patch at
+> > https://lkml.org/lkml/2010/12/16/74 that I sent to LKML and I dont see
+> > p being uninitialized. 
+> 
+> I very much apologize. Seems that Evolution was playing tricks on me.
+> 
+>   http://rostedt.homelinux.com/private/evolution-wtf.png
+> 
+> That's a screen shot of your email in the preview window. Where 'p' is
+> definitely not initialized. WTF happened to my email?
+> 
+> But all the replies to that email does not have it initialized either ??
+> I was not the only one affected by this.
+> 
 
-Who said "instead of"?  I'm using both.
+Seems to be a bug in Evolution :-p  As both Peter and I tested out this
+email in mutt, and that line appears ?? And Peter tried it out in raw
+mode (^u) and it shows up there in Evolution.
 
-Cheers
+I know, I know, GUI email clients suck. And for good reason too. I guess
+I just spent too many years in the corporate environment to know any
+better.
+
+-- Steve
+
+
