@@ -1,67 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755114Ab1A1Ihd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 03:37:33 -0500
-Received: from casper.infradead.org ([85.118.1.10]:49418 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755015Ab1A1Ihc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 03:37:32 -0500
-Subject: Re: [RFC] [PATCH 2.6.37-rc5-tip 13/20] 13: x86: x86 specific probe
- handling
-From: Peter Zijlstra <peterz@infradead.org>
-To: Roland McGrath <roland@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        SystemTap <systemtap@sources.redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20110128062316.9515018099A@magilla.sf.frob.com>
-References: <20101216095714.23751.52601.sendpatchset@localhost6.localdomain6>
-	 <20101216095947.23751.75003.sendpatchset@localhost6.localdomain6>
-	 <1295963783.28776.1061.camel@laptop>
-	 <20110127094041.GR19725@linux.vnet.ibm.com>
-	 <1296123733.15234.53.camel@laptop>
-	 <20110127191146.DB22F180999@magilla.sf.frob.com>
-	 <20110128045721.GV19725@linux.vnet.ibm.com>
-	 <20110128062316.9515018099A@magilla.sf.frob.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 28 Jan 2011 09:36:38 +0100
-Message-ID: <1296203798.15234.249.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755104Ab1A1Ila (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 03:41:30 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:41195 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755045Ab1A1Il3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 03:41:29 -0500
+Date: Fri, 28 Jan 2011 09:41:21 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
+Subject: Re: [BUGFIX][PATCH 1/4] memcg: fix limit estimation at reclaim for
+ hugepage
+Message-ID: <20110128084121.GE2213@cmpxchg.org>
+References: <20110128122229.6a4c74a2.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110128122449.e4bb0e5f.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110128134019.27abcfe2.nishimura@mxp.nes.nec.co.jp>
+ <20110128135839.d53422e8.kamezawa.hiroyu@jp.fujitsu.com>
+ <AANLkTikCjKCtjhRH-ZVsEQN-Luz==8g8e60uxhCTeD2w@mail.gmail.com>
+ <20110128081723.GD2213@cmpxchg.org>
+ <AANLkTinikUM09bXbLZ5zU1gdgfdPZSQmbycbbeSyGk59@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinikUM09bXbLZ5zU1gdgfdPZSQmbycbbeSyGk59@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-27 at 22:23 -0800, Roland McGrath wrote:
-> > Uprobes doesn't request/handle block-step for now. So can we postpone
-> > your suggested changes till uprobes needs to handle block-step?
+On Fri, Jan 28, 2011 at 05:25:58PM +0900, Minchan Kim wrote:
+> Hi Hannes,
 > 
-> That's not the issue.  The way the hardware works is that if the bit is set
-> in the MSR, then the TF eflags bit means block-step instead of single-step.
-> So if PTRACE_SINGLEBLOCK has been used (i.e. user_enable_block_step), then
-> this can interfere with your use of single-step.  You need to do the work
-> in the else branch of step.c:enable_step to ensure that the hardware is not
-> left in the state where it will do block-step instead of single-step when
-> uprobes wants a single-step done. 
+> On Fri, Jan 28, 2011 at 5:17 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > On Fri, Jan 28, 2011 at 05:04:16PM +0900, Minchan Kim wrote:
+> >> Hi Kame,
+> >>
+> >> On Fri, Jan 28, 2011 at 1:58 PM, KAMEZAWA Hiroyuki
+> >> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> >> > How about this ?
+> >> > ==
+> >> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> >> >
+> >> > Current memory cgroup's code tends to assume page_size == PAGE_SIZE
+> >> > and arrangement for THP is not enough yet.
+> >> >
+> >> > This is one of fixes for supporing THP. This adds
+> >> > mem_cgroup_check_margin() and checks whether there are required amount of
+> >> > free resource after memory reclaim. By this, THP page allocation
+> >> > can know whether it really succeeded or not and avoid infinite-loop
+> >> > and hangup.
+> >> >
+> >> > Total fixes for do_charge()/reclaim memory will follow this patch.
+> >>
+> >> If this patch is only related to THP, I think patch order isn't good.
+> >> Before applying [2/4], huge page allocation will retry without
+> >> reclaiming and loop forever by below part.
+> >>
+> >> @@ -1854,9 +1858,6 @@ static int __mem_cgroup_do_charge(struct
+> >>       } else
+> >>               mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
+> >>
+> >> -     if (csize > PAGE_SIZE) /* change csize and retry */
+> >> -             return CHARGE_RETRY;
+> >> -
+> >>       if (!(gfp_mask & __GFP_WAIT))
+> >>               return CHARGE_WOULDBLOCK;
+> >>
+> >> Am I missing something?
+> >
+> > No, you are correct.  But I am not sure the order really matters in
+> > theory: you have two endless loops that need independent fixing.
+> 
+> That's why I ask a question.
+> Two endless loop?
+> 
+> One is what I mentioned. The other is what?
 
-And reset the hardware back to block step when done, and provide the
-actual break blockstep would have.
+The other is
 
-Suppose you hit a breakpoint on the return path while the user it
-debugging in blockstep mode, that should all just work.
+1. huge page charge, fail
+2. reclaim
+3. limit is ok, retry at 1.
 
-So there you trap on the return, switch to single step to execute the
-return out of line, when done you need to actually break to userspace
-since its the end of a block, as well as reset block mode.
+The problem is that the limit will be okay for regular pages, but not
+huge pages.
+
+Currently, this code is never reached due to the endless loop you
+already spotted.
+
+HTH
