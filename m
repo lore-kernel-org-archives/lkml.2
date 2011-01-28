@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab1A1TuT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 14:50:19 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:54934 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752793Ab1A1TuR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 14:50:17 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=wiVbS626MyoxH+EJFSUSgrD/M1qX9eXu9UmXcQZvnRjKW8UcRhP2jy49uMREdKSAUj
-         7VoSoz68HoWS8Vr/i1PCWT0P1SGyWplXhfQgWJp8cYDwwyNVygCQx4o716Qh44uwCQRu
-         fEivlPHemPH25ObovERYcnU50Rm31fM+eKujk=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH]drivers:wireless:acx.h change initate to initiate
-Date: Fri, 28 Jan 2011 11:50:04 -0800
-Message-Id: <1296244204-3890-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.6.5.GIT
+	id S1755333Ab1A1Txl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 14:53:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53243 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754793Ab1A1Txi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 14:53:38 -0500
+From: Glauber Costa <glommer@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, aliguori@us.ibm.com
+Subject: [PATCH v2 0/6] KVM Steal time, new submission
+Date: Fri, 28 Jan 2011 14:52:14 -0500
+Message-Id: <1296244340-15173-1-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not sure if this is a typo or not. if it is then feel free to take this.
+Gentlemen,
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+If I may please steal a little bit of your time, for the revision of
+this patchset, this is appreciated. This version only includes the steal
+time part, using a new MSR+cpuid to register it.
 
----
- drivers/net/wireless/wl12xx/acx.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+It also includes some documentation, describing the ABI.
+Mostly inspired by the kvmclock one.
 
-diff --git a/drivers/net/wireless/wl12xx/acx.h b/drivers/net/wireless/wl12xx/acx.h
-index 7bd8e4d..c56088b 100644
---- a/drivers/net/wireless/wl12xx/acx.h
-+++ b/drivers/net/wireless/wl12xx/acx.h
-@@ -987,7 +987,7 @@ struct wl1271_acx_ht_capabilities {
- 	 *         Note, driver will still leave space for HT control in packets
- 	 *         regardless of the value of this field. FW will be responsible
- 	 *         to drop the HT field from any frame when this Bit set to 0.
--	 * bit 5 - Allow RD initiation in TXOP. FW is allowed to initate RD.
-+	 * bit 5 - Allow RD initiation in TXOP. FW is allowed to initiate RD.
- 	 *         Exact policy setting for this feature is TBD.
- 	 *         Note, this bit can only be set to 1 if bit 3 is set to 1.
- 	 */
+Comments welcome
+
+Glauber Costa (6):
+  KVM-HDR: KVM Steal time implementation
+  KVM-HV: KVM Steal time implementation
+  KVM-GST: KVM Steal time accounting
+  KVM-GST: KVM Steal time registration
+  KVM-GST: adjust scheduler cpu power
+  Describe KVM_MSR_STEAL_TIME
+
+ Documentation/kvm/msr.txt       |   32 ++++++++++
+ arch/x86/Kconfig                |   12 ++++
+ arch/x86/include/asm/kvm_host.h |    6 ++
+ arch/x86/include/asm/kvm_para.h |   10 +++
+ arch/x86/kernel/kvm.c           |   61 +++++++++++++++++++
+ arch/x86/kernel/kvmclock.c      |    2 +
+ arch/x86/kvm/x86.c              |   48 +++++++++++++--
+ include/linux/kvm.h             |    1 +
+ include/linux/sched.h           |    1 +
+ kernel/sched.c                  |  126 +++++++++++++++++++++++++++++++++++----
+ kernel/sched_features.h         |    4 +-
+ 11 files changed, 283 insertions(+), 20 deletions(-)
+
 -- 
-1.6.5.GIT
+1.7.2.3
 
