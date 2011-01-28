@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754368Ab1A1Bal (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 20:30:41 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33043 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753239Ab1A1Bak (ORCPT
+	id S1754541Ab1A1BbH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 20:31:07 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:62579 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754221Ab1A1BbF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 20:30:40 -0500
-Message-ID: <4D421BD5.30903@oracle.com>
-Date: Thu, 27 Jan 2011 17:28:53 -0800
-From: Sunil Mushran <sunil.mushran@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
+	Thu, 27 Jan 2011 20:31:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=epBRV/crLRkyZPH94/HzIREyNCrJ9wrvU1qACYFwQ1Q2ORinXRLGBilGf7rv9GR0fa
+         6/vDc9l7RrWV6CnUtzWQ==
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: dsterba@suse.cz, mfasheh@suse.com, linux-kernel@vger.kernel.org,
-        ocfs2-devel@oss.oracle.com
-Subject: Re: [Ocfs2-devel] fs/ocfs2/dlm: Use GFP_ATOMIC under spin_lock
-References: <20101102223601.GA27513@ds.suse.cz> <20110127170948.9a0d8b60.akpm@linux-foundation.org>
-In-Reply-To: <20110127170948.9a0d8b60.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4D42192C.9000701@codeaurora.org>
+References: <AANLkTi=6nwDCdzDz7E2EaAw2pf3KUVjmKMRqGfz5zVhP@mail.gmail.com>
+ <1290577024-12347-1-git-send-email-ccross@android.com> <4D42192C.9000701@codeaurora.org>
+From: Paul Menage <menage@google.com>
+Date: Thu, 27 Jan 2011 17:30:41 -0800
+Message-ID: <AANLkTin7B51maXHRH+FNmZ14bmWmEp9P2=2QTNqgq_Fi@mail.gmail.com>
+Subject: Re: [PATCH 1/2] cgroup: Set CGRP_RELEASABLE when adding to a cgroup
+To: Bryan Huntsman <bryanh@codeaurora.org>
+Cc: Colin Cross <ccross@android.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        mbohan@codeaurora.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2011 05:09 PM, Andrew Morton wrote:
-> Switching to GFP_ATOMIC is the worst of all possible ways of "fixing"
-> this bug.  GFP_ATOMIC is *unreliable*.  We don't want to introduce
-> unreliability deep down inside our filesytems.  And fs maintainers who
-> don't want to make their filesystems less reliable shouldn't blindly
-> apply patches that do so :(
+On Thu, Jan 27, 2011 at 5:17 PM, Bryan Huntsman <bryanh@codeaurora.org> wrote:
 >
+> Tested-by: Mike Bohan <mbohan@codeaurora.org>
 >
-> A reliable way of fixing this bug is below.  As an added bonus, it
-> makes the fs faster.
+> I'm responding on Mike's behalf and adding him to this thread.  This
+> patch improves launch time of a test app from ~700ms to ~250ms on MSM,
+> with much lower variance across tests.  We also see UI latency
+> improvements, but have not quantified the gains.
 >
-> --- a/fs/ocfs2/dlm/dlmdomain.c~a
-> +++ a/fs/ocfs2/dlm/dlmdomain.c
-> @@ -926,9 +926,9 @@ static int dlm_assert_joined_handler(str
->   }
->
->   static int dlm_match_regions(struct dlm_ctxt *dlm,
-> -			     struct dlm_query_region *qr)
-> +			     struct dlm_query_region *qr, u8 *local)
->   {
-> -	char *local = NULL, *remote = qr->qr_regions;
-> +	char *remote = qr->qr_regions;
->   	char *l, *r;
->   	int localnr, i, j, foundit;
->   	int status = 0;
-> @@ -957,12 +957,6 @@ static int dlm_match_regions(struct dlm_
->   		r += O2HB_MAX_REGION_NAME_LEN;
->   	}
->
-> -	local = kmalloc(sizeof(qr->qr_regions), GFP_ATOMIC);
-> -	if (!local) {
-> -		status = -ENOMEM;
-> -		goto bail;
-> -	}
-> -
->   	localnr = o2hb_get_all_regions(local, O2NM_MAX_REGIONS);
->
->   	/* compare local regions with remote */
-> @@ -1012,8 +1006,6 @@ static int dlm_match_regions(struct dlm_
->   	}
->
->   bail:
-> -	kfree(local);
-> -
->   	return status;
->   }
->
-> @@ -1077,6 +1069,7 @@ static int dlm_query_region_handler(stru
->   	struct dlm_ctxt *dlm = NULL;
->   	int status = 0;
->   	int locked = 0;
-> +	static u8 local[sizeof(qr->qr_regions)]; /* locked by dlm_domain_lock */
->
->   	qr = (struct dlm_query_region *) msg->buf;
->
-> @@ -1112,7 +1105,7 @@ static int dlm_query_region_handler(stru
->   		goto bail;
->   	}
->
-> -	status = dlm_match_regions(dlm, qr);
-> +	status = dlm_match_regions(dlm, qr, local);
->
->   bail:
->   	if (locked)
 
-That sizeof() is 1K. It maybe better if we moved the kmalloc() here.
+Is this attached to the wrong patch? I'd thought that it was the other
+patch (removing the rcu_synchronize()) that's the performance booster.
+This one is more about preserving the semantics of the notification
+API.
 
-Note that this handler is only called during mount. If the alloc fails, the
-mount fails. It's not the end of the world.
+Paul
