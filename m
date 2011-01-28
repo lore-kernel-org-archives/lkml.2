@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903Ab1A1Efs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 23:35:48 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:33765 "EHLO
+	id S1754923Ab1A1Eft (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 23:35:49 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:39587 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754738Ab1A1Edp (ORCPT
+	with ESMTP id S1754735Ab1A1Edp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 Jan 2011 23:33:45 -0500
-X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=KfAb1R83KNMA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=hBWW8U-Tjhmsyq5nGhsA:9 a=AtiXsElqQt-VTbQ-Q7wA:7 a=Z8SVm-kwZ14OzBS8u2DmXIqIWgQA:4 a=fOX5Bau-VLh-bvhM:21 a=lEfEXCZ3Tmr1wANV:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=CR1Lrxq07PoA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=No5Jr1LyxbjlGglRNzUA:9 a=EJ-oRPYxe2Lo9mtBIfO8rEsIw64A:4 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110128042118.561146147@goodmis.org>
+Message-Id: <20110128043344.742156218@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 27 Jan 2011 23:21:18 -0500
+Date: Thu, 27 Jan 2011 23:21:24 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
@@ -20,68 +20,39 @@ Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Lai Jiangshan <laijs@cn.fujitsu.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [RFC][PATCH 00/12] tracing/filter: Remove 32 pred limit and add short circuits
+Subject: [RFC][PATCH 06/12] tracing/filter: Free pred array on disabling of filter
+References: <20110128042118.561146147@goodmis.org>
+Content-Disposition: inline; filename=0006-tracing-filter-Free-pred-array-on-disabling-of-filte.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While doing some intense tracing, I hit the 32 pred limit in the filters.
-This annoyed me a little, so I decided to remove this constraint.
-But as I saw that the current approach needs to store state in a stack,
-the algorithm needed to be changed such that we could do any
-arbitrary number of preds without needing to store state.
+From: Steven Rostedt <srostedt@redhat.com>
 
-This patch series converts the stack version into a tree walk that can
-use the direction of the walk to store the state.
+When a filter is disabled, free the preds.
 
-An added bonus is that this also allows short circuit of AND and OR
-logic when one value is found to be false or true respectively.
-That is, if the left child is false and the operation is an AND, we
-do not need to process the right child. We can just set the result
-to false and pass it up to the parent.
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_events_filter.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-For an optimization, the tree is also folded so that multiple ANDs
-or ORs in a row are converted to a single pred that has all
-the opperations in an array:
-
-  a || b || c || d || e ...
-
-  a && b && c && d && e ...
-
-Either of the above does not need a tree walk. If any of the ORs
-are found to be true, we can exit and move to the parent. If any
-of the ANDs are found to be false we can do the same. Otherwise
-we can use the result of the last compare.
-
-I'm sending this out as an RFC first, but they are pretty much
-set. I'll start running them through more vigorous tests and then
-package them up for 2.6.39.
-
-This email is to let people know what is happening.
-
-The following patches are in:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-
-    branch: rfc/tracing/filter
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+index 8c560eb..23753f6 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -1389,6 +1389,10 @@ int apply_event_filter(struct ftrace_event_call *call, char *filter_string)
+ 
+ 	if (!strcmp(strstrip(filter_string), "0")) {
+ 		filter_disable_preds(call);
++		reset_preds(call->filter);
++		/* Make sure the filter is not being used */
++		synchronize_sched();
++		__free_preds(call->filter);
+ 		remove_filter_string(call->filter);
+ 		goto out_unlock;
+ 	}
+-- 
+1.7.2.3
 
 
-Steven Rostedt (12):
-      tracing/filter: Have no filter return a match
-      tracing/filter: Move OR and AND logic out of fn() method
-      tracing/filter: Dynamically allocate preds
-      tracing/filter: Call synchronize_sched() just once for system filters
-      tracing/filter: Allocate the preds in an array
-      tracing/filter: Free pred array on disabling of filter
-      tracing/filter: Use a tree instead of stack for filter_match_preds()
-      tracing/filter: Optimize short ciruit check
-      tracing/filter: Check the created pred tree
-      tracing/filter: Optimize filter by folding the tree
-      tracing/filter: Move MAX_FILTER_PRED to local tracing directory
-      tracing/filter: Increase the max preds to 2^14
-
-----
- include/linux/ftrace_event.h       |    1 -
- kernel/trace/trace.h               |   38 ++-
- kernel/trace/trace_events_filter.c |  751 ++++++++++++++++++++++++++++++-----
- 3 files changed, 675 insertions(+), 115 deletions(-)
