@@ -1,89 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817Ab1A1PqL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 10:46:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49398 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752349Ab1A1PqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 10:46:10 -0500
-Date: Fri, 28 Jan 2011 15:45:51 +0000
-From: "Daniel P. Berrange" <berrange@redhat.com>
-To: Daniel Lezcano <daniel.lezcano@free.fr>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        libvir-list@redhat.com
-Subject: Re: [PATCH] cgroup : remove the ns_cgroup
-Message-ID: <20110128154551.GM26309@redhat.com>
-Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
-References: <1295948388-15108-1-git-send-email-daniel.lezcano@free.fr>
- <20110126161837.43830756.akpm@linux-foundation.org>
- <4D40C5A3.4070703@cn.fujitsu.com>
- <20110126174513.c2a20fff.akpm@linux-foundation.org>
- <4D4131DE.3080309@free.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4D4131DE.3080309@free.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754856Ab1A1PrL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 10:47:11 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:10613 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752349Ab1A1PrJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 10:47:09 -0500
+Subject: Re: [PATCH 2/2] net/netlabel: Avoid call to genlmsg_cancel
+From: Paul Moore <paul.moore@hp.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: kernel-janitors@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1296224232-8115-2-git-send-email-julia@diku.dk>
+References: <1296224232-8115-2-git-send-email-julia@diku.dk>
+Content-Type: text/plain; charset="us-ascii"
+Organization: Hewlett Packard
+Date: Fri, 28 Jan 2011 10:46:51 -0500
+Message-ID: <1296229611.5511.15.camel@sifl>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 27, 2011 at 09:50:38AM +0100, Daniel Lezcano wrote:
-> On 01/27/2011 02:45 AM, Andrew Morton wrote:
-> >On Thu, 27 Jan 2011 09:08:51 +0800 Li Zefan<lizf@cn.fujitsu.com>  wrote:
-> >
-> >>Andrew Morton wrote:
-> >>>On Tue, 25 Jan 2011 10:39:48 +0100
-> >>>Daniel Lezcano<daniel.lezcano@free.fr>  wrote:
-> >>>
-> >>>>This patch removes the ns_cgroup as suggested in the following thread:
-> >>>I had this patch queued up in September last year, but dropped it.  Why
-> >>>did I do that?
-> >>Because you wanted to wait for some time for users (if any) to notice this
-> >>coming change.
-> >>
-> >>Author: Daniel Lezcano<daniel.lezcano@free.fr>
-> >>Date:   Wed Oct 27 15:33:38 2010 -0700
-> >>
-> >>     cgroup: notify ns_cgroup deprecated
-> >>
-> >>     The ns_cgroup will be removed very soon.  Let's warn, for this version,
-> >>     ns_cgroup is deprecated.
-> >>
-> >>     Make ns_cgroup and clone_children exclusive.  If the clone_children is set
-> >>     and the ns_cgroup is mounted, let's fail with EINVAL when the ns_cgroup
-> >>     subsys is created (a printk will help the user to understand why the
-> >>     creation fails).
-> >>
-> >>     Update the feature remove schedule file with the deprecated ns_cgroup.
-> >>
-> >>     Signed-off-by: Daniel Lezcano<daniel.lezcano@free.fr>
-> >>     Acked-by: Paul Menage<menage@google.com>
-> >>     Signed-off-by: Andrew Morton<akpm@linux-foundation.org>
-> >>     Signed-off-by: Linus Torvalds<torvalds@linux-foundation.org>
-> >ooh, that was clever of me.
-> >
-> >Here is the text which was missing from the changelog:
-> >
-> >   This is a userspace-visible change.  Commit 45531757b45c ("cgroup:
-> >   notify ns_cgroup deprecated") (merged into 2.6.27) caused the kernel
-> >   to emit a printk warning users that the feature is planned for
-> >   removal.  Since that time we have heard from XXX users who were
-> >   affected by this.
-> >
-> >Please provide XXX.
+On Fri, 2011-01-28 at 15:17 +0100, Julia Lawall wrote:
+> genlmsg_cancel subtracts some constants from its second argument before
+> calling nlmsg_cancel.  nlmsg_cancel then calls nlmsg_trim on the same
+> arguments.  nlmsg_trim tests for NULL before doing any computation, but a
+> NULL second argument to genlmsg_cancel is no longer NULL due to the initial
+> subtraction.  Nothing else happens in this execution, so the call to
+> genlmsg_cancel is simply unnecessary in this case.
 > 
-> Ok, AFAIK nobody makes use of the ns_cgroup except the LXC userspace
-> tools which I maintain and where
-> the backward compatibility with the ns_cgroup and the clone_children
-> flag is already implemented.
-> Since today nobody seems to be affected by this.
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
 > 
-> I Cc'ed the libvirt mailing list.
+> // <smpl>
+> @@
+> expression data;
+> @@
+> 
+> if (data == NULL) { ...
+> * genlmsg_cancel(..., data);
+>   ...
+>   return ...;
+> }
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-Removing 'ns_cgroup' won't impact libvirt's container
-support in any negative way, so fine by me.
+Acked-by: Paul Moore <paul.moore@hp.com>
 
-Regards,
-Daniel
+> ---
+>  net/netlabel/netlabel_cipso_v4.c  |    2 +-
+>  net/netlabel/netlabel_mgmt.c      |    4 ++--
+>  net/netlabel/netlabel_unlabeled.c |    2 +-
+>  3 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/net/netlabel/netlabel_cipso_v4.c b/net/netlabel/netlabel_cipso_v4.c
+> index 5f14c84..0a1f77b 100644
+> --- a/net/netlabel/netlabel_cipso_v4.c
+> +++ b/net/netlabel/netlabel_cipso_v4.c
+> @@ -635,7 +635,7 @@ static int netlbl_cipsov4_listall_cb(struct cipso_v4_doi *doi_def, void *arg)
+>  			   cb_arg->seq, &netlbl_cipsov4_gnl_family,
+>  			   NLM_F_MULTI, NLBL_CIPSOV4_C_LISTALL);
+>  	if (data == NULL)
+> -		goto listall_cb_failure;
+> +		return ret_val;
+>  
+>  	ret_val = nla_put_u32(cb_arg->skb, NLBL_CIPSOV4_A_DOI, doi_def->doi);
+>  	if (ret_val != 0)
+> diff --git a/net/netlabel/netlabel_mgmt.c b/net/netlabel/netlabel_mgmt.c
+> index 998e85e..daaa01d 100644
+> --- a/net/netlabel/netlabel_mgmt.c
+> +++ b/net/netlabel/netlabel_mgmt.c
+> @@ -452,7 +452,7 @@ static int netlbl_mgmt_listall_cb(struct netlbl_dom_map *entry, void *arg)
+>  			   cb_arg->seq, &netlbl_mgmt_gnl_family,
+>  			   NLM_F_MULTI, NLBL_MGMT_C_LISTALL);
+>  	if (data == NULL)
+> -		goto listall_cb_failure;
+> +		return ret_val;
+>  
+>  	ret_val = netlbl_mgmt_listentry(cb_arg->skb, entry);
+>  	if (ret_val != 0)
+> @@ -617,7 +617,7 @@ static int netlbl_mgmt_protocols_cb(struct sk_buff *skb,
+>  			   &netlbl_mgmt_gnl_family, NLM_F_MULTI,
+>  			   NLBL_MGMT_C_PROTOCOLS);
+>  	if (data == NULL)
+> -		goto protocols_cb_failure;
+> +		return ret_val;
+>  
+>  	ret_val = nla_put_u32(skb, NLBL_MGMT_A_PROTOCOL, protocol);
+>  	if (ret_val != 0)
+> diff --git a/net/netlabel/netlabel_unlabeled.c b/net/netlabel/netlabel_unlabeled.c
+> index e2b0a68..b5d3945 100644
+> --- a/net/netlabel/netlabel_unlabeled.c
+> +++ b/net/netlabel/netlabel_unlabeled.c
+> @@ -1141,7 +1141,7 @@ static int netlbl_unlabel_staticlist_gen(u32 cmd,
+>  			   cb_arg->seq, &netlbl_unlabel_gnl_family,
+>  			   NLM_F_MULTI, cmd);
+>  	if (data == NULL)
+> -		goto list_cb_failure;
+> +		return ret_val;
+>  
+>  	if (iface->ifindex > 0) {
+>  		dev = dev_get_by_index(&init_net, iface->ifindex);
+> 
+
+-- 
+paul moore
+linux @ hp
+
+
