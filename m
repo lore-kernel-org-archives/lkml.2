@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab1A1JxT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 04:53:19 -0500
-Received: from lo.gmane.org ([80.91.229.12]:37370 "EHLO lo.gmane.org"
+	id S1754629Ab1A1KOj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 05:14:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2117 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750982Ab1A1JxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 04:53:18 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: WANG Cong <xiyou.wangcong@gmail.com>
-Subject: Re: Syslog-NG Fails as of Kernel 2.6.38-rc1
-Date: Fri, 28 Jan 2011 09:53:04 +0000 (UTC)
-Message-ID: <ihu3lv$921$4@dough.gmane.org>
-References: <513567.89196.qm@web55903.mail.re3.yahoo.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 60.247.97.98
-User-Agent: Pan/0.133 (House of Butterflies)
+	id S1754244Ab1A1KOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 05:14:38 -0500
+From: Andreas Schwab <schwab@redhat.com>
+To: "David Laight" <David.Laight@ACULAB.COM>
+Cc: "David Daney" <ddaney@caviumnetworks.com>,
+        "Coly Li" <bosong.ly@taobao.com>, Wang Cong <xiyou.wangcong@gmail.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Yong Zhang <yong.zhang0@gmail.com>
+Subject: Re: [PATCH 2/7] PowerPC: add unlikely() to BUG_ON()
+References: <4D41B213.4070606@caviumnetworks.com>
+	<AE90C24D6B3A694183C094C60CF0A2F6D8AC2D__37237.0892241181$1296205746$gmane$org@saturn3.aculab.com>
+X-Yow: Clear the laundromat!!  This whirl-o-matic just had a nuclear meltdown!!
+Date: Fri, 28 Jan 2011 11:14:16 +0100
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6D8AC2D__37237.0892241181$1296205746$gmane$org@saturn3.aculab.com>
+	(David Laight's message of "Fri, 28 Jan 2011 09:05:59 -0000")
+Message-ID: <m31v3xxrlz.fsf@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Jan 2011 04:51:10 -0800, Eugene Markow wrote:
+"David Laight" <David.Laight@ACULAB.COM> writes:
 
-> The following appears in dmesg from kernels 2.6.38-rc1 to
-> 2.6.38-rc2-git5 (Not an issue in 2.6.37 stable):
-> 
-> ----------
-> WARNING: at kernel/printk.c:430 do_syslog+0xeb/0x5e0()
+> Also, as (I think) in some of the generated code quoted,
+> use of __builtin_expect() with a boolean expression can
+> force some versions of gcc to generate the integer
+> value of the expression
 
-Looks like syslog-ng passes a wrong type to sys_syslog():
+That's more likely a side effect of the definition of likely/unlikely:
+they expand to !!(x).
 
-        if (type == SYSLOG_ACTION_OPEN || !from_file) {
-                if (dmesg_restrict && !capable(CAP_SYSLOG))
-                        goto warn;
+Andreas.
 
-                if ((type != SYSLOG_ACTION_READ_ALL &&
-                     type != SYSLOG_ACTION_SIZE_BUFFER) &&
-                    !capable(CAP_SYSLOG))
-                        goto warn;
-        }
-
-...
-> 
-> Furthermore, during the bootup process, I'm getting:
-> 
-> 
-> ----------
-> ::Starting Syslg-NG            [BUSY] Error opening file for reading:
-> filename '/proc/kmsg', error='Operation not permitted (1)'
-> Error initializing source driver: source='src', id='src#2' Error
-> initializing message pipline;
->                     [FAIL]
-
-
-Hmm, it writes /proc/kmsg... I will look at the code later.
-
-
+-- 
+Andreas Schwab, schwab@redhat.com
+GPG Key fingerprint = D4E8 DBE3 3813 BB5D FA84  5EC7 45C6 250E 6F00 984E
+"And now for something completely different."
