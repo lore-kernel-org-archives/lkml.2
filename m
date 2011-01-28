@@ -1,215 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476Ab1A1BRh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 20:17:37 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:28541 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753563Ab1A1BRg (ORCPT
+	id S1754052Ab1A1BWv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 20:22:51 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:33728 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752680Ab1A1BWu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 20:17:36 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6239"; a="72271921"
-Message-ID: <4D42192C.9000701@codeaurora.org>
-Date: Thu, 27 Jan 2011 17:17:32 -0800
-From: Bryan Huntsman <bryanh@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Thu, 27 Jan 2011 20:22:50 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAEapQU1Ld/sX/2dsb2JhbAAMhAjNLZBdgSODOHQEhRc
+X-IronPort-AV: E=Sophos;i="4.60,388,1291611600"; 
+   d="scan'208";a="89494157"
+Message-ID: <4D421A68.9000607@teksavvy.com>
+Date: Thu, 27 Jan 2011 20:22:48 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Colin Cross <ccross@android.com>
-CC: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        mbohan@codeaurora.org
-Subject: Re: [PATCH 1/2] cgroup: Set CGRP_RELEASABLE when adding to a cgroup
-References: <AANLkTi=6nwDCdzDz7E2EaAw2pf3KUVjmKMRqGfz5zVhP@mail.gmail.com> <1290577024-12347-1-git-send-email-ccross@android.com>
-In-Reply-To: <1290577024-12347-1-git-send-email-ccross@android.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dave Chinner <david@fromorbit.com>
+CC: Stan Hoeppner <stan@hardwarefreak.com>,
+        Justin Piszcz <jpiszcz@lucidpixels.com>,
+        Christoph Hellwig <hch@infradead.org>, Alex Elder <aelder@sgi.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: xfs: very slow after mount, very slow at umount
+References: <4D40C8D1.8090202@teksavvy.com> <20110127033011.GH21311@dastard> <4D40EB2F.2050809@teksavvy.com> <4D418B57.1000501@teksavvy.com> <alpine.DEB.2.00.1101271040000.31246@p34.internal.lan> <4D419765.4070805@teksavvy.com> <4D41CA16.8070001@hardwarefreak.com> <4D41EA04.7010506@teksavvy.com> <20110128001735.GO21311@dastard>
+In-Reply-To: <20110128001735.GO21311@dastard>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2010 09:37 PM, Colin Cross wrote:
-> Changes the meaning of CGRP_RELEASABLE to be set on any cgroup
-> that has ever had a task or cgroup in it, or had css_get called
-> on it.  The bit is set in cgroup_attach_task, cgroup_create,
-> and __css_get.  It is not necessary to set the bit in
-> cgroup_fork, as the task is either in the root cgroup, in
-> which can never be released, or the task it was forked from
-> already set the bit in croup_attach_task.
-> 
-> Signed-off-by: Colin Cross <ccross@android.com>
-> ---
->  include/linux/cgroup.h |   12 +--------
->  kernel/cgroup.c        |   54 ++++++++++++++++++++---------------------------
->  2 files changed, 25 insertions(+), 41 deletions(-)
-> 
-> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-> index ed4ba11..9e13078 100644
-> --- a/include/linux/cgroup.h
-> +++ b/include/linux/cgroup.h
-> @@ -84,12 +84,6 @@ enum {
->  	CSS_REMOVED, /* This CSS is dead */
->  };
->  
-> -/* Caller must verify that the css is not for root cgroup */
-> -static inline void __css_get(struct cgroup_subsys_state *css, int count)
-> -{
-> -	atomic_add(count, &css->refcnt);
-> -}
-> -
->  /*
->   * Call css_get() to hold a reference on the css; it can be used
->   * for a reference obtained via:
-> @@ -97,6 +91,7 @@ static inline void __css_get(struct cgroup_subsys_state *css, int count)
->   * - task->cgroups for a locked task
->   */
->  
-> +extern void __css_get(struct cgroup_subsys_state *css, int count);
->  static inline void css_get(struct cgroup_subsys_state *css)
->  {
->  	/* We don't need to reference count the root state */
-> @@ -143,10 +138,7 @@ static inline void css_put(struct cgroup_subsys_state *css)
->  enum {
->  	/* Control Group is dead */
->  	CGRP_REMOVED,
-> -	/*
-> -	 * Control Group has previously had a child cgroup or a task,
-> -	 * but no longer (only if CGRP_NOTIFY_ON_RELEASE is set)
-> -	 */
-> +	/* Control Group has ever had a child cgroup or a task */
->  	CGRP_RELEASABLE,
->  	/* Control Group requires release notifications to userspace */
->  	CGRP_NOTIFY_ON_RELEASE,
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index 66a416b..34e855e 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -338,7 +338,15 @@ static void free_css_set_rcu(struct rcu_head *obj)
->   * compiled into their kernel but not actually in use */
->  static int use_task_css_set_links __read_mostly;
->  
-> -static void __put_css_set(struct css_set *cg, int taskexit)
-> +/*
-> + * refcounted get/put for css_set objects
-> + */
-> +static inline void get_css_set(struct css_set *cg)
-> +{
-> +	atomic_inc(&cg->refcount);
-> +}
-> +
-> +static void put_css_set(struct css_set *cg)
->  {
->  	struct cg_cgroup_link *link;
->  	struct cg_cgroup_link *saved_link;
-> @@ -364,12 +372,8 @@ static void __put_css_set(struct css_set *cg, int taskexit)
->  		struct cgroup *cgrp = link->cgrp;
->  		list_del(&link->cg_link_list);
->  		list_del(&link->cgrp_link_list);
-> -		if (atomic_dec_and_test(&cgrp->count) &&
-> -		    notify_on_release(cgrp)) {
-> -			if (taskexit)
-> -				set_bit(CGRP_RELEASABLE, &cgrp->flags);
-> +		if (atomic_dec_and_test(&cgrp->count))
->  			check_for_release(cgrp);
-> -		}
->  
->  		kfree(link);
->  	}
-> @@ -379,24 +383,6 @@ static void __put_css_set(struct css_set *cg, int taskexit)
->  }
->  
->  /*
-> - * refcounted get/put for css_set objects
-> - */
-> -static inline void get_css_set(struct css_set *cg)
-> -{
-> -	atomic_inc(&cg->refcount);
-> -}
-> -
-> -static inline void put_css_set(struct css_set *cg)
-> -{
-> -	__put_css_set(cg, 0);
-> -}
-> -
-> -static inline void put_css_set_taskexit(struct css_set *cg)
-> -{
-> -	__put_css_set(cg, 1);
-> -}
-> -
-> -/*
->   * compare_css_sets - helper function for find_existing_css_set().
->   * @cg: candidate css_set being tested
->   * @old_cg: existing css_set for a task
-> @@ -1801,7 +1787,7 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
->  		if (ss->attach)
->  			ss->attach(ss, cgrp, oldcgrp, tsk, false);
->  	}
-> -	set_bit(CGRP_RELEASABLE, &oldcgrp->flags);
-> +	set_bit(CGRP_RELEASABLE, &cgrp->flags);
->  	synchronize_rcu();
->  	put_css_set(cg);
->  
-> @@ -3427,6 +3413,8 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
->  	if (err < 0)
->  		goto err_remove;
->  
-> +	set_bit(CGRP_RELEASABLE, &parent->flags);
-> +
->  	/* The cgroup directory was pre-locked for us */
->  	BUG_ON(!mutex_is_locked(&cgrp->dentry->d_inode->i_mutex));
->  
-> @@ -3645,7 +3633,6 @@ again:
->  	cgroup_d_remove_dir(d);
->  	dput(d);
->  
-> -	set_bit(CGRP_RELEASABLE, &parent->flags);
->  	check_for_release(parent);
->  
->  	/*
-> @@ -4240,7 +4227,7 @@ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
->  	tsk->cgroups = &init_css_set;
->  	task_unlock(tsk);
->  	if (cg)
-> -		put_css_set_taskexit(cg);
-> +		put_css_set(cg);
->  }
->  
->  /**
-> @@ -4410,6 +4397,14 @@ static void check_for_release(struct cgroup *cgrp)
->  }
->  
->  /* Caller must verify that the css is not for root cgroup */
-> +void __css_get(struct cgroup_subsys_state *css, int count)
-> +{
-> +	atomic_add(count, &css->refcnt);
-> +	set_bit(CGRP_RELEASABLE, &css->cgroup->flags);
-> +}
-> +EXPORT_SYMBOL_GPL(__css_get);
-> +
-> +/* Caller must verify that the css is not for root cgroup */
->  void __css_put(struct cgroup_subsys_state *css, int count)
->  {
->  	struct cgroup *cgrp = css->cgroup;
-> @@ -4417,10 +4412,7 @@ void __css_put(struct cgroup_subsys_state *css, int count)
->  	rcu_read_lock();
->  	val = atomic_sub_return(count, &css->refcnt);
->  	if (val == 1) {
-> -		if (notify_on_release(cgrp)) {
-> -			set_bit(CGRP_RELEASABLE, &cgrp->flags);
-> -			check_for_release(cgrp);
-> -		}
-> +		check_for_release(cgrp);
->  		cgroup_wakeup_rmdir_waiter(cgrp);
->  	}
->  	rcu_read_unlock();
+On 11-01-27 07:17 PM, Dave Chinner wrote:
+>
+> In my experience with XFS, most people who tweak mkfs parameters end
+> up with some kind of problem they can't explain and don't know how
+> to solve. And they are typically problems that would not have
+> occurred had they simply used the defaults in the first place. What
+> you've done is a perfect example of this.
 
-Tested-by: Mike Bohan <mbohan@codeaurora.org>
+Maybe.  But what I read from the paragraph above,
+is that the documentation could perhaps explain things better,
+and then people other than the coders might understand how
+best to tweak it.
 
-I'm responding on Mike's behalf and adding him to this thread.  This
-patch improves launch time of a test app from ~700ms to ~250ms on MSM,
-with much lower variance across tests.  We also see UI latency
-improvements, but have not quantified the gains.
+> Why 8 AGs and not the default?
 
-- Bryan
+How AGs are used is not really explained anywhere I've looked,
+so I am guessing at what they do and how the system might respond
+to different values there (that documentation thing again).
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Lacking documentation, my earlier experiences suggest that more AGs
+gives me less fragmentation when multiple simultaneous recording streams
+are active.  I got higher fragmentation with the defaults than with
+the tweaked value.
+
+Now, that might be due to differences in kernel versions too,
+as things in XFS are continuously getting even better (thanks!),
+and the original "defaults" assessment was with the kernel-of-the-day
+back in early 2010 (2.6.34?), and now the system is using 2.6.37.
+
+But I just don't know.  My working theory, likely entirely wrong,
+is that if I have N streams active, odds are that each of those
+streams might get assigned to different AGs, given sufficient AGs >= N.
+
+Since the box often has 3-7 recording streams active,
+I'm trying it out with 8 AGs now.
+
+Cheers
+
