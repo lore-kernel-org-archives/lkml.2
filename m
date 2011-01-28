@@ -1,79 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab1A1HD3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 02:03:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63802 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754360Ab1A1HD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 02:03:28 -0500
+	id S1752882Ab1A1HIL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 02:08:11 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62513 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482Ab1A1HII (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 02:08:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=u4n92WSVJFDUbK7p9COx0R2AwfzdTF92la50llT5ms0ztHqsEg532k0SOg5JwI3DjA
+         3NVKHSOKsY74MipYTBc3MG5Ny7CGbQrClzC8u9jkwh1i4ak5LQNnZsRwKW4BHwbz2nRY
+         XFYOOwleYIqIi1klLAmi6vpofZj9D1W+25AzQ=
+Date: Fri, 28 Jan 2011 08:08:00 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Richard Cochran <richard.cochran@omicron.at>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, netdev@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
+        Krzysztof Halasa <khc@pm.waw.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Mike Frysinger <vapier@gentoo.org>, Paul Mackerras <paulus@samba.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH V10 01/15] time: Introduce timekeeping_inject_offset
+Message-ID: <20110128070800.GA3225@riccoc20.at.omicron.at>
+References: <cover.1296124770.git.richard.cochran@omicron.at>
+ <6aec014551fc1d34924d6a7bcf97769867c15ba9.1296124770.git.richard.cochran@omicron.at>
+ <1296154099.2855.162.camel@work-vm>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-X-Fcc: ~/Mail/linus
-Cc: oleg@redhat.com, linux-kernel@vger.kernel.org, rjw@sisk.pl,
-        jan.kratochvil@redhat.com
-Subject: Re: [PATCH 2/4] ptrace: remove the extra wake_up_process() from
- ptrace_detach()
-In-Reply-To: Tejun Heo's message of  Thursday, 27 January 2011 14:34:12 +0100 <20110127133412.GC24925@htj.dyndns.org>
-References: <1293016398-18001-1-git-send-email-tj@kernel.org>
-	<1293016398-18001-3-git-send-email-tj@kernel.org>
-	<20110117221340.E6A4F180996@magilla.sf.frob.com>
-	<20110127133412.GC24925@htj.dyndns.org>
-X-Shopping-List: (1) Porous warriors
-   (2) Insistent protein reservations
-   (3) Hot pink conical balls
-Message-Id: <20110128070252.709F8183C1A@magilla.sf.frob.com>
-Date: Thu, 27 Jan 2011 23:02:52 -0800 (PST)
+Content-Disposition: inline
+In-Reply-To: <1296154099.2855.162.camel@work-vm>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, Jan 17, 2011 at 02:13:40PM -0800, Roland McGrath wrote:
-> > Of course I agree that the current code is wrong here.  But I'm still not
-> > at all clear on what practical compatibility problems it introduces.  This
-> > change is OK if and only if we are really making the only area clean and
-> > well-defined in the same release cycle.
-> 
-> I don't follow what you meant by the above sentence.  Can you please
-> clarify a bit?
+On Thu, Jan 27, 2011 at 10:48:19AM -0800, John Stultz wrote:
+> While I appreciate you preserving the path author, and the signoffs are
+> right, you really should send the email under your own name.
 
-I think I meant to write "the whole area" rather than "the only area".
-The point I meant to make is that removing this (wrong) wake-up entirely
-should only be done when we are also thoroughly cleaning up and verifying
-everything about the behavior of stopping/resuming in ptrace.  When we get
-to a clear statement of what all the rules are and we really believe that
-the new code matches those rules, then fine.  When we are still in the
-quagmire, no change is better than an incremental change whose subtle
-ramifications we can't clearly articulate.
+Guess I've been reading too much spam. It wore off on me.
+ 
+> The proper style is to keep the mail-header From: the same (ie: Richard
+> Cochran <richardcochran@gmail.com>), but as the first line of the mail
+> body put:
+>    From: Author Name <author@lemail.com>
 
-> It's slightly more serious than that.  Calling wake_up_process()
-> unconditionally can cause a quite serious failure.  It wakes up a
-> process in any state and there are code paths which aren't prepared to
-> be woken up unless certain conditions are met.  
+Sorry about this. Arnd already explained this to me, and I did catch
+it with V9. This time I forgot.
 
-I understand that.  But I don't recall having seen anyone cite an actual
-scenario in the real world where it does something problematic.
+I would like to get to the bottom of this. Here is what I did:
 
-> A safer choice can be changing it to wake up only tasks in interruptible
-> sleep.
+   1. Saved your patch to disk in mbox format using Mutt.
+   2. git am
+   3. ... rebase, rebase, rebase, ...
+   4. git format-patch [options] 1234..abcd
+   5. Edit cover letter
+   6. for x in 00*; do mutt -H $x; done
 
-For ptrace-related purposes, wake_up_state(child, TASK_TRACED|TASK_STOPPED)
-ought to cover anything that it is doing now that anything could reasonably
-be relying on.
+Git format-patch places the "From: John Stultz <john.stultz@linaro.org>"
+line with the other mail headers, and so I guess mutt just faithfully
+preserves this.
 
-> I have very difficult time imagining what real user visible
-> implication it would have in negative and noticeable manner, so while
-> I do agree that we should proceed carefully, I think it would be
-> better to take the chance and remove the erratic behavior.  We have
-> release cycles and testing at multiple layers after all.  If we find
-> out that it breaks something in serious manner, we can always revert.
+I don't like having to remember to fix this manually. There must be a
+better way...
 
-"Difficult time imagining" and ptrace subtleties unfortunately often go
-together.  I want to be sure we are doing something right, rather than just
-being thoroughly unsure that we aren't doing something wrong.
+Sorry,
+Richard
 
 
-Thanks,
-Roland
