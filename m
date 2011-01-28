@@ -1,52 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372Ab1A1SEQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 13:04:16 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58861 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755051Ab1A1SEP (ORCPT
+	id S1755139Ab1A1SKi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 13:10:38 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54186 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753955Ab1A1SKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 13:04:15 -0500
+	Fri, 28 Jan 2011 13:10:36 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=umRs0el7h6ygZAchyP+shCh7kpgeKM96SZoZP12W3Vpw1UkO4SFM9/L7C5PFD00A0q
-         fJ0jk2S6p3QQedECxdDk4SonHMuEysbWEQLE6/gq7Uz0b2sDEEW+diLTgu0N7mE+EpoH
-         tpFuOF87jiITCxfnxqH7tKPZbWZQ+LGrQEtpk=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=i2SyvJiPMb8m4dA5I2mwdYx/OXHa2pFAAmyFb9PYlg6MaUug0clK4T2KHmy6FaoklR
+         dAdddt2NbXY5AWUoUYX6BEGdac0exwT26nX9v8zbcEzBUCfaMjHfjpIAtd41akCNqRtp
+         3xxSs9Y+Wj8hkcxbysLX0jWaMAarmGCipoaL0=
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1101281839390.31804@localhost6.localdomain6>
-References: <1296227324-25295-1-git-send-email-tj@kernel.org>
-	<20110128165455.GA18194@elte.hu>
-	<alpine.LFD.2.00.1101281839390.31804@localhost6.localdomain6>
-Date: Fri, 28 Jan 2011 20:04:13 +0200
-Message-ID: <AANLkTinm53a1BzLu6JCBdgOpkHw9MOg2H4gD7xiRyvOh@mail.gmail.com>
-Subject: Re: [PATCHSET] ptrace,signal: group stop / ptrace updates
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>, roland@redhat.com,
-        oleg@redhat.com, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+In-Reply-To: <20110128173355.GD2586@polaris.bitmath.org>
+References: <1296124547-3323-1-git-send-email-benjamin.tissoires@enac.fr>
+	<1296124547-3323-2-git-send-email-benjamin.tissoires@enac.fr>
+	<20110127120603.GB15626@polaris.bitmath.org>
+	<AANLkTim7DbxhEO7vHPFcC1PFf=d2mSEyL+wurzUQa0pg@mail.gmail.com>
+	<20110128173355.GD2586@polaris.bitmath.org>
+Date: Fri, 28 Jan 2011 19:10:34 +0100
+X-Google-Sender-Auth: AhtknGbdxNJs-6i3C9PZmAu59Pg
+Message-ID: <AANLkTikM-DguswOb6Hv5jgkrirfFf+MHTJgK_Xk45gz5@mail.gmail.com>
+Subject: Re: [RFC 1/2] input: mt: Add method to extract the MT slot state
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Ping Cheng <pingc@wacom.com>,
+        Jiri Kosina <jkosina@suse.cz>, Chris Bagwell <chris@cnpbagwell.com>,
+        Rafi Rubin <rafi@seas.upenn.edu>, Stephane Chatty <chatty@lii-enac.fr>,
+        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 28, 2011 at 7:41 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Fri, 28 Jan 2011, Ingo Molnar wrote:
->> See that '^C^C' line? That is where i had to do Ctrl-C twice.
+On Fri, Jan 28, 2011 at 18:33, Henrik Rydberg <rydberg@euromail.se> wrote:
+> On Thu, Jan 27, 2011 at 01:49:18PM +0100, Benjamin Tissoires wrote:
+>> Hi Henrik,
 >>
->> It only fails here about once every 10 times, so it's very rare. I have a stock F14
->> system running on that box, with the very latest .38 based kernel.
+>> On Thu, Jan 27, 2011 at 13:06, Henrik Rydberg <rydberg@euromail.se> wrote:
+>> > Hi Benjamin,
+>> >
+>> > On Thu, Jan 27, 2011 at 11:35:46AM +0100, Benjamin Tissoires wrote:
+>> >> This patch adds the function input_mt_get_abs_value(), which may be
+>> >
+>> > Ehm, input_mt_get_absinfo?
+>>
+>> In fact, the idea was to put this on the table again ;). I have no
+>> idea of what is the right think to do in such case.
+>> So I'll take all comments.
+>>
+>> >
+>> >> used to extract the current state of the MT slots.
+>> >>
+>> >> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+>> >
+>> > I had rather re-add this myself, thanks.
+>>
+>> That was my question. Plus I had a subliminal message in which I
+>> intend you to take the drive on this work. ;)
 >
-> Tripped over the refuse ^C thing today twice. Had to kill a kernel
-> build from another shell. It just happily displayed ^C and never
-> stopped. That happens once in a while and I have no idea either how to
-> debug that.
+> Thanks for the patches, Benjamin, perhaps they do need a bit of
+> rewrite or a new ioctl. We will see what happens.
+>
 
-cc: Mathieu
+Today  I found a bug in these 2 patches: they send garbage with
+devices that use protocol A.
+This is definitely a bad idea to send the input_absinfo.
 
-Use lttng ?
+In addition to that, using the original behavior (which seems better)
+does not seems to add sth in regard to input_mt_get_value.
+It would just add some guards that can be resumed in just a test:
+(code >= ABS_MT_FIRST && code <= ABS_MT_LAST && dev->mt &&
+	slot >= 0 && slot < dev->mtsize)
+
+Henrik, if you want to introduce the new IOCTL, feel free, I don't
+need it right now.
+
+Cheers,
+Benjamin
