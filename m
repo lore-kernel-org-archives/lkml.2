@@ -1,120 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494Ab1A1FEr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 00:04:47 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45805 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750965Ab1A1FEq (ORCPT
+	id S1751702Ab1A1FOV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 00:14:21 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:43624 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349Ab1A1FOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 00:04:46 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 28 Jan 2011 13:58:39 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Subject: Re: [BUGFIX][PATCH 1/4] memcg: fix limit estimation at reclaim for
- hugepage
-Message-Id: <20110128135839.d53422e8.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110128134019.27abcfe2.nishimura@mxp.nes.nec.co.jp>
-References: <20110128122229.6a4c74a2.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110128122449.e4bb0e5f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110128134019.27abcfe2.nishimura@mxp.nes.nec.co.jp>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 28 Jan 2011 00:14:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=KUZQpQt0P/0m0LmgDPebWFzGdhPKJk8F0jx3Hzyk9RGiNGNyx3+VidIn5henXlga8e
+         /oJtXnv77F4VFslcjT1wRrtelgoy7mP6oqOPxVOoCeVUA+TWcvJFFk46Eb6pK6Cj0901
+         oFRdVKwwcwnpmxcOnqBRmx5pd2DXQsg7JL130=
+MIME-Version: 1.0
+Date: Fri, 28 Jan 2011 10:44:19 +0530
+Message-ID: <AANLkTi=+Hx+3Jk0yprAffhvQM+WcO+WytaLBU-vwbetc@mail.gmail.com>
+Subject: equivalent of phys_to_virt in an iommu system
+From: MJ embd <mj.embd@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-How about this ?
-==
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Hi,
 
-Current memory cgroup's code tends to assume page_size == PAGE_SIZE
-and arrangement for THP is not enough yet.
+Assuming at core mmu there is a mapping, V1 -> P1
+And at the IOMMU for the device to access a region of DDR there is a
+mapping P2 -> P1. [P2 is the address on which device issues a r/w]
 
-This is one of fixes for supporing THP. This adds
-mem_cgroup_check_margin() and checks whether there are required amount of
-free resource after memory reclaim. By this, THP page allocation
-can know whether it really succeeded or not and avoid infinite-loop
-and hangup.
+Now the device driver does the following.
 
-Total fixes for do_charge()/reclaim memory will follow this patch.
+Line 0: V1 = kmalloc();
+Line 1: P2 = dma_map_single(V1)
 
-Changelog v1->v2:
- - style fix.
+Now if later in the driver, there is a requirement to get V1 from P2
+what is the primitive in linux  ?
+Also is my understanding of Line 1(above) correct ?
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- include/linux/res_counter.h |   11 +++++++++++
- mm/memcontrol.c             |   22 +++++++++++++++++++++-
- 2 files changed, 32 insertions(+), 1 deletion(-)
 
-Index: mmotm-0125/include/linux/res_counter.h
-===================================================================
---- mmotm-0125.orig/include/linux/res_counter.h
-+++ mmotm-0125/include/linux/res_counter.h
-@@ -182,6 +182,17 @@ static inline bool res_counter_check_und
- 	return ret;
- }
- 
-+static inline s64 res_counter_check_margin(struct res_counter *cnt)
-+{
-+	s64 ret;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&cnt->lock, flags);
-+	ret = cnt->limit - cnt->usage;
-+	spin_unlock_irqrestore(&cnt->lock, flags);
-+	return ret;
-+}
-+
- static inline bool res_counter_check_under_soft_limit(struct res_counter *cnt)
- {
- 	bool ret;
-Index: mmotm-0125/mm/memcontrol.c
-===================================================================
---- mmotm-0125.orig/mm/memcontrol.c
-+++ mmotm-0125/mm/memcontrol.c
-@@ -1111,6 +1111,19 @@ static bool mem_cgroup_check_under_limit
- 	return false;
- }
- 
-+static s64 mem_cgroup_check_margin(struct mem_cgroup *mem)
-+{
-+	s64 mem_margin = res_counter_check_margin(&mem->res);
-+	s64 memsw_margin;
-+
-+	if (do_swap_account)
-+		memsw_margin = res_counter_check_margin(&mem->memsw);
-+	else
-+		memsw_margin = RESOURCE_MAX;
-+
-+	return min(mem_margin, memsw_margin);
-+}
-+
- static unsigned int get_swappiness(struct mem_cgroup *memcg)
- {
- 	struct cgroup *cgrp = memcg->css.cgroup;
-@@ -1853,7 +1866,14 @@ static int __mem_cgroup_do_charge(struct
- 	 * Check the limit again to see if the reclaim reduced the
- 	 * current usage of the cgroup before giving up
- 	 */
--	if (ret || mem_cgroup_check_under_limit(mem_over_limit))
-+	if (mem_cgroup_check_margin(mem_over_limit) >= csize)
-+		return CHARGE_RETRY;
-+
-+	/*
-+	 * If the charge size is a PAGE_SIZE, it's not hopeless while
-+	 * we can reclaim a page.
-+	 */
-+	if (csize == PAGE_SIZE && ret)
- 		return CHARGE_RETRY;
- 
- 	/*
-
+-- 
+-mj
