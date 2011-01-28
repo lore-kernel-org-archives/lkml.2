@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317Ab1A1A03 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 19:26:29 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:63197 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753522Ab1A1A01 (ORCPT
+	id S1754432Ab1A1A06 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 19:26:58 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51271 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752762Ab1A1A05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 19:26:27 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 24.130.172.179
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+OTSA0LBoQxcxwiBUDEZ8j
-Date: Thu, 27 Jan 2011 16:26:21 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Jarkko Nikula <jhnikula@gmail.com>
-Cc: Julia Lawall <julia@diku.dk>, Russell King <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] arch/arm/mach-omap2/dma.c: Convert IS_ERR result
- to PTR_ERR
-Message-ID: <20110128002620.GR23412@atomide.com>
-References: <1296143347-17508-1-git-send-email-julia@diku.dk>
- <20110127210225.07de155f.jhnikula@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110127210225.07de155f.jhnikula@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 27 Jan 2011 19:26:57 -0500
+Date: Thu, 27 Jan 2011 16:26:26 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] mm: Make vm_acct_memory scalable for large memory
+ allocations
+Message-Id: <20110127162626.8b38145b.akpm@linux-foundation.org>
+In-Reply-To: <4D420A89.3050906@linux.intel.com>
+References: <1296082319.2712.100.camel@schen9-DESK>
+	<20110127153642.f022b51c.akpm@linux-foundation.org>
+	<4D420A89.3050906@linux.intel.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Jarkko Nikula <jhnikula@gmail.com> [110127 11:03]:
-> On Thu, 27 Jan 2011 16:49:06 +0100
-> Julia Lawall <julia@diku.dk> wrote:
-> 
-> > diff -u -p a/arch/arm/mach-omap2/dma.c b/arch/arm/mach-omap2/dma.c
-> > --- a/arch/arm/mach-omap2/dma.c
-> > +++ b/arch/arm/mach-omap2/dma.c
-> > @@ -264,7 +264,7 @@ static int __init omap2_system_dma_init_
-> >  	if (IS_ERR(od)) {
-> >  		pr_err("%s: Cant build omap_device for %s:%s.\n",
-> >  			__func__, name, oh->name);
-> > -		return IS_ERR(od);
-> > +		return PTR_ERR(od);
-> >  	}
-> >  
-> FWIW,
-> 
-> Acked-by: Jarkko Nikula <jhnikula@gmail.com>
+On Thu, 27 Jan 2011 16:15:05 -0800
+Andi Kleen <ak@linux.intel.com> wrote:
 
-Thanks, will queue as a fix during the -rc cycle.
+> 
+> > This seems like a pretty dumb test case.  We have 64 cores sitting in a
+> > loop "allocating" 32MB of memory, not actually using that memory and
+> > then freeing it up again.
+> >
+> > Any not-completely-insane application would actually _use_ the memory.
+> > Which involves pagefaults, page allocations and much memory traffic
+> > modifying the page contents.
+> >
+> > Do we actually care?
+> 
+> It's a bit like a poorly tuned malloc. From what I heard poorly tuned 
+> mallocs are quite
+> common in the field, also with lots of custom ones around.
+> 
+> While it would be good to tune them better the kernel should also have 
+> reasonable performance
+> for this case.
+> 
+> The poorly tuned malloc has other problems too, but this addresses at 
+> least one
+> of them.
+> 
+> Also I think Tim's patch is a general improvement to a somewhat dumb 
+> code path.
+> 
 
-Tony
+I guess another approach to this would be change the way in which we
+decide to update the central counter.
+
+At present we'll spill the per-cpu counter into the central counter
+when the per-cpu counter exceeds some fixed threshold.  But that's
+dumb, because the error factor is relatively large for small values of
+the counter, and relatively small for large values of the counter.
+
+So instead, we should spill the per-cpu counter into the central
+counter when the per-cpu counter exceeds some proportion of the central
+counter (eg, 1%?).  That way the inaccuracy is largely independent of
+the counter value and the lock-taking frequency decreases for large
+counter values.
+
+And given that "large cpu count" and "lots of memory" correlate pretty
+well, I suspect such a change would fix up the contention which is
+being seen here without magical startup-time tuning heuristics.
+
+This again will require moving the batch threshold into the counter
+itself and also recalculating it when the central counter is updated.
