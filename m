@@ -1,175 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755267Ab1A1RdU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 12:33:20 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:40138 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab1A1RdS (ORCPT
+	id S1755310Ab1A1ReO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 12:34:14 -0500
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:58589 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751409Ab1A1ReN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 12:33:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=xkAdCfNoTuKcbPKto8NrlIa2vGNN+Eo5Yb8by3JJjgGFalIpoiExzlTVYxvLlELg13
-         9E7Xtd5bA994WAwuo4Pbd8iG011meJvTjDIvuUGXkiWpRHPj1SuJQfi09mgO581b1+Ss
-         ygzOgB0E6gq06iTipZhD4YsiqEAbiiY4s2epU=
-Date: Fri, 28 Jan 2011 09:33:05 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Mark Lord <kernel@teksavvy.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils ?
-Message-ID: <20110128173305.GC6252@core.coreip.homeip.net>
-References: <20110127021227.GA29709@core.coreip.homeip.net>
- <4D40E41D.2030003@teksavvy.com>
- <20110127063815.GA29924@core.coreip.homeip.net>
- <4D414928.80801@redhat.com>
- <20110127172128.GA19672@core.coreip.homeip.net>
- <4D41C071.2090201@redhat.com>
- <20110128093922.GA3357@core.coreip.homeip.net>
- <4D42AECE.3020402@redhat.com>
- <20110128164057.GA6252@core.coreip.homeip.net>
- <4D42F686.8010104@redhat.com>
+	Fri, 28 Jan 2011 12:34:13 -0500
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Fri, 28 Jan 2011 18:33:55 +0100
+To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Ping Cheng <pingc@wacom.com>,
+        Jiri Kosina <jkosina@suse.cz>, Chris Bagwell <chris@cnpbagwell.com>,
+        Rafi Rubin <rafi@seas.upenn.edu>, Stephane Chatty <chatty@lii-enac.fr>,
+        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/2] input: mt: Add method to extract the MT slot state
+Message-ID: <20110128173355.GD2586@polaris.bitmath.org>
+References: <1296124547-3323-1-git-send-email-benjamin.tissoires@enac.fr>
+ <1296124547-3323-2-git-send-email-benjamin.tissoires@enac.fr>
+ <20110127120603.GB15626@polaris.bitmath.org>
+ <AANLkTim7DbxhEO7vHPFcC1PFf=d2mSEyL+wurzUQa0pg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D42F686.8010104@redhat.com>
+In-Reply-To: <AANLkTim7DbxhEO7vHPFcC1PFf=d2mSEyL+wurzUQa0pg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: 83.248.192.164
+X-Scan-Result: No virus found in message 1PisBw-0004qY-AJ.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PisBw-0004qY-AJ dc4d65fec712231387fe81bf5008b718
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 28, 2011 at 03:01:58PM -0200, Mauro Carvalho Chehab wrote:
-> Em 28-01-2011 14:40, Dmitry Torokhov escreveu:
-> > On Fri, Jan 28, 2011 at 09:55:58AM -0200, Mauro Carvalho Chehab wrote:
+On Thu, Jan 27, 2011 at 01:49:18PM +0100, Benjamin Tissoires wrote:
+> Hi Henrik,
 > 
-> >> The rc-core register (and the corresponding input register) is done when
-> >> the device detected a remote controller, so, it should be safe to register
-> >> on that point. If not, IMHO, there's a bug somewhere. 
-> > 
-> > It is not a matter of safe or unsafe registration. Registration is fine.
-> > The problem is that with the current set up is that utility is fired
-> > when trunk of [sub]tree is created, but the utility wants to operate on
-> > leaves which may not be there yet.
+> On Thu, Jan 27, 2011 at 13:06, Henrik Rydberg <rydberg@euromail.se> wrote:
+> > Hi Benjamin,
+> >
+> > On Thu, Jan 27, 2011 at 11:35:46AM +0100, Benjamin Tissoires wrote:
+> >> This patch adds the function input_mt_get_abs_value(), which may be
+> >
+> > Ehm, input_mt_get_absinfo?
 > 
-> I'm not an udev expert. Is there a udev event that hits only after having
-> the driver completely loaded?
-
-Define completely loaded? For a PCI SCSI controller does fully loaded
-mean all attached devices are discovered and registered with block layer?
-For a wireless NIC does it mean that it assocuated with an AP? What if
-you have more than one device that driver serves?
-
-So teh answer is no and there should not be.
-
->
-> Starting an udev rule while modprobe is
-> still running is asking for race conditions.
-
-Not if we write stuff properly.
-
+> In fact, the idea was to put this on the table again ;). I have no
+> idea of what is the right think to do in such case.
+> So I'll take all comments.
 > 
-> I'm not entirely convinced that this is the bug that Mark is hitting, as
-
-I do not know yet.
-
-> rc-core does all needed setups before registering the evdev device. We
-> need the core and the dmesg to be sure about what's happening there.
-
-I will say it again. Your udev rule triggers when you create rcX device.
-eventX device may apeear 2 hours after that (I could have evdev as a
-module and blacklisted and load it later manually).
-
-You need to split it into 2 separate steps:
-
-1. Triggers when rcX appears, accesses only rcX and it's parents and
-   does rcX related stuff.
-
-2. Triggers when eventX appears and loads keymap and what not. Because
-   it is a child of rcX (in  specific case of remotes) it may examine
-   rcX attributes as well.
-
-> 
-> >> Yet, I agree that udev tries to set devices too fast.
-> > 
-> > It tries to set devices exacty when you tell it to do so. It's not like
-> > it goes trolling for random devices is sysfs.
-> > 
-> >> It would be better if
-> >> it would wait for a few milisseconds, to reduce the risk of race conditions.
-> > 
-> > Gah, I really prefer using properly engineered solutions instead of
-> > adding crutches.
-> 
-> I agree.
-> 
-> >>> And this could be easily added to the udev's keymap utility that is
-> >>> fired up when we discover evdevX devices.
+> >
+> >> used to extract the current state of the MT slots.
 > >>
-> >> Yes, it can, if you add the IR protocol selection on that tool. A remote 
-> >> controller keycode table has both the protocol and the keycodes.
-> >> This basically means to merge 99% of the logic inside ir-keytable into the
-> >> evdev generic tool.
-> > 
-> > Or just have an utility producing keymap name and feed it as input to
-> > the generic tools. The way most of utilities work...
+> >> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> >
+> > I had rather re-add this myself, thanks.
 > 
-> I don't like the idea of running a some logic at udev that would generate
-> such keymap in runtime just before calling the generic tool. The other
+> That was my question. Plus I had a subliminal message in which I
+> intend you to take the drive on this work. ;)
 
-Why? You'd just call something like:
+Thanks for the patches, Benjamin, perhaps they do need a bit of
+rewrite or a new ioctl. We will see what happens.
 
-      keymap $name `rc-keymap-name -d $name`
-
-where 'keymap' is udev's utility and 'rc-keymap-name' is new utility
-that incorporates map selection logic currently found in rc-keytable.
-
-It looks like format of the keymaps is compatible between 'keymap' and
-'ir-keytable' and metadata that is present in your keymaps will not
-confuse 'keymap' utility.
-
-> alternative (e. g.) to maintain the RC-protocol dependent keytables separate
-> from the RC protocol used by each table will be a maintenance nightmare.
-
-I do not propose splitting keytables, I propose splittign utilities.
-ir-keytable is a kitchen sink now. It implements 'keymap', 'evtest' and
-bucnch of other stuff and would be much cleaner if split apart.
-
-> 
-> >>>> Also, I'm currently working on a way to map media keys for remote controllers 
-> >>>> into X11 (basically, mapping them into the keyspace between 8-255, passing 
-> >>>> through Xorg evdev.c, and then mapping back into some X11 symbols). This way,
-> >>>> we don't need to violate the X11 protocol. (Yeah, I know this is hacky, but
-> >>>> while X11 cannot pass the full evdev keycode, at least the Remote Controllers
-> >>>> will work). This probably means that we may need to add some DBus logic
-> >>>> inside ir-keytable, when called via udev, to allow it to announce to X11.
-> >>>
-> >>> The same issue is present with other types of input devices (multimedia
-> >>> keyboards emitting codes that X can't consume) and so it again would
-> >>> make sense to enhance udev's utility instead of confining it all to
-> >>> ir-keytable.
-> >>
-> >> I agree with you, but I'm not sure if we can find a solution that will
-> >> work for both RC and media keyboards, as X11 evdev just maps keyboards
-> >> on the 8-255 range. I was thinking to add a detection there for RC, and
-> >> use a separate map for them, as RC don't need most of the normal keyboard
-> >> keys.
-> > 
-> > Well, there will always be clashes - there is reason why evdev goes
-> > beyond 255 keycodes...
-> 
-> Yeah. The most appropriate fix would be for X to just use the full evdev
-> keycode range. However, I'm not seeing any indication that such change
-> will happen soon. Not sure if there are some news about it at LCA, as
-> there were one speech about this subject there.
-> 
-
-Would be nice...
-
-Thanks.
-
--- 
-Dmitry
+Thanks,
+Henrik
