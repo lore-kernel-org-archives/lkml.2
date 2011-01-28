@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589Ab1A1CYc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 21:24:32 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:42555 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754203Ab1A1CYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 21:24:31 -0500
-Message-ID: <4D4228CE.5090601@zytor.com>
-Date: Thu, 27 Jan 2011 18:24:14 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1754603Ab1A1Cds (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 21:33:48 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60563 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754495Ab1A1Cdr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 21:33:47 -0500
+Date: Thu, 27 Jan 2011 18:33:42 -0800
+From: Joel Becker <jlbec@evilplan.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: dsterba@suse.cz, mfasheh@suse.com, linux-kernel@vger.kernel.org,
+        ocfs2-devel@oss.oracle.com
+Subject: Re: [Ocfs2-devel] fs/ocfs2/dlm: Use GFP_ATOMIC under spin_lock
+Message-ID: <20110128023341.GA9816@noexit>
+Mail-Followup-To: Andrew Morton <akpm@linux-foundation.org>,
+	dsterba@suse.cz, mfasheh@suse.com, linux-kernel@vger.kernel.org,
+	ocfs2-devel@oss.oracle.com
+References: <20101102223601.GA27513@ds.suse.cz>
+ <20110127170948.9a0d8b60.akpm@linux-foundation.org>
+ <20110128013552.GB8019@noexit>
+ <20110127174857.1f49cefc.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Kees Cook <kees.cook@canonical.com>
-CC: matthieu castet <castet.matthieu@free.fr>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [BUG] broken ebba638ae723d8a8fc2f7abce5ec18b688b791d7
-References: <4D41E86D.8060205@free.fr> <20110127230013.GO4981@outflux.net>
-In-Reply-To: <20110127230013.GO4981@outflux.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110127174857.1f49cefc.akpm@linux-foundation.org>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/27/2011 03:00 PM, Kees Cook wrote:
->
-> Yikes, good catch.
->
-> arch/x86/kernel/trampoline_64.S uses:
->          movw    $(trampoline_stack_end - r_base), %sp
->
-> arch/x86/boot/compressed/head_64.S uses:
->          movl    $boot_stack_end, %eax
->          addl    %ebp, %eax
->          movl    %eax, %esp
->
-> what would be safe for arch/x86/kernel/head_32.S ? It uses "stack_start",
-> but later after paging set-up. Is the following sane to solve this?
->
+On Thu, Jan 27, 2011 at 05:48:57PM -0800, Andrew Morton wrote:
+> On Thu, 27 Jan 2011 17:35:53 -0800 Joel Becker <jlbec@evilplan.org> wrote:
+> 
+> > > --- a/fs/ocfs2/dlm/dlmdomain.c~a
+> > > +++ a/fs/ocfs2/dlm/dlmdomain.c
+> > > @@ -926,9 +926,9 @@ static int dlm_assert_joined_handler(str
+> > >  }
+> > >  
+> > >  static int dlm_match_regions(struct dlm_ctxt *dlm,
+> > > -			     struct dlm_query_region *qr)
+> > > +			     struct dlm_query_region *qr, u8 *local)
+> > >  {
+> > > -	char *local = NULL, *remote = qr->qr_regions;
+> > > +	char *remote = qr->qr_regions;
+> > 
+> > 	Won't the stack-depth busybodies hate us for this?  I realize we
+> > don't go much deeper from here, but it still is 1K of stack.
+> 
+> +	static u8 local[sizeof(qr->qr_regions)]; /* locked by dlm_domain_lock */
+>         ^^^^^^
 
-To run it before paging is set up, you can't use stack, start; you have 
-to use a pointer based on physical address.  You have two problems with 
-using stack_start: you're using a linear address to access stack_start, 
-and stack_start itself contains a linear address.
+	I can read C, I swear!
 
-It's not entirely clear to me why we don't initialize %ss to __BOOT_DS 
-with the other segment registers, but it would make most sense to me:
+Joel
 
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index fc293dc..c10f9ba 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -99,7 +99,12 @@ ENTRY(startup_32)
-         movl %eax,%es
-         movl %eax,%fs
-         movl %eax,%gs
-+       movl %eax,%ss
-  2:
-+/*
-+ * Set up an initial stack
-+ */
-+       movl $pa(init_thread_union+THREAD_SIZE), %esp
+-- 
 
-  /*
-   * Clear BSS first so that there are no surprises...
+"And yet I find,
+ And yet I find repeating in my head.
+ If I can't be my own, 
+ I'd feel better dead."
 
-	-hpa
+			http://www.jlbec.org/
+			jlbec@evilplan.org
