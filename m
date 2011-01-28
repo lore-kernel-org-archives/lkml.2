@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755055Ab1A1MNi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 07:13:38 -0500
-Received: from mail.comu.edu.tr ([193.255.97.15]:42095 "EHLO mail.comu.edu.tr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754812Ab1A1MNg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 07:13:36 -0500
-Cc: recipient list not shown:;
-Message-ID: <71f2abd14d179d33b15fd4c11217b8d5.squirrel@webmail.comu.edu.tr>
-Date: Fri, 28 Jan 2011 13:31:16 +0200
-Subject: 
-From: "ECOWAS/UNITED NATIONS" <info@un.org>
-Reply-To: intercontinentalbamkplc@accountant.com
-User-Agent: SquirrelMail/1.4.21
+	id S1755171Ab1A1MUS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 07:20:18 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:39077 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754752Ab1A1MUQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 07:20:16 -0500
+Message-ID: <4D42B436.8070901@ru.mvista.com>
+Date: Fri, 28 Jan 2011 15:19:02 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-9
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+To: Davidlohr Bueso <dave@gnu.org>
+CC: Michal Nazarewicz <m.nazarewicz@samsung.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
+Subject: Re: [PATCH 2/2] USB: tools: Add a Makefile
+References: <1296157174.2113.6.camel@offworld>
+In-Reply-To: <1296157174.2113.6.camel@offworld>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
+On 27-01-2011 22:39, Davidlohr Bueso wrote:
 
-2010 SCAM VICTIMS COMPENSATIONS PAYMENTS.
-YOUR REF/PAYMENTS CODE: IBN/06654 FOR $500,000 USD ONLY.
+> I originally sent this in several months ago, but never got around to correcting the changes, so... here it is.
 
-This is to bring to your notice that our bank (INTERCONTINENTAL BANK INTL.
-PLC) is
-delegated by the ECOWAS/UNITED NATIONS in Central Bank to pay victims
-of scam $500,000 (Five Hundred Thousand Dollars Only).
+    This remark should follow the --- tear line, to be automatically stripped 
+when applying the patch.
 
-For verification you are to view the following link.
+> From: Davidlohr Bueso<dave@gnu.org>
 
-http://www.un.org/News/Press/docs/2003/ik344.doc.htm
+> Build USB tools easier.
 
-You are to send the following information for remittance.
+> Signed-off-by: Davidlohr Bueso<dave@gnu.org>
 
-Your Name.___________________________
-Address.___________________________
-Phone .___________________________
-Amount Defrauded.___________________________
-Age.__________________________
-Sex__________________________
-Country.________________________
-
-Send a copy of your response with the PAYMENT CODE
-NUMBER(IBN/06654).
-
-NAME: MRs.RHODA MIKE
-      SCAMMED VICTIM/REF/PAYMENTS CODE:
-      IBN/06654 $500,000 USD.
-
-
-Email: intercontinentalbankplc136@accountant.com
-
-Yours Faithfully,
-Mrs. Rosemary Peter
-PUBLIC RELATIONS OFFICER
-Copyright © 2010
-
+WBR, Sergei
