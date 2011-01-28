@@ -1,72 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281Ab1A1Qm4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 11:42:56 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:37097 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754805Ab1A1Qmy (ORCPT
+	id S1755290Ab1A1QpY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 11:45:24 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:50647 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754518Ab1A1QpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 11:42:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Zl7F6MIHDvfaa5omQP6NufBmblGYNJzm2+ccQziF80rjkrCWtoi4XuVHbr0ze7XrTR
-         Win4H3CmOTbKXWlaZaNS6GoyQ89X6JCLUCQdAiKLp1B5Aiwtnp07VSDQ3WSIkaCfqhYf
-         zV3IjWOgjQiFF72ju/QqsE49UPPTgjbOFgNYs=
-Date: Fri, 28 Jan 2011 08:42:44 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Mark Lord <kernel@teksavvy.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils ?
-Message-ID: <20110128164244.GB6252@core.coreip.homeip.net>
-References: <20110125232914.GA20130@core.coreip.homeip.net>
- <20110126020003.GA23085@core.coreip.homeip.net>
- <4D403855.4050706@teksavvy.com>
- <4D40C3D7.90608@teksavvy.com>
- <4D40C551.4020907@teksavvy.com>
- <20110127021227.GA29709@core.coreip.homeip.net>
- <4D40E41D.2030003@teksavvy.com>
- <20110127163931.GA1825@core.coreip.homeip.net>
- <4D41B5A0.70704@teksavvy.com>
- <20110127195325.GB29910@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110127195325.GB29910@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 28 Jan 2011 11:45:22 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=h2yeJ4ZP6yX90wWf+6ZCEpJ86USq7UIiH8XYS5CqVN58UxfIzXuDNoqKUBMKcRzUjYGJWkUgOAgpiUTFw0Jk3zLczEmiwD0kq7F83RBtfys8rbg/j/nGPjw4LYN5P9LK;
+Date: Fri, 28 Jan 2011 08:45:18 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: <Narendra_K@Dell.com>
+Cc: <sfr@canb.auug.org.au>, <lenb@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-next@vger.kernel.org>, <Matt_Domsch@Dell.com>,
+        <Charles_Rose@Dell.com>, <Surya_Prabhakar@Dell.com>
+Subject: Re: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by
+ allmodconfig
+Message-ID: <20110128084518.7783091e@jbarnes-desktop>
+In-Reply-To: <20110128155337.GA27642@fedora14-r610.oslab.blr.amer.dell.com>
+References: <20110112203414.GA5657@fedora14-r610.oslab.blr.amer.dell.com>
+	<20110112160229.7b8d82c1@jbarnes-desktop>
+	<alpine.LFD.2.02.1101122217370.19754@x980>
+	<20110113075556.789ac3c3@jbarnes-vaio.home>
+	<20110113162755.GA5872@fedora14-r610.oslab.blr.amer.dell.com>
+	<20110114154458.GA18289@fedora14-r610.oslab.blr.amer.dell.com>
+	<20110115080949.62176a3c.sfr@canb.auug.org.au>
+	<20110117195215.GA2708@fedora14-r610.oslab.blr.amer.dell.com>
+	<20110120190459.GA30978@fedora14-r610.oslab.blr.amer.dell.com>
+	<20110128155337.GA27642@fedora14-r610.oslab.blr.amer.dell.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 27, 2011 at 11:53:25AM -0800, Dmitry Torokhov wrote:
-> On Thu, Jan 27, 2011 at 01:12:48PM -0500, Mark Lord wrote:
-> > On 11-01-27 11:39 AM, Dmitry Torokhov wrote:
-> > > On Wed, Jan 26, 2011 at 10:18:53PM -0500, Mark Lord wrote:
-> > >> No, it does not seem to segfault when I unload/reload ir-kbd-i2c
-> > >> and then invoke it by hand with the same parameters.
-> > >> Quite possibly the environment is different when udev invokes it,
-> > >> and my strace attempt with udev killed the system, so no info there.
-> > >>
+On Fri, 28 Jan 2011 07:30:36 -0800
+<Narendra_K@Dell.com> wrote:
+
+> On Fri, Jan 21, 2011 at 12:11:50AM +0530, K, Narendra wrote:
+> > On Tue, Jan 18, 2011 at 12:58:48AM +0530, K, Narendra wrote:
+> > > On Sat, Jan 15, 2011 at 02:39:49AM +0530, Stephen Rothwell wrote:
+> > > > Hi Narendra,
+> > > > 
+> > > > On Fri, 14 Jan 2011 20:52:42 +0530 <Narendra_K@Dell.com> wrote:
+> > > > >
+> > > > > This patch addresses the build failure described in this thread by
+> > > > > compiling fs/nls/nls_base.c always into vmlinux, thus making the base
+> > > > > nls functions available always.
+> > > > 
+> > > > Even on platforms that don't support ACPI or DMI ...
+> > > > 
+> > > > You should really restrict this to CONFIG_ACPI || CONFIG_DMI ||
+> > > > CONFIG_NLS ... maybe create a CONFIG_NLS_BASE that is selected by ACPI,
+> > > > DMI and NLS?
 > > > 
-> > > Hmm, what about compiling with debug and getting a core then?
+> > > Hi Stephen,
+> > > 
+> > > Thank you for the suggestions. 
+> > > 
+> > > I agree with your suggestion that we should compile nls_base.o
+> > > conditionally, only when ACPI || DMI || NLS. I have introduced a bew
+> > > config option CONFIG_NLS_BASE and made ACPI, DMI and NLS select it.
+> > > 
+> > > V1 -> V2:
+> > > 
+> > > 1. Conditionally compile fs/nls/nls_base.c by introducing a new config
+> > > option CONFIG_NLS_BASE, which is selected by (ACPI || DMI || NLS).
+> > > Behavior of the rest of the files under fs/nls is not changed.
+> > > 
+> > > From: Narendra K <narendra_k@dell.com>
+> > > Subject: [PATCH V2] Fix build failure when CONFIG_NLS is set to 'm' by allmodconfig
 > > 
-> > Sure.  debug is easy, -g, but you'll have to tell me how to get it
-> > do produce a core dump.
+> > Hi,
 > > 
+> > Please let me know if there are any concerns with Version 2 of the patch.
+> > If it looks good please consider it for inclusion.
 > 
-> See if adjusting /etc/security/limits.conf will enable it to dump core.
-> Otherwise you'll have to stick 'ulimit -c unlimited' somewhere...
+> Hi Jesse,
 > 
+> Please let me know if there are any concerns with this patch. If it is
+> acceptable, please consider this for inclusion.
 
-Mark,
-
-Any luck with getting the core? I'd really like to resolve this issue.
-
-Thanks.
+I think the fs stuff will have to get an ack from Al.  If he doesn't
+like it, see my earlier mail for another suggestion.
 
 -- 
-Dmitry
+Jesse Barnes, Intel Open Source Technology Center
