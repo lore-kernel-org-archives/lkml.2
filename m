@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754641Ab1A1C5l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 21:57:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43002 "EHLO mx1.redhat.com"
+	id S1754650Ab1A1C6a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 21:58:30 -0500
+Received: from kroah.org ([198.145.64.141]:34025 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754556Ab1A1C5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 21:57:40 -0500
-Date: Fri, 28 Jan 2011 08:27:25 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH 1/3] tty: move hvc drivers to drivers/tty/hvc/
-Message-ID: <20110128025725.GA2822@amit-x200.redhat.com>
-References: <20110120174910.GA30124@kroah.com>
- <1295546625-30681-1-git-send-email-gregkh@suse.de>
- <20110127182916.GA4688@amit-x200.redhat.com>
- <201101272253.29223.arnd@arndb.de>
+	id S1754556Ab1A1C63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 21:58:29 -0500
+Date: Thu, 27 Jan 2011 18:55:16 -0800
+From: Greg KH <greg@kroah.com>
+To: Mike Waychison <mikew@google.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, torvalds@linux-foundation.org,
+        San Mehat <san@google.com>, Aaron Durbin <adurbin@google.com>,
+        Duncan Laurie <dlaurie@google.com>, linux-kernel@vger.kernel.org,
+        Tim Hockin <thockin@google.com>
+Subject: Re: [PATCH v1 3/6] driver: Google EFI SMI
+Message-ID: <20110128025516.GB32284@kroah.com>
+References: <20110125002433.12637.51091.stgit@mike.mtv.corp.google.com>
+ <20110125002449.12637.35623.stgit@mike.mtv.corp.google.com>
+ <20110125031752.GA9846@kroah.com>
+ <AANLkTi=XhRX-=k8UmmQFshP6fgF_q2c-9gEHuH0mWu0a@mail.gmail.com>
+ <20110126024608.GB28283@kroah.com>
+ <AANLkTi=rO5QOVjNNWkekOb0WXzKX2CUpgvEryL0cemzB@mail.gmail.com>
+ <20110127104343.5931161e@lxorguk.ukuu.org.uk>
+ <AANLkTikGJJsnAwiyhrS6m8TJQfR8UHCzZG+t=2GHFRiW@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <201101272253.29223.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikGJJsnAwiyhrS6m8TJQfR8UHCzZG+t=2GHFRiW@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Thu) Jan 27 2011 [22:53:29], Arnd Bergmann wrote:
-> On Thursday 27 January 2011 19:29:44 Amit Shah wrote:
-> > On (Thu) Jan 20 2011 [10:03:43], Greg Kroah-Hartman wrote:
-> > > As requested by Arnd Bergmann, the hvc drivers are now
-> > > moved to the drivers/tty/hvc/ directory.  The virtio_console.c driver
-> > > was also moved, as it required the hvc_console.h file to be able to be
-> > > built, and it really is a hvc driver.
-> > 
-> > I just saw this now as a result of this patch entering mainline.  I
-> > would have liked to be CC'ed to the patches.  Also, I don't like the
-> > move of the virtio_console.c file to drivers/tty/hvc.  virtio_console.c
-> > is not only an hvc driver; one of its functions is to hook some ports to
-> > hvc, but it's mostly a generic driver these days.
+On Thu, Jan 27, 2011 at 11:22:55AM -0800, Mike Waychison wrote:
+> On Thu, Jan 27, 2011 at 2:43 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> >> I understand that type widths change in a compat setting.  So what?
+> >> Code in each environment is written to it's own namespace anyhow.
+> >
+> > So you ned up with a pile of extra crap in the kernel to handle 32bit
+> > userspace on 64bit and the like. If instead the structs are carefully
+> > laid out this doesn't occur.
+> >
+> >> Here's what *I* think *you* think about __u32 vs u32 vs uint32_t.
+> >> Correct me if I'm totally off-base here:
+> >
+> > And the __aligned_ ones for things like u64 in ioctls and structs...
+> >
+> > It's also a style and consistency thing, its trivialto use the same style
+> > as the rest of the kernel, it's trivial to tweak and it helps keep
+> > coherency of style, even if you are sitting at the keyboard mumbling
+> > "bunch of morons if you ask me" while doing it ;)
 > 
-> Sorry about this, the idea to move this file was mine and my original
-> patch did this as well. I remembered the code from when it was a simple
-> console driver based on hvc and never noticed that it had evolved into
-> a generic host/guest communication stack.
+> I'm always mumbling and cursing at my desk :p
 > 
-> > Can you please move it back?
+> I've already changed the series to not use C99 types.  I understand
+> the value in style consistency :)
 > 
-> No objection from me here in general, though as Greg writes above, it's
-> a bit ugly when hvc_console.h is in a different directory.
+> I'm still trying to understand if there is any actual technical merit
+> to avoid standard types though, of which there doesn't seem to be any.
 
-Greg, can you do this please?  (A way to do it with preservig git
-history of the file would be great as well, but I think only a revert
-will do that?)
+Yes there is, it is subtle and prone to get wrong.  Linus wrote it all
+up in detail a few years ago and I was going to document it in the
+kernel tree somewhere but got busy.
 
-> > I could perhaps think of a way of splitting the file so the hvc bits can
-> > be moved to drivers/tty/hvc/ and having the core stay in drivers/char/,
-> > but that'll have to wait for the next cycle.
-> 
-> I think that's a really good idea. The main reason for moving the tty
-> drivers from drivers/char to drivers/tty was to separate the everything
-> related to tty from everything else. The common part should IMHO then not
-> be named "console", "tty" os similar but indicate that it's more generic
-> than that. Maybe virtio-pipe?
+You can dig through the lkml archives for the details but basically
+always remember to use them in the following manner:
+	u32 - in kernel usage
+	__u32 - when the data crosses the kernel/user boundry
+	uint32_t - never use
 
-Rusty has suggested virtio-ports in the past.
+that will ensure you get your code right and no one will complain.
 
-		Amit
+thanks,
+
+greg k-h
