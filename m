@@ -1,55 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182Ab1A1MX7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 07:23:59 -0500
-Received: from caiajhbdcbhh.dreamhost.com ([208.97.132.177]:42843 "EHLO
-	homiemail-a61.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753896Ab1A1MX6 (ORCPT
+	id S1755212Ab1A1MZJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 07:25:09 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:32877 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755031Ab1A1MZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 07:23:58 -0500
-X-Greylist: delayed 60262 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Jan 2011 07:23:58 EST
-Subject: Re: [PATCH 2/2] USB: tools: Add a Makefile
-From: Davidlohr Bueso <dave@gnu.org>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: Michal Nazarewicz <m.nazarewicz@samsung.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
-In-Reply-To: <4D42B436.8070901@ru.mvista.com>
-References: <1296157174.2113.6.camel@offworld>
-	 <4D42B436.8070901@ru.mvista.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 28 Jan 2011 09:23:47 -0300
-Message-ID: <1296217427.2169.0.camel@offworld>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 28 Jan 2011 07:25:08 -0500
+Date: Fri, 28 Jan 2011 12:25:24 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-arm-kernel@lists.infradead.org, stable@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ASoC: DaVinci: fix kernel panic due to uninitialized
+ platform_data
+Message-ID: <20110128122524.GA10350@opensource.wolfsonmicro.com>
+References: <1296136063-31625-1-git-send-email-prakash.pm@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1296136063-31625-1-git-send-email-prakash.pm@ti.com>
+X-Cookie: You will never know hunger.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-28 at 15:19 +0300, Sergei Shtylyov wrote:
-> Hello.
+On Thu, Jan 27, 2011 at 07:17:43PM +0530, Manjunathappa, Prakash wrote:
+> This patch fixes the Kernel panic issue on accessing davinci_vc in
+> cq93vc_probe function. struct davinci_vc is part of platform device's
+> private driver data(codec->dev->p->driver_data) and this is populated
+> by DaVinci Voice Codec MFD driver.
 > 
-> On 27-01-2011 22:39, Davidlohr Bueso wrote:
-> 
-> > I originally sent this in several months ago, but never got around to correcting the changes, so... here it is.
-> 
->     This remark should follow the --- tear line, to be automatically stripped 
-> when applying the patch.
-> 
+> Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
 
-It wasn't meant for the log, that's why it's above the tear line.
-
-Thanks.
-
-> > From: Davidlohr Bueso<dave@gnu.org>
-> 
-> > Build USB tools easier.
-> 
-> > Signed-off-by: Davidlohr Bueso<dave@gnu.org>
-> 
-> WBR, Sergei
-> 
-
-
+Applied, thanks.
