@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755388Ab1A1Rif (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 12:38:35 -0500
-Received: from [123.122.102.109] ([123.122.102.109]:36389 "EHLO enigma.site"
+	id S1755377Ab1A1Rie (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 12:38:34 -0500
+Received: from [123.122.102.109] ([123.122.102.109]:36390 "EHLO enigma.site"
 	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754999Ab1A1Rhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755061Ab1A1Rhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Jan 2011 12:37:46 -0500
 From: Coly Li <bosong.ly@taobao.com>
 To: linux-kernel@vger.kernel.org
 Cc: Coly Li <bosong.ly@taobao.com>, Greg KH <gregkh@suse.de>
-Subject: [PATCH 3/5] dma: use BUG_ON correctly in ppc4xx/adam.c, v3
-Date: Sat, 29 Jan 2011 01:55:48 +0800
-Message-Id: <1296237350-6624-4-git-send-email-bosong.ly@taobao.com>
+Subject: [PATCH 1/5] dma: use BUG_ON correctly in iop-adma.c, v3
+Date: Sat, 29 Jan 2011 01:55:46 +0800
+Message-Id: <1296237350-6624-2-git-send-email-bosong.ly@taobao.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1296237350-6624-1-git-send-email-bosong.ly@taobao.com>
 References: <1296237350-6624-1-git-send-email-bosong.ly@taobao.com>
@@ -19,54 +19,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes BUG_ON() usage correct in drivers/dma/ppc4xx/adam.c
+This patch makes BUG_ON() usage correct in drivers/dma/iop-adma.c.
 
 Signed-off-by: Coly Li <bosong.ly@taobao.com>
 Cc: Greg KH <gregkh@suse.de>
 ---
- drivers/dma/ppc4xx/adma.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/dma/iop-adma.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/dma/ppc4xx/adma.c b/drivers/dma/ppc4xx/adma.c
-index cef5845..a2b62e9 100644
---- a/drivers/dma/ppc4xx/adma.c
-+++ b/drivers/dma/ppc4xx/adma.c
-@@ -2313,7 +2313,7 @@ static struct dma_async_tx_descriptor *ppc440spe_adma_prep_dma_memcpy(
+diff --git a/drivers/dma/iop-adma.c b/drivers/dma/iop-adma.c
+index c6b01f5..e03f811 100644
+--- a/drivers/dma/iop-adma.c
++++ b/drivers/dma/iop-adma.c
+@@ -619,7 +619,7 @@ iop_adma_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dma_dest,
+ 
  	if (unlikely(!len))
  		return NULL;
+-	BUG_ON(unlikely(len > IOP_ADMA_MAX_BYTE_COUNT));
++	BUG_ON(len > IOP_ADMA_MAX_BYTE_COUNT);
  
--	BUG_ON(unlikely(len > PPC440SPE_ADMA_DMA_MAX_BYTE_COUNT));
-+	BUG_ON(len > PPC440SPE_ADMA_DMA_MAX_BYTE_COUNT);
+ 	dev_dbg(iop_chan->device->common.dev, "%s len: %u\n",
+ 		__func__, len);
+@@ -652,7 +652,7 @@ iop_adma_prep_dma_memset(struct dma_chan *chan, dma_addr_t dma_dest,
  
- 	spin_lock_bh(&ppc440spe_chan->lock);
- 
-@@ -2354,7 +2354,7 @@ static struct dma_async_tx_descriptor *ppc440spe_adma_prep_dma_memset(
  	if (unlikely(!len))
  		return NULL;
+-	BUG_ON(unlikely(len > IOP_ADMA_MAX_BYTE_COUNT));
++	BUG_ON(len > IOP_ADMA_MAX_BYTE_COUNT);
  
--	BUG_ON(unlikely(len > PPC440SPE_ADMA_DMA_MAX_BYTE_COUNT));
-+	BUG_ON(len > PPC440SPE_ADMA_DMA_MAX_BYTE_COUNT);
+ 	dev_dbg(iop_chan->device->common.dev, "%s len: %u\n",
+ 		__func__, len);
+@@ -686,7 +686,7 @@ iop_adma_prep_dma_xor(struct dma_chan *chan, dma_addr_t dma_dest,
  
- 	spin_lock_bh(&ppc440spe_chan->lock);
- 
-@@ -2397,7 +2397,7 @@ static struct dma_async_tx_descriptor *ppc440spe_adma_prep_dma_xor(
- 				     dma_dest, dma_src, src_cnt));
  	if (unlikely(!len))
  		return NULL;
--	BUG_ON(unlikely(len > PPC440SPE_ADMA_XOR_MAX_BYTE_COUNT));
-+	BUG_ON(len > PPC440SPE_ADMA_XOR_MAX_BYTE_COUNT);
+-	BUG_ON(unlikely(len > IOP_ADMA_XOR_MAX_BYTE_COUNT));
++	BUG_ON(len > IOP_ADMA_XOR_MAX_BYTE_COUNT);
  
- 	dev_dbg(ppc440spe_chan->device->common.dev,
- 		"ppc440spe adma%d: %s src_cnt: %d len: %u int_en: %d\n",
-@@ -2887,7 +2887,7 @@ static struct dma_async_tx_descriptor *ppc440spe_adma_prep_dma_pq(
- 	ADMA_LL_DBG(prep_dma_pq_dbg(ppc440spe_chan->device->id,
- 				    dst, src, src_cnt));
- 	BUG_ON(!len);
--	BUG_ON(unlikely(len > PPC440SPE_ADMA_XOR_MAX_BYTE_COUNT));
-+	BUG_ON(len > PPC440SPE_ADMA_XOR_MAX_BYTE_COUNT);
- 	BUG_ON(!src_cnt);
- 
- 	if (src_cnt == 1 && dst[1] == src[0]) {
+ 	dev_dbg(iop_chan->device->common.dev,
+ 		"%s src_cnt: %d len: %u flags: %lx\n",
 -- 
 1.7.3.4
 
