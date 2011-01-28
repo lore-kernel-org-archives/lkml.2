@@ -1,191 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab1A1Ded (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 22:34:33 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51647 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754610Ab1A1Dec (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 22:34:32 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 28 Jan 2011 12:28:32 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Subject: [BUGFIX][PATCH 4/4] memcg: fix khugepaged should skip busy memcg
-Message-Id: <20110128122832.34550412.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110128122229.6a4c74a2.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110128122229.6a4c74a2.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754724Ab1A1DiU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 22:38:20 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45570 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754656Ab1A1DiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 22:38:19 -0500
+Message-ID: <4D423A19.2060201@zytor.com>
+Date: Thu, 27 Jan 2011 19:38:01 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Kees Cook <kees.cook@canonical.com>, Jeremy Fitzhardinge <jeremy@goop.org>
+CC: matthieu castet <castet.matthieu@free.fr>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [BUG] broken ebba638ae723d8a8fc2f7abce5ec18b688b791d7
+References: <4D41E86D.8060205@free.fr> <20110127230013.GO4981@outflux.net> <4D4228CE.5090601@zytor.com>
+In-Reply-To: <4D4228CE.5090601@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[Adding Jeremy]
 
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Jeremy, would this break Xen?  As far as I know, Xen is the main user of 
+skipping segment register initialization.
 
-When using khugepaged with small memory cgroup, we see khugepaged
-causes soft lockup, or running process under memcg will hang
+	-hpa
 
-It's because khugepaged tries to scan all pmd of a process
-which is under busy/small memory cgroup and tries to allocate
-HUGEPAGE size resource.
 
-This work is done under mmap_sem and can cause memory reclaim
-repeatedly. This will easily raise cpu usage of khugepaged and latecy
-of scanned process will goes up. Moreover, it seems succesfully
-working TransHuge pages may be splitted by this memory reclaim
-caused by khugepaged.
-
-This patch adds a hint for khugepaged whether a process is
-under a memory cgroup which has sufficient memory. If memcg
-seems busy, a process is skipped.
-
-How to test:
-  # mount -o cgroup cgroup /cgroup/memory -o memory
-  # mkdir /cgroup/memory/A
-  # echo 200M (or some small) > /cgroup/memory/A/memory.limit_in_bytes
-  # echo 0 > /cgroup/memory/A/tasks
-  # make -j 8 kernel
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- include/linux/memcontrol.h |    7 +++++
- mm/huge_memory.c           |   10 +++++++-
- mm/memcontrol.c            |   53 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 69 insertions(+), 1 deletion(-)
-
-Index: mmotm-0125/mm/memcontrol.c
-===================================================================
---- mmotm-0125.orig/mm/memcontrol.c
-+++ mmotm-0125/mm/memcontrol.c
-@@ -255,6 +255,9 @@ struct mem_cgroup {
- 	/* For oom notifier event fd */
- 	struct list_head oom_notify;
- 
-+	/* For transparent hugepage daemon */
-+	unsigned long long recent_failcnt;
-+
- 	/*
- 	 * Should we move charges of a task when a task is moved into this
- 	 * mem_cgroup ? And what type of charges should we move ?
-@@ -2214,6 +2217,56 @@ void mem_cgroup_split_huge_fixup(struct 
- 	tail_pc->flags = head_pc->flags & ~PCGF_NOCOPY_AT_SPLIT;
- 	move_unlock_page_cgroup(head_pc, &flags);
- }
-+
-+bool mem_cgroup_worth_try_hugepage_scan(struct mm_struct *mm)
-+{
-+	struct mem_cgroup *mem;
-+	bool ret = true;
-+	u64 recent_charge_fail;
-+
-+	if (mem_cgroup_disabled())
-+		return true;
-+
-+	mem = try_get_mem_cgroup_from_mm(mm);
-+
-+	if (!mem)
-+		return true;
-+
-+	if (mem_cgroup_is_root(mem))
-+		goto out;
-+
-+	/*
-+	 * At collapsing, khugepaged charges HPAGE_SIZE. When it unmap
-+	 * used ptes, the charge will be decreased.
-+	 *
-+	 * This requirement of 'extra charge' at collapsing seems redundant
-+	 * it's safe way for now. For example, at replacing a chunk of page
-+	 * to be hugepage, khuepaged skips pte_none() entry, which is not
-+	 * which is not charged. But we should do charge under spinlocks as
-+	 * pte_lock, we need precharge. Check status before doing heavy
-+	 * jobs and give khugepaged chance to retire early.
-+	 */
-+	if (mem_cgroup_check_margin(mem) >= HPAGE_SIZE)
-+		ret = false;
-+
-+	 /*
-+	  * This is an easy check. If someone other than khugepaged does
-+	  * hit limit, khugepaged should avoid more pressure.
-+	  */
-+	recent_charge_fail = res_counter_read_u64(&mem->res, RES_FAILCNT);
-+	if (ret
-+	    && mem->recent_failcnt
-+            && recent_charge_fail > mem->recent_failcnt) {
-+		ret = false;
-+	}
-+	/* because this thread will fail charge by itself +1.*/
-+	if (recent_charge_fail)
-+		mem->recent_failcnt = recent_charge_fail + 1;
-+out:
-+	css_put(&mem->css);
-+	return ret;
-+}
-+
- #endif
- 
- /**
-Index: mmotm-0125/mm/huge_memory.c
-===================================================================
---- mmotm-0125.orig/mm/huge_memory.c
-+++ mmotm-0125/mm/huge_memory.c
-@@ -2011,8 +2011,10 @@ static unsigned int khugepaged_scan_mm_s
- 	down_read(&mm->mmap_sem);
- 	if (unlikely(khugepaged_test_exit(mm)))
- 		vma = NULL;
--	else
-+	else if (mem_cgroup_worth_try_hugepage_scan(mm))
- 		vma = find_vma(mm, khugepaged_scan.address);
-+	else
-+		vma = NULL;
- 
- 	progress++;
- 	for (; vma; vma = vma->vm_next) {
-@@ -2024,6 +2026,12 @@ static unsigned int khugepaged_scan_mm_s
- 			break;
- 		}
- 
-+		if (unlikely(!mem_cgroup_worth_try_hugepage_scan(mm))) {
-+			progress++;
-+			vma = NULL; /* try next mm */
-+			break;
-+		}
-+
- 		if ((!(vma->vm_flags & VM_HUGEPAGE) &&
- 		     !khugepaged_always()) ||
- 		    (vma->vm_flags & VM_NOHUGEPAGE)) {
-Index: mmotm-0125/include/linux/memcontrol.h
-===================================================================
---- mmotm-0125.orig/include/linux/memcontrol.h
-+++ mmotm-0125/include/linux/memcontrol.h
-@@ -148,6 +148,7 @@ u64 mem_cgroup_get_limit(struct mem_cgro
- 
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- void mem_cgroup_split_huge_fixup(struct page *head, struct page *tail);
-+bool mem_cgroup_worth_try_hugepage_scan(struct mm_struct *mm);
- #endif
- 
- #else /* CONFIG_CGROUP_MEM_RES_CTLR */
-@@ -342,6 +343,12 @@ u64 mem_cgroup_get_limit(struct mem_cgro
- static inline void mem_cgroup_split_huge_fixup(struct page *head,
- 						struct page *tail)
- {
-+
-+}
-+
-+static inline bool mem_cgroup_worth_try_hugepage_scan(struct mm_struct *mm)
-+{
-+	return true;
- }
- 
- #endif /* CONFIG_CGROUP_MEM_CONT */
-
+On 01/27/2011 06:24 PM, H. Peter Anvin wrote:
+> On 01/27/2011 03:00 PM, Kees Cook wrote:
+>>
+>> Yikes, good catch.
+>>
+>> arch/x86/kernel/trampoline_64.S uses:
+>> movw $(trampoline_stack_end - r_base), %sp
+>>
+>> arch/x86/boot/compressed/head_64.S uses:
+>> movl $boot_stack_end, %eax
+>> addl %ebp, %eax
+>> movl %eax, %esp
+>>
+>> what would be safe for arch/x86/kernel/head_32.S ? It uses "stack_start",
+>> but later after paging set-up. Is the following sane to solve this?
+>>
+>
+> To run it before paging is set up, you can't use stack, start; you have
+> to use a pointer based on physical address. You have two problems with
+> using stack_start: you're using a linear address to access stack_start,
+> and stack_start itself contains a linear address.
+>
+> It's not entirely clear to me why we don't initialize %ss to __BOOT_DS
+> with the other segment registers, but it would make most sense to me:
+>
+> diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+> index fc293dc..c10f9ba 100644
+> --- a/arch/x86/kernel/head_32.S
+> +++ b/arch/x86/kernel/head_32.S
+> @@ -99,7 +99,12 @@ ENTRY(startup_32)
+> movl %eax,%es
+> movl %eax,%fs
+> movl %eax,%gs
+> + movl %eax,%ss
+> 2:
+> +/*
+> + * Set up an initial stack
+> + */
+> + movl $pa(init_thread_union+THREAD_SIZE), %esp
+>
+> /*
+> * Clear BSS first so that there are no surprises...
+>
+> -hpa
