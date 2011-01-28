@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab1A1Sgz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 13:36:55 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:57772 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753199Ab1A1Sgy (ORCPT
+	id S1755429Ab1A1Smi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 13:42:38 -0500
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:32931 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753199Ab1A1Smh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 13:36:54 -0500
-Date: Fri, 28 Jan 2011 13:36:50 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Anca Emanuel <anca.emanuel@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Tejun Heo <tj@kernel.org>, roland@redhat.com, oleg@redhat.com,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCHSET] ptrace,signal: group stop / ptrace updates
-Message-ID: <20110128183650.GA26633@Krystal>
-References: <1296227324-25295-1-git-send-email-tj@kernel.org> <20110128165455.GA18194@elte.hu> <alpine.LFD.2.00.1101281839390.31804@localhost6.localdomain6> <AANLkTinm53a1BzLu6JCBdgOpkHw9MOg2H4gD7xiRyvOh@mail.gmail.com>
+	Fri, 28 Jan 2011 13:42:37 -0500
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Fri, 28 Jan 2011 19:43:26 +0100
+To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] hid-multitouch: work on default classes and renaming
+ of classes
+Message-ID: <20110128184326.GB2553@polaris.bitmath.org>
+References: <1296230680-2871-1-git-send-email-benjamin.tissoires@enac.fr>
+ <20110128171852.GA2586@polaris.bitmath.org>
+ <AANLkTimB2bA9JuhNox8UCsHkGEGyUQLBPnELBR0-=-ie@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <AANLkTinm53a1BzLu6JCBdgOpkHw9MOg2H4gD7xiRyvOh@mail.gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 13:29:41 up 65 days, 23:32,  1 user,  load average: 0.19, 0.09,
-	0.05
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimB2bA9JuhNox8UCsHkGEGyUQLBPnELBR0-=-ie@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: 83.248.192.164
+X-Scan-Result: No virus found in message 1PitHB-00073f-3u.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PitHB-00073f-3u 230d2f77dee2adda43677d6cd705e739
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Anca Emanuel (anca.emanuel@gmail.com) wrote:
-> On Fri, Jan 28, 2011 at 7:41 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > On Fri, 28 Jan 2011, Ingo Molnar wrote:
-> >> See that '^C^C' line? That is where i had to do Ctrl-C twice.
-> >>
-> >> It only fails here about once every 10 times, so it's very rare. I have a stock F14
-> >> system running on that box, with the very latest .38 based kernel.
+> >> This patch introduce also MT_CLS_DUAL_DEFAULT which has the same purpose
+> >> than MT_CLS_DEFAULT, but for dual touch panels.
 > >
-> > Tripped over the refuse ^C thing today twice. Had to kill a kernel
-> > build from another shell. It just happily displayed ^C and never
-> > stopped. That happens once in a while and I have no idea either how to
-> > debug that.
+> > But it is used anywhere?
 > 
-> cc: Mathieu
+> Hi Henrik,
 > 
-> Use lttng ?
+> In it's current form, no. I often rely on it to make a quick patch
+> (just adding the ids in hid-ids, hid-core and hid-multitouch) to test
+> a new (dual touch) device. I thought it would be useful to be
+> mainstream.
 
-Heh :) I'm sure Ingo and Thomas have their own tools for that ;) There is
-one extra thing in the LTTng instrumentation that can help solve this problem:
-the "input subsystem" instrumentation (enabled with ltt-armall -i). You can then
-get a dump of:
+I see. However, it is just as easy to keep as a local patch. Quite
+generally, there really is a difference between what we do in our
+computers and what ends up in mainline, and it is almost always for a
+good reason.
 
-- Your keystrokes (you can then grep for your ctrl-c input)
-- Read/poll/select system calls (so you know when your terminal receives the
-  input).
-- Signals sent/delivered
+> >> @@ -65,10 +66,11 @@ struct mt_class {
+> >>  };
+> >>
+> >>  /* classes of device behavior */
+> >> -#define MT_CLS_DEFAULT       1
+> >> -#define MT_CLS_DUAL1 2
+> >> -#define MT_CLS_DUAL2 3
+> >> -#define MT_CLS_CYPRESS       4
+> >> +#define MT_CLS_DEFAULT                               1
+> >> +#define MT_CLS_DUAL_DEFAULT                  2
+> >> +#define MT_CLS_DUAL_INRANGE_CONTACTID                3
+> >> +#define MT_CLS_DUAL_INRANGE_CONTACTNUMBER    4
+> >> +#define MT_CLS_CYPRESS                               10
+> >
+> > There is no need to change the numbering for unchanged names.
+> 
+> I just wanted to keep device-specific at the end of the list. Hence
+> the 10 to keep a little space between generic and devices:
+> MT_CLS_DUAL_CONFIDENCE_CONTACT* are coming...
 
-Some of these are already instrumented in the mainline kernel, so you might get
-away without the input subsystem instrumentation.
+It is very often the case that one would like to modify something to
+keep to a certain aesthetic classification or idea, but there is a
+very good reason not to do it. In order to maintain more than one
+branch, for instance a stable tree and several distributions, having
+simple patches makes a huge difference in maintenance burden. Not to
+mention how hard it can be to merge trees with unrelated changes in
+them. So please, keep patches short, sweet and to the point.
 
-If I had to take a wild guess, my bet would be to take a look in the area of
-signal delivery, but you never know, maybe it's a userspace bug in the X
-terminal emulator code that is causing this weirdness.
-
-Hope this helps,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Thanks,
+Henrik
