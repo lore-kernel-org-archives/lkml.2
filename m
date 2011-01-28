@@ -1,103 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166Ab1A1JFQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 04:05:16 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62605 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755098Ab1A1JFI convert rfc822-to-8bit (ORCPT
+	id S1755180Ab1A1JLu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 04:11:50 -0500
+Received: from hull.simtec.co.uk ([78.105.113.97]:41839 "EHLO
+	preston.local.simtec.co.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755132Ab1A1JLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 04:05:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Ac/af6/BKRnF1AhQdRJcdm2exg9ihfyDmEvs6eK/lRqmVjhT0VZfSEixG8sQvK+Y7x
-         RHlJEkfDulAaC0R/pg9S+XxeNkwOENmexL4S1GbSyDEspprunwbwKyyC1mxon+LQKFT4
-         5JCC6i0hInsGcac5aA2A51kDmwtAxAb9u0wQY=
+	Fri, 28 Jan 2011 04:11:48 -0500
+Message-ID: <4D428831.2070209@simtec.co.uk>
+Date: Fri, 28 Jan 2011 09:11:13 +0000
+From: Ben Dooks <ben@simtec.co.uk>
+Organization: Simtec Electronics, UK
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20110127232252.GA3493@ime.usp.br>
-References: <20110127232252.GA3493@ime.usp.br>
-Date: Fri, 28 Jan 2011 10:05:07 +0100
-Message-ID: <AANLkTingnEndZa2ZdTdbo7P=ePo1iRfTNBTjyBOM10n1@mail.gmail.com>
-Subject: Re: [PATCH 01/02] ath3k: Avoid duplication of code
-From: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
-To: =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
-Cc: linux-kernel@vger.kernel.org, Alexander Holler <holler@ahsoftware.de>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Jack Stone <jwjstone@fastmail.fm>, Ben Dooks <ben-linux@fluff.org>,
+        Vincent Sanders <vince@simtec.co.uk>,
+        Simtec Support <support@simtec.co.uk>, linux-kernel@vger.kernel.org,
+        linux@simtec.co.uk
+Subject: Re: [PATCH 3/3] MAINTAINERS: Fixup Simtec support email entries
+References: <0bd9310fc4d79ee83f9f657640be251d84dbf86f.1294998254.git.ben-linux@fluff.org>	<fd0227dd223f5c88e559b2902d5124107ffb7c6a.1294998254.git.ben-linux@fluff.org>	<4D302081.3020102@fastmail.fm>	<4D302727.6070006@simtec.co.uk> <20110127160034.b3aab078.akpm@linux-foundation.org>
+In-Reply-To: <20110127160034.b3aab078.akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 28/01/11 00:00, Andrew Morton wrote:
+> On Fri, 14 Jan 2011 10:36:23 +0000
+> Ben Dooks <ben@simtec.co.uk> wrote:
+> 
+>> On 14/01/11 10:08, Jack Stone wrote:
+>>> On 14/01/2011 09:44, Ben Dooks wrote:
+>>>> The support@simtec.co.uk address is for direct customer support only, the
+>>>> EB2410ITX and EB110ATX entries should direct to the Simtec Linux Team
+>>>> address of linux@simtec.co.uk
+>>>>
+>>>> Also add correct email address for Vincent Sanders
+>>>>
+>>>> Signed-off-by: Ben Dooks <ben-linux@fluff.org>
+>>>> Cc: Vincent Sanders <vince@simtec.co.uk>
+>>>> Cc: Simtec Support <support@simtec.co.uk>
+>>>> Cc: Simtec Linux Team <linux@simtec.co.uk>
+>>>> ---
+>>>>  MAINTAINERS |    6 ++++--
+>>>>  1 files changed, 4 insertions(+), 2 deletions(-)
+>>>>
+>>>> diff --git a/MAINTAINERS b/MAINTAINERS
+>>>> index 4a99ddf..3f5dc25 100644
+>>>> --- a/MAINTAINERS
+>>>> +++ b/MAINTAINERS
+>>>> @@ -5557,13 +5557,15 @@ F:	include/linux/sfi*.h
+>>>>  
+>>>>  SIMTEC EB110ATX (Chalice CATS)
+>>>>  P:	Ben Dooks
+>>>> -M:	Vincent Sanders <support@simtec.co.uk>
+>>>> +P:	Vincent Sanders <support@simtec.co.uk>
+>>>
+>>> Did you mean to update this email as well?
+>>
+>> Thankyou, will correct this.
+>>
+> 
+> <ETIMEDOUT>
+> 
+> Like this?
 
-2011/1/28 Rogério Brito <rbrito@ime.usp.br>:
-> Hi.
->
-> In commit 86e09287e4f8c81831b4d4118a48597565f0d21b, to reduce memory
-> usage, the functions of the ath3k module were rewritten to release the
-> firmware blob after it has been loaded (successfully or not).
->
-> The resuting code has some redundancy and the compiler can potentially
-> produce better code if we omit a function call that is unconditionally
-> executed in
->
-> ,----
-> |       if (ath3k_load_firmware(udev, firmware)) {
-> |               release_firmware(firmware);
-> |               return -EIO;
-> |       }
-> |       release_firmware(firmware);
-> |
-> |       return 0;
-> | }
-> `----
->
-> It may also be argued that the rewritten code becomes easier to read,
-> and also to see the code coverage of the snippet in question.
->
->
-> Signed-off-by: Rogério Brito <rbrito@ime.usp.br>
->
-> ---
->
-> I am sending here two proposals for rewriting the code.  This is the
-> first one. The second uses the ternary operator and seems to have more
-> usage in the kernel (or, at least, under mm).
->
-> ---
->
-> diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
-> index a126e61..0043781 100644
-> --- a/drivers/bluetooth/ath3k.c
-> +++ b/drivers/bluetooth/ath3k.c
-> @@ -116,13 +116,13 @@ static int ath3k_probe(struct usb_interface *intf,
->                return -EIO;
->        }
->
-> -       if (ath3k_load_firmware(udev, firmware)) {
-> -               release_firmware(firmware);
-> -               return -EIO;
-> -       }
-> +       ret = ath3k_load_firmware(udev, firmware);
->        release_firmware(firmware);
->
-> -       return 0;
-> +       if (ret)
-> +               return -EIO;
-> +       else
-> +               return 0;
+Yes, I did send Linus a pull request for the last merge window
+with this fixed. But yes, great.
 
-We don't need "else" after a return statement, in order to avoid a
-indentation level.
+> --- a/MAINTAINERS~maintainers-fixup-simtec-support-email-entries-fix
+> +++ a/MAINTAINERS
+> @@ -5622,7 +5622,7 @@ F:	include/linux/sfi*.h
+>  
+>  SIMTEC EB110ATX (Chalice CATS)
+>  P:	Ben Dooks
+> -P:	Vincent Sanders <support@simtec.co.uk>
+> +P:	Vincent Sanders <vince@simtec.co.uk>
+>  M:	Simtec Linux Team <linux@simtec.co.uk>
+>  W:	http://www.simtec.co.uk/products/EB110ATX/
+>  S:	Supported
+> _
+> 
 
->  }
->
->  static void ath3k_disconnect(struct usb_interface *intf)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
