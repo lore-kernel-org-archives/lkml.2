@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391Ab1A1Tt1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 14:49:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3279 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752793Ab1A1TtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 14:49:25 -0500
-From: Glauber Costa <glommer@redhat.com>
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, aliguori@us.ibm.com
-Subject: [PATCH] release kvmclock page on reset
-Date: Fri, 28 Jan 2011 14:48:06 -0500
-Message-Id: <1296244086-15081-1-git-send-email-glommer@redhat.com>
+	id S1755401Ab1A1TuT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 14:50:19 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:54934 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752793Ab1A1TuR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 14:50:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=wiVbS626MyoxH+EJFSUSgrD/M1qX9eXu9UmXcQZvnRjKW8UcRhP2jy49uMREdKSAUj
+         7VoSoz68HoWS8Vr/i1PCWT0P1SGyWplXhfQgWJp8cYDwwyNVygCQx4o716Qh44uwCQRu
+         fEivlPHemPH25ObovERYcnU50Rm31fM+eKujk=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH]drivers:wireless:acx.h change initate to initiate
+Date: Fri, 28 Jan 2011 11:50:04 -0800
+Message-Id: <1296244204-3890-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.6.5.GIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Up to know, we were relying on guest cooperation to turn off kvmclock.
-I just realized that even though this is fine and nice, a more robust
-method is to (also) turn it off on vcpu_reset on the hypervisor side.
-This will protect us against reboots, and we don't expect the guest
-to reset its cpu during normal operation anyway.
+Not sure if this is a typo or not. if it is then feel free to take this.
 
-Signed-off-by: Glauber Costa <glommer@redhat.com>
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+
 ---
- arch/x86/kvm/x86.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ drivers/net/wireless/wl12xx/acx.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index bcc0efc..38b55b3 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -5878,6 +5878,11 @@ int kvm_arch_vcpu_reset(struct kvm_vcpu *vcpu)
- 	kvm_make_request(KVM_REQ_EVENT, vcpu);
- 	vcpu->arch.apf.msr_val = 0;
- 
-+	if (vcpu->arch.time_page) {
-+		kvm_release_page_dirty(vcpu->arch.time_page);
-+		vcpu->arch.time_page = NULL;
-+	}
-+
- 	kvm_clear_async_pf_completion_queue(vcpu);
- 	kvm_async_pf_hash_reset(vcpu);
- 	vcpu->arch.apf.halted = false;
+diff --git a/drivers/net/wireless/wl12xx/acx.h b/drivers/net/wireless/wl12xx/acx.h
+index 7bd8e4d..c56088b 100644
+--- a/drivers/net/wireless/wl12xx/acx.h
++++ b/drivers/net/wireless/wl12xx/acx.h
+@@ -987,7 +987,7 @@ struct wl1271_acx_ht_capabilities {
+ 	 *         Note, driver will still leave space for HT control in packets
+ 	 *         regardless of the value of this field. FW will be responsible
+ 	 *         to drop the HT field from any frame when this Bit set to 0.
+-	 * bit 5 - Allow RD initiation in TXOP. FW is allowed to initate RD.
++	 * bit 5 - Allow RD initiation in TXOP. FW is allowed to initiate RD.
+ 	 *         Exact policy setting for this feature is TBD.
+ 	 *         Note, this bit can only be set to 1 if bit 3 is set to 1.
+ 	 */
 -- 
-1.7.2.3
+1.6.5.GIT
 
