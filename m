@@ -1,149 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab1A1GhT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 01:37:19 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54393 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753733Ab1A1GhS convert rfc822-to-8bit (ORCPT
+	id S1754880Ab1A1Gs6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 01:48:58 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:39069 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753694Ab1A1Gs4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 01:37:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=UDkNiJVXUC1T3rg3iXZFt9SsgEK/88G0ho1Y7tWPq/yQcSVANBBhgWvD5h3pa4p189
-         umxAvL2raJRp2Vd1NfEQMiUfaa7NAf5AsTCRu71kLahFzKuOycxLYQUjyeGFMTBzlYE5
-         0P+ItBHM1PAjEPyGc33fIIFjoq1rmKHGD4ji0=
+	Fri, 28 Jan 2011 01:48:56 -0500
+Date: Fri, 28 Jan 2011 12:18:51 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kosaki.motohiro@jp.fujitsu.com, cl@linux.com,
+        kamezawa.hiroyu@jp.fujitsu.com
+Subject: Re: [PATCH 3/3] Provide control over unmapped pages (v4)
+Message-ID: <20110128064851.GB5054@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20110125051003.13762.35120.stgit@localhost6.localdomain6>
+ <20110125051015.13762.13429.stgit@localhost6.localdomain6>
+ <AANLkTikHLw0Qg+odOB-bDtBSB-5UbTJ5ZOM-ZAdMqXgh@mail.gmail.com>
+ <AANLkTi=qXsDjN5Jp4m3QMgVnckoAM7uE9_Hzn6CajP+c@mail.gmail.com>
+ <AANLkTinfxXc04S9VwQcJ9thFff=cP=icroaiVLkN-GeH@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4D40A116.6040209@gmail.com>
-References: <20110118195933.13011.56098.stgit@localhost6.localdomain6>
-	<00bcd596-2108-4c54-92d3-7fda39e333e3@VA3EHSMHS015.ehs.local>
-	<4D40A116.6040209@gmail.com>
-Date: Fri, 28 Jan 2011 14:37:15 +0800
-Message-ID: <AANLkTiktL9LzHTHv06Cx27CjvMiGCo6kN_HaDBiajr6n@mail.gmail.com>
-Subject: Re: [PATCH 0/8] Basic ARM device tree support
-From: Jason Liu <liu.h.jason@gmail.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: John Linn <John.Linn@xilinx.com>, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Lennert Buijtenhek <buytenh@wantstofly.org>,
-        Olof Johansson <olof@lixom.net>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinfxXc04S9VwQcJ9thFff=cP=icroaiVLkN-GeH@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Rob,
+* MinChan Kim <minchan.kim@gmail.com> [2011-01-28 14:44:50]:
 
-2011/1/27 Rob Herring <robherring2@gmail.com>:
-> On 01/26/2011 02:04 PM, John Linn wrote:
->>>
->>> -----Original Message-----
->>> From: Grant Likely [mailto:glikely@secretlab.ca] On Behalf Of Grant
->>> Likely
->>> Sent: Tuesday, January 18, 2011 1:29 PM
->>> To: linux-arm-kernel@lists.infradead.org
->>> Cc: Nicolas Pitre; Russell King; Catalin Marinas;
->>> devicetree-discuss@lists.ozlabs.org; linux-
->>> kernel@vger.kernel.org; Olof Johansson; Jeremy Kerr; John Linn; Lennert
->>> Buijtenhek
->>> Subject: [PATCH 0/8] Basic ARM device tree support
->>>
->>> It's been a while since these patches have been circulated for review.
->>> Much has changed since the last posting and there are no longer any
->>> ugly hacks or workarounds to it working.  From my viewpoint, these
->>> patches are complete and ready to be used.
->>>
->>> This patch series allows CONFIG_OF to be enabled on ARM and allows the
->>> kernel to accept a dtb pointer from boot firmware instead of atags.
->>> If a dtb is passed, then the kernel will use the root 'compatible'
->>> property to find a matching machine_desc, and it will use it to obtain
->>> the memory layout, initrd location and kernel parameters string.
->>>
->>> Only limited device tree support is enabled here.  It does not perform
->>> any kind of device registration from device tree data.  That support
->>> will be enabled in a later patch set.  Right now those patches depend
->>> on the common struct clk patches that Jeremy is working on, so I'm not
->>> going to post them yet.  Rather, this series is a stable base that
->>> other engineers can use to start working on device tree support for
->>> their platforms.
->>>
->>> Tested on Versatile (qemu) and nVidia Tegra Harmony.  Kernel compiles
->>> an boot with CONFIG_OF both on and off, both with and without passing
->>> a device tree blob.
->>
->> Tested on Xilinx platform.  Did see an issue with loading the device
->> tree blob into higher memory.  At address 0 there was no issue.
->>
+> On Fri, Jan 28, 2011 at 11:56 AM, Balbir Singh
+> <balbir@linux.vnet.ibm.com> wrote:
+> > On Thu, Jan 27, 2011 at 4:42 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> > [snip]
+> >
+> >>> index 7b56473..2ac8549 100644
+> >>> --- a/mm/page_alloc.c
+> >>> +++ b/mm/page_alloc.c
+> >>> @@ -1660,6 +1660,9 @@ zonelist_scan:
+> >>>                        unsigned long mark;
+> >>>                        int ret;
+> >>>
+> >>> +                       if (should_reclaim_unmapped_pages(zone))
+> >>> +                               wakeup_kswapd(zone, order, classzone_idx);
+> >>> +
+> >>
+> >> Do we really need the check in fastpath?
+> >> There are lost of caller of alloc_pages.
+> >> Many of them are not related to mapped pages.
+> >> Could we move the check into add_to_page_cache_locked?
+> >
+> > The check is a simple check to see if the unmapped pages need
+> > balancing, the reason I placed this check here is to allow other
+> > allocations to benefit as well, if there are some unmapped pages to be
+> > freed. add_to_page_cache_locked (check under a critical section) is
+> > even worse, IMHO.
+> 
+> It just moves the overhead from general into specific case(ie,
+> allocates page for just page cache).
+> Another cases(ie, allocates pages for other purpose except page cache,
+> ex device drivers or fs allocation for internal using) aren't
+> affected.
+> So, It would be better.
+> 
+> The goal in this patch is to remove only page cache page, isn't it?
+> So I think we could the balance check in add_to_page_cache and trigger reclaim.
+> If we do so, what's the problem?
 >
-> I have a fix for this. The issue is the early mmu page table needs to map
-> the dtb. I later realized this is also may be problem for ATAGs as well, so
-> I planned to re-work to make it unconditional and work for ATAGs. Or perhaps
-> ATAGs only get accessed with the MMU on later than the dtb and everything is
-> okay?
->
-> This applies to the DT patch set prior to the one Grant sent out
-> this week, so it may need updates.
->
-> From: Rob Herring <rob.herring@calxeda.com>
-> Date: Tue, 5 Oct 2010 10:32:51 -0500
-> Subject: [PATCH] arm/dt: map devtree blob in initial page table
->
-> If the DTB is not in 1st 1MB of RAM, it will not be mapped before
-> memblock is setup, so map it early. We assume the dtb is less than
-> 1MB and map 2MB so it can be at any alignment.
->
-> Some assembly optimizations from Nicolas Pitre.
->
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> ---
->  arch/arm/kernel/head.S |   13 +++++++++++++
->  1 files changed, 13 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
-> index 0480f25..1fcb962 100644
-> --- a/arch/arm/kernel/head.S
-> +++ b/arch/arm/kernel/head.S
-> @@ -228,6 +228,19 @@ __create_page_tables:
->        .endif
->        str     r6, [r0]
->
-> +#ifdef CONFIG_OF_FLATTREE
-> +       /* Make sure DT blob is mapped */
-> +       adr     r0, __devtree_pointer
-> +       ldr     r0, [r0]
-> +       mov     r0, r0, lsr #20
-> +       mov     r0, r0, lsl #20
-> +       add     r3, r0, #PAGE_OFFSET
-> +       add     r3, r4, r3, lsr #18
-> +       orr     r6, r7, r0
-> +       str     r6, [r3]
-> +       add     r6, r6, #0x100000
-> +       str     r6, [r3, #4]
-> +#endif
->  #ifdef CONFIG_DEBUG_LL
->  #ifndef CONFIG_DEBUG_ICEDCC
 
-Build broken after apply your patch,
-arch/arm/kernel/head.S:223: Error: undefined symbol __devtree_pointer
-used as an immediate value
-make[2]: *** [arch/arm/kernel/head.o] Error 1
+I see it as a tradeoff of when to check? add_to_page_cache or when we
+are want more free memory (due to allocation). It is OK to wakeup
+kswapd while allocating memory, somehow for this purpose (global page
+cache), add_to_page_cache or add_to_page_cache_locked does not seem
+the right place to hook into. I'd be open to comments/suggestions
+though from others as well.
+ 
+> >
+> >
+> >>
+> >>>                        mark = zone->watermark[alloc_flags & ALLOC_WMARK_MASK];
+> >>>                        if (zone_watermark_ok(zone, order, mark,
+> >>>                                    classzone_idx, alloc_flags))
+> >>> @@ -4167,8 +4170,12 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
+> >>>
+> >>>                zone->spanned_pages = size;
+> >>>                zone->present_pages = realsize;
+> >>> +#if defined(CONFIG_UNMAPPED_PAGE_CONTROL) || defined(CONFIG_NUMA)
+> >>>                zone->min_unmapped_pages = (realsize*sysctl_min_unmapped_ratio)
+> >>>                                                / 100;
+> >>> +               zone->max_unmapped_pages = (realsize*sysctl_max_unmapped_ratio)
+> >>> +                                               / 100;
+> >>> +#endif
+> >>>  #ifdef CONFIG_NUMA
+> >>>                zone->node = nid;
+> >>>                zone->min_slab_pages = (realsize * sysctl_min_slab_ratio) / 100;
+> >>> @@ -5084,6 +5091,7 @@ int min_free_kbytes_sysctl_handler(ctl_table *table, int write,
+> >>>        return 0;
+> >>>  }
+> >>>
+> >>> +#if defined(CONFIG_UNMAPPED_PAGE_CONTROL) || defined(CONFIG_NUMA)
+> >>>  int sysctl_min_unmapped_ratio_sysctl_handler(ctl_table *table, int write,
+> >>>        void __user *buffer, size_t *length, loff_t *ppos)
+> >>>  {
+> >>> @@ -5100,6 +5108,23 @@ int sysctl_min_unmapped_ratio_sysctl_handler(ctl_table *table, int write,
+> >>>        return 0;
+> >>>  }
+> >>>
+> >>> +int sysctl_max_unmapped_ratio_sysctl_handler(ctl_table *table, int write,
+> >>> +       void __user *buffer, size_t *length, loff_t *ppos)
+> >>> +{
+> >>> +       struct zone *zone;
+> >>> +       int rc;
+> >>> +
+> >>> +       rc = proc_dointvec_minmax(table, write, buffer, length, ppos);
+> >>> +       if (rc)
+> >>> +               return rc;
+> >>> +
+> >>> +       for_each_zone(zone)
+> >>> +               zone->max_unmapped_pages = (zone->present_pages *
+> >>> +                               sysctl_max_unmapped_ratio) / 100;
+> >>> +       return 0;
+> >>> +}
+> >>> +#endif
+> >>> +
+> >>>  #ifdef CONFIG_NUMA
+> >>>  int sysctl_min_slab_ratio_sysctl_handler(ctl_table *table, int write,
+> >>>        void __user *buffer, size_t *length, loff_t *ppos)
+> >>> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> >>> index 02cc82e..6377411 100644
+> >>> --- a/mm/vmscan.c
+> >>> +++ b/mm/vmscan.c
+> >>> @@ -159,6 +159,29 @@ static DECLARE_RWSEM(shrinker_rwsem);
+> >>>  #define scanning_global_lru(sc)        (1)
+> >>>  #endif
+> >>>
+> >>> +#if defined(CONFIG_UNMAPPED_PAGECACHE_CONTROL)
+> >>> +static unsigned long reclaim_unmapped_pages(int priority, struct zone *zone,
+> >>> +                                               struct scan_control *sc);
+> >>> +static int unmapped_page_control __read_mostly;
+> >>> +
+> >>> +static int __init unmapped_page_control_parm(char *str)
+> >>> +{
+> >>> +       unmapped_page_control = 1;
+> >>> +       /*
+> >>> +        * XXX: Should we tweak swappiness here?
+> >>> +        */
+> >>> +       return 1;
+> >>> +}
+> >>> +__setup("unmapped_page_control", unmapped_page_control_parm);
+> >>> +
+> >>> +#else /* !CONFIG_UNMAPPED_PAGECACHE_CONTROL */
+> >>> +static inline unsigned long reclaim_unmapped_pages(int priority,
+> >>> +                               struct zone *zone, struct scan_control *sc)
+> >>> +{
+> >>> +       return 0;
+> >>> +}
+> >>> +#endif
+> >>> +
+> >>>  static struct zone_reclaim_stat *get_reclaim_stat(struct zone *zone,
+> >>>                                                  struct scan_control *sc)
+> >>>  {
+> >>> @@ -2359,6 +2382,12 @@ loop_again:
+> >>>                                shrink_active_list(SWAP_CLUSTER_MAX, zone,
+> >>>                                                        &sc, priority, 0);
+> >>>
+> >>> +                       /*
+> >>> +                        * We do unmapped page reclaim once here and once
+> >>> +                        * below, so that we don't lose out
+> >>> +                        */
+> >>> +                       reclaim_unmapped_pages(priority, zone, &sc);
+> >>> +
+> >>>                        if (!zone_watermark_ok_safe(zone, order,
+> >>>                                        high_wmark_pages(zone), 0, 0)) {
+> >>>                                end_zone = i;
+> >>> @@ -2396,6 +2425,11 @@ loop_again:
+> >>>                                continue;
+> >>>
+> >>>                        sc.nr_scanned = 0;
+> >>> +                       /*
+> >>> +                        * Reclaim unmapped pages upfront, this should be
+> >>> +                        * really cheap
+> >>> +                        */
+> >>> +                       reclaim_unmapped_pages(priority, zone, &sc);
+> >>
+> >> Why should we do by two phase?
+> >> It's not a direct reclaim path. I mean it doesn't need to reclaim tighly
+> >> If we can't reclaim enough, next allocation would wake up kswapd again
+> >> and kswapd try it again.
+> >>
+> >
+> > I am not sure I understand, the wakeup will occur only if the unmapped
+> > pages are still above the max_unmapped_ratio. They are tunable control
+> > points.
+> 
+> I mean you try to reclaim twice in one path.
+> one is when select highest zone to reclaim.
+> one is when VM reclaim the zone.
+> 
+> What's your intention?
+> 
 
+That is because some zones can be skipped, we need to ensure we go
+through all zones, rather than selective zones (limited via search for
+end_zone).
 
-BR,
-Jason Liu
+> 
+> >
+> >> And I have a concern. I already pointed out.
+> >> If memory pressure is heavy and unmappd_pages is more than our
+> >> threshold, this can move inactive's tail pages which are mapped into
+> >> heads by reclaim_unmapped_pages. It can make confusing LRU order so
+> >> working set can be evicted.
+> >>
+> >
+> > Sorry, not sure  I understand completely? The LRU order is disrupted
+> > because we selectively scan unmapped pages. shrink_page_list() will
+> > ignore mapped pages and put them back in the LRU at head? Here is a
+> > quick take on what happens
+> >
+> > zone_reclaim() will be invoked as a result of these patches and the
+> > pages it tries to reclaim is very few (1 << order). Active list will
+> > be shrunk only when the inactive anon or inactive list is low in size.
+> > I don't see a major churn happening unless we keep failing to reclaim
+> > unmapped pages. In any case we isolate inactive pages and try to
+> > reclaim minimal memory, the churn is mostly in the inactive list if
+> > the page is not reclaimed (am I missing anything?).
+> 
+> You understand my question completely. :)
+> In inactive list, page order is important, too although it's weak
+> lumpy and compaction as time goes by.
+> If threshold up and down happens  frequently, victim pages in inactive
+> list could move into head and it's not good.
 
->        /*
-> --
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->
+But the assumption for LRU order to change happens only if the page
+cannot be successfully freed, which means it is in some way active..
+and needs to be moved no?
+
+Thanks for the detailed review!
+
+-- 
+	Three Cheers,
+	Balbir
