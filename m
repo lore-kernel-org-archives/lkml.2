@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699Ab1A1PUI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 10:20:08 -0500
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:29627 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751731Ab1A1PUG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 10:20:06 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 4MA1VeUVM1nIndq4IS1Uq2F7wDQlq_Hkmuu41b4OxizpeHg
- c14niju3qvplLMcR53eZicRIdYXwShwP8HzetsL7f81sMsgPhonAdI_P4OR1
- v8efhVrTekD0fEbUpbYy7I85P7Zqy7ZL2C3yqt8O9c0Wjg7hM7ANDKPbaOYn
- xau9ooPIKZDar5KOZWMBucI5xcSAtjcZgw7ZtXhbpJLJoNrR7HWmYBxKKZkh
- vbqRwHMMaZ0M-
-X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 28 Jan 2011 09:20:02 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-cc: Minchan Kim <minchan.kim@gmail.com>, balbir@linux.vnet.ibm.com,
-        linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kosaki.motohiro@jp.fujitsu.com
-Subject: Re: [PATCH 3/3] Provide control over unmapped pages (v4)
-In-Reply-To: <20110128165605.3cbe5208.kamezawa.hiroyu@jp.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1101280917570.1194@router.home>
-References: <20110125051003.13762.35120.stgit@localhost6.localdomain6> <20110125051015.13762.13429.stgit@localhost6.localdomain6> <AANLkTikHLw0Qg+odOB-bDtBSB-5UbTJ5ZOM-ZAdMqXgh@mail.gmail.com> <AANLkTi=qXsDjN5Jp4m3QMgVnckoAM7uE9_Hzn6CajP+c@mail.gmail.com>
- <AANLkTinfxXc04S9VwQcJ9thFff=cP=icroaiVLkN-GeH@mail.gmail.com> <20110128064851.GB5054@balbir.in.ibm.com> <AANLkTikw_j0JJVqEsj1xThoashiOARg+8BgcLKrvkV3U@mail.gmail.com> <20110128165605.3cbe5208.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753896Ab1A1PVQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 10:21:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56751 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750982Ab1A1PVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 10:21:15 -0500
+Date: Fri, 28 Jan 2011 07:15:55 -0800
+From: Greg KH <gregkh@suse.de>
+To: Jeff Garzik <jeff@garzik.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, cota@braap.org,
+        martyn.welch@ge.com
+Subject: Re: [git patch] Delete zero-length file
+Message-ID: <20110128151555.GA5199@suse.de>
+References: <20110128083118.GA20804@havoc.gtf.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110128083118.GA20804@havoc.gtf.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Jan 2011, KAMEZAWA Hiroyuki wrote:
+On Fri, Jan 28, 2011 at 03:31:18AM -0500, Jeff Garzik wrote:
+> 
+> Please pull from 'zerolen' branch of
+> master.kernel.org:/pub/scm/linux/kernel/git/jgarzik/misc-2.6.git zerolen
+> 
+> to receive the following updates:
+> 
+>  0 files changed, 0 insertions(+), 0 deletions(-)
+>  delete mode 100644 drivers/staging/vme/bridges/Module.symvers
+> 
+> Jeff Garzik (1):
+>       Delete zero-length drivers/staging/vme/bridges/Module.symvers
+> 
+> diff --git a/drivers/staging/vme/bridges/Module.symvers b/drivers/staging/vme/bridges/Module.symvers
+> deleted file mode 100644
+> index e69de29..0000000
 
-> > > I see it as a tradeoff of when to check? add_to_page_cache or when we
-> > > are want more free memory (due to allocation). It is OK to wakeup
-> > > kswapd while allocating memory, somehow for this purpose (global page
-> > > cache), add_to_page_cache or add_to_page_cache_locked does not seem
-> > > the right place to hook into. I'd be open to comments/suggestions
-> > > though from others as well.
->
-> I don't like add hook here.
-> AND I don't want to run kswapd because 'kswapd' has been a sign as
-> there are memory shortage. (reusing code is ok.)
->
-> How about adding new daemon ? Recently, khugepaged, ksmd works for
-> managing memory. Adding one more daemon for special purpose is not
-> very bad, I think. Then, you can do
->  - wake up without hook
->  - throttle its work.
->  - balance the whole system rather than zone.
->    I think per-node balance is enough...
+Heh, yes, that's in my staging-linus tree already which will be going to
+Linus later today.  Sorry, I've been on the road all week, which has
+kept me from being able to send it off.
 
+thanks,
 
-I think we already have enough kernel daemons floating around. They are
-multiplying in an amazing way. What would be useful is to map all
-the memory management background stuff into a process. May call this memd
-instead? Perhaps we can fold khugepaged into kswapd as well etc.
+greg k-h
