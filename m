@@ -1,78 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755308Ab1A1QzR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 11:55:17 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:47161 "EHLO mx3.mail.elte.hu"
+	id S1755318Ab1A1Q6u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 11:58:50 -0500
+Received: from claw.goop.org ([74.207.240.146]:43278 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755267Ab1A1QzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 11:55:16 -0500
-Date: Fri, 28 Jan 2011 17:54:55 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Tejun Heo <tj@kernel.org>
-Cc: roland@redhat.com, oleg@redhat.com, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCHSET] ptrace,signal: group stop / ptrace updates
-Message-ID: <20110128165455.GA18194@elte.hu>
-References: <1296227324-25295-1-git-send-email-tj@kernel.org>
+	id S1754668Ab1A1Q6t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 11:58:49 -0500
+Message-ID: <4D42F5C8.8060703@goop.org>
+Date: Fri, 28 Jan 2011 08:58:48 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296227324-25295-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Kees Cook <kees.cook@canonical.com>,
+        matthieu castet <castet.matthieu@free.fr>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [BUG] broken ebba638ae723d8a8fc2f7abce5ec18b688b791d7
+References: <4D41E86D.8060205@free.fr> <20110127230013.GO4981@outflux.net> <4D4228CE.5090601@zytor.com> <4D423A19.2060201@zytor.com>
+In-Reply-To: <4D423A19.2060201@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/27/2011 07:38 PM, H. Peter Anvin wrote:
+> [Adding Jeremy]
+>
+> Jeremy, would this break Xen?  As far as I know, Xen is the main user
+> of skipping segment register initialization.
 
-Hi,
+Xen doesn't go through head_*.S at all.
 
-I'm hijacking this thread, to report a signal handling bug that Linux and Bash has, 
-and which has been there at least for 10 years since i started using SMP Linux 
-systems ...
+    J
 
-It's not easy to reproduce but today i found a reproducer - maybe you guys have an 
-idea what's going on.
+>
+>     -hpa
+>
+>
+> On 01/27/2011 06:24 PM, H. Peter Anvin wrote:
+>> On 01/27/2011 03:00 PM, Kees Cook wrote:
+>>>
+>>> Yikes, good catch.
+>>>
+>>> arch/x86/kernel/trampoline_64.S uses:
+>>> movw $(trampoline_stack_end - r_base), %sp
+>>>
+>>> arch/x86/boot/compressed/head_64.S uses:
+>>> movl $boot_stack_end, %eax
+>>> addl %ebp, %eax
+>>> movl %eax, %esp
+>>>
+>>> what would be safe for arch/x86/kernel/head_32.S ? It uses
+>>> "stack_start",
+>>> but later after paging set-up. Is the following sane to solve this?
+>>>
+>>
+>> To run it before paging is set up, you can't use stack, start; you have
+>> to use a pointer based on physical address. You have two problems with
+>> using stack_start: you're using a linear address to access stack_start,
+>> and stack_start itself contains a linear address.
+>>
+>> It's not entirely clear to me why we don't initialize %ss to __BOOT_DS
+>> with the other segment registers, but it would make most sense to me:
+>>
+>> diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+>> index fc293dc..c10f9ba 100644
+>> --- a/arch/x86/kernel/head_32.S
+>> +++ b/arch/x86/kernel/head_32.S
+>> @@ -99,7 +99,12 @@ ENTRY(startup_32)
+>> movl %eax,%es
+>> movl %eax,%fs
+>> movl %eax,%gs
+>> + movl %eax,%ss
+>> 2:
+>> +/*
+>> + * Set up an initial stack
+>> + */
+>> + movl $pa(init_thread_union+THREAD_SIZE), %esp
+>>
+>> /*
+>> * Clear BSS first so that there are no surprises...
+>>
+>> -hpa
+>
 
-There's two very simple scripts, one calls the other in an infinite loop:
-
- $ cat test-signal
- #!/bin/bash
-
- while true; do ./test-signal2; done
-
- $ cat test-signal2
- #!/bin/bash
-
- true
-
-The bug is that occasionally Ctrl-C does not get processed, and that the Ctrl-C is 
-'lost'. It can be reproduced here by running ./test-signal several times, and 
-Ctrl-C-ing it:
-
- $ ./test-signal
- ^C
- $ ./test-signal
- ^C^C
- $ ./test-signal
- ^C
-
-See that '^C^C' line? That is where i had to do Ctrl-C twice.
-
-It only fails here about once every 10 times, so it's very rare. I have a stock F14 
-system running on that box, with the very latest .38 based kernel.
-
-Any ideas what's going on?
-
-Thanks,
-
-	Ingo
