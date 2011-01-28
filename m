@@ -1,102 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066Ab1A1ARm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 19:17:42 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:8579 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753894Ab1A1ARk (ORCPT
+	id S1754383Ab1A1ASz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 19:18:55 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38502 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753522Ab1A1ASy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 19:17:40 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtAEAI6ZQU15LN5mgWdsb2JhbACkfBYBARYiJLxXDYVCBA
-Date: Fri, 28 Jan 2011 11:17:35 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Mark Lord <kernel@teksavvy.com>
-Cc: Stan Hoeppner <stan@hardwarefreak.com>,
-        Justin Piszcz <jpiszcz@lucidpixels.com>,
-        Christoph Hellwig <hch@infradead.org>, Alex Elder <aelder@sgi.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: xfs: very slow after mount, very slow at umount
-Message-ID: <20110128001735.GO21311@dastard>
-References: <4D40C8D1.8090202@teksavvy.com>
- <20110127033011.GH21311@dastard>
- <4D40EB2F.2050809@teksavvy.com>
- <4D418B57.1000501@teksavvy.com>
- <alpine.DEB.2.00.1101271040000.31246@p34.internal.lan>
- <4D419765.4070805@teksavvy.com>
- <4D41CA16.8070001@hardwarefreak.com>
- <4D41EA04.7010506@teksavvy.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D41EA04.7010506@teksavvy.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 27 Jan 2011 19:18:54 -0500
+Date: Thu, 27 Jan 2011 16:18:17 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Haavard Skinnemoen <hskinnemoen@atmel.com>, Linux-MM <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Xen-devel <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 0/9] Add apply_to_page_range_batch() and use it
+Message-Id: <20110127161817.9cbcae91.akpm@linux-foundation.org>
+In-Reply-To: <cover.1295653400.git.jeremy.fitzhardinge@citrix.com>
+References: <cover.1295653400.git.jeremy.fitzhardinge@citrix.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 27, 2011 at 04:56:20PM -0500, Mark Lord wrote:
-> On 11-01-27 02:40 PM, Stan Hoeppner wrote:
-> ..
-> > You need to use the mkfs.xfs defaults for any single drive filesystem, and trust
-> > the allocator to do the right thing.
+On Mon, 24 Jan 2011 14:55:58 -0800
+Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+
+> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 > 
-> But it did not do the right thing when I used the defaults.
-> Big files ended up with tons of (exactly) 64MB extents, ISTR.
-
-Because your AG size is 64MB. An extent can't be larger than an AG.
-Hence you are fragmenting your large files unnecessarily, as extents
-can be up to 8GB in size on a 4k block size filesystem.
-
-> With the increased number of ags, I saw much less fragmentation,
-> and the drive was still very light on I/O despite multiple simultaneous
-> recordings, commflaggers, and playback at once.
-
-The allocsize mount option is the prefered method of keeping
-fragemntation down for dvr style workloads.
-
-> > Trust the defaults.
+> I'm proposing this series for 2.6.39.
 > 
-> I imagine the defaults are designed to handle a typical Linux install,
-> with 100,000 to 1,000,000 files varying from a few bytes to a few megabytes.
+> We've had apply_to_page_range() for a while, which is a general way to
+> apply a function to ptes across a range of addresses - including
+> allocating any missing parts of the pagetable as needed.  This logic
+> is replicated in a number of places throughout the kernel, but it
+> hasn't been widely replaced by this function, partly because of
+> concerns about the overhead of calling the function once per pte.
+> 
+> This series adds apply_to_page_range_batch() (and reimplements
+> apply_to_page_range() in terms of it), which calls the pte operation
+> function once per pte page, moving the inner loop into the callback
+> function.
+> 
+> apply_to_page_range(_batch) also calls its callback with lazy mmu
+> updates enabled, which allows batching of the operations in
+> environments where this is beneficial (ie, virtualization).  The only
+> caveat this introduces is callbacks can't expect to immediately see
+> the effects of the pte updates in memory.
+> 
+> Since this is effectively identical to the code in lib/ioremap.c and
+> mm/vmalloc.c (twice!), I replace their open-coded variants.  I'm sure
+> there are others places in the kernel which could do with this (I only
+> stumbled over ioremap by accident).
+> 
+> I also add a minor optimisation to vunmap_page_range() to use a
+> plain pte_clear() rather than the more expensive and unnecessary
+> ptep_get_and_clear().
+> 
+> Jeremy Fitzhardinge (9):
+>   mm: remove unused "token" argument from apply_to_page_range callback.
+>   mm: add apply_to_page_range_batch()
+>   ioremap: use apply_to_page_range_batch() for ioremap_page_range()
+>   vmalloc: use plain pte_clear() for unmaps
+>   vmalloc: use apply_to_page_range_batch() for vunmap_page_range()
+>   vmalloc: use apply_to_page_range_batch() for
+>     vmap_page_range_noflush()
+>   vmalloc: use apply_to_page_range_batch() in alloc_vm_area()
+>   xen/mmu: use apply_to_page_range_batch() in
+>     xen_remap_domain_mfn_range()
+>   xen/grant-table: use apply_to_page_range_batch()
+> 
+>  arch/x86/xen/grant-table.c |   30 +++++----
+>  arch/x86/xen/mmu.c         |   18 +++--
+>  include/linux/mm.h         |    9 ++-
+>  lib/ioremap.c              |   85 +++++++------------------
+>  mm/memory.c                |   57 ++++++++++++-----
+>  mm/vmalloc.c               |  150 ++++++++++++--------------------------------
+>  6 files changed, 140 insertions(+), 209 deletions(-)
 
-Why would we optimise a filesystem designed for use on high end
-storage and large amounts of IO concurrency for what a typical Linux
-desktop needs? For such storage (i.e. single spindle) mkfs optimises
-the layout for minimal seeks and relatively low amounts of
-concurrency. This gives _adequate_ performance on desktop machines
-without compromising scalbility on high end storage.
-
-In my experience with XFS, most people who tweak mkfs parameters end
-up with some kind of problem they can't explain and don't know how
-to solve. And they are typically problems that would not have
-occurred had they simply used the defaults in the first place. What
-you've done is a perfect example of this.
-
-Yes, I know we are taking the fun out of tweaking knobs so you can
-say it's 1% faster than the default, but that's our job: to
-determine the right default settings so the filesystem works as well
-as possible out of the box with no tweaking for most workloads on a
-wide range of storage....
-
-> That's not what this filesystem will have. It will have only a few thousand
-> (max) inodes at any given time, but each file will be HUGE.
-
-Which is exactly the use case XFS was designed for, and....
-
-> XFS is fantastic at adapting to the workload, but I'd like to try and have
-> it tuned more closely for the known workload this system is throwing at it.
-
-.... as such the mkfs defaults are already tuned as well as they can
-be for such usage.
-
-> I'm now trying again, but with 8 ags instead of 8000+.
-
-Why 8 AGs and not the default?
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+That all looks good to me.
