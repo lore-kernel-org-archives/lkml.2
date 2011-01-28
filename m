@@ -1,21 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab1A1BJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 20:09:57 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49889 "EHLO
+	id S1754013Ab1A1BNg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 20:13:36 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47029 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752960Ab1A1BJ4 (ORCPT
+	by vger.kernel.org with ESMTP id S1752576Ab1A1BNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 20:09:56 -0500
-Date: Thu, 27 Jan 2011 17:09:48 -0800
+	Thu, 27 Jan 2011 20:13:34 -0500
+Date: Thu, 27 Jan 2011 17:12:44 -0800
 From: Andrew Morton <akpm@linux-foundation.org>
-To: dsterba@suse.cz
-Cc: ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org, mfasheh@suse.com,
-        joel.becker@oracle.com
-Subject: Re: fs/ocfs2/dlm: Use GFP_ATOMIC under spin_lock
-Message-Id: <20110127170948.9a0d8b60.akpm@linux-foundation.org>
-In-Reply-To: <20101102223601.GA27513@ds.suse.cz>
-References: <20101102223601.GA27513@ds.suse.cz>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Huang Ying <ying.huang@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Avi Kivity <avi@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>, Dean Nelson <dnelson@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [PATCH 1/2] mm, Make __get_user_pages return -EHWPOISON for
+ HWPOISON page optionally
+Message-Id: <20110127171244.7a9442a7.akpm@linux-foundation.org>
+In-Reply-To: <20110128005711.GB15569@one.firstfloor.org>
+References: <1294908168.4596.58.camel@yhuang-dev>
+	<4D2ED737.6050802@redhat.com>
+	<1294969036.4596.67.camel@yhuang-dev>
+	<4D331054.4030206@redhat.com>
+	<1295225259.10748.3.camel@yhuang-dev>
+	<20110120155021.GA5996@amt.cnet>
+	<1296113345.15213.87.camel@yhuang-dev>
+	<20110127150705.f2cfe235.akpm@linux-foundation.org>
+	<20110128005711.GB15569@one.firstfloor.org>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -24,107 +38,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Blast from the past...
+On Fri, 28 Jan 2011 01:57:11 +0100
+Andi Kleen <andi@firstfloor.org> wrote:
 
-On Tue, 2 Nov 2010 23:36:02 +0100
-David Sterba <dsterba@suse.cz> wrote:
-
-> coccinelle check scripts/coccinelle/locks/call_kern.cocci found that
-> in fs/ocfs2/dlm/dlmdomain.c an allocation with GFP_KERNEL is done
-> with locks held:
+> I personally would consider it cleaner to have clearly
+> defined wrappers instead of complicted flags in the caller.
 > 
-> dlm_query_region_handler
->   spin_lock(dlm_domain_lock)
->     dlm_match_regions
->       kmalloc(GFP_KERNEL)
+> > The number of args to these functions is getting nutty - you'll
+> > probably find that it is beneficial to inline these wrapepr functions, if
+> > the number of callsites is small.
 > 
-> Change it to GFP_ATOMIC.
-> 
-> Signed-off-by: David Sterba <dsterba@suse.cz>
-> CC: Joel Becker <joel.becker@oracle.com>
-> CC: Mark Fasheh <mfasheh@suse.com>
-> CC: ocfs2-devel@oss.oracle.com
-> 
-> --
-> Exists in v2.6.37-rc1 and current linux-next.
-> 
-> diff -u -p a/fs/ocfs2/dlm/dlmdomain.c b/fs/ocfs2/dlm/dlmdomain.c
-> --- a/fs/ocfs2/dlm/dlmdomain.c 2010-10-22 10:23:23.502434402 +0200
-> +++ b/fs/ocfs2/dlm/dlmdomain.c 2010-11-02 17:11:06.000000000 +0100
-> @@ -959,7 +959,7 @@ static int dlm_match_regions(struct dlm_
->                 r += O2HB_MAX_REGION_NAME_LEN;
->         }
-> 
-> -       local = kmalloc(sizeof(qr->qr_regions), GFP_KERNEL);
-> +       local = kmalloc(sizeof(qr->qr_regions), GFP_ATOMIC);
->         if (!local) {
->                 status = -ENOMEM;
->                 goto bail;
-> 
+> Really the functions are so heavy weight it should not matter.
+> The problem with inlining is that you end up with the code in
+> the header file and I personally find that much harder to browse
+> instead of having everything in one file.
 
-Switching to GFP_ATOMIC is the worst of all possible ways of "fixing"
-this bug.  GFP_ATOMIC is *unreliable*.  We don't want to introduce
-unreliability deep down inside our filesytems.  And fs maintainers who
-don't want to make their filesystems less reliable shouldn't blindly
-apply patches that do so :(
+You'll cope.
 
+> Also longer term we'll get compilers that can do cross-file inlining
+> for optimized builds.
 
-A reliable way of fixing this bug is below.  As an added bonus, it
-makes the fs faster.
+Which we'll probably need to turn off all over the place :(
 
---- a/fs/ocfs2/dlm/dlmdomain.c~a
-+++ a/fs/ocfs2/dlm/dlmdomain.c
-@@ -926,9 +926,9 @@ static int dlm_assert_joined_handler(str
- }
- 
- static int dlm_match_regions(struct dlm_ctxt *dlm,
--			     struct dlm_query_region *qr)
-+			     struct dlm_query_region *qr, u8 *local)
- {
--	char *local = NULL, *remote = qr->qr_regions;
-+	char *remote = qr->qr_regions;
- 	char *l, *r;
- 	int localnr, i, j, foundit;
- 	int status = 0;
-@@ -957,12 +957,6 @@ static int dlm_match_regions(struct dlm_
- 		r += O2HB_MAX_REGION_NAME_LEN;
- 	}
- 
--	local = kmalloc(sizeof(qr->qr_regions), GFP_ATOMIC);
--	if (!local) {
--		status = -ENOMEM;
--		goto bail;
--	}
--
- 	localnr = o2hb_get_all_regions(local, O2NM_MAX_REGIONS);
- 
- 	/* compare local regions with remote */
-@@ -1012,8 +1006,6 @@ static int dlm_match_regions(struct dlm_
- 	}
- 
- bail:
--	kfree(local);
--
- 	return status;
- }
- 
-@@ -1077,6 +1069,7 @@ static int dlm_query_region_handler(stru
- 	struct dlm_ctxt *dlm = NULL;
- 	int status = 0;
- 	int locked = 0;
-+	static u8 local[sizeof(qr->qr_regions)]; /* locked by dlm_domain_lock */
- 
- 	qr = (struct dlm_query_region *) msg->buf;
- 
-@@ -1112,7 +1105,7 @@ static int dlm_query_region_handler(stru
- 		goto bail;
- 	}
- 
--	status = dlm_match_regions(dlm, qr);
-+	status = dlm_match_regions(dlm, qr, local);
- 
- bail:
- 	if (locked)
-_
+> So please better avoid these kinds of micro optimizations unless
+> it's a really really extremly speed critical path.
 
-
+It's not just speed and it's not just .text size, either. Calling a
+ten-arg function consumes stack space.
