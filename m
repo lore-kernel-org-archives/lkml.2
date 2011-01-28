@@ -1,53 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869Ab1A1Hlt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 02:41:49 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:35964 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753304Ab1A1Hls (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 02:41:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=YdT4M7QB9bJGj8j/ILyWLs1cSRUUXxVlOwXdh+pRLGsDCg12R7cj48b3P6u7j0lnHu
-         r2hyKAZjbiOVGlASAmCt96cUodpj5hSjzO2GHhcurnAr0sxJ41g3EcpqpIwbir0N1OC6
-         iT/Sj6PZekh3h1n2ByMvAa3wxXrJtizLTVynI=
-Date: Fri, 28 Jan 2011 10:41:37 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Joe Perches <joe@perches.com>, Vipin Mehta <vmehta@atheros.com>,
-        devel@driverdev.osuosl.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/15] staging: ath6kl: Update cfg80211 to recent
- calling convention changes
-Message-ID: <20110128074137.GC20606@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Joe Perches <joe@perches.com>, Vipin Mehta <vmehta@atheros.com>,
-	devel@driverdev.osuosl.org, Greg Kroah-Hartman <gregkh@suse.de>,
-	linux-kernel@vger.kernel.org
-References: <cover.1296186677.git.joe@perches.com>
- <9f92ccc5786180a9055ee22b28d1b6ea8cbda425.1296186677.git.joe@perches.com>
- <20110128073554.GB20606@bicker>
+	id S1753985Ab1A1HwX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 02:52:23 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:59016 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753472Ab1A1HwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 02:52:22 -0500
+Date: Fri, 28 Jan 2011 08:52:15 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
+Subject: Re: [BUGFIX][PATCH 1/4] memcg: fix limit estimation at reclaim for
+ hugepage
+Message-ID: <20110128075215.GA2213@cmpxchg.org>
+References: <20110128122229.6a4c74a2.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110128122449.e4bb0e5f.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110128073554.GB20606@bicker>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110128122449.e4bb0e5f.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 28, 2011 at 10:35:54AM +0300, Dan Carpenter wrote:
-> On Thu, Jan 27, 2011 at 08:04:18PM -0800, Joe Perches wrote:
-> > Add bool unicast and bool multicast to set_default_key
-> > Return struct net_device * to add_virtual_intf
+On Fri, Jan 28, 2011 at 12:24:49PM +0900, KAMEZAWA Hiroyuki wrote:
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > 
-> Don't we have to update the callers when we change the functions?  I
-> think this would break git bisect.  What am I missing?
+> Current memory cgroup's code tends to assume page_size == PAGE_SIZE
+> and arrangement for THP is not enough yet.
+> 
+> This is one of fixes for supporing THP. This adds
+> mem_cgroup_check_margin() and checks whether there are required amount of
+> free resource after memory reclaim. By this, THP page allocation
+> can know whether it really succeeded or not and avoid infinite-loop
+> and hangup.
+> 
+> Total fixes for do_charge()/reclaim memory will follow this patch.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  include/linux/res_counter.h |   11 +++++++++++
+>  mm/memcontrol.c             |   25 ++++++++++++++++++++++++-
+>  2 files changed, 35 insertions(+), 1 deletion(-)
+> 
+> Index: mmotm-0125/include/linux/res_counter.h
+> ===================================================================
+> --- mmotm-0125.orig/include/linux/res_counter.h
+> +++ mmotm-0125/include/linux/res_counter.h
+> @@ -182,6 +182,17 @@ static inline bool res_counter_check_und
+>  	return ret;
+>  }
+>  
+> +static inline s64 res_counter_check_margin(struct res_counter *cnt)
+> +{
+> +	s64 ret;
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&cnt->lock, flags);
+> +	ret = cnt->limit - cnt->usage;
+> +	spin_unlock_irqrestore(&cnt->lock, flags);
+> +	return ret;
+> +}
 
-Ah.  It didn't work before.  I see.
+This function does not check anything.  You could name it
+res_counter_get_margin() e.g.  But if you do that, I will complain
+that it's asymmetric to res_counter_check_under_limit().  And the
+result will be pretty close to my version...
 
-regards,
-dan carpenter
+> @@ -1853,7 +1869,14 @@ static int __mem_cgroup_do_charge(struct
+>  	 * Check the limit again to see if the reclaim reduced the
+>  	 * current usage of the cgroup before giving up
+>  	 */
+> -	if (ret || mem_cgroup_check_under_limit(mem_over_limit))
+> +	if (mem_cgroup_check_margin(mem_over_limit) >= csize)
+> +		return CHARGE_RETRY;
+> +
+> +	/*
+> + 	 * If the charge size is a PAGE_SIZE, it's not hopeless while
+> + 	 * we can reclaim a page.
+> + 	 */
+> +	if (csize == PAGE_SIZE && ret)
+>  		return CHARGE_RETRY;
+
+That makes sense.
