@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129Ab1A1QE4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 11:04:56 -0500
-Received: from 89-230.252-81.static-ip.oleane.fr ([81.252.230.89]:42942 "EHLO
+	id S1755264Ab1A1QFK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 11:05:10 -0500
+Received: from 89-230.252-81.static-ip.oleane.fr ([81.252.230.89]:42947 "EHLO
 	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753703Ab1A1QEz (ORCPT
+	with ESMTP id S1753947Ab1A1QEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Jan 2011 11:04:55 -0500
 From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
@@ -13,99 +13,69 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Benjamin Tissoires <benjamin.tissoires@enac.fr>,
         Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@lii-enac.fr>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] hid-multitouch: work on default classes and renaming of classes
-Date: Fri, 28 Jan 2011 17:04:39 +0100
-Message-Id: <1296230680-2871-1-git-send-email-benjamin.tissoires@enac.fr>
+Subject: [PATCH 2/2] hid-multitouch: introduce IrTouch Infrared USB device
+Date: Fri, 28 Jan 2011 17:04:40 +0100
+Message-Id: <1296230680-2871-2-git-send-email-benjamin.tissoires@enac.fr>
 X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1296230680-2871-1-git-send-email-benjamin.tissoires@enac.fr>
+References: <1296230680-2871-1-git-send-email-benjamin.tissoires@enac.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The safest quirk for a device (the one that works out of the box for
-most of them) is the MT_QUIRK_NOT_SEEN_MEANS_UP. Indeed, it does not
-make any assumption on the device. When adding a new device, we can
-easily test it against MT_CLS_DEFAULT, and then optimize it with other
-quirks: that's why no device use MT_CLS_DEFAULT right now.
+The product id is the 42 inches one. I don't know if they have
+other product id for the other size, or if it is a per-size product id.
 
-This patch introduce also MT_CLS_DUAL_DEFAULT which has the same purpose
-than MT_CLS_DEFAULT, but for dual touch panels.
-
-Finally, the patch renames MT_CLS_DUAL1 to MT_CLS_DUAL_INRANGE_CONTACTID
-and MT_CLS_DUAL2 to MT_CLS_DUAL_INRANGE_CONTACTNUMBER for better
-readability.
-
+Tested-by: Victor Zhuk <v.zhuk@acs-ltd.ru>
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
 ---
- drivers/hid/hid-multitouch.c |   25 +++++++++++++++----------
- 1 files changed, 15 insertions(+), 10 deletions(-)
+ drivers/hid/Kconfig          |    1 +
+ drivers/hid/hid-ids.h        |    3 +++
+ drivers/hid/hid-multitouch.c |    5 +++++
+ 3 files changed, 9 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index 24cca2f..a0b117d 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -304,6 +304,7 @@ config HID_MULTITOUCH
+ 	  Say Y here if you have one of the following devices:
+ 	  - Cypress TrueTouch panels
+ 	  - Hanvon dual touch panels
++	  - IrTouch Infrared USB panels
+ 	  - Pixcir dual touch panels
+ 	  - 'Sensing Win7-TwoFinger' panel by GeneralTouch
+ 
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 92a0d61..b1dd7ad 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -333,6 +333,9 @@
+ #define USB_VENDOR_ID_IMATION		0x0718
+ #define USB_DEVICE_ID_DISC_STAKKA	0xd000
+ 
++#define USB_VENDOR_ID_IRTOUCHSYSTEMS	0x6615
++#define USB_DEVICE_ID_IRTOUCH_INFRARED_USB	0x0070
++
+ #define USB_VENDOR_ID_JESS		0x0c45
+ #define USB_DEVICE_ID_JESS_YUREX	0x1010
+ 
 diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 07d3183..ffe2a76 100644
+index ffe2a76..1629296 100644
 --- a/drivers/hid/hid-multitouch.c
 +++ b/drivers/hid/hid-multitouch.c
-@@ -24,6 +24,7 @@
- 
- 
- MODULE_AUTHOR("Stephane Chatty <chatty@enac.fr>");
-+MODULE_AUTHOR("Benjamin Tissoires <benjamin.tissoires@gmail.com>");
- MODULE_DESCRIPTION("HID multitouch panels");
- MODULE_LICENSE("GPL");
- 
-@@ -65,10 +66,11 @@ struct mt_class {
- };
- 
- /* classes of device behavior */
--#define MT_CLS_DEFAULT	1
--#define MT_CLS_DUAL1	2
--#define MT_CLS_DUAL2	3
--#define MT_CLS_CYPRESS	4
-+#define MT_CLS_DEFAULT				1
-+#define MT_CLS_DUAL_DEFAULT			2
-+#define MT_CLS_DUAL_INRANGE_CONTACTID		3
-+#define MT_CLS_DUAL_INRANGE_CONTACTNUMBER	4
-+#define MT_CLS_CYPRESS				10
- 
- /*
-  * these device-dependent functions determine what slot corresponds
-@@ -104,13 +106,16 @@ static int find_slot_from_contactid(struct mt_device *td)
- 
- struct mt_class mt_classes[] = {
- 	{ .name = MT_CLS_DEFAULT,
--		.quirks = MT_QUIRK_VALID_IS_INRANGE,
-+		.quirks = MT_QUIRK_NOT_SEEN_MEANS_UP,
- 		.maxcontacts = 10 },
--	{ .name = MT_CLS_DUAL1,
-+	{ .name = MT_CLS_DUAL_DEFAULT,
-+		.quirks = MT_QUIRK_NOT_SEEN_MEANS_UP,
-+		.maxcontacts = 2 },
-+	{ .name = MT_CLS_DUAL_INRANGE_CONTACTID,
- 		.quirks = MT_QUIRK_VALID_IS_INRANGE |
- 			MT_QUIRK_SLOT_IS_CONTACTID,
- 		.maxcontacts = 2 },
--	{ .name = MT_CLS_DUAL2,
-+	{ .name = MT_CLS_DUAL_INRANGE_CONTACTNUMBER,
- 		.quirks = MT_QUIRK_VALID_IS_INRANGE |
- 			MT_QUIRK_SLOT_IS_CONTACTNUMBER,
- 		.maxcontacts = 2 },
-@@ -466,15 +471,15 @@ static const struct hid_device_id mt_devices[] = {
- 			USB_DEVICE_ID_CYPRESS_TRUETOUCH) },
- 
- 	/* GeneralTouch panel */
--	{ .driver_data = MT_CLS_DUAL2,
-+	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTNUMBER,
+@@ -475,6 +475,11 @@ static const struct hid_device_id mt_devices[] = {
  		HID_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
  			USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS) },
  
++	/* IRTOUCH panels */
++	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTID,
++		HID_USB_DEVICE(USB_VENDOR_ID_IRTOUCHSYSTEMS,
++			USB_DEVICE_ID_IRTOUCH_INFRARED_USB) },
++
  	/* PixCir-based panels */
--	{ .driver_data = MT_CLS_DUAL1,
-+	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTID,
+ 	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTID,
  		HID_USB_DEVICE(USB_VENDOR_ID_HANVON,
- 			USB_DEVICE_ID_HANVON_MULTITOUCH) },
--	{ .driver_data = MT_CLS_DUAL1,
-+	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTID,
- 		HID_USB_DEVICE(USB_VENDOR_ID_CANDO,
- 			USB_DEVICE_ID_CANDO_PIXCIR_MULTI_TOUCH) },
- 
 -- 
 1.7.3.4
 
