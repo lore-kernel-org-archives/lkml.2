@@ -1,160 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755131Ab1A1O6R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 09:58:17 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:58194 "EHLO mgw2.diku.dk"
+	id S1755251Ab1A1O62 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 09:58:28 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:33730 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754808Ab1A1O6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 09:58:16 -0500
-Date: Fri, 28 Jan 2011 15:58:09 +0100 (CET)
-From: Julia Lawall <julia@diku.dk>
-To: Paul Moore <paul.moore@hp.com>
-Cc: kernel-janitors@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] net/netlabel: Avoid call to genlmsg_cancel
-In-Reply-To: <1296225364.5511.6.camel@sifl>
-Message-ID: <Pine.LNX.4.64.1101281541030.8546@pc-004.diku.dk>
-References: <1296224232-8115-2-git-send-email-julia@diku.dk>
- <1296225364.5511.6.camel@sifl>
+	id S1755196Ab1A1O61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 09:58:27 -0500
+Date: Fri, 28 Jan 2011 08:58:17 -0600
+From: Robert Jennings <rcj@linux.vnet.ibm.com>
+To: Nitin Gupta <ngupta@vflare.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/7] [v2] zram: Prevent overflow in logical block size
+Message-ID: <20110128145816.GC2062@linux.vnet.ibm.com>
+Mail-Followup-To: Nitin Gupta <ngupta@vflare.org>,
+	Greg Kroah-Hartman <gregkh@suse.de>,
+	Pekka Enberg <penberg@cs.helsinki.fi>, devel@driverdev.osuosl.org,
+	linux-kernel@vger.kernel.org
+References: <20110128145602.GA2062@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110128145602.GA2062@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Jan 2011, Paul Moore wrote:
+On a 64K page kernel, the value PAGE_SIZE passed to
+blk_queue_logical_block_size would overflow the logical block size
+argument (resulting in setting it to 0).
 
-> On Fri, 2011-01-28 at 15:17 +0100, Julia Lawall wrote:
-> > genlmsg_cancel subtracts some constants from its second argument before
-> > calling nlmsg_cancel.  nlmsg_cancel then calls nlmsg_trim on the same
-> > arguments.  nlmsg_trim tests for NULL before doing any computation, but a
-> > NULL second argument to genlmsg_cancel is no longer NULL due to the initial
-> > subtraction.  Nothing else happens in this execution, so the call to
-> > genlmsg_cancel is simply unnecessary in this case.
-> > 
-> > The semantic match that finds this problem is as follows:
-> > (http://coccinelle.lip6.fr/)
-> > 
-> > // <smpl>
-> > @@
-> > expression data;
-> > @@
-> > 
-> > if (data == NULL) { ...
-> > * genlmsg_cancel(..., data);
-> >   ...
-> >   return ...;
-> > }
-> > // </smpl>
-> > 
-> > Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> In all of the cases below, these functions are called multiple times to
-> generate data chunks (additional netlink attributes) which are appended
-> to an existing skbuff.  I believe that the calls to genlmsg_cancel() are
-> still needed to help cleanup in the case where the functions fail on the
-> Nth call.
-> 
-> If I'm wrong, feel free to enlighten me.
+This patch sets the logical block size to 4096, using a new
+ZRAM_LOGICAL_BLOCK_SIZE constant.
 
-Perhaps something is needed, but I don't see how the current code can 
-work.  The call is genlmsg_cancel(cb_arg->skb, NULL) in each case.
+Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+---
+ drivers/staging/zram/zram_drv.c |    3 ++-
+ drivers/staging/zram/zram_drv.h |    1 +
+ 2 files changed, 3 insertions(+), 1 deletions(-)
 
-The definition of genlmsg_cancel is:
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 5415712..d85d034 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -620,7 +620,8 @@ static int create_device(struct zram *zram, int device_id)
+ 	 * and n*PAGE_SIZED sized I/O requests.
+ 	 */
+ 	blk_queue_physical_block_size(zram->disk->queue, PAGE_SIZE);
+-	blk_queue_logical_block_size(zram->disk->queue, PAGE_SIZE);
++	blk_queue_logical_block_size(zram->disk->queue,
++					ZRAM_LOGICAL_BLOCK_SIZE);
+ 	blk_queue_io_min(zram->disk->queue, PAGE_SIZE);
+ 	blk_queue_io_opt(zram->disk->queue, PAGE_SIZE);
+ 
+diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+index a481551..408b2c0 100644
+--- a/drivers/staging/zram/zram_drv.h
++++ b/drivers/staging/zram/zram_drv.h
+@@ -61,6 +61,7 @@ static const unsigned max_zpage_size = PAGE_SIZE / 4 * 3;
+ #define SECTOR_SIZE		(1 << SECTOR_SHIFT)
+ #define SECTORS_PER_PAGE_SHIFT	(PAGE_SHIFT - SECTOR_SHIFT)
+ #define SECTORS_PER_PAGE	(1 << SECTORS_PER_PAGE_SHIFT)
++#define ZRAM_LOGICAL_BLOCK_SIZE	4096
+ 
+ /* Flags for zram pages (table[page_no].flags) */
+ enum zram_pageflags {
+-- 
+1.7.0.4
 
-static inline void genlmsg_cancel(struct sk_buff *skb, void *hdr)
-{
-	nlmsg_cancel(skb, hdr - GENL_HDRLEN - NLMSG_HDRLEN);
-}
-
-Now the second argument to nlmsg_cancel is essentially a negative integer 
-(or a very large pointer).
-
-nlmsg_cancel will call nlmsg_trim, which is defined as follows:
-
-static inline void nlmsg_trim(struct sk_buff *skb, const void *mark)
-{
-	if (mark)
-		skb_trim(skb, (unsigned char *) mark - skb->data);
-}
-
-I guess that the subtraction is going to result in an even larger negative 
-number.  The whole process is likely to end in doing nothing in the 
-definition of skb_trim, which is as follows:
-
-void skb_trim(struct sk_buff *skb, unsigned int len)
-{
-	if (skb->len > len)
-		__skb_trim(skb, len);
-}
-
-since the result of casting a negative number to unsigned is likely to be 
-larger than skb->len.
-
-
-> > ---
-> >  net/netlabel/netlabel_cipso_v4.c  |    2 +-
-> >  net/netlabel/netlabel_mgmt.c      |    4 ++--
-> >  net/netlabel/netlabel_unlabeled.c |    2 +-
-> >  3 files changed, 4 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/net/netlabel/netlabel_cipso_v4.c b/net/netlabel/netlabel_cipso_v4.c
-> > index 5f14c84..0a1f77b 100644
-> > --- a/net/netlabel/netlabel_cipso_v4.c
-> > +++ b/net/netlabel/netlabel_cipso_v4.c
-> > @@ -635,7 +635,7 @@ static int netlbl_cipsov4_listall_cb(struct cipso_v4_doi *doi_def, void *arg)
-> >  			   cb_arg->seq, &netlbl_cipsov4_gnl_family,
-> >  			   NLM_F_MULTI, NLBL_CIPSOV4_C_LISTALL);
-> >  	if (data == NULL)
-> > -		goto listall_cb_failure;
-> > +		return ret_val;
-> >  
-> >  	ret_val = nla_put_u32(cb_arg->skb, NLBL_CIPSOV4_A_DOI, doi_def->doi);
-> >  	if (ret_val != 0)
-> > diff --git a/net/netlabel/netlabel_mgmt.c b/net/netlabel/netlabel_mgmt.c
-> > index 998e85e..daaa01d 100644
-> > --- a/net/netlabel/netlabel_mgmt.c
-> > +++ b/net/netlabel/netlabel_mgmt.c
-> > @@ -452,7 +452,7 @@ static int netlbl_mgmt_listall_cb(struct netlbl_dom_map *entry, void *arg)
-> >  			   cb_arg->seq, &netlbl_mgmt_gnl_family,
-> >  			   NLM_F_MULTI, NLBL_MGMT_C_LISTALL);
-> >  	if (data == NULL)
-> > -		goto listall_cb_failure;
-> > +		return ret_val;
-> >  
-> >  	ret_val = netlbl_mgmt_listentry(cb_arg->skb, entry);
-> >  	if (ret_val != 0)
-> > @@ -617,7 +617,7 @@ static int netlbl_mgmt_protocols_cb(struct sk_buff *skb,
-> >  			   &netlbl_mgmt_gnl_family, NLM_F_MULTI,
-> >  			   NLBL_MGMT_C_PROTOCOLS);
-> >  	if (data == NULL)
-> > -		goto protocols_cb_failure;
-> > +		return ret_val;
-> >  
-> >  	ret_val = nla_put_u32(skb, NLBL_MGMT_A_PROTOCOL, protocol);
-> >  	if (ret_val != 0)
-> > diff --git a/net/netlabel/netlabel_unlabeled.c b/net/netlabel/netlabel_unlabeled.c
-> > index e2b0a68..b5d3945 100644
-> > --- a/net/netlabel/netlabel_unlabeled.c
-> > +++ b/net/netlabel/netlabel_unlabeled.c
-> > @@ -1141,7 +1141,7 @@ static int netlbl_unlabel_staticlist_gen(u32 cmd,
-> >  			   cb_arg->seq, &netlbl_unlabel_gnl_family,
-> >  			   NLM_F_MULTI, cmd);
-> >  	if (data == NULL)
-> > -		goto list_cb_failure;
-> > +		return ret_val;
-> >  
-> >  	if (iface->ifindex > 0) {
-> >  		dev = dev_get_by_index(&init_net, iface->ifindex);
-> > 
-> 
-> -- 
-> paul moore
-> linux @ hp
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
