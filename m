@@ -1,44 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702Ab1A1FOV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 00:14:21 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:43624 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349Ab1A1FOU (ORCPT
+	id S1751592Ab1A1FhR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 00:37:17 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:60062 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220Ab1A1FhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 00:14:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=KUZQpQt0P/0m0LmgDPebWFzGdhPKJk8F0jx3Hzyk9RGiNGNyx3+VidIn5henXlga8e
-         /oJtXnv77F4VFslcjT1wRrtelgoy7mP6oqOPxVOoCeVUA+TWcvJFFk46Eb6pK6Cj0901
-         oFRdVKwwcwnpmxcOnqBRmx5pd2DXQsg7JL130=
-MIME-Version: 1.0
-Date: Fri, 28 Jan 2011 10:44:19 +0530
-Message-ID: <AANLkTi=+Hx+3Jk0yprAffhvQM+WcO+WytaLBU-vwbetc@mail.gmail.com>
-Subject: equivalent of phys_to_virt in an iommu system
-From: MJ embd <mj.embd@gmail.com>
+	Fri, 28 Jan 2011 00:37:16 -0500
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=mqxvRrgu12IA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=viPnuUhvq8mc9a2Po1IA:9 a=kFjuDuR1DJDOYXuwFdR6um2TwFAA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][PATCH 08/12] tracing/filter: Optimize short ciruit check
+From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+In-Reply-To: <20110128043345.224997318@goodmis.org>
+References: <20110128042118.561146147@goodmis.org>
+	 <20110128043345.224997318@goodmis.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 28 Jan 2011 00:37:13 -0500
+Message-ID: <1296193033.10144.98.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2011-01-27 at 23:21 -0500, Steven Rostedt wrote:
 
-Assuming at core mmu there is a mapping, V1 -> P1
-And at the IOMMU for the device to access a region of DDR there is a
-mapping P2 -> P1. [P2 is the address on which device issues a r/w]
+> diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+> index 2677924..afe59ab 100644
+> --- a/kernel/trace/trace_events_filter.c
+> +++ b/kernel/trace/trace_events_filter.c
+> @@ -426,9 +426,15 @@ int filter_match_preds(struct event_filter *filter, void *rec)
+>  					       pred->parent, &move);
+>  			continue;
+>  		case MOVE_UP_FROM_LEFT:
+> -			/* Check for short circuits */
+> -			if ((match && pred->op == OP_OR) ||
+> -			    (!match && pred->op == OP_AND)) {
+> +			/*
+> +			 * Check for short circuits.
+> +			 *
+> +			 * Optimization: !!match == (pred->op == OP_OR)
+> +			 *   is the same as:
+> +			 * if ((match && pred->op == OP_OR) ||
+> +			 *     (!match && pred->op == OP_AND))
+> +			 */
+> +			if (!!match == (pred->op == OP_OR))
 
-Now the device driver does the following.
++                                                             {
 
-Line 0: V1 = kmalloc();
-Line 1: P2 = dma_map_single(V1)
+Bah! I tested these in quilt and when I pulled them into git, I must
+have accidentally deleted the '{' in the patch :-p
 
-Now if later in the driver, there is a requirement to get V1 from P2
-what is the primitive in linux  ?
-Also is my understanding of Line 1(above) correct ?
+Thanks goodness this was only a RFC ;)
+
+/me goes to rebase
+
+-- Steve
+
+>  				if (pred == root)
+>  					break;
+>  				pred = get_pred_parent(pred, preds,
 
 
--- 
--mj
