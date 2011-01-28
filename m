@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab1A1MnI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 07:43:08 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:35433 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754678Ab1A1MnG (ORCPT
+	id S1755273Ab1A1Muq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 07:50:46 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:36989 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751393Ab1A1Mup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 07:43:06 -0500
-Subject: Re: [PATCH V10 01/15] time: Introduce timekeeping_inject_offset
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Richard Cochran <richard.cochran@omicron.at>,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Christoph Lameter <cl@linux.com>, David Miller <davem@davemloft.net>,
-        Krzysztof Halasa <khc@pm.waw.pl>, Rodolfo Giometti <giometti@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Mike Frysinger <vapier@gentoo.org>, Paul Mackerras <paulus@samba.org>,
-        Russell King <linux@arm.linux.org.uk>
-In-Reply-To: <201101281305.37370.arnd@arndb.de>
-References: <cover.1296124770.git.richard.cochran@omicron.at>
-	 <1296154099.2855.162.camel@work-vm>
-	 <20110128070800.GA3225@riccoc20.at.omicron.at>
-	 <201101281305.37370.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 28 Jan 2011 13:43:50 +0100
-Message-ID: <1296218630.15234.334.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 28 Jan 2011 07:50:45 -0500
+Message-ID: <4D42BB5D.6040407@mvista.com>
+Date: Fri, 28 Jan 2011 15:49:33 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Davidlohr Bueso <dave@gnu.org>
+CC: Michal Nazarewicz <m.nazarewicz@samsung.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
+Subject: Re: [PATCH 2/2] USB: tools: Add a Makefile
+References: <1296157174.2113.6.camel@offworld>	 <4D42B436.8070901@ru.mvista.com> <1296217427.2169.0.camel@offworld> <4D42B8B4.40404@ru.mvista.com>
+In-Reply-To: <4D42B8B4.40404@ru.mvista.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-28 at 13:05 +0100, Arnd Bergmann wrote:
-> On Friday 28 January 2011, Richard Cochran wrote:
-> > I would like to get to the bottom of this. Here is what I did:
-> > 
-> >    1. Saved your patch to disk in mbox format using Mutt.
-> >    2. git am
-> >    3. ... rebase, rebase, rebase, ...
-> >    4. git format-patch [options] 1234..abcd
-> >    5. Edit cover letter
-> >    6. for x in 00*; do mutt -H $x; done
-> > 
-> > Git format-patch places the "From: John Stultz <john.stultz@linaro.org>"
-> > line with the other mail headers, and so I guess mutt just faithfully
-> > preserves this.
-> > 
-> > I don't like having to remember to fix this manually. There must be a
-> > better way...
-> 
-> The problem is step 6. The output of git format-patch does not work when
-> sending with mutt. The easiest solution is to send with git send-email,
-> which does the same as mutt -H, but gets it right.
+On 28-01-2011 15:38, I wrote:
 
-I use: formail -s sendmail -t < patches.mbox, but then, I use quilt mail
-to generate the mbox, not git.
+>>>> I originally sent this in several months ago, but never got around to
+>>>> correcting the changes, so... here it is.
 
+>>> This remark should follow the --- tear line, to be automatically stripped
+>>> when applying the patch.
+
+>> It wasn't meant for the log, that's why it's above the tear line.
+
+> Everything above the tearline gets into the changelog. If it wasn't meant to,
+> it should be below the tearline, or have to be manually edited out of it.
+
+    s/it/the patch/
+
+>> Thanks.
+
+    It helps to actually read Documentation/SubmittingPatches sometimes. ;-)
+
+WBR, Sergei
