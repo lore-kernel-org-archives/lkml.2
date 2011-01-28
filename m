@@ -1,131 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474Ab1A1Txv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 14:53:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41861 "EHLO mx1.redhat.com"
+	id S1755431Ab1A1Txp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 14:53:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4275 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755354Ab1A1Txr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 14:53:47 -0500
+	id S1755354Ab1A1Txn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 14:53:43 -0500
 From: Glauber Costa <glommer@redhat.com>
 To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
-        Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>
-Subject: [PATCH v2 3/6] KVM-GST: KVM Steal time accounting
-Date: Fri, 28 Jan 2011 14:52:17 -0500
-Message-Id: <1296244340-15173-4-git-send-email-glommer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, aliguori@us.ibm.com
+Subject: [PATCH v2 6/6] Describe KVM_MSR_STEAL_TIME
+Date: Fri, 28 Jan 2011 14:52:20 -0500
+Message-Id: <1296244340-15173-7-git-send-email-glommer@redhat.com>
 In-Reply-To: <1296244340-15173-1-git-send-email-glommer@redhat.com>
 References: <1296244340-15173-1-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch accounts steal time time in kernel/sched.
-I kept it from last proposal, because I still see advantages
-in it: Doing it here will give us easier access from scheduler
-variables such as the cpu rq. The next patch shows an example of
-usage for it.
-
-Since functions like account_idle_time() can be called from
-multiple places, not only account_process_tick(), steal time
-grabbing is repeated in each account function separatedely.
+This patch adds documentation about usage of the newly
+introduced KVM_MSR_STEAL_TIME.
 
 Signed-off-by: Glauber Costa <glommer@redhat.com>
-CC: Rik van Riel <riel@redhat.com>
-CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: Avi Kivity <avi@redhat.com>
 ---
- include/linux/sched.h |    1 +
- kernel/sched.c        |   41 +++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 42 insertions(+), 0 deletions(-)
+ Documentation/kvm/msr.txt |   32 ++++++++++++++++++++++++++++++++
+ 1 files changed, 32 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index d747f94..77e9297 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -302,6 +302,7 @@ long io_schedule_timeout(long timeout);
- extern void cpu_init (void);
- extern void trap_init(void);
- extern void update_process_times(int user);
-+extern u64 (*hypervisor_steal_time)(void);
- extern void scheduler_tick(void);
+diff --git a/Documentation/kvm/msr.txt b/Documentation/kvm/msr.txt
+index d079aed..7a2d223 100644
+--- a/Documentation/kvm/msr.txt
++++ b/Documentation/kvm/msr.txt
+@@ -185,3 +185,35 @@ MSR_KVM_ASYNC_PF_EN: 0x4b564d02
  
- extern void sched_show_task(struct task_struct *p);
-diff --git a/kernel/sched.c b/kernel/sched.c
-index ea3e5ef..7765e9d 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -3508,6 +3508,39 @@ unsigned long long thread_group_sched_runtime(struct task_struct *p)
- 	return ns;
- }
- 
-+u64 (*hypervisor_steal_time)(void) = NULL;
+ 	Currently type 2 APF will be always delivered on the same vcpu as
+ 	type 1 was, but guest should not rely on that.
 +
-+/*
-+ * We have to at flush steal time information every time something else
-+ * is accounted. Since the accounting functions are all visible to the rest
-+ * of the kernel, it gets tricky to do them in one place. This helper function
-+ * helps us.
-+ *
-+ * When the system is idle, the concept of steal time does not apply. We just
-+ * tell the underlying hypervisor that we grabbed the data, but skip steal time
-+ * accounting
-+ */
-+static int touch_steal_time(int is_idle)
-+{
-+	u64 steal, st;
++MSR_KVM_STEAL_TIME: 0x4b564d03
 +
-+	if (!hypervisor_steal_time)
-+		return 0;
++	data: 4-byte alignment physical address of a memory area which must be
++	in guest RAM, plus an enable bit in bit 0. This memory is expected to
++	hold a copy of the following structure:
 +
-+	steal = hypervisor_steal_time();
-+
-+	st = usecs_to_cputime(steal / 1000);
-+
-+	if (is_idle)
-+		return 0;
-+
-+	if (st) {
-+		account_steal_time(st);
-+		return 1;
++	struct kvm_steal_time {
++	  	__u64 steal;
++ 		__u32 version;
++ 		__u32 flags;
++	 	__u32 pad[6];
 +	}
-+	return 0;
-+}
 +
- /*
-  * Account user cpu time to a process.
-  * @p: the process that the cpu time gets accounted to
-@@ -3520,6 +3553,9 @@ void account_user_time(struct task_struct *p, cputime_t cputime,
- 	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
- 	cputime64_t tmp;
- 
-+	if (touch_steal_time(0))
-+		return;
++	whose data will be filled in by the hypervisor periodically. Only one
++	write, or registration, is needed for each VCPU. The interval between
++	updates of this structure is arbitrary and implementation-dependent.
++	The hypervisor may update this structure at any time it sees fit until
++	anything with bit0 == 0 is written to it.
 +
- 	/* Add user time to process. */
- 	p->utime = cputime_add(p->utime, cputime);
- 	p->utimescaled = cputime_add(p->utimescaled, cputime_scaled);
-@@ -3580,6 +3616,9 @@ void account_system_time(struct task_struct *p, int hardirq_offset,
- 	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
- 	cputime64_t tmp;
- 
-+	if (touch_steal_time(0))
-+		return;
++	Fields have the following meanings:
 +
- 	if ((p->flags & PF_VCPU) && (irq_count() - hardirq_offset == 0)) {
- 		account_guest_time(p, cputime, cputime_scaled);
- 		return;
-@@ -3627,6 +3666,8 @@ void account_idle_time(cputime_t cputime)
- 	cputime64_t cputime64 = cputime_to_cputime64(cputime);
- 	struct rq *rq = this_rq();
- 
-+	touch_steal_time(1);
++		version: guest has to check version before and after grabbing
++		time information and check that they are both equal and even.
++		An odd version indicates an in-progress update.
 +
- 	if (atomic_read(&rq->nr_iowait) > 0)
- 		cpustat->iowait = cputime64_add(cpustat->iowait, cputime64);
- 	else
++		flags: At this point, always zero. May be used to indicate
++		changes in this structure in the future.
++
++		steal: the amount of time in which this vCPU did not run, in
++		nanoseconds.
++
 -- 
 1.7.2.3
 
