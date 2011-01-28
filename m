@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138Ab1A1IqU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 03:46:20 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:5558 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755070Ab1A1IqS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 03:46:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=rYMSAFpYAhNLa/WgGjndr/MGyDuIIFztT4fMnaDGgCrMnXLOU5L45Wym6eg+5EhUOh
-         W3+LyxKxUBTQvj4Vklhw==
-MIME-Version: 1.0
-In-Reply-To: <AANLkTino3tzfri0MiPpMArsB8VGiKZh2aP85tv+psBbZ@mail.gmail.com>
-References: <AANLkTim6zcdn8FgUTa7OO=_4B3x5CiHxWr_g=uR0m4zX@mail.gmail.com>
-	<AANLkTino3tzfri0MiPpMArsB8VGiKZh2aP85tv+psBbZ@mail.gmail.com>
-Date: Fri, 28 Jan 2011 00:46:11 -0800
-Message-ID: <AANLkTin899Md9s5-EiK9WH4-FZp4aTJpWF6-wcWhfR0T@mail.gmail.com>
-Subject: Re: [GIT PULL] ARM Tegra fixes for 2.6.38
-From: Colin Cross <ccross@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-main <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Linux Tegra Mailing List <linux-tegra@vger.kernel.org>,
-        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1755147Ab1A1Iws (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 03:52:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24221 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755131Ab1A1Iwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 03:52:47 -0500
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: WANG Cong <amwang@redhat.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Paul Mundt <lethal@linux-sh.org>,
+        John Kacur <jkacur@redhat.com>, Ralf Baechle <ralf@linux-mips.org>,
+        alsa-devel@alsa-project.org
+Subject: [Patch] sound: silent echo'ed messages in Makefile
+Date: Fri, 28 Jan 2011 16:52:00 +0800
+Message-Id: <1296204727-19160-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 27, 2011 at 12:42 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, Jan 27, 2011 at 3:41 PM, Colin Cross <ccross@google.com> wrote:
->>
->> Please pull fixes for the Tegra machine from:
->>
->>  http://android.git.kernel.org/kernel/tegra.git for-linus
->
-> I don't do http fetching. My life is too short. If there isn't a
-> native git server, make one.
->
->               Linus
->
+Silent these echo's, please.
 
-Sorry, the git server wasn't responding for me yesterday.  Please pull from:
-git://android.git.kernel.org/kernel/tegra.git for-linus
+Signed-off-by: WANG Cong <amwang@redhat.com>
+
+---
+diff --git a/sound/oss/Makefile b/sound/oss/Makefile
+index 96f14dc..90ffb99 100644
+--- a/sound/oss/Makefile
++++ b/sound/oss/Makefile
+@@ -87,7 +87,7 @@ ifeq ($(CONFIG_PSS_HAVE_BOOT),y)
+ 	$(obj)/bin2hex pss_synth < $< > $@
+ else
+     $(obj)/pss_boot.h:
+-	(							\
++	$(Q)(							\
+ 	    echo 'static unsigned char * pss_synth = NULL;';	\
+ 	    echo 'static int pss_synthLen = 0;';		\
+ 	) > $@
+@@ -102,7 +102,7 @@ ifeq ($(CONFIG_TRIX_HAVE_BOOT),y)
+ 	$(obj)/hex2hex -i trix_boot < $< > $@
+ else
+     $(obj)/trix_boot.h:
+-	(							\
++	$(Q)(							\
+ 	    echo 'static unsigned char * trix_boot = NULL;';	\
+ 	    echo 'static int trix_boot_len = 0;';		\
+ 	) > $@
