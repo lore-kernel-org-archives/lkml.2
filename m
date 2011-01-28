@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328Ab1A1TLG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 14:11:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10827 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755224Ab1A1TLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 14:11:03 -0500
-From: Steve Grubb <sgrubb@redhat.com>
-Organization: Red Hat
-To: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Subject: Re: [PATCH] System Wide Capability Bounding Set
-Date: Fri, 28 Jan 2011 14:10:29 -0500
-User-Agent: KMail/1.13.5 (Linux/2.6.35.10-74.fc14.x86_64; KDE/4.5.5; x86_64; ; )
-Cc: Eric Paris <eparis@redhat.com>, "Andrew G. Morgan" <morgan@kernel.org>,
-        "Serge E. Hallyn" <serge@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-References: <1294266337.3237.45.camel@localhost.localdomain> <201101270942.07689.sgrubb@redhat.com> <20110128184901.GA5134@localhost>
-In-Reply-To: <20110128184901.GA5134@localhost>
+	id S1755305Ab1A1TS2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 14:18:28 -0500
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:46947 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753067Ab1A1TS1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 14:18:27 -0500
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: xfs@oss.sgi.com
+Subject: Re: xfs: very slow after mount, very slow at umount
+Date: Fri, 28 Jan 2011 20:18:11 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-tp42-rtime-00004-g9eb63ce; KDE/4.5.3; i686; ; )
+Cc: Stan Hoeppner <stan@hardwarefreak.com>, Mark Lord <kernel@teksavvy.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Justin Piszcz <jpiszcz@lucidpixels.com>, Alex Elder <aelder@sgi.com>
+References: <4D40C8D1.8090202@teksavvy.com> <4D419765.4070805@teksavvy.com> <4D41CA16.8070001@hardwarefreak.com> (sfid-20110127_220503_352851_8BD9DFC6)
+In-Reply-To: <4D41CA16.8070001@hardwarefreak.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: multipart/signed;
+  boundary="nextPart3926807.QEyy5ibxh2";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201101281410.29794.sgrubb@redhat.com>
+Message-Id: <201101282018.12247.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 28, 2011 01:49:01 pm Serge E. Hallyn wrote:
-> > Using a wrapper program is a NOGO because the admin renting the machine
-> > would be able  to overwrite the wrapper and then they have arbitrary
-> > code running with full privs and
-> 
-> Not sure I've got this.  Wrapper program in the VM he can over-write,
-> but then he can overwrite the kernel too.
+--nextPart3926807.QEyy5ibxh2
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-No, because the kernel is only read in at boot. After that, /boot can disapear and it 
-won't matter. It can be replaced with something and that won't matter because that's 
-not the real boot partition.
+Am Thursday 27 January 2011 schrieb Stan Hoeppner:
+> Trust the defaults.  If they give you problems (unlikely) then we can't
+> talk. ;)
 
-> But what we are worried about is the host, so you must mean that.  But if the
-> wrapper program is of type noone_may_write_this_t, then wouldn't finding a way to
-> replace that be as hard as overwriting the host kernel? 
+With one addition: Use a recent xfsprogs! ;)
 
-No, because we aren't taking away the ability to mount or unmount. Not to mention that 
-root can replace his selinux policy so that next boot it doesn't define 
-noone_may_write_this_t. He might even put selinux in his VM in permissive.
+Earlier ones created more AGs, didn't activate lazy super block counter=20
+(likely no issue here) and whatnot...
 
-> Which, of course, still remains as a viable attack vector for the guest admin,
-> whether you have this bounding set or not.
+=2D-=20
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
 
-No, with the bounding set, any external call the kernel makes has the bounding set 
-applied. This means we don't have to further restrict root in unnatural ways.
+--nextPart3926807.QEyy5ibxh2
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-> In other words, we have to accept that the TCB is always not just the
-> kernel, but some user-space too.  And yes, the wrapper program here
-> would be part of the TCB.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-If you give someone root access in the VM, they probably want to set things up their 
-way. So, we really would like it if all the security mechanism were inside where they 
-can't be easily tampered with.
+iEYEABECAAYFAk1DFnQACgkQmRvqrKWZhMc2qwCgrnlXK8kUFcYrtLFEyX6XzsW3
+tU0AoKhzXci4d/RObXp7lZnjWofQXv7y
+=FYnv
+-----END PGP SIGNATURE-----
 
--Steve
+--nextPart3926807.QEyy5ibxh2--
