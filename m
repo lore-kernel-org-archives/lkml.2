@@ -1,48 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657Ab1A1KwX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 05:52:23 -0500
-Received: from smtp.nokia.com ([147.243.128.26]:63620 "EHLO mgw-da02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751963Ab1A1KwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 05:52:22 -0500
-Message-ID: <4D42A033.9030906@maxwell.research.nokia.com>
-Date: Fri, 28 Jan 2011 12:53:39 +0200
-From: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101123 SeaMonkey/2.0.11
+	id S1754190Ab1A1LAH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 06:00:07 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64997 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752003Ab1A1LAE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 06:00:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=xYSTBJfsVC5g8IUikdATVPr8rw32u4pK2oZhxM5YuXK/OFQ3MSFY6Ms7nJMhrJOYTp
+         fTAz/0ocdX5pCPi8QJyQkbQdciki+bZ+JG53E8MAJWMu8aET2Waf1TKcMeLpXGlfPWoQ
+         lda2ytHFu4NVVZIvrgfISVcOafxZ9EJko0Nnw=
+Date: Fri, 28 Jan 2011 11:59:57 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Roland McGrath <roland@redhat.com>
+Cc: oleg@redhat.com, linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        jan.kratochvil@redhat.com
+Subject: Re: [PATCH 2/4] ptrace: remove the extra wake_up_process() from
+ ptrace_detach()
+Message-ID: <20110128105957.GJ24925@htj.dyndns.org>
+References: <1293016398-18001-1-git-send-email-tj@kernel.org>
+ <1293016398-18001-3-git-send-email-tj@kernel.org>
+ <20110117221340.E6A4F180996@magilla.sf.frob.com>
+ <20110127133412.GC24925@htj.dyndns.org>
+ <20110128070252.709F8183C1A@magilla.sf.frob.com>
 MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
-        clemens@ladisch.de
-Subject: Re: [PATCH v8 03/12] media: Entities, pads and links
-References: <1296131437-29954-1-git-send-email-laurent.pinchart@ideasonboard.com> <1296131437-29954-4-git-send-email-laurent.pinchart@ideasonboard.com>
-In-Reply-To: <1296131437-29954-4-git-send-email-laurent.pinchart@ideasonboard.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110128070252.709F8183C1A@magilla.sf.frob.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+Hello, Roland.
 
-Thanks for the patches!
+On Thu, Jan 27, 2011 at 11:02:52PM -0800, Roland McGrath wrote:
+> > On Mon, Jan 17, 2011 at 02:13:40PM -0800, Roland McGrath wrote:
+> > > Of course I agree that the current code is wrong here.  But I'm still not
+> > > at all clear on what practical compatibility problems it introduces.  This
+> > > change is OK if and only if we are really making the only area clean and
+> > > well-defined in the same release cycle.
+> > 
+> > I don't follow what you meant by the above sentence.  Can you please
+> > clarify a bit?
+> 
+> I think I meant to write "the whole area" rather than "the only area".
+> The point I meant to make is that removing this (wrong) wake-up entirely
+> should only be done when we are also thoroughly cleaning up and verifying
+> everything about the behavior of stopping/resuming in ptrace.  When we get
+> to a clear statement of what all the rules are and we really believe that
+> the new code matches those rules, then fine.  When we are still in the
+> quagmire, no change is better than an incremental change whose subtle
+> ramifications we can't clearly articulate.
 
-I've got one comment that I should have made long time ago... Pads are
-inputs or outputs... or: are they sinks or sources? I recall that it was
-agreed on some occasion that sink and source are much less ambiguous and
-they should be used instead.
+Hmm... I'm not sure I quite agree.  We sure should proceed with the
+big picture in mind but procedding gradually is usually the better and
+sometimes the only way to get there.  Unconditional wake up doesn't
+belong anywhere no matter which direction we end up taking.  It's a
+natural step to take.
 
-So we'd have MEDIA_PAD_FL_{SINK,SOURCE}, for example. Currently the
-source and documentation is using input/output and source/sink
-interchangeably. I think sink and source should be used all the time.
+> > It's slightly more serious than that.  Calling wake_up_process()
+> > unconditionally can cause a quite serious failure.  It wakes up a
+> > process in any state and there are code paths which aren't prepared to
+> > be woken up unless certain conditions are met.  
+> 
+> I understand that.  But I don't recall having seen anyone cite an actual
+> scenario in the real world where it does something problematic.
 
-What do you think?
+I don't think it will be easily seen during regular use.  Debugging is
+often pretty slow paced and tasks are usually stopped in well known
+places.  But it does make a pretty decent attack vector for malicious
+users.  I don't think it will take too much effort to come up with a
+proof-of-concept DOS attack exploiting this.  It's plain dangerous to
+do this no matter how unlikely regular users might hit it.
 
-Regards,
+> > A safer choice can be changing it to wake up only tasks in interruptible
+> > sleep.
+> 
+> For ptrace-related purposes, wake_up_state(child, TASK_TRACED|TASK_STOPPED)
+> ought to cover anything that it is doing now that anything could reasonably
+> be relying on.
+
+That probably is something we need to do for -stable, I agree.
+
+> > I have very difficult time imagining what real user visible
+> > implication it would have in negative and noticeable manner, so while
+> > I do agree that we should proceed carefully, I think it would be
+> > better to take the chance and remove the erratic behavior.  We have
+> > release cycles and testing at multiple layers after all.  If we find
+> > out that it breaks something in serious manner, we can always revert.
+> 
+> "Difficult time imagining" and ptrace subtleties unfortunately often go
+> together.
+
+But that's the only way forward.  Ptrace sure is complicated, some
+part due to its inherent nature but more because things were
+continuously piled on top of it without proper clean up, but other
+parts of kernel are complicated too and we make changes all the time.
+We have the whole release cycle structure and testing hierarchies
+throughout the ecosystem to enable changes like this.
+
+> I want to be sure we are doing something right, rather than just
+> being thoroughly unsure that we aren't doing something wrong.
+
+But this is something which is apparently wrong and highly unlikely to
+cause any problem especially because with the patchset an attached
+task is always in traced state on detach and thus always gets
+signal_wake_up().  The only difference is removal of an extra spurious
+unconditional wakeup which may or may not disturb the group stop
+depending on timing.  If we can't change this, I don't know what we
+can.
+
+Thank you.
 
 -- 
-Sakari Ailus
-sakari.ailus@maxwell.research.nokia.com
+tejun
