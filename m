@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755219Ab1A1MVn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 07:21:43 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42040 "EHLO
+	id S1755228Ab1A1MVu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 07:21:50 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42049 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755127Ab1A1MVk (ORCPT
+	with ESMTP id S1755098Ab1A1MVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 07:21:40 -0500
+	Fri, 28 Jan 2011 07:21:48 -0500
 From: Sascha Hauer <s.hauer@pengutronix.de>
 To: linux-kernel@vger.kernel.org
 Cc: Eric Miao <eric.miao@linaro.org>, Ben Dooks <ben-linux@fluff.org>,
@@ -17,9 +17,9 @@ Cc: Eric Miao <eric.miao@linaro.org>, Ben Dooks <ben-linux@fluff.org>,
         Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
         Shawn Guo <shawn.guo@freescale.com>,
         Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH 1/2] pwmlib: add pwm support
-Date: Fri, 28 Jan 2011 13:21:22 +0100
-Message-Id: <1296217283-14531-2-git-send-email-s.hauer@pengutronix.de>
+Subject: [PATCH 2/2] pwm: Add a i.MX23/28 pwm driver
+Date: Fri, 28 Jan 2011 13:21:23 +0100
+Message-Id: <1296217283-14531-3-git-send-email-s.hauer@pengutronix.de>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <1296217283-14531-1-git-send-email-s.hauer@pengutronix.de>
 References: <1296217283-14531-1-git-send-email-s.hauer@pengutronix.de>
@@ -31,369 +31,317 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The barebone pwm API is present in the kernel for longer.
-This patch adds pwmlib support to support dynamically registered
-pwms. Porions of this code are inspired by the gpiolib support.
-
 Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 ---
- drivers/Kconfig      |    2 +
- drivers/Makefile     |    1 +
- drivers/pwm/Kconfig  |   11 +++
- drivers/pwm/Makefile |    1 +
- drivers/pwm/pwmlib.c |  246 ++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/pwm.h  |   38 ++++++++
- 6 files changed, 299 insertions(+), 0 deletions(-)
- create mode 100644 drivers/pwm/Kconfig
- create mode 100644 drivers/pwm/Makefile
- create mode 100644 drivers/pwm/pwmlib.c
+ drivers/pwm/Kconfig   |    5 +
+ drivers/pwm/Makefile  |    2 +
+ drivers/pwm/mxs-pwm.c |  275 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 282 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/pwm/mxs-pwm.c
 
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index 9bfb71f..bb332a6 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -117,4 +117,6 @@ source "drivers/staging/Kconfig"
- source "drivers/platform/Kconfig"
- 
- source "drivers/clk/Kconfig"
-+
-+source "drivers/pwm/Kconfig"
- endmenu
-diff --git a/drivers/Makefile b/drivers/Makefile
-index 7eb35f4..8cd30a5 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -6,6 +6,7 @@
- #
- 
- obj-y				+= gpio/
-+obj-y				+= pwm/
- obj-$(CONFIG_PCI)		+= pci/
- obj-$(CONFIG_PARISC)		+= parisc/
- obj-$(CONFIG_RAPIDIO)		+= rapidio/
 diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-new file mode 100644
-index 0000000..04ddbfd
---- /dev/null
+index 04ddbfd..f9a728b 100644
+--- a/drivers/pwm/Kconfig
 +++ b/drivers/pwm/Kconfig
-@@ -0,0 +1,11 @@
-+menuconfig PWMLIB
-+	bool "PWM Support"
-+	help
-+	  This enables PWM support through the generic PWM library.
-+	  You only need to enable this, if you also want to enable
-+	  one or more of the PWM drivers below.
+@@ -8,4 +8,9 @@ menuconfig PWMLIB
+ 	  If unsure, say N.
+ 
+ if PWMLIB
 +
-+	  If unsure, say N.
++config PWM_MXS
++	tristate "MXS pwm support"
++	depends on ARCH_MXS
 +
-+if PWMLIB
-+endif
+ endif
 diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-new file mode 100644
-index 0000000..389c049
---- /dev/null
+index 389c049..1c6441c 100644
+--- a/drivers/pwm/Makefile
 +++ b/drivers/pwm/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_PWMLIB)		+= pwmlib.o
-diff --git a/drivers/pwm/pwmlib.c b/drivers/pwm/pwmlib.c
-new file mode 100644
-index 0000000..0d6c4cc
---- /dev/null
-+++ b/drivers/pwm/pwmlib.c
-@@ -0,0 +1,246 @@
-+/*
-+ * Generic pwmlib implementation
-+ *
-+ * Copyright (C) 2011 Sascha Hauer <s.hauer@pengutronix.de>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2, or (at your option)
-+ *  any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License
-+ *  along with this program; see the file COPYING.  If not, write to
-+ *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+#include <linux/module.h>
-+#include <linux/pwm.h>
-+#include <linux/list.h>
-+#include <linux/mutex.h>
-+#include <linux/err.h>
-+#include <linux/slab.h>
-+#include <linux/device.h>
+@@ -1 +1,3 @@
+ obj-$(CONFIG_PWMLIB)		+= pwmlib.o
 +
-+struct pwm_device {
-+	struct			pwm_chip *chip;
-+	const char		*label;
-+	int			enabled;
-+	unsigned long		flags;
-+#define FLAG_REQUESTED	0
-+#define FLAG_ENABLED	1
-+	struct list_head	node;
++obj-$(CONFIG_PWM_MXS)		+= mxs-pwm.o
+diff --git a/drivers/pwm/mxs-pwm.c b/drivers/pwm/mxs-pwm.c
+new file mode 100644
+index 0000000..052cb0c
+--- /dev/null
++++ b/drivers/pwm/mxs-pwm.c
+@@ -0,0 +1,275 @@
++/*
++ * Copyright (C) 2011 Pengutronix
++ * Sascha Hauer <s.hauer@pengutronix.de>
++ *
++ * simple driver for PWM (Pulse Width Modulator) controller
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Derived from pxa PWM driver by eric miao <eric.miao@marvell.com>
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/clk.h>
++#include <linux/delay.h>
++#include <linux/io.h>
++#include <linux/pwm.h>
++#include <mach/hardware.h>
++#include <mach/mxs.h>
++#include <mach/mx23.h>
++#include <mach/mx28.h>
++#include <asm/div64.h>
++
++struct mxs_pwm_device {
++	struct device		*dev;
++
++	struct clk	*clk;
++
++	int		enabled;
++	void __iomem	*mmio_base;
++
++	unsigned int	pwm_id;
++
++	u32		val_active;
++	u32		val_period;
++	int		period_us;
++	struct pwm_chip chip;
 +};
 +
-+static LIST_HEAD(pwm_list);
++/* common register space */
++static void __iomem *pwm_base_common;
++#define REG_PWM_CTRL	0x0
++#define PWM_SFTRST	(1 << 31)
++#define PWM_CLKGATE	(1 << 30)
++#define PWM_ENABLE(p)	(1 << (p))
 +
-+static DEFINE_MUTEX(pwm_lock);
++/* per pwm register space */
++#define REG_ACTIVE	0x0
++#define REG_PERIOD	0x10
 +
-+static struct pwm_device *find_pwm(int pwm_id)
++#define PERIOD_PERIOD(p)	((p) & 0xffff)
++#define PERIOD_ACTIVE_HIGH	(3 << 16)
++#define PERIOD_INACTIVE_LOW	(2 << 18)
++#define PERIOD_CDIV(div)	(((div) & 0x7) << 20)
++
++static void pwm_update(struct mxs_pwm_device *pwm)
 +{
-+	struct pwm_device *pwm;
-+
-+	list_for_each_entry(pwm, &pwm_list, node) {
-+		if (pwm->chip->pwm_id == pwm_id)
-+			return pwm;
-+	}
-+
-+	return NULL;
++	writel(pwm->val_active, pwm->mmio_base + REG_ACTIVE);
++	writel(pwm->val_period, pwm->mmio_base + REG_PERIOD);
 +}
 +
-+/*
-+ * The next pwm id to assign. We do not bother to fill gaps which
-+ * occur during dynamic registering/deregistering of pwms, but
-+ * instead assign a uniq id to each new pwm.
-+ */
-+static int next_pwm_id;
++#define to_mxs_pwm_device(chip)	container_of(chip, struct mxs_pwm_device, chip)
 +
-+/**
-+ * pwmchip_reserve() - reserve range of pwms to use with platform code only
-+ * @npwms: number of pwms to reserve
-+ * Context: platform init
-+ *
-+ * Maybe called only once. It reserves the first pwm_ids for platform use so
-+ * that they can refer to pwm_ids during compile time.
-+ */
-+int __init pwmchip_reserve(int npwms)
++static int mxs_pwm_config(struct pwm_chip *chip, int duty_ns, int period_ns)
 +{
-+	if (next_pwm_id)
-+		return -EBUSY;
++	struct mxs_pwm_device *pwm = to_mxs_pwm_device(chip);
++	int div = 0;
++	unsigned long rate;
++	unsigned long long c;
++	unsigned long period_cycles, duty_cycles;
 +
-+	next_pwm_id = npwms;
++	rate = clk_get_rate(pwm->clk);
++
++	dev_dbg(pwm->dev, "config: duty_ns: %d, period_ns: %d (clkrate %ld)\n",
++			duty_ns, period_ns, rate);
++
++	while (1) {
++		c = rate / (1 << div);
++		c = c * period_ns;
++		do_div(c, 1000000000);
++		if (c < 0x10000)
++			break;
++		div++;
++
++		if (div > 8)
++			return -EINVAL;
++	}
++
++	period_cycles = c;
++	duty_cycles = period_cycles * duty_ns / period_ns;
++
++	dev_dbg(pwm->dev, "config period_cycles: %ld duty_cycles: %ld\n",
++			period_cycles, duty_cycles);
++
++	pwm->val_active = period_cycles << 16 | duty_cycles;
++	pwm->val_period = PERIOD_PERIOD(period_cycles) | PERIOD_ACTIVE_HIGH |
++			PERIOD_INACTIVE_LOW | PERIOD_CDIV(div);
++	pwm->period_us = period_ns / 1000;
++
++	pwm_update(pwm);
 +
 +	return 0;
 +}
 +
-+/**
-+ * pwmchip_add() - register a new pwm
-+ * @chip: the pwm
-+ *
-+ * register a new pwm. pwm->pwm_id must be initialized. if pwm_id < 0 then
-+ * a dynamically assigned id will be used, otherwise the id specified,
-+ */
-+int pwmchip_add(struct pwm_chip *chip)
++static void __pwm_enable(struct mxs_pwm_device *pwm, int enable)
 +{
-+	struct pwm_device *pwm;
++	if (enable)
++		__mxs_setl(PWM_ENABLE(pwm->chip.pwm_id), pwm_base_common + REG_PWM_CTRL);
++	else
++		__mxs_clrl(PWM_ENABLE(pwm->chip.pwm_id), pwm_base_common + REG_PWM_CTRL);
++}
++
++static int mxs_pwm_enable(struct pwm_chip *chip)
++{
++	struct mxs_pwm_device *pwm = to_mxs_pwm_device(chip);
 +	int ret = 0;
 +
-+	mutex_lock(&pwm_lock);
++	dev_dbg(pwm->dev, "enable\n");
 +
-+	if (chip->pwm_id >= 0 && find_pwm(chip->pwm_id)) {
-+		ret = -EBUSY;
-+		goto out;
-+	}
-+
-+	pwm = kzalloc(sizeof(*pwm), GFP_KERNEL);
-+	if (!pwm) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+
-+	pwm->chip = chip;
-+
-+	if (chip->pwm_id < 0)
-+		chip->pwm_id = next_pwm_id++;
-+
-+	list_add_tail(&pwm->node, &pwm_list);
-+out:
-+	mutex_unlock(&pwm_lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(pwmchip_add);
-+
-+/**
-+ * pwmchip_remove() - remove a pwm
-+ * @chip: the pwm
-+ *
-+ * remove a pwm. This function may return busy if the pwm is still requested.
-+ */
-+int pwmchip_remove(struct pwm_chip *chip)
-+{
-+	struct pwm_device *pwm;
-+	int ret = 0;
-+
-+	mutex_lock(&pwm_lock);
-+
-+	pwm = find_pwm(chip->pwm_id);
-+	if (!pwm) {
-+		ret = -ENOENT;
-+		goto out;
-+	}
-+
-+	if (test_bit(FLAG_REQUESTED, &pwm->flags)) {
-+		ret = -EBUSY;
-+		goto out;
-+	}
-+
-+	list_del(&pwm->node);
-+out:
-+	mutex_unlock(&pwm_lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(pwmchip_remove);
-+
-+/*
-+ * pwm_request - request a PWM device
-+ */
-+struct pwm_device *pwm_request(int pwm_id, const char *label)
-+{
-+	struct pwm_device *pwm;
-+	int ret;
-+
-+	mutex_lock(&pwm_lock);
-+
-+	pwm = find_pwm(pwm_id);
-+	if (!pwm) {
-+		pwm = ERR_PTR(-ENOENT);
-+		goto out;
-+	}
-+
-+	if (test_bit(FLAG_REQUESTED, &pwm->flags)) {
-+		pwm = ERR_PTR(-EBUSY);
-+		goto out;
-+	}
-+
-+	if (!try_module_get(pwm->chip->owner)) {
-+		pwm = ERR_PTR(-ENODEV);
-+		goto out;
-+	}
-+
-+	if (pwm->chip->ops->request) {
-+		ret = pwm->chip->ops->request(pwm->chip);
-+		if (ret) {
-+			pwm = ERR_PTR(ret);
-+			goto out_put;
++	if (!pwm->enabled) {
++		ret = clk_enable(pwm->clk);
++		if (!ret) {
++			pwm->enabled = 1;
++			__pwm_enable(pwm, 1);
++			pwm_update(pwm);
 +		}
 +	}
-+
-+	pwm->label = label;
-+	set_bit(FLAG_REQUESTED, &pwm->flags);
-+
-+	goto out;
-+
-+out_put:
-+	module_put(pwm->chip->owner);
-+out:
-+	mutex_unlock(&pwm_lock);
-+
-+	return pwm;
++	return ret;
 +}
-+EXPORT_SYMBOL_GPL(pwm_request);
 +
-+/*
-+ * pwm_free - free a PWM device
-+ */
-+void pwm_free(struct pwm_device *pwm)
++static void mxs_pwm_disable(struct pwm_chip *chip)
 +{
-+	mutex_lock(&pwm_lock);
++	struct mxs_pwm_device *pwm = to_mxs_pwm_device(chip);
 +
-+	if (!test_and_clear_bit(FLAG_REQUESTED, &pwm->flags)) {
-+		pr_warning("PWM device already freed\n");
-+		goto out;
++	dev_dbg(pwm->dev, "disable\n");
++
++	if (pwm->enabled) {
++		/*
++		 * We need a little delay here, it takes one period for
++		 * the last pwm_config call to take effect. If we disable
++		 * the pwm too early it just freezes the current output
++		 * state.
++		 */
++		usleep_range(pwm->period_us, pwm->period_us * 2);
++		__pwm_enable(pwm, 0);
++		clk_disable(pwm->clk);
++		pwm->enabled = 0;
++	}
++}
++
++static struct pwm_ops mxs_pwm_ops = {
++	.enable = mxs_pwm_enable,
++	.disable = mxs_pwm_disable,
++	.config = mxs_pwm_config,
++};
++
++static int __devinit mxs_pwm_probe(struct platform_device *pdev)
++{
++	struct mxs_pwm_device *pwm;
++	struct resource *r;
++	int ret = 0;
++
++	pwm = devm_kzalloc(&pdev->dev, sizeof(struct mxs_pwm_device), GFP_KERNEL);
++	if (pwm == NULL) {
++		dev_err(&pdev->dev, "failed to allocate memory\n");
++		return -ENOMEM;
 +	}
 +
-+	pwm->label = NULL;
++	pwm->clk = clk_get(&pdev->dev, NULL);
 +
-+	module_put(pwm->chip->owner);
-+out:
-+	mutex_unlock(&pwm_lock);
++	if (IS_ERR(pwm->clk)) {
++		ret = PTR_ERR(pwm->clk);
++		goto err_free;
++	}
++
++	pwm->chip.ops = &mxs_pwm_ops;
++
++	pwm->enabled = 0;
++
++	pwm->chip.pwm_id = pdev->id;
++	pwm->chip.owner = THIS_MODULE;
++
++	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (r == NULL) {
++		dev_err(&pdev->dev, "no memory resource defined\n");
++		ret = -ENODEV;
++		goto err_free_clk;
++	}
++
++	r = request_mem_region(r->start, resource_size(r), pdev->name);
++	if (r == NULL) {
++		dev_err(&pdev->dev, "failed to request memory resource\n");
++		ret = -EBUSY;
++		goto err_free_clk;
++	}
++
++	pwm->mmio_base = ioremap(r->start, resource_size(r));
++	if (pwm->mmio_base == NULL) {
++		dev_err(&pdev->dev, "failed to ioremap() registers\n");
++		ret = -ENODEV;
++		goto err_free_mem;
++	}
++
++	ret = pwmchip_add(&pwm->chip);
++	if (ret)
++		goto err_free_mem;
++
++	platform_set_drvdata(pdev, pwm);
++	return 0;
++
++err_free_mem:
++	release_mem_region(r->start, resource_size(r));
++err_free_clk:
++	clk_put(pwm->clk);
++err_free:
++	kfree(pwm);
++	return ret;
 +}
-+EXPORT_SYMBOL_GPL(pwm_free);
 +
-+/*
-+ * pwm_config - change a PWM device configuration
-+ */
-+int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
++static int __devexit mxs_pwm_remove(struct platform_device *pdev)
 +{
-+	return pwm->chip->ops->config(pwm->chip, duty_ns, period_ns);
-+}
-+EXPORT_SYMBOL_GPL(pwm_config);
++	struct mxs_pwm_device *pwm;
++	struct resource *r;
++	int ret;
 +
-+/*
-+ * pwm_enable - start a PWM output toggling
-+ */
-+int pwm_enable(struct pwm_device *pwm)
-+{
-+	if (!test_and_set_bit(FLAG_ENABLED, &pwm->flags))
-+		return pwm->chip->ops->enable(pwm->chip);
++	pwm = platform_get_drvdata(pdev);
++
++	ret = pwmchip_remove(&pwm->chip);
++	if (ret)
++		return ret;
++
++	iounmap(pwm->mmio_base);
++
++	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	release_mem_region(r->start, resource_size(r));
++
++	clk_put(pwm->clk);
 +
 +	return 0;
 +}
-+EXPORT_SYMBOL_GPL(pwm_enable);
 +
-+/*
-+ * pwm_disable - stop a PWM output toggling
-+ */
-+void pwm_disable(struct pwm_device *pwm)
++static struct platform_driver mxs_pwm_driver = {
++	.driver		= {
++		.name	= "mxs-pwm",
++	},
++	.probe		= mxs_pwm_probe,
++	.remove		= __devexit_p(mxs_pwm_remove),
++};
++
++static int __init mxs_pwm_init(void)
 +{
-+	if (test_and_clear_bit(FLAG_ENABLED, &pwm->flags))
-+		pwm->chip->ops->disable(pwm->chip);
++	if (cpu_is_mx28())
++		pwm_base_common = MX28_IO_ADDRESS(MX28_PWM_BASE_ADDR);
++	else
++		pwm_base_common = MX23_IO_ADDRESS(MX23_PWM_BASE_ADDR);
++
++	__mxs_clrl(PWM_SFTRST | PWM_CLKGATE, pwm_base_common + REG_PWM_CTRL);
++
++	return platform_driver_register(&mxs_pwm_driver);
 +}
-+EXPORT_SYMBOL_GPL(pwm_disable);
-diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-index 7c77575..e3e2139 100644
---- a/include/linux/pwm.h
-+++ b/include/linux/pwm.h
-@@ -28,4 +28,42 @@ int pwm_enable(struct pwm_device *pwm);
-  */
- void pwm_disable(struct pwm_device *pwm);
- 
-+#ifdef CONFIG_PWMLIB
-+struct pwm_chip;
++arch_initcall(mxs_pwm_init);
 +
-+/**
-+ * struct pwm_ops - PWM operations
-+ * @request: optional hook for requesting a PWM
-+ * @free: optional hook for freeing a PWM
-+ * @config: configure duty cycles and period length for this PWM
-+ * @enable: enable PWM output toggling
-+ * @disable: disable PWM output toggling
-+ */
-+struct pwm_ops {
-+	int			(*request)(struct pwm_chip *chip);
-+	void			(*free)(struct pwm_chip *chip);
-+	int			(*config)(struct pwm_chip *chip, int duty_ns,
-+						int period_ns);
-+	int			(*enable)(struct pwm_chip *chip);
-+	void			(*disable)(struct pwm_chip *chip);
-+};
++static void __exit mxs_pwm_exit(void)
++{
++	platform_driver_unregister(&mxs_pwm_driver);
++}
++module_exit(mxs_pwm_exit);
 +
-+/**
-+ * struct pwm_chip - abstract a PWM
-+ * @label: for diagnostics
-+ * @owner: helps prevent removal of modules exporting active PWMs
-+ * @ops: The callbacks for this PWM
-+ */
-+struct pwm_chip {
-+	int			pwm_id;
-+	const char		*label;
-+	struct module		*owner;
-+	struct pwm_ops		*ops;
-+};
-+
-+int __must_check pwmchip_reserve(int npwms);
-+int pwmchip_add(struct pwm_chip *chip);
-+int pwmchip_remove(struct pwm_chip *chip);
-+#endif
-+
- #endif /* __LINUX_PWM_H */
++MODULE_LICENSE("GPL v2");
++MODULE_AUTHOR("Sascha Hauer <s.hauer@pengutronix.de>");
 -- 
 1.7.2.3
 
