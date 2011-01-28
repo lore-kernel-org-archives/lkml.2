@@ -1,65 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310Ab1A1ReO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 12:34:14 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:58589 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751409Ab1A1ReN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 12:34:13 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Fri, 28 Jan 2011 18:33:55 +0100
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Ping Cheng <pingc@wacom.com>,
-        Jiri Kosina <jkosina@suse.cz>, Chris Bagwell <chris@cnpbagwell.com>,
-        Rafi Rubin <rafi@seas.upenn.edu>, Stephane Chatty <chatty@lii-enac.fr>,
-        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 1/2] input: mt: Add method to extract the MT slot state
-Message-ID: <20110128173355.GD2586@polaris.bitmath.org>
-References: <1296124547-3323-1-git-send-email-benjamin.tissoires@enac.fr>
- <1296124547-3323-2-git-send-email-benjamin.tissoires@enac.fr>
- <20110127120603.GB15626@polaris.bitmath.org>
- <AANLkTim7DbxhEO7vHPFcC1PFf=d2mSEyL+wurzUQa0pg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTim7DbxhEO7vHPFcC1PFf=d2mSEyL+wurzUQa0pg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 83.248.192.164
-X-Scan-Result: No virus found in message 1PisBw-0004qY-AJ.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PisBw-0004qY-AJ dc4d65fec712231387fe81bf5008b718
+	id S1755361Ab1A1Rht (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 12:37:49 -0500
+Received: from [123.122.102.109] ([123.122.102.109]:36388 "EHLO enigma.site"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754745Ab1A1Rhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 12:37:46 -0500
+From: Coly Li <bosong.ly@taobao.com>
+To: linux-kernel@vger.kernel.org
+Cc: Coly Li <bosong.ly@taobao.com>, Greg KH <gregkh@suse.de>
+Subject: [PATCH 4/5] wl_cfg80211.c: use BUG_ON correctly, v3
+Date: Sat, 29 Jan 2011 01:55:49 +0800
+Message-Id: <1296237350-6624-5-git-send-email-bosong.ly@taobao.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1296237350-6624-1-git-send-email-bosong.ly@taobao.com>
+References: <1296237350-6624-1-git-send-email-bosong.ly@taobao.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 27, 2011 at 01:49:18PM +0100, Benjamin Tissoires wrote:
-> Hi Henrik,
-> 
-> On Thu, Jan 27, 2011 at 13:06, Henrik Rydberg <rydberg@euromail.se> wrote:
-> > Hi Benjamin,
-> >
-> > On Thu, Jan 27, 2011 at 11:35:46AM +0100, Benjamin Tissoires wrote:
-> >> This patch adds the function input_mt_get_abs_value(), which may be
-> >
-> > Ehm, input_mt_get_absinfo?
-> 
-> In fact, the idea was to put this on the table again ;). I have no
-> idea of what is the right think to do in such case.
-> So I'll take all comments.
-> 
-> >
-> >> used to extract the current state of the MT slots.
-> >>
-> >> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> >
-> > I had rather re-add this myself, thanks.
-> 
-> That was my question. Plus I had a subliminal message in which I
-> intend you to take the drive on this work. ;)
+This patch removes explicit unlikely() when using BUG_ON() in
+wl_cfg80211.c
 
-Thanks for the patches, Benjamin, perhaps they do need a bit of
-rewrite or a new ioctl. We will see what happens.
+Signed-off-by: Coly Li <bosong.ly@taobao.com>
+Cc: Greg KH <gregkh@suse.de>
+---
+ drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
-Thanks,
-Henrik
+diff --git a/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
+index 991463f..35124b1 100644
+--- a/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
++++ b/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
+@@ -673,7 +673,7 @@ wl_dev_iovar_setbuf(struct net_device *dev, s8 * iovar, void *param,
+ 	s32 iolen;
+ 
+ 	iolen = bcm_mkiovar(iovar, param, paramlen, bufptr, buflen);
+-	BUG_ON(unlikely(!iolen));
++	BUG_ON(!iolen);
+ 
+ 	return wl_dev_ioctl(dev, WLC_SET_VAR, bufptr, iolen);
+ }
+@@ -685,7 +685,7 @@ wl_dev_iovar_getbuf(struct net_device *dev, s8 * iovar, void *param,
+ 	s32 iolen;
+ 
+ 	iolen = bcm_mkiovar(iovar, param, paramlen, bufptr, buflen);
+-	BUG_ON(unlikely(!iolen));
++	BUG_ON(!iolen);
+ 
+ 	return wl_dev_ioctl(dev, WLC_GET_VAR, bufptr, buflen);
+ }
+@@ -704,7 +704,7 @@ wl_run_iscan(struct wl_iscan_ctrl *iscan, struct wlc_ssid *ssid, u16 action)
+ 	if (unlikely(!params))
+ 		return -ENOMEM;
+ 	memset(params, 0, params_size);
+-	BUG_ON(unlikely(params_size >= WLC_IOCTL_SMLEN));
++	BUG_ON(params_size >= WLC_IOCTL_SMLEN);
+ 
+ 	wl_iscan_prep(&params->params, ssid);
+ 
+@@ -875,7 +875,7 @@ static s32 wl_dev_intvar_set(struct net_device *dev, s8 *name, s32 val)
+ 
+ 	val = htod32(val);
+ 	len = bcm_mkiovar(name, (char *)(&val), sizeof(val), buf, sizeof(buf));
+-	BUG_ON(unlikely(!len));
++	BUG_ON(!len);
+ 
+ 	err = wl_dev_ioctl(dev, WLC_SET_VAR, buf, len);
+ 	if (unlikely(err)) {
+@@ -899,7 +899,7 @@ wl_dev_intvar_get(struct net_device *dev, s8 *name, s32 *retval)
+ 	len =
+ 	    bcm_mkiovar(name, (char *)(&data_null), 0, (char *)(&var),
+ 			sizeof(var.buf));
+-	BUG_ON(unlikely(!len));
++	BUG_ON(!len);
+ 	err = wl_dev_ioctl(dev, WLC_GET_VAR, &var, len);
+ 	if (unlikely(err)) {
+ 		WL_ERR("error (%d)\n", err);
+@@ -2436,7 +2436,7 @@ wl_dev_bufvar_set(struct net_device *dev, s8 *name, s8 *buf, s32 len)
+ 	u32 buflen;
+ 
+ 	buflen = bcm_mkiovar(name, buf, len, wl->ioctl_buf, WL_IOCTL_LEN_MAX);
+-	BUG_ON(unlikely(!buflen));
++	BUG_ON(!buflen);
+ 
+ 	return wl_dev_ioctl(dev, WLC_SET_VAR, wl->ioctl_buf, buflen);
+ }
+@@ -2450,7 +2450,7 @@ wl_dev_bufvar_get(struct net_device *dev, s8 *name, s8 *buf,
+ 	s32 err = 0;
+ 
+ 	len = bcm_mkiovar(name, NULL, 0, wl->ioctl_buf, WL_IOCTL_LEN_MAX);
+-	BUG_ON(unlikely(!len));
++	BUG_ON(!len);
+ 	err = wl_dev_ioctl(dev, WLC_GET_VAR, (void *)wl->ioctl_buf,
+ 			WL_IOCTL_LEN_MAX);
+ 	if (unlikely(err)) {
+-- 
+1.7.3.4
+
