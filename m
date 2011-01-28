@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754087Ab1A1H5a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 02:57:30 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:35475 "EHLO zene.cmpxchg.org"
+	id S1754133Ab1A1H6Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 02:58:24 -0500
+Received: from lo.gmane.org ([80.91.229.12]:57656 "EHLO lo.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753551Ab1A1H52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 02:57:28 -0500
-Date: Fri, 28 Jan 2011 08:57:24 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Subject: Re: [BUGFIX][PATCH 2/4] memcg: fix charge path for THP and allow
- early retirement
-Message-ID: <20110128075724.GB2213@cmpxchg.org>
-References: <20110128122229.6a4c74a2.kamezawa.hiroyu@jp.fujitsu.com>
- <20110128122608.cf9be26b.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110128122608.cf9be26b.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1753472Ab1A1H6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 02:58:23 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: WANG Cong <xiyou.wangcong@gmail.com>
+Subject: Re: [Patch] make installkernel configurable from command line (was
+ Re: how to avoid that install.sh goes mad, if I am not root?)
+Date: Fri, 28 Jan 2011 07:58:07 +0000 (UTC)
+Message-ID: <ihtsue$921$2@dough.gmane.org>
+References: <4D388A08.1010004@afaics.de>
+	<19768.44428.482148.361069@pilspetsen.it.uu.se>
+	<ihbvd1$jbj$3@dough.gmane.org> <4D3A03CA.2060507@afaics.de>
+	<20110124102159.GD5510@cr0.nay.redhat.com>
+	<19773.26066.137666.718852@pilspetsen.it.uu.se>
+	<20110125054800.GC13618@cr0.nay.redhat.com>
+	<19775.61731.753606.576942@pilspetsen.it.uu.se>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 60.247.97.98
+User-Agent: Pan/0.133 (House of Butterflies)
+Cc: linux-kbuild@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 28, 2011 at 12:26:08PM +0900, KAMEZAWA Hiroyuki wrote:
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+On Wed, 26 Jan 2011 11:02:11 +0100, Mikael Pettersson wrote:
 > 
-> When THP is used, Hugepage size charge can happen. It's not handled
-> correctly in mem_cgroup_do_charge(). For example, THP can fallback
-> to small page allocation when HUGEPAGE allocation seems difficult
-> or busy, but memory cgroup doesn't understand it and continue to
-> try HUGEPAGE charging. And the worst thing is memory cgroup
-> believes 'memory reclaim succeeded' if limit - usage > PAGE_SIZE.
-> 
-> By this, khugepaged etc...can goes into inifinite reclaim loop
-> if tasks in memcg are busy.
-> 
-> After this patch 
->  - Hugepage allocation will fail if 1st trial of page reclaim fails.
-> 
-> Changelog:
->  - make changes small. removed renaming codes.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  mm/memcontrol.c |   28 ++++++++++++++++++++++++----
->  1 file changed, 24 insertions(+), 4 deletions(-)
+> Tested.  This works as far as not overriding root's ~/bin/installkernel
+> if it exists, but it fails to give precedence to an explicit
+> command-line INSTALLKERNEL=... over the built-in fallbacks.  I don't see
+> an easy way to fix that without first consolidating all archs'
+> INSTALLKERNEL handling into the top-level Makefile.
 
-Was there something wrong with my oneline fix?
 
-Really, there is no way to make this a beautiful fix.  The way this
-function is split up makes no sense, and the constant addition of more
-and more flags just to correctly communicate with _one callsite_
-should be an obvious hint.
+Yes, exactly, I can expect this.
+
+> 
+> Not using make install and just invoking your own install script
+> directly works, so I'm not sure this is worth the trouble (unless you
+> can unify all archs' INSTALLKERNEL handling as a side-effect / cleanup).
+
+Agreed, I will have a try.
+
+Thanks!
+
