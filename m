@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab1A1EEn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 23:04:43 -0500
-Received: from mail.perches.com ([173.55.12.10]:3416 "EHLO mail.perches.com"
+	id S1754887Ab1A1EFT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 23:05:19 -0500
+Received: from mail.perches.com ([173.55.12.10]:3458 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754710Ab1A1EEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 23:04:41 -0500
+	id S1754768Ab1A1EEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 23:04:55 -0500
 From: Joe Perches <joe@perches.com>
 To: Vipin Mehta <vmehta@atheros.com>
 Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 01/15] staging: ath6kl: Update cfg80211 to recent calling convention changes
-Date: Thu, 27 Jan 2011 20:04:18 -0800
-Message-Id: <9f92ccc5786180a9055ee22b28d1b6ea8cbda425.1296186677.git.joe@perches.com>
+Subject: [PATCH 13/15] staging: ath6kl: Convert A_NETBUF_QUEUE_EMPTY to return TRUE or FALSE
+Date: Thu, 27 Jan 2011 20:04:30 -0800
+Message-Id: <df0541518c4f42e84115b10e3888b317c5e07faa.1296186677.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.4.rc3
 In-Reply-To: <cover.1296186677.git.joe@perches.com>
 References: <cover.1296186677.git.joe@perches.com>
@@ -20,45 +20,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add bool unicast and bool multicast to set_default_key
-Return struct net_device * to add_virtual_intf
+Make the return an A_BOOL not int.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/staging/ath6kl/os/linux/cfg80211.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ .../staging/ath6kl/os/linux/include/osapi_linux.h  |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/ath6kl/os/linux/cfg80211.c b/drivers/staging/ath6kl/os/linux/cfg80211.c
-index 7269d0a..cbd9d55 100644
---- a/drivers/staging/ath6kl/os/linux/cfg80211.c
-+++ b/drivers/staging/ath6kl/os/linux/cfg80211.c
-@@ -978,7 +978,7 @@ ar6k_cfg80211_get_key(struct wiphy *wiphy, struct net_device *ndev,
+diff --git a/drivers/staging/ath6kl/os/linux/include/osapi_linux.h b/drivers/staging/ath6kl/os/linux/include/osapi_linux.h
+index a1dd024..cdbda89 100644
+--- a/drivers/staging/ath6kl/os/linux/include/osapi_linux.h
++++ b/drivers/staging/ath6kl/os/linux/include/osapi_linux.h
+@@ -247,7 +247,7 @@ typedef struct sk_buff_head A_NETBUF_QUEUE_T;
+ #define A_NETBUF_QUEUE_SIZE(q)  \
+     a_netbuf_queue_size(q)
+ #define A_NETBUF_QUEUE_EMPTY(q) \
+-    a_netbuf_queue_empty(q)
++    (a_netbuf_queue_empty(q) ? TRUE : FALSE)
  
- static int
- ar6k_cfg80211_set_default_key(struct wiphy *wiphy, struct net_device *ndev,
--                              A_UINT8 key_index)
-+                              A_UINT8 key_index, bool unicast, bool multicast)
- {
-     AR_SOFTC_T *ar = (AR_SOFTC_T *)ar6k_priv(ndev);
-     struct ar_key *key = NULL;
-@@ -1201,7 +1201,7 @@ ar6k_cfg80211_set_power_mgmt(struct wiphy *wiphy,
-     return 0;
- }
- 
--static int
-+static struct net_device *
- ar6k_cfg80211_add_virtual_intf(struct wiphy *wiphy, char *name,
-             				    enum nl80211_iftype type, u32 *flags,
-             				    struct vif_params *params)
-@@ -1212,7 +1212,7 @@ ar6k_cfg80211_add_virtual_intf(struct wiphy *wiphy, char *name,
-     /* Multiple virtual interface is not supported.
-      * The default interface supports STA and IBSS type
-      */
--    return -EOPNOTSUPP;
-+    return ERR_PTR(-EOPNOTSUPP);
- }
- 
- static int
+ /*
+  * Network buffer support
 -- 
 1.7.4.rc3
 
