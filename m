@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab1A1X2k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 18:28:40 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48811 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752836Ab1A1X2j (ORCPT
+	id S1753999Ab1A1XeW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 18:34:22 -0500
+Received: from nitrogen.linux2go.dk ([178.63.73.81]:50385 "EHLO
+	nitrogen.linux2go.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753258Ab1A1XeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 18:28:39 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=W8HuSDyMEQcaB7tf+qRZAJEhCebFped9UDj9CrQI7eRhIMUloiovtKJR4FXKmQ3iXi
-         eS5fgOOfgmFUtU/IReEtIaPFLwZ0vJGhnzMZXKH8nEmwWVkkZ3g0ik0TPsQetJz42M0t
-         1z3hnxe7Ur8bqFSvcO+cP630lVfIaDnEoz3FA=
-Message-ID: <4D435123.3080003@suse.cz>
-Date: Sat, 29 Jan 2011 00:28:35 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Kacper Kornet <kornet@camk.edu.pl>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Fix prlimit64 for suid/sgid processes
-References: <20110127134710.GB519@camk.edu.pl> <AANLkTimOM7KDtFkU=CmXZ8J2FqekY=EjCuOdtZHQJQWT@mail.gmail.com> <20110128232104.GA22667@camk.edu.pl>
-In-Reply-To: <20110128232104.GA22667@camk.edu.pl>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+	Fri, 28 Jan 2011 18:34:20 -0500
+X-Greylist: delayed 629 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Jan 2011 18:34:20 EST
+From: Soren Hansen <soren@linux2go.dk>
+To: linux-kernel@vger.kernel.org
+Cc: Soren Hansen <soren@linux2go.dk>
+Subject: [PATCH] nbd: Remove module-level ioctl mutex
+Date: Sat, 29 Jan 2011 00:23:48 +0100
+Message-Id: <1296257028-14748-1-git-send-email-soren@linux2go.dk>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <AANLkTimP=5A-BNHUwV0qhvjw8y4HevMvXtOBpRr6vFYR@mail.gmail.com>
+References: <AANLkTimP=5A-BNHUwV0qhvjw8y4HevMvXtOBpRr6vFYR@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2011 12:21 AM, Kacper Kornet wrote:
-> Since check_prlimit_permission always fails in the case of SUID/GUID
-> processes, such processes are not able to read or set their own limits.
-> This commit changes this by assuming that process can always read/change
-> its own limits.
-> 
-> Signed-off-by: Kacper Kornet <kornet@camk.edu.pl>
+2a48fc0ab24241755dc93bfd4f01d68efab47f5a replaced uses of the BKL in
+the nbd driver with mutex operations. Since then, I've been been seeing
+these lock ups:
 
-ACK. The check comes from the ptrace code. I forgot to copy this test.
+ INFO: task qemu-nbd:16115 blocked for more than 120 seconds.
+ "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+ qemu-nbd      D 0000000000000001     0 16115  16114 0x00000004
+  ffff88007d775d98 0000000000000082 ffff88007d775fd8 ffff88007d774000
+  0000000000013a80 ffff8800020347e0 ffff88007d775fd8 0000000000013a80
+  ffff880133730000 ffff880002034440 ffffea0004333db8 ffffffffa071c020
+ Call Trace:
+  [<ffffffff815b9997>] __mutex_lock_slowpath+0xf7/0x180
+  [<ffffffff81132f13>] ? handle_mm_fault+0x1c3/0x410
+  [<ffffffff815b93eb>] mutex_lock+0x2b/0x50
+  [<ffffffffa071a21c>] nbd_ioctl+0x6c/0x1c0 [nbd]
+  [<ffffffff812cb970>] blkdev_ioctl+0x230/0x730
+  [<ffffffff811967a1>] block_ioctl+0x41/0x50
+  [<ffffffff81175c03>] do_vfs_ioctl+0x93/0x370
+  [<ffffffff8116fa83>] ? putname+0x33/0x50
+  [<ffffffff81175f61>] sys_ioctl+0x81/0xa0
+  [<ffffffff8100c0c2>] system_call_fastpath+0x16/0x1b
 
-> ---
->  kernel/sys.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/sys.c b/kernel/sys.c
-> index e9ad444..03bead7 100644
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-> @@ -1375,7 +1375,8 @@ static int check_prlimit_permission(struct task_struct *task)
->  	const struct cred *cred = current_cred(), *tcred;
->  
->  	tcred = __task_cred(task);
-> -	if ((cred->uid != tcred->euid ||
-> +	if (current != task &&
-> +	    (cred->uid != tcred->euid ||
->  	     cred->uid != tcred->suid ||
->  	     cred->uid != tcred->uid  ||
->  	     cred->gid != tcred->egid ||
+Instrumenting the nbd module's ioctl handler with some extra logging
+clearly shows the NBD_DO_IT ioctl being invoked which is a long-lived
+ioctl in the sense that it doesn't return until another ioctl asks the
+driver to disconnect. However, that other ioctl blocks, waiting for the
+module-level mutex that replaced the BKL, and then we're stuck.
 
-thanks,
+This patch removes the module-level mutex altogether. It's clearly
+wrong, and as far as I can see, it's entirely unnecessary, since the
+nbd driver maintains per-device mutexes, and I don't see anything that
+would require a module-level (or kernel-level, for that matter) mutex.
+
+Signed-off-by: Soren Hansen <soren@linux2go.dk>
+---
+ drivers/block/nbd.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
+index a32fb41..e6fc716 100644
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -53,7 +53,6 @@
+ #define DBG_BLKDEV      0x0100
+ #define DBG_RX          0x0200
+ #define DBG_TX          0x0400
+-static DEFINE_MUTEX(nbd_mutex);
+ static unsigned int debugflags;
+ #endif /* NDEBUG */
+ 
+@@ -718,11 +717,9 @@ static int nbd_ioctl(struct block_device *bdev, fmode_t mode,
+ 	dprintk(DBG_IOCTL, "%s: nbd_ioctl cmd=%s(0x%x) arg=%lu\n",
+ 			lo->disk->disk_name, ioctl_cmd_to_ascii(cmd), cmd, arg);
+ 
+-	mutex_lock(&nbd_mutex);
+ 	mutex_lock(&lo->tx_lock);
+ 	error = __nbd_ioctl(bdev, lo, cmd, arg);
+ 	mutex_unlock(&lo->tx_lock);
+-	mutex_unlock(&nbd_mutex);
+ 
+ 	return error;
+ }
 -- 
-js
-suse labs
+1.7.2.3
+
