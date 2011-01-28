@@ -1,55 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab1A1A74 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 19:59:56 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:39738 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752306Ab1A1A74 (ORCPT
+	id S1753976Ab1A1BJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 20:09:57 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49889 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752960Ab1A1BJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 19:59:56 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAGajQU1Ld/sX/2dsb2JhbAAMhAiqB6M1kF6BI4M4dASFFw
-X-IronPort-AV: E=Sophos;i="4.60,388,1291611600"; 
-   d="scan'208";a="89492284"
-Message-ID: <4D421507.1030006@teksavvy.com>
-Date: Thu, 27 Jan 2011 19:59:51 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Stan Hoeppner <stan@hardwarefreak.com>,
-        Christoph Hellwig <hch@infradead.org>, Alex Elder <aelder@sgi.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: xfs: very slow after mount, very slow at umount
-References: <4D40C8D1.8090202@teksavvy.com> <20110127033011.GH21311@dastard> <4D40EB2F.2050809@teksavvy.com> <4D418B57.1000501@teksavvy.com> <20110127234152.GN21311@dastard>
-In-Reply-To: <20110127234152.GN21311@dastard>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 27 Jan 2011 20:09:56 -0500
+Date: Thu, 27 Jan 2011 17:09:48 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: dsterba@suse.cz
+Cc: ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org, mfasheh@suse.com,
+        joel.becker@oracle.com
+Subject: Re: fs/ocfs2/dlm: Use GFP_ATOMIC under spin_lock
+Message-Id: <20110127170948.9a0d8b60.akpm@linux-foundation.org>
+In-Reply-To: <20101102223601.GA27513@ds.suse.cz>
+References: <20101102223601.GA27513@ds.suse.cz>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-01-27 06:41 PM, Dave Chinner wrote:
-> On Thu, Jan 27, 2011 at 10:12:23AM -0500, Mark Lord wrote:
-..
->> Can you recommend a good set of mkfs.xfs parameters to suit the characteristics
->> of this system? 
+Blast from the past...
+
+On Tue, 2 Nov 2010 23:36:02 +0100
+David Sterba <dsterba@suse.cz> wrote:
+
+> coccinelle check scripts/coccinelle/locks/call_kern.cocci found that
+> in fs/ocfs2/dlm/dlmdomain.c an allocation with GFP_KERNEL is done
+> with locks held:
 > 
-> http://xfs.org/index.php/XFS_FAQ#Q:_I_want_to_tune_my_XFS_filesystems_for_.3Csomething.3E
+> dlm_query_region_handler
+>   spin_lock(dlm_domain_lock)
+>     dlm_match_regions
+>       kmalloc(GFP_KERNEL)
+> 
+> Change it to GFP_ATOMIC.
+> 
+> Signed-off-by: David Sterba <dsterba@suse.cz>
+> CC: Joel Becker <joel.becker@oracle.com>
+> CC: Mark Fasheh <mfasheh@suse.com>
+> CC: ocfs2-devel@oss.oracle.com
+> 
+> --
+> Exists in v2.6.37-rc1 and current linux-next.
+> 
+> diff -u -p a/fs/ocfs2/dlm/dlmdomain.c b/fs/ocfs2/dlm/dlmdomain.c
+> --- a/fs/ocfs2/dlm/dlmdomain.c 2010-10-22 10:23:23.502434402 +0200
+> +++ b/fs/ocfs2/dlm/dlmdomain.c 2010-11-02 17:11:06.000000000 +0100
+> @@ -959,7 +959,7 @@ static int dlm_match_regions(struct dlm_
+>                 r += O2HB_MAX_REGION_NAME_LEN;
+>         }
+> 
+> -       local = kmalloc(sizeof(qr->qr_regions), GFP_KERNEL);
+> +       local = kmalloc(sizeof(qr->qr_regions), GFP_ATOMIC);
+>         if (!local) {
+>                 status = -ENOMEM;
+>                 goto bail;
+> 
 
-That entry says little beyond "blindly trust the defaults".
-But thanks anyway (really).
+Switching to GFP_ATOMIC is the worst of all possible ways of "fixing"
+this bug.  GFP_ATOMIC is *unreliable*.  We don't want to introduce
+unreliability deep down inside our filesytems.  And fs maintainers who
+don't want to make their filesystems less reliable shouldn't blindly
+apply patches that do so :(
 
-> And perhaps you want to consider the allocsize mount option, though
-> that shouldn't be necessary for 2.6.38+...
 
-That's a good tip, thanks.
->From my earlier posting:
+A reliable way of fixing this bug is below.  As an added bonus, it
+makes the fs faster.
 
->   /dev/sdb1 on /var/lib/mythtv type xfs
-> (rw,noatime,allocsize=64M,logbufs=8,largeio)
+--- a/fs/ocfs2/dlm/dlmdomain.c~a
++++ a/fs/ocfs2/dlm/dlmdomain.c
+@@ -926,9 +926,9 @@ static int dlm_assert_joined_handler(str
+ }
+ 
+ static int dlm_match_regions(struct dlm_ctxt *dlm,
+-			     struct dlm_query_region *qr)
++			     struct dlm_query_region *qr, u8 *local)
+ {
+-	char *local = NULL, *remote = qr->qr_regions;
++	char *remote = qr->qr_regions;
+ 	char *l, *r;
+ 	int localnr, i, j, foundit;
+ 	int status = 0;
+@@ -957,12 +957,6 @@ static int dlm_match_regions(struct dlm_
+ 		r += O2HB_MAX_REGION_NAME_LEN;
+ 	}
+ 
+-	local = kmalloc(sizeof(qr->qr_regions), GFP_ATOMIC);
+-	if (!local) {
+-		status = -ENOMEM;
+-		goto bail;
+-	}
+-
+ 	localnr = o2hb_get_all_regions(local, O2NM_MAX_REGIONS);
+ 
+ 	/* compare local regions with remote */
+@@ -1012,8 +1006,6 @@ static int dlm_match_regions(struct dlm_
+ 	}
+ 
+ bail:
+-	kfree(local);
+-
+ 	return status;
+ }
+ 
+@@ -1077,6 +1069,7 @@ static int dlm_query_region_handler(stru
+ 	struct dlm_ctxt *dlm = NULL;
+ 	int status = 0;
+ 	int locked = 0;
++	static u8 local[sizeof(qr->qr_regions)]; /* locked by dlm_domain_lock */
+ 
+ 	qr = (struct dlm_query_region *) msg->buf;
+ 
+@@ -1112,7 +1105,7 @@ static int dlm_query_region_handler(stru
+ 		goto bail;
+ 	}
+ 
+-	status = dlm_match_regions(dlm, qr);
++	status = dlm_match_regions(dlm, qr, local);
+ 
+ bail:
+ 	if (locked)
+_
 
-Maybe that allocsize value could be increased though.
-Perhaps something on the order of 256MB might do it.
 
-Thanks again!
