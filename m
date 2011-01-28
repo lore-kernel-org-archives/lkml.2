@@ -1,358 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab1A1Efr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Jan 2011 23:35:47 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:65481 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754752Ab1A1Edq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Jan 2011 23:33:46 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=qZ4xYAo_FgcA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=BOclaGDz0n5iUR0CXbwA:9 a=UmB0VJidCqf4SsKDzdAA:7 a=ExWbzozDDP_afQROCmhE-fbd1sgA:4 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=CcHbYU1O7xZJxL_k:21 a=ME1qhUlepV7grWCg:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Message-Id: <20110128043344.000942033@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Thu, 27 Jan 2011 23:21:21 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [RFC][PATCH 03/12] tracing/filter: Dynamically allocate preds
-References: <20110128042118.561146147@goodmis.org>
-Content-Disposition: inline; filename=0003-tracing-filter-Dynamically-allocate-preds.patch
+	id S1754825Ab1A1Ein (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Jan 2011 23:38:43 -0500
+Received: from cantor.suse.de ([195.135.220.2]:57865 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754772Ab1A1Eim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Jan 2011 23:38:42 -0500
+Date: Thu, 27 Jan 2011 20:21:25 -0800
+From: Greg KH <gregkh@suse.de>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH 1/3] tty: move hvc drivers to drivers/tty/hvc/
+Message-ID: <20110128042125.GA1844@suse.de>
+References: <20110120174910.GA30124@kroah.com>
+ <1295546625-30681-1-git-send-email-gregkh@suse.de>
+ <20110127182916.GA4688@amit-x200.redhat.com>
+ <201101272253.29223.arnd@arndb.de>
+ <20110128025725.GA2822@amit-x200.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110128025725.GA2822@amit-x200.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+On Fri, Jan 28, 2011 at 08:27:25AM +0530, Amit Shah wrote:
+> On (Thu) Jan 27 2011 [22:53:29], Arnd Bergmann wrote:
+> > On Thursday 27 January 2011 19:29:44 Amit Shah wrote:
+> > > On (Thu) Jan 20 2011 [10:03:43], Greg Kroah-Hartman wrote:
+> > > > As requested by Arnd Bergmann, the hvc drivers are now
+> > > > moved to the drivers/tty/hvc/ directory.  The virtio_console.c driver
+> > > > was also moved, as it required the hvc_console.h file to be able to be
+> > > > built, and it really is a hvc driver.
+> > > 
+> > > I just saw this now as a result of this patch entering mainline.  I
+> > > would have liked to be CC'ed to the patches.  Also, I don't like the
+> > > move of the virtio_console.c file to drivers/tty/hvc.  virtio_console.c
+> > > is not only an hvc driver; one of its functions is to hook some ports to
+> > > hvc, but it's mostly a generic driver these days.
+> > 
+> > Sorry about this, the idea to move this file was mine and my original
+> > patch did this as well. I remembered the code from when it was a simple
+> > console driver based on hvc and never noticed that it had evolved into
+> > a generic host/guest communication stack.
+> > 
+> > > Can you please move it back?
+> > 
+> > No objection from me here in general, though as Greg writes above, it's
+> > a bit ugly when hvc_console.h is in a different directory.
+> 
+> Greg, can you do this please?  (A way to do it with preservig git
+> history of the file would be great as well, but I think only a revert
+> will do that?)
 
-For every filter that is made, we create predicates to hold every
-operation within the filter. We have a max of 32 predicates that we
-can hold. Currently, we allocate all 32 even if we only need to
-use one.
+So just move the one file, virtio_console.c?  If so, yes, I can move it
+back.
 
-Part of the reason we do this is that the filter can be used at
-any moment by any event. Fortunately, the filter is only used
-with preemption disabled. By reseting the count of preds used "n_preds"
-to zero, then performing a synchronize_sched(), we can safely
-free and reallocate a new array of preds.
+> > > I could perhaps think of a way of splitting the file so the hvc bits can
+> > > be moved to drivers/tty/hvc/ and having the core stay in drivers/char/,
+> > > but that'll have to wait for the next cycle.
 
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace.h               |    3 +-
- kernel/trace/trace_events_filter.c |  142 +++++++++++++++++++++++++++---------
- 2 files changed, 109 insertions(+), 36 deletions(-)
+That would be great, care to send me those patches now so I can queue it
+up for .39?
 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 1597bc0..441fc1b 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -661,7 +661,8 @@ struct ftrace_event_field {
- };
- 
- struct event_filter {
--	int			n_preds;
-+	int			n_preds;	/* Number assigned */
-+	int			a_preds;	/* allocated */
- 	struct filter_pred	**preds;
- 	char			*filter_string;
- };
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index 5d719b3..932f605 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -362,6 +362,7 @@ int filter_match_preds(struct event_filter *filter, void *rec)
- {
- 	int match = -1, top = 0, val1 = 0, val2 = 0;
- 	int stack[MAX_FILTER_PRED];
-+	struct filter_pred **preds;
- 	struct filter_pred *pred;
- 	int n_preds = ACCESS_ONCE(filter->n_preds);
- 	int i;
-@@ -370,8 +371,13 @@ int filter_match_preds(struct event_filter *filter, void *rec)
- 	if (!n_preds)
- 		return 1;
- 
-+	/*
-+	 * n_preds and filter->preds is protect with preemption disabled.
-+	 */
-+	preds = rcu_dereference_sched(filter->preds);
-+
- 	for (i = 0; i < n_preds; i++) {
--		pred = filter->preds[i];
-+		pred = preds[i];
- 		if (!pred->pop_n) {
- 			match = pred->fn(pred, rec);
- 			stack[top++] = match;
-@@ -548,46 +554,55 @@ static int filter_set_pred(struct filter_pred *dest,
- 	return 0;
- }
- 
-+static void __free_preds(struct event_filter *filter)
-+{
-+	int i;
-+
-+	if (filter->preds) {
-+		for (i = 0; i < filter->a_preds; i++) {
-+			if (filter->preds[i])
-+				filter_free_pred(filter->preds[i]);
-+		}
-+		kfree(filter->preds);
-+		filter->preds = NULL;
-+	}
-+	filter->a_preds = 0;
-+	filter->n_preds = 0;
-+}
-+
- static void filter_disable_preds(struct ftrace_event_call *call)
- {
- 	struct event_filter *filter = call->filter;
- 	int i;
- 
- 	call->flags &= ~TRACE_EVENT_FL_FILTERED;
-+	if (filter->preds) {
-+		for (i = 0; i < filter->n_preds; i++)
-+			filter->preds[i]->fn = filter_pred_none;
-+	}
- 	filter->n_preds = 0;
--
--	for (i = 0; i < MAX_FILTER_PRED; i++)
--		filter->preds[i]->fn = filter_pred_none;
- }
- 
--static void __free_preds(struct event_filter *filter)
-+static void __free_filter(struct event_filter *filter)
- {
--	int i;
--
- 	if (!filter)
- 		return;
- 
--	for (i = 0; i < MAX_FILTER_PRED; i++) {
--		if (filter->preds[i])
--			filter_free_pred(filter->preds[i]);
--	}
--	kfree(filter->preds);
-+	__free_preds(filter);
- 	kfree(filter->filter_string);
- 	kfree(filter);
- }
- 
- void destroy_preds(struct ftrace_event_call *call)
- {
--	__free_preds(call->filter);
-+	__free_filter(call->filter);
- 	call->filter = NULL;
- 	call->flags &= ~TRACE_EVENT_FL_FILTERED;
- }
- 
--static struct event_filter *__alloc_preds(void)
-+static struct event_filter *__alloc_filter(void)
- {
- 	struct event_filter *filter;
--	struct filter_pred *pred;
--	int i;
- 
- 	filter = kzalloc(sizeof(*filter), GFP_KERNEL);
- 	if (!filter)
-@@ -595,32 +610,63 @@ static struct event_filter *__alloc_preds(void)
- 
- 	filter->n_preds = 0;
- 
--	filter->preds = kzalloc(MAX_FILTER_PRED * sizeof(pred), GFP_KERNEL);
-+	return filter;
-+}
-+
-+static int __alloc_preds(struct event_filter *filter, int n_preds)
-+{
-+	struct filter_pred *pred;
-+	int i;
-+
-+	if (filter->preds) {
-+		if (filter->a_preds < n_preds) {
-+			/* We need to reallocate */
-+			filter->n_preds = 0;
-+			/*
-+			 * It is possible that the filter is currently
-+			 * being used. We need to zero out the number
-+			 * of preds, wait on preemption and then free
-+			 * the preds.
-+			 */
-+			synchronize_sched();
-+			__free_preds(filter);
-+		}
-+	}
-+
-+	if (!filter->preds) {
-+		filter->preds =
-+			kzalloc(sizeof(*filter->preds) * n_preds, GFP_KERNEL);
-+		filter->a_preds = n_preds;
-+	}
- 	if (!filter->preds)
--		goto oom;
-+		return -ENOMEM;
-+
-+	if (WARN_ON(filter->a_preds < n_preds))
-+		return -EINVAL;
- 
--	for (i = 0; i < MAX_FILTER_PRED; i++) {
--		pred = kzalloc(sizeof(*pred), GFP_KERNEL);
-+	for (i = 0; i < n_preds; i++) {
-+		pred = filter->preds[i];
-+		if (!pred)
-+			pred = kzalloc(sizeof(*pred), GFP_KERNEL);
- 		if (!pred)
- 			goto oom;
- 		pred->fn = filter_pred_none;
- 		filter->preds[i] = pred;
- 	}
- 
--	return filter;
--
--oom:
-+	return 0;
-+ oom:
- 	__free_preds(filter);
--	return ERR_PTR(-ENOMEM);
-+	return -ENOMEM;
- }
- 
--static int init_preds(struct ftrace_event_call *call)
-+static int init_filter(struct ftrace_event_call *call)
- {
- 	if (call->filter)
- 		return 0;
- 
- 	call->flags &= ~TRACE_EVENT_FL_FILTERED;
--	call->filter = __alloc_preds();
-+	call->filter = __alloc_filter();
- 	if (IS_ERR(call->filter))
- 		return PTR_ERR(call->filter);
- 
-@@ -636,7 +682,7 @@ static int init_subsystem_preds(struct event_subsystem *system)
- 		if (strcmp(call->class->system, system->name) != 0)
- 			continue;
- 
--		err = init_preds(call);
-+		err = init_filter(call);
- 		if (err)
- 			return err;
- 	}
-@@ -665,7 +711,7 @@ static int filter_add_pred_fn(struct filter_parse_state *ps,
- {
- 	int idx, err;
- 
--	if (filter->n_preds == MAX_FILTER_PRED) {
-+	if (WARN_ON(filter->n_preds == filter->a_preds)) {
- 		parse_error(ps, FILT_ERR_TOO_MANY_PREDS, 0);
- 		return -ENOSPC;
- 	}
-@@ -1179,6 +1225,20 @@ static int check_preds(struct filter_parse_state *ps)
- 	return 0;
- }
- 
-+static int count_preds(struct filter_parse_state *ps)
-+{
-+	struct postfix_elt *elt;
-+	int n_preds = 0;
-+
-+	list_for_each_entry(elt, &ps->postfix, list) {
-+		if (elt->op == OP_NONE)
-+			continue;
-+		n_preds++;
-+	}
-+
-+	return n_preds;
-+}
-+
- static int replace_preds(struct ftrace_event_call *call,
- 			 struct event_filter *filter,
- 			 struct filter_parse_state *ps,
-@@ -1191,10 +1251,22 @@ static int replace_preds(struct ftrace_event_call *call,
- 	int err;
- 	int n_preds = 0;
- 
-+	n_preds = count_preds(ps);
-+	if (n_preds >= MAX_FILTER_PRED) {
-+		parse_error(ps, FILT_ERR_TOO_MANY_PREDS, 0);
-+		return -ENOSPC;
-+	}
-+
- 	err = check_preds(ps);
- 	if (err)
- 		return err;
- 
-+	if (!dry_run) {
-+		err = __alloc_preds(filter, n_preds);
-+		if (err)
-+			return err;
-+	}
-+
- 	list_for_each_entry(elt, &ps->postfix, list) {
- 		if (elt->op == OP_NONE) {
- 			if (!operand1)
-@@ -1208,7 +1280,7 @@ static int replace_preds(struct ftrace_event_call *call,
- 			continue;
- 		}
- 
--		if (n_preds++ == MAX_FILTER_PRED) {
-+		if (WARN_ON(n_preds++ == MAX_FILTER_PRED)) {
- 			parse_error(ps, FILT_ERR_TOO_MANY_PREDS, 0);
- 			return -ENOSPC;
- 		}
-@@ -1283,7 +1355,7 @@ int apply_event_filter(struct ftrace_event_call *call, char *filter_string)
- 
- 	mutex_lock(&event_mutex);
- 
--	err = init_preds(call);
-+	err = init_filter(call);
- 	if (err)
- 		goto out_unlock;
- 
-@@ -1376,7 +1448,7 @@ void ftrace_profile_free_filter(struct perf_event *event)
- 	struct event_filter *filter = event->filter;
- 
- 	event->filter = NULL;
--	__free_preds(filter);
-+	__free_filter(filter);
- }
- 
- int ftrace_profile_set_filter(struct perf_event *event, int event_id,
-@@ -1402,7 +1474,7 @@ int ftrace_profile_set_filter(struct perf_event *event, int event_id,
- 	if (event->filter)
- 		goto out_unlock;
- 
--	filter = __alloc_preds();
-+	filter = __alloc_filter();
- 	if (IS_ERR(filter)) {
- 		err = PTR_ERR(filter);
- 		goto out_unlock;
-@@ -1411,7 +1483,7 @@ int ftrace_profile_set_filter(struct perf_event *event, int event_id,
- 	err = -ENOMEM;
- 	ps = kzalloc(sizeof(*ps), GFP_KERNEL);
- 	if (!ps)
--		goto free_preds;
-+		goto free_filter;
- 
- 	parse_init(ps, filter_ops, filter_str);
- 	err = filter_parse(ps);
-@@ -1427,9 +1499,9 @@ free_ps:
- 	postfix_clear(ps);
- 	kfree(ps);
- 
--free_preds:
-+free_filter:
- 	if (err)
--		__free_preds(filter);
-+		__free_filter(filter);
- 
- out_unlock:
- 	mutex_unlock(&event_mutex);
--- 
-1.7.2.3
+thanks,
 
-
+greg k-h
