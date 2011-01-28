@@ -1,113 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367Ab1A1R7Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 12:59:16 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39592 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483Ab1A1R7O convert rfc822-to-8bit (ORCPT
+	id S1755395Ab1A1R7X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 12:59:23 -0500
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:40556
+	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755373Ab1A1R7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 12:59:14 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=ceXIpJH6UpxLBcJ+OS7rSxeRMHrKuPhNmQ+l7mrU17oXvTh/cLGaxNb3oXCH5KdnRt
-         A6GfZRV/oNwOZQ6TsgnPRO1AbEkHDu2FYLdJRGE4gAjpCn4Q7gtSkb+r9hXOFswS+WRE
-         lagDcfcMSCUPNkR2Ltc1TksgeKYvizzOyLNO0=
+	Fri, 28 Jan 2011 12:59:20 -0500
+X-SpamScore: -16
+X-BigFish: VPS-16(z6c9Mz1432N98dNzz1202hzzz32i637h668h34h)
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LFQVAL-02-90T-02
+X-M-MSG: 
+Date: Fri, 28 Jan 2011 18:59:10 +0100
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
+To: Manoj Iyer <manoj.iyer@canonical.com>,
+        "James C. Georgas" <james.georgas@yahoo.ca>
+CC: Borislav Petkov <bp@amd64.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] Quirk to fix suspend/resume on Lenovo Edge 11,13,14,15
+Message-ID: <20110128175910.GB4599@alberich.amd.com>
+References: <20110113185807.GA24720@srcf.ucam.org>
+ <20110113190700.GB30866@kryptos.osrc.amd.com>
+ <alpine.LFD.2.00.1101132012140.2678@localhost6.localdomain6>
+ <20110113192825.GC30866@kryptos.osrc.amd.com>
+ <alpine.LFD.2.00.1101132032350.2678@localhost6.localdomain6>
+ <20110113210950.GA4081@aftab>
+ <alpine.LFD.2.00.1101132210351.2678@localhost6.localdomain6>
+ <20110113214841.GC4081@aftab>
+ <alpine.LFD.2.00.1101132353210.2678@localhost6.localdomain6>
+ <AANLkTik7DgsmFv1KN6r92jai-Git5G9+kQLF9J0u=6e0@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110128172139.GB2586@polaris.bitmath.org>
-References: <1296230680-2871-1-git-send-email-benjamin.tissoires@enac.fr>
-	<1296230680-2871-2-git-send-email-benjamin.tissoires@enac.fr>
-	<20110128172139.GB2586@polaris.bitmath.org>
-Date: Fri, 28 Jan 2011 18:59:13 +0100
-X-Google-Sender-Auth: Qw5n0csKnJCURstAQsHtR2-mDyg
-Message-ID: <AANLkTi=XKTdOBGcG8oo49=yPvSnsH5CpCsfhwwedm0eT@mail.gmail.com>
-Subject: Re: [PATCH 2/2] hid-multitouch: introduce IrTouch Infrared USB device
-From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/mixed; boundary="l76fUT7nc3MelDdI"
+Content-Disposition: inline
+In-Reply-To: <AANLkTik7DgsmFv1KN6r92jai-Git5G9+kQLF9J0u=6e0@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 28, 2011 at 18:21, Henrik Rydberg <rydberg@euromail.se> wrote:
-> On Fri, Jan 28, 2011 at 05:04:40PM +0100, Benjamin Tissoires wrote:
->> The product id is the 42 inches one. I don't know if they have
->> other product id for the other size, or if it is a per-size product id.
->>
->> Tested-by: Victor Zhuk <v.zhuk@acs-ltd.ru>
->> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
->> ---
->
-> The canonical patch description presents the reason for the change,
-> and what the patch does (not necessarily how).
+--l76fUT7nc3MelDdI
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It was just to keep trace of the kind of display it was. As Florian
-told the 63" does not have the same PID but not also the same
-protocol.
-Otherwise, we can also change the name of the define, but I'm not sure
-on the rule to apply here.
+On Fri, Jan 14, 2011 at 02:55:30PM -0500, Manoj Iyer wrote:
+> Borislav,
+>=20
+> Any more thoughts on this one ?
 
-Thanks,
-Benjamin
+Seems that we've identified the root cause.
 
->
->>  drivers/hid/Kconfig          |    1 +
->>  drivers/hid/hid-ids.h        |    3 +++
->>  drivers/hid/hid-multitouch.c |    5 +++++
->>  3 files changed, 9 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
->> index 24cca2f..a0b117d 100644
->> --- a/drivers/hid/Kconfig
->> +++ b/drivers/hid/Kconfig
->> @@ -304,6 +304,7 @@ config HID_MULTITOUCH
->>         Say Y here if you have one of the following devices:
->>         - Cypress TrueTouch panels
->>         - Hanvon dual touch panels
->> +       - IrTouch Infrared USB panels
->>         - Pixcir dual touch panels
->>         - 'Sensing Win7-TwoFinger' panel by GeneralTouch
->>
->> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
->> index 92a0d61..b1dd7ad 100644
->> --- a/drivers/hid/hid-ids.h
->> +++ b/drivers/hid/hid-ids.h
->> @@ -333,6 +333,9 @@
->>  #define USB_VENDOR_ID_IMATION                0x0718
->>  #define USB_DEVICE_ID_DISC_STAKKA    0xd000
->>
->> +#define USB_VENDOR_ID_IRTOUCHSYSTEMS 0x6615
->> +#define USB_DEVICE_ID_IRTOUCH_INFRARED_USB   0x0070
->> +
->>  #define USB_VENDOR_ID_JESS           0x0c45
->>  #define USB_DEVICE_ID_JESS_YUREX     0x1010
->>
->> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
->> index ffe2a76..1629296 100644
->> --- a/drivers/hid/hid-multitouch.c
->> +++ b/drivers/hid/hid-multitouch.c
->> @@ -475,6 +475,11 @@ static const struct hid_device_id mt_devices[] = {
->>               HID_USB_DEVICE(USB_VENDOR_ID_GENERAL_TOUCH,
->>                       USB_DEVICE_ID_GENERAL_TOUCH_WIN7_TWOFINGERS) },
->>
->> +     /* IRTOUCH panels */
->> +     { .driver_data = MT_CLS_DUAL_INRANGE_CONTACTID,
->> +             HID_USB_DEVICE(USB_VENDOR_ID_IRTOUCHSYSTEMS,
->> +                     USB_DEVICE_ID_IRTOUCH_INFRARED_USB) },
->> +
->>       /* PixCir-based panels */
->>       { .driver_data = MT_CLS_DUAL_INRANGE_CONTACTID,
->>               HID_USB_DEVICE(USB_VENDOR_ID_HANVON,
->> --
->> 1.7.3.4
->>
->
-> Thanks,
-> Henrik
->
+I wondered why systems with the problem have configured IOAPIC pin
+with polarity=3D1 (low active).  That was different to what the working
+systems used.
+
+Switching the configuration to the usual polarity=3D0 (high active)
+fixed the issue.
+
+The explanation is that when hpet interrupt is triggerd, signal goes
+from low to high. (AFAIK HPET spec even mentions that HPET interrupts
+are all active high.)
+
+Now if IO-APIC pin is configured as low active it just ignores this
+signal change. It just triggers later when for next interrupt signal
+will go from high to low and high again. (That happens the first time
+after resume when the HPET counter wrapped around.)=20
+
+Setting the correct polarity fixes the detection of the first hpet
+interrupt after resume.
+
+To confirm that your systems behave similar you should boot with
+"apic=3Ddebug" kernel parameter. The output for IO APIC should show
+polarity=3D1 for IO APIC pin 2, e.g.
+
+  [    0.158179] IO APIC #2......
+   ...
+  [    0.158205]  NR Dst Mask Trig IRR Pol Stat Dmod Deli Vect:
+  [    0.158210]  00 000 1    0    0   0   0    0    0    00
+  [    0.158217]  01 003 0    0    0   0   0    1    1    31
+  [    0.158224]  02 003 0    0    0   1   0    1    1    30
+
+Furthermore you can check with attached test patch whether changing
+the polarity fixes the problem on your system. IO APIC debug output
+with this patch should change to
+
+  [    0.156170] IO APIC #2......
+   ...
+  [    0.156197]  NR Dst Mask Trig IRR Pol Stat Dmod Deli Vect:
+  [    0.156202]  00 000 1    0    0   0   0    0    0    00
+  [    0.156209]  01 003 0    0    0   0   0    1    1    31
+  [    0.156216]  02 003 0    0    0   0   0    1    1    30
+
+
+I'll come up with an SB800 quirk asap. (Of course we'll also try to
+fix the respective BIOSes but too often BIOS updates are only
+available for a limited time period.)
+
+
+Regards,
+
+Andreas
+
+--=20
+Operating | Advanced Micro Devices GmbH
+  System  | Einsteinring 24, 85609 Dornach b. M=FCnchen, Germany
+ Research | Gesch=E4ftsf=FChrer: Alberto Bozzo, Andrew Bowd
+  Center  | Sitz: Dornach, Gemeinde Aschheim, Landkreis M=FCnchen
+  (OSRC)  | Registergericht M=FCnchen, HRB Nr. 43632
+
+--l76fUT7nc3MelDdI
+Content-Type: text/plain; charset="us-ascii"; name="polarity-fix.diff"
+Content-Disposition: attachment; filename="polarity-fix.diff"
+Content-Description: polarity-fix.diff
+
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 697dc34..9bf2b87 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1365,6 +1365,10 @@ static void setup_ioapic_irq(int apic_id, int pin, unsigned int irq,
+ 		    apic_id, mp_ioapics[apic_id].apicid, pin, cfg->vector,
+ 		    irq, trigger, polarity);
+ 
++	if (pin == 2) {
++		polarity = 0;
++		trigger = 0;
++	}
+ 
+ 	if (setup_ioapic_entry(mp_ioapics[apic_id].apicid, irq, &entry,
+ 			       dest, trigger, polarity, cfg->vector, pin)) {
+
+--l76fUT7nc3MelDdI--
