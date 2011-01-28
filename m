@@ -1,115 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856Ab1A1PrL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 10:47:11 -0500
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:10613 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349Ab1A1PrJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 10:47:09 -0500
-Subject: Re: [PATCH 2/2] net/netlabel: Avoid call to genlmsg_cancel
-From: Paul Moore <paul.moore@hp.com>
-To: Julia Lawall <julia@diku.dk>
-Cc: kernel-janitors@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1296224232-8115-2-git-send-email-julia@diku.dk>
-References: <1296224232-8115-2-git-send-email-julia@diku.dk>
-Content-Type: text/plain; charset="us-ascii"
-Organization: Hewlett Packard
-Date: Fri, 28 Jan 2011 10:46:51 -0500
-Message-ID: <1296229611.5511.15.camel@sifl>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1755025Ab1A1QBH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 11:01:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33441 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753951Ab1A1QBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 11:01:05 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: x86@kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Don Zickus <dzickus@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        stable@kernel.org
+Subject: [PATCH 3/3] watchdog: Don't change watchdog state on read of sysctl
+Date: Fri, 28 Jan 2011 11:00:33 -0500
+Message-Id: <1296230433-6261-3-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1296230433-6261-1-git-send-email-dzickus@redhat.com>
+References: <1296230433-6261-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-28 at 15:17 +0100, Julia Lawall wrote:
-> genlmsg_cancel subtracts some constants from its second argument before
-> calling nlmsg_cancel.  nlmsg_cancel then calls nlmsg_trim on the same
-> arguments.  nlmsg_trim tests for NULL before doing any computation, but a
-> NULL second argument to genlmsg_cancel is no longer NULL due to the initial
-> subtraction.  Nothing else happens in this execution, so the call to
-> genlmsg_cancel is simply unnecessary in this case.
-> 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression data;
-> @@
-> 
-> if (data == NULL) { ...
-> * genlmsg_cancel(..., data);
->   ...
->   return ...;
-> }
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
 
-Acked-by: Paul Moore <paul.moore@hp.com>
+Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: stable@kernel.org
+[ add {}'s to fix a warning ]
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ kernel/watchdog.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-> ---
->  net/netlabel/netlabel_cipso_v4.c  |    2 +-
->  net/netlabel/netlabel_mgmt.c      |    4 ++--
->  net/netlabel/netlabel_unlabeled.c |    2 +-
->  3 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/net/netlabel/netlabel_cipso_v4.c b/net/netlabel/netlabel_cipso_v4.c
-> index 5f14c84..0a1f77b 100644
-> --- a/net/netlabel/netlabel_cipso_v4.c
-> +++ b/net/netlabel/netlabel_cipso_v4.c
-> @@ -635,7 +635,7 @@ static int netlbl_cipsov4_listall_cb(struct cipso_v4_doi *doi_def, void *arg)
->  			   cb_arg->seq, &netlbl_cipsov4_gnl_family,
->  			   NLM_F_MULTI, NLBL_CIPSOV4_C_LISTALL);
->  	if (data == NULL)
-> -		goto listall_cb_failure;
-> +		return ret_val;
->  
->  	ret_val = nla_put_u32(cb_arg->skb, NLBL_CIPSOV4_A_DOI, doi_def->doi);
->  	if (ret_val != 0)
-> diff --git a/net/netlabel/netlabel_mgmt.c b/net/netlabel/netlabel_mgmt.c
-> index 998e85e..daaa01d 100644
-> --- a/net/netlabel/netlabel_mgmt.c
-> +++ b/net/netlabel/netlabel_mgmt.c
-> @@ -452,7 +452,7 @@ static int netlbl_mgmt_listall_cb(struct netlbl_dom_map *entry, void *arg)
->  			   cb_arg->seq, &netlbl_mgmt_gnl_family,
->  			   NLM_F_MULTI, NLBL_MGMT_C_LISTALL);
->  	if (data == NULL)
-> -		goto listall_cb_failure;
-> +		return ret_val;
->  
->  	ret_val = netlbl_mgmt_listentry(cb_arg->skb, entry);
->  	if (ret_val != 0)
-> @@ -617,7 +617,7 @@ static int netlbl_mgmt_protocols_cb(struct sk_buff *skb,
->  			   &netlbl_mgmt_gnl_family, NLM_F_MULTI,
->  			   NLBL_MGMT_C_PROTOCOLS);
->  	if (data == NULL)
-> -		goto protocols_cb_failure;
-> +		return ret_val;
->  
->  	ret_val = nla_put_u32(skb, NLBL_MGMT_A_PROTOCOL, protocol);
->  	if (ret_val != 0)
-> diff --git a/net/netlabel/netlabel_unlabeled.c b/net/netlabel/netlabel_unlabeled.c
-> index e2b0a68..b5d3945 100644
-> --- a/net/netlabel/netlabel_unlabeled.c
-> +++ b/net/netlabel/netlabel_unlabeled.c
-> @@ -1141,7 +1141,7 @@ static int netlbl_unlabel_staticlist_gen(u32 cmd,
->  			   cb_arg->seq, &netlbl_unlabel_gnl_family,
->  			   NLM_F_MULTI, cmd);
->  	if (data == NULL)
-> -		goto list_cb_failure;
-> +		return ret_val;
->  
->  	if (iface->ifindex > 0) {
->  		dev = dev_get_by_index(&init_net, iface->ifindex);
-> 
-
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 38af39a..6b16cb1 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -493,10 +493,12 @@ int proc_dowatchdog_enabled(struct ctl_table *table, int write,
+ {
+ 	proc_dointvec(table, write, buffer, length, ppos);
+ 
+-	if (watchdog_enabled)
+-		watchdog_enable_all_cpus();
+-	else
+-		watchdog_disable_all_cpus();
++	if (write) {
++		if (watchdog_enabled)
++			watchdog_enable_all_cpus();
++		else
++			watchdog_disable_all_cpus();
++	}
+ 	return 0;
+ }
+ 
 -- 
-paul moore
-linux @ hp
-
+1.7.3.4
 
