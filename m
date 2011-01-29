@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991Ab1A2WIZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jan 2011 17:08:25 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:51535 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329Ab1A2WIY (ORCPT
+	id S1755044Ab1A2WT3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jan 2011 17:19:29 -0500
+Received: from casper.infradead.org ([85.118.1.10]:52191 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754183Ab1A2WT2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jan 2011 17:08:24 -0500
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Stefan Weil <weil@mail.berlios.de>, linux390@de.ibm.com,
-        Ursula Braun <ursula.braun@de.ibm.com>,
-        Frank Blaschka <blaschka@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] s390: Fix possibly wrong size in strncmp (smsglucv)
-References: <1296336808-2809-1-git-send-email-weil@mail.berlios.de>
-	<1296336808-2809-2-git-send-email-weil@mail.berlios.de>
-	<alpine.LNX.2.00.1101292237220.19392@swampdragon.chaosbits.net>
-X-Yow: Do you need any MOUTH-TO-MOUTH resuscitation?
-Date: Sat, 29 Jan 2011 23:08:20 +0100
-In-Reply-To: <alpine.LNX.2.00.1101292237220.19392@swampdragon.chaosbits.net>
-	(Jesper Juhl's message of "Sat, 29 Jan 2011 22:38:31 +0100 (CET)")
-Message-ID: <m2mxmjtlbf.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2.92 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Sat, 29 Jan 2011 17:19:28 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 1/7] perf record: No need to check for overwrites
+Date: Sat, 29 Jan 2011 20:19:13 -0200
+Message-Id: <1296339559-20914-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1296339559-20914-1-git-send-email-acme@infradead.org>
+References: <1296339559-20914-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jesper Juhl <jj@chaosbits.net> writes:
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-> On Sat, 29 Jan 2011, Stefan Weil wrote:
->
->> This error was reported by cppcheck:
->> drivers/s390/net/smsgiucv.c:63: error: Using sizeof for array given as function argument returns the size of pointer.
->> 
->> Although there is no runtime problem as long as sizeof(u8 *) == 8,
->> this misleading code should get fixed.
->> 
->> Cc: Ursula Braun <ursula.braun@de.ibm.com>
->> Cc: linux390@de.ibm.com
->> Cc: Frank Blaschka <blaschka@linux.vnet.ibm.com>
->> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
->> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
->> Cc: linux-s390@vger.kernel.org
->> Cc: linux-kernel@vger.kernel.org
->> Signed-off-by: Stefan Weil <weil@mail.berlios.de>
->> ---
->>  drivers/s390/net/smsgiucv.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->> 
->> diff --git a/drivers/s390/net/smsgiucv.c b/drivers/s390/net/smsgiucv.c
->> index 65e1cf1..207b7d7 100644
->> --- a/drivers/s390/net/smsgiucv.c
->> +++ b/drivers/s390/net/smsgiucv.c
->> @@ -60,7 +60,7 @@ static struct iucv_handler smsg_handler = {
->>  static int smsg_path_pending(struct iucv_path *path, u8 ipvmid[8],
->>  			     u8 ipuser[16])
->>  {
->> -	if (strncmp(ipvmid, "*MSG    ", sizeof(ipvmid)) != 0)
->> +	if (strncmp(ipvmid, "*MSG    ", 8) != 0)
->
-> Hmm, shouldn't this really be  ARRAY_SIZE(ipvmid)  ??
+As we open the mmap with (PROT_READ | PROT_WRITE), signalling the kernel
+with perf_mmap__write_tail() when consuming data, so the kernel will not
+overwrite.
 
-ARRAY_SIZE does not work for the same reason why sizeof does not work:
-ipvmid is not an array, it's a pointer.
+Suggested-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-record.c |   24 ++++--------------------
+ 1 files changed, 4 insertions(+), 20 deletions(-)
 
-Andreas.
-
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index d788630..caf9279 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -115,27 +115,11 @@ static void mmap_read(struct perf_mmap *md)
+ 	unsigned char *data = md->base + page_size;
+ 	unsigned long size;
+ 	void *buf;
+-	int diff;
+ 
+-	/*
+-	 * If we're further behind than half the buffer, there's a chance
+-	 * the writer will bite our tail and mess up the samples under us.
+-	 *
+-	 * If we somehow ended up ahead of the head, we got messed up.
+-	 *
+-	 * In either case, truncate and restart at head.
+-	 */
+-	diff = head - old;
+-	if (diff < 0) {
+-		fprintf(stderr, "WARNING: failed to keep up with mmap data\n");
+-		/*
+-		 * head points to a known good entry, start there.
+-		 */
+-		old = head;
+-	}
++	if (old == head)
++		return;
+ 
+-	if (old != head)
+-		samples++;
++	samples++;
+ 
+ 	size = head - old;
+ 
 -- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+1.6.2.5
+
