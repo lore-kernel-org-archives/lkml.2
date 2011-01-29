@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754183Ab1A2Uig (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jan 2011 15:38:36 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:45720 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968Ab1A2Uif (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jan 2011 15:38:35 -0500
-Date: Sat, 29 Jan 2011 21:38:21 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Eric Miao <eric.miao@linaro.org>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Hemanth V <hemanthv@ti.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
-        Shawn Guo <shawn.guo@freescale.com>
-Subject: Re: [RFC] add pwmlib support
-Message-ID: <20110129213821.0e51dc32@endymion.delvare>
-In-Reply-To: <1296217283-14531-1-git-send-email-s.hauer@pengutronix.de>
-References: <1296217283-14531-1-git-send-email-s.hauer@pengutronix.de>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754912Ab1A2Un5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jan 2011 15:43:57 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:42355 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750968Ab1A2Unz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Jan 2011 15:43:55 -0500
+Message-ID: <4D447C00.70709@free.fr>
+Date: Sat, 29 Jan 2011 21:43:44 +0100
+From: matthieu castet <castet.matthieu@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr; rv:1.8.1.23) Gecko/20090823 SeaMonkey/1.1.18
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-acpi@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
+Subject: Re: [RFC] merge 32/64 bits realmode wakeup code
+References: <4D41EA12.1030402@free.fr> <201101272354.00042.rjw@sisk.pl>
+In-Reply-To: <201101272354.00042.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sascha,
-
-On Fri, 28 Jan 2011 13:21:21 +0100, Sascha Hauer wrote:
-> While implementing just another pwm driver I thought it's time to implement
-> generic pwm support. The following series adds drivers/pwm/pwmlib.c and
-> a i.MX23/28 pwm driver which serves as a usage example for pwmlib. The
-> code is inspired by gpiolib support and tested using the backlight pwm
-> driver by Eric Miao.
+Rafael J. Wysocki a écrit :
+> On Thursday, January 27, 2011, matthieu castet wrote:
+>> Hi,
+>>
+>> this patch merge 32 and 64 realmode wakeup code :
+>> - this mean less ifdef in code
+>> - we could remove now unused field in wakeup_header (pmode_*)
+>> - this allow to set the first 1 MB NX.
+>>
+>> Do you think it is safe on all X86 32 bit machine ?
+>>
+>> Matthieu
+>>
+>>
+>> Signed-off-by: Matthieu CASTET <castet.matthieu@free.fr>
 > 
-> Currently the pwm_request, pwm_add, pwm_remove and pwm_free operations are
-> protected with a single mutex wherea the pwm_enable, pwm_disable and
-> pwm_config operations are unlocked. It is assumed that the owners of the
-> pwm handle the serialization of the pwm accesses. This may not be enough, so
-> i'd like to discuss the locking (and type of locking) here.
+> It _looks_ sane, but it will require some serious testing.  I'm not sure,
+> though, if we can get enough testing coverage without actually committing
+> that change.
 > 
-> I Cced the people working with PWMs in the kernel in the hope that they can
-> give input on what's missing / wrong in this implementation
+> How much testing has it received so far?
+> 
+Not too much only qemu with 1 and 2 core and a laptop with 1 cpu.
 
-I do not have the time to review your patches. But I think your
-introduction above lacks a fundamental point, which is: what are you
-trying to achieve? What would you be able to do with pwmlib, which you
-currently aren't?
+Please note that with this patch we can also remove the gdt, idt, ldt stuff from 
+arch/x86/kernel/acpi/wakeup_32.S
 
-As far as hwmon driver are concerned, please understand that "PWM" is a
-misnomer for "fan speed control". Some hwmon drivers have pwm
-attributes which actually correspond to analog voltage outputs. In both
-cases (PWM and DC) these are outputs which are dedicated to fan
-control, and I've never seen any other use of these, so I doubt it
-would make much sense to register them as generic pwm outputs.
 
-So I believe that hwmon drivers are out of scope for pwmlib. Which
-makes me wonder what you intend to do with pwmlib (back to my first
-question...) as the only use I know of for PWM signals in computers is
-for fan control.
 
--- 
-Jean Delvare
+
+Matthieu
