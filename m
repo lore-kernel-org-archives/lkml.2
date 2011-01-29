@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754344Ab1A2Igr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jan 2011 03:36:47 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51022 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754023Ab1A2Igp (ORCPT
+	id S1754494Ab1A2IrP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jan 2011 03:47:15 -0500
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:52406 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752398Ab1A2IrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jan 2011 03:36:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Eogx1c7JOmGivJNUxfcW25MkzlSSc6qmtWGU0FVToydBPkPLJRAeEVyUiHikmu3GXp
-         +X1uXbbRbVHM2QuPzp4sIVxRwhI84X2DIG4cn/BaAm4rU/bedguS+/JiqTxYH8maivBI
-         D6sWjnWb1yDVB8GVXP46nL7L25MKDg/Hfd+7U=
-Date: Sat, 29 Jan 2011 00:36:38 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Robin Theunis <robint91@gmail.com>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: USB HID plug and play, hardware developer frustration
-Message-ID: <20110129083638.GD26915@core.coreip.homeip.net>
-References: <AANLkTinytMpW8-7eEDg1O+vUP=C6-MHc8H8yssRbbxUc@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinytMpW8-7eEDg1O+vUP=C6-MHc8H8yssRbbxUc@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 29 Jan 2011 03:47:14 -0500
+Subject: Re: [PATCH 0/7][v2] zram/xvmalloc: 64K page fixes and optimizations
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Robert Jennings <rcj@linux.vnet.ibm.com>
+Cc: Nitin Gupta <ngupta@vflare.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20110128145602.GA2062@linux.vnet.ibm.com>
+References: <20110128145602.GA2062@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Sat, 29 Jan 2011 10:47:11 +0200
+Message-ID: <1296290831.30654.4.camel@jaguar>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ho Robin,
-
-On Sat, Jan 29, 2011 at 09:15:11AM +0100, Robin Theunis wrote:
-> Hi Devs,
+On Fri, 2011-01-28 at 08:56 -0600, Robert Jennings wrote:
+> Based on feedback this is version 2 of my patches to fix zram and the
+> xvmalloc allocator for 64K page size kernels along with a few small
+> zram optimizations.
 > 
-> Currently I am design a USB product, and in that process I also look
-> if almost every OS supports my device.
-> The device is just only a HID digitizer or touch tablet thingy. It
-> reports it self also as HID device. This is to have it
-> work PLUG and PLAY. But I gotten a cold shower when trying this on my
-> linux pcs. It doesn't work!
-> I did some investigation and found that the linux (kernel) only
-> support mouses and keyboard, all the other usage pages
-> that are included in the USB HID specs aren't implemented.
-> http://www.usb.org/developers/devclass_docs/Hut1_11.pdf
+> I have dropped the patch to mark the device as non-rotational media as
+> this was duplicated elsewhere.  I also dropped the patch regarding caching
+> the indices for page size allocations because gcc is quite smart.
 > 
-> Is there a reason why they aren't implemented? especially the
-> digitizer thingies because of all the new tablets?
+> There are two new patches at the end of this patch set.  The first
+> changes zram to return zero'd pages for reads of pages which have not
+> been written to, this eliminates passing uninitialized pages back
+> to user-space.  The second new patch cleans up freelist pointer
+> management and combines the two delete node functions into one common
+> function.
+> 
+> The xvmalloc allocator is non-functional when running with a 64K page
+> size.  The first two patches fix 64K page related issues.
+> [1/7] [v2] zram/vmalloc: Correct tunings to enable use with 64K pages
+> [2/7] [v2] zram: Prevent overflow in logical block size
+> 
+> The next 3 patches provide some small optimizations for zram and
+> xvmalloc.
+> [3/7] [v2] zram/xvmalloc: free bit block insertion optimization
+> [4/7] [v2] zram/xvmalloc: create CONFIG_ZRAM_DEBUG for debug code
+> [5/7] [v2] zram/xvmalloc: Close 32byte hole on 64bit CPUs
+> 
+> These last 2 patches are new, see the description above.
+> [6/7] zram: Return zero'd pages on new reads
+> [7/7] zram/xvmalloc: combine duplicate block delete code
+> 
+> Thanks for the helpful reviews.
 
-Linux HID driver does have code to handle digitizers, please take a look
-at drivers/hid/hid-input.c::hidinput_configure_usage().
+Hey, you dropped Nitin's and my Reviewed-by tags! Please don't do that
+in the future.
 
-> Is it difficult
-> to make a driver to support my device?
+			Pekka
 
-It should not be. You might need to tweak usage mappings a bit by the
-way of writing small HID sub-driver. Look for examples in
-drivers/hid/hid-<vendor>.c
-
-If you need additional help I'd recommend asking on
-linux-input@vger.kernel.org
-
-> I have seen that there are a
-> lot of wacom drivers, I think doing all the same thing.
->
-
-Wacoms are quite different since they are not HID devices but handler by
-a completely separate driver.
-
-Thanks.
-
--- 
-Dmitry
