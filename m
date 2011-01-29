@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755020Ab1A2T0q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jan 2011 14:26:46 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:60763 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754919Ab1A2T0k (ORCPT
+	id S1755216Ab1A2T1b (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jan 2011 14:27:31 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:46242 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754988Ab1A2T0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jan 2011 14:26:40 -0500
+	Sat, 29 Jan 2011 14:26:46 -0500
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: v9fs-developer@lists.sourceforge.net
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [RFC PATCH -V1 2/7] fs/9p: set fs cache cookie in create path also
-Date: Sun, 30 Jan 2011 00:56:21 +0530
-Message-Id: <1296329186-23807-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [RFC PATCH -V1 5/7] fs/9p: Add read write helper function
+Date: Sun, 30 Jan 2011 00:56:24 +0530
+Message-Id: <1296329186-23807-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1296329186-23807-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1296329186-23807-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -21,62 +21,192 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to call v9fs_cache_inode_set_cookie in create
-path also
+We add read write helper function here which will
+be used later by the mmap patch
 
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/9p/vfs_file.c       |    4 +---
- fs/9p/vfs_inode.c      |    4 ++++
- fs/9p/vfs_inode_dotl.c |    4 ++++
- 3 files changed, 9 insertions(+), 3 deletions(-)
+ fs/9p/v9fs_vfs.h |    4 ++-
+ fs/9p/vfs_file.c |  100 ++++++++++++++++++++++++++++++++---------------------
+ 2 files changed, 63 insertions(+), 41 deletions(-)
 
+diff --git a/fs/9p/v9fs_vfs.h b/fs/9p/v9fs_vfs.h
+index e4d5540..276ad44 100644
+--- a/fs/9p/v9fs_vfs.h
++++ b/fs/9p/v9fs_vfs.h
+@@ -64,8 +64,10 @@ void v9fs_inode2stat(struct inode *inode, struct p9_wstat *stat);
+ int v9fs_uflags2omode(int uflags, int extended);
+ 
+ ssize_t v9fs_file_readn(struct file *, char *, char __user *, u32, u64);
++ssize_t v9fs_fid_readn(struct p9_fid *, char *, char __user *, u32, u64);
+ void v9fs_blank_wstat(struct p9_wstat *wstat);
+ int v9fs_vfs_setattr_dotl(struct dentry *, struct iattr *);
+ int v9fs_file_fsync_dotl(struct file *filp, int datasync);
+-
++ssize_t v9fs_file_write_internal(struct inode *, struct p9_fid *, char *,
++				 size_t, loff_t *, int);
+ #define P9_LOCK_TIMEOUT (30*HZ)
 diff --git a/fs/9p/vfs_file.c b/fs/9p/vfs_file.c
-index 6a67100..ce1eae4 100644
+index ce1eae4..ecdd512 100644
 --- a/fs/9p/vfs_file.c
 +++ b/fs/9p/vfs_file.c
-@@ -87,10 +87,8 @@ int v9fs_file_open(struct inode *inode, struct file *file)
- 
- 	file->private_data = fid;
- #ifdef CONFIG_9P_FSCACHE
--	if ((fid->qid.version) && (v9ses->cache)) {
--		P9_DPRINTK(P9_DEBUG_VFS, "cached");
-+	if (v9ses->cache)
- 		v9fs_cache_inode_set_cookie(inode, file);
--	}
- #endif
- 	return 0;
+@@ -323,25 +323,22 @@ out_err:
  }
-diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
-index 45e7ea4..b6b939b 100644
---- a/fs/9p/vfs_inode.c
-+++ b/fs/9p/vfs_inode.c
-@@ -607,6 +607,10 @@ v9fs_vfs_create(struct inode *dir, struct dentry *dentry, int mode,
- 		}
  
- 		filp->private_data = fid;
-+#ifdef CONFIG_9P_FSCACHE
-+		if (v9ses->cache)
-+			v9fs_cache_inode_set_cookie(inode, filp);
-+#endif
- 	} else
- 		p9_client_clunk(fid);
+ /**
+- * v9fs_file_readn - read from a file
+- * @filp: file pointer to read
++ * v9fs_fid_readn - read from a fid
++ * @fid: fid to read
+  * @data: data buffer to read data into
+  * @udata: user data buffer to read data into
+  * @count: size of buffer
+  * @offset: offset at which to read data
+  *
+  */
+-
+ ssize_t
+-v9fs_file_readn(struct file *filp, char *data, char __user *udata, u32 count,
++v9fs_fid_readn(struct p9_fid *fid, char *data, char __user *udata, u32 count,
+ 	       u64 offset)
+ {
+ 	int n, total, size;
+-	struct p9_fid *fid = filp->private_data;
  
-diff --git a/fs/9p/vfs_inode_dotl.c b/fs/9p/vfs_inode_dotl.c
-index fe3ffa9..fbe9572 100644
---- a/fs/9p/vfs_inode_dotl.c
-+++ b/fs/9p/vfs_inode_dotl.c
-@@ -226,6 +226,10 @@ v9fs_vfs_create_dotl(struct inode *dir, struct dentry *dentry, int omode,
- 		return PTR_ERR(filp);
+ 	P9_DPRINTK(P9_DEBUG_VFS, "fid %d offset %llu count %d\n", fid->fid,
+-					(long long unsigned) offset, count);
+-
++		   (long long unsigned) offset, count);
+ 	n = 0;
+ 	total = 0;
+ 	size = fid->iounit ? fid->iounit : fid->clnt->msize - P9_IOHDRSZ;
+@@ -367,6 +364,22 @@ v9fs_file_readn(struct file *filp, char *data, char __user *udata, u32 count,
+ }
+ 
+ /**
++ * v9fs_file_readn - read from a file
++ * @filp: file pointer to read
++ * @data: data buffer to read data into
++ * @udata: user data buffer to read data into
++ * @count: size of buffer
++ * @offset: offset at which to read data
++ *
++ */
++ssize_t
++v9fs_file_readn(struct file *filp, char *data, char __user *udata, u32 count,
++	       u64 offset)
++{
++	return v9fs_fid_readn(filp->private_data, data, udata, count, offset);
++}
++
++/**
+  * v9fs_file_read - read from a file
+  * @filp: file pointer to read
+  * @udata: user data buffer to read data into
+@@ -398,45 +411,20 @@ v9fs_file_read(struct file *filp, char __user *udata, size_t count,
+ 	return ret;
+ }
+ 
+-/**
+- * v9fs_file_write - write to a file
+- * @filp: file pointer to write
+- * @data: data buffer to write data from
+- * @count: size of buffer
+- * @offset: offset at which to write data
+- *
+- */
+-
+-static ssize_t
+-v9fs_file_write(struct file *filp, const char __user * data,
+-		size_t count, loff_t * offset)
++ssize_t
++v9fs_file_write_internal(struct inode *inode, struct p9_fid *fid, char *data,
++			 size_t count, loff_t *offset, int invalidate)
+ {
+-	ssize_t retval;
+-	size_t total = 0;
+ 	int n;
+-	struct p9_fid *fid;
++	size_t total = 0;
+ 	struct p9_client *clnt;
+-	struct inode *inode = filp->f_path.dentry->d_inode;
+ 	loff_t origin = *offset;
+ 	unsigned long pg_start, pg_end;
+ 
+ 	P9_DPRINTK(P9_DEBUG_VFS, "data %p count %d offset %x\n", data,
+ 		(int)count, (int)*offset);
+ 
+-	fid = filp->private_data;
+ 	clnt = fid->clnt;
+-
+-	retval = generic_write_checks(filp, &origin, &count, 0);
+-	if (retval)
+-		goto out;
+-
+-	retval = -EINVAL;
+-	if ((ssize_t) count < 0)
+-		goto out;
+-	retval = 0;
+-	if (!count)
+-		goto out;
+-
+ 	do {
+ 		n = p9_client_write(fid, NULL, data+total, origin+total, count);
+ 		if (n <= 0)
+@@ -445,7 +433,7 @@ v9fs_file_write(struct file *filp, const char __user * data,
+ 		total += n;
+ 	} while (count > 0);
+ 
+-	if (total > 0) {
++	if (invalidate && total > 0) {
+ 		pg_start = origin >> PAGE_CACHE_SHIFT;
+ 		pg_end = (origin + total - 1) >> PAGE_CACHE_SHIFT;
+ 		if (inode->i_mapping && inode->i_mapping->nrpages)
+@@ -457,9 +445,41 @@ v9fs_file_write(struct file *filp, const char __user * data,
  	}
- 	filp->private_data = ofid;
-+#ifdef CONFIG_9P_FSCACHE
-+	if (v9ses->cache)
-+		v9fs_cache_inode_set_cookie(inode, filp);
-+#endif
- 	return 0;
  
- error:
+ 	if (n < 0)
+-		retval = n;
+-	else
+-		retval = total;
++		return n;
++
++	return total;
++}
++
++/**
++ * v9fs_file_write - write to a file
++ * @filp: file pointer to write
++ * @data: data buffer to write data from
++ * @count: size of buffer
++ * @offset: offset at which to write data
++ *
++ */
++static ssize_t
++v9fs_file_write(struct file *filp, const char __user * data,
++		size_t count, loff_t *offset)
++{
++	ssize_t retval = 0;
++	loff_t origin = *offset;
++
++
++	retval = generic_write_checks(filp, &origin, &count, 0);
++	if (retval)
++		goto out;
++
++	retval = -EINVAL;
++	if ((ssize_t) count < 0)
++		goto out;
++	retval = 0;
++	if (!count)
++		goto out;
++
++	return v9fs_file_write_internal(filp->f_path.dentry->d_inode,
++					filp->private_data,
++					(char *)data, count, offset, 1);
+ out:
+ 	return retval;
+ }
 -- 
 1.7.1
 
