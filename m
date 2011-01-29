@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234Ab1A2W4c (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jan 2011 17:56:32 -0500
-Received: from nm22-vm0.bullet.mail.ac4.yahoo.com ([98.139.53.218]:26953 "HELO
-	nm22-vm0.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751989Ab1A2W4c (ORCPT
+	id S1755044Ab1A2XBE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jan 2011 18:01:04 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:53026 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab1A2XBC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jan 2011 17:56:32 -0500
-X-Yahoo-Newman-Id: 75099.67098.bm@omp1049.mail.ac4.yahoo.com
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: cm45MAEVM1kuU1ykSZd0Q7dq_eDh3JDbtO3O3twUjM9PHeX
- qmWyGZ.J6zMrNMFLC3KtZQivNBG_egJTPunocsd9pnAlNm_NxJOgUFx8Df7k
- 2u1Wog9bM4Ir.wYfyYIdBaQV6RclryG2N_uBFlBAInvKpwPcucS14Tug6.eh
- 01HBiZJqfw8_NDxaZCbQGbQXjc._ZWElnJ5hccsqZPMMYZE2Fr3QIn41ED8M
- lburEvdsTqn..7ehEga_XC_gqwvIeU6yjcT9w37mkbeSWe8cP2scgti0v4Rr
- QJOEWsE7o
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [PATCH] SCSI, target: Don't leak memory in error path in
-	pscsi_alloc_task()
-From: "Nicholas A. Bellinger" <nab@kernel.org>
-Reply-To: nab@kernel.org
+	Sat, 29 Jan 2011 18:01:02 -0500
+Message-ID: <4D449C28.90202@weilnetz.de>
+Date: Sun, 30 Jan 2011 00:00:56 +0100
+From: Stefan Weil <stefan@weilnetz.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Iceowl/1.0b1 Icedove/3.0.11
+MIME-Version: 1.0
 To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, James Bottomley <James.Bottomley@suse.de>
-In-Reply-To: <alpine.LNX.2.00.1101292326510.19392@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1101292326510.19392@swampdragon.chaosbits.net>
-Content-Type: text/plain
-Date: Sat, 29 Jan 2011 14:56:27 -0800
-Message-Id: <1296341787.14831.237.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+CC: linux390@de.ibm.com, Ursula Braun <ursula.braun@de.ibm.com>,
+        Frank Blaschka <blaschka@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] s390: Fix possibly wrong size in strncmp (smsglucv)
+References: <1296336808-2809-1-git-send-email-weil@mail.berlios.de> <1296336808-2809-2-git-send-email-weil@mail.berlios.de> <alpine.LNX.2.00.1101292237220.19392@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1101292237220.19392@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:unR0OYdeHk1YHfpjeYFzJdZzHtTnvzE1795asAPmCfl
+ zgM7ux7DubR205T91FjTT+ZTu3EAgxelPszdsyu+nfOTp0IMYT
+ ZlbjhHG1zRrTuyfg31onngjCtinKJAj08eDKyEi/G8DBCSsyw7
+ U5is0TJxqb+zi/PquyTjHGlgHht+ZtqjI1FKKLpJbouC9irXIo
+ t4AY+oNzO7bLlMSDmBOy9KEOh5dknZ4aNNNB6yfhm+IjDjUrdH
+ RxoG2VFxyxehU
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-01-29 at 23:29 +0100, Jesper Juhl wrote:
-> We'll leak the memory allocated via kzalloc() to 'pt' if the allocation of 
-> memory for 'pt->pscsi_cdb' fails in pscsi_alloc_task().
-> This patch fixes the leak by kfree()'ing the previously allocated memory 
-> in the error path.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  target_core_pscsi.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
->   Compile tested only since I lack the hardware.
-> 
-> diff --git a/drivers/target/target_core_pscsi.c b/drivers/target/target_core_pscsi.c
-> index 742d246..84561a0 100644
-> --- a/drivers/target/target_core_pscsi.c
-> +++ b/drivers/target/target_core_pscsi.c
-> @@ -815,6 +815,7 @@ pscsi_alloc_task(struct se_cmd *cmd)
->  
->  		pt->pscsi_cdb = kzalloc(scsi_command_size(cdb), GFP_KERNEL);
->  		if (!(pt->pscsi_cdb)) {
-> +			kfree(pt);
->  			printk(KERN_ERR "pSCSI: Unable to allocate extended"
->  					" pt->pscsi_cdb\n");
->  			return NULL;
-> 
-> 
+Am 29.01.2011 22:38, schrieb Jesper Juhl:
+> On Sat, 29 Jan 2011, Stefan Weil wrote:
+>
+>    
+>> This error was reported by cppcheck:
+>> drivers/s390/net/smsgiucv.c:63: error: Using sizeof for array given as function argument returns the size of pointer.
+>>
+>> Although there is no runtime problem as long as sizeof(u8 *) == 8,
+>> this misleading code should get fixed.
+>>
+>> Cc: Ursula Braun<ursula.braun@de.ibm.com>
+>> Cc: linux390@de.ibm.com
+>> Cc: Frank Blaschka<blaschka@linux.vnet.ibm.com>
+>> Cc: Martin Schwidefsky<schwidefsky@de.ibm.com>
+>> Cc: Heiko Carstens<heiko.carstens@de.ibm.com>
+>> Cc: linux-s390@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org
+>> Signed-off-by: Stefan Weil<weil@mail.berlios.de>
+>> ---
+>>   drivers/s390/net/smsgiucv.c |    2 +-
+>>   1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/s390/net/smsgiucv.c b/drivers/s390/net/smsgiucv.c
+>> index 65e1cf1..207b7d7 100644
+>> --- a/drivers/s390/net/smsgiucv.c
+>> +++ b/drivers/s390/net/smsgiucv.c
+>> @@ -60,7 +60,7 @@ static struct iucv_handler smsg_handler = {
+>>   static int smsg_path_pending(struct iucv_path *path, u8 ipvmid[8],
+>>   			     u8 ipuser[16])
+>>   {
+>> -	if (strncmp(ipvmid, "*MSG    ", sizeof(ipvmid)) != 0)
+>> +	if (strncmp(ipvmid, "*MSG    ", 8) != 0)
+>>      
+> Hmm, shouldn't this really be  ARRAY_SIZE(ipvmid)  ??
+>    
 
-Thanks, but this one was already fixed recently by Roland in
-lio-core-2.6.git/linus-38-rc2, and included in the series to mainline as
-[PATCH 04/24]:
-
-commit 85133a962707b0e550c3f5f151557bed3e056869
-Author: Roland Dreier <rolandd@cisco.com>
-Date:   Sun Jan 16 06:59:51 2011 +0000
-
-    target: Fix memory leak on error path
-
-Best Regards,
-
---nab
-
-
-
-
+I think that would be wrong, too (only in this special case where
+an array is passed as a function parameter).
