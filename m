@@ -1,44 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723Ab1A2BYN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 20:24:13 -0500
-Received: from ch1outboundpool.messaging.microsoft.com ([157.55.116.156]:33882
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751731Ab1A2BYM (ORCPT
+	id S1754773Ab1A2BZp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 20:25:45 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:26814 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751731Ab1A2BZo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 20:24:12 -0500
-X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Jan 2011 20:24:11 EST
-X-SpamScore: -9
-X-BigFish: VPS-9(zzbb2dK98dNzz1202hzzz2fh2a8h637h668h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4D43689A.2040303@am.sony.com>
-Date: Fri, 28 Jan 2011 17:08:42 -0800
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.1) Gecko/20090814 Fedora/3.0-2.6.b3.fc11 Thunderbird/3.0b3
+	Fri, 28 Jan 2011 20:25:44 -0500
+Date: Sat, 29 Jan 2011 02:26:51 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [PATCH] USB, Mass Storage, composite, gadget: Fix build failure and
+ memset of a struct
+Message-ID: <alpine.LNX.2.00.1101290216500.6465@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Chris Mason <chris.mason@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
-        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 16/18] sched: Rename ttwu_post_activation
-References: <20110104145929.772813816@chello.nl> <20110104150103.113685173@chello.nl>
-In-Reply-To: <20110104150103.113685173@chello.nl>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-671475880-1296264411=:6465"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04/11 06:59, Peter Zijlstra wrote:
-> The ttwu_post_actication() does the core wakeup, it sets TASK_RUNNING
-> and performs wakeup-preemption, so give is a more descriptive name.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-s/ttwu_post_actication/ttwu_post_activation/
+--8323328-671475880-1296264411=:6465
+Content-Type: TEXT/PLAIN; charset=ISO-8859-7
+Content-Transfer-Encoding: 8BIT
 
--Frank
+Trying to compile drivers/usb/gadget/f_mass_storage.o currently fails and 
+spews a ton of warnings :
 
+  CC      drivers/usb/gadget/f_mass_storage.o
+drivers/usb/gadget/f_mass_storage.c:436:22: error: field ¡function¢ has incomplete type
+drivers/usb/gadget/f_mass_storage.c: In function ¡fsg_from_func¢:
+drivers/usb/gadget/f_mass_storage.c:466:9: warning: type defaults to ¡int¢ in declaration of ¡__mptr¢
+drivers/usb/gadget/f_mass_storage.c:466:9: warning: initialization from incompatible pointer type
+drivers/usb/gadget/f_mass_storage.c: At top level:
+drivers/usb/gadget/f_mass_storage.c:2743:15: warning: ¡struct usb_composite_dev¢ declared inside parameter list
+drivers/usb/gadget/f_mass_storage.c:2743:15: warning: its scope is only this definition or declaration, which is probably not what you want
+drivers/usb/gadget/f_mass_storage.c: In function ¡fsg_common_init¢:
+drivers/usb/gadget/f_mass_storage.c:2745:34: error: dereferencing pointer to incomplete type
+drivers/usb/gadget/f_mass_storage.c:2775:23: error: dereferencing pointer to incomplete type
+drivers/usb/gadget/f_mass_storage.c:2779:3: error: implicit declaration of function ¡usb_string_id¢
+drivers/usb/gadget/f_mass_storage.c: At top level:
+drivers/usb/gadget/f_mass_storage.c:2984:60: warning: ¡struct usb_configuration¢ declared inside parameter list
+drivers/usb/gadget/f_mass_storage.c:3003:57: warning: ¡struct usb_configuration¢ declared inside parameter list
+drivers/usb/gadget/f_mass_storage.c: In function ¡fsg_bind¢:
+drivers/usb/gadget/f_mass_storage.c:3006:31: error: dereferencing pointer to incomplete type
+drivers/usb/gadget/f_mass_storage.c:3013:2: error: implicit declaration of function ¡usb_interface_id¢
+drivers/usb/gadget/f_mass_storage.c:3033:3: error: dereferencing pointer to incomplete type
+drivers/usb/gadget/f_mass_storage.c:3034:6: error: dereferencing pointer to incomplete type
+drivers/usb/gadget/f_mass_storage.c:3043:4: error: dereferencing pointer to incomplete type
+drivers/usb/gadget/f_mass_storage.c:3044:7: error: dereferencing pointer to incomplete type
+drivers/usb/gadget/f_mass_storage.c:3045:26: error: dereferencing pointer to incomplete type
+drivers/usb/gadget/f_mass_storage.c: At top level:
+drivers/usb/gadget/f_mass_storage.c:3067:14: warning: ¡struct usb_configuration¢ declared inside parameter list
+drivers/usb/gadget/f_mass_storage.c:3067:14: warning: ¡struct usb_composite_dev¢ declared inside parameter list
+drivers/usb/gadget/f_mass_storage.c: In function ¡fsg_bind_config¢:
+drivers/usb/gadget/f_mass_storage.c:3093:2: error: implicit declaration of function ¡usb_add_function¢
+drivers/usb/gadget/f_mass_storage.c: At top level:
+drivers/usb/gadget/f_mass_storage.c:3103:9: warning: ¡struct usb_configuration¢ declared inside parameter list
+drivers/usb/gadget/f_mass_storage.c:3103:9: warning: ¡struct usb_composite_dev¢ declared inside parameter list
+drivers/usb/gadget/f_mass_storage.c: In function ¡fsg_add¢:
+drivers/usb/gadget/f_mass_storage.c:3105:2: warning: passing argument 1 of ¡fsg_bind_config¢ from incompatible pointer type
+drivers/usb/gadget/f_mass_storage.c:3065:12: note: expected ¡struct usb_composite_dev *¢ but argument is of type ¡struct usb_composite_dev *¢
+drivers/usb/gadget/f_mass_storage.c:3105:2: warning: passing argument 2 of ¡fsg_bind_config¢ from incompatible pointer type
+drivers/usb/gadget/f_mass_storage.c:3065:12: note: expected ¡struct usb_configuration *¢ but argument is of type ¡struct usb_configuration *¢
+drivers/usb/gadget/f_mass_storage.c: At top level:
+drivers/usb/gadget/f_mass_storage.c:3190:23: warning: ¡struct usb_composite_dev¢ declared inside parameter list
+drivers/usb/gadget/f_mass_storage.c:3195:23: warning: ¡struct usb_composite_dev¢ declared inside parameter list
+drivers/usb/gadget/f_mass_storage.c:3193:1: error: conflicting types for ¡fsg_common_from_params¢
+drivers/usb/gadget/f_mass_storage.c:3188:1: note: previous declaration of ¡fsg_common_from_params¢ was here
+drivers/usb/gadget/f_mass_storage.c: In function ¡fsg_common_from_params¢:
+drivers/usb/gadget/f_mass_storage.c:3199:2: warning: passing argument 2 of ¡fsg_common_init¢ from incompatible pointer type
+drivers/usb/gadget/f_mass_storage.c:2741:27: note: expected ¡struct usb_composite_dev *¢ but argument is of type ¡struct usb_composite_dev *¢
+make[1]: *** [drivers/usb/gadget/f_mass_storage.o] Error 1
+make: *** [drivers/usb/gadget/f_mass_storage.o] Error 2
+
+This is due to the missing include of linux/usb/composite.h - this patch 
+adds the missing include.
+
+In addition there's also a problem in fsg_common_init() where we memset 
+'common', but we use the size of a pointer to 'struct fsg_common' as the 
+size argument to memset(), not the actual size of the struct. This patch 
+fixes the sizeof so we zero the entire struct as intended.
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ f_mass_storage.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+  compile tested only.
+
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index b5dbb23..6d8e533 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -293,6 +293,7 @@
+ 
+ #include <linux/usb/ch9.h>
+ #include <linux/usb/gadget.h>
++#include <linux/usb/composite.h>
+ 
+ #include "gadget_chips.h"
+ 
+@@ -2763,7 +2764,7 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
+ 			return ERR_PTR(-ENOMEM);
+ 		common->free_storage_on_release = 1;
+ 	} else {
+-		memset(common, 0, sizeof common);
++		memset(common, 0, sizeof *common);
+ 		common->free_storage_on_release = 0;
+ 	}
+ 
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
+--8323328-671475880-1296264411=:6465--
