@@ -1,94 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754669Ab1A2AW2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 19:22:28 -0500
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:39788
-	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754133Ab1A2AW1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 19:22:27 -0500
-X-SpamScore: -20
-X-BigFish: VPS-20(zz14e0Mbb2dK1432N98dNzz1202hzzz2fh2a8h637h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4D435DA6.70208@am.sony.com>
-Date: Fri, 28 Jan 2011 16:21:58 -0800
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.1) Gecko/20090814 Fedora/3.0-2.6.b3.fc11 Thunderbird/3.0b3
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Chris Mason <chris.mason@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
-        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 11/18] sched: Add p->pi_lock to task_rq_lock()
-References: <20110104145929.772813816@chello.nl> <20110104150102.862431889@chello.nl>
-In-Reply-To: <20110104150102.862431889@chello.nl>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+	id S1754786Ab1A2A1F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 19:27:05 -0500
+Received: from claw.goop.org ([74.207.240.146]:40204 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753320Ab1A2A1C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 19:27:02 -0500
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Xen Devel <Xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 2/2] xen: add CPU microcode update driver
+Date: Fri, 28 Jan 2011 16:26:54 -0800
+Message-Id: <0a49ceea0d032864a72a8744c82c3786a01f34f4.1296260656.git.jeremy.fitzhardinge@citrix.com>
+X-Mailer: git-send-email 1.7.3.5
+In-Reply-To: <cover.1296259339.git.jeremy.fitzhardinge@citrix.com>
+References: <cover.1296259339.git.jeremy.fitzhardinge@citrix.com>
+In-Reply-To: <cover.1296260656.git.jeremy.fitzhardinge@citrix.com>
+References: <cover.1296260656.git.jeremy.fitzhardinge@citrix.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04/11 06:59, Peter Zijlstra wrote:
-> In order to be able to call set_task_cpu() while either holding
-> p->pi_lock or task_rq(p)->lock we need to hold both locks in order to
-> stabilize task_rq().
-> 
-> This makes task_rq_lock() acquire both locks, and have
-> __task_rq_lock() validate that p->pi_lock is held. This increases the
-> locking overhead for most scheduler syscalls but allows reduction of
-> rq->lock contention for some scheduler hot paths (ttwu).
-> 
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  kernel/sched.c |   81 ++++++++++++++++++++++++++-------------------------------
->  1 file changed, 37 insertions(+), 44 deletions(-)
-> 
-> Index: linux-2.6/kernel/sched.c
-> ===================================================================
-> 
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-> @@ -980,10 +972,13 @@ static void __task_rq_unlock(struct rq *
->  	raw_spin_unlock(&rq->lock);
->  }
->  
-> -static inline void task_rq_unlock(struct rq *rq, unsigned long *flags)
-> +static inline void
-> +task_rq_unlock(struct rq *rq, struct task_struct *p, unsigned long *flags)
->  	__releases(rq->lock)
-> +	__releases(p->pi_lock)
->  {
-> -	raw_spin_unlock_irqrestore(&rq->lock, *flags);
-> +	raw_spin_unlock(&rq->lock);
-> +	raw_spin_unlock_irqrestore(&p->pi_lock, *flags);
->  }
->  
->  /*
+Xen does all the hard work for us, including choosing the right update
+method for this cpu type and actually doing it for all cpus.  We just
+need to supply it with the firmware blob.
 
-Most of the callers of task_rq_unlock() were also fixed up to reflect
-the newly added parameter "*p", but a couple were missed.  By the end
-of the patch series that is ok because the couple that were missed
-get removed in patches 12 and 13.  But if you want the patch series
-to be bisectable (which I think it is otherwise), you might want to
-fix those last couple of callers of task_rq_unlock() in this patch.
+Because Xen updates all CPUs (and the kernel's virtual cpu numbers have
+no fixed relationship with the underlying physical cpus), we only bother
+doing anything for cpu "0".
 
+[ Impact: allow CPU microcode update in Xen dom0 ]
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+---
+ arch/x86/include/asm/microcode.h |    9 ++
+ arch/x86/kernel/Makefile         |    1 +
+ arch/x86/kernel/microcode_core.c |    5 +-
+ arch/x86/kernel/microcode_xen.c  |  198 ++++++++++++++++++++++++++++++++++++++
+ arch/x86/xen/Kconfig             |    4 +
+ 5 files changed, 216 insertions(+), 1 deletions(-)
+ create mode 100644 arch/x86/kernel/microcode_xen.c
 
-> @@ -2646,9 +2647,9 @@ void sched_fork(struct task_struct *p, i
->          *
->          * Silence PROVE_RCU.
->          */
-> -       rcu_read_lock();
-> +       raw_spin_lock_irqsave(&p->pi_lock, flags);
->         set_task_cpu(p, cpu);
-> -       rcu_read_unlock();
-> +       raw_spin_unlock_irqrestore(&p->pi_lock, flags);
-
-Does "* Silence PROVE_RCU." no longer apply after remove rcu_read_lock() and
-rcu_read_unlock()?
-
--Frank
+diff --git a/arch/x86/include/asm/microcode.h b/arch/x86/include/asm/microcode.h
+index 2421507..22677d6 100644
+--- a/arch/x86/include/asm/microcode.h
++++ b/arch/x86/include/asm/microcode.h
+@@ -61,4 +61,13 @@ static inline struct microcode_ops * __init init_amd_microcode(void)
+ }
+ #endif
+ 
++#ifdef CONFIG_MICROCODE_XEN
++extern struct microcode_ops * __init init_xen_microcode(void);
++#else
++static inline struct microcode_ops * __init init_xen_microcode(void)
++{
++	return NULL;
++}
++#endif
++
+ #endif /* _ASM_X86_MICROCODE_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 34244b2..8fd7a4e 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -104,6 +104,7 @@ obj-$(CONFIG_PCSPKR_PLATFORM)	+= pcspeaker.o
+ microcode-y				:= microcode_core.o
+ microcode-$(CONFIG_MICROCODE_INTEL)	+= microcode_intel.o
+ microcode-$(CONFIG_MICROCODE_AMD)	+= microcode_amd.o
++microcode-$(CONFIG_MICROCODE_XEN)	+= microcode_xen.o
+ obj-$(CONFIG_MICROCODE)			+= microcode.o
+ 
+ obj-$(CONFIG_X86_CHECK_BIOS_CORRUPTION) += check.o
+diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
+index 1cca374..6550539 100644
+--- a/arch/x86/kernel/microcode_core.c
++++ b/arch/x86/kernel/microcode_core.c
+@@ -83,6 +83,7 @@
+ #include <linux/fs.h>
+ #include <linux/mm.h>
+ 
++#include <xen/xen.h>
+ #include <asm/microcode.h>
+ #include <asm/processor.h>
+ 
+@@ -506,7 +507,9 @@ static int __init microcode_init(void)
+ 	struct cpuinfo_x86 *c = &cpu_data(0);
+ 	int error;
+ 
+-	if (c->x86_vendor == X86_VENDOR_INTEL)
++	if (xen_pv_domain())
++		microcode_ops = init_xen_microcode();
++	else if (c->x86_vendor == X86_VENDOR_INTEL)
+ 		microcode_ops = init_intel_microcode();
+ 	else if (c->x86_vendor == X86_VENDOR_AMD)
+ 		microcode_ops = init_amd_microcode();
+diff --git a/arch/x86/kernel/microcode_xen.c b/arch/x86/kernel/microcode_xen.c
+new file mode 100644
+index 0000000..9d2a06b
+--- /dev/null
++++ b/arch/x86/kernel/microcode_xen.c
+@@ -0,0 +1,198 @@
++/*
++ * Xen microcode update driver
++ *
++ * Xen does most of the work here.  We just pass the whole blob into
++ * Xen, and it will apply it to all CPUs as appropriate.  Xen will
++ * worry about how different CPU models are actually updated.
++ */
++#include <linux/sched.h>
++#include <linux/module.h>
++#include <linux/firmware.h>
++#include <linux/vmalloc.h>
++#include <linux/uaccess.h>
++
++#include <asm/microcode.h>
++
++#include <xen/xen.h>
++#include <xen/interface/platform.h>
++#include <xen/interface/xen.h>
++
++#include <asm/xen/hypercall.h>
++#include <asm/xen/hypervisor.h>
++
++MODULE_DESCRIPTION("Xen microcode update driver");
++MODULE_LICENSE("GPL");
++
++struct xen_microcode {
++	size_t len;
++	char data[0];
++};
++
++static int xen_microcode_update(int cpu)
++{
++	int err;
++	struct xen_platform_op op;
++	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
++	struct xen_microcode *uc = uci->mc;
++
++	if (uc == NULL || uc->len == 0) {
++		/*
++		 * We do all cpus at once, so we don't need to do
++		 * other cpus explicitly (besides, these vcpu numbers
++		 * have no relationship to underlying physical cpus).
++		 */
++		return 0;
++	}
++
++	op.cmd = XENPF_microcode_update;
++	set_xen_guest_handle(op.u.microcode.data, uc->data);
++	op.u.microcode.length = uc->len;
++
++	err = HYPERVISOR_dom0_op(&op);
++
++	if (err != 0)
++		printk(KERN_WARNING "microcode_xen: microcode update failed: %d\n", err);
++
++	return err;
++}
++
++static enum ucode_state xen_request_microcode_fw(int cpu, struct device *device)
++{
++	char name[30];
++	struct cpuinfo_x86 *c = &cpu_data(cpu);
++	const struct firmware *firmware;
++	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
++	enum ucode_state ret;
++	struct xen_microcode *uc;
++	size_t size;
++	int err;
++
++	switch (c->x86_vendor) {
++	case X86_VENDOR_INTEL:
++		snprintf(name, sizeof(name), "intel-ucode/%02x-%02x-%02x",
++			 c->x86, c->x86_model, c->x86_mask);
++		break;
++
++	case X86_VENDOR_AMD:
++		snprintf(name, sizeof(name), "amd-ucode/microcode_amd.bin");
++		break;
++
++	default:
++		return UCODE_NFOUND;
++	}
++
++	err = request_firmware(&firmware, name, device);
++	if (err) {
++		pr_debug("microcode: data file %s load failed\n", name);
++		return UCODE_NFOUND;
++	}
++
++	/*
++	 * Only bother getting real firmware for cpu 0; the others get
++	 * dummy placeholders.
++	 */
++	if (cpu == 0)
++		size = firmware->size;
++	else
++		size = 0;
++
++	if (uci->mc != NULL) {
++		vfree(uci->mc);
++		uci->mc = NULL;
++	}
++
++	ret = UCODE_ERROR;
++	uc = vmalloc(sizeof(*uc) + size);
++	if (uc == NULL)
++		goto out;
++
++	ret = UCODE_OK;
++	uc->len = size;
++	memcpy(uc->data, firmware->data, uc->len);
++
++	uci->mc = uc;
++
++out:
++	release_firmware(firmware);
++
++	return ret;
++}
++
++static enum ucode_state xen_request_microcode_user(int cpu,
++						   const void __user *buf, size_t size)
++{
++	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
++	struct xen_microcode *uc;
++	enum ucode_state ret;
++	size_t unread;
++
++	if (cpu != 0) {
++		/* No real firmware for non-zero cpus; just store a
++		   placeholder */
++		size = 0;
++	}
++
++	if (uci->mc != NULL) {
++		vfree(uci->mc);
++		uci->mc = NULL;
++	}
++
++	ret = UCODE_ERROR;
++	uc = vmalloc(sizeof(*uc) + size);
++	if (uc == NULL)
++		goto out;
++
++	uc->len = size;
++
++	ret = UCODE_NFOUND;
++
++	unread = copy_from_user(uc->data, buf, size);
++
++	if (unread != 0) {
++		printk(KERN_WARNING "failed to read %zd of %zd bytes at %p -> %p\n",
++		       unread, size, buf, uc->data);
++		goto out;
++	}
++
++	ret = UCODE_OK;
++
++out:
++	if (ret == 0)
++		uci->mc = uc;
++	else
++		vfree(uc);
++
++	return ret;
++}
++
++static void xen_microcode_fini_cpu(int cpu)
++{
++	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
++
++	vfree(uci->mc);
++	uci->mc = NULL;
++}
++
++static int xen_collect_cpu_info(int cpu, struct cpu_signature *sig)
++{
++	sig->sig = 0;
++	sig->pf = 0;
++	sig->rev = 0;
++
++	return 0;
++}
++
++static struct microcode_ops microcode_xen_ops = {
++	.request_microcode_user		  = xen_request_microcode_user,
++	.request_microcode_fw             = xen_request_microcode_fw,
++	.collect_cpu_info                 = xen_collect_cpu_info,
++	.apply_microcode                  = xen_microcode_update,
++	.microcode_fini_cpu               = xen_microcode_fini_cpu,
++};
++
++struct microcode_ops * __init init_xen_microcode(void)
++{
++	if (!xen_initial_domain())
++		return NULL;
++	return &microcode_xen_ops;
++}
+diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
+index 5b54892..384e0a5 100644
+--- a/arch/x86/xen/Kconfig
++++ b/arch/x86/xen/Kconfig
+@@ -48,3 +48,7 @@ config XEN_DEBUG_FS
+ 	help
+ 	  Enable statistics output and various tuning options in debugfs.
+ 	  Enabling this option may incur a significant performance overhead.
++
++config MICROCODE_XEN
++       def_bool y
++       depends on XEN_DOM0 && MICROCODE
+\ No newline at end of file
+-- 
+1.7.3.5
 
