@@ -1,172 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540Ab1A2HgB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jan 2011 02:36:01 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:63626 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750765Ab1A2HgA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jan 2011 02:36:00 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: At8EAHxRQ015LN5mgWdsb2JhbAClAxYBARYiJLsSDYVBBA
-Date: Sat, 29 Jan 2011 18:35:54 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: david@lang.hm
-Cc: Stan Hoeppner <stan@hardwarefreak.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        Christoph Hellwig <hch@infradead.org>,
-        Justin Piszcz <jpiszcz@lucidpixels.com>, Alex Elder <aelder@sgi.com>,
-        Mark Lord <kernel@teksavvy.com>
-Subject: Re: xfs: very slow after mount, very slow at umount
-Message-ID: <20110129073554.GC21311@dastard>
-References: <alpine.DEB.2.00.1101271040000.31246@p34.internal.lan>
- <4D419765.4070805@teksavvy.com>
- <4D41CA16.8070001@hardwarefreak.com>
- <alpine.DEB.2.00.1101271209370.17579@asgard.lang.hm>
- <4D42056E.2050505@hardwarefreak.com>
- <alpine.DEB.2.00.1101271730030.17579@asgard.lang.hm>
- <20110128135629.GX21311@dastard>
- <alpine.DEB.2.00.1101281119250.17579@asgard.lang.hm>
- <20110129054021.GB21311@dastard>
- <alpine.DEB.2.00.1101282201260.29659@asgard.lang.hm>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1101282201260.29659@asgard.lang.hm>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753663Ab1A2Hku (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jan 2011 02:40:50 -0500
+Received: from smtp5-g21.free.fr ([212.27.42.5]:42019 "EHLO smtp5-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752296Ab1A2Hkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Jan 2011 02:40:49 -0500
+From: Corentin Chary <corentincj@iksaif.net>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: platform-driver-x86@vger.kernel.org, acpi4asus-user@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        Corentin Chary <corentincj@iksaif.net>
+Subject: [PATCH v2 14/14] eeepc-wmi: support backlight power (bl_power) attribute
+Date: Sat, 29 Jan 2011 08:42:33 +0100
+Message-Id: <1296286953-8847-1-git-send-email-corentincj@iksaif.net>
+X-Mailer: git-send-email 1.7.4.rc2
+In-Reply-To: <1295886238-15961-15-git-send-email-corentincj@iksaif.net>
+References: <1295886238-15961-15-git-send-email-corentincj@iksaif.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 28, 2011 at 10:08:42PM -0800, david@lang.hm wrote:
-> On Sat, 29 Jan 2011, Dave Chinner wrote:
-> 
-> >On Fri, Jan 28, 2011 at 11:26:00AM -0800, david@lang.hm wrote:
-> >>On Sat, 29 Jan 2011, Dave Chinner wrote:
-> >>
-> >>>On Thu, Jan 27, 2011 at 06:09:58PM -0800, david@lang.hm wrote:
-> >>>>On Thu, 27 Jan 2011, Stan Hoeppner wrote:
-> >>>>>david@lang.hm put forth on 1/27/2011 2:11 PM:
-> >>>>>
-> >>>>>Picking the perfect mkfs.xfs parameters for a hardware RAID array can be
-> >>>>>somewhat of a black art, mainly because no two vendor arrays act or perform
-> >>>>>identically.
-> >>>>
-> >>>>if mkfs.xfs can figure out how to do the 'right thing' for md raid
-> >>>>arrays, can there be a mode where it asks the users for the same
-> >>>>information that it gets from the kernel?
-> >>>
-> >>>mkfs.xfs can get the information it needs directly from dm and md
-> >>>devices. However, when hardware RAID luns present themselves to the
-> >>>OS in an identical manner to single drives, how does mkfs tell the
-> >>>difference between a 2TB hardware RAID lun made up of 30x73GB drives
-> >>>and a single 2TB SATA drive? The person running mkfs should already
-> >>>know this little detail....
-> >>
-> >>that's my point, the person running mkfs knows this information, and
-> >>can easily answer questions that mkfs asks (or provide this
-> >>information on the command line). but mkfs doesn't ask for this
-> >>infomation, instead it asks the user to define a whole bunch of
-> >>parameters that are not well understood.
-> >
-> >I'm going to be blunt - XFS is not a filesystem suited to use by
-> >clueless noobs. XFS is a highly complex filesystem designed for high
-> >end, high performance storage and therefore has the configurability
-> >and flexibility required by such environments. Hence I expect that
-> >anyone configuring an XFS filesystem for a production environments
-> >is a professional and has, at minimum, done their homework before
-> >they go fiddling with knobs. And we have a FAQ for a reason. ;)
-> >
-> >>An XFS guru can tell you
-> >>how to configure these parameters based on different hardware
-> >>layouts, but as long as it remains a 'back art' getting new people
-> >>up to speed is really hard. If this can be reduced down to
-> >>
-> >>is this a hardware raid device
-> >>  if yes
-> >>    how many drives are there
-> >>    what raid type is used (linear, raid 0, 1, 5, 6, 10)
-> >>
-> >>and whatever questions are needed, it would _greatly_ improve the
-> >>quality of the settings that non-guru people end up using.
-> >
-> >As opposed to just making mkfs DTRT without needing to ask
-> >questions?
-> 
-> but you just said that mkfs couldn't do this with hardware raid
-> because it can't "tell the difference between a 2TB hardware RAID
-> lun made up of 30x73GB drives and a single 2TB SATA drive" if it
-> could tell the difference, it should just do the right thing, but if
-> it can't tell the difference, it should ask the user who can give it
-> the answer.
+Signed-off-by: Corentin Chary <corentincj@iksaif.net>
+---
+The previous patch broke eeepc_wmi_get_devstate_simple(),
+here is a fixed patch.
 
-Just because we can't do it right now doesn't mean it is not
-possible. Array/raid controller vendors need to implement the SCSI
-block limit VPD page, and if they do then stripe unit/stripe width
-may be exposed for the device in sysfs. However, I haven't seen any
-devices except for md and dm that actually export values that
-reflect sunit/swidth in the files:
+ drivers/platform/x86/eeepc-wmi.c |   75 +++++++++++++++++++++++++++++++-------
+ 1 files changed, 61 insertions(+), 14 deletions(-)
 
-/sys/block/<dev>/queue/minimum_io_size
-/sys/block/<dev>/queue/optimal_io_size
-
-There's information about it here:
-
-http://www.kernel.org/doc/ols/2009/ols2009-pages-235-238.pdf
-
-But what we really need here is for RAID vendors to implement the
-part of the SCSI protocol that gives us the necessary information.
-
-> also, keep in mind that what it learns about the 'disks' from md and
-> dm may not be the complete picture. I have one system that thinks
-> it's doing a raid0 across 10 drives, but it's really 160 drives,
-> grouped into 10 raid6 sets by hardware raid, than then gets combined
-> by md.
-
-MD doesn't care whether the block devices are single disks or RAID
-LUNS.  In this case, it's up to you to configure the md chunk size
-appropriately for those devices. i.e. the MD chunk size needs to be
-the RAID6 lun stripe width. If you get the MD config right, then
-mkfs will do exactly the right thing without needing to be tweaked.
-The same goes for any sort of heirarchical aggregation of storage -
-if you don't get the geometry right at each level, then performance
-will suck.
-
-FWIW, SGI has been using XFS in complex, multilayer, multipath,
-heirarchical configurations like this for 15 years.  What you
-describe is a typical, everyday configuration that XFS is used on
-and it is this sort of configuration we tend to optimise the
-default behaviour for....
-
-> I am all for the defaults and auto-config being as good as possible
-> (one of my biggest gripes about postgres is how bad it's defaults
-> are), but whe you can't tell what reality is, ask the admin who
-> knows (or at least have the option of asking the admin)
->
-> >If you really think an interactive mkfs-for-dummies script is
-> >necessary, then go ahead and write one - you don't need to modify
-> >mkfs at all to do it.....
-> 
-> it doesn't have to be interactive, the answers to the questions
-> could be comand-line options.
-
-Which means you're assuming a competent admin is running the tool,
-in which case they could just run mkfs directly.  Anyway, it still
-doesn't need mkfs changes.
-
-> as for the reason that I don't do this, that's simple. I don't know
-> enough of the black arts to know what the logic is to convert from
-> knowing the disk layout to setting the existing parameters.
-
-Writing such a script would be a good way to learn the art and
-document the information that people are complaining that is
-lacking. I don't have the time (or need) to write such a script, but
-I can answer questions when they arise should someone decide to do
-it....
-
-Cheers,
-
-Dave.
+diff --git a/drivers/platform/x86/eeepc-wmi.c b/drivers/platform/x86/eeepc-wmi.c
+index 75dd692..910eb00 100644
+--- a/drivers/platform/x86/eeepc-wmi.c
++++ b/drivers/platform/x86/eeepc-wmi.c
+@@ -73,13 +73,16 @@ MODULE_ALIAS("wmi:"EEEPC_WMI_MGMT_GUID);
+ #define EEEPC_WMI_DEVID_BLUETOOTH	0x00010013
+ #define EEEPC_WMI_DEVID_WIMAX		0x00010017
+ #define EEEPC_WMI_DEVID_WWAN3G		0x00010019
+-#define EEEPC_WMI_DEVID_BACKLIGHT	0x00050012
++#define EEEPC_WMI_DEVID_BACKLIGHT	0x00050011
++#define EEEPC_WMI_DEVID_BRIGHTNESS	0x00050012
+ #define EEEPC_WMI_DEVID_CAMERA		0x00060013
+ #define EEEPC_WMI_DEVID_CARDREADER	0x00080013
+ #define EEEPC_WMI_DEVID_TPDLED		0x00100011
+ 
+ #define EEEPC_WMI_DSTS_STATUS_BIT	0x00000001
+ #define EEEPC_WMI_DSTS_PRESENCE_BIT	0x00010000
++#define EEEPC_WMI_DSTS_BRIGHTNESS_MASK	0x000000FF
++#define EEEPC_WMI_DSTS_MAX_BRIGTH_MASK	0x0000FF00
+ 
+ static bool hotplug_wireless;
+ 
+@@ -262,7 +265,7 @@ static acpi_status eeepc_wmi_set_devstate(u32 dev_id, u32 ctrl_param,
+ }
+ 
+ /* Helper for special devices with magic return codes */
+-static int eeepc_wmi_get_devstate_simple(u32 dev_id)
++static int eeepc_wmi_get_devstate_bits(u32 dev_id, u32 mask)
+ {
+ 	u32 retval = 0;
+ 	acpi_status status;
+@@ -275,7 +278,12 @@ static int eeepc_wmi_get_devstate_simple(u32 dev_id)
+ 	if (!(retval & EEEPC_WMI_DSTS_PRESENCE_BIT))
+ 		return -ENODEV;
+ 
+-	return retval & EEEPC_WMI_DSTS_STATUS_BIT;
++	return retval & mask;
++}
++
++static int eeepc_wmi_get_devstate_simple(u32 dev_id)
++{
++	return eeepc_wmi_get_devstate_bits(dev_id, EEEPC_WMI_DSTS_STATUS_BIT);
+ }
+ 
+ /*
+@@ -770,34 +778,53 @@ exit:
+ /*
+  * Backlight
+  */
++static int read_backlight_power(void)
++{
++	int ret = eeepc_wmi_get_devstate_simple(EEEPC_WMI_DEVID_BACKLIGHT);
++
++	if (ret < 0)
++		return ret;
++
++	return ret ? FB_BLANK_UNBLANK : FB_BLANK_POWERDOWN;
++}
++
+ static int read_brightness(struct backlight_device *bd)
+ {
+ 	u32 retval;
+ 	acpi_status status;
+ 
+-	status = eeepc_wmi_get_devstate(EEEPC_WMI_DEVID_BACKLIGHT, &retval);
++	status = eeepc_wmi_get_devstate(EEEPC_WMI_DEVID_BRIGHTNESS, &retval);
+ 
+ 	if (ACPI_FAILURE(status))
+-		return -1;
++		return -EIO;
+ 	else
+-		return retval & 0xFF;
++		return retval & EEEPC_WMI_DSTS_BRIGHTNESS_MASK;
+ }
+ 
+ static int update_bl_status(struct backlight_device *bd)
+ {
+-
+ 	u32 ctrl_param;
+ 	acpi_status status;
++	int power;
+ 
+ 	ctrl_param = bd->props.brightness;
+ 
+-	status = eeepc_wmi_set_devstate(EEEPC_WMI_DEVID_BACKLIGHT,
++	status = eeepc_wmi_set_devstate(EEEPC_WMI_DEVID_BRIGHTNESS,
+ 					ctrl_param, NULL);
+ 
+ 	if (ACPI_FAILURE(status))
+-		return -1;
+-	else
+-		return 0;
++		return -EIO;
++
++	power = read_backlight_power();
++	if (power != -ENODEV && bd->props.power != power) {
++		ctrl_param = !!(bd->props.power == FB_BLANK_UNBLANK);
++		status = eeepc_wmi_set_devstate(EEEPC_WMI_DEVID_BACKLIGHT,
++						ctrl_param, NULL);
++
++		if (ACPI_FAILURE(status))
++			return -EIO;
++	}
++	return 0;
+ }
+ 
+ static const struct backlight_ops eeepc_wmi_bl_ops = {
+@@ -827,9 +854,29 @@ static int eeepc_wmi_backlight_init(struct eeepc_wmi *eeepc)
+ {
+ 	struct backlight_device *bd;
+ 	struct backlight_properties props;
++	int max;
++	int power;
++
++	max = eeepc_wmi_get_devstate_bits(EEEPC_WMI_DEVID_BRIGHTNESS,
++					  EEEPC_WMI_DSTS_MAX_BRIGTH_MASK);
++	power = read_backlight_power();
++
++	if (max < 0 && power < 0) {
++		/* Try to keep the original error */
++		if (max == -ENODEV && power == -ENODEV)
++			return -ENODEV;
++		if (max != -ENODEV)
++			return max;
++		else
++			return power;
++	}
++	if (max == -ENODEV)
++		max = 0;
++	if (power == -ENODEV)
++		power = FB_BLANK_UNBLANK;
+ 
+ 	memset(&props, 0, sizeof(struct backlight_properties));
+-	props.max_brightness = 15;
++	props.max_brightness = max;
+ 	bd = backlight_device_register(EEEPC_WMI_FILE,
+ 				       &eeepc->platform_device->dev, eeepc,
+ 				       &eeepc_wmi_bl_ops, &props);
+@@ -841,7 +888,7 @@ static int eeepc_wmi_backlight_init(struct eeepc_wmi *eeepc)
+ 	eeepc->backlight_device = bd;
+ 
+ 	bd->props.brightness = read_brightness(bd);
+-	bd->props.power = FB_BLANK_UNBLANK;
++	bd->props.power = power;
+ 	backlight_update_status(bd);
+ 
+ 	return 0;
+@@ -1202,7 +1249,7 @@ static int __init eeepc_wmi_add(struct platform_device *pdev)
+ 
+ 	if (!acpi_video_backlight_support()) {
+ 		err = eeepc_wmi_backlight_init(eeepc);
+-		if (err)
++		if (err && err != -ENODEV)
+ 			goto fail_backlight;
+ 	} else
+ 		pr_info("Backlight controlled by ACPI video driver\n");
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.4.rc2
+
