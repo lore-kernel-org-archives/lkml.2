@@ -1,123 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551Ab1A1X66 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 18:58:58 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:63951 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752495Ab1A1X65 (ORCPT
+	id S1754603Ab1A2AE7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 19:04:59 -0500
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:57716
+	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754423Ab1A2AE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 18:58:57 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AuUEAIvnQk15LN5mgWdsb2JhbAClAxYBARYiJLwMDYVCBA
-Date: Sat, 29 Jan 2011 10:58:47 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Mark Lord <kernel@teksavvy.com>
-Cc: Stan Hoeppner <stan@hardwarefreak.com>,
-        Justin Piszcz <jpiszcz@lucidpixels.com>,
-        Christoph Hellwig <hch@infradead.org>, Alex Elder <aelder@sgi.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: xfs: very slow after mount, very slow at umount
-Message-ID: <20110128235847.GY21311@dastard>
-References: <4D40EB2F.2050809@teksavvy.com>
- <4D418B57.1000501@teksavvy.com>
- <alpine.DEB.2.00.1101271040000.31246@p34.internal.lan>
- <4D419765.4070805@teksavvy.com>
- <4D41CA16.8070001@hardwarefreak.com>
- <4D41EA04.7010506@teksavvy.com>
- <20110128001735.GO21311@dastard>
- <4D421A68.9000607@teksavvy.com>
- <20110128073119.GV21311@dastard>
- <4D42D39E.4080304@teksavvy.com>
+	Fri, 28 Jan 2011 19:04:58 -0500
+X-SpamScore: -18
+X-BigFish: VPS-18(zzbb2dK936eK1432N98dNzz1202hzzz2fh2a8h637h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4D435988.2090002@am.sony.com>
+Date: Fri, 28 Jan 2011 16:04:24 -0800
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.1) Gecko/20090814 Fedora/3.0-2.6.b3.fc11 Thunderbird/3.0b3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D42D39E.4080304@teksavvy.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Oleg Nesterov <oleg@redhat.com>, Chris Mason <chris.mason@oracle.com>,
+        "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Mike Galbraith <efault@gmx.de>, Paul Turner <pjt@google.com>,
+        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 17/18] sched: Move the second half of ttwu() to the
+ remote cpu
+References: <20110104145929.772813816@chello.nl>	 <20110104150103.164045216@chello.nl> <20110105210754.GA2579@redhat.com>	 <1294326577.2016.373.camel@laptop>  <20110107152207.GA16341@redhat.com> <1295368688.30950.925.camel@laptop>
+In-Reply-To: <1295368688.30950.925.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 28, 2011 at 09:33:02AM -0500, Mark Lord wrote:
-> On 11-01-28 02:31 AM, Dave Chinner wrote:
-> >
-> > A simple google search turns up discussions like this:
-> > 
-> > http://oss.sgi.com/archives/xfs/2009-01/msg01161.html
+On 01/18/11 08:38, Peter Zijlstra wrote:
+> On Fri, 2011-01-07 at 16:22 +0100, Oleg Nesterov wrote:
+
+>> Doesn't __migrate_task() need pi_lock? Consider:
+
+In the reply to this Peter suggests:
+
+"keep ->pi_lock locked over the call to
+stop_one_cpu() from set_cpus_allowed_ptr()"
+
+Then Oleg replies to Peter with a possible problem to that.
+
+If I understand Oleg's original suggestion, it solves the problem.
+I inject the "pi_lock in __migrate_task()" in Oleg's original problem
+description below, and how I think it fixes the problem:
+
+>>
+>> 1. A task T runs on CPU_0, it does set_current_state(TASK_INTERRUBTIBLE)
+>>
+>> 2. some CPU does set_cpus_allowed_ptr(T, new_mask), new_mask doesn't
+>>    include CPU_0.
+>>
+>>    T is running, cpumask_any_and() picks CPU_1, set_cpus_allowed_ptr()
+>>    drops pi_lock and rq->lock before stop_one_cpu().
+>>
+>> 3. T calls schedule() and becomes deactivated.
+>>
+>> 4. CPU_2 does try_to_wake_up(T, TASK_INTERRUPTIBLE), takes pi_lock
+>>    and sees on_rq == F.
+>>
+>> 5. set_cpus_allowed_ptr() resumes and calls stop_one_cpu(cpu => 1).
+>>
+>> 6. cpu_stopper_thread() runs on CPU_1 and calls ____migrate_task().
+
+      It attempts to lock p->pi_lock (and thus blocks on lock held by
+      try_to_wake_up())
+
+      So do not get to this double rq lock yet:
+>>    It locks CPU_0 and CPU_1 rq's and checks task_cpu() == src_cpu.
+
+
+>>
+>> 7. CPU_2 calls select_task_rq(), it returns (to simplify) 2.
+>>
+>>    Now try_to_wake_up() does set_task_cpu(T, 2), and calls
+>>    ttwu_queue()->ttwu_do_activate()->activate_task().
+
+ 7.1  Now __migrate_task() gets the p->pi_lock that it was blocked on,
+      continues on to get the double rq lock (the last part of step 6
+      that got postponed above), discovers that
+      (task_cpu(p) != src_cpu), and thus skips over the problematic
+      step 8:
+
+>>
+>> 8. __migrate_task() on CPU_1 sees p->on_rq and starts the
+>>    deactivate/activate dance racing with ttwu_do_activate()
+>>    on CPU_2.
 > 
-> "in the long term we still expect fragmentation to degrade the performance of
-> XFS file systems"
-
-"so we intend to add an on-line file system defragmentation utility
-to optimize the file system in the future"
-
-You are quoting from the wrong link - that's from the 1996
-whitepaper.  And sure, at the time that was written, nobody had any
-real experience with long term aging of XFS filesystems so it was
-still a guess at that point. XFS has had that online defragmentation
-utility since 1998, IIRC, even though in most cases it is
-unnecessary to use it.
-
-> Other than that, no hints there about how changing agcount affects things.
-
-If the reason given in the whitepaper for multiple AGs (i.e. they
-are for increasing the concurrency of allocation) doesn't help you
-understand why you'd want to increase the number of AGs in the
-filesystem, then you haven't really thought about what you read.
-
-As it is, from the same google search that found the above link
-as #1 hit, this was #6:
-
-http://oss.sgi.com/archives/xfs/2010-11/msg00497.html
-
-| > AG count has a
-| > direct relationship to the storage hardware, not the number of CPUs
-| >  (cores) in the system
-|
-| Actually, I used 16 AGs because it's twice the number of CPU cores
-| and I want to make sure that CPU parallel workloads (e.g. make -j 8)
-| don't serialise on AG locks during allocation. IOWs, I laid it out
-| that way precisely because of the number of CPUs in the system...
-| 
-| And to point out the not-so-obvious, this is the _default layout_
-| that mkfs.xfs in the debian squeeze installer came up with. IOWs,
-| mkfs.xfs did exactly what I wanted without me having to tweak
-| _anything_."
-| 
-[...]
-| 
-| In that case, you are right. Single spindle SRDs go backwards in
-| performance pretty quickly once you go over 4 AGs...
-
-It seems to me that you haven't really done much looking for
-information; there's lots of relevant advice in xfs mailing list
-archives...
-
-(and before you ask - SRD == Spinning Rust Disk)
-
-> > Configuring XFS filesystems for optimal performance has always been
-> > a black art because it requires you to understand your storage, your
-> > application workload(s) and XFS from the ground up.  Most people
-> > can't even tick one of those boxes, let alone all three....
+> Drad, yes I think you're right, now you've got me worried about the
+> other migration paths too.. however did you come up with that
+> scenario? :-)
 > 
-> Well, I've got 2/3 of those down just fine, thanks.
-> But it's the "XFS" part that is still the "black art" part,
-> because so little is written about *how* it works
-> (as opposed to how it is laid out on disk).
+> A simple fix would be to keep ->pi_lock locked over the call to
+> stop_one_cpu() from set_cpus_allowed_ptr().
+> 
+> I think the sched_fair.c load-balance code paths are ok because we only
+> find a task to migrate after we've obtained both runqueue locks, so even
+> if we migrate current, it cannot schedule (step 3).
+> 
+> I'm not at all sure about the sched_rt load-balance paths, will need to
+> twist my head around that..
 
-If you want to know exactly how it works, there plenty of code to
-read. I know, you're going to call that a cop out, but I've got more
-important things to do than document 20,000 lines of allocation
-code just for you.
+I haven't yet tried to twist my head around either the sched_fair or the
+sched_rt load balance paths.  But wouldn't it just be safer (especially
+given that the load balance code will be modified by somebody at some
+point in the future, and that this locking complexity does require head
+twisting) to just add the pi_lock in the load-balance paths also?
 
-In a world of infinite resources then everything would be documented
-just the way you want, but we don't have infinite resources so it
-remains documented by the code that implements it.  However, if you
-want to go and understand it and document it all for us, then we'll
-happily take the patches. :)
+-Frank
 
-Cheers,,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
