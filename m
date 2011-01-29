@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287Ab1A2MAG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jan 2011 07:00:06 -0500
-Received: from h1047321.serverkompetenz.net ([85.214.67.163]:55819 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767Ab1A2MAE convert rfc822-to-8bit (ORCPT
+	id S1753087Ab1A2Mr5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jan 2011 07:47:57 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41515 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752416Ab1A2Mr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jan 2011 07:00:04 -0500
-Message-ID: <4D44013B.8050306@ahsoftware.de>
-Date: Sat, 29 Jan 2011 12:59:55 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
+	Sat, 29 Jan 2011 07:47:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=nR/U2p44ERWq1L3ULJSWcURoPVpfXCH5KjiHPoXws2fw0/rGfYjvrydmspn606NOCi
+         6Ytv3bf3vXbHSlFvlr++winiMhAxQR1pMf3dI9MYAcgrqlHtDD+q4QWyYdM4ggvPBdT7
+         4PtG9TaV0Xrk9bf+vmvkZjsjSfM8ntgCadJ4g=
 MIME-Version: 1.0
-To: =?UTF-8?B?Um9nw6lyaW8gQnJpdG8=?= <rbrito@ime.usp.br>
-CC: linux-kernel@vger.kernel.org,
-        Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>
-Subject: Re: [PATCH] ath3k: Avoid duplication of code
-References: <20110127232453.GA3531@ime.usp.br> <4D4284D7.8000200@ahsoftware.de> <20110128221807.GA9741@ime.usp.br>
-In-Reply-To: <20110128221807.GA9741@ime.usp.br>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20110128122229.6a4c74a2.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110128122229.6a4c74a2.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Sat, 29 Jan 2011 18:17:56 +0530
+X-Google-Sender-Auth: 304ybpkDzBIT3Uc8LCdcaLHLMH0
+Message-ID: <AANLkTiktzgxEVROyB=-0ZNq5xzao1Q-Cu3xpGqhx0gxm@mail.gmail.com>
+Subject: Re: [BUGFIX][PATCH 0/4] Fixes for memcg with THP
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 28.01.2011 23:18, schrieb Rogério Brito:
+On Fri, Jan 28, 2011 at 8:52 AM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>
+> On recent -mm, when I run make -j 8 under 200M limit of memcg, as
+> ==
+> # mount -t cgroup none /cgroup/memory -o memory
+> # mkdir /cgroup/memory/A
+> # echo 200M > /cgroup/memory/A/memory.limit_in_bytes
+> # echo $$ > /cgroup/memory/A/tasks
+> # make -j 8 kernel
+> ==
+>
+> I see hangs with khugepaged. That's because memcg's memory reclaim
+> routine doesn't handle HUGE_PAGE request in proper way. And khugepaged
+> doesn't know about memcg.
+>
+> This patch set is for fixing above hang. Patch 1-3 seems obvious and
+> has the same concept as patches in RHEL.
 
-> Thanks for all the feedback on the previous patches. The one that
-> didn't compile before was sent without a hunk. This time everything
-> all the basics are verified.
+Do you have any backtraces? Are they in the specific patches?
 
-They both had the same error, so I assume none of them compiled.
-
-Besides that I don't have an opinion on your patch.
-
-That stuff is only executed once when a device will be attached. The 
-only reason I had a look at the code, was that I once got an out of 
-memory error after I've attached such an device to a memory constrained 
-(embedded) system.
-
-Regards,
-
-Alexander
-
+Balbir
