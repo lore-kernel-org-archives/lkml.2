@@ -1,111 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751493Ab1A2GJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jan 2011 01:09:27 -0500
-Received: from mail.lang.hm ([64.81.33.126]:38384 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750726Ab1A2GJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jan 2011 01:09:26 -0500
-Date: Fri, 28 Jan 2011 22:08:42 -0800 (PST)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Dave Chinner <david@fromorbit.com>
-cc: Stan Hoeppner <stan@hardwarefreak.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        Christoph Hellwig <hch@infradead.org>,
-        Justin Piszcz <jpiszcz@lucidpixels.com>, Alex Elder <aelder@sgi.com>,
-        Mark Lord <kernel@teksavvy.com>
-Subject: Re: xfs: very slow after mount, very slow at umount
-In-Reply-To: <20110129054021.GB21311@dastard>
-Message-ID: <alpine.DEB.2.00.1101282201260.29659@asgard.lang.hm>
-References: <4D40EB2F.2050809@teksavvy.com> <4D418B57.1000501@teksavvy.com> <alpine.DEB.2.00.1101271040000.31246@p34.internal.lan> <4D419765.4070805@teksavvy.com> <4D41CA16.8070001@hardwarefreak.com> <alpine.DEB.2.00.1101271209370.17579@asgard.lang.hm>
- <4D42056E.2050505@hardwarefreak.com> <alpine.DEB.2.00.1101271730030.17579@asgard.lang.hm> <20110128135629.GX21311@dastard> <alpine.DEB.2.00.1101281119250.17579@asgard.lang.hm> <20110129054021.GB21311@dastard>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1752876Ab1A2HJr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jan 2011 02:09:47 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:43092 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868Ab1A2HJq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Jan 2011 02:09:46 -0500
+From: Adam Thompson <adam@lotpblog.com>
+To: gregk@suse.de, ehames@gmail.com, svenne@krap.dk, johanmeiring@gmail.com,
+        julia@diku.dk
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        adam@lotpblog.com
+Subject: [PATCH] Staging: wlan-ng: fix 2 space coding style issues This patch to p80211conv.c fixes to space coding style warnings found with checkpatch.pl Signed-off-by: Adam Thompson <adam@lotpblog.com>
+Date: Sat, 29 Jan 2011 02:08:50 -0500
+Message-Id: <1296284930-8396-1-git-send-email-adam@lotpblog.com>
+X-Mailer: git-send-email 1.7.3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 29 Jan 2011, Dave Chinner wrote:
+---
+ drivers/staging/wlan-ng/p80211conv.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> On Fri, Jan 28, 2011 at 11:26:00AM -0800, david@lang.hm wrote:
->> On Sat, 29 Jan 2011, Dave Chinner wrote:
->>
->>> On Thu, Jan 27, 2011 at 06:09:58PM -0800, david@lang.hm wrote:
->>>> On Thu, 27 Jan 2011, Stan Hoeppner wrote:
->>>>> david@lang.hm put forth on 1/27/2011 2:11 PM:
->>>>>
->>>>> Picking the perfect mkfs.xfs parameters for a hardware RAID array can be
->>>>> somewhat of a black art, mainly because no two vendor arrays act or perform
->>>>> identically.
->>>>
->>>> if mkfs.xfs can figure out how to do the 'right thing' for md raid
->>>> arrays, can there be a mode where it asks the users for the same
->>>> information that it gets from the kernel?
->>>
->>> mkfs.xfs can get the information it needs directly from dm and md
->>> devices. However, when hardware RAID luns present themselves to the
->>> OS in an identical manner to single drives, how does mkfs tell the
->>> difference between a 2TB hardware RAID lun made up of 30x73GB drives
->>> and a single 2TB SATA drive? The person running mkfs should already
->>> know this little detail....
->>
->> that's my point, the person running mkfs knows this information, and
->> can easily answer questions that mkfs asks (or provide this
->> information on the command line). but mkfs doesn't ask for this
->> infomation, instead it asks the user to define a whole bunch of
->> parameters that are not well understood.
->
-> I'm going to be blunt - XFS is not a filesystem suited to use by
-> clueless noobs. XFS is a highly complex filesystem designed for high
-> end, high performance storage and therefore has the configurability
-> and flexibility required by such environments. Hence I expect that
-> anyone configuring an XFS filesystem for a production environments
-> is a professional and has, at minimum, done their homework before
-> they go fiddling with knobs. And we have a FAQ for a reason. ;)
->
->> An XFS guru can tell you
->> how to configure these parameters based on different hardware
->> layouts, but as long as it remains a 'back art' getting new people
->> up to speed is really hard. If this can be reduced down to
->>
->> is this a hardware raid device
->>   if yes
->>     how many drives are there
->>     what raid type is used (linear, raid 0, 1, 5, 6, 10)
->>
->> and whatever questions are needed, it would _greatly_ improve the
->> quality of the settings that non-guru people end up using.
->
-> As opposed to just making mkfs DTRT without needing to ask
-> questions?
+diff --git a/drivers/staging/wlan-ng/p80211conv.c b/drivers/staging/wlan-ng/p80211conv.c
+index 146f365..f53a27a 100644
+--- a/drivers/staging/wlan-ng/p80211conv.c
++++ b/drivers/staging/wlan-ng/p80211conv.c
+@@ -379,7 +379,7 @@ int skb_p80211_to_ether(wlandevice_t *wlandev, u32 ethconv,
+ 
+ 	} else if ((payload_length >= sizeof(struct wlan_llc) +
+ 		sizeof(struct wlan_snap))
+-		&&(e_llc->dsap == 0xaa)
++		&& (e_llc->dsap == 0xaa)
+ 		&& (e_llc->ssap == 0xaa)
+ 		&& (e_llc->ctl == 0x03)
+ 		   &&
+@@ -415,7 +415,7 @@ int skb_p80211_to_ether(wlandevice_t *wlandev, u32 ethconv,
+ 
+ 	} else if ((payload_length >= sizeof(struct wlan_llc) +
+ 		sizeof(struct wlan_snap))
+-		&&(e_llc->dsap == 0xaa)
++		&& (e_llc->dsap == 0xaa)
+ 		&& (e_llc->ssap == 0xaa)
+ 		&& (e_llc->ctl == 0x03)) {
+ 		pr_debug("802.1h/RFC1042 len: %d\n", payload_length);
+-- 
+1.7.3.5
 
-but you just said that mkfs couldn't do this with hardware raid because it 
-can't "tell the difference between a 2TB hardware RAID lun made up of 
-30x73GB drives and a single 2TB SATA drive" if it could tell the 
-difference, it should just do the right thing, but if it can't tell the 
-difference, it should ask the user who can give it the answer.
-
-also, keep in mind that what it learns about the 'disks' from md and dm 
-may not be the complete picture. I have one system that thinks it's doing 
-a raid0 across 10 drives, but it's really 160 drives, grouped into 10 
-raid6 sets by hardware raid, than then gets combined by md.
-
-I am all for the defaults and auto-config being as good as possible (one 
-of my biggest gripes about postgres is how bad it's defaults are), but whe 
-you can't tell what reality is, ask the admin who knows (or at least have 
-the option of asking the admin)
-
-> If you really think an interactive mkfs-for-dummies script is
-> necessary, then go ahead and write one - you don't need to modify
-> mkfs at all to do it.....
-
-it doesn't have to be interactive, the answers to the questions could be 
-comand-line options.
-
-as for the reason that I don't do this, that's simple. I don't know enough 
-of the black arts to know what the logic is to convert from knowing the 
-disk layout to setting the existing parameters.
-
-David Lang
