@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755356Ab1A2WUL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jan 2011 17:20:11 -0500
-Received: from casper.infradead.org ([85.118.1.10]:52218 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755296Ab1A2WUI (ORCPT
+	id S1755371Ab1A2WUa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jan 2011 17:20:30 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:23633 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755233Ab1A2WU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jan 2011 17:20:08 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 2/7] perf events: Account PERF_RECORD_LOST events in event__process
-Date: Sat, 29 Jan 2011 20:19:14 -0200
-Message-Id: <1296339559-20914-3-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1296339559-20914-1-git-send-email-acme@infradead.org>
-References: <1296339559-20914-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sat, 29 Jan 2011 17:20:28 -0500
+Date: Sat, 29 Jan 2011 23:21:40 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        James Bottomley <James.Bottomley@suse.de>,
+        "Nicholas A. Bellinger" <nab@kernel.org>
+Subject: [PATCH] SCSI, target: Avoid mem leak and needless work in
+ transport_generic_get_mem().
+Message-ID: <alpine.LNX.2.00.1101292316490.19392@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+In drivers/target/target_core_transport.c::transport_generic_get_mem() 
+there are a few potential memory leaks in the error paths. This patch 
+makes sure that we free previously allocated memory when other allocations 
+fail. It also moves some work (INIT_LIST_HEAD() and assignment to 
+se_mem->se_len) below all the allocations so that if something fails we 
+don't do the work at all.
 
-Right now this function is only used by perf top, that uses PROT_READ
-only, i.e. overwrite mode, so no PERF_RECORD_LOST events are generated,
-but don't forget those events.
+Please review and consider for inclusion.
+I don't have any hardware to actually test this so it is compile tested 
+only.
 
-The patch that moved this out of perf top was made so that this routine
-could be used by 'perf probe' in the uprobes patchset, so perhaps there
-they need to check for LOST events and warn the user, as will be done in
-the following patches that will switch 'perf top' to non overwrite mode
-(mmap with PROT_READ|PROT_WRITE).
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- tools/perf/util/event.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ target_core_transport.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index e4db8b8..b9d4ac8 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -646,6 +646,8 @@ int event__process(event_t *event, struct sample_data *sample,
- 	case PERF_RECORD_EXIT:
- 		event__process_task(event, sample, session);
- 		break;
-+	case PERF_RECORD_LOST:
-+		event__process_lost(event, sample, session);
- 	default:
- 		break;
- 	}
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index 28b6292..4776293 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -4334,11 +4334,9 @@ transport_generic_get_mem(struct se_cmd *cmd, u32 length, u32 dma_size)
+ 			printk(KERN_ERR "Unable to allocate struct se_mem\n");
+ 			goto out;
+ 		}
+-		INIT_LIST_HEAD(&se_mem->se_list);
+-		se_mem->se_len = (length > dma_size) ? dma_size : length;
+ 
+ /* #warning FIXME Allocate contigous pages for struct se_mem elements */
+-		se_mem->se_page = (struct page *) alloc_pages(GFP_KERNEL, 0);
++		se_mem->se_page = alloc_pages(GFP_KERNEL, 0);
+ 		if (!(se_mem->se_page)) {
+ 			printk(KERN_ERR "alloc_pages() failed\n");
+ 			goto out;
+@@ -4349,6 +4347,8 @@ transport_generic_get_mem(struct se_cmd *cmd, u32 length, u32 dma_size)
+ 			printk(KERN_ERR "kmap_atomic() failed\n");
+ 			goto out;
+ 		}
++		INIT_LIST_HEAD(&se_mem->se_list);
++		se_mem->se_len = (length > dma_size) ? dma_size : length;
+ 		memset(buf, 0, se_mem->se_len);
+ 		kunmap_atomic(buf, KM_IRQ0);
+ 
+@@ -4367,6 +4367,9 @@ transport_generic_get_mem(struct se_cmd *cmd, u32 length, u32 dma_size)
+ 
+ 	return 0;
+ out:
++	if (se_mem)
++		__free_pages(se_mem->se_page, 0);
++	kmem_cache_free(se_mem_cache, se_mem);
+ 	return -1;
+ }
+ 
+
+
 -- 
-1.6.2.5
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
 
