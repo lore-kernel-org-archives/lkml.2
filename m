@@ -1,106 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab1A2I5E (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jan 2011 03:57:04 -0500
-Received: from fmmailgate03.web.de ([217.72.192.234]:59172 "EHLO
-	fmmailgate03.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270Ab1A2I5C (ORCPT
+	id S1752287Ab1A2JPq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jan 2011 04:15:46 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54885 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751298Ab1A2JPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jan 2011 03:57:02 -0500
-Message-ID: <4D43D658.7080605@web.de>
-Date: Sat, 29 Jan 2011 09:56:56 +0100
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	Sat, 29 Jan 2011 04:15:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=sqh6KZJWhGNBF1UNsikdJ3SIZBarn6PKTCPYXW76cpOL+0fAQBp1QBRfJ5F3E9Viue
+         PtOIFlDHFDE/m1T5xQOmmg7l4zHbvggdcxbHZcvsJZPsejbQJ/NbRWYYhGhluGV5Mneq
+         2bg4APVOf6/oQLZQgzDM7ta4kxT0EqE/xz4rk=
 MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com
-Subject: Re: [PATCH] release kvmclock page on reset
-References: <1296244086-15081-1-git-send-email-glommer@redhat.com>	 <4D433088.10308@web.de> <1296266847.3591.41.camel@mothafucka.localdomain>
-In-Reply-To: <1296266847.3591.41.camel@mothafucka.localdomain>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigFC56573D8C99F116402EC9FF"
-X-Provags-ID: V01U2FsdGVkX18yHR0GqBmqFSzMlPgZ3WK0efFBofNFB9ilKMkB
-	DQFKu1ppNnMmvwCwsLD67kxt4WRGDHPLoi1hK4F5AfARiaw2M5
-	fduYq83as=
+In-Reply-To: <20110129083638.GD26915@core.coreip.homeip.net>
+References: <AANLkTinytMpW8-7eEDg1O+vUP=C6-MHc8H8yssRbbxUc@mail.gmail.com>
+	<20110129083638.GD26915@core.coreip.homeip.net>
+Date: Sat, 29 Jan 2011 10:15:40 +0100
+Message-ID: <AANLkTimq1JY5MNx3-CL=gfGreA5=VLtSfrg81TzftZd2@mail.gmail.com>
+Subject: Re: USB HID plug and play, hardware developer frustration
+From: Robin Theunis <robint91@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-doc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigFC56573D8C99F116402EC9FF
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi Devs, Dmitry
 
-On 2011-01-29 03:07, Glauber Costa wrote:
-> On Fri, 2011-01-28 at 22:09 +0100, Jan Kiszka wrote:
->> On 2011-01-28 20:48, Glauber Costa wrote:
->>> Up to know, we were relying on guest cooperation to turn off kvmclock=
-=2E
->>> I just realized that even though this is fine and nice, a more robust=
+Oh, there is some support for digitizers. That will help me a lot!
+Some thing else. When releasing my product how do I "ship" my driver?
+Or do I need to hope that it will be included in the kernel?
 
->>> method is to (also) turn it off on vcpu_reset on the hypervisor side.=
+Thanks
 
->>> This will protect us against reboots, and we don't expect the guest
->>> to reset its cpu during normal operation anyway.
->>>
->>> Signed-off-by: Glauber Costa <glommer@redhat.com>
->>> ---
->>>  arch/x86/kvm/x86.c |    5 +++++
->>>  1 files changed, 5 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->>> index bcc0efc..38b55b3 100644
->>> --- a/arch/x86/kvm/x86.c
->>> +++ b/arch/x86/kvm/x86.c
->>> @@ -5878,6 +5878,11 @@ int kvm_arch_vcpu_reset(struct kvm_vcpu *vcpu)=
+Robin
 
->>>  	kvm_make_request(KVM_REQ_EVENT, vcpu);
->>>  	vcpu->arch.apf.msr_val =3D 0;
->>> =20
->>> +	if (vcpu->arch.time_page) {
->>> +		kvm_release_page_dirty(vcpu->arch.time_page);
->>> +		vcpu->arch.time_page =3D NULL;
->>> +	}
->>> +
+2011/1/29 Dmitry Torokhov <dmitry.torokhov@gmail.com>:
+> Ho Robin,
+>
+> On Sat, Jan 29, 2011 at 09:15:11AM +0100, Robin Theunis wrote:
+>> Hi Devs,
 >>
->> kvm_arch_vcpu_reset is only called on vcpu setup and when it receives =
-a
->> sipi (provided in-kernel irqchip is in use). If you want this page to =
-be
->> consistently reset on guest reboot, you have to trigger this from user=
-
->> space. But I thought we are doing this already in qemu, don't we?
->=20
-> Humm, you might as well be right regarding reboots.
-> But in the end, it doesn't affect correctness here. If we're resetting
-> the vcpu, we should not let that kind of data live.
->=20
-
-Right, just checked that we reset other states like nmi_pending or
-async_pf here as well. So doing the same for the time_page looks
-appropriate.
-
-But I think you should encapsulate the pattern above in a function and
-substitute other occurrences at this chance. Also, the changelog should
-clarify in which cases the code matters.
-
-Jan
-
-
---------------enigFC56573D8C99F116402EC9FF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.15 (GNU/Linux)
-Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk1D1lwACgkQitSsb3rl5xS2oQCfaU7MAY6IUOPR7XLa6qyiw0lI
-/hEAoL099J7L0FJQeUwmydxTXGCY+sOL
-=YWMh
------END PGP SIGNATURE-----
-
---------------enigFC56573D8C99F116402EC9FF--
+>> Currently I am design a USB product, and in that process I also look
+>> if almost every OS supports my device.
+>> The device is just only a HID digitizer or touch tablet thingy. It
+>> reports it self also as HID device. This is to have it
+>> work PLUG and PLAY. But I gotten a cold shower when trying this on my
+>> linux pcs. It doesn't work!
+>> I did some investigation and found that the linux (kernel) only
+>> support mouses and keyboard, all the other usage pages
+>> that are included in the USB HID specs aren't implemented.
+>> http://www.usb.org/developers/devclass_docs/Hut1_11.pdf
+>>
+>> Is there a reason why they aren't implemented? especially the
+>> digitizer thingies because of all the new tablets?
+>
+> Linux HID driver does have code to handle digitizers, please take a look
+> at drivers/hid/hid-input.c::hidinput_configure_usage().
+>
+>> Is it difficult
+>> to make a driver to support my device?
+>
+> It should not be. You might need to tweak usage mappings a bit by the
+> way of writing small HID sub-driver. Look for examples in
+> drivers/hid/hid-<vendor>.c
+>
+> If you need additional help I'd recommend asking on
+> linux-input@vger.kernel.org
+>
+>> I have seen that there are a
+>> lot of wacom drivers, I think doing all the same thing.
+>>
+>
+> Wacoms are quite different since they are not HID devices but handler by
+> a completely separate driver.
+>
+> Thanks.
+>
+> --
+> Dmitry
+>
