@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753737Ab1A2Qf3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jan 2011 11:35:29 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63974 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753087Ab1A2Qf2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jan 2011 11:35:28 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=cc:message-id:from:to:in-reply-to:content-type
-         :content-transfer-encoding:mime-version:subject:date:references
-         :x-mailer;
-        b=xCQltCWtQyZzr/+BAMjuNKf8nfKysFsGt8YNyWum9/WrqPU0ip815ku/hbIj9h/O+u
-         2AL2Ht4f/ibxpamtwNSLCY96SvKNdRrgsZ9zQE3/F1MdjOQJuts8DSCmjL4WRTsdSQCL
-         9mAaRBc56+i9kRW4mIQccbMF3n46iQULu8AgA=
-Cc: trivial@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linus.walleij@stericsson.com, srinidhi.kasagar@stericsson.com
-Message-Id: <C8696C82-BB0E-4F18-B971-3C288BBE3E5A@gmail.com>
-From: Justin Mattock <justinmattock@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-In-Reply-To: <20110129095045.GA1842@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=US-ASCII; format=flowed; delsp=yes
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0 (Apple Message framework v936)
-Subject: Re: [PATCH] arch:arm:mbox-db5500.c Change initate to initiate.
-Date: Sat, 29 Jan 2011 08:35:05 -0800
-References: <1296244040-3653-1-git-send-email-justinmattock@gmail.com> <20110129095045.GA1842@n2100.arm.linux.org.uk>
-X-Mailer: Apple Mail (2.936)
+	id S1754337Ab1A2QnB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jan 2011 11:43:01 -0500
+Received: from smtp.nokia.com ([147.243.1.47]:36630 "EHLO mgw-sa01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753708Ab1A2QnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Jan 2011 11:43:00 -0500
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Holger Brunck <holger.brunck@keymile.com>,
+        Anatolij Gustschin <agust@denx.de>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        linux-kernel@vger.kernel.org
+Date: Sat, 29 Jan 2011 18:44:48 +0200
+Message-Id: <20110129164448.22944.90815.sendpatchset@localhost.localdomain>
+Subject: [GIT PULL] UBI fix for 2.6.38-rc2
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
-On Jan 29, 2011, at 1:50 AM, Russell King - ARM Linux wrote:
+please pull a fix for UBIFS backward compatibility breakage.
+The fix consists of one revert and fixes the problem reported
+here: http://lists.infradead.org/pipermail/linux-mtd/2011-January/033790.html
 
-> On Fri, Jan 28, 2011 at 11:47:20AM -0800, Justin P. Mattock wrote:
->> Not sure if this is a typo or not. if it is then feel free to take  
->> this.
->
-> You should copy the maintainers for this platform:
->
-> ARM/Ux500 ARM ARCHITECTURE
-> M:      Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-> M:      Linus Walleij <linus.walleij@stericsson.com>
-> L:      linux-arm-kernel@lists.infradead.org (moderated for non- 
-> subscribers)
-> S:      Maintained
-> F:      arch/arm/mach-ux500/
-> F:      drivers/dma/ste_dma40*
-> F:      drivers/mfd/ab3550*
-> F:      drivers/mfd/abx500*
-> F:      drivers/mfd/ab8500*
-> F:      drivers/mfd/stmpe*
-> F:      drivers/rtc/rtc-ab8500.c
-> T:      git git://git.kernel.org/pub/scm/linux/kernel/git/linusw/ 
-> linux-stericsson.git
+The following changes since commit 1bae4ce27c9c90344f23c65ea6966c50ffeae2f5:
 
+  Linux 2.6.38-rc2 (2011-01-21 19:01:34 -0800)
 
-alright.. I added them to the Cc..
+are available in the git repository at:
+  git://git.infradead.org/ubi-2.6.git for-linus
 
-Justin P. Mattock
+Artem Bityutskiy (1):
+      Revert "UBI: use mtd->writebufsize to set minimal I/O unit size"
+
+ drivers/mtd/ubi/build.c |   28 +---------------------------
+ 1 files changed, 1 insertions(+), 27 deletions(-)
+
+Thanks,
+Artem.
