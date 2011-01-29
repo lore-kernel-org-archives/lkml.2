@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494Ab1A2IrP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jan 2011 03:47:15 -0500
+	id S1754584Ab1A2Irr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jan 2011 03:47:47 -0500
 Received: from courier.cs.helsinki.fi ([128.214.9.1]:52406 "EHLO
 	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752398Ab1A2IrO (ORCPT
+	with ESMTP id S1752876Ab1A2Irq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jan 2011 03:47:14 -0500
-Subject: Re: [PATCH 0/7][v2] zram/xvmalloc: 64K page fixes and optimizations
+	Sat, 29 Jan 2011 03:47:46 -0500
+Subject: Re: [PATCH 1/7] [v2] zram/vmalloc: Correct tunings to enable use
+ with 64K pages
 From: Pekka Enberg <penberg@cs.helsinki.fi>
 To: Robert Jennings <rcj@linux.vnet.ibm.com>
 Cc: Nitin Gupta <ngupta@vflare.org>, Greg Kroah-Hartman <gregkh@suse.de>,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20110128145602.GA2062@linux.vnet.ibm.com>
+In-Reply-To: <20110128145726.GB2062@linux.vnet.ibm.com>
 References: <20110128145602.GA2062@linux.vnet.ibm.com>
+	 <20110128145726.GB2062@linux.vnet.ibm.com>
 Content-Type: text/plain; charset="ISO-8859-1"
-Date: Sat, 29 Jan 2011 10:47:11 +0200
-Message-ID: <1296290831.30654.4.camel@jaguar>
+Date: Sat, 29 Jan 2011 10:47:44 +0200
+Message-ID: <1296290864.30654.5.camel@jaguar>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -24,41 +26,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-28 at 08:56 -0600, Robert Jennings wrote:
-> Based on feedback this is version 2 of my patches to fix zram and the
-> xvmalloc allocator for 64K page size kernels along with a few small
-> zram optimizations.
+On Fri, 2011-01-28 at 08:57 -0600, Robert Jennings wrote:
+> xvmalloc will not currently function with 64K pages.  Newly allocated
+> pages will be inserted at an offset beyond the end of the first-level
+> index.  This tuning is needed to properly size the allocator for 64K
+> pages.
 > 
-> I have dropped the patch to mark the device as non-rotational media as
-> this was duplicated elsewhere.  I also dropped the patch regarding caching
-> the indices for page size allocations because gcc is quite smart.
+> The default 3 byte shift results in a second level list size which can not
+> be indexed using the 64 bits of the flbitmap in the xv_pool structure.
+> The shift must increase to 4 bytes between second level list entries to
+> fit the size of the first level bitmap.
 > 
-> There are two new patches at the end of this patch set.  The first
-> changes zram to return zero'd pages for reads of pages which have not
-> been written to, this eliminates passing uninitialized pages back
-> to user-space.  The second new patch cleans up freelist pointer
-> management and combines the two delete node functions into one common
-> function.
+> Here are a few statistics for structure sizes on 32- and 64-bit CPUs
+> with 4KB and 64KB page sizes.
 > 
-> The xvmalloc allocator is non-functional when running with a 64K page
-> size.  The first two patches fix 64K page related issues.
-> [1/7] [v2] zram/vmalloc: Correct tunings to enable use with 64K pages
-> [2/7] [v2] zram: Prevent overflow in logical block size
+> bits_per_long              32        64        64
+> page_size               4,096     4,096    65,535
+> xv_align                    4         8         8
+> fl_delta                    3         3         4
+> num_free_lists            508       508     4,094
+> xv_pool size            4,144b    8,216b   66,040b
+> per object overhead        32        64        64
+> zram struct 0.5GB disk    512KB    1024KB      64KB
 > 
-> The next 3 patches provide some small optimizations for zram and
-> xvmalloc.
-> [3/7] [v2] zram/xvmalloc: free bit block insertion optimization
-> [4/7] [v2] zram/xvmalloc: create CONFIG_ZRAM_DEBUG for debug code
-> [5/7] [v2] zram/xvmalloc: Close 32byte hole on 64bit CPUs
+> This patch maintains the current tunings for 4K pages, adds an optimal
+> sizing for 64K pages and adds a safe tuning for any other page sizes.
 > 
-> These last 2 patches are new, see the description above.
-> [6/7] zram: Return zero'd pages on new reads
-> [7/7] zram/xvmalloc: combine duplicate block delete code
-> 
-> Thanks for the helpful reviews.
+> Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
 
-Hey, you dropped Nitin's and my Reviewed-by tags! Please don't do that
-in the future.
-
-			Pekka
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
 
