@@ -1,102 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755258Ab1A2WTj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jan 2011 17:19:39 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:35648 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755184Ab1A2WTd (ORCPT
+	id S1755350Ab1A2WVD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jan 2011 17:21:03 -0500
+Received: from casper.infradead.org ([85.118.1.10]:52199 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755228Ab1A2WTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jan 2011 17:19:33 -0500
+	Sat, 29 Jan 2011 17:19:37 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Clark Williams <williams@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 4/7] perf top: Switch to non overwrite mode
-Date: Sat, 29 Jan 2011 20:19:16 -0200
-Message-Id: <1296339559-20914-5-git-send-email-acme@infradead.org>
+        Tom Zanussi <tzanussi@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [GIT PULL 0/7] perf/core improvements
+Date: Sat, 29 Jan 2011 20:19:12 -0200
+Message-Id: <1296339559-20914-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1296339559-20914-1-git-send-email-acme@infradead.org>
-References: <1296339559-20914-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Hi Ingo,
 
-Just like 'perf record'. Warn the user when PERF_RECORD_LOST events
-happen.
+        Please consider pulling from:
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-top.c |   13 +++++++++----
- 1 files changed, 9 insertions(+), 4 deletions(-)
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index ce2e50c..7f92ab7 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -464,7 +464,7 @@ static void rb_insert_active_sym(struct rb_root *tree, struct sym_entry *se)
- 	rb_insert_color(&se->rb_node, tree);
- }
- 
--static void print_sym_table(void)
-+static void print_sym_table(struct perf_session *session)
- {
- 	int printed = 0, j;
- 	struct perf_evsel *counter;
-@@ -513,7 +513,6 @@ static void print_sym_table(void)
- 
- 	puts(CONSOLE_CLEAR);
- 
--	printf("%-*.*s\n", win_width, win_width, graph_dotted_line);
- 	if (!perf_guest) {
- 		printf("   PerfTop:%8.0f irqs/sec  kernel:%4.1f%%"
- 			"  exact: %4.1f%% [",
-@@ -578,6 +577,12 @@ static void print_sym_table(void)
- 
- 	printf("%-*.*s\n", win_width, win_width, graph_dotted_line);
- 
-+	if (session->hists.stats.total_lost != 0) {
-+		color_fprintf(stdout, PERF_COLOR_RED, "WARNING:");
-+		printf(" LOST %" PRIu64 " events, Check IO/CPU overload\n",
-+		       session->hists.stats.total_lost);
-+	}
-+
- 	if (sym_filter_entry) {
- 		show_details(sym_filter_entry);
- 		return;
-@@ -919,7 +924,7 @@ repeat:
- 	getc(stdin);
- 
- 	do {
--		print_sym_table();
-+		print_sym_table(session);
- 	} while (!poll(&stdin_poll, 1, delay_msecs) == 1);
- 
- 	c = getc(stdin);
-@@ -1176,7 +1181,7 @@ try_again:
- 		}
- 	}
- 
--	if (perf_evlist__mmap(evlist, cpus, threads, mmap_pages, true) < 0)
-+	if (perf_evlist__mmap(evlist, cpus, threads, mmap_pages, false) < 0)
- 		die("failed to mmap with %d (%s)\n", errno, strerror(errno));
- }
- 
--- 
-1.6.2.5
+Regards,
+
+- Arnaldo
+
+Arnaldo Carvalho de Melo (7):
+  perf record: No need to check for overwrites
+  perf events: Account PERF_RECORD_LOST events in event__process
+  perf evlist: Support non overwrite mode in perf_evlist__read_on_cpu
+  perf top: Switch to non overwrite mode
+  perf tools: Rename 'struct sample_data' to 'struct perf_sample'
+  perf tools: Kill event_t typedef, use 'union perf_event' instead
+  perf tools: Initial python binding
+
+ tools/perf/builtin-annotate.c  |   11 +-
+ tools/perf/builtin-diff.c      |   16 +-
+ tools/perf/builtin-inject.c    |   82 ++--
+ tools/perf/builtin-kmem.c      |   10 +-
+ tools/perf/builtin-lock.c      |    6 +-
+ tools/perf/builtin-record.c    |   80 ++--
+ tools/perf/builtin-report.c    |   62 ++--
+ tools/perf/builtin-sched.c     |   15 +-
+ tools/perf/builtin-script.c    |   17 +-
+ tools/perf/builtin-test.c      |    8 +-
+ tools/perf/builtin-timechart.c |   13 +-
+ tools/perf/builtin-top.c       |   48 ++-
+ tools/perf/python/twatch.py    |   41 ++
+ tools/perf/util/build-id.c     |   21 +-
+ tools/perf/util/callchain.c    |    3 +-
+ tools/perf/util/callchain.h    |    4 +-
+ tools/perf/util/debug.c        |    2 +-
+ tools/perf/util/debug.h        |    2 +-
+ tools/perf/util/event.c        |  191 +++++----
+ tools/perf/util/event.h        |   71 ++--
+ tools/perf/util/evlist.c       |   41 +-
+ tools/perf/util/evlist.h       |    5 +-
+ tools/perf/util/evsel.c        |   11 +-
+ tools/perf/util/header.c       |   83 ++--
+ tools/perf/util/header.h       |   50 ++--
+ tools/perf/util/hist.c         |    2 +-
+ tools/perf/util/python.c       |  888 ++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/session.c      |  189 +++++-----
+ tools/perf/util/session.h      |   15 +-
+ tools/perf/util/setup.py       |   18 +
+ 30 files changed, 1493 insertions(+), 512 deletions(-)
+ create mode 100755 tools/perf/python/twatch.py
+ create mode 100644 tools/perf/util/python.c
+ create mode 100644 tools/perf/util/setup.py
 
