@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842Ab1A2TIg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jan 2011 14:08:36 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:46732 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754257Ab1A2TIe (ORCPT
+	id S1755002Ab1A2TJD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jan 2011 14:09:03 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:47684 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754882Ab1A2TIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jan 2011 14:08:34 -0500
+	Sat, 29 Jan 2011 14:08:51 -0500
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
         corbet@lwn.net, neilb@suse.de, npiggin@kernel.dk,
@@ -14,9 +14,9 @@ To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
 Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
         linux-kernel@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V26 01/16] exportfs: Return the minimum required handle size
-Date: Sun, 30 Jan 2011 00:38:04 +0530
-Message-Id: <1296328099-23263-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V26 05/16] fs: Remove i_nlink check from file system link callback
+Date: Sun, 30 Jan 2011 00:38:08 +0530
+Message-Id: <1296328099-23263-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1296328099-23263-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1296328099-23263-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -24,247 +24,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The exportfs encode handle function should return the minimum required
-handle size. This helps user to find out the handle size by passing 0
-handle size in the first step and then redoing to the call again with
-the returned handle size value.
+Now that VFS check for inode->i_nlink == 0 and returns proper
+error, remove similar check from file system
 
-Acked-by: Serge Hallyn <serue@us.ibm.com>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/btrfs/export.c             |    8 ++++++--
- fs/exportfs/expfs.c           |    9 +++++++--
- fs/fat/inode.c                |    4 +++-
- fs/fuse/inode.c               |    4 +++-
- fs/gfs2/export.c              |    8 ++++++--
- fs/isofs/export.c             |    8 ++++++--
- fs/ocfs2/export.c             |    8 ++++++--
- fs/reiserfs/inode.c           |    7 ++++++-
- fs/udf/namei.c                |    7 ++++++-
- fs/xfs/linux-2.6/xfs_export.c |    4 +++-
- include/linux/exportfs.h      |    6 ++++--
- mm/shmem.c                    |    4 +++-
- 12 files changed, 59 insertions(+), 18 deletions(-)
+ fs/btrfs/inode.c    |    3 ---
+ fs/ext3/namei.c     |    7 -------
+ fs/ext4/namei.c     |    7 -------
+ fs/jfs/namei.c      |    3 ---
+ fs/reiserfs/namei.c |    4 ----
+ fs/ubifs/dir.c      |   18 ------------------
+ 6 files changed, 0 insertions(+), 42 deletions(-)
 
-diff --git a/fs/btrfs/export.c b/fs/btrfs/export.c
-index 9786963..6ee1d94 100644
---- a/fs/btrfs/export.c
-+++ b/fs/btrfs/export.c
-@@ -21,9 +21,13 @@ static int btrfs_encode_fh(struct dentry *dentry, u32 *fh, int *max_len,
- 	int len = *max_len;
- 	int type;
+diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+index 160b55b..5b1e504 100644
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -4794,9 +4794,6 @@ static int btrfs_link(struct dentry *old_dentry, struct inode *dir,
+ 	int err;
+ 	int drop_inode = 0;
  
--	if ((len < BTRFS_FID_SIZE_NON_CONNECTABLE) ||
--	    (connectable && len < BTRFS_FID_SIZE_CONNECTABLE))
-+	if (connectable && (len < BTRFS_FID_SIZE_CONNECTABLE)) {
-+		*max_len = BTRFS_FID_SIZE_CONNECTABLE;
- 		return 255;
-+	} else if (len < BTRFS_FID_SIZE_NON_CONNECTABLE) {
-+		*max_len = BTRFS_FID_SIZE_NON_CONNECTABLE;
-+		return 255;
-+	}
- 
- 	len  = BTRFS_FID_SIZE_NON_CONNECTABLE;
- 	type = FILEID_BTRFS_WITHOUT_PARENT;
-diff --git a/fs/exportfs/expfs.c b/fs/exportfs/expfs.c
-index 4b68257..cfe5573 100644
---- a/fs/exportfs/expfs.c
-+++ b/fs/exportfs/expfs.c
-@@ -320,9 +320,14 @@ static int export_encode_fh(struct dentry *dentry, struct fid *fid,
- 	struct inode * inode = dentry->d_inode;
- 	int len = *max_len;
- 	int type = FILEID_INO32_GEN;
--	
--	if (len < 2 || (connectable && len < 4))
-+
-+	if (connectable && (len < 4)) {
-+		*max_len = 4;
-+		return 255;
-+	} else if (len < 2) {
-+		*max_len = 2;
- 		return 255;
-+	}
- 
- 	len = 2;
- 	fid->i32.ino = inode->i_ino;
-diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-index 86753fe..0e277ec 100644
---- a/fs/fat/inode.c
-+++ b/fs/fat/inode.c
-@@ -757,8 +757,10 @@ fat_encode_fh(struct dentry *de, __u32 *fh, int *lenp, int connectable)
- 	struct inode *inode =  de->d_inode;
- 	u32 ipos_h, ipos_m, ipos_l;
- 
--	if (len < 5)
-+	if (len < 5) {
-+		*lenp = 5;
- 		return 255; /* no room */
-+	}
- 
- 	ipos_h = MSDOS_I(inode)->i_pos >> 8;
- 	ipos_m = (MSDOS_I(inode)->i_pos & 0xf0) << 24;
-diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-index 9e3f68c..051b1a0 100644
---- a/fs/fuse/inode.c
-+++ b/fs/fuse/inode.c
-@@ -637,8 +637,10 @@ static int fuse_encode_fh(struct dentry *dentry, u32 *fh, int *max_len,
- 	u64 nodeid;
- 	u32 generation;
- 
--	if (*max_len < len)
-+	if (*max_len < len) {
-+		*max_len = len;
- 		return  255;
-+	}
- 
- 	nodeid = get_fuse_inode(inode)->nodeid;
- 	generation = inode->i_generation;
-diff --git a/fs/gfs2/export.c b/fs/gfs2/export.c
-index 9023db8..b5a5e60 100644
---- a/fs/gfs2/export.c
-+++ b/fs/gfs2/export.c
-@@ -36,9 +36,13 @@ static int gfs2_encode_fh(struct dentry *dentry, __u32 *p, int *len,
- 	struct super_block *sb = inode->i_sb;
- 	struct gfs2_inode *ip = GFS2_I(inode);
- 
--	if (*len < GFS2_SMALL_FH_SIZE ||
--	    (connectable && *len < GFS2_LARGE_FH_SIZE))
-+	if (connectable && (*len < GFS2_LARGE_FH_SIZE)) {
-+		*len = GFS2_LARGE_FH_SIZE;
- 		return 255;
-+	} else if (*len < GFS2_SMALL_FH_SIZE) {
-+		*len = GFS2_SMALL_FH_SIZE;
-+		return 255;
-+	}
- 
- 	fh[0] = cpu_to_be32(ip->i_no_formal_ino >> 32);
- 	fh[1] = cpu_to_be32(ip->i_no_formal_ino & 0xFFFFFFFF);
-diff --git a/fs/isofs/export.c b/fs/isofs/export.c
-index ed752cb..dd4687f 100644
---- a/fs/isofs/export.c
-+++ b/fs/isofs/export.c
-@@ -124,9 +124,13 @@ isofs_export_encode_fh(struct dentry *dentry,
- 	 * offset of the inode and the upper 16 bits of fh32[1] to
- 	 * hold the offset of the parent.
- 	 */
+-	if (inode->i_nlink == 0)
+-		return -ENOENT;
 -
--	if (len < 3 || (connectable && len < 5))
-+	if (connectable && (len < 5)) {
-+		*max_len = 5;
-+		return 255;
-+	} else if (len < 3) {
-+		*max_len = 3;
- 		return 255;
-+	}
+ 	/* do not allow sys_link's with other subvols of the same device */
+ 	if (root->objectid != BTRFS_I(inode)->root->objectid)
+ 		return -EPERM;
+diff --git a/fs/ext3/namei.c b/fs/ext3/namei.c
+index b27ba71..561f692 100644
+--- a/fs/ext3/namei.c
++++ b/fs/ext3/namei.c
+@@ -2253,13 +2253,6 @@ static int ext3_link (struct dentry * old_dentry,
  
- 	len = 3;
- 	fh32[0] = ei->i_iget5_block;
-diff --git a/fs/ocfs2/export.c b/fs/ocfs2/export.c
-index 5dbc306..254652a 100644
---- a/fs/ocfs2/export.c
-+++ b/fs/ocfs2/export.c
-@@ -197,8 +197,12 @@ static int ocfs2_encode_fh(struct dentry *dentry, u32 *fh_in, int *max_len,
- 		   dentry->d_name.len, dentry->d_name.name,
- 		   fh, len, connectable);
+ 	dquot_initialize(dir);
  
--	if (len < 3 || (connectable && len < 6)) {
--		mlog(ML_ERROR, "fh buffer is too small for encoding\n");
-+	if (connectable && (len < 6)) {
-+		*max_len = 6;
-+		type = 255;
-+		goto bail;
-+	} else if (len < 3) {
-+		*max_len = 3;
- 		type = 255;
- 		goto bail;
+-	/*
+-	 * Return -ENOENT if we've raced with unlink and i_nlink is 0.  Doing
+-	 * otherwise has the potential to corrupt the orphan inode list.
+-	 */
+-	if (inode->i_nlink == 0)
+-		return -ENOENT;
+-
+ retry:
+ 	handle = ext3_journal_start(dir, EXT3_DATA_TRANS_BLOCKS(dir->i_sb) +
+ 					EXT3_INDEX_EXTRA_TRANS_BLOCKS);
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index 5485390..e781b7e 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -2304,13 +2304,6 @@ static int ext4_link(struct dentry *old_dentry,
+ 
+ 	dquot_initialize(dir);
+ 
+-	/*
+-	 * Return -ENOENT if we've raced with unlink and i_nlink is 0.  Doing
+-	 * otherwise has the potential to corrupt the orphan inode list.
+-	 */
+-	if (inode->i_nlink == 0)
+-		return -ENOENT;
+-
+ retry:
+ 	handle = ext4_journal_start(dir, EXT4_DATA_TRANS_BLOCKS(dir->i_sb) +
+ 					EXT4_INDEX_EXTRA_TRANS_BLOCKS);
+diff --git a/fs/jfs/namei.c b/fs/jfs/namei.c
+index 81ead85..8799020 100644
+--- a/fs/jfs/namei.c
++++ b/fs/jfs/namei.c
+@@ -809,9 +809,6 @@ static int jfs_link(struct dentry *old_dentry,
+ 	if (ip->i_nlink == JFS_LINK_MAX)
+ 		return -EMLINK;
+ 
+-	if (ip->i_nlink == 0)
+-		return -ENOENT;
+-
+ 	dquot_initialize(dir);
+ 
+ 	tid = txBegin(ip->i_sb, 0);
+diff --git a/fs/reiserfs/namei.c b/fs/reiserfs/namei.c
+index ba5f51e..ae303ca 100644
+--- a/fs/reiserfs/namei.c
++++ b/fs/reiserfs/namei.c
+@@ -1122,10 +1122,6 @@ static int reiserfs_link(struct dentry *old_dentry, struct inode *dir,
+ 		reiserfs_write_unlock(dir->i_sb);
+ 		return -EMLINK;
  	}
-diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
-index 0bae036..1bba24b 100644
---- a/fs/reiserfs/inode.c
-+++ b/fs/reiserfs/inode.c
-@@ -1593,8 +1593,13 @@ int reiserfs_encode_fh(struct dentry *dentry, __u32 * data, int *lenp,
- 	struct inode *inode = dentry->d_inode;
- 	int maxlen = *lenp;
+-	if (inode->i_nlink == 0) {
+-		reiserfs_write_unlock(dir->i_sb);
+-		return -ENOENT;
+-	}
  
--	if (maxlen < 3)
-+	if (need_parent && (maxlen < 5)) {
-+		*lenp = 5;
- 		return 255;
-+	} else if (maxlen < 3) {
-+		*lenp = 3;
-+		return 255;
-+	}
+ 	/* inc before scheduling so reiserfs_unlink knows we are here */
+ 	inc_nlink(inode);
+diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
+index 14f64b6..7217d67 100644
+--- a/fs/ubifs/dir.c
++++ b/fs/ubifs/dir.c
+@@ -522,24 +522,6 @@ static int ubifs_link(struct dentry *old_dentry, struct inode *dir,
+ 	ubifs_assert(mutex_is_locked(&dir->i_mutex));
+ 	ubifs_assert(mutex_is_locked(&inode->i_mutex));
  
- 	data[0] = inode->i_ino;
- 	data[1] = le32_to_cpu(INODE_PKEY(inode)->k_dir_id);
-diff --git a/fs/udf/namei.c b/fs/udf/namei.c
-index 2be0f9e..076aef6 100644
---- a/fs/udf/namei.c
-+++ b/fs/udf/namei.c
-@@ -1287,8 +1287,13 @@ static int udf_encode_fh(struct dentry *de, __u32 *fh, int *lenp,
- 	struct fid *fid = (struct fid *)fh;
- 	int type = FILEID_UDF_WITHOUT_PARENT;
- 
--	if (len < 3 || (connectable && len < 5))
-+	if (connectable && (len < 5)) {
-+		*lenp = 5;
-+		return 255;
-+	} else if (len < 3) {
-+		*lenp = 3;
- 		return 255;
-+	}
- 
- 	*lenp = 3;
- 	fid->udf.block = location.logicalBlockNum;
-diff --git a/fs/xfs/linux-2.6/xfs_export.c b/fs/xfs/linux-2.6/xfs_export.c
-index fc0114d..f4f878f 100644
---- a/fs/xfs/linux-2.6/xfs_export.c
-+++ b/fs/xfs/linux-2.6/xfs_export.c
-@@ -89,8 +89,10 @@ xfs_fs_encode_fh(
- 	 * seven combinations work.  The real answer is "don't use v2".
- 	 */
- 	len = xfs_fileid_length(fileid_type);
--	if (*max_len < len)
-+	if (*max_len < len) {
-+		*max_len = len;
- 		return 255;
-+	}
- 	*max_len = len;
- 
- 	switch (fileid_type) {
-diff --git a/include/linux/exportfs.h b/include/linux/exportfs.h
-index 2802898..65afdfd 100644
---- a/include/linux/exportfs.h
-+++ b/include/linux/exportfs.h
-@@ -121,8 +121,10 @@ struct fid {
-  *    set, the encode_fh() should store sufficient information so that a good
-  *    attempt can be made to find not only the file but also it's place in the
-  *    filesystem.   This typically means storing a reference to de->d_parent in
-- *    the filehandle fragment.  encode_fh() should return the number of bytes
-- *    stored or a negative error code such as %-ENOSPC
-+ *    the filehandle fragment.  encode_fh() should return the fileid_type on
-+ *    success and on error returns 255 (if the space needed to encode fh is
-+ *    greater than @max_len*4 bytes). On error @max_len contains the minimum
-+ *    size(in 4 byte unit) needed to encode the file handle.
-  *
-  * fh_to_dentry:
-  *    @fh_to_dentry is given a &struct super_block (@sb) and a file handle
-diff --git a/mm/shmem.c b/mm/shmem.c
-index 5ee67c9..3437b65 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -2144,8 +2144,10 @@ static int shmem_encode_fh(struct dentry *dentry, __u32 *fh, int *len,
- {
- 	struct inode *inode = dentry->d_inode;
- 
--	if (*len < 3)
-+	if (*len < 3) {
-+		*len = 3;
- 		return 255;
-+	}
- 
- 	if (inode_unhashed(inode)) {
- 		/* Unfortunately insert_inode_hash is not idempotent,
+-	/*
+-	 * Return -ENOENT if we've raced with unlink and i_nlink is 0.  Doing
+-	 * otherwise has the potential to corrupt the orphan inode list.
+-	 *
+-	 * Indeed, consider a scenario when 'vfs_link(dirA/fileA)' and
+-	 * 'vfs_unlink(dirA/fileA, dirB/fileB)' race. 'vfs_link()' does not
+-	 * lock 'dirA->i_mutex', so this is possible. Both of the functions
+-	 * lock 'fileA->i_mutex' though. Suppose 'vfs_unlink()' wins, and takes
+-	 * 'fileA->i_mutex' mutex first. Suppose 'fileA->i_nlink' is 1. In this
+-	 * case 'ubifs_unlink()' will drop the last reference, and put 'inodeA'
+-	 * to the list of orphans. After this, 'vfs_link()' will link
+-	 * 'dirB/fileB' to 'inodeA'. This is a problem because, for example,
+-	 * the subsequent 'vfs_unlink(dirB/fileB)' will add the same inode
+-	 * to the list of orphans.
+-	 */
+-	 if (inode->i_nlink == 0)
+-		 return -ENOENT;
+-
+ 	err = dbg_check_synced_i_size(inode);
+ 	if (err)
+ 		return err;
 -- 
 1.7.1
 
