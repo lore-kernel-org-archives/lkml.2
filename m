@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab1A2Ady (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 19:33:54 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37489 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753362Ab1A2Adx (ORCPT
+	id S1754727Ab1A2Ai7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 19:38:59 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:26316 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754706Ab1A2Ai6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 19:33:53 -0500
-Date: Fri, 28 Jan 2011 16:33:15 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Leonardo  L. P. da Mata" <barroca@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Guo-Fu Tseng <cooldavid@cooldavid.org>,
-        netdev@vger.kernel.org
-Subject: Re: jme driver loses connection after resuming from suspend
-Message-Id: <20110128163315.1e4e8346.akpm@linux-foundation.org>
-In-Reply-To: <AANLkTikrKEY7Zt5HvxQcJLk9eGne0BGD82NFEiWO4smt@mail.gmail.com>
-References: <AANLkTikrKEY7Zt5HvxQcJLk9eGne0BGD82NFEiWO4smt@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 28 Jan 2011 19:38:58 -0500
+Date: Sat, 29 Jan 2011 01:40:04 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: alsa-devel@alsa-project.org, Takashi Iwai <tiwai@suse.de>,
+        Jaroslav Kysela <perex@perex.cz>, Wu Fengguang <wfg@linux.intel.com>
+Subject: [PATCH] sound, hda_eld: suspicious sizeof() in call to
+ snd_print_pcm_bits()
+Message-ID: <alpine.LNX.2.00.1101290132560.6465@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc's added)
+In hdmi_show_short_audio_desc() we call snd_print_pcm_bits() like this:
+  snd_print_pcm_bits(a->sample_bits, buf2 + 8, sizeof(buf2 - 8));
+that last argument is supposed to be the size of the buffer that 
+snd_print_pcm_bits() writes to, so I believe it should be this:
+  snd_print_pcm_bits(a->sample_bits, buf2 + 8, sizeof(buf2) - 8);
 
-On Fri, 28 Jan 2011 16:03:11 -0200
-"Leonardo  L. P. da Mata" <barroca@gmail.com> wrote:
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ hda_eld.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> Hello, i'm testing the kernel 2.6.37 on my hardware, Once connect on
-> wired network, i call the suspend with:
-> echo "mem" >/sys/power/state
-> 
-> The system goes on suspend. After resuming from suspend, the network card
-> cannot be used anymore.
-> 
-> 
-> The bug is reported here:
->  https://bugzilla.kernel.org/show_bug.cgi?id=27692
-> 
-> Can you please point me to similar problems on other network cards so
-> i can get possible solutions on this.
+ Compile tested only. I don't have relevant hardware.
+
+diff --git a/sound/pci/hda/hda_eld.c b/sound/pci/hda/hda_eld.c
+index 4a66347..74b0560 100644
+--- a/sound/pci/hda/hda_eld.c
++++ b/sound/pci/hda/hda_eld.c
+@@ -381,7 +381,7 @@ static void hdmi_show_short_audio_desc(struct cea_sad *a)
+ 	snd_print_pcm_rates(a->rates, buf, sizeof(buf));
+ 
+ 	if (a->format == AUDIO_CODING_TYPE_LPCM)
+-		snd_print_pcm_bits(a->sample_bits, buf2 + 8, sizeof(buf2 - 8));
++		snd_print_pcm_bits(a->sample_bits, buf2 + 8, sizeof(buf2) - 8);
+ 	else if (a->max_bitrate)
+ 		snprintf(buf2, sizeof(buf2),
+ 				", max bitrate = %d", a->max_bitrate);
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
 
