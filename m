@@ -1,130 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836Ab1A2CR4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 21:17:56 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:54971 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754343Ab1A2CRy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 21:17:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=P7kmGTnAGxdzHrPtzuwsgRT6YKObAP11Yf8AyFOrN22IwPH9mFU+uIFGLFQ2EWgeVT
-         X9em0dOcwwIJmj36I+w8GYPo1StrXAO5xFevMEt+zL+7+PJbV1SL5whwS+YpsUX/D9/o
-         vtYGiF89Ye6N+MkhhYUP0d1jEeTNRaMxnsx58=
-MIME-Version: 1.0
-In-Reply-To: <1296266504.29747.70.camel@sbsiddha-MOBL3.sc.intel.com>
-References: <4D423360.6080408@kernel.org>
-	<1296266504.29747.70.camel@sbsiddha-MOBL3.sc.intel.com>
-Date: Fri, 28 Jan 2011 18:17:53 -0800
-X-Google-Sender-Auth: qbWLJ1NEZFtn3R6yB5S_R-rsfdY
-Message-ID: <AANLkTikm=pSoUsyBOF_L-eiw+B631G0fTEwNP7GZ2Gj1@mail.gmail.com>
-Subject: Re: [PATCH -v2] x86, acpi: Handle xapic/x2apic entries in MADT at
- same time
-From: Yinghai Lu <yinghai@kernel.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: "Brown, Len" <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753386Ab1A2C7i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 21:59:38 -0500
+Received: from mx3.gwdg.de ([134.76.10.16]:50253 "EHLO mx3.gwdg.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752063Ab1A2C7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 21:59:37 -0500
+X-IronPort-Reputation-Score: None
+X-IronPort-AV: E=McAfee;i="5400,1158,6240"; a="22494372"
+X-IronPort-AV: E=Sophos;i="4.60,395,1291590000"; 
+   d="scan'208";a="22494372"
+In-Reply-To: <alpine.LSU.2.00.1101281347200.1759@sister.anvils>
+References: <20110123011221.GB1805@nowhere> <1295780472-8475-1-git-send-email-chris@chris-wilson.co.uk> <20110123175945.GA1760@nowhere> <alpine.LSU.2.00.1101232246380.3691@sister.anvils> <849307$b9dvii@azsmga001.ch.intel.com> <alpine.LSU.2.00.1101281347200.1759@sister.anvils>
+Mime-Version: 1.0 (Apple Message framework v753.1)
+Content-Type: text/plain; charset=US-ASCII; delsp=yes; format=flowed
+Message-Id: <EB643972-4918-4B89-B325-59D03648F2F9@tuebingen.mpg.de>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Arnd Bergmann <arnd@arndb.de>,
+        Jiri Olsa <jolsa@redhat.com>, Chris Clayton <chris2553@googlemail.com>,
+        Mario Kleiner <mario.kleiner@tuebingen.mpg.de>
+Content-Transfer-Encoding: 7bit
+From: Mario Kleiner <mario.kleiner@tuebingen.mpg.de>
+Subject: Re: [PATCH] drm/i915,agp/intel: Do not clear stolen entries
+Date: Sat, 29 Jan 2011 03:59:38 +0100
+To: Hugh Dickins <hughd@google.com>
+X-Mailer: Apple Mail (2.753.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 28, 2011 at 6:01 PM, Suresh Siddha
-<suresh.b.siddha@intel.com> wrote:
-> On Thu, 2011-01-27 at 19:09 -0800, Yinghai Lu wrote:
->> One system have mixing xapic and x2apic entries in MADT and SRAT.
->> BIOS guys insist that ACPI 4.0 SPEC said so, if apic id < 255, even
->> the cpus are with x2apic mode pre-enabled, still need to use xapic entries
->> instead of x2apic entries.
->
-> true. thats what the spec says.
+On Jan 28, 2011, at 11:00 PM, Hugh Dickins wrote:
 
-I was thinking if cpus are with x2apic pre-enabled, we should have
-x2apic entries for them.
-
+> Sorry, this is now abount vblank or scanout rather than stolen  
+> entries.
 >
->> on 8 socket system with x2apic pre-enabled, will get out of order sequence:
->> CPU0: socket0, core0, thread0.
->> CPU1 - CPU 40: socket 4 - socket 7, thread 0
->> CPU41 - CPU 80: socket 4 - socket 7, thread 1
->> CPU81 - CPU 119: socket 0 - socket 3, thread 0
->> CPU120 - CPU 159: socket 0 - socket 3, thread 1
+> On Mon, 24 Jan 2011, Chris Wilson wrote:
+>> On Sun, 23 Jan 2011 23:40:41 -0800 (PST), Hugh Dickins  
+>> <hughd@google.com> wrote:
 >>
->> so max_cpus=80 will not get all thread0 now.
+>>> On this laptop I'm typing from (GM965 with KMS), I've had no trouble
+>>> getting X up; but when typing in one of the xterms, typed characters
+>>> often stop echoing, until I shift to a different window, whereupon
+>>> they appear.  This condition cleared (for a while) by switching to
+>>> VESA fb console and back; no such problem observed on that console.
+>>>
+>>> Does that sound familiar?  I have no evidence whatever that i915 is
+>>> to blame here.  Several times I tried bisecting last week, but each
+>>> attempt ended up in a nonsensical place, because the effect does not
+>>> occur to order.  So I'd sometimes mark a bisection point as good  
+>>> when
+>>> I guess it must actually have been bad.  Perhaps it's a matter of
+>>> timing or an uninitialized variable.  But while I'm here, worth  
+>>> asking
+>>> if that behaviour sounds like anything you might be responsible for?
 >>
->> Need to handle every entry in MADT at same time with xapic and x2apic.
->> so we can honor sequence in MADT.
+>> Sounds suspiciously like the batch buffer is not being dispatched and
+>> flushed to the scanout. A very similar bug was recently fixed for
+>> xf86-video-intel 2.14.0 which was causing deferred output.
 >
-> hmm few things.
+> I made a more patient bisection during the week, on x86_64 which
+> seemed more consistent than i386, and this time it converged sensibly:
+> to commit 0af7e4dff50454905092d468e91c1ef92e10e6b4
+> drm/i915: Add support for precise vblank timestamping (v2)
 >
-> So is your bios listing like this:
+> Which kindly notes in its commit message:
+>     This code has been only tested on a HP-Mini Netbook with
+>     Atom processor and Intel 945GME gpu. The codepath for
+>     (IS_G4X(dev) || IS_GEN5(dev) || IS_GEN6(dev)) gpu's
+>     has not been tested so far due to lack of hardware.
+> so not surprising that it doesn't work on GM965.
 >
-> xapic entries for all thread-0
-> x2apic entries for all thread-0
-> xapic entries for all thread-1
-> x2apic entries for all thread-1
-
-Yes. that is required by BIOS write guide, it says all thread 0 should
-come first.
-
+> I'm now running with this silly revert:
 >
-> What happens if some other bios lists like:
+> --- a/drivers/gpu/drm/i915/i915_drv.c	2011-01-18 22:04:29.000000000  
+> -0800
+> +++ b/drivers/gpu/drm/i915/i915_drv.c	2011-01-24 19:35:51.000000000  
+> -0800
+> @@ -674,8 +674,8 @@ static struct drm_driver driver = {
+>  	.device_is_agp = i915_driver_device_is_agp,
+>  	.enable_vblank = i915_enable_vblank,
+>  	.disable_vblank = i915_disable_vblank,
+> -	.get_vblank_timestamp = i915_get_vblank_timestamp,
+> -	.get_scanout_position = i915_get_crtc_scanoutpos,
+> +	.get_vblank_timestamp = NULL /* i915_get_vblank_timestamp */,
+> +	.get_scanout_position = NULL /* i915_get_crtc_scanoutpos */,
+>  	.irq_preinstall = i915_driver_irq_preinstall,
+>  	.irq_postinstall = i915_driver_irq_postinstall,
+>  	.irq_uninstall = i915_driver_irq_uninstall,
 >
-> all xapic entries
-> followed by all x2apic entries
-
-assume should get
-
-CPU0: socket0, core0, thread0.
- CPU1 - CPU 80: socket 4 - socket 7, thread 0 and thread 1
- CPU81 - CPU 159: socket 0 - socket 3, thread 0 and thread 1
-
-
+> which makes 2.6.38-rc usable; though I do believe that I've seen
+> the same issue (unflushed text) occur a couple of times since, much
+> too rare to bisect or get upset by, but indicative of some  
+> remaining bug.
 >
-> or
->
-> all x2apic entries
-> followed by all x2apic entries
 
-all x2apic ?
+Hi,
 
->
-> I am not sure if there is a strict recommendation by Intel bios writers
-> guide to list all thread-0 first followed by thread-1. Even if there is
-> a strict recommendation like that, I am sure there will be some bios's
-> that don't follow the rules.
+just skimmed through the archives of this thread. Do i understand  
+correctly that the problem that gets fixed by your revert is that
 
-our bios follow the BWG guide.
+<snip>
+>>> when typing in one of the xterms, typed characters
+>>> often stop echoing, until I shift to a different window, whereupon
+>>> they appear.  This condition cleared (for a while) by switching to
+>>> VESA fb console and back; no such problem observed on that console.
+>>
+</snip>
 
->
-> Anyways two things.
->
-> a) I don't want to complicate the code too much and still doesn't get
-> the desired behavior when some bios has a different silly ordering.
+Is this with desktop composition enabled? Do things like glxgears in  
+a window work correctly? If desktop composition is off?
 
-we have right ordering according to ACPI 4.0 spec and BWG
+For a softer fix to the problem you can revert your revert and  
+disable use of those functions by the drm core via:
 
-also i think that code is not that complicated.
+echo 0 > /sys/modules/drm/parameters/timestamp_precision_usec
 
->
-> b) Also perhaps we need to make it more explicit. Like instead of
-> relying on the "maxcpus=n/2" to boot all thread-0's, we should say it
-> more explicitly like perhaps nosmt or noht (we used to have this kind of
-> option before).  Or is it even worth to bother about this, given that we
-> can boot all the cpu's and offline the SMT siblings.
+But can you run it with echo 7 >  /sys/modules/drm/parameters/debug
 
-interesting, if we have nosmt or noht, we still need to boot that cpu
-to use cpuid to
-find out thread idx?
+and show me bits of the syslog output when the problem happens?  
+Especially output from the functions  
+"drm_calc_vbltimestamp_from_scanoutpos" and "drm_handle_vblank" and  
+maybe for "vblank_disable_fn", "drm_update_vblank_count", and  
+"drm_vblank_get".
 
-Thanks
+Those functions (are supposed to) compute exact timestamps of start  
+of scanout after each vblank. If they get disabled via the "echo  
+0 ..." then a do_gettimeofday() is called for a crude approximation  
+of start of scanout. The computed timestamps are returned to clients  
+which want them (oml_sync_control extension). I doubt that many apps  
+use that extension or its timestamps already, especially not desktop  
+compositors etc., so i wouldn't expect trouble from such wrong  
+timestamps.
 
-Yinghai Lu
+However, the timestamps are also used in drm_handle_vblank() in  
+drivers/gpu/drm/drm_irq.c at each vblank irq to detect and filter out  
+redundant vblank irq's to avoid miscounting of vblanks (observed on  
+some Radeon's). If the kms driver would deliver a grossly wrong  
+timestamp and something would be wrong in the implementation of that  
+filtering, it could happen that the vblank counter doesn't get  
+incremented -> delivery of a vblank event to the x-server gets  
+delayed -> a swapbuffer operation on a composited desktop gets  
+delayed -> content of a redirected window updates only with a delay.
+
+The relevant check which could prevent vblank counter increments and  
+delay vblank event delivery to the x-server in drm_handle_vblank()  
+would be:
+
+         if (abs(diff_ns) > DRM_REDUNDANT_VBLIRQ_THRESH_NS) {
+
+The condition should be satisfied if everything works correctly, but  
+also if timestamps would be grossly wrong, thereby leading to a  
+larger than 1 msec positive or negative diff_ns. s64 diff_ns is a  
+signed 64 bit integer. Could abs(diff_ns) somehow miscompute for  
+large 64 bit numbers?
+
+All guesswork, the syslog output should tell us more if the  
+timestamping is really involved in the problem.
+
+thanks,
+-mario
+
+*********************************************************************
+Mario Kleiner
+Max Planck Institute for Biological Cybernetics
+Spemannstr. 38
+72076 Tuebingen
+Germany
+
+e-mail: mario.kleiner@tuebingen.mpg.de
+office: +49 (0)7071/601-1623
+fax:    +49 (0)7071/601-616
+www:    http://www.kyb.tuebingen.mpg.de/~kleinerm
+*********************************************************************
+"For a successful technology, reality must take precedence
+over public relations, for Nature cannot be fooled."
+(Richard Feynman)
+
