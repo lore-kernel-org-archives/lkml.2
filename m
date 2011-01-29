@@ -1,88 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754343Ab1A2AUR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 19:20:17 -0500
-Received: from mail4.comsite.net ([205.238.176.238]:20945 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752706Ab1A2AUQ (ORCPT
+	id S1754669Ab1A2AW2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 19:22:28 -0500
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:39788
+	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754133Ab1A2AW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 19:20:16 -0500
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=65.70.204.62;
-Subject: call_function_many: fix list delete vs add race
-From: Milton Miller <miltonm@bga.com>
-To: Peter Zijlstra <peterz@infradead.org>, akpm@linux-foundation.org
-Cc: Anton Blanchard <anton@samba.org>, xiaoguangrong@cn.fujitsu.com,
-        mingo@elte.hu, jaxboe@fusionio.com, npiggin@gmail.com,
-        rusty@rustcorp.com.au, torvalds@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, benh@kernel.crashing.org,
-        linux-kernel@vger.kernel.org
-References: <20110112150740.77dde58c@kryten>
-	 <1295288253.30950.280.camel@laptop>
-	 <smp-call-function-peter-reply@mdm.bga.com>
-	 <smp-call-function-move-writes@mdm.bga.com>
-	 <1296145360.15234.234.camel@laptop> 
-	 <smp-call-function-list-race@mdm.bga.com>
-In-Reply-To: <smp-call-function-list-race@mdm.bga.com>
-Message-ID: <smp-call-function-list-race-fix@mdm.bga.com>
-Date: Fri, 28 Jan 2011 18:20:14 -0600
-X-Originating-IP: 65.70.204.62
+	Fri, 28 Jan 2011 19:22:27 -0500
+X-SpamScore: -20
+X-BigFish: VPS-20(zz14e0Mbb2dK1432N98dNzz1202hzzz2fh2a8h637h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4D435DA6.70208@am.sony.com>
+Date: Fri, 28 Jan 2011 16:21:58 -0800
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.1) Gecko/20090814 Fedora/3.0-2.6.b3.fc11 Thunderbird/3.0b3
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Chris Mason <chris.mason@oracle.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>, Paul Turner <pjt@google.com>,
+        Jens Axboe <axboe@kernel.dk>, Yong Zhang <yong.zhang0@gmail.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 11/18] sched: Add p->pi_lock to task_rq_lock()
+References: <20110104145929.772813816@chello.nl> <20110104150102.862431889@chello.nl>
+In-Reply-To: <20110104150102.862431889@chello.nl>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/04/11 06:59, Peter Zijlstra wrote:
+> In order to be able to call set_task_cpu() while either holding
+> p->pi_lock or task_rq(p)->lock we need to hold both locks in order to
+> stabilize task_rq().
+> 
+> This makes task_rq_lock() acquire both locks, and have
+> __task_rq_lock() validate that p->pi_lock is held. This increases the
+> locking overhead for most scheduler syscalls but allows reduction of
+> rq->lock contention for some scheduler hot paths (ttwu).
+> 
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+>  kernel/sched.c |   81 ++++++++++++++++++++++++++-------------------------------
+>  1 file changed, 37 insertions(+), 44 deletions(-)
+> 
+> Index: linux-2.6/kernel/sched.c
+> ===================================================================
+> 
 
-Peter pointed out there was nothing preventing the list_del_rcu in
-smp_call_function_interrupt from running before the list_add_rcu in
-smp_call_function_many.   Fix this by not setting refs until we have put
-the entry on the list.  We can use the lock acquire and release instead
-of a wmb.
+> @@ -980,10 +972,13 @@ static void __task_rq_unlock(struct rq *
+>  	raw_spin_unlock(&rq->lock);
+>  }
+>  
+> -static inline void task_rq_unlock(struct rq *rq, unsigned long *flags)
+> +static inline void
+> +task_rq_unlock(struct rq *rq, struct task_struct *p, unsigned long *flags)
+>  	__releases(rq->lock)
+> +	__releases(p->pi_lock)
+>  {
+> -	raw_spin_unlock_irqrestore(&rq->lock, *flags);
+> +	raw_spin_unlock(&rq->lock);
+> +	raw_spin_unlock_irqrestore(&p->pi_lock, *flags);
+>  }
+>  
+>  /*
 
-Reported-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Milton Miller <miltonm@bga.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
----
+Most of the callers of task_rq_unlock() were also fixed up to reflect
+the newly added parameter "*p", but a couple were missed.  By the end
+of the patch series that is ok because the couple that were missed
+get removed in patches 12 and 13.  But if you want the patch series
+to be bisectable (which I think it is otherwise), you might want to
+fix those last couple of callers of task_rq_unlock() in this patch.
 
-I tried to force this race with a udelay before the lock & list_add and
-by mixing all 64 online cpus with just 3 random cpus in the mask, but
-was unsuccessful.  Still, it seems to be a valid race, and the fix
-is a simple change to the current code.
 
-Index: common/kernel/smp.c
-===================================================================
---- common.orig/kernel/smp.c	2011-01-28 16:23:15.000000000 -0600
-+++ common/kernel/smp.c	2011-01-28 16:55:01.000000000 -0600
-@@ -491,15 +491,17 @@ void smp_call_function_many(const struct
- 	cpumask_clear_cpu(this_cpu, data->cpumask);
- 
- 	/*
--	 * To ensure the interrupt handler gets an complete view
--	 * we order the cpumask and refs writes and order the read
--	 * of them in the interrupt handler.  In addition we may
--	 * only clear our own cpu bit from the mask.
-+	 * We reuse the call function data without waiting for any grace
-+	 * period after some other cpu removes it from the global queue.
-+	 * This means a cpu might find our data block as it is writen.
-+	 * The interrupt handler waits until it sees refs filled out
-+	 * while its cpu mask bit is set; here we may only clear our
-+	 * own cpu mask bit, and must wait to set refs until we are sure
-+	 * previous writes are complete and we have obtained the lock to
-+	 * add the element to the queue.  We use the acquire and release
-+	 * of the lock as a wmb() -- acquire prevents write moving up and
-+	 * release requires old writes are visible.
- 	 */
--	smp_wmb();
--
--	atomic_set(&data->refs, cpumask_weight(data->cpumask));
--
- 	raw_spin_lock_irqsave(&call_function.lock, flags);
- 	/*
- 	 * Place entry at the _HEAD_ of the list, so that any cpu still
-@@ -509,6 +511,8 @@ void smp_call_function_many(const struct
- 	list_add_rcu(&data->csd.list, &call_function.queue);
- 	raw_spin_unlock_irqrestore(&call_function.lock, flags);
- 
-+	atomic_set(&data->refs, cpumask_weight(data->cpumask));
-+
- 	/*
- 	 * Make the list addition visible before sending the ipi.
- 	 * (IPIs must obey or appear to obey normal Linux cache
+> @@ -2646,9 +2647,9 @@ void sched_fork(struct task_struct *p, i
+>          *
+>          * Silence PROVE_RCU.
+>          */
+> -       rcu_read_lock();
+> +       raw_spin_lock_irqsave(&p->pi_lock, flags);
+>         set_task_cpu(p, cpu);
+> -       rcu_read_unlock();
+> +       raw_spin_unlock_irqrestore(&p->pi_lock, flags);
+
+Does "* Silence PROVE_RCU." no longer apply after remove rcu_read_lock() and
+rcu_read_unlock()?
+
+-Frank
+
