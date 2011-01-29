@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754783Ab1A2Vax (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jan 2011 16:30:53 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:21639 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752496Ab1A2Vax (ORCPT
+	id S1754937Ab1A2Vdv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jan 2011 16:33:51 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:57515 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751350Ab1A2Vdu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jan 2011 16:30:53 -0500
-Date: Sat, 29 Jan 2011 22:32:04 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Michael Rodriguez <dkingston02@gmail.com>
-cc: mingo@elte.hu, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kernel/cpu.c: Fix many errors related to style.
-In-Reply-To: <1296332359-21389-1-git-send-email-dkingston02@gmail.com>
-Message-ID: <alpine.LNX.2.00.1101292229270.19392@swampdragon.chaosbits.net>
-References: <1296332359-21389-1-git-send-email-dkingston02@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 29 Jan 2011 16:33:50 -0500
+From: Stefan Weil <weil@mail.berlios.de>
+To: linux390@de.ibm.com
+Cc: Stefan Weil <weil@mail.berlios.de>, Ursula Braun <ursula.braun@de.ibm.com>,
+        Frank Blaschka <blaschka@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] s390: Fix wrong size in memcmp (netiucv)
+Date: Sat, 29 Jan 2011 22:33:27 +0100
+Message-Id: <1296336808-2809-1-git-send-email-weil@mail.berlios.de>
+X-Mailer: git-send-email 1.7.2.3
+X-Provags-ID: V02:K0:Aax+s9alzT5YyKeQ1iy8IVHzSIhtMvKmwqKkq7RoZo1
+ G88LNJFOARXwgwugXhY2TfWKec74OiTWs5bXYVGevQ/TUFPlLX
+ 9cNQn+lpMJfFnmhwwanL5xudSKaQ6kxIAOYgUMP5O3sXUy3+N4
+ nDOiOoOYnkSQi/JzknB/Wv8h+Fw1kz67cMy8GNaRHfN7E4IUpt
+ vmAeW+a4UHEwI3O6YJaC2W8LKT9RceLYiZQR3peoBg3kP2gJhW
+ msZ5iRpdSR3Rh
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 29 Jan 2011, Michael Rodriguez wrote:
+This error was reported by cppcheck:
+drivers/s390/net/netiucv.c:568: error: Using sizeof for array given as function argument returns the size of pointer.
 
-> This patch changes the printk() calls to have the KERN_INFO/KERN_ERROR stuff,
-> and fixes other coding style errors. Not _all_ of them are gone, though.
-> 
-> Signed-off-by: Michael Rodriguez <dkingston02@gmail.com>
-> ---
->  kernel/cpu.c |   13 +++++++------
->  1 files changed, 7 insertions(+), 6 deletions(-)
-> 
-...
-> @@ -201,11 +200,11 @@ static int __ref take_cpu_down(void *_param)
->  
->  	/* Ensure this CPU doesn't handle any more interrupts. */
->  	err = __cpu_disable();
-> +
->  	if (err < 0)
->  		return err;
-Why? We set 'err', then we test 'err' - why do we need a blank line 
-between those two? It's not like you are sepperating two logically 
-different operations from eachother here...
+sizeof(ipuser) did not result in 16 (as many programmers would have
+expected) but sizeof(u8 *), so it is 4 or 8, too small here.
 
-...
-> @@ -227,7 +226,9 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
->  		return -EINVAL;
->  
->  	cpu_hotplug_begin();
-> +
->  	err = __cpu_notify(CPU_DOWN_PREPARE | mod, hcpu, -1, &nr_calls);
-> +
->  	if (err) {
->  		nr_calls--;
->  		__cpu_notify(CPU_DOWN_FAILED | mod, hcpu, nr_calls, NULL);
+Cc: Ursula Braun <ursula.braun@de.ibm.com>
+Cc: linux390@de.ibm.com
+Cc: Frank Blaschka <blaschka@linux.vnet.ibm.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: linux-s390@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Stefan Weil <weil@mail.berlios.de>
+---
+ drivers/s390/net/netiucv.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Why would we want these extra newlines? What's the point? The opereations 
-fit nicely together, I don't see the point in adding these extra 
-newlines..
-
-
+diff --git a/drivers/s390/net/netiucv.c b/drivers/s390/net/netiucv.c
+index 65ebee0..b6a6356 100644
+--- a/drivers/s390/net/netiucv.c
++++ b/drivers/s390/net/netiucv.c
+@@ -565,7 +565,7 @@ static int netiucv_callback_connreq(struct iucv_path *path,
+ 	struct iucv_event ev;
+ 	int rc;
+ 
+-	if (memcmp(iucvMagic, ipuser, sizeof(ipuser)))
++	if (memcmp(iucvMagic, ipuser, 16))
+ 		/* ipuser must match iucvMagic. */
+ 		return -EINVAL;
+ 	rc = -EINVAL;
 -- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
+1.7.2.3
 
