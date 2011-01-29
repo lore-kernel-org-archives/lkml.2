@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab1A2AlR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 19:41:17 -0500
-Received: from na3sys010aog104.obsmtp.com ([74.125.245.76]:56665 "HELO
-	na3sys010aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752495Ab1A2AlQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 19:41:16 -0500
+	id S1754741Ab1A2AtM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 19:49:12 -0500
+Received: from exprod7og127.obsmtp.com ([64.18.2.210]:44681 "EHLO
+	exprod7og127.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752495Ab1A2AtL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 19:49:11 -0500
+X-Greylist: delayed 1288 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Jan 2011 19:49:10 EST
 MIME-Version: 1.0
-In-Reply-To: <20110124110654.GA11404@htj.dyndns.org>
-References: <1292086307-19211-1-git-send-email-tj@kernel.org>
- <1292086307-19211-2-git-send-email-tj@kernel.org> <adamxn0yujn.fsf@cisco.com> <20110124110654.GA11404@htj.dyndns.org>
-From: Roland Dreier <roland@kernel.org>
-Date: Fri, 28 Jan 2011 16:40:55 -0800
-X-Google-Sender-Auth: hUwdn5WG1YV3Crb5v0HqhGfTWQo
-Message-ID: <AANLkTinREtRhxhrY3nwAGdDqYqCGxMX6M8HhoxXcx8if@mail.gmail.com>
-Subject: Re: [PATCH] RDMA: update missed converion of flush_scheduled_work()
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20110128141216.GA6374@trinity.fluff.org>
+References: <1296217283-14531-1-git-send-email-s.hauer@pengutronix.de> <20110128141216.GA6374@trinity.fluff.org>
+From: Matt Sealey <matt@genesi-usa.com>
+Date: Fri, 28 Jan 2011 18:21:17 -0600
+Message-ID: <AANLkTincgZadM7hbb6dT+JkxcgUHwuEoragvjfFj+fJa@mail.gmail.com>
+Subject: Re: [RFC] add pwmlib support
+To: root <ben@fluff.org>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, Kukjin Kim <kgene.kim@samsung.com>,
+        Hemanth V <hemanthv@ti.com>, linux-kernel@vger.kernel.org,
+        Eric Miao <eric.miao@linaro.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        linux-arm-kernel@lists.infradead.org, Ben Dooks <ben-linux@fluff.org>,
+        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
+        Jean Delvare <khali@linux-fr.org>, Shawn Guo <shawn.guo@freescale.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Commit f0626710 (d9112f11586830d22501d0e26245ea) introduced ib_wq and
-> removed the use of flush_scheduled_work(); however, during merge
-> process one chunk was lost in ib_sa_remove_one().  Fix it.
+On Fri, Jan 28, 2011 at 8:12 AM, root <ben@fluff.org> wrote:
+>
+> On Fri, Jan 28, 2011 at 01:21:21PM +0100, Sascha Hauer wrote:
+>> Hi all,
+>>
+>> While implementing just another pwm driver I thought it's time to implement
+>> generic pwm support. The following series adds drivers/pwm/pwmlib.c and
+>> a i.MX23/28 pwm driver which serves as a usage example for pwmlib. The
+>> code is inspired by gpiolib support and tested using the backlight pwm
+>> driver by Eric Miao.
+>
+> You know, I really wish driver cores like this where not called lib... it
+> is hardly as if they can be taken out of the kernel and usefully re-used
+> in another project.
 
-Thanks, applied.
+Well, I've never known a collection of code shared across multiple
+client applications with the specific intent of consolidating
+functonality under a single framework to be called many other things
+than a "library". It doesn't matter what address space it's in, it's a
+library of reusable code, so I think the name stands up.
 
-BTW in the future if you can cc the linux-rdma@vger mailing list on RDMA patches
-that helps me out, since the patch goes into the linux-rdma patchwork
-and I'm much
-less likely to lose it in my inbox.
+Sascha, this is awesome, BTW. I'm going to see if I can get PWM for
+MX5x and MC13892 under this..
 
-Thanks,
-  Roland
+-- 
+Matt Sealey <matt@genesi-usa.com>
+Product Development Analyst, Genesi USA, Inc.
