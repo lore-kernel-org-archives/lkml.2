@@ -1,73 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044Ab1A2XBE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jan 2011 18:01:04 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:53026 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751813Ab1A2XBC (ORCPT
+	id S1755044Ab1A2XbA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jan 2011 18:31:00 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:25297 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab1A2Xa7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jan 2011 18:01:02 -0500
-Message-ID: <4D449C28.90202@weilnetz.de>
-Date: Sun, 30 Jan 2011 00:00:56 +0100
-From: Stefan Weil <stefan@weilnetz.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Iceowl/1.0b1 Icedove/3.0.11
+	Sat, 29 Jan 2011 18:30:59 -0500
+Date: Sun, 30 Jan 2011 00:32:11 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+cc: linux-kernel@vger.kernel.org, James Bottomley <James.Bottomley@suse.de>
+Subject: Re: [PATCH] SCSI, target: Avoid mem leak and needless work in
+ transport_generic_get_mem().
+In-Reply-To: <1296341530.14831.231.camel@haakon2.linux-iscsi.org>
+Message-ID: <alpine.LNX.2.00.1101300025360.19392@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1101292316490.19392@swampdragon.chaosbits.net> <1296341530.14831.231.camel@haakon2.linux-iscsi.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Jesper Juhl <jj@chaosbits.net>
-CC: linux390@de.ibm.com, Ursula Braun <ursula.braun@de.ibm.com>,
-        Frank Blaschka <blaschka@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] s390: Fix possibly wrong size in strncmp (smsglucv)
-References: <1296336808-2809-1-git-send-email-weil@mail.berlios.de> <1296336808-2809-2-git-send-email-weil@mail.berlios.de> <alpine.LNX.2.00.1101292237220.19392@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1101292237220.19392@swampdragon.chaosbits.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:unR0OYdeHk1YHfpjeYFzJdZzHtTnvzE1795asAPmCfl
- zgM7ux7DubR205T91FjTT+ZTu3EAgxelPszdsyu+nfOTp0IMYT
- ZlbjhHG1zRrTuyfg31onngjCtinKJAj08eDKyEi/G8DBCSsyw7
- U5is0TJxqb+zi/PquyTjHGlgHht+ZtqjI1FKKLpJbouC9irXIo
- t4AY+oNzO7bLlMSDmBOy9KEOh5dknZ4aNNNB6yfhm+IjDjUrdH
- RxoG2VFxyxehU
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 29.01.2011 22:38, schrieb Jesper Juhl:
-> On Sat, 29 Jan 2011, Stefan Weil wrote:
->
->    
->> This error was reported by cppcheck:
->> drivers/s390/net/smsgiucv.c:63: error: Using sizeof for array given as function argument returns the size of pointer.
->>
->> Although there is no runtime problem as long as sizeof(u8 *) == 8,
->> this misleading code should get fixed.
->>
->> Cc: Ursula Braun<ursula.braun@de.ibm.com>
->> Cc: linux390@de.ibm.com
->> Cc: Frank Blaschka<blaschka@linux.vnet.ibm.com>
->> Cc: Martin Schwidefsky<schwidefsky@de.ibm.com>
->> Cc: Heiko Carstens<heiko.carstens@de.ibm.com>
->> Cc: linux-s390@vger.kernel.org
->> Cc: linux-kernel@vger.kernel.org
->> Signed-off-by: Stefan Weil<weil@mail.berlios.de>
->> ---
->>   drivers/s390/net/smsgiucv.c |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/s390/net/smsgiucv.c b/drivers/s390/net/smsgiucv.c
->> index 65e1cf1..207b7d7 100644
->> --- a/drivers/s390/net/smsgiucv.c
->> +++ b/drivers/s390/net/smsgiucv.c
->> @@ -60,7 +60,7 @@ static struct iucv_handler smsg_handler = {
->>   static int smsg_path_pending(struct iucv_path *path, u8 ipvmid[8],
->>   			     u8 ipuser[16])
->>   {
->> -	if (strncmp(ipvmid, "*MSG    ", sizeof(ipvmid)) != 0)
->> +	if (strncmp(ipvmid, "*MSG    ", 8) != 0)
->>      
-> Hmm, shouldn't this really be  ARRAY_SIZE(ipvmid)  ??
->    
+On Sat, 29 Jan 2011, Nicholas A. Bellinger wrote:
 
-I think that would be wrong, too (only in this special case where
-an array is passed as a function parameter).
+> On Sat, 2011-01-29 at 23:21 +0100, Jesper Juhl wrote:
+> > In drivers/target/target_core_transport.c::transport_generic_get_mem() 
+> > there are a few potential memory leaks in the error paths. This patch 
+> > makes sure that we free previously allocated memory when other allocations 
+> > fail. It also moves some work (INIT_LIST_HEAD() and assignment to 
+> > se_mem->se_len) below all the allocations so that if something fails we 
+> > don't do the work at all.
+> > 
+> 
+> Hi Jesper,
+> 
+> > Please review and consider for inclusion.
+> > I don't have any hardware to actually test this so it is compile tested 
+> > only.
+> > 
+> 
+> Btw, you don't need any special hardware to test this.  Just a
+> virtual NIC and a couple of VMs.  ;)
+> 
+> > 
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > ---
+> >  target_core_transport.c |    9 ++++++---
+> >  1 file changed, 6 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+> > index 28b6292..4776293 100644
+> > --- a/drivers/target/target_core_transport.c
+> > +++ b/drivers/target/target_core_transport.c
+> > @@ -4334,11 +4334,9 @@ transport_generic_get_mem(struct se_cmd *cmd, u32 length, u32 dma_size)
+> >  			printk(KERN_ERR "Unable to allocate struct se_mem\n");
+> >  			goto out;
+> >  		}
+> > -		INIT_LIST_HEAD(&se_mem->se_list);
+> > -		se_mem->se_len = (length > dma_size) ? dma_size : length;
+> >  
+> >  /* #warning FIXME Allocate contigous pages for struct se_mem elements */
+> > -		se_mem->se_page = (struct page *) alloc_pages(GFP_KERNEL, 0);
+> > +		se_mem->se_page = alloc_pages(GFP_KERNEL, 0);
+> >  		if (!(se_mem->se_page)) {
+> >  			printk(KERN_ERR "alloc_pages() failed\n");
+> >  			goto out;
+> > @@ -4349,6 +4347,8 @@ transport_generic_get_mem(struct se_cmd *cmd, u32 length, u32 dma_size)
+> >  			printk(KERN_ERR "kmap_atomic() failed\n");
+> >  			goto out;
+> >  		}
+> > +		INIT_LIST_HEAD(&se_mem->se_list);
+> > +		se_mem->se_len = (length > dma_size) ? dma_size : length;
+> >  		memset(buf, 0, se_mem->se_len);
+> >  		kunmap_atomic(buf, KM_IRQ0);
+> >  
+> > @@ -4367,6 +4367,9 @@ transport_generic_get_mem(struct se_cmd *cmd, u32 length, u32 dma_size)
+> >  
+> >  	return 0;
+> >  out:
+> > +	if (se_mem)
+> > +		__free_pages(se_mem->se_page, 0);
+> > +	kmem_cache_free(se_mem_cache, se_mem);
+> >  	return -1;
+> >  }
+> >  
+> > 
+> 
+> There is actually not a memory leak here.
+> 
+> The T_TASK(cmd)->t_mem_list (and associated struct se_pages) are
+> released during a transport_generic_get_mem() allocation failure
+> directly from the 'normal' struct se_cmd descriptor release path called
+> by all target fabric modules in transport_generic_remove() ->
+> transport_free_pages().
+> 
+> So I think the allocation failure case in trasnport_generic_new_cmd() ->
+> transport_allocate_resources() -> transport_generic_get_mem()
+> is better served by some additional code comments perhaps..?
+> 
+
+well,
+
+  static int
+  transport_generic_get_mem(struct se_cmd *cmd, u32 length, u32 dma_size)
+  {
+  	unsigned char *buf;
+  	struct se_mem *se_mem;
+se_mem is a local variable --^
+  ...
+  	while (length) {
+  		se_mem = kmem_cache_zalloc(se_mem_cache, GFP_KERNEL);
+We allocate mem --^
+  ...
+  		se_mem->se_page = alloc_pages(GFP_KERNEL, 0);
+  		if (!(se_mem->se_page)) {
+  			printk(KERN_ERR "alloc_pages() failed\n");
+  			goto out;
+we've no assigned se_mem anywhere and now jump to 'out' --^
+  ...
+  out:
+  	return -1;
+'se_mem' goes out of scope --^
+
+how is that not a leak?
+what am I missing?
+
+I also think the moving of 'INIT_LIST_HEAD()' and assignment to 
+'se_mem->se_len' to after we know all mem allocations are ok is still 
+worth doing.
+
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
