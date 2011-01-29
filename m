@@ -1,84 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371Ab1A2WUa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jan 2011 17:20:30 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:23633 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755233Ab1A2WU2 (ORCPT
+	id S1755258Ab1A2WTj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jan 2011 17:19:39 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:35648 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755184Ab1A2WTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jan 2011 17:20:28 -0500
-Date: Sat, 29 Jan 2011 23:21:40 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        James Bottomley <James.Bottomley@suse.de>,
-        "Nicholas A. Bellinger" <nab@kernel.org>
-Subject: [PATCH] SCSI, target: Avoid mem leak and needless work in
- transport_generic_get_mem().
-Message-ID: <alpine.LNX.2.00.1101292316490.19392@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 29 Jan 2011 17:19:33 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 4/7] perf top: Switch to non overwrite mode
+Date: Sat, 29 Jan 2011 20:19:16 -0200
+Message-Id: <1296339559-20914-5-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1296339559-20914-1-git-send-email-acme@infradead.org>
+References: <1296339559-20914-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In drivers/target/target_core_transport.c::transport_generic_get_mem() 
-there are a few potential memory leaks in the error paths. This patch 
-makes sure that we free previously allocated memory when other allocations 
-fail. It also moves some work (INIT_LIST_HEAD() and assignment to 
-se_mem->se_len) below all the allocations so that if something fails we 
-don't do the work at all.
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Please review and consider for inclusion.
-I don't have any hardware to actually test this so it is compile tested 
-only.
+Just like 'perf record'. Warn the user when PERF_RECORD_LOST events
+happen.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- target_core_transport.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ tools/perf/builtin-top.c |   13 +++++++++----
+ 1 files changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 28b6292..4776293 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -4334,11 +4334,9 @@ transport_generic_get_mem(struct se_cmd *cmd, u32 length, u32 dma_size)
- 			printk(KERN_ERR "Unable to allocate struct se_mem\n");
- 			goto out;
- 		}
--		INIT_LIST_HEAD(&se_mem->se_list);
--		se_mem->se_len = (length > dma_size) ? dma_size : length;
- 
- /* #warning FIXME Allocate contigous pages for struct se_mem elements */
--		se_mem->se_page = (struct page *) alloc_pages(GFP_KERNEL, 0);
-+		se_mem->se_page = alloc_pages(GFP_KERNEL, 0);
- 		if (!(se_mem->se_page)) {
- 			printk(KERN_ERR "alloc_pages() failed\n");
- 			goto out;
-@@ -4349,6 +4347,8 @@ transport_generic_get_mem(struct se_cmd *cmd, u32 length, u32 dma_size)
- 			printk(KERN_ERR "kmap_atomic() failed\n");
- 			goto out;
- 		}
-+		INIT_LIST_HEAD(&se_mem->se_list);
-+		se_mem->se_len = (length > dma_size) ? dma_size : length;
- 		memset(buf, 0, se_mem->se_len);
- 		kunmap_atomic(buf, KM_IRQ0);
- 
-@@ -4367,6 +4367,9 @@ transport_generic_get_mem(struct se_cmd *cmd, u32 length, u32 dma_size)
- 
- 	return 0;
- out:
-+	if (se_mem)
-+		__free_pages(se_mem->se_page, 0);
-+	kmem_cache_free(se_mem_cache, se_mem);
- 	return -1;
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index ce2e50c..7f92ab7 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -464,7 +464,7 @@ static void rb_insert_active_sym(struct rb_root *tree, struct sym_entry *se)
+ 	rb_insert_color(&se->rb_node, tree);
  }
  
-
-
+-static void print_sym_table(void)
++static void print_sym_table(struct perf_session *session)
+ {
+ 	int printed = 0, j;
+ 	struct perf_evsel *counter;
+@@ -513,7 +513,6 @@ static void print_sym_table(void)
+ 
+ 	puts(CONSOLE_CLEAR);
+ 
+-	printf("%-*.*s\n", win_width, win_width, graph_dotted_line);
+ 	if (!perf_guest) {
+ 		printf("   PerfTop:%8.0f irqs/sec  kernel:%4.1f%%"
+ 			"  exact: %4.1f%% [",
+@@ -578,6 +577,12 @@ static void print_sym_table(void)
+ 
+ 	printf("%-*.*s\n", win_width, win_width, graph_dotted_line);
+ 
++	if (session->hists.stats.total_lost != 0) {
++		color_fprintf(stdout, PERF_COLOR_RED, "WARNING:");
++		printf(" LOST %" PRIu64 " events, Check IO/CPU overload\n",
++		       session->hists.stats.total_lost);
++	}
++
+ 	if (sym_filter_entry) {
+ 		show_details(sym_filter_entry);
+ 		return;
+@@ -919,7 +924,7 @@ repeat:
+ 	getc(stdin);
+ 
+ 	do {
+-		print_sym_table();
++		print_sym_table(session);
+ 	} while (!poll(&stdin_poll, 1, delay_msecs) == 1);
+ 
+ 	c = getc(stdin);
+@@ -1176,7 +1181,7 @@ try_again:
+ 		}
+ 	}
+ 
+-	if (perf_evlist__mmap(evlist, cpus, threads, mmap_pages, true) < 0)
++	if (perf_evlist__mmap(evlist, cpus, threads, mmap_pages, false) < 0)
+ 		die("failed to mmap with %d (%s)\n", errno, strerror(errno));
+ }
+ 
 -- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
+1.6.2.5
 
