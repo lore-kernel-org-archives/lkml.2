@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754741Ab1A2AtM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 19:49:12 -0500
-Received: from exprod7og127.obsmtp.com ([64.18.2.210]:44681 "EHLO
-	exprod7og127.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab1A2AtL (ORCPT
+	id S1754757Ab1A2AwE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 19:52:04 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:26470 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754674Ab1A2AwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 19:49:11 -0500
-X-Greylist: delayed 1288 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Jan 2011 19:49:10 EST
+	Fri, 28 Jan 2011 19:52:02 -0500
+Date: Sat, 29 Jan 2011 01:53:09 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>
+Subject: [PATCH] SCSI, SAS, MPT: memset all of struct sas_identify, not just
+ size of a pointer bytes
+Message-ID: <alpine.LNX.2.00.1101290147120.6465@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110128141216.GA6374@trinity.fluff.org>
-References: <1296217283-14531-1-git-send-email-s.hauer@pengutronix.de> <20110128141216.GA6374@trinity.fluff.org>
-From: Matt Sealey <matt@genesi-usa.com>
-Date: Fri, 28 Jan 2011 18:21:17 -0600
-Message-ID: <AANLkTincgZadM7hbb6dT+JkxcgUHwuEoragvjfFj+fJa@mail.gmail.com>
-Subject: Re: [RFC] add pwmlib support
-To: root <ben@fluff.org>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>, Kukjin Kim <kgene.kim@samsung.com>,
-        Hemanth V <hemanthv@ti.com>, linux-kernel@vger.kernel.org,
-        Eric Miao <eric.miao@linaro.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        linux-arm-kernel@lists.infradead.org, Ben Dooks <ben-linux@fluff.org>,
-        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
-        Jean Delvare <khali@linux-fr.org>, Shawn Guo <shawn.guo@freescale.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 28, 2011 at 8:12 AM, root <ben@fluff.org> wrote:
->
-> On Fri, Jan 28, 2011 at 01:21:21PM +0100, Sascha Hauer wrote:
->> Hi all,
->>
->> While implementing just another pwm driver I thought it's time to implement
->> generic pwm support. The following series adds drivers/pwm/pwmlib.c and
->> a i.MX23/28 pwm driver which serves as a usage example for pwmlib. The
->> code is inspired by gpiolib support and tested using the backlight pwm
->> driver by Eric Miao.
->
-> You know, I really wish driver cores like this where not called lib... it
-> is hardly as if they can be taken out of the kernel and usefully re-used
-> in another project.
+I have a hard time believing that the intention of this code in 
+drivers/scsi/mpt2sas/mpt2sas_transport.c
+    static int
+    _transport_set_identify(struct MPT2SAS_ADAPTER *ioc, u16 handle,
+        struct sas_identify *identify)
+    {
+    ...
+    	memset(identify, 0, sizeof(identify));
+    ...
+really is to just memset() the first few bytes (size of the pointer) of 
+the struct.
 
-Well, I've never known a collection of code shared across multiple
-client applications with the specific intent of consolidating
-functonality under a single framework to be called many other things
-than a "library". It doesn't matter what address space it's in, it's a
-library of reusable code, so I think the name stands up.
+I believe what is intended is to memset() the entire struct.
 
-Sascha, this is awesome, BTW. I'm going to see if I can get PWM for
-MX5x and MC13892 under this..
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ mpt2sas_transport.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+  compile tested only
+
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_transport.c b/drivers/scsi/mpt2sas/mpt2sas_transport.c
+index cb1cdec..9e86708 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_transport.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_transport.c
+@@ -163,7 +163,7 @@ _transport_set_identify(struct MPT2SAS_ADAPTER *ioc, u16 handle,
+ 		return -EIO;
+ 	}
+ 
+-	memset(identify, 0, sizeof(identify));
++	memset(identify, 0, sizeof(*identify));
+ 	device_info = le32_to_cpu(sas_device_pg0.DeviceInfo);
+ 
+ 	/* sas_address */
+
 
 -- 
-Matt Sealey <matt@genesi-usa.com>
-Product Development Analyst, Genesi USA, Inc.
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
