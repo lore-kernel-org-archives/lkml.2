@@ -1,126 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab1A2BZp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Jan 2011 20:25:45 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:26814 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751731Ab1A2BZo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Jan 2011 20:25:44 -0500
-Date: Sat, 29 Jan 2011 02:26:51 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCH] USB, Mass Storage, composite, gadget: Fix build failure and
- memset of a struct
-Message-ID: <alpine.LNX.2.00.1101290216500.6465@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-671475880-1296264411=:6465"
+	id S1754793Ab1A2B1T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Jan 2011 20:27:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48200 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752023Ab1A2B1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Jan 2011 20:27:18 -0500
+Subject: Re: [PATCH v2 3/6] KVM-GST: KVM Steal time accounting
+From: Glauber Costa <glommer@redhat.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "aliguori@us.ibm.com" <aliguori@us.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Avi Kivity <avi@redhat.com>
+In-Reply-To: <4D436A68.2000100@goop.org>
+References: <1296244340-15173-1-git-send-email-glommer@redhat.com>
+	 <1296244340-15173-4-git-send-email-glommer@redhat.com>
+	 <4D436A68.2000100@goop.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat
+Date: Fri, 28 Jan 2011 23:27:08 -0200
+Message-ID: <1296264428.3591.40.camel@mothafucka.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Fri, 2011-01-28 at 17:16 -0800, Jeremy Fitzhardinge wrote:
+> On 01/28/2011 11:52 AM, Glauber Costa wrote:
+> > This patch accounts steal time time in kernel/sched.
+> > I kept it from last proposal, because I still see advantages
+> > in it: Doing it here will give us easier access from scheduler
+> > variables such as the cpu rq. The next patch shows an example of
+> > usage for it.
+> 
+> Is this used on the host or guest side?
 
---8323328-671475880-1296264411=:6465
-Content-Type: TEXT/PLAIN; charset=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+Guest.
 
-Trying to compile drivers/usb/gadget/f_mass_storage.o currently fails and 
-spews a ton of warnings :
+>     J
+> 
+> > Since functions like account_idle_time() can be called from
+> > multiple places, not only account_process_tick(), steal time
+> > grabbing is repeated in each account function separatedely.
+> >
+> > Signed-off-by: Glauber Costa <glommer@redhat.com>
+> > CC: Rik van Riel <riel@redhat.com>
+> > CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> > CC: Peter Zijlstra <peterz@infradead.org>
+> > CC: Avi Kivity <avi@redhat.com>
+> > ---
+> >  include/linux/sched.h |    1 +
+> >  kernel/sched.c        |   41 +++++++++++++++++++++++++++++++++++++++++
+> >  2 files changed, 42 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/include/linux/sched.h b/include/linux/sched.h
+> > index d747f94..77e9297 100644
+> > --- a/include/linux/sched.h
+> > +++ b/include/linux/sched.h
+> > @@ -302,6 +302,7 @@ long io_schedule_timeout(long timeout);
+> >  extern void cpu_init (void);
+> >  extern void trap_init(void);
+> >  extern void update_process_times(int user);
+> > +extern u64 (*hypervisor_steal_time)(void);
+> >  extern void scheduler_tick(void);
+> >  
+> >  extern void sched_show_task(struct task_struct *p);
+> > diff --git a/kernel/sched.c b/kernel/sched.c
+> > index ea3e5ef..7765e9d 100644
+> > --- a/kernel/sched.c
+> > +++ b/kernel/sched.c
+> > @@ -3508,6 +3508,39 @@ unsigned long long thread_group_sched_runtime(struct task_struct *p)
+> >  	return ns;
+> >  }
+> >  
+> > +u64 (*hypervisor_steal_time)(void) = NULL;
+> > +
+> > +/*
+> > + * We have to at flush steal time information every time something else
+> > + * is accounted. Since the accounting functions are all visible to the rest
+> > + * of the kernel, it gets tricky to do them in one place. This helper function
+> > + * helps us.
+> > + *
+> > + * When the system is idle, the concept of steal time does not apply. We just
+> > + * tell the underlying hypervisor that we grabbed the data, but skip steal time
+> > + * accounting
+> > + */
+> > +static int touch_steal_time(int is_idle)
+> > +{
+> > +	u64 steal, st;
+> > +
+> > +	if (!hypervisor_steal_time)
+> > +		return 0;
+> > +
+> > +	steal = hypervisor_steal_time();
+> > +
+> > +	st = usecs_to_cputime(steal / 1000);
+> > +
+> > +	if (is_idle)
+> > +		return 0;
+> > +
+> > +	if (st) {
+> > +		account_steal_time(st);
+> > +		return 1;
+> > +	}
+> > +	return 0;
+> > +}
+> > +
+> >  /*
+> >   * Account user cpu time to a process.
+> >   * @p: the process that the cpu time gets accounted to
+> > @@ -3520,6 +3553,9 @@ void account_user_time(struct task_struct *p, cputime_t cputime,
+> >  	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
+> >  	cputime64_t tmp;
+> >  
+> > +	if (touch_steal_time(0))
+> > +		return;
+> > +
+> >  	/* Add user time to process. */
+> >  	p->utime = cputime_add(p->utime, cputime);
+> >  	p->utimescaled = cputime_add(p->utimescaled, cputime_scaled);
+> > @@ -3580,6 +3616,9 @@ void account_system_time(struct task_struct *p, int hardirq_offset,
+> >  	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
+> >  	cputime64_t tmp;
+> >  
+> > +	if (touch_steal_time(0))
+> > +		return;
+> > +
+> >  	if ((p->flags & PF_VCPU) && (irq_count() - hardirq_offset == 0)) {
+> >  		account_guest_time(p, cputime, cputime_scaled);
+> >  		return;
+> > @@ -3627,6 +3666,8 @@ void account_idle_time(cputime_t cputime)
+> >  	cputime64_t cputime64 = cputime_to_cputime64(cputime);
+> >  	struct rq *rq = this_rq();
+> >  
+> > +	touch_steal_time(1);
+> > +
+> >  	if (atomic_read(&rq->nr_iowait) > 0)
+> >  		cpustat->iowait = cputime64_add(cpustat->iowait, cputime64);
+> >  	else
+> 
 
-  CC      drivers/usb/gadget/f_mass_storage.o
-drivers/usb/gadget/f_mass_storage.c:436:22: error: field ¡function¢ has incomplete type
-drivers/usb/gadget/f_mass_storage.c: In function ¡fsg_from_func¢:
-drivers/usb/gadget/f_mass_storage.c:466:9: warning: type defaults to ¡int¢ in declaration of ¡__mptr¢
-drivers/usb/gadget/f_mass_storage.c:466:9: warning: initialization from incompatible pointer type
-drivers/usb/gadget/f_mass_storage.c: At top level:
-drivers/usb/gadget/f_mass_storage.c:2743:15: warning: ¡struct usb_composite_dev¢ declared inside parameter list
-drivers/usb/gadget/f_mass_storage.c:2743:15: warning: its scope is only this definition or declaration, which is probably not what you want
-drivers/usb/gadget/f_mass_storage.c: In function ¡fsg_common_init¢:
-drivers/usb/gadget/f_mass_storage.c:2745:34: error: dereferencing pointer to incomplete type
-drivers/usb/gadget/f_mass_storage.c:2775:23: error: dereferencing pointer to incomplete type
-drivers/usb/gadget/f_mass_storage.c:2779:3: error: implicit declaration of function ¡usb_string_id¢
-drivers/usb/gadget/f_mass_storage.c: At top level:
-drivers/usb/gadget/f_mass_storage.c:2984:60: warning: ¡struct usb_configuration¢ declared inside parameter list
-drivers/usb/gadget/f_mass_storage.c:3003:57: warning: ¡struct usb_configuration¢ declared inside parameter list
-drivers/usb/gadget/f_mass_storage.c: In function ¡fsg_bind¢:
-drivers/usb/gadget/f_mass_storage.c:3006:31: error: dereferencing pointer to incomplete type
-drivers/usb/gadget/f_mass_storage.c:3013:2: error: implicit declaration of function ¡usb_interface_id¢
-drivers/usb/gadget/f_mass_storage.c:3033:3: error: dereferencing pointer to incomplete type
-drivers/usb/gadget/f_mass_storage.c:3034:6: error: dereferencing pointer to incomplete type
-drivers/usb/gadget/f_mass_storage.c:3043:4: error: dereferencing pointer to incomplete type
-drivers/usb/gadget/f_mass_storage.c:3044:7: error: dereferencing pointer to incomplete type
-drivers/usb/gadget/f_mass_storage.c:3045:26: error: dereferencing pointer to incomplete type
-drivers/usb/gadget/f_mass_storage.c: At top level:
-drivers/usb/gadget/f_mass_storage.c:3067:14: warning: ¡struct usb_configuration¢ declared inside parameter list
-drivers/usb/gadget/f_mass_storage.c:3067:14: warning: ¡struct usb_composite_dev¢ declared inside parameter list
-drivers/usb/gadget/f_mass_storage.c: In function ¡fsg_bind_config¢:
-drivers/usb/gadget/f_mass_storage.c:3093:2: error: implicit declaration of function ¡usb_add_function¢
-drivers/usb/gadget/f_mass_storage.c: At top level:
-drivers/usb/gadget/f_mass_storage.c:3103:9: warning: ¡struct usb_configuration¢ declared inside parameter list
-drivers/usb/gadget/f_mass_storage.c:3103:9: warning: ¡struct usb_composite_dev¢ declared inside parameter list
-drivers/usb/gadget/f_mass_storage.c: In function ¡fsg_add¢:
-drivers/usb/gadget/f_mass_storage.c:3105:2: warning: passing argument 1 of ¡fsg_bind_config¢ from incompatible pointer type
-drivers/usb/gadget/f_mass_storage.c:3065:12: note: expected ¡struct usb_composite_dev *¢ but argument is of type ¡struct usb_composite_dev *¢
-drivers/usb/gadget/f_mass_storage.c:3105:2: warning: passing argument 2 of ¡fsg_bind_config¢ from incompatible pointer type
-drivers/usb/gadget/f_mass_storage.c:3065:12: note: expected ¡struct usb_configuration *¢ but argument is of type ¡struct usb_configuration *¢
-drivers/usb/gadget/f_mass_storage.c: At top level:
-drivers/usb/gadget/f_mass_storage.c:3190:23: warning: ¡struct usb_composite_dev¢ declared inside parameter list
-drivers/usb/gadget/f_mass_storage.c:3195:23: warning: ¡struct usb_composite_dev¢ declared inside parameter list
-drivers/usb/gadget/f_mass_storage.c:3193:1: error: conflicting types for ¡fsg_common_from_params¢
-drivers/usb/gadget/f_mass_storage.c:3188:1: note: previous declaration of ¡fsg_common_from_params¢ was here
-drivers/usb/gadget/f_mass_storage.c: In function ¡fsg_common_from_params¢:
-drivers/usb/gadget/f_mass_storage.c:3199:2: warning: passing argument 2 of ¡fsg_common_init¢ from incompatible pointer type
-drivers/usb/gadget/f_mass_storage.c:2741:27: note: expected ¡struct usb_composite_dev *¢ but argument is of type ¡struct usb_composite_dev *¢
-make[1]: *** [drivers/usb/gadget/f_mass_storage.o] Error 1
-make: *** [drivers/usb/gadget/f_mass_storage.o] Error 2
 
-This is due to the missing include of linux/usb/composite.h - this patch 
-adds the missing include.
-
-In addition there's also a problem in fsg_common_init() where we memset 
-'common', but we use the size of a pointer to 'struct fsg_common' as the 
-size argument to memset(), not the actual size of the struct. This patch 
-fixes the sizeof so we zero the entire struct as intended.
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- f_mass_storage.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-  compile tested only.
-
-diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index b5dbb23..6d8e533 100644
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -293,6 +293,7 @@
- 
- #include <linux/usb/ch9.h>
- #include <linux/usb/gadget.h>
-+#include <linux/usb/composite.h>
- 
- #include "gadget_chips.h"
- 
-@@ -2763,7 +2764,7 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
- 			return ERR_PTR(-ENOMEM);
- 		common->free_storage_on_release = 1;
- 	} else {
--		memset(common, 0, sizeof common);
-+		memset(common, 0, sizeof *common);
- 		common->free_storage_on_release = 0;
- 	}
- 
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
---8323328-671475880-1296264411=:6465--
