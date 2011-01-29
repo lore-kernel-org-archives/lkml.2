@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754912Ab1A2Un5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jan 2011 15:43:57 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:42355 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750968Ab1A2Unz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jan 2011 15:43:55 -0500
-Message-ID: <4D447C00.70709@free.fr>
-Date: Sat, 29 Jan 2011 21:43:44 +0100
-From: matthieu castet <castet.matthieu@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr; rv:1.8.1.23) Gecko/20090823 SeaMonkey/1.1.18
+	id S1754897Ab1A2Uwm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jan 2011 15:52:42 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:54600 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751477Ab1A2Uwl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Jan 2011 15:52:41 -0500
+Message-ID: <4D447E5E.6060007@metafoo.de>
+Date: Sat, 29 Jan 2011 21:53:50 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
-Subject: Re: [RFC] merge 32/64 bits realmode wakeup code
-References: <4D41EA12.1030402@free.fr> <201101272354.00042.rjw@sisk.pl>
-In-Reply-To: <201101272354.00042.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: linux-kernel@vger.kernel.org, Eric Miao <eric.miao@linaro.org>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Hemanth V <hemanthv@ti.com>, Jean Delvare <khali@linux-fr.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Arun Murthy <arun.murthy@stericsson.com>,
+        Bill Gatliff <bgat@billgatliff.com>
+Subject: Re: [RFC] add pwmlib support
+References: <1296217283-14531-1-git-send-email-s.hauer@pengutronix.de>
+In-Reply-To: <1296217283-14531-1-git-send-email-s.hauer@pengutronix.de>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael J. Wysocki a écrit :
-> On Thursday, January 27, 2011, matthieu castet wrote:
->> Hi,
->>
->> this patch merge 32 and 64 realmode wakeup code :
->> - this mean less ifdef in code
->> - we could remove now unused field in wakeup_header (pmode_*)
->> - this allow to set the first 1 MB NX.
->>
->> Do you think it is safe on all X86 32 bit machine ?
->>
->> Matthieu
->>
->>
->> Signed-off-by: Matthieu CASTET <castet.matthieu@free.fr>
+On 01/28/2011 01:21 PM, Sascha Hauer wrote:
+> Hi all,
 > 
-> It _looks_ sane, but it will require some serious testing.  I'm not sure,
-> though, if we can get enough testing coverage without actually committing
-> that change.
+> While implementing just another pwm driver I thought it's time to implement
+> generic pwm support. The following series adds drivers/pwm/pwmlib.c and
+> a i.MX23/28 pwm driver which serves as a usage example for pwmlib. The
+> code is inspired by gpiolib support and tested using the backlight pwm
+> driver by Eric Miao.
 > 
-> How much testing has it received so far?
+> Currently the pwm_request, pwm_add, pwm_remove and pwm_free operations are
+> protected with a single mutex wherea the pwm_enable, pwm_disable and
+> pwm_config operations are unlocked. It is assumed that the owners of the
+> pwm handle the serialization of the pwm accesses. This may not be enough, so
+> i'd like to discuss the locking (and type of locking) here.
 > 
-Not too much only qemu with 1 and 2 core and a laptop with 1 cpu.
+> I Cced the people working with PWMs in the kernel in the hope that they can
+> give input on what's missing / wrong in this implementation
+> 
+> Sascha
+> 
 
-Please note that with this patch we can also remove the gdt, idt, ldt stuff from 
-arch/x86/kernel/acpi/wakeup_32.S
+Hi
 
+There have been two other proposals for a generic PWM api during the last year.
+You might want to take a look at them.
 
+https://lkml.org/lkml/2010/2/9/275
+https://lkml.org/lkml/2010/9/28/107
 
+I've added Bill Gatliff and Arun Murthy to Cc.
 
-Matthieu
+- Lars
