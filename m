@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897Ab1A2Uwm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jan 2011 15:52:42 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:54600 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751477Ab1A2Uwl (ORCPT
+	id S1754882Ab1A2VPf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jan 2011 16:15:35 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:34132 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752022Ab1A2VPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jan 2011 15:52:41 -0500
-Message-ID: <4D447E5E.6060007@metafoo.de>
-Date: Sat, 29 Jan 2011 21:53:50 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+	Sat, 29 Jan 2011 16:15:34 -0500
+Date: Sat, 29 Jan 2011 22:15:31 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: linux-edac@vger.kernel.org
+Cc: Borislav Petkov <borislav.petkov@amd.com>,
+        Doug Thompson <dougthompson@xmission.com>,
+        linux-kernel@vger.kernel.org
+Subject: [EDAC-AMD64] Display correct RAM sizes in ganged mode on F10 CPUs
+Message-ID: <20110129211531.GA1874@gentoo.trippels.de>
 MIME-Version: 1.0
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: linux-kernel@vger.kernel.org, Eric Miao <eric.miao@linaro.org>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Hemanth V <hemanthv@ti.com>, Jean Delvare <khali@linux-fr.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Arun Murthy <arun.murthy@stericsson.com>,
-        Bill Gatliff <bgat@billgatliff.com>
-Subject: Re: [RFC] add pwmlib support
-References: <1296217283-14531-1-git-send-email-s.hauer@pengutronix.de>
-In-Reply-To: <1296217283-14531-1-git-send-email-s.hauer@pengutronix.de>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2011 01:21 PM, Sascha Hauer wrote:
-> Hi all,
-> 
-> While implementing just another pwm driver I thought it's time to implement
-> generic pwm support. The following series adds drivers/pwm/pwmlib.c and
-> a i.MX23/28 pwm driver which serves as a usage example for pwmlib. The
-> code is inspired by gpiolib support and tested using the backlight pwm
-> driver by Eric Miao.
-> 
-> Currently the pwm_request, pwm_add, pwm_remove and pwm_free operations are
-> protected with a single mutex wherea the pwm_enable, pwm_disable and
-> pwm_config operations are unlocked. It is assumed that the owners of the
-> pwm handle the serialization of the pwm accesses. This may not be enough, so
-> i'd like to discuss the locking (and type of locking) here.
-> 
-> I Cced the people working with PWMs in the kernel in the hope that they can
-> give input on what's missing / wrong in this implementation
-> 
-> Sascha
-> 
+The EDAC_AMD64 module displays only half the actual memory size, when
+RAM is running in ganged mode on F10 CPUs. Fix this by moving the the
+conversion factor check out of the if block, where it is never reached.
 
-Hi
+With this patch:
 
-There have been two other proposals for a generic PWM api during the last year.
-You might want to take a look at them.
+Unganged: 
+ amd64: DRAM ECC enabled.
+ EDAC amd64: F10h detected (node 0).
+ EDAC amd64: using x4 syndromes.
+ EDAC MC: DCT0 chip selects:
+ kernel: EDAC amd64: MC: 0:  1024MB 1:  1024MB
+ kernel: EDAC amd64: MC: 2:  1024MB 3:  1024MB
+ kernel: EDAC amd64: MC: 4:     0MB 5:     0MB
+ kernel: EDAC amd64: MC: 6:     0MB 7:     0MB
+ kernel: EDAC MC: DCT1 chip selects:
+ kernel: EDAC amd64: MC: 0:  1024MB 1:  1024MB
+ kernel: EDAC amd64: MC: 2:  1024MB 3:  1024MB
+ kernel: EDAC amd64: MC: 4:     0MB 5:     0MB
+ kernel: EDAC amd64: MC: 6:     0MB 7:     0MB
+ kernel: EDAC amd64: MCT channel count: 2
 
-https://lkml.org/lkml/2010/2/9/275
-https://lkml.org/lkml/2010/9/28/107
+Ganged:
+ EDAC amd64: DRAM ECC enabled.
+ EDAC amd64: F10h detected (node 0).
+ EDAC amd64: using x4 syndromes.
+ EDAC MC: DCT0 chip selects:
+ EDAC amd64: MC: 0:  2048MB 1:  2048MB
+ EDAC amd64: MC: 2:  2048MB 3:  2048MB
+ EDAC amd64: MC: 4:     0MB 5:     0MB
+ EDAC amd64: MC: 6:     0MB 7:     0MB
 
-I've added Bill Gatliff and Arun Murthy to Cc.
 
-- Lars
+diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
+index 4a5ecc5..e872d79 100644
+--- a/drivers/edac/amd64_edac.c
++++ b/drivers/edac/amd64_edac.c
+@@ -1633,10 +1633,10 @@ static void amd64_debug_display_dimm_sizes(int ctrl, struct amd64_pvt *pvt)
+ 	u32 dbam;
+ 	u32 *dcsb;
+ 
+-	if (boot_cpu_data.x86 == 0xf) {
+-		if (pvt->dclr0 & F10_WIDTH_128)
+-			factor = 1;
++	if (pvt->dclr0 & F10_WIDTH_128)
++		factor = 1;
+ 
++	if (boot_cpu_data.x86 == 0xf) {
+ 		/* K8 families < revF not supported yet */
+ 	       if (pvt->ext_model < K8_REV_F)
+ 			return;
+
+-- 
+Markus
