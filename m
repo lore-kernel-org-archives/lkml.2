@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754036Ab1A3NAE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jan 2011 08:00:04 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:50022 "EHLO ogre.sisk.pl"
+	id S1754102Ab1A3NCQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jan 2011 08:02:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38052 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753744Ab1A3NAC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jan 2011 08:00:02 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [RFC] merge 32/64 bits realmode wakeup code
-Date: Sun, 30 Jan 2011 13:59:18 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc2+; KDE/4.4.4; x86_64; ; )
-Cc: matthieu castet <castet.matthieu@free.fr>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org
-References: <4D41EA12.1030402@free.fr> <201101292215.57292.rjw@sisk.pl> <4D44AE75.6020803@zytor.com>
-In-Reply-To: <4D44AE75.6020803@zytor.com>
+	id S1753804Ab1A3NCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Jan 2011 08:02:14 -0500
+Message-ID: <4D456139.4090508@redhat.com>
+Date: Sun, 30 Jan 2011 15:01:45 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Jan Beulich <JBeulich@novell.com>, Xiaowei Yang <xiaowei.yang@huawei.com>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, fanhenglong@huawei.com,
+        Kaushik Barde <kbarde@huawei.com>, Kenneth Lee <liguozhu@huawei.com>,
+        linqaingmin <linqiangmin@huawei.com>, wangzhenguo@huawei.com,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: One (possible) x86 get_user_pages bug
+References: <4D416D9A.9010603@huawei.com> <4D419416020000780002ECB7@vpn.id2.novell.com> <4D41B90D.5000305@goop.org>
+In-Reply-To: <4D41B90D.5000305@goop.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201101301359.18869.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, January 30, 2011, H. Peter Anvin wrote:
-> On 01/29/2011 01:15 PM, Rafael J. Wysocki wrote:
-> >
-> > That's correct, but those changes can wait.  The most urgent thing is to fix
-> > the resume regression at hand.  I guess we should ask the reporter's in
-> > https://bugzilla.kernel.org/show_bug.cgi?id=27472 to test that patch, right?
-> >
-> 
-> By the way, guys: I'm on vacation at the moment, but I do monitor this 
-> thread.  I think at this point we should revert NX for the low 1 MiB and 
-> worry about doing it properly for .39.
+On 01/27/2011 08:27 PM, Jeremy Fitzhardinge wrote:
+> And even just considering virtualization, having non-IPI-based tlb
+> shootdown is a measurable performance win, since a hypervisor can
+> optimise away a cross-VCPU shootdown if it knows no physical TLB
+> contains the target VCPU's entries.  I can imagine the KVM folks could
+> get some benefit from that as well.
 
-Fine by me, this is your call anyway.
+It's nice to avoid the IPI (and waking up a cpu if it happens to be 
+asleep) but I think the risk of deviating too much from the baremetal 
+arch is too large, as demonstrated by this bug.
 
-> That being said, this kind of unification is a good thing in general.
+(well, async page faults is a counterexample, I wonder if/when it will 
+bite us)
 
-Sure.
+-- 
+error compiling committee.c: too many arguments to function
 
-Thanks,
-Rafael
