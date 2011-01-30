@@ -1,75 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754305Ab1A3NT2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jan 2011 08:19:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39510 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753598Ab1A3NT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jan 2011 08:19:27 -0500
-Message-ID: <4D456555.2030606@redhat.com>
-Date: Sun, 30 Jan 2011 15:19:17 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1754045Ab1A3Noo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jan 2011 08:44:44 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:56139 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753504Ab1A3Non (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Jan 2011 08:44:43 -0500
+Date: Sun, 30 Jan 2011 11:44:29 -0200
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Clark Williams <williams@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [PATCH 7/7] perf tools: Initial python binding
+Message-ID: <20110130134429.GF13616@ghostprotocols.net>
+References: <1296339559-20914-1-git-send-email-acme@infradead.org> <1296339559-20914-8-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com
-Subject: Re: [PATCH v2 6/6] Describe KVM_MSR_STEAL_TIME
-References: <1296244340-15173-1-git-send-email-glommer@redhat.com> <1296244340-15173-7-git-send-email-glommer@redhat.com>
-In-Reply-To: <1296244340-15173-7-git-send-email-glommer@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1296339559-20914-8-git-send-email-acme@infradead.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2011 09:52 PM, Glauber Costa wrote:
-> This patch adds documentation about usage of the newly
-> introduced KVM_MSR_STEAL_TIME.
->
->
-> +
-> +MSR_KVM_STEAL_TIME: 0x4b564d03
-> +
-> +	data: 4-byte alignment physical address of a memory area which must be
-> +	in guest RAM, plus an enable bit in bit 0.
+Em Sat, Jan 29, 2011 at 08:19:19PM -0200, Arnaldo Carvalho de Melo escreveu:
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> First clarifying that this kind of binding is not a replacement or an
+> equivalent to the 'perf script' way of using python with perf.
+> 
+> The 'perf script' way is to process events and look at a given script
+> for some python function that matches the events to pass each event for
+> processing.
 
-64-byte aligned:
-- avoids wrapping around a page boundary, which may let us optimize 
-things later on (see kvm_write_guest_cached()).
-- gives us 5 more unused bits to enable more options
+Ooops, forgot to add this to this cset, fixed it up and force pushed it
+there.
 
->   This memory is expected to
-> +	hold a copy of the following structure:
-> +
-> +	struct kvm_steal_time {
-> +	  	__u64 steal;
-> + 		__u32 version;
-> + 		__u32 flags;
-> +	 	__u32 pad[6];
-> +	}
-> +
-> +	whose data will be filled in by the hypervisor periodically. Only one
-> +	write, or registration, is needed for each VCPU. The interval between
-> +	updates of this structure is arbitrary and implementation-dependent.
-> +	The hypervisor may update this structure at any time it sees fit until
-> +	anything with bit0 == 0 is written to it.
-> +
-> +	Fields have the following meanings:
-> +
-> +		version: guest has to check version before and after grabbing
-> +		time information and check that they are both equal and even.
-> +		An odd version indicates an in-progress update.
-> +
-> +		flags: At this point, always zero. May be used to indicate
-> +		changes in this structure in the future.
-> +
-> +		steal: the amount of time in which this vCPU did not run, in
-> +		nanoseconds.
-> +
+- Arnaldo
 
-The guest must initialize the entire 64-byte structure to zero before 
-enabling the feature.
-
--- 
-error compiling committee.c: too many arguments to function
-
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index eedcf95..36ff73c 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -315,6 +315,7 @@ COMPAT_CFLAGS =
+ COMPAT_OBJS =
+ LIB_H =
+ LIB_OBJS =
++PYRF_OBJS =
+ SCRIPT_PERL =
+ SCRIPT_SH =
+ TEST_PROGRAMS =
+@@ -324,6 +325,9 @@ SCRIPT_SH += perf-archive.sh
+ grep-libs = $(filter -l%,$(1))
+ strip-libs = $(filter-out -l%,$(1))
+ 
++pyrf: $(PYRF_OBJS)
++	python util/setup.py build --build-base='$(OUTPUT)'
++
+ #
+ # No Perl scripts right now:
+ #
+@@ -349,7 +353,7 @@ PROGRAMS += $(OUTPUT)perf
+ #
+ 
+ # what 'all' will build and 'install' will install, in perfexecdir
+-ALL_PROGRAMS = $(PROGRAMS) $(SCRIPTS)
++ALL_PROGRAMS = $(PROGRAMS) $(SCRIPTS) pyrf
+ 
+ # what 'all' will build but not install in perfexecdir
+ OTHER_PROGRAMS = $(OUTPUT)perf$X
+@@ -520,6 +524,20 @@ BUILTIN_OBJS += $(OUTPUT)builtin-inject.o
+ 
+ PERFLIBS = $(LIB_FILE)
+ 
++# Files needed for the python binding, perf.so
++# pyrf is just an internal name needed for all those wrappers.
++# This has to be in sync with what is in the 'sources' variable in
++# tools/perf/util/setup.py
++
++PYRF_OBJS += $(OUTPUT)util/cpumap.o
++PYRF_OBJS += $(OUTPUT)util/ctype.o
++PYRF_OBJS += $(OUTPUT)util/evlist.o
++PYRF_OBJS += $(OUTPUT)util/evsel.o
++PYRF_OBJS += $(OUTPUT)util/python.o
++PYRF_OBJS += $(OUTPUT)util/thread_map.o
++PYRF_OBJS += $(OUTPUT)util/util.o
++PYRF_OBJS += $(OUTPUT)util/xyarray.o
++
+ #
+ # Platform specific tweaks
+ #
