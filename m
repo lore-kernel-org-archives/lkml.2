@@ -1,55 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943Ab1A3JqJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jan 2011 04:46:09 -0500
-Received: from grimli.r00tworld.net ([83.169.44.195]:36990 "EHLO
-	mail.r00tworld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343Ab1A3JqI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jan 2011 04:46:08 -0500
-X-Greylist: delayed 857 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 Jan 2011 04:46:07 EST
-From: Mathias Krause <minipli@googlemail.com>
-To: linux-mtd@lists.infradead.org
-Cc: Joern Engel <joern@lazybastard.org>, David Woodhouse <dwmw2@infradead.org>,
-        linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>
-Subject: [PATCH] mtd: fix memory leak
-Date: Sun, 30 Jan 2011 10:31:48 +0100
-Message-Id: <1296379908-10150-1-git-send-email-minipli@googlemail.com>
-X-Mailer: git-send-email 1.5.6.5
+	id S1753048Ab1A3Jrc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jan 2011 04:47:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26608 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752673Ab1A3Jrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Jan 2011 04:47:31 -0500
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Amerigo Wang <amwang@redhat.com>
+Subject: [PATCH 2/4] kmap_atomic: remove dead code in ieee80211 staging code
+Date: Sun, 30 Jan 2011 17:46:58 +0800
+Message-Id: <1296380820-8801-2-git-send-email-amwang@redhat.com>
+In-Reply-To: <1296380820-8801-1-git-send-email-amwang@redhat.com>
+References: <1296380820-8801-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 4f678a58 missed two cases where the memory allocated for name
-would be leaked. This commit frees the memory when register_device()
-fails and on unregister_devices().
+The previous leaves some unused code in drivers/staging/rtl8192u/ieee80211/,
+this patch removes them.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: WANG Cong <amwang@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+
 ---
- drivers/mtd/devices/phram.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ drivers/staging/rtl8192u/ieee80211/internal.h    |   17 -----------------
+ drivers/staging/rtl8192u/ieee80211/kmap_types.h  |   20 --------------------
+ drivers/staging/rtl8192u/ieee80211/scatterwalk.c |    9 ---------
+ 3 files changed, 0 insertions(+), 46 deletions(-)
+ delete mode 100644 drivers/staging/rtl8192u/ieee80211/kmap_types.h
 
-diff --git a/drivers/mtd/devices/phram.c b/drivers/mtd/devices/phram.c
-index 5239328..8d28fa0 100644
---- a/drivers/mtd/devices/phram.c
-+++ b/drivers/mtd/devices/phram.c
-@@ -117,6 +117,7 @@ static void unregister_devices(void)
- 	list_for_each_entry_safe(this, safe, &phram_list, list) {
- 		del_mtd_device(&this->mtd);
- 		iounmap(this->mtd.priv);
-+		kfree(this->mtd.name);
- 		kfree(this);
- 	}
- }
-@@ -275,6 +276,8 @@ static int phram_setup(const char *val, struct kernel_param *kp)
- 	ret = register_device(name, start, len);
- 	if (!ret)
- 		pr_info("%s device: %#x at %#x\n", name, len, start);
-+	else
-+		kfree(name);
+diff --git a/drivers/staging/rtl8192u/ieee80211/internal.h b/drivers/staging/rtl8192u/ieee80211/internal.h
+index 85571d4..bebe13a 100644
+--- a/drivers/staging/rtl8192u/ieee80211/internal.h
++++ b/drivers/staging/rtl8192u/ieee80211/internal.h
+@@ -23,23 +23,6 @@
+ #include <asm/kmap_types.h>
  
- 	return ret;
- }
+ 
+-extern enum km_type crypto_km_types[];
+-
+-static inline enum km_type crypto_kmap_type(int out)
+-{
+-	return crypto_km_types[(in_softirq() ? 2 : 0) + out];
+-}
+-
+-static inline void *crypto_kmap(struct page *page, int out)
+-{
+-	return kmap_atomic(page);
+-}
+-
+-static inline void crypto_kunmap(void *vaddr, int out)
+-{
+-	kunmap_atomic(vaddr);
+-}
+-
+ static inline void crypto_yield(struct crypto_tfm *tfm)
+ {
+ 	if (!in_softirq())
+diff --git a/drivers/staging/rtl8192u/ieee80211/kmap_types.h b/drivers/staging/rtl8192u/ieee80211/kmap_types.h
+deleted file mode 100644
+index de67bb0..0000000
+--- a/drivers/staging/rtl8192u/ieee80211/kmap_types.h
++++ /dev/null
+@@ -1,20 +0,0 @@
+-#ifndef __KMAP_TYPES_H
+-
+-#define __KMAP_TYPES_H
+-
+-
+-enum km_type {
+-	KM_BOUNCE_READ,
+-	KM_SKB_SUNRPC_DATA,
+-	KM_SKB_DATA_SOFTIRQ,
+-	KM_USER0,
+-	KM_USER1,
+-	KM_BH_IRQ,
+-	KM_SOFTIRQ0,
+-	KM_SOFTIRQ1,
+-	KM_TYPE_NR
+-};
+-
+-#define _ASM_KMAP_TYPES_H
+-
+-#endif
+diff --git a/drivers/staging/rtl8192u/ieee80211/scatterwalk.c b/drivers/staging/rtl8192u/ieee80211/scatterwalk.c
+index a123f95..8625045 100644
+--- a/drivers/staging/rtl8192u/ieee80211/scatterwalk.c
++++ b/drivers/staging/rtl8192u/ieee80211/scatterwalk.c
+@@ -13,8 +13,6 @@
+  * any later version.
+  *
+  */
+-#include "kmap_types.h"
+-
+ #include <linux/kernel.h>
+ #include <linux/mm.h>
+ #include <linux/pagemap.h>
+@@ -23,13 +21,6 @@
+ #include "internal.h"
+ #include "scatterwalk.h"
+ 
+-enum km_type crypto_km_types[] = {
+-	KM_USER0,
+-	KM_USER1,
+-	KM_SOFTIRQ0,
+-	KM_SOFTIRQ1,
+-};
+-
+ void *scatterwalk_whichbuf(struct scatter_walk *walk, unsigned int nbytes, void *scratch)
+ {
+ 	if (nbytes <= walk->len_this_page &&
 -- 
-1.5.6.5
+1.7.3.5
 
