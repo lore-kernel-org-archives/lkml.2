@@ -1,73 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755029Ab1A3WOo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jan 2011 17:14:44 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45537 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754344Ab1A3WOo (ORCPT
+	id S1754986Ab1A3W0K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jan 2011 17:26:10 -0500
+Received: from usaga03-in.huawei.com ([206.16.17.220]:62067 "EHLO
+	usaga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753972Ab1A3W0J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jan 2011 17:14:44 -0500
-Date: Sun, 30 Jan 2011 23:14:34 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Joachim Eastwood <manabian@gmail.com>
-Cc: rpurdie@rpsys.net, riku.voipio@iki.fi, linux-kernel@vger.kernel.org,
-        joachim.eastwood@jotron.com
-Subject: Re: [leds-pca9532] Add gpio capability v2
-Message-ID: <20110130221434.GB28220@pengutronix.de>
-References: <AANLkTinuphNyLoFz1TLxFJ6=g+GMph6njGhs2FBB6Evj@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WYTEVAkct0FjGQmd"
-Content-Disposition: inline
-In-Reply-To: <AANLkTinuphNyLoFz1TLxFJ6=g+GMph6njGhs2FBB6Evj@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Sun, 30 Jan 2011 17:26:09 -0500
+X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 Jan 2011 17:26:09 EST
+Date: Sun, 30 Jan 2011 14:21:11 -0800
+From: Kaushik Barde <kbarde@huawei.com>
+Subject: RE: One (possible) x86 get_user_pages bug
+In-reply-to: <4D456139.4090508@redhat.com>
+To: "'Avi Kivity'" <avi@redhat.com>, "'Jeremy Fitzhardinge'" <jeremy@goop.org>
+Cc: "'Jan Beulich'" <JBeulich@novell.com>,
+        "'Xiaowei Yang'" <xiaowei.yang@huawei.com>,
+        "'Nick Piggin'" <npiggin@kernel.dk>,
+        "'Peter Zijlstra'" <a.p.zijlstra@chello.nl>, fanhenglong@huawei.com,
+        "'Kenneth Lee'" <liguozhu@huawei.com>,
+        "'linqaingmin'" <linqiangmin@huawei.com>, wangzhenguo@huawei.com,
+        "'Wu Fengguang'" <fengguang.wu@intel.com>,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        "'Marcelo Tosatti'" <mtosatti@redhat.com>
+Message-id: <001801cbc0cc$00d98d70$028ca850$@com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: en-us
+Content-transfer-encoding: 7BIT
+Thread-index: AcvAfeg92q3NfNbiSnmuJgUEgTqz7gASdFRg
+References: <4D416D9A.9010603@huawei.com>
+ <4D419416020000780002ECB7@vpn.id2.novell.com> <4D41B90D.5000305@goop.org>
+ <4D456139.4090508@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I agree i.e. deviation from underlying arch consideration is not a good
+idea.
 
---WYTEVAkct0FjGQmd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Also, agreed, hypervisor knows which page entries are ready for TLB flush
+across vCPUs. 
 
-On Sun, Jan 30, 2011 at 09:20:13PM +0100, Joachim Eastwood wrote:
-> Hello,
->=20
-> This is v2 of the patch to add gpio capability to the leds-pca9532
-> driver. Please read the first mail in this thread for more
-> information.
->=20
-> Changes in v2:
-> * Add Kconfig magic. gpio capability is now optional
-> * Addressed review from Wolfram Sang
->=20
-> Wolfram: If this looks okey can I add your Reviewed-by tag?
+But, using above knowledge, along with TLB flush based on IPI is a better
+solution.  Its ability to synchronize it with pCPU based IPI and TLB flush
+across vCPU. is key. 
 
-The patch seems line-wrapped. Is checkpatch happy (enough), too?
-Other than that looks good to me:
+IPIs themselves should be in few hundred uSecs in terms latency. Also, why
+should pCPU be in sleep state for active vCPU scheduled page workload?
 
-Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
+-Kaushik
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+-----Original Message-----
+From: Avi Kivity [mailto:avi@redhat.com] 
+Sent: Sunday, January 30, 2011 5:02 AM
+To: Jeremy Fitzhardinge
+Cc: Jan Beulich; Xiaowei Yang; Nick Piggin; Peter Zijlstra;
+fanhenglong@huawei.com; Kaushik Barde; Kenneth Lee; linqaingmin;
+wangzhenguo@huawei.com; Wu Fengguang; xen-devel@lists.xensource.com;
+linux-kernel@vger.kernel.org; Marcelo Tosatti
+Subject: Re: One (possible) x86 get_user_pages bug
 
---WYTEVAkct0FjGQmd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+On 01/27/2011 08:27 PM, Jeremy Fitzhardinge wrote:
+> And even just considering virtualization, having non-IPI-based tlb
+> shootdown is a measurable performance win, since a hypervisor can
+> optimise away a cross-VCPU shootdown if it knows no physical TLB
+> contains the target VCPU's entries.  I can imagine the KVM folks could
+> get some benefit from that as well.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
+It's nice to avoid the IPI (and waking up a cpu if it happens to be 
+asleep) but I think the risk of deviating too much from the baremetal 
+arch is too large, as demonstrated by this bug.
 
-iEYEARECAAYFAk1F4soACgkQD27XaX1/VRvrLQCgpgfO88OCvM05+QIxaSV2LDRi
-L/YAoKODhHKkogJdq3W1s1x0IuhvfceD
-=+iVA
------END PGP SIGNATURE-----
+(well, async page faults is a counterexample, I wonder if/when it will 
+bite us)
 
---WYTEVAkct0FjGQmd--
+-- 
+error compiling committee.c: too many arguments to function
+
