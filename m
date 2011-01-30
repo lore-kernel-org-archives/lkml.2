@@ -1,58 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970Ab1A3Xhr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jan 2011 18:37:47 -0500
-Received: from mga03.intel.com ([143.182.124.21]:56909 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751275Ab1A3Xhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jan 2011 18:37:46 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,402,1291622400"; 
-   d="scan'208";a="381898797"
-Date: Mon, 31 Jan 2011 00:37:44 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Vincent Palatin <vpalatin@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Olof Johansson <olofj@chromium.org>
-Subject: Re: [PATCH] mfd: tps6586x: Invert GPIO and subdevices
- initialization
-Message-ID: <20110130233743.GE2565@sortiz-mobl>
-References: <1295448729-22821-1-git-send-email-vpalatin@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295448729-22821-1-git-send-email-vpalatin@chromium.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751834Ab1AaACI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jan 2011 19:02:08 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59522 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750968Ab1AaACG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Jan 2011 19:02:06 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 31 Jan 2011 08:55:47 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Balbir Singh <balbir@linux.vnet.ibm.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [BUGFIX][PATCH 0/4] Fixes for memcg with THP
+Message-Id: <20110131085547.960f6702.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <AANLkTiktzgxEVROyB=-0ZNq5xzao1Q-Cu3xpGqhx0gxm@mail.gmail.com>
+References: <20110128122229.6a4c74a2.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTiktzgxEVROyB=-0ZNq5xzao1Q-Cu3xpGqhx0gxm@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vincent,
+On Sat, 29 Jan 2011 18:17:56 +0530
+Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
 
-On Wed, Jan 19, 2011 at 09:52:09AM -0500, Vincent Palatin wrote:
-> When using a fixed voltage regulator triggered by a TPS6586x GPIO,
-> this allows to declare and initialize it conveniently from the "subdev" list.
+> On Fri, Jan 28, 2011 at 8:52 AM, KAMEZAWA Hiroyuki
+> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> >
+> > On recent -mm, when I run make -j 8 under 200M limit of memcg, as
+> > ==
+> > # mount -t cgroup none /cgroup/memory -o memory
+> > # mkdir /cgroup/memory/A
+> > # echo 200M > /cgroup/memory/A/memory.limit_in_bytes
+> > # echo $$ > /cgroup/memory/A/tasks
+> > # make -j 8 kernel
+> > ==
+> >
+> > I see hangs with khugepaged. That's because memcg's memory reclaim
+> > routine doesn't handle HUGE_PAGE request in proper way. And khugepaged
+> > doesn't know about memcg.
+> >
+> > This patch set is for fixing above hang. Patch 1-3 seems obvious and
+> > has the same concept as patches in RHEL.
 > 
-> Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
-> ---
->  drivers/mfd/tps6586x.c |   10 ++++++++--
->  1 files changed, 8 insertions(+), 2 deletions(-)
+> Do you have any backtraces? Are they in the specific patches?
 > 
-> diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
-> index 627cf57..fdb16ed 100644
-> --- a/drivers/mfd/tps6586x.c
-> +++ b/drivers/mfd/tps6586x.c
-> @@ -517,19 +517,25 @@ static int __devinit tps6586x_i2c_probe(struct i2c_client *client,
->  		}
->  	}
->  
-> +	tps6586x_gpio_init(tps6586x, pdata->gpio_base);
-> +
-Wouldn't it make sense to have tps6586x_gpio_init() return an int and check it
-before adding the subdevs then ?
 
-Cheers,
-Samuel.
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007] INFO: rcu_sched_state detected stall on CPU 0
+(t=60000 jiffies)
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007] sending NMI to all CPUs:
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007] NMI backtrace for cpu 0
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007] CPU 0
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8102a04e>] arch_trigger_all_cpu_bac
+ktrace+0x5e/0xa0
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff810bca09>] __rcu_pending+0x169/0x3b
+0
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8108a250>] ? tick_sched_timer+0x0/0
+xc0
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff810bccbc>] rcu_check_callbacks+0x6c
+/0x120
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff810689a8>] update_process_times+0x4
+8/0x90
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8108a2b6>] tick_sched_timer+0x66/0x
+c0
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8107ede0>] __run_hrtimer+0x90/0x1e0
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff81032db9>] ? kvm_clock_get_cycles+0
+x9/0x10
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8107f1be>] hrtimer_interrupt+0xde/0
+x240
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8155268b>] smp_apic_timer_interrupt
++0x6b/0x9b
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8100c9d3>] apic_timer_interrupt+0x13/0x20
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  <EOI>
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff810a726a>] ? res_counter_charge+0xda/0x100
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff81145459>] __mem_cgroup_try_charge+0x199/0x5d0
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff811463b5>] mem_cgroup_newpage_charge+0x45/0x50
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8113dbd4>] khugepaged+0x924/0x1430
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8107af00>] ? autoremove_wake_function+0x0/0x40
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8113d2b0>] ? khugepaged+0x0/0x1430
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8107a8b6>] kthread+0x96/0xa0
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8100ce24>] kernel_thread_helper+0x4/0x10
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8107a820>] ? kthread+0x0/0xa0
+Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8100ce20>] ? kernel_thread_helper+0x0/0x10
+
+Thanks,
+-Kame
+
