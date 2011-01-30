@@ -1,100 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab1A3Noo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jan 2011 08:44:44 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:56139 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753504Ab1A3Non (ORCPT
+	id S1753966Ab1A3N50 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jan 2011 08:57:26 -0500
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:44063 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752287Ab1A3N5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jan 2011 08:44:43 -0500
-Date: Sun, 30 Jan 2011 11:44:29 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Clark Williams <williams@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [PATCH 7/7] perf tools: Initial python binding
-Message-ID: <20110130134429.GF13616@ghostprotocols.net>
-References: <1296339559-20914-1-git-send-email-acme@infradead.org> <1296339559-20914-8-git-send-email-acme@infradead.org>
+	Sun, 30 Jan 2011 08:57:25 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tao.ma;
+	h=Received:Message-ID:Date:From:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=0Lxqd4HjiDsb0BsytPldiWLDslDyhh8leI9+UUuGdLu8+Ux9nsBLz8AyQuG5cG11kDAV76GzyFcaT4Je+YhlfgWoc9JezxlW4JVwc2BxTFBCtsZ0UfgTantR1xfjOTix;
+Message-ID: <4D456E3E.1020800@tao.ma>
+Date: Sun, 30 Jan 2011 21:57:18 +0800
+From: Tao Ma <tm@tao.ma>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296339559-20914-8-git-send-email-acme@infradead.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Michel Lespinasse <walken@google.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] mlock: revert the optimization for dirtying pages and
+ triggering writeback.
+References: <1296371720-4176-1-git-send-email-tm@tao.ma> <AANLkTik1dt1Q9TA+JmdvkuOqmt5LB2iZ1X2B5GbBFx1+@mail.gmail.com>
+In-Reply-To: <AANLkTik1dt1Q9TA+JmdvkuOqmt5LB2iZ1X2B5GbBFx1+@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 114.245.231.188 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Jan 29, 2011 at 08:19:19PM -0200, Arnaldo Carvalho de Melo escreveu:
-> From: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> First clarifying that this kind of binding is not a replacement or an
-> equivalent to the 'perf script' way of using python with perf.
-> 
-> The 'perf script' way is to process events and look at a given script
-> for some python function that matches the events to pass each event for
-> processing.
+On 01/30/2011 06:26 PM, Michel Lespinasse wrote:
+> On Sat, Jan 29, 2011 at 11:15 PM, Tao Ma<tm@tao.ma>  wrote:
+>>         buf = mmap(NULL, file_len, PROT_WRITE, MAP_SHARED, fd, 0);
+>>         if (buf == MAP_FAILED) {
+>>                 perror("mmap");
+>>                 goto out;
+>>         }
+>>
+>>         if (mlock(buf, file_len)<  0) {
+>>                 perror("mlock");
+>>                 goto out;
+>>         }
+> Thanks Tao for tracing this to an individual change. I can reproduce
+> this on my system. The issue is that the file is mapped without the
+> PROT_READ permission, so mlock can't fault in the pages. Up to 2.6.37
+> this worked because mlock was using a write.
+>
+> The test case does show there was a behavior change; however it's not
+> clear to me that the tested behavior is valid.
+>
+> I can see two possible resolutions:
+>
+> 1- do nothing, if we can agree that the test case is invalid
+The test case does exist in the real world and used widespread. ;)
+It is blktrace. 
+git://git.kernel.org/pub/scm/linux/kernel/git/axboe/blktrace.git
+I can paste codes here also.
+In blktrace.c setup_mmap:
+mip->fs_buf = my_mmap(NULL, mip->fs_buf_len, PROT_WRITE,
+                                       MAP_SHARED, fd,
+                                       mip->fs_size - mip->fs_off);
+> 2- restore the previous behavior for writable, non-readable, shared
+> mappings while preserving the optimization for read/write shared
+> mappings. The test would then look like:
+>          if ((vma->vm_flags&  VM_WRITE)&&  (vma->vm_flags&  (VM_READ |
+> VM_SHARED)) != VM_SHARED)
+>                  gup_flags |= FOLL_WRITE;
+I am not sure whether it is proper or not. I guess a fat comment is 
+needed here
+to explain the corner case. So do you have some statistics that your change
+improve the performance a lot? If yes, I agree with you. Otherwise, I would
+prefer to revert it back to the original design.
 
-Ooops, forgot to add this to this cset, fixed it up and force pushed it
-there.
-
-- Arnaldo
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index eedcf95..36ff73c 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -315,6 +315,7 @@ COMPAT_CFLAGS =
- COMPAT_OBJS =
- LIB_H =
- LIB_OBJS =
-+PYRF_OBJS =
- SCRIPT_PERL =
- SCRIPT_SH =
- TEST_PROGRAMS =
-@@ -324,6 +325,9 @@ SCRIPT_SH += perf-archive.sh
- grep-libs = $(filter -l%,$(1))
- strip-libs = $(filter-out -l%,$(1))
- 
-+pyrf: $(PYRF_OBJS)
-+	python util/setup.py build --build-base='$(OUTPUT)'
-+
- #
- # No Perl scripts right now:
- #
-@@ -349,7 +353,7 @@ PROGRAMS += $(OUTPUT)perf
- #
- 
- # what 'all' will build and 'install' will install, in perfexecdir
--ALL_PROGRAMS = $(PROGRAMS) $(SCRIPTS)
-+ALL_PROGRAMS = $(PROGRAMS) $(SCRIPTS) pyrf
- 
- # what 'all' will build but not install in perfexecdir
- OTHER_PROGRAMS = $(OUTPUT)perf$X
-@@ -520,6 +524,20 @@ BUILTIN_OBJS += $(OUTPUT)builtin-inject.o
- 
- PERFLIBS = $(LIB_FILE)
- 
-+# Files needed for the python binding, perf.so
-+# pyrf is just an internal name needed for all those wrappers.
-+# This has to be in sync with what is in the 'sources' variable in
-+# tools/perf/util/setup.py
-+
-+PYRF_OBJS += $(OUTPUT)util/cpumap.o
-+PYRF_OBJS += $(OUTPUT)util/ctype.o
-+PYRF_OBJS += $(OUTPUT)util/evlist.o
-+PYRF_OBJS += $(OUTPUT)util/evsel.o
-+PYRF_OBJS += $(OUTPUT)util/python.o
-+PYRF_OBJS += $(OUTPUT)util/thread_map.o
-+PYRF_OBJS += $(OUTPUT)util/util.o
-+PYRF_OBJS += $(OUTPUT)util/xyarray.o
-+
- #
- # Platform specific tweaks
- #
+Regards,
+Tao
