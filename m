@@ -1,148 +1,515 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234Ab1A2Xth (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jan 2011 18:49:37 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:39708 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752626Ab1A2Xtg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jan 2011 18:49:36 -0500
-Subject: Re: [PATCH] SCSI, target: Avoid mem leak and needless work in
-	transport_generic_get_mem().
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, James Bottomley <James.Bottomley@suse.de>
-In-Reply-To: <alpine.LNX.2.00.1101300025360.19392@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1101292316490.19392@swampdragon.chaosbits.net>
-	 <1296341530.14831.231.camel@haakon2.linux-iscsi.org>
-	 <alpine.LNX.2.00.1101300025360.19392@swampdragon.chaosbits.net>
-Content-Type: text/plain
-Date: Sat, 29 Jan 2011 15:49:32 -0800
-Message-Id: <1296344972.14831.242.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	id S1754773Ab1A3AID (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jan 2011 19:08:03 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:49581 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751342Ab1A3AIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Jan 2011 19:08:01 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+Subject: [RFC][PATCH] Power domains for platform bus type
+Date: Sun, 30 Jan 2011 01:07:19 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc2+; KDE/4.4.4; x86_64; ; )
+Cc: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201101300107.19389.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-01-30 at 00:32 +0100, Jesper Juhl wrote:
-> On Sat, 29 Jan 2011, Nicholas A. Bellinger wrote:
-> 
-> > On Sat, 2011-01-29 at 23:21 +0100, Jesper Juhl wrote:
-> > > In drivers/target/target_core_transport.c::transport_generic_get_mem() 
-> > > there are a few potential memory leaks in the error paths. This patch 
-> > > makes sure that we free previously allocated memory when other allocations 
-> > > fail. It also moves some work (INIT_LIST_HEAD() and assignment to 
-> > > se_mem->se_len) below all the allocations so that if something fails we 
-> > > don't do the work at all.
-> > > 
-> > 
-> > Hi Jesper,
-> > 
-> > > Please review and consider for inclusion.
-> > > I don't have any hardware to actually test this so it is compile tested 
-> > > only.
-> > > 
-> > 
-> > Btw, you don't need any special hardware to test this.  Just a
-> > virtual NIC and a couple of VMs.  ;)
-> > 
-> > > 
-> > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > > ---
-> > >  target_core_transport.c |    9 ++++++---
-> > >  1 file changed, 6 insertions(+), 3 deletions(-)
-> > > 
-> > > diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-> > > index 28b6292..4776293 100644
-> > > --- a/drivers/target/target_core_transport.c
-> > > +++ b/drivers/target/target_core_transport.c
-> > > @@ -4334,11 +4334,9 @@ transport_generic_get_mem(struct se_cmd *cmd, u32 length, u32 dma_size)
-> > >  			printk(KERN_ERR "Unable to allocate struct se_mem\n");
-> > >  			goto out;
-> > >  		}
-> > > -		INIT_LIST_HEAD(&se_mem->se_list);
-> > > -		se_mem->se_len = (length > dma_size) ? dma_size : length;
-> > >  
-> > >  /* #warning FIXME Allocate contigous pages for struct se_mem elements */
-> > > -		se_mem->se_page = (struct page *) alloc_pages(GFP_KERNEL, 0);
-> > > +		se_mem->se_page = alloc_pages(GFP_KERNEL, 0);
-> > >  		if (!(se_mem->se_page)) {
-> > >  			printk(KERN_ERR "alloc_pages() failed\n");
-> > >  			goto out;
-> > > @@ -4349,6 +4347,8 @@ transport_generic_get_mem(struct se_cmd *cmd, u32 length, u32 dma_size)
-> > >  			printk(KERN_ERR "kmap_atomic() failed\n");
-> > >  			goto out;
-> > >  		}
-> > > +		INIT_LIST_HEAD(&se_mem->se_list);
-> > > +		se_mem->se_len = (length > dma_size) ? dma_size : length;
-> > >  		memset(buf, 0, se_mem->se_len);
-> > >  		kunmap_atomic(buf, KM_IRQ0);
-> > >  
-> > > @@ -4367,6 +4367,9 @@ transport_generic_get_mem(struct se_cmd *cmd, u32 length, u32 dma_size)
-> > >  
-> > >  	return 0;
-> > >  out:
-> > > +	if (se_mem)
-> > > +		__free_pages(se_mem->se_page, 0);
-> > > +	kmem_cache_free(se_mem_cache, se_mem);
-> > >  	return -1;
-> > >  }
-> > >  
-> > > 
-> > 
-> > There is actually not a memory leak here.
-> > 
-> > The T_TASK(cmd)->t_mem_list (and associated struct se_pages) are
-> > released during a transport_generic_get_mem() allocation failure
-> > directly from the 'normal' struct se_cmd descriptor release path called
-> > by all target fabric modules in transport_generic_remove() ->
-> > transport_free_pages().
-> > 
-> > So I think the allocation failure case in trasnport_generic_new_cmd() ->
-> > transport_allocate_resources() -> transport_generic_get_mem()
-> > is better served by some additional code comments perhaps..?
-> > 
-> 
-> well,
-> 
->   static int
->   transport_generic_get_mem(struct se_cmd *cmd, u32 length, u32 dma_size)
->   {
->   	unsigned char *buf;
->   	struct se_mem *se_mem;
-> se_mem is a local variable --^
->   ...
->   	while (length) {
->   		se_mem = kmem_cache_zalloc(se_mem_cache, GFP_KERNEL);
-> We allocate mem --^
->   ...
->   		se_mem->se_page = alloc_pages(GFP_KERNEL, 0);
->   		if (!(se_mem->se_page)) {
->   			printk(KERN_ERR "alloc_pages() failed\n");
->   			goto out;
-> we've no assigned se_mem anywhere and now jump to 'out' --^
->   ...
->   out:
->   	return -1;
-> 'se_mem' goes out of scope --^
-> 
-> how is that not a leak?
-> what am I missing?
-> 
+Hi,
 
-Sorry, I did originally mis-read the intention of this patch.  
+This is something we discussed during the last Linux Plumbers Conference.
 
-> I also think the moving of 'INIT_LIST_HEAD()' and assignment to 
-> 'se_mem->se_len' to after we know all mem allocations are ok is still 
-> worth doing.
-> 
+The problem appears to be that the same device may be used in different
+systems in different configurations such that actions necessary for the
+device's power management can vary from one system to another.  In those
+cases the drivers' power management callbacks are generally not sufficient,
+because they can't take the configuration of the whole system into account.
 
-Fair enough.   I will commit your original patch as-is into
-lio-core-2.6.git, and queue up for the next mainline series.
+I think this issue may be addressed by adding objects that will represent
+power domains and will provide power management callbacks to be executed
+in addition to the device driver's PM callbacks, which is done by the patch
+below.
 
-Thanks!
+Please have a look at it and tell me what you think.
 
---nab
+Thanks,
+Rafael
 
+---
+The platform bus type is often used to represent Systems-on-a-Chip
+(SoC) where all devices are represented by objects of type struct
+platform_device.  In those cases the same "platform" device driver
+may be used in multiple different system configurations, but the
+actions needed to put the devices it handles into a low-power state
+and back into the full-power state may depend on the design of the
+SoC.  The driver, however, cannot possibly include all the
+information necessary for the power management of its device on all
+the systems it's used with.  Moreover, the device hierarchy also
+isn't suitable for holding this kind of information.
+
+The patch below attempts to address this problem by introducing
+objects of type struct power_domain that can be used for representing
+power domains inside of the SoC.  Every struct power_domain object
+consists of two sets of device power management callbacks that
+can be used to perform what's needed for device power management
+in addition to the operations carried out by the device's driver.
+Namely, if a struct power_domain object is pointed to by the domain
+field in a struct platform_device, the callbacks provided by its
+pre_ops member will be executed for the dev member of that
+struct platform_device before executing the corresponding callbacks
+provided by the device's driver.  Analogously, the power domain's
+post_ops callbacks will be executed after the corresponding callbacks
+provided by the device's driver.
+---
+ drivers/base/platform.c         |  266 ++++++++++++++++++++++++++++------------
+ include/linux/platform_device.h |    6 
+ 2 files changed, 198 insertions(+), 74 deletions(-)
+
+Index: linux-2.6/include/linux/platform_device.h
+===================================================================
+--- linux-2.6.orig/include/linux/platform_device.h
++++ linux-2.6/include/linux/platform_device.h
+@@ -14,6 +14,11 @@
+ #include <linux/device.h>
+ #include <linux/mod_devicetable.h>
+ 
++struct power_domain {
++	struct dev_pm_ops *pre_ops;
++	struct dev_pm_ops *post_ops;
++};
++
+ struct platform_device {
+ 	const char	* name;
+ 	int		id;
+@@ -22,6 +27,7 @@ struct platform_device {
+ 	struct resource	* resource;
+ 
+ 	const struct platform_device_id	*id_entry;
++	const struct power_domain *domain;
+ 
+ 	/* arch specific additions */
+ 	struct pdev_archdata	archdata;
+Index: linux-2.6/drivers/base/platform.c
+===================================================================
+--- linux-2.6.orig/drivers/base/platform.c
++++ linux-2.6/drivers/base/platform.c
+@@ -697,68 +697,98 @@ static void platform_pm_complete(struct
+ int __weak platform_pm_suspend(struct device *dev)
+ {
+ 	struct device_driver *drv = dev->driver;
++	struct platform_device *pdev = to_platform_device(dev);
++	const struct power_domain *pd = pdev->domain;
+ 	int ret = 0;
+ 
+-	if (!drv)
+-		return 0;
++	if (pd && pd->pre_ops && pd->pre_ops->suspend)
++		pd->pre_ops->suspend(dev);
+ 
+-	if (drv->pm) {
+-		if (drv->pm->suspend)
+-			ret = drv->pm->suspend(dev);
+-	} else {
+-		ret = platform_legacy_suspend(dev, PMSG_SUSPEND);
++	if (drv) {
++		if (drv->pm) {
++			if (drv->pm->suspend)
++				ret = drv->pm->suspend(dev);
++		} else {
++			ret = platform_legacy_suspend(dev, PMSG_SUSPEND);
++		}
++		if (ret)
++			return ret;
+ 	}
+ 
++	if (pd && pd->post_ops && pd->post_ops->suspend)
++		pd->post_ops->suspend(dev);
++
+ 	return ret;
+ }
+ 
+ int __weak platform_pm_suspend_noirq(struct device *dev)
+ {
+ 	struct device_driver *drv = dev->driver;
++	struct platform_device *pdev = to_platform_device(dev);
++	const struct power_domain *pd = pdev->domain;
+ 	int ret = 0;
+ 
+-	if (!drv)
+-		return 0;
++	if (pd && pd->pre_ops && pd->pre_ops->suspend_noirq)
++		pd->pre_ops->suspend_noirq(dev);
+ 
+-	if (drv->pm) {
+-		if (drv->pm->suspend_noirq)
+-			ret = drv->pm->suspend_noirq(dev);
++	if (drv && drv->pm && drv->pm->suspend_noirq) {
++		ret = drv->pm->suspend_noirq(dev);
++		if (ret)
++			return ret;
+ 	}
+ 
++	if (pd && pd->post_ops && pd->post_ops->suspend_noirq)
++		pd->post_ops->suspend_noirq(dev);
++
+ 	return ret;
+ }
+ 
+ int __weak platform_pm_resume(struct device *dev)
+ {
+ 	struct device_driver *drv = dev->driver;
++	struct platform_device *pdev = to_platform_device(dev);
++	const struct power_domain *pd = pdev->domain;
+ 	int ret = 0;
+ 
+-	if (!drv)
+-		return 0;
++	if (pd && pd->pre_ops && pd->pre_ops->resume)
++		pd->pre_ops->resume(dev);
+ 
+-	if (drv->pm) {
+-		if (drv->pm->resume)
+-			ret = drv->pm->resume(dev);
+-	} else {
+-		ret = platform_legacy_resume(dev);
++	if (drv) {
++		if (drv->pm) {
++			if (drv->pm->resume)
++				ret = drv->pm->resume(dev);
++		} else {
++			ret = platform_legacy_resume(dev);
++		}
++		if (ret)
++			return ret;
+ 	}
+ 
++	if (pd && pd->post_ops && pd->post_ops->resume)
++		pd->post_ops->resume(dev);
++
+ 	return ret;
+ }
+ 
+ int __weak platform_pm_resume_noirq(struct device *dev)
+ {
+ 	struct device_driver *drv = dev->driver;
++	struct platform_device *pdev = to_platform_device(dev);
++	const struct power_domain *pd = pdev->domain;
+ 	int ret = 0;
+ 
+-	if (!drv)
+-		return 0;
++	if (pd && pd->pre_ops && pd->pre_ops->resume_noirq)
++		pd->pre_ops->resume_noirq(dev);
+ 
+-	if (drv->pm) {
+-		if (drv->pm->resume_noirq)
+-			ret = drv->pm->resume_noirq(dev);
++	if (drv && drv->pm && drv->pm->resume_noirq) {
++		ret = drv->pm->resume_noirq(dev);
++		if (ret)
++			return ret;
+ 	}
+ 
++	if (pd && pd->post_ops && pd->post_ops->resume_noirq)
++		pd->post_ops->resume_noirq(dev);
++
+ 	return ret;
+ }
+ 
+@@ -776,136 +806,196 @@ int __weak platform_pm_resume_noirq(stru
+ static int platform_pm_freeze(struct device *dev)
+ {
+ 	struct device_driver *drv = dev->driver;
++	struct platform_device *pdev = to_platform_device(dev);
++	const struct power_domain *pd = pdev->domain;
+ 	int ret = 0;
+ 
+-	if (!drv)
+-		return 0;
++	if (pd && pd->pre_ops && pd->pre_ops->freeze)
++		pd->pre_ops->freeze(dev);
+ 
+-	if (drv->pm) {
+-		if (drv->pm->freeze)
+-			ret = drv->pm->freeze(dev);
+-	} else {
+-		ret = platform_legacy_suspend(dev, PMSG_FREEZE);
++	if (drv) {
++		if (drv->pm) {
++			if (drv->pm->freeze)
++				ret = drv->pm->freeze(dev);
++		} else {
++			ret = platform_legacy_suspend(dev, PMSG_FREEZE);
++		}
++		if (ret)
++			return ret;
+ 	}
+ 
++	if (pd && pd->post_ops && pd->post_ops->freeze)
++		pd->post_ops->freeze(dev);
++
+ 	return ret;
+ }
+ 
+ static int platform_pm_freeze_noirq(struct device *dev)
+ {
+ 	struct device_driver *drv = dev->driver;
++	struct platform_device *pdev = to_platform_device(dev);
++	const struct power_domain *pd = pdev->domain;
+ 	int ret = 0;
+ 
+-	if (!drv)
+-		return 0;
++	if (pd && pd->pre_ops && pd->pre_ops->freeze_noirq)
++		pd->pre_ops->freeze_noirq(dev);
+ 
+-	if (drv->pm) {
+-		if (drv->pm->freeze_noirq)
+-			ret = drv->pm->freeze_noirq(dev);
++	if (drv && drv->pm && drv->pm->freeze_noirq) {
++		ret = drv->pm->freeze_noirq(dev);
++		if (ret)
++			return ret;
+ 	}
+ 
++	if (pd && pd->post_ops && pd->post_ops->freeze_noirq)
++		pd->post_ops->freeze_noirq(dev);
++
+ 	return ret;
+ }
+ 
+ static int platform_pm_thaw(struct device *dev)
+ {
+ 	struct device_driver *drv = dev->driver;
++	struct platform_device *pdev = to_platform_device(dev);
++	const struct power_domain *pd = pdev->domain;
+ 	int ret = 0;
+ 
+-	if (!drv)
+-		return 0;
++	if (pd && pd->pre_ops && pd->pre_ops->thaw)
++		pd->pre_ops->thaw(dev);
+ 
+-	if (drv->pm) {
+-		if (drv->pm->thaw)
+-			ret = drv->pm->thaw(dev);
+-	} else {
+-		ret = platform_legacy_resume(dev);
++	if (drv) {
++		if (drv->pm) {
++			if (drv->pm->thaw)
++				ret = drv->pm->thaw(dev);
++		} else {
++			ret = platform_legacy_resume(dev);
++		}
++		if (ret)
++			return ret;
+ 	}
+ 
++	if (pd && pd->post_ops && pd->post_ops->thaw)
++		pd->post_ops->thaw(dev);
++
+ 	return ret;
+ }
+ 
+ static int platform_pm_thaw_noirq(struct device *dev)
+ {
+ 	struct device_driver *drv = dev->driver;
++	struct platform_device *pdev = to_platform_device(dev);
++	const struct power_domain *pd = pdev->domain;
+ 	int ret = 0;
+ 
+-	if (!drv)
+-		return 0;
++	if (pd && pd->pre_ops && pd->pre_ops->thaw_noirq)
++		pd->pre_ops->thaw_noirq(dev);
+ 
+-	if (drv->pm) {
+-		if (drv->pm->thaw_noirq)
+-			ret = drv->pm->thaw_noirq(dev);
++	if (drv && drv->pm && drv->pm->thaw_noirq) {
++		ret = drv->pm->thaw_noirq(dev);
++		if (ret)
++			return ret;
+ 	}
+ 
++	if (pd && pd->post_ops && pd->post_ops->thaw_noirq)
++		pd->post_ops->thaw_noirq(dev);
++
+ 	return ret;
+ }
+ 
+ static int platform_pm_poweroff(struct device *dev)
+ {
+ 	struct device_driver *drv = dev->driver;
++	struct platform_device *pdev = to_platform_device(dev);
++	const struct power_domain *pd = pdev->domain;
+ 	int ret = 0;
+ 
+-	if (!drv)
+-		return 0;
++	if (pd && pd->pre_ops && pd->pre_ops->poweroff)
++		pd->pre_ops->poweroff(dev);
+ 
+-	if (drv->pm) {
+-		if (drv->pm->poweroff)
+-			ret = drv->pm->poweroff(dev);
+-	} else {
+-		ret = platform_legacy_suspend(dev, PMSG_HIBERNATE);
++	if (drv) {
++		if (drv->pm) {
++			if (drv->pm->poweroff)
++				ret = drv->pm->poweroff(dev);
++		} else {
++			ret = platform_legacy_suspend(dev, PMSG_HIBERNATE);
++		}
++		if (ret)
++			return ret;
+ 	}
+ 
++	if (pd && pd->post_ops && pd->post_ops->poweroff)
++		pd->post_ops->poweroff(dev);
++
+ 	return ret;
+ }
+ 
+ static int platform_pm_poweroff_noirq(struct device *dev)
+ {
+ 	struct device_driver *drv = dev->driver;
++	struct platform_device *pdev = to_platform_device(dev);
++	const struct power_domain *pd = pdev->domain;
+ 	int ret = 0;
+ 
+-	if (!drv)
+-		return 0;
++	if (pd && pd->pre_ops && pd->pre_ops->poweroff_noirq)
++		pd->pre_ops->poweroff_noirq(dev);
+ 
+-	if (drv->pm) {
+-		if (drv->pm->poweroff_noirq)
+-			ret = drv->pm->poweroff_noirq(dev);
++	if (drv && drv->pm && drv->pm->poweroff_noirq) {
++		ret = drv->pm->poweroff_noirq(dev);
++		if (ret)
++			return ret;
+ 	}
+ 
++	if (pd && pd->post_ops && pd->post_ops->poweroff_noirq)
++		pd->post_ops->poweroff_noirq(dev);
++
+ 	return ret;
+ }
+ 
+ static int platform_pm_restore(struct device *dev)
+ {
+ 	struct device_driver *drv = dev->driver;
++	struct platform_device *pdev = to_platform_device(dev);
++	const struct power_domain *pd = pdev->domain;
+ 	int ret = 0;
+ 
+-	if (!drv)
+-		return 0;
++	if (pd && pd->pre_ops && pd->pre_ops->restore)
++		pd->pre_ops->restore(dev);
+ 
+-	if (drv->pm) {
+-		if (drv->pm->restore)
+-			ret = drv->pm->restore(dev);
+-	} else {
+-		ret = platform_legacy_resume(dev);
++	if (drv) {
++		if (drv->pm) {
++			if (drv->pm->restore)
++				ret = drv->pm->restore(dev);
++		} else {
++			ret = platform_legacy_resume(dev);
++		}
++		if (ret)
++			return ret;
+ 	}
+ 
++	if (pd && pd->post_ops && pd->post_ops->restore)
++		pd->post_ops->restore(dev);
++
+ 	return ret;
+ }
+ 
+ static int platform_pm_restore_noirq(struct device *dev)
+ {
+ 	struct device_driver *drv = dev->driver;
++	struct platform_device *pdev = to_platform_device(dev);
++	const struct power_domain *pd = pdev->domain;
+ 	int ret = 0;
+ 
+-	if (!drv)
+-		return 0;
++	if (pd && pd->pre_ops && pd->pre_ops->restore_noirq)
++		pd->pre_ops->restore_noirq(dev);
+ 
+-	if (drv->pm) {
+-		if (drv->pm->restore_noirq)
+-			ret = drv->pm->restore_noirq(dev);
++	if (drv && drv->pm && drv->pm->restore_noirq) {
++		ret = drv->pm->restore_noirq(dev);
++		if (ret)
++			return ret;
+ 	}
+ 
++	if (pd && pd->post_ops && pd->post_ops->restore_noirq)
++		pd->post_ops->restore_noirq(dev);
++
+ 	return ret;
+ }
+ 
+@@ -926,12 +1016,40 @@ static int platform_pm_restore_noirq(str
+ 
+ int __weak platform_pm_runtime_suspend(struct device *dev)
+ {
+-	return pm_generic_runtime_suspend(dev);
++	struct platform_device *pdev = to_platform_device(dev);
++	const struct power_domain *pd = pdev->domain;
++	int ret;
++
++	if (pd && pd->pre_ops && pd->pre_ops->runtime_suspend)
++		pd->pre_ops->runtime_suspend(dev);
++
++	ret = pm_generic_runtime_suspend(dev);
++	if (ret)
++		return ret;
++
++	if (pd && pd->post_ops && pd->post_ops->runtime_suspend)
++		pd->post_ops->runtime_suspend(dev);
++
++	return 0;
+ };
+ 
+ int __weak platform_pm_runtime_resume(struct device *dev)
+ {
+-	return pm_generic_runtime_resume(dev);
++	struct platform_device *pdev = to_platform_device(dev);
++	const struct power_domain *pd = pdev->domain;
++	int ret;
++
++	if (pd && pd->pre_ops && pd->pre_ops->runtime_resume)
++		pd->pre_ops->runtime_resume(dev);
++
++	ret = pm_generic_runtime_resume(dev);
++	if (ret)
++		return ret;
++
++	if (pd && pd->post_ops && pd->post_ops->runtime_resume)
++		pd->post_ops->runtime_resume(dev);
++
++	return 0;
+ };
+ 
+ int __weak platform_pm_runtime_idle(struct device *dev)
