@@ -1,15 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754729Ab1A3Mjd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jan 2011 07:39:33 -0500
-Received: from mail-in-03.arcor-online.net ([151.189.21.43]:56041 "EHLO
-	mail-in-03.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753427Ab1A3Mih (ORCPT
+	id S1755029Ab1A3MkA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jan 2011 07:40:00 -0500
+Received: from mail-in-04.arcor-online.net ([151.189.21.44]:55235 "EHLO
+	mail-in-04.arcor-online.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753744Ab1A3Mi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jan 2011 07:38:37 -0500
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-15.arcor-online.net 863F61AB5F8
-Subject: [PATCH 7/8] HID: roccat: Fixed NULL pointer dereference when
- unloading module
+	Sun, 30 Jan 2011 07:38:28 -0500
+X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-15.arcor-online.net F1BD21AB6F2
+Subject: [PATCH 2/8] HID: roccat: Use new hid_err macros
 From: Stefan Achatz <erazor_de@users.sourceforge.net>
 Reply-To: erazor_de@users.sourceforge.net
 To: Randy Dunlap <rdunlap@xenotime.net>, Jiri Kosina <jkosina@suse.cz>,
@@ -20,8 +19,8 @@ To: Randy Dunlap <rdunlap@xenotime.net>, Jiri Kosina <jkosina@suse.cz>,
         Thomas Weber <weber@corscience.de>, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 30 Jan 2011 13:38:27 +0100
-Message-ID: <1296391107.2283.186.camel@neuromancer>
+Date: Sun, 30 Jan 2011 13:38:21 +0100
+Message-ID: <1296391101.2283.181.camel@neuromancer>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Content-Transfer-Encoding: 7bit
@@ -29,90 +28,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Class was destroyed before starting the unregistering driver chain.
-Disconnecting a device from roccat chardev in this process then
-raised a NULL pointer dereference.
-Fixed this by destroying class after unregistering driver.
+Using the new hid_err macros instead of dev_err.
 
 Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
 ---
- drivers/hid/hid-roccat-arvo.c     |    2 +-
- drivers/hid/hid-roccat-kone.c     |    2 +-
- drivers/hid/hid-roccat-koneplus.c |    2 +-
- drivers/hid/hid-roccat-kovaplus.c |    2 +-
- drivers/hid/hid-roccat-pyra.c     |    2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/hid/hid-roccat-arvo.c     |   13 ++++++-------
+ drivers/hid/hid-roccat-koneplus.c |   15 +++++++--------
+ 2 files changed, 13 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/hid/hid-roccat-arvo.c b/drivers/hid/hid-roccat-arvo.c
-index 7b9a992..75f532f 100644
+index 8facbd3..ebf3c15 100644
 --- a/drivers/hid/hid-roccat-arvo.c
 +++ b/drivers/hid/hid-roccat-arvo.c
-@@ -438,8 +438,8 @@ static int __init arvo_init(void)
+@@ -358,21 +358,20 @@ static int arvo_init_specials(struct hid_device *hdev)
  
- static void __exit arvo_exit(void)
- {
--	class_destroy(arvo_class);
- 	hid_unregister_driver(&arvo_driver);
-+	class_destroy(arvo_class);
- }
+ 	arvo = kzalloc(sizeof(*arvo), GFP_KERNEL);
+ 	if (!arvo) {
+-		dev_err(&hdev->dev, "can't alloc device descriptor\n");
++		hid_err(hdev, "can't alloc device descriptor\n");
+ 		return -ENOMEM;
+ 	}
+ 	hid_set_drvdata(hdev, arvo);
  
- module_init(arvo_init);
-diff --git a/drivers/hid/hid-roccat-kone.c b/drivers/hid/hid-roccat-kone.c
-index 5cdb282..d749796 100644
---- a/drivers/hid/hid-roccat-kone.c
-+++ b/drivers/hid/hid-roccat-kone.c
-@@ -844,8 +844,8 @@ static int __init kone_init(void)
+ 	retval = arvo_init_arvo_device_struct(usb_dev, arvo);
+ 	if (retval) {
+-		dev_err(&hdev->dev,
+-				"couldn't init struct arvo_device\n");
++		hid_err(hdev, "couldn't init struct arvo_device\n");
+ 		goto exit_free;
+ 	}
  
- static void __exit kone_exit(void)
- {
--	class_destroy(kone_class);
- 	hid_unregister_driver(&kone_driver);
-+	class_destroy(kone_class);
- }
+ 	retval = roccat_connect(arvo_class, hdev);
+ 	if (retval < 0) {
+-		dev_err(&hdev->dev, "couldn't init char dev\n");
++		hid_err(hdev, "couldn't init char dev\n");
+ 	} else {
+ 		arvo->chrdev_minor = retval;
+ 		arvo->roccat_claimed = 1;
+@@ -406,19 +405,19 @@ static int arvo_probe(struct hid_device *hdev,
  
- module_init(kone_init);
+ 	retval = hid_parse(hdev);
+ 	if (retval) {
+-		dev_err(&hdev->dev, "parse failed\n");
++		hid_err(hdev, "parse failed\n");
+ 		goto exit;
+ 	}
+ 
+ 	retval = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+ 	if (retval) {
+-		dev_err(&hdev->dev, "hw start failed\n");
++		hid_err(hdev, "hw start failed\n");
+ 		goto exit;
+ 	}
+ 
+ 	retval = arvo_init_specials(hdev);
+ 	if (retval) {
+-		dev_err(&hdev->dev, "couldn't install keyboard\n");
++		hid_err(hdev, "couldn't install keyboard\n");
+ 		goto exit_stop;
+ 	}
+ 
 diff --git a/drivers/hid/hid-roccat-koneplus.c b/drivers/hid/hid-roccat-koneplus.c
-index 7367e4e..ac20107 100644
+index 65d7cde..c826c0d 100644
 --- a/drivers/hid/hid-roccat-koneplus.c
 +++ b/drivers/hid/hid-roccat-koneplus.c
-@@ -774,8 +774,8 @@ static int __init koneplus_init(void)
+@@ -116,7 +116,7 @@ static int koneplus_receive_control_status(struct usb_device *usb_dev)
+ 			goto out;
+ 		}
  
- static void __exit koneplus_exit(void)
- {
--	class_destroy(koneplus_class);
- 	hid_unregister_driver(&koneplus_driver);
-+	class_destroy(koneplus_class);
- }
+-		dev_err(&usb_dev->dev, "koneplus_receive_control_status: "
++		hid_err(usb_dev, "koneplus_receive_control_status: "
+ 				"unknown response value 0x%x\n", control->value);
+ 		retval = -EINVAL;
+ 		goto out;
+@@ -658,21 +658,20 @@ static int koneplus_init_specials(struct hid_device *hdev)
  
- module_init(koneplus_init);
-diff --git a/drivers/hid/hid-roccat-kovaplus.c b/drivers/hid/hid-roccat-kovaplus.c
-index 7664e2c..4eeb62f 100644
---- a/drivers/hid/hid-roccat-kovaplus.c
-+++ b/drivers/hid/hid-roccat-kovaplus.c
-@@ -703,8 +703,8 @@ static int __init kovaplus_init(void)
+ 		koneplus = kzalloc(sizeof(*koneplus), GFP_KERNEL);
+ 		if (!koneplus) {
+-			dev_err(&hdev->dev, "can't alloc device descriptor\n");
++			hid_err(hdev, "can't alloc device descriptor\n");
+ 			return -ENOMEM;
+ 		}
+ 		hid_set_drvdata(hdev, koneplus);
  
- static void __exit kovaplus_exit(void)
- {
--	class_destroy(kovaplus_class);
- 	hid_unregister_driver(&kovaplus_driver);
-+	class_destroy(kovaplus_class);
- }
+ 		retval = koneplus_init_koneplus_device_struct(usb_dev, koneplus);
+ 		if (retval) {
+-			dev_err(&hdev->dev,
+-					"couldn't init struct koneplus_device\n");
++			hid_err(hdev, "couldn't init struct koneplus_device\n");
+ 			goto exit_free;
+ 		}
  
- module_init(kovaplus_init);
-diff --git a/drivers/hid/hid-roccat-pyra.c b/drivers/hid/hid-roccat-pyra.c
-index be4daa9..02a7243 100644
---- a/drivers/hid/hid-roccat-pyra.c
-+++ b/drivers/hid/hid-roccat-pyra.c
-@@ -685,8 +685,8 @@ static int __init pyra_init(void)
+ 		retval = roccat_connect(koneplus_class, hdev);
+ 		if (retval < 0) {
+-			dev_err(&hdev->dev, "couldn't init char dev\n");
++			hid_err(hdev, "couldn't init char dev\n");
+ 		} else {
+ 			koneplus->chrdev_minor = retval;
+ 			koneplus->roccat_claimed = 1;
+@@ -708,19 +707,19 @@ static int koneplus_probe(struct hid_device *hdev,
  
- static void __exit pyra_exit(void)
- {
--	class_destroy(pyra_class);
- 	hid_unregister_driver(&pyra_driver);
-+	class_destroy(pyra_class);
- }
+ 	retval = hid_parse(hdev);
+ 	if (retval) {
+-		dev_err(&hdev->dev, "parse failed\n");
++		hid_err(hdev, "parse failed\n");
+ 		goto exit;
+ 	}
  
- module_init(pyra_init);
+ 	retval = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+ 	if (retval) {
+-		dev_err(&hdev->dev, "hw start failed\n");
++		hid_err(hdev, "hw start failed\n");
+ 		goto exit;
+ 	}
+ 
+ 	retval = koneplus_init_specials(hdev);
+ 	if (retval) {
+-		dev_err(&hdev->dev, "couldn't install mouse\n");
++		hid_err(hdev, "couldn't install mouse\n");
+ 		goto exit_stop;
+ 	}
+ 
 -- 
 1.7.3.4
 
