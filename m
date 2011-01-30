@@ -1,117 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740Ab1A3DRJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Jan 2011 22:17:09 -0500
-Received: from mga09.intel.com ([134.134.136.24]:23155 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752250Ab1A3DRH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Jan 2011 22:17:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,398,1291622400"; 
-   d="scan'208";a="597720139"
-From: Yin Kangkai <kangkai.yin@linux.intel.com>
-To: linux-serial <linux-serial@vger.kernel.org>
-Cc: linux-kernel@vger.kernel.org, Yin Kangkai <kangkai.yin@linux.intel.com>,
-        Greg KH <greg@kroah.com>, Deepak Saxena <dsaxena@laptop.org>,
-        Jason Wang <jason77.wang@gmail.com>,
-        Stanislav Brabec <sbrabec@suse.cz>, Daniel Drake <dsd@laptop.org>
-Subject: [PATCH Resend] serial-core: reset the console speed on resume
-Date: Sun, 30 Jan 2011 11:15:30 +0800
-Message-Id: <1296357330-28571-2-git-send-email-kangkai.yin@linux.intel.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <20110125104302.GM3315@kai-debian>
-References: <20110125104302.GM3315@kai-debian>
+	id S1752433Ab1A3Dtf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Jan 2011 22:49:35 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:37544 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752048Ab1A3Dte convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Jan 2011 22:49:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ent0/nspo1zcqFeJiZR4yNV3+xznaxNIhE/WcZFMVX7LmqiqFE6n0OlxjX657LdC4m
+         G4CukYJXwHj3FY46myKEJifS7R3ZyxUkpP+PKFghSLN9lzgmF4m2WI4B4TmrFbJWkELj
+         R2DyRwMKvUmYrERahL6zfGSC/bz6sD9mzEjsc=
+MIME-Version: 1.0
+In-Reply-To: <20110129215141.GA3493@pengutronix.de>
+References: <1296217283-14531-1-git-send-email-s.hauer@pengutronix.de>
+	<20110129213821.0e51dc32@endymion.delvare>
+	<20110129215141.GA3493@pengutronix.de>
+Date: Sun, 30 Jan 2011 11:49:32 +0800
+Message-ID: <AANLkTi=ppKZ96T3_1nYisHG9705OCHgZqkLnu2f47zq5@mail.gmail.com>
+Subject: Re: [RFC] add pwmlib support
+From: arden jay <arden.jay@gmail.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Jean Delvare <khali@linux-fr.org>, Sascha Hauer <s.hauer@pengutronix.de>,
+        linux-kernel@vger.kernel.org, Eric Miao <eric.miao@linaro.org>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Hemanth V <hemanthv@ti.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some platforms, we need to restore the console speed on resume even
-it was not suspended (no_console_suspend), and on others we don't have
-to do that.
+Sorry, I'm confused about this.
+If it is for backlight control, why it don't go through led_class?
 
-So don't care about the "console_suspend_enabled" and unconditionally
-reset the console speed if it is a console.
+Do I miss anything?
 
-This is actually a redo of ba15ab0 (Set proper console speed on resume
-if console suspend is disabled) from Deepak Saxena.  I also tried to
-investigate more to find out if this change will break others, here is
-what I've found out:
+2011/1/30 Wolfram Sang <w.sang@pengutronix.de>:
+>
+>> > code is inspired by gpiolib support and tested using the backlight pwm
+>                                                             ^^^^^^^^^
+>> So I believe that hwmon drivers are out of scope for pwmlib. Which
+>> makes me wonder what you intend to do with pwmlib (back to my first
+>> question...) as the only use I know of for PWM signals in computers is
+>> for fan control.
+>
+> It was meant for backlight control (was mentioned very indirectly).
+> I also pointed him to Bill's implementation, too.
+>
+> Regards,
+>
+>   Wolfram
+>
+> --
+> Pengutronix e.K.                           | Wolfram Sang                |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+>
+> -----BEGIN PGP SIGNATURE-----
+> Version: GnuPG v1.4.9 (GNU/Linux)
+>
+> iEYEARECAAYFAk1Ei+0ACgkQD27XaX1/VRvjkACeOhJonBEZQX8U+ihKtiMjQT/U
+> IfAAoMdZiOrAOvuH1Iv6ZKNYoT+VhhTM
+> =ROYN
+> -----END PGP SIGNATURE-----
+>
+>
 
-commit 891b9dd10764352926e1e107756aa229dfa2c210
-Author: Jason Wang <jason77.wang@gmail.com>
-    serial-core: restore termios settings when resume console ports
 
-commit ca2e71aa8cfb0056ce720f3fd53f59f5fac4a3e1
-Author: Jason Wang <jason77.wang@gmail.com>
-    serial-core: skip call set_termios/console_start when no_console_suspend
 
-commit 4547be7809a3b775ce750ec7f8b5748954741523
-Author: Stanislav Brabec <sbrabec@suse.cz>
-    serial-core: resume serial hardware with no_console_suspend
-
-commit ba15ab0e8de0d4439a91342ad52d55ca9e313f3d
-Author: Deepak Saxena <dsaxena@laptop.org>
-    Set proper console speed on resume if console suspend is disabled
-
-from ba15ab0, we learned that, even if the console suspend is disabled
-(when no_console_suspend is set), we may still need to "reset the port
-to the state it was in before we suspended."
-
-Then with 4547be7, this piece of code is removed.
-
-And then Jason Wang added that back in ca2e71a and 891b9dd, to fix
-some breakage on OMAP3EVM platform. From ca2e71a we learned that the
-"set_termios" things is actually needed by both console is suspended
-and not suspended.
-
-That's why I removed the console_suspended_enabled condition, and only
-call console_start() when we actually suspeneded it.
-
-I also noticed in this thread:
-http://marc.info/?t=129079257100004&r=1&w=2, which talked about on
-some platforms, UART HW will be cut power whether or not we set
-no_console_suspend, and then on resume it does not work quite well. I
-have a similar HW, and this patch fixed this issue, don't know if this
-patch also works on their platforms.
-
-[Update: Stanislav tested this patch on Zaurus and reported it improves the
-situation. Thanks.]
-
-CC: Greg KH <greg@kroah.com>
-CC: Deepak Saxena <dsaxena@laptop.org>
-CC: Jason Wang <jason77.wang@gmail.com>
-CC: Stanislav Brabec <sbrabec@suse.cz>
-CC: Daniel Drake <dsd@laptop.org>
-Signed-off-by: Yin Kangkai <kangkai.yin@linux.intel.com>
----
- drivers/tty/serial/serial_core.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index 460a72d..20563c5 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -2064,7 +2064,7 @@ int uart_resume_port(struct uart_driver *drv, struct uart_port *uport)
- 	/*
- 	 * Re-enable the console device after suspending.
- 	 */
--	if (console_suspend_enabled && uart_console(uport)) {
-+	if (uart_console(uport)) {
- 		/*
- 		 * First try to use the console cflag setting.
- 		 */
-@@ -2077,9 +2077,9 @@ int uart_resume_port(struct uart_driver *drv, struct uart_port *uport)
- 		if (port->tty && port->tty->termios && termios.c_cflag == 0)
- 			termios = *(port->tty->termios);
- 
--		uart_change_pm(state, 0);
- 		uport->ops->set_termios(uport, &termios, NULL);
--		console_start(uport->cons);
-+		if (console_suspend_enabled)
-+			console_start(uport->cons);
- 	}
- 
- 	if (port->flags & ASYNC_SUSPENDED) {
 -- 
-1.7.2.3
-
+cheers,
+jay
