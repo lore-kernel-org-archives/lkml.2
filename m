@@ -1,106 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751831Ab1A3HP4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jan 2011 02:15:56 -0500
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:39307 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751165Ab1A3HPz (ORCPT
+	id S1751924Ab1A3IXg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jan 2011 03:23:36 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:44201 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751186Ab1A3IXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jan 2011 02:15:55 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tao.ma;
-	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer:X-Identified-User;
-	b=M96EAhbJNtA3xzee58R1Ta1z09UyKTiTJ0A7+q+NQsj6BL/+JoeKUL2AQVWkySi4NLWvTSMChBmMaAFsG6tWaOy3wlbGJZvlchqeGx/3b3QratFTPiEw55NXnq5IHdxv;
-From: Tao Ma <tm@tao.ma>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] mlock: revert the optimization for dirtying pages and triggering writeback.
-Date: Sun, 30 Jan 2011 15:15:20 +0800
-Message-Id: <1296371720-4176-1-git-send-email-tm@tao.ma>
-X-Mailer: git-send-email 1.7.1
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 114.251.86.0 authed with tm@tao.ma}
+	Sun, 30 Jan 2011 03:23:35 -0500
+Date: Sun, 30 Jan 2011 17:23:43 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+Subject: Re: [PATCH 0/5] mmc: add double buffering for mmc block requests
+In-reply-to: <AANLkTi=H71TQpuBnagMThcv-6NKJyqsD-xtg_eW8Pb_T@mail.gmail.com>
+To: Per Forlin <per.forlin@linaro.org>
+Cc: Jaehoon Chung <jh80.chung@samsung.com>, linux-mmc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, Chris Ball <cjb@laptop.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Message-id: <4D45200F.9090007@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7BIT
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+References: <1294856043-13447-1-git-send-email-per.forlin@linaro.org>
+ <4D34FC5D.5080605@samsung.com>
+ <AANLkTimjfO4Wb0f87X_sDugW=yU1=YEQn35uZnsKKwq2@mail.gmail.com>
+ <AANLkTi=H71TQpuBnagMThcv-6NKJyqsD-xtg_eW8Pb_T@mail.gmail.com>
+X-OriginalArrivalTime: 30 Jan 2011 08:23:27.0948 (UTC)
+ FILETIME=[F88690C0:01CBC056]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tao Ma <boyu.mt@taobao.com>
+Hi Per.
 
-In 5ecfda0, we do some optimization in mlock, but it causes
-a very basic test case(attached below) of mlock to fail. So
-this patch revert it with some tiny modification so that it
-apply successfully with the lastest 38-rc2 kernel.
-The test program is attached below.
+If you sketch a implementation for sdhci. i can test the patches on the Samsung Soc
+Your help is very nice for me :).i want to know how much improve the performance 
+after applied your patch.
 
-#include <sys/mman.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/types.h>
+Regards,
+Jaehoon Chung
 
-int main()
-{
-	char *buf, *testfile = "test_mmap";
-	int fd, file_len = 40960, ret = -1;
-
-	fd = open(testfile, O_RDWR);
-	if (fd < 0) {
-		perror("open");
-		return -1;
-	}
-
-	if (ftruncate(fd, file_len) < 0) {
-		perror("ftruncate");
-		goto out;
-	}
-
-	buf = mmap(NULL, file_len, PROT_WRITE, MAP_SHARED, fd, 0);
-	if (buf == MAP_FAILED) {
-		perror("mmap");
-		goto out;
-	}
-
-	if (mlock(buf, file_len) < 0) {
-		perror("mlock");
-		goto out;
-	}
-
-	munlock(buf, file_len);
-	munmap(buf, file_len);
-	ret = 0;
-out:
-	close(fd);
-	return ret;
-}
-
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
----
- mm/mlock.c |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
-
-diff --git a/mm/mlock.c b/mm/mlock.c
-index 13e81ee..76e106c 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -170,12 +170,8 @@ static long __mlock_vma_pages_range(struct vm_area_struct *vma,
- 	VM_BUG_ON(!rwsem_is_locked(&mm->mmap_sem));
- 
- 	gup_flags = FOLL_TOUCH;
--	/*
--	 * We want to touch writable mappings with a write fault in order
--	 * to break COW, except for shared mappings because these don't COW
--	 * and we would not want to dirty them for nothing.
--	 */
--	if ((vma->vm_flags & (VM_WRITE | VM_SHARED)) == VM_WRITE)
-+
-+	if (vma->vm_flags & VM_WRITE)
- 		gup_flags |= FOLL_WRITE;
- 
- 	if (vma->vm_flags & VM_LOCKED)
--- 
-1.6.3.GIT
+Per Forlin wrote:
+> Hi Jaehoon,
+> 
+> Have you had the chance to test the patches on the Samsung Soc. I can
+> sketch a implementation for sdhci if that helps? Unfortunately I don't
+> have any hardware to test the SDHCI driver unless there is support in
+> QEMU?
+> I really think I need to test this on more hardware in order to get
+> more results for the patchset and hopefully more attention as well.
+> 
+> BR
+> Per
+> 
+> On 18 January 2011 09:12, Per Forlin <per.forlin@linaro.org> wrote:
+>> On 18 January 2011 03:35, Jaehoon Chung <jh80.chung@samsung.com> wrote:
+>>> Hi Per..
+>>>
+>>> it is interesting approach..so
+>>> we want to test your double buffering in our environment(Samsung SoC).
+>>>
+>>> Did you test with SDHCI?
+>> So far I have only tested on mmci for board u5500 and u8500. I happily
+>> test on a different board if I can get hold of one.
+>>
+>>> If you tested with SDHCI, i want to know how much increase the performance.
+>>>
+>>> Thanks,
+>>> Jaehoon Chung
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
