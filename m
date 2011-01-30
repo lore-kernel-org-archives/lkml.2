@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab1A3Ubr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jan 2011 15:31:47 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:64390 "EHLO
+	id S1754704Ab1A3Ulw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jan 2011 15:41:52 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:50806 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752075Ab1A3Ubq (ORCPT
+	with ESMTP id S1752075Ab1A3Ulv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jan 2011 15:31:46 -0500
+	Sun, 30 Jan 2011 15:41:51 -0500
 From: Stefan Weil <weil@mail.berlios.de>
-To: Karsten Keil <isdn@linux-pingi.de>
-Cc: Stefan Weil <weil@mail.berlios.de>, Karsten Keil <isdn@linux-pingi.de>,
-        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, netdev@vger.kernel.org,
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: Stefan Weil <weil@mail.berlios.de>, Ralf Baechle <ralf@linux-mips.org>,
+        Wu Zhangjin <wuzhangjin@gmail.com>,
+        Arnaud Patard <apatard@mandriva.com>, linux-mips@linux-mips.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] isdn: icn: Fix potentially wrong string handling
-Date: Sun, 30 Jan 2011 21:31:26 +0100
-Message-Id: <1296419486-5482-1-git-send-email-weil@mail.berlios.de>
+Subject: [PATCH] MIPS: Loongson: Fix potentially wrong string handling
+Date: Sun, 30 Jan 2011 21:41:44 +0100
+Message-Id: <1296420104-5679-1-git-send-email-weil@mail.berlios.de>
 X-Mailer: git-send-email 1.7.2.3
-X-Provags-ID: V02:K0:YSeecV0k+wVTjUHGauNWRWpjAp7fiClqQ6Ixa28v5mQ
- gKrXLy1KEbABhcLUCbXexcj2iA2xT0MyjS8vjXcKXWnuVcj2FI
- 5FNfk6+dhysFoK9u9aFF7DhRXLNdIdI0wct73jLlFLZ/MF4vuO
- yiu9cKpX4NpRKQh1ujRoROxu65CBFDaaFXDY5sbowHHa6lkC/e
- s9wE30I85ZxCeWgCMaqD3W9XgZPehZpJ2mv9UoEsMHeg3aIPS8
- TLujuttabo+Y+
+X-Provags-ID: V02:K0:nG43jotu6AUcUO34iS9wi7Ehk4HnpJ3hzy75Q5gd4sj
+ jEy5Ja7ZDIVLYnc5lIN/TLb/cNZzHT0l3rFM2Z3FtO1HCkq71B
+ mtcvMLjPSQfPbH87WXjCybtr6MOJB+neMqCP2FtWVegte6Ez4T
+ oYB+psAv01LhrVN8AFrWvj7MMsbDa9HfEUEY0yzd9bWpKHDHZn
+ Y6gVx3LDD0PUKMzGmkdkB9QgbUOc+0FXU9X67ulf5u+we3mIAh
+ PDgJFI4CtmHP1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This warning was reported by cppcheck:
-drivers/isdn/icn/icn.c:1641: error: Dangerous usage of 'rev' (strncpy doesn't always 0-terminate it)
+This error was reported by cppcheck:
+arch/mips/loongson/common/machtype.c:56: error: Dangerous usage of 'str' (strncpy doesn't always 0-terminate it)
 
-If strncpy copied 20 bytes, the destination string rev was not terminated.
-The patch adds one more byte to rev and makes sure that this byte is
+If strncpy copied MACHTYPE_LEN bytes, the destination string str
+was not terminated.
+
+The patch adds one more byte to str and makes sure that this byte is
 always 0.
 
-Cc: Karsten Keil <isdn@linux-pingi.de>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: netdev@vger.kernel.org
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Wu Zhangjin <wuzhangjin@gmail.com>
+Cc: Arnaud Patard <apatard@mandriva.com>
+Cc: linux-mips@linux-mips.org
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Stefan Weil <weil@mail.berlios.de>
 ---
- drivers/isdn/icn/icn.c |   15 ++++++++-------
- 1 files changed, 8 insertions(+), 7 deletions(-)
+ arch/mips/loongson/common/machtype.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/isdn/icn/icn.c b/drivers/isdn/icn/icn.c
-index f2b5bab..540c181 100644
---- a/drivers/isdn/icn/icn.c
-+++ b/drivers/isdn/icn/icn.c
-@@ -1627,7 +1627,7 @@ __setup("icn=", icn_setup);
- static int __init icn_init(void)
+diff --git a/arch/mips/loongson/common/machtype.c b/arch/mips/loongson/common/machtype.c
+index 81fbe6b..2efd5d9 100644
+--- a/arch/mips/loongson/common/machtype.c
++++ b/arch/mips/loongson/common/machtype.c
+@@ -41,7 +41,7 @@ void __weak __init mach_prom_init_machtype(void)
+ 
+ void __init prom_init_machtype(void)
  {
- 	char *p;
--	char rev[20];
-+	char rev[21];
+-	char *p, str[MACHTYPE_LEN];
++	char *p, str[MACHTYPE_LEN + 1];
+ 	int machtype = MACH_LEMOTE_FL2E;
  
- 	memset(&dev, 0, sizeof(icn_dev));
- 	dev.memaddr = (membase & 0x0ffc000);
-@@ -1638,6 +1638,7 @@ static int __init icn_init(void)
- 
- 	if ((p = strchr(revision, ':'))) {
- 		strncpy(rev, p + 1, 20);
-+		rev[20] = '\0';
- 		p = strchr(rev, '$');
- 		if (p)
- 			*p = 0;
+ 	mips_machtype = LOONGSON_MACHTYPE;
+@@ -53,6 +53,7 @@ void __init prom_init_machtype(void)
+ 	}
+ 	p += strlen("machtype=");
+ 	strncpy(str, p, MACHTYPE_LEN);
++	str[MACHTYPE_LEN] = '\0';
+ 	p = strstr(str, " ");
+ 	if (p)
+ 		*p = '\0';
 -- 
 1.7.2.3
 
