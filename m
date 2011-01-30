@@ -1,310 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770Ab1A3TMN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jan 2011 14:12:13 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:56764 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752765Ab1A3TMM (ORCPT
+	id S1753841Ab1A3TO4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jan 2011 14:14:56 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:39499 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752814Ab1A3TOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jan 2011 14:12:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=aSrq1ztWXJkGVulCVb8F/xaMekmUUkgzUPNc3SflpXURE6R2utNnQDoftrvtBTz475
-         LOcIrJ6lRD//e048pONIJ/06Z0snaz+bbT2zAFqJ/lMo7Dp8fOQHrU93CVgB8Lrb+o0p
-         ubydJ+wHVwmd9e+cmETggeHvlO4fcxO9Vztgo=
+	Sun, 30 Jan 2011 14:14:54 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX19sBFNDxkxsKDH1sjIZTcvUkX2+Lx6Clz2g8zaFPb
+	h5RY6Dld4ItnkZ
+From: Peter =?iso-8859-15?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: Corey Minyard <minyard@acm.org>
+Subject: Re: [PATCH] char/ipmi: fix OOPS caused by pnp_unregister_driver on unregistered driver
+Date: Sun, 30 Jan 2011 20:14:49 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.4.5; x86_64; ; )
+Cc: Matthew Garrett <mjg@redhat.com>, openipmi-developer@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+References: <1294587680-1924-1-git-send-email-peterhuewe@gmx.de>
+In-Reply-To: <1294587680-1924-1-git-send-email-peterhuewe@gmx.de>
 MIME-Version: 1.0
-In-Reply-To: <20110130182540.GA12801@pengutronix.de>
-References: <AANLkTimHqDGtY3rTzB_xr9f_-pd7Sf084G8vOGghdKhh@mail.gmail.com>
-	<20110130182540.GA12801@pengutronix.de>
-Date: Sun, 30 Jan 2011 20:12:10 +0100
-Message-ID: <AANLkTi=UYOeNXtL9ZhyVESBvWQwMEdbVUAOMqp4aV4_H@mail.gmail.com>
-Subject: Re: [leds-pca9532] Add gpio capability
-From: Joachim Eastwood <manabian@gmail.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: rpurdie@rpsys.net, riku.voipio@iki.fi, linux-kernel@vger.kernel.org,
-        joachim.eastwood@jotron.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101302014.49507.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Am Sonntag 09 Januar 2011, 16:41:20 schrieb Peter Huewe:
+> This patch fixes an OOPS triggered when calling modprobe ipmi_si a
+> second time after the first modprobe returned without finding any ipmi
+> devices.
+> 
+> The OOPS is caused by calling pnp_unregister_driver on a (possibly)
+> unregistered pnp driver. (Although I'm not sure why it works the first
+> time)
+> 
+> IPMI System Interface driver.
+> ipmi_si: Adding default-specified kcs state machine
+> ipmi_si: Trying default-specified kcs state machine at i/o address 0xca2,
+> slave address 0x0, irq 0 ipmi_si: Interface detection failed
+> ipmi_si: Adding default-specified smic state machine
+> ipmi_si: Trying default-specified smic state machine at i/o address 0xca9,
+> slave address 0x0, irq 0 ipmi_si: Interface detection failed
+> ipmi_si: Adding default-specified bt state machine
+> ipmi_si: Trying default-specified bt state machine at i/o address 0xe4,
+> slave address 0x0, irq 0 ipmi_si: Interface detection failed
+> ipmi_si: Unable to find any System Interface(s)
+> 
+> IPMI System Interface driver.
+> BUG: unable to handle kernel paging request at c9ccb990
+> IP: [<c1380c98>] put_driver+0x8/0x20
+> *pde = 05e2f067 *pte = 00000000
+> Oops: 0000 [#1]
+> last sysfs file: /sys/module/ipmi_msghandler/initstate
+> Modules linked in: ipmi_si(+) ipmi_msghandler snd_seq_dummy snd_seq_oss
+> snd_seq_midi_event snd_seq snd_pcm_oss snd_mixer_oss ipv6 pcmcia
+> pcmcia_core lp fuse snd_ens1371 snd_via82xx gameport snd_ac97_codec
+> ac97_bus snd_pcm ppdev snd_timer snd_mpu401_uart snd_rawmidi
+> snd_seq_device snd via686a snd_page_alloc hwmon soundcore parport_pc
+> shpchp rtc_cmos psmouse rtc_core parport rtc_lib button evdev serio_raw sg
+> [last unloaded: pcmcia_core]
+> 
+> Pid: 1653, comm: insmod Not tainted 2.6.37 #1 8363-686A/VT8363
+> EIP: 0060:[<c1380c98>] EFLAGS: 00010286 CPU: 0
+> EIP is at put_driver+0x8/0x20
+> EAX: c9ccb960 EBX: c12cc2e0 ECX: 00000000 EDX: c9ccb960
+> ESI: c9ceb960 EDI: 00000000 EBP: c5e8fee0 ESP: c5e8fee0
+>  DS: 007b ES: 007b FS: 0000 GS: 00e0 SS: 0068
+> Process insmod (pid: 1653, ti=c5e8e000 task=c6e0a000 task.ti=c5e8e000)
+> Stack:
+>  c5e8ff04 c1380db5 c1118ba3 c9ceb8c0 c5e8fef8 c1380e99 00000000 00000004
+>  00000000 c5e8ff0c c12cc49c c5e8ff58 c9ce9640 c9cea71c 000001a4 00000000
+>  c9ceb65c c19fc3f8 fffffffc 00000000 c5e8ff38 c107b185 c5e8ff54 c105063c
+> Call Trace:
+>  [<c1380db5>] ? driver_register+0x105/0x130
+>  [<c1118ba3>] ? sysfs_create_file+0x33/0x40
+>  [<c1380e99>] ? driver_create_file+0x19/0x20
+>  [<c12cc49c>] ? pnp_register_driver+0x1c/0x20
+>  [<c9ce9640>] ? init_ipmi_si+0x294/0x88f [ipmi_si]
+>  [<c107b185>] ? tracepoint_module_notify+0x25/0x30
+>  [<c105063c>] ? notifier_call_chain+0x4c/0x70
+>  [<c1001206>] ? do_one_initcall+0x116/0x160
+>  [<c9ce93ac>] ? init_ipmi_si+0x0/0x88f [ipmi_si]
+>  [<c1062f41>] ? sys_init_module+0x91/0x1d0
+>  [<c17b7ebc>] ? syscall_call+0x7/0xb
+> Code: 01 00 00 c7 04 24 c7 1c 91 c1 e8 64 14 cb ff 83 c4 0c 5b 5e c9 c3 8d
+> b6 00 00 00 00 8d bc 27 00 00 00 00 55 89 e5 3e 8d 74 26 00 <8b> 40 30 e8
+> 70 18 ee ff c9 c3 8d b4 26 00 00 00 00 8d bc 27 00 EIP: [<c1380c98>]
+> put_driver+0x8/0x20 SS:ESP 0068:c5e8fee0
+> CR2: 00000000c9ccb990
+> ---[ end trace 9b4a0dc647b099c4 ]---
+> 
+> Since the OOPS occurs in the current 2.6.37 release, I added stable on
+> CC.
+> The code exists in this form since 27d0567ab6 (2009-12-17), but could
+> not reproduce it in 2.6.33.
+> 
+> KernelVersion: 2.6.37
+> Cc: <stable@kernel.org>
+> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+> ---
+>  drivers/char/ipmi/ipmi_si_intf.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/char/ipmi/ipmi_si_intf.c
+> b/drivers/char/ipmi/ipmi_si_intf.c index 035da9e..26c46af 100644
+> --- a/drivers/char/ipmi/ipmi_si_intf.c
+> +++ b/drivers/char/ipmi/ipmi_si_intf.c
+> @@ -3440,6 +3440,11 @@ static int __devinit init_ipmi_si(void)
+>  			pci_unregister_driver(&ipmi_pci_driver);
+>  #endif
+> 
+> +#ifdef CONFIG_ACPI
+> +		if (pnp_registered)
+> +			pnp_unregister_driver(&ipmi_pnp_driver);
+> +#endif
+> +
+>  #ifdef CONFIG_PPC_OF
+>  		if (of_registered)
+>  			of_unregister_platform_driver(&ipmi_of_platform_driver);
 
-On 1/30/11, Wolfram Sang <w.sang@pengutronix.de> wrote:
-> Hi,
->
->> Since it is a bug to call get/set value on unrequested gpio's the
->> check for PCA9532_TYPE_GPIO could be removed from
->> pca9532_gpio_get_value/pca9532_gpio_set_value functions. But I have
->> kept it for this posting.
->
-> If you keep it, you could print a warning maybe. Or just remove the check.
 
-I'll think I will remove the check.
+Ping? 
+Any updates on this one?
 
->
->> -------------------------------------------------------------------
->>     [leds-pca9532] Add gpio capability
->>
->>     Pins not used for leds can now be used as gpio by setting pin type as
->>     PCA9532_TYPE_GPIO and defining a gpio_base in platform data.
->>
->>     Signed-off-by: Joachim Eastwood <joachim.eastwood@jotron.com>
->
-> Some Kconfig-magic is missing. Iff that feature is used, then it depends on
-> GENERIC_GPIO.
-
-I though about it just when I had hit send. I'll create an updated
-version where gpio capability is optional.
-
-GENERIC_GPIO? Shouldn't it be GPIOLIB in this case?
-
->
->>
->> diff --git a/drivers/leds/leds-pca9532.c b/drivers/leds/leds-pca9532.c
->> index afac338..b036fa5 100644
->> --- a/drivers/leds/leds-pca9532.c
->> +++ b/drivers/leds/leds-pca9532.c
->> @@ -19,7 +19,9 @@
->>  #include <linux/mutex.h>
->>  #include <linux/workqueue.h>
->>  #include <linux/leds-pca9532.h>
->> +#include <linux/gpio.h>
->>
->> +#define PCA9532_REG_INPUT(i) ((i)/8)
->>  #define PCA9532_REG_PSC(i) (0x2+(i)*2)
->>  #define PCA9532_REG_PWM(i) (0x3+(i)*2)
->>  #define PCA9532_REG_LS0  0x6
->> @@ -34,6 +36,7 @@ struct pca9532_data {
->>  	struct mutex update_lock;
->>  	struct input_dev *idev;
->>  	struct work_struct work;
->> +	struct gpio_chip gpio;
->>  	u8 pwm[2];
->>  	u8 psc[2];
->>  };
->> @@ -200,16 +203,58 @@ static void pca9532_led_work(struct work_struct
->> *work)
->>  	pca9532_setled(led);
->>  }
->>
->> -static void pca9532_destroy_devices(struct pca9532_data *data, int
->> n_devs)
->> +static int pca9532_gpio_request_pin(struct gpio_chip *gc, unsigned off)
->
-> Nitpick: maybe 'offset' as variable name? I first thought 'off' was a
-> description of the state.
-
-Yes, I guess 'offset' would be better. This seems to used in other
-gpio drivers as well.
-
->>  {
->> -	int i = n_devs;
->> +	struct pca9532_data *data = container_of(gc, struct pca9532_data, gpio);
->> +	struct pca9532_led *led = &data->leds[off];
->> +
->> +	if (led->type == PCA9532_TYPE_GPIO)
->> +		return 0;
->> +
->> +	return -EINVAL;
->
-> -EBUSY? The value is valid, just the pin is used already.
-
-Agreed.
-
->> +}
->> +
->> +static void pca9532_gpio_set_value(struct gpio_chip *gc, unsigned off,
->> int val)
->> +{
->> +	struct pca9532_data *data = container_of(gc, struct pca9532_data, gpio);
->> +	struct pca9532_led *led = &data->leds[off];
->> +
->> +	if (led->type == PCA9532_TYPE_GPIO) {
->> +		if (val)
->> +			led->state = PCA9532_ON;
->> +		else
->> +			led->state = PCA9532_OFF;
->> +
->> +		pca9532_setled(led);
->> +	}
->> +}
->> +
->> +static int pca9532_gpio_get_value(struct gpio_chip *gc, unsigned off)
->> +{
->> +	struct pca9532_data *data = container_of(gc, struct pca9532_data, gpio);
->> +	struct pca9532_led *led = &data->leds[off];
->> +	unsigned char reg;
->> +
->> +	if (led->type == PCA9532_TYPE_GPIO) {
->> +		reg = i2c_smbus_read_byte_data(data->client,
->> +						PCA9532_REG_INPUT(off));
->> +		return !!(reg & (1<<(off % 8)));
->
-> Spaces around operators.
-
-Will fix.
-
->> +	}
->> +
->> +	return -1;
->
-> According to gpio.txt, you should return 0 here (there are no errorcodes).
-
-I will remove the check for PCA9532_TYPE_GPIO so this will go away.
-
->> +}
->> +
->> +static int pca9532_destroy_devices(struct pca9532_data *data, int n_devs)
->> +{
->> +	int err, i = n_devs;
->>
->>  	if (!data)
->> -		return;
->> +		return -EINVAL;
->>
->>  	while (--i >= 0) {
->>  		switch (data->leds[i].type) {
->>  		case PCA9532_TYPE_NONE:
->> +		case PCA9532_TYPE_GPIO:
->>  			break;
->>  		case PCA9532_TYPE_LED:
->>  			led_classdev_unregister(&data->leds[i].ldev);
->> @@ -224,12 +269,24 @@ static void pca9532_destroy_devices(struct
->> pca9532_data *data, int n_devs)
->>  			break;
->>  		}
->>  	}
->> +
->> +	if (data->gpio.dev) {
->> +		err = gpiochip_remove(&data->gpio);
->> +		if (err) {
->> +			dev_err(&data->client->dev, "%s failed, %d\n",
->> +						"gpiochip_remove()", err);
->> +			return err;
->> +		}
->> +	}
->> +
->> +	return 0;
->>  }
->>
->>  static int pca9532_configure(struct i2c_client *client,
->>  	struct pca9532_data *data, struct pca9532_platform_data *pdata)
->>  {
->>  	int i, err = 0;
->> +	int gpios = 0;
->>
->>  	for (i = 0; i < 2; i++)	{
->>  		data->pwm[i] = pdata->pwm[i];
->> @@ -249,6 +306,9 @@ static int pca9532_configure(struct i2c_client
->> *client,
->>  		switch (led->type) {
->>  		case PCA9532_TYPE_NONE:
->>  			break;
->> +		case PCA9532_TYPE_GPIO:
->> +			gpios++;
->> +			break;
->>  		case PCA9532_TYPE_LED:
->>  			led->state = pled->state;
->>  			led->name = pled->name;
->> @@ -297,6 +357,30 @@ static int pca9532_configure(struct i2c_client
->> *client,
->>  			break;
->>  		}
->>  	}
->> +
->> +	if (gpios) {
->> +		data->gpio.label = "gpio-pca9532";
->> +		data->gpio.set = pca9532_gpio_set_value;
->> +		data->gpio.get = pca9532_gpio_get_value;
->> +		data->gpio.request = pca9532_gpio_request_pin;
->> +		data->gpio.can_sleep = 1;
->> +		data->gpio.base = pdata->gpio_base;
->> +		data->gpio.ngpio = 16;
->> +		data->gpio.dev = &client->dev;
->> +		data->gpio.owner = THIS_MODULE;
->
-> I'd assume that you also need to define a direction_output-function which
-> always
-> returns success?
-
-Yes, you are right. It is not possible to set direction in hw, but I
-should provide them.
-
->> +
->> +		err = gpiochip_add(&data->gpio);
->> +		if (err) {
->> +			/* Use data->gpio.dev as a flag for freeing gpiochip */
->> +			data->gpio.dev = NULL;
->> +			dev_info(&client->dev, "could not add gpiochip\n");
->
-> dev_warning?
-
-Yes, that is better.
-
->> +		} else {
->> +			dev_info(&client->dev, "gpios %i...%i\n",
->> +				data->gpio.base, data->gpio.base +
->> +				data->gpio.ngpio - 1);
->> +		}
->> +	}
->> +
->>  	return 0;
->>
->>  exit:
->> @@ -337,7 +421,12 @@ static int pca9532_probe(struct i2c_client *client,
->>  static int pca9532_remove(struct i2c_client *client)
->>  {
->>  	struct pca9532_data *data = i2c_get_clientdata(client);
->> -	pca9532_destroy_devices(data, 16);
->> +	int err;
->> +
->> +	err = pca9532_destroy_devices(data, 16);
->> +	if (err)
->> +		return err;
->> +
->>  	kfree(data);
->>  	return 0;
->>  }
->> diff --git a/include/linux/leds-pca9532.h b/include/linux/leds-pca9532.h
->> index f158eb1..b8d6fff 100644
->> --- a/include/linux/leds-pca9532.h
->> +++ b/include/linux/leds-pca9532.h
->> @@ -25,7 +25,7 @@ enum pca9532_state {
->>  };
->>
->>  enum pca9532_type { PCA9532_TYPE_NONE, PCA9532_TYPE_LED,
->> -	PCA9532_TYPE_N2100_BEEP };
->> +	PCA9532_TYPE_N2100_BEEP, PCA9532_TYPE_GPIO };
->>
->>  struct pca9532_led {
->>  	u8 id;
->> @@ -41,6 +41,7 @@ struct pca9532_platform_data {
->>  	struct pca9532_led leds[16];
->>  	u8 pwm[2];
->>  	u8 psc[2];
->> +	int gpio_base;
->>  };
->>
->>  #endif /* __LINUX_PCA9532_H */
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-
-Thanks for the review. I'll send out an updated patch later tonight.
-
-regards
-Joachim Eastwood
-
-> Regards,
->
->    Wolfram
->
-> --
-> Pengutronix e.K.                           | Wolfram Sang                |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
->
+Thanks,
+Peter
