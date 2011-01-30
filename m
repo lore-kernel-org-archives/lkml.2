@@ -1,25 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751834Ab1AaACI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jan 2011 19:02:08 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59522 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968Ab1AaACG (ORCPT
+	id S1752150Ab1AaAFC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jan 2011 19:05:02 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57971 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750874Ab1AaAFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jan 2011 19:02:06 -0500
+	Sun, 30 Jan 2011 19:05:00 -0500
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 31 Jan 2011 08:55:47 +0900
+Date: Mon, 31 Jan 2011 08:58:53 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Balbir Singh <balbir@linux.vnet.ibm.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [BUGFIX][PATCH 0/4] Fixes for memcg with THP
-Message-Id: <20110131085547.960f6702.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <AANLkTiktzgxEVROyB=-0ZNq5xzao1Q-Cu3xpGqhx0gxm@mail.gmail.com>
-References: <20110128122229.6a4c74a2.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTiktzgxEVROyB=-0ZNq5xzao1Q-Cu3xpGqhx0gxm@mail.gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>, balbir@linux.vnet.ibm.com,
+        linux-mm@kvack.org, akpm@linux-foundation.org, npiggin@kernel.dk,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kosaki.motohiro@jp.fujitsu.com
+Subject: Re: [PATCH 3/3] Provide control over unmapped pages (v4)
+Message-Id: <20110131085853.b09aef2d.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <alpine.DEB.2.00.1101280917570.1194@router.home>
+References: <20110125051003.13762.35120.stgit@localhost6.localdomain6>
+	<20110125051015.13762.13429.stgit@localhost6.localdomain6>
+	<AANLkTikHLw0Qg+odOB-bDtBSB-5UbTJ5ZOM-ZAdMqXgh@mail.gmail.com>
+	<AANLkTi=qXsDjN5Jp4m3QMgVnckoAM7uE9_Hzn6CajP+c@mail.gmail.com>
+	<AANLkTinfxXc04S9VwQcJ9thFff=cP=icroaiVLkN-GeH@mail.gmail.com>
+	<20110128064851.GB5054@balbir.in.ibm.com>
+	<AANLkTikw_j0JJVqEsj1xThoashiOARg+8BgcLKrvkV3U@mail.gmail.com>
+	<20110128165605.3cbe5208.kamezawa.hiroyu@jp.fujitsu.com>
+	<alpine.DEB.2.00.1101280917570.1194@router.home>
 Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
@@ -29,69 +36,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 29 Jan 2011 18:17:56 +0530
-Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+On Fri, 28 Jan 2011 09:20:02 -0600 (CST)
+Christoph Lameter <cl@linux.com> wrote:
 
-> On Fri, Jan 28, 2011 at 8:52 AM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> >
-> > On recent -mm, when I run make -j 8 under 200M limit of memcg, as
-> > ==
-> > # mount -t cgroup none /cgroup/memory -o memory
-> > # mkdir /cgroup/memory/A
-> > # echo 200M > /cgroup/memory/A/memory.limit_in_bytes
-> > # echo $$ > /cgroup/memory/A/tasks
-> > # make -j 8 kernel
-> > ==
-> >
-> > I see hangs with khugepaged. That's because memcg's memory reclaim
-> > routine doesn't handle HUGE_PAGE request in proper way. And khugepaged
-> > doesn't know about memcg.
-> >
-> > This patch set is for fixing above hang. Patch 1-3 seems obvious and
-> > has the same concept as patches in RHEL.
+> On Fri, 28 Jan 2011, KAMEZAWA Hiroyuki wrote:
 > 
-> Do you have any backtraces? Are they in the specific patches?
+> > > > I see it as a tradeoff of when to check? add_to_page_cache or when we
+> > > > are want more free memory (due to allocation). It is OK to wakeup
+> > > > kswapd while allocating memory, somehow for this purpose (global page
+> > > > cache), add_to_page_cache or add_to_page_cache_locked does not seem
+> > > > the right place to hook into. I'd be open to comments/suggestions
+> > > > though from others as well.
+> >
+> > I don't like add hook here.
+> > AND I don't want to run kswapd because 'kswapd' has been a sign as
+> > there are memory shortage. (reusing code is ok.)
+> >
+> > How about adding new daemon ? Recently, khugepaged, ksmd works for
+> > managing memory. Adding one more daemon for special purpose is not
+> > very bad, I think. Then, you can do
+> >  - wake up without hook
+> >  - throttle its work.
+> >  - balance the whole system rather than zone.
+> >    I think per-node balance is enough...
+> 
+> 
+> I think we already have enough kernel daemons floating around. They are
+> multiplying in an amazing way. What would be useful is to map all
+> the memory management background stuff into a process. May call this memd
+> instead? Perhaps we can fold khugepaged into kswapd as well etc.
 > 
 
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007] INFO: rcu_sched_state detected stall on CPU 0
-(t=60000 jiffies)
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007] sending NMI to all CPUs:
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007] NMI backtrace for cpu 0
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007] CPU 0
-
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8102a04e>] arch_trigger_all_cpu_bac
-ktrace+0x5e/0xa0
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff810bca09>] __rcu_pending+0x169/0x3b
-0
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8108a250>] ? tick_sched_timer+0x0/0
-xc0
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff810bccbc>] rcu_check_callbacks+0x6c
-/0x120
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff810689a8>] update_process_times+0x4
-8/0x90
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8108a2b6>] tick_sched_timer+0x66/0x
-c0
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8107ede0>] __run_hrtimer+0x90/0x1e0
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff81032db9>] ? kvm_clock_get_cycles+0
-x9/0x10
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8107f1be>] hrtimer_interrupt+0xde/0
-x240
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8155268b>] smp_apic_timer_interrupt
-+0x6b/0x9b
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8100c9d3>] apic_timer_interrupt+0x13/0x20
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  <EOI>
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff810a726a>] ? res_counter_charge+0xda/0x100
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff81145459>] __mem_cgroup_try_charge+0x199/0x5d0
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff811463b5>] mem_cgroup_newpage_charge+0x45/0x50
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8113dbd4>] khugepaged+0x924/0x1430
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8107af00>] ? autoremove_wake_function+0x0/0x40
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8113d2b0>] ? khugepaged+0x0/0x1430
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8107a8b6>] kthread+0x96/0xa0
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8100ce24>] kernel_thread_helper+0x4/0x10
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8107a820>] ? kthread+0x0/0xa0
-Jan 18 10:28:29 rhel6-test kernel: [56245.286007]  [<ffffffff8100ce20>] ? kernel_thread_helper+0x0/0x10
+Making kswapd slow for whis "additional", "requested by user, not by system"
+work is good thing ? I think workqueue works enough well, it's scale based on
+workloads, if using thread is bad.
 
 Thanks,
 -Kame
+
+
+
 
