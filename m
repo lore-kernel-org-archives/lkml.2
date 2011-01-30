@@ -1,131 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751697Ab1A3Q2I (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jan 2011 11:28:08 -0500
-Received: from service87.mimecast.com ([94.185.240.25]:51240 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750807Ab1A3Q2G convert rfc822-to-8bit (ORCPT
+	id S1751970Ab1A3Qip (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jan 2011 11:38:45 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:47915 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836Ab1A3Qio convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jan 2011 11:28:06 -0500
-Subject: Re: [PATCH] ARM: Fix SMP_ON_UP for non ARM ltd. implementations
-From: Will Deacon <will.deacon@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-In-Reply-To: <20110130122027.GA22677@n2100.arm.linux.org.uk>
-References: <1296083052-20034-1-git-send-email-sboyd@codeaurora.org>
-	 <20110130122027.GA22677@n2100.arm.linux.org.uk>
-Date: Sun, 30 Jan 2011 16:27:55 +0000
-Message-ID: <1296404875.6192.10.camel@jazzbox>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2
-X-OriginalArrivalTime: 30 Jan 2011 16:27:58.0745 (UTC) FILETIME=[A8122890:01CBC09A]
-X-MC-Unique: 111013016280200901
-Content-Type: text/plain; charset=UTF-8
+	Sun, 30 Jan 2011 11:38:44 -0500
+Subject: Re: [PATCH] a patch to fix the cpu-offline-online problem caused
+ by pm_idle
+From: Peter Zijlstra <peterz@infradead.org>
+To: Luming Yu <luming.yu@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, tglx <tglx@linutronix.de>
+In-Reply-To: <AANLkTikagMAGssG09D+SCKTsu9T+==R2fsSM3tgHctdv@mail.gmail.com>
+References: <AANLkTinaOQpuJis5HgK316ANxpDS8eZ8Q0S4a44POrp0@mail.gmail.com>
+	 <1295894492.28776.470.camel@laptop>
+	 <AANLkTimq3jmza-t5iL10wgLLycwdDkJ3mznLQsKHM_Kf@mail.gmail.com>
+	 <1295946736.28776.479.camel@laptop>
+	 <AANLkTikQs1UcfBGf_6shNVtdDSzR+8XzUKcx0amFZXey@mail.gmail.com>
+	 <1296210619.15234.263.camel@laptop>
+	 <AANLkTikagMAGssG09D+SCKTsu9T+==R2fsSM3tgHctdv@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Sun, 30 Jan 2011 17:36:06 +0100
+Message-ID: <1296405366.2274.60.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
-
-On Sun, 2011-01-30 at 12:20 +0000, Russell King - ARM Linux wrote:
-> On Wed, Jan 26, 2011 at 03:04:12PM -0800, Stephen Boyd wrote:
-> > @@ -393,20 +393,25 @@ ENDPROC(__turn_mmu_on)
-> >  #ifdef CONFIG_SMP_ON_UP
-> >  __fixup_smp:
-> >       mov     r4, #0x00070000
-> > -     orr     r3, r4, #0xff000000     @ mask 0xff070000
-> > -     orr     r4, r4, #0x41000000     @ val 0x41070000
-> > -     and     r0, r9, r3
-> > -     teq     r0, r4                  @ ARM CPU and ARMv6/v7?
-> > +     and     r0, r9, r4
-> > +     teq     r0, r4                  @ ARMv6/v7?
-> >       bne     __fixup_smp_on_up       @ no, assume UP
-> > 
-> > +     orr     r3, r4, #0xff000000     @ mask 0xff070000
-> >       orr     r3, r3, #0x0000ff00
-> >       orr     r3, r3, #0x000000f0     @ mask 0xff07fff0
-> > +     orr     r4, r4, #0x41000000     @ val 0x41070000
-> >       orr     r4, r4, #0x0000b000
-> >       orr     r4, r4, #0x00000020     @ val 0x4107b020
-> >       and     r0, r9, r3
-> >       teq     r0, r4                  @ ARM 11MPCore?
-> >       moveq   pc, lr                  @ yes, assume SMP
-> > 
-> > +     mov     r4, #0x00070000
-> > +     and     r0, r9, #0x000f0000
-> > +     teq     r0, r4                  @ ARMv6?
-> > +     beq     __fixup_smp_on_up       @ yes, assume UP
-> > +
+On Sat, 2011-01-29 at 13:44 +0800, Luming Yu wrote:
+> On Fri, Jan 28, 2011 at 6:30 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> >> We have seen an extremely slow system under the CPU-OFFLINE-ONLIE test
+> >> on a 4-sockets NHM-EX system.
+> >
+> > Slow is OK, cpu-hotplug isn't performance critical by any means.
 > 
-> Wouldn't it be better to check for CPUID presence first, then ARM11MPcore,
-> and lastly preserve of MPIDR-flagged extensions?
+> Here is one example that the "slow" is not acceptable. Maybe I should
+> not use "slow" in the first place. It happnes after I resolved a
+> similar NMI watchdog warnning in calibrate_delay_direct..
 > 
+> Please note, I got the BUG in a 2.6.32-based kernel. Upstream  behaves
+> similar I guess.
 
-Yes, the v6 catch-all at the end is pretty horrible.
+Guessing is totally the wrong thing when you're sending stuff upstream,
+esp ugly patches such as this. .32 is more than a year old, anything
+could have happened.
 
+> BUG: soft lockup - CPU#63 stuck for 61s! [migration/63:256]
 
-> Will - can you check whether the below is correct?
+> > If its slow but working, the test is broken, I don't see a reason to do
+> > anything to the kernel, let alone the below.
 > 
->  arch/arm/kernel/head.S |   17 +++++++----------
->  1 files changed, 7 insertions(+), 10 deletions(-)
+> It not working sometimes, so I think it's not a solid feature right now.
+
+But you didn't say anything about not working, you merely said slow. If
+its not working, you need to very carefully explain what is not working,
+where its deadlocked and how your patch solves this and how you avoid
+wrecking stuff for everybody else.
+
+> >>  since it currently unnecessarily implicitly interact with
+> >> CPU power management.
+> >
+> > daft statement at best, because if not for some misguided power
+> > management purpose, what are you actually unplugging cpus for?
+> > (misguided because unplug doesn't actually safe more power than simply
+> > idling the cpu).
+> It's a RAS feature and Suspend Resume also hits same code path I think.
+
+That still doesn't say anything, also who in his right mind suspends a
+nhm-ex system?
+
+> > So you flip the pm_idle pointer protected unter hotplug mutex, but
+> > that's not serialized against module loading, so what happens if you
+> > concurrently load a module that sets another idle policy?
+> >
+> > Your changelog is vague at best, so what exactly is the purpose here? We
+> > flip to default_idle(), which uses HLT, which is C1. Then you run
+> > cpu_idle_wait(), which will IPI all cpus, all these CPUs (except one)
+> > could have been in deep C states (C3+) so you get your slow wakeup
+> > anyway.
+> >
+> > There-after you do the normal stop-machine hot-plug dance, which again
+> > will IPI all cpus once, then you flip it back to the saved pm_idle
+> > handler and again IPI all cpus.
 > 
-> diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
-> index 17a97b5..f6b31c4 100644
-> --- a/arch/arm/kernel/head.S
-> +++ b/arch/arm/kernel/head.S
-> @@ -390,19 +390,16 @@ ENDPROC(__turn_mmu_on)
-> 
->  #ifdef CONFIG_SMP_ON_UP
->  __fixup_smp:
-> -       mov     r4, #0x00070000
-> -       orr     r3, r4, #0xff000000     @ mask 0xff070000
-> -       orr     r4, r4, #0x41000000     @ val 0x41070000
-> -       and     r0, r9, r3
-> -       teq     r0, r4                  @ ARM CPU and ARMv6/v7?
-> +       and     r3, r9, #0x000f0000     @ architecture version
-> +       teq     r3, #0x000f00000        @ CPU ID supported?
+> https://lkml.org/lkml/2009/6/29/60
+> it needs 50-100us latency to send one IPI, you could get an idea on a
+> large NHM-EX system which contains 64 logical processors. With
+> Tickless and APIC timer stopped in C3 on NHM-EX, you could also have
+> an idea about the problem I have.
 
+Ok, so one IPI costs 50-100 us, even with 64 cpu, that's at most 6.4ms
+nowhere near enough to trigger the NMI watchdog. So what does go wrong?
 
-You've got an extra 0x0 on the end of that constant.
+Why does your patch solve things, like said, it doesn't avoid the slow
+IPI at all, you still IPI each cpu right after changing the pm_idle
+function. Those IPIs will still hit C3+ states.
 
+> Let me know if there are still questions .
 
->         bne     __fixup_smp_on_up       @ no, assume UP
-> 
-> -       orr     r3, r3, #0x0000ff00
-> -       orr     r3, r3, #0x000000f0     @ mask 0xff07fff0
-> +       bic     r3, r9, #0x00ff0000
-> +       bic     r3, r3, #0x0000000f     @ mask 0xff00fff0
-> +       mov     r4, #0x41000000
->         orr     r4, r4, #0x0000b000
-> -       orr     r4, r4, #0x00000020     @ val 0x4107b020
-> -       and     r0, r9, r3
-> -       teq     r0, r4                  @ ARM 11MPCore?
-> +       orr     r4, r4, #0x00000020     @ val 0x4100b020
-> +       teq     r3, r4                  @ ARM 11MPCore?
->         moveq   pc, lr                  @ yes, assume SMP
-> 
-
-Yup, that looks correct to me. 11MPCore has 0xf for the architecture
-field so we'll end up identifying it correctly here.
-
-
->         mrc     p15, 0, r0, c0, c0, 5   @ read MPIDR
-
-
-The code following this does:
-
-tst     r0, #1 << 31
-movne   pc, lr                  @ bit 31 => SMP
-
-As an optimisation, we could also check that bit 30 is zero so that
-we patch out the SMP stuff for single-core A5/A9/A15. Up to you.
-
-With the typo fixed:
-
-Acked-by: Will Deacon <will.deacon@arm.com>
-
-Will
+Yeah, what are you smoking? Why do you wreck perfectly fine code for one
+backward ass piece of hardware.
 
 
