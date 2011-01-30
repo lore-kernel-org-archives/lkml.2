@@ -1,447 +1,978 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816Ab1A3UwV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jan 2011 15:52:21 -0500
-Received: from mail.bluewatersys.com ([202.124.120.130]:54668 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754230Ab1A3UwU (ORCPT
+	id S1754697Ab1A3VYF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jan 2011 16:24:05 -0500
+Received: from miraculix-out.informatik.uni-kiel.de ([134.245.248.209]:56591
+	"EHLO miraculix.informatik.uni-kiel.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753922Ab1A3VYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jan 2011 15:52:20 -0500
-Message-ID: <4D45CF96.1090100@bluewatersys.com>
-Date: Mon, 31 Jan 2011 09:52:38 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: linux-kernel@vger.kernel.org, Eric Miao <eric.miao@linaro.org>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Hemanth V <hemanthv@ti.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Bill Gatliff <bgat@billgatliff.com>,
-        Arun Murthy <arun.murthy@stericsson.com>
-Subject: Re: [PATCH 1/2] pwmlib: add pwm support
-References: <1296217283-14531-1-git-send-email-s.hauer@pengutronix.de> <1296217283-14531-2-git-send-email-s.hauer@pengutronix.de>
-In-Reply-To: <1296217283-14531-2-git-send-email-s.hauer@pengutronix.de>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sun, 30 Jan 2011 16:24:03 -0500
+From: Timo von Holtz <tvh@informatik.uni-kiel.de>
+To: gregkh@suse.de
+Cc: deti@fliegl.de, tvh@informatik.uni-kiel.de, mchehab@redhat.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: dabusb: fixed coding style issues
+Date: Sun, 30 Jan 2011 22:19:39 +0100
+Message-Id: <1296422379-28093-1-git-send-email-tvh@informatik.uni-kiel.de>
+X-Mailer: git-send-email 1.7.3.5
+X-Null-Tag: 5e4cec08e264c98486526a4b53b4a496
+X-Authenticated-Sender: user tvh from 86.103.153.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/29/2011 01:21 AM, Sascha Hauer wrote:
-> The barebone pwm API is present in the kernel for longer.
-> This patch adds pwmlib support to support dynamically registered
-> pwms. Porions of this code are inspired by the gpiolib support.
+Fixed coding style issues
 
-Hi Sascha,
+Signed-off-by: Timo von Holtz <tvh@informatik.uni-kiel.de>
+---
+ drivers/staging/dabusb/dabusb.c |  338 ++++++++++++++++++++-------------------
+ drivers/staging/dabusb/dabusb.h |   41 ++---
+ 2 files changed, 193 insertions(+), 186 deletions(-)
 
-A couple of comments below. I have added Bill and Arun to the Cc list.
-As somebody else pointed out there have been a couple of attempts to
-create a generic pwm framework so far. It would be good to try and
-consolidate the efforts.
-
-~Ryan
-
-> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-> ---
->  drivers/Kconfig      |    2 +
->  drivers/Makefile     |    1 +
->  drivers/pwm/Kconfig  |   11 +++
->  drivers/pwm/Makefile |    1 +
->  drivers/pwm/pwmlib.c |  246 ++++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/pwm.h  |   38 ++++++++
->  6 files changed, 299 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/pwm/Kconfig
->  create mode 100644 drivers/pwm/Makefile
->  create mode 100644 drivers/pwm/pwmlib.c
-> 
-> diff --git a/drivers/Kconfig b/drivers/Kconfig
-> index 9bfb71f..bb332a6 100644
-> --- a/drivers/Kconfig
-> +++ b/drivers/Kconfig
-> @@ -117,4 +117,6 @@ source "drivers/staging/Kconfig"
->  source "drivers/platform/Kconfig"
->  
->  source "drivers/clk/Kconfig"
-> +
-> +source "drivers/pwm/Kconfig"
->  endmenu
-> diff --git a/drivers/Makefile b/drivers/Makefile
-> index 7eb35f4..8cd30a5 100644
-> --- a/drivers/Makefile
-> +++ b/drivers/Makefile
-> @@ -6,6 +6,7 @@
->  #
->  
->  obj-y				+= gpio/
-> +obj-y				+= pwm/
->  obj-$(CONFIG_PCI)		+= pci/
->  obj-$(CONFIG_PARISC)		+= parisc/
->  obj-$(CONFIG_RAPIDIO)		+= rapidio/
-> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-> new file mode 100644
-> index 0000000..04ddbfd
-> --- /dev/null
-> +++ b/drivers/pwm/Kconfig
-> @@ -0,0 +1,11 @@
-> +menuconfig PWMLIB
-> +	bool "PWM Support"
-> +	help
-> +	  This enables PWM support through the generic PWM library.
-> +	  You only need to enable this, if you also want to enable
-> +	  one or more of the PWM drivers below.
-> +
-> +	  If unsure, say N.
-> +
-> +if PWMLIB
-> +endif
-> diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-> new file mode 100644
-> index 0000000..389c049
-> --- /dev/null
-> +++ b/drivers/pwm/Makefile
-> @@ -0,0 +1 @@
-> +obj-$(CONFIG_PWMLIB)		+= pwmlib.o
-> diff --git a/drivers/pwm/pwmlib.c b/drivers/pwm/pwmlib.c
-> new file mode 100644
-> index 0000000..0d6c4cc
-> --- /dev/null
-> +++ b/drivers/pwm/pwmlib.c
-> @@ -0,0 +1,246 @@
-> +/*
-> + * Generic pwmlib implementation
-> + *
-> + * Copyright (C) 2011 Sascha Hauer <s.hauer@pengutronix.de>
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License as published by
-> + *  the Free Software Foundation; either version 2, or (at your option)
-> + *  any later version.
-> + *
-> + *  This program is distributed in the hope that it will be useful,
-> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *  GNU General Public License for more details.
-> + *
-> + *  You should have received a copy of the GNU General Public License
-> + *  along with this program; see the file COPYING.  If not, write to
-> + *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-> + */
-> +#include <linux/module.h>
-> +#include <linux/pwm.h>
-> +#include <linux/list.h>
-> +#include <linux/mutex.h>
-> +#include <linux/err.h>
-> +#include <linux/slab.h>
-> +#include <linux/device.h>
-> +
-> +struct pwm_device {
-> +	struct			pwm_chip *chip;
-> +	const char		*label;
-> +	int			enabled;
-> +	unsigned long		flags;
-> +#define FLAG_REQUESTED	0
-> +#define FLAG_ENABLED	1
-> +	struct list_head	node;
-> +};
-> +
-> +static LIST_HEAD(pwm_list);
-> +
-> +static DEFINE_MUTEX(pwm_lock);
-> +
-> +static struct pwm_device *find_pwm(int pwm_id)
-> +{
-> +	struct pwm_device *pwm;
-> +
-> +	list_for_each_entry(pwm, &pwm_list, node) {
-> +		if (pwm->chip->pwm_id == pwm_id)
-> +			return pwm;
-> +	}
-> +
-> +	return NULL;
-> +}
-> +
-> +/*
-> + * The next pwm id to assign. We do not bother to fill gaps which
-> + * occur during dynamic registering/deregistering of pwms, but
-> + * instead assign a uniq id to each new pwm.
-> + */
-> +static int next_pwm_id;
-> +
-> +/**
-> + * pwmchip_reserve() - reserve range of pwms to use with platform code only
-> + * @npwms: number of pwms to reserve
-> + * Context: platform init
-> + *
-> + * Maybe called only once. It reserves the first pwm_ids for platform use so
-> + * that they can refer to pwm_ids during compile time.
-> + */
-> +int __init pwmchip_reserve(int npwms)
-> +{
-
-This concept is a bit ugly.
-
-> +	if (next_pwm_id)
-> +		return -EBUSY;
-> +
-> +	next_pwm_id = npwms;
-> +
-> +	return 0;
-> +}
-> +
-> +/**
-> + * pwmchip_add() - register a new pwm
-> + * @chip: the pwm
-> + *
-> + * register a new pwm. pwm->pwm_id must be initialized. if pwm_id < 0 then
-> + * a dynamically assigned id will be used, otherwise the id specified,
-> + */
-> +int pwmchip_add(struct pwm_chip *chip)
-> +{
-> +	struct pwm_device *pwm;
-> +	int ret = 0;
-> +
-> +	mutex_lock(&pwm_lock);
-> +
-> +	if (chip->pwm_id >= 0 && find_pwm(chip->pwm_id)) {
-> +		ret = -EBUSY;
-> +		goto out;
-> +	}
-> +
-> +	pwm = kzalloc(sizeof(*pwm), GFP_KERNEL);
-> +	if (!pwm) {
-> +		ret = -ENOMEM;
-> +		goto out;
-> +	}
-> +
-> +	pwm->chip = chip;
-> +
-> +	if (chip->pwm_id < 0)
-> +		chip->pwm_id = next_pwm_id++;
-> +
-> +	list_add_tail(&pwm->node, &pwm_list);
-> +out:
-> +	mutex_unlock(&pwm_lock);
-
-The locking here is a little heavier than it needs to be. Only the list
-lookup, incrementing next_pwm_id and the list add need to be protected.
-The pwm allocation and assignment of chip do not need to be protected by
-the mutex.
-
-The performance difference is negligible, but it does make it more clear
-what the lock actually protects.
-
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(pwmchip_add);
-> +
-> +/**
-> + * pwmchip_remove() - remove a pwm
-> + * @chip: the pwm
-> + *
-> + * remove a pwm. This function may return busy if the pwm is still requested.
-> + */
-> +int pwmchip_remove(struct pwm_chip *chip)
-> +{
-> +	struct pwm_device *pwm;
-> +	int ret = 0;
-> +
-> +	mutex_lock(&pwm_lock);
-> +
-> +	pwm = find_pwm(chip->pwm_id);
-> +	if (!pwm) {
-> +		ret = -ENOENT;
-> +		goto out;
-> +	}
-> +
-> +	if (test_bit(FLAG_REQUESTED, &pwm->flags)) {
-> +		ret = -EBUSY;
-> +		goto out;
-> +	}
-> +
-> +	list_del(&pwm->node);
-> +out:
-> +	mutex_unlock(&pwm_lock);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(pwmchip_remove);
-> +
-> +/*
-> + * pwm_request - request a PWM device
-> + */
-> +struct pwm_device *pwm_request(int pwm_id, const char *label)
-> +{
-
-What purpose does the label serve? It gets assigned but never used.
-Possibly it could be useful later in sysfs/debugfs output?
-
-I think requesting pwm's by id is not particularly useful in practice.
-Drivers which need to request a pwm would need to know what the id of
-the correct pwm was, which may vary between platforms. A better approach
-would be to either use device associations (similar to the clock api) or
-to just use a string label for lookup.
-
-> +	struct pwm_device *pwm;
-> +	int ret;
-> +
-> +	mutex_lock(&pwm_lock);
-> +
-> +	pwm = find_pwm(pwm_id);
-> +	if (!pwm) {
-> +		pwm = ERR_PTR(-ENOENT);
-> +		goto out;
-> +	}
-> +
-> +	if (test_bit(FLAG_REQUESTED, &pwm->flags)) {
-> +		pwm = ERR_PTR(-EBUSY);
-> +		goto out;
-> +	}
-> +
-> +	if (!try_module_get(pwm->chip->owner)) {
-> +		pwm = ERR_PTR(-ENODEV);
-> +		goto out;
-> +	}
-> +
-> +	if (pwm->chip->ops->request) {
-
-The pwm driver you have provide does not have a request callback. Based
-on just the id/label why might a particular pwm driver refuse a request
-if the pwm core would grant it?
-
-> +		ret = pwm->chip->ops->request(pwm->chip);
-> +		if (ret) {
-> +			pwm = ERR_PTR(ret);
-> +			goto out_put;
-> +		}
-> +	}
-> +
-> +	pwm->label = label;
-> +	set_bit(FLAG_REQUESTED, &pwm->flags);
-> +
-> +	goto out;
-> +
-> +out_put:
-> +	module_put(pwm->chip->owner);
-> +out:
-> +	mutex_unlock(&pwm_lock);
-> +
-> +	return pwm;
-> +}
-> +EXPORT_SYMBOL_GPL(pwm_request);
-> +
-> +/*
-> + * pwm_free - free a PWM device
-> + */
-> +void pwm_free(struct pwm_device *pwm)
-> +{
-> +	mutex_lock(&pwm_lock);
-> +
-> +	if (!test_and_clear_bit(FLAG_REQUESTED, &pwm->flags)) {
-> +		pr_warning("PWM device already freed\n");
-> +		goto out;
-> +	}
-> +
-> +	pwm->label = NULL;
-> +
-> +	module_put(pwm->chip->owner);
-> +out:
-> +	mutex_unlock(&pwm_lock);
-> +}
-> +EXPORT_SYMBOL_GPL(pwm_free);
-> +
-> +/*
-> + * pwm_config - change a PWM device configuration
-> + */
-> +int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
-
-duty_ns/period_ns should probably be an unsigned type. Is 32 bits enough
-for all pwms?
-
-> +{
-> +	return pwm->chip->ops->config(pwm->chip, duty_ns, period_ns);
-> +}
-> +EXPORT_SYMBOL_GPL(pwm_config);
-> +
-> +/*
-> + * pwm_enable - start a PWM output toggling
-> + */
-> +int pwm_enable(struct pwm_device *pwm)
-> +{
-> +	if (!test_and_set_bit(FLAG_ENABLED, &pwm->flags))
-> +		return pwm->chip->ops->enable(pwm->chip);
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(pwm_enable);
-> +
-> +/*
-> + * pwm_disable - stop a PWM output toggling
-> + */
-> +void pwm_disable(struct pwm_device *pwm)
-> +{
-> +	if (test_and_clear_bit(FLAG_ENABLED, &pwm->flags))
-> +		pwm->chip->ops->disable(pwm->chip);
-> +}
-> +EXPORT_SYMBOL_GPL(pwm_disable);
-> diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-> index 7c77575..e3e2139 100644
-> --- a/include/linux/pwm.h
-> +++ b/include/linux/pwm.h
-> @@ -28,4 +28,42 @@ int pwm_enable(struct pwm_device *pwm);
->   */
->  void pwm_disable(struct pwm_device *pwm);
->  
-> +#ifdef CONFIG_PWMLIB
-> +struct pwm_chip;
-> +
-> +/**
-> + * struct pwm_ops - PWM operations
-> + * @request: optional hook for requesting a PWM
-> + * @free: optional hook for freeing a PWM
-> + * @config: configure duty cycles and period length for this PWM
-> + * @enable: enable PWM output toggling
-> + * @disable: disable PWM output toggling
-> + */
-> +struct pwm_ops {
-> +	int			(*request)(struct pwm_chip *chip);
-> +	void			(*free)(struct pwm_chip *chip);
-> +	int			(*config)(struct pwm_chip *chip, int duty_ns,
-> +						int period_ns);
-> +	int			(*enable)(struct pwm_chip *chip);
-> +	void			(*disable)(struct pwm_chip *chip);
-> +};
-> +
-> +/**
-> + * struct pwm_chip - abstract a PWM
-> + * @label: for diagnostics
-> + * @owner: helps prevent removal of modules exporting active PWMs
-> + * @ops: The callbacks for this PWM
-> + */
-> +struct pwm_chip {
-> +	int			pwm_id;
-> +	const char		*label;
-> +	struct module		*owner;
-> +	struct pwm_ops		*ops;
-> +};
-> +
-> +int __must_check pwmchip_reserve(int npwms);
-> +int pwmchip_add(struct pwm_chip *chip);
-> +int pwmchip_remove(struct pwm_chip *chip);
-> +#endif
-> +
->  #endif /* __LINUX_PWM_H */
-
-
+diff --git a/drivers/staging/dabusb/dabusb.c b/drivers/staging/dabusb/dabusb.c
+index f3e25e9..21768a6 100644
+--- a/drivers/staging/dabusb/dabusb.c
++++ b/drivers/staging/dabusb/dabusb.c
+@@ -33,8 +33,8 @@
+ #include <linux/vmalloc.h>
+ #include <linux/slab.h>
+ #include <linux/init.h>
+-#include <asm/uaccess.h>
+-#include <asm/atomic.h>
++#include <linux/uaccess.h>
++#include <linux/atomic.h>
+ #include <linux/delay.h>
+ #include <linux/usb.h>
+ #include <linux/mutex.h>
+@@ -66,28 +66,29 @@ static struct usb_driver dabusb_driver;
+ 
+ /*-------------------------------------------------------------------*/
+ 
+-static int dabusb_add_buf_tail (pdabusb_t s, struct list_head *dst, struct list_head *src)
++static int dabusb_add_buf_tail(pdabusb_t s, struct list_head *dst,
++			       struct list_head *src)
+ {
+ 	unsigned long flags;
+ 	struct list_head *tmp;
+ 	int ret = 0;
+ 
+-	spin_lock_irqsave (&s->lock, flags);
++	spin_lock_irqsave(&s->lock, flags);
+ 
+-	if (list_empty (src)) {
+-		// no elements in source buffer
++	if (list_empty(src)) {
++		/* no elements in source buffer */
+ 		ret = -1;
+ 		goto err;
+ 	}
+ 	tmp = src->next;
+-	list_move_tail (tmp, dst);
++	list_move_tail(tmp, dst);
+ 
+-  err:	spin_unlock_irqrestore (&s->lock, flags);
++err:	spin_unlock_irqrestore(&s->lock, flags);
+ 	return ret;
+ }
+ /*-------------------------------------------------------------------*/
+ #ifdef DEBUG
+-static void dump_urb (struct urb *urb)
++static void dump_urb(struct urb *urb)
+ {
+ 	dbg("urb                   :%p", urb);
+ 	dbg("dev                   :%p", urb->dev);
+@@ -107,26 +108,26 @@ static void dump_urb (struct urb *urb)
+ }
+ #endif
+ /*-------------------------------------------------------------------*/
+-static int dabusb_cancel_queue (pdabusb_t s, struct list_head *q)
++static int dabusb_cancel_queue(pdabusb_t s, struct list_head *q)
+ {
+ 	unsigned long flags;
+ 	pbuff_t b;
+ 
+ 	dbg("dabusb_cancel_queue");
+ 
+-	spin_lock_irqsave (&s->lock, flags);
++	spin_lock_irqsave(&s->lock, flags);
+ 
+ 	list_for_each_entry(b, q, buff_list) {
+ #ifdef DEBUG
+ 		dump_urb(b->purb);
+ #endif
+-		usb_unlink_urb (b->purb);
++		usb_unlink_urb(b->purb);
+ 	}
+-	spin_unlock_irqrestore (&s->lock, flags);
++	spin_unlock_irqrestore(&s->lock, flags);
+ 	return 0;
+ }
+ /*-------------------------------------------------------------------*/
+-static int dabusb_free_queue (struct list_head *q)
++static int dabusb_free_queue(struct list_head *q)
+ {
+ 	struct list_head *tmp;
+ 	struct list_head *p;
+@@ -134,7 +135,7 @@ static int dabusb_free_queue (struct list_head *q)
+ 
+ 	dbg("dabusb_free_queue");
+ 	for (p = q->next; p != q;) {
+-		b = list_entry (p, buff_t, buff_list);
++		b = list_entry(p, buff_t, buff_list);
+ 
+ #ifdef DEBUG
+ 		dump_urb(b->purb);
+@@ -142,23 +143,23 @@ static int dabusb_free_queue (struct list_head *q)
+ 		kfree(b->purb->transfer_buffer);
+ 		usb_free_urb(b->purb);
+ 		tmp = p->next;
+-		list_del (p);
+-		kfree (b);
++		list_del(p);
++		kfree(b);
+ 		p = tmp;
+ 	}
+ 
+ 	return 0;
+ }
+ /*-------------------------------------------------------------------*/
+-static int dabusb_free_buffers (pdabusb_t s)
++static int dabusb_free_buffers(pdabusb_t s)
+ {
+ 	unsigned long flags;
+ 	dbg("dabusb_free_buffers");
+ 
+ 	spin_lock_irqsave(&s->lock, flags);
+ 
+-	dabusb_free_queue (&s->free_buff_list);
+-	dabusb_free_queue (&s->rec_buff_list);
++	dabusb_free_queue(&s->free_buff_list);
++	dabusb_free_queue(&s->rec_buff_list);
+ 
+ 	spin_unlock_irqrestore(&s->lock, flags);
+ 
+@@ -166,7 +167,7 @@ static int dabusb_free_buffers (pdabusb_t s)
+ 	return 0;
+ }
+ /*-------------------------------------------------------------------*/
+-static void dabusb_iso_complete (struct urb *purb)
++static void dabusb_iso_complete(struct urb *purb)
+ {
+ 	pbuff_t b = purb->context;
+ 	pdabusb_t s = b->s;
+@@ -177,42 +178,45 @@ static void dabusb_iso_complete (struct urb *purb)
+ 
+ 	dbg("dabusb_iso_complete");
+ 
+-	// process if URB was not killed
++	/* process if URB was not killed */
+ 	if (purb->status != -ENOENT) {
+-		unsigned int pipe = usb_rcvisocpipe (purb->dev, _DABUSB_ISOPIPE);
+-		int pipesize = usb_maxpacket (purb->dev, pipe, usb_pipeout (pipe));
++		unsigned int pipe = usb_rcvisocpipe(purb->dev, _DABUSB_ISOPIPE);
++		int pipesize = usb_maxpacket(purb->dev, pipe,
++					     usb_pipeout(pipe));
+ 		for (i = 0; i < purb->number_of_packets; i++)
+ 			if (!purb->iso_frame_desc[i].status) {
+ 				len = purb->iso_frame_desc[i].actual_length;
+ 				if (len <= pipesize) {
+-					memcpy (buf + dst, buf + purb->iso_frame_desc[i].offset, len);
++					memcpy(buf + dst, buf + purb->iso_frame_desc[i].offset, len);
+ 					dst += len;
+-				}
+-				else
++				} else
+ 					dev_err(&purb->dev->dev,
+-						"dabusb_iso_complete: invalid len %d\n", len);
+-			}
+-			else
+-				dev_warn(&purb->dev->dev, "dabusb_iso_complete: corrupted packet status: %d\n", purb->iso_frame_desc[i].status);
++						"dabusb_iso_complete: invalid len %d\n",
++						len);
++			} else
++				dev_warn(&purb->dev->dev,
++					 "dabusb_iso_complete: corrupted packet status: %d\n",
++					 purb->iso_frame_desc[i].status);
+ 		if (dst != purb->actual_length)
+ 			dev_err(&purb->dev->dev,
+ 				"dst!=purb->actual_length:%d!=%d\n",
+ 					dst, purb->actual_length);
+ 	}
+ 
+-	if (atomic_dec_and_test (&s->pending_io) && !s->remove_pending && s->state != _stopped) {
++	if (atomic_dec_and_test(&s->pending_io) &&
++	    !s->remove_pending && s->state != _stopped) {
+ 		s->overruns++;
+ 		dev_err(&purb->dev->dev, "overrun (%d)\n", s->overruns);
+ 	}
+-	wake_up (&s->wait);
++	wake_up(&s->wait);
+ }
+ /*-------------------------------------------------------------------*/
+-static int dabusb_alloc_buffers (pdabusb_t s)
++static int dabusb_alloc_buffers(pdabusb_t s)
+ {
+ 	int transfer_len = 0;
+ 	pbuff_t b;
+-	unsigned int pipe = usb_rcvisocpipe (s->usbdev, _DABUSB_ISOPIPE);
+-	int pipesize = usb_maxpacket (s->usbdev, pipe, usb_pipeout (pipe));
++	unsigned int pipe = usb_rcvisocpipe(s->usbdev, _DABUSB_ISOPIPE);
++	int pipesize = usb_maxpacket(s->usbdev, pipe, usb_pipeout(pipe));
+ 	int packets = _ISOPIPESIZE / pipesize;
+ 	int transfer_buffer_length = packets * pipesize;
+ 	int i;
+@@ -221,7 +225,7 @@ static int dabusb_alloc_buffers (pdabusb_t s)
+ 		 pipesize, packets, transfer_buffer_length);
+ 
+ 	while (transfer_len < (s->total_buffer_size << 10)) {
+-		b = kzalloc(sizeof (buff_t), GFP_KERNEL);
++		b = kzalloc(sizeof(buff_t), GFP_KERNEL);
+ 		if (!b) {
+ 			dev_err(&s->usbdev->dev,
+ 				"kzalloc(sizeof(buff_t))==NULL\n");
+@@ -231,14 +235,15 @@ static int dabusb_alloc_buffers (pdabusb_t s)
+ 		b->purb = usb_alloc_urb(packets, GFP_KERNEL);
+ 		if (!b->purb) {
+ 			dev_err(&s->usbdev->dev, "usb_alloc_urb == NULL\n");
+-			kfree (b);
++			kfree(b);
+ 			goto err;
+ 		}
+ 
+-		b->purb->transfer_buffer = kmalloc (transfer_buffer_length, GFP_KERNEL);
++		b->purb->transfer_buffer = kmalloc(transfer_buffer_length,
++						   GFP_KERNEL);
+ 		if (!b->purb->transfer_buffer) {
+-			kfree (b->purb);
+-			kfree (b);
++			kfree(b->purb);
++			kfree(b);
+ 			dev_err(&s->usbdev->dev,
+ 				"kmalloc(%d)==NULL\n", transfer_buffer_length);
+ 			goto err;
+@@ -258,18 +263,18 @@ static int dabusb_alloc_buffers (pdabusb_t s)
+ 		}
+ 
+ 		transfer_len += transfer_buffer_length;
+-		list_add_tail (&b->buff_list, &s->free_buff_list);
++		list_add_tail(&b->buff_list, &s->free_buff_list);
+ 	}
+ 	s->got_mem = transfer_len;
+ 
+ 	return 0;
+ 
+-	err:
+-	dabusb_free_buffers (s);
++err:
++	dabusb_free_buffers(s);
+ 	return -ENOMEM;
+ }
+ /*-------------------------------------------------------------------*/
+-static int dabusb_bulk (pdabusb_t s, pbulk_transfer_t pb)
++static int dabusb_bulk(pdabusb_t s, pbulk_transfer_t pb)
+ {
+ 	int ret;
+ 	unsigned int pipe;
+@@ -278,25 +283,26 @@ static int dabusb_bulk (pdabusb_t s, pbulk_transfer_t pb)
+ 	dbg("dabusb_bulk");
+ 
+ 	if (!pb->pipe)
+-		pipe = usb_rcvbulkpipe (s->usbdev, 2);
++		pipe = usb_rcvbulkpipe(s->usbdev, 2);
+ 	else
+-		pipe = usb_sndbulkpipe (s->usbdev, 2);
++		pipe = usb_sndbulkpipe(s->usbdev, 2);
+ 
+-	ret=usb_bulk_msg(s->usbdev, pipe, pb->data, pb->size, &actual_length, 100);
+-	if(ret<0) {
++	ret = usb_bulk_msg(s->usbdev, pipe, pb->data,
++			   pb->size, &actual_length, 100);
++	if (ret < 0) {
+ 		dev_err(&s->usbdev->dev,
+ 			"usb_bulk_msg failed(%d)\n", ret);
+ 
+-		if (usb_set_interface (s->usbdev, _DABUSB_IF, 1) < 0) {
++		if (usb_set_interface(s->usbdev, _DABUSB_IF, 1) < 0) {
+ 			dev_err(&s->usbdev->dev, "set_interface failed\n");
+ 			return -EINVAL;
+ 		}
+ 
+ 	}
+ 
+-	if( ret == -EPIPE ) {
++	if (ret == -EPIPE) {
+ 		dev_warn(&s->usbdev->dev, "CLEAR_FEATURE request to remove STALL condition.\n");
+-		if(usb_clear_halt(s->usbdev, usb_pipeendpoint(pipe)))
++		if (usb_clear_halt(s->usbdev, usb_pipeendpoint(pipe)))
+ 			dev_err(&s->usbdev->dev, "request failed\n");
+ 	}
+ 
+@@ -304,11 +310,11 @@ static int dabusb_bulk (pdabusb_t s, pbulk_transfer_t pb)
+ 	return ret;
+ }
+ /* --------------------------------------------------------------------- */
+-static int dabusb_writemem (pdabusb_t s, int pos, const unsigned char *data,
++static int dabusb_writemem(pdabusb_t s, int pos, const unsigned char *data,
+ 			    int len)
+ {
+ 	int ret;
+-	unsigned char *transfer_buffer =  kmalloc (len, GFP_KERNEL);
++	unsigned char *transfer_buffer =  kmalloc(len, GFP_KERNEL);
+ 
+ 	if (!transfer_buffer) {
+ 		dev_err(&s->usbdev->dev,
+@@ -316,21 +322,22 @@ static int dabusb_writemem (pdabusb_t s, int pos, const unsigned char *data,
+ 		return -ENOMEM;
+ 	}
+ 
+-	memcpy (transfer_buffer, data, len);
++	memcpy(transfer_buffer, data, len);
+ 
+-	ret=usb_control_msg(s->usbdev, usb_sndctrlpipe( s->usbdev, 0 ), 0xa0, 0x40, pos, 0, transfer_buffer, len, 300);
++	ret = usb_control_msg(s->usbdev, usb_sndctrlpipe(s->usbdev, 0),
++			      0xa0, 0x40, pos, 0, transfer_buffer, len, 300);
+ 
+-	kfree (transfer_buffer);
++	kfree(transfer_buffer);
+ 	return ret;
+ }
+ /* --------------------------------------------------------------------- */
+-static int dabusb_8051_reset (pdabusb_t s, unsigned char reset_bit)
++static int dabusb_8051_reset(pdabusb_t s, unsigned char reset_bit)
+ {
+-	dbg("dabusb_8051_reset: %d",reset_bit);
+-	return dabusb_writemem (s, CPUCS_REG, &reset_bit, 1);
++	dbg("dabusb_8051_reset: %d", reset_bit);
++	return dabusb_writemem(s, CPUCS_REG, &reset_bit, 1);
+ }
+ /* --------------------------------------------------------------------- */
+-static int dabusb_loadmem (pdabusb_t s, const char *fname)
++static int dabusb_loadmem(pdabusb_t s, const char *fname)
+ {
+ 	int ret;
+ 	const struct ihex_binrec *rec;
+@@ -344,7 +351,7 @@ static int dabusb_loadmem (pdabusb_t s, const char *fname)
+ 			"Failed to load \"dabusb/firmware.fw\": %d\n", ret);
+ 		goto out;
+ 	}
+-	ret = dabusb_8051_reset (s, 1);
++	ret = dabusb_8051_reset(s, 1);
+ 
+ 	for (rec = (const struct ihex_binrec *)fw->data; rec;
+ 	     rec = ihex_next_binrec(rec)) {
+@@ -361,7 +368,7 @@ static int dabusb_loadmem (pdabusb_t s, const char *fname)
+ 			break;
+ 		}
+ 	}
+-	ret = dabusb_8051_reset (s, 0);
++	ret = dabusb_8051_reset(s, 0);
+ 	release_firmware(fw);
+  out:
+ 	dbg("dabusb_loadmem: exit");
+@@ -369,7 +376,7 @@ static int dabusb_loadmem (pdabusb_t s, const char *fname)
+ 	return ret;
+ }
+ /* --------------------------------------------------------------------- */
+-static int dabusb_fpga_clear (pdabusb_t s, pbulk_transfer_t b)
++static int dabusb_fpga_clear(pdabusb_t s, pbulk_transfer_t b)
+ {
+ 	b->size = 4;
+ 	b->data[0] = 0x2a;
+@@ -379,10 +386,10 @@ static int dabusb_fpga_clear (pdabusb_t s, pbulk_transfer_t b)
+ 
+ 	dbg("dabusb_fpga_clear");
+ 
+-	return dabusb_bulk (s, b);
++	return dabusb_bulk(s, b);
+ }
+ /* --------------------------------------------------------------------- */
+-static int dabusb_fpga_init (pdabusb_t s, pbulk_transfer_t b)
++static int dabusb_fpga_init(pdabusb_t s, pbulk_transfer_t b)
+ {
+ 	b->size = 4;
+ 	b->data[0] = 0x2c;
+@@ -392,12 +399,12 @@ static int dabusb_fpga_init (pdabusb_t s, pbulk_transfer_t b)
+ 
+ 	dbg("dabusb_fpga_init");
+ 
+-	return dabusb_bulk (s, b);
++	return dabusb_bulk(s, b);
+ }
+ /* --------------------------------------------------------------------- */
+-static int dabusb_fpga_download (pdabusb_t s, const char *fname)
++static int dabusb_fpga_download(pdabusb_t s, const char *fname)
+ {
+-	pbulk_transfer_t b = kmalloc (sizeof (bulk_transfer_t), GFP_KERNEL);
++	pbulk_transfer_t b = kmalloc(sizeof(bulk_transfer_t), GFP_KERNEL);
+ 	const struct firmware *fw;
+ 	unsigned int blen, n;
+ 	int ret;
+@@ -419,8 +426,8 @@ static int dabusb_fpga_download (pdabusb_t s, const char *fname)
+ 	}
+ 
+ 	b->pipe = 1;
+-	ret = dabusb_fpga_clear (s, b);
+-	mdelay (10);
++	ret = dabusb_fpga_clear(s, b);
++	mdelay(10);
+ 	blen = fw->data[73] + (fw->data[72] << 8);
+ 
+ 	dbg("Bitstream len: %i", blen);
+@@ -431,19 +438,19 @@ static int dabusb_fpga_download (pdabusb_t s, const char *fname)
+ 	b->data[3] = 60;
+ 
+ 	for (n = 0; n <= blen + 60; n += 60) {
+-		// some cclks for startup
++		/* some cclks for startup */
+ 		b->size = 64;
+-		memcpy (b->data + 4, fw->data + 74 + n, 60);
+-		ret = dabusb_bulk (s, b);
++		memcpy(b->data + 4, fw->data + 74 + n, 60);
++		ret = dabusb_bulk(s, b);
+ 		if (ret < 0) {
+ 			dev_err(&s->usbdev->dev, "dabusb_bulk failed.\n");
+ 			break;
+ 		}
+-		mdelay (1);
++		mdelay(1);
+ 	}
+ 
+-	ret = dabusb_fpga_init (s, b);
+-	kfree (b);
++	ret = dabusb_fpga_init(s, b);
++	kfree(b);
+ 	release_firmware(fw);
+ 
+ 	dbg("exit dabusb_fpga_download");
+@@ -451,12 +458,12 @@ static int dabusb_fpga_download (pdabusb_t s, const char *fname)
+ 	return ret;
+ }
+ 
+-static int dabusb_stop (pdabusb_t s)
++static int dabusb_stop(pdabusb_t s)
+ {
+ 	dbg("dabusb_stop");
+ 
+ 	s->state = _stopped;
+-	dabusb_cancel_queue (s, &s->rec_buff_list);
++	dabusb_cancel_queue(s, &s->rec_buff_list);
+ 
+ 	dbg("pending_io: %d", s->pending_io.counter);
+ 
+@@ -464,50 +471,53 @@ static int dabusb_stop (pdabusb_t s)
+ 	return 0;
+ }
+ 
+-static int dabusb_startrek (pdabusb_t s)
++static int dabusb_startrek(pdabusb_t s)
+ {
+ 	if (!s->got_mem && s->state != _started) {
+ 
+ 		dbg("dabusb_startrek");
+ 
+-		if (dabusb_alloc_buffers (s) < 0)
++		if (dabusb_alloc_buffers(s) < 0)
+ 			return -ENOMEM;
+-		dabusb_stop (s);
++		dabusb_stop(s);
+ 		s->state = _started;
+ 		s->readptr = 0;
+ 	}
+ 
+-	if (!list_empty (&s->free_buff_list)) {
++	if (!list_empty(&s->free_buff_list)) {
+ 		pbuff_t end;
+ 		int ret;
+ 
+-	while (!dabusb_add_buf_tail (s, &s->rec_buff_list, &s->free_buff_list)) {
++	while (!dabusb_add_buf_tail(s, &s->rec_buff_list, &s->free_buff_list)) {
+ 
+-			dbg("submitting: end:%p s->rec_buff_list:%p", s->rec_buff_list.prev, &s->rec_buff_list);
++			dbg("submitting: end:%p s->rec_buff_list:%p",
++			    s->rec_buff_list.prev, &s->rec_buff_list);
+ 
+-			end = list_entry (s->rec_buff_list.prev, buff_t, buff_list);
++			end = list_entry(s->rec_buff_list.prev,
++					 buff_t, buff_list);
+ 
+-			ret = usb_submit_urb (end->purb, GFP_KERNEL);
++			ret = usb_submit_urb(end->purb, GFP_KERNEL);
+ 			if (ret) {
+ 				dev_err(&s->usbdev->dev,
+ 					"usb_submit_urb returned:%d\n", ret);
+-				if (dabusb_add_buf_tail (s, &s->free_buff_list, &s->rec_buff_list))
++				if (dabusb_add_buf_tail(s, &s->free_buff_list,
++							&s->rec_buff_list))
+ 					dev_err(&s->usbdev->dev,
+ 						"startrek: dabusb_add_buf_tail failed\n");
+ 				break;
+-			}
+-			else
+-				atomic_inc (&s->pending_io);
++			} else
++				atomic_inc(&s->pending_io);
+ 		}
+-		dbg("pending_io: %d",s->pending_io.counter);
++		dbg("pending_io: %d", s->pending_io.counter);
+ 	}
+ 
+ 	return 0;
+ }
+ 
+-static ssize_t dabusb_read (struct file *file, char __user *buf, size_t count, loff_t * ppos)
++static ssize_t dabusb_read(struct file *file, char __user *buf,
++			   size_t count, loff_t *ppos)
+ {
+-	pdabusb_t s = (pdabusb_t) file->private_data;
++	pdabusb_t s = (pdabusb_t)file->private_data;
+ 	unsigned long flags;
+ 	unsigned ret = 0;
+ 	int rem;
+@@ -528,11 +538,11 @@ static ssize_t dabusb_read (struct file *file, char __user *buf, size_t count, l
+ 		return -EIO;
+ 
+ 	while (count > 0) {
+-		dabusb_startrek (s);
++		dabusb_startrek(s);
+ 
+-		spin_lock_irqsave (&s->lock, flags);
++		spin_lock_irqsave(&s->lock, flags);
+ 
+-		if (list_empty (&s->rec_buff_list)) {
++		if (list_empty(&s->rec_buff_list)) {
+ 
+ 			spin_unlock_irqrestore(&s->lock, flags);
+ 
+@@ -541,30 +551,30 @@ static ssize_t dabusb_read (struct file *file, char __user *buf, size_t count, l
+ 			goto err;
+ 		}
+ 
+-		b = list_entry (s->rec_buff_list.next, buff_t, buff_list);
++		b = list_entry(s->rec_buff_list.next, buff_t, buff_list);
+ 		purb = b->purb;
+ 
+ 		spin_unlock_irqrestore(&s->lock, flags);
+ 
+ 		if (purb->status == -EINPROGRESS) {
+-			if (file->f_flags & O_NONBLOCK)		// return nonblocking
+-			 {
++			/* return nonblocking */
++			if (file->f_flags & O_NONBLOCK) {
+ 				if (!ret)
+ 					ret = -EAGAIN;
+ 				goto err;
+ 			}
+ 
+-			interruptible_sleep_on (&s->wait);
++			interruptible_sleep_on(&s->wait);
+ 
+-			if (signal_pending (current)) {
++			if (signal_pending(current)) {
+ 				if (!ret)
+ 					ret = -ERESTARTSYS;
+ 				goto err;
+ 			}
+ 
+-			spin_lock_irqsave (&s->lock, flags);
++			spin_lock_irqsave(&s->lock, flags);
+ 
+-			if (list_empty (&s->rec_buff_list)) {
++			if (list_empty(&s->rec_buff_list)) {
+ 				spin_unlock_irqrestore(&s->lock, flags);
+ 				dev_err(&s->usbdev->dev,
+ 					"error: still no buffer available.\n");
+@@ -578,16 +588,20 @@ static ssize_t dabusb_read (struct file *file, char __user *buf, size_t count, l
+ 			goto err;
+ 		}
+ 
+-		rem = purb->actual_length - s->readptr;		// set remaining bytes to copy
++		/* set remaining bytes to copy */
++		rem = purb->actual_length - s->readptr;
+ 
+ 		if (count >= rem)
+ 			cnt = rem;
+ 		else
+ 			cnt = count;
+ 
+-		dbg("copy_to_user:%p %p %d",buf, purb->transfer_buffer + s->readptr, cnt);
++		dbg("copy_to_user:%p %p %d", buf,
++		    purb->transfer_buffer + s->readptr, cnt);
+ 
+-		if (copy_to_user (buf, purb->transfer_buffer + s->readptr, cnt)) {
++		if (copy_to_user(buf,
++				purb->transfer_buffer + s->readptr,
++				cnt)) {
+ 			dev_err(&s->usbdev->dev, "read: copy_to_user failed\n");
+ 			if (!ret)
+ 				ret = -EFAULT;
+@@ -600,18 +614,19 @@ static ssize_t dabusb_read (struct file *file, char __user *buf, size_t count, l
+ 		ret += cnt;
+ 
+ 		if (s->readptr == purb->actual_length) {
+-			// finished, take next buffer
+-			if (dabusb_add_buf_tail (s, &s->free_buff_list, &s->rec_buff_list))
++			/* finished, take next buffer */
++			if (dabusb_add_buf_tail(s, &s->free_buff_list,
++						&s->rec_buff_list))
+ 				dev_err(&s->usbdev->dev,
+ 					"read: dabusb_add_buf_tail failed\n");
+ 			s->readptr = 0;
+ 		}
+ 	}
+-      err:			//mutex_unlock(&s->mutex);
++err:			/*mutex_unlock(&s->mutex);*/
+ 	return ret;
+ }
+ 
+-static int dabusb_open (struct inode *inode, struct file *file)
++static int dabusb_open(struct inode *inode, struct file *file)
+ {
+ 	int devnum = iminor(inode);
+ 	pdabusb_t s;
+@@ -632,11 +647,11 @@ static int dabusb_open (struct inode *inode, struct file *file)
+ 			return -EBUSY;
+ 		msleep_interruptible(500);
+ 
+-		if (signal_pending (current))
++		if (signal_pending(current))
+ 			return -EAGAIN;
+ 		mutex_lock(&s->mutex);
+ 	}
+-	if (usb_set_interface (s->usbdev, _DABUSB_IF, 1) < 0) {
++	if (usb_set_interface(s->usbdev, _DABUSB_IF, 1) < 0) {
+ 		mutex_unlock(&s->mutex);
+ 		dev_err(&s->usbdev->dev, "set_interface failed\n");
+ 		return -EINVAL;
+@@ -651,31 +666,30 @@ static int dabusb_open (struct inode *inode, struct file *file)
+ 	return r;
+ }
+ 
+-static int dabusb_release (struct inode *inode, struct file *file)
++static int dabusb_release(struct inode *inode, struct file *file)
+ {
+-	pdabusb_t s = (pdabusb_t) file->private_data;
++	pdabusb_t s = (pdabusb_t)file->private_data;
+ 
+ 	dbg("dabusb_release");
+ 
+ 	mutex_lock(&s->mutex);
+-	dabusb_stop (s);
+-	dabusb_free_buffers (s);
++	dabusb_stop(s);
++	dabusb_free_buffers(s);
+ 	mutex_unlock(&s->mutex);
+ 
+ 	if (!s->remove_pending) {
+-		if (usb_set_interface (s->usbdev, _DABUSB_IF, 0) < 0)
++		if (usb_set_interface(s->usbdev, _DABUSB_IF, 0) < 0)
+ 			dev_err(&s->usbdev->dev, "set_interface failed\n");
+-	}
+-	else
+-		wake_up (&s->remove_ok);
++	} else
++		wake_up(&s->remove_ok);
+ 
+ 	s->opened = 0;
+ 	return 0;
+ }
+ 
+-static long dabusb_ioctl (struct file *file, unsigned int cmd, unsigned long arg)
++static long dabusb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ {
+-	pdabusb_t s = (pdabusb_t) file->private_data;
++	pdabusb_t s = (pdabusb_t)file->private_data;
+ 	pbulk_transfer_t pbulk;
+ 	int ret = 0;
+ 	int version = DABUSB_VERSION;
+@@ -703,20 +717,20 @@ static long dabusb_ioctl (struct file *file, unsigned int cmd, unsigned long arg
+ 			break;
+ 		}
+ 
+-		ret=dabusb_bulk (s, pbulk);
+-		if(ret==0)
++		ret = dabusb_bulk(s, pbulk);
++		if (ret == 0)
+ 			if (copy_to_user((void __user *)arg, pbulk,
+ 					 sizeof(bulk_transfer_t)))
+ 				ret = -EFAULT;
+-		kfree (pbulk);
++		kfree(pbulk);
+ 		break;
+ 
+ 	case IOCTL_DAB_OVERRUNS:
+-		ret = put_user (s->overruns, (unsigned int __user *) arg);
++		ret = put_user(s->overruns, (unsigned int __user *) arg);
+ 		break;
+ 
+ 	case IOCTL_DAB_VERSION:
+-		ret = put_user (version, (unsigned int __user *) arg);
++		ret = put_user(version, (unsigned int __user *) arg);
+ 		break;
+ 
+ 	default:
+@@ -727,8 +741,7 @@ static long dabusb_ioctl (struct file *file, unsigned int cmd, unsigned long arg
+ 	return ret;
+ }
+ 
+-static const struct file_operations dabusb_fops =
+-{
++static const struct file_operations dabusb_fops = {
+ 	.owner =	THIS_MODULE,
+ 	.llseek =	no_llseek,
+ 	.read =		dabusb_read,
+@@ -751,7 +764,7 @@ static struct usb_class_driver dabusb_class = {
+ 
+ 
+ /* --------------------------------------------------------------------- */
+-static int dabusb_probe (struct usb_interface *intf,
++static int dabusb_probe(struct usb_interface *intf,
+ 			 const struct usb_device_id *id)
+ {
+ 	struct usb_device *usbdev = interface_to_usbdev(intf);
+@@ -780,54 +793,53 @@ static int dabusb_probe (struct usb_interface *intf,
+ 	s->usbdev = usbdev;
+ 	s->devnum = intf->minor;
+ 
+-	if (usb_reset_configuration (usbdev) < 0) {
++	if (usb_reset_configuration(usbdev) < 0) {
+ 		dev_err(&intf->dev, "reset_configuration failed\n");
+ 		goto reject;
+ 	}
+ 	if (le16_to_cpu(usbdev->descriptor.idProduct) == 0x2131) {
+-		dabusb_loadmem (s, NULL);
++		dabusb_loadmem(s, NULL);
+ 		goto reject;
+-	}
+-	else {
+-		dabusb_fpga_download (s, NULL);
++	} else {
++		dabusb_fpga_download(s, NULL);
+ 
+-		if (usb_set_interface (s->usbdev, _DABUSB_IF, 0) < 0) {
++		if (usb_set_interface(s->usbdev, _DABUSB_IF, 0) < 0) {
+ 			dev_err(&intf->dev, "set_interface failed\n");
+ 			goto reject;
+ 		}
+ 	}
+ 	dbg("bound to interface: %d", intf->altsetting->desc.bInterfaceNumber);
+-	usb_set_intfdata (intf, s);
++	usb_set_intfdata(intf, s);
+ 	mutex_unlock(&s->mutex);
+ 
+ 	retval = usb_register_dev(intf, &dabusb_class);
+ 	if (retval) {
+-		usb_set_intfdata (intf, NULL);
++		usb_set_intfdata(intf, NULL);
+ 		return -ENOMEM;
+ 	}
+ 
+ 	return 0;
+ 
+-      reject:
++reject:
+ 	mutex_unlock(&s->mutex);
+ 	s->usbdev = NULL;
+ 	return -ENODEV;
+ }
+ 
+-static void dabusb_disconnect (struct usb_interface *intf)
++static void dabusb_disconnect(struct usb_interface *intf)
+ {
+ 	wait_queue_t __wait;
+-	pdabusb_t s = usb_get_intfdata (intf);
++	pdabusb_t s = usb_get_intfdata(intf);
+ 
+ 	dbg("dabusb_disconnect");
+ 
+ 	init_waitqueue_entry(&__wait, current);
+ 
+-	usb_set_intfdata (intf, NULL);
++	usb_set_intfdata(intf, NULL);
+ 	if (s) {
+-		usb_deregister_dev (intf, &dabusb_class);
++		usb_deregister_dev(intf, &dabusb_class);
+ 		s->remove_pending = 1;
+-		wake_up (&s->wait);
++		wake_up(&s->wait);
+ 		add_wait_queue(&s->remove_ok, &__wait);
+ 		set_current_state(TASK_UNINTERRUPTIBLE);
+ 		if (s->state == _started)
+@@ -840,13 +852,13 @@ static void dabusb_disconnect (struct usb_interface *intf)
+ 	}
+ }
+ 
+-static struct usb_device_id dabusb_ids [] = {
+-	// { USB_DEVICE(0x0547, 0x2131) },	/* An2131 chip, no boot ROM */
++static struct usb_device_id dabusb_ids[] = {
++	/* { USB_DEVICE(0x0547, 0x2131) },*/	/* An2131 chip, no boot ROM */
+ 	{ USB_DEVICE(0x0547, 0x9999) },
+ 	{ }						/* Terminating entry */
+ };
+ 
+-MODULE_DEVICE_TABLE (usb, dabusb_ids);
++MODULE_DEVICE_TABLE(usb, dabusb_ids);
+ 
+ static struct usb_driver dabusb_driver = {
+ 	.name =		"dabusb",
+@@ -857,7 +869,7 @@ static struct usb_driver dabusb_driver = {
+ 
+ /* --------------------------------------------------------------------- */
+ 
+-static int __init dabusb_init (void)
++static int __init dabusb_init(void)
+ {
+ 	int retval;
+ 	unsigned u;
+@@ -865,15 +877,15 @@ static int __init dabusb_init (void)
+ 	/* initialize struct */
+ 	for (u = 0; u < NRDABUSB; u++) {
+ 		pdabusb_t s = &dabusb[u];
+-		memset (s, 0, sizeof (dabusb_t));
+-		mutex_init (&s->mutex);
++		memset(s, 0, sizeof(dabusb_t));
++		mutex_init(&s->mutex);
+ 		s->usbdev = NULL;
+ 		s->total_buffer_size = buffers;
+-		init_waitqueue_head (&s->wait);
+-		init_waitqueue_head (&s->remove_ok);
+-		spin_lock_init (&s->lock);
+-		INIT_LIST_HEAD (&s->free_buff_list);
+-		INIT_LIST_HEAD (&s->rec_buff_list);
++		init_waitqueue_head(&s->wait);
++		init_waitqueue_head(&s->remove_ok);
++		spin_lock_init(&s->lock);
++		INIT_LIST_HEAD(&s->free_buff_list);
++		INIT_LIST_HEAD(&s->rec_buff_list);
+ 	}
+ 
+ 	/* register misc device */
+@@ -890,25 +902,25 @@ out:
+ 	return retval;
+ }
+ 
+-static void __exit dabusb_cleanup (void)
++static void __exit dabusb_cleanup(void)
+ {
+ 	dbg("dabusb_cleanup");
+ 
+-	usb_deregister (&dabusb_driver);
++	usb_deregister(&dabusb_driver);
+ }
+ 
+ /* --------------------------------------------------------------------- */
+ 
+-MODULE_AUTHOR( DRIVER_AUTHOR );
+-MODULE_DESCRIPTION( DRIVER_DESC );
++MODULE_AUTHOR(DRIVER_AUTHOR);
++MODULE_DESCRIPTION(DRIVER_DESC);
+ MODULE_LICENSE("GPL");
+ MODULE_FIRMWARE("dabusb/firmware.fw");
+ MODULE_FIRMWARE("dabusb/bitstream.bin");
+ 
+ module_param(buffers, int, 0);
+-MODULE_PARM_DESC (buffers, "Number of buffers (default=256)");
++MODULE_PARM_DESC(buffers, "Number of buffers (default=256)");
+ 
+-module_init (dabusb_init);
+-module_exit (dabusb_cleanup);
++module_init(dabusb_init);
++module_exit(dabusb_cleanup);
+ 
+ /* --------------------------------------------------------------------- */
+diff --git a/drivers/staging/dabusb/dabusb.h b/drivers/staging/dabusb/dabusb.h
+index 00eb34c..c1772ef 100644
+--- a/drivers/staging/dabusb/dabusb.h
++++ b/drivers/staging/dabusb/dabusb.h
+@@ -1,10 +1,9 @@
+ #define _BULK_DATA_LEN 64
+-typedef struct
+-{
++typedef struct {
+ 	unsigned char data[_BULK_DATA_LEN];
+ 	unsigned int size;
+ 	unsigned int pipe;
+-}bulk_transfer_t,*pbulk_transfer_t;
++} bulk_transfer_t, *pbulk_transfer_t;
+ 
+ #define DABUSB_MINOR 240		/* some unassigned USB minor */
+ #define DABUSB_VERSION 0x1000
+@@ -14,10 +13,9 @@ typedef struct
+ 
+ #ifdef __KERNEL__
+ 
+-typedef enum { _stopped=0, _started } driver_state_t;
++typedef enum { _stopped = 0, _started } driver_state_t;
+ 
+-typedef struct
+-{
++typedef struct {
+ 	struct mutex mutex;
+ 	struct usb_device *usbdev;
+ 	wait_queue_head_t wait;
+@@ -34,17 +32,15 @@ typedef struct
+ 	int devnum;
+ 	struct list_head free_buff_list;
+ 	struct list_head rec_buff_list;
+-} dabusb_t,*pdabusb_t;
++} dabusb_t, *pdabusb_t;
+ 
+-typedef struct
+-{
++typedef struct {
+ 	pdabusb_t s;
+ 	struct urb *purb;
+ 	struct list_head buff_list;
+-} buff_t,*pbuff_t;
++} buff_t, *pbuff_t;
+ 
+-typedef struct
+-{
++typedef struct {
+ 	wait_queue_head_t wait;
+ } bulk_completion_context_t, *pbulk_completion_context_t;
+ 
+@@ -54,11 +50,11 @@ typedef struct
+ #define _ISOPIPESIZE	16384
+ 
+ #define _BULK_DATA_LEN 64
+-// Vendor specific request code for Anchor Upload/Download
+-// This one is implemented in the core
++/* Vendor specific request code for Anchor Upload/Download
++ *This one is implemented in the core */
+ #define ANCHOR_LOAD_INTERNAL  0xA0
+ 
+-// EZ-USB Control and Status Register.  Bit 0 controls 8051 reset
++/* EZ-USB Control and Status Register.  Bit 0 controls 8051 reset */
+ #define CPUCS_REG    0x7F92
+ #define _TOTAL_BUFFERS 384
+ 
+@@ -67,19 +63,18 @@ typedef struct
+ #ifndef _BYTE_DEFINED
+ #define _BYTE_DEFINED
+ typedef unsigned char BYTE;
+-#endif // !_BYTE_DEFINED
++#endif /* !_BYTE_DEFINED */
+ 
+ #ifndef _WORD_DEFINED
+ #define _WORD_DEFINED
+ typedef unsigned short WORD;
+-#endif // !_WORD_DEFINED
++#endif /* !_WORD_DEFINED */
+ 
+-typedef struct _INTEL_HEX_RECORD
+-{
+-   BYTE  Length;
+-   WORD  Address;
+-   BYTE  Type;
+-   BYTE  Data[MAX_INTEL_HEX_RECORD_LENGTH];
++typedef struct _INTEL_HEX_RECORD {
++	BYTE  Length;
++	WORD  Address;
++	BYTE  Type;
++	BYTE  Data[MAX_INTEL_HEX_RECORD_LENGTH];
+ } INTEL_HEX_RECORD, *PINTEL_HEX_RECORD;
+ 
+ #endif
 -- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
+1.7.3.5
 
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
