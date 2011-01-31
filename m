@@ -1,54 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755538Ab1AaMWq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 07:22:46 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:50750 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752968Ab1AaMWp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 07:22:45 -0500
-Message-ID: <4D46A94C.7000700@ru.mvista.com>
-Date: Mon, 31 Jan 2011 15:21:32 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	id S1755548Ab1AaMZT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 07:25:19 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:46050 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752452Ab1AaMZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 07:25:17 -0500
+Date: Mon, 31 Jan 2011 13:24:47 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Yinghai Lu <yinghai@kernel.org>, Len Brown <lenb@kernel.org>
+Cc: Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH -v2] x86, acpi: Handle xapic/x2apic entries in MADT at
+ same time
+Message-ID: <20110131122447.GA30149@elte.hu>
+References: <4D423360.6080408@kernel.org>
 MIME-Version: 1.0
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: linux-arm-kernel@lists.infradead.org,
-        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: dmaengine: i.MX dma fixes
-References: <1296475248-29095-1-git-send-email-s.hauer@pengutronix.de>
-In-Reply-To: <1296475248-29095-1-git-send-email-s.hauer@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D423360.6080408@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-On 31-01-2011 15:00, Sascha Hauer wrote:
+* Yinghai Lu <yinghai@kernel.org> wrote:
 
-> The following contains fixes for the i.MX dma driver.
+> 
+> One system have mixing xapic and x2apic entries in MADT and SRAT.
+> BIOS guys insist that ACPI 4.0 SPEC said so, if apic id < 255, even
+> the cpus are with x2apic mode pre-enabled, still need to use xapic entries
+> instead of x2apic entries.
+> 
+> on 8 socket system with x2apic pre-enabled, will get out of order sequence:
+> CPU0: socket0, core0, thread0.
+> CPU1 - CPU 40: socket 4 - socket 7, thread 0
+> CPU41 - CPU 80: socket 4 - socket 7, thread 1
+> CPU81 - CPU 119: socket 0 - socket 3, thread 0
+> CPU120 - CPU 159: socket 0 - socket 3, thread 1
+> 
+> so max_cpus=80 will not get all thread0 now.
+> 
+> Need to handle every entry in MADT at same time with xapic and x2apic.
+> so we can honor sequence in MADT.
+> 
+> We can use max_cpus= command line to use thread0 in every core,
+> because recent MADT always have all thread0 at first.
+> Also it could make the cpu to node mapping more sane.
+> 
+> after patch will get
+> CPU0 - CPU 79: socket 0 - socket 7, thread 0
+> CPU80 - CPU 159: socket 0 - socket 7, thread 1
+> 
+> -v2: update some comments, and change to pass array pointer.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> ---
+>  arch/x86/kernel/acpi/boot.c |   30 ++++++++++++++++-------
+>  drivers/acpi/numa.c         |   16 +++++++++---
+>  drivers/acpi/tables.c       |   57 +++++++++++++++++++++++++++++++++-----------
+>  include/linux/acpi.h        |    9 ++++++
+>  4 files changed, 86 insertions(+), 26 deletions(-)
 
-> Sascha
+Seems useful - we can queue it up and can get it tested in the x86 tree if Len acks 
+the principle and the ACPI approach.
 
-> The following changes since commit 1bae4ce27c9c90344f23c65ea6966c50ffeae2f5:
+Thanks,
 
->    Linux 2.6.38-rc2 (2011-01-21 19:01:34 -0800)
-
-> are available in the git repository at:
->    git://git.pengutronix.de/git/imx/linux-2.6 dmaengine-imxdma
-
-> Sascha Hauer (4):
->        dmaengine i.MX dma: set maximum segment size for our device
->        dmaengine i.MX dma: check sg entries for valid addresses and lengths
->        dmaengine i.MX DMA: do not initialize chan_id field
->        dmaengine i.MX dma: initialize dma capabilities outside channel loop
-
->   drivers/dma/imx-dma.c |   26 ++++++++++++++++++++++----
->   1 files changed, 22 insertions(+), 4 deletions(-)
-
-    Actually, would have made sense to combine the analogous changes to SDMA 
-and DMA drivers into the single patch...
-
-WBR, Sergei
+	Ingo
