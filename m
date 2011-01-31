@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756723Ab1AaWyL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 17:54:11 -0500
-Received: from kroah.org ([198.145.64.141]:49411 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752920Ab1AaWyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 17:54:09 -0500
-Date: Mon, 31 Jan 2011 14:50:15 -0800
-From: Greg KH <greg@kroah.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH 1/7] sysdev: Do not register with sysdev when erroring
- on add
-Message-ID: <20110131225015.GA18474@kroah.com>
-References: <1295882943-11184-1-git-send-email-bp@amd64.org>
- <1295882943-11184-2-git-send-email-bp@amd64.org>
- <20110131221659.GA14918@kroah.com>
- <20110131223319.GA3839@aftab>
+	id S1756731Ab1AaW5e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 17:57:34 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:36941 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754296Ab1AaW5c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 17:57:32 -0500
+Date: Tue, 1 Feb 2011 09:57:28 +1100
+From: Simon Horman <horms@verge.net.au>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for January 31 (ip_vs)
+Message-ID: <20110131225727.GA23992@verge.net.au>
+References: <20110131174113.8199f901.sfr@canb.auug.org.au>
+ <20110131101829.b842da44.randy.dunlap@oracle.com>
+ <20110131211846.GH2389@verge.net.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110131223319.GA3839@aftab>
+In-Reply-To: <20110131211846.GH2389@verge.net.au>
+Organisation: Horms Solutions Ltd.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 31, 2011 at 11:33:19PM +0100, Borislav Petkov wrote:
-> On Mon, Jan 31, 2011 at 05:16:59PM -0500, Greg KH wrote:
-> > On Mon, Jan 24, 2011 at 04:28:57PM +0100, Borislav Petkov wrote:
-> > > From: Borislav Petkov <borislav.petkov@amd.com>
+On Tue, Feb 01, 2011 at 08:18:47AM +1100, Simon Horman wrote:
+> On Mon, Jan 31, 2011 at 10:18:29AM -0800, Randy Dunlap wrote:
+> > On Mon, 31 Jan 2011 17:41:13 +1100 Stephen Rothwell wrote:
+> > 
+> > > Hi all,
 > > > 
-> > > When encountering an error while executing the driver's ->add method, we
-> > > should cancel registration and unwind what we've regged so far. The low
-> > > level ->add methods do return proper error codes but those aren't looked
-> > > at in sysdev_driver_register(). Fix that by sharing the unregistering
-> > > code.
+> > > Changes since 20110121:
+> > > 
+> > > The net tree lost its build failure.
 > > 
-> > Have you actually hit this before?  If so, where?
-> 
-> Sorta. I want to be paranoid when loading the microcode image file and
-> in patch 3/7 (http://marc.info/?l=linux-kernel&m=129588287409770) I
-> propagate the error in case loading the microcode fails. If we don't
-> cleanup here, the driver remains loaded and takes up resources. And if
-> you load it again, you get a sysfs warning about duplicated entries.
-
-Ok, it's good to clean up properly, but I was wondering if this was a
-real problem that people saw "in the wild" or not.
-
-> > > Also, fixup warning messages formatting while at it.
 > > 
-> > Please, no, one patch per thing.  Please break this up into two
-> > different patches.
+> > When CONFIG_SYSCTL is not enabled:
+> > 
+> > net/netfilter/ipvs/ip_vs_core.c:1891: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'unsigned int'
+> > ERROR: "unregister_net_sysctl_table" [net/netfilter/ipvs/ip_vs.ko] undefined!
+> > ERROR: "register_net_sysctl_table" [net/netfilter/ipvs/ip_vs.ko] undefined!
 > 
-> Yes, will do.
-> 
-> > And, in the future, let me know that you need this for other work.
-> 
-> Will do.
-> 
-> > Actually, why did you send this to Ingo in your pull request?  What does
-> > your microcode patches need from this patch?  It should go through my
-> > tree, especially as there is other sysdev work happening at the moment.
-> 
-> Sorry about that, I did not mean to bypass/offend you in any way.
-> 
-> > so, no, please don't send this on to anyone else right now.
-> 
-> Do you need the patches rediffed against a some tree of yours?
+> Thanks, I'm looking into it.
 
-Just resend the two patches to me against linux-next and all should be
-good.
-
-thanks,
-
-greg k-h
+On a related note, does IPVS need to handle the case
+where CONFIG_PROC_FS is not enabled?
