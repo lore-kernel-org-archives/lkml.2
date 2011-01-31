@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521Ab1AaKaS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 05:30:18 -0500
-Received: from nm8.bullet.mail.ac4.yahoo.com ([98.139.52.205]:41280 "HELO
-	nm8.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755464Ab1AaKaO (ORCPT
+	id S1755502Ab1AaKaK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 05:30:10 -0500
+Received: from nm9.bullet.mail.ac4.yahoo.com ([98.139.52.206]:23923 "HELO
+	nm9.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755464Ab1AaKaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 05:30:14 -0500
-X-Yahoo-Newman-Id: 708187.50649.bm@omp1037.mail.ac4.yahoo.com
+	Mon, 31 Jan 2011 05:30:07 -0500
+X-Yahoo-Newman-Id: 466054.95525.bm@omp1068.mail.ac4.yahoo.com
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: MHfsCJkVM1mwuSoNQdIj_QmZ3CTZldGztGuJzwHusCOVyDF
- wg3T8KF_luFXxbwyIesHvsOgmwEpN.7th4R8PRyrVOKoTPHOT90fEBS0LWjF
- 3SMFYtmb5mbvgOD.i0EgSrX0ethc7Qwp8huvGKTIJ2_Wfik9PyvInoTO6FqZ
- 1K7PAYCMV3yfTaE5qgJkGSpOopp3iwCxjHP5CH7d7MKzeLywVoVHChPDaSg_
- epuJNLw2V94L0AD78DmlcqGsmDL7s52cbRfnzRWk7gNiMfE15Usj5cSTJNZx
- ZbaBlb5.GoHkZ4IziKCnUth44okDVr6CDVLR.uy921pfLrQ2GCJozczzAxQ-
+X-YMail-OSG: AUU4rPEVM1nJMBfIXscF5uY3dfUtAwf4_UrvBkePQSWeRt0
+ np4OMu_dT4nyOHtPb37kC2WdIZ2TjaQHKMnnXWW14bI17IOH3egkDODAMwwq
+ K0G4_AdcNB_qbyK.XdCUrlHLVw9fuVLISdPPD_SncIJ6PE4IoGsDkypi.1Uh
+ .hd_9M_5.Db26Dh.kfNEKBp4FkRhq2dAGhJZZyMOHI6ZdmplAjO0gWBBKPEC
+ X9JRfih0JsMAflsuqTEsKQBSeQgRQCEZZGHgMcDX0Mh6gQpcGkJQc4pRBQ8.
+ KzuyO3gq3V4hKCdX3fkVOtkGq9e7xgMd5oXh0zz7yCAIVEZty.FYeYZ3_lD5
+ qcXV_hHruoUMb1pbkbN2uUde6Ha1Jdqs6GXm5Up3XPqknLCyT.OhiDg6BXA-
  -
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
@@ -28,9 +29,9 @@ Cc: Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
         Joel Becker <jlbec@evilplan.org>,
         Douglas Gilbert <dgilbert@interlog.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3/3] target: add initial fabric MappedLUN context target_core_stat.c code
-Date: Mon, 31 Jan 2011 02:29:55 -0800
-Message-Id: <1296469795-27632-4-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 2/3] target: add initial fabric port context target_core_stat.c code
+Date: Mon, 31 Jan 2011 02:29:54 -0800
+Message-Id: <1296469795-27632-3-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1296469795-27632-1-git-send-email-nab@linux-iscsi.org>
 References: <1296469795-27632-1-git-send-email-nab@linux-iscsi.org>
@@ -41,819 +42,804 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
 This patch adds a target_core_mib.c statistics conversion for
-TCM MappedLUN/LunACL context struct se_lun_acl + struct se_dev_entry
-config_group based statistics in target_core_fabric_configfs.c using
-CONFIGFS_EATTR() based struct config_item_types from existing generic
-target fabric TF_CIT_SETUP() wrapper code in target_core_fabric_configfs.c.
+TCM fabric port/LUN context struct se_lun + struct se_port config_group
+based statistics in target_core_fabric_configfs.c using CONFIGFS_EATTR()
+based struct config_item_types from existing generic target fabric
+TF_CIT_SETUP() wrapper code in target_core_fabric_configfs.c.
 
 The conversion from backend /proc/scsi_target/mib/ context output to configfs
-default groups+attributes include scsi_att_intr_port and scsi_auth_intr output
-from within individual:
+default groups+attributes include scsi_port, scsi_tgt_port and scsi_transport
+output from within individual:
 
-	/sys/kernel/config/target/fabric/$WWN/tpgt_$TPGT/acls/$INITIATOR_WWN/lun_$LUN_ID/statistics/
+	/sys/kernel/config/target/fabric/$WWN/tpgt_$TPGT/lun/lun_$LUN_ID/statistics/
 
 The legacy procfs output now appear as individual configfs attributes under:
 
-*) acls/$INITIATOR_WWN/lun_$LUN_ID/statistics/scsi_att_intr_port
+*) fabric/$WWN/tpgt_$TPGT/lun/lun_$LUN_ID/statistics/scsi_port
 
+|-- busy_count
 |-- dev
 |-- indx
 |-- inst
-|-- port
-|-- port_auth_indx
-`-- port_ident
+`-- role
 
-*) acls/$INITIATOR_WWN/lun_$LUN_ID/statistics/scsi_auth_intr
+*) fabric/$WWN/tpgt_$TPGT/lun/lun_$LUN_ID/statistics/scsi_tgt_port
 
-|-- att_count
-|-- creation_time
 |-- dev
-|-- dev_or_port
-|-- hs_num_cmds
+|-- hs_in_cmds
+|-- in_cmds
 |-- indx
 |-- inst
-|-- intr_name
-|-- map_indx
-|-- num_cmds
-|-- port
+|-- name
+|-- port_index
 |-- read_mbytes
-|-- row_status
 `-- write_mbytes
+
+*) fabric/$WWN/tpgt_$TPGT/lun/lun_$LUN_ID/statistics/scsi_transport
+
+|-- dev_name
+|-- device
+|-- indx
+`-- inst
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/target_core_fabric_configfs.c |   76 ++++-
- drivers/target/target_core_stat.c            |  582 ++++++++++++++++++++++++++
+ drivers/target/target_core_fabric_configfs.c |   83 ++++-
+ drivers/target/target_core_stat.c            |  544 ++++++++++++++++++++++++++
  drivers/target/target_core_stat.h            |    1 +
- include/target/target_core_base.h            |    9 +
+ include/target/target_core_base.h            |   11 +-
  include/target/target_core_configfs.h        |    1 +
- 5 files changed, 668 insertions(+), 1 deletions(-)
+ 5 files changed, 636 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/target/target_core_fabric_configfs.c b/drivers/target/target_core_fabric_configfs.c
-index 1357592..ea49c9d 100644
+index 32b148d..1357592 100644
 --- a/drivers/target/target_core_fabric_configfs.c
 +++ b/drivers/target/target_core_fabric_configfs.c
-@@ -232,6 +232,32 @@ TF_CIT_SETUP(tpg_mappedlun, &target_fabric_mappedlun_item_ops, NULL,
+@@ -4,10 +4,10 @@
+  * This file contains generic fabric module configfs infrastructure for
+  * TCM v4.x code
+  *
+- * Copyright (c) 2010 Rising Tide Systems
+- * Copyright (c) 2010 Linux-iSCSI.org
++ * Copyright (c) 2010,2011 Rising Tide Systems
++ * Copyright (c) 2010,2011 Linux-iSCSI.org
+  *
+- * Copyright (c) 2010 Nicholas A. Bellinger <nab@linux-iscsi.org>
++ * Copyright (c) Nicholas A. Bellinger <nab@linux-iscsi.org>
+ *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -48,6 +48,7 @@
+ #include "target_core_alua.h"
+ #include "target_core_hba.h"
+ #include "target_core_pr.h"
++#include "target_core_stat.h"
  
- /* End of tfc_tpg_mappedlun_cit */
+ #define TF_CIT_SETUP(_name, _item_ops, _group_ops, _attrs)		\
+ static void target_fabric_setup_##_name##_cit(struct target_fabric_configfs *tf) \
+@@ -736,6 +737,31 @@ TF_CIT_SETUP(tpg_port, &target_fabric_port_item_ops, NULL, target_fabric_port_at
  
-+/* Start of tfc_tpg_mappedlun_port_cit */
+ /* End of tfc_tpg_port_cit */
+ 
++/* Start of tfc_tpg_port_stat_cit */
 +
-+static struct config_group *target_core_mappedlun_stat_mkdir(
++static struct config_group *target_core_port_stat_mkdir(
 +	struct config_group *group,
 +	const char *name)
 +{
 +	return ERR_PTR(-ENOSYS);
 +}
 +
-+static void target_core_mappedlun_stat_rmdir(
++static void target_core_port_stat_rmdir(
 +	struct config_group *group,
 +	struct config_item *item)
 +{
 +	return;
 +}
 +
-+static struct configfs_group_operations target_fabric_mappedlun_stat_group_ops = {
-+	.make_group		= target_core_mappedlun_stat_mkdir,
-+	.drop_item		= target_core_mappedlun_stat_rmdir,
++static struct configfs_group_operations target_fabric_port_stat_group_ops = {
++	.make_group		= target_core_port_stat_mkdir,
++	.drop_item		= target_core_port_stat_rmdir,
 +};
 +
-+TF_CIT_SETUP(tpg_mappedlun_stat, NULL, &target_fabric_mappedlun_stat_group_ops,
-+		NULL);
++TF_CIT_SETUP(tpg_port_stat, NULL, &target_fabric_port_stat_group_ops, NULL);
 +
-+/* End of tfc_tpg_mappedlun_port_cit */
++/* End of tfc_tpg_port_stat_cit */
 +
- /* Start of tfc_tpg_nacl_attrib_cit */
+ /* Start of tfc_tpg_lun_cit */
  
- CONFIGFS_EATTR_OPS(target_fabric_nacl_attrib, se_node_acl, acl_attrib_group);
-@@ -285,6 +311,7 @@ static struct config_group *target_fabric_make_mappedlun(
+ static struct config_group *target_fabric_make_lun(
+@@ -746,7 +772,9 @@ static struct config_group *target_fabric_make_lun(
+ 	struct se_portal_group *se_tpg = container_of(group,
+ 			struct se_portal_group, tpg_lun_group);
  	struct target_fabric_configfs *tf = se_tpg->se_tpg_wwn->wwn_tf;
- 	struct se_lun_acl *lacl;
- 	struct config_item *acl_ci;
-+	struct config_group *lacl_cg = NULL, *ml_stat_grp = NULL;
- 	char *buf;
- 	unsigned long mapped_lun;
- 	int ret = 0;
-@@ -321,15 +348,42 @@ static struct config_group *target_fabric_make_mappedlun(
++	struct config_group *lun_cg = NULL, *port_stat_grp = NULL;
+ 	unsigned long unpacked_lun;
++	int errno;
  
- 	lacl = core_dev_init_initiator_node_lun_acl(se_tpg, mapped_lun,
- 			config_item_name(acl_ci), &ret);
--	if (!(lacl))
-+	if (!(lacl)) {
-+		ret = -EINVAL;
- 		goto out;
+ 	if (strstr(name, "lun_") != name) {
+ 		printk(KERN_ERR "Unable to locate \'_\" in"
+@@ -760,16 +788,64 @@ static struct config_group *target_fabric_make_lun(
+ 	if (!(lun))
+ 		return ERR_PTR(-EINVAL);
+ 
++	lun_cg = &lun->lun_group;
++	lun_cg->default_groups = kzalloc(sizeof(struct config_group) * 2,
++				GFP_KERNEL);
++	if (!lun_cg->default_groups) {
++		printk(KERN_ERR "Unable to allocate lun_cg->default_groups\n");
++		return ERR_PTR(-ENOMEM);
 +	}
 +
-+	lacl_cg = &lacl->se_lun_group;
-+	lacl_cg->default_groups = kzalloc(sizeof(struct config_group) * 2,
-+				GFP_KERNEL);
-+	if (!lacl_cg->default_groups) {
-+		printk(KERN_ERR "Unable to allocate lacl_cg->default_groups\n");
-+		ret = -ENOMEM;
-+		goto out;
-+	}
- 
- 	config_group_init_type_name(&lacl->se_lun_group, name,
- 			&TF_CIT_TMPL(tf)->tfc_tpg_mappedlun_cit);
-+	config_group_init_type_name(&lacl->ml_stat_grps.stat_group,
-+			"statistics", &TF_CIT_TMPL(tf)->tfc_tpg_mappedlun_stat_cit);
-+	lacl_cg->default_groups[0] = &lacl->ml_stat_grps.stat_group;
-+	lacl_cg->default_groups[1] = NULL;
+ 	config_group_init_type_name(&lun->lun_group, name,
+ 			&TF_CIT_TMPL(tf)->tfc_tpg_port_cit);
++	config_group_init_type_name(&lun->port_stat_grps.stat_group,
++			"statistics", &TF_CIT_TMPL(tf)->tfc_tpg_port_stat_cit);
++	lun_cg->default_groups[0] = &lun->port_stat_grps.stat_group;	
++	lun_cg->default_groups[1] = NULL;
 +
-+	ml_stat_grp = &ML_STAT_GRPS(lacl)->stat_group;	
-+	ml_stat_grp->default_groups = kzalloc(sizeof(struct config_group) * 3,
++	port_stat_grp = &PORT_STAT_GRP(lun)->stat_group;
++	port_stat_grp->default_groups =  kzalloc(sizeof(struct config_group) * 3,
 +				GFP_KERNEL);
-+	if (!ml_stat_grp->default_groups) {
-+		printk(KERN_ERR "Unable to allocate ml_stat_grp->default_groups\n");
-+		ret = -ENOMEM;
++	if (!port_stat_grp->default_groups) {
++		printk(KERN_ERR "Unable to allocate port_stat_grp->default_groups\n");
++		errno = -ENOMEM;
 +		goto out;
 +	}
-+	target_stat_setup_mappedlun_default_groups(lacl);
++	target_stat_setup_port_default_groups(lun);
  
- 	kfree(buf);
- 	return &lacl->se_lun_group;
- out:
-+	if (lacl_cg)
-+		kfree(lacl_cg->default_groups);
- 	kfree(buf);
- 	return ERR_PTR(ret);
+ 	return &lun->lun_group;
++out:
++	if (lun_cg)
++		kfree(lun_cg->default_groups);
++	return ERR_PTR(errno);
  }
-@@ -341,6 +395,25 @@ static void target_fabric_drop_mappedlun(
- 	struct se_lun_acl *lacl = container_of(to_config_group(item),
- 			struct se_lun_acl, se_lun_group);
- 	struct se_portal_group *se_tpg = lacl->se_lun_nacl->se_tpg;
+ 
+ static void target_fabric_drop_lun(
+ 	struct config_group *group,
+ 	struct config_item *item)
+ {
++	struct se_lun *lun = container_of(to_config_group(item),
++				struct se_lun, lun_group);
 +	struct config_item *df_item;
-+	struct config_group *lacl_cg = NULL, *ml_stat_grp = NULL;
++	struct config_group *lun_cg, *port_stat_grp;
 +	int i;
 +
-+	ml_stat_grp = &ML_STAT_GRPS(lacl)->stat_group;
-+	for (i = 0; ml_stat_grp->default_groups[i]; i++) {
-+		df_item = &ml_stat_grp->default_groups[i]->cg_item;
-+		ml_stat_grp->default_groups[i] = NULL;
++	port_stat_grp = &PORT_STAT_GRP(lun)->stat_group;
++	for (i = 0; port_stat_grp->default_groups[i]; i++) {
++		df_item = &port_stat_grp->default_groups[i]->cg_item;
++		port_stat_grp->default_groups[i] = NULL;
 +		config_item_put(df_item);
 +	}
-+	kfree(ml_stat_grp->default_groups);
++	kfree(port_stat_grp->default_groups);
 +
-+	lacl_cg = &lacl->se_lun_group;
-+	for (i = 0; lacl_cg->default_groups[i]; i++) {
-+		df_item = &lacl_cg->default_groups[i]->cg_item;
-+		lacl_cg->default_groups[i] = NULL;
++	lun_cg = &lun->lun_group;
++	for (i = 0; lun_cg->default_groups[i]; i++) {
++		df_item = &lun_cg->default_groups[i]->cg_item;
++		lun_cg->default_groups[i] = NULL;
 +		config_item_put(df_item);
 +	}
-+	kfree(lacl_cg->default_groups);
- 
++	kfree(lun_cg->default_groups);
++
  	config_item_put(item);
- 	core_dev_free_initiator_node_lun_acl(se_tpg, lacl);
-@@ -1068,6 +1141,7 @@ int target_fabric_setup_cits(struct target_fabric_configfs *tf)
- 	target_fabric_setup_tpg_nacl_auth_cit(tf);
- 	target_fabric_setup_tpg_nacl_param_cit(tf);
- 	target_fabric_setup_tpg_mappedlun_cit(tf);
-+	target_fabric_setup_tpg_mappedlun_stat_cit(tf);
- 
- 	return 0;
  }
+ 
+@@ -980,6 +1056,7 @@ int target_fabric_setup_cits(struct target_fabric_configfs *tf)
+ 	target_fabric_setup_tpg_cit(tf);
+ 	target_fabric_setup_tpg_base_cit(tf);
+ 	target_fabric_setup_tpg_port_cit(tf);
++	target_fabric_setup_tpg_port_stat_cit(tf);
+ 	target_fabric_setup_tpg_lun_cit(tf);
+ 	target_fabric_setup_tpg_np_cit(tf);
+ 	target_fabric_setup_tpg_np_base_cit(tf);
 diff --git a/drivers/target/target_core_stat.c b/drivers/target/target_core_stat.c
-index 667efe6..2bcc8ce 100644
+index 9b2ea89..667efe6 100644
 --- a/drivers/target/target_core_stat.c
 +++ b/drivers/target/target_core_stat.c
-@@ -1227,3 +1227,585 @@ void target_stat_setup_port_default_groups(struct se_lun *lun)
- 	port_stat_grp->default_groups[2] = &PORT_STAT_GRP(lun)->scsi_transport_group;
- 	port_stat_grp->default_groups[3] = NULL;
+@@ -683,3 +683,547 @@ void target_stat_setup_dev_default_groups(struct se_subsystem_dev *se_subdev)
+ 	dev_stat_grp->default_groups[2] = &DEV_STAT_GRP(se_subdev)->scsi_lu_group;
+ 	dev_stat_grp->default_groups[3] = NULL;
  }
 +
 +/*
-+ * SCSI Authorized Initiator Table
++ * SCSI Port Table
 + */
 +
-+CONFIGFS_EATTR_STRUCT(target_stat_scsi_auth_intr, se_ml_stat_grps);
-+#define DEV_STAT_SCSI_AUTH_INTR_ATTR(_name, _mode)			\
-+static struct target_stat_scsi_auth_intr_attribute			\
-+			target_stat_scsi_auth_intr_##_name =		\
++CONFIGFS_EATTR_STRUCT(target_stat_scsi_port, se_port_stat_grps);
++#define DEV_STAT_SCSI_PORT_ATTR(_name, _mode)				\
++static struct target_stat_scsi_port_attribute				\
++			target_stat_scsi_port_##_name =			\
 +	__CONFIGFS_EATTR(_name, _mode,					\
-+	target_stat_scsi_auth_intr_show_attr_##_name,			\
-+	target_stat_scsi_auth_intr_store_attr_##_name);
++	target_stat_scsi_port_show_attr_##_name,			\
++	target_stat_scsi_port_store_attr_##_name);
 +
-+#define DEV_STAT_SCSI_AUTH_INTR_ATTR_RO(_name)				\
-+static struct target_stat_scsi_auth_intr_attribute			\
-+			target_stat_scsi_auth_intr_##_name =		\
++#define DEV_STAT_SCSI_PORT_ATTR_RO(_name)				\
++static struct target_stat_scsi_port_attribute				\
++			target_stat_scsi_port_##_name =			\
 +	__CONFIGFS_EATTR_RO(_name,					\
-+	target_stat_scsi_auth_intr_show_attr_##_name);
++	target_stat_scsi_port_show_attr_##_name);
 +
-+static ssize_t target_stat_scsi_auth_intr_show_attr_inst(
-+	struct se_ml_stat_grps *lgrps, char *page)
++static ssize_t target_stat_scsi_port_show_attr_inst(
++	struct se_port_stat_grps *pgrps, char *page)
 +{
-+	struct se_lun_acl *lacl = container_of(lgrps,
-+			struct se_lun_acl, ml_stat_grps);
-+	struct se_node_acl *nacl = lacl->se_lun_nacl;
-+	struct se_dev_entry *deve;
-+	struct se_portal_group *tpg;
++	struct se_lun *lun = container_of(pgrps, struct se_lun, port_stat_grps);
++	struct se_port *sep;
++	struct se_device *dev = lun->lun_se_dev;
++	struct se_hba *hba;
 +	ssize_t ret;
 +
-+	spin_lock_irq(&nacl->device_list_lock);
-+	deve = &nacl->device_list[lacl->mapped_lun];
-+	if (!deve->se_lun || !deve->se_lun_acl) {
-+		spin_unlock_irq(&nacl->device_list_lock);
++	spin_lock(&lun->lun_sep_lock);
++	sep = lun->lun_sep;
++	if (!sep) {
++		spin_unlock(&lun->lun_sep_lock);
 +		return -ENODEV;
 +	}
-+	tpg = nacl->se_tpg;
-+	/* scsiInstIndex */
-+	ret = snprintf(page, PAGE_SIZE, "%u\n",
-+			TPG_TFO(tpg)->tpg_get_inst_index(tpg));
-+	spin_unlock_irq(&nacl->device_list_lock);
++	hba = dev->se_hba;
++	ret = snprintf(page, PAGE_SIZE, "%u\n", hba->hba_index);
++	spin_unlock(&lun->lun_sep_lock);
 +	return ret;
 +}
-+DEV_STAT_SCSI_AUTH_INTR_ATTR_RO(inst);
++DEV_STAT_SCSI_PORT_ATTR_RO(inst);
 +
-+static ssize_t target_stat_scsi_auth_intr_show_attr_dev(
-+	struct se_ml_stat_grps *lgrps, char *page)
++static ssize_t target_stat_scsi_port_show_attr_dev(
++	struct se_port_stat_grps *pgrps, char *page)
 +{
-+	struct se_lun_acl *lacl = container_of(lgrps,
-+			struct se_lun_acl, ml_stat_grps);
-+	struct se_node_acl *nacl = lacl->se_lun_nacl;
-+	struct se_dev_entry *deve;
-+	struct se_lun *lun;
-+	struct se_portal_group *tpg;
++	struct se_lun *lun = container_of(pgrps, struct se_lun, port_stat_grps);
++	struct se_port *sep;
++	struct se_device *dev = lun->lun_se_dev;
 +	ssize_t ret;
 +
-+	spin_lock_irq(&nacl->device_list_lock);
-+	deve = &nacl->device_list[lacl->mapped_lun];
-+	if (!deve->se_lun || !deve->se_lun_acl) {
-+		spin_unlock_irq(&nacl->device_list_lock);
++	spin_lock(&lun->lun_sep_lock);
++	sep = lun->lun_sep;
++	if (!sep) {
++		spin_unlock(&lun->lun_sep_lock);
 +		return -ENODEV;
 +	}
-+	tpg = nacl->se_tpg;
-+	lun = deve->se_lun;
-+	/* scsiDeviceIndex */
-+	ret = snprintf(page, PAGE_SIZE, "%u\n", lun->lun_se_dev->dev_index);
-+	spin_unlock_irq(&nacl->device_list_lock);
++	ret = snprintf(page, PAGE_SIZE, "%u\n", dev->dev_index);
++	spin_unlock(&lun->lun_sep_lock);
 +	return ret;
 +}
-+DEV_STAT_SCSI_AUTH_INTR_ATTR_RO(dev);
++DEV_STAT_SCSI_PORT_ATTR_RO(dev);
 +
-+static ssize_t target_stat_scsi_auth_intr_show_attr_port(
-+	struct se_ml_stat_grps *lgrps, char *page)
++static ssize_t target_stat_scsi_port_show_attr_indx(
++	struct se_port_stat_grps *pgrps, char *page)
 +{
-+	struct se_lun_acl *lacl = container_of(lgrps,
-+			struct se_lun_acl, ml_stat_grps);
-+	struct se_node_acl *nacl = lacl->se_lun_nacl;
-+	struct se_dev_entry *deve;
-+	struct se_portal_group *tpg;
++	struct se_lun *lun = container_of(pgrps, struct se_lun, port_stat_grps);
++	struct se_port *sep;
 +	ssize_t ret;
 +
-+	spin_lock_irq(&nacl->device_list_lock);
-+	deve = &nacl->device_list[lacl->mapped_lun];
-+	if (!deve->se_lun || !deve->se_lun_acl) {
-+		spin_unlock_irq(&nacl->device_list_lock);
++	spin_lock(&lun->lun_sep_lock);
++	sep = lun->lun_sep;
++	if (!sep) {
++		spin_unlock(&lun->lun_sep_lock);
 +		return -ENODEV;
 +	}
-+	tpg = nacl->se_tpg;
-+	/* scsiAuthIntrTgtPortIndex */
-+	ret = snprintf(page, PAGE_SIZE, "%u\n", TPG_TFO(tpg)->tpg_get_tag(tpg));
-+	spin_unlock_irq(&nacl->device_list_lock);
++	ret = snprintf(page, PAGE_SIZE, "%u\n", sep->sep_index);
++	spin_unlock(&lun->lun_sep_lock);
 +	return ret;
 +}
-+DEV_STAT_SCSI_AUTH_INTR_ATTR_RO(port);
++DEV_STAT_SCSI_PORT_ATTR_RO(indx);
 +
-+static ssize_t target_stat_scsi_auth_intr_show_attr_indx(
-+	struct se_ml_stat_grps *lgrps, char *page)
++static ssize_t target_stat_scsi_port_show_attr_role(
++	struct se_port_stat_grps *pgrps, char *page)
 +{
-+	struct se_lun_acl *lacl = container_of(lgrps,
-+			struct se_lun_acl, ml_stat_grps);
-+	struct se_node_acl *nacl = lacl->se_lun_nacl;
-+	struct se_dev_entry *deve;
++	struct se_lun *lun = container_of(pgrps, struct se_lun, port_stat_grps);
++	struct se_device *dev = lun->lun_se_dev;
++	struct se_port *sep;
 +	ssize_t ret;
 +
-+	spin_lock_irq(&nacl->device_list_lock);
-+	deve = &nacl->device_list[lacl->mapped_lun];
-+	if (!deve->se_lun || !deve->se_lun_acl) {
-+		spin_unlock_irq(&nacl->device_list_lock);
++	if (!dev)
++		return -ENODEV;
++
++	spin_lock(&lun->lun_sep_lock);
++	sep = lun->lun_sep;
++	if (!sep) {
++		spin_unlock(&lun->lun_sep_lock);
 +		return -ENODEV;
 +	}
-+	/* scsiAuthIntrIndex */
-+	ret = snprintf(page, PAGE_SIZE, "%u\n", nacl->acl_index);
-+	spin_unlock_irq(&nacl->device_list_lock);
++	ret = snprintf(page, PAGE_SIZE, "%s%u\n", "Device", dev->dev_index);
++	spin_unlock(&lun->lun_sep_lock);
 +	return ret;
 +}
-+DEV_STAT_SCSI_AUTH_INTR_ATTR_RO(indx);
++DEV_STAT_SCSI_PORT_ATTR_RO(role);
 +
-+static ssize_t target_stat_scsi_auth_intr_show_attr_dev_or_port(
-+	struct se_ml_stat_grps *lgrps, char *page)
++static ssize_t target_stat_scsi_port_show_attr_busy_count(
++	struct se_port_stat_grps *pgrps, char *page)
 +{
-+	struct se_lun_acl *lacl = container_of(lgrps,
-+			struct se_lun_acl, ml_stat_grps);
-+	struct se_node_acl *nacl = lacl->se_lun_nacl;
-+	struct se_dev_entry *deve;
++	struct se_lun *lun = container_of(pgrps, struct se_lun, port_stat_grps);
++	struct se_port *sep;
 +	ssize_t ret;
 +
-+	spin_lock_irq(&nacl->device_list_lock);
-+	deve = &nacl->device_list[lacl->mapped_lun];
-+	if (!deve->se_lun || !deve->se_lun_acl) {
-+		spin_unlock_irq(&nacl->device_list_lock);
++	spin_lock(&lun->lun_sep_lock);
++	sep = lun->lun_sep;
++	if (!sep) {
++		spin_unlock(&lun->lun_sep_lock);
 +		return -ENODEV;
 +	}
-+	/* scsiAuthIntrDevOrPort */
-+	ret = snprintf(page, PAGE_SIZE, "%u\n", 1);
-+	spin_unlock_irq(&nacl->device_list_lock);
++	/* FIXME: scsiPortBusyStatuses  */
++	ret = snprintf(page, PAGE_SIZE, "%u\n", 0);
++	spin_unlock(&lun->lun_sep_lock);
 +	return ret;
 +}
-+DEV_STAT_SCSI_AUTH_INTR_ATTR_RO(dev_or_port);
++DEV_STAT_SCSI_PORT_ATTR_RO(busy_count);
 +
-+static ssize_t target_stat_scsi_auth_intr_show_attr_intr_name(
-+	struct se_ml_stat_grps *lgrps, char *page)
++CONFIGFS_EATTR_OPS(target_stat_scsi_port, se_port_stat_grps, scsi_port_group);
++
++static struct configfs_attribute *target_stat_scsi_port_attrs[] = {
++	&target_stat_scsi_port_inst.attr,
++	&target_stat_scsi_port_dev.attr,
++	&target_stat_scsi_port_indx.attr,
++	&target_stat_scsi_port_role.attr,
++	&target_stat_scsi_port_busy_count.attr,
++	NULL,
++};
++
++static struct configfs_item_operations target_stat_scsi_port_attrib_ops = {
++	.show_attribute		= target_stat_scsi_port_attr_show,
++	.store_attribute	= target_stat_scsi_port_attr_store,
++};
++
++static struct config_item_type target_stat_scsi_port_cit = {
++	.ct_item_ops		= &target_stat_scsi_port_attrib_ops,
++	.ct_attrs		= target_stat_scsi_port_attrs,
++	.ct_owner		= THIS_MODULE,
++};
++
++/*
++ * SCSI Target Port Table
++ */
++CONFIGFS_EATTR_STRUCT(target_stat_scsi_tgt_port, se_port_stat_grps);
++#define DEV_STAT_SCSI_TGT_PORT_ATTR(_name, _mode)			\
++static struct target_stat_scsi_tgt_port_attribute			\
++			target_stat_scsi_tgt_port_##_name =		\
++	__CONFIGFS_EATTR(_name, _mode,					\
++	target_stat_scsi_tgt_port_show_attr_##_name,			\
++	target_stat_scsi_tgt_port_store_attr_##_name);
++
++#define DEV_STAT_SCSI_TGT_PORT_ATTR_RO(_name)				\
++static struct target_stat_scsi_tgt_port_attribute			\
++			target_stat_scsi_tgt_port_##_name =		\
++	__CONFIGFS_EATTR_RO(_name,					\
++	target_stat_scsi_tgt_port_show_attr_##_name);
++
++static ssize_t target_stat_scsi_tgt_port_show_attr_inst(
++	struct se_port_stat_grps *pgrps, char *page)
 +{
-+	struct se_lun_acl *lacl = container_of(lgrps,
-+			struct se_lun_acl, ml_stat_grps);
-+	struct se_node_acl *nacl = lacl->se_lun_nacl;
-+	struct se_dev_entry *deve;
++	struct se_lun *lun = container_of(pgrps, struct se_lun, port_stat_grps);
++	struct se_device *dev = lun->lun_se_dev;
++	struct se_port *sep;
++	struct se_hba *hba;
 +	ssize_t ret;
 +
-+	spin_lock_irq(&nacl->device_list_lock);
-+	deve = &nacl->device_list[lacl->mapped_lun];
-+	if (!deve->se_lun || !deve->se_lun_acl) {
-+		spin_unlock_irq(&nacl->device_list_lock);
-+		return -ENODEV;
-+	}
-+	/* scsiAuthIntrName */
-+	ret = snprintf(page, PAGE_SIZE, "%s\n", nacl->initiatorname);
-+	spin_unlock_irq(&nacl->device_list_lock);
-+	return ret;
-+}
-+DEV_STAT_SCSI_AUTH_INTR_ATTR_RO(intr_name);
-+
-+static ssize_t target_stat_scsi_auth_intr_show_attr_map_indx(
-+	struct se_ml_stat_grps *lgrps, char *page)
-+{
-+	struct se_lun_acl *lacl = container_of(lgrps,
-+			struct se_lun_acl, ml_stat_grps);
-+	struct se_node_acl *nacl = lacl->se_lun_nacl;
-+	struct se_dev_entry *deve;
-+	ssize_t ret;
-+
-+	spin_lock_irq(&nacl->device_list_lock);
-+	deve = &nacl->device_list[lacl->mapped_lun];
-+	if (!deve->se_lun || !deve->se_lun_acl) {
-+		spin_unlock_irq(&nacl->device_list_lock);
++	spin_lock(&lun->lun_sep_lock);
++	sep = lun->lun_sep;
++	if (!sep) {
++		spin_unlock(&lun->lun_sep_lock);
 +		return -ENODEV;
 +	}	
-+	/* FIXME: scsiAuthIntrLunMapIndex */
++	hba = dev->se_hba;
++	ret = snprintf(page, PAGE_SIZE, "%u\n", hba->hba_index);
++	spin_unlock(&lun->lun_sep_lock);
++	return ret;
++}
++DEV_STAT_SCSI_TGT_PORT_ATTR_RO(inst);
++
++static ssize_t target_stat_scsi_tgt_port_show_attr_dev(
++	struct se_port_stat_grps *pgrps, char *page)
++{
++	struct se_lun *lun = container_of(pgrps, struct se_lun, port_stat_grps);
++	struct se_device *dev = lun->lun_se_dev;
++	struct se_port *sep;
++	ssize_t ret;
++
++	spin_lock(&lun->lun_sep_lock);
++	sep = lun->lun_sep;
++	if (!sep) {
++		spin_unlock(&lun->lun_sep_lock);
++		return -ENODEV;
++	}
++	ret = snprintf(page, PAGE_SIZE, "%u\n", dev->dev_index);
++	spin_unlock(&lun->lun_sep_lock);
++	return ret;
++}
++DEV_STAT_SCSI_TGT_PORT_ATTR_RO(dev);
++
++static ssize_t target_stat_scsi_tgt_port_show_attr_indx(
++	struct se_port_stat_grps *pgrps, char *page)
++{
++	struct se_lun *lun = container_of(pgrps, struct se_lun, port_stat_grps);
++	struct se_port *sep;
++	ssize_t ret;
++
++	spin_lock(&lun->lun_sep_lock);
++	sep = lun->lun_sep;
++	if (!sep) { 
++		spin_unlock(&lun->lun_sep_lock);
++		return -ENODEV; 
++	}
++	ret = snprintf(page, PAGE_SIZE, "%u\n", sep->sep_index);
++	spin_unlock(&lun->lun_sep_lock);
++	return ret;
++}
++DEV_STAT_SCSI_TGT_PORT_ATTR_RO(indx);
++
++static ssize_t target_stat_scsi_tgt_port_show_attr_name(
++	struct se_port_stat_grps *pgrps, char *page)
++{
++	struct se_lun *lun = container_of(pgrps, struct se_lun, port_stat_grps);
++	struct se_port *sep;
++	struct se_portal_group *tpg;
++	ssize_t ret;
++
++	spin_lock(&lun->lun_sep_lock);
++	sep = lun->lun_sep;
++	if (!sep) {
++		spin_unlock(&lun->lun_sep_lock);
++		return -ENODEV;
++	}
++	tpg = sep->sep_tpg;
++
++	ret = snprintf(page, PAGE_SIZE, "%sPort#%u\n",
++		TPG_TFO(tpg)->get_fabric_name(), sep->sep_index);
++	spin_unlock(&lun->lun_sep_lock);
++	return ret;
++}
++DEV_STAT_SCSI_TGT_PORT_ATTR_RO(name);
++
++static ssize_t target_stat_scsi_tgt_port_show_attr_port_index(
++	struct se_port_stat_grps *pgrps, char *page)
++{
++	struct se_lun *lun = container_of(pgrps, struct se_lun, port_stat_grps);
++	struct se_port *sep;
++	struct se_portal_group *tpg;
++	ssize_t ret;
++
++	spin_lock(&lun->lun_sep_lock);
++	sep = lun->lun_sep;
++	if (!sep) {
++		spin_unlock(&lun->lun_sep_lock);
++		return -ENODEV;
++	}
++	tpg = sep->sep_tpg;
++
++	ret = snprintf(page, PAGE_SIZE, "%s%s%d\n",
++		TPG_TFO(tpg)->tpg_get_wwn(tpg), "+t+",
++		TPG_TFO(tpg)->tpg_get_tag(tpg));
++	spin_unlock(&lun->lun_sep_lock);
++	return ret;
++}
++DEV_STAT_SCSI_TGT_PORT_ATTR_RO(port_index);
++
++static ssize_t target_stat_scsi_tgt_port_show_attr_in_cmds(
++	struct se_port_stat_grps *pgrps, char *page)
++{
++	struct se_lun *lun = container_of(pgrps, struct se_lun, port_stat_grps);
++	struct se_port *sep;
++	struct se_portal_group *tpg;
++	ssize_t ret;
++
++	spin_lock(&lun->lun_sep_lock);
++	sep = lun->lun_sep;
++	if (!sep) {
++		spin_unlock(&lun->lun_sep_lock);
++		return -ENODEV;
++	}
++	tpg = sep->sep_tpg;
++	
++	ret = snprintf(page, PAGE_SIZE, "%llu\n", sep->sep_stats.cmd_pdus);
++	spin_unlock(&lun->lun_sep_lock);
++	return ret;
++}
++DEV_STAT_SCSI_TGT_PORT_ATTR_RO(in_cmds);
++
++static ssize_t target_stat_scsi_tgt_port_show_attr_write_mbytes(
++	struct se_port_stat_grps *pgrps, char *page)
++{
++	struct se_lun *lun = container_of(pgrps, struct se_lun, port_stat_grps);
++	struct se_port *sep;
++	struct se_portal_group *tpg;
++	ssize_t ret;
++
++	spin_lock(&lun->lun_sep_lock);
++	sep = lun->lun_sep;
++	if (!sep) {
++		spin_unlock(&lun->lun_sep_lock);
++		return -ENODEV;
++	}
++	tpg = sep->sep_tpg;
++
++	ret = snprintf(page, PAGE_SIZE, "%u\n",
++			(u32)(sep->sep_stats.rx_data_octets >> 20));
++	spin_unlock(&lun->lun_sep_lock);
++	return ret;
++}
++DEV_STAT_SCSI_TGT_PORT_ATTR_RO(write_mbytes);
++
++static ssize_t target_stat_scsi_tgt_port_show_attr_read_mbytes(
++	struct se_port_stat_grps *pgrps, char *page)
++{
++	struct se_lun *lun = container_of(pgrps, struct se_lun, port_stat_grps);
++	struct se_port *sep;
++	struct se_portal_group *tpg;
++	ssize_t ret;
++
++	spin_lock(&lun->lun_sep_lock);
++	sep = lun->lun_sep;
++	if (!sep) {
++		spin_unlock(&lun->lun_sep_lock);
++		return -ENODEV;
++	}
++	tpg = sep->sep_tpg;
++
++	ret = snprintf(page, PAGE_SIZE, "%u\n",
++			(u32)(sep->sep_stats.tx_data_octets >> 20));
++	spin_unlock(&lun->lun_sep_lock);
++	return ret;
++}
++DEV_STAT_SCSI_TGT_PORT_ATTR_RO(read_mbytes);
++
++static ssize_t target_stat_scsi_tgt_port_show_attr_hs_in_cmds(
++	struct se_port_stat_grps *pgrps, char *page)
++{
++	struct se_lun *lun = container_of(pgrps, struct se_lun, port_stat_grps);
++	struct se_port *sep;
++	struct se_portal_group *tpg;
++	ssize_t ret;
++
++	spin_lock(&lun->lun_sep_lock);
++	sep = lun->lun_sep;
++	if (!sep) {
++		spin_unlock(&lun->lun_sep_lock);
++		return -ENODEV;
++	}
++	tpg = sep->sep_tpg;
++
++	/* FIXME: scsiTgtPortHsInCommands */
 +	ret = snprintf(page, PAGE_SIZE, "%u\n", 0);
-+	spin_unlock_irq(&nacl->device_list_lock);
++	spin_unlock(&lun->lun_sep_lock);
 +	return ret;
 +}
-+DEV_STAT_SCSI_AUTH_INTR_ATTR_RO(map_indx);
++DEV_STAT_SCSI_TGT_PORT_ATTR_RO(hs_in_cmds);
 +
-+static ssize_t target_stat_scsi_auth_intr_show_attr_att_count(
-+	struct se_ml_stat_grps *lgrps, char *page)
-+{
-+	struct se_lun_acl *lacl = container_of(lgrps,
-+			struct se_lun_acl, ml_stat_grps);
-+	struct se_node_acl *nacl = lacl->se_lun_nacl;
-+	struct se_dev_entry *deve;
-+	ssize_t ret;
++CONFIGFS_EATTR_OPS(target_stat_scsi_tgt_port, se_port_stat_grps,
++		scsi_tgt_port_group);
 +
-+	spin_lock_irq(&nacl->device_list_lock);
-+	deve = &nacl->device_list[lacl->mapped_lun];
-+	if (!deve->se_lun || !deve->se_lun_acl) {
-+		spin_unlock_irq(&nacl->device_list_lock);
-+		return -ENODEV;
-+	}
-+	/* scsiAuthIntrAttachedTimes */
-+	ret = snprintf(page, PAGE_SIZE, "%u\n", deve->attach_count);
-+	spin_unlock_irq(&nacl->device_list_lock);
-+	return ret;
-+}
-+DEV_STAT_SCSI_AUTH_INTR_ATTR_RO(att_count);
-+
-+static ssize_t target_stat_scsi_auth_intr_show_attr_num_cmds(
-+	struct se_ml_stat_grps *lgrps, char *page)
-+{
-+	struct se_lun_acl *lacl = container_of(lgrps,
-+			struct se_lun_acl, ml_stat_grps);
-+	struct se_node_acl *nacl = lacl->se_lun_nacl;
-+	struct se_dev_entry *deve;
-+	ssize_t ret;
-+
-+	spin_lock_irq(&nacl->device_list_lock);
-+	deve = &nacl->device_list[lacl->mapped_lun];
-+	if (!deve->se_lun || !deve->se_lun_acl) {
-+		spin_unlock_irq(&nacl->device_list_lock);
-+		return -ENODEV;
-+	}
-+	/* scsiAuthIntrOutCommands */
-+	ret = snprintf(page, PAGE_SIZE, "%u\n", deve->total_cmds);
-+	spin_unlock_irq(&nacl->device_list_lock);
-+	return ret;
-+}
-+DEV_STAT_SCSI_AUTH_INTR_ATTR_RO(num_cmds);
-+
-+static ssize_t target_stat_scsi_auth_intr_show_attr_read_mbytes(
-+	struct se_ml_stat_grps *lgrps, char *page)
-+{
-+	struct se_lun_acl *lacl = container_of(lgrps,
-+			struct se_lun_acl, ml_stat_grps);
-+	struct se_node_acl *nacl = lacl->se_lun_nacl;
-+	struct se_dev_entry *deve;
-+	ssize_t ret;
-+
-+	spin_lock_irq(&nacl->device_list_lock);
-+	deve = &nacl->device_list[lacl->mapped_lun];
-+	if (!deve->se_lun || !deve->se_lun_acl) {
-+		spin_unlock_irq(&nacl->device_list_lock);
-+		return -ENODEV;
-+	}
-+	/* scsiAuthIntrReadMegaBytes */
-+	ret = snprintf(page, PAGE_SIZE, "%u\n", (u32)(deve->read_bytes >> 20));
-+	spin_unlock_irq(&nacl->device_list_lock);
-+	return ret;
-+}
-+DEV_STAT_SCSI_AUTH_INTR_ATTR_RO(read_mbytes);
-+
-+static ssize_t target_stat_scsi_auth_intr_show_attr_write_mbytes(
-+	struct se_ml_stat_grps *lgrps, char *page)
-+{
-+	struct se_lun_acl *lacl = container_of(lgrps,
-+			struct se_lun_acl, ml_stat_grps);
-+	struct se_node_acl *nacl = lacl->se_lun_nacl;
-+	struct se_dev_entry *deve;
-+	ssize_t ret;
-+
-+	spin_lock_irq(&nacl->device_list_lock);
-+	deve = &nacl->device_list[lacl->mapped_lun];
-+	if (!deve->se_lun || !deve->se_lun_acl) {
-+		spin_unlock_irq(&nacl->device_list_lock);
-+		return -ENODEV;
-+	}
-+	/* scsiAuthIntrWrittenMegaBytes */
-+	ret = snprintf(page, PAGE_SIZE, "%u\n", (u32)(deve->write_bytes >> 20));
-+	spin_unlock_irq(&nacl->device_list_lock);
-+	return ret;
-+}
-+DEV_STAT_SCSI_AUTH_INTR_ATTR_RO(write_mbytes);
-+
-+static ssize_t target_stat_scsi_auth_intr_show_attr_hs_num_cmds(
-+	struct se_ml_stat_grps *lgrps, char *page)
-+{
-+	struct se_lun_acl *lacl = container_of(lgrps,
-+			struct se_lun_acl, ml_stat_grps);
-+	struct se_node_acl *nacl = lacl->se_lun_nacl;
-+	struct se_dev_entry *deve;
-+	ssize_t ret;
-+
-+	spin_lock_irq(&nacl->device_list_lock);
-+	deve = &nacl->device_list[lacl->mapped_lun];
-+	if (!deve->se_lun || !deve->se_lun_acl) {
-+		spin_unlock_irq(&nacl->device_list_lock);
-+		return -ENODEV;
-+	}
-+	/* FIXME: scsiAuthIntrHSOutCommands */
-+	ret = snprintf(page, PAGE_SIZE, "%u\n", 0);
-+	spin_unlock_irq(&nacl->device_list_lock);
-+	return ret;
-+}
-+DEV_STAT_SCSI_AUTH_INTR_ATTR_RO(hs_num_cmds);
-+
-+static ssize_t target_stat_scsi_auth_intr_show_attr_creation_time(
-+	struct se_ml_stat_grps *lgrps, char *page)
-+{
-+	struct se_lun_acl *lacl = container_of(lgrps,
-+			struct se_lun_acl, ml_stat_grps);
-+	struct se_node_acl *nacl = lacl->se_lun_nacl;
-+	struct se_dev_entry *deve;
-+	ssize_t ret;
-+
-+	spin_lock_irq(&nacl->device_list_lock);
-+	deve = &nacl->device_list[lacl->mapped_lun];
-+	if (!deve->se_lun || !deve->se_lun_acl) {
-+		spin_unlock_irq(&nacl->device_list_lock);
-+		return -ENODEV;
-+	}
-+	/* scsiAuthIntrLastCreation */
-+	ret = snprintf(page, PAGE_SIZE, "%u\n", (u32)(((u32)deve->creation_time -
-+				INITIAL_JIFFIES) * 100 / HZ));
-+	spin_unlock_irq(&nacl->device_list_lock);
-+	return ret;
-+}
-+DEV_STAT_SCSI_AUTH_INTR_ATTR_RO(creation_time);
-+
-+static ssize_t target_stat_scsi_auth_intr_show_attr_row_status(
-+	struct se_ml_stat_grps *lgrps, char *page)
-+{
-+	struct se_lun_acl *lacl = container_of(lgrps,
-+			struct se_lun_acl, ml_stat_grps);
-+	struct se_node_acl *nacl = lacl->se_lun_nacl;
-+	struct se_dev_entry *deve;
-+	ssize_t ret;
-+
-+	spin_lock_irq(&nacl->device_list_lock);
-+	deve = &nacl->device_list[lacl->mapped_lun];
-+	if (!deve->se_lun || !deve->se_lun_acl) {
-+		spin_unlock_irq(&nacl->device_list_lock);
-+		return -ENODEV;
-+	}
-+	/* FIXME: scsiAuthIntrRowStatus */
-+	ret = snprintf(page, PAGE_SIZE, "Ready\n");
-+	spin_unlock_irq(&nacl->device_list_lock);
-+	return ret;
-+}
-+DEV_STAT_SCSI_AUTH_INTR_ATTR_RO(row_status);
-+
-+CONFIGFS_EATTR_OPS(target_stat_scsi_auth_intr, se_ml_stat_grps,
-+		scsi_auth_intr_group);
-+
-+static struct configfs_attribute *target_stat_scsi_auth_intr_attrs[] = {
-+	&target_stat_scsi_auth_intr_inst.attr,
-+	&target_stat_scsi_auth_intr_dev.attr,
-+	&target_stat_scsi_auth_intr_port.attr,
-+	&target_stat_scsi_auth_intr_indx.attr,
-+	&target_stat_scsi_auth_intr_dev_or_port.attr,
-+	&target_stat_scsi_auth_intr_intr_name.attr,
-+	&target_stat_scsi_auth_intr_map_indx.attr,
-+	&target_stat_scsi_auth_intr_att_count.attr,
-+	&target_stat_scsi_auth_intr_num_cmds.attr,
-+	&target_stat_scsi_auth_intr_read_mbytes.attr,
-+	&target_stat_scsi_auth_intr_write_mbytes.attr,
-+	&target_stat_scsi_auth_intr_hs_num_cmds.attr,
-+	&target_stat_scsi_auth_intr_creation_time.attr,
-+	&target_stat_scsi_auth_intr_row_status.attr,
++static struct configfs_attribute *target_stat_scsi_tgt_port_attrs[] = {
++	&target_stat_scsi_tgt_port_inst.attr,
++	&target_stat_scsi_tgt_port_dev.attr,
++	&target_stat_scsi_tgt_port_indx.attr,
++	&target_stat_scsi_tgt_port_name.attr,
++	&target_stat_scsi_tgt_port_port_index.attr,
++	&target_stat_scsi_tgt_port_in_cmds.attr,
++	&target_stat_scsi_tgt_port_write_mbytes.attr,
++	&target_stat_scsi_tgt_port_read_mbytes.attr,
++	&target_stat_scsi_tgt_port_hs_in_cmds.attr,
 +	NULL,
 +};
 +
-+static struct configfs_item_operations target_stat_scsi_auth_intr_attrib_ops = {
-+	.show_attribute		= target_stat_scsi_auth_intr_attr_show,
-+	.store_attribute	= target_stat_scsi_auth_intr_attr_store,
++static struct configfs_item_operations target_stat_scsi_tgt_port_attrib_ops = {
++	.show_attribute		= target_stat_scsi_tgt_port_attr_show,
++	.store_attribute	= target_stat_scsi_tgt_port_attr_store,
 +};
 +
-+static struct config_item_type target_stat_scsi_auth_intr_cit = {
-+	.ct_item_ops		= &target_stat_scsi_auth_intr_attrib_ops,
-+	.ct_attrs		= target_stat_scsi_auth_intr_attrs,
++static struct config_item_type target_stat_scsi_tgt_port_cit = {
++	.ct_item_ops		= &target_stat_scsi_tgt_port_attrib_ops,
++	.ct_attrs		= target_stat_scsi_tgt_port_attrs,
 +	.ct_owner		= THIS_MODULE,
 +};
 +
 +/*
-+ * SCSI Attached Initiator Port Table
-+ */
++ * SCSI Transport Table
++o */
 +
-+CONFIGFS_EATTR_STRUCT(target_stat_scsi_att_intr_port, se_ml_stat_grps);
-+#define DEV_STAT_SCSI_ATTR_INTR_PORT_ATTR(_name, _mode)			\
-+static struct target_stat_scsi_att_intr_port_attribute			\
-+		target_stat_scsi_att_intr_port_##_name =		\
++CONFIGFS_EATTR_STRUCT(target_stat_scsi_transport, se_port_stat_grps);
++#define DEV_STAT_SCSI_TRANSPORT_ATTR(_name, _mode)			\
++static struct target_stat_scsi_transport_attribute			\
++			target_stat_scsi_transport_##_name =		\
 +	__CONFIGFS_EATTR(_name, _mode,					\
-+	target_stat_scsi_att_intr_port_show_attr_##_name,		\
-+	target_stat_scsi_att_intr_port_store_attr_##_name);
++	target_stat_scsi_transport_show_attr_##_name,			\
++	target_stat_scsi_transport_store_attr_##_name);
 +
-+#define DEV_STAT_SCSI_ATTR_INTR_PORT_ATTR_RO(_name)			\
-+static struct target_stat_scsi_att_intr_port_attribute			\
-+		target_stat_scsi_att_intr_port_##_name =		\
++#define DEV_STAT_SCSI_TRANSPORT_ATTR_RO(_name)				\
++static struct target_stat_scsi_transport_attribute			\
++			target_stat_scsi_transport_##_name =		\
 +	__CONFIGFS_EATTR_RO(_name,					\
-+	target_stat_scsi_att_intr_port_show_attr_##_name);
++	target_stat_scsi_transport_show_attr_##_name);
 +
-+static ssize_t target_stat_scsi_att_intr_port_show_attr_inst(
-+	struct se_ml_stat_grps *lgrps, char *page)
++static ssize_t target_stat_scsi_transport_show_attr_inst(
++	struct se_port_stat_grps *pgrps, char *page)
 +{
-+	struct se_lun_acl *lacl = container_of(lgrps,
-+			struct se_lun_acl, ml_stat_grps);
-+	struct se_node_acl *nacl = lacl->se_lun_nacl;
-+	struct se_dev_entry *deve;
++	struct se_lun *lun = container_of(pgrps, struct se_lun, port_stat_grps);
++	struct se_device *dev = lun->lun_se_dev;
++	struct se_port *sep;
++	struct se_hba *hba;
++	ssize_t ret;
++
++	spin_lock(&lun->lun_sep_lock);
++	sep = lun->lun_sep;
++	if (!sep) {
++		spin_unlock(&lun->lun_sep_lock);
++		return -ENODEV;
++	}
++
++	hba = dev->se_hba; 
++	ret = snprintf(page, PAGE_SIZE, "%u\n", hba->hba_index);
++	spin_unlock(&lun->lun_sep_lock);
++	return ret;
++}
++DEV_STAT_SCSI_TRANSPORT_ATTR_RO(inst);
++
++static ssize_t target_stat_scsi_transport_show_attr_device(
++	struct se_port_stat_grps *pgrps, char *page)
++{
++	struct se_lun *lun = container_of(pgrps, struct se_lun, port_stat_grps);
++	struct se_port *sep;
 +	struct se_portal_group *tpg;
 +	ssize_t ret;
 +
-+	spin_lock_irq(&nacl->device_list_lock);
-+	deve = &nacl->device_list[lacl->mapped_lun];
-+	if (!deve->se_lun || !deve->se_lun_acl) {
-+		spin_unlock_irq(&nacl->device_list_lock);
++	spin_lock(&lun->lun_sep_lock);
++	sep = lun->lun_sep;
++	if (!sep) {
++		spin_unlock(&lun->lun_sep_lock);
 +		return -ENODEV;
 +	}
-+	tpg = nacl->se_tpg;
-+	/* scsiInstIndex */
++	tpg = sep->sep_tpg;
++	/* scsiTransportType */
++	ret = snprintf(page, PAGE_SIZE, "scsiTransport%s\n",
++			TPG_TFO(tpg)->get_fabric_name());
++	spin_unlock(&lun->lun_sep_lock);
++	return ret;
++}
++DEV_STAT_SCSI_TRANSPORT_ATTR_RO(device);
++
++static ssize_t target_stat_scsi_transport_show_attr_indx(
++	struct se_port_stat_grps *pgrps, char *page)
++{
++	struct se_lun *lun = container_of(pgrps, struct se_lun, port_stat_grps);
++	struct se_port *sep;
++	struct se_portal_group *tpg;
++	ssize_t ret;
++
++	spin_lock(&lun->lun_sep_lock);
++	sep = lun->lun_sep;
++	if (!sep) {
++		spin_unlock(&lun->lun_sep_lock);
++		return -ENODEV;
++	}
++	tpg = sep->sep_tpg;
 +	ret = snprintf(page, PAGE_SIZE, "%u\n",
 +			TPG_TFO(tpg)->tpg_get_inst_index(tpg));
-+	spin_unlock_irq(&nacl->device_list_lock);
++	spin_unlock(&lun->lun_sep_lock);
 +	return ret;
 +}
-+DEV_STAT_SCSI_ATTR_INTR_PORT_ATTR_RO(inst);
++DEV_STAT_SCSI_TRANSPORT_ATTR_RO(indx);
 +
-+static ssize_t target_stat_scsi_att_intr_port_show_attr_dev(
-+	struct se_ml_stat_grps *lgrps, char *page)
++static ssize_t target_stat_scsi_transport_show_attr_dev_name(
++	struct se_port_stat_grps *pgrps, char *page)
 +{
-+	struct se_lun_acl *lacl = container_of(lgrps,
-+			struct se_lun_acl, ml_stat_grps);
-+	struct se_node_acl *nacl = lacl->se_lun_nacl;
-+	struct se_dev_entry *deve;
-+	struct se_lun *lun;
++	struct se_lun *lun = container_of(pgrps, struct se_lun, port_stat_grps);
++	struct se_device *dev = lun->lun_se_dev;
++	struct se_port *sep;
 +	struct se_portal_group *tpg;
++	struct t10_wwn *wwn;
 +	ssize_t ret;
 +
-+	spin_lock_irq(&nacl->device_list_lock);
-+	deve = &nacl->device_list[lacl->mapped_lun];
-+	if (!deve->se_lun || !deve->se_lun_acl) {
-+		spin_unlock_irq(&nacl->device_list_lock);
++	spin_lock(&lun->lun_sep_lock);
++	sep = lun->lun_sep;
++	if (!sep) {
++		spin_unlock(&lun->lun_sep_lock);
 +		return -ENODEV;
 +	}
-+	tpg = nacl->se_tpg;
-+	lun = deve->se_lun;
-+	/* scsiDeviceIndex */
-+	ret = snprintf(page, PAGE_SIZE, "%u\n", lun->lun_se_dev->dev_index);
-+	spin_unlock_irq(&nacl->device_list_lock);
++	tpg = sep->sep_tpg;
++	wwn = DEV_T10_WWN(dev);
++	/* scsiTransportDevName */
++	ret = snprintf(page, PAGE_SIZE, "%s+%s\n",
++			TPG_TFO(tpg)->tpg_get_wwn(tpg),
++			(strlen(wwn->unit_serial)) ? wwn->unit_serial :
++			wwn->vendor);
++	spin_unlock(&lun->lun_sep_lock);
 +	return ret;
 +}
-+DEV_STAT_SCSI_ATTR_INTR_PORT_ATTR_RO(dev);
++DEV_STAT_SCSI_TRANSPORT_ATTR_RO(dev_name);
 +
-+static ssize_t target_stat_scsi_att_intr_port_show_attr_port(
-+	struct se_ml_stat_grps *lgrps, char *page)
-+{
-+	struct se_lun_acl *lacl = container_of(lgrps,
-+			struct se_lun_acl, ml_stat_grps);
-+	struct se_node_acl *nacl = lacl->se_lun_nacl;
-+	struct se_dev_entry *deve;
-+	struct se_portal_group *tpg;
-+	ssize_t ret;
++CONFIGFS_EATTR_OPS(target_stat_scsi_transport, se_port_stat_grps,
++		scsi_transport_group);
 +
-+	spin_lock_irq(&nacl->device_list_lock);
-+	deve = &nacl->device_list[lacl->mapped_lun];
-+	if (!deve->se_lun || !deve->se_lun_acl) {
-+		spin_unlock_irq(&nacl->device_list_lock);
-+		return -ENODEV;
-+	}
-+	tpg = nacl->se_tpg;
-+	/* scsiPortIndex */
-+	ret = snprintf(page, PAGE_SIZE, "%u\n", TPG_TFO(tpg)->tpg_get_tag(tpg));
-+	spin_unlock_irq(&nacl->device_list_lock);
-+	return ret;
-+}
-+DEV_STAT_SCSI_ATTR_INTR_PORT_ATTR_RO(port);
-+
-+static ssize_t target_stat_scsi_att_intr_port_show_attr_indx(
-+	struct se_ml_stat_grps *lgrps, char *page)
-+{
-+	struct se_lun_acl *lacl = container_of(lgrps,
-+			struct se_lun_acl, ml_stat_grps);
-+	struct se_node_acl *nacl = lacl->se_lun_nacl;
-+	struct se_session *se_sess;
-+	struct se_portal_group *tpg;
-+	ssize_t ret;
-+
-+	spin_lock_irq(&nacl->nacl_sess_lock);
-+	se_sess = nacl->nacl_sess;
-+	if (!se_sess) {
-+		spin_unlock_irq(&nacl->nacl_sess_lock);
-+		return -ENODEV;
-+	}
-+
-+	tpg = nacl->se_tpg;
-+	/* scsiAttIntrPortIndex */
-+	ret = snprintf(page, PAGE_SIZE, "%u\n",
-+			TPG_TFO(tpg)->sess_get_index(se_sess));
-+	spin_unlock_irq(&nacl->nacl_sess_lock);
-+	return ret;
-+}
-+DEV_STAT_SCSI_ATTR_INTR_PORT_ATTR_RO(indx);
-+
-+static ssize_t target_stat_scsi_att_intr_port_show_attr_port_auth_indx(
-+	struct se_ml_stat_grps *lgrps, char *page)
-+{
-+	struct se_lun_acl *lacl = container_of(lgrps,
-+			struct se_lun_acl, ml_stat_grps);
-+	struct se_node_acl *nacl = lacl->se_lun_nacl;
-+	struct se_dev_entry *deve;
-+	ssize_t ret;
-+
-+	spin_lock_irq(&nacl->device_list_lock);
-+	deve = &nacl->device_list[lacl->mapped_lun];
-+	if (!deve->se_lun || !deve->se_lun_acl) {
-+		spin_unlock_irq(&nacl->device_list_lock);
-+		return -ENODEV;
-+	}
-+	/* scsiAttIntrPortAuthIntrIdx */
-+	ret = snprintf(page, PAGE_SIZE, "%u\n", nacl->acl_index);
-+	spin_unlock_irq(&nacl->device_list_lock);
-+	return ret;
-+}
-+DEV_STAT_SCSI_ATTR_INTR_PORT_ATTR_RO(port_auth_indx);
-+
-+static ssize_t target_stat_scsi_att_intr_port_show_attr_port_ident(
-+	struct se_ml_stat_grps *lgrps, char *page)
-+{
-+	struct se_lun_acl *lacl = container_of(lgrps,
-+			struct se_lun_acl, ml_stat_grps);
-+	struct se_node_acl *nacl = lacl->se_lun_nacl;
-+	struct se_session *se_sess;
-+	struct se_portal_group *tpg;
-+	ssize_t ret;
-+	unsigned char buf[64];
-+
-+	spin_lock_irq(&nacl->nacl_sess_lock);
-+	se_sess = nacl->nacl_sess;
-+	if (!se_sess) {
-+		spin_unlock_irq(&nacl->nacl_sess_lock);
-+		return -ENODEV;
-+	}
-+
-+	tpg = nacl->se_tpg;
-+	/* scsiAttIntrPortName+scsiAttIntrPortIdentifier */
-+	memset(buf, 0, 64);
-+	if (TPG_TFO(tpg)->sess_get_initiator_sid != NULL)
-+		TPG_TFO(tpg)->sess_get_initiator_sid(se_sess,
-+				(unsigned char *)&buf[0], 64);
-+
-+	ret = snprintf(page, PAGE_SIZE, "%s+i+%s\n", nacl->initiatorname, buf);
-+	spin_unlock_irq(&nacl->nacl_sess_lock);
-+	return ret;
-+}
-+DEV_STAT_SCSI_ATTR_INTR_PORT_ATTR_RO(port_ident);
-+
-+CONFIGFS_EATTR_OPS(target_stat_scsi_att_intr_port, se_ml_stat_grps,
-+		scsi_att_intr_port_group);
-+
-+static struct configfs_attribute *target_stat_scsi_ath_intr_port_attrs[] = {
-+	&target_stat_scsi_att_intr_port_inst.attr,
-+	&target_stat_scsi_att_intr_port_dev.attr,
-+	&target_stat_scsi_att_intr_port_port.attr,
-+	&target_stat_scsi_att_intr_port_indx.attr,
-+	&target_stat_scsi_att_intr_port_port_auth_indx.attr,
-+	&target_stat_scsi_att_intr_port_port_ident.attr,
++static struct configfs_attribute *target_stat_scsi_transport_attrs[] = {
++	&target_stat_scsi_transport_inst.attr,
++	&target_stat_scsi_transport_device.attr,
++	&target_stat_scsi_transport_indx.attr,
++	&target_stat_scsi_transport_dev_name.attr,
 +	NULL,
 +};
 +
-+static struct configfs_item_operations target_stat_scsi_att_intr_port_attrib_ops = {
-+	.show_attribute		= target_stat_scsi_att_intr_port_attr_show,
-+	.store_attribute	= target_stat_scsi_att_intr_port_attr_store,
++static struct configfs_item_operations target_stat_scsi_transport_attrib_ops = {
++	.show_attribute		= target_stat_scsi_transport_attr_show,
++	.store_attribute	= target_stat_scsi_transport_attr_store,
 +};
 +
-+static struct config_item_type target_stat_scsi_att_intr_port_cit = {
-+	.ct_item_ops		= &target_stat_scsi_att_intr_port_attrib_ops,
-+	.ct_attrs		= target_stat_scsi_ath_intr_port_attrs,
++static struct config_item_type target_stat_scsi_transport_cit = {
++	.ct_item_ops		= &target_stat_scsi_transport_attrib_ops,
++	.ct_attrs		= target_stat_scsi_transport_attrs,
 +	.ct_owner		= THIS_MODULE,
 +};
 +
 +/*
-+ * Called from target_core_fabric_configfs.c:target_fabric_make_mappedlun() to setup
-+ * the target MappedLUN statistics groups + configfs CITs located in target_core_stat.c
++ * Called from target_core_fabric_configfs.c:target_fabric_make_lun() to setup
++ * the target port statistics groups + configfs CITs located in target_core_stat.c
 + */
-+void target_stat_setup_mappedlun_default_groups(struct se_lun_acl *lacl)
++void target_stat_setup_port_default_groups(struct se_lun *lun)
 +{
-+	struct config_group *ml_stat_grp = &ML_STAT_GRPS(lacl)->stat_group;
++	struct config_group *port_stat_grp = &PORT_STAT_GRP(lun)->stat_group;
 +
-+	config_group_init_type_name(&ML_STAT_GRPS(lacl)->scsi_auth_intr_group,
-+			"scsi_auth_intr", &target_stat_scsi_auth_intr_cit);
-+	config_group_init_type_name(&ML_STAT_GRPS(lacl)->scsi_att_intr_port_group,
-+			"scsi_att_intr_port", &target_stat_scsi_att_intr_port_cit);
++	config_group_init_type_name(&PORT_STAT_GRP(lun)->scsi_port_group,
++			"scsi_port", &target_stat_scsi_port_cit);
++	config_group_init_type_name(&PORT_STAT_GRP(lun)->scsi_tgt_port_group,
++			"scsi_tgt_port", &target_stat_scsi_tgt_port_cit);
++	config_group_init_type_name(&PORT_STAT_GRP(lun)->scsi_transport_group,
++			"scsi_transport", &target_stat_scsi_transport_cit);
 +
-+	ml_stat_grp->default_groups[0] = &ML_STAT_GRPS(lacl)->scsi_auth_intr_group;
-+	ml_stat_grp->default_groups[1] = &ML_STAT_GRPS(lacl)->scsi_att_intr_port_group;
-+	ml_stat_grp->default_groups[2] = NULL;
++	port_stat_grp->default_groups[0] = &PORT_STAT_GRP(lun)->scsi_port_group;
++	port_stat_grp->default_groups[1] = &PORT_STAT_GRP(lun)->scsi_tgt_port_group;
++	port_stat_grp->default_groups[2] = &PORT_STAT_GRP(lun)->scsi_transport_group;
++	port_stat_grp->default_groups[3] = NULL;
 +}
 diff --git a/drivers/target/target_core_stat.h b/drivers/target/target_core_stat.h
-index 31cb3c0..4201acd 100644
+index 6bc6a87..31cb3c0 100644
 --- a/drivers/target/target_core_stat.h
 +++ b/drivers/target/target_core_stat.h
-@@ -12,5 +12,6 @@ typedef enum {
+@@ -11,5 +11,6 @@ typedef enum {
+ #endif
  
  extern void target_stat_setup_dev_default_groups(struct se_subsystem_dev *);
- extern void target_stat_setup_port_default_groups(struct se_lun *);
-+extern void target_stat_setup_mappedlun_default_groups(struct se_lun_acl *);
++extern void target_stat_setup_port_default_groups(struct se_lun *);
  
  #endif   /*** TARGET_CORE_STAT_H ***/
 diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
-index d153d1d..9d18115 100644
+index 2d20b3f..d153d1d 100644
 --- a/include/target/target_core_base.h
 +++ b/include/target/target_core_base.h
-@@ -618,6 +618,12 @@ struct se_device;
- struct se_transform_info;
- struct scatterlist;
+@@ -841,6 +841,13 @@ struct se_hba {
  
-+struct se_ml_stat_grps {
-+	struct config_group	stat_group;
-+	struct config_group	scsi_auth_intr_group;
-+	struct config_group	scsi_att_intr_port_group;
+ #define SE_HBA(dev)		((dev)->se_hba)
+ 
++struct se_port_stat_grps {
++	struct config_group stat_group;
++	struct config_group scsi_port_group;
++	struct config_group scsi_tgt_port_group;
++	struct config_group scsi_transport_group;
 +};
 +
- struct se_lun_acl {
- 	char			initiatorname[TRANSPORT_IQN_LEN];
- 	u32			mapped_lun;
-@@ -625,8 +631,11 @@ struct se_lun_acl {
- 	struct se_lun		*se_lun;
- 	struct list_head	lacl_list;
- 	struct config_group	se_lun_group;
-+	struct se_ml_stat_grps	ml_stat_grps;
- }  ____cacheline_aligned;
+ struct se_lun {
+ 	/* See transport_lun_status_table */
+ 	enum transport_lun_status_table lun_status;
+@@ -855,11 +862,13 @@ struct se_lun {
+ 	struct list_head	lun_cmd_list;
+ 	struct list_head	lun_acl_list;
+ 	struct se_device	*lun_se_dev;
++	struct se_port		*lun_sep;
+ 	struct config_group	lun_group;
+-	struct se_port	*lun_sep;
++	struct se_port_stat_grps port_stat_grps;
+ } ____cacheline_aligned;
  
-+#define ML_STAT_GRPS(lacl)	(&(lacl)->ml_stat_grps)
-+
- struct se_dev_entry {
- 	bool			def_pr_registered;
- 	/* See transport_lunflags_table */
+ #define SE_LUN(cmd)		((cmd)->se_lun)
++#define PORT_STAT_GRP(lun)	(&(lun)->port_stat_grps)
+ 
+ struct se_port {
+ 	/* RELATIVE TARGET PORT IDENTIFER */
 diff --git a/include/target/target_core_configfs.h b/include/target/target_core_configfs.h
-index 06c5b1d..fc3bb9f 100644
+index 40e6e74..06c5b1d 100644
 --- a/include/target/target_core_configfs.h
 +++ b/include/target/target_core_configfs.h
-@@ -29,6 +29,7 @@ struct target_fabric_configfs_template {
- 	struct config_item_type tfc_tpg_nacl_auth_cit;
- 	struct config_item_type tfc_tpg_nacl_param_cit;
- 	struct config_item_type tfc_tpg_mappedlun_cit;
-+	struct config_item_type tfc_tpg_mappedlun_stat_cit;
- };
- 
- struct target_fabric_configfs {
+@@ -18,6 +18,7 @@ struct target_fabric_configfs_template {
+ 	struct config_item_type tfc_tpg_base_cit;
+ 	struct config_item_type tfc_tpg_lun_cit;
+ 	struct config_item_type tfc_tpg_port_cit;
++	struct config_item_type tfc_tpg_port_stat_cit;
+ 	struct config_item_type tfc_tpg_np_cit;
+ 	struct config_item_type tfc_tpg_np_base_cit;
+ 	struct config_item_type tfc_tpg_attrib_cit;
 -- 
 1.5.6.5
 
