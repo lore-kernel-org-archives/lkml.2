@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756615Ab1AaVsx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 16:48:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52927 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756576Ab1AaVsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 16:48:15 -0500
-Date: Mon, 31 Jan 2011 16:47:01 -0500
-From: Rik van Riel <riel@redhat.com>
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>,
-        "Nakajima, Jun" <jun.nakajima@intel.com>
-Subject: [PATCH -v8 6/7] kvm: keep track of which task is running a KVM vcpu
-Message-ID: <20110131164701.28da2ed1@annuminas.surriel.com>
-In-Reply-To: <20110131164049.0ad68e72@annuminas.surriel.com>
-References: <20110131164049.0ad68e72@annuminas.surriel.com>
-Organization: Red Hat, Inc.
+	id S1756630Ab1AaVtJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 16:49:09 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:40620 "EHLO
+	localhost6.localdomain6" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756583Ab1AaVtG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 16:49:06 -0500
+Date: Mon, 31 Jan 2011 21:48:54 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
+        stable <stable@kernel.org>
+Subject: Re: [PATCH 3/5] serial: unbreak billionton CF card
+Message-ID: <20110131214854.3bb53bd4@pyx>
+In-Reply-To: <1296491470-23096-3-git-send-email-gregkh@suse.de>
+References: <20110131162852.GA22875@kroah.com>
+	<1296491470-23096-3-git-send-email-gregkh@suse.de>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; i686-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -26,61 +26,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Keep track of which task is running a KVM vcpu.  This helps us
-figure out later what task to wake up if we want to boost a
-vcpu that got preempted.
+On Mon, 31 Jan 2011 08:31:08 -0800
+Greg Kroah-Hartman <gregkh@suse.de> wrote:
 
-Unfortunately there are no guarantees that the same task
-always keeps the same vcpu, so we can only track the task
-across a single "run" of the vcpu.
+> From: Pavel Machek <pavel@ucw.cz>
+> 
+> Unbreak Billionton CF bluetooth card. This actually fixes a regression
+> on zaurus.
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
+It also unbreaks a pile of other chips.
 
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index a055742..9d56ed5 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -81,6 +81,7 @@ struct kvm_vcpu {
- #endif
- 	int vcpu_id;
- 	struct mutex mutex;
-+	struct pid *pid;
- 	int   cpu;
- 	atomic_t guest_mode;
- 	struct kvm_run *run;
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 5225052..0fa9a48 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -117,6 +117,14 @@ void vcpu_load(struct kvm_vcpu *vcpu)
- 	int cpu;
- 
- 	mutex_lock(&vcpu->mutex);
-+	if (unlikely(vcpu->pid != current->pids[PIDTYPE_PID].pid)) {
-+		/* The thread running this VCPU changed. */
-+		struct pid *oldpid = vcpu->pid;
-+		struct pid *newpid = get_task_pid(current, PIDTYPE_PID);
-+		rcu_assign_pointer(vcpu->pid, newpid);
-+		synchronize_rcu();
-+		put_pid(oldpid);
-+	}
- 	cpu = get_cpu();
- 	preempt_notifier_register(&vcpu->preempt_notifier);
- 	kvm_arch_vcpu_load(vcpu, cpu);
-@@ -185,6 +193,7 @@ int kvm_vcpu_init(struct kvm_vcpu *vcpu, struct kvm *kvm, unsigned id)
- 	vcpu->cpu = -1;
- 	vcpu->kvm = kvm;
- 	vcpu->vcpu_id = id;
-+	vcpu->pid = NULL;
- 	init_waitqueue_head(&vcpu->wq);
- 
- 	page = alloc_page(GFP_KERNEL | __GFP_ZERO);
-@@ -208,6 +217,7 @@ EXPORT_SYMBOL_GPL(kvm_vcpu_init);
- 
- void kvm_vcpu_uninit(struct kvm_vcpu *vcpu)
- {
-+	put_pid(vcpu->pid);
- 	kvm_arch_vcpu_uninit(vcpu);
- 	free_page((unsigned long)vcpu->run);
- }
+Properly this should be a revert of  commit
+7a56aa45982bb87bfca98a2832b5ae782c03364a as far as I can see.
 
