@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751651Ab1AaFQn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 00:16:43 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:58900 "EHLO smtps.tip.net.au"
+	id S1751869Ab1AaFp4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 00:45:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59529 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750750Ab1AaFQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 00:16:42 -0500
-Date: Mon, 31 Jan 2011 16:16:40 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dan Carpenter <error27@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: linux-next: manual merge of the staging tree with the
- staging.current tree
-Message-Id: <20110131161640.93d8688a.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1750978Ab1AaFpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 00:45:55 -0500
+Message-ID: <4D464C6F.7010601@redhat.com>
+Date: Mon, 31 Jan 2011 13:45:19 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: linux-kernel@vger.kernel.org, Stephen Hemminger <shemminger@vyatta.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Jamie Lokier <jamie@shareable.org>, Thomas Weber <swirl@gmx.li>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Andy Fleming <afleming@freescale.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Neil Horman <nhorman@redhat.com>
+Subject: Re: [RFC Patch] virtio: export model and type in /sys
+References: <1296442381-21652-1-git-send-email-amwang@redhat.com> <201101311435.24531.rusty@rustcorp.com.au>
+In-Reply-To: <201101311435.24531.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+(Adding Neil into Cc.)
 
-Today's linux-next merge of the staging tree got a conflict in
-drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c between commit
-f32b8453e5a5587ae112ba478ae0bbad74e83d22 ("Staging: ste_rmi4: use after
-input_unregister_device()") from the staging.current tree and commit
-dc7b202a4ee6cb686e2bbef80c84443f43ec91bd ("staging/ste_rmi4: Remove
-obsolete cleanup for clientdata") from the staging tree.
+于 2011年01月31日 12:05, Rusty Russell 写道:
+> On Mon, 31 Jan 2011 01:23:00 pm Amerigo Wang wrote:
+>> Our kdump script needs /sys/block/X/device/{vendor, model, type},
+>> but virtio devices don't have {model, type}, this patch adds them.
+>> Actually, I don't know how to fill the model field, other block devices
+>> seem read it from SCSI. Any comments?
+>
+> This seems deeply wrong.  Can't you fix your script?
 
-I fixed it up (I think - see below) and can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Well, we use (vendor, model, type) to identify a disk, and so far we only
+see virtio devices don't have this. So, we hope virtio at least provides
+some dummy files for us.
 
-diff --cc drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
-index 80183a7,fa1ee9d..0000000
---- a/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
-+++ b/drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c
-@@@ -997,21 -1001,14 +995,19 @@@ static int __devinit synaptics_rmi4_pro
-  	if (retval) {
-  		dev_err(&client->dev, "%s:Unable to get attn irq %d\n",
-  				__func__, platformdata->irq_number);
-- 		goto err_unset_clientdata;
- -		goto err_request_irq;
-++		goto err_query_dev;
- +	}
- +
- +	retval = input_register_device(rmi4_data->input_dev);
- +	if (retval) {
- +		dev_err(&client->dev, "%s:input register failed\n", __func__);
- +		goto err_free_irq;
-  	}
-  
-  	return retval;
-  
- -err_request_irq:
- +err_free_irq:
-  	free_irq(platformdata->irq_number, rmi4_data);
-- err_unset_clientdata:
-- 	i2c_set_clientdata(client, NULL);
- -	input_unregister_device(rmi4_data->input_dev);
-  err_query_dev:
-  	if (platformdata->regulator_en) {
-  		regulator_disable(rmi4_data->regulator);
+>
+> Model might sanely map to the feature bits, but making the type the same
+> as the PCI type is weird...
+>
+
+Yeah, that is why I mark the patch as RFC, I don't know which is the correct way
+to fill these two values. Providing some dummy values is also fine for us.
+
+Thanks.
