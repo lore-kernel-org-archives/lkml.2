@@ -1,84 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756363Ab1AaVjE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 16:39:04 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:40300 "EHLO smtp.outflux.net"
+	id S1756492Ab1AaVkP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 16:40:15 -0500
+Received: from kroah.org ([198.145.64.141]:54196 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754033Ab1AaVjC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 16:39:02 -0500
-Date: Mon, 31 Jan 2011 13:38:47 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: matthieu castet <castet.matthieu@free.fr>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [BUG] broken ebba638ae723d8a8fc2f7abce5ec18b688b791d7
-Message-ID: <20110131213847.GF4557@outflux.net>
-References: <4D41E86D.8060205@free.fr>
- <20110127230013.GO4981@outflux.net>
- <4D4228CE.5090601@zytor.com>
+	id S1754081Ab1AaVkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 16:40:14 -0500
+Date: Mon, 31 Jan 2011 13:31:40 -0800
+From: Greg KH <greg@kroah.com>
+To: Sutharsan <sutharsan.tech@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-usb@vger.kernel.org, david.cross@cypress.com, srmt@cypress.com
+Subject: Re: Staging: Westbridge: fix EXPORT_SYMBOL errors reported by
+ checkpatch.pl
+Message-ID: <20110131213140.GA1671@kroah.com>
+References: <1296018202.3623.24.camel@sutharsan-laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D4228CE.5090601@zytor.com>
-Organization: Canonical
-X-HELO: www.outflux.net
+In-Reply-To: <1296018202.3623.24.camel@sutharsan-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thu, Jan 27, 2011 at 06:24:14PM -0800, H. Peter Anvin wrote:
-> On 01/27/2011 03:00 PM, Kees Cook wrote:
-> >
-> >Yikes, good catch.
-> >
-> >arch/x86/kernel/trampoline_64.S uses:
-> >         movw    $(trampoline_stack_end - r_base), %sp
-> >
-> >arch/x86/boot/compressed/head_64.S uses:
-> >         movl    $boot_stack_end, %eax
-> >         addl    %ebp, %eax
-> >         movl    %eax, %esp
-> >
-> >what would be safe for arch/x86/kernel/head_32.S ? It uses "stack_start",
-> >but later after paging set-up. Is the following sane to solve this?
-> >
+On Tue, Jan 25, 2011 at 09:03:22PM -0800, Sutharsan wrote:
+> From: Sutharsan Ramamoorthy <srmt@cypress.com>
 > 
-> To run it before paging is set up, you can't use stack, start; you
-> have to use a pointer based on physical address.  You have two
-> problems with using stack_start: you're using a linear address to
-> access stack_start, and stack_start itself contains a linear
-> address.
+> This patch fixes errors reported by checkpatch.pl 
+> in westbridge device controller driver in the staging tree.
+> File containing EXPORT_SYMBOL() macros for all the APIs exported 
+> by the westbridge software has been removed. EXPORT_SYMBOL() 
+> macros are added after the corresponding function definitions.
 > 
-> It's not entirely clear to me why we don't initialize %ss to
-> __BOOT_DS with the other segment registers, but it would make most
-> sense to me:
-> 
-> diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-> index fc293dc..c10f9ba 100644
-> --- a/arch/x86/kernel/head_32.S
-> +++ b/arch/x86/kernel/head_32.S
-> @@ -99,7 +99,12 @@ ENTRY(startup_32)
->         movl %eax,%es
->         movl %eax,%fs
->         movl %eax,%gs
-> +       movl %eax,%ss
->  2:
-> +/*
-> + * Set up an initial stack
-> + */
-> +       movl $pa(init_thread_union+THREAD_SIZE), %esp
-> 
->  /*
->   * Clear BSS first so that there are no surprises...
+> Signed-off-by: Sutharsan Ramamoorthy <srmt@cypress.com>
 
-This doesn't appear to work for me. While I can boot fine, doing CPU
-hotplugging hangs the system. :(
+I've already applied this patch, and you should have gotten the "this
+patch has been applied" email, right?
 
--Kees
+So why was it resent?
 
--- 
-Kees Cook
-Ubuntu Security Team
+confused,
+
+greg k-h
