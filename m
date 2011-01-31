@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756687Ab1AaWRU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 17:17:20 -0500
-Received: from kroah.org ([198.145.64.141]:53643 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756676Ab1AaWRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 17:17:18 -0500
-Date: Mon, 31 Jan 2011 14:16:59 -0800
-From: Greg KH <greg@kroah.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH 1/7] sysdev: Do not register with sysdev when erroring
- on add
-Message-ID: <20110131221659.GA14918@kroah.com>
-References: <1295882943-11184-1-git-send-email-bp@amd64.org>
- <1295882943-11184-2-git-send-email-bp@amd64.org>
+	id S1756389Ab1AaWXP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 17:23:15 -0500
+Received: from pfepa.post.tele.dk ([195.41.46.235]:55585 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754098Ab1AaWXO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 17:23:14 -0500
+Date: Mon, 31 Jan 2011 23:23:11 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: devicetree-discuss@lists.ozlabs.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, jwboyer@linux.vnet.ibm.com,
+        benh@kernel.crashing.org
+Subject: Re: [PATCH 0/3] dt: documentation reorganization
+Message-ID: <20110131222311.GA7903@merkur.ravnborg.org>
+References: <20110131073918.9058.37628.stgit@localhost6.localdomain6> <20110131203449.GA4199@merkur.ravnborg.org> <20110131210131.GA14086@angua.secretlab.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1295882943-11184-2-git-send-email-bp@amd64.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110131210131.GA14086@angua.secretlab.ca>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24, 2011 at 04:28:57PM +0100, Borislav Petkov wrote:
-> From: Borislav Petkov <borislav.petkov@amd.com>
+On Mon, Jan 31, 2011 at 02:01:31PM -0700, Grant Likely wrote:
+> On Mon, Jan 31, 2011 at 09:34:49PM +0100, Sam Ravnborg wrote:
+> > On Mon, Jan 31, 2011 at 12:44:41AM -0700, Grant Likely wrote:
+> > > This series reorganizes and cleans up the device tree documentation
+> > > to make the directory useful for non-powerpc users.
+> > 
+> > Looks better than first try. But the structure is very flat.
+> > Did you consider an arch/* for all arch specific stuff?
 > 
-> When encountering an error while executing the driver's ->add method, we
-> should cancel registration and unwind what we've regged so far. The low
-> level ->add methods do return proper error codes but those aren't looked
-> at in sysdev_driver_register(). Fix that by sharing the unregistering
-> code.
+> Yes I did; but this stuff is pretty sparse so I didn't want to create
+> a whole lot of levels when it isn't warranted.  If really required in
+> the future I'll split the arch and drivers into two separate
+> directories.  In the mean time I'm going to stick with this.
+OK.
 
-Have you actually hit this before?  If so, where?
-
-> Also, fixup warning messages formatting while at it.
-
-Please, no, one patch per thing.  Please break this up into two
-different patches.
-
-And, in the future, let me know that you need this for other work.
-Actually, why did you send this to Ingo in your pull request?  What does
-your microcode patches need from this patch?  It should go through my
-tree, especially as there is other sysdev work happening at the moment.
-
-so, no, please don't send this on to anyone else right now.
-
-thanks,
-
-greg k-h
+	Sam
