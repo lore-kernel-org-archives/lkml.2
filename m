@@ -1,72 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058Ab1AaUQC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 15:16:02 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:51983 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753327Ab1AaUQA (ORCPT
+	id S1754089Ab1AaURL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 15:17:11 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:25120 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753179Ab1AaURJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 15:16:00 -0500
+	Mon, 31 Jan 2011 15:17:09 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=aXw0jsJMbTf/sEj2yHCUC6AVod5ple8mj9C39VW5CR773AeaFimwDjdfeKWfqvo4jg
-         9+zK/TTx/mU8S7DLyKbXo7nobCe2yvyVyqdjkesvMLKwyf3MmOKDpo9AC/DlWZYGsLeu
-         8Gxqre3A2hU35G9luoPq6PbpJf+JO6HfSnSmo=
-Date: Mon, 31 Jan 2011 23:15:55 +0300
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Grazvydas Ignotas <notasas@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: Fwd: [PATCH] bq27x00_battery: Add new properties
-Message-ID: <20110131201555.GA31249@oksana.dev.rtsoft.ru>
-References: <20110131135147.GB3883@oksana.dev.rtsoft.ru>
- <20110131154354.GC3819@enneenne.com>
- <20110131160321.GA23546@oksana.dev.rtsoft.ru>
- <AANLkTikr3LL-+4LObBaCTo7JGTFTRdVbpbbUH4nfJ28X@mail.gmail.com>
- <4D470B42.7050301@metafoo.de>
- <20110131192242.GB23722@sirena.org.uk>
- <AANLkTi=zc_Ft6K=QP70-fUASO+0pO_2O8Cp6W6LL08MS@mail.gmail.com>
- <20110131193810.GK5123@opensource.wolfsonmicro.com>
- <AANLkTinWiG=v-Mwt+tBBSFN43w4f0qifmr+v=mArB0u0@mail.gmail.com>
- <AANLkTi=ySBY3=-kyL0x3GbzmNELWi7Ot=nivuVVwHov6@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=ySBY3=-kyL0x3GbzmNELWi7Ot=nivuVVwHov6@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        d=google.com; s=beta;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=kcp/cm1QEs8Cvdkj27xxIv16elIkC+Xqa6HnCMPUKZott7tZtScrJNfJGIGepbOxoD
+         p77/ntsrzpzs8JInfPlg==
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Jaswinder Singh <jaswinderlinux@gmail.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Venkatesh Pallipadi <venki@google.com>
+Subject: Re: [PATCH] Fix linux-next warning from abb74cef
+Date: Mon, 31 Jan 2011 12:16:46 -0800
+Message-Id: <1296505006-26660-1-git-send-email-venki@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <20110131113820.193a89c5.rdunlap@xenotime.net>
+References: <20110131113820.193a89c5.rdunlap@xenotime.net>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 31, 2011 at 09:04:32PM +0100, Pali Rohár wrote:
-> This patch adds MODULE_DEVICE_TABLE for module bq27x00_battery.
-> 
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> Tested-by: Pali Rohár <pali.rohar@gmail.com>
+Thanks. Updated to address comments from Randy.
 
-Lars, if that's OK for you, please take Pali's patches via your
-tree. I can merge it into battery-2.6.git on request (and after
-review, of course).
+Yes. Patch below should fix the problem.
 
-Thanks!
+Fix below warning -
+ Introduced by commit abb74cefa9c682fb38ba86c17ca3c86fed6cc464 ("sched:
+ Export ns irqtimes through /proc/stat").
 
-> 
-> --- a/drivers/power/bq27x00_battery.c   2011-01-31 20:58:11.000000000 +0100
-> +++ b/drivers/power/bq27x00_battery.c   2011-01-31 20:57:05.000000000 +0100
-> @@ -596,6 +596,7 @@ static const struct i2c_device_id bq27x0
->         { "bq27500", BQ27500 },
->         {},
->  };
-> +MODULE_DEVICE_TABLE(i2c, bq27x00_id);
-> 
->  static struct i2c_driver bq27x00_battery_driver = {
->         .driver = {
+After merging the tip tree, today's linux-next build (powerpc
+ppc64_defconfig) produced these warnings:
 
+kernel/sched.c:3719: warning: 'irqtime_account_idle_ticks' defined but not used
+kernel/sched.c:3720: warning: 'irqtime_account_process_tick' defined but not used
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+---
+ kernel/sched.c |   64 ++++++++++++++++++++++++++++----------------------------
+ 1 files changed, 32 insertions(+), 32 deletions(-)
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 477e1bc..9a552bd 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -3654,6 +3654,36 @@ void account_system_time(struct task_struct *p, int hardirq_offset,
+ 	__account_system_time(p, cputime, cputime_scaled, target_cputime64);
+ }
+ 
++/*
++ * Account for involuntary wait time.
++ * @cputime: the cpu time spent in involuntary wait
++ */
++void account_steal_time(cputime_t cputime)
++{
++	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
++	cputime64_t cputime64 = cputime_to_cputime64(cputime);
++
++	cpustat->steal = cputime64_add(cpustat->steal, cputime64);
++}
++
++/*
++ * Account for idle time.
++ * @cputime: the cpu time spent in idle wait
++ */
++void account_idle_time(cputime_t cputime)
++{
++	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
++	cputime64_t cputime64 = cputime_to_cputime64(cputime);
++	struct rq *rq = this_rq();
++
++	if (atomic_read(&rq->nr_iowait) > 0)
++		cpustat->iowait = cputime64_add(cpustat->iowait, cputime64);
++	else
++		cpustat->idle = cputime64_add(cpustat->idle, cputime64);
++}
++
++#ifndef CONFIG_VIRT_CPU_ACCOUNTING
++
+ #ifdef CONFIG_IRQ_TIME_ACCOUNTING
+ /*
+  * Account a tick to a process and cpustat
+@@ -3715,41 +3745,11 @@ static void irqtime_account_idle_ticks(int ticks)
+ 	for (i = 0; i < ticks; i++)
+ 		irqtime_account_process_tick(current, 0, rq);
+ }
+-#else
++#else /* CONFIG_IRQ_TIME_ACCOUNTING */
+ static void irqtime_account_idle_ticks(int ticks) {}
+ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+ 						struct rq *rq) {}
+-#endif
+-
+-/*
+- * Account for involuntary wait time.
+- * @steal: the cpu time spent in involuntary wait
+- */
+-void account_steal_time(cputime_t cputime)
+-{
+-	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
+-	cputime64_t cputime64 = cputime_to_cputime64(cputime);
+-
+-	cpustat->steal = cputime64_add(cpustat->steal, cputime64);
+-}
+-
+-/*
+- * Account for idle time.
+- * @cputime: the cpu time spent in idle wait
+- */
+-void account_idle_time(cputime_t cputime)
+-{
+-	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
+-	cputime64_t cputime64 = cputime_to_cputime64(cputime);
+-	struct rq *rq = this_rq();
+-
+-	if (atomic_read(&rq->nr_iowait) > 0)
+-		cpustat->iowait = cputime64_add(cpustat->iowait, cputime64);
+-	else
+-		cpustat->idle = cputime64_add(cpustat->idle, cputime64);
+-}
+-
+-#ifndef CONFIG_VIRT_CPU_ACCOUNTING
++#endif /* CONFIG_IRQ_TIME_ACCOUNTING */
+ 
+ /*
+  * Account a single tick of cpu time.
 -- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+1.7.3.1
+
