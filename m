@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740Ab1AaQVB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 11:21:01 -0500
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:51804 "EHLO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752299Ab1AaQVA (ORCPT
+	id S1755929Ab1AaQXL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 11:23:11 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:50192 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751697Ab1AaQXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 11:21:00 -0500
-From: Kevin Hilman <khilman@ti.com>
-To: Stefan Weil <weil@mail.berlios.de>
-Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm: Fix possible memory leak
-Organization: Texas Instruments, Inc.
-References: <1296415587-4524-1-git-send-email-weil@mail.berlios.de>
-Date: Mon, 31 Jan 2011 08:20:55 -0800
-In-Reply-To: <1296415587-4524-1-git-send-email-weil@mail.berlios.de> (Stefan
-	Weil's message of "Sun, 30 Jan 2011 20:26:27 +0100")
-Message-ID: <87zkqh82oo.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	Mon, 31 Jan 2011 11:23:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=tDfEmvBekkNJSxlW7Ay7lpubDzCLBMa1oQ+Ix7zanLdhn/qGGVQyKzZpfDHdA5rTbc
+         qTwjy2w71JBQDErTV00KA4ZDFsvCD1DEIhNHLg+GDdeTTumC+fWyWM5RgY9AJ00zEUCQ
+         YMfaJdUPXis9Add+et1XINIy6KRv4gckA9RBw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Date: Mon, 31 Jan 2011 11:23:09 -0500
+Message-ID: <AANLkTi=cCN4gaa_Gh=dWFXORe6mLVLF9y1nWoO5pCupF@mail.gmail.com>
+Subject: Please correct this code
+From: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
+To: Kernel-newbies <kernelnewbies@nl.linux.org>,
+        linux-kernel-mail <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stefan Weil <weil@mail.berlios.de> writes:
+I have following snippet of code.
 
-> sr_info was allocated and needs a kfree before returning.
->
-> This error was reported by cppcheck:
-> arch/arm/mach-omap2/smartreflex.c:837: error: Memory leak: sr_info
->
-> To: Tony Lindgren <tony@atomide.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: linux-omap@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Stefan Weil <weil@mail.berlios.de>
+Code A
 
-Thanks, will queue this for 2.6.38-rc in my pm-fixes branch.
+__asm__ __volatile__(
+                      "   lock       ;\n"
+                      "   addl %1,%0 ;\n"
+                      : "=m"  (my_var)
+                      : "ir"  (my_int), "m" (my_var)
+                      :                                 /* no clobber-list */
+                      );
 
-Kevin
+Code B
 
-> ---
->  arch/arm/mach-omap2/smartreflex.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-omap2/smartreflex.c
-> index af39d17..07324607 100644
-> --- a/arch/arm/mach-omap2/smartreflex.c
-> +++ b/arch/arm/mach-omap2/smartreflex.c
-> @@ -832,7 +832,8 @@ static int __init omap_sr_probe(struct platform_device *pdev)
->
->  	if (!pdata) {
->  		dev_err(&pdev->dev, "%s: platform data missing\n", __func__);
-> -		return -EINVAL;
-> +		ret = -EINVAL;
-> +		goto err_free_devinfo;
->  	}
->
->  	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> --
-> 1.7.2.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+ __asm__ __volatile__(  "decl %0; sete %1"
+                      : "=m" (my_var), "=q" (cond)
+                      : "m" (my_var)
+                      : "memory"
+                      );
+
+In Code A memory contents are getting updated. And in Code B memory
+contents and 'cond' var are getting updated.
+In Code B in cobbler column 'memory' is used to indicate that this
+code modifies memory contents. But where as in Code A it was not
+mentioned
+
+Is is not that Code A is wrong, for not mentioning cobbler list
+'memory' to indicate memory contents are getting updated.
+Please rectify me, if I am wrong.
+-- 
+Regards,
+Sri.
