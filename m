@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755712Ab1AaLuq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 06:50:46 -0500
-Received: from casper.infradead.org ([85.118.1.10]:48119 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755678Ab1AaLup convert rfc822-to-8bit (ORCPT
+	id S1755754Ab1AaL7p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 06:59:45 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53496 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755722Ab1AaL7m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 06:50:45 -0500
-Subject: Re: [RFC -v7 PATCH 5/7] export pid symbols needed for
- kvm_vcpu_on_spin
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Rik van Riel <riel@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Avi Kiviti <avi@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>,
-        ttracy@redhat.com, "Nakajima, Jun" <jun.nakajima@intel.com>
-In-Reply-To: <20110126172303.3d5184a7@annuminas.surriel.com>
-References: <20110126165657.2ddd2ac9@annuminas.surriel.com>
-	 <20110126172303.3d5184a7@annuminas.surriel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 31 Jan 2011 12:51:39 +0100
-Message-ID: <1296474699.15234.396.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Mon, 31 Jan 2011 06:59:42 -0500
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [PATCH 1/5] dmaengine i.MX sdma: set maximum segment size for our device
+Date: Mon, 31 Jan 2011 12:59:28 +0100
+Message-Id: <1296475172-23900-2-git-send-email-s.hauer@pengutronix.de>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1296475172-23900-1-git-send-email-s.hauer@pengutronix.de>
+References: <1296475172-23900-1-git-send-email-s.hauer@pengutronix.de>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-01-26 at 17:23 -0500, Rik van Riel wrote:
-> Export the symbols required for a race-free kvm_vcpu_on_spin.
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+---
+ drivers/dma/imx-sdma.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-Avi, you asked for an example of why I hated KVM as a module :-)
-
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> 
-> diff --git a/kernel/fork.c b/kernel/fork.c
-> index 3b159c5..adc8f47 100644
-> --- a/kernel/fork.c
-> +++ b/kernel/fork.c
-> @@ -191,6 +191,7 @@ void __put_task_struct(struct task_struct *tsk)
->  	if (!profile_handoff_task(tsk))
->  		free_task(tsk);
->  }
-> +EXPORT_SYMBOL_GPL(__put_task_struct);
->  
->  /*
->   * macro override instead of weak attribute alias, to workaround
-> diff --git a/kernel/pid.c b/kernel/pid.c
-> index 39b65b6..02f2212 100644
-> --- a/kernel/pid.c
-> +++ b/kernel/pid.c
-> @@ -435,6 +435,7 @@ struct pid *get_task_pid(struct task_struct *task, enum pid_type type)
->  	rcu_read_unlock();
->  	return pid;
->  }
-> +EXPORT_SYMBOL_GPL(get_task_pid);
->  
->  struct task_struct *get_pid_task(struct pid *pid, enum pid_type type)
->  {
-> @@ -446,6 +447,7 @@ struct task_struct *get_pid_task(struct pid *pid, enum pid_type type)
->  	rcu_read_unlock();
->  	return result;
->  }
-> +EXPORT_SYMBOL_GPL(get_pid_task);
->  
->  struct pid *find_get_pid(pid_t nr)
->  {
-
+diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+index d5a5d4d..c503050 100644
+--- a/drivers/dma/imx-sdma.c
++++ b/drivers/dma/imx-sdma.c
+@@ -301,6 +301,7 @@ struct sdma_firmware_header {
+ 
+ struct sdma_engine {
+ 	struct device			*dev;
++	struct device_dma_parameters	dma_parms;
+ 	struct sdma_channel		channel[MAX_DMA_CHANNELS];
+ 	struct sdma_channel_control	*channel_control;
+ 	void __iomem			*regs;
+@@ -1317,6 +1318,8 @@ static int __init sdma_probe(struct platform_device *pdev)
+ 	sdma->dma_device.device_prep_dma_cyclic = sdma_prep_dma_cyclic;
+ 	sdma->dma_device.device_control = sdma_control;
+ 	sdma->dma_device.device_issue_pending = sdma_issue_pending;
++	sdma->dma_device.dev->dma_parms = &sdma->dma_parms;
++	dma_set_max_seg_size(sdma->dma_device.dev, 65535);
+ 
+ 	ret = dma_async_device_register(&sdma->dma_device);
+ 	if (ret) {
+-- 
+1.7.2.3
 
