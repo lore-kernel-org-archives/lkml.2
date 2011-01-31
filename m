@@ -1,60 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122Ab1AaQHg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 11:07:36 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45786 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751114Ab1AaQHe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 11:07:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=MIOE0g1F3pHqnkR0Kt4NPZiYclUAhk2gzefFkKY2B5bXztediR3XsI97NwjfqrVaCw
-         svVfFhe6js2/vtEiaphgghrSMmUy4np+6LYhKOHmZIcBcPYwitNZc5KedM/A78X/VZRb
-         cooMXSN0fbixDYZxHGM4ZDWOSmKvSqNAUdecs=
-Date: Mon, 31 Jan 2011 17:07:24 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCHSET RFC] ptrace,signal: clean transition between STOPPED
- and TRACED
-Message-ID: <20110131160724.GO7459@htj.dyndns.org>
-References: <1293199257-11255-1-git-send-email-tj@kernel.org>
- <20110118021417.D347A1807B7@magilla.sf.frob.com>
- <20110127154600.GE24925@htj.dyndns.org>
- <20110127174857.GG24925@htj.dyndns.org>
- <20110128204030.52D31183C1E@magilla.sf.frob.com>
- <20110131154117.GK7459@htj.dyndns.org>
- <20110131155411.GA1613@redhat.com>
+	id S1753322Ab1AaQMl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 11:12:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24691 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751579Ab1AaQMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 11:12:40 -0500
+Message-ID: <4D46DF75.6010902@redhat.com>
+Date: Mon, 31 Jan 2011 14:12:37 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110131155411.GA1613@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Greg KH <greg@kroah.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Remove drivers/staging/vme/bridges/Module.symvers file
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This file is auto-generated/auto-removed. It shouldn't be
+committed at the tree.
 
-On Mon, Jan 31, 2011 at 04:54:11PM +0100, Oleg Nesterov wrote:
-> Are you sure late-ptrace-may-attach-check hangs? Perhaps it is the next
-> one, tracer-lockup-on-sighandler-kill, it needs a lot of time to finish.
-> IIRC, some time ago I did the testing with your patches applied (under
-> kvm), I didn't notice anything unexpected.
-> 
-> Unfortunately, these tests are more or less "random", usually a new
-> test-case appears when we find a bug.
+This caused me some hurt, as, depending if I did a make
+clean or not, a "git commit -a" ends folding this file
+removal, mangling my patches.
 
-I thought it was the first one but might be mistaken.  I left it
-running for a couple of minutes several times but maybe it just needs
-more time.  I'll try again.
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-Thanks.
-
--- 
-tejun
+diff --git a/drivers/staging/vme/bridges/Module.symvers b/drivers/staging/vme/bridges/Module.symvers
+deleted file mode 100644
+index e69de29..0000000
