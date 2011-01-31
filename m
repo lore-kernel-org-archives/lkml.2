@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756107Ab1AaTco (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 14:32:44 -0500
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:42161 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753553Ab1AaTcn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 14:32:43 -0500
-Subject: Re: linux-next: build failure after merge of the slab tree
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Christoph Lameter <cl@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Theodore Tso <tytso@MIT.EDU>
-In-Reply-To: <20110131144246.dfa2abe3.sfr@canb.auug.org.au>
-References: <20110131144246.dfa2abe3.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Mon, 31 Jan 2011 21:32:19 +0200
-Message-ID: <1296502339.30654.13.camel@jaguar>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756151Ab1AaTei (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 14:34:38 -0500
+Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:57444
+	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754075Ab1AaTeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 14:34:37 -0500
+Date: Mon, 31 Jan 2011 19:35:07 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Soren Hansen <soren@linux2go.dk>, linux-kernel@vger.kernel.org,
+        Dave Hansen <haveblue@us.ibm.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: nbd locking problems
+Message-ID: <20110131193507.GA19778@mail.hallyn.com>
+References: <AANLkTimP=5A-BNHUwV0qhvjw8y4HevMvXtOBpRr6vFYR@mail.gmail.com>
+ <20110128211825.GA20707@mail.hallyn.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110128211825.GA20707@mail.hallyn.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-31 at 14:42 +1100, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the slab tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> fs/ext4/mballoc.c: In function 'ext4_exit_mballoc':
-> fs/ext4/mballoc.c:2750: error: implicit declaration of function 'kmem_cache_name'
-> fs/ext4/mballoc.c:2750: warning: cast to pointer from integer of different size
-> 
-> Caused by commit 63310467a3d1ed6a0460ec1f4268126cd1ceec2e ("mm: Remove
-> support for kmem_cache_name()").  Clearly the last user has not gone, yet.
-> 
-> I have used the version of the slab tree from next-20110121 for today.
+Quoting Serge E. Hallyn (serge@hallyn.com):
+> Quoting Soren Hansen (soren@linux2go.dk):
 
-Christoph, Ted? Should I revert the patch from slab.git?
+(Sorry, I seem to have stupidly deleted later replies)
 
+> 
+> As Dave just explained to me, BKL is released when you sleep :)  I
+> assume that's how it gets released around the kthread_create().  I
+> *think* you're right that the new mutex is superfluous, but I'd like to
+> look through the ioctl code and make sure there's no shared state which
+> we need to protect.  I don't see how there could be, or rather, if there
+> were, then it was broken before.
+
+Yup, removing nbd_mutex should be safe.  Esp since the
+bdev->bd_disk->private_data doesn't get changed outside
+of nbd_init().  Removing it looks safe.
+
+thanks,
+-serge
