@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab1AaKhC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 05:37:02 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56889 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755303Ab1AaKhA (ORCPT
+	id S1755526Ab1AaKhg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 05:37:36 -0500
+Received: from mtagate5.uk.ibm.com ([194.196.100.165]:54958 "EHLO
+	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755303Ab1AaKhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 05:37:00 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=XtbU2C0eMk+p6mB3cIrS6JvluX2gXA6NKiQjmgBwFFZDtKE+9tbPQFz8WDO2LIg4U+
-         nm18LXEWKT6+qHwRHVeG+WDXEZlsbxA+yLmrgQ7JilyGYaXw/eGPdhEc9teJa/37FQXh
-         hGqX/jznFoAAz9h3Sz+74pcwmsPwiSWcTmHa0=
-Date: Mon, 31 Jan 2011 11:36:55 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Roland Dreier <roland@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>
-Subject: Re: [PATCH] RDMA: update missed converion of flush_scheduled_work()
-Message-ID: <20110131103655.GC7459@htj.dyndns.org>
-References: <1292086307-19211-1-git-send-email-tj@kernel.org>
- <1292086307-19211-2-git-send-email-tj@kernel.org>
- <adamxn0yujn.fsf@cisco.com>
- <20110124110654.GA11404@htj.dyndns.org>
- <AANLkTinREtRhxhrY3nwAGdDqYqCGxMX6M8HhoxXcx8if@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinREtRhxhrY3nwAGdDqYqCGxMX6M8HhoxXcx8if@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 31 Jan 2011 05:37:35 -0500
+Subject: Re: [PATCH 1/2] s390: Fix wrong size in memcmp (netiucv)
+From: Ursula Braun <ubraun@linux.vnet.ibm.com>
+To: Stefan Weil <weil@mail.berlios.de>
+Cc: linux390@de.ibm.com, Ursula Braun <ursula.braun@de.ibm.com>,
+        Frank Blaschka <blaschka@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1296336808-2809-1-git-send-email-weil@mail.berlios.de>
+References: <1296336808-2809-1-git-send-email-weil@mail.berlios.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 31 Jan 2011 11:37:25 +0100
+Message-ID: <1296470245.9948.20.camel@braunu-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Ack - thanks, Stefan.
 
-On Fri, Jan 28, 2011 at 04:40:55PM -0800, Roland Dreier wrote:
-> > Commit f0626710 (d9112f11586830d22501d0e26245ea) introduced ib_wq and
-> > removed the use of flush_scheduled_work(); however, during merge
-> > process one chunk was lost in ib_sa_remove_one().  Fix it.
+We have added your netiucv patch to our local repository. It will be
+part of our next patch collection submitted to Dave Miller for upstream
+integration.
+
+Regards, Ursula
+
+On Sat, 2011-01-29 at 22:33 +0100, Stefan Weil wrote:
+> This error was reported by cppcheck:
+> drivers/s390/net/netiucv.c:568: error: Using sizeof for array given as function argument returns the size of pointer.
 > 
-> Thanks, applied.
+> sizeof(ipuser) did not result in 16 (as many programmers would have
+> expected) but sizeof(u8 *), so it is 4 or 8, too small here.
 > 
-> BTW in the future if you can cc the linux-rdma@vger mailing list on RDMA patches
-> that helps me out, since the patch goes into the linux-rdma patchwork
-> and I'm much
-> less likely to lose it in my inbox.
+> Cc: Ursula Braun <ursula.braun@de.ibm.com>
+> Cc: linux390@de.ibm.com
+> Cc: Frank Blaschka <blaschka@linux.vnet.ibm.com>
+> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Cc: linux-s390@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Stefan Weil <weil@mail.berlios.de>
+> ---
+>  drivers/s390/net/netiucv.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/s390/net/netiucv.c b/drivers/s390/net/netiucv.c
+> index 65ebee0..b6a6356 100644
+> --- a/drivers/s390/net/netiucv.c
+> +++ b/drivers/s390/net/netiucv.c
+> @@ -565,7 +565,7 @@ static int netiucv_callback_connreq(struct iucv_path *path,
+>  	struct iucv_event ev;
+>  	int rc;
+> 
+> -	if (memcmp(iucvMagic, ipuser, sizeof(ipuser)))
+> +	if (memcmp(iucvMagic, ipuser, 16))
+>  		/* ipuser must match iucvMagic. */
+>  		return -EINVAL;
+>  	rc = -EINVAL;
 
-Oh, I see.  I'll try to remember that.
 
-Thank you.
-
--- 
-tejun
