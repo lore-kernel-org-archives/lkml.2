@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248Ab1AaUtk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 15:49:40 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:61784 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753544Ab1AaUtj (ORCPT
+	id S1756312Ab1AaU4H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 15:56:07 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:49038 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753729Ab1AaU4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 15:49:39 -0500
-Message-ID: <4D4720BA.1050307@metafoo.de>
-Date: Mon, 31 Jan 2011 21:51:06 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+	Mon, 31 Jan 2011 15:56:05 -0500
+From: Patrick Boettcher <pboettcher@kernellabs.com>
+Organization: KernelLabs Inc.
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: [GIT PULL for 2.6.38-rc2] V4L/DVB patches
+Date: Mon, 31 Jan 2011 21:55:59 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36-trunk-amd64; KDE/4.4.5; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <4D386A69.3080000@redhat.com> <4D398755.7040107@redhat.com>
+In-Reply-To: <4D398755.7040107@redhat.com>
 MIME-Version: 1.0
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-CC: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Grazvydas Ignotas <notasas@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: Fwd: [PATCH] bq27x00_battery: Add new properties
-References: <20110131135147.GB3883@oksana.dev.rtsoft.ru> <20110131154354.GC3819@enneenne.com> <20110131160321.GA23546@oksana.dev.rtsoft.ru> <AANLkTikr3LL-+4LObBaCTo7JGTFTRdVbpbbUH4nfJ28X@mail.gmail.com> <4D470B42.7050301@metafoo.de> <20110131192242.GB23722@sirena.org.uk> <AANLkTi=zc_Ft6K=QP70-fUASO+0pO_2O8Cp6W6LL08MS@mail.gmail.com> <20110131193810.GK5123@opensource.wolfsonmicro.com> <AANLkTinWiG=v-Mwt+tBBSFN43w4f0qifmr+v=mArB0u0@mail.gmail.com> <AANLkTi=ySBY3=-kyL0x3GbzmNELWi7Ot=nivuVVwHov6@mail.gmail.com> <20110131201555.GA31249@oksana.dev.rtsoft.ru>
-In-Reply-To: <20110131201555.GA31249@oksana.dev.rtsoft.ru>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101312155.59363.pboettcher@kernellabs.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2011 09:15 PM, Anton Vorontsov wrote:
-> On Mon, Jan 31, 2011 at 09:04:32PM +0100, Pali Rohár wrote:
->> This patch adds MODULE_DEVICE_TABLE for module bq27x00_battery.
->>
->> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
->> Tested-by: Pali Rohár <pali.rohar@gmail.com>
-> 
-> Lars, if that's OK for you, please take Pali's patches via your
-> tree. I can merge it into battery-2.6.git on request (and after
-> review, of course).
-> 
-> Thanks!
-> 
+Hi Mauro,
 
-I'll do. Thanks
-
-- Lars
-
->>
->> --- a/drivers/power/bq27x00_battery.c   2011-01-31 20:58:11.000000000 +0100
->> +++ b/drivers/power/bq27x00_battery.c   2011-01-31 20:57:05.000000000 +0100
->> @@ -596,6 +596,7 @@ static const struct i2c_device_id bq27x0
->>         { "bq27500", BQ27500 },
->>         {},
->>  };
->> +MODULE_DEVICE_TABLE(i2c, bq27x00_id);
->>
->>  static struct i2c_driver bq27x00_battery_driver = {
->>         .driver = {
+On Friday 21 January 2011 14:17:09 Mauro Carvalho Chehab wrote:
+> Linus,
 > 
+> Em 20-01-2011 15:01, Mauro Carvalho Chehab escreveu:
+> > Hi Linus,
+> > 
+> > Those are some changes that I tried to prepare to send you during the
+> > merge window, but, unfortunately, the new videobuf2 driver took me a
+> > longer time to review/test than I originally expected.
+> > 
+> > Please pull from:
+> >   ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
+> >   v4l_for_linus
+> 
+> Please, don't pull yet. There are some changesets that have some
+> weird stuff, like this:
+> 
+> diff --git a/drivers/staging/vme/bridges/Module.symvers
+> b/drivers/staging/vme/bridges/Module.symvers deleted file mode 100644
+> index e69de29..0000000
+> 
+> I have no idea why those things appeared, as I never handled any patch
+> that touched inside drivers/staging/vme. I need to further investigate
+> the entire patchset and see if other weird stuff happened there.
+> 
+> I'll send you another pull request after fixing those things.
 
+Do you think those changesets will make it into 2.6.38 at some point? I'm 
+asking because this is where the technisat-driver is currently residing on his 
+way into the kernel.  I understand that there is a problem in this branch, but 
+still I'd like to see the technisat-usb2 being merged.
+
+I'm getting a little bit desperate. :-(
+
+Can I do something to help?
+
+best regards,
+--
+Patrick Boettcher - KernelLabs
+http://www.kernellabs.com/
