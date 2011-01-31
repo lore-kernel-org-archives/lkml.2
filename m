@@ -1,78 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857Ab1AaN3j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 08:29:39 -0500
-Received: from vwp2514.webpack.hosteurope.de ([87.230.42.24]:59584 "EHLO
-	vwp2514.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755536Ab1AaN3i (ORCPT
+	id S1755881Ab1AaN3s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 08:29:48 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:33405 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755867Ab1AaN3r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 08:29:38 -0500
-Subject: Re: [PATCH] ARM: pxa: fix suspend on PXA3XX
-From: Sven Neumann <s.neumann@raumfeld.com>
-To: Eric Miao <eric.y.miao@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Daniel Mack <daniel@caiaq.de>
-In-Reply-To: <AANLkTimUg=y49H6THn5s7f7v418W68fhAsMLZGnDqabF@mail.gmail.com>
-References: <20110124101701.GE16202@n2100.arm.linux.org.uk>
-	 <1295864750-1238-1-git-send-email-s.neumann@raumfeld.com>
-	 <AANLkTinrxiHx6jX9jFzVzjq5FH-W=MLoDThAtRq2a1zZ@mail.gmail.com>
-	 <1296029447.2013.8.camel@sven>
-	 <AANLkTimUg=y49H6THn5s7f7v418W68fhAsMLZGnDqabF@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: RAUMFELD GmbH
-Date: Mon, 31 Jan 2011 14:29:18 +0100
-Message-ID: <1296480558.25696.2.camel@sven>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-bounce-key: webpack.hosteurope.de;s.neumann@raumfeld.com;1296480578;7d79c1d8;
+	Mon, 31 Jan 2011 08:29:47 -0500
+Date: Mon, 31 Jan 2011 14:30:24 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Greg Kroah-Hartman <greg@kroah.com>, x86 <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] AMD microcode fixes
+Message-ID: <20110131133024.GC32230@aftab>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-27 at 22:46 +0800, Eric Miao wrote:
-> On Wed, Jan 26, 2011 at 4:10 PM, Sven Neumann <s.neumann@raumfeld.com> wrote:
-> > On Wed, 2011-01-26 at 05:06 +0800, Eric Miao wrote:
-> >> How about this instead?
-> >>
-> >> diff --git a/arch/arm/mach-pxa/pm.c b/arch/arm/mach-pxa/pm.c
-> >> index 978e1b2..1807c9a 100644
-> >> --- a/arch/arm/mach-pxa/pm.c
-> >> +++ b/arch/arm/mach-pxa/pm.c
-> >> @@ -33,7 +33,7 @@ int pxa_pm_enter(suspend_state_t state)
-> >>  #endif
-> >>
-> >>       /* skip registers saving for standby */
-> >> -     if (state != PM_SUSPEND_STANDBY) {
-> >> +     if (state != PM_SUSPEND_STANDBY && pxa_cpu_pm_fns->save) {
-> >>               pxa_cpu_pm_fns->save(sleep_save);
-> >>               /* before sleeping, calculate and save a checksum */
-> >>               for (i = 0; i < pxa_cpu_pm_fns->save_count - 1; i++)
-> >> @@ -44,7 +44,7 @@ int pxa_pm_enter(suspend_state_t state)
-> >>       pxa_cpu_pm_fns->enter(state);
-> >>       cpu_init();
-> >>
-> >> -     if (state != PM_SUSPEND_STANDBY) {
-> >> +     if (state != PM_SUSPEND_STANDBY && pxa_cpu_pm_fns->restore) {
-> >>               /* after sleeping, validate the checksum */
-> >>               for (i = 0; i < pxa_cpu_pm_fns->save_count - 1; i++)
-> >>                       checksum += sleep_save[i];
-> >>
-> >
-> > Not sure if that will work as well. With this change the code is
-> > skipping more than just the calls to pxa_cpu_pm_fns->save() and
-> > pxa_cpu_pm_fns->restore(). In particular it doesn't call
-> > pxa_cpu_pm_fns->enter(state).
-> >
-> 
-> Nah, that ->enable() is called if the checksum is incorrect. Please compare
-> with the original code?
+Hey Ingo,
 
-I see. Well, I've tried your patch and it seems to work as well.
+please pull from the branch below to receive a bunch of AMD microcode
+driver fixes and cleanups. They are not strictly needed for .38 so
+you could easily postpone them for .39 but still have them cook in
+linux-next.
 
+Patches survived testing here and were out for review a week ago:
+http://marc.info/?l=linux-kernel&m=129588278209579
 
-Thanks,
-Sven
+There's one out-of-tree change to <drivers/base/sys.c> which Greg hasn't
+explicitly acked yet but judging by his silence he has nothing against
+it :).
 
+Thanks.
 
+The following changes since commit 1bae4ce27c9c90344f23c65ea6966c50ffeae2f5:
+
+  Linux 2.6.38-rc2 (2011-01-21 19:01:34 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git ucode-fixes
+
+Borislav Petkov (7):
+      sysdev: Do not register with sysdev when erroring on add
+      x86, microcode: Correct sysdev_add error path
+      x86, microcode, AMD: Release firmware on error
+      x86, microcode, AMD: Simplify install_equiv_cpu_table
+      x86, microcode, AMD: Simplify get_next_ucode
+      x86, microcode, AMD: Remove unneeded memset call
+      x86, microcode, AMD: Cleanup dmesg output
+
+ arch/x86/kernel/microcode_amd.c  |  142 ++++++++++++++++++--------------------
+ arch/x86/kernel/microcode_core.c |    6 +-
+ drivers/base/sys.c               |   65 ++++++++++++-----
+ 3 files changed, 118 insertions(+), 95 deletions(-)
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
