@@ -1,132 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754952Ab1AaHCr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 02:02:47 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:42254 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750978Ab1AaHCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 02:02:46 -0500
-Date: Mon, 31 Jan 2011 08:02:41 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Xen Devel <Xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH 0/2] x86/microcode: support for microcode update in Xen
- dom0
-Message-ID: <20110131070241.GA22071@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Jeremy Fitzhardinge <jeremy@goop.org>,
-	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-	the arch/x86 maintainers <x86@kernel.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Xen Devel <Xen-devel@lists.xensource.com>,
-	Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-References: <cover.1296259339.git.jeremy.fitzhardinge@citrix.com>
- <20110130113356.GA27967@liondog.tnic>
- <4D461FB9.5050807@goop.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4D461FB9.5050807@goop.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753600Ab1AaHVb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 02:21:31 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:58873 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750912Ab1AaHVa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 02:21:30 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18QRZ4ygoQQzQ7YLXbpYECDA416QVrcnNprzosVx2
+	/e6AdPoYw5JTRu
+Subject: Re: call_function_many: fix list delete vs add race
+From: Mike Galbraith <efault@gmx.de>
+To: Milton Miller <miltonm@bga.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, akpm@linux-foundation.org,
+        Anton Blanchard <anton@samba.org>, xiaoguangrong@cn.fujitsu.com,
+        mingo@elte.hu, jaxboe@fusionio.com, npiggin@gmail.com,
+        rusty@rustcorp.com.au, torvalds@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, benh@kernel.crashing.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <smp-call-function-list-race-fix@mdm.bga.com>
+References: <20110112150740.77dde58c@kryten>
+	 <1295288253.30950.280.camel@laptop>
+	 <smp-call-function-peter-reply@mdm.bga.com>
+	 <smp-call-function-move-writes@mdm.bga.com>
+	 <1296145360.15234.234.camel@laptop>
+	 <smp-call-function-list-race@mdm.bga.com>
+	 <smp-call-function-list-race-fix@mdm.bga.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 31 Jan 2011 08:21:22 +0100
+Message-ID: <1296458482.7889.175.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 30, 2011 at 06:34:33PM -0800, Jeremy Fitzhardinge wrote:
-> > - ucode should be loaded as early as possible and the perfect place
-> > for that should be the hypervisor and not the dom0 kernel. But I'm not
-> > that familiar with xen design and I guess it would be pretty hard to
-> > do. (Btw, x86 bare metal could also try to improve the situation there
-> > but that's also hard due to the design of the firmware loader (needs
-> > userspace)).
-> 
-> Yes, its the same issue with Xen or without.  The Xen hypervisor has no
-> devices, storage or anything else with which it can get microcode data. 
-> It depends on the dom0 kernel getting it from somewhere and supplying it
-> to the hypervisor.  In practice this is no different from relying on
-> usermode to get the firmware update.
-> 
-> In general firmware updates are not critical and not required very
-> early, so "as soon as reasonably possible" is OK.
+On Fri, 2011-01-28 at 18:20 -0600, Milton Miller wrote:
+> Peter pointed out there was nothing preventing the list_del_rcu in
+> smp_call_function_interrupt from running before the list_add_rcu in
+> smp_call_function_many.   Fix this by not setting refs until we have put
+> the entry on the list.  We can use the lock acquire and release instead
+> of a wmb.
 
-Yep.
+Wondering if a final sanity check makes sense.  I've got a perma-spin
+bug where comment apparently happened.  Another CPU's diddle the mask
+IPI may make this CPU do horrible things to itself as it's setting up to
+IPI others with that mask.
 
-I can imagine cases where CPU ucode might need to get applied as early
-as possible.
+---
+ kernel/smp.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-> (If the firmware update is critical, it should be supplied as a BIOS
-> update.)
+Index: linux-2.6.38.git/kernel/smp.c
+===================================================================
+--- linux-2.6.38.git.orig/kernel/smp.c
++++ linux-2.6.38.git/kernel/smp.c
+@@ -490,6 +490,9 @@ void smp_call_function_many(const struct
+ 	cpumask_and(data->cpumask, mask, cpu_online_mask);
+ 	cpumask_clear_cpu(this_cpu, data->cpumask);
+ 
++	/* Did you pass me a mask that can be changed/emptied under me? */
++	BUG_ON(cpumask_empty(data->cpumask));
++
+ 	/*
+ 	 * We reuse the call function data without waiting for any grace
+ 	 * period after some other cpu removes it from the global queue.
 
-I can also imagine cases where BIOS update is not an option/is not
-provided and we'd need the ucode applied by the OS too :). Think BIOS
-quirks in the kernel whereas all that can be fixed in the BIOS.
 
-> So I think this is moot with respect to this particular patch.
-> 
-> > - you're adding a microcode_xen.c as if this is another hw vendor and
-> > you're figuring out which is the proper firmware image based on the
-> > vendor, then you load it and then do the hypercall. This is duplicating
-> > code and inviting future bugs. Everytime the hw vendors decide to change
-> > something to their fw loading mechanism, xen needs to be updated. Also,
-> > you don't do any sanity checks to the ucode image as the vendor code
-> > does which is inacceptable.
-> 
-> The code within the hypervisor is more or less the same as the kernel's:
-> it does all the required vendor-specific checks on the firmware and
-> loads it on all the CPUs with the appropriate mechanism.  The hypercall
-> ABI is vendor-agnostic, but it assumes that dom0 will supply suitable
-> microcode for the current CPU vendor (though if it doesn't, the image
-> will presumably be rejected).
-> 
-> So from that perspective, it is a distinct microcode loading mechanism,
-> akin to a vendor-specific one.  The awkward part is getting the filename
-> to actually request from usermode, which is Intel/AMD/whatever specific,
-> which results in duplicated code to generate that pathname.
-> 
-> > What it should do instead, is call into the hw vendor-specific ucode
-> > loading mechanism and do all the image loading/verification there. The
-> > only thing you'd need to supply is a xen-specific ->apply_microcode()
-> > doing the hypercall _after_ the ucode image has been verified and is
-> > good to go. I'm guessing the XENPF_microcode_update does call into the
-> > hypervisor and calls a xen-specific ucode update mechanism based on the
-> > vendor instead of using the vendor-supplied code...
-> 
-> Well, I was trying to avoid putting Xen-specific code into the existing
-> Intel/AMD loaders.  That doesn't seem any cleaner.
-> 
-> I could export "my firmware pathname" functions from them and have the
-> Xen driver call those, rather than duplicating the pathname construction
-> code.  Would that help address your concerns?
 
-Well, I was thinking even more radically than that. How about
-
-1. microcode_xen.c figures out which struct microcode_ops to use based
-on the hw vendor;
-
-2. overwrites the ->apply_microcode ptr with the hypercall wrapper
-
-3. dom0 uses it to load the firmware image and do all checks to it
-
-4. eventually, the hypervisor gets to apply the _verified_ microcode
-image (no more checks needed) using the vendor-specific application
-method.
-
-This way there's almost no code duplication, you'll be reusing the
-vendor-supplied code in baremetal which gets tested and updated
-everytime it needs to and will save you a bunch of work everytime
-there's change to it needed to replicate it into the hypervisor.
-
-Btw, if the code within the hypervisor is similar to the kernel's, you
-could even save the original ->apply_microcode() pointer from step 2 and
-call it in the hypervisor when the XENPF_microcode_update hypercall op
-gets called. This way you have 0 code duplication.
-
-I think this'll be very cool :).
-
--- 
-Regards/Gruss,
-    Boris.
