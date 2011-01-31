@@ -1,163 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298Ab1AaD0I (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jan 2011 22:26:08 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38093 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752122Ab1AaD0H convert rfc822-to-8bit (ORCPT
+	id S1754736Ab1AaD01 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jan 2011 22:26:27 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:63007 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753174Ab1AaD0Z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jan 2011 22:26:07 -0500
+	Sun, 30 Jan 2011 22:26:25 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=SjBY5OJhKcubqSLKJZz7oOBgGPKS0kY58qHJyI8pN7HFpgrhVEBifk/9jajE2qJ3Y5
-         b+DMXZlbXhFZcnCqbR9Dz+IvxFShn0wyIH4AGBnQ/Wx+HQ0sXfkr0fem5lDAvl4OAwuV
-         EDRbJqt8QUvugS4uAvtQ3jG+GuLufAW5qxxnI=
+        b=ZRQNGq57ZvlxkvGYiJzY7QGzfdlzHSdgtlSDGg5098yqI0ZxX+ddX66ATbND2+ya0x
+         VIarKzHjZMMNMZxT3B3uEyyybiWGmNBWBqOKxWWrWbiNOqRnjRBrFX5VgBtikbEn50kQ
+         rbWyIQ2GdoFyPmnzDRy/W9W5MY4ws7v/OfVWI=
 MIME-Version: 1.0
-In-Reply-To: <1296405366.2274.60.camel@twins>
-References: <AANLkTinaOQpuJis5HgK316ANxpDS8eZ8Q0S4a44POrp0@mail.gmail.com>
-	<1295894492.28776.470.camel@laptop>
-	<AANLkTimq3jmza-t5iL10wgLLycwdDkJ3mznLQsKHM_Kf@mail.gmail.com>
-	<1295946736.28776.479.camel@laptop>
-	<AANLkTikQs1UcfBGf_6shNVtdDSzR+8XzUKcx0amFZXey@mail.gmail.com>
-	<1296210619.15234.263.camel@laptop>
-	<AANLkTikagMAGssG09D+SCKTsu9T+==R2fsSM3tgHctdv@mail.gmail.com>
-	<1296405366.2274.60.camel@twins>
-Date: Sun, 30 Jan 2011 22:26:04 -0500
-Message-ID: <AANLkTinxHXqndfP79W0=zer70psi6Dmkcv7rZc4ew7ZF@mail.gmail.com>
-Subject: Re: [PATCH] a patch to fix the cpu-offline-online problem caused by pm_idle
-From: Luming Yu <luming.yu@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, tglx <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1296403013-6058-1-git-send-email-thomas@wytron.com.tw>
+References: <1296403013-6058-1-git-send-email-thomas@wytron.com.tw>
+Date: Sun, 30 Jan 2011 19:26:24 -0800
+Message-ID: <AANLkTi=5Uik+EwBRfYs_Pa77+qHngY03ezC63RC0WLQ8@mail.gmail.com>
+Subject: Re: [PATCH] i2c-gpio: add devicetree support
+From: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>
+To: Thomas Chou <thomas@wytron.com.tw>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Ben Dooks <ben-linux@fluff.org>,
+        linux-kernel@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
+        devicetree-discuss@lists.ozlabs.org, linux-i2c@vger.kernel.org,
+        Jean Delvare <khali@linux-fr.org>,
+        Albert Herranz <albert_herranz@yahoo.es>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 31, 2011 at 12:36 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Sat, 2011-01-29 at 13:44 +0800, Luming Yu wrote:
->> On Fri, Jan 28, 2011 at 6:30 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> >> We have seen an extremely slow system under the CPU-OFFLINE-ONLIE test
->> >> on a 4-sockets NHM-EX system.
->> >
->> > Slow is OK, cpu-hotplug isn't performance critical by any means.
->>
->> Here is one example that the "slow" is not acceptable. Maybe I should
->> not use "slow" in the first place. It happnes after I resolved a
->> similar NMI watchdog warnning in calibrate_delay_direct..
->>
->> Please note, I got the BUG in a 2.6.32-based kernel. Upstream Â behaves
->> similar I guess.
+Hi,
+
+On Sun, Jan 30, 2011 at 7:56 AM, Thomas Chou <thomas@wytron.com.tw> wrote:
+> From: Albert Herranz <albert_herranz@yahoo.es>
 >
-> Guessing is totally the wrong thing when you're sending stuff upstream,
-> esp ugly patches such as this. .32 is more than a year old, anything
-> could have happened.
+> This patch is based on an earlier patch from Albert Herranz,
+> http://git.infradead.org/users/herraa1/gc-linux-2.6.git/commit/
+> 9854eb78607c641ab5ae85bcbe3c9d14ac113733
 
-Ok. the default upstream kernel seems to have NMI watchdog disabled?
-since there is 0 NMI.
+That commit has a single-line description of which I don't understand
+a single word (unless "wii" is what I think it is, which seems
+likely). Could you please explain how that commit relates to this
+patch?
 
-# cat /proc/interrupts | grep -i nmi
- NMI:          0          0          0          0          0
-0          0          0          0          0          0          0
-      0          0          0          0          0          0
- 0          0          0          0          0          0          0
-       0          0          0          0          0          0
-  0          0          0          0          0          0          0
-        0          0          0          0          0          0
-   0          0          0          0          0          0          0
-         0          0          0          0          0          0
-    0          0          0          0          0          0
-Non-maskable interrupts
-[root@intel-s3e36-02 ~]# uptime
- 21:43:27 up 34 min,  2 users,  load average: 0.40, 1.27, 2.32
+> The dts binding is modified as Grant suggested. The of probing
+> is merged inline instead of a separate file. It uses the newer
+> of gpio probe.
 
-But there is a problem like this:
+It seems like a terrible idea to merge firmware-specific code into the
+driver. Is there are reason why of-based platforms can't just pass the
+data they need in pdata like everyone else?
 
-Booting Node 3 Processor 59 APIC 0x75
-Clocksource tsc unstable (delta = -77316000544 ns)
-Switching to clocksource hpet
+Not saying that it necessarily _is_ a terrible idea, but I think the
+reasoning behind it needs to be included in the patch description.
 
-
+> Signed-off-by: Albert Herranz <albert_herranz@yahoo.es>
+> Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
+> ---
+>  Documentation/devicetree/bindings/gpio/i2c.txt |   39 ++++++++++++++
+>  drivers/i2c/busses/i2c-gpio.c                  |   67 ++++++++++++++++++++++-
+>  2 files changed, 103 insertions(+), 3 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/gpio/i2c.txt
 >
->> BUG: soft lockup - CPU#63 stuck for 61s! [migration/63:256]
->
->> > If its slow but working, the test is broken, I don't see a reason to do
->> > anything to the kernel, let alone the below.
->>
->> It not working sometimes, so I think it's not a solid feature right now.
->
-> But you didn't say anything about not working, you merely said slow. If
-> its not working, you need to very carefully explain what is not working,
-> where its deadlocked and how your patch solves this and how you avoid
-> wrecking stuff for everybody else.
+> diff --git a/Documentation/devicetree/bindings/gpio/i2c.txt b/Documentation/devicetree/bindings/gpio/i2c.txt
+> new file mode 100644
+> index 0000000..402569e
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/gpio/i2c.txt
 
-It's not working because of NMI watchdog. If you ignore NMI watchdog,
-then I guess it works but just slow..
+This looks a bit backwards. i2c-gpio is a i2c driver which happens to
+utilize the gpio framework, not the other way around.
 
->
->> >> Â since it currently unnecessarily implicitly interact with
->> >> CPU power management.
->> >
->> > daft statement at best, because if not for some misguided power
->> > management purpose, what are you actually unplugging cpus for?
->> > (misguided because unplug doesn't actually safe more power than simply
->> > idling the cpu).
->> It's a RAS feature and Suspend Resume also hits same code path I think.
->
-> That still doesn't say anything, also who in his right mind suspends a
-> nhm-ex system?
+> @@ -0,0 +1,39 @@
+> +GPIO-based I2C
+> +
+> +Required properties:
+> +- compatible : should be "i2c-gpio".
+> +- gpios : should specify GPIOs used for SDA and SCL lines, in that order.
+> +Optional properties:
+> +- sda-is-open-drain : present if SDA gpio is open-drain.
+> +- scl-is-open-drain : present if SCL gpio is open-drain.
+> +- scl-is-output-only : present if SCL is an output gpio only.
 
-But we need to have a solid code in place. We can't blame user who
-could find something useful with trying that. Let hotplug code to
-implicitly interact with CPU PM will complicate things unnecessarily.
+I think "present if the output driver for SCL cannot be turned off" is
+more accurate. Might also be worth mentioning that this will prevent
+clock stretching from working.
 
->
->> > So you flip the pm_idle pointer protected unter hotplug mutex, but
->> > that's not serialized against module loading, so what happens if you
->> > concurrently load a module that sets another idle policy?
->> >
->> > Your changelog is vague at best, so what exactly is the purpose here? We
->> > flip to default_idle(), which uses HLT, which is C1. Then you run
->> > cpu_idle_wait(), which will IPI all cpus, all these CPUs (except one)
->> > could have been in deep C states (C3+) so you get your slow wakeup
->> > anyway.
->> >
->> > There-after you do the normal stop-machine hot-plug dance, which again
->> > will IPI all cpus once, then you flip it back to the saved pm_idle
->> > handler and again IPI all cpus.
->>
->> https://lkml.org/lkml/2009/6/29/60
->> it needs 50-100us latency to send one IPI, you could get an idea on a
->> large NHM-EX system which contains 64 logical processors. With
->> Tickless and APIC timer stopped in C3 on NHM-EX, you could also have
->> an idea about the problem I have.
->
-> Ok, so one IPI costs 50-100 us, even with 64 cpu, that's at most 6.4ms
-> nowhere near enough to trigger the NMI watchdog. So what does go wrong?
+> --- a/drivers/i2c/busses/i2c-gpio.c
+> +++ b/drivers/i2c/busses/i2c-gpio.c
+> @@ -14,6 +14,9 @@
+>  #include <linux/module.h>
+>  #include <linux/slab.h>
+>  #include <linux/platform_device.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/of_gpio.h>
+> +#include <linux/of_i2c.h>
 
-Good question!
-But we also can't forget there were large latency from C3.
-And I guess some reschedule ticks get lost to kick some CPUs out of
-idle due to the side effects of the CPU PM feature. if use nohz=off,
-everything seems to just work.
-Yes, I agree we need to dig it out either.
-But it's kind of combination problem between the special stop_machine
-context and CPU power management...
+Do these headers provide stubs so non-of platforms won't break?
 
->
-> Why does your patch solve things, like said, it doesn't avoid the slow
-> IPI at all, you still IPI each cpu right after changing the pm_idle
-> function. Those IPIs will still hit C3+ states.
->
->> Let me know if there are still questions .
->
-> Yeah, what are you smoking? Why do you wreck perfectly fine code for one
-> backward ass piece of hardware.
+> @@ -83,11 +86,52 @@ static int __devinit i2c_gpio_probe(struct platform_device *pdev)
+>        struct i2c_gpio_platform_data *pdata;
+>        struct i2c_algo_bit_data *bit_data;
+>        struct i2c_adapter *adap;
+> +       struct device_node *np = pdev->dev.of_node;
 
-Just make things less complex...
+Would be nice if this could be eliminated on non-of platforms.
 
-Thanks
-Luming
+>        int ret;
+>
+>        pdata = pdev->dev.platform_data;
+> -       if (!pdata)
+> -               return -ENXIO;
+> +       if (!pdata) {
+> +               if (np && of_gpio_count(np) >= 2) {
+
+If that expression somehow always evaluates to false on non-of
+platforms, this might be ok. But please confirm if this is the case;
+otherwise, it looks like a pretty large addition to an otherwise very
+small driver.
+
+How about a tiny bit of restructuring: Move the block below into a
+separate function, which is only called if some constant expression
+says that of is enabled. Then you can move the declaration above
+either into the if block or into the function, depending on where you
+want to do the conditional above.
+
+>  static struct platform_driver i2c_gpio_driver = {
+>        .driver         = {
+>                .name   = "i2c-gpio",
+>                .owner  = THIS_MODULE,
+> +               .of_match_table = i2c_gpio_match,
+
+Is this field always present even when of is disabled?
+
+Havard
