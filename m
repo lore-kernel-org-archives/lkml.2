@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169Ab1AaID1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 03:03:27 -0500
-Received: from www.tglx.de ([62.245.132.106]:53576 "EHLO www.tglx.de"
+	id S1754988Ab1AaIIb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 03:08:31 -0500
+Received: from a.mx.secunet.com ([195.81.216.161]:52320 "EHLO a.mx.secunet.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751651Ab1AaID0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 03:03:26 -0500
-Date: Mon, 31 Jan 2011 09:02:49 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-cc: David Miller <davem@davemloft.net>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        linux-net-drivers@solarflare.com, Tom Herbert <therbert@google.com>
-Subject: Re: linux-next: build failure after merge of the final tree (net
- and tip tree related)
-In-Reply-To: <20110131170123.9ee51a40.sfr@canb.auug.org.au>
-Message-ID: <alpine.LFD.2.00.1101310902330.31804@localhost6.localdomain6>
-References: <20110131170123.9ee51a40.sfr@canb.auug.org.au>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751616Ab1AaIIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 03:08:30 -0500
+Date: Mon, 31 Jan 2011 09:08:26 +0100
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Eric Paris <eparis@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: flex_array related problems on selinux policy loading
+Message-ID: <20110131080826.GJ3070@secunet.com>
+References: <20110120122659.GD4639@secunet.com>
+ <1295537330.9039.583.camel@nimitz>
+ <20110121072022.GA3070@secunet.com>
+ <1295625455.9039.3326.camel@nimitz>
+ <20110126102328.GC3070@secunet.com>
+ <1296058216.7567.21.camel@nimitz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1296058216.7567.21.camel@nimitz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 31 Jan 2011 08:08:26.0618 (UTC) FILETIME=[09B445A0:01CBC11E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 Jan 2011, Stephen Rothwell wrote:
-
-> Hi all,
+On Wed, Jan 26, 2011 at 08:10:16AM -0800, Dave Hansen wrote:
 > 
-> After merging the final tree, today's linux-next build (sparc64 defconfig)
-> failed like this:
+> > If we would make
+> > flex_array of dynamic size, say metadata plus the maximum size of the array
+> > in the case that the metadata and the array fit into a single page, and
+> > metadata plus space for all the base pointers we need to dereference the
+> > parts, if the metadata and array is beyond page size. With this, the struct
+> > flex_array would have a reasonable size in any case, even if the array to
+> > store is small or of zero size.
 > 
-> kernel/irq/manage.c: In function 'irq_affinity_notify':
-> kernel/irq/manage.c:182: error: 'struct irq_desc' has no member named 'affinity'
+> Sounds like a good idea to me.  Done right, it should only really affect
+> the allocation path since we use kmalloc() already, and we can still
+> plain kfree() it.
 > 
-> Caused by commit cd7eab44e9946c28d595abe3e9a43e945bc49141 ("genirq: Add
-> IRQ affinity notifiers").  This build has
-> CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED=y.
-> 
-> I have just left it broken for today.
 
-Queued a fix.
 
-Thanks,
+I started to look into making flex_array of dynamic size.
+There are al lot of structural changes necessary, so I think this
+is too much just to fix a zero size allocation bug. So
+lets fix it like you proposed it by allocating the flex_array
+in any case and accept that it will be of PAGE_SIZE by now.
+Making flex_array of dynamic size can wait for 2.6.39 I think.
 
-	tglx
+Steffen
