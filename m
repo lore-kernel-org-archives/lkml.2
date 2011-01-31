@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755786Ab1AaOAM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 09:00:12 -0500
-Received: from smtprelay02.ispgateway.de ([80.67.31.40]:39686 "EHLO
-	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752543Ab1AaOAL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 09:00:11 -0500
-Message-ID: <4D46BF6E.4090401@ladisch.de>
-Date: Mon, 31 Jan 2011 14:55:58 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1755764Ab1AaOD2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 09:03:28 -0500
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:35911 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752954Ab1AaOD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 09:03:26 -0500
+Message-ID: <4D46C0EB.9000505@linux.vnet.ibm.com>
+Date: Mon, 31 Jan 2011 08:02:19 -0600
+From: Anthony Liguori <aliguori@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Lightning/1.0b1 Thunderbird/3.0.10
 MIME-Version: 1.0
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: irq N: nobody cared (try booting with the "irqpoll" option)
-References: <17725266.49811296475716764.JavaMail.root@mail-zbox20.bo3.lycos.com>
-In-Reply-To: <17725266.49811296475716764.JavaMail.root@mail-zbox20.bo3.lycos.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
+To: Cong Wang <amwang@redhat.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Jamie Lokier <jamie@shareable.org>, Thomas Weber <swirl@gmx.li>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Andy Fleming <afleming@freescale.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Neil Horman <nhorman@redhat.com>
+Subject: Re: [RFC Patch] virtio: export model and type in /sys
+References: <1296442381-21652-1-git-send-email-amwang@redhat.com> <201101311435.24531.rusty@rustcorp.com.au> <4D464C6F.7010601@redhat.com>
+In-Reply-To: <4D464C6F.7010601@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Artem S. Tashkinov wrote:
-> I've never faced this problem before but after I've recently
-> renewed my PC (a new MoBo and CPU) I'm now randomly getting
-> this kernel message after booting the PC:
-> 
-> irq 18: nobody cared
+On 01/30/2011 11:45 PM, Cong Wang wrote:
+> (Adding Neil into Cc.)
+>
+> 于 2011年01月31日 12:05, Rusty Russell 写道:
+>> On Mon, 31 Jan 2011 01:23:00 pm Amerigo Wang wrote:
+>>> Our kdump script needs /sys/block/X/device/{vendor, model, type},
+>>> but virtio devices don't have {model, type}, this patch adds them.
+>>> Actually, I don't know how to fill the model field, other block devices
+>>> seem read it from SCSI. Any comments?
+>>
+>> This seems deeply wrong.  Can't you fix your script?
+>
+> Well, we use (vendor, model, type) to identify a disk, and so far we only
+> see virtio devices don't have this. So, we hope virtio at least provides
+> some dummy files for us.
 
-One of the devices on interrupt line 18 has raised an interrupt, but
-no driver has accepted it.
+Uniquely identify the disk or identify the class of disk?
 
-Have a look into /proc/interrupts to see which drivers are registered
-for irq 18 (e100 in your case), then search in the output of "lspci -v"
-for any _other_ devices that use irq 18.
-
-It's also possible that one of the drivers is buggy and mistakenly said
-"this interrupt is not from my device", or, in theory, that the BIOS is
-buggy and has mislabeled some device's interrupt.
-
-
-According to Google, there are other reports of this message with the
-e100 driver.  Does your network work?  If not, does irqpoll help?
-
+If it's the former, would serial be a better attribute to key off of?
 
 Regards,
-Clemens
+
+Anthony Liguori
+
+>>
+>> Model might sanely map to the feature bits, but making the type the same
+>> as the PCI type is weird...
+>>
+>
+> Yeah, that is why I mark the patch as RFC, I don't know which is the 
+> correct way
+> to fill these two values. Providing some dummy values is also fine for 
+> us.
+>
+> Thanks.
+
