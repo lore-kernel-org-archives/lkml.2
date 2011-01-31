@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557Ab1AaDSg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jan 2011 22:18:36 -0500
-Received: from ozlabs.org ([203.10.76.45]:48738 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752122Ab1AaDSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jan 2011 22:18:35 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [RFC PATCH] Tracepoints: fix section alignment using pointer array
-Date: Mon, 31 Jan 2011 13:48:27 +1030
-User-Agent: KMail/1.13.5 (Linux/2.6.35-24-generic; KDE/4.5.1; i686; ; )
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>
-References: <20110126222622.GA10794@Krystal>
-In-Reply-To: <20110126222622.GA10794@Krystal>
+	id S1753902Ab1AaDZN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jan 2011 22:25:13 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45015 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037Ab1AaDZL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Jan 2011 22:25:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=PQZn2ydEFi9nPOAkts8ozV9oIgA7h/oO31dycpT3pczRLRuS1AMs0Sl9DuHJz7PGM1
+         2q505mtfZrV3QIu40sQYXc6jJlqcNNfC9qclfVlEez1uJ8p1AzbNQipV5i96E+d0L4h7
+         M6sX7xg2YX69dvc7aTPrgIz7YORaRS2FIwI5c=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101311348.27501.rusty@rustcorp.com.au>
+In-Reply-To: <20110131132743.4ae5d4ae.sfr@canb.auug.org.au>
+References: <20110131132743.4ae5d4ae.sfr@canb.auug.org.au>
+Date: Sun, 30 Jan 2011 21:25:08 -0600
+Message-ID: <AANLkTineJds4VXmYP7q68C5mk_KD_TyMT7Fj=KE0BupJ@mail.gmail.com>
+Subject: Re: linux-next: build warning after merge of the cifs tree
+From: Steve French <smfrench@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-cifs@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
+        Jeff Layton <jlayton@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Jan 2011 08:56:22 am Mathieu Desnoyers wrote:
-> Make the tracepoints more robust, making them solid enough to handle compiler
-> changes by not relying on anything based on compiler-specific behavior with
-> respect to structure alignment. Implement an approach proposed by David Miller:
-> use an array of const pointers to refer to the individual structures, and export
-> this pointer array through the linker script rather than the structures per se.
-> It will consume 32 extra bytes per tracepoint (24 for structure padding and 8
-> for the pointers), but are less likely to break due to compiler changes.
-> 
-> History:
-> 
-> commit 7e066fb870fcd1025ec3ba7bbde5d541094f4ce1 added the aligned(32) type and
-> variable attribute to the tracepoint structures to deal with gcc happily
-> aligning statically defined structures on 32-byte multiples.
-> 
-> commit 15e3540ce2159705f18fad6147ffedf04445ad64 tried to use a 8-byte alignment
-> for tracepoint structures by applying both the variable and type attribute to
-> tracepoint structures definitions and declarations. It worked fine with gcc
-> 4.5.1, but broke with gcc 4.4.4 and 4.4.5.
-> 
-> The reason is that the "aligned" attribute only specify the _minimum_ alignment
-> for a structure, leaving both the compiler and the linker free to align on
-> larger multiples. Because tracepoint.c expects the structures to be placed as an
-> array within each section, up-alignment cause NULL-pointer exceptions due to the
-> extra unexpected padding.
+Noticed this Friday but had a pending merge request (upstream) in so
+was holding off.  I now have merged the fix for this crypto cleanup
+warning.
 
-Hmm, that assumption is used in module parameters too, so we already rely on 
-the toolchain not to over-pad.
+On Sun, Jan 30, 2011 at 8:27 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> After merging the cifs tree, today's linux-next build (powerpc
+> ppc64_defconfig) produced this warning:
+>
+> fs/cifs/link.c: In function 'symlink_hash':
+> fs/cifs/link.c:58: warning: 'rc' may be used uninitialized in this function
+>
+> and, indeed, it may be ...
+>
+> Introduced by commit ee2c9258501f83d3ed0fd09ce5df1cec53312cf0 ("cifs:
+> More crypto cleanup (try #2)").
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> http://www.canb.auug.org.au/~sfr/
+>
 
-Perhaps we should fix that too, or wait until it explodes?
 
-Cheers,
-Rusty.
+
+-- 
+Thanks,
+
+Steve
