@@ -1,132 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753583Ab1AaSNe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 13:13:34 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:51473 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755863Ab1AaSNc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 13:13:32 -0500
-Message-ID: <4D46FC2A.6010402@metafoo.de>
-Date: Mon, 31 Jan 2011 19:15:06 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+	id S1755792Ab1AaSRJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 13:17:09 -0500
+Received: from claw.goop.org ([74.207.240.146]:40521 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754958Ab1AaSRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 13:17:08 -0500
+Message-ID: <4D46FC9F.6090309@goop.org>
+Date: Mon, 31 Jan 2011 10:17:03 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-CC: Grazvydas Ignotas <notasas@gmail.com>,
-        Rodolfo Giometti <giometti@linux.it>, linux-kernel@vger.kernel.org,
-        =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
-Subject: Re: Fwd: [PATCH] bq27x00_battery: Some fixes
-References: <20110131135417.GC3883@oksana.dev.rtsoft.ru>
-In-Reply-To: <20110131135417.GC3883@oksana.dev.rtsoft.ru>
-X-Enigmail-Version: 1.0.1
+To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Xen Devel <Xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 0/2] x86/microcode: support for microcode update in Xen
+ dom0
+References: <cover.1296259339.git.jeremy.fitzhardinge@citrix.com> <20110130113356.GA27967@liondog.tnic> <4D461FB9.5050807@goop.org> <20110131070241.GA22071@liondog.tnic>
+In-Reply-To: <20110131070241.GA22071@liondog.tnic>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2011 02:54 PM, Anton Vorontsov wrote:
-> The same is for this patch.
-> 
-> Comments, Reviewed-by or Acked-by?
-> 
-> p.s. FWIW, I already asked Pali to factor out bq27x00_battery_time()
->      fix to a separate patch.
-> 
+On 01/30/2011 11:02 PM, Borislav Petkov wrote:
+>> Well, I was trying to avoid putting Xen-specific code into the existing
+>> Intel/AMD loaders.  That doesn't seem any cleaner.
+>>
+>> I could export "my firmware pathname" functions from them and have the
+>> Xen driver call those, rather than duplicating the pathname construction
+>> code.  Would that help address your concerns?
+> Well, I was thinking even more radically than that. How about
+>
+> 1. microcode_xen.c figures out which struct microcode_ops to use based
+> on the hw vendor;
+>
+> 2. overwrites the ->apply_microcode ptr with the hypercall wrapper
+>
+> 3. dom0 uses it to load the firmware image and do all checks to it
 
-Hi
+That could be made to work, but I don't really see it as being an
+improvement.  The whole "overwriting bits of other people's ops
+structures" thing seems like a pretty bad idea for long term
+maintainability.
 
-I have a larger series pending which adds support for the bq27000 chip and polling to
-the bq27x00 driver. Since this series does some refactoring of the bq27x00 driver, it
-might make sense to rebase this (and the other) patch ontop of that series instead of
-the other way around.
+> 4. eventually, the hypervisor gets to apply the _verified_ microcode
+> image (no more checks needed) using the vendor-specific application
+> method.
+>
+> This way there's almost no code duplication, you'll be reusing the
+> vendor-supplied code in baremetal which gets tested and updated
+> everytime it needs to and will save you a bunch of work everytime
+> there's change to it needed to replicate it into the hypervisor.
 
-I'll try to send it in later today or tomorrow. For now you can take a look at it at
-http://git.metafoo.de/?p=linux-2.6;a=shortlog;h=refs/heads/bq27x00-for-upstream
+In general Xen tries to avoid trusting its domains.  Admittedly, dom0 is
+special in that it is already somewhat trusted, but even dom0 is
+constrained by Xen.  For microcode, Xen just depends on it to provide a
+best-possible microcode file, then Xen+the CPU do the work of fully
+validating it and installing it.
 
-- Lars
+> Btw, if the code within the hypervisor is similar to the kernel's, you
+> could even save the original ->apply_microcode() pointer from step 2 and
+> call it in the hypervisor when the XENPF_microcode_update hypercall op
+> gets called. This way you have 0 code duplication.
 
-> ----- Forwarded message from Pali Rohár <pali.rohar@gmail.com> -----
-> 
-> Date: Wed, 26 Jan 2011 21:42:39 +0100
-> From: Pali Rohár <pali.rohar@gmail.com>
-> To: Anton Vorontsov <cbouatmailru@gmail.com>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Subject: Re: [PATCH] bq27x00_battery
-> 
-> This patch fix reporting correct (devided by resistor sense) values on
-> bq27000/bq27200 batteries.
-> 
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> Tested-by: Pali Rohár <pali.rohar@gmail.com>
-> 
-> --- a/drivers/power/bq27x00_battery.c	2011-01-26 21:30:40.000000000 +0100
-> +++ b/drivers/power/bq27x00_battery.c	2011-01-26 21:32:34.000000000 +0100
-> @@ -37,10 +37,11 @@
->  #define BQ27x00_REG_TTF			0x18
->  #define BQ27x00_REG_TTECP		0x26
-> 
-> +#define BQ27000_RS			20 /* Resistor sense */
->  #define BQ27000_REG_RSOC		0x0B /* Relative State-of-Charge */
->  #define BQ27000_FLAG_CHGS		BIT(7)
-> 
-> -#define BQ27500_REG_SOC			0x2c
-> +#define BQ27500_REG_SOC			0x2C
->  #define BQ27500_FLAG_DSC		BIT(0)
->  #define BQ27500_FLAG_FC			BIT(9)
-> 
-> @@ -112,7 +113,7 @@ static int bq27x00_battery_temperature(s
->  }
-> 
->  /*
-> - * Return the battery Voltage in milivolts
-> + * Return the battery Voltage in µV
->   * Or < 0 if something fails.
->   */
->  static int bq27x00_battery_voltage(struct bq27x00_device_info *di)
-> @@ -130,7 +131,7 @@ static int bq27x00_battery_voltage(struc
->  }
-> 
->  /*
-> - * Return the battery average current
-> + * Return the battery average current in µA
->   * Note that current can be negative signed as well
->   * Or 0 if something fails.
->   */
-> @@ -149,6 +150,7 @@ static int bq27x00_battery_current(struc
->  	if (di->chip == BQ27500) {
->  		/* bq27500 returns signed value */
->  		curr = (int)(s16)curr;
-> +		curr *= 1000;
->  	} else {
->  		ret = bq27x00_read(BQ27x00_REG_FLAGS, &flags, 0, di);
->  		if (ret < 0) {
-> @@ -159,9 +161,10 @@ static int bq27x00_battery_current(struc
->  			dev_dbg(di->dev, "negative current!\n");
->  			curr = -curr;
->  		}
-> +		curr = curr * 3570 / BQ27000_RS;
->  	}
-> 
-> -	return curr * 1000;
-> +	return curr;
->  }
-> 
->  /*
-> @@ -233,7 +236,7 @@ static int bq27x00_battery_time(struct b
->  	}
-> 
->  	if (tval == 65535)
-> -		return -ENODATA;
-> +		tval = 0;
-> 
->  	val->intval = tval * 60;
->  	return 0;
-> 
-> ----- End forwarded message -----
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+The hypervisor and its domains are completely separate pieces of code. 
+This is akin to suggesting the kernel directly jump through a pointer
+and to run some usermode code.
+
+    J
