@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755982Ab1AaPL2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 10:11:28 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:34465 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751576Ab1AaPL1 convert rfc822-to-8bit (ORCPT
+	id S1756010Ab1AaPLz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 10:11:55 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:34519 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752016Ab1AaPLx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 10:11:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=IyhGRmcH65/LFXnD195aPwFmlx0vyM49p6SCdbv4LCa9oj2lspIQ5Lu0vjCOMY1rez
-         P/82m3N2P+vQYS3Uyf9A==
+	Mon, 31 Jan 2011 10:11:53 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6242"; a="72438045"
+From: "Tanya Brokhman" <tlinder@codeaurora.org>
+To: "'Alan Stern'" <stern@rowland.harvard.edu>
+Cc: <gregkh@suse.de>, <linux-arm-msm@vger.kernel.org>,
+        "'open list:USB GADGET/PERIPH...'" <linux-usb@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+References: <1296133918-31099-1-git-send-email-tlinder@codeaurora.org> <Pine.LNX.4.44L0.1101271116470.2090-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1101271116470.2090-100000@iolanthe.rowland.org>
+Subject: RE: [PATCH v7 1/5] usb: Adding SuperSpeed support to dummy_hcd
+Date: Mon, 31 Jan 2011 17:09:32 +0200
+Message-ID: <000301cbc158$df3bc470$9db34d50$@org>
 MIME-Version: 1.0
-In-Reply-To: <20110130233743.GE2565@sortiz-mobl>
-References: <1295448729-22821-1-git-send-email-vpalatin@chromium.org> <20110130233743.GE2565@sortiz-mobl>
-From: Vincent Palatin <vpalatin@chromium.org>
-Date: Mon, 31 Jan 2011 10:11:03 -0500
-X-Google-Sender-Auth: lHNNS8ualLw76FQAJ8SvhXq_V2k
-Message-ID: <AANLkTikxfvHMHWjy=y14wwj3f+V-NfcjtUnQ=6QOh_2R@mail.gmail.com>
-Subject: Re: [PATCH] mfd: tps6586x: Invert GPIO and subdevices initialization
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Olof Johansson <olofj@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain;
+	charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Content-language: en-us
+Thread-index: Acu+PxveVr2G6Bd6RqGvhJZZNRHUigDGVeEQ
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+> > This patch adds SS support to the dummy hcd module. It may be used to
+> test
+> > SS device when no (SS) HW is available.
+> > USB 3.0 hub includes 2 hubs - HS and SS ones.
+> > This patch adds support for a SS hub in the dummy_hcd module. Thus,
+> when
+> > dummy_hcd enabled it will register 2 root hubs (SS and HS).
+> 
+> Getting there.  A few spots could still use some attention.
+> 
 
-On Sun, Jan 30, 2011 at 18:37, Samuel Ortiz <sameo@linux.intel.com> wrote:
-[...]
->> diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
->> index 627cf57..fdb16ed 100644
->> --- a/drivers/mfd/tps6586x.c
->> +++ b/drivers/mfd/tps6586x.c
->> @@ -517,19 +517,25 @@ static int __devinit tps6586x_i2c_probe(struct i2c_client *client,
->>               }
->>       }
->>
->> +     tps6586x_gpio_init(tps6586x, pdata->gpio_base);
->> +
-> Wouldn't it make sense to have tps6586x_gpio_init() return an int and check it
-> before adding the subdevs then ?
+Could you please elaborate? 
 
-Yes, probably. I will do a v2 which checks the result of the GPIO registration.
-By the way, when "gpio_base" is not set, I will consider that the
-developer doesn't want the TPS gpio support and gracefully continue
-without the GPIO registration in order to keep the current behaviour.
+> Also, you might try running this patch through checkpatch.pl and fixing
+> any complaints it makes.
+>
 
-Regards,
--- 
-Vincent
+Actually I always do that. It came out clean. If you see something wrong
+with the coding style please let me know.
+ 
+Thank you for your input
+
+Tanya Brokhman
+Consultant for Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+
+
+
+
