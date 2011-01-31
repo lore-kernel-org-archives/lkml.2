@@ -1,74 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756017Ab1AaQmj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 11:42:39 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:42508 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751404Ab1AaQmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 11:42:38 -0500
-From: Alex Elder <aelder@sgi.com>
-Message-Id: <201101311642.p0VGgXTS018851@stout.americas.sgi.com>
-Date: Mon, 31 Jan 2011 10:42:33 -0600
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update for 2.6.38-rc3
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
-User-Agent: Heirloom mailx 12.5 7/5/10
+	id S1756165Ab1AaQoW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 11:44:22 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39909 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752299Ab1AaQoV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 11:44:21 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=LfnZUhN8D2WUI2UPY4XMyE3Ge8lDXtEzQFtOPUBAJSz6OGxdWiM45heqVO4W+6qIb6
+         PPvPTY1mFl8zKg+U524UjTMqNVadl1ZuMzJtuTeBwzw3r/Zag74KcpSVnZ2YtH1vDtKv
+         lS2YxFb3EPx8bC5L6qDbJUBi00uWBW8JVVZzQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110128175910.GB4599@alberich.amd.com>
+References: <20110113185807.GA24720@srcf.ucam.org>
+	<20110113190700.GB30866@kryptos.osrc.amd.com>
+	<alpine.LFD.2.00.1101132012140.2678@localhost6.localdomain6>
+	<20110113192825.GC30866@kryptos.osrc.amd.com>
+	<alpine.LFD.2.00.1101132032350.2678@localhost6.localdomain6>
+	<20110113210950.GA4081@aftab>
+	<alpine.LFD.2.00.1101132210351.2678@localhost6.localdomain6>
+	<20110113214841.GC4081@aftab>
+	<alpine.LFD.2.00.1101132353210.2678@localhost6.localdomain6>
+	<AANLkTik7DgsmFv1KN6r92jai-Git5G9+kQLF9J0u=6e0@mail.gmail.com>
+	<20110128175910.GB4599@alberich.amd.com>
+Date: Mon, 31 Jan 2011 10:44:19 -0600
+X-Google-Sender-Auth: gZHZg9RiuWxTqR7wbyj8NQAPsg8
+Message-ID: <AANLkTi=r5Q5zsGnxF_Fxa+2p6Hno=Xe=0Y9Lio=KK69N@mail.gmail.com>
+Subject: Re: [PATCH] Quirk to fix suspend/resume on Lenovo Edge 11,13,14,15
+From: Manoj Iyer <manoj.iyer@canonical.com>
+To: Andreas Herrmann <andreas.herrmann3@amd.com>
+Cc: "James C. Georgas" <james.georgas@yahoo.ca>,
+        Borislav Petkov <bp@amd64.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please accept the following updates for XFS, for 2.6.38-rc3
-(if it's not too late) or 2.6.38-rc4.
+Sorry, I was not able to get to this last week, I will test your patch
+today and reply by EOBD today.
 
-They are all fixes for bugs that have some pretty undesirable
-consequences.  They address:
-- One spot in which a hang can occur due to neglecting to drop a
-  lock
-- A bug which in some cases a bogus block number can be recorded in
-  a block map btree, resulting in a subsequent BUG_ON().
-- Two memory leaks
-- Three places in which extent sizes are allowed to exceed various
-  size limits
-- One place where code depends on behavior that is not well-defined
-  by the C standard
-- One problem in handling transaction commit errors
+On Fri, Jan 28, 2011 at 11:59 AM, Andreas Herrmann
+<andreas.herrmann3@amd.com> wrote:
+> On Fri, Jan 14, 2011 at 02:55:30PM -0500, Manoj Iyer wrote:
+>> Borislav,
+>>
+>> Any more thoughts on this one ?
+>
+> Seems that we've identified the root cause.
+>
+> I wondered why systems with the problem have configured IOAPIC pin
+> with polarity=1 (low active).  That was different to what the working
+> systems used.
+>
+> Switching the configuration to the usual polarity=0 (high active)
+> fixed the issue.
+>
+> The explanation is that when hpet interrupt is triggerd, signal goes
+> from low to high. (AFAIK HPET spec even mentions that HPET interrupts
+> are all active high.)
+>
+> Now if IO-APIC pin is configured as low active it just ignores this
+> signal change. It just triggers later when for next interrupt signal
+> will go from high to low and high again. (That happens the first time
+> after resume when the HPET counter wrapped around.)
+>
+> Setting the correct polarity fixes the detection of the first hpet
+> interrupt after resume.
+>
+> To confirm that your systems behave similar you should boot with
+> "apic=debug" kernel parameter. The output for IO APIC should show
+> polarity=1 for IO APIC pin 2, e.g.
+>
+>  [    0.158179] IO APIC #2......
+>   ...
+>  [    0.158205]  NR Dst Mask Trig IRR Pol Stat Dmod Deli Vect:
+>  [    0.158210]  00 000 1    0    0   0   0    0    0    00
+>  [    0.158217]  01 003 0    0    0   0   0    1    1    31
+>  [    0.158224]  02 003 0    0    0   1   0    1    1    30
+>
+> Furthermore you can check with attached test patch whether changing
+> the polarity fixes the problem on your system. IO APIC debug output
+> with this patch should change to
+>
+>  [    0.156170] IO APIC #2......
+>   ...
+>  [    0.156197]  NR Dst Mask Trig IRR Pol Stat Dmod Deli Vect:
+>  [    0.156202]  00 000 1    0    0   0   0    0    0    00
+>  [    0.156209]  01 003 0    0    0   0   0    1    1    31
+>  [    0.156216]  02 003 0    0    0   0   0    1    1    30
+>
+>
+> I'll come up with an SB800 quirk asap. (Of course we'll also try to
+> fix the respective BIOSes but too often BIOS updates are only
+> available for a limited time period.)
+>
+>
+> Regards,
+>
+> Andreas
+>
+> --
+> Operating | Advanced Micro Devices GmbH
+>  System  | Einsteinring 24, 85609 Dornach b. München, Germany
+>  Research | Geschäftsführer: Alberto Bozzo, Andrew Bowd
+>  Center  | Sitz: Dornach, Gemeinde Aschheim, Landkreis München
+>  (OSRC)  | Registergericht München, HRB Nr. 43632
+>
 
-Thank you.
 
-					-Alex
 
-The following changes since commit 70d1f365568e0cdbc9f4ab92428e1830fdb09ab0:
-
-  Merge branch 'for-linus' of git://git.infradead.org/ubi-2.6 (2011-01-31 13:04:51 +1000)
-
-are available in the git repository at:
-
-  git://oss.sgi.com/xfs/xfs for-linus
-
-Dave Chinner (8):
-      xfs: fix log ticket leak on forced shutdown.
-      xfs: fix efi item leak on forced shutdown
-      xfs: speculative delayed allocation uses rounddown_power_of_2 badly
-      xfs: limit extent length for allocation to AG size
-      xfs: prevent extsize alignment from exceeding maximum extent size
-      xfs: limit extsize to size of AGs and/or MAXEXTLEN
-      xfs: handle CIl transaction commit failures correctly
-      xfs: fix dquot shaker deadlock
-
-bpm@sgi.com (1):
-      xfs: xfs_bmap_add_extent_delay_real should init br_startblock
-
- fs/xfs/linux-2.6/xfs_ioctl.c |   20 ++++++++++++-
- fs/xfs/quota/xfs_qm.c        |   46 ++++++++++++++-----------------
- fs/xfs/xfs_alloc.h           |   16 +++++++++++
- fs/xfs/xfs_bmap.c            |   61 +++++++++++++++++++++++++++++++-----------
- fs/xfs/xfs_buf_item.c        |   12 +++++---
- fs/xfs/xfs_extfree_item.c    |    3 +-
- fs/xfs/xfs_iomap.c           |    7 ++++-
- fs/xfs/xfs_log.h             |    2 +-
- fs/xfs/xfs_log_cil.c         |   15 ++++------
- fs/xfs/xfs_trans.c           |   41 ++++++++++++++++++++-------
- 10 files changed, 152 insertions(+), 71 deletions(-)
+-- 
+-----------------------------------------------------
+Manoj Iyer
+Ubuntu/Canonical Kernel Developer
+Hardware Enablement Team
+------------------------------------------------------
