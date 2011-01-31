@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010Ab1AaPLz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 10:11:55 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:34519 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016Ab1AaPLx (ORCPT
+	id S1755930Ab1AaPQl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 10:16:41 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:9015 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693Ab1AaPQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 10:11:53 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6242"; a="72438045"
-From: "Tanya Brokhman" <tlinder@codeaurora.org>
-To: "'Alan Stern'" <stern@rowland.harvard.edu>
-Cc: <gregkh@suse.de>, <linux-arm-msm@vger.kernel.org>,
-        "'open list:USB GADGET/PERIPH...'" <linux-usb@vger.kernel.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>
-References: <1296133918-31099-1-git-send-email-tlinder@codeaurora.org> <Pine.LNX.4.44L0.1101271116470.2090-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1101271116470.2090-100000@iolanthe.rowland.org>
-Subject: RE: [PATCH v7 1/5] usb: Adding SuperSpeed support to dummy_hcd
-Date: Mon, 31 Jan 2011 17:09:32 +0200
-Message-ID: <000301cbc158$df3bc470$9db34d50$@org>
+	Mon, 31 Jan 2011 10:16:40 -0500
+X-IronPort-AV: E=Sophos;i="4.60,404,1291593600"; 
+   d="scan'208";a="4064331"
+Date: Mon, 31 Jan 2011 15:18:10 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: <linux-kernel@vger.kernel.org>
+CC: <tglx@linutronix.de>, <hpa@zytor.com>, <x86@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        Jan Beulich <JBeulich@novell.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: [PATCH] x86/mm/init: respect memblock reserved regions when destroying
+ mappings
+Message-ID: <alpine.DEB.2.00.1101311514580.7277@kaball-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Content-language: en-us
-Thread-index: Acu+PxveVr2G6Bd6RqGvhJZZNRHUigDGVeEQ
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > This patch adds SS support to the dummy hcd module. It may be used to
-> test
-> > SS device when no (SS) HW is available.
-> > USB 3.0 hub includes 2 hubs - HS and SS ones.
-> > This patch adds support for a SS hub in the dummy_hcd module. Thus,
-> when
-> > dummy_hcd enabled it will register 2 root hubs (SS and HS).
-> 
-> Getting there.  A few spots could still use some attention.
-> 
+x86/mm/init: respect memblock reserved regions when destroying mappings
 
-Could you please elaborate? 
+In init_memory_mapping we are destroying all the mappings between
+_brk_end and _end, no matter if some memory areas in that range have
+been reserved using memblock_x86_reserve_range.
+Besides if _end is not pmd aligned we might destroy the
+mappings for valid memory between _end and the following pmd.
 
-> Also, you might try running this patch through checkpatch.pl and fixing
-> any complaints it makes.
->
+In order to avoid this problem, before clearing any pmds we check if the
+corresponding memory area has been reserved and we only destroy the
+mapping if it hasn't.
 
-Actually I always do that. It came out clean. If you see something wrong
-with the coding style please let me know.
+We found this problem because under Xen we have a valid mapping at _end,
+and if _end is not pmd aligned the current code destroys the initial
+part of it.
+
+In practice this fix does not have any impact on native.
+
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 947f42a..66637bd 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -283,6 +283,8 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 	if (!after_bootmem && !start) {
+ 		pud_t *pud;
+ 		pmd_t *pmd;
++		unsigned long addr;
++		u64 size, memblock_addr;
  
-Thank you for your input
-
-Tanya Brokhman
-Consultant for Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
-
-
-
-
+ 		mmu_cr4_features = read_cr4();
+ 
+@@ -291,11 +293,18 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 		 * located on different 2M pages. cleanup_highmap(), however,
+ 		 * can only consider _end when it runs, so destroy any
+ 		 * mappings beyond _brk_end here.
++		 * Respect memblock reserved regions.
+ 		 */
+ 		pud = pud_offset(pgd_offset_k(_brk_end), _brk_end);
+ 		pmd = pmd_offset(pud, _brk_end - 1);
+-		while (++pmd <= pmd_offset(pud, (unsigned long)_end - 1))
+-			pmd_clear(pmd);
++		addr = (_brk_end + PMD_SIZE - 1) & PMD_MASK;
++		while (++pmd <= pmd_offset(pud, (unsigned long)_end - 1)) {
++			memblock_addr = memblock_x86_find_in_range_size(__pa(addr),
++					&size, PMD_SIZE);
++			if (memblock_addr == (u64) __pa(addr) && size >= PMD_SIZE)
++				pmd_clear(pmd);
++			addr += PMD_SIZE;
++		}
+ 	}
+ #endif
+ 	__flush_tlb_all();
