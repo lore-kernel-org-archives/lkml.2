@@ -1,407 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab1AaEIA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jan 2011 23:08:00 -0500
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:44053 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754005Ab1AaEH7 (ORCPT
+	id S1754616Ab1AaEKp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jan 2011 23:10:45 -0500
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:57258 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752122Ab1AaEKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jan 2011 23:07:59 -0500
-From: Arun Murthy <arun.murthy@stericsson.com>
-To: <sameo@linux.intel.com>
-Cc: <linux-kernel@vger.kernel.org>, <arun.murthy@stericsson.com>,
-        <linus.walleij@stericsson.com>, <srinidhi.kasagar@stericsson.com>,
-        <mattias.wallin@stericsson.com>
-Subject: [PATCHv2] mfd: ab8500-gpadc add new GPADC driver
-Date: Mon, 31 Jan 2011 09:37:12 +0530
-Message-ID: <1296446832-19332-1-git-send-email-arun.murthy@stericsson.com>
-X-Mailer: git-send-email 1.7.2.dirty
+	Sun, 30 Jan 2011 23:10:44 -0500
+Message-ID: <4D463647.7000106@linux.vnet.ibm.com>
+Date: Mon, 31 Jan 2011 09:40:47 +0530
+From: Ciju Rajan K <ciju@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
+CC: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>
+Subject: Re: [PATCH 1/2 v2.0]sched: Removing unused fields from /proc/schedstat
+References: <4D3F3595.4020607@linux.vnet.ibm.com> <4D3F3676.1030601@linux.vnet.ibm.com> <4D3FBAD5.1070307@jp.fujitsu.com>
+In-Reply-To: <4D3FBAD5.1070307@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AB8500 GPADC driver used to convert Acc and battery/ac/usb voltage
+Hi Satoru,
 
-Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
-Acked-by: Mattias Wallin <mattias.wallin@stericsson.com>
----
- drivers/mfd/Kconfig              |    7 +
- drivers/mfd/Makefile             |    1 +
- drivers/mfd/ab8500-gpadc.c       |  296 ++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/ab8500-gpadc.h |   28 ++++
- 4 files changed, 332 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/ab8500-gpadc.c
- create mode 100644 include/linux/mfd/ab8500-gpadc.h
+> 
+> This patch is logically correct, succeeded to compile and works
+> fine. But I came to be worried about whether it is good to kill
+> all fields you said after reading old and upstream scheduler
+> code again.
+> 
+> I think we can remove rq->sched_switch and rq->sched_switch
+> without no problem because they are meaningless. The former
+> is for old O(1) scheduler and means the number of runqueue
+> switching among active/expired queue. The latter is for
+> SD_WAKE_BALANCE flag and its logic is already gone.
+> 
+> However sbe_* are for SD_BALANCE_EXEC flag and sbf_* are for
+> SD_BALANCE_FORK flag. Since both logic for them are still alive,
+> the absence of these accounting is regression in my perspective.
+> In addition, these fields would be useful for analyzing load
+> balance behavior.
+> 
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index fd01836..5309534 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -523,6 +523,13 @@ config AB8500_DEBUG
-          Select this option if you want debug information using the debug
-          filesystem, debugfs.
- 
-+config AB8500_GPADC
-+	bool "AB8500 GPADC driver"
-+	depends on AB8500_CORE && REGULATOR_AB8500
-+	default y
-+	help
-+	  AB8500 GPADC driver used to convert Acc and battery/ac/usb voltage
-+
- config AB3550_CORE
-         bool "ST-Ericsson AB3550 Mixed Signal Circuit core functions"
- 	select MFD_CORE
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index a54e2c7..c17ab3f 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -73,6 +73,7 @@ obj-$(CONFIG_AB3550_CORE)	+= ab3550-core.o
- obj-$(CONFIG_AB8500_CORE)	+= ab8500-core.o
- obj-$(CONFIG_AB8500_I2C_CORE)	+= ab8500-i2c.o
- obj-$(CONFIG_AB8500_DEBUG)	+= ab8500-debugfs.o
-+obj-$(CONFIG_AB8500_GPADC)	+= ab8500-gpadc.o
- obj-$(CONFIG_MFD_TIMBERDALE)    += timberdale.o
- obj-$(CONFIG_PMIC_ADP5520)	+= adp5520.o
- obj-$(CONFIG_LPC_SCH)		+= lpc_sch.o
-diff --git a/drivers/mfd/ab8500-gpadc.c b/drivers/mfd/ab8500-gpadc.c
-new file mode 100644
-index 0000000..19339bc
---- /dev/null
-+++ b/drivers/mfd/ab8500-gpadc.c
-@@ -0,0 +1,296 @@
-+/*
-+ * Copyright (C) ST-Ericsson SA 2010
-+ *
-+ * License Terms: GNU General Public License v2
-+ * Author: Arun R Murthy <arun.murthy@stericsson.com>
-+ */
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/device.h>
-+#include <linux/interrupt.h>
-+#include <linux/spinlock.h>
-+#include <linux/delay.h>
-+#include <linux/platform_device.h>
-+#include <linux/completion.h>
-+#include <linux/regulator/consumer.h>
-+#include <linux/err.h>
-+#include <linux/slab.h>
-+#include <linux/mfd/ab8500.h>
-+#include <linux/mfd/abx500.h>
-+#include <linux/mfd/ab8500-gpadc.h>
-+
-+/*
-+ * GPADC register offsets
-+ * Bank : 0x0A
-+ */
-+#define AB8500_GPADC_CTRL1_REG		0x00
-+#define AB8500_GPADC_CTRL2_REG		0x01
-+#define AB8500_GPADC_CTRL3_REG		0x02
-+#define AB8500_GPADC_AUTO_TIMER_REG	0x03
-+#define AB8500_GPADC_STAT_REG		0x04
-+#define AB8500_GPADC_MANDATAL_REG	0x05
-+#define AB8500_GPADC_MANDATAH_REG	0x06
-+#define AB8500_GPADC_AUTODATAL_REG	0x07
-+#define AB8500_GPADC_AUTODATAH_REG	0x08
-+#define AB8500_GPADC_MUX_CTRL_REG	0x09
-+
-+/* gpadc constants */
-+#define EN_VINTCORE12			0x04
-+#define EN_VTVOUT			0x02
-+#define EN_GPADC			0x01
-+#define DIS_GPADC			0x00
-+#define SW_AVG_16			0x60
-+#define ADC_SW_CONV			0x04
-+#define EN_BUF				0x40
-+#define DIS_ZERO			0x00
-+#define GPADC_BUSY			0x01
-+
-+/**
-+ * struct ab8500_gpadc - ab8500 GPADC device information
-+ * @dev:			pointer to the struct device
-+ * @parent:			pointer to the parent device structure ab8500
-+ * @ab8500_gpadc_complete:	pointer to the struct completion, to indicate
-+ *				the completion of gpadc conversion
-+ * @ab8500_gpadc_lock:		structure of type mutex
-+ * @regu:			pointer to the struct regulator
-+ * @irq:			interrupt number that is used by gpadc
-+ */
-+static struct ab8500_gpadc {
-+	struct device *dev;
-+	struct ab8500 *parent;
-+	struct completion ab8500_gpadc_complete;
-+	struct mutex ab8500_gpadc_lock;
-+	struct regulator *regu;
-+	int irq;
-+} *di;
-+
-+/**
-+ * ab8500_gpadc_convert() - gpadc conversion
-+ * @input:	analog input to be converted to digital data
-+ *
-+ * This function converts the selected analog i/p to digital
-+ * data. Thereafter calibration has to be made to obtain the
-+ * data in the required quantity measurement.
-+ */
-+int ab8500_gpadc_convert(u8 input)
-+{
-+	int ret;
-+	u16 data = 0;
-+	int looplimit = 0;
-+	u8 val, low_data, high_data;
-+
-+	if (!di)
-+		return -ENODEV;
-+
-+	mutex_lock(&di->ab8500_gpadc_lock);
-+	/* Enable VTVout LDO this is required for GPADC */
-+	regulator_enable(di->regu);
-+
-+	/* Check if ADC is not busy, lock and proceed */
-+	do {
-+		ret = abx500_get_register_interruptible(di->dev, AB8500_GPADC,
-+			AB8500_GPADC_STAT_REG, &val);
-+		if (ret < 0)
-+			goto out;
-+		if (!(val & GPADC_BUSY))
-+			break;
-+		msleep(10);
-+	} while (++looplimit < 10);
-+	if (looplimit >= 10 && (val & GPADC_BUSY)) {
-+		dev_err(di->dev, "gpadc_conversion: GPADC busy");
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	/* Enable GPADC */
-+	ret = abx500_mask_and_set_register_interruptible(di->dev, AB8500_GPADC,
-+		AB8500_GPADC_CTRL1_REG, EN_GPADC, EN_GPADC);
-+	if (ret < 0) {
-+		dev_err(di->dev, "gpadc_conversion: enable gpadc failed\n");
-+		goto out;
-+	}
-+	/* Select the input source and set average samples to 16 */
-+	ret = abx500_set_register_interruptible(di->dev, AB8500_GPADC,
-+		AB8500_GPADC_CTRL2_REG, (input | SW_AVG_16));
-+	if (ret < 0) {
-+		dev_err(di->dev,
-+			"gpadc_conversion: set avg samples failed\n");
-+		goto out;
-+	}
-+	/* Enable ADC, Buffering and select rising edge, start Conversion */
-+	ret = abx500_mask_and_set_register_interruptible(di->dev, AB8500_GPADC,
-+		AB8500_GPADC_CTRL1_REG, EN_BUF, EN_BUF);
-+	if (ret < 0) {
-+		dev_err(di->dev,
-+			"gpadc_conversion: select falling edge failed\n");
-+		goto out;
-+	}
-+	ret = abx500_mask_and_set_register_interruptible(di->dev, AB8500_GPADC,
-+		AB8500_GPADC_CTRL1_REG, ADC_SW_CONV, ADC_SW_CONV);
-+	if (ret < 0) {
-+		dev_err(di->dev,
-+			"gpadc_conversion: start s/w conversion failed\n");
-+		goto out;
-+	}
-+	/* wait for completion of conversion */
-+	if (!wait_for_completion_timeout(&di->ab8500_gpadc_complete, 2*HZ)) {
-+		dev_err(di->dev,
-+			"timeout: didnt recieve GPADC conversion interrupt\n");
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	/* Read the converted RAW data */
-+	ret = abx500_get_register_interruptible(di->dev, AB8500_GPADC,
-+		AB8500_GPADC_MANDATAL_REG, &low_data);
-+	if (ret < 0) {
-+		dev_err(di->dev, "gpadc_conversion: read low data failed\n");
-+		goto out;
-+	}
-+
-+	ret = abx500_get_register_interruptible(di->dev, AB8500_GPADC,
-+		AB8500_GPADC_MANDATAH_REG, &high_data);
-+	if (ret < 0) {
-+		dev_err(di->dev, "gpadc_conversion: read high data failed\n");
-+		goto out;
-+	}
-+
-+	data = (high_data << 8) | low_data;
-+	/* Disable GPADC */
-+	ret = abx500_set_register_interruptible(di->dev, AB8500_GPADC,
-+		AB8500_GPADC_CTRL1_REG, DIS_GPADC);
-+	if (ret < 0) {
-+		dev_err(di->dev, "gpadc_conversion: disable gpadc failed\n");
-+		goto out;
-+	}
-+	/* Disable VTVout LDO this is required for GPADC */
-+	regulator_disable(di->regu);
-+	mutex_unlock(&di->ab8500_gpadc_lock);
-+	return data;
-+
-+out:
-+	/*
-+	 * It has shown to be needed to turn off the GPADC if an error occurs,
-+	 * otherwise we might have problem when waiting for the busy bit in the
-+	 * GPADC status register to go low. In V1.1 there wait_for_completion
-+	 * seems to timeout when waiting for an interrupt.. Not seen in V2.0
-+	 */
-+	(void) abx500_set_register_interruptible(di->dev, AB8500_GPADC,
-+		AB8500_GPADC_CTRL1_REG, DIS_GPADC);
-+	regulator_disable(di->regu);
-+	mutex_unlock(&di->ab8500_gpadc_lock);
-+	dev_err(di->dev, "gpadc_conversion: Failed to AD convert channel %d\n",
-+		input);
-+	return ret;
-+}
-+EXPORT_SYMBOL(ab8500_gpadc_convert);
-+
-+/**
-+ * ab8500_bm_gpswadcconvend_handler() - isr for s/w gpadc conversion completion
-+ * @irq:	irq number
-+ * @data:	pointer to the data passed during request irq
-+ *
-+ * This is a interrupt service routine for s/w gpadc conversion completion.
-+ * Notifies the gpadc completion is completed and the converted raw value
-+ * can be read from the registers.
-+ * Returns IRQ status(IRQ_HANDLED)
-+ */
-+static irqreturn_t ab8500_bm_gpswadcconvend_handler(int irq, void *_di)
-+{
-+	struct ab8500_gpadc *gpadc = _di;
-+
-+	complete(&gpadc->ab8500_gpadc_complete);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int __devinit ab8500_gpadc_probe(struct platform_device *pdev)
-+{
-+	int ret = 0;
-+	struct ab8500_gpadc *gpadc;
-+
-+	gpadc = kzalloc(sizeof(struct ab8500_gpadc), GFP_KERNEL);
-+	if (!gpadc) {
-+		dev_err(&pdev->dev, "Error: No memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	gpadc->parent = dev_get_drvdata(pdev->dev.parent);
-+	gpadc->irq = platform_get_irq_byname(pdev, "SW_CONV_END");
-+	if (gpadc->irq < 0) {
-+		dev_err(gpadc->dev, "failed to get platform irq-%d\n", di->irq);
-+		ret = gpadc->irq;
-+		goto fail;
-+	}
-+
-+	gpadc->dev = &pdev->dev;
-+	mutex_init(&di->ab8500_gpadc_lock);
-+
-+	/* Initialize completion used to notify completion of conversion */
-+	init_completion(&gpadc->ab8500_gpadc_complete);
-+
-+	/* Register interrupt  - SwAdcComplete */
-+	ret = request_threaded_irq(gpadc->irq, NULL,
-+		ab8500_bm_gpswadcconvend_handler,
-+		IRQF_NO_SUSPEND | IRQF_SHARED, "ab8500-gpadc", gpadc);
-+	if (ret < 0) {
-+		dev_err(gpadc->dev, "Failed to register interrupt, irq: %d\n",
-+			gpadc->irq);
-+		goto fail;
-+	}
-+
-+	/* VTVout LDO used to power up ab8500-GPADC */
-+	gpadc->regu = regulator_get(&pdev->dev, "vddadc");
-+	if (IS_ERR(gpadc->regu)) {
-+		ret = PTR_ERR(gpadc->regu);
-+		dev_err(gpadc->dev, "failed to get vtvout LDO\n");
-+		goto fail;
-+	}
-+	di = gpadc;
-+	dev_dbg(gpadc->dev, "probe success\n");
-+	return 0;
-+fail:
-+	kfree(gpadc);
-+	gpadc = NULL;
-+	return ret;
-+}
-+
-+static int __devexit ab8500_gpadc_remove(struct platform_device *pdev)
-+{
-+	struct ab8500_gpadc *gpadc = platform_get_drvdata(pdev);
-+
-+	/* remove interrupt  - completion of Sw ADC conversion */
-+	free_irq(gpadc->irq, di);
-+	/* disable VTVout LDO that is being used by GPADC */
-+	regulator_put(gpadc->regu);
-+	kfree(gpadc);
-+	gpadc = NULL;
-+	return 0;
-+}
-+
-+static struct platform_driver ab8500_gpadc_driver = {
-+	.probe = ab8500_gpadc_probe,
-+	.remove = __devexit_p(ab8500_gpadc_remove),
-+	.driver = {
-+		.name = "ab8500-gpadc",
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+static int __init ab8500_gpadc_init(void)
-+{
-+	return platform_driver_register(&ab8500_gpadc_driver);
-+}
-+
-+static void __exit ab8500_gpadc_exit(void)
-+{
-+	platform_driver_unregister(&ab8500_gpadc_driver);
-+}
-+
-+subsys_initcall_sync(ab8500_gpadc_init);
-+module_exit(ab8500_gpadc_exit);
-+
-+MODULE_LICENSE("GPL v2");
-+MODULE_AUTHOR("Arun R Murthy");
-+MODULE_ALIAS("platform:ab8500_gpadc");
-+MODULE_DESCRIPTION("AB8500 GPADC driver");
-diff --git a/include/linux/mfd/ab8500-gpadc.h b/include/linux/mfd/ab8500-gpadc.h
-new file mode 100644
-index 0000000..9f6cc26
---- /dev/null
-+++ b/include/linux/mfd/ab8500-gpadc.h
-@@ -0,0 +1,28 @@
-+/*
-+ * Copyright (C) 2010 ST-Ericsson SA
-+ * Licensed under GPLv2.
-+ *
-+ * Author: Arun R Murthy <arun.murthy@stericsson.com>
-+ */
-+
-+#ifndef	_AB8500_GPADC_H
-+#define _AB8500_GPADC_H
-+
-+/* GPADC source: From datasheet(ADCSwSel[4:0] in GPADCCtrl2) */
-+#define BAT_CTRL        0x01
-+#define BTEMP_BALL      0x02
-+#define MAIN_CHARGER_V  0x03
-+#define ACC_DETECT1     0x04
-+#define ACC_DETECT2     0x05
-+#define ADC_AUX1	0x06
-+#define ADC_AUX2	0x07
-+#define MAIN_BAT_V      0x08
-+#define VBUS_V          0x09
-+#define MAIN_CHARGER_C  0x0A
-+#define USB_CHARGER_C   0x0B
-+#define BK_BAT_V        0x0C
-+#define DIE_TEMP        0x0D
-+
-+int ab8500_gpadc_convert(u8 input);
-+
-+#endif /* _AB8500_GPADC_H */
--- 
-1.7.2.dirty
+sbe_* & sbf_* flags are added by the commit
+68767a0ae428801649d510d9a65bb71feed44dd1  Git describe shows that it was
+gone in to v2.6.12-1422-g68767a0  which is quite old. So in my opinion
+this might not be a regression.
+
+> # although I haven't been able to notice they are always zero ;-(
+> 
+> I prefer not to remove these fields({sbe,sbf}_*) but to add
+> accounting code for these flags again. What do you think?
+
+I will go through the code and verify once again.
+
+-Ciju
 
