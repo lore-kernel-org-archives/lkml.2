@@ -1,35 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755131Ab1AaOlk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 09:41:40 -0500
-Received: from jdl.com ([208.123.74.7]:44382 "EHLO jdl.com"
+	id S1755815Ab1AaOo1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 09:44:27 -0500
+Received: from cantor.suse.de ([195.135.220.2]:55193 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751020Ab1AaOli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 09:41:38 -0500
-X-Greylist: delayed 2754 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 Jan 2011 09:41:38 EST
-To: Grant Likely <grant.likely@secretlab.ca>
-cc: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>,
-        nios2-dev@sopc.et.ntust.edu.tw, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>, Jean Delvare <khali@linux-fr.org>,
-        Albert Herranz <albert_herranz@yahoo.es>
-Subject: Re: [PATCH] i2c-gpio: add devicetree support 
-In-reply-to: <AANLkTimS70uHqmv3jhr+7mPz4QFKXRXuFnWj8s3EpKsO@mail.gmail.com> 
-References: <1296403013-6058-1-git-send-email-thomas@wytron.com.tw> <AANLkTi=5Uik+EwBRfYs_Pa77+qHngY03ezC63RC0WLQ8@mail.gmail.com> <AANLkTimS70uHqmv3jhr+7mPz4QFKXRXuFnWj8s3EpKsO@mail.gmail.com>
-Comments: In-reply-to Grant Likely <grant.likely@secretlab.ca>
-   message dated "Mon, 31 Jan 2011 01:09:02 -0700."
-Date: Mon, 31 Jan 2011 07:55:27 -0600
-From: Jon Loeliger <jdl@jdl.com>
-Message-Id: <E1PjuE3-0002Xy-6z@jdl.com>
-X-Spam-Score: -0.5
+	id S1752394Ab1AaOoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 09:44:25 -0500
+Date: Mon, 31 Jan 2011 15:44:24 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Alan Ott <alan@signal11.us>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] hidraw: Replace Confusing += Operator with =
+In-Reply-To: <1296098718-6964-1-git-send-email-alan@signal11.us>
+Message-ID: <alpine.LNX.2.00.1101311544120.5725@pobox.suse.cz>
+References: <1296098718-6964-1-git-send-email-alan@signal11.us>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Is this field always present even when of is disabled?
+On Wed, 26 Jan 2011, Alan Ott wrote:
+
+> Setting of the return value of hidraw_read() uses the += operator when
+> = is more appropriate.  There is no case where ret can be anything
+> other than zero when the assignment is made, making = equivalent to
+> += and much more clear.
 > 
-> No, not yet.  It will be in 2.6.29.
+> Signed-off-by: Alan Ott <alan@signal11.us>
+> ---
+>  drivers/hid/hidraw.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
+> index 468e87b..66fbcba 100644
+> --- a/drivers/hid/hidraw.c
+> +++ b/drivers/hid/hidraw.c
+> @@ -91,7 +91,7 @@ static ssize_t hidraw_read(struct file *file, char __user *buffer, size_t count,
+>  			ret = -EFAULT;
+>  			goto out;
+>  		}
+> -		ret += len;
+> +		ret = len;
+>  
 
-Perhaps even 2.6.39? :-)
+Applied, thanks.
 
-jdl
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
