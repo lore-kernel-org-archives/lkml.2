@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755538Ab1AaKiG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 05:38:06 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:45393 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755303Ab1AaKiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 05:38:05 -0500
-Date: Mon, 31 Jan 2011 11:37:46 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Clark Williams <williams@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [PATCH 7/7] perf tools: Initial python binding
-Message-ID: <20110131103746.GA32639@elte.hu>
-References: <1296339559-20914-1-git-send-email-acme@infradead.org>
- <1296339559-20914-8-git-send-email-acme@infradead.org>
- <20110130134429.GF13616@ghostprotocols.net>
+	id S1755509Ab1AaKjB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 05:39:01 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:59364 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752683Ab1AaKjA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 05:39:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=T8MZClBjme6LDoSenm0GuaM96ihhC1EsQwQirhF190AmxSaovNYNb8La9QhPdLUCvA
+         p+ta9dN3GpWj3+gxDD9cRxK3pY9rPinzKcWOPU/FW696IgsnTy09AY+/nK6zvDkKE4vy
+         Md+QSfbrnYA1DAtmGPmCmh0mvzQlegNa5V/U8=
+Date: Mon, 31 Jan 2011 11:38:55 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Roland McGrath <roland@redhat.com>
+Cc: oleg@redhat.com, jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 02/10] ptrace: remove the extra wake_up_process() from
+ ptrace_detach()
+Message-ID: <20110131103855.GD7459@htj.dyndns.org>
+References: <1296227324-25295-1-git-send-email-tj@kernel.org>
+ <1296227324-25295-3-git-send-email-tj@kernel.org>
+ <20110128184601.CBF7C180996@magilla.sf.frob.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110130134429.GF13616@ghostprotocols.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110128184601.CBF7C180996@magilla.sf.frob.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+On Fri, Jan 28, 2011 at 10:46:01AM -0800, Roland McGrath wrote:
+> NAK.  Let's have the wake_up_state(task, TASK_TRACED|TASK_STOPPED) version
+> go in first.  That one will be more appropriate for -stable.  Even if we
+> shortly remove it entirely in mainline, having the more conservative
+> intermediate state in the git history will make any future problems more
+> susceptible to bisection.
 
-> Em Sat, Jan 29, 2011 at 08:19:19PM -0200, Arnaldo Carvalho de Melo escreveu:
-> > From: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > 
-> > First clarifying that this kind of binding is not a replacement or an
-> > equivalent to the 'perf script' way of using python with perf.
-> > 
-> > The 'perf script' way is to process events and look at a given script
-> > for some python function that matches the events to pass each event for
-> > processing.
-> 
-> Ooops, forgot to add this to this cset, fixed it up and force pushed it
-> there.
-> 
-> - Arnaldo
+Yeap, sounds reasonable.  So, you're saying it can go away but should
+be converted to safer sleep first, right?  I'll resequence the patches.
 
-Pulled, thanks a lot Arnaldo!
+Thank you.
 
-	Ingo
+-- 
+tejun
