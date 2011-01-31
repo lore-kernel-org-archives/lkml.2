@@ -1,116 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940Ab1AaOES (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 09:04:18 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:46461 "EHLO zene.cmpxchg.org"
+	id S1755979Ab1AaOEy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 09:04:54 -0500
+Received: from hera.kernel.org ([140.211.167.34]:46455 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755916Ab1AaOEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 09:04:15 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: akpm@linux-foundation.org
-Cc: kamezawa.hiroyu@jp.fujitsu.com, nishimura@mxp.nes.nec.co.jp,
-        balbir@linux.vnet.ibm.com, minchan.kim@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch 2/3] memcg: prevent endless loop when charging huge pages to near-limit group
-Date: Mon, 31 Jan 2011 15:03:54 +0100
-Message-Id: <1296482635-13421-3-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 1.7.3.5
-In-Reply-To: <1296482635-13421-1-git-send-email-hannes@cmpxchg.org>
-References: <1296482635-13421-1-git-send-email-hannes@cmpxchg.org>
+	id S1755964Ab1AaOEv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 09:04:51 -0500
+Date: Mon, 31 Jan 2011 14:04:40 GMT
+From: tip-bot for Torben Hohn <torbenh@gmx.de>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        torbenh@gmx.de, peterz@infradead.org, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torbenh@gmx.de, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <20110127145905.23248.30458.stgit@localhost>
+References: <20110127145905.23248.30458.stgit@localhost>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] time: Provide get_xtime_and_monotonic_offset()
+Message-ID: <tip-48cf76f7104f655bbd48a75c7759dce82c3e1ab6@git.kernel.org>
+Git-Commit-ID: 48cf76f7104f655bbd48a75c7759dce82c3e1ab6
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 31 Jan 2011 14:04:41 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If reclaim after a failed charging was unsuccessful, the limits are
-checked again, just in case they settled by means of other tasks.
+Commit-ID:  48cf76f7104f655bbd48a75c7759dce82c3e1ab6
+Gitweb:     http://git.kernel.org/tip/48cf76f7104f655bbd48a75c7759dce82c3e1ab6
+Author:     Torben Hohn <torbenh@gmx.de>
+AuthorDate: Thu, 27 Jan 2011 15:59:05 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 31 Jan 2011 14:55:42 +0100
 
-This is all fine as long as every charge is of size PAGE_SIZE, because
-in that case, being below the limit means having at least PAGE_SIZE
-bytes available.
+time: Provide get_xtime_and_monotonic_offset()
 
-But with transparent huge pages, we may end up in an endless loop
-where charging and reclaim fail, but we keep going because the limits
-are not yet exceeded, although not allowing for a huge page.
+The hrtimer code accesses timekeeping variables under
+xtime_lock. Provide a sensible accessor function and use it.
 
-Fix this up by explicitely checking for enough room, not just whether
-we are within limits.
+[ tglx: Removed the conditionals, unused variable, fixed codingstyle
+  	and massaged changelog ]
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Torben Hohn <torbenh@gmx.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: johnstul@us.ibm.com
+Cc: yong.zhang0@gmail.com
+Cc: hch@infradead.org
+LKML-Reference: <20110127145905.23248.30458.stgit@localhost>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/res_counter.h |   12 ++++++++++++
- mm/memcontrol.c             |   27 ++++++++++++++++++++-------
- 2 files changed, 32 insertions(+), 7 deletions(-)
+ include/linux/time.h      |    1 +
+ kernel/hrtimer.c          |   13 ++-----------
+ kernel/time/timekeeping.c |   16 ++++++++++++++++
+ 3 files changed, 19 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
-index fcb9884..5cfd78a 100644
---- a/include/linux/res_counter.h
-+++ b/include/linux/res_counter.h
-@@ -182,6 +182,18 @@ static inline bool res_counter_check_under_limit(struct res_counter *cnt)
- 	return ret;
- }
+diff --git a/include/linux/time.h b/include/linux/time.h
+index 86a9c48..4007a12 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -127,6 +127,7 @@ struct timespec current_kernel_time(void);
+ struct timespec __current_kernel_time(void); /* does not take xtime_lock */
+ struct timespec __get_wall_to_monotonic(void); /* does not take xtime_lock */
+ struct timespec get_monotonic_coarse(void);
++void get_xtime_and_monotonic_offset(struct timespec *xtim, struct timespec *wtom);
  
-+static inline bool res_counter_check_margin(struct res_counter *cnt,
-+					    unsigned long bytes)
-+{
-+	bool ret;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&cnt->lock, flags);
-+	ret = cnt->limit - cnt->usage >= bytes;
-+	spin_unlock_irqrestore(&cnt->lock, flags);
-+	return ret;
-+}
-+
- static inline bool res_counter_check_under_soft_limit(struct res_counter *cnt)
+ #define CURRENT_TIME		(current_kernel_time())
+ #define CURRENT_TIME_SEC	((struct timespec) { get_seconds(), 0 })
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 0c8d7c0..57c4d33 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -85,13 +85,8 @@ static void hrtimer_get_softirq_time(struct hrtimer_cpu_base *base)
  {
- 	bool ret;
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 73ea323..c28072f 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1111,6 +1111,15 @@ static bool mem_cgroup_check_under_limit(struct mem_cgroup *mem)
- 	return false;
- }
+ 	ktime_t xtim, tomono;
+ 	struct timespec xts, tom;
+-	unsigned long seq;
  
-+static bool mem_cgroup_check_margin(struct mem_cgroup *mem, unsigned long bytes)
-+{
-+	if (!res_counter_check_margin(&mem->res, bytes))
-+		return false;
-+	if (do_swap_account && !res_counter_check_margin(&mem->memsw, bytes))
-+		return false;
-+	return true;
-+}
-+
- static unsigned int get_swappiness(struct mem_cgroup *memcg)
+-	do {
+-		seq = read_seqbegin(&xtime_lock);
+-		xts = __current_kernel_time();
+-		tom = __get_wall_to_monotonic();
+-	} while (read_seqretry(&xtime_lock, seq));
++	get_xtime_and_monotonic_offset(&xts, &tom);
+ 
+ 	xtim = timespec_to_ktime(xts);
+ 	tomono = timespec_to_ktime(tom);
+@@ -612,15 +607,11 @@ static void retrigger_next_event(void *arg)
  {
- 	struct cgroup *cgrp = memcg->css.cgroup;
-@@ -1852,15 +1861,19 @@ static int __mem_cgroup_do_charge(struct mem_cgroup *mem, gfp_t gfp_mask,
- 		return CHARGE_WOULDBLOCK;
+ 	struct hrtimer_cpu_base *base;
+ 	struct timespec realtime_offset, wtm;
+-	unsigned long seq;
  
- 	ret = mem_cgroup_hierarchical_reclaim(mem_over_limit, NULL,
--					gfp_mask, flags);
-+					      gfp_mask, flags);
-+	if (mem_cgroup_check_margin(mem_over_limit, csize))
-+		return CHARGE_RETRY;
- 	/*
--	 * try_to_free_mem_cgroup_pages() might not give us a full
--	 * picture of reclaim. Some pages are reclaimed and might be
--	 * moved to swap cache or just unmapped from the cgroup.
--	 * Check the limit again to see if the reclaim reduced the
--	 * current usage of the cgroup before giving up
-+	 * Even though the limit is exceeded at this point, reclaim
-+	 * may have been able to free some pages.  Retry the charge
-+	 * before killing the task.
-+	 *
-+	 * Only for regular pages, though: huge pages are rather
-+	 * unlikely to succeed so close to the limit, and we fall back
-+	 * to regular pages anyway in case of failure.
- 	 */
--	if (ret || mem_cgroup_check_under_limit(mem_over_limit))
-+	if (csize == PAGE_SIZE && ret)
- 		return CHARGE_RETRY;
+ 	if (!hrtimer_hres_active())
+ 		return;
  
- 	/*
--- 
-1.7.3.5
-
+-	do {
+-		seq = read_seqbegin(&xtime_lock);
+-		wtm = __get_wall_to_monotonic();
+-	} while (read_seqretry(&xtime_lock, seq));
++	get_xtime_and_monotonic_offset(&realtime_offset, &wtm);
+ 	set_normalized_timespec(&realtime_offset, -wtm.tv_sec, -wtm.tv_nsec);
+ 
+ 	base = &__get_cpu_var(hrtimer_bases);
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index c1a178c..c50aaf6 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -958,3 +958,19 @@ void do_timer(unsigned long ticks)
+ 	update_wall_time();
+ 	calc_global_load(ticks);
+ }
++
++/**
++ * get_xtime_and_monotonic_offset() - get xtime and wall_to_monotonic
++ * @xtim:	pointer to timespec to be set with xtime
++ * @wtom:	pointer to timespec to be set with wall_to_monotonic
++ */
++void get_xtime_and_monotonic_offset(struct timespec *xtim, struct timespec *wtom)
++{
++	unsigned long seq;
++
++	do {
++		seq = read_seqbegin(&xtime_lock);
++		*xtim = xtime;
++		*wtom = wall_to_monotonic;
++	} while (read_seqretry(&xtime_lock, seq));
++}
