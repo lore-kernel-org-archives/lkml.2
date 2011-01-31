@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557Ab1AaCZf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jan 2011 21:25:35 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:36727 "EHLO smtps.tip.net.au"
+	id S1752552Ab1AaCZP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jan 2011 21:25:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10980 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752826Ab1AaCZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jan 2011 21:25:30 -0500
-Date: Mon, 31 Jan 2011 13:25:22 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Steve French <smfrench@gmail.com>, <linux-cifs@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
-        Jeff Layton <jlayton@redhat.com>
-Subject: linux-next: build warning after merge of the cifs tree
-Message-Id: <20110131132522.a81827db.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__31_Jan_2011_13_25_22_+1100_e5/flyaIUMvz=l4u"
+	id S1750858Ab1AaCZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Jan 2011 21:25:14 -0500
+Message-ID: <4D461D5C.6090401@redhat.com>
+Date: Mon, 31 Jan 2011 10:24:28 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Marcin Slusarz <marcin.slusarz@gmail.com>
+CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/4] kmap_atomic: remove the second parameter
+References: <1296380820-8801-1-git-send-email-amwang@redhat.com> <20110130103348.GA2528@joi.lan>
+In-Reply-To: <20110130103348.GA2528@joi.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__31_Jan_2011_13_25_22_+1100_e5/flyaIUMvz=l4u
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+于 2011年01月30日 18:33, Marcin Slusarz 写道:
+> On Sun, Jan 30, 2011 at 05:46:57PM +0800, Amerigo Wang wrote:
+>>
+>> (...)
+>>
+>> diff --git a/sound/oss/Makefile b/sound/oss/Makefile
+>> index 96f14dc..90ffb99 100644
+>> --- a/sound/oss/Makefile
+>> +++ b/sound/oss/Makefile
+>> @@ -87,7 +87,7 @@ ifeq ($(CONFIG_PSS_HAVE_BOOT),y)
+>>   	$(obj)/bin2hex pss_synth<  $<  >  $@
+>>   else
+>>       $(obj)/pss_boot.h:
+>> -	(							\
+>> +	$(Q)(							\
+>>   	    echo 'static unsigned char * pss_synth = NULL;';	\
+>>   	    echo 'static int pss_synthLen = 0;';		\
+>>   	)>  $@
+>> @@ -102,7 +102,7 @@ ifeq ($(CONFIG_TRIX_HAVE_BOOT),y)
+>>   	$(obj)/hex2hex -i trix_boot<  $<  >  $@
+>>   else
+>>       $(obj)/trix_boot.h:
+>> -	(							\
+>> +	$(Q)(							\
+>>   	    echo 'static unsigned char * trix_boot = NULL;';	\
+>>   	    echo 'static int trix_boot_len = 0;';		\
+>>   	)>  $@
+>> --
+>
+> does it belong here?
+>
 
-Hi all,
+Oh, of course not. My bad, I forgot to revert the previous patch before
+making this one! :(
 
-After merging the cifs tree, today's linux-next build (powerpc
-ppc64_defconfig) produced this warning:
-
-fs/cifs/smbencrypt.c: In function 'mdfour':
-fs/cifs/smbencrypt.c:61: warning: 'rc' may be used uninitialized in this fu=
-nction
-
-and, indeed, it may be ...
-
-Introduced by commit ee2c9258501f83d3ed0fd09ce5df1cec53312cf0 ("cifs:
-More crypto cleanup (try #2)").
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__31_Jan_2011_13_25_22_+1100_e5/flyaIUMvz=l4u
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEbBAEBAgAGBQJNRh2SAAoJEDMEi1NhKgbsoQEH+I/fl7+GhwzA+qZ5uzhEasDW
-6Dpt7HK4B8VDaQxsxqQ1Rx6KOykCIpVJ05DlG4pyiuHW80Mpy1+r7PoRkS+a6kj0
-653jgq/up2hvpNiFLnLztOYDx+H9BPNWZ6Gs6olCxssxDl6y/C4TVKzkAKWwIZAd
-ioD8cxSlJlQIaFqGHeTtyWAcVmmA957O9NMJSPOruALywGWKKdFpxwLnw7l/LoJT
-PqC7Ixz1Yg4A6Oz4BbKBKeEps1x6/zuhIzLB/P1nt0u9e2y1C1uaxRKmK8rj59ug
-9zlh2k+y4YzXRQ76XTqH0EJ0KnWLL34ymraZOFXVSK1OvqOPeO4DqJDi+s9wzA==
-=QRgj
------END PGP SIGNATURE-----
-
---Signature=_Mon__31_Jan_2011_13_25_22_+1100_e5/flyaIUMvz=l4u--
+Thanks!
