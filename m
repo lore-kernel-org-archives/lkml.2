@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756045Ab1AaS04 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 13:26:56 -0500
-Received: from proxima.lp0.eu ([81.2.80.65]:53930 "EHLO proxima.lp0.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753902Ab1AaS0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 13:26:53 -0500
-Message-ID: <4D46FEDE.7060909@simon.arlott.org.uk>
-Date: Mon, 31 Jan 2011 18:26:38 +0000
-From: Simon Arlott <simon@fire.lp0.eu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110116 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1756111Ab1AaS1K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 13:27:10 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:36080 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755832Ab1AaS1I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 13:27:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=fA3YLQvxbqnoyiT7c4WwDuRM1W1ybPbSaEQe1BaUkLwuUYlrkDbsUeRSUr5QAGCHtQ
+         z3brUwCOW1GJ+dsi3VRIBUgmHJlC5k0j7yf0ZySg0lt+R2hKhI4xLK9B/jnX0WN3JL2j
+         8deo9uT5o3nB8uOFbnCryNmg/s1DmlMXcuFVw=
+Date: Mon, 31 Jan 2011 21:27:04 +0300
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Grazvydas Ignotas <notasas@gmail.com>,
+        Rodolfo Giometti <giometti@linux.it>, linux-kernel@vger.kernel.org,
+        Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
+Subject: Re: Fwd: [PATCH] bq27x00_battery: Some fixes
+Message-ID: <20110131182704.GA13244@oksana.dev.rtsoft.ru>
+References: <20110131135417.GC3883@oksana.dev.rtsoft.ru>
+ <4D46FC2A.6010402@metafoo.de>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: axboe@kernel.dk, jeff@garzik.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        kay.sievers@vrfy.org, jack@suse.cz,
-        James.Bottomley@HansenPartnership.com, sshtylyov@mvista.com
-Subject: [PATCH (v2)] cdrom: support devices that have check_events but not
- media_changed
-References: <1291838262-21274-1-git-send-email-tj@kernel.org> <1291838262-21274-8-git-send-email-tj@kernel.org> <4D44BE3E.5080107@simon.arlott.org.uk> <4D44BF64.4060205@simon.arlott.org.uk> <20110131101244.GA7459@htj.dyndns.org>
-In-Reply-To: <20110131101244.GA7459@htj.dyndns.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4D46FC2A.6010402@metafoo.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 93aae17af1172c40c6f74b7294e93a90c3cfaa5d ("sr: implement
-sr_check_events()") replaced the media_changed op with the
-check_events op in drivers/scsi/sr.c
+On Mon, Jan 31, 2011 at 07:15:06PM +0100, Lars-Peter Clausen wrote:
+> On 01/31/2011 02:54 PM, Anton Vorontsov wrote:
+> > The same is for this patch.
+> > 
+> > Comments, Reviewed-by or Acked-by?
+> > 
+> > p.s. FWIW, I already asked Pali to factor out bq27x00_battery_time()
+> >      fix to a separate patch.
+> > 
+> 
+> Hi
+> 
+> I have a larger series pending which adds support for the bq27000 chip and polling to
+> the bq27x00 driver. Since this series does some refactoring of the bq27x00 driver, it
+> might make sense to rebase this (and the other) patch ontop of that series instead of
+> the other way around.
 
-All users that check for the CDC_MEDIA_CHANGED capbility try both
-the check_events op and the media_changed op, but register_cdrom()
-was requiring media_changed.
+Pali was first to send out his work, so I think that it would make
+sense to ask you to rebase your work on top. Especially since Pali's
+patches were somewhat reviewed already.
 
-This patch fixes the capability checking.
+I hope Pali will resend the fixed versions quickly enough so
+that I'll apply the patches asap and you'll easily use git
+for rebasing.
 
-The cdrom_select_disc ioctl is also using the two operations, so
-they should be required for CDC_SELECT_DISC too.
-
-Signed-off-by: Simon Arlott <simon@fire.lp0.eu>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
----
- drivers/cdrom/cdrom.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
-index 14033a3..e2c48a7 100644
---- a/drivers/cdrom/cdrom.c
-+++ b/drivers/cdrom/cdrom.c
-@@ -409,7 +409,8 @@ int register_cdrom(struct cdrom_device_info *cdi)
- 	}
- 
- 	ENSURE(drive_status, CDC_DRIVE_STATUS );
--	ENSURE(media_changed, CDC_MEDIA_CHANGED);
-+	if (cdo->check_events == NULL && cdo->media_changed == NULL)
-+		*change_capability = ~(CDC_MEDIA_CHANGED | CDC_SELECT_DISC);
- 	ENSURE(tray_move, CDC_CLOSE_TRAY | CDC_OPEN_TRAY);
- 	ENSURE(lock_door, CDC_LOCK);
- 	ENSURE(select_speed, CDC_SELECT_SPEED);
--- 
-1.7.0.4
+Thanks!
 
 -- 
-Simon Arlott
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
