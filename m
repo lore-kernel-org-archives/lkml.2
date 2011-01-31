@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752299Ab1AaGBe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 01:01:34 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:54038 "EHLO smtps.tip.net.au"
+	id S1752284Ab1AaGQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 01:16:28 -0500
+Received: from ozlabs.org ([203.10.76.45]:50244 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751815Ab1AaGBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 01:01:33 -0500
-Date: Mon, 31 Jan 2011 17:01:23 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        linux-net-drivers@solarflare.com, Tom Herbert <therbert@google.com>
-Subject: linux-next: build failure after merge of the final tree (net and
- tip tree related)
-Message-Id: <20110131170123.9ee51a40.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__31_Jan_2011_17_01_23_+1100__m0n40exP0oGnQ0y"
+	id S1751404Ab1AaGQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 01:16:27 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH] virtio: update MAINTAINERS
+Date: Mon, 31 Jan 2011 16:46:20 +1030
+User-Agent: KMail/1.13.5 (Linux/2.6.35-24-generic; KDE/4.5.1; i686; ; )
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        "Michael S. Tsirkin" <mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201101311646.20873.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__31_Jan_2011_17_01_23_+1100__m0n40exP0oGnQ0y
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Patches should keep coming through Rusty but it
+helps if I'm Cc'd as well.
 
-Hi all,
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+---
+ MAINTAINERS |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-After merging the final tree, today's linux-next build (sparc64 defconfig)
-failed like this:
-
-kernel/irq/manage.c: In function 'irq_affinity_notify':
-kernel/irq/manage.c:182: error: 'struct irq_desc' has no member named 'affi=
-nity'
-
-Caused by commit cd7eab44e9946c28d595abe3e9a43e945bc49141 ("genirq: Add
-IRQ affinity notifiers").  This build has
-CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED=3Dy.
-
-I have just left it broken for today.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__31_Jan_2011_17_01_23_+1100__m0n40exP0oGnQ0y
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNRlAzAAoJEDMEi1NhKgbsVnYIAJq2+t92If/U59zDFsPv8lKx
-6wPf404DUYV7AcAb+doQKt4gDqZCatUnrz7dch5cray4P+dKK9DzcCyhbAC/MOU9
-Gzk2ylofFWKfiwKMuEPYrMtjneRfRR4qy1BCLBiWP9fbT9AYCo0uZdc/Qe3BMuVI
-lfr49Hg3jkde3TnPCiBkP5kcBODN/kzmRLIrgquxNns+kItgTwnP6Y0mHfK7VSjQ
-YAoL2TxOXRNpzRVi4gTuHMb4YLAz9FKxwpKvP61E+Dvdw/EozJEQiQtxLOpvMSE1
-oD+qie9lHKNEcWjAjhXhVJQmrMLYkBdQqKKl2CDdUKd524IxNOJKIVr4m4218j4=
-=H4Kt
------END PGP SIGNATURE-----
-
---Signature=_Mon__31_Jan_2011_17_01_23_+1100__m0n40exP0oGnQ0y--
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 23d0436..7de75ad 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6439,6 +6439,16 @@ S:	Maintained
+ F:	drivers/char/virtio_console.c
+ F:	include/linux/virtio_console.h
+ 
++VIRTIO CORE, NET AND BLOCK DRIVERS
++M:	Rusty Russell <rusty@rustcorp.com.au>
++M:	"Michael S. Tsirkin" <mst@redhat.com>
++L:	virtualization@lists.linux-foundation.org
++S:	Maintained
++F:	drivers/virtio/
++F:	drivers/net/virtio_net.c
++F:	drivers/block/virtio_blk.c
++F:	include/linux/virtio_*.h
++
+ VIRTIO HOST (VHOST)
+ M:	"Michael S. Tsirkin" <mst@redhat.com>
+ L:	kvm@vger.kernel.org
