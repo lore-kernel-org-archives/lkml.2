@@ -1,139 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756100Ab1AaPqq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 10:46:46 -0500
-Received: from 81-174-11-161.staticnet.ngi.it ([81.174.11.161]:48689 "EHLO
-	mail.enneenne.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1756063Ab1AaPqp (ORCPT
+	id S1756081Ab1AaPxk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 10:53:40 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37685 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752550Ab1AaPxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 10:46:45 -0500
-Date: Mon, 31 Jan 2011 16:46:26 +0100
-From: Rodolfo Giometti <giometti@enneenne.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Grazvydas Ignotas <notasas@gmail.com>, linux-kernel@vger.kernel.org,
-        Pali =?iso-8859-15?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Message-ID: <20110131154626.GD3819@enneenne.com>
-Mail-Followup-To: Anton Vorontsov <cbouatmailru@gmail.com>,
-	Grazvydas Ignotas <notasas@gmail.com>, linux-kernel@vger.kernel.org,
-	Pali =?iso-8859-15?Q?Roh=E1r?= <pali.rohar@gmail.com>
-References: <20110131135417.GC3883@oksana.dev.rtsoft.ru>
+	Mon, 31 Jan 2011 10:53:38 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=qlLmrWhdrTS3m1yIm6DKR+ZsZIB837gk4JmojSVA/qqA3GtUN/Md89t/cM8DOVzG0a
+         fhMQFXHN91Ahoy406S06/dGSVgP/jLlhvEDKu51HAQwNKtjtLSzxdGyV0qtdVMGWlvxZ
+         +7NrycGUODYwLM3Hx2BexmvscuxJQQ+CqPAKk=
+Date: Mon, 31 Jan 2011 16:53:30 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        penberg@kernel.org, tglx@linutronix.de, rientjes@google.com,
+        mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/numa] x86: Unify cpu/apicid <-> NUMA node mapping
+ between 32 and 64bit
+Message-ID: <20110131155330.GL7459@htj.dyndns.org>
+References: <1295789862-25482-14-git-send-email-tj@kernel.org>
+ <tip-bbc9e2f452d9c4b166d1f9a78d941d80173312fe@git.kernel.org>
+ <4D4327FC.5000600@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110131135417.GC3883@oksana.dev.rtsoft.ru>
-Organization: GNU/Linux Device Drivers, Embedded Systems and Courses
-X-PGP-Key: gpg --keyserver keyserver.linux.it --recv-keys D25A5633
+In-Reply-To: <4D4327FC.5000600@kernel.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 192.168.32.37
-X-SA-Exim-Mail-From: giometti@enneenne.com
-Subject: Re: Fwd: [PATCH] bq27x00_battery: Some fixes
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on mail.enneenne.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 31, 2011 at 04:54:17PM +0300, Anton Vorontsov wrote:
-> The same is for this patch.
-> 
-> Comments, Reviewed-by or Acked-by?
-> 
-> p.s. FWIW, I already asked Pali to factor out bq27x00_battery_time()
->      fix to a separate patch.
-> 
-> ----- Forwarded message from Pali Rohár <pali.rohar@gmail.com> -----
-> 
-> Date: Wed, 26 Jan 2011 21:42:39 +0100
-> From: Pali Rohár <pali.rohar@gmail.com>
-> To: Anton Vorontsov <cbouatmailru@gmail.com>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Subject: Re: [PATCH] bq27x00_battery
-> 
-> This patch fix reporting correct (devided by resistor sense) values on
-> bq27000/bq27200 batteries.
-> 
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> Tested-by: Pali Rohár <pali.rohar@gmail.com>
-> 
-> --- a/drivers/power/bq27x00_battery.c	2011-01-26 21:30:40.000000000 +0100
-> +++ b/drivers/power/bq27x00_battery.c	2011-01-26 21:32:34.000000000 +0100
-> @@ -37,10 +37,11 @@
->  #define BQ27x00_REG_TTF			0x18
->  #define BQ27x00_REG_TTECP		0x26
-> 
-> +#define BQ27000_RS			20 /* Resistor sense */
->  #define BQ27000_REG_RSOC		0x0B /* Relative State-of-Charge */
->  #define BQ27000_FLAG_CHGS		BIT(7)
-> 
-> -#define BQ27500_REG_SOC			0x2c
-> +#define BQ27500_REG_SOC			0x2C
->  #define BQ27500_FLAG_DSC		BIT(0)
->  #define BQ27500_FLAG_FC			BIT(9)
-> 
-> @@ -112,7 +113,7 @@ static int bq27x00_battery_temperature(s
->  }
-> 
->  /*
-> - * Return the battery Voltage in milivolts
-> + * Return the battery Voltage in µV
->   * Or < 0 if something fails.
->   */
->  static int bq27x00_battery_voltage(struct bq27x00_device_info *di)
-> @@ -130,7 +131,7 @@ static int bq27x00_battery_voltage(struc
->  }
+Hello, Yinghai.
 
-Ok, but I think we should change the function name adding _mV...
-
+On Fri, Jan 28, 2011 at 12:33:00PM -0800, Yinghai Lu wrote:
+> > +#ifdef CONFIG_NUMA
+> > +extern int __cpuinit numa_cpu_node(int apicid);
 > 
->  /*
-> - * Return the battery average current
-> + * Return the battery average current in µA
->   * Note that current can be negative signed as well
->   * Or 0 if something fails.
->   */
-> @@ -149,6 +150,7 @@ static int bq27x00_battery_current(struc
->  	if (di->chip == BQ27500) {
->  		/* bq27500 returns signed value */
->  		curr = (int)(s16)curr;
-> +		curr *= 1000;
->  	} else {
->  		ret = bq27x00_read(BQ27x00_REG_FLAGS, &flags, 0, di);
->  		if (ret < 0) {
-> @@ -159,9 +161,10 @@ static int bq27x00_battery_current(struc
->  			dev_dbg(di->dev, "negative current!\n");
->  			curr = -curr;
->  		}
-> +		curr = curr * 3570 / BQ27000_RS;
->  	}
-> 
-> -	return curr * 1000;
-> +	return curr;
->  }
+> cpu or apicid?
 
-And here _mA.
+Should have been @cpu.  Will send a patch to update it.
 
->  /*
-> @@ -233,7 +236,7 @@ static int bq27x00_battery_time(struct b
->  	}
+> > +int __cpuinit numa_cpu_node(int cpu)
+> > +{
+> > +	int apicid = early_per_cpu(x86_cpu_to_apicid, cpu);
+> > +
+> > +	if (apicid != BAD_APICID)
+> > +		return __apicid_to_node[apicid];
+> > +	return NUMA_NO_NODE;
+> > +}
 > 
->  	if (tval == 65535)
-> -		return -ENODATA;
-> +		tval = 0;
+> it should be changed to cpu_to_node_via_apicid(), it could return
+> not onlined node, aka node without memory.
 > 
->  	val->intval = tval * 60;
->  	return 0;
-> 
-> ----- End forwarded message -----
+> So don't mess it up with cpu_to_node()
 
-Ciao,
+Hmmm... are you saying that the name is too confusing with
+cpu_to_node() and should be renamed to cpu_to_node_via_apicid()?  In
+that case, I agree but wish the name were something which represents
+what it does as _via_apicid postfix doesn't really tell much.  Any
+better idea?
 
-Rodolfo
+Thanks.
 
 -- 
-
-GNU/Linux Solutions                  e-mail: giometti@enneenne.com
-Linux Device Driver                          giometti@linux.it
-Embedded Systems                     phone:  +39 349 2432127
-UNIX programming                     skype:  rodolfo.giometti
-Freelance ICT Italia - Consulente ICT Italia - www.consulenti-ict.it
+tejun
