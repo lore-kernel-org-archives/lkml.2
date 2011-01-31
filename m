@@ -1,348 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049Ab1AaGlY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 01:41:24 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:33643 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751177Ab1AaGlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 01:41:22 -0500
-Date: Mon, 31 Jan 2011 17:41:13 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for January 31
-Message-Id: <20110131174113.8199f901.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__31_Jan_2011_17_41_13_+1100_rno_U79jOfqfmYtU"
+	id S1752730Ab1AaGxl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 01:53:41 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:47874 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978Ab1AaGxk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 01:53:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=mWc0RtCU5D4XDsG55N1IAzx6wX7uogPiRBEfvTXUfoEVtOmvc/qA+eWFljuFWoGdQX
+         REen3sM7UaHwre2ec6R+Xtih8YcTK7j3EWjrSBmO9Arz6f/GTdM+OQn4wixnqaUk4vXJ
+         wozOO/LTBB4y7viVFGn2HnBNaFL+RDSUnhP28=
+MIME-Version: 1.0
+In-Reply-To: <20110130221434.GB28220@pengutronix.de>
+References: <AANLkTinuphNyLoFz1TLxFJ6=g+GMph6njGhs2FBB6Evj@mail.gmail.com>
+	<20110130221434.GB28220@pengutronix.de>
+Date: Mon, 31 Jan 2011 07:53:39 +0100
+Message-ID: <AANLkTikFU1gcC-wUbujh3hkxyRQgQFc8Zb1w-Tx+7zYb@mail.gmail.com>
+Subject: Re: [leds-pca9532] Add gpio capability v2
+From: Joachim Eastwood <manabian@gmail.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: rpurdie@rpsys.net, riku.voipio@iki.fi, linux-kernel@vger.kernel.org,
+        joachim.eastwood@jotron.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__31_Jan_2011_17_41_13_+1100_rno_U79jOfqfmYtU
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, Jan 30, 2011 at 11:14 PM, Wolfram Sang <w.sang@pengutronix.de> wrote:
+> On Sun, Jan 30, 2011 at 09:20:13PM +0100, Joachim Eastwood wrote:
+>> Hello,
+>>
+>> This is v2 of the patch to add gpio capability to the leds-pca9532
+>> driver. Please read the first mail in this thread for more
+>> information.
+>>
+>> Changes in v2:
+>> * Add Kconfig magic. gpio capability is now optional
+>> * Addressed review from Wolfram Sang
+>>
+>> Wolfram: If this looks okey can I add your Reviewed-by tag?
+>
+> The patch seems line-wrapped. Is checkpatch happy (enough), too?
+> Other than that looks good to me:
 
-Hi all,
+checkpatch reports a couple of line over 80 chars but that is it.
 
-Changes since 20110121:
+> Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
 
-New tree: unicore32
+Thanks for your time.
 
-Renamed tree: swiotlb-xen to xen-two
+regards
+Joachim Eastwood
 
-Dropped tree: xen
-
-The tty.current tree gained a conflict against Linus' tree.
-
-The msm tree gained conflicts against the arm tree.
-
-The bjdooks-i2c tree lost its conflicts.
-
-The net tree lost its build failure.
-
-The slab tree gained a build failure so I used the version from
-next-20110121.
-
-The suspend tree gained a build failure so I used the version from
-next-20110121.
-
-The tip tree gained a build failure that went away when I removed a
-temporary file from my object tree.
-
-The usb tree gained a conflict against the arm tree.
-
-The staging tree gained conflicts against the staging.current tree.
-
-The sparc64 defconfig build is broken by a commit in the net and tip
-trees, but I have left it for now.
-
-The powerpc allyesconfig build has been broken by some obscure bloating
-of the low memory code.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 186 trees (counting Linus' and 28 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging 52xx-and-virtex-current/powerpc/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging kbuild-current/rc-fixes
-Merging driver-core.current/driver-core-linus
-Merging tty.current/tty-linus
-CONFLICT (content): Merge conflict in drivers/tty/tty_io.c
-Merging usb.current/usb-linus
-Merging staging.current/staging-linus
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging sh-current/sh-fixes-for-linus
-Merging rmobile-current/rmobile-fixes-for-linus
-Merging fbdev-current/fbdev-fixes-for-linus
-Merging devicetree-current/devicetree/merge
-Merging spi-current/spi/merge
-Merging arm/devel
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging linux-spec/for-next
-Merging msm/for-next
-CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-msm7x27.c
-CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-msm7x30.c
-CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-qsd8x50.c
-CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-sapphire.c
-CONFLICT (content): Merge conflict in arch/arm/mach-msm/include/mach/memory=
-.h
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-CONFLICT (content): Merge conflict in arch/arm/mach-tegra/timer.c
-Merging ux500-core/ux500-core
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/for-next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/powerpc/next
-Merging galak/next
-Merging s390/features
-Merging sh/sh-latest
-Merging rmobile/rmobile-latest
-Merging sparc/master
-Merging tile/master
-Merging unicore32/unicore32
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging vfs-scale/vfs-scale-working
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-Merging wireless/master
-Merging bluetooth/master
-Merging mtd/master
-Merging crypto/master
-Merging sound/for-next
-Merging sound-asoc/for-next
-Merging cpufreq/next
-Merging quilt/rr
-Merging input/next
-Merging input-mt/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-CONFLICT (content): Merge conflict in drivers/leds/Kconfig
-Merging backlight/for-mm
-Merging mmc/mmc-next
-Merging kgdb/kgdb-next
-Merging slab/for-next
-$ git reset --hard HEAD^
-Merging refs/next/20110121/slab
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging fbdev/master
-Merging viafb/viafb-next
-Merging omap_dss2/for-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging selinux/master
-Merging lblnet/master
-Merging agp/agp-next
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging suspend/linux-next
-$ git reset --hard HEAD^
-Merging refs/next/20110121/suspend
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging catalin/for-next
-Merging alacrity/linux-next
-CONFLICT (content): Merge conflict in drivers/Makefile
-CONFLICT (content): Merge conflict in include/linux/Kbuild
-CONFLICT (content): Merge conflict in lib/Kconfig
-Merging i7core_edac/linux_next
-Merging i7300_edac/linux_next
-Merging devicetree/devicetree/next
-Merging spi/spi/next
-Merging tip/auto-latest
-Merging rcu/rcu/next
-Merging oprofile/for-next
-Merging xen-two/linux-next
-Merging xen-pvhvm/linux-next
-CONFLICT (content): Merge conflict in arch/x86/include/asm/xen/page.h
-Merging edac-amd/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging driver-core/driver-core-next
-Merging tty/tty-next
-Merging usb/usb-next
-CONFLICT (content): Merge conflict in drivers/usb/gadget/Kconfig
-Merging staging/staging-next
-CONFLICT (rename/modify): Merge conflict in drivers/staging/brcm80211/brcms=
-mac/wl_mac80211.c
-CONFLICT (content): Merge conflict in drivers/staging/ste_rmi4/synaptics_i2=
-c_rmi4.c
-Merging slabh/slabh
-Merging bkl-trivial/trivial
-Merging bkl-llseek/llseek
-Merging bkl-vfs/vfs
-Merging bkl-config/config
-CONFLICT (content): Merge conflict in arch/powerpc/kernel/setup_64.c
-CONFLICT (delete/modify): drivers/staging/stradis/Kconfig deleted in HEAD a=
-nd modified in bkl-config/config. Version bkl-config/config of drivers/stag=
-ing/stradis/Kconfig left in tree.
-CONFLICT (content): Merge conflict in fs/nfsd/nfs4state.c
-CONFLICT (content): Merge conflict in include/linux/hardirq.h
-CONFLICT (content): Merge conflict in include/linux/smp_lock.h
-$ git rm -f drivers/staging/stradis/Kconfig
-Merging irqflags/master
-Merging cleancache/linux-next
-CONFLICT (content): Merge conflict in fs/ocfs2/super.c
-CONFLICT (content): Merge conflict in fs/super.c
-CONFLICT (content): Merge conflict in include/linux/fs.h
-CONFLICT (content): Merge conflict in mm/Kconfig
-Merging scsi-post-merge/merge-base:master
-$ git checkout scsi-post-merge/master
-
---Signature=_Mon__31_Jan_2011_17_41_13_+1100_rno_U79jOfqfmYtU
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNRlmJAAoJEDMEi1NhKgbsojoH/15188UV3owJtz355WY4dy2I
-eGp1Hl5Ilq+FSmgmrlYlVw2LQ0QbOFHoIsvklTwdUI832K/PJ/NgROPuYokqY+h7
-zuXF4eN8u8quJYbukFvPfK9Cg+dGbTtY2JvIHjrrhZ96CNH2NQ3fgg6I5cLiEaZL
-jeOWG2NzGRDlYytGtuNJxXwgZDuVszdp/BYb+SLlASxp237n7Pm700NM+UnOgr4l
-yppEn31TU/07e4Xs3euDhnhAA+Dccye45NoBYeEQV86mRxR7bTRX7n5GcKQK1Wcg
-Ui8KkkHRNV9Rt8f9bCVsE+F1EuXXqOmtF+olkZnUAXWjMDDkpCKuZD4UEwZuA5k=
-=UtCP
------END PGP SIGNATURE-----
-
---Signature=_Mon__31_Jan_2011_17_41_13_+1100_rno_U79jOfqfmYtU--
+> --
+> Pengutronix e.K.                           | Wolfram Sang                |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+>
+> -----BEGIN PGP SIGNATURE-----
+> Version: GnuPG v1.4.9 (GNU/Linux)
+>
+> iEYEARECAAYFAk1F4soACgkQD27XaX1/VRvrLQCgpgfO88OCvM05+QIxaSV2LDRi
+> L/YAoKODhHKkogJdq3W1s1x0IuhvfceD
+> =+iVA
+> -----END PGP SIGNATURE-----
+>
+>
