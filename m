@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756403Ab1AaVeR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 16:34:17 -0500
-Received: from www17.your-server.de ([213.133.104.17]:43666 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754113Ab1AaVeQ (ORCPT
+	id S1756452Ab1AaVe6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 16:34:58 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:63596 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756311Ab1AaVe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 16:34:16 -0500
-References: <1295693349.2120.3.camel@localhost.localdomain> <201101222043.07703.rjw@sisk.pl> <1296249125.2006.7.camel@localhost.localdomain> <201101312139.03634.rjw@sisk.pl>
-In-Reply-To: <201101312139.03634.rjw@sisk.pl>
-Mime-Version: 1.0 (iPod Mail 8C148)
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <DB7A733A-D21A-4134-B50F-121CE2C179D3@m3y3r.de>
-Cc: "rui.zhang@intel.com" <rui.zhang@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-X-Mailer: iPod Mail (8C148)
-From: Thomas Meyer <thomas@m3y3r.de>
-Subject: Re: 2.6.38-rc2: acpi backlight control missing
-Date: Mon, 31 Jan 2011 22:34:16 +0100
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-X-Authenticated-Sender: thomas@m3y3r.de
+	Mon, 31 Jan 2011 16:34:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=IMDTqIwiGr7Eat6W/LmZ7zQfXhGVVcJLXafEWZvjDtPiB2oYyRYtQTF7la9h++N19t
+         GyEyXeQIeh0wBQ8jGXexyVRA4TgvHDXan+Xm6U8ThxyWYAauYC3ArW6vK906yQK51i+J
+         qaxkQfOpoXi1LOsodajLFJLoyx0yYxImzqDwE=
+MIME-Version: 1.0
+In-Reply-To: <4D2D9834.5000309@iis.fraunhofer.de>
+References: <4D272DDA.6010007@iis.fraunhofer.de>
+	<4D2D8B12.2@gmail.com>
+	<4D2D9834.5000309@iis.fraunhofer.de>
+Date: Mon, 31 Jan 2011 22:34:56 +0100
+Message-ID: <AANLkTimxM5WBn1=T8HJEiLnHmijKf-NahG9D1A0sH-yS@mail.gmail.com>
+Subject: Re: [PATCH resend 2] Add sc16is7x2 driver
+From: Thomas Weber <thomas.weber.linux@googlemail.com>
+To: Manuel Stahl <manuel.stahl@iis.fraunhofer.de>
+Cc: linux-serial@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Weber <weber@corscience.de>, Johannes Reif <reif@corscience.de>,
+        changgx <changgx@163.com>, miguelangel@nbee.es
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 31.01.2011 um 21:39 schrieb "Rafael J. Wysocki" <rjw@sisk.pl>:
+2011/1/12 Manuel Stahl <manuel.stahl@iis.fraunhofer.de>:
+> On 12.01.2011 12:05, Thomas Weber wrote:
+>>
+>> Am 07.01.2011 16:14, schrieb Manuel Stahl:
+>>>
+>>> IRQ is now implemented with work queue (like max3100).
+>>> The problem is, that the sc16is7x2 has a low active irq. But with active
+>>> low threaded_irqs, shared irqs are not allowed.
+>>>
+>>> Please try this one and report errors.
+>>>
+>>> Regards,
+>>> Manuel Stahl
+>>>
+>>> PS: sorry that the patch is not inline, not sure how to configure
+>>> thunderbird correctly
+>>
+>> Hello Manuel,
+>>
+>> There is a re-definition of PORT_SC16IS7X2 in serial_core.h
+>> First time it is 20, second time it is 98.
+>
+> A sorry, forgot to delete the line with 20.
+>
+> Can someone already confirm that the this version works more reliably than
+> the last one?
+>
+> Regards,
+> Manuel Stahl
+>
 
-> On Friday, January 28, 2011, Thomas Meyer wrote:
->> Am Samstag, den 22.01.2011, 20:43 +0100 schrieb Rafael J. Wysocki:
->>> On Saturday, January 22, 2011, Thomas Meyer wrote:
->>>> with 2.6.38-rc2 the acpi backlight is gone:
->>>> 
->>>> any ideas?
->>> 
->>> Not really, but Matthew may have some (CCed).
->> 
->> Okay, found the problem.
->> 
->> This commit broke my backlight:
->> 
->> commit 677bd810eedce61edf15452491781ff046b92edc
->> Author: Zhang Rui <rui.zhang@intel.com>
->> Date:   Mon Dec 6 15:04:21 2010 +0800
->> 
->>    ACPI video: remove output switching control
->> 
->> This is because in function
->> "acpi_is_video_device()" (drivers/acpi/video_detect.c) the backlight
->> device is only checked when some video capabilities were found, but by
->> removing the check for the VIDEO_OUTPUT_SWITCHING (that seems to be the
->> only video capability on my system) the check for the backlight device
->> isn't done anymore.
->> 
->> by reverting above commit, the backlight is back again.
-> 
-> Is it the same issue as https://bugzilla.kernel.org/show_bug.cgi?id=27702 ?
+Hello Manuel,
 
-Yes, it is.
+Johannes reworked the patch and tested it. He is at school in the
+moment, but he told me that it works now. Can you send a fixed patch?
 
-> In case it is, can you test the patch in there, please?
-> 
-
-Didn't test the patch. But it should do the trick.
-
-> Rafael
+Thomas
