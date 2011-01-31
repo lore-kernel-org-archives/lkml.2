@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755679Ab1AaSYw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 13:24:52 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:54688 "EHLO ogre.sisk.pl"
+	id S1755909Ab1AaSZj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 13:25:39 -0500
+Received: from claw.goop.org ([74.207.240.146]:48854 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751950Ab1AaSYu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 13:24:50 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Richard =?utf-8?q?Sch=C3=BCtz?= <r.schtz@t-online.de>
-Subject: Re: Common boot/shutdown issues with the latest 2.6.37 (Mostly Asus laptops)
-Date: Mon, 31 Jan 2011 19:24:32 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc2+; KDE/4.4.4; x86_64; ; )
-Cc: Ozan =?utf-8?q?=C3=87a=C4=9Flayan?= <ozan@pardus.org.tr>,
-        Lionel Debroux <lionel_debroux@yahoo.fr>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        colin.king@canonical.com
-References: <556624.21214.qm@web28409.mail.ukl.yahoo.com> <201101311123.14704.rjw@sisk.pl> <4D468F1F.8030704@t-online.de>
-In-Reply-To: <4D468F1F.8030704@t-online.de>
+	id S1754573Ab1AaSZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 13:25:38 -0500
+Message-ID: <4D46FE9E.3010502@goop.org>
+Date: Mon, 31 Jan 2011 10:25:34 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201101311924.33098.rjw@sisk.pl>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for January 31
+References: <20110131174113.8199f901.sfr@canb.auug.org.au> <20110131170506.GA11939@dumpdata.com>
+In-Reply-To: <20110131170506.GA11939@dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 31, 2011, Richard Schütz wrote:
-> >>>> I'll compile a kernel with CONFIG_NO_HZ to see what happens but how do I
-> >>>> disable cpuidle during boot? I've checked the kernel-parameters.txt but
-> >>>> there's no cpuidle related boot parameter there.
-> >>>
-> >>> Booting with intel_idle.max_cstate=0 should do the trick.
-> >>
-> >> intel_idle.max_cstate=0 causes a fallback to the acpi_idle driver. So it
-> >> does not disable the C-states directly.
-> >
-> > What about not building the acpi_idle driver, then?
-> 
-> Or just use the processor.max_cstate parameter then.
+On 01/31/2011 09:05 AM, Konrad Rzeszutek Wilk wrote:
+> On Mon, Jan 31, 2011 at 05:41:13PM +1100, Stephen Rothwell wrote:
+>> Hi all,
+>>
+>> Changes since 20110121:
+>>
+>> New tree: unicore32
+>>
+>> Renamed tree: swiotlb-xen to xen-two
+> Sweet. Thank you.
+>> Dropped tree: xen
+> Uh, why? Jeremy's tree should be OK now? Did something not
+> compile correctly? 
 
-As I wrote a couple of messages ago, https://lkml.org/lkml/2011/1/31/52 .
+No, keep it dropped for now.  I'll do a proper linux-next branch shortly.
 
-Sure, that should do the trick too.
-
-Thanks,
-Rafael
+    J
