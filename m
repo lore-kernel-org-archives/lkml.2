@@ -1,94 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab1AaLY1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 06:24:27 -0500
-Received: from casper.infradead.org ([85.118.1.10]:58135 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755564Ab1AaLYZ (ORCPT
+	id S1755581Ab1AaLYs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 06:24:48 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:45809 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753910Ab1AaLYr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 06:24:25 -0500
-Subject: Re: [PATCH v2 5/6] KVM-GST: adjust scheduler cpu power
-From: Peter Zijlstra <peterz@infradead.org>
-To: Glauber Costa <glommer@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
-        Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Avi Kivity <avi@redhat.com>
-In-Reply-To: <1296244340-15173-6-git-send-email-glommer@redhat.com>
-References: <1296244340-15173-1-git-send-email-glommer@redhat.com>
-	 <1296244340-15173-6-git-send-email-glommer@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 31 Jan 2011 12:25:20 +0100
-Message-ID: <1296473120.15234.375.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 31 Jan 2011 06:24:47 -0500
+Date: Mon, 31 Jan 2011 06:24:00 -0500
+From: Josh Boyer <jwboyer@linux.vnet.ibm.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: devicetree-discuss@lists.ozlabs.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, sam@ravnborg.org,
+        benh@kernel.crashing.org
+Subject: Re: [PATCH 3/3 RFC] dt: add documentation of ARM dt boot interface
+Message-ID: <20110131112400.GB13541@zod.rchland.ibm.com>
+References: <20110131073918.9058.37628.stgit@localhost6.localdomain6>
+ <20110131074510.9058.59071.stgit@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110131074510.9058.59071.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-28 at 14:52 -0500, Glauber Costa wrote:
+On Mon, Jan 31, 2011 at 12:45:41AM -0700, Grant Likely wrote:
+>Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+>---
+>
+>For RFC only.  I do not plan to merge this change yet.
+>
+>g.
+>
+> Documentation/devicetree/booting-without-of.txt |   40 +++++++++++++++++++++++
+> 1 files changed, 40 insertions(+), 0 deletions(-)
+>
+>diff --git a/Documentation/devicetree/booting-without-of.txt b/Documentation/devicetree/booting-without-of.txt
+>index 6bca668..3950aea 100644
+>--- a/Documentation/devicetree/booting-without-of.txt
+>+++ b/Documentation/devicetree/booting-without-of.txt
+>@@ -232,6 +233,45 @@ it with special cases.
+>   cannot support both configurations with Book E and configurations
+>   with classic Powerpc architectures.
+>
+>+2) Entry point for arch/arm
+>+---------------------------
+>+
+>+   There is one and one single entry point to the kernel, at the start
 
-> +#ifdef CONFIG_PARAVIRT_TIME_ACCOUNTING
-> +static DEFINE_PER_CPU(u64, cpu_steal_time);
-> +
-> +#ifndef CONFIG_64BIT
-> +static DEFINE_PER_CPU(seqcount_t, steal_time_seq);
-> +
-> +static inline void steal_time_write_begin(void)
-> +{
-> +	__this_cpu_inc(steal_time_seq.sequence);
-> +	smp_wmb();
-> +}
-> +
-> +static inline void steal_time_write_end(void)
-> +{
-> +	smp_wmb();
-> +	__this_cpu_inc(steal_time_seq.sequence);
-> +}
-> +
-> +static inline u64 steal_time_read(int cpu)
-> +{
-> +	u64 steal_time;
-> +	unsigned seq;
-> +
-> +	do {
-> +		seq = read_seqcount_begin(&per_cpu(steal_time_seq, cpu));
-> +		steal_time = per_cpu(cpu_steal_time, cpu);
-> +	} while (read_seqcount_retry(&per_cpu(steal_time_seq, cpu), seq));
-> +
-> +	return steal_time;
-> +}
-> +#else /* CONFIG_64BIT */
-> +static inline void steal_time_write_begin(void)
-> +{
-> +}
-> +
-> +static inline void steal_time_write_end(void)
-> +{
-> +}
-> +
-> +static inline u64 steal_time_read(int cpu)
-> +{
-> +	return per_cpu(cpu_steal_time, cpu);
-> +}
+"one and one" ?
 
-
-> @@ -3536,6 +3592,11 @@ static int touch_steal_time(int is_idle)
->  
->  	if (st) {
->  		account_steal_time(st);
-> +#ifdef CONFIG_PARAVIRT_TIME_ACCOUNTING
-> +		steal_time_write_begin();
-> +		__this_cpu_add(cpu_steal_time, steal);
-> +		steal_time_write_end();
-> +#endif
->  		return 1;
->  	}
->  	return 0;
-
-
-Why replicate all logic you've already got in patch 4? That too is
-reading steal time in a loop in kvm_account_steal_time(), why not extend
-that interface to take a cpu argument and be done with it?
-
+josh
