@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab1AaNcO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 08:32:14 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:44392 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755515Ab1AaNcN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 08:32:13 -0500
-Message-ID: <4D46B9A9.1060205@vflare.org>
-Date: Mon, 31 Jan 2011 08:31:21 -0500
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1755872Ab1AaNdn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 08:33:43 -0500
+Received: from smtp1-g21.free.fr ([212.27.42.1]:39635 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755515Ab1AaNdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 08:33:42 -0500
+Message-ID: <4D46BA25.8080201@free.fr>
+Date: Mon, 31 Jan 2011 14:33:25 +0100
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@suse.de>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/7] zram/xvmalloc: combine duplicate block delete code
-References: <20110128145602.GA2062@linux.vnet.ibm.com> <20110128150155.GH2062@linux.vnet.ibm.com>
-In-Reply-To: <20110128150155.GH2062@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+CC: akpm@linux-foundation.org, ebiederm@xmission.com,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        clg@fr.ibm.com
+Subject: Re: [PATCH 2/4] pidns: Call pid_ns_prepare_proc from	create_pid_namespace
+References: <1296469525-30111-1-git-send-email-daniel.lezcano@free.fr> <1296469525-30111-3-git-send-email-daniel.lezcano@free.fr> <20110131132207.GA26995@redhat.com>
+In-Reply-To: <20110131132207.GA26995@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28/2011 10:01 AM, Robert Jennings wrote:
-> This patch eliminates duplicate code.  The remove_block_head function
-> is a special case of remove_block which can be contained in remove_block
-> without confusion.
+On 01/31/2011 02:22 PM, Oleg Nesterov wrote:
+> On 01/31, Daniel Lezcano wrote:
+>> @@ -96,6 +97,9 @@ static struct pid_namespace *create_pid_namespace(struct pid_namespace *parent_p
+>>   	for (i = 1; i<  PIDMAP_ENTRIES; i++)
+>>   		atomic_set(&ns->pidmap[i].nr_free, BITS_PER_PAGE);
+>>
+>> +	if (pid_ns_prepare_proc(ns))
+>> +		goto out_free_map;
+>> +
+>>   	return ns;
+> This is not right, afaics. I already sent the similar patches, but
+> they were ignored ;)
 >
-> The portion of code in remove_block_head which was noted as "DEBUG ONLY"
-> is now mandatory.  Doing this provides consistent management of the double
-> linked list of blocks under a freelist and makes this consolidation
-> of delete block code safe.  The first and last blocks will have NULL
-> pointers in their previous and next page pointers respectively.
+> Please see http://marc.info/?l=linux-kernel&m=127697484000334
 >
-> Additionally, any time a block is removed from a free list the next and
-> previous pointers will be set to NULL to avoid misuse outside xvmalloc.
->
-> Signed-off-by: Robert Jennings<rcj@linux.vnet.ibm.com>
+> If pid_ns_prepare_proc() fails we shouldn't blindly return ENOMEM
+> and, more importantly, we need put_pid_ns(parent_ns).
 
-The reason for introducing remove_block_head() as a separate function 
-was to make malloc slightly faster but since I lack any profiling data, 
-I'm not very sure if this may impact performance. Ideally, some sort of 
-data with some malloc heavy test would have been useful. Anyways, I 
-think major allocator changes will happen when we make xvmalloc 
-allocated memory reclaimable, so maybe we can defer profiling.
+Oh, ok. Right. Thanks for the pointer.
 
-Acked-by: Nitin Gupta <ngupta@vflare.org>
-
-Thanks,
-Nitin
+Are you ok if I replace the patch 2/4 with your patch ?
