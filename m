@@ -1,106 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756474Ab1AaVgb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 16:36:31 -0500
-Received: from mail4.comsite.net ([205.238.176.238]:36581 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754081Ab1AaVga (ORCPT
+	id S1756310Ab1AaVhk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 16:37:40 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51261 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752303Ab1AaVhj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 16:36:30 -0500
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
-Subject: Re: call_function_many: fix list delete vs add race
-To: Peter Zijlstra <peterz@infradead.org>
-From: Milton Miller <miltonm@bga.com>
-Cc: akpm@linux-foundation.org, Anton Blanchard <anton@samba.org>,
-        xiaoguangrong@cn.fujitsu.com, mingo@elte.hu, jaxboe@fusionio.com,
-        npiggin@gmail.com, rusty@rustcorp.com.au,
-        torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        benh@kernel.crashing.org, efault@gmx.de, linux-kernel@vger.kernel.org
-Message-id: <ipi-list-reply-2@mdm.bga.com>
-In-Reply-To: <1296508677.26581.84.camel@laptop>
-References: <20110112150740.77dde58c@kryten>
-	 <1295288253.30950.280.camel@laptop>
-	 <smp-call-function-peter-reply@mdm.bga.com>
-	 <smp-call-function-move-writes@mdm.bga.com>
-	 <1296145360.15234.234.camel@laptop>
-	 <smp-call-function-list-race@mdm.bga.com>
-	 <smp-call-function-list-race-fix@mdm.bga.com>
-	 <1296508677.26581.84.camel@laptop>
-Date: Mon, 31 Jan 2011 15:36:29 -0600
-X-Originating-IP: 71.22.127.106
+	Mon, 31 Jan 2011 16:37:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=O0GUTFj1WcoB6R4fZBf5PjUB3+RcH6HdeO4H5kRvBgxlJVYlwPN04doutlBIyRSod9
+         DZ/xWi9JuDDk+DKw8u8dgSP1D2Dd0YN4atHDItXRKKkbL6We5qdyj3sKi9FPKg75p2Jy
+         WHtQubbkFQQWM0xkDEmthagCc/h5W4xAHmKqg=
+Message-ID: <4D472B9E.5090000@gmail.com>
+Date: Mon, 31 Jan 2011 22:37:34 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@suse.com>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: Resume hangs [was: mmotm 2010-12-02-16-34 uploaded]
+References: <201012030107.oB317ZSW019223@imap1.linux-foundation.org> <4D25CF4A.9090202@gmail.com> <4D38538E.9070104@gmail.com> <201101202202.01089.rjw@suse.com>
+In-Reply-To: <201101202202.01089.rjw@suse.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 Jan 2011 about 22:17:57 +0100, Peter Zijlstra wrote:
+On 01/20/2011 10:02 PM, Rafael J. Wysocki wrote:
+> On Thursday, January 20, 2011, Jiri Slaby wrote:
+>> On 01/06/2011 03:18 PM, Jiri Slaby wrote:
+>>> On 12/14/2010 11:22 PM, Rafael J. Wysocki wrote:
+>>>> On Tuesday, December 14, 2010, Jiri Slaby wrote:
+>>>>> On 12/13/2010 10:10 PM, Rafael J. Wysocki wrote:
+>>>>>> On Monday, December 13, 2010, Jiri Slaby wrote:
+>>>>>>> On 12/05/2010 02:08 PM, Rafael J. Wysocki wrote:
+>>>>>>>> On Sunday, December 05, 2010, Jiri Slaby wrote:
+>>>>>>>>> On 12/03/2010 01:34 AM, akpm@linux-foundation.org wrote:
+>>>>>>>>>> The mm-of-the-moment snapshot 2010-12-02-16-34 has been uploaded to
+>>>>>>>>>
+>>>>>>>>> Hi, this kernel regresses with respect to resume. It doesn't wake up,
+>>>>>>>>> the screen is black with blinking cursor at position [1, 1].
+>>>>>>>>> 2010-11-23-16-12 seemed to be OK. In this one it is 100% reproducible so
+>>>>>>>>> far.
+>>>>>>>>>
+>>>>>>>>> I'm using pm-suspend, any ideas what to test before I start to find the
+>>>>>>>>> reason on my own?
+>>>>>>>>
+>>>>>>>> Please try the pm_test tests for core, processors and devices, eg.:
+>>>>>>>
+>>>>>>> Hmm, I haven't seen the issues since then. So it had to be some kind of
+>>>>>>> coincidence -- I see the issue occasionally for some time already. Now
+>>>>>>> it triggered twice in a row after I updated the kernel.
+>>>>>>
+>>>>>> Hmm.  What hardware is that?
+>>>>>
+>>>>> What exactly do you want to know about it? It's some specific intel
+>>>>> desktop machine, 3 years old, 2 intel cores, 6G of mem, 2 sata disks in
+>>>>> raid, dvb-t usb receiver (af9015), usb keyboard and mouse.
+>>>>
+>>>> I'm seeing pretty much the same symptoms on quite different hardware, except
+>>>> for one thing: USB keyboard and mouse.
+>>>>
+>>>> Have you checked if writing 0 to /sys/power/pm_async helps?
+>>>
+>>> It's very hard to reproduce (it happens once a week or two), so I can't
+>>> say yet. As it happened yesterday again, going to test it from now on.
+>>
+>> Ok, I haven't seen the issue with 0 in /sys/power/pm_async for two weeks
+>> now (I added it to boot.local). I would say it's related to that...
 > 
-> On Fri, 2011-01-28 at 18:20 -0600, Milton Miller wrote:
-> > @@ -491,15 +491,17 @@ void smp_call_function_many(const struct
-> >         cpumask_clear_cpu(this_cpu, data->cpumask);
-> >  
-> >         /*
-> > -        * To ensure the interrupt handler gets an complete view
-> > -        * we order the cpumask and refs writes and order the read
-> > -        * of them in the interrupt handler.  In addition we may
-> > -        * only clear our own cpu bit from the mask.
-> > +        * We reuse the call function data without waiting for any grace
-> > +        * period after some other cpu removes it from the global queue.
-> > +        * This means a cpu might find our data block as it is writen.
-> > +        * The interrupt handler waits until it sees refs filled out
-> > +        * while its cpu mask bit is set; here we may only clear our
-> > +        * own cpu mask bit, and must wait to set refs until we are sure
-> > +        * previous writes are complete and we have obtained the lock to
-> > +        * add the element to the queue.  We use the acquire and release
-> > +        * of the lock as a wmb() -- acquire prevents write moving up and
-> > +        * release requires old writes are visible.
+> In that case the next step would be to build the kernel with
+> CONFIG_PM_ADVANCED_DEBUG set and try to switch the async flag for individual
+> devices (it is located is /sys/devices/.../power/ for each device).
 > 
-> That's wrong:
-> 
->  ->foo =
->  LOCK
->  UNLOCK
->  ->bar =
-> 
-> can be re-ordered as:
-> 
->  LOCK
->  ->bar =
->  ->foo =
->  UNLOCK
-> 
-> Only a UNLOCK+LOCK sequence can be considered an MB.
+> For example, I wonder if it is sufficient to unset it for all USB devices.
 
-I knew I was copying people for a reason.
+It seems to suffice... No hangs still. Should I enable pm_async back
+again to confirm the issue is still present?
 
-Thats a problem because there is nothing preventing the set of func and
-data from being foo, which if it went after bar (set refs) would mean
-that we executed the wrong function and/or call data.
+Note that I also had had issues with fan which was at full speed after
+resume sometimes (very rarely, like this issue). Full power-cycle was
+needed to cure that. I don't see that now as well.
 
-> 
-> However, I think the code is still OK, because list_add_rcu() implies a
-> wmb(), so in that respect its an improvement since we fix a race and
-> avoid an extra wmb. But the comment needs an update.
-> 
-> >          */
-> > -       smp_wmb();
-> > -
-> > -       atomic_set(&data->refs, cpumask_weight(data->cpumask));
-> > -
-> >         raw_spin_lock_irqsave(&call_function.lock, flags);
-> >         /*
-> >          * Place entry at the _HEAD_ of the list, so that any cpu still
-> > @@ -509,6 +511,8 @@ void smp_call_function_many(const struct
-> >         list_add_rcu(&data->csd.list, &call_function.queue);
-> >         raw_spin_unlock_irqrestore(&call_function.lock, flags);
-> 
-> And this wants to grow a comment that it relies on the wmb implied by
-> list_add_rcu()
-> 
-> > +       atomic_set(&data->refs, cpumask_weight(data->cpumask));
-> > +
-
-yea, I'll make an updated patch, and move the set into the lock.
-
-but after some food (and meetings).
-
-milton
+thanks,
+-- 
+js
