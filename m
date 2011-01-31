@@ -1,79 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756448Ab1AaX46 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 18:56:58 -0500
-Received: from mail131.messagelabs.com ([216.82.242.99]:47374 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754283Ab1AaX45 (ORCPT
+	id S1756511Ab1AaX5M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 18:57:12 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37589 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756475Ab1AaX5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 18:56:57 -0500
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-5.tower-131.messagelabs.com!1296518215!12358790!1
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [216.166.12.97]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 31 Jan 2011 17:56:53 -0600
-Subject: Re: [leds-pca9532] Add gpio capability
-Thread-Topic: Re: [leds-pca9532] Add gpio capability
-Thread-Index: AcvBoojycM09n7jnSDeE2o7G+39//g==
-Message-ID: <0D753D10438DA54287A00B027084269764CEEDA479@AUSP01VMBX24.collaborationhost.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Mon, 31 Jan 2011 18:57:10 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 1 Feb 2011 08:51:06 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: akpm@linux-foundation.org, nishimura@mxp.nes.nec.co.jp,
+        balbir@linux.vnet.ibm.com, minchan.kim@gmail.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/3] memcg: never OOM when charging huge pages
+Message-Id: <20110201085106.790e5f65.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1296482635-13421-4-git-send-email-hannes@cmpxchg.org>
+References: <1296482635-13421-1-git-send-email-hannes@cmpxchg.org>
+	<1296482635-13421-4-git-send-email-hannes@cmpxchg.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p0VNv6Jm005856
 
->>>> + if (gpios) {
->>>> + data->gpio.label = "gpio-pca9532";
->>>> + data->gpio.set = pca9532_gpio_set_value;
->>>> + data->gpio.get = pca9532_gpio_get_value;
->>>> + data->gpio.request = pca9532_gpio_request_pin;
->>>> + data->gpio.can_sleep = 1;
->>>> + data->gpio.base = pdata->gpio_base;
->>>> + data->gpio.ngpio = 16;
->>>> + data->gpio.dev = &client->dev;
->>>> + data->gpio.owner = THIS_MODULE;
->>>
->>> I'd assume that you also need to define a direction_output-function which
->>> always
->>> returns success?
->>
->> Yes, you are right. It is not possible to set direction in hw, but I
->> should provide them.
->
-> It should be okay to skip direction_input, because gpiolib will return an error
-> if it is not available. This is exactly why IMO you need a direction_output
-> returning 0. Otherwise drivers checking if that operation was successful, might
-> be fooled.
+On Mon, 31 Jan 2011 15:03:55 +0100
+Johannes Weiner <hannes@cmpxchg.org> wrote:
 
->From the datasheet:
+> Huge page coverage should obviously have less priority than the
+> continued execution of a process.
+> 
+> Never kill a process when charging it a huge page fails.  Instead,
+> give up after the first failed reclaim attempt and fall back to
+> regular pages.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu,com>
 
-
-6.4 Pins used as GPIOs
-
-LEDn pins not used to control LEDs can be used as General Purpose I/Os (GPIOs).
-
-To use as input, set LEDn to high-impendance (00) and then read the pin state
-via the INPUT0 or INPUT1 register.
-
-For use as output, connect external pull-up resistor to the pin and size it
-according to the DC recommended operating characteristics.  LEDn output is HIGH
-when the output is programmed as high-impedance, and LOW when programmed LOW
-through the 'LED selector' register.  The output can be pulse-width controlled
-when PWM0 or PWM1 are used.
-
-
-So, you should provide both a direction_input and direction_output.
-
-Regards,
-Hartley
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
