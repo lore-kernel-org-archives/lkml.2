@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534Ab1AaBqj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jan 2011 20:46:39 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:46666 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751834Ab1AaBqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jan 2011 20:46:38 -0500
-Date: Mon, 31 Jan 2011 12:46:33 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Torben Hohn <torbenh@gmx.de>, Kay Sievers <kay.sievers@vrfy.org>,
-        Linus <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: linux-next: manual merge of the tty.current tree with Linus' tree
-Message-Id: <20110131124633.3f49a8f9.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
+	id S1752740Ab1AaBvn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jan 2011 20:51:43 -0500
+Received: from smtp-a.TvNetWork.Hu ([80.95.81.66]:51593 "HELO
+	smtp-a.tvnetwork.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751986Ab1AaBvm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Jan 2011 20:51:42 -0500
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 Jan 2011 20:51:41 EST
+X-Spam-Report: * -0.0 SPF_PASS SPF: sender matches SPF record
+	*  1.5 RAZOR2_CF_RANGE_E4_51_100 Razor2 gives engine 4 confidence level
+	*      above 50%
+	*      [cf: 100]
+	*  0.5 RAZOR2_CHECK Listed in Razor2 (http://razor.sf.net/)
+	*  0.5 RAZOR2_CF_RANGE_51_100 Razor2 gives confidence level above 50%
+	*      [cf: 100]
+	*  0.1 RDNS_NONE Delivered to trusted network by a host with no rDNS
+X-Envelope-From: info@tvnetwork.hu
+Message-ID: <49554.82.128.16.176.1296438305.squirrel@www.tvnetwork.hu>
+Date: Mon, 31 Jan 2011 02:45:05 +0100 (CET)
+Subject: Re:New Email From A Friend
+From: "Mr. David Freeman" <info@tvnetwork.hu>
+Reply-To: davidfreemanlawfirm02@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.9a
+MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+I am David Freeman, a principal partner at Paull & Williamsons Solicitors
+in Scotland.I am contacting you because I would like to request for your
+undivided attention and trust in assisting with the transfer of the funds
+of my deceased client as next of kin before the British Treasury can
+commence the confiscation procedures. I advice that there should be utmost
+confidentiality in all matters I shall discuss with you because it is only
+on this premise of reliability and implicit trust in our capabilities that
+the exact dividends of this proposal will be achieved. Privileged
+information and official instruments at my disposal will enable this
+proposal in the right perspective for a 100% successful execution rate, it
+is therefore paramount for me to be assured of your discretion in handling
+details of this proposal which I will discuss with you once I receive an
+acknowledgment of this email from you with the assurance that you will
+work hand-in-hand with me to see these funds released to you. I await your
+response which should be sent ONLY to my personal email at
+davidfreemanlawfirm02@yahoo.com.hk
 
-Today's linux-next merge of the tty.current tree got a conflict in
-drivers/tty/tty_io.c between commit
-ac751efa6a0d70f2c9daef5c7e3a92270f5c2dff ("console: rename
-acquire/release_console_sem() to console_lock/unlock()") from Linus' tree
-and commit a2a6a822adc2a91c677cb60e9bc6ffe26fa90e9f ("tty: use
-for_each_console() and WARN() on sysfs failures") from the tty.current
-tree.
+Thanks,
+David S. Freeman
+Email: davidfreemanlawfirm02@yahoo.com.hk
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/tty/tty_io.c
-index 6158eae,dae6fc9..0000000
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@@ -3256,8 -3256,8 +3256,8 @@@ static ssize_t show_cons_active(struct 
-  	struct console *c;
-  	ssize_t count = 0;
-  
- -	acquire_console_sem();
- +	console_lock();
-- 	for (c = console_drivers; c; c = c->next) {
-+ 	for_each_console(c) {
-  		if (!c->device)
-  			continue;
-  		if (!c->write)
+
