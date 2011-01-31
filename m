@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab1AaRUp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 12:20:45 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:39297 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404Ab1AaRUo (ORCPT
+	id S1756163Ab1AaRW7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 12:22:59 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62636 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999Ab1AaRW6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 12:20:44 -0500
-Date: Mon, 31 Jan 2011 17:20:38 +0000
-From: Jamie Iles <jamie@jamieiles.com>
+	Mon, 31 Jan 2011 12:22:58 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=nXAh4J8sAGQLpTFAew/cg+7Kk+UGR8X3pEgUQHabCOZTO7WbolLrx2QvjnlIxzxRS2
+         VPS0mVD4Y/xkM7nWbsQwjSLWniEXScNKqKWoEBIYQG7U5rJa9XCwijIzh8s6y4cMtC7b
+         qhwUqI8PeRusSIt9s9Nn3KyQbbrRgRiXsTylE=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTimjz6t9ziPajW1wJdUE8ytWy=FbCr-Zg71PiBgf@mail.gmail.com>
+References: <AANLkTimjz6t9ziPajW1wJdUE8ytWy=FbCr-Zg71PiBgf@mail.gmail.com>
+Date: Mon, 31 Jan 2011 18:22:57 +0100
+X-Google-Sender-Auth: P4NHiAtVfMPFlQmS5c-yX6HCSR0
+Message-ID: <AANLkTinU9nWTW9nJeGYQ9YJKbSzWn2SK7BjXPx_JZ-0w@mail.gmail.com>
+Subject: Re: typecheck code
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
 Cc: Kernel-newbies <kernelnewbies@nl.linux.org>,
         linux-kernel-mail <linux-kernel@vger.kernel.org>
-Subject: Re: typecheck code
-Message-ID: <20110131172038.GD2819@pulham.picochip.com>
-References: <AANLkTimjz6t9ziPajW1wJdUE8ytWy=FbCr-Zg71PiBgf@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimjz6t9ziPajW1wJdUE8ytWy=FbCr-Zg71PiBgf@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 31, 2011 at 12:03:37PM -0500, Sri Ram Vemulpali wrote:
+On Mon, Jan 31, 2011 at 18:03, Sri Ram Vemulpali
+<sri.ram.gmu06@gmail.com> wrote:
 > Hi all,
-> 
+>
 > /*
->  * Check at compile time that something is of a particular type.
->  * Always evaluates to 1 so you may use it easily in comparisons.
->  */
->  #define typecheck(type,x) \
->  ({      type __dummy; \
->         typeof(x) __dummy2; \
-
-So here we're creating __dummy of the macro specified type and __dummy2 
-by using the GCC extensions to work out the type.
-
->         (void)(&__dummy == &__dummy2); \
-
-This does a comparison and casts the result to void so we ignore the 
-result at runtime (and the compiler can optimise it away), but at 
-compile time, if the types don't match then we'll get:
-
-	warning: comparison of distinct pointer types lacks a cast
-
->         1; \
-
-and here we always return 1.
-
->  })
-> 
+>  * Check at compile time that something is of a particular type.
+>  * Always evaluates to 1 so you may use it easily in comparisons.
+>  */
+>  #define typecheck(type,x) \
+>  ({      type __dummy; \
+>        typeof(x) __dummy2; \
+>        (void)(&__dummy == &__dummy2); \
+>        1; \
+>  })
+>
 > #define typecheck_fn(type,function) \
-> ({      typeof(type) __tmp = function; \
->        (void)__tmp; \
+> ({      typeof(type) __tmp = function; \
+>       (void)__tmp; \
 > })
-> 
+>
 > Can anyone help me, explain the above code typecheck. How does
 > (void)(&__dummy == &__dummy2) evaluates to 1
 
-It's not that comparison that is evaluating to 1, it's the line 
-immediately after.  The GCC statement expression extensions [1] mean 
-that the "1; \" at the end will always be the value that the macro is 
-evaluated to.
+It does not rely on the equation evaluating to 1. That result is
+expicitly unused,
+witness the cast to void.
+It does rely on gcc complaining if you compare two pointers that don't
+point to the same type.
 
-Jamie
+Gr{oetje,eeting}s,
 
-1. http://gcc.gnu.org/onlinedocs/gcc/Statement-Exprs.html
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
