@@ -1,93 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644Ab1AaSLt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 13:11:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8069 "EHLO mx1.redhat.com"
+	id S1755739Ab1AaSMB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 13:12:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28419 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751663Ab1AaSLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 13:11:47 -0500
-Date: Mon, 31 Jan 2011 18:26:26 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>, Prasad <prasad@linux.vnet.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: Q: perf_install_in_context/perf_event_enable are racy?
-Message-ID: <20110131172626.GA5407@redhat.com>
-References: <20110124114234.GA12166@redhat.com> <20110126175322.GA28617@redhat.com> <1296134077.15234.161.camel@laptop> <20110127165712.GC25060@redhat.com> <1296148294.15234.242.camel@laptop> <20110127221856.GA10539@redhat.com> <1296215577.15234.333.camel@laptop> <1296226667.15234.337.camel@laptop> <20110128162847.GA25088@redhat.com> <1296238278.15234.340.camel@laptop>
+	id S1755693Ab1AaSL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 13:11:59 -0500
+Message-ID: <4D46FB57.2080005@redhat.com>
+Date: Mon, 31 Jan 2011 13:11:35 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296238278.15234.340.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Avi Kiviti <avi@redhat.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>,
+        ttracy@redhat.com, "Nakajima, Jun" <jun.nakajima@intel.com>
+Subject: Re: [RFC -v7 PATCH 4/7] Add yield_to(task, preempt) functionality.
+References: <20110126165657.2ddd2ac9@annuminas.surriel.com>	 <20110126172148.32d07561@annuminas.surriel.com> <1296474542.15234.394.camel@laptop>
+In-Reply-To: <1296474542.15234.394.camel@laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/28, Peter Zijlstra wrote:
+On 01/31/2011 06:49 AM, Peter Zijlstra wrote:
+> On Wed, 2011-01-26 at 17:21 -0500, Rik van Riel wrote:
+
+>> +       if (yielded)
+>> +               yield();
+>> +
+>> +       return yielded;
+>> +}
+>> +EXPORT_SYMBOL_GPL(yield_to);
 >
-> Just to give you more food for through, I couldn't help myself..
+> yield() will again acquire rq->lock.. not not simply have
+> ->yield_to_task() do everything required and make that an unconditional
+> schedule()?
 
-Hmm. So far I am only trying to understand the perf_install_in_context()
-paths. And, after I spent almost 2 hours, I am starting to believe this
-change is probably good ;)
+I wanted to reduce code duplication, since this code path
+should not be taken all that frequently.  But hey, you're
+the maintainer, so I'll implement it your way :)
 
-I do not understand the point of cpu_function_call() though, it looks
-equal to smp_call_function_single() ?
+The patches should be on the way later today :)
 
-> -static void __perf_install_in_context(void *info)
-> +static int  __perf_install_in_context(void *info)
->  {
->  	struct perf_event *event = info;
->  	struct perf_event_context *ctx = event->ctx;
-> @@ -942,20 +1015,15 @@ static void __perf_install_in_context(void *info)
->  	int err;
->
->  	/*
-> -	 * If this is a task context, we need to check whether it is
-> -	 * the current task context of this cpu. If not it has been
-> -	 * scheduled out before the smp call arrived.
-> -	 * Or possibly this is the right context but it isn't
-> -	 * on this cpu because it had no events.
-> +	 * In case we're installing a new context to an already running task,
-> +	 * could also happen before perf_event_task_sched_in() on architectures
-> +	 * which do context switches with IRQs enabled.
->  	 */
-> -	if (ctx->task && cpuctx->task_ctx != ctx) {
-> -		if (cpuctx->task_ctx || ctx->task != current)
-> -			return;
-> -		cpuctx->task_ctx = ctx;
-> -	}
-> +	if (ctx->task && !cpuctx->task_ctx)
-> +		perf_event_context_sched_in(ctx);
-
-OK... This eliminates the 2nd race with __ARCH_WANT_INTERRUPTS_ON_CTXSW
-(we must not set "cpuctx->task_ctx = ctx" in case "next" is going to
- do perf_event_context_sched_in() later). So it is enough to check
-rq->curr in remote_function().
-
->  	raw_spin_lock(&ctx->lock);
-> -	ctx->is_active = 1;
-> +	WARN_ON_ONCE(!ctx->is_active);
-
-This looks wrong if ctx->task == NULL.
-
-
-
-So. With this patch it is possible that perf_event_context_sched_in()
-is called right after prepare_lock_switch(). Stupid question, why
-can't we always do this then? I mean, what if we change
-prepare_task_switch() to do
-
-	perf_event_task_sched_out();
-	perf_event_task_sched_in();
-
-?
-
-Probably we can unify the COND_STMT(perf_task_events) check and simplify
-the things further.
-
-Oleg.
-
+-- 
+All rights reversed
