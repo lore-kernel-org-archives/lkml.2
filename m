@@ -1,43 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab1AaKcZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 05:32:25 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:42936 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755164Ab1AaKcX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 05:32:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=bDYN5EihhYU7Y1kkek46E752+k89y9Ufd4IgsIMaZ+34MA7kGbtcnOtSVXQK+AACgY
-         Qu6EitKqp/TeOv8VfdFuw8w7MCzWU3WfWYOPD8Cl45vFzfipbhk3T03fKb2y7VLdYi3i
-         Xe3tiYb0NkFTXNNvS2M+GUFifvORZIzBNTDpk=
+	id S1755482Ab1AaKcd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 05:32:33 -0500
+Received: from www.tglx.de ([62.245.132.106]:52561 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755442Ab1AaKcb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 05:32:31 -0500
+Date: Mon, 31 Jan 2011 11:32:20 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Torben Hohn <torbenh@gmx.de>
+cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        johnstul@us.ibm.com, hch@infradead.org, yong.zhang0@gmail.com,
+        Matt Turner <mattst88@gmail.com>, Richard Henderson <rth@twiddle.net>
+Subject: Re: [PATCH v2 05/20] alpha: change do_timer() to xtime_update()
+In-Reply-To: <alpine.LFD.2.00.1101311120530.31804@localhost6.localdomain6>
+Message-ID: <alpine.LFD.2.00.1101311131470.31804@localhost6.localdomain6>
+References: <20110127145741.23248.68098.stgit@localhost> <20110127145915.23248.20919.stgit@localhost> <alpine.LFD.2.00.1101311120530.31804@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1296244098-3732-1-git-send-email-justinmattock@gmail.com>
-References: <1296244098-3732-1-git-send-email-justinmattock@gmail.com>
-Date: Mon, 31 Jan 2011 11:32:23 +0100
-X-Google-Sender-Auth: vNu4XbEB3FafRUFrAFtBZDzr7CQ
-Message-ID: <AANLkTi=F29x=iFUGd3PkHhLtA5E_oA5R7fOyUvQJXW0J@mail.gmail.com>
-Subject: Re: [PATCH]drivers:dma:coh901318.c Change initate to initiate.
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: trivial@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/1/28 Justin P. Mattock <justinmattock@gmail.com>:
+On Mon, 31 Jan 2011, Thomas Gleixner wrote:
 
-> Not sure if this is a typo or not. if it is then feel free to take this.
->
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> On Thu, 27 Jan 2011, Torben Hohn wrote:
+> 
+> > xtime_update() takes the xtime_lock itself.
+> > state does not to be protected with this lock.
+> > its only touched here and during init.
+> 
+> xtime_lock very well serializes the access to state on
+> SMP. timer_interrupt() is called on each cpu. So that wont work.
 
-Why not,
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
-
-Yours,
-Linus Walleij
+Hmm. No. It's bound to boot_cpu_id.
