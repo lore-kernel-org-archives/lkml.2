@@ -1,71 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab1AaLYO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 06:24:14 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:53870 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755329Ab1AaLYM (ORCPT
+	id S1755579Ab1AaLY1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 06:24:27 -0500
+Received: from casper.infradead.org ([85.118.1.10]:58135 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755564Ab1AaLYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 06:24:12 -0500
-Message-ID: <4D469B92.6050705@ru.mvista.com>
-Date: Mon, 31 Jan 2011 14:22:58 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Simon Arlott <simon@fire.lp0.eu>
-CC: axboe@kernel.dk, Tejun Heo <tj@kernel.org>, jeff@garzik.org,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, kay.sievers@vrfy.org, jack@suse.cz,
-        James.Bottomley@HansenPartnership.com
-Subject: Re: [PATCH] cdrom: support devices that have check_events but not
- media_changed
-References: <1291838262-21274-1-git-send-email-tj@kernel.org> <1291838262-21274-8-git-send-email-tj@kernel.org> <4D44BE3E.5080107@simon.arlott.org.uk> <4D44BF64.4060205@simon.arlott.org.uk>
-In-Reply-To: <4D44BF64.4060205@simon.arlott.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Mon, 31 Jan 2011 06:24:25 -0500
+Subject: Re: [PATCH v2 5/6] KVM-GST: adjust scheduler cpu power
+From: Peter Zijlstra <peterz@infradead.org>
+To: Glauber Costa <glommer@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
+        Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Avi Kivity <avi@redhat.com>
+In-Reply-To: <1296244340-15173-6-git-send-email-glommer@redhat.com>
+References: <1296244340-15173-1-git-send-email-glommer@redhat.com>
+	 <1296244340-15173-6-git-send-email-glommer@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 31 Jan 2011 12:25:20 +0100
+Message-ID: <1296473120.15234.375.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Fri, 2011-01-28 at 14:52 -0500, Glauber Costa wrote:
 
-On 30-01-2011 4:31, Simon Arlott wrote:
+> +#ifdef CONFIG_PARAVIRT_TIME_ACCOUNTING
+> +static DEFINE_PER_CPU(u64, cpu_steal_time);
+> +
+> +#ifndef CONFIG_64BIT
+> +static DEFINE_PER_CPU(seqcount_t, steal_time_seq);
+> +
+> +static inline void steal_time_write_begin(void)
+> +{
+> +	__this_cpu_inc(steal_time_seq.sequence);
+> +	smp_wmb();
+> +}
+> +
+> +static inline void steal_time_write_end(void)
+> +{
+> +	smp_wmb();
+> +	__this_cpu_inc(steal_time_seq.sequence);
+> +}
+> +
+> +static inline u64 steal_time_read(int cpu)
+> +{
+> +	u64 steal_time;
+> +	unsigned seq;
+> +
+> +	do {
+> +		seq = read_seqcount_begin(&per_cpu(steal_time_seq, cpu));
+> +		steal_time = per_cpu(cpu_steal_time, cpu);
+> +	} while (read_seqcount_retry(&per_cpu(steal_time_seq, cpu), seq));
+> +
+> +	return steal_time;
+> +}
+> +#else /* CONFIG_64BIT */
+> +static inline void steal_time_write_begin(void)
+> +{
+> +}
+> +
+> +static inline void steal_time_write_end(void)
+> +{
+> +}
+> +
+> +static inline u64 steal_time_read(int cpu)
+> +{
+> +	return per_cpu(cpu_steal_time, cpu);
+> +}
 
-> 93aae17af1172c40c6f74b7294e93a90c3cfaa5d replaced the media_changed op
 
-    Please specify the commit summary in parens, as asked by Linus.
+> @@ -3536,6 +3592,11 @@ static int touch_steal_time(int is_idle)
+>  
+>  	if (st) {
+>  		account_steal_time(st);
+> +#ifdef CONFIG_PARAVIRT_TIME_ACCOUNTING
+> +		steal_time_write_begin();
+> +		__this_cpu_add(cpu_steal_time, steal);
+> +		steal_time_write_end();
+> +#endif
+>  		return 1;
+>  	}
+>  	return 0;
 
-> with the check_events op in drivers/scsi/sr.c
 
-> All users that check for the CDC_MEDIA_CHANGED capability try both
-> the check_events op and the media_changed op, but register_cdrom()
-> was requiring media_changed.
+Why replicate all logic you've already got in patch 4? That too is
+reading steal time in a loop in kvm_account_steal_time(), why not extend
+that interface to take a cpu argument and be done with it?
 
-> This patch fixes the capability checking and removes a redundant
-> check that media_changed != NULL.
-
-> The cdrom_select_disc ioctl is also using the two operations, so
-> they should be required for CDC_SELECT_DISC too.
-
-> Signed-off-by: Simon Arlott<simon@fire.lp0.eu>
-> Cc: Jens Axboe<axboe@kernel.dk>
-> Cc: Tejun Heo<tj@kernel.org>
-> Cc: Kay Sievers<kay.sievers@vrfy.org>
-[...]
-
-> diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
-> index 14033a3..4716d76 100644
-> --- a/drivers/cdrom/cdrom.c
-> +++ b/drivers/cdrom/cdrom.c
-> @@ -409,7 +409,9 @@ int register_cdrom(struct cdrom_device_info *cdi)
->   	}
->
->   	ENSURE(drive_status, CDC_DRIVE_STATUS );
-> -	ENSURE(media_changed, CDC_MEDIA_CHANGED);
-> +	if (cdo->check_events == NULL && cdo->media_changed == NULL) {
-> +		*change_capability = ~(CDC_MEDIA_CHANGED | CDC_SELECT_DISC);
-> +	}
-
-    {} are not needed here. I think checkstatus.pl should detect this...
-
-WBR, Sergei
