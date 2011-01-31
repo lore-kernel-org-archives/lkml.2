@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528Ab1AaFIi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 00:08:38 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:59835 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750698Ab1AaFIg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 00:08:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=NU8j61Vjer1PYr9tgLdOY6/i9osdmQMsHqeJ83d0ynCmD7BYRBsKO/abqRydhZOb4n
-         +Wp1oyMlB8CBd6ThitB2cc00eejtiiABtc+V9dcYvIovd96NBMroKhSKN0/98FIj6KwB
-         NbQBWhdr79GG+Xn/HB8CzNwWelWzcA0zBnWdE=
-MIME-Version: 1.0
-In-Reply-To: <20110131152756.0f1b1026.sfr@canb.auug.org.au>
-References: <20110131152756.0f1b1026.sfr@canb.auug.org.au>
-Date: Mon, 31 Jan 2011 10:38:35 +0530
-Message-ID: <AANLkTi=+VtHwRMkxq+BK3wRDE9fiAZCy=5dypn45o=Hz@mail.gmail.com>
-Subject: Re: linux-next: build warnings after merge of the tip tree
-From: Jaswinder Singh <jaswinderlinux@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Venkatesh Pallipadi <venki@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751959Ab1AaFJb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 00:09:31 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:39024 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750905Ab1AaFJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 00:09:29 -0500
+Date: Mon, 31 Jan 2011 16:09:26 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arend van Spriel <arend@broadcom.com>
+Subject: linux-next: manual merge of the staging tree with the
+ staging.current tree
+Message-Id: <20110131160926.27223d25.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Greg,
 
-On Mon, Jan 31, 2011 at 9:57 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> After merging the tip tree, today's linux-next build (powerpc
-> ppc64_defconfig) produced these warnings:
->
-> kernel/sched.c:3719: warning: 'irqtime_account_idle_ticks' defined but not used
-> kernel/sched.c:3720: warning: 'irqtime_account_process_tick' defined but not used
->
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/brcm80211/brcmsmac/wl_mac80211.c,
+drivers/staging/brcm80211/sys/wlc_mac80211.c and
+drivers/staging/brcm80211/sys/wlc_mac80211.c (these three files names are
+the same file, it has been renamed twice, I think ..) between
+commit4032ec639af9b735fdd903fab09de567bd73eaa0 ("staging: brcm80211: fix
+suspend/resume issue in brcmsmac") from the staging.current tree and
+commit c836f77fdba3631e295e3da1718ab53a9038fdf2 ("staging: brcm80211: use
+KBUILD_MODNAME as driver name in registration") from the staging tree.
 
-These functions should move inside ifndef CONFIG_VIRT_CPU_ACCOUNTING
+I fixed it up (see below) and can carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Thanks,
---
-Jaswinder Singh.
+diff --cc drivers/staging/brcm80211/brcmsmac/wl_mac80211.c
+index f123588,6505732..0000000
+--- a/drivers/staging/brcm80211/brcmsmac/wl_mac80211.c
++++ b/drivers/staging/brcm80211/brcmsmac/wl_mac80211.c
+@@@ -1187,11 -1154,13 +1157,11 @@@ static void wl_remove(struct pci_dev *p
+  }
+  
+  static struct pci_driver wl_pci_driver = {
+- 	.name = "brcm80211",
++ 	.name  = KBUILD_MODNAME,
+  	.probe = wl_pci_probe,
+ -#ifdef LINUXSTA_PS
+  	.suspend = wl_suspend,
+ -	.resume  = wl_resume,
+ -#endif				/* LINUXSTA_PS */
+ -	.remove   = __devexit_p(wl_remove),
+ +	.resume = wl_resume,
+ +	.remove = __devexit_p(wl_remove),
+  	.id_table = wl_id_table,
+  };
+  
