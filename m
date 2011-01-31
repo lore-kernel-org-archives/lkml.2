@@ -1,43 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755689Ab1AaTiP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 14:38:15 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37733 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753687Ab1AaTiO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 14:38:14 -0500
-Date: Mon, 31 Jan 2011 19:38:10 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Grazvydas Ignotas <notasas@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: Fwd: [PATCH] bq27x00_battery: Add new properties
-Message-ID: <20110131193810.GK5123@opensource.wolfsonmicro.com>
-References: <20110131135147.GB3883@oksana.dev.rtsoft.ru>
- <20110131154354.GC3819@enneenne.com>
- <20110131160321.GA23546@oksana.dev.rtsoft.ru>
- <AANLkTikr3LL-+4LObBaCTo7JGTFTRdVbpbbUH4nfJ28X@mail.gmail.com>
- <4D470B42.7050301@metafoo.de>
- <20110131192242.GB23722@sirena.org.uk>
- <AANLkTi=zc_Ft6K=QP70-fUASO+0pO_2O8Cp6W6LL08MS@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=zc_Ft6K=QP70-fUASO+0pO_2O8Cp6W6LL08MS@mail.gmail.com>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756190Ab1AaTi1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 14:38:27 -0500
+Received: from xenotime.net ([72.52.115.56]:52541 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756156Ab1AaTiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 14:38:25 -0500
+Date: Mon, 31 Jan 2011 11:38:20 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Jaswinder Singh <jaswinderlinux@gmail.com>
+Subject: Re: [PATCH] Fix linux-next warning from abb74cef
+Message-Id: <20110131113820.193a89c5.rdunlap@xenotime.net>
+In-Reply-To: <1296501163-31113-1-git-send-email-venki@google.com>
+References: <AANLkTi=+VtHwRMkxq+BK3wRDE9fiAZCy=5dypn45o=Hz@mail.gmail.com>
+	<1296501163-31113-1-git-send-email-venki@google.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 31, 2011 at 08:35:47PM +0100, Pali Rohár wrote:
+On Mon, 31 Jan 2011 11:12:43 -0800 Venkatesh Pallipadi wrote:
 
-> Can you give me example how to use MODULE_DEVICE_TABLE (if alias is
-> not good solution)?
+> Yes. Patch below should fix the problem.
+> 
+> Fix below warning -
+>  Introduced by commit abb74cefa9c682fb38ba86c17ca3c86fed6cc464 ("sched:
+>  Export ns irqtimes through /proc/stat").
+> 
+> After merging the tip tree, today's linux-next build (powerpc
+> ppc64_defconfig) produced these warnings:
+> 
+> kernel/sched.c:3719: warning: 'irqtime_account_idle_ticks' defined but not =
+> used
+> kernel/sched.c:3720: warning: 'irqtime_account_process_tick' defined but no=
+> t used
 
-git grep MODULE_DEVICE_TABLE\(i2c
+[ugh on the '=' line continuations.]
 
-provides quite a few examples.
+> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+> ---
+>  kernel/sched.c |   64 ++++++++++++++++++++++++++++----------------------------
+>  1 files changed, 32 insertions(+), 32 deletions(-)
+> 
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index 477e1bc..9a552bd 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -3654,6 +3654,36 @@ void account_system_time(struct task_struct *p, int hardirq_offset,
+>  	__account_system_time(p, cputime, cputime_scaled, target_cputime64);
+>  }
+>  
+> +/*
+> + * Account for involuntary wait time.
+> + * @steal: the cpu time spent in involuntary wait
+
+I see that you only moved this code, but please change @steal to @cputime also.
+
+> + */
+> +void account_steal_time(cputime_t cputime)
+> +{
+> +	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
+> +	cputime64_t cputime64 = cputime_to_cputime64(cputime);
+> +
+> +	cpustat->steal = cputime64_add(cpustat->steal, cputime64);
+> +}
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
