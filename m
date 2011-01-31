@@ -1,73 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600Ab1AaHVb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 02:21:31 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:58873 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750912Ab1AaHVa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 02:21:30 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18QRZ4ygoQQzQ7YLXbpYECDA416QVrcnNprzosVx2
-	/e6AdPoYw5JTRu
-Subject: Re: call_function_many: fix list delete vs add race
-From: Mike Galbraith <efault@gmx.de>
-To: Milton Miller <miltonm@bga.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, akpm@linux-foundation.org,
-        Anton Blanchard <anton@samba.org>, xiaoguangrong@cn.fujitsu.com,
-        mingo@elte.hu, jaxboe@fusionio.com, npiggin@gmail.com,
-        rusty@rustcorp.com.au, torvalds@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, benh@kernel.crashing.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <smp-call-function-list-race-fix@mdm.bga.com>
-References: <20110112150740.77dde58c@kryten>
-	 <1295288253.30950.280.camel@laptop>
-	 <smp-call-function-peter-reply@mdm.bga.com>
-	 <smp-call-function-move-writes@mdm.bga.com>
-	 <1296145360.15234.234.camel@laptop>
-	 <smp-call-function-list-race@mdm.bga.com>
-	 <smp-call-function-list-race-fix@mdm.bga.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 31 Jan 2011 08:21:22 +0100
-Message-ID: <1296458482.7889.175.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1755007Ab1AaHk3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 02:40:29 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:33757 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750978Ab1AaHk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 02:40:28 -0500
+Date: Sun, 30 Jan 2011 23:40:24 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Amerigo Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, Wu Fengguang <fengguang.wu@intel.com>,
+        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>
+Subject: Re: [Patch] rcu: remove dead code in include/linux/pagemap.h
+Message-ID: <20110131074024.GB2145@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1296455224-14065-1-git-send-email-amwang@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1296455224-14065-1-git-send-email-amwang@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-01-28 at 18:20 -0600, Milton Miller wrote:
-> Peter pointed out there was nothing preventing the list_del_rcu in
-> smp_call_function_interrupt from running before the list_add_rcu in
-> smp_call_function_many.   Fix this by not setting refs until we have put
-> the entry on the list.  We can use the lock acquire and release instead
-> of a wmb.
+On Mon, Jan 31, 2011 at 02:27:04PM +0800, Amerigo Wang wrote:
+> TREE_RCU depends on !PREEMPT && SMP, when !CONFIG_SMP is true, CONFIG_TREE_RCU
+> will be false, thus "!defined(CONFIG_SMP) && defined(CONFIG_TREE_RCU)"
+> is always false.
 
-Wondering if a final sanity check makes sense.  I've got a perma-spin
-bug where comment apparently happened.  Another CPU's diddle the mask
-IPI may make this CPU do horrible things to itself as it's setting up to
-IPI others with that mask.
+The relationship between these configuration parameters has indeed
+changed.  But I am wondering if rather than removing these, the
+conditions need to be updated as shown below.
 
----
- kernel/smp.c |    3 +++
- 1 file changed, 3 insertions(+)
+							Thanx, Paul
 
-Index: linux-2.6.38.git/kernel/smp.c
-===================================================================
---- linux-2.6.38.git.orig/kernel/smp.c
-+++ linux-2.6.38.git/kernel/smp.c
-@@ -490,6 +490,9 @@ void smp_call_function_many(const struct
- 	cpumask_and(data->cpumask, mask, cpu_online_mask);
- 	cpumask_clear_cpu(this_cpu, data->cpumask);
- 
-+	/* Did you pass me a mask that can be changed/emptied under me? */
-+	BUG_ON(cpumask_empty(data->cpumask));
-+
- 	/*
- 	 * We reuse the call function data without waiting for any grace
- 	 * period after some other cpu removes it from the global queue.
+> Remove these dead code.
+> 
+> Signed-off-by: WANG Cong <amwang@redhat.com>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> ---
+> diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+> index 9c66e99..e2bbbe3 100644
+> --- a/include/linux/pagemap.h
+> +++ b/include/linux/pagemap.h
+> @@ -133,23 +133,6 @@ static inline int page_cache_get_speculative(struct page *page)
+>  {
+>  	VM_BUG_ON(in_interrupt());
+> 
+> -#if !defined(CONFIG_SMP) && defined(CONFIG_TREE_RCU)
 
+#if !defined(CONFIG_SMP) && defined(CONFIG_TREE_PREEMPT_RCU)
 
+/* Must have CONFIG_PREEMPT here, implied by CONFIG_TREE_PREEMPT_RCU. */
 
+> -# ifdef CONFIG_PREEMPT
+	VM_BUG_ON(!in_atomic());
+> -# endif
+	/*
+	 * Preempt must be disabled here - we rely on rcu_read_lock doing
+	 * this for us.
+	 *
+	 * Pagecache won't be truncated from interrupt context, so if we have
+	 * found a page in the radix tree here, we have pinned its refcount by
+	 * disabling preempt, and hence no need for the "speculative get" that
+	 * SMP requires.
+	 */
+	VM_BUG_ON(page_count(page) == 0);
+	atomic_inc(&page->_count);
+
+#else
+	if (unlikely(!get_page_unless_zero(page))) {
+		/*
+		 * Either the page has been freed, or will be freed.
+> @@ -158,7 +141,6 @@ static inline int page_cache_get_speculative(struct page *page)
+		 */
+		return 0;
+	}
+#endif
+>  	VM_BUG_ON(PageTail(page));
+> 
+>  	return 1;
+> @@ -171,17 +153,9 @@ static inline int page_cache_add_speculative(struct page *page, int count)
+>  {
+>  	VM_BUG_ON(in_interrupt());
+> 
+> -#if !defined(CONFIG_SMP) && defined(CONFIG_TREE_RCU)
+> -# ifdef CONFIG_PREEMPT
+> -	VM_BUG_ON(!in_atomic());
+> -# endif
+> -	VM_BUG_ON(page_count(page) == 0);
+> -	atomic_add(count, &page->_count);
+> -
+> -#else
+>  	if (unlikely(!atomic_add_unless(&page->_count, count, 0)))
+>  		return 0;
+> -#endif
+> +
+>  	VM_BUG_ON(PageCompound(page) && page != compound_head(page));
+> 
+>  	return 1;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
