@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466Ab1AaW1Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 17:27:25 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:41985 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753451Ab1AaW1Y (ORCPT
+	id S1756479Ab1AaW1k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 17:27:40 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:34131 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756429Ab1AaW1h convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 17:27:24 -0500
-Date: Mon, 31 Jan 2011 17:27:20 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-X-X-Sender: nico@xanadu.home
-To: Grant Likely <grant.likely@secretlab.ca>
-cc: Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Olof Johansson <olof@lixom.net>, john.linn@xilinx.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 4/6] arm/dt: probe for platforms via the device tree
-In-Reply-To: <20110131210410.15105.63595.stgit@localhost6.localdomain6>
-Message-ID: <alpine.LFD.2.00.1101311709280.8580@xanadu.home>
-References: <20110131203626.15105.64302.stgit@localhost6.localdomain6> <20110131210410.15105.63595.stgit@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Mon, 31 Jan 2011 17:27:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=fIs5k/90cMZFDYBY5cBJ9EALLWgNg/cFh8tesAK+/7UNdeY6FT7yhQIGLciJiKxC9W
+         e9UfTw90UR7B4eXdZp3dfcuwCCLJuM4yttftPEtMW+A3uDkVtZ3IWQRFb4VpM8ifIXzT
+         eOeHJ6WMx/gb7QxYGN95xYsXA52nRrQ8o5Z84=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1296482635-13421-2-git-send-email-hannes@cmpxchg.org>
+References: <1296482635-13421-1-git-send-email-hannes@cmpxchg.org>
+	<1296482635-13421-2-git-send-email-hannes@cmpxchg.org>
+Date: Tue, 1 Feb 2011 07:27:36 +0900
+Message-ID: <AANLkTikB+_Qgb0OA8mkEhftAvH3eZz_PCTqrzCoZUqEy@mail.gmail.com>
+Subject: Re: [patch 1/3] memcg: prevent endless loop when charging huge pages
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
+        nishimura@mxp.nes.nec.co.jp, balbir@linux.vnet.ibm.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 Jan 2011, Grant Likely wrote:
+On Mon, Jan 31, 2011 at 11:03 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> The charging code can encounter a charge size that is bigger than a
+> regular page in two situations: one is a batched charge to fill the
+> per-cpu stocks, the other is a huge page charge.
+>
+> This code is distributed over two functions, however, and only the
+> outer one is aware of huge pages.  In case the charging fails, the
+> inner function will tell the outer function to retry if the charge
+> size is bigger than regular pages--assuming batched charging is the
+> only case.  And the outer function will retry forever charging a huge
+> page.
+>
+> This patch makes sure the inner function can distinguish between batch
+> charging and a single huge page charge.  It will only signal another
+> attempt if batch charging failed, and go into regular reclaim when it
+> is called on behalf of a huge page.
+>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-> If a dtb is passed to the kernel then the kernel needs to iterate
-> through compiled-in mdescs looking for one that matches and move the
-> dtb data to a safe location before it gets accidentally overwritten by
-> the kernel.
-> 
-> This patch creates a new function, setup_machine_fdt() which is
-> analogous to the setup_machine_atags() created in the previous patch.
-> It does all the early setup needed to use a device tree machine
-> description.  It also creates arm_unflatten_device_tree() which copies
-> the dtb into an allocated buffer and unflattens it into the live-tree
-> representation.
-> 
-> v2: Changed to save the dtb by copying into an allocated buffer.
->     - Since the dtb will very likely be passed in the first 16k of ram
->       where the interrupt vectors live, memblock_reserve() is
->       insufficient to protect the dtb data.
-
-This is wrong.  The vector page can be allocated anywhere.  It is 
-currently allocated with memblock_alloc(), so if you memblock_reserve() 
-the dtb soon enough then it should be safe and the vector page or 
-whatever will be allocated somewhere else.
-
-What was the actual problem?
-
-
-Nicolas
+-- 
+Kind regards,
+Minchan Kim
