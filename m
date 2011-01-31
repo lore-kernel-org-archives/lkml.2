@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab1AaKr3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 05:47:29 -0500
-Received: from casper.infradead.org ([85.118.1.10]:49103 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755194Ab1AaKr2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 05:47:28 -0500
-Subject: Re: [PATCH] a patch to fix the cpu-offline-online problem caused
- by pm_idle
-From: Peter Zijlstra <peterz@infradead.org>
-To: Luming Yu <luming.yu@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, tglx <tglx@linutronix.de>
-In-Reply-To: <AANLkTinxHXqndfP79W0=zer70psi6Dmkcv7rZc4ew7ZF@mail.gmail.com>
-References: <AANLkTinaOQpuJis5HgK316ANxpDS8eZ8Q0S4a44POrp0@mail.gmail.com>
-	 <1295894492.28776.470.camel@laptop>
-	 <AANLkTimq3jmza-t5iL10wgLLycwdDkJ3mznLQsKHM_Kf@mail.gmail.com>
-	 <1295946736.28776.479.camel@laptop>
-	 <AANLkTikQs1UcfBGf_6shNVtdDSzR+8XzUKcx0amFZXey@mail.gmail.com>
-	 <1296210619.15234.263.camel@laptop>
-	 <AANLkTikagMAGssG09D+SCKTsu9T+==R2fsSM3tgHctdv@mail.gmail.com>
-	 <1296405366.2274.60.camel@twins>
-	 <AANLkTinxHXqndfP79W0=zer70psi6Dmkcv7rZc4ew7ZF@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 31 Jan 2011 11:48:25 +0100
-Message-ID: <1296470905.15234.363.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755164Ab1AaKug (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 05:50:36 -0500
+Received: from mga09.intel.com ([134.134.136.24]:48061 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752626Ab1AaKuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 05:50:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,403,1291622400"; 
+   d="scan'208";a="598012821"
+Date: Mon, 31 Jan 2011 11:50:31 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Heiko Schocher <hs@denx.de>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-fbdev@vger.kernel.org,
+        devicetree-discuss@ozlabs.org, Ben Dooks <ben@simtec.co.uk>,
+        Vincent Sanders <vince@simtec.co.uk>, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>, Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH 1/4 v4] video, sm501: add I/O functions for use on
+ powerpc
+Message-ID: <20110131105030.GD5954@sortiz-mobl>
+References: <1291451028-22532-1-git-send-email-hs@denx.de>
+ <1295863040-11086-1-git-send-email-hs@denx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1295863040-11086-1-git-send-email-hs@denx.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-01-30 at 22:26 -0500, Luming Yu wrote:
-> 
-> Booting Node 3 Processor 59 APIC 0x75
-> Clocksource tsc unstable (delta = -77316000544 ns)
-> Switching to clocksource hpet 
+Hi Heiko,
 
-I think that's known NHM-EX suckage, it does all kinds of stupid things
-in deeper C states that other NHM/WSM chips don't do.
+On Mon, Jan 24, 2011 at 10:57:20AM +0100, Heiko Schocher wrote:
+> - add read/write functions for using this driver
+>   also on powerpc plattforms
+Not sure whose tree this is going through. Probably Paul's one though.
+The mfd part looks fine to me, please add my:
+Acked-by: Samuel Ortiz <sameo@linux.intel.com>
 
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
