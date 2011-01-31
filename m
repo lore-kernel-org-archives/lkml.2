@@ -1,44 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325Ab1AaKyn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 05:54:43 -0500
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:36305 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754022Ab1AaKym (ORCPT
+	id S1755310Ab1AaK5y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 05:57:54 -0500
+Received: from server109-228-6-236.live-servers.net ([109.228.6.236]:59056
+	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752137Ab1AaK5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 05:54:42 -0500
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Mon, 31 Jan 2011 11:55:26 +0100
-To: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@lii-enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 0/4] hid-multitouch work
-Message-ID: <20110131105526.GA1551@polaris.bitmath.org>
-References: <1296469702-3710-1-git-send-email-benjamin.tissoires@enac.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296469702-3710-1-git-send-email-benjamin.tissoires@enac.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 83.248.192.164
-X-Scan-Result: No virus found in message 1PjrOg-0006QD-Au.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1PjrOg-0006QD-Au 9e442edd609d0fb4bb281ea1a8f84a52
+	Mon, 31 Jan 2011 05:57:53 -0500
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Hugh Dickins <hughd@google.com>
+Cc: Mario Kleiner <mario.kleiner@tuebingen.mpg.de>,
+        linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [PATCH] drm/i915: Suppress spurious vblank interrupts
+Date: Mon, 31 Jan 2011 10:57:42 +0000
+Message-Id: <1296471462-8578-1-git-send-email-chris@chris-wilson.co.uk>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <849307$bc24ct@azsmga001.ch.intel.com>
+References: <849307$bc24ct@azsmga001.ch.intel.com>
+X-Originating-IP: 78.156.66.37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 31, 2011 at 11:28:18AM +0100, Benjamin Tissoires wrote:
-> Hi guys,
-> 
-> here is the v2 of the work on hid-multitouch sent last friday.
-> I just split the former first patch and remove the MT_CLS_DUAL_DEFAUT stuff.
+Hugh Dickins found that characters in xterm were going missing and oft
+delayed. Being the curious type, he managed to associate this with the
+new high-precision vblank patches; disabling these he found, restored
+the orderliness of his characters.
 
-Excellent. You may want to add at least one sentence in the commit
-message of patch 3, but other than that,
+The oddness begins when one realised that Hugh was not using vblanks at
+all on his system (fvwm and some xterms). Instead, all he had to go on
+were warning of a pipe underrun, curiously enough at around 60Hz. He
+poked and found that in addition to the underrun warning, the hardware
+was flagging the start of a new frame, a vblank, which in turn was
+kicking off the pending vblank processing code.
 
-Reviewed-by: Henrik Rydberg <rydberg@euromail.se>
+There is little we can do for the underruns on Hugh's machine, a
+Crestline [965GM], which must have its FIFO watermarks set to 8.
+However, we do not need to process the vblank if we know that they are
+disabled...
 
-on all four of them. Thank you Benjamin.
+Reported-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+---
+ drivers/gpu/drm/drm_irq.c       |    7 ++++---
+ drivers/gpu/drm/i915/i915_irq.c |    8 ++++----
+ include/drm/drmP.h              |    2 +-
+ 3 files changed, 9 insertions(+), 8 deletions(-)
 
-Henrik
+diff --git a/drivers/gpu/drm/drm_irq.c b/drivers/gpu/drm/drm_irq.c
+index 0054e95..3dadfa2 100644
+--- a/drivers/gpu/drm/drm_irq.c
++++ b/drivers/gpu/drm/drm_irq.c
+@@ -1250,7 +1250,7 @@ void drm_handle_vblank_events(struct drm_device *dev, int crtc)
+  * Drivers should call this routine in their vblank interrupt handlers to
+  * update the vblank counter and send any signals that may be pending.
+  */
+-void drm_handle_vblank(struct drm_device *dev, int crtc)
++bool drm_handle_vblank(struct drm_device *dev, int crtc)
+ {
+ 	u32 vblcount;
+ 	s64 diff_ns;
+@@ -1258,7 +1258,7 @@ void drm_handle_vblank(struct drm_device *dev, int crtc)
+ 	unsigned long irqflags;
+ 
+ 	if (!dev->num_crtcs)
+-		return;
++		return false;
+ 
+ 	/* Need timestamp lock to prevent concurrent execution with
+ 	 * vblank enable/disable, as this would cause inconsistent
+@@ -1269,7 +1269,7 @@ void drm_handle_vblank(struct drm_device *dev, int crtc)
+ 	/* Vblank irq handling disabled. Nothing to do. */
+ 	if (!dev->vblank_enabled[crtc]) {
+ 		spin_unlock_irqrestore(&dev->vblank_time_lock, irqflags);
+-		return;
++		return false;
+ 	}
+ 
+ 	/* Fetch corresponding timestamp for this vblank interval from
+@@ -1311,5 +1311,6 @@ void drm_handle_vblank(struct drm_device *dev, int crtc)
+ 	drm_handle_vblank_events(dev, crtc);
+ 
+ 	spin_unlock_irqrestore(&dev->vblank_time_lock, irqflags);
++	return true;
+ }
+ EXPORT_SYMBOL(drm_handle_vblank);
+diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
+index d388bbb..1a33aea 100644
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -1202,18 +1202,18 @@ irqreturn_t i915_driver_irq_handler(DRM_IRQ_ARGS)
+ 				intel_finish_page_flip_plane(dev, 1);
+ 		}
+ 
+-		if (pipea_stats & vblank_status) {
++		if (pipea_stats & vblank_status &&
++		    drm_handle_vblank(dev, 0)) {
+ 			vblank++;
+-			drm_handle_vblank(dev, 0);
+ 			if (!dev_priv->flip_pending_is_done) {
+ 				i915_pageflip_stall_check(dev, 0);
+ 				intel_finish_page_flip(dev, 0);
+ 			}
+ 		}
+ 
+-		if (pipeb_stats & vblank_status) {
++		if (pipeb_stats & vblank_status &&
++		    drm_handle_vblank(dev, 1)) {
+ 			vblank++;
+-			drm_handle_vblank(dev, 1);
+ 			if (!dev_priv->flip_pending_is_done) {
+ 				i915_pageflip_stall_check(dev, 1);
+ 				intel_finish_page_flip(dev, 1);
+diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+index a4694c6..fe29aad 100644
+--- a/include/drm/drmP.h
++++ b/include/drm/drmP.h
+@@ -1367,7 +1367,7 @@ extern int drm_vblank_wait(struct drm_device *dev, unsigned int *vbl_seq);
+ extern u32 drm_vblank_count(struct drm_device *dev, int crtc);
+ extern u32 drm_vblank_count_and_time(struct drm_device *dev, int crtc,
+ 				     struct timeval *vblanktime);
+-extern void drm_handle_vblank(struct drm_device *dev, int crtc);
++extern bool drm_handle_vblank(struct drm_device *dev, int crtc);
+ extern int drm_vblank_get(struct drm_device *dev, int crtc);
+ extern void drm_vblank_put(struct drm_device *dev, int crtc);
+ extern void drm_vblank_off(struct drm_device *dev, int crtc);
+-- 
+1.7.2.3
+
