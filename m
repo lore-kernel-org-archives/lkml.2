@@ -1,120 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967Ab1AaOEv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 09:04:51 -0500
-Received: from hera.kernel.org ([140.211.167.34]:46451 "EHLO hera.kernel.org"
+	id S1755944Ab1AaOFn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 09:05:43 -0500
+Received: from hera.kernel.org ([140.211.167.34]:46496 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754797Ab1AaOEt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 09:04:49 -0500
-Date: Mon, 31 Jan 2011 14:04:17 GMT
+	id S1752042Ab1AaOFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 09:05:41 -0500
+Date: Mon, 31 Jan 2011 14:05:29 GMT
 From: tip-bot for Torben Hohn <torbenh@gmx.de>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         torbenh@gmx.de, peterz@infradead.org, tglx@linutronix.de
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         torbenh@gmx.de, peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <20110127145900.23248.73352.stgit@localhost>
-References: <20110127145900.23248.73352.stgit@localhost>
+In-Reply-To: <20110127145910.23248.21379.stgit@localhost>
+References: <20110127145910.23248.21379.stgit@localhost>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] time: Move get_jiffies_64 to kernel/time/jiffies.c
-Message-ID: <tip-fbad1ea94159a71bc0f68b00e57ae803606af9fb@git.kernel.org>
-Git-Commit-ID: fbad1ea94159a71bc0f68b00e57ae803606af9fb
+Subject: [tip:timers/core] time: Provide xtime_update()
+Message-ID: <tip-f0af911a9dec9de702645182c8d269449e24d24b@git.kernel.org>
+Git-Commit-ID: f0af911a9dec9de702645182c8d269449e24d24b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 31 Jan 2011 14:04:17 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 31 Jan 2011 14:05:30 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fbad1ea94159a71bc0f68b00e57ae803606af9fb
-Gitweb:     http://git.kernel.org/tip/fbad1ea94159a71bc0f68b00e57ae803606af9fb
+Commit-ID:  f0af911a9dec9de702645182c8d269449e24d24b
+Gitweb:     http://git.kernel.org/tip/f0af911a9dec9de702645182c8d269449e24d24b
 Author:     Torben Hohn <torbenh@gmx.de>
-AuthorDate: Thu, 27 Jan 2011 15:59:00 +0100
+AuthorDate: Thu, 27 Jan 2011 15:59:10 +0100
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 31 Jan 2011 14:55:42 +0100
+CommitDate: Mon, 31 Jan 2011 14:55:43 +0100
 
-time: Move get_jiffies_64 to kernel/time/jiffies.c
+time: Provide xtime_update()
 
-Move the jiffies access functions to the jiffies clocksource code.
-
-[ tglx: Add missing include ]
+xtime_update() takes xtime_lock write locked and calls
+do_timer(). Provided to replace the do_timer() calls in the
+architecture code.
 
 Signed-off-by: Torben Hohn <torbenh@gmx.de>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: johnstul@us.ibm.com
 Cc: yong.zhang0@gmail.com
 Cc: hch@infradead.org
-LKML-Reference: <20110127145900.23248.73352.stgit@localhost>
+LKML-Reference: <20110127145910.23248.21379.stgit@localhost>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/time.c         |   17 -----------------
- kernel/time/jiffies.c |   18 ++++++++++++++++++
- 2 files changed, 18 insertions(+), 17 deletions(-)
+ include/linux/sched.h     |    1 +
+ kernel/time/timekeeping.c |   13 +++++++++++++
+ 2 files changed, 14 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/time.c b/kernel/time.c
-index 3217435..a31b512 100644
---- a/kernel/time.c
-+++ b/kernel/time.c
-@@ -674,23 +674,6 @@ unsigned long nsecs_to_jiffies(u64 n)
- #endif
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index d747f94..9d9a078 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2050,6 +2050,7 @@ extern void release_uids(struct user_namespace *ns);
+ #include <asm/current.h>
+ 
+ extern void do_timer(unsigned long ticks);
++extern void xtime_update(unsigned long ticks);
+ 
+ extern int wake_up_state(struct task_struct *tsk, unsigned int state);
+ extern int wake_up_process(struct task_struct *tsk);
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 8da35d1..02c13a3 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -969,3 +969,16 @@ void get_xtime_and_monotonic_offset(struct timespec *xtim, struct timespec *wtom
+ 		*wtom = wall_to_monotonic;
+ 	} while (read_seqretry(&xtime_lock, seq));
  }
- 
--#if (BITS_PER_LONG < 64)
--u64 get_jiffies_64(void)
--{
--	unsigned long seq;
--	u64 ret;
--
--	do {
--		seq = read_seqbegin(&xtime_lock);
--		ret = jiffies_64;
--	} while (read_seqretry(&xtime_lock, seq));
--	return ret;
--}
--EXPORT_SYMBOL(get_jiffies_64);
--#endif
--
--EXPORT_SYMBOL(jiffies);
--
- /*
-  * Add two timespec values and do a safety check for overflow.
-  * It's assumed that both values are valid (>= 0)
-diff --git a/kernel/time/jiffies.c b/kernel/time/jiffies.c
-index 5404a84..2fbc207 100644
---- a/kernel/time/jiffies.c
-+++ b/kernel/time/jiffies.c
-@@ -22,6 +22,7 @@
- ************************************************************************/
- #include <linux/clocksource.h>
- #include <linux/jiffies.h>
-+#include <linux/module.h>
- #include <linux/init.h>
- 
- /* The Jiffies based clocksource is the lowest common
-@@ -64,6 +65,23 @@ struct clocksource clocksource_jiffies = {
- 	.shift		= JIFFIES_SHIFT,
- };
- 
-+#if (BITS_PER_LONG < 64)
-+u64 get_jiffies_64(void)
++
++/**
++ * xtime_update() - advances the timekeeping infrastructure
++ * @ticks:	number of ticks, that have elapsed since the last call.
++ *
++ * Must be called with interrupts disabled.
++ */
++void xtime_update(unsigned long ticks)
 +{
-+	unsigned long seq;
-+	u64 ret;
-+
-+	do {
-+		seq = read_seqbegin(&xtime_lock);
-+		ret = jiffies_64;
-+	} while (read_seqretry(&xtime_lock, seq));
-+	return ret;
++	write_seqlock(&xtime_lock);
++	do_timer(ticks);
++	write_sequnlock(&xtime_lock);
 +}
-+EXPORT_SYMBOL(get_jiffies_64);
-+#endif
-+
-+EXPORT_SYMBOL(jiffies);
-+
- static int __init init_jiffies_clocksource(void)
- {
- 	return clocksource_register(&clocksource_jiffies);
