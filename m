@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756499Ab1AaVmt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 16:42:49 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:38437 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756243Ab1AaVms (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 16:42:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=EmHCeYRXulmsB8AJiod1qTjQTuBpA0YypjM5pXBjIGHGnCB5E4KZApKwKNMCP1a2wt
-         TrgXc7nNeWlW0KRtLE5xylrizmCyCb56d728bBCbQ6axDRRHtJ08jUjmQO4mpiGhIoQ/
-         cvhpP2YKSIJosxV8ZQ8XQp59/aijQpfHErakY=
+	id S1756513Ab1AaVq2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 16:46:28 -0500
+Received: from kroah.org ([198.145.64.141]:57747 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754215Ab1AaVq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 16:46:26 -0500
+Date: Mon, 31 Jan 2011 13:40:32 -0800
+From: Greg KH <greg@kroah.com>
+To: Sutharsan <sutharsan.tech@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-usb@vger.kernel.org, david.cross@cypress.com, srmt@cypress.com
+Subject: Re: [PATCH] Staging: Westbridge: fix EXPORT_SYMBOL errors reported
+ by checkpatch.pl
+Message-ID: <20110131214032.GB1629@kroah.com>
+References: <1296061134.4116.7.camel@sutharsan-laptop>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimgTCdJfyKcyrpM-VgWtNCFonu2rvca+pkc+ebh@mail.gmail.com>
-References: <AANLkTimjz6t9ziPajW1wJdUE8ytWy=FbCr-Zg71PiBgf@mail.gmail.com>
-	<AANLkTimgTCdJfyKcyrpM-VgWtNCFonu2rvca+pkc+ebh@mail.gmail.com>
-Date: Mon, 31 Jan 2011 21:42:47 +0000
-Message-ID: <AANLkTi==JWuwP23xCHgMXZefVAw_kPzQmh1nRqcot0eM@mail.gmail.com>
-Subject: Re: typecheck code
-From: julie Sullivan <kernelmail.jms@gmail.com>
-To: Dave Hylands <dhylands@gmail.com>
-Cc: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>,
-        Kernel-newbies <kernelnewbies@nl.linux.org>,
-        linux-kernel-mail <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1296061134.4116.7.camel@sutharsan-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->If dummy and dummy2 are of different types, then when you try and do a
->pointer comparison (&dummy == &dummy2) it will produce a compiler
->warning/error.
+On Wed, Jan 26, 2011 at 08:58:54AM -0800, Sutharsan wrote:
+> 
+> From: Sutharsan Ramamoorthy <srmt@cypress.com>
+> 
+> This patch fixes errors reported by checkpatch.pl
+> in westbridge device controller driver in the staging tree.
+> File containing EXPORT_SYMBOL() macros for all the APIs exported
+> by the westbridge software has been removed. EXPORT_SYMBOL() 
+> macros are added after the corresponding function definitions.
+> 
+> Signed-off-by: Sutharsan Ramamoorthy <srmt@cypress.com>
 
-O--ooohhh...
-I came across this ages ago when I was trying to unravel the jiffies
-wraparound macros and I've been scratching my head ever since trying
-to figure out what this line _really_  did. A bit arcane, isn't it?
-Thanks a lot Dave and everyone for explaining.
+Why was this sent again?
 
-Cheers
-Julie
+totally confused,
+
+greg k-h
