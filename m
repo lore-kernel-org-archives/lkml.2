@@ -1,119 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab1AaNIh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 08:08:37 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:38355 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753736Ab1AaNIf (ORCPT
+	id S1755604Ab1AaNT7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 08:19:59 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:48814 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754868Ab1AaNT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 08:08:35 -0500
-Date: Mon, 31 Jan 2011 13:08:26 +0000
-From: Andy Whitcroft <apw@canonical.com>
-To: Andrew Hendry <andrew.hendry@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: John Hughes <john@calva.com>, linux-x25@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tim Gardner <tim.gardner@canonical.com>
-Subject: x25: possible skb leak on bad facilities
-Message-ID: <20110131130826.GC16804@shadowen.org>
+	Mon, 31 Jan 2011 08:19:58 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=k84cL0EZeeb17n25x7KvUzH0Ivb4dLkGTlfjUV9n/90WHAF2H8z23x5oHlHOiyn8Sj
+         t8verDHV5o70TXgQe847wqgyjLLzTUZ9oE8NCEhdFk1ImGcJQFPXTYw2eoyp1KwXDvfn
+         9jBoTeUY6sWmZjQO3CgnCdDIa+8WoQLKncPds=
+Date: Mon, 31 Jan 2011 16:19:52 +0300
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: rklein@nvidia.com
+Cc: olofj@chromium.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] power: bq20z75: add support for charge properties
+Message-ID: <20110131131952.GA22005@oksana.dev.rtsoft.ru>
+References: <1295982606-4604-1-git-send-email-rklein@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+In-Reply-To: <1295982606-4604-1-git-send-email-rklein@nvidia.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looking at the changes introduced in the commit below, we seem to
-introduce an skb leak when a packet with bad facilities are present:
+On Tue, Jan 25, 2011 at 11:10:06AM -0800, rklein@nvidia.com wrote:
+> From: Rhyland Klein <rklein@nvidia.com>
+> 
+> Adding support for charge properties for gas gauge.
+> Also ensuring that battery mode is correct now for energy as well as
+> charge properties by setting it on the fly.
+> 
+> I also added 2 functions to power_supply.h to help identify the units for
+> specific properties more easily by power supplies.
+> 
+> Signed-off-by: Rhyland Klein <rklein@nvidia.com>
+> ---
 
-    commit a6331d6f9a4298173b413cf99a40cc86a9d92c37
-    Author: andrew hendry <andrew.hendry@gmail.com>
-    Date:   Wed Nov 3 12:54:53 2010 +0000
+Applied with some cosmetic changes.
 
-        memory corruption in X.25 facilities parsing
+[...]
+> +static inline bool power_supply_is_amp_property(
+> +	enum power_supply_property psp){
 
-If I am understanding things correctly then we trigger a -1 return to
-the main packet dispatch loop, this being non-zero implies that we have
-requeued the skb and it should not be freed.  As it was not requeued,
-I believe the skb is no longer referenced and then is leaked.
+Fixed style issues here.
 
-Perhaps someone better aquainted with this code could review my analysis
-in the patch leader below.  If accurate I believe we need the patch below
-to resolve this.  If it is not then I suspect a comment is required on
-the -1 return.
+[...]
+> +static inline bool power_supply_is_watt_property(
+> +	enum power_supply_property psp){
 
-Thoughts?
+And here.
 
--apw
+Thanks!
 
->From 5728c05fb669e8ee1e6d20fb7a71916362039411 Mon Sep 17 00:00:00 2001
-From: Andy Whitcroft <apw@canonical.com>
-Date: Mon, 31 Jan 2011 10:37:36 +0000
-Subject: [PATCH] x25: drop packet on invalid facility headers
-
-The commit below introduced additional checks for invalid facilities,
-and a new return path when these were detected:
-
-    commit a6331d6f9a4298173b413cf99a40cc86a9d92c37
-    Author: andrew hendry <andrew.hendry@gmail.com>
-    Date:   Wed Nov 3 12:54:53 2010 +0000
-
-	memory corruption in X.25 facilities parsing
-
-This new return path short circuits packet handling, the new return -1
-below:
-
-    static int x25_state1_machine(struct sock *sk, struct sk_buff *skb,
-							    int frametype)
-    {
-    [...]
-                        len = x25_parse_facilities(skb, &x25->facilities,
-                                                &x25->dte_facilities,
-                                                &x25->vc_facil_mask);
-                        if (len > 0)
-                                skb_pull(skb, len);
-                        else
-                                return -1;
-    [...]
-
-This return code is passed back up the chain (via x25_process_rx_frame)
-and is interpreted as below by the caller:
-
-    int x25_backlog_rcv(struct sock *sk, struct sk_buff *skb)
-    {
-        int queued = x25_process_rx_frame(sk, skb);
-
-        if (!queued)
-                kfree_skb(skb);
-
-        return 0;
-    }
-
-Here we interpret the non-zero status as indicating the skb has been
-requeued and should be preserved.  As we have not actually done so it
-will be leaked.
-
-Fix this up by indicating that the packet should be dropped.
-
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
----
- net/x25/x25_in.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/net/x25/x25_in.c b/net/x25/x25_in.c
-index f729f02..213b93a 100644
---- a/net/x25/x25_in.c
-+++ b/net/x25/x25_in.c
-@@ -120,7 +120,7 @@ static int x25_state1_machine(struct sock *sk, struct sk_buff *skb, int frametyp
- 			if (len > 0)
- 				skb_pull(skb, len);
- 			else
--				return -1;
-+				return 0;
- 			/*
- 			 *	Copy any Call User Data.
- 			 */
 -- 
-1.7.1
-
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
