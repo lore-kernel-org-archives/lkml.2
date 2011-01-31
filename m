@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab1AaNak (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 08:30:40 -0500
-Received: from peer.zerties.org ([188.40.33.175]:56607 "EHLO peer.zerties.org"
+	id S1755886Ab1AaNbM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 08:31:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24200 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755634Ab1AaNaj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 08:30:39 -0500
-X-Greylist: delayed 1812 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 Jan 2011 08:30:39 EST
-From: Christian Dietrich <christian.dietrich@informatik.uni-erlangen.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Reinhard Tartler <Reinhard.Tartler@informatik.uni-erlangen.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        vamos@i4.informatik.uni-erlangen.de, Julia Lawall <julia@diku.dk>
-Subject: Re: [ANNOUNCE] undertaker 1.0
-Organization: Uni Erlangen, Informatik 4, Lehrstuhl =?utf-8?Q?f=C3=BCr?=
- Betriebs- und verteilte Systeme
-References: <87y666tvag.fsf@faui44a.informatik.uni-erlangen.de>
-	<alpine.LFD.2.00.1101282126210.31804@localhost6.localdomain6>
-Date: Mon, 31 Jan 2011 14:00:24 +0100
-In-Reply-To: <alpine.LFD.2.00.1101282126210.31804@localhost6.localdomain6>
-	(Thomas Gleixner's message of "Fri, 28 Jan 2011 21:41:18 +0100 (CET)")
-Message-ID: <86sjw9jkif.fsf@peer.zerties.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1755865Ab1AaNbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 08:31:11 -0500
+Date: Mon, 31 Jan 2011 14:22:07 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Daniel Lezcano <daniel.lezcano@free.fr>
+Cc: akpm@linux-foundation.org, ebiederm@xmission.com,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        clg@fr.ibm.com
+Subject: Re: [PATCH 2/4] pidns: Call pid_ns_prepare_proc from
+	create_pid_namespace
+Message-ID: <20110131132207.GA26995@redhat.com>
+References: <1296469525-30111-1-git-send-email-daniel.lezcano@free.fr> <1296469525-30111-3-git-send-email-daniel.lezcano@free.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1296469525-30111-3-git-send-email-daniel.lezcano@free.fr>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Gleixner <tglx@linutronix.de> writes:
-
-> The one in manage.c is not:
+On 01/31, Daniel Lezcano wrote:
 >
->  921 #ifdef CONFIG_IRQ_RELEASE_METHOD
+> @@ -96,6 +97,9 @@ static struct pid_namespace *create_pid_namespace(struct pid_namespace *parent_p
+>  	for (i = 1; i < PIDMAP_ENTRIES; i++)
+>  		atomic_set(&ns->pidmap[i].nr_free, BITS_PER_PAGE);
 >
-> CONFIG_IRQ_RELEASE_METHOD is set by arch/um. Ditto for include/linux/irq.h
+> +	if (pid_ns_prepare_proc(ns))
+> +		goto out_free_map;
+> +
+>  	return ns;
 
-This problem was the result of an implementation bug. We didn't create a
-feature model for um. This is now fixed in our master branch and will be
-in the next minor release.
+This is not right, afaics. I already sent the similar patches, but
+they were ignored ;)
 
-> It'd be nice if the web interface would have a knob to jump to the
-> next red section. Scrolling through is annoying.
+Please see http://marc.info/?l=linux-kernel&m=127697484000334
 
-I generated a new code browser for -rc2[1]. There you can press 'n' to jump
-to the next defect. I've only tested the javascript code with chromium,
-but it should work anywhere else too.
+If pid_ns_prepare_proc() fails we shouldn't blindly return ENOMEM
+and, more importantly, we need put_pid_ns(parent_ns).
 
-[1] http://www4.informatik.uni-erlangen.de/Research/VAMOS/linux-trees/v2.6.38-rc2/
--- 
-(λ x . x x) (λ x . x x) -- See how beautiful the lambda is
-No documentation is better than bad documentation
+Oleg.
 
