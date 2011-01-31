@@ -1,111 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab1AaKPW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 05:15:22 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55344 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752683Ab1AaKPV convert rfc822-to-8bit (ORCPT
+	id S1754881Ab1AaKPw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 05:15:52 -0500
+Received: from casper.infradead.org ([85.118.1.10]:60840 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752610Ab1AaKPv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 05:15:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=eB+/O0ei6mZVPi52P1tYo3D9vf4ZaiN8D77uwtitDmaPussveRhVP/4nmc2TfoxQVh
-         AbFoUoOvXcWrBdaGO7uYGjmpLoMUwAwCc/Smuy143w9uqgCDIy0ScumlyEhQwNOUluL9
-         PlLC3CRMmTRqWFhKPcLOej5owKpLFdxiIEFdE=
-MIME-Version: 1.0
-In-Reply-To: <1296461958.4168.5.camel@dell>
-References: <1295440968.2276.46.camel@dell>
-	<ih8qf2$41t$3@dough.gmane.org>
-	<4D380279.4070502@suse.cz>
-	<1295594371.27658.3.camel@dell>
-	<20110121101755.GP16804@shadowen.org>
-	<1296461958.4168.5.camel@dell>
-Date: Mon, 31 Jan 2011 12:15:10 +0200
-Message-ID: <AANLkTi=0Gpvtvi8RyHbPAeh__YWLLPz+dE7iMdFbgGEW@mail.gmail.com>
-Subject: Re: Checkpatch problem with Kconfig help symbol ?
-From: Tomas Winkler <tomasw@gmail.com>
-To: tapio.vihuri@nokia.com
-Cc: ext Andy Whitcroft <apw@canonical.com>, ext Michal Marek <mmarek@suse.cz>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 31 Jan 2011 05:15:51 -0500
+Subject: Re: [PATCH] a patch to fix the cpu-offline-online problem caused
+ by pm_idle
+From: Peter Zijlstra <peterz@infradead.org>
+To: Luming Yu <luming.yu@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, tglx <tglx@linutronix.de>
+In-Reply-To: <AANLkTinxHXqndfP79W0=zer70psi6Dmkcv7rZc4ew7ZF@mail.gmail.com>
+References: <AANLkTinaOQpuJis5HgK316ANxpDS8eZ8Q0S4a44POrp0@mail.gmail.com>
+	 <1295894492.28776.470.camel@laptop>
+	 <AANLkTimq3jmza-t5iL10wgLLycwdDkJ3mznLQsKHM_Kf@mail.gmail.com>
+	 <1295946736.28776.479.camel@laptop>
+	 <AANLkTikQs1UcfBGf_6shNVtdDSzR+8XzUKcx0amFZXey@mail.gmail.com>
+	 <1296210619.15234.263.camel@laptop>
+	 <AANLkTikagMAGssG09D+SCKTsu9T+==R2fsSM3tgHctdv@mail.gmail.com>
+	 <1296405366.2274.60.camel@twins>
+	 <AANLkTinxHXqndfP79W0=zer70psi6Dmkcv7rZc4ew7ZF@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 31 Jan 2011 11:16:46 +0100
+Message-ID: <1296469006.15234.359.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 31, 2011 at 10:19 AM, Tapio Vihuri <tapio.vihuri@nokia.com> wrote:
-> On Fri, 2011-01-21 at 10:17 +0000, ext Andy Whitcroft wrote:
->> On Fri, Jan 21, 2011 at 09:19:31AM +0200, Tapio Vihuri wrote:
->> > On Thu, 2011-01-20 at 10:38 +0100, ext Michal Marek wrote:
->> > > On 20.1.2011 09:06, WANG Cong wrote:
->> > > > On Wed, 19 Jan 2011 14:42:48 +0200, Tapio Vihuri wrote:
->> > > >
->> > > >> Hi
->> > > >>
->> > > >> Is this false positive ?
->> > > >>
->> > > >> WARNING: please write a paragraph that describes the config symbol fully
->> > > >> #60: FILE: drivers/input/misc/Kconfig:159: +       help
->> > > >>
->> > > >>
->> > > >> Interesting enough, also:
->> > > >>
->> > > >> ./scripts/checkpatch.pl --file drivers/input/misc/Kconfig WARNING:
->> > > >> please write a paragraph that describes the config symbol fully #430:
->> > > >> FILE: input/misc/Kconfig:430:
->> > > >> +       help
->> > > >>
->> > > >>
->> > > >> But this is different line.
->> > > >>
->> > > >
->> > > > Seems yes, the Kconfig part of your patch looks fine.
->> > >
->> > > The check is complaining that the help text is too short:
->> > >
->> > > +config ECI_CTRL_DEBUG
->> > > + bool "ECI controller debug"
->> > > + depends on INPUT_ECI_AT20
->> > > + help
->> > > +   Say Y here to enable debugging messages for ECI controller driver.
->> > >
->> > > Michal
->> >
->> > Hi.
->> >
->> > That I suspect, and I tried to add four lines more.
->> > But it still complain the same.
->>
->> If you have a patch which has four or more lines and trips this message
->> it is false yes.  Please do send me your example, as my current tests
->> pass.
->>
->> -apw
->
-> Hi.
->
-> Sorry for the delay, I had made stupid email filter. Mea Culpa.
->
-> It's working OK. If there is only three lines of help, checkpatch will
-> complain.
-> With four lines, it's not.
->
-> I add more help in my case. It toggle driver debug on/off, so I try
-> harder to figure out how to say it with more words ;)
->
-> BR,
-> Tapio
->
+On Sun, 2011-01-30 at 22:26 -0500, Luming Yu wrote:
 
-I believe that the warning is not descriptive enough, I also had to
-look into the checkpatch script to
-figure out what is going on.
-What about adding little explanation like that:
+> > Guessing is totally the wrong thing when you're sending stuff upstream,
+> > esp ugly patches such as this. .32 is more than a year old, anything
+> > could have happened.
+> 
+> Ok. the default upstream kernel seems to have NMI watchdog disabled?
 
-WARNING: please write a paragraph that describes the config symbol
-fully (4 lines at least)
+Then enable it already, its a whole CONFIG option away..
 
-Thanks
-Tomas
+> It's not working because of NMI watchdog. If you ignore NMI watchdog,
+> then I guess it works but just slow..
+
+Don't guess, test it dammit. And then figure out why it triggers, I
+haven't seen _anything_ that would cause it to trigger, nor a sane
+explanation for your patch.
+
+> > Ok, so one IPI costs 50-100 us, even with 64 cpu, that's at most 6.4ms
+> > nowhere near enough to trigger the NMI watchdog. So what does go wrong?
+> 
+> Good question!
+> But we also can't forget there were large latency from C3.
+
+Not 60+ seconds large I hope, I know NHM-EX has some suckage, but surely
+not that bad?
+
+> And I guess some reschedule ticks get lost to kick some CPUs out of
+> idle due to the side effects of the CPU PM feature. if use nohz=off,
+> everything seems to just work.
+> Yes, I agree we need to dig it out either.
+> But it's kind of combination problem between the special stop_machine
+> context and CPU power management...
+
+Yeah, so? Also, incidentally, stop-machine got a rewrite around .35 and
+again significant changes in .37, so please do test mainline and not
+your dinosaur.
+
+> > Yeah, what are you smoking? Why do you wreck perfectly fine code for one
+> > backward ass piece of hardware.
+> 
+> Just make things less complex...
+
+But its wrong, it very clearly works around a real problem, don't ever
+do that, fix the problem!
+
