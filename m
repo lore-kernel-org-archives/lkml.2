@@ -1,78 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756757Ab1AaXMg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 18:12:36 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:39418 "EHLO smtp6-g21.free.fr"
+	id S1756860Ab1AaXNH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 18:13:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22024 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754198Ab1AaXMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 18:12:35 -0500
-Message-ID: <4D4741DE.90006@free.fr>
-Date: Tue, 01 Feb 2011 00:12:30 +0100
-From: matthieu castet <castet.matthieu@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr; rv:1.8.1.23) Gecko/20090823 SeaMonkey/1.1.18
+	id S1756714Ab1AaXNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 18:13:05 -0500
+Date: Tue, 1 Feb 2011 00:13:01 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: CAI Qian <caiqian@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: kswapd hung tasks in 2.6.38-rc1
+Message-ID: <20110131231301.GP16981@random.random>
+References: <1150342867.83404.1295513748640.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+ <1296507528.7797.4609.camel@nimitz>
+ <1296513616.7797.4929.camel@nimitz>
 MIME-Version: 1.0
-To: Kees Cook <kees.cook@canonical.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [BUG] broken ebba638ae723d8a8fc2f7abce5ec18b688b791d7
-References: <4D41E86D.8060205@free.fr> <20110127230013.GO4981@outflux.net> <4D4228CE.5090601@zytor.com> <20110131213847.GF4557@outflux.net>
-In-Reply-To: <20110131213847.GF4557@outflux.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1296513616.7797.4929.camel@nimitz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees Cook a écrit :
-> Hi,
+On Mon, Jan 31, 2011 at 02:40:16PM -0800, Dave Hansen wrote:
+> Still not a very good data point, but I ran a heavy swap load for an
+> hour or so without reproducing this.  But, it happened again after I
+> enabled transparent huge pages.  I managed to get a sysrq-t dump out of
+> it:
 > 
-> On Thu, Jan 27, 2011 at 06:24:14PM -0800, H. Peter Anvin wrote:
->> On 01/27/2011 03:00 PM, Kees Cook wrote:
->>> Yikes, good catch.
->>>
->>> arch/x86/kernel/trampoline_64.S uses:
->>>         movw    $(trampoline_stack_end - r_base), %sp
->>>
->>> arch/x86/boot/compressed/head_64.S uses:
->>>         movl    $boot_stack_end, %eax
->>>         addl    %ebp, %eax
->>>         movl    %eax, %esp
->>>
->>> what would be safe for arch/x86/kernel/head_32.S ? It uses "stack_start",
->>> but later after paging set-up. Is the following sane to solve this?
->>>
->> To run it before paging is set up, you can't use stack, start; you
->> have to use a pointer based on physical address.  You have two
->> problems with using stack_start: you're using a linear address to
->> access stack_start, and stack_start itself contains a linear
->> address.
->>
->> It's not entirely clear to me why we don't initialize %ss to
->> __BOOT_DS with the other segment registers, but it would make most
->> sense to me:
->>
->> diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
->> index fc293dc..c10f9ba 100644
->> --- a/arch/x86/kernel/head_32.S
->> +++ b/arch/x86/kernel/head_32.S
->> @@ -99,7 +99,12 @@ ENTRY(startup_32)
->>         movl %eax,%es
->>         movl %eax,%fs
->>         movl %eax,%gs
->> +       movl %eax,%ss
->>  2:
->> +/*
->> + * Set up an initial stack
->> + */
->> +       movl $pa(init_thread_union+THREAD_SIZE), %esp
->>
->>  /*
->>   * Clear BSS first so that there are no surprises...
+> 	http://sr71.net/~dave/ibm/2.6.38-rc2-hang-0.txt
 > 
-> This doesn't appear to work for me. While I can boot fine, doing CPU
-> hotplugging hangs the system. :(
-> 
-That's because of NX :)
+> khugepaged is one of the three running tasks.  Note, I set both its
+> sleep timeouts to zero to stress it out a bit.
 
-The stack is marked NX, 
+sysrq+l? sysrq+t doesn't provide interesting info for running tasks.
+
+> I'll keep trying to reproduce without THP.
+
+BTW, do you have prove locking enabled? With recent git I get a
+deadlock inside _raw_spin_unlock_irq with prove locking enabled and it
+goes away when I disable it.
