@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872Ab1AaNdn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 08:33:43 -0500
-Received: from smtp1-g21.free.fr ([212.27.42.1]:39635 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755515Ab1AaNdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 08:33:42 -0500
-Message-ID: <4D46BA25.8080201@free.fr>
-Date: Mon, 31 Jan 2011 14:33:25 +0100
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1755901Ab1AaNeA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 08:34:00 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:60383 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755889Ab1AaNd7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 08:33:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=t7n63PRPjASLcmpOrPpHuTtgg1R6UVmK5ksij/rOsFCGTf7pjL0bxEru2oXHC0XUKc
+         mN0y5hn0l2EsTK/0L2bZUZ4d+fsZ2eYGclo4Blc4ADx7DqmmMKefoVLXP3EiRmg6bMYP
+         xFEevBzqxIYlXzFCari8h2/9w+mV8puejvsFw=
+Date: Mon, 31 Jan 2011 16:33:54 +0300
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Vasily Khoruzhick <anarsoul@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
+        "Arnaud Patard (Rtp)" <arnaud.patard@rtp-net.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH 2/2] power_supply: Add new LED trigger
+ charging-blink-solid-full
+Message-ID: <20110131133354.GA24125@oksana.dev.rtsoft.ru>
+References: <1294417697-4692-1-git-send-email-anarsoul@gmail.com>
+ <1294417697-4692-3-git-send-email-anarsoul@gmail.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: akpm@linux-foundation.org, ebiederm@xmission.com,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        clg@fr.ibm.com
-Subject: Re: [PATCH 2/4] pidns: Call pid_ns_prepare_proc from	create_pid_namespace
-References: <1296469525-30111-1-git-send-email-daniel.lezcano@free.fr> <1296469525-30111-3-git-send-email-daniel.lezcano@free.fr> <20110131132207.GA26995@redhat.com>
-In-Reply-To: <20110131132207.GA26995@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1294417697-4692-3-git-send-email-anarsoul@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2011 02:22 PM, Oleg Nesterov wrote:
-> On 01/31, Daniel Lezcano wrote:
->> @@ -96,6 +97,9 @@ static struct pid_namespace *create_pid_namespace(struct pid_namespace *parent_p
->>   	for (i = 1; i<  PIDMAP_ENTRIES; i++)
->>   		atomic_set(&ns->pidmap[i].nr_free, BITS_PER_PAGE);
->>
->> +	if (pid_ns_prepare_proc(ns))
->> +		goto out_free_map;
->> +
->>   	return ns;
-> This is not right, afaics. I already sent the similar patches, but
-> they were ignored ;)
->
-> Please see http://marc.info/?l=linux-kernel&m=127697484000334
->
-> If pid_ns_prepare_proc() fails we shouldn't blindly return ENOMEM
-> and, more importantly, we need put_pid_ns(parent_ns).
+On Fri, Jan 07, 2011 at 06:28:17PM +0200, Vasily Khoruzhick wrote:
+> Add new trigger to power_supply LEDs. It will blink when
+> battery is charging, and stay solid when battery is charged.
+> It's usefull to indicate battery state when there's only one
+> LED available.
+> 
+> Signed-off-by: Vasily Khoruzhick <anarsoul@gmail.com>
+> ---
 
-Oh, ok. Right. Thanks for the pointer.
+Appled both patches to battery-2.6.git, thanks!
 
-Are you ok if I replace the patch 2/4 with your patch ?
+>  drivers/power/power_supply_leds.c |   18 ++++++++++++++++++
+>  include/linux/power_supply.h      |    2 ++
+>  2 files changed, 20 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/power/power_supply_leds.c b/drivers/power/power_supply_leds.c
+> index 031a554..b640bbf 100644
+> --- a/drivers/power/power_supply_leds.c
+> +++ b/drivers/power/power_supply_leds.c
+> @@ -21,6 +21,7 @@
+>  static void power_supply_update_bat_leds(struct power_supply *psy)
+>  {
+>  	union power_supply_propval status;
+> +	unsigned long delay_on = 0, delay_off = 0;
+
+Changed this to 
+
+	unsigned long delay_on = 0;
+	unsigned long delay_off = 0;
+
+Thanks!
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
