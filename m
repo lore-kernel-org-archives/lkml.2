@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755952Ab1AaPDR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 10:03:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34205 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752550Ab1AaPDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 10:03:16 -0500
-Message-ID: <4D46CF18.4060406@redhat.com>
-Date: Mon, 31 Jan 2011 10:02:48 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Avi Kiviti <avi@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>,
-        ttracy@redhat.com, "Nakajima, Jun" <jun.nakajima@intel.com>
-Subject: Re: [RFC -v7 PATCH 3/7] sched: use a buddy to implement yield_task_fair
-References: <20110126165657.2ddd2ac9@annuminas.surriel.com>	 <20110126172101.7b5c22e6@annuminas.surriel.com> <1296474447.15234.392.camel@laptop>
-In-Reply-To: <1296474447.15234.392.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755976Ab1AaPIh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 10:08:37 -0500
+Received: from service87.mimecast.com ([94.185.240.25]:49568 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755740Ab1AaPIg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 10:08:36 -0500
+From: Will Deacon <will.deacon@arm.com>
+To: linux-kernel@vger.kernel.org, oprofile-list@lists.sf.net
+Cc: Will Deacon <will.deacon@arm.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH] oprofile: add SMP barriers for hrtimer hotplug code
+Date: Mon, 31 Jan 2011 15:08:21 +0000
+Message-Id: <1296486501-25848-1-git-send-email-will.deacon@arm.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 31 Jan 2011 15:08:27.0950 (UTC) FILETIME=[B6DE5CE0:01CBC158]
+X-MC-Unique: 111013115083100401
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id p0VF8oGs002976
 
-On 01/31/2011 06:47 AM, Peter Zijlstra wrote:
-> On Wed, 2011-01-26 at 17:21 -0500, Rik van Riel wrote:
->
->> +static struct sched_entity *__pick_second_entity(struct cfs_rq *cfs_rq)
->> +{
->> +	struct rb_node *left = cfs_rq->rb_leftmost;
->> +	struct rb_node *second;
->> +
->> +	if (!left)
->> +		return NULL;
->> +
->> +	second = rb_next(left);
->> +
->> +	if (!second)
->> +		second = left;
->> +
->> +	return rb_entry(second, struct sched_entity, run_node);
->> +}
->
-> I would still prefer:
->
-> sed -i 's/__pick_next_entity/__pick_first_entity/g' kernel/sched*.[ch]
+OProfile uses a CPU notifier to start and stop any hrtimers when CPUs change
+between ONLINE and DEAD. A static int ctr_running is used to keep track of
+the counter state.
 
-Ahhh, now I understand what you want.  I'll get right on it.
+This can lead to problems where writes to the state variable are re-ordered
+with repect to reads of the variable occurring on other CPUs, meaning that
+__oprofile_hrtimer_start may read ctr_running as 0 and not initialise the
+hrtimer. Potential deadlock can occur in __oprofile_hrtimer_stop because
+lock_hrtimer_base will poll until timer->base != NULL, which will never
+happen.
 
-> You seem to have lost the hunk removing sysctl_sched_compat_yield from
-> kernel/sysctl.c :-)
+This patch adds smp_mb()s to ensure that ctr_running mirrors the correct
+counter state.
 
-Let me take care of that, too.
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+---
+ drivers/oprofile/timer_int.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/oprofile/timer_int.c b/drivers/oprofile/timer_int.c
+index 0107251..38c1e1b 100644
+--- a/drivers/oprofile/timer_int.c
++++ b/drivers/oprofile/timer_int.c
+@@ -48,6 +48,7 @@ static int oprofile_hrtimer_start(void)
+ {
+ 	get_online_cpus();
+ 	ctr_running = 1;
++	smp_mb();
+ 	on_each_cpu(__oprofile_hrtimer_start, NULL, 1);
+ 	put_online_cpus();
+ 	return 0;
+@@ -70,6 +71,7 @@ static void oprofile_hrtimer_stop(void)
+ 	get_online_cpus();
+ 	for_each_online_cpu(cpu)
+ 		__oprofile_hrtimer_stop(cpu);
++	smp_mb();
+ 	ctr_running = 0;
+ 	put_online_cpus();
+ }
 -- 
-All rights reversed
+1.7.0.4
+
+
