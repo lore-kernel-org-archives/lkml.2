@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755695Ab1AaTOz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 14:14:55 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:55510 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752143Ab1AaTOz (ORCPT
+	id S1755551Ab1AaTR3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 14:17:29 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:38345 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753514Ab1AaTR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 14:14:55 -0500
-Message-ID: <4D470A8B.70700@metafoo.de>
-Date: Mon, 31 Jan 2011 20:16:27 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+	Mon, 31 Jan 2011 14:17:28 -0500
+Date: Mon, 31 Jan 2011 14:17:20 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: david@lang.hm, Stan Hoeppner <stan@hardwarefreak.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        Christoph Hellwig <hch@infradead.org>,
+        Justin Piszcz <jpiszcz@lucidpixels.com>, Alex Elder <aelder@sgi.com>,
+        Mark Lord <kernel@teksavvy.com>
+Subject: Re: xfs: very slow after mount, very slow at umount
+Message-ID: <20110131191720.GA2327@infradead.org>
+References: <4D419765.4070805@teksavvy.com>
+ <4D41CA16.8070001@hardwarefreak.com>
+ <alpine.DEB.2.00.1101271209370.17579@asgard.lang.hm>
+ <4D42056E.2050505@hardwarefreak.com>
+ <alpine.DEB.2.00.1101271730030.17579@asgard.lang.hm>
+ <20110128135629.GX21311@dastard>
+ <alpine.DEB.2.00.1101281119250.17579@asgard.lang.hm>
+ <20110129054021.GB21311@dastard>
+ <alpine.DEB.2.00.1101282201260.29659@asgard.lang.hm>
+ <20110129073554.GC21311@dastard>
 MIME-Version: 1.0
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-CC: Grazvydas Ignotas <notasas@gmail.com>,
-        Rodolfo Giometti <giometti@linux.it>, linux-kernel@vger.kernel.org,
-        =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
-Subject: Re: Fwd: [PATCH] bq27x00_battery: Some fixes
-References: <20110131135417.GC3883@oksana.dev.rtsoft.ru> <4D46FC2A.6010402@metafoo.de> <20110131182704.GA13244@oksana.dev.rtsoft.ru>
-In-Reply-To: <20110131182704.GA13244@oksana.dev.rtsoft.ru>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110129073554.GC21311@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2011 07:27 PM, Anton Vorontsov wrote:
-> On Mon, Jan 31, 2011 at 07:15:06PM +0100, Lars-Peter Clausen wrote:
->> On 01/31/2011 02:54 PM, Anton Vorontsov wrote:
->>> The same is for this patch.
->>>
->>> Comments, Reviewed-by or Acked-by?
->>>
->>> p.s. FWIW, I already asked Pali to factor out bq27x00_battery_time()
->>>      fix to a separate patch.
->>>
->>
->> Hi
->>
->> I have a larger series pending which adds support for the bq27000 chip and polling to
->> the bq27x00 driver. Since this series does some refactoring of the bq27x00 driver, it
->> might make sense to rebase this (and the other) patch ontop of that series instead of
->> the other way around.
-> 
-> Pali was first to send out his work, so I think that it would make
-> sense to ask you to rebase your work on top. Especially since Pali's
-> patches were somewhat reviewed already.
+On Sat, Jan 29, 2011 at 06:35:54PM +1100, Dave Chinner wrote:
+> Just because we can't do it right now doesn't mean it is not
+> possible. Array/raid controller vendors need to implement the SCSI
+> block limit VPD page, and if they do then stripe unit/stripe width
+> may be exposed for the device in sysfs. However, I haven't seen any
+> devices except for md and dm that actually export values that
+> reflect sunit/swidth in the files:
 
-I suspect it to be substantial more work to rebase mine on top of his. That's why I'm
-asking for a exception in this case. I would be willing to adjust his patches, so
-they can be applied on top of mine.
-
-> 
-> I hope Pali will resend the fixed versions quickly enough so
-> that I'll apply the patches asap and you'll easily use git
-> for rebasing.
-> 
-
-git won't help in this case, because my patches basically rewrite the parts changed
-by Palis patches. It would be one merge conflict after another, I guess.
-
-> Thanks!
-> 
+I have access to a few big vendor arrays that export it, but I think
+they are still running beta firmware versions.
 
