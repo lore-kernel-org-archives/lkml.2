@@ -1,86 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756553Ab1AaWmV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 17:42:21 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53704 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754328Ab1AaWmU (ORCPT
+	id S1756680Ab1AaWmu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 17:42:50 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:32776 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754179Ab1AaWmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 17:42:20 -0500
-Date: Mon, 31 Jan 2011 14:41:31 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: kamezawa.hiroyu@jp.fujitsu.com, nishimura@mxp.nes.nec.co.jp,
-        balbir@linux.vnet.ibm.com, minchan.kim@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/3] memcg: prevent endless loop when charging huge
- pages to near-limit group
-Message-Id: <20110131144131.6733aa3a.akpm@linux-foundation.org>
+	Mon, 31 Jan 2011 17:42:49 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=A3zfyxbid/zHiQa0zSuVqGz6PNkx3QhksAQfOMPiAZvFhiDCXYrPTV36WPrTxnXfe5
+         ylWrX4Z3qRrbWb/jJ8YTtsgItplrjKTWvxhzXb6bMMhIr3jN+wBluk8jAdP94XBF2fqW
+         /E6mb5oj76wHXCzzzwfqPk2bhiVxwk5uYUKyE=
+MIME-Version: 1.0
 In-Reply-To: <1296482635-13421-3-git-send-email-hannes@cmpxchg.org>
 References: <1296482635-13421-1-git-send-email-hannes@cmpxchg.org>
 	<1296482635-13421-3-git-send-email-hannes@cmpxchg.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Date: Tue, 1 Feb 2011 07:42:48 +0900
+Message-ID: <AANLkTikdrFYCjYTat+0iLoOJD9S1=KreJhNbFXbzah4x@mail.gmail.com>
+Subject: Re: [patch 2/3] memcg: prevent endless loop when charging huge pages
+ to near-limit group
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
+        nishimura@mxp.nes.nec.co.jp, balbir@linux.vnet.ibm.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 Jan 2011 15:03:54 +0100
-Johannes Weiner <hannes@cmpxchg.org> wrote:
+On Mon, Jan 31, 2011 at 11:03 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> If reclaim after a failed charging was unsuccessful, the limits are
+> checked again, just in case they settled by means of other tasks.
+>
+> This is all fine as long as every charge is of size PAGE_SIZE, because
+> in that case, being below the limit means having at least PAGE_SIZE
+> bytes available.
+>
+> But with transparent huge pages, we may end up in an endless loop
+> where charging and reclaim fail, but we keep going because the limits
+> are not yet exceeded, although not allowing for a huge page.
+>
+> Fix this up by explicitely checking for enough room, not just whether
+> we are within limits.
+>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-> +static inline bool res_counter_check_margin(struct res_counter *cnt,
-> +					    unsigned long bytes)
-> +{
-> +	bool ret;
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&cnt->lock, flags);
-> +	ret = cnt->limit - cnt->usage >= bytes;
-> +	spin_unlock_irqrestore(&cnt->lock, flags);
-> +	return ret;
-> +}
-> +
->  static inline bool res_counter_check_under_soft_limit(struct res_counter *cnt)
->  {
->  	bool ret;
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 73ea323..c28072f 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1111,6 +1111,15 @@ static bool mem_cgroup_check_under_limit(struct mem_cgroup *mem)
->  	return false;
->  }
->  
-> +static bool mem_cgroup_check_margin(struct mem_cgroup *mem, unsigned long bytes)
-> +{
-> +	if (!res_counter_check_margin(&mem->res, bytes))
-> +		return false;
-> +	if (do_swap_account && !res_counter_check_margin(&mem->memsw, bytes))
-> +		return false;
-> +	return true;
-> +}
 
-argh.
-
-If you ever have a function with the string "check" in its name, it's a
-good sign that you did something wrong.
-
-Check what?  Against what?  Returning what?
-
-mem_cgroup_check_under_limit() isn't toooo bad - the name tells you
-what's being checked and tells you what to expect the return value to
-mean.
-
-But "res_counter_check_margin" and "mem_cgroup_check_margin" are just
-awful.  Something like
-
-	bool res_counter_may_charge(counter, bytes)
-
-would be much clearer.
-
-If we really want to stick with the "check" names (perhaps as an ironic
-reference to res_counter's past mistakes) then please at least document
-the sorry things?
-
+-- 
+Kind regards,
+Minchan Kim
