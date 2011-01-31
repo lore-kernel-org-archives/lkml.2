@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756358Ab1AaVdd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 16:33:33 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:63602 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753514Ab1AaVdb (ORCPT
+	id S1756403Ab1AaVeR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 16:34:17 -0500
+Received: from www17.your-server.de ([213.133.104.17]:43666 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754113Ab1AaVeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 16:33:31 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6243"; a="72480750"
-Message-ID: <4D472AAA.501@codeaurora.org>
-Date: Mon, 31 Jan 2011 13:33:30 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: Fix SMP_ON_UP for non ARM ltd. implementations
-References: <1296083052-20034-1-git-send-email-sboyd@codeaurora.org> <20110130122027.GA22677@n2100.arm.linux.org.uk> <1296404875.6192.10.camel@jazzbox> <20110130164007.GA27436@n2100.arm.linux.org.uk>
-In-Reply-To: <20110130164007.GA27436@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 31 Jan 2011 16:34:16 -0500
+References: <1295693349.2120.3.camel@localhost.localdomain> <201101222043.07703.rjw@sisk.pl> <1296249125.2006.7.camel@localhost.localdomain> <201101312139.03634.rjw@sisk.pl>
+In-Reply-To: <201101312139.03634.rjw@sisk.pl>
+Mime-Version: 1.0 (iPod Mail 8C148)
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <DB7A733A-D21A-4134-B50F-121CE2C179D3@m3y3r.de>
+Cc: "rui.zhang@intel.com" <rui.zhang@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+X-Mailer: iPod Mail (8C148)
+From: Thomas Meyer <thomas@m3y3r.de>
+Subject: Re: 2.6.38-rc2: acpi backlight control missing
+Date: Mon, 31 Jan 2011 22:34:16 +0100
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/30/2011 08:40 AM, Russell King - ARM Linux wrote:
-> Ok, so with that added, it becomes:
->
->  arch/arm/kernel/head.S |   22 ++++++++++------------
->  1 files changed, 10 insertions(+), 12 deletions(-)
->
-> diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
-> index f17d9a0..c0225da 100644
-> --- a/arch/arm/kernel/head.S
-> +++ b/arch/arm/kernel/head.S
-> @@ -392,24 +392,22 @@ ENDPROC(__turn_mmu_on)
->  
->  #ifdef CONFIG_SMP_ON_UP
->  __fixup_smp:
-> -	mov	r4, #0x00070000
-> -	orr	r3, r4, #0xff000000	@ mask 0xff070000
-> -	orr	r4, r4, #0x41000000	@ val 0x41070000
-> -	and	r0, r9, r3
-> -	teq	r0, r4			@ ARM CPU and ARMv6/v7?
-> +	and	r3, r9, #0x000f0000	@ architecture version
-> +	teq	r3, #0x000f0000		@ CPU ID supported?
->  	bne	__fixup_smp_on_up	@ no, assume UP
->  
-> -	orr	r3, r3, #0x0000ff00
-> -	orr	r3, r3, #0x000000f0	@ mask 0xff07fff0
-> +	bic	r3, r9, #0x00ff0000
-> +	bic	r3, r3, #0x0000000f	@ mask 0xff00fff0
-> +	mov	r4, #0x41000000
->  	orr	r4, r4, #0x0000b000
-> -	orr	r4, r4, #0x00000020	@ val 0x4107b020
-> -	and	r0, r9, r3
-> -	teq	r0, r4			@ ARM 11MPCore?
-> +	orr	r4, r4, #0x00000020	@ val 0x4100b020
-> +	teq	r3, r4			@ ARM 11MPCore?
->  	moveq	pc, lr			@ yes, assume SMP
->  
->  	mrc	p15, 0, r0, c0, c0, 5	@ read MPIDR
-> -	tst	r0, #1 << 31
-> -	movne	pc, lr			@ bit 31 => SMP
-> +	and	r0, r0, #0xc0000000	@ multiprocessing extensions and
-> +	teq	r0, #0x80000000		@ not part of a uniprocessor system?
-> +	moveq	pc, lr			@ yes, assume SMP
->  
->  __fixup_smp_on_up:
->  	adr	r0, 1f
+Am 31.01.2011 um 21:39 schrieb "Rafael J. Wysocki" <rjw@sisk.pl>:
 
-Great. Looks good to me too. If I had know that ARM 11MPCore had an 0xf
-in the architecture bits I would have suggested this fix instead.
+> On Friday, January 28, 2011, Thomas Meyer wrote:
+>> Am Samstag, den 22.01.2011, 20:43 +0100 schrieb Rafael J. Wysocki:
+>>> On Saturday, January 22, 2011, Thomas Meyer wrote:
+>>>> with 2.6.38-rc2 the acpi backlight is gone:
+>>>> 
+>>>> any ideas?
+>>> 
+>>> Not really, but Matthew may have some (CCed).
+>> 
+>> Okay, found the problem.
+>> 
+>> This commit broke my backlight:
+>> 
+>> commit 677bd810eedce61edf15452491781ff046b92edc
+>> Author: Zhang Rui <rui.zhang@intel.com>
+>> Date:   Mon Dec 6 15:04:21 2010 +0800
+>> 
+>>    ACPI video: remove output switching control
+>> 
+>> This is because in function
+>> "acpi_is_video_device()" (drivers/acpi/video_detect.c) the backlight
+>> device is only checked when some video capabilities were found, but by
+>> removing the check for the VIDEO_OUTPUT_SWITCHING (that seems to be the
+>> only video capability on my system) the check for the backlight device
+>> isn't done anymore.
+>> 
+>> by reverting above commit, the backlight is back again.
+> 
+> Is it the same issue as https://bugzilla.kernel.org/show_bug.cgi?id=27702 ?
 
-Also, I wasn't sure if we should send fixes for EXPERIMENTAL features to
-the stable tree. If its appropriate, please Cc stable when the patch
-goes in.
+Yes, it is.
 
-Reported-and-Tested-by: Stephen Boyd <sboyd@codeaurora.org>
+> In case it is, can you test the patch in there, please?
+> 
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Didn't test the patch. But it should do the trick.
 
+> Rafael
