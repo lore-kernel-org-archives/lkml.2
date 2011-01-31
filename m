@@ -1,57 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab1AaNpu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 08:45:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26977 "EHLO mx1.redhat.com"
+	id S1755432Ab1AaNsT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 08:48:19 -0500
+Received: from www.tglx.de ([62.245.132.106]:51813 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752192Ab1AaNps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 08:45:48 -0500
-Message-ID: <4D46BCFD.9010300@redhat.com>
-Date: Mon, 31 Jan 2011 15:45:33 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1751177Ab1AaNsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 08:48:18 -0500
+Date: Mon, 31 Jan 2011 14:47:47 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Torben Hohn <torbenh@gmx.de>
+cc: LKML <linux-kernel@vger.kernel.org>, hch@infradead.org,
+        Peter Zijlstra <peterz@infradead.org>, johnstul@us.ibm.com,
+        David Howells <dhowells@redhat.com>, yong.zhang0@gmail.com,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
+Subject: Re: [PATCH v2 16/20] mn10300: switch do_timer() to xtimer_update()
+In-Reply-To: <20110127150011.23248.62040.stgit@localhost>
+Message-ID: <alpine.LFD.2.00.1101311446570.31804@localhost6.localdomain6>
+References: <20110127145741.23248.68098.stgit@localhost> <20110127150011.23248.62040.stgit@localhost>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Rik van Riel <riel@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>,
-        ttracy@redhat.com, "Nakajima, Jun" <jun.nakajima@intel.com>
-Subject: Re: [RFC -v7 PATCH 5/7] export pid symbols needed for kvm_vcpu_on_spin
-References: <20110126165657.2ddd2ac9@annuminas.surriel.com>	 <20110126172303.3d5184a7@annuminas.surriel.com>	 <1296474699.15234.396.camel@laptop>  <4D46B88C.4000700@redhat.com> <1296481415.26581.13.camel@laptop>
-In-Reply-To: <1296481415.26581.13.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2011 03:43 PM, Peter Zijlstra wrote:
-> On Mon, 2011-01-31 at 15:26 +0200, Avi Kivity wrote:
-> >  On 01/31/2011 01:51 PM, Peter Zijlstra wrote:
-> >  >  On Wed, 2011-01-26 at 17:23 -0500, Rik van Riel wrote:
-> >  >  >   Export the symbols required for a race-free kvm_vcpu_on_spin.
-> >  >
-> >  >  Avi, you asked for an example of why I hated KVM as a module :-)
-> >
-> >  Why do you dislike exports so much?
->
-> Because I hate modules [*],
+On Thu, 27 Jan 2011, Torben Hohn wrote:
 
-Well, you could have just said you hate KVM as a module because it is a 
-module, and saved one indirection.
+> xtimer_update() properly takes the xtime_lock.
+> mn10300_last_tsc is only accessed from this function.
 
-> since we sadly cannot undo those, limiting
-> the module interface is all we've got, and KVM is one that pushes the
-> module interface further and further.
->
-> Many people see an EXPORT as a acknowledgement that its OK to use the
-> interface, even when its not.
->
-> [*] they enable the binary junk thing.
+This patch can be dropped as that code is dead. I sent a cleanup patch
+to the mn10300 folks.
 
-Then we need to stop binary modules, not castrate modules as a whole.
+Thanks,
 
--- 
-error compiling committee.c: too many arguments to function
-
+	tglx
