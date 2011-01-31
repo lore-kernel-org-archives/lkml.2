@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755516Ab1AaKfX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 05:35:23 -0500
-Received: from nm10.bullet.mail.ac4.yahoo.com ([98.139.52.207]:46034 "HELO
-	nm10.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753999Ab1AaKfV (ORCPT
+	id S1755491Ab1AaKhC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 05:37:02 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56889 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755303Ab1AaKhA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 05:35:21 -0500
-X-Greylist: delayed 325 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 Jan 2011 05:35:21 EST
-X-Yahoo-Newman-Id: 895528.44431.bm@omp1054.mail.ac4.yahoo.com
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: XcbUQA4VM1njk_5fZQknx37T73fVYS5Jn6Zy3zLRGONDpAJ
- ro8d5HToksaoazQ9oI8e.fmPyCjGC_E9lQwR67Z5tJrrufhZ6lGramq5nZCx
- 6XdfR1wDz7AfriDYKFVrFsQ0g3VJvNwmmNC.hJAtGtW3OudYWxS9_UxAAvuL
- AHYzeebQ5GaxAc_xY69ZAne3yd.VIYACvNlnSN93sh4uAZGuAY0JWQegX0kL
- fqfnRgRyrJtfyd2sXbFxCt030odKCKN83xWIE9SAo_di1rZcdrFV8hnoIgrA
- KlSWkbMstv7oYJFWgf6uCvmg0kMFlCPNnJWU41OGpGgF2WK7r9a4QcJHWdUE
- aIkra6rEV
-X-Yahoo-Newman-Property: ymail-3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Christoph Hellwig <hch@lst.de>, Mike Christie <michaelc@cs.wisc.edu>,
-        Hannes Reinecke <hare@suse.de>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Joel Becker <jlbec@evilplan.org>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 0/3] target: Add target_core_stat.c configfs code
-Date: Mon, 31 Jan 2011 02:29:52 -0800
-Message-Id: <1296469795-27632-1-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.5.6.5
+	Mon, 31 Jan 2011 05:37:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=XtbU2C0eMk+p6mB3cIrS6JvluX2gXA6NKiQjmgBwFFZDtKE+9tbPQFz8WDO2LIg4U+
+         nm18LXEWKT6+qHwRHVeG+WDXEZlsbxA+yLmrgQ7JilyGYaXw/eGPdhEc9teJa/37FQXh
+         hGqX/jznFoAAz9h3Sz+74pcwmsPwiSWcTmHa0=
+Date: Mon, 31 Jan 2011 11:36:55 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Roland Dreier <roland@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>
+Subject: Re: [PATCH] RDMA: update missed converion of flush_scheduled_work()
+Message-ID: <20110131103655.GC7459@htj.dyndns.org>
+References: <1292086307-19211-1-git-send-email-tj@kernel.org>
+ <1292086307-19211-2-git-send-email-tj@kernel.org>
+ <adamxn0yujn.fsf@cisco.com>
+ <20110124110654.GA11404@htj.dyndns.org>
+ <AANLkTinREtRhxhrY3nwAGdDqYqCGxMX6M8HhoxXcx8if@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinREtRhxhrY3nwAGdDqYqCGxMX6M8HhoxXcx8if@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+Hello,
 
-Hi James and Co,
+On Fri, Jan 28, 2011 at 04:40:55PM -0800, Roland Dreier wrote:
+> > Commit f0626710 (d9112f11586830d22501d0e26245ea) introduced ib_wq and
+> > removed the use of flush_scheduled_work(); however, during merge
+> > process one chunk was lost in ib_sa_remove_one().  Fix it.
+> 
+> Thanks, applied.
+> 
+> BTW in the future if you can cc the linux-rdma@vger mailing list on RDMA patches
+> that helps me out, since the patch goes into the linux-rdma patchwork
+> and I'm much
+> less likely to lose it in my inbox.
 
-This patch series adds support for TCM backend, fabric port/LUN,
-and MappedLUN/LunACL context struct config_group based statistics in
-target_core_configfs.c and target_core_fabric_configfs.c code using
-CONFIGFS_EATTR() based struct config_item_types.
+Oh, I see.  I'll try to remember that.
 
-This is based on target_core_mib.c procfs + seq_list based logic
-broken up into individual configfs groups and attributes following
-RFC4455.
+Thank you.
 
-Please have a look for review and comment,
-
-Thanks!
-
-Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-
-Nicholas Bellinger (3):
-  target: add initial device backend context target_core_stat.c code
-  target: add initial fabric port context target_core_stat.c code
-  target: add initial fabric MappedLUN context target_core_stat.c code
-
+-- 
+tejun
