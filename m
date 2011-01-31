@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab1AaKMn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 05:12:43 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:51432 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752610Ab1AaKMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 05:12:41 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mandeep Singh Baines <msb@chromium.org>
-Subject: Re: [PATCH 3/6] PM: use appropriate printk priority level
-Date: Mon, 31 Jan 2011 11:12:29 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc2+; KDE/4.4.4; x86_64; ; )
-Cc: gregkh@suse.de, mingo@redhat.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
-References: <20110125235700.GR8008@google.com> <1296084570-31453-4-git-send-email-msb@chromium.org>
-In-Reply-To: <1296084570-31453-4-git-send-email-msb@chromium.org>
+	id S1754898Ab1AaKMx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 05:12:53 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36831 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752683Ab1AaKMu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 05:12:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=PeKCZ2buqK4gvbwBjHBVvKrbTqVGJn73CJqEEYPIslFhLVYmcCDTeK5ZJ4dvP88DLU
+         F/RfC8QZ58eZ/4AiPcgJQNVlp7vsy0Suifbr/RMdhYuZdDaww8FE3p3LHcJyHnql5F9r
+         kZbVPEAm8ddYhb457v+8OBDPqwvs7O1K2fBFY=
+Date: Mon, 31 Jan 2011 11:12:44 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Simon Arlott <simon@fire.lp0.eu>
+Cc: axboe@kernel.dk, jeff@garzik.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        kay.sievers@vrfy.org, jack@suse.cz,
+        James.Bottomley@HansenPartnership.com
+Subject: Re: [PATCH] cdrom: support devices that have check_events but not
+ media_changed
+Message-ID: <20110131101244.GA7459@htj.dyndns.org>
+References: <1291838262-21274-1-git-send-email-tj@kernel.org>
+ <1291838262-21274-8-git-send-email-tj@kernel.org>
+ <4D44BE3E.5080107@simon.arlott.org.uk>
+ <4D44BF64.4060205@simon.arlott.org.uk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101311112.29528.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D44BF64.4060205@simon.arlott.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 27, 2011, Mandeep Singh Baines wrote:
-> printk()s without a priority level default to KERN_WARNING. To reduce
-> noise at KERN_WARNING, this patch set the priority level appriopriately
-> for unleveled printks()s. This should be useful to folks that look at
-> dmesg warnings closely.
+Hello,
+
+On Sun, Jan 30, 2011 at 01:31:16AM +0000, Simon Arlott wrote:
+> 93aae17af1172c40c6f74b7294e93a90c3cfaa5d replaced the media_changed op
+> with the check_events op in drivers/scsi/sr.c
 > 
-> Changed these messages to pr_info. But might be more appropriate as
-> pr_debug.
+> All users that check for the CDC_MEDIA_CHANGED capability try both
+> the check_events op and the media_changed op, but register_cdrom()
+> was requiring media_changed.
 > 
-> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-
-Applied to suspend-2.6/linux-next.
-
-Thanks,
-Rafael
-
-
-> ---
->  drivers/base/power/trace.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
+> This patch fixes the capability checking and removes a redundant
+> check that media_changed != NULL.
 > 
-> diff --git a/drivers/base/power/trace.c b/drivers/base/power/trace.c
-> index 9f4258d..c80e138 100644
-> --- a/drivers/base/power/trace.c
-> +++ b/drivers/base/power/trace.c
-> @@ -112,7 +112,7 @@ static unsigned int read_magic_time(void)
->  	unsigned int val;
->  
->  	get_rtc_time(&time);
-> -	printk("Time: %2d:%02d:%02d  Date: %02d/%02d/%02d\n",
-> +	pr_info("Time: %2d:%02d:%02d  Date: %02d/%02d/%02d\n",
->  		time.tm_hour, time.tm_min, time.tm_sec,
->  		time.tm_mon + 1, time.tm_mday, time.tm_year % 100);
->  	val = time.tm_year;				/* 100 years */
-> @@ -179,7 +179,7 @@ static int show_file_hash(unsigned int value)
->  		unsigned int hash = hash_string(lineno, file, FILEHASH);
->  		if (hash != value)
->  			continue;
-> -		printk("  hash matches %s:%u\n", file, lineno);
-> +		pr_info("  hash matches %s:%u\n", file, lineno);
->  		match++;
+> The cdrom_select_disc ioctl is also using the two operations, so
+> they should be required for CDC_SELECT_DISC too.
+
+First of all, thanks a lot for fixing this.  Just minor nits below.
+
+> diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
+> index 14033a3..4716d76 100644
+> --- a/drivers/cdrom/cdrom.c
+> +++ b/drivers/cdrom/cdrom.c
+> @@ -409,7 +409,9 @@ int register_cdrom(struct cdrom_device_info *cdi)
 >  	}
->  	return match;
-> @@ -255,7 +255,7 @@ static int late_resume_init(void)
->  	val = val / FILEHASH;
->  	dev = val /* % DEVHASH */;
 >  
-> -	printk("  Magic number: %d:%d:%d\n", user, file, dev);
-> +	pr_info("  Magic number: %d:%d:%d\n", user, file, dev);
->  	show_file_hash(file);
->  	show_dev_hash(dev);
->  	return 0;
-> 
+>  	ENSURE(drive_status, CDC_DRIVE_STATUS );
+> -	ENSURE(media_changed, CDC_MEDIA_CHANGED);
+> +	if (cdo->check_events == NULL && cdo->media_changed == NULL) {
+> +		*change_capability = ~(CDC_MEDIA_CHANGED | CDC_SELECT_DISC);
+> +	}
 
+Can we lose the unnecessary {}?
+
+>  	ENSURE(tray_move, CDC_CLOSE_TRAY | CDC_OPEN_TRAY);
+>  	ENSURE(lock_door, CDC_LOCK);
+>  	ENSURE(select_speed, CDC_SELECT_SPEED);
+> @@ -1471,7 +1473,7 @@ int cdrom_media_changed(struct cdrom_device_info *cdi)
+>  	/* This talks to the VFS, which doesn't like errors - just 1 or 0.  
+>  	 * Returning "0" is always safe (media hasn't been changed). Do that 
+>  	 * if the low-level cdrom driver dosn't support media changed. */ 
+> -	if (cdi == NULL || cdi->ops->media_changed == NULL)
+> +	if (cdi == NULL)
+
+This change is probably not necessary as cdrom_media_changed() is only
+called from drivers which implement media_changed.  I don't think it's
+gonna break anything but the whole media_changed stuff is scheduled
+for removal anyway, so I think it would be better to keep the changes
+minimal.
+
+Thank you.
+
+-- 
+tejun
