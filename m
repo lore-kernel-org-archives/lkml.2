@@ -1,59 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572Ab1AaOVh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 09:21:37 -0500
-Received: from smtp1-g21.free.fr ([212.27.42.1]:53209 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755033Ab1AaOVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 09:21:35 -0500
-Message-ID: <4D46C55C.1050200@free.fr>
-Date: Mon, 31 Jan 2011 15:21:16 +0100
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: akpm@linux-foundation.org, ebiederm@xmission.com,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        clg@fr.ibm.com
-Subject: Re: [PATCH 2/4] pidns: Call pid_ns_prepare_proc from	create_pid_namespace
-References: <1296469525-30111-1-git-send-email-daniel.lezcano@free.fr> <1296469525-30111-3-git-send-email-daniel.lezcano@free.fr> <20110131132207.GA26995@redhat.com> <4D46BA25.8080201@free.fr> <20110131140257.GA28827@redhat.com>
-In-Reply-To: <20110131140257.GA28827@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755892Ab1AaOVn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 09:21:43 -0500
+Received: from msux-gh1-uea01.nsa.gov ([63.239.65.39]:55964 "EHLO
+	msux-gh1-uea01.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755664Ab1AaOVl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 09:21:41 -0500
+Subject: Re: [PATCH 2/2] RFC: selinux: sysctl: fix selinux labeling broken
+ by last patch
+From: Stephen Smalley <sds@tycho.nsa.gov>
+To: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Cc: James Morris <jmorris@namei.org>, Eric Paris <eparis@parisplace.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
+        Dave Chinner <dchinner@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        selinux <selinux@tycho.nsa.gov>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+In-Reply-To: <AANLkTinMNftk8cUnGn+XfpUkwyo5axdnS2oO8Dg4k6M8@mail.gmail.com>
+References: <AANLkTi=4CH2zFrDp6DAnSj3pa28MtymfG+NrtQ3iW5k-@mail.gmail.com>
+	 <1296482354.26427.21.camel@moss-pluto>
+	 <AANLkTinMNftk8cUnGn+XfpUkwyo5axdnS2oO8Dg4k6M8@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: National Security Agency
+Date: Mon, 31 Jan 2011 09:21:20 -0500
+Message-ID: <1296483680.26427.32.camel@moss-pluto>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2011 03:02 PM, Oleg Nesterov wrote:
-> On 01/31, Daniel Lezcano wrote:
->> On 01/31/2011 02:22 PM, Oleg Nesterov wrote:
->>> On 01/31, Daniel Lezcano wrote:
->>>> @@ -96,6 +97,9 @@ static struct pid_namespace *create_pid_namespace(struct pid_namespace *parent_p
->>>>    	for (i = 1; i<   PIDMAP_ENTRIES; i++)
->>>>    		atomic_set(&ns->pidmap[i].nr_free, BITS_PER_PAGE);
->>>>
->>>> +	if (pid_ns_prepare_proc(ns))
->>>> +		goto out_free_map;
->>>> +
->>>>    	return ns;
->>> This is not right, afaics. I already sent the similar patches, but
->>> they were ignored ;)
->>>
->>> Please see http://marc.info/?l=linux-kernel&m=127697484000334
->>>
->>> If pid_ns_prepare_proc() fails we shouldn't blindly return ENOMEM
->>> and, more importantly, we need put_pid_ns(parent_ns).
->> Oh, ok. Right. Thanks for the pointer.
->>
->> Are you ok if I replace the patch 2/4 with your patch ?
-> My patch depends on 1/4, http://marc.info/?l=linux-kernel&m=127697468632667
->
-> Your change looks very similar to 1/4 + 3/4. Just fix the problem
-> in create_pid_namespace(), no need to replace.
+On Mon, 2011-01-31 at 16:14 +0200, Lucian Adrian Grijincu wrote:
+> On Mon, Jan 31, 2011 at 3:59 PM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
+> > - Don't remove the IS_PRIVATE() test from inode_has_perm(), as other
+> > inodes beyond just the /proc/sys ones are marked with that flag
+> > (original usage was for reiserfs xattr inodes).
+> 
+> 
+> Are you sure? I believe it was added here:
+> 
+>     [PATCH] selinux: enhance selinux to always ignore private inodes
+> 
+>     Hmmm...turns out to not be quite enough, as the /proc/sys inodes
+> aren't truly
+>     private to the fs, so we can run into them in a variety of security hooks
+>     beyond just the inode hooks, such as security_file_permission (when reading
+>     and writing them via the vfs helpers), security_sb_mount (when
+> mounting other
+>     filesystems on directories in proc like binfmt_misc), and deeper within the
+>     security module itself (as in flush_unauthorized_files upon
+> inheritance across
+>     execve).  So I think we have to add an IS_PRIVATE() guard within SELinux, as
+>     below.  Note however that the use of the private flag here could
+> be confusing,
+>     as these inodes are _not_ private to the fs, are exposed to userspace, and
+>     security modules must implement the sysctl hook to get any access
+> control over
+>     them.
+> 
+> 
+> http://thread.gmane.org/gmane.comp.security.selinux/341/focus=519
+> 
+> 
+> In my patch I don't care about IS_PRIVATE, because I don't mark proc
+> inodes as PRIVATE any more.
+> 
+> 
+> This patch added S_ISPRIVATE to proc inodes:
+>     [PATCH] sysctl: hide the sysctl proc inodes from selinux
+>     86a71dbd3e81e8870d0f0e56b87875f57e58222b
+> 
+> This one added the IS_PRIVATE check:
+>     [PATCH] selinux: enhance selinux to always ignore private inodes
+>     bbaca6c2e7ef0f663bc31be4dad7cf530f6c4962
+> 
+> 
+> I'll remove the check from my patch if you say it's used in other
+> places too, but the original usage does not seem to be "for reiserfs
+> xattr inodes".
 
-Ok, will do.
+Ok, my mistake - you can leave that part alone.  The original usage of
+the S_PRIVATE flag was for reiserfs xattr inodes, but it appears that
+you are correct that we don't need the IS_PRIVATE() guard within the
+selinux code for that use case.
 
-Thanks Oleg.
-
-   -- Daniel
+-- 
+Stephen Smalley
+National Security Agency
 
