@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755881Ab1AaN3s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 08:29:48 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:33405 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755867Ab1AaN3r (ORCPT
+	id S1755849Ab1AaNak (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 08:30:40 -0500
+Received: from peer.zerties.org ([188.40.33.175]:56607 "EHLO peer.zerties.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755634Ab1AaNaj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 08:29:47 -0500
-Date: Mon, 31 Jan 2011 14:30:24 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Greg Kroah-Hartman <greg@kroah.com>, x86 <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] AMD microcode fixes
-Message-ID: <20110131133024.GC32230@aftab>
+	Mon, 31 Jan 2011 08:30:39 -0500
+X-Greylist: delayed 1812 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 Jan 2011 08:30:39 EST
+From: Christian Dietrich <christian.dietrich@informatik.uni-erlangen.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Reinhard Tartler <Reinhard.Tartler@informatik.uni-erlangen.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        vamos@i4.informatik.uni-erlangen.de, Julia Lawall <julia@diku.dk>
+Subject: Re: [ANNOUNCE] undertaker 1.0
+Organization: Uni Erlangen, Informatik 4, Lehrstuhl =?utf-8?Q?f=C3=BCr?=
+ Betriebs- und verteilte Systeme
+References: <87y666tvag.fsf@faui44a.informatik.uni-erlangen.de>
+	<alpine.LFD.2.00.1101282126210.31804@localhost6.localdomain6>
+Date: Mon, 31 Jan 2011 14:00:24 +0100
+In-Reply-To: <alpine.LFD.2.00.1101282126210.31804@localhost6.localdomain6>
+	(Thomas Gleixner's message of "Fri, 28 Jan 2011 21:41:18 +0100 (CET)")
+Message-ID: <86sjw9jkif.fsf@peer.zerties.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Ingo,
+Thomas Gleixner <tglx@linutronix.de> writes:
 
-please pull from the branch below to receive a bunch of AMD microcode
-driver fixes and cleanups. They are not strictly needed for .38 so
-you could easily postpone them for .39 but still have them cook in
-linux-next.
+> The one in manage.c is not:
+>
+>  921 #ifdef CONFIG_IRQ_RELEASE_METHOD
+>
+> CONFIG_IRQ_RELEASE_METHOD is set by arch/um. Ditto for include/linux/irq.h
 
-Patches survived testing here and were out for review a week ago:
-http://marc.info/?l=linux-kernel&m=129588278209579
+This problem was the result of an implementation bug. We didn't create a
+feature model for um. This is now fixed in our master branch and will be
+in the next minor release.
 
-There's one out-of-tree change to <drivers/base/sys.c> which Greg hasn't
-explicitly acked yet but judging by his silence he has nothing against
-it :).
+> It'd be nice if the web interface would have a knob to jump to the
+> next red section. Scrolling through is annoying.
 
-Thanks.
+I generated a new code browser for -rc2[1]. There you can press 'n' to jump
+to the next defect. I've only tested the javascript code with chromium,
+but it should work anywhere else too.
 
-The following changes since commit 1bae4ce27c9c90344f23c65ea6966c50ffeae2f5:
-
-  Linux 2.6.38-rc2 (2011-01-21 19:01:34 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git ucode-fixes
-
-Borislav Petkov (7):
-      sysdev: Do not register with sysdev when erroring on add
-      x86, microcode: Correct sysdev_add error path
-      x86, microcode, AMD: Release firmware on error
-      x86, microcode, AMD: Simplify install_equiv_cpu_table
-      x86, microcode, AMD: Simplify get_next_ucode
-      x86, microcode, AMD: Remove unneeded memset call
-      x86, microcode, AMD: Cleanup dmesg output
-
- arch/x86/kernel/microcode_amd.c  |  142 ++++++++++++++++++--------------------
- arch/x86/kernel/microcode_core.c |    6 +-
- drivers/base/sys.c               |   65 ++++++++++++-----
- 3 files changed, 118 insertions(+), 95 deletions(-)
-
+[1] http://www4.informatik.uni-erlangen.de/Research/VAMOS/linux-trees/v2.6.38-rc2/
 -- 
-Regards/Gruss,
-Boris.
+(λ x . x x) (λ x . x x) -- See how beautiful the lambda is
+No documentation is better than bad documentation
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
