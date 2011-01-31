@@ -1,89 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944Ab1AaOFn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 09:05:43 -0500
-Received: from hera.kernel.org ([140.211.167.34]:46496 "EHLO hera.kernel.org"
+	id S1755870Ab1AaOEI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 09:04:08 -0500
+Received: from smtp.nokia.com ([147.243.1.48]:28830 "EHLO mgw-sa02.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752042Ab1AaOFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 09:05:41 -0500
-Date: Mon, 31 Jan 2011 14:05:29 GMT
-From: tip-bot for Torben Hohn <torbenh@gmx.de>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torbenh@gmx.de, peterz@infradead.org, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torbenh@gmx.de, peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <20110127145910.23248.21379.stgit@localhost>
-References: <20110127145910.23248.21379.stgit@localhost>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] time: Provide xtime_update()
-Message-ID: <tip-f0af911a9dec9de702645182c8d269449e24d24b@git.kernel.org>
-Git-Commit-ID: f0af911a9dec9de702645182c8d269449e24d24b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 31 Jan 2011 14:05:30 +0000 (UTC)
+	id S1752954Ab1AaOEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 09:04:06 -0500
+From: tapio.vihuri@nokia.com
+To: dmitry.torokhov@gmail.com
+Cc: peter.ujfalusi@nokia.com, randy.dunlap@oracle.com,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        ilkka.koskinen@nokia.com, samu.p.onkalo@nokia.com
+Subject: [PATCH v6 0/3] input: Add support for ECI (multimedia) accessories
+Date: Mon, 31 Jan 2011 16:03:51 +0200
+Message-Id: <1296482634-31666-1-git-send-email-tapio.vihuri@nokia.com>
+X-Mailer: git-send-email 1.6.5
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f0af911a9dec9de702645182c8d269449e24d24b
-Gitweb:     http://git.kernel.org/tip/f0af911a9dec9de702645182c8d269449e24d24b
-Author:     Torben Hohn <torbenh@gmx.de>
-AuthorDate: Thu, 27 Jan 2011 15:59:10 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 31 Jan 2011 14:55:43 +0100
+From: Tapio Vihuri <tapio.vihuri@nokia.com>
 
-time: Provide xtime_update()
+Thank you for comments.
 
-xtime_update() takes xtime_lock write locked and calls
-do_timer(). Provided to replace the do_timer() calls in the
-architecture code.
+ECI input driver changes:
+- Add debuging config option with adequate "help" in Kconfig
+- Clean out debug messages
+- Clean out error messages
+- Force all buttons up event when unplugging accessory
 
-Signed-off-by: Torben Hohn <torbenh@gmx.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: johnstul@us.ibm.com
-Cc: yong.zhang0@gmail.com
-Cc: hch@infradead.org
-LKML-Reference: <20110127145910.23248.21379.stgit@localhost>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- include/linux/sched.h     |    1 +
- kernel/time/timekeeping.c |   13 +++++++++++++
- 2 files changed, 14 insertions(+), 0 deletions(-)
+ECI controller driver changes:
+- Remove unused debuging config option
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index d747f94..9d9a078 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2050,6 +2050,7 @@ extern void release_uids(struct user_namespace *ns);
- #include <asm/current.h>
- 
- extern void do_timer(unsigned long ticks);
-+extern void xtime_update(unsigned long ticks);
- 
- extern int wake_up_state(struct task_struct *tsk, unsigned int state);
- extern int wake_up_process(struct task_struct *tsk);
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 8da35d1..02c13a3 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -969,3 +969,16 @@ void get_xtime_and_monotonic_offset(struct timespec *xtim, struct timespec *wtom
- 		*wtom = wall_to_monotonic;
- 	} while (read_seqretry(&xtime_lock, seq));
- }
-+
-+/**
-+ * xtime_update() - advances the timekeeping infrastructure
-+ * @ticks:	number of ticks, that have elapsed since the last call.
-+ *
-+ * Must be called with interrupts disabled.
-+ */
-+void xtime_update(unsigned long ticks)
-+{
-+	write_seqlock(&xtime_lock);
-+	do_timer(ticks);
-+	write_sequnlock(&xtime_lock);
-+}
+Created against linux-2.6.38-rc2 at:
+70d1f36 Merge branch 'for-linus' of git://git.infradead.org/ubi-2.6
+
+Please review.
+
+--- v5 message ---
+
+Thank you for comments.
+
+ECI input driver changes:
+
+- Use sparse_keymap_setup() properly, remove unneeded input set_bits
+
+ECI controller driver changes:
+
+- Added "button" debugfs entry for input driver buttons handling testing
+
+--- v4 message ---
+
+Thank you for comments.
+
+ECI input driver changes:
+
+- Use driver name in debugfs
+- reject accessory stating more than maximum 31 buttons
+- clean out couple comments
+
+ECI controller driver changes:
+
+- name change, from ecibus to eci_xxx_ctrl
+- location change, from drivers/ecibus to drivers/input/misc
+- major rework from platform driver to i2c-driver
+- removed mrst platform dependency
+
+Checkpatch warn about Kconfig, but I think it is false positive, and I will
+report it to the maintainer.
+
+Platform code changes:
+
+- medfield_ prefix changed to mrst_
+- added ECI controller needed power control
+- remover ECI controller platform driver stuff
+- added i2c stuff for ECI controller driver
+
+Created against linux-2.6.37-rc8 at:
+a25cecc Merge branch 'next' of git://git.monstr.eu/linux-2.6-microblaze
+
+--- v3 message ---
+
+Thank you for comments.
+
+ECI input driver changes:
+
+- Makefile and Kconfig sorted alphabetically
+- using sparse keymap library, much cleaner solution
+- correct string aligment with 80 column
+- debugfs initialization fix
+- sysfs cable entry using just 0/1
+- using cheaper __set_bit
+- insane comments fixed
+- remove unneeded misc device
+
+Created against linux-2.6.37-rc8 at:
+989d873 Merge master.kernel.org:/home/rmk/linux-2.6-arm
+
+--- v2 message ---
+
+Thank you for comments.
+
+In series two there Kconfig dependency problem fixed, preventing compilation
+if X86_MRST (Intel Moorestown) or INPUT_MISC is not selected.
+
+Also created against linux-2.6.37-rc8
+
+--- v1 message ---
+
+Hi all
+
+This patch set introduce Multimedia Headset Accessory support for
+Nokia phones. Technically those are known as ECI (Enhancement Control Interface)
+	
+If headset has many buttons, like play, vol+, vol- etc. then it is propably ECI
+accessory.
+
+Among several buttons ECI accessories contains memory for storing several
+parameters.
+
+This ECI input driver provides the following features:
+ - reading ECI configuration memory
+ - ECI buttons as input events
+
+Drive is constructed as follows:
+ - ECI accessory input driver deals with headset accessory
+ - ECI bus control driver deals the HW transfering data to/from headset
+ - platform data match used HW
+
+In the future accessory detection logic will be added using ALSA jack reporting.
+
+Created against linux-2.6.37-rc6
+
+Please review.
+
+Tapio Vihuri (3):
+  ECI: input: introduce ECI accessory input driver
+  ECI: introducing ECI controller driver
+  ECI: adding platform data for ECI driver
+
+ arch/x86/platform/mrst/mrst.c      |   48 ++
+ drivers/input/misc/Kconfig         |   65 +++
+ drivers/input/misc/Makefile        |    3 +-
+ drivers/input/misc/eci.c           |  949 ++++++++++++++++++++++++++++++++++++
+ drivers/input/misc/eci_at20_ctrl.c |  566 +++++++++++++++++++++
+ include/linux/input/eci.h          |  179 +++++++
+ 6 files changed, 1809 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/input/misc/eci.c
+ create mode 100644 drivers/input/misc/eci_at20_ctrl.c
+ create mode 100644 include/linux/input/eci.h
+
