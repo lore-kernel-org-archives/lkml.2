@@ -1,110 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab1AaPlW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 10:41:22 -0500
-Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:51109 "HELO
-	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752550Ab1AaPlV (ORCPT
+	id S1756107Ab1AaPlh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 10:41:37 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:41532 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756095Ab1AaPlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 10:41:21 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=tao.ma;
-	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer:In-Reply-To:References:X-Identified-User;
-	b=w2TEvGmxTeEPOrEK7zomSLJMs7PXo3W3YMzCSmQtZEE/5HqQ6LdvSDXvK+6iYhKZ2idlCZuE95lp6AWKxKGoA+VZcvmpWm8+jfs+XNJQlHUtZ9SUdOduxy5QEAf/ewYa;
-From: Tao Ma <tm@tao.ma>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michel Lespinasse <walken@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v2] mlock: set VM_WRITE in case we don't have read permission.
-Date: Mon, 31 Jan 2011 23:41:03 +0800
-Message-Id: <1296488463-15179-1-git-send-email-tm@tao.ma>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20110131203943.4C77.A69D9226@jp.fujitsu.com>
-References: <20110131203943.4C77.A69D9226@jp.fujitsu.com>
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 114.251.86.0 authed with tm@tao.ma}
+	Mon, 31 Jan 2011 10:41:35 -0500
+Date: Mon, 31 Jan 2011 10:41:34 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Tanya Brokhman <tlinder@codeaurora.org>
+cc: gregkh@suse.de, <linux-arm-msm@vger.kernel.org>,
+        "'open list:USB GADGET/PERIPH...'" <linux-usb@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v7 1/5] usb: Adding SuperSpeed support to dummy_hcd
+In-Reply-To: <000301cbc158$df3bc470$9db34d50$@org>
+Message-ID: <Pine.LNX.4.44L0.1101311036220.1931-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tao Ma <boyu.mt@taobao.com>
+On Mon, 31 Jan 2011, Tanya Brokhman wrote:
 
-In 5ecfda0, we do some optimization in mlock, but it causes
-a very basic test case(attached below) of mlock to fail. So
-this patch add another check that if we don't have read permission,
-still set FOLL_WRITE flag. Thank KOSAKI for the suggestion.
-The test program is attached below.
+> > > This patch adds SS support to the dummy hcd module. It may be used to
+> > test
+> > > SS device when no (SS) HW is available.
+> > > USB 3.0 hub includes 2 hubs - HS and SS ones.
+> > > This patch adds support for a SS hub in the dummy_hcd module. Thus,
+> > when
+> > > dummy_hcd enabled it will register 2 root hubs (SS and HS).
+> > 
+> > Getting there.  A few spots could still use some attention.
+> > 
+> 
+> Could you please elaborate? 
 
-#include <sys/mman.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/types.h>
+I _did_ elaborate in the original email message.  Here's a repeat of
+what I said:
 
-int main()
-{
-	char *buf, *testfile = "test_mmap";
-	int fd, file_len = 40960, ret = -1;
+------------------------------------------------------------------------
 
-	fd = open(testfile, O_RDWR);
-	if (fd < 0) {
-		perror("open");
-		return -1;
-	}
+> @@ -343,7 +431,13 @@ dummy_enable (struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
+>  	dum = ep_to_dummy (ep);
+>  	if (!dum->driver || !is_enabled (dum))
+>  		return -ESHUTDOWN;
+> -	max = le16_to_cpu(desc->wMaxPacketSize) & 0x3ff;
+> +	max = le16_to_cpu(desc->wMaxPacketSize) ;
+> +	/*
+> +	 * For HS/FS devices only bits 0..9 of the wMaxPacketSize 
+represent the
+> +	 * maximum packet size
+> +	 */
+> +	if (dum->gadget.speed < USB_SPEED_SUPER)
+> +		max &= 0x3ff;
 
-	if (ftruncate(fd, file_len) < 0) {
-		perror("ftruncate");
-		goto out;
-	}
+Strictly speaking, both the old and the new code are wrong.  For all
+devices, regardless of speed, we should say:
 
-	buf = mmap(NULL, file_len, PROT_WRITE, MAP_SHARED, fd, 0);
-	if (buf == MAP_FAILED) {
-		perror("mmap");
-		goto out;
-	}
+	max = le16_to_cpu(desc->wMaxPacketSize) & 0x7ff;
 
-	if (mlock(buf, file_len) < 0) {
-		perror("mlock");
-		goto out;
-	}
+In other words, the speed is contained in bits 0..10 (not 0..9).
 
-	munlock(buf, file_len);
-	munmap(buf, file_len);
-	ret = 0;
-out:
-	close(fd);
-	return ret;
-}
 
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
----
- mm/mlock.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+> @@ -1352,6 +1559,10 @@ static void dummy_timer (unsigned long _dum)
+>  	case USB_SPEED_HIGH:
+>  		total = 512/*bytes*/ * 13/*packets*/ * 8/*uframes*/;
+>  		break;
+> +	case USB_SPEED_SUPER:
+> +		/* 400MBps = 400*(2^20)/1000 bytes per milisec */
+> +		total = (400 << 20) / 1000;
+> +		break;
 
-diff --git a/mm/mlock.c b/mm/mlock.c
-index 13e81ee..8508c5a 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -178,6 +178,13 @@ static long __mlock_vma_pages_range(struct vm_area_struct *vma,
- 	if ((vma->vm_flags & (VM_WRITE | VM_SHARED)) == VM_WRITE)
- 		gup_flags |= FOLL_WRITE;
- 
-+	/*
-+	 * We don't have readable permission. Therefore we can't use read
-+	 * operation even though it's faster.
-+	 */
-+	if ((vma->vm_flags & (VM_READ|VM_WRITE)) == VM_WRITE)
-+		gup_flags |= FOLL_WRITE;
-+
- 	if (vma->vm_flags & VM_LOCKED)
- 		gup_flags |= FOLL_MLOCK;
- 
--- 
-1.6.3.GIT
+Ugh.  For one thing, SuperSpeed runs at 500 million bytes/s, not 400
+million.  For another, 400 << 20 isn't equal to 400 million.
+
+Don't try to be too clever.  Realizing that this is only an 
+approximation anyway, just say:
+
+		/* Bus speed is 500000 bytes/ms, so use a little less */
+		total = 490000;
+
+------------------------------------------------------------------------
+
+
+> > Also, you might try running this patch through checkpatch.pl and fixing
+> > any complaints it makes.
+> >
+> 
+> Actually I always do that. It came out clean. If you see something wrong
+> with the coding style please let me know.
+
+There are a few places where a terminating ';' is preceded by an
+unnecessary ' ' character.
+
+Alan Stern
 
