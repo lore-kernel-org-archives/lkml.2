@@ -1,113 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754400Ab1AaXwq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 18:52:46 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:33620 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754242Ab1AaXwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 18:52:45 -0500
-Date: Mon, 31 Jan 2011 15:52:31 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: matthieu castet <castet.matthieu@free.fr>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [BUG] broken ebba638ae723d8a8fc2f7abce5ec18b688b791d7
-Message-ID: <20110131235231.GJ4557@outflux.net>
-References: <4D41E86D.8060205@free.fr>
- <20110127230013.GO4981@outflux.net>
- <4D4228CE.5090601@zytor.com>
- <20110131213847.GF4557@outflux.net>
- <4D474194.2000709@free.fr>
+	id S1756237Ab1AaXyQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 18:54:16 -0500
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:47062 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754129Ab1AaXyP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 18:54:15 -0500
+From: Kevin Hilman <khilman@ti.com>
+To: Thomas Weber <thomas.weber.linux@googlemail.com>
+Cc: Govindraj <govindraj.ti@gmail.com>, Thomas Weber <weber@corscience.de>,
+        linux-omap@vger.kernel.org, manjugk@ti.com, gadiyar@ti.com,
+        tony@atomide.com, govindraj@ti.com, gregkh@suse.de,
+        andrei.emeltchenko@nokia.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3] OMAP: Enable Magic SysRq on serial console ttyOx
+Organization: Texas Instruments, Inc.
+References: <1295604084-27761-1-git-send-email-weber@corscience.de>
+	<AANLkTikSznkcNwkVaPswx=zr8FFGQPVMw_AebF9ymZLE@mail.gmail.com>
+	<8739oi7z4m.fsf@ti.com>
+	<AANLkTi=HxnPVu83CpodFA4rLipcz1Oie2co49S1=+1M6@mail.gmail.com>
+Date: Mon, 31 Jan 2011 15:54:11 -0800
+In-Reply-To: <AANLkTi=HxnPVu83CpodFA4rLipcz1Oie2co49S1=+1M6@mail.gmail.com>
+	(Thomas Weber's message of "Mon, 31 Jan 2011 22:31:09 +0100")
+Message-ID: <87vd141vfg.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4D474194.2000709@free.fr>
-Organization: Canonical
-X-HELO: www.outflux.net
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matthieu,
+Thomas Weber <thomas.weber.linux@googlemail.com> writes:
 
-On Tue, Feb 01, 2011 at 12:11:16AM +0100, matthieu castet wrote:
-> Kees Cook a écrit :
-> >On Thu, Jan 27, 2011 at 06:24:14PM -0800, H. Peter Anvin wrote:
-> >>On 01/27/2011 03:00 PM, Kees Cook wrote:
-> >>>Yikes, good catch.
-> >>>
-> >>>arch/x86/kernel/trampoline_64.S uses:
-> >>>        movw    $(trampoline_stack_end - r_base), %sp
-> >>>
-> >>>arch/x86/boot/compressed/head_64.S uses:
-> >>>        movl    $boot_stack_end, %eax
-> >>>        addl    %ebp, %eax
-> >>>        movl    %eax, %esp
-> >>>
-> >>>what would be safe for arch/x86/kernel/head_32.S ? It uses "stack_start",
-> >>>but later after paging set-up. Is the following sane to solve this?
-> >>>
-> >>To run it before paging is set up, you can't use stack, start; you
-> >>have to use a pointer based on physical address.  You have two
-> >>problems with using stack_start: you're using a linear address to
-> >>access stack_start, and stack_start itself contains a linear
-> >>address.
-> >>
-> >>It's not entirely clear to me why we don't initialize %ss to
-> >>__BOOT_DS with the other segment registers, but it would make most
-> >>sense to me:
-> >>
-> >>diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-> >>index fc293dc..c10f9ba 100644
-> >>--- a/arch/x86/kernel/head_32.S
-> >>+++ b/arch/x86/kernel/head_32.S
-> >>@@ -99,7 +99,12 @@ ENTRY(startup_32)
-> >>        movl %eax,%es
-> >>        movl %eax,%fs
-> >>        movl %eax,%gs
-> >>+       movl %eax,%ss
-> >> 2:
-> >>+/*
-> >>+ * Set up an initial stack
-> >>+ */
-> >>+       movl $pa(init_thread_union+THREAD_SIZE), %esp
-> >>
-> >> /*
-> >>  * Clear BSS first so that there are no surprises...
-> >
-> >This doesn't appear to work for me. While I can boot fine, doing CPU
-> >hotplugging hangs the system. :(
-> >
-> This is weird because the patch only touch first cpu (startup_32
-> entry) and cpu hotplug go to startup_32_smp.
-> 
-> Here a untested patch that move the stack setup in the common path.
-> 
-> diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-> index fc293dc..5df3432 100644
-> --- a/arch/x86/kernel/head_32.S
-> +++ b/arch/x86/kernel/head_32.S
-> @@ -284,6 +284,12 @@ ENTRY(startup_32_smp)
->  	movl %eax,%gs
->  #endif /* CONFIG_SMP */
->  default_entry:
-> +	/*
-> +	 * Set up an initial stack
-> +	 */
-> +	movl $(__BOOT_DS),%eax
-> +	movl %eax,%ss
-> +	movl $pa(init_thread_union+THREAD_SIZE), %esp
->  
->  /*
->   *	New page tables may be in 4Mbyte page mode and may
+> On Mon, Jan 24, 2011 at 10:47 PM, Kevin Hilman <khilman@ti.com> wrote:
+>> Govindraj <govindraj.ti@gmail.com> writes:
+>>
+>>> On Fri, Jan 21, 2011 at 3:31 PM, Thomas Weber <weber@corscience.de> wrote:
+>>>> Magic SysRq key is not working for OMAP on new serial
+>>>> console ttyOx because SUPPORT_SYSRQ is not defined
+>>>> for omap-serial.
+>>>>
+>>>> This patch defines SUPPORT_SYSRQ in omap-serial and
+>>>> enables handling of Magic SysRq character.
+>>>>
+>>>> Further there is an issue of losing first break character.
+>>>> Removing the reset of the lsr_break_flag fixes this issue.
+>>>>
+>>>> Signed-off-by: Thomas Weber <weber@corscience.de>
+>>>
+>>>
+>>> Acked-by: Govindraj.R <govindraj.raja@ti.com>
+>>> Tested-by: Manjunath G Kondaiah <manjugk@ti.com>
+>>>
+>>
+>> Acked-by: Kevin Hilman <khilman@ti.com>
+>>
+>> Greg, this one should go for .38-rc. Â  Feel free to merge, or we can
+>> take it through the OMAP tree with your ack.
+>>
+>> Thanks,
+>>
+>> Kevin
+>>
+>> --
+>
+> Hello,
+> should I rebase this patch, because it does not apply after movement
+> of driver/serial to driver/tty/serial?
+>
 
-This worked, thanks! If this tests cleanly for you in qemu, we should get
-this committed.
+Yes, please rebase.
 
--Kees
+Thanks,
 
--- 
-Kees Cook
-Ubuntu Security Team
+Kevin
+
