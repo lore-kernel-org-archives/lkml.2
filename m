@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab1AaRuV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 12:50:21 -0500
-Received: from cantor.suse.de ([195.135.220.2]:34379 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751543Ab1AaRuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 12:50:20 -0500
-Date: Mon, 31 Jan 2011 09:46:22 -0800
-From: Greg KH <gregkh@suse.de>
-To: Arthur Taylor <art@ified.ca>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, alan@redhat.com,
-        Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCH] vt: Add virtual console keyboard mode OFF
-Message-ID: <20110131174622.GA25097@suse.de>
-References: <AANLkTikZe1EuvNQHceNUdKFpmmeAbQG8H+34AG9fw43u@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikZe1EuvNQHceNUdKFpmmeAbQG8H+34AG9fw43u@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754868Ab1AaRxV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 12:53:21 -0500
+Received: from service87.mimecast.com ([94.185.240.25]:50261 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752394Ab1AaRxT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 12:53:19 -0500
+From: Will Deacon <will.deacon@arm.com>
+To: linux-kernel@vger.kernel.org, oprofile-list@lists.sf.net
+Cc: Will Deacon <will.deacon@arm.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH v2] oprofile: add SMP barriers for hrtimer hotplug code
+Date: Mon, 31 Jan 2011 17:53:09 +0000
+Message-Id: <1296496389-30647-1-git-send-email-will.deacon@arm.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 31 Jan 2011 17:53:13.0681 (UTC) FILETIME=[BB393410:01CBC16F]
+X-MC-Unique: 111013117531700201
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id p0VHrSQa003837
 
-On Sun, Jan 30, 2011 at 12:36:22AM -0800, Arthur Taylor wrote:
-> Add a new mode for the virtual console keyboard OFF to compliment RAW
-> in which all key events are ignored. New mode prevents vt input
-> buffers from overflowing when a program opens but doesn't read from a
-> tty, like Xorg using only evdev for input.
-> 
-> The new mode is available by the ioctl KDSKBMODE with argument K_OFF
-> from linux/kd.h. Does not effect sysrq behaviour.
+OProfile uses a CPU notifier to start and stop any hrtimers when CPUs change
+between ONLINE and DEAD. A static int ctr_running is used to keep track of
+the counter state.
 
-Care to document this somewhere (i.e. Documentation/ABI?)
+This can lead to problems where writes to the state variable are re-ordered
+with repect to reads of the variable occurring on other CPUs, meaning that
+__oprofile_hrtimer_start may read ctr_running as 0 and not initialise the
+hrtimer. Potential deadlock can occur in __oprofile_hrtimer_stop because
+lock_hrtimer_base will poll until timer->base != NULL, which will never
+happen.
 
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Alan Cox <alan@redhat.com>
-> Signed-off-by: Arthur Taylor <art@ified.ca>
-> ---
->  drivers/tty/vt/keyboard.c |    5 +++--
->  drivers/tty/vt/vt_ioctl.c |    3 +++
->  include/linux/kbd_kern.h  |    3 ++-
->  include/linux/kd.h        |    1 +
->  4 files changed, 9 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
-> index e95d787..6dd3c68 100644
-> --- a/drivers/tty/vt/keyboard.c
-> +++ b/drivers/tty/vt/keyboard.c
-> @@ -654,7 +654,8 @@ static void k_spec(struct vc_data *vc, unsigned
-> char value, char up_flag)
+This patch adds an smp_mb() before initialising the hrtimers to ensure that
+ctr_running mirrors the correct counter state.
 
-Your patch is line-wrapped and can not be applied :(
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+---
 
-> @@ -50,11 +50,12 @@ struct kbd_struct {
->  #define VC_CAPSLOCK	2	/* capslock mode */
->  #define VC_KANALOCK	3	/* kanalock mode */
-> 
-> -	unsigned char kbdmode:2;	/* one 2-bit value */
-> +	unsigned char kbdmode:3;	/* one 3-bit value */
+Changes since v1: Removed redundant barrier from stop() code.
 
-Are you sure you can change the size of this structure and no one is
-going to have problems?
+ drivers/oprofile/timer_int.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Also, what userspace code is going to use this new feature?  Has it been
-tested to work properly?
+diff --git a/drivers/oprofile/timer_int.c b/drivers/oprofile/timer_int.c
+index 0107251..a3a94ea 100644
+--- a/drivers/oprofile/timer_int.c
++++ b/drivers/oprofile/timer_int.c
+@@ -48,6 +48,7 @@ static int oprofile_hrtimer_start(void)
+ {
+ 	get_online_cpus();
+ 	ctr_running = 1;
++	smp_mb();
+ 	on_each_cpu(__oprofile_hrtimer_start, NULL, 1);
+ 	put_online_cpus();
+ 	return 0;
+-- 
+1.7.0.4
 
-thanks,
 
-greg k-h
