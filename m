@@ -1,94 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445Ab1AaKZw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 05:25:52 -0500
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:43270 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755345Ab1AaKZk (ORCPT
+	id S1755356Ab1AaK05 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 05:26:57 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:57532 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753322Ab1AaK04 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 05:25:40 -0500
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-To: akpm@linux-foundation.org
-Cc: ebiederm@xmission.com, oleg@redhat.com,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        clg@fr.ibm.com
-Subject: [PATCH 3/4] procfs: kill the global proc_mnt variable
-Date: Mon, 31 Jan 2011 11:25:24 +0100
-Message-Id: <1296469525-30111-4-git-send-email-daniel.lezcano@free.fr>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1296469525-30111-1-git-send-email-daniel.lezcano@free.fr>
-References: <1296469525-30111-1-git-send-email-daniel.lezcano@free.fr>
+	Mon, 31 Jan 2011 05:26:56 -0500
+Subject: Re: call_function_many: fix list delete vs add race
+From: Peter Zijlstra <peterz@infradead.org>
+To: Milton Miller <miltonm@bga.com>
+Cc: akpm@linux-foundation.org, Anton Blanchard <anton@samba.org>,
+        xiaoguangrong@cn.fujitsu.com, mingo@elte.hu, jaxboe@fusionio.com,
+        npiggin@gmail.com, rusty@rustcorp.com.au,
+        torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        benh@kernel.crashing.org, linux-kernel@vger.kernel.org
+In-Reply-To: <smp-call-function-list-race-fix@mdm.bga.com>
+References: <20110112150740.77dde58c@kryten>
+	 <1295288253.30950.280.camel@laptop>
+	 <smp-call-function-peter-reply@mdm.bga.com>
+	 <smp-call-function-move-writes@mdm.bga.com>
+	 <1296145360.15234.234.camel@laptop>
+	 <smp-call-function-list-race@mdm.bga.com>
+	 <smp-call-function-list-race-fix@mdm.bga.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 31 Jan 2011 11:27:45 +0100
+Message-ID: <1296469665.15234.361.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+On Fri, 2011-01-28 at 18:20 -0600, Milton Miller wrote:
+> Peter pointed out there was nothing preventing the list_del_rcu in
+> smp_call_function_interrupt from running before the list_add_rcu in
+> smp_call_function_many.   Fix this by not setting refs until we have put
+> the entry on the list.  We can use the lock acquire and release instead
+> of a wmb.
+> 
+> Reported-by: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Milton Miller <miltonm@bga.com>
+> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> ---
+> 
+> I tried to force this race with a udelay before the lock & list_add and
+> by mixing all 64 online cpus with just 3 random cpus in the mask, but
+> was unsuccessful.  Still, it seems to be a valid race, and the fix
+> is a simple change to the current code.
 
-After the previous cleanup in proc_get_sb() the global proc_mnt has
-no reasons to exists, kill it.
+Yes, I think this will fix it, I think simply putting that assignment
+under the lock is sufficient, because then the list removal will
+serialize again the list add. But placing it after the list add does
+also seem sufficient.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Daniel Lezcano <daniel.lezcano@free.fr>
----
- fs/proc/inode.c    |    2 --
- fs/proc/internal.h |    1 -
- fs/proc/root.c     |    7 ++++---
- 3 files changed, 4 insertions(+), 6 deletions(-)
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-diff --git a/fs/proc/inode.c b/fs/proc/inode.c
-index 176ce4c..ee0f802 100644
---- a/fs/proc/inode.c
-+++ b/fs/proc/inode.c
-@@ -42,8 +42,6 @@ static void proc_evict_inode(struct inode *inode)
- 		sysctl_head_put(PROC_I(inode)->sysctl);
- }
- 
--struct vfsmount *proc_mnt;
--
- static struct kmem_cache * proc_inode_cachep;
- 
- static struct inode *proc_alloc_inode(struct super_block *sb)
-diff --git a/fs/proc/internal.h b/fs/proc/internal.h
-index 9ad561d..c03e8d3 100644
---- a/fs/proc/internal.h
-+++ b/fs/proc/internal.h
-@@ -107,7 +107,6 @@ static inline struct proc_dir_entry *pde_get(struct proc_dir_entry *pde)
- }
- void pde_put(struct proc_dir_entry *pde);
- 
--extern struct vfsmount *proc_mnt;
- int proc_fill_super(struct super_block *);
- struct inode *proc_get_inode(struct super_block *, struct proc_dir_entry *);
- 
-diff --git a/fs/proc/root.c b/fs/proc/root.c
-index e5e2bfa..a9000e9 100644
---- a/fs/proc/root.c
-+++ b/fs/proc/root.c
-@@ -90,19 +90,20 @@ static struct file_system_type proc_fs_type = {
- 
- void __init proc_root_init(void)
- {
-+	struct vfsmount *mnt;
- 	int err;
- 
- 	proc_init_inodecache();
- 	err = register_filesystem(&proc_fs_type);
- 	if (err)
- 		return;
--	proc_mnt = kern_mount_data(&proc_fs_type, &init_pid_ns);
--	if (IS_ERR(proc_mnt)) {
-+	mnt = kern_mount_data(&proc_fs_type, &init_pid_ns);
-+	if (IS_ERR(mnt)) {
- 		unregister_filesystem(&proc_fs_type);
- 		return;
- 	}
- 
--	init_pid_ns.proc_mnt = proc_mnt;
-+	init_pid_ns.proc_mnt = mnt;
- 	proc_symlink("mounts", NULL, "self/mounts");
- 
- 	proc_net_init();
--- 
-1.7.1
+> Index: common/kernel/smp.c
+> ===================================================================
+> --- common.orig/kernel/smp.c	2011-01-28 16:23:15.000000000 -0600
+> +++ common/kernel/smp.c	2011-01-28 16:55:01.000000000 -0600
+> @@ -491,15 +491,17 @@ void smp_call_function_many(const struct
+>  	cpumask_clear_cpu(this_cpu, data->cpumask);
+>  
+>  	/*
+> -	 * To ensure the interrupt handler gets an complete view
+> -	 * we order the cpumask and refs writes and order the read
+> -	 * of them in the interrupt handler.  In addition we may
+> -	 * only clear our own cpu bit from the mask.
+> +	 * We reuse the call function data without waiting for any grace
+> +	 * period after some other cpu removes it from the global queue.
+> +	 * This means a cpu might find our data block as it is writen.
+> +	 * The interrupt handler waits until it sees refs filled out
+> +	 * while its cpu mask bit is set; here we may only clear our
+> +	 * own cpu mask bit, and must wait to set refs until we are sure
+> +	 * previous writes are complete and we have obtained the lock to
+> +	 * add the element to the queue.  We use the acquire and release
+> +	 * of the lock as a wmb() -- acquire prevents write moving up and
+> +	 * release requires old writes are visible.
+>  	 */
+> -	smp_wmb();
+> -
+> -	atomic_set(&data->refs, cpumask_weight(data->cpumask));
+> -
+>  	raw_spin_lock_irqsave(&call_function.lock, flags);
+>  	/*
+>  	 * Place entry at the _HEAD_ of the list, so that any cpu still
+> @@ -509,6 +511,8 @@ void smp_call_function_many(const struct
+>  	list_add_rcu(&data->csd.list, &call_function.queue);
+>  	raw_spin_unlock_irqrestore(&call_function.lock, flags);
+>  
+> +	atomic_set(&data->refs, cpumask_weight(data->cpumask));
+> +
+>  	/*
+>  	 * Make the list addition visible before sending the ipi.
+>  	 * (IPIs must obey or appear to obey normal Linux cache
+
+
 
