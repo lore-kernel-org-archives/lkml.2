@@ -1,124 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756876Ab1AaXCU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 18:02:20 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:55400 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754296Ab1AaXCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 18:02:17 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Hilman <khilman@ti.com>, Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [RFC][PATCH] Power domains for platform bus type
-Date: Tue, 1 Feb 2011 00:01:51 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc2+; KDE/4.4.4; x86_64; ; )
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>
-References: <Pine.LNX.4.44L0.1101311442100.1931-100000@iolanthe.rowland.org> <20110131222609.GC27856@angua.secretlab.ca> <87vd1466d8.fsf@ti.com>
-In-Reply-To: <87vd1466d8.fsf@ti.com>
+	id S1756760Ab1AaXDq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 18:03:46 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:57881 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754179Ab1AaXDp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 18:03:45 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102010001.51418.rjw@sisk.pl>
+In-Reply-To: <alpine.LFD.2.00.1101311709280.8580@xanadu.home>
+References: <20110131203626.15105.64302.stgit@localhost6.localdomain6>
+ <20110131210410.15105.63595.stgit@localhost6.localdomain6> <alpine.LFD.2.00.1101311709280.8580@xanadu.home>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 31 Jan 2011 16:03:24 -0700
+X-Google-Sender-Auth: OePdK8OS1W5y1o4Y9ZY4VJdJiwc
+Message-ID: <AANLkTi=Kfb6TVUqN9aogq8A5WskNfwW=s7Dswgf2MC8i@mail.gmail.com>
+Subject: Re: [PATCH v2 4/6] arm/dt: probe for platforms via the device tree
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Olof Johansson <olof@lixom.net>, john.linn@xilinx.com,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 31, 2011, Kevin Hilman wrote:
-> Grant Likely <grant.likely@secretlab.ca> writes:
-> 
-> > On Mon, Jan 31, 2011 at 11:16:51PM +0100, Rafael J. Wysocki wrote:
-> >> On Monday, January 31, 2011, Alan Stern wrote:
-> >> > On Mon, 31 Jan 2011, Rafael J. Wysocki wrote:
-> >> > 
-> >> > > On Monday, January 31, 2011, Alan Stern wrote:
-> >> > > > On Sun, 30 Jan 2011, Rafael J. Wysocki wrote:
-> >> > > > 
-> >> > > > > > One thing about this implementation is slightly questionable.  The new
-> >> > > > > > power_domain callbacks were added to the __weak platform PM routines,
-> >> > > > > > which means they will have to be included in every overriding routine
-> >> > > > > > provided by a platform imiplementation.
-> >> > > > > > 
-> >> > > > > > Would it be better to separate these things?  Have the power_domain 
-> >> > > > > > callbacks occur in a static outer function which then calls a public 
-> >> > > > > > __weak inner function that can be overridden?
-> >> > > > > 
-> >> > > > > That certainly is a good idea, but I wasn't sure how to do that.  It looks
-> >> > > > > like I could keep the __weak functions as they are and modify
-> >> > > > > platform_dev_pm_ops instead to point to a new set of function that in turn
-> >> > > > > would call the __weak ones.  For example, the .suspend pointer in
-> >> > > > > platform_dev_pm_ops might point to a new function, say
-> >> > > > > platform_pm_full_suspend() that would call the power domain functions and
-> >> > > > > the "original" platform_pm_suspend().  Is that what you mean?
-> >> > > > 
-> >> > > > Yes.  But what about the platform_bus_set_pm_ops() interface?  Should
-> >> > > > platform-specific replacements for the pm_ops functions also include
-> >> > > > the power_domain callbacks?
-> >> > > 
-> >> > > Well, whoever uses platform_bus_set_pm_ops(), he can simply prevent power
-> >> > > domains from being used by not defining them in the first place. :-)
-> >> > 
-> >> > But what about the case where the user _does_ want to have power
-> >> > domains?
-> >> 
-> >> Ah, OK.  The caller of platform_bus_set_pm_ops() will replace the original
-> >> platform_dev_pm_ops with his own set of operations, so he will not see the
-> >> power domains.
-> >> 
-> >> > Do you want to make the replacement routines responsible for
-> >> > invoking the power-domain callbacks, or should the platform core handle
-> >> > this automatically?
-> >> 
-> >> Well, if someone replaces the entire platform_dev_pm_ops object, this means
-> >> that on his platform power management is substantially different from the
-> >> generic one.  In that case, IMO, he should be responsible for handling all
-> >> of the subsystem-level aspects of power management, including power domains.
-> >
-> > Part of point of doing something like power_domain is to *get rid* of
-> > platform_bus_set_pm_ops().  It is a horrid, stop-gap interface that
-> > doesn't scale.  I don't think much consideration needs to be made for
-> > users of platform_bus_set_pm_ops() in this regard.
-> 
-> As the author of platform_bus_set_pm_ops(), I humbly agree.  
-> 
-> Also, the __weak functions here were obsoleted by
-> platform_bus_set_pm_ops().  Once Magnus moves to
-> platform_bus_set_pm_ops() (or this new interface) the __weak attributes
-> should be removed (c.f. commit log below[1] where
-> platform_bus_set_pm_ops() was added.)
-> 
-> Kevin
-> 
-> commit c64a0926710153b9d44c979d2942f4a8648fd74e
-> Author: Kevin Hilman <khilman@ti.com>
-> Date:   Wed Aug 25 12:50:00 2010 -0700
-> 
->     driver core: platform_bus: allow runtime override of dev_pm_ops
->     
->     Currently, the platform_bus allows customization of several of the
->     busses dev_pm_ops methods by using weak symbols so that platform code
->     can override them.  The weak-symbol approach is not scalable when
->     wanting to support multiple platforms in a single kernel binary.
->     
->     Instead, provide __init methods for platform code to customize the
->     dev_pm_ops methods at runtime.
->     
->     NOTE: after these dynamic methods are merged, the weak symbols should
->           be removed from drivers/base/platform.c.  AFAIK, this will only
->           affect SH and sh-mobile which should be converted to use this
->           runtime approach instead of the weak symbols.  After SH &
->           sh-mobile are converted, the weak symobols could be removed.
-> --
+On Mon, Jan 31, 2011 at 3:27 PM, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> On Mon, 31 Jan 2011, Grant Likely wrote:
+>
+>> If a dtb is passed to the kernel then the kernel needs to iterate
+>> through compiled-in mdescs looking for one that matches and move the
+>> dtb data to a safe location before it gets accidentally overwritten by
+>> the kernel.
+>>
+>> This patch creates a new function, setup_machine_fdt() which is
+>> analogous to the setup_machine_atags() created in the previous patch.
+>> It does all the early setup needed to use a device tree machine
+>> description.  It also creates arm_unflatten_device_tree() which copies
+>> the dtb into an allocated buffer and unflattens it into the live-tree
+>> representation.
+>>
+>> v2: Changed to save the dtb by copying into an allocated buffer.
+>>     - Since the dtb will very likely be passed in the first 16k of ram
+>>       where the interrupt vectors live, memblock_reserve() is
+>>       insufficient to protect the dtb data.
+>
+> This is wrong.  The vector page can be allocated anywhere.  It is
+> currently allocated with memblock_alloc(), so if you memblock_reserve()
+> the dtb soon enough then it should be safe and the vector page or
+> whatever will be allocated somewhere else.
 
-So, it seems there are two possibilities, either (1) keep the $subject patch
-as is in the hope that Magnus will use power domains instead of overriding
-the __weak callbacks and remove the _weak attribute when that happens, or (2)
-modify it along the lines suggested by Alan (ie. so that the _weak callbacks
-stay as they are, but they won't be pointed to by platform_dev_pm_ops directly).
-I'm pretty much fine with each of them, so I'd prefer to do whichever is
-generally more useful.  Magnus?
+Ah, thanks.  Did not know that.
 
-Rafael
+> What was the actual problem?
+
+I was seeing the first page in memory getting zeroed partway through
+the boot process which wiped out the dtb.  I haven't yet narrowed down
+to the exact point that it gets overwritten.  It is late enough that
+all the early setup dt code works, but before init_machine gets
+called.
+
+I'm also seeing a problem with /proc/device-tree getting corrupted on
+qemu which I cannot reproduce on Tegra hardware.  Still investigating
+this one.
+
+g.
