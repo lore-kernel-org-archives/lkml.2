@@ -1,65 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755626Ab1AaLhm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 06:37:42 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:36592 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754022Ab1AaLhk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 06:37:40 -0500
-Date: Mon, 31 Jan 2011 06:36:57 -0500
-From: Josh Boyer <jwboyer@linux.vnet.ibm.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: devicetree-discuss@lists.ozlabs.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, sam@ravnborg.org,
-        benh@kernel.crashing.org
-Subject: Re: [PATCH 2/3] dt: Remove obsolete description of powerpc boot
- interface
-Message-ID: <20110131113657.GC13541@zod.rchland.ibm.com>
-References: <20110131073918.9058.37628.stgit@localhost6.localdomain6>
- <20110131074502.9058.11473.stgit@localhost6.localdomain6>
+	id S1755657Ab1AaLi6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 06:38:58 -0500
+Received: from www.tglx.de ([62.245.132.106]:52513 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755609Ab1AaLi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 06:38:56 -0500
+Date: Mon, 31 Jan 2011 12:38:46 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Torben Hohn <torbenh@gmx.de>
+cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        johnstul@us.ibm.com, yong.zhang0@gmail.com, hch@infradead.org
+Subject: Re: [PATCH v2 03/20] provide get_xtime_and_monotonic_offset() and
+ use it in hrtimer.c
+In-Reply-To: <20110127145905.23248.30458.stgit@localhost>
+Message-ID: <alpine.LFD.2.00.1101311236440.31804@localhost6.localdomain6>
+References: <20110127145741.23248.68098.stgit@localhost> <20110127145905.23248.30458.stgit@localhost>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110131074502.9058.11473.stgit@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 31, 2011 at 12:45:05AM -0700, Grant Likely wrote:
->32 and 64 bit powerpc support has been merged for a while now, but
->the booting-without-of.txt document still describes 32 bit as not
->supporting multiplatform, which is no longer true.  This patch fixes
->the documentation.
->
->Also remove references to powerpc-specific details outside of section
->I in preparation to add details for other architectures.
+On Thu, 27 Jan 2011, Torben Hohn wrote:
 
-There's a line around 500 that starts:
+> 2 places in hrtimer need to take the xtime_lock, but we want it
+> to be private to kernel/time...
+> 
+> we just provide a function, which gets the values with proper
+> read locking the xtime_lock.
 
-	"The kernel powerpc generic code does..."
+Proper sentences start with an uppercase letter.
+ 
+> @@ -617,10 +612,7 @@ static void retrigger_next_event(void *arg)
+>  	if (!hrtimer_hres_active())
+>  		return;
+>  
+> -	do {
+> -		seq = read_seqbegin(&xtime_lock);
+> -		wtm = __get_wall_to_monotonic();
+> -	} while (read_seqretry(&xtime_lock, seq));
+> +	get_xtime_and_monotonic_offset(NULL, &wtm);
+>  	set_normalized_timespec(&realtime_offset, -wtm.tv_sec, -wtm.tv_nsec);
 
-Perhaps the powerpc reference should be dropped there?
+Leaves an unused variable seq. Please do NOT ignore compiler warnings.
+ 
+>  	base = &__get_cpu_var(hrtimer_bases);
+> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> index e4fd957..6085fa5 100644
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -957,3 +957,24 @@ void do_timer(unsigned long ticks)
+>  	jiffies_64 += ticks;
+>  	update_wall_time();
+>  }
+> +
+> +/**
+> + * get_xtime_and_monotonic_offset() - get xtime and wall_to_monotonic
+> + * @xts: pointer to struct timespec, filled with the current_time
+> + * @tom: pointer to struct timespec, filled with the wall_to_monotonic offset
+> + *
+> + * this function does proper locking.
+> + * and it allows passing NULL, when one is not interested in the value.
+> + */
+> +void get_xtime_and_monotonic_offset(struct timespec *xts, struct timespec *tom)
+> +{
+> +	unsigned long seq;
+> +
+> +	do {
+> +		seq = read_seqbegin(&xtime_lock);
+> +		if (xts)
+> +			*xts = xtime;
+> +		if (tom)
+> +			*tom = wall_to_monotonic;
 
-Also, there are several mentions of "real Open Firmware", which are
-probably just fine, and prom_init(), which are probably arch specific.
+That's silly. We can hand in realtime_offset in
+retrigger_next_event(). No need for these conditionals.
 
-There is a section that talks about ranges that starts with:
+> +	} while (read_seqretry(&xtime_lock, seq));
+> +}
 
-	"For a new 64-bit powerpc board, I...".
+Thanks,
 
-Section III 5) has all kinds of powerpc specific stuff.  CHRP,
-pSeries, PAPR in the root node.  The references to Apple machines for
-examples are probably OK, but it shouldn't make PowerPC items as
-explicit requirements.
-
-Section III 5e) references a file that doesn't exist:
-arch/ppc64/kernel/setup.c
-
-Section V, paragraph 2 references a file that doesn't exist:
-arch/ppc64/kernel/prom.c
-
-Hope that helps you...
-
-josh
+	tglx
+ 
