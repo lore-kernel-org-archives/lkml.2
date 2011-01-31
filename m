@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755516Ab1AaMQf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 07:16:35 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:64869 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322Ab1AaMQe (ORCPT
+	id S1755538Ab1AaMWq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 07:22:46 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:50750 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752968Ab1AaMWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 07:16:34 -0500
-From: Thomas Weber <weber@corscience.de>
-To: linux-omap@vger.kernel.org
-Cc: Thomas Weber <weber@corscience.de>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] video: omap24xxcam: Fix compilation
-Date: Mon, 31 Jan 2011 13:16:09 +0100
-Message-Id: <1296476169-10862-1-git-send-email-weber@corscience.de>
-X-Mailer: git-send-email 1.7.4.rc3
-X-Provags-ID: V02:K0:c+NQv/N8hZDoUKd5gj3GEW5fC3Z95wLQsdBWDT3/CF7
- 7KsyuZZm3pLJs4v+Zzf+Taz795BJh1mPHypzYK1sfOdE1nKWyD
- fd0+Jtt0BX+EmBfHYupKZ7fziTBuhCot1z1WoKX5VYN45kGuYG
- 9/wsFu8YuNGvntlAB6OUbXHU0IBLUBdeeeesjSXGCD16ez0LBD
- L4ROc00yZ4kzxZ4V4iarA==
+	Mon, 31 Jan 2011 07:22:45 -0500
+Message-ID: <4D46A94C.7000700@ru.mvista.com>
+Date: Mon, 31 Jan 2011 15:21:32 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: linux-arm-kernel@lists.infradead.org,
+        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: dmaengine: i.MX dma fixes
+References: <1296475248-29095-1-git-send-email-s.hauer@pengutronix.de>
+In-Reply-To: <1296475248-29095-1-git-send-email-s.hauer@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add linux/sched.h because of missing declaration of TASK_NORMAL.
+Hello.
 
-This patch fixes the following error:
+On 31-01-2011 15:00, Sascha Hauer wrote:
 
-drivers/media/video/omap24xxcam.c: In function
-'omap24xxcam_vbq_complete':
-drivers/media/video/omap24xxcam.c:415: error: 'TASK_NORMAL' undeclared
-(first use in this function)
-drivers/media/video/omap24xxcam.c:415: error: (Each undeclared
-identifier is reported only once
-drivers/media/video/omap24xxcam.c:415: error: for each function it
-appears in.)
+> The following contains fixes for the i.MX dma driver.
 
-Signed-off-by: Thomas Weber <weber@corscience.de>
----
- drivers/media/video/omap24xxcam.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+> Sascha
 
-diff --git a/drivers/media/video/omap24xxcam.c b/drivers/media/video/omap24xxcam.c
-index 0175527..f6626e8 100644
---- a/drivers/media/video/omap24xxcam.c
-+++ b/drivers/media/video/omap24xxcam.c
-@@ -36,6 +36,7 @@
- #include <linux/clk.h>
- #include <linux/io.h>
- #include <linux/slab.h>
-+#include <linux/sched.h>
- 
- #include <media/v4l2-common.h>
- #include <media/v4l2-ioctl.h>
--- 
-1.7.4.rc3
+> The following changes since commit 1bae4ce27c9c90344f23c65ea6966c50ffeae2f5:
 
+>    Linux 2.6.38-rc2 (2011-01-21 19:01:34 -0800)
+
+> are available in the git repository at:
+>    git://git.pengutronix.de/git/imx/linux-2.6 dmaengine-imxdma
+
+> Sascha Hauer (4):
+>        dmaengine i.MX dma: set maximum segment size for our device
+>        dmaengine i.MX dma: check sg entries for valid addresses and lengths
+>        dmaengine i.MX DMA: do not initialize chan_id field
+>        dmaengine i.MX dma: initialize dma capabilities outside channel loop
+
+>   drivers/dma/imx-dma.c |   26 ++++++++++++++++++++++----
+>   1 files changed, 22 insertions(+), 4 deletions(-)
+
+    Actually, would have made sense to combine the analogous changes to SDMA 
+and DMA drivers into the single patch...
+
+WBR, Sergei
