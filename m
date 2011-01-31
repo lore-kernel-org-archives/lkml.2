@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755894Ab1AaSl7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 13:41:59 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:44377 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752143Ab1AaSl6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 13:41:58 -0500
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: v9fs-developer@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH -V1 0/7] Buffered write and writeable mmap support for 9P
-In-Reply-To: <E1PjqD4-0000dZ-UN@pomaz-ex.szeredi.hu>
-References: <1296329186-23807-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <E1PjqD4-0000dZ-UN@pomaz-ex.szeredi.hu>
-User-Agent: Notmuch/0.5-64-gc3ae51d (http://notmuchmail.org) Emacs/23.1.1 (i486-pc-linux-gnu)
-Date: Tue, 01 Feb 2011 00:11:51 +0530
-Message-ID: <877hdk9aq8.fsf@linux.vnet.ibm.com>
+	id S1755961Ab1AaSsz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 13:48:55 -0500
+Received: from kroah.org ([198.145.64.141]:54115 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755886Ab1AaSsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 13:48:53 -0500
+Date: Mon, 31 Jan 2011 10:47:26 -0800
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dan Carpenter <error27@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: linux-next: manual merge of the staging tree with the
+ staging.current tree
+Message-ID: <20110131184726.GB17755@kroah.com>
+References: <20110131161640.93d8688a.sfr@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110131161640.93d8688a.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 Jan 2011 10:38:10 +0100, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> On Sun, 30 Jan 2011, Aneesh Kumar K.V wrote:
-> > The patch series implement buffered write and writeable mmap for 9P
+On Mon, Jan 31, 2011 at 04:16:40PM +1100, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> P9 is supposed to work with servers on the local machine, right?
-
-Yes
-
+> Today's linux-next merge of the staging tree got a conflict in
+> drivers/staging/ste_rmi4/synaptics_i2c_rmi4.c between commit
+> f32b8453e5a5587ae112ba478ae0bbad74e83d22 ("Staging: ste_rmi4: use after
+> input_unregister_device()") from the staging.current tree and commit
+> dc7b202a4ee6cb686e2bbef80c84443f43ec91bd ("staging/ste_rmi4: Remove
+> obsolete cleanup for clientdata") from the staging tree.
 > 
-> In that case you need to think about various deadlock scenarios.  An
-> example: the P9 server needs a large order allocation while serving
-> the buffered write request.  That may trigger the page reclaim and go
-> into synchronous writeback, possibly waiting on the exact page which
-> the P9 server is just trying to finish writing out.
-> 
-> This is not easy to deal with, see commit 3be5a52b for the fuse
-> solution.  I'm not saying it's the only way, there may be a better
-> one.
-> 
+> I fixed it up (I think - see below) and can carry the fix as necessary.
 
-Thanks for the commit info. I will look at the details and see how best
-we can solve this in 9P
+Thanks, that looks correct to me.  I'll apply this when Linus syncs up
+with my staging-linus tree.
 
--aneesh
+greg k-h
