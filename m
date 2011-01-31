@@ -1,103 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756369Ab1AaX41 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 18:56:27 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60836 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754283Ab1AaX40 (ORCPT
+	id S1756448Ab1AaX46 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 18:56:58 -0500
+Received: from mail131.messagelabs.com ([216.82.242.99]:47374 "EHLO
+	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754283Ab1AaX45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 18:56:26 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 1 Feb 2011 08:50:21 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, nishimura@mxp.nes.nec.co.jp,
-        balbir@linux.vnet.ibm.com, minchan.kim@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/3] memcg: prevent endless loop when charging huge
- pages to near-limit group
-Message-Id: <20110201085021.fa975a56.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110131144131.6733aa3a.akpm@linux-foundation.org>
-References: <1296482635-13421-1-git-send-email-hannes@cmpxchg.org>
-	<1296482635-13421-3-git-send-email-hannes@cmpxchg.org>
-	<20110131144131.6733aa3a.akpm@linux-foundation.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 31 Jan 2011 18:56:57 -0500
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-5.tower-131.messagelabs.com!1296518215!12358790!1
+X-StarScan-Version: 6.2.9; banners=-,-,-
+X-Originating-IP: [216.166.12.97]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 31 Jan 2011 17:56:53 -0600
+Subject: Re: [leds-pca9532] Add gpio capability
+Thread-Topic: Re: [leds-pca9532] Add gpio capability
+Thread-Index: AcvBoojycM09n7jnSDeE2o7G+39//g==
+Message-ID: <0D753D10438DA54287A00B027084269764CEEDA479@AUSP01VMBX24.collaborationhost.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p0VNv6Jm005856
 
-On Mon, 31 Jan 2011 14:41:31 -0800
-Andrew Morton <akpm@linux-foundation.org> wrote:
+>>>> + if (gpios) {
+>>>> + data->gpio.label = "gpio-pca9532";
+>>>> + data->gpio.set = pca9532_gpio_set_value;
+>>>> + data->gpio.get = pca9532_gpio_get_value;
+>>>> + data->gpio.request = pca9532_gpio_request_pin;
+>>>> + data->gpio.can_sleep = 1;
+>>>> + data->gpio.base = pdata->gpio_base;
+>>>> + data->gpio.ngpio = 16;
+>>>> + data->gpio.dev = &client->dev;
+>>>> + data->gpio.owner = THIS_MODULE;
+>>>
+>>> I'd assume that you also need to define a direction_output-function which
+>>> always
+>>> returns success?
+>>
+>> Yes, you are right. It is not possible to set direction in hw, but I
+>> should provide them.
+>
+> It should be okay to skip direction_input, because gpiolib will return an error
+> if it is not available. This is exactly why IMO you need a direction_output
+> returning 0. Otherwise drivers checking if that operation was successful, might
+> be fooled.
 
-> On Mon, 31 Jan 2011 15:03:54 +0100
-> Johannes Weiner <hannes@cmpxchg.org> wrote:
-> 
-> > +static inline bool res_counter_check_margin(struct res_counter *cnt,
-> > +					    unsigned long bytes)
-> > +{
-> > +	bool ret;
-> > +	unsigned long flags;
-> > +
-> > +	spin_lock_irqsave(&cnt->lock, flags);
-> > +	ret = cnt->limit - cnt->usage >= bytes;
-> > +	spin_unlock_irqrestore(&cnt->lock, flags);
-> > +	return ret;
-> > +}
-> > +
-> >  static inline bool res_counter_check_under_soft_limit(struct res_counter *cnt)
-> >  {
-> >  	bool ret;
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index 73ea323..c28072f 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -1111,6 +1111,15 @@ static bool mem_cgroup_check_under_limit(struct mem_cgroup *mem)
-> >  	return false;
-> >  }
-> >  
-> > +static bool mem_cgroup_check_margin(struct mem_cgroup *mem, unsigned long bytes)
-> > +{
-> > +	if (!res_counter_check_margin(&mem->res, bytes))
-> > +		return false;
-> > +	if (do_swap_account && !res_counter_check_margin(&mem->memsw, bytes))
-> > +		return false;
-> > +	return true;
-> > +}
-> 
-> argh.
-> 
-> If you ever have a function with the string "check" in its name, it's a
-> good sign that you did something wrong.
-> 
-> Check what?  Against what?  Returning what?
-> 
-> mem_cgroup_check_under_limit() isn't toooo bad - the name tells you
-> what's being checked and tells you what to expect the return value to
-> mean.
-> 
-> But "res_counter_check_margin" and "mem_cgroup_check_margin" are just
-> awful.  Something like
-> 
-> 	bool res_counter_may_charge(counter, bytes)
-> 
-> would be much clearer.
-> 
-> If we really want to stick with the "check" names (perhaps as an ironic
-> reference to res_counter's past mistakes) then please at least document
-> the sorry things?
-> 
-
-Ah, I ack the concept of patch.
-
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-Johannes, could you change name ? I'm sorry.
+>From the datasheet:
 
 
+6.4 Pins used as GPIOs
 
- 
+LEDn pins not used to control LEDs can be used as General Purpose I/Os (GPIOs).
 
+To use as input, set LEDn to high-impendance (00) and then read the pin state
+via the INPUT0 or INPUT1 register.
+
+For use as output, connect external pull-up resistor to the pin and size it
+according to the DC recommended operating characteristics.  LEDn output is HIGH
+when the output is programmed as high-impedance, and LOW when programmed LOW
+through the 'LED selector' register.  The output can be pulse-width controlled
+when PWM0 or PWM1 are used.
+
+
+So, you should provide both a direction_input and direction_output.
+
+Regards,
+Hartley
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
