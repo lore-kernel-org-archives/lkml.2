@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab1AaP4L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 10:56:11 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:41060 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752983Ab1AaP4K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 10:56:10 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=cc:message-id:from:to:in-reply-to:content-type
-         :content-transfer-encoding:mime-version:subject:date:references
-         :x-mailer;
-        b=hYGSxzbJodCtGMEgeyya7NTqHIyPu4YBle8ukEGKvVc4JplLnITKyzTEVI6qPMza8J
-         MrK/wKbCqp5t62YMqL1am7yD12iD0nwXckkemjwGLk9b+BMoz2ARGYp2vT7tr83mC7l6
-         XjlU0E5BngUcQiUI6C8Oa5V2S43WQDP7HuBg4=
-Cc: trivial@kernel.org, linux@arm.linux.org.uk, linux-kernel@vger.kernel.org
-Message-Id: <DFCEA15D-B25F-4E7E-9510-88E45008C492@gmail.com>
-From: Justin Mattock <justinmattock@gmail.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-In-Reply-To: <AANLkTi=esKDkirbi1TmCzUCJNkP6_x-D5QpLfVnaJrnA@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII; format=flowed; delsp=yes
+	id S1756130Ab1AaP41 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 10:56:27 -0500
+Received: from xenotime.net ([72.52.115.56]:47433 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756121Ab1AaP40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 10:56:26 -0500
+Date: Mon, 31 Jan 2011 07:56:19 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Amirali Shambayati <amirali.shambayati@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: kernel compilation error
+Message-Id: <20110131075619.c738c551.rdunlap@xenotime.net>
+In-Reply-To: <AANLkTinDHW9BOFVi9Kux3p_swX-ZtzsravAgXQ2KVooU@mail.gmail.com>
+References: <AANLkTinDHW9BOFVi9Kux3p_swX-ZtzsravAgXQ2KVooU@mail.gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0 (Apple Message framework v936)
-Subject: Re: [PATCH] arch:arm:mbox-db5500.c Change initate to initiate.
-Date: Mon, 31 Jan 2011 07:56:05 -0800
-References: <1296244040-3653-1-git-send-email-justinmattock@gmail.com> <AANLkTi=esKDkirbi1TmCzUCJNkP6_x-D5QpLfVnaJrnA@mail.gmail.com>
-X-Mailer: Apple Mail (2.936)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 31 Jan 2011 12:15:59 +0330 Amirali Shambayati wrote:
 
-On Jan 31, 2011, at 2:33 AM, Linus Walleij wrote:
-
-> 2011/1/28 Justin P. Mattock <justinmattock@gmail.com>:
->
->> Not sure if this is a typo or not. if it is then feel free to take  
->> this.
->>
->> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
->
-> Why not,
-> Acked-by: Linus Walleij <linus.walleij@stericsson.com>
->
-> Yours,
-> Linus Walleij
+> Hello,
+> 
+> I have problem with compiling kernel. I receive this error during
+> compilation process:
+> /include/trace/events/kmem.h:45: undefined reference to `.L1747'
+> I googled it but I didn't find any useful tip.
+> 
+> Anybody's help is appreciated.
 
 
-alright..
+Hi,
+What kernel version?
 
-Justin P. Mattock
+Please post the kernel .config file that you are using.
 
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
