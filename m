@@ -1,49 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756097Ab1AaRaY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 12:30:24 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:56276 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404Ab1AaRaX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 12:30:23 -0500
-Date: Mon, 31 Jan 2011 09:29:14 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: torvalds <torvalds@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH] kernel.h: fix kernel-doc warning
-Message-Id: <20110131092914.950be58f.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756228Ab1AaRbH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 12:31:07 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:37898 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755397Ab1AaRbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 12:31:05 -0500
+From: Julia Lawall <julia@diku.dk>
+To: Lars Ellenberg <drbd-dev@lists.linbit.com>
+Cc: kernel-janitors@vger.kernel.org, drbd-user@lists.linbit.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/block/drbd: add NULL test around call to crypto_free_hash
+Date: Mon, 31 Jan 2011 18:51:03 +0100
+Message-Id: <1296496263-16362-1-git-send-email-julia@diku.dk>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+crypto_free_hash calls the function crypto_hash_tfm and then
+crypto_free_tfm on the result.  crypto_free_tfm calls crypto_destroy_tfm,
+which tests this result for NULL and then dereferences it.  crypto_hash_tfm
+returns &tfm->base where tfm is its argument.  base is actually the first
+and only field of a crypto_hash-typed structure, so perhaps one can rely on
+it to return NULL for a NULL value of tfm.  But most calls to
+crypto_hash_tfm where the argument might be NULL don't rely on this
+property and test for NULL explicitly.
 
-Fix kernel-doc warning in kernel.h:
-(from commit 7ef88ad561457c0346355dfd1f53e503ddfde719)
+The semantic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-Warning(include/linux/kernel.h:605): No description found for parameter 'condition'
-Warning(include/linux/kernel.h:605): Excess function parameter 'cond' description in 'BUILD_BUG_ON'
+// <smpl>
+@safe@
+position p;
+expression x;
+@@
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+if (x) { <+... crypto_free_hash@p(x) ...+> }
+
+@@
+expression x;
+position p!=safe.p;
+@@
+
+*x = NULL
+...
+*crypto_free_hash@p(x)
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
 ---
- include/linux/kernel.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/block/drbd/drbd_nl.c       |   18 ++++++++++++------
+ drivers/block/drbd/drbd_receiver.c |    6 ++++--
+ 2 files changed, 16 insertions(+), 8 deletions(-)
 
---- linux-2.6.38-rc2-git5.orig/include/linux/kernel.h
-+++ linux-2.6.38-rc2-git5/include/linux/kernel.h
-@@ -588,7 +588,7 @@ struct sysinfo {
+diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
+index 8cbfaa6..aa5fbc0 100644
+--- a/drivers/block/drbd/drbd_nl.c
++++ b/drivers/block/drbd/drbd_nl.c
+@@ -1482,13 +1482,16 @@ static int drbd_nl_net_conf(struct drbd_conf *mdev, struct drbd_nl_cfg_req *nlp,
+ 		mdev->ee_hash = new_ee_hash;
+ 	}
  
- /**
-  * BUILD_BUG_ON - break compile if a condition is true.
-- * @cond: the condition which the compiler should know is false.
-+ * @condition: the condition which the compiler should know is false.
-  *
-  * If you have some code which relies on certain constants being equal, or
-  * other compile-time-evaluated condition, you should use BUILD_BUG_ON to
+-	crypto_free_hash(mdev->cram_hmac_tfm);
++	if (mdev->cram_hmac_tfm)
++		crypto_free_hash(mdev->cram_hmac_tfm);
+ 	mdev->cram_hmac_tfm = tfm;
+ 
+-	crypto_free_hash(mdev->integrity_w_tfm);
++	if (mdev->integrity_w_tfm)
++		crypto_free_hash(mdev->integrity_w_tfm);
+ 	mdev->integrity_w_tfm = integrity_w_tfm;
+ 
+-	crypto_free_hash(mdev->integrity_r_tfm);
++	if (mdev->integrity_r_tfm)
++		crypto_free_hash(mdev->integrity_r_tfm);
+ 	mdev->integrity_r_tfm = integrity_r_tfm;
+ 
+ 	kfree(mdev->int_dig_out);
+@@ -1509,9 +1512,12 @@ fail:
+ 	kfree(int_dig_out);
+ 	kfree(int_dig_in);
+ 	kfree(int_dig_vv);
+-	crypto_free_hash(tfm);
+-	crypto_free_hash(integrity_w_tfm);
+-	crypto_free_hash(integrity_r_tfm);
++	if (tfm)
++		crypto_free_hash(tfm);
++	if (integrity_w_tfm)
++		crypto_free_hash(integrity_w_tfm);
++	if (integrity_r_tfm)
++		crypto_free_hash(integrity_r_tfm);
+ 	kfree(new_tl_hash);
+ 	kfree(new_ee_hash);
+ 	kfree(new_conf);
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index 24487d4..3453cc3 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -2871,9 +2871,11 @@ static int receive_SyncParam(struct drbd_conf *mdev, enum drbd_packets cmd, unsi
+ disconnect:
+ 	/* just for completeness: actually not needed,
+ 	 * as this is not reached if csums_tfm was ok. */
+-	crypto_free_hash(csums_tfm);
++	if (csums_tfm)
++		crypto_free_hash(csums_tfm);
+ 	/* but free the verify_tfm again, if csums_tfm did not work out */
+-	crypto_free_hash(verify_tfm);
++	if (verify_tfm)
++		crypto_free_hash(verify_tfm);
+ 	drbd_force_state(mdev, NS(conn, C_DISCONNECTING));
+ 	return FALSE;
+ }
+
