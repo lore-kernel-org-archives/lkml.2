@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869Ab1AaXK7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 18:10:59 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:22809 "EHLO
+	id S1756853Ab1AaXK5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 18:10:57 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:22799 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754198Ab1AaXJR (ORCPT
+	with ESMTP id S1756509Ab1AaXJR (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
 	Mon, 31 Jan 2011 18:09:17 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -13,9 +13,9 @@ To: linux-kernel@vger.kernel.org, Xen-devel@lists.xensource.com,
 Cc: hpa@zytor.com, stefano.stabellini@eu.citrix.com,
         Ian.Campbell@eu.citrix.com,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 08/11] xen/debugfs: Add 'p2m' file for printing out the P2M layout.
-Date: Mon, 31 Jan 2011 17:44:33 -0500
-Message-Id: <1296513876-31415-9-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 07/11] x86/setup: Consult the raw E820 for zero sized E820 RAM regions.
+Date: Mon, 31 Jan 2011 17:44:32 -0500
+Message-Id: <1296513876-31415-8-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1296513876-31415-1-git-send-email-konrad.wilk@oracle.com>
 References: <1296513876-31415-1-git-send-email-konrad.wilk@oracle.com>
@@ -23,168 +23,188 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We walk over the whole P2M tree and construct a simplified view of
-which PFN regions belong to what level and what type they are.
+When the Xen hypervisor provides us with an E820, it can
+contain zero sized RAM regions. Those are entries that have
+been trimmed down due to the user utilizing the dom0_mem flag.
 
-Only enabled if CONFIG_XEN_DEBUG_FS is set.
+What it means is that there is RAM at those regions, and we
+should _not_ be considering those regions as 1-1 mapping.
 
-[v2: UNKN->UNKNOWN, use uninitialized_var]
-[v3: Rebased on top of mmu->p2m code split]
-[v4: Fixed the else if]
-Reviewed-by: Ian Campbell <Ian.Campbell@eu.citrix.com>
+This dom0_mem parameter changes a nice looking E820 like this:
+
+Xen: 0000000000000000 - 000000000009d000 (usable)
+Xen: 000000000009d000 - 0000000000100000 (reserved)
+Xen: 0000000000100000 - 000000009cf67000 (usable)
+Xen: 000000009cf67000 - 000000009d103000 (ACPI NVS)
+Xen: 000000009d103000 - 000000009f6bd000 (usable)
+Xen: 000000009f6bd000 - 000000009f6bf000 (reserved)
+Xen: 000000009f6bf000 - 000000009f714000 (usable)
+
+(wherein we would happily set 9d->100, 9cf67->9d103, and
+9f6bd->9f6bf to identity mapping) .. but with a dom0_mem
+argument (say dom0_mem=700MB) it looks as so:
+
+Xen: 0000000000000000 - 000000000009d000 (usable)
+Xen: 000000000009d000 - 0000000000100000 (reserved)
+Xen: 0000000000100000 - 000000002bc00000 (usable)
+Xen: 000000009cf67000 - 000000009d103000 (ACPI NVS)
+Xen: 000000009f6bd000 - 000000009f6bf000 (reserved)
+
+We would set 9d->100, and 9cf670->9f6bf to identity
+mapping. The region from 9d103->9f6bd - which is
+System RAM where a guest could be allocated from,
+would be considered identity which is incorrect.
+
+[Note: this printout of the E820 is after E820
+sanitization, the raw E820 would look like this]:
+
+Xen: 0000000000000000 - 000000000009d000 (usable)
+Xen: 000000000009d000 - 0000000000100000 (reserved)
+Xen: 0000000000100000 - 000000002bc00000 (usable)
+Xen: 000000009cf67000 - 000000009d103000 (ACPI NVS)
+Xen: 000000009d103000 - 000000009d103000 (usable)  <===
+Xen: 000000009f6bd000 - 000000009f6bf000 (reserved)
+
+[Notice the "usable" zero sized region]
+
+This patch consults the non-sanitized version of the E820
+and checks if there are zero-sized RAM regions right before
+the non-RAM E820 entry we are currently evaluating.
+If so, we utilize the 'ram_end' value to piggyback on the
+code introduced by "xen/setup: Pay attention to zero sized
+E820_RAM regions" patch. Also we add a printk to help
+us determine which region has been set to 1-1 mapping and
+add some sanity checking.
+
+We must keep those regions zero-size E820 RAM regions
+as is (so missing), otherwise the M2P override code can
+malfunction if a guest grant page is present in those regions.
+
+Shifting the "xen_set_identity" to be called earlier (so that
+we are using the non-sanitized version of the &e820) does not
+work as we need to take into account the E820 after the
+initial increase/decrease reservation done and addition of a
+new E820 region in 'xen_add_extra_mem').
+
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/include/asm/xen/page.h |    3 +
- arch/x86/xen/mmu.c              |   14 +++++++
- arch/x86/xen/p2m.c              |   78 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 95 insertions(+), 0 deletions(-)
+ arch/x86/xen/p2m.c   |    9 +++++++--
+ arch/x86/xen/setup.c |   47 +++++++++++++++++++++++++++++++++++++++++++----
+ 2 files changed, 50 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-index 47c1b59..7b17fc5 100644
---- a/arch/x86/include/asm/xen/page.h
-+++ b/arch/x86/include/asm/xen/page.h
-@@ -52,6 +52,9 @@ extern int m2p_remove_override(struct page *page);
- extern struct page *m2p_find_override(unsigned long mfn);
- extern unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn);
- 
-+#ifdef CONFIG_XEN_DEBUG_FS
-+extern int p2m_dump_show(struct seq_file *m, void *v);
-+#endif
- static inline unsigned long pfn_to_mfn(unsigned long pfn)
- {
- 	unsigned long mfn;
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 9c9e076..b13b6ca 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -46,6 +46,7 @@
- #include <linux/module.h>
- #include <linux/gfp.h>
- #include <linux/memblock.h>
-+#include <linux/seq_file.h>
- 
- #include <asm/pgtable.h>
- #include <asm/tlbflush.h>
-@@ -2367,6 +2368,18 @@ EXPORT_SYMBOL_GPL(xen_remap_domain_mfn_range);
- 
- #ifdef CONFIG_XEN_DEBUG_FS
- 
-+static int p2m_dump_open(struct inode *inode, struct file *filp)
-+{
-+	return single_open(filp, p2m_dump_show, NULL);
-+}
-+
-+static const struct file_operations p2m_dump_fops = {
-+	.open		= p2m_dump_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+};
-+
- static struct dentry *d_mmu_debug;
- 
- static int __init xen_mmu_debugfs(void)
-@@ -2422,6 +2435,7 @@ static int __init xen_mmu_debugfs(void)
- 	debugfs_create_u32("prot_commit_batched", 0444, d_mmu_debug,
- 			   &mmu_stats.prot_commit_batched);
- 
-+	debugfs_create_file("p2m", 0600, d_mmu_debug, NULL, &p2m_dump_fops);
- 	return 0;
- }
- fs_initcall(xen_mmu_debugfs);
 diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 70bd49b..38ae7fe 100644
+index fbbd2ab..70bd49b 100644
 --- a/arch/x86/xen/p2m.c
 +++ b/arch/x86/xen/p2m.c
-@@ -30,6 +30,7 @@
- #include <linux/list.h>
- #include <linux/hash.h>
- #include <linux/sched.h>
-+#include <linux/seq_file.h>
+@@ -423,6 +423,9 @@ unsigned long set_phys_range_identity(unsigned long pfn_s,
+ 	if (unlikely(xen_feature(XENFEAT_auto_translated_physmap)))
+ 		return pfn_e - pfn_s;
  
- #include <asm/cache.h>
- #include <asm/setup.h>
-@@ -636,3 +637,80 @@ unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn)
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(m2p_find_override_pfn);
-+
-+#ifdef CONFIG_XEN_DEBUG_FS
-+
-+int p2m_dump_show(struct seq_file *m, void *v)
-+{
-+	static const char * const level_name[] = { "top", "middle",
-+						"entry", "abnormal" };
-+	static const char * const type_name[] = { "identity", "missing",
-+						"pfn", "abnormal"};
-+#define TYPE_IDENTITY 0
-+#define TYPE_MISSING 1
-+#define TYPE_PFN 2
-+#define TYPE_UNKNOWN 3
-+	unsigned long pfn, prev_pfn_type = 0, prev_pfn_level = 0;
-+	unsigned int uninitialized_var(prev_level);
-+	unsigned int uninitialized_var(prev_type);
-+
-+	if (!p2m_top)
++	if (pfn_s > pfn_e)
 +		return 0;
 +
-+	for (pfn = 0; pfn < MAX_DOMAIN_PAGES; pfn++) {
-+		unsigned topidx = p2m_top_index(pfn);
-+		unsigned mididx = p2m_mid_index(pfn);
-+		unsigned idx = p2m_index(pfn);
-+		unsigned lvl, type;
+ 	for (pfn = (pfn_s & ~(P2M_MID_PER_PAGE * P2M_PER_PAGE - 1));
+ 		pfn < ALIGN(pfn_e, (P2M_MID_PER_PAGE * P2M_PER_PAGE));
+ 		pfn += P2M_MID_PER_PAGE * P2M_PER_PAGE)
+@@ -444,9 +447,11 @@ unsigned long set_phys_range_identity(unsigned long pfn_s,
+ 		if (!__set_phys_to_machine(pfn, IDENTITY_FRAME(pfn)))
+ 			break;
+ 
+-	WARN((pfn - pfn_s) != (pfn_e - pfn_s),
++	if (!WARN((pfn - pfn_s) != (pfn_e - pfn_s),
+ 		"Identity mapping failed. We are %ld short of 1-1 mappings!\n",
+-		(pfn_e - pfn_s) - (pfn - pfn_s));
++		(pfn_e - pfn_s) - (pfn - pfn_s)))
++		printk(KERN_DEBUG "1-1 mapping on %lx->%lx\n", pfn_s, pfn);
 +
-+		lvl = 4;
-+		type = TYPE_UNKNOWN;
-+		if (p2m_top[topidx] == p2m_mid_missing) {
-+			lvl = 0; type = TYPE_MISSING;
-+		} else if (p2m_top[topidx] == NULL) {
-+			lvl = 0; type = TYPE_UNKNOWN;
-+		} else if (p2m_top[topidx][mididx] == NULL) {
-+			lvl = 1; type = TYPE_UNKNOWN;
-+		} else if (p2m_top[topidx][mididx] == p2m_identity) {
-+			lvl = 1; type = TYPE_IDENTITY;
-+		} else if (p2m_top[topidx][mididx] == p2m_missing) {
-+			lvl = 1; type = TYPE_MISSING;
-+		} else if (p2m_top[topidx][mididx][idx] == 0) {
-+			lvl = 2; type = TYPE_UNKNOWN;
-+		} else if (p2m_top[topidx][mididx][idx] == IDENTITY_FRAME(pfn)) {
-+			lvl = 2; type = TYPE_IDENTITY;
-+		} else if (p2m_top[topidx][mididx][idx] == INVALID_P2M_ENTRY) {
-+			lvl = 2; type = TYPE_MISSING;
-+		} else if (p2m_top[topidx][mididx][idx] == pfn) {
-+			lvl = 2; type = TYPE_PFN;
-+		} else if (p2m_top[topidx][mididx][idx] != pfn) {
-+			lvl = 2; type = TYPE_PFN;
+ 
+ 	return pfn - pfn_s;
+ }
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index 5b2ae49..e7ee04c 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -143,13 +143,16 @@ static unsigned long __init xen_return_unused_memory(unsigned long max_pfn,
+ 	return released;
+ }
+ 
+-static unsigned long __init xen_set_identity(const struct e820map *e820)
++static unsigned long __init xen_set_identity(const struct e820map *e820,
++					     const struct e820entry *list,
++					     ssize_t map_size)
+ {
+ 	phys_addr_t last = xen_initial_domain() ? 0 : ISA_END_ADDRESS;
+ 	phys_addr_t start_pci = last;
+ 	phys_addr_t ram_end = last;
+-	int i;
++	int i, j;
+ 	unsigned long identity = 0;
++	const struct e820entry *entry;
+ 
+ 	for (i = 0; i < e820->nr_map; i++) {
+ 		phys_addr_t start = e820->map[i].addr;
+@@ -158,6 +161,8 @@ static unsigned long __init xen_set_identity(const struct e820map *e820)
+ 		if (start < last)
+ 			start = last;
+ 
++		/* Sadly, we do not get E820 entries with zero size after
++		 * sanitization. */
+ 		if (end <= start)
+ 			continue;
+ 
+@@ -173,6 +178,37 @@ static unsigned long __init xen_set_identity(const struct e820map *e820)
+ 			start_pci = last = ram_end = end;
+ 			continue;
+ 		}
++		/* Consult the real non-sanitizied version of E820 to see
++		 * if there is a E820_RAM region with zero size right before
++		 * our non-RAM E820 entry. The 'zero size' are real RAM
++		 * regions which the hypervisor has truncated to zero size.
++		 * This is b/c the user supplied a dom0_mem flag to trim how
++		 * much RAM we can use.*/
++		for (j = 0, entry = list; j < map_size; j++, entry++) {
++			/* Found this non-RAM E820 region. If previous entry
++			 * is a zero sized E820 RAM region, then rethink.
++			 */
++			if (start == entry->addr) {
++				const struct e820entry *tmp = entry-1;
++				phys_addr_t ghost_ram = tmp->addr;
++
++				if ((tmp->type != E820_RAM) && (tmp->size != 0))
++					break;
++
++				if (ghost_ram > start_pci) {
++					identity += set_phys_range_identity(
++						PFN_UP(start_pci),
++						PFN_DOWN(ghost_ram));
++				}
++				/* We ought to reset it to the _end_ of the
++				 * E820 RAM region but since it is zero sized,
++				 * that would not work. Instead we reset it to
++				 * the start of non-RAM E820 region and the let
++				 * the code right below fix up the values.*/
++				ram_end = start;
++				break;
++			}
 +		}
-+		if (pfn == 0) {
-+			prev_level = lvl;
-+			prev_type = type;
-+		}
-+		if (pfn == MAX_DOMAIN_PAGES-1) {
-+			lvl = 3;
-+			type = TYPE_UNKNOWN;
-+		}
-+		if (prev_type != type) {
-+			seq_printf(m, " [0x%lx->0x%lx] %s\n",
-+				prev_pfn_type, pfn, type_name[prev_type]);
-+			prev_pfn_type = pfn;
-+			prev_type = type;
-+		}
-+		if (prev_level != lvl) {
-+			seq_printf(m, " [0x%lx->0x%lx] level %s\n",
-+				prev_pfn_level, pfn, level_name[prev_level]);
-+			prev_pfn_level = pfn;
-+			prev_level = lvl;
-+		}
-+	}
-+	return 0;
-+#undef TYPE_IDENTITY
-+#undef TYPE_MISSING
-+#undef TYPE_PFN
-+#undef TYPE_UNKNOWN
-+}
-+#endif
+ 		/* Gap found right after the 1st RAM region. Skip over it.
+ 		 * Why? That is b/c if we pass in dom0_mem=max:512MB and
+ 		 * have in reality 1GB, the E820 is clipped at 512MB.
+@@ -308,9 +344,12 @@ char * __init xen_memory_setup(void)
+ 
+ 	/*
+ 	 * Set P2M for all non-RAM pages and E820 gaps to be identity
+-	 * type PFNs.
++	 * type PFNs. We also supply it with the non-sanitized version
++	 * of the E820 - which can have zero size E820 RAM regions
++	 * that we _MUST_ consult so that we do not set 1-1 mapping
++	 * on RAM regions (which might be assigned to guests for example).
+ 	 */
+-	identity_pages = xen_set_identity(&e820);
++	identity_pages = xen_set_identity(&e820, map, memmap.nr_entries);
+ 	printk(KERN_INFO "Set %ld page(s) to 1-1 mapping.\n", identity_pages);
+ 	return "Xen";
+ }
 -- 
 1.7.1
 
