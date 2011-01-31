@@ -1,76 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479Ab1AaOKg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 09:10:36 -0500
-Received: from hera.kernel.org ([140.211.167.34]:42640 "EHLO hera.kernel.org"
+	id S1755955Ab1AaOKz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 09:10:55 -0500
+Received: from hera.kernel.org ([140.211.167.34]:42652 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754877Ab1AaOKe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 09:10:34 -0500
-Date: Mon, 31 Jan 2011 14:10:14 GMT
+	id S1752231Ab1AaOKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 09:10:54 -0500
+Date: Mon, 31 Jan 2011 14:10:36 GMT
 From: tip-bot for Torben Hohn <torbenh@gmx.de>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        peterz@infradead.org, kyle@mcmartin.ca, torbenh@gmx.de,
-        jejb@parisc-linux.org, tglx@linutronix.de, deller@gmx.de
+        torbenh@gmx.de, peterz@infradead.org, tglx@linutronix.de,
+        davem@davemloft.net
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torbenh@gmx.de, jejb@parisc-linux.org, peterz@infradead.org,
-        tglx@linutronix.de, deller@gmx.de, kyle@mcmartin.ca
-In-Reply-To: <20110127150017.23248.22559.stgit@localhost>
-References: <20110127150017.23248.22559.stgit@localhost>
+        torbenh@gmx.de, peterz@infradead.org, tglx@linutronix.de,
+        davem@davemloft.net
+In-Reply-To: <20110127150022.23248.80369.stgit@localhost>
+References: <20110127150022.23248.80369.stgit@localhost>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] parisc: Switch do_timer() to xtime_update()
-Message-ID: <tip-bb1dfc1cf6c51ca42f7c05029a6f06df9092a0fc@git.kernel.org>
-Git-Commit-ID: bb1dfc1cf6c51ca42f7c05029a6f06df9092a0fc
+Subject: [tip:timers/core] sparc: Switch do_timer() to xtime_update()
+Message-ID: <tip-4ea1b72551d052a3993ef72ce06ecf5bdd125859@git.kernel.org>
+Git-Commit-ID: 4ea1b72551d052a3993ef72ce06ecf5bdd125859
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 31 Jan 2011 14:10:15 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 31 Jan 2011 14:10:36 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bb1dfc1cf6c51ca42f7c05029a6f06df9092a0fc
-Gitweb:     http://git.kernel.org/tip/bb1dfc1cf6c51ca42f7c05029a6f06df9092a0fc
+Commit-ID:  4ea1b72551d052a3993ef72ce06ecf5bdd125859
+Gitweb:     http://git.kernel.org/tip/4ea1b72551d052a3993ef72ce06ecf5bdd125859
 Author:     Torben Hohn <torbenh@gmx.de>
-AuthorDate: Thu, 27 Jan 2011 16:00:17 +0100
+AuthorDate: Thu, 27 Jan 2011 16:00:22 +0100
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Mon, 31 Jan 2011 14:55:46 +0100
 
-parisc: Switch do_timer() to xtime_update()
+sparc: Switch do_timer() to xtime_update()
 
 xtime_update() takes the xtime_lock itself.
 
+pcic_clear_clock_irq() and clear_clock_irq do not need
+to be protected by xtime_lock.
+
 Signed-off-by: Torben Hohn <torbenh@gmx.de>
-Cc: hch@infradead.org
+Acked-by: David S. Miller <davem@davemloft.net>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: johnstul@us.ibm.com
-Cc: Helge Deller <deller@gmx.de>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-Cc: Kyle McMartin <kyle@mcmartin.ca>
+Cc: hch@infradead.org
 Cc: yong.zhang0@gmail.com
-LKML-Reference: <20110127150017.23248.22559.stgit@localhost>
+LKML-Reference: <20110127150022.23248.80369.stgit@localhost>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/parisc/kernel/time.c |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
+ arch/sparc/kernel/pcic.c    |    4 +---
+ arch/sparc/kernel/time_32.c |    9 ++-------
+ 2 files changed, 3 insertions(+), 10 deletions(-)
 
-diff --git a/arch/parisc/kernel/time.c b/arch/parisc/kernel/time.c
-index 05511cc..45b7389 100644
---- a/arch/parisc/kernel/time.c
-+++ b/arch/parisc/kernel/time.c
-@@ -162,11 +162,8 @@ irqreturn_t __irq_entry timer_interrupt(int irq, void *dev_id)
- 		update_process_times(user_mode(get_irq_regs()));
- 	}
+diff --git a/arch/sparc/kernel/pcic.c b/arch/sparc/kernel/pcic.c
+index aeaa09a..2cdc131 100644
+--- a/arch/sparc/kernel/pcic.c
++++ b/arch/sparc/kernel/pcic.c
+@@ -700,10 +700,8 @@ static void pcic_clear_clock_irq(void)
  
--	if (cpu == 0) {
--		write_seqlock(&xtime_lock);
--		do_timer(ticks_elapsed);
--		write_sequnlock(&xtime_lock);
--	}
-+	if (cpu == 0)
-+		xtime_update(ticks_elapsed);
+ static irqreturn_t pcic_timer_handler (int irq, void *h)
+ {
+-	write_seqlock(&xtime_lock);	/* Dummy, to show that we remember */
+ 	pcic_clear_clock_irq();
+-	do_timer(1);
+-	write_sequnlock(&xtime_lock);
++	xtime_update(1);
+ #ifndef CONFIG_SMP
+ 	update_process_times(user_mode(get_irq_regs()));
+ #endif
+diff --git a/arch/sparc/kernel/time_32.c b/arch/sparc/kernel/time_32.c
+index 9c743b1..4211bfc 100644
+--- a/arch/sparc/kernel/time_32.c
++++ b/arch/sparc/kernel/time_32.c
+@@ -85,7 +85,7 @@ int update_persistent_clock(struct timespec now)
  
- 	return IRQ_HANDLED;
- }
+ /*
+  * timer_interrupt() needs to keep up the real-time clock,
+- * as well as call the "do_timer()" routine every clocktick
++ * as well as call the "xtime_update()" routine every clocktick
+  */
+ 
+ #define TICK_SIZE (tick_nsec / 1000)
+@@ -96,14 +96,9 @@ static irqreturn_t timer_interrupt(int dummy, void *dev_id)
+ 	profile_tick(CPU_PROFILING);
+ #endif
+ 
+-	/* Protect counter clear so that do_gettimeoffset works */
+-	write_seqlock(&xtime_lock);
+-
+ 	clear_clock_irq();
+ 
+-	do_timer(1);
+-
+-	write_sequnlock(&xtime_lock);
++	xtime_update(1);
+ 
+ #ifndef CONFIG_SMP
+ 	update_process_times(user_mode(get_irq_regs()));
