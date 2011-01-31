@@ -1,37 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482Ab1AaKcd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 05:32:33 -0500
-Received: from www.tglx.de ([62.245.132.106]:52561 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755442Ab1AaKcb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 05:32:31 -0500
-Date: Mon, 31 Jan 2011 11:32:20 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Torben Hohn <torbenh@gmx.de>
-cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        johnstul@us.ibm.com, hch@infradead.org, yong.zhang0@gmail.com,
-        Matt Turner <mattst88@gmail.com>, Richard Henderson <rth@twiddle.net>
-Subject: Re: [PATCH v2 05/20] alpha: change do_timer() to xtime_update()
-In-Reply-To: <alpine.LFD.2.00.1101311120530.31804@localhost6.localdomain6>
-Message-ID: <alpine.LFD.2.00.1101311131470.31804@localhost6.localdomain6>
-References: <20110127145741.23248.68098.stgit@localhost> <20110127145915.23248.20919.stgit@localhost> <alpine.LFD.2.00.1101311120530.31804@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755415Ab1AaKd5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 05:33:57 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:49192 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999Ab1AaKd4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 05:33:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=ESZFr379Ku8YjYm+gUg2vDMQ3Tzweq8bBW1vYrEzQ696cqvWsAnDIESEZ8WOzitmaU
+         aA/EledTwaMHkIGY5uDsNQr7+r5agFKTIG5FuaVSdRHgtx9YhYcmaQaTfCS9xEkXu9HY
+         A04uoioJxb73MA+NzIx5ommjeWP2wIn+ryLL0=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1296244040-3653-1-git-send-email-justinmattock@gmail.com>
+References: <1296244040-3653-1-git-send-email-justinmattock@gmail.com>
+Date: Mon, 31 Jan 2011 11:33:55 +0100
+X-Google-Sender-Auth: tJJ17MuSy4dbhfNlaQCCLer7pms
+Message-ID: <AANLkTi=esKDkirbi1TmCzUCJNkP6_x-D5QpLfVnaJrnA@mail.gmail.com>
+Subject: Re: [PATCH] arch:arm:mbox-db5500.c Change initate to initiate.
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: trivial@kernel.org, linux@arm.linux.org.uk, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 Jan 2011, Thomas Gleixner wrote:
+2011/1/28 Justin P. Mattock <justinmattock@gmail.com>:
 
-> On Thu, 27 Jan 2011, Torben Hohn wrote:
-> 
-> > xtime_update() takes the xtime_lock itself.
-> > state does not to be protected with this lock.
-> > its only touched here and during init.
-> 
-> xtime_lock very well serializes the access to state on
-> SMP. timer_interrupt() is called on each cpu. So that wont work.
+> Not sure if this is a typo or not. if it is then feel free to take this.
+>
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-Hmm. No. It's bound to boot_cpu_id.
+Why not,
+Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+
+Yours,
+Linus Walleij
