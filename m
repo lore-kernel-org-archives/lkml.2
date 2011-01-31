@@ -1,137 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087Ab1AaNA6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 08:00:58 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55508 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751451Ab1AaNA5 (ORCPT
+	id S1755458Ab1AaNIh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 08:08:37 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:38355 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753736Ab1AaNIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 08:00:57 -0500
-Date: Mon, 31 Jan 2011 14:00:49 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Arun MURTHY <arun.murthy@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Eric Miao <eric.miao@linaro.org>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Hemanth V <hemanthv@ti.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Bill Gatliff <bgat@billgatliff.com>
-Subject: Re: [RFC] add pwmlib support
-Message-ID: <20110131130049.GM9041@pengutronix.de>
-References: <1296217283-14531-1-git-send-email-s.hauer@pengutronix.de>
- <4D447E5E.6060007@metafoo.de>
- <F45880696056844FA6A73F415B568C6953739F1986@EXDCVYMBSTM006.EQ1STM.local>
- <20110131075408.GH9041@pengutronix.de>
- <4D46AFAB.3070805@metafoo.de>
+	Mon, 31 Jan 2011 08:08:35 -0500
+Date: Mon, 31 Jan 2011 13:08:26 +0000
+From: Andy Whitcroft <apw@canonical.com>
+To: Andrew Hendry <andrew.hendry@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: John Hughes <john@calva.com>, linux-x25@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tim Gardner <tim.gardner@canonical.com>
+Subject: x25: possible skb leak on bad facilities
+Message-ID: <20110131130826.GC16804@shadowen.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D46AFAB.3070805@metafoo.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 13:50:19 up 15 days, 22:57, 50 users,  load average: 0.10, 0.16,
- 0.36
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 31, 2011 at 01:48:43PM +0100, Lars-Peter Clausen wrote:
-> On 01/31/2011 08:54 AM, Sascha Hauer wrote:
-> > On Mon, Jan 31, 2011 at 04:35:33AM +0100, Arun MURTHY wrote:
-> >> Hi Sascha,
-> >>
-> >>>> I Cced the people working with PWMs in the kernel in the hope that
-> >>> they can
-> >>>> give input on what's missing / wrong in this implementation
-> >>>>
-> >>>> Sascha
-> >>>>
-> >>>
-> >>> Hi
-> >>>
-> >>> There have been two other proposals for a generic PWM api during the
-> >>> last year.
-> >>> You might want to take a look at them.
-> >>>
-> >>> https://lkml.org/lkml/2010/2/9/275
-> >>> https://lkml.org/lkml/2010/9/28/107
-> >>>
-> >>> I've added Bill Gatliff and Arun Murthy to Cc.
-> >>>
-> >>
-> >> As said by Lars, we already have developed the pwm core driver and
-> >> progressing towards aligning the existing pwm drivers to the pwm core
-> >> driver.
-> >> These set of patches are expected to be out in LKML by this week.
-> > 
-> > Nice, problem solved without me having to work on it ;).
-> 
-> I wouldn't call it problem solved yet.
-> I liked your approach better so far, but lets see how the next iteration of Aruns
-> patches turn out.
+Looking at the changes introduced in the commit below, we seem to
+introduce an skb leak when a packet with bad facilities are present:
 
-What I don't like about Bills patches is the way PWMs are configured.
+    commit a6331d6f9a4298173b413cf99a40cc86a9d92c37
+    Author: andrew hendry <andrew.hendry@gmail.com>
+    Date:   Wed Nov 3 12:54:53 2010 +0000
 
-Bill, since you are on Cc, maybe you can comment on this:
+        memory corruption in X.25 facilities parsing
 
-> +enum {
-> +	PWM_CONFIG_DUTY_TICKS = BIT(0),
-> +	PWM_CONFIG_PERIOD_TICKS = BIT(1),
-> +	PWM_CONFIG_POLARITY = BIT(2),
-> +	PWM_CONFIG_START = BIT(3),
-> +	PWM_CONFIG_STOP = BIT(4),
-> +
-> +	PWM_CONFIG_HANDLER = BIT(5),
-> +
-> +	PWM_CONFIG_DUTY_NS = BIT(6),
-> +	PWM_CONFIG_DUTY_PERCENT = BIT(7),
-> +	PWM_CONFIG_PERIOD_NS = BIT(8),
-> +};
-> +
->
-> ...
->
-> +
-> +struct pwm_channel_config {
-> +	int config_mask;
-> +	unsigned long duty_ticks;
-> +	unsigned long period_ticks;
-> +	int polarity;
-> +
-> +	pwm_handler_t handler;
-> +
-> +	unsigned long duty_ns;
-> +	unsigned long period_ns;
-> +	int duty_percent;
-> +};
-> 
-> ...
-> 
-> +int pwm_config(struct pwm_channel *pwm,
-> +	       struct pwm_channel_config *c);
+If I am understanding things correctly then we trigger a -1 return to
+the main packet dispatch loop, this being non-zero implies that we have
+requeued the skb and it should not be freed.  As it was not requeued,
+I believe the skb is no longer referenced and then is leaked.
 
-I think we should have a single internal interpretation of how a pwm is
-configured, either ticks or ns (or whatever else), but not ticks, ns and
-percent. Instead we could provide helpers to convert between them.
-Also, I don't like ioctl like function calls. Instead of dispatching
-PWM_CONFIG_* we should use discrete functions for each functionality.
+Perhaps someone better aquainted with this code could review my analysis
+in the patch leader below.  If accurate I believe we need the patch below
+to resolve this.  If it is not then I suspect a comment is required on
+the -1 return.
 
-Sascha
+Thoughts?
 
+-apw
+
+>From 5728c05fb669e8ee1e6d20fb7a71916362039411 Mon Sep 17 00:00:00 2001
+From: Andy Whitcroft <apw@canonical.com>
+Date: Mon, 31 Jan 2011 10:37:36 +0000
+Subject: [PATCH] x25: drop packet on invalid facility headers
+
+The commit below introduced additional checks for invalid facilities,
+and a new return path when these were detected:
+
+    commit a6331d6f9a4298173b413cf99a40cc86a9d92c37
+    Author: andrew hendry <andrew.hendry@gmail.com>
+    Date:   Wed Nov 3 12:54:53 2010 +0000
+
+	memory corruption in X.25 facilities parsing
+
+This new return path short circuits packet handling, the new return -1
+below:
+
+    static int x25_state1_machine(struct sock *sk, struct sk_buff *skb,
+							    int frametype)
+    {
+    [...]
+                        len = x25_parse_facilities(skb, &x25->facilities,
+                                                &x25->dte_facilities,
+                                                &x25->vc_facil_mask);
+                        if (len > 0)
+                                skb_pull(skb, len);
+                        else
+                                return -1;
+    [...]
+
+This return code is passed back up the chain (via x25_process_rx_frame)
+and is interpreted as below by the caller:
+
+    int x25_backlog_rcv(struct sock *sk, struct sk_buff *skb)
+    {
+        int queued = x25_process_rx_frame(sk, skb);
+
+        if (!queued)
+                kfree_skb(skb);
+
+        return 0;
+    }
+
+Here we interpret the non-zero status as indicating the skb has been
+requeued and should be preserved.  As we have not actually done so it
+will be leaked.
+
+Fix this up by indicating that the packet should be dropped.
+
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+---
+ net/x25/x25_in.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/net/x25/x25_in.c b/net/x25/x25_in.c
+index f729f02..213b93a 100644
+--- a/net/x25/x25_in.c
++++ b/net/x25/x25_in.c
+@@ -120,7 +120,7 @@ static int x25_state1_machine(struct sock *sk, struct sk_buff *skb, int frametyp
+ 			if (len > 0)
+ 				skb_pull(skb, len);
+ 			else
+-				return -1;
++				return 0;
+ 			/*
+ 			 *	Copy any Call User Data.
+ 			 */
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+1.7.1
+
