@@ -1,193 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657Ab1AaSKT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 13:10:19 -0500
-Received: from kroah.org ([198.145.64.141]:45281 "EHLO coco.kroah.org"
+	id S1755644Ab1AaSLt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 13:11:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8069 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752016Ab1AaSKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 13:10:18 -0500
-Date: Mon, 31 Jan 2011 10:10:13 -0800
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [GIT PATCH] USB fixes for .38
-Message-ID: <20110131181013.GA6949@kroah.com>
+	id S1751663Ab1AaSLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 13:11:47 -0500
+Date: Mon, 31 Jan 2011 18:26:26 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>, Prasad <prasad@linux.vnet.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: Q: perf_install_in_context/perf_event_enable are racy?
+Message-ID: <20110131172626.GA5407@redhat.com>
+References: <20110124114234.GA12166@redhat.com> <20110126175322.GA28617@redhat.com> <1296134077.15234.161.camel@laptop> <20110127165712.GC25060@redhat.com> <1296148294.15234.242.camel@laptop> <20110127221856.GA10539@redhat.com> <1296215577.15234.333.camel@laptop> <1296226667.15234.337.camel@laptop> <20110128162847.GA25088@redhat.com> <1296238278.15234.340.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1296238278.15234.340.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are some USB fixes for your .38 tree.
+On 01/28, Peter Zijlstra wrote:
+>
+> Just to give you more food for through, I couldn't help myself..
 
-Nothing major here, lots of little things and some xhci fixes that are
-needed to resolve some reported bugs as well as a number of new device
-ids and usb-storage quirks.
+Hmm. So far I am only trying to understand the perf_install_in_context()
+paths. And, after I spent almost 2 hours, I am starting to believe this
+change is probably good ;)
 
-Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb-2.6.git/ usb-linus
+I do not understand the point of cpu_function_call() though, it looks
+equal to smp_call_function_single() ?
 
-All of these patches have been in the linux-next and mm trees for a
-while.
+> -static void __perf_install_in_context(void *info)
+> +static int  __perf_install_in_context(void *info)
+>  {
+>  	struct perf_event *event = info;
+>  	struct perf_event_context *ctx = event->ctx;
+> @@ -942,20 +1015,15 @@ static void __perf_install_in_context(void *info)
+>  	int err;
+>
+>  	/*
+> -	 * If this is a task context, we need to check whether it is
+> -	 * the current task context of this cpu. If not it has been
+> -	 * scheduled out before the smp call arrived.
+> -	 * Or possibly this is the right context but it isn't
+> -	 * on this cpu because it had no events.
+> +	 * In case we're installing a new context to an already running task,
+> +	 * could also happen before perf_event_task_sched_in() on architectures
+> +	 * which do context switches with IRQs enabled.
+>  	 */
+> -	if (ctx->task && cpuctx->task_ctx != ctx) {
+> -		if (cpuctx->task_ctx || ctx->task != current)
+> -			return;
+> -		cpuctx->task_ctx = ctx;
+> -	}
+> +	if (ctx->task && !cpuctx->task_ctx)
+> +		perf_event_context_sched_in(ctx);
 
-The full patches will be sent to the linux-usb mailing list, if anyone
-wants to see them.
+OK... This eliminates the 2nd race with __ARCH_WANT_INTERRUPTS_ON_CTXSW
+(we must not set "cpuctx->task_ctx = ctx" in case "next" is going to
+ do perf_event_context_sched_in() later). So it is enough to check
+rq->curr in remote_function().
 
-thanks,
+>  	raw_spin_lock(&ctx->lock);
+> -	ctx->is_active = 1;
+> +	WARN_ON_ONCE(!ctx->is_active);
 
-greg k-h
+This looks wrong if ctx->task == NULL.
 
-------------
 
- MAINTAINERS                           |    6 +
- drivers/usb/class/cdc-wdm.c           |    2 +-
- drivers/usb/core/endpoint.c           |    2 +-
- drivers/usb/core/hcd-pci.c            |    7 +-
- drivers/usb/core/hub.c                |   21 +++
- drivers/usb/gadget/Kconfig            |    7 +-
- drivers/usb/gadget/ci13xxx_udc.c      |  268 +++++++++++++++++----------------
- drivers/usb/gadget/ci13xxx_udc.h      |    9 +-
- drivers/usb/gadget/composite.c        |    5 +-
- drivers/usb/gadget/pch_udc.c          |  127 +++++++++------
- drivers/usb/gadget/printer.c          |   19 +--
- drivers/usb/host/ehci-fsl.c           |   13 --
- drivers/usb/host/ehci-fsl.h           |    3 -
- drivers/usb/host/ehci-hcd.c           |   19 ++-
- drivers/usb/host/ehci-mxc.c           |   25 +++-
- drivers/usb/host/ehci-pci.c           |   33 +++--
- drivers/usb/host/fsl-mph-dr-of.c      |   11 +-
- drivers/usb/host/xhci-ring.c          |   91 ++++++-----
- drivers/usb/host/xhci.c               |   60 +++-----
- drivers/usb/host/xhci.h               |   16 +--
- drivers/usb/misc/usbled.c             |    2 +-
- drivers/usb/misc/uss720.c             |    1 -
- drivers/usb/otg/nop-usb-xceiv.c       |    2 +
- drivers/usb/otg/ulpi.c                |    2 +-
- drivers/usb/serial/ch341.c            |   10 ++
- drivers/usb/serial/cp210x.c           |   16 +--
- drivers/usb/serial/digi_acceleport.c  |   10 --
- drivers/usb/serial/ftdi_sio.c         |   12 ++-
- drivers/usb/serial/ftdi_sio_ids.h     |   22 ++-
- drivers/usb/serial/generic.c          |   20 +++
- drivers/usb/serial/io_tables.h        |    1 +
- drivers/usb/serial/iuu_phoenix.c      |    1 +
- drivers/usb/serial/keyspan.h          |    4 +
- drivers/usb/serial/keyspan_pda.c      |   17 --
- drivers/usb/serial/moto_modem.c       |    1 +
- drivers/usb/serial/option.c           |   23 +++-
- drivers/usb/serial/oti6858.c          |    1 +
- drivers/usb/serial/pl2303.c           |   12 ++
- drivers/usb/serial/pl2303.h           |    1 +
- drivers/usb/serial/qcaux.c            |    3 +
- drivers/usb/serial/siemens_mpi.c      |    1 +
- drivers/usb/serial/spcp8x5.c          |    7 +-
- drivers/usb/serial/usb-serial.c       |    8 +-
- drivers/usb/serial/usb_debug.c        |    1 +
- drivers/usb/storage/unusual_cypress.h |    5 +
- drivers/usb/storage/unusual_devs.h    |   18 +++
- include/linux/usb/hcd.h               |    1 +
- include/linux/usb/serial.h            |    3 +
- 48 files changed, 568 insertions(+), 381 deletions(-)
 
----------------
+So. With this patch it is possible that perf_event_context_sched_in()
+is called right after prepare_lock_switch(). Stupid question, why
+can't we always do this then? I mean, what if we change
+prepare_task_switch() to do
 
-Alan Stern (5):
-      USB: usb-storage: unusual_devs entry for CamSport Evo
-      USB: EHCI: fix DMA deallocation bug
-      USB: g_printer: fix bug in unregistration
-      USB: g_printer: fix bug in module parameter definitions
-      USB serial: add missing .usb_driver field in serial drivers
+	perf_event_task_sched_out();
+	perf_event_task_sched_in();
 
-Alex He (1):
-      USB: EHCI: ASPM quirk of ISOC on AMD Hudson
+?
 
-Andiry Xu (6):
-      xHCI: synchronize irq in xhci_suspend()
-      xHCI: fix queue_trb in isoc transfer
-      xHCI: remove redundant parameter in giveback_first_trb()
-      xHCI: fix cycle bit set in giveback_first_trb()
-      xHCI: replace dev_dbg() with xhci_dbg()
-      xHCI: fix printk_ratelimit() usage
+Probably we can unify the COND_STMT(perf_task_events) check and simplify
+the things further.
 
-Arnaud Patard (1):
-      USB: ehci-mxc: add work-around for efika mx/sb bug
-
-Craig Shelley (2):
-      USB: CP210x Add two device IDs
-      USB: CP210x Removed incorrect device ID
-
-Dan Williams (1):
-      USB: qcaux: add Pantech UML290 device ID
-
-Dario Lombardo (1):
-      drivers: update to pl2303 usb-serial to support Motorola cables
-
-David Sterba (1):
-      USB: cdc-wdm: fix misuse of logical operation in place of bitop
-
-Eric Bénard (1):
-      USB: unbreak ehci-mxc on otg port of i.MX27
-
-Fabio Estevam (1):
-      usb: otg: Make USB3319 ULPI ID generic
-
-Libor Pechacek (1):
-      USB: serial: handle Data Carrier Detect changes
-
-Matthew Wilcox (1):
-      xhci: Remove more doorbell-related reads
-
-Maulik Mankad (1):
-      usb: gadget: composite: avoid access beyond array max length
-
-Melchior FRANZ (1):
-      USB: DL100B webmail notifier: initialize return value
-
-Ming Lei (1):
-      usb: otg: nop: fix oops triggered by otg_register_notifier
-
-Nicolaus Colberg (1):
-      USB: adding USB support for Cinterion's HC2x, EU3 and PH8 products
-
-Pavankumar Kondeti (2):
-      USB: gadget: Fix error path in ci13xxx_udc gadget probe function
-      USB: gadget: Fix endpoint representation in ci13xxx_udc
-
-Peter Chen (1):
-      usb: set ep_dev async suspend should be later than device_initialize
-
-Peter Tyser (1):
-      USB: ehci-fsl: Fix 'have_sysif_regs' detection
-
-Pieter Maes (1):
-      USB: serial: Updated support for ICOM devices
-
-Richard Schütz (2):
-      USB: usb-storage: unusual_devs update for Cypress ATACB
-      USB: usb-storage: unusual_devs update for TrekStor DataStation maxi g.u external hard drive enclosure
-
-Sarah Sharp (3):
-      xhci: Resume bus on any port status change.
-      usb: Realloc xHCI structures after a hub is verified.
-      xhci: Use GFP_NOIO during device reset.
-
-Sergei Shtylyov (1):
-      USB: uss720: remove duplicate USB device
-
-Stanislaw Gruszka (1):
-      MAINTAINERS: add ueagle-atm entry
-
-Tomoya MORINAGA (1):
-      USB: pch_udc: support new device ML7213 IOH
-
-Toshiharu Okada (2):
-      usb: pch_udc: Fixed issue which does not work with g_serial
-      usb: pch_udc: Fix the worning log issue at gadget driver remove
-
-Zhang Rui (1):
-      xhci: Do not run xhci_cleanup_msix with irq disabled
+Oleg.
 
