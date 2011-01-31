@@ -1,85 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178Ab1AaOJQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 09:09:16 -0500
-Received: from hera.kernel.org ([140.211.167.34]:42584 "EHLO hera.kernel.org"
+	id S1754311Ab1AaOJZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 09:09:25 -0500
+Received: from hera.kernel.org ([140.211.167.34]:42592 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751168Ab1AaOJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 09:09:14 -0500
-Date: Mon, 31 Jan 2011 14:08:38 GMT
+	id S1753767Ab1AaOJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 09:09:24 -0500
+Date: Mon, 31 Jan 2011 14:09:03 GMT
 From: tip-bot for Torben Hohn <torbenh@gmx.de>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torbenh@gmx.de, peterz@infradead.org, tglx@linutronix.de,
-        ysato@users.sourceforge.jp
+        peterz@infradead.org, tony.luck@intel.com, torbenh@gmx.de,
+        fenghua.yu@intel.com, tglx@linutronix.de
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torbenh@gmx.de, peterz@infradead.org, tglx@linutronix.de,
-        ysato@users.sourceforge.jp
-In-Reply-To: <20110127145951.23248.92727.stgit@localhost>
-References: <20110127145951.23248.92727.stgit@localhost>
+        peterz@infradead.org, tony.luck@intel.com, torbenh@gmx.de,
+        fenghua.yu@intel.com, tglx@linutronix.de
+In-Reply-To: <20110127145956.23248.49107.stgit@localhost>
+References: <20110127145956.23248.49107.stgit@localhost>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] h8300: Switch do_timer() to xtime_update()
-Message-ID: <tip-daad8b581e7f5e21a2f79e49d57d4f6a73b26510@git.kernel.org>
-Git-Commit-ID: daad8b581e7f5e21a2f79e49d57d4f6a73b26510
+Subject: [tip:timers/core] ia64: Switch do_timer() to xtime_update()
+Message-ID: <tip-1aabd67d2e97e6affdf5a7c65f442ac91ace3f85@git.kernel.org>
+Git-Commit-ID: 1aabd67d2e97e6affdf5a7c65f442ac91ace3f85
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 31 Jan 2011 14:08:39 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 31 Jan 2011 14:09:04 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  daad8b581e7f5e21a2f79e49d57d4f6a73b26510
-Gitweb:     http://git.kernel.org/tip/daad8b581e7f5e21a2f79e49d57d4f6a73b26510
+Commit-ID:  1aabd67d2e97e6affdf5a7c65f442ac91ace3f85
+Gitweb:     http://git.kernel.org/tip/1aabd67d2e97e6affdf5a7c65f442ac91ace3f85
 Author:     Torben Hohn <torbenh@gmx.de>
-AuthorDate: Thu, 27 Jan 2011 15:59:51 +0100
+AuthorDate: Thu, 27 Jan 2011 15:59:56 +0100
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Mon, 31 Jan 2011 14:55:45 +0100
 
-h8300: Switch do_timer() to xtime_update()
+ia64: Switch do_timer() to xtime_update()
 
-xtime_update() takes the xtime_lock itself.
+local_cpu_data->itm_next = new_itm; does not need to be protected by
+xtime_lock. xtime_update() takes the lock itself.
 
 Signed-off-by: Torben Hohn <torbenh@gmx.de>
-Cc: Yoshinori Sato <ysato@users.sourceforge.jp>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Tony Luck <tony.luck@intel.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: johnstul@us.ibm.com
 Cc: hch@infradead.org
 Cc: yong.zhang0@gmail.com
-LKML-Reference: <20110127145951.23248.92727.stgit@localhost>
+LKML-Reference: <20110127145956.23248.49107.stgit@localhost>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/h8300/kernel/time.c         |    4 +---
- arch/h8300/kernel/timer/timer8.c |    2 +-
- 2 files changed, 2 insertions(+), 4 deletions(-)
+ arch/ia64/kernel/time.c |   19 +++++--------------
+ arch/ia64/xen/time.c    |   13 +++++--------
+ 2 files changed, 10 insertions(+), 22 deletions(-)
 
-diff --git a/arch/h8300/kernel/time.c b/arch/h8300/kernel/time.c
-index 165005a..32263a1 100644
---- a/arch/h8300/kernel/time.c
-+++ b/arch/h8300/kernel/time.c
-@@ -35,9 +35,7 @@ void h8300_timer_tick(void)
- {
- 	if (current->pid)
- 		profile_tick(CPU_PROFILING);
--	write_seqlock(&xtime_lock);
--	do_timer(1);
--	write_sequnlock(&xtime_lock);
-+	xtime_update(1);
- 	update_process_times(user_mode(get_irq_regs()));
- }
+diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
+index 9702fa9..156ad80 100644
+--- a/arch/ia64/kernel/time.c
++++ b/arch/ia64/kernel/time.c
+@@ -190,19 +190,10 @@ timer_interrupt (int irq, void *dev_id)
  
-diff --git a/arch/h8300/kernel/timer/timer8.c b/arch/h8300/kernel/timer/timer8.c
-index 3946c0f..7a1533f 100644
---- a/arch/h8300/kernel/timer/timer8.c
-+++ b/arch/h8300/kernel/timer/timer8.c
-@@ -61,7 +61,7 @@
+ 		new_itm += local_cpu_data->itm_delta;
  
- /*
-  * timer_interrupt() needs to keep up the real-time clock,
-- * as well as call the "do_timer()" routine every clocktick
-+ * as well as call the "xtime_update()" routine every clocktick
-  */
+-		if (smp_processor_id() == time_keeper_id) {
+-			/*
+-			 * Here we are in the timer irq handler. We have irqs locally
+-			 * disabled, but we don't know if the timer_bh is running on
+-			 * another CPU. We need to avoid to SMP race by acquiring the
+-			 * xtime_lock.
+-			 */
+-			write_seqlock(&xtime_lock);
+-			do_timer(1);
+-			local_cpu_data->itm_next = new_itm;
+-			write_sequnlock(&xtime_lock);
+-		} else
+-			local_cpu_data->itm_next = new_itm;
++		if (smp_processor_id() == time_keeper_id)
++			xtime_update(1);
++
++		local_cpu_data->itm_next = new_itm;
  
- static irqreturn_t timer_interrupt(int irq, void *dev_id)
+ 		if (time_after(new_itm, ia64_get_itc()))
+ 			break;
+@@ -222,7 +213,7 @@ skip_process_time_accounting:
+ 		 * comfort, we increase the safety margin by
+ 		 * intentionally dropping the next tick(s).  We do NOT
+ 		 * update itm.next because that would force us to call
+-		 * do_timer() which in turn would let our clock run
++		 * xtime_update() which in turn would let our clock run
+ 		 * too fast (with the potentially devastating effect
+ 		 * of losing monotony of time).
+ 		 */
+diff --git a/arch/ia64/xen/time.c b/arch/ia64/xen/time.c
+index c1c5445..1f8244a 100644
+--- a/arch/ia64/xen/time.c
++++ b/arch/ia64/xen/time.c
+@@ -139,14 +139,11 @@ consider_steal_time(unsigned long new_itm)
+ 		run_posix_cpu_timers(p);
+ 		delta_itm += local_cpu_data->itm_delta * (stolen + blocked);
+ 
+-		if (cpu == time_keeper_id) {
+-			write_seqlock(&xtime_lock);
+-			do_timer(stolen + blocked);
+-			local_cpu_data->itm_next = delta_itm + new_itm;
+-			write_sequnlock(&xtime_lock);
+-		} else {
+-			local_cpu_data->itm_next = delta_itm + new_itm;
+-		}
++		if (cpu == time_keeper_id)
++			xtime_update(stolen + blocked);
++
++		local_cpu_data->itm_next = delta_itm + new_itm;
++
+ 		per_cpu(xen_stolen_time, cpu) += NS_PER_TICK * stolen;
+ 		per_cpu(xen_blocked_time, cpu) += NS_PER_TICK * blocked;
+ 	}
