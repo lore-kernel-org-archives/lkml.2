@@ -1,98 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755788Ab1AaNUR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 08:20:17 -0500
-Received: from www.tglx.de ([62.245.132.106]:59148 "EHLO www.tglx.de"
+	id S1755751Ab1AaNYF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 08:24:05 -0500
+Received: from www.tglx.de ([62.245.132.106]:52049 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755644Ab1AaNUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 08:20:12 -0500
-Message-Id: <20110131131809.017899070@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Mon, 31 Jan 2011 13:19:57 -0000
+	id S1752683Ab1AaNYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 08:24:03 -0500
+Date: Mon, 31 Jan 2011 14:23:56 +0100 (CET)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: David Howells <dhowells@redhat.com>, John Stultz <johnstul@us.ibm.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Mark Salter <msalter@redhat.com>
-Subject: [patch 3/3] mn10300: Use clockevents_calc_mult_shift()
-References: <20110131131707.795836437@linutronix.de>
-Content-Disposition: inline;
-	filename=mn10300-use-clockevents_calc_mult_shift.patch
+To: Christian Dietrich <christian.dietrich@informatik.uni-erlangen.de>
+cc: Reinhard Tartler <Reinhard.Tartler@informatik.uni-erlangen.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        vamos@i4.informatik.uni-erlangen.de, Julia Lawall <julia@diku.dk>
+Subject: Re: [ANNOUNCE] undertaker 1.0
+In-Reply-To: <86sjw9jkif.fsf@peer.zerties.org>
+Message-ID: <alpine.LFD.2.00.1101311422520.31804@localhost6.localdomain6>
+References: <87y666tvag.fsf@faui44a.informatik.uni-erlangen.de> <alpine.LFD.2.00.1101282126210.31804@localhost6.localdomain6> <86sjw9jkif.fsf@peer.zerties.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use clockevents_calc_mult_shift() instead of the homebrewn function in
-mn10300/kernel/time.c.
+On Mon, 31 Jan 2011, Christian Dietrich wrote:
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
-Cc: Mark Salter <msalter@redhat.com> 
----
- arch/mn10300/kernel/cevt-mn10300.c |    5 +++--
- arch/mn10300/kernel/internal.h     |    7 -------
- arch/mn10300/kernel/time.c         |   17 -----------------
- 3 files changed, 3 insertions(+), 26 deletions(-)
+> Thomas Gleixner <tglx@linutronix.de> writes:
+> 
+> > The one in manage.c is not:
+> >
+> >  921 #ifdef CONFIG_IRQ_RELEASE_METHOD
+> >
+> > CONFIG_IRQ_RELEASE_METHOD is set by arch/um. Ditto for include/linux/irq.h
+> 
+> This problem was the result of an implementation bug. We didn't create a
+> feature model for um. This is now fixed in our master branch and will be
+> in the next minor release.
+> 
+> > It'd be nice if the web interface would have a knob to jump to the
+> > next red section. Scrolling through is annoying.
+> 
+> I generated a new code browser for -rc2[1]. There you can press 'n' to jump
+> to the next defect. I've only tested the javascript code with chromium,
+> but it should work anywhere else too.
 
-Index: linux-2.6/arch/mn10300/kernel/cevt-mn10300.c
-===================================================================
---- linux-2.6.orig/arch/mn10300/kernel/cevt-mn10300.c
-+++ linux-2.6/arch/mn10300/kernel/cevt-mn10300.c
-@@ -89,9 +89,10 @@ int __init init_clockevents(void)
- 	cd->name		= "Timestamp";
- 	cd->features		= CLOCK_EVT_FEAT_ONESHOT;
- 
--	/* Calculate the min / max delta */
--	clockevent_set_clock(cd, MN10300_JCCLK);
-+	/* Calculate shift/mult. We want to spawn at least 1 second */
-+	clockevents_calc_mult_shift(cd, MN10300_JCCLK, 1);
- 
-+	/* Calculate the min / max delta */
- 	cd->max_delta_ns	= clockevent_delta2ns(TMJCBR_MAX, cd);
- 	cd->min_delta_ns	= clockevent_delta2ns(100, cd);
- 
-Index: linux-2.6/arch/mn10300/kernel/internal.h
-===================================================================
---- linux-2.6.orig/arch/mn10300/kernel/internal.h
-+++ linux-2.6/arch/mn10300/kernel/internal.h
-@@ -33,10 +33,3 @@ extern void mn10300_low_ipi_handler(void
-  * time.c
-  */
- extern irqreturn_t local_timer_interrupt(void);
--
--/*
-- * time.c
-- */
--#ifdef CONFIG_CSRC_MN10300
--extern void clocksource_set_clock(struct clocksource *, unsigned int);
--#endif
-Index: linux-2.6/arch/mn10300/kernel/time.c
-===================================================================
---- linux-2.6.orig/arch/mn10300/kernel/time.c
-+++ linux-2.6/arch/mn10300/kernel/time.c
-@@ -93,23 +93,6 @@ irqreturn_t local_timer_interrupt(void)
- 	return IRQ_HANDLED;
- }
- 
--void __cpuinit clockevent_set_clock(struct clock_event_device *cd,
--				    unsigned int clock)
--{
--	u64 temp;
--	u32 shift;
--
--	/* Find a shift value */
--	for (shift = 32; shift > 0; shift--) {
--		temp = (u64) clock << shift;
--		do_div(temp, NSEC_PER_SEC);
--		if ((temp >> 32) == 0)
--			break;
--	}
--	cd->shift = shift;
--	cd->mult = (u32) temp;
--}
--
- /*
-  * initialise the various timers used by the main part of the kernel
-  */
+Works nicely in firefox. Thanks a lot !
 
-
+      tglx
