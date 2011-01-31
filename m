@@ -1,143 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab1AaDZv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jan 2011 22:25:51 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:50888 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752122Ab1AaDZt (ORCPT
+	id S1754298Ab1AaD0I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jan 2011 22:26:08 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38093 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752122Ab1AaD0H convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jan 2011 22:25:49 -0500
+	Sun, 30 Jan 2011 22:26:07 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:content-type;
-        b=MpjT6lDVyHu12fgat8OqBhhBMyB5yS82u4wvr8KaRhIFmF4Yely5gSxreAMUw1rvWh
-         09zEIfboIM8dUscICvOKS8PP210UoDHIgBp/8xcXvfio0b+VnsG8qyMb/ZkUqqAJqbKW
-         p3gCavVwfWFPKqa53nblwwO8dc9RM65/M7Oug=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=SjBY5OJhKcubqSLKJZz7oOBgGPKS0kY58qHJyI8pN7HFpgrhVEBifk/9jajE2qJ3Y5
+         b+DMXZlbXhFZcnCqbR9Dz+IvxFShn0wyIH4AGBnQ/Wx+HQ0sXfkr0fem5lDAvl4OAwuV
+         EDRbJqt8QUvugS4uAvtQ3jG+GuLufAW5qxxnI=
 MIME-Version: 1.0
-From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Date: Mon, 31 Jan 2011 05:25:28 +0200
-Message-ID: <AANLkTi=5LB8M1VXZXZ2zEEa1rNf7Ps2bbg5h=x1mJS38@mail.gmail.com>
-Subject: [PATCH 1/2] security/selinux: Simplify proc inode to security label mapping
-To: Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
-        Eric Paris <eparis@parisplace.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        selinux@tycho.nsa.gov, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Octavian Purdila <opurdila@ixiacom.com>
-Content-Type: multipart/mixed; boundary=0022152d7e0be29b1b049b1bf8b7
+In-Reply-To: <1296405366.2274.60.camel@twins>
+References: <AANLkTinaOQpuJis5HgK316ANxpDS8eZ8Q0S4a44POrp0@mail.gmail.com>
+	<1295894492.28776.470.camel@laptop>
+	<AANLkTimq3jmza-t5iL10wgLLycwdDkJ3mznLQsKHM_Kf@mail.gmail.com>
+	<1295946736.28776.479.camel@laptop>
+	<AANLkTikQs1UcfBGf_6shNVtdDSzR+8XzUKcx0amFZXey@mail.gmail.com>
+	<1296210619.15234.263.camel@laptop>
+	<AANLkTikagMAGssG09D+SCKTsu9T+==R2fsSM3tgHctdv@mail.gmail.com>
+	<1296405366.2274.60.camel@twins>
+Date: Sun, 30 Jan 2011 22:26:04 -0500
+Message-ID: <AANLkTinxHXqndfP79W0=zer70psi6Dmkcv7rZc4ew7ZF@mail.gmail.com>
+Subject: Re: [PATCH] a patch to fix the cpu-offline-online problem caused by pm_idle
+From: Luming Yu <luming.yu@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, tglx <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0022152d7e0be29b1b049b1bf8b7
-Content-Type: text/plain; charset=UTF-8
+On Mon, Jan 31, 2011 at 12:36 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Sat, 2011-01-29 at 13:44 +0800, Luming Yu wrote:
+>> On Fri, Jan 28, 2011 at 6:30 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> >> We have seen an extremely slow system under the CPU-OFFLINE-ONLIE test
+>> >> on a 4-sockets NHM-EX system.
+>> >
+>> > Slow is OK, cpu-hotplug isn't performance critical by any means.
+>>
+>> Here is one example that the "slow" is not acceptable. Maybe I should
+>> not use "slow" in the first place. It happnes after I resolved a
+>> similar NMI watchdog warnning in calibrate_delay_direct..
+>>
+>> Please note, I got the BUG in a 2.6.32-based kernel. Upstream  behaves
+>> similar I guess.
+>
+> Guessing is totally the wrong thing when you're sending stuff upstream,
+> esp ugly patches such as this. .32 is more than a year old, anything
+> could have happened.
 
-Currently selinux has incestuous knowledge of the implementation details
-of procfs and sysctl that it uses to get a pathname from an inode. As it
-happens the point we care is in the security_d_instantiate lsm hook so
-we have a valid dentry that we can use to get the entire pathname on
-the proc filesystem.  With the recent change to sys_sysctl to go through
-proc/sys all proc and sysctl accesses go through the vfs, which
-means we no longer need a sysctl special case.
+Ok. the default upstream kernel seems to have NMI watchdog disabled?
+since there is 0 NMI.
 
-So get the path for the dentry, remove the incestuous knowledge
-and simplify the code.
+# cat /proc/interrupts | grep -i nmi
+ NMI:          0          0          0          0          0
+0          0          0          0          0          0          0
+      0          0          0          0          0          0
+ 0          0          0          0          0          0          0
+       0          0          0          0          0          0
+  0          0          0          0          0          0          0
+        0          0          0          0          0          0
+   0          0          0          0          0          0          0
+         0          0          0          0          0          0
+    0          0          0          0          0          0
+Non-maskable interrupts
+[root@intel-s3e36-02 ~]# uptime
+ 21:43:27 up 34 min,  2 users,  load average: 0.40, 1.27, 2.32
 
-caveat: Because the dentry may not yet be hashed I think dentry_path will
-        append (deleted) and thus is not the right function to call.
+But there is a problem like this:
 
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
----
- security/selinux/hooks.c |  114 ++++-----------------------------------------
- 1 files changed, 11 insertions(+), 103 deletions(-)
+Booting Node 3 Processor 59 APIC 0x75
+Clocksource tsc unstable (delta = -77316000544 ns)
+Switching to clocksource hpet
 
---0022152d7e0be29b1b049b1bf8b7
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0001-security-selinux-Simplify-proc-inode-to-security-lab.patch"
-Content-Disposition: attachment; 
-	filename="0001-security-selinux-Simplify-proc-inode-to-security-lab.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: 3f754629de6aef33_0.1
 
-ZGlmZiAtLWdpdCBhL3NlY3VyaXR5L3NlbGludXgvaG9va3MuYyBiL3NlY3VyaXR5L3NlbGludXgv
-aG9va3MuYw0KaW5kZXggNjVmYThiZi4uNTE2MTVmNiAxMDA2NDQNCi0tLSBhL3NlY3VyaXR5L3Nl
-bGludXgvaG9va3MuYw0KKysrIGIvc2VjdXJpdHkvc2VsaW51eC9ob29rcy5jDQpAQCAtNDMsNyAr
-NDMsNiBAQA0KICNpbmNsdWRlIDxsaW51eC9mZHRhYmxlLmg+DQogI2luY2x1ZGUgPGxpbnV4L25h
-bWVpLmg+DQogI2luY2x1ZGUgPGxpbnV4L21vdW50Lmg+DQotI2luY2x1ZGUgPGxpbnV4L3Byb2Nf
-ZnMuaD4NCiAjaW5jbHVkZSA8bGludXgvbmV0ZmlsdGVyX2lwdjQuaD4NCiAjaW5jbHVkZSA8bGlu
-dXgvbmV0ZmlsdGVyX2lwdjYuaD4NCiAjaW5jbHVkZSA8bGludXgvdHR5Lmg+DQpAQCAtNzAsNyAr
-NjksNiBAQA0KICNpbmNsdWRlIDxuZXQvaXB2Ni5oPg0KICNpbmNsdWRlIDxsaW51eC9odWdldGxi
-Lmg+DQogI2luY2x1ZGUgPGxpbnV4L3BlcnNvbmFsaXR5Lmg+DQotI2luY2x1ZGUgPGxpbnV4L3N5
-c2N0bC5oPg0KICNpbmNsdWRlIDxsaW51eC9hdWRpdC5oPg0KICNpbmNsdWRlIDxsaW51eC9zdHJp
-bmcuaD4NCiAjaW5jbHVkZSA8bGludXgvc2VsaW51eC5oPg0KQEAgLTExMjAsMzkgKzExMTgsMjcg
-QEAgc3RhdGljIGlubGluZSB1MTYgc29ja2V0X3R5cGVfdG9fc2VjdXJpdHlfY2xhc3MoaW50IGZh
-bWlseSwgaW50IHR5cGUsIGludCBwcm90b2MNCiB9DQogDQogI2lmZGVmIENPTkZJR19QUk9DX0ZT
-DQotc3RhdGljIGludCBzZWxpbnV4X3Byb2NfZ2V0X3NpZChzdHJ1Y3QgcHJvY19kaXJfZW50cnkg
-KmRlLA0KK3N0YXRpYyBpbnQgc2VsaW51eF9wcm9jX2dldF9zaWQoc3RydWN0IGRlbnRyeSAqZGVu
-dHJ5LA0KIAkJCQl1MTYgdGNsYXNzLA0KIAkJCQl1MzIgKnNpZCkNCiB7DQotCWludCBidWZsZW4s
-IHJjOw0KLQljaGFyICpidWZmZXIsICpwYXRoLCAqZW5kOw0KKwlpbnQgcmM7DQorCWNoYXIgKmJ1
-ZmZlciwgKnBhdGg7DQogDQogCWJ1ZmZlciA9IChjaGFyICopX19nZXRfZnJlZV9wYWdlKEdGUF9L
-RVJORUwpOw0KIAlpZiAoIWJ1ZmZlcikNCiAJCXJldHVybiAtRU5PTUVNOw0KIA0KLQlidWZsZW4g
-PSBQQUdFX1NJWkU7DQotCWVuZCA9IGJ1ZmZlcitidWZsZW47DQotCSotLWVuZCA9ICdcMCc7DQot
-CWJ1Zmxlbi0tOw0KLQlwYXRoID0gZW5kLTE7DQotCSpwYXRoID0gJy8nOw0KLQl3aGlsZSAoZGUg
-JiYgZGUgIT0gZGUtPnBhcmVudCkgew0KLQkJYnVmbGVuIC09IGRlLT5uYW1lbGVuICsgMTsNCi0J
-CWlmIChidWZsZW4gPCAwKQ0KLQkJCWJyZWFrOw0KLQkJZW5kIC09IGRlLT5uYW1lbGVuOw0KLQkJ
-bWVtY3B5KGVuZCwgZGUtPm5hbWUsIGRlLT5uYW1lbGVuKTsNCi0JCSotLWVuZCA9ICcvJzsNCi0J
-CXBhdGggPSBlbmQ7DQotCQlkZSA9IGRlLT5wYXJlbnQ7DQotCX0NCi0JcmMgPSBzZWN1cml0eV9n
-ZW5mc19zaWQoInByb2MiLCBwYXRoLCB0Y2xhc3MsIHNpZCk7DQorCXBhdGggPSBkZW50cnlfcGF0
-aChkZW50cnksIGJ1ZmZlciwgUEFHRV9TSVpFKTsNCisJaWYgKElTX0VSUihwYXRoKSkNCisJCXJj
-ID0gUFRSX0VSUihwYXRoKTsNCisJZWxzZQ0KKwkJcmMgPSBzZWN1cml0eV9nZW5mc19zaWQoInBy
-b2MiLCBwYXRoLCB0Y2xhc3MsIHNpZCk7DQogCWZyZWVfcGFnZSgodW5zaWduZWQgbG9uZylidWZm
-ZXIpOw0KIAlyZXR1cm4gcmM7DQogfQ0KICNlbHNlDQotc3RhdGljIGludCBzZWxpbnV4X3Byb2Nf
-Z2V0X3NpZChzdHJ1Y3QgcHJvY19kaXJfZW50cnkgKmRlLA0KK3N0YXRpYyBpbnQgc2VsaW51eF9w
-cm9jX2dldF9zaWQoc3RydWN0IGRlbnRyeSAqZGVudHJ5LA0KIAkJCQl1MTYgdGNsYXNzLA0KIAkJ
-CQl1MzIgKnNpZCkNCiB7DQpAQCAtMTMxNiwxMCArMTMwMiw5IEBAIHN0YXRpYyBpbnQgaW5vZGVf
-ZG9pbml0X3dpdGhfZGVudHJ5KHN0cnVjdCBpbm9kZSAqaW5vZGUsIHN0cnVjdCBkZW50cnkgKm9w
-dF9kZW50DQogCQlpc2VjLT5zaWQgPSBzYnNlYy0+c2lkOw0KIA0KIAkJaWYgKChzYnNlYy0+Zmxh
-Z3MgJiBTRV9TQlBST0MpICYmICFTX0lTTE5LKGlub2RlLT5pX21vZGUpKSB7DQotCQkJc3RydWN0
-IHByb2NfaW5vZGUgKnByb2NpID0gUFJPQ19JKGlub2RlKTsNCi0JCQlpZiAocHJvY2ktPnBkZSkg
-ew0KKwkJCWlmIChvcHRfZGVudHJ5KSB7DQogCQkJCWlzZWMtPnNjbGFzcyA9IGlub2RlX21vZGVf
-dG9fc2VjdXJpdHlfY2xhc3MoaW5vZGUtPmlfbW9kZSk7DQotCQkJCXJjID0gc2VsaW51eF9wcm9j
-X2dldF9zaWQocHJvY2ktPnBkZSwNCisJCQkJcmMgPSBzZWxpbnV4X3Byb2NfZ2V0X3NpZChvcHRf
-ZGVudHJ5LA0KIAkJCQkJCQkgIGlzZWMtPnNjbGFzcywNCiAJCQkJCQkJICAmc2lkKTsNCiAJCQkJ
-aWYgKHJjKQ0KQEAgLTE4NjIsODIgKzE4NDcsNiBAQCBzdGF0aWMgaW50IHNlbGludXhfY2FwYWJs
-ZShzdHJ1Y3QgdGFza19zdHJ1Y3QgKnRzaywgY29uc3Qgc3RydWN0IGNyZWQgKmNyZWQsDQogCXJl
-dHVybiB0YXNrX2hhc19jYXBhYmlsaXR5KHRzaywgY3JlZCwgY2FwLCBhdWRpdCk7DQogfQ0KIA0K
-LXN0YXRpYyBpbnQgc2VsaW51eF9zeXNjdGxfZ2V0X3NpZChjdGxfdGFibGUgKnRhYmxlLCB1MTYg
-dGNsYXNzLCB1MzIgKnNpZCkNCi17DQotCWludCBidWZsZW4sIHJjOw0KLQljaGFyICpidWZmZXIs
-ICpwYXRoLCAqZW5kOw0KLQ0KLQlyYyA9IC1FTk9NRU07DQotCWJ1ZmZlciA9IChjaGFyICopX19n
-ZXRfZnJlZV9wYWdlKEdGUF9LRVJORUwpOw0KLQlpZiAoIWJ1ZmZlcikNCi0JCWdvdG8gb3V0Ow0K
-LQ0KLQlidWZsZW4gPSBQQUdFX1NJWkU7DQotCWVuZCA9IGJ1ZmZlcitidWZsZW47DQotCSotLWVu
-ZCA9ICdcMCc7DQotCWJ1Zmxlbi0tOw0KLQlwYXRoID0gZW5kLTE7DQotCSpwYXRoID0gJy8nOw0K
-LQl3aGlsZSAodGFibGUpIHsNCi0JCWNvbnN0IGNoYXIgKm5hbWUgPSB0YWJsZS0+cHJvY25hbWU7
-DQotCQlzaXplX3QgbmFtZWxlbiA9IHN0cmxlbihuYW1lKTsNCi0JCWJ1ZmxlbiAtPSBuYW1lbGVu
-ICsgMTsNCi0JCWlmIChidWZsZW4gPCAwKQ0KLQkJCWdvdG8gb3V0X2ZyZWU7DQotCQllbmQgLT0g
-bmFtZWxlbjsNCi0JCW1lbWNweShlbmQsIG5hbWUsIG5hbWVsZW4pOw0KLQkJKi0tZW5kID0gJy8n
-Ow0KLQkJcGF0aCA9IGVuZDsNCi0JCXRhYmxlID0gdGFibGUtPnBhcmVudDsNCi0JfQ0KLQlidWZs
-ZW4gLT0gNDsNCi0JaWYgKGJ1ZmxlbiA8IDApDQotCQlnb3RvIG91dF9mcmVlOw0KLQllbmQgLT0g
-NDsNCi0JbWVtY3B5KGVuZCwgIi9zeXMiLCA0KTsNCi0JcGF0aCA9IGVuZDsNCi0JcmMgPSBzZWN1
-cml0eV9nZW5mc19zaWQoInByb2MiLCBwYXRoLCB0Y2xhc3MsIHNpZCk7DQotb3V0X2ZyZWU6DQot
-CWZyZWVfcGFnZSgodW5zaWduZWQgbG9uZylidWZmZXIpOw0KLW91dDoNCi0JcmV0dXJuIHJjOw0K
-LX0NCi0NCi1zdGF0aWMgaW50IHNlbGludXhfc3lzY3RsKGN0bF90YWJsZSAqdGFibGUsIGludCBv
-cCkNCi17DQotCWludCBlcnJvciA9IDA7DQotCXUzMiBhdjsNCi0JdTMyIHRzaWQsIHNpZDsNCi0J
-aW50IHJjOw0KLQ0KLQlzaWQgPSBjdXJyZW50X3NpZCgpOw0KLQ0KLQlyYyA9IHNlbGludXhfc3lz
-Y3RsX2dldF9zaWQodGFibGUsIChvcCA9PSAwMDAxKSA/DQotCQkJCSAgICBTRUNDTEFTU19ESVIg
-OiBTRUNDTEFTU19GSUxFLCAmdHNpZCk7DQotCWlmIChyYykgew0KLQkJLyogRGVmYXVsdCB0byB0
-aGUgd2VsbC1kZWZpbmVkIHN5c2N0bCBTSUQuICovDQotCQl0c2lkID0gU0VDSU5JVFNJRF9TWVND
-VEw7DQotCX0NCi0NCi0JLyogVGhlIG9wIHZhbHVlcyBhcmUgImRlZmluZWQiIGluIHN5c2N0bC5j
-LCB0aGVyZWJ5IGNyZWF0aW5nDQotCSAqIGEgYmFkIGNvdXBsaW5nIGJldHdlZW4gdGhpcyBtb2R1
-bGUgYW5kIHN5c2N0bC5jICovDQotCWlmIChvcCA9PSAwMDEpIHsNCi0JCWVycm9yID0gYXZjX2hh
-c19wZXJtKHNpZCwgdHNpZCwNCi0JCQkJICAgICBTRUNDTEFTU19ESVIsIERJUl9fU0VBUkNILCBO
-VUxMKTsNCi0JfSBlbHNlIHsNCi0JCWF2ID0gMDsNCi0JCWlmIChvcCAmIDAwNCkNCi0JCQlhdiB8
-PSBGSUxFX19SRUFEOw0KLQkJaWYgKG9wICYgMDAyKQ0KLQkJCWF2IHw9IEZJTEVfX1dSSVRFOw0K
-LQkJaWYgKGF2KQ0KLQkJCWVycm9yID0gYXZjX2hhc19wZXJtKHNpZCwgdHNpZCwNCi0JCQkJCSAg
-ICAgU0VDQ0xBU1NfRklMRSwgYXYsIE5VTEwpOw0KLQl9DQotDQotCXJldHVybiBlcnJvcjsNCi19
-DQotDQogc3RhdGljIGludCBzZWxpbnV4X3F1b3RhY3RsKGludCBjbWRzLCBpbnQgdHlwZSwgaW50
-IGlkLCBzdHJ1Y3Qgc3VwZXJfYmxvY2sgKnNiKQ0KIHsNCiAJY29uc3Qgc3RydWN0IGNyZWQgKmNy
-ZWQgPSBjdXJyZW50X2NyZWQoKTsNCkBAIC01Mzk1LDcgKzUzMDQsNiBAQCBzdGF0aWMgc3RydWN0
-IHNlY3VyaXR5X29wZXJhdGlvbnMgc2VsaW51eF9vcHMgPSB7DQogCS5wdHJhY2VfdHJhY2VtZSA9
-CQlzZWxpbnV4X3B0cmFjZV90cmFjZW1lLA0KIAkuY2FwZ2V0ID0JCQlzZWxpbnV4X2NhcGdldCwN
-CiAJLmNhcHNldCA9CQkJc2VsaW51eF9jYXBzZXQsDQotCS5zeXNjdGwgPQkJCXNlbGludXhfc3lz
-Y3RsLA0KIAkuY2FwYWJsZSA9CQkJc2VsaW51eF9jYXBhYmxlLA0KIAkucXVvdGFjdGwgPQkJCXNl
-bGludXhfcXVvdGFjdGwsDQogCS5xdW90YV9vbiA9CQkJc2VsaW51eF9xdW90YV9vbiwNCg==
---0022152d7e0be29b1b049b1bf8b7--
+>
+>> BUG: soft lockup - CPU#63 stuck for 61s! [migration/63:256]
+>
+>> > If its slow but working, the test is broken, I don't see a reason to do
+>> > anything to the kernel, let alone the below.
+>>
+>> It not working sometimes, so I think it's not a solid feature right now.
+>
+> But you didn't say anything about not working, you merely said slow. If
+> its not working, you need to very carefully explain what is not working,
+> where its deadlocked and how your patch solves this and how you avoid
+> wrecking stuff for everybody else.
+
+It's not working because of NMI watchdog. If you ignore NMI watchdog,
+then I guess it works but just slow..
+
+>
+>> >>  since it currently unnecessarily implicitly interact with
+>> >> CPU power management.
+>> >
+>> > daft statement at best, because if not for some misguided power
+>> > management purpose, what are you actually unplugging cpus for?
+>> > (misguided because unplug doesn't actually safe more power than simply
+>> > idling the cpu).
+>> It's a RAS feature and Suspend Resume also hits same code path I think.
+>
+> That still doesn't say anything, also who in his right mind suspends a
+> nhm-ex system?
+
+But we need to have a solid code in place. We can't blame user who
+could find something useful with trying that. Let hotplug code to
+implicitly interact with CPU PM will complicate things unnecessarily.
+
+>
+>> > So you flip the pm_idle pointer protected unter hotplug mutex, but
+>> > that's not serialized against module loading, so what happens if you
+>> > concurrently load a module that sets another idle policy?
+>> >
+>> > Your changelog is vague at best, so what exactly is the purpose here? We
+>> > flip to default_idle(), which uses HLT, which is C1. Then you run
+>> > cpu_idle_wait(), which will IPI all cpus, all these CPUs (except one)
+>> > could have been in deep C states (C3+) so you get your slow wakeup
+>> > anyway.
+>> >
+>> > There-after you do the normal stop-machine hot-plug dance, which again
+>> > will IPI all cpus once, then you flip it back to the saved pm_idle
+>> > handler and again IPI all cpus.
+>>
+>> https://lkml.org/lkml/2009/6/29/60
+>> it needs 50-100us latency to send one IPI, you could get an idea on a
+>> large NHM-EX system which contains 64 logical processors. With
+>> Tickless and APIC timer stopped in C3 on NHM-EX, you could also have
+>> an idea about the problem I have.
+>
+> Ok, so one IPI costs 50-100 us, even with 64 cpu, that's at most 6.4ms
+> nowhere near enough to trigger the NMI watchdog. So what does go wrong?
+
+Good question!
+But we also can't forget there were large latency from C3.
+And I guess some reschedule ticks get lost to kick some CPUs out of
+idle due to the side effects of the CPU PM feature. if use nohz=off,
+everything seems to just work.
+Yes, I agree we need to dig it out either.
+But it's kind of combination problem between the special stop_machine
+context and CPU power management...
+
+>
+> Why does your patch solve things, like said, it doesn't avoid the slow
+> IPI at all, you still IPI each cpu right after changing the pm_idle
+> function. Those IPIs will still hit C3+ states.
+>
+>> Let me know if there are still questions .
+>
+> Yeah, what are you smoking? Why do you wreck perfectly fine code for one
+> backward ass piece of hardware.
+
+Just make things less complex...
+
+Thanks
+Luming
