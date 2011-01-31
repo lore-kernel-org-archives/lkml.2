@@ -1,78 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756237Ab1AaXyQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 18:54:16 -0500
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:47062 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754129Ab1AaXyP convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 18:54:15 -0500
-From: Kevin Hilman <khilman@ti.com>
-To: Thomas Weber <thomas.weber.linux@googlemail.com>
-Cc: Govindraj <govindraj.ti@gmail.com>, Thomas Weber <weber@corscience.de>,
-        linux-omap@vger.kernel.org, manjugk@ti.com, gadiyar@ti.com,
-        tony@atomide.com, govindraj@ti.com, gregkh@suse.de,
-        andrei.emeltchenko@nokia.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3] OMAP: Enable Magic SysRq on serial console ttyOx
-Organization: Texas Instruments, Inc.
-References: <1295604084-27761-1-git-send-email-weber@corscience.de>
-	<AANLkTikSznkcNwkVaPswx=zr8FFGQPVMw_AebF9ymZLE@mail.gmail.com>
-	<8739oi7z4m.fsf@ti.com>
-	<AANLkTi=HxnPVu83CpodFA4rLipcz1Oie2co49S1=+1M6@mail.gmail.com>
-Date: Mon, 31 Jan 2011 15:54:11 -0800
-In-Reply-To: <AANLkTi=HxnPVu83CpodFA4rLipcz1Oie2co49S1=+1M6@mail.gmail.com>
-	(Thomas Weber's message of "Mon, 31 Jan 2011 22:31:09 +0100")
-Message-ID: <87vd141vfg.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1756390Ab1AaXyk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 18:54:40 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37492 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754332Ab1AaXyj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 18:54:39 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 1 Feb 2011 08:48:29 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: akpm@linux-foundation.org, nishimura@mxp.nes.nec.co.jp,
+        balbir@linux.vnet.ibm.com, minchan.kim@gmail.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/3] memcg: prevent endless loop when charging huge
+ pages
+Message-Id: <20110201084829.86b7290c.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1296482635-13421-2-git-send-email-hannes@cmpxchg.org>
+References: <1296482635-13421-1-git-send-email-hannes@cmpxchg.org>
+	<1296482635-13421-2-git-send-email-hannes@cmpxchg.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Weber <thomas.weber.linux@googlemail.com> writes:
+On Mon, 31 Jan 2011 15:03:53 +0100
+Johannes Weiner <hannes@cmpxchg.org> wrote:
 
-> On Mon, Jan 24, 2011 at 10:47 PM, Kevin Hilman <khilman@ti.com> wrote:
->> Govindraj <govindraj.ti@gmail.com> writes:
->>
->>> On Fri, Jan 21, 2011 at 3:31 PM, Thomas Weber <weber@corscience.de> wrote:
->>>> Magic SysRq key is not working for OMAP on new serial
->>>> console ttyOx because SUPPORT_SYSRQ is not defined
->>>> for omap-serial.
->>>>
->>>> This patch defines SUPPORT_SYSRQ in omap-serial and
->>>> enables handling of Magic SysRq character.
->>>>
->>>> Further there is an issue of losing first break character.
->>>> Removing the reset of the lsr_break_flag fixes this issue.
->>>>
->>>> Signed-off-by: Thomas Weber <weber@corscience.de>
->>>
->>>
->>> Acked-by: Govindraj.R <govindraj.raja@ti.com>
->>> Tested-by: Manjunath G Kondaiah <manjugk@ti.com>
->>>
->>
->> Acked-by: Kevin Hilman <khilman@ti.com>
->>
->> Greg, this one should go for .38-rc.   Feel free to merge, or we can
->> take it through the OMAP tree with your ack.
->>
->> Thanks,
->>
->> Kevin
->>
->> --
->
-> Hello,
-> should I rebase this patch, because it does not apply after movement
-> of driver/serial to driver/tty/serial?
->
+> The charging code can encounter a charge size that is bigger than a
+> regular page in two situations: one is a batched charge to fill the
+> per-cpu stocks, the other is a huge page charge.
+> 
+> This code is distributed over two functions, however, and only the
+> outer one is aware of huge pages.  In case the charging fails, the
+> inner function will tell the outer function to retry if the charge
+> size is bigger than regular pages--assuming batched charging is the
+> only case.  And the outer function will retry forever charging a huge
+> page.
+> 
+> This patch makes sure the inner function can distinguish between batch
+> charging and a single huge page charge.  It will only signal another
+> attempt if batch charging failed, and go into regular reclaim when it
+> is called on behalf of a huge page.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Yes, please rebase.
+Thank you very much.
 
-Thanks,
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Kevin
+> ---
+>  mm/memcontrol.c |   11 +++++++++--
+>  1 files changed, 9 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index d572102..73ea323 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1837,8 +1837,15 @@ static int __mem_cgroup_do_charge(struct mem_cgroup *mem, gfp_t gfp_mask,
+>  		flags |= MEM_CGROUP_RECLAIM_NOSWAP;
+>  	} else
+>  		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
+> -
+> -	if (csize > PAGE_SIZE) /* change csize and retry */
+> +	/*
+> +	 * csize can be either a huge page (HPAGE_SIZE), a batch of
+> +	 * regular pages (CHARGE_SIZE), or a single regular page
+> +	 * (PAGE_SIZE).
+> +	 *
+> +	 * Never reclaim on behalf of optional batching, retry with a
+> +	 * single page instead.
+> +	 */
+> +	if (csize == CHARGE_SIZE)
+>  		return CHARGE_RETRY;
+>  
+>  	if (!(gfp_mask & __GFP_WAIT))
+> -- 
+> 1.7.3.5
+> 
+> 
 
