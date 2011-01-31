@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756170Ab1AaQbS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 11:31:18 -0500
-Received: from kroah.org ([198.145.64.141]:46370 "EHLO coco.kroah.org"
+	id S1756210Ab1AaQbo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 11:31:44 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:39018 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754954Ab1AaQbQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 11:31:16 -0500
-From: Greg Kroah-Hartman <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Pavel Machek <pavel@ucw.cz>, stable <stable@kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 3/5] serial: unbreak billionton CF card
-Date: Mon, 31 Jan 2011 08:31:08 -0800
-Message-Id: <1296491470-23096-3-git-send-email-gregkh@suse.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20110131162852.GA22875@kroah.com>
-References: <20110131162852.GA22875@kroah.com>
+	id S1756012Ab1AaQbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 11:31:41 -0500
+Subject: Re: [PATCH] flex_array: Change behaviour on zero size allocations
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Eric Paris <eparis@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+In-Reply-To: <20110131085213.GK3070@secunet.com>
+References: <20110131085213.GK3070@secunet.com>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Mon, 31 Jan 2011 08:31:37 -0800
+Message-ID: <1296491497.7797.3792.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pavel Machek <pavel@ucw.cz>
+On Mon, 2011-01-31 at 09:52 +0100, Steffen Klassert wrote:
+>  int flex_array_put(struct flex_array *fa, unsigned int element_nr, void *src,
+>                         gfp_t flags)
+>  {
+> -       int part_nr = fa_element_to_part_nr(fa, element_nr);
+> +       int part_nr;
+>         struct flex_array_part *part;
+>         void *dst;
+> 
+> +       if (!fa->element_size)
+> +               return 0;
+>         if (element_nr >= fa->total_nr_elements)
+>                 return -ENOSPC; 
 
-Unbreak Billionton CF bluetooth card. This actually fixes a regression
-on zaurus.
+I think this still has some of the issues of the earlier patch.  The
+zero-size check needs to be moved after the ->total_nr_elements check.
+Otherwise, this won't produce any errors:
 
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
-Cc: stable <stable@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/tty/serial/8250.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+	fa = flex_array_alloc(0, 100, GFP_KERNEL);
+	flex_array_put(fa, 1001, ptr, GFP_KERNEL);
 
-diff --git a/drivers/tty/serial/8250.c b/drivers/tty/serial/8250.c
-index b25e6e4..3975df6 100644
---- a/drivers/tty/serial/8250.c
-+++ b/drivers/tty/serial/8250.c
-@@ -236,7 +236,8 @@ static const struct serial8250_config uart_config[] = {
- 		.fifo_size	= 128,
- 		.tx_loadsz	= 128,
- 		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
--		.flags		= UART_CAP_FIFO | UART_CAP_EFR | UART_CAP_SLEEP,
-+		/* UART_CAP_EFR breaks billionon CF bluetooth card. */
-+		.flags		= UART_CAP_FIFO | UART_CAP_SLEEP,
- 	},
- 	[PORT_16654] = {
- 		.name		= "ST16654",
--- 
-1.7.1
+> @@ -284,6 +297,8 @@ void *flex_array_get(struct flex_array *fa, unsigned int element_nr)
+>         int part_nr = fa_element_to_part_nr(fa, element_nr);
+>         struct flex_array_part *part;
+> 
+> +       if (!fa->total_nr_elements || !fa->element_size)
+> +               return NULL;
+>         if (element_nr >= fa->total_nr_elements)
+>                 return NULL;
+>         if (elements_fit_in_base(fa))
+
+Do you really need to check fa->total_nr_elements both for zero and
+against element_nr?  Seems a but superfluous to me.
+
+-- Dave
 
