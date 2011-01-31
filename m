@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab1AaMIo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 07:08:44 -0500
-Received: from mailbox20.lycos.com ([209.202.250.20]:48760 "EHLO
-	mailbox20.lycos.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754954Ab1AaMIm (ORCPT
+	id S1755486Ab1AaMJt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 07:09:49 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41963 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754190Ab1AaMJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 07:08:42 -0500
-Date: Mon, 31 Jan 2011 07:08:36 -0500 (EST)
-From: "Artem S. Tashkinov" <t.artem@lycos.com>
-To: linux-kernel@vger.kernel.org
-Message-ID: <17725266.49811296475716764.JavaMail.root@mail-zbox20.bo3.lycos.com>
-In-Reply-To: <9147572.49771296475645053.JavaMail.root@mail-zbox20.bo3.lycos.com>
-Subject: irq N: nobody cared (try booting with the "irqpoll" option)
+	Mon, 31 Jan 2011 07:09:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references:mime-version:content-type:content-transfer-encoding;
+        b=aqxS/yjlgz4P5KdbH3ec6+fBj89XPKeL7F3tMCoo1oQqOwdiYTXmslvsqvHux2utCP
+         TMlsq3pqDsCNCL108aM4GHl77q6ok340NS8wo5QVM9F0wvaEde4mIMU2JFHjuPrCw7K2
+         DqZm3tI8srvCsObrqG2oNDTTidLSxK8RpKq/Q=
+From: Pavel Shilovsky <piastry@etersoft.ru>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Steve French <smfrench@gmail.com>,
+        Suresh Jayaraman <sjayaraman@suse.de>
+Cc: linux-cifs@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jeff Layton <jlayton@redhat.com>
+Subject: [PATCH] cifs: fix compiler warning about incompatible pointer type (try #3)
+Date: Mon, 31 Jan 2011 15:09:39 +0300
+Message-Id: <1296475779-19357-1-git-send-email-piastry@etersoft.ru>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <4D4693CF.9090903@suse.de>
+References: <4D4693CF.9090903@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [188.16.86.63]
-X-Mailer: Zimbra 5.0 (ZimbraWebClient - FF3.0 (Linux)/5.0.18_GA_3028.CentOS5)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone!
+fs/cifs/file.c: In function ‘cifs_iovec_write’:
+fs/cifs/file.c:1740:9: warning: passing argument 6 of ‘CIFSSMBWrite2’ from incompatible pointer type
+fs/cifs/cifsproto.h:343:12: note: expected ‘unsigned int *’ but argument is of type ‘size_t *’
 
-I've never faced this problem before but after I've recently
-renewed my PC (a new MoBo and CPU) I'm now randomly getting
-this kernel message after booting the PC:
+Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
+Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
+---
+ fs/cifs/file.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-[ 4684.693288] irq 18: nobody cared (try booting with the "irqpoll" option)
-[ 4684.693294] Pid: 0, comm: swapper Tainted: P            2.6.37-ic #1
-[ 4684.693296] Call Trace:
-[ 4684.693303]  [<c129ebd9>] ? printk+0x18/0x1a
-[ 4684.693309]  [<c1066637>] __report_bad_irq.clone.2+0x27/0x90
-[ 4684.693314]  [<c10667ef>] note_interrupt+0x14f/0x190
-[ 4684.693320]  [<c101cc72>] ? ack_apic_level+0x62/0x1b0
-[ 4684.693323]  [<c1068354>] ? move_native_irq+0x14/0x50
-[ 4684.693328]  [<c10672fb>] handle_fasteoi_irq+0xab/0xd0
-[ 4684.693332]  [<c1067250>] ? handle_fasteoi_irq+0x0/0xd0
-[ 4684.693334]  <IRQ>  [<c1004e24>] ? do_IRQ+0x44/0xc0
-[ 4684.693340]  [<c1003229>] ? common_interrupt+0x29/0x30
-[ 4684.693344]  [<c1003229>] ? common_interrupt+0x29/0x30
-[ 4684.693348]  [<c103007b>] ? scheduler_tick+0x18b/0x220
-[ 4684.693353]  [<c117553f>] ? intel_idle+0xaf/0x100
-[ 4684.693357]  [<c1221c6e>] ? cpuidle_idle_call+0x6e/0xf0
-[ 4684.693360]  [<c10016e6>] ? cpu_idle+0x46/0x80
-[ 4684.693365]  [<c129127b>] ? rest_init+0x7b/0x80
-[ 4684.693369]  [<c13986e1>] ? start_kernel+0x26e/0x274
-[ 4684.693373]  [<c13981b9>] ? unknown_bootoption+0x0/0x1a3
-[ 4684.693377]  [<c139808e>] ? i386_start_kernel+0x8e/0x90
-[ 4684.693379] handlers:
-[ 4684.693380] [<f89b4c20>] (e100_intr+0x0/0xd0 [e100])
-[ 4684.693397] Disabling IRQ #18
-
-The Internet and even kernel bugzilla are rife with reports like this
-one and almost all of them are left unanswered or unresolved (for
-instance see kernel bugzilla reports 15307 and 17672).
-
-Can anyone shed light on this problem?
-
-How one can debug/understand/eliminate it? Is it safe to use irqpoll
-boot option?
-
-Best wishes,
-
-Artem
+diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+index 0de17c1..d8338e7 100644
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -1667,9 +1667,10 @@ static ssize_t
+ cifs_iovec_write(struct file *file, const struct iovec *iov,
+ 		 unsigned long nr_segs, loff_t *poffset)
+ {
+-	size_t total_written = 0, written = 0;
+-	unsigned long num_pages, npages;
+-	size_t copied, len, cur_len, i;
++	unsigned int written;
++	ssize_t total_written = 0;
++	unsigned long num_pages, npages, i;
++	size_t copied, len, cur_len;
+ 	struct kvec *to_send;
+ 	struct page **pages;
+ 	struct iov_iter it;
+@@ -1825,7 +1826,8 @@ cifs_iovec_read(struct file *file, const struct iovec *iov,
+ {
+ 	int rc;
+ 	int xid;
+-	unsigned int total_read, bytes_read = 0;
++	ssize_t total_read;
++	unsigned int bytes_read = 0;
+ 	size_t len, cur_len;
+ 	int iov_offset = 0;
+ 	struct cifs_sb_info *cifs_sb;
+-- 
+1.7.1
 
