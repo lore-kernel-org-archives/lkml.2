@@ -1,112 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab1AaSWc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 13:22:32 -0500
-Received: from casper.infradead.org ([85.118.1.10]:37673 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753902Ab1AaSWb (ORCPT
+	id S1755679Ab1AaSYw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 13:24:52 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:54688 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751950Ab1AaSYu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 13:22:31 -0500
-Subject: Re: Q: perf_install_in_context/perf_event_enable are racy?
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>, Prasad <prasad@linux.vnet.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20110131172626.GA5407@redhat.com>
-References: <20110124114234.GA12166@redhat.com>
-	 <20110126175322.GA28617@redhat.com> <1296134077.15234.161.camel@laptop>
-	 <20110127165712.GC25060@redhat.com> <1296148294.15234.242.camel@laptop>
-	 <20110127221856.GA10539@redhat.com> <1296215577.15234.333.camel@laptop>
-	 <1296226667.15234.337.camel@laptop> <20110128162847.GA25088@redhat.com>
-	 <1296238278.15234.340.camel@laptop>  <20110131172626.GA5407@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 31 Jan 2011 19:23:25 +0100
-Message-ID: <1296498205.26581.54.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 31 Jan 2011 13:24:50 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Richard =?utf-8?q?Sch=C3=BCtz?= <r.schtz@t-online.de>
+Subject: Re: Common boot/shutdown issues with the latest 2.6.37 (Mostly Asus laptops)
+Date: Mon, 31 Jan 2011 19:24:32 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc2+; KDE/4.4.4; x86_64; ; )
+Cc: Ozan =?utf-8?q?=C3=87a=C4=9Flayan?= <ozan@pardus.org.tr>,
+        Lionel Debroux <lionel_debroux@yahoo.fr>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        colin.king@canonical.com
+References: <556624.21214.qm@web28409.mail.ukl.yahoo.com> <201101311123.14704.rjw@sisk.pl> <4D468F1F.8030704@t-online.de>
+In-Reply-To: <4D468F1F.8030704@t-online.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201101311924.33098.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-31 at 18:26 +0100, Oleg Nesterov wrote:
-> On 01/28, Peter Zijlstra wrote:
+On Monday, January 31, 2011, Richard Schütz wrote:
+> >>>> I'll compile a kernel with CONFIG_NO_HZ to see what happens but how do I
+> >>>> disable cpuidle during boot? I've checked the kernel-parameters.txt but
+> >>>> there's no cpuidle related boot parameter there.
+> >>>
+> >>> Booting with intel_idle.max_cstate=0 should do the trick.
+> >>
+> >> intel_idle.max_cstate=0 causes a fallback to the acpi_idle driver. So it
+> >> does not disable the C-states directly.
 > >
-> > Just to give you more food for through, I couldn't help myself..
+> > What about not building the acpi_idle driver, then?
 > 
-> Hmm. So far I am only trying to understand the perf_install_in_context()
-> paths. And, after I spent almost 2 hours, I am starting to believe this
-> change is probably good ;)
- 
-phew ;-)
+> Or just use the processor.max_cstate parameter then.
 
-> I do not understand the point of cpu_function_call() though, it looks
-> equal to smp_call_function_single() ?
+As I wrote a couple of messages ago, https://lkml.org/lkml/2011/1/31/52 .
 
-Very nearly so, except it takes a function that returns an int..
+Sure, that should do the trick too.
 
-> > -static void __perf_install_in_context(void *info)
-> > +static int  __perf_install_in_context(void *info)
-> >  {
-> >  	struct perf_event *event = info;
-> >  	struct perf_event_context *ctx = event->ctx;
-> > @@ -942,20 +1015,15 @@ static void __perf_install_in_context(void *info)
-> >  	int err;
-> >
-> >  	/*
-> > -	 * If this is a task context, we need to check whether it is
-> > -	 * the current task context of this cpu. If not it has been
-> > -	 * scheduled out before the smp call arrived.
-> > -	 * Or possibly this is the right context but it isn't
-> > -	 * on this cpu because it had no events.
-> > +	 * In case we're installing a new context to an already running task,
-> > +	 * could also happen before perf_event_task_sched_in() on architectures
-> > +	 * which do context switches with IRQs enabled.
-> >  	 */
-> > -	if (ctx->task && cpuctx->task_ctx != ctx) {
-> > -		if (cpuctx->task_ctx || ctx->task != current)
-> > -			return;
-> > -		cpuctx->task_ctx = ctx;
-> > -	}
-> > +	if (ctx->task && !cpuctx->task_ctx)
-> > +		perf_event_context_sched_in(ctx);
-> 
-> OK... This eliminates the 2nd race with __ARCH_WANT_INTERRUPTS_ON_CTXSW
-> (we must not set "cpuctx->task_ctx = ctx" in case "next" is going to
->  do perf_event_context_sched_in() later). So it is enough to check
-> rq->curr in remote_function().
-
-Right, but since I moved those functions into perf_event.c (they were
-getting rather specific) I can no longer deref (or even obtain) a rq
-structure. So it implements rq->curr == p in a somewhat round-about
-fashion but it should be identical.
-
-> 
-> >  	raw_spin_lock(&ctx->lock);
-> > -	ctx->is_active = 1;
-> > +	WARN_ON_ONCE(!ctx->is_active);
-> 
-> This looks wrong if ctx->task == NULL.
-
-cpuctx->ctx should still have ->is_active = 1 I think.
-
-> 
-> So. With this patch it is possible that perf_event_context_sched_in()
-> is called right after prepare_lock_switch(). Stupid question, why
-> can't we always do this then? I mean, what if we change
-> prepare_task_switch() to do
-> 
-> 	perf_event_task_sched_out();
-> 	perf_event_task_sched_in();
-> 
-> ?
-> 
-> Probably we can unify the COND_STMT(perf_task_events) check and simplify
-> the things further.
-
-That might work, Ingo any reason we have a pre and post hook around the
-context switch and not a single function?
-
+Thanks,
+Rafael
