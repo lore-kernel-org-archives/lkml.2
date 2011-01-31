@@ -1,140 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab1AaD01 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jan 2011 22:26:27 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:63007 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753174Ab1AaD0Z convert rfc822-to-8bit (ORCPT
+	id S1754530Ab1AaD1S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jan 2011 22:27:18 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61351 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752122Ab1AaD1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jan 2011 22:26:25 -0500
+	Sun, 30 Jan 2011 22:27:15 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ZRQNGq57ZvlxkvGYiJzY7QGzfdlzHSdgtlSDGg5098yqI0ZxX+ddX66ATbND2+ya0x
-         VIarKzHjZMMNMZxT3B3uEyyybiWGmNBWBqOKxWWrWbiNOqRnjRBrFX5VgBtikbEn50kQ
-         rbWyIQ2GdoFyPmnzDRy/W9W5MY4ws7v/OfVWI=
+        h=mime-version:from:date:message-id:subject:to:content-type;
+        b=SX0mu8L9iLrpg8dOOoc3Hn6NPUm7aVZCRvjabMWfjTK1D4mhTfCBNhYxmEEqXMDoiw
+         siF9tc1Y2mqVhy91EXIXqQcwo9KjSK+MaebUgh9jEMVRBemPimbLRUlfpicWKcB+Vuvo
+         /cmyr0PAIA2zBWwqvtzmXH/Sr6difrmn2PoGQ=
 MIME-Version: 1.0
-In-Reply-To: <1296403013-6058-1-git-send-email-thomas@wytron.com.tw>
-References: <1296403013-6058-1-git-send-email-thomas@wytron.com.tw>
-Date: Sun, 30 Jan 2011 19:26:24 -0800
-Message-ID: <AANLkTi=5Uik+EwBRfYs_Pa77+qHngY03ezC63RC0WLQ8@mail.gmail.com>
-Subject: Re: [PATCH] i2c-gpio: add devicetree support
-From: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>
-To: Thomas Chou <thomas@wytron.com.tw>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Ben Dooks <ben-linux@fluff.org>,
-        linux-kernel@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
-        devicetree-discuss@lists.ozlabs.org, linux-i2c@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>,
-        Albert Herranz <albert_herranz@yahoo.es>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Date: Mon, 31 Jan 2011 05:26:54 +0200
+Message-ID: <AANLkTi=4CH2zFrDp6DAnSj3pa28MtymfG+NrtQ3iW5k-@mail.gmail.com>
+Subject: [PATCH 2/2] RFC: selinux: sysctl: fix selinux labeling broken by last patch
+To: Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
+        Eric Paris <eparis@parisplace.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>,
+        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
+        Dave Chinner <dchinner@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        selinux <selinux@tycho.nsa.gov>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Content-Type: multipart/mixed; boundary=0050450143e7016b60049b1bfec7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--0050450143e7016b60049b1bfec7
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-On Sun, Jan 30, 2011 at 7:56 AM, Thomas Chou <thomas@wytron.com.tw> wrote:
-> From: Albert Herranz <albert_herranz@yahoo.es>
->
-> This patch is based on an earlier patch from Albert Herranz,
-> http://git.infradead.org/users/herraa1/gc-linux-2.6.git/commit/
-> 9854eb78607c641ab5ae85bcbe3c9d14ac113733
+Eric's patch was rejected because it broke selinux labeling:
+http://thread.gmane.org/gmane.linux.kernel.lsm/9807/focus=3D9841
 
-That commit has a single-line description of which I don't understand
-a single word (unless "wii" is what I think it is, which seems
-likely). Could you please explain how that commit relates to this
-patch?
+       This seems to break labeling.  Prior to this patch, I see:
 
-> The dts binding is modified as Grant suggested. The of probing
-> is merged inline instead of a separate file. It uses the newer
-> of gpio probe.
+       # ls -lZ /proc/1/net/rpc/nfsd.fh
+       -rw-------. root root system_u:object_r:sysctl_rpc_t:s0 channel
 
-It seems like a terrible idea to merge firmware-specific code into the
-driver. Is there are reason why of-based platforms can't just pass the
-data they need in pdata like everyone else?
+       with the patch:
 
-Not saying that it necessarily _is_ a terrible idea, but I think the
-reasoning behind it needs to be included in the patch description.
+       # ls -lZ /proc/1/net/rpc/nfsd.fh
+       -rw-------. root root system_u:object_r:proc_t:s0      channel
 
-> Signed-off-by: Albert Herranz <albert_herranz@yahoo.es>
-> Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
-> ---
->  Documentation/devicetree/bindings/gpio/i2c.txt |   39 ++++++++++++++
->  drivers/i2c/busses/i2c-gpio.c                  |   67 ++++++++++++++++++++++-
->  2 files changed, 103 insertions(+), 3 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/gpio/i2c.txt
->
-> diff --git a/Documentation/devicetree/bindings/gpio/i2c.txt b/Documentation/devicetree/bindings/gpio/i2c.txt
-> new file mode 100644
-> index 0000000..402569e
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/gpio/i2c.txt
+My patch seems to have fixed this problem (it correctly reports
+sysctl_rpc_t in this case), but my selinux experience is =CE=B5 > 0 and I
+have no ideea what else it may have broken.
 
-This looks a bit backwards. i2c-gpio is a i2c driver which happens to
-utilize the gpio framework, not the other way around.
+I ran 'find /proc | xargs ls -Z > f' on a kernel with an without
+these patches:
+* http://swarm.cs.pub.ro/~lucian/store/ls-Z-with-patch
+* http://swarm.cs.pub.ro/~lucian/store/ls-Z-without-patch
 
-> @@ -0,0 +1,39 @@
-> +GPIO-based I2C
-> +
-> +Required properties:
-> +- compatible : should be "i2c-gpio".
-> +- gpios : should specify GPIOs used for SDA and SCL lines, in that order.
-> +Optional properties:
-> +- sda-is-open-drain : present if SDA gpio is open-drain.
-> +- scl-is-open-drain : present if SCL gpio is open-drain.
-> +- scl-is-output-only : present if SCL is an output gpio only.
+My setup is a custom busybox live CD with selinux enabled, with
+/etc/selinux and /usr/share/selinux/default copied from Ubuntu 10.10's
+selinux-policy-default package. I'm sure there are lots of reasons why
+this is not correcly configured, etc., but I have no experience
+regarding selinux. I can make all the scripts/sources/configs/etc
+available to anyone interested.
 
-I think "present if the output driver for SCL cannot be turned off" is
-more accurate. Might also be worth mentioning that this will prevent
-clock stretching from working.
+NOTE: this patch will be merged with:
+  security/selinux: Simplify proc inode to security label mapping
 
-> --- a/drivers/i2c/busses/i2c-gpio.c
-> +++ b/drivers/i2c/busses/i2c-gpio.c
-> @@ -14,6 +14,9 @@
->  #include <linux/module.h>
->  #include <linux/slab.h>
->  #include <linux/platform_device.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/of_gpio.h>
-> +#include <linux/of_i2c.h>
+I'm only prividing this patch separately to point out the differences
+to Eric W. Biederman's patch.
 
-Do these headers provide stubs so non-of platforms won't break?
+Both of these patches apply cleanly agains Linux 2.6.37.
 
-> @@ -83,11 +86,52 @@ static int __devinit i2c_gpio_probe(struct platform_device *pdev)
->        struct i2c_gpio_platform_data *pdata;
->        struct i2c_algo_bit_data *bit_data;
->        struct i2c_adapter *adap;
-> +       struct device_node *np = pdev->dev.of_node;
+Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+---
+ fs/proc/proc_sysctl.c    |    1 -
+ security/selinux/hooks.c |   20 ++++++++++++++++----
+ 2 files changed, 16 insertions(+), 5 deletions(-)
 
-Would be nice if this could be eliminated on non-of platforms.
+--0050450143e7016b60049b1bfec7
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0002-RFC-selinux-sysctl-fix-selinux-labeling-broken-by-la.patch"
+Content-Disposition: attachment; 
+	filename="0002-RFC-selinux-sysctl-fix-selinux-labeling-broken-by-la.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: 110397b064c22d36_0.1
 
->        int ret;
->
->        pdata = pdev->dev.platform_data;
-> -       if (!pdata)
-> -               return -ENXIO;
-> +       if (!pdata) {
-> +               if (np && of_gpio_count(np) >= 2) {
-
-If that expression somehow always evaluates to false on non-of
-platforms, this might be ok. But please confirm if this is the case;
-otherwise, it looks like a pretty large addition to an otherwise very
-small driver.
-
-How about a tiny bit of restructuring: Move the block below into a
-separate function, which is only called if some constant expression
-says that of is enabled. Then you can move the declaration above
-either into the if block or into the function, depending on where you
-want to do the conditional above.
-
->  static struct platform_driver i2c_gpio_driver = {
->        .driver         = {
->                .name   = "i2c-gpio",
->                .owner  = THIS_MODULE,
-> +               .of_match_table = i2c_gpio_match,
-
-Is this field always present even when of is disabled?
-
-Havard
+ZGlmZiAtLWdpdCBhL2ZzL3Byb2MvcHJvY19zeXNjdGwuYyBiL2ZzL3Byb2MvcHJvY19zeXNjdGwu
+Yw0KaW5kZXggYjY1MmNiMC4uYjE3NjE5ZCAxMDA2NDQNCi0tLSBhL2ZzL3Byb2MvcHJvY19zeXNj
+dGwuYw0KKysrIGIvZnMvcHJvYy9wcm9jX3N5c2N0bC5jDQpAQCAtMzEsNyArMzEsNiBAQCBzdGF0
+aWMgc3RydWN0IGlub2RlICpwcm9jX3N5c19tYWtlX2lub2RlKHN0cnVjdCBzdXBlcl9ibG9jayAq
+c2IsDQogCWVpLT5zeXNjdGxfZW50cnkgPSB0YWJsZTsNCiANCiAJaW5vZGUtPmlfbXRpbWUgPSBp
+bm9kZS0+aV9hdGltZSA9IGlub2RlLT5pX2N0aW1lID0gQ1VSUkVOVF9USU1FOw0KLQlpbm9kZS0+
+aV9mbGFncyB8PSBTX1BSSVZBVEU7IC8qIHRlbGwgc2VsaW51eCB0byBpZ25vcmUgdGhpcyBpbm9k
+ZSAqLw0KIAlpbm9kZS0+aV9tb2RlID0gdGFibGUtPm1vZGU7DQogCWlmICghdGFibGUtPmNoaWxk
+KSB7DQogCQlpbm9kZS0+aV9tb2RlIHw9IFNfSUZSRUc7DQpkaWZmIC0tZ2l0IGEvc2VjdXJpdHkv
+c2VsaW51eC9ob29rcy5jIGIvc2VjdXJpdHkvc2VsaW51eC9ob29rcy5jDQppbmRleCA1MTYxNWY2
+Li41ZjU4MDE5IDEwMDY0NA0KLS0tIGEvc2VjdXJpdHkvc2VsaW51eC9ob29rcy5jDQorKysgYi9z
+ZWN1cml0eS9zZWxpbnV4L2hvb2tzLmMNCkBAIC0xMTMyLDggKzExMzIsMjMgQEAgc3RhdGljIGlu
+dCBzZWxpbnV4X3Byb2NfZ2V0X3NpZChzdHJ1Y3QgZGVudHJ5ICpkZW50cnksDQogCXBhdGggPSBk
+ZW50cnlfcGF0aChkZW50cnksIGJ1ZmZlciwgUEFHRV9TSVpFKTsNCiAJaWYgKElTX0VSUihwYXRo
+KSkNCiAJCXJjID0gUFRSX0VSUihwYXRoKTsNCi0JZWxzZQ0KKwllbHNlIHsNCisJCS8qIGJlY2F1
+c2UgZGVudHJ5IGlzIG5vdCBoYXNoZWQsIGRlbnRyeV9wYXRoKCkgd2lsbA0KKwkJICogYXBwZW5k
+ICIvL2RlbGV0ZWQiIHRvIHRoZSBlbmQgb2YgdGhlIHN0cmluZy4gV2UnbGwNCisJCSAqIHJlbW92
+ZSB0aGlzIGFzIG5vIC9wcm9jLyBmaWxlIGlzIG5hbWVkIHNvLiAqLw0KKwkJaW50IHBhdGhsZW4g
+PSBzdHJsZW4ocGF0aCk7DQorCQlpbnQgZGVsbGVuID0gc3RybGVuKCIvL2RlbGV0ZWQiKTsNCisJ
+CWlmICgocGF0aGxlbiA+IGRlbGxlbikgJiYgc3RyY21wKHBhdGggKyBwYXRobGVuIC0gZGVsbGVu
+LCAiLy9kZWxldGVkIikgPT0gMCkNCisJCQlwYXRoW3BhdGhsZW4tZGVsbGVuXSA9ICdcMCc7DQor
+DQorCQkvKiBlYWNoIHByb2Nlc3MgZ2V0cyBhIC9wcm9jL1BJRC8gZW50cnkuIFN0cmlwIG9mZiB0
+aGUNCisJCSAqIFBJRCBwYXJ0IHRvIGdldCBhIHZhbGlkIHNlbGludXggbGFiZWxpbmcuICovDQor
+CQl3aGlsZSAocGF0aFsxXSA+PSAnMCcgJiYgcGF0aFsxXSA8PSAnOScpIHsNCisJCQlwYXRoWzFd
+ID0gJy8nOw0KKwkJCXBhdGgrKzsNCisJCX0NCiAJCXJjID0gc2VjdXJpdHlfZ2VuZnNfc2lkKCJw
+cm9jIiwgcGF0aCwgdGNsYXNzLCBzaWQpOw0KKwl9DQogCWZyZWVfcGFnZSgodW5zaWduZWQgbG9u
+ZylidWZmZXIpOw0KIAlyZXR1cm4gcmM7DQogfQ0KQEAgLTE0NjQsOSArMTQ3OSw2IEBAIHN0YXRp
+YyBpbnQgaW5vZGVfaGFzX3Blcm0oY29uc3Qgc3RydWN0IGNyZWQgKmNyZWQsDQogDQogCXZhbGlk
+YXRlX2NyZWRzKGNyZWQpOw0KIA0KLQlpZiAodW5saWtlbHkoSVNfUFJJVkFURShpbm9kZSkpKQ0K
+LQkJcmV0dXJuIDA7DQotDQogCXNpZCA9IGNyZWRfc2lkKGNyZWQpOw0KIAlpc2VjID0gaW5vZGUt
+Pmlfc2VjdXJpdHk7DQogDQo=
+--0050450143e7016b60049b1bfec7--
