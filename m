@@ -1,42 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab1AaKd5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 05:33:57 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:49192 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999Ab1AaKd4 (ORCPT
+	id S1755544Ab1AaKeL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 05:34:11 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44200 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755514Ab1AaKeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 05:33:56 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=ESZFr379Ku8YjYm+gUg2vDMQ3Tzweq8bBW1vYrEzQ696cqvWsAnDIESEZ8WOzitmaU
-         aA/EledTwaMHkIGY5uDsNQr7+r5agFKTIG5FuaVSdRHgtx9YhYcmaQaTfCS9xEkXu9HY
-         A04uoioJxb73MA+NzIx5ommjeWP2wIn+ryLL0=
-MIME-Version: 1.0
-In-Reply-To: <1296244040-3653-1-git-send-email-justinmattock@gmail.com>
-References: <1296244040-3653-1-git-send-email-justinmattock@gmail.com>
-Date: Mon, 31 Jan 2011 11:33:55 +0100
-X-Google-Sender-Auth: tJJ17MuSy4dbhfNlaQCCLer7pms
-Message-ID: <AANLkTi=esKDkirbi1TmCzUCJNkP6_x-D5QpLfVnaJrnA@mail.gmail.com>
-Subject: Re: [PATCH] arch:arm:mbox-db5500.c Change initate to initiate.
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: trivial@kernel.org, linux@arm.linux.org.uk, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 31 Jan 2011 05:34:07 -0500
+From: Ohad Ben-Cohen <ohad@wizery.com>
+To: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <akpm@linux-foundation.org>
+Cc: Greg KH <greg@kroah.com>, Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>, Suman Anna <s-anna@ti.com>,
+        Kevin Hilman <khilman@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Paul Walmsley <paul@pwsan.com>,
+        Hari Kanigeri <hari.kanigeri@gmail.com>,
+        Simon Que <simonque@gmail.com>
+Subject: [PATCH v4 2/4] drivers: hwspinlock: add OMAP implementation
+Date: Mon, 31 Jan 2011 12:33:42 +0200
+Message-Id: <1296470024-26854-3-git-send-email-ohad@wizery.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1296470024-26854-1-git-send-email-ohad@wizery.com>
+References: <1296470024-26854-1-git-send-email-ohad@wizery.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/1/28 Justin P. Mattock <justinmattock@gmail.com>:
+From: Simon Que <sque@ti.com>
 
-> Not sure if this is a typo or not. if it is then feel free to take this.
->
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+Add hwspinlock support for the OMAP4 Hardware Spinlock device.
 
-Why not,
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+The Hardware Spinlock device on OMAP4 provides hardware assistance
+for synchronization between the multiple processors in the system
+(dual Cortex-A9, dual Cortex-M3 and a C64x+ DSP).
 
-Yours,
-Linus Walleij
+[ohad@wizery.com: adapt to hwspinlock framework, tidy up]
+Signed-off-by: Simon Que <sque@ti.com>
+Signed-off-by: Hari Kanigeri <h-kanigeri2@ti.com>
+Signed-off-by: Krishnamoorthy, Balaji T <balajitk@ti.com>
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Benoit Cousson <b-cousson@ti.com>
+Cc: Kevin Hilman <khilman@ti.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Paul Walmsley <paul@pwsan.com>
+Acked-by: Tony Lindgren <tony@atomide.com>
+---
+ drivers/hwspinlock/Kconfig           |    9 ++
+ drivers/hwspinlock/Makefile          |    1 +
+ drivers/hwspinlock/omap_hwspinlock.c |  231 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 241 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/hwspinlock/omap_hwspinlock.c
+
+diff --git a/drivers/hwspinlock/Kconfig b/drivers/hwspinlock/Kconfig
+index 9dd8db4..eb4af28 100644
+--- a/drivers/hwspinlock/Kconfig
++++ b/drivers/hwspinlock/Kconfig
+@@ -11,3 +11,12 @@ config HWSPINLOCK
+ 	  coprocessors).
+ 
+ 	  If unsure, say N.
++
++config HWSPINLOCK_OMAP
++	tristate "OMAP Hardware Spinlock device"
++	depends on HWSPINLOCK && ARCH_OMAP4
++	help
++	  Say y here to support the OMAP Hardware Spinlock device (firstly
++	  introduced in OMAP4).
++
++	  If unsure, say N.
+diff --git a/drivers/hwspinlock/Makefile b/drivers/hwspinlock/Makefile
+index b9d2b9f..5729a3f 100644
+--- a/drivers/hwspinlock/Makefile
++++ b/drivers/hwspinlock/Makefile
+@@ -3,3 +3,4 @@
+ #
+ 
+ obj-$(CONFIG_HWSPINLOCK)		+= hwspinlock_core.o
++obj-$(CONFIG_HWSPINLOCK_OMAP)		+= omap_hwspinlock.o
+diff --git a/drivers/hwspinlock/omap_hwspinlock.c b/drivers/hwspinlock/omap_hwspinlock.c
+new file mode 100644
+index 0000000..03e1d60
+--- /dev/null
++++ b/drivers/hwspinlock/omap_hwspinlock.c
+@@ -0,0 +1,231 @@
++/*
++ * OMAP hardware spinlock driver
++ *
++ * Copyright (C) 2010 Texas Instruments Incorporated - http://www.ti.com
++ *
++ * Contact: Simon Que <sque@ti.com>
++ *          Hari Kanigeri <h-kanigeri2@ti.com>
++ *          Ohad Ben-Cohen <ohad@wizery.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/device.h>
++#include <linux/delay.h>
++#include <linux/io.h>
++#include <linux/bitops.h>
++#include <linux/pm_runtime.h>
++#include <linux/slab.h>
++#include <linux/spinlock.h>
++#include <linux/hwspinlock.h>
++#include <linux/platform_device.h>
++
++#include "hwspinlock.h"
++
++/* Spinlock register offsets */
++#define SYSSTATUS_OFFSET		0x0014
++#define LOCK_BASE_OFFSET		0x0800
++
++#define SPINLOCK_NUMLOCKS_BIT_OFFSET	(24)
++
++/* Possible values of SPINLOCK_LOCK_REG */
++#define SPINLOCK_NOTTAKEN		(0)	/* free */
++#define SPINLOCK_TAKEN			(1)	/* locked */
++
++#define to_omap_hwspinlock(lock)	\
++	container_of(lock, struct omap_hwspinlock, lock)
++
++struct omap_hwspinlock {
++	struct hwspinlock lock;
++	void __iomem *addr;
++};
++
++struct omap_hwspinlock_state {
++	int num_locks;			/* Total number of locks in system */
++	void __iomem *io_base;		/* Mapped base address */
++};
++
++static int omap_hwspinlock_trylock(struct hwspinlock *lock)
++{
++	struct omap_hwspinlock *omap_lock = to_omap_hwspinlock(lock);
++
++	/* attempt to acquire the lock by reading its value */
++	return (SPINLOCK_NOTTAKEN == readl(omap_lock->addr));
++}
++
++static void omap_hwspinlock_unlock(struct hwspinlock *lock)
++{
++	struct omap_hwspinlock *omap_lock = to_omap_hwspinlock(lock);
++
++	/* release the lock by writing 0 to it */
++	writel(SPINLOCK_NOTTAKEN, omap_lock->addr);
++}
++
++/*
++ * relax the OMAP interconnect while spinning on it.
++ *
++ * The specs recommended that the retry delay time will be
++ * just over half of the time that a requester would be
++ * expected to hold the lock.
++ *
++ * The number below is taken from an hardware specs example,
++ * obviously it is somewhat arbitrary.
++ */
++static void omap_hwspinlock_relax(struct hwspinlock *lock)
++{
++	ndelay(50);
++}
++
++static const struct hwspinlock_ops omap_hwspinlock_ops = {
++	.trylock = omap_hwspinlock_trylock,
++	.unlock = omap_hwspinlock_unlock,
++	.relax = omap_hwspinlock_relax,
++};
++
++static int __devinit omap_hwspinlock_probe(struct platform_device *pdev)
++{
++	struct omap_hwspinlock *omap_lock;
++	struct omap_hwspinlock_state *state;
++	struct hwspinlock *lock;
++	struct resource *res;
++	void __iomem *io_base;
++	int i, ret;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res)
++		return -ENODEV;
++
++	state = kzalloc(sizeof(*state), GFP_KERNEL);
++	if (!state)
++		return -ENOMEM;
++
++	io_base = ioremap(res->start, resource_size(res));
++	if (!io_base) {
++		ret = -ENOMEM;
++		goto free_state;
++	}
++
++	/* Determine number of locks */
++	i = readl(io_base + SYSSTATUS_OFFSET);
++	i >>= SPINLOCK_NUMLOCKS_BIT_OFFSET;
++
++	/* one of the four lsb's must be set, and nothing else */
++	if (hweight_long(i & 0xf) != 1 || i > 8) {
++		ret = -EINVAL;
++		goto iounmap_base;
++	}
++
++	state->num_locks = i * 32;
++	state->io_base = io_base;
++
++	platform_set_drvdata(pdev, state);
++
++	/*
++	 * runtime PM will make sure the clock of this module is
++	 * enabled iff at least one lock is requested
++	 */
++	pm_runtime_enable(&pdev->dev);
++
++	for (i = 0; i < state->num_locks; i++) {
++		omap_lock = kzalloc(sizeof(*omap_lock), GFP_KERNEL);
++		if (!omap_lock) {
++			ret = -ENOMEM;
++			goto free_locks;
++		}
++
++		omap_lock->lock.dev = &pdev->dev;
++		omap_lock->lock.owner = THIS_MODULE;
++		omap_lock->lock.id = i;
++		omap_lock->lock.ops = &omap_hwspinlock_ops;
++		omap_lock->addr = io_base + LOCK_BASE_OFFSET + sizeof(u32) * i;
++
++		ret = hwspin_lock_register(&omap_lock->lock);
++		if (ret) {
++			kfree(omap_lock);
++			goto free_locks;
++		}
++	}
++
++	return 0;
++
++free_locks:
++	while (--i >= 0) {
++		lock = hwspin_lock_unregister(i);
++		/* this should't happen, but let's give our best effort */
++		if (!lock) {
++			dev_err(&pdev->dev, "%s: cleanups failed\n", __func__);
++			continue;
++		}
++		omap_lock = to_omap_hwspinlock(lock);
++		kfree(omap_lock);
++	}
++	pm_runtime_disable(&pdev->dev);
++iounmap_base:
++	iounmap(io_base);
++free_state:
++	kfree(state);
++	return ret;
++}
++
++static int omap_hwspinlock_remove(struct platform_device *pdev)
++{
++	struct omap_hwspinlock_state *state = platform_get_drvdata(pdev);
++	struct hwspinlock *lock;
++	struct omap_hwspinlock *omap_lock;
++	int i;
++
++	for (i = 0; i < state->num_locks; i++) {
++		lock = hwspin_lock_unregister(i);
++		/* this shouldn't happen at this point. if it does, at least
++		 * don't continue with the remove */
++		if (!lock) {
++			dev_err(&pdev->dev, "%s: failed on %d\n", __func__, i);
++			return -EBUSY;
++		}
++
++		omap_lock = to_omap_hwspinlock(lock);
++		kfree(omap_lock);
++	}
++
++	pm_runtime_disable(&pdev->dev);
++	iounmap(state->io_base);
++	kfree(state);
++
++	return 0;
++}
++
++static struct platform_driver omap_hwspinlock_driver = {
++	.probe		= omap_hwspinlock_probe,
++	.remove		= omap_hwspinlock_remove,
++	.driver		= {
++		.name	= "omap_hwspinlock",
++	},
++};
++
++static int __init omap_hwspinlock_init(void)
++{
++	return platform_driver_register(&omap_hwspinlock_driver);
++}
++/* board init code might need to reserve hwspinlocks for predefined purposes */
++postcore_initcall(omap_hwspinlock_init);
++
++static void __exit omap_hwspinlock_exit(void)
++{
++	platform_driver_unregister(&omap_hwspinlock_driver);
++}
++module_exit(omap_hwspinlock_exit);
++
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("Hardware spinlock driver for OMAP");
++MODULE_AUTHOR("Simon Que <sque@ti.com>");
++MODULE_AUTHOR("Hari Kanigeri <h-kanigeri2@ti.com>");
++MODULE_AUTHOR("Ohad Ben-Cohen <ohad@wizery.com>");
+-- 
+1.7.1
+
