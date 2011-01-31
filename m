@@ -1,77 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755839Ab1AaMwp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 07:52:45 -0500
-Received: from hera.kernel.org ([140.211.167.34]:39046 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755775Ab1AaMwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 07:52:42 -0500
-Date: Mon, 31 Jan 2011 12:52:16 GMT
-From: tip-bot for Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, marcin.slusarz@gmail.com, fweisbec@gmail.com,
-        stable@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        dzickus@redhat.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, marcin.slusarz@gmail.com, fweisbec@gmail.com,
-        stable@kernel.org, tglx@linutronix.de, dzickus@redhat.com,
-        mingo@elte.hu
-In-Reply-To: <1296230433-6261-3-git-send-email-dzickus@redhat.com>
-References: <1296230433-6261-3-git-send-email-dzickus@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] watchdog: Don't change watchdog state on read of sysctl
-Message-ID: <tip-9ffdc6c37df131f89d52001e0ef03091b158826f@git.kernel.org>
-Git-Commit-ID: 9ffdc6c37df131f89d52001e0ef03091b158826f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1755087Ab1AaNA6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 08:00:58 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55508 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751451Ab1AaNA5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 08:00:57 -0500
+Date: Mon, 31 Jan 2011 14:00:49 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Arun MURTHY <arun.murthy@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Eric Miao <eric.miao@linaro.org>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Hemanth V <hemanthv@ti.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Bill Gatliff <bgat@billgatliff.com>
+Subject: Re: [RFC] add pwmlib support
+Message-ID: <20110131130049.GM9041@pengutronix.de>
+References: <1296217283-14531-1-git-send-email-s.hauer@pengutronix.de>
+ <4D447E5E.6060007@metafoo.de>
+ <F45880696056844FA6A73F415B568C6953739F1986@EXDCVYMBSTM006.EQ1STM.local>
+ <20110131075408.GH9041@pengutronix.de>
+ <4D46AFAB.3070805@metafoo.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 31 Jan 2011 12:52:17 +0000 (UTC)
+In-Reply-To: <4D46AFAB.3070805@metafoo.de>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 13:50:19 up 15 days, 22:57, 50 users,  load average: 0.10, 0.16,
+ 0.36
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9ffdc6c37df131f89d52001e0ef03091b158826f
-Gitweb:     http://git.kernel.org/tip/9ffdc6c37df131f89d52001e0ef03091b158826f
-Author:     Marcin Slusarz <marcin.slusarz@gmail.com>
-AuthorDate: Fri, 28 Jan 2011 11:00:33 -0500
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 31 Jan 2011 13:22:43 +0100
+On Mon, Jan 31, 2011 at 01:48:43PM +0100, Lars-Peter Clausen wrote:
+> On 01/31/2011 08:54 AM, Sascha Hauer wrote:
+> > On Mon, Jan 31, 2011 at 04:35:33AM +0100, Arun MURTHY wrote:
+> >> Hi Sascha,
+> >>
+> >>>> I Cced the people working with PWMs in the kernel in the hope that
+> >>> they can
+> >>>> give input on what's missing / wrong in this implementation
+> >>>>
+> >>>> Sascha
+> >>>>
+> >>>
+> >>> Hi
+> >>>
+> >>> There have been two other proposals for a generic PWM api during the
+> >>> last year.
+> >>> You might want to take a look at them.
+> >>>
+> >>> https://lkml.org/lkml/2010/2/9/275
+> >>> https://lkml.org/lkml/2010/9/28/107
+> >>>
+> >>> I've added Bill Gatliff and Arun Murthy to Cc.
+> >>>
+> >>
+> >> As said by Lars, we already have developed the pwm core driver and
+> >> progressing towards aligning the existing pwm drivers to the pwm core
+> >> driver.
+> >> These set of patches are expected to be out in LKML by this week.
+> > 
+> > Nice, problem solved without me having to work on it ;).
+> 
+> I wouldn't call it problem solved yet.
+> I liked your approach better so far, but lets see how the next iteration of Aruns
+> patches turn out.
 
-watchdog: Don't change watchdog state on read of sysctl
+What I don't like about Bills patches is the way PWMs are configured.
 
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-[ add {}'s to fix a warning ]
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: <stable@kernel.org>
-LKML-Reference: <1296230433-6261-3-git-send-email-dzickus@redhat.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/watchdog.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+Bill, since you are on Cc, maybe you can comment on this:
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index c7e0049..f37f974 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -493,10 +493,12 @@ int proc_dowatchdog_enabled(struct ctl_table *table, int write,
- {
- 	proc_dointvec(table, write, buffer, length, ppos);
- 
--	if (watchdog_enabled)
--		watchdog_enable_all_cpus();
--	else
--		watchdog_disable_all_cpus();
-+	if (write) {
-+		if (watchdog_enabled)
-+			watchdog_enable_all_cpus();
-+		else
-+			watchdog_disable_all_cpus();
-+	}
- 	return 0;
- }
- 
+> +enum {
+> +	PWM_CONFIG_DUTY_TICKS = BIT(0),
+> +	PWM_CONFIG_PERIOD_TICKS = BIT(1),
+> +	PWM_CONFIG_POLARITY = BIT(2),
+> +	PWM_CONFIG_START = BIT(3),
+> +	PWM_CONFIG_STOP = BIT(4),
+> +
+> +	PWM_CONFIG_HANDLER = BIT(5),
+> +
+> +	PWM_CONFIG_DUTY_NS = BIT(6),
+> +	PWM_CONFIG_DUTY_PERCENT = BIT(7),
+> +	PWM_CONFIG_PERIOD_NS = BIT(8),
+> +};
+> +
+>
+> ...
+>
+> +
+> +struct pwm_channel_config {
+> +	int config_mask;
+> +	unsigned long duty_ticks;
+> +	unsigned long period_ticks;
+> +	int polarity;
+> +
+> +	pwm_handler_t handler;
+> +
+> +	unsigned long duty_ns;
+> +	unsigned long period_ns;
+> +	int duty_percent;
+> +};
+> 
+> ...
+> 
+> +int pwm_config(struct pwm_channel *pwm,
+> +	       struct pwm_channel_config *c);
+
+I think we should have a single internal interpretation of how a pwm is
+configured, either ticks or ns (or whatever else), but not ticks, ns and
+percent. Instead we could provide helpers to convert between them.
+Also, I don't like ioctl like function calls. Instead of dispatching
+PWM_CONFIG_* we should use discrete functions for each functionality.
+
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
