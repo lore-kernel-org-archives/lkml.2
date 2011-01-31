@@ -1,85 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597Ab1AaWci (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 17:32:38 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:45392 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754300Ab1AaWch (ORCPT
+	id S1756419Ab1AaWfe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 17:35:34 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:54860 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753635Ab1AaWfc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 17:32:37 -0500
-Date: Mon, 31 Jan 2011 23:33:19 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Greg KH <greg@kroah.com>, Ingo Molnar <mingo@elte.hu>
-Cc: "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH 1/7] sysdev: Do not register with sysdev when erroring
- on add
-Message-ID: <20110131223319.GA3839@aftab>
-References: <1295882943-11184-1-git-send-email-bp@amd64.org>
- <1295882943-11184-2-git-send-email-bp@amd64.org>
- <20110131221659.GA14918@kroah.com>
+	Mon, 31 Jan 2011 17:35:32 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=gGPNuBswxQhIys/5Bvf4yz/pso9u3q8XcVu96DOGJ4+SZvLDLP7bsnMimW69GPgPrF
+         XDesd4lOzm/j6OMomQXgKBeViNvH3u/1E0cgQMtKJM2N56KIHg55yOqwq7aJqZXR6Jnz
+         K083PTLxZX6umJELC2OX7vM0tkfkRDB5XNZ4M=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110131221659.GA14918@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTimS70uHqmv3jhr+7mPz4QFKXRXuFnWj8s3EpKsO@mail.gmail.com>
+References: <1296403013-6058-1-git-send-email-thomas@wytron.com.tw>
+	<AANLkTi=5Uik+EwBRfYs_Pa77+qHngY03ezC63RC0WLQ8@mail.gmail.com>
+	<AANLkTimS70uHqmv3jhr+7mPz4QFKXRXuFnWj8s3EpKsO@mail.gmail.com>
+Date: Mon, 31 Jan 2011 14:35:31 -0800
+Message-ID: <AANLkTini7Hx6dbTAKJKJy=NnC+LFcQuHEsayxwJJ78-+@mail.gmail.com>
+Subject: Re: [PATCH] i2c-gpio: add devicetree support
+From: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Thomas Chou <thomas@wytron.com.tw>, Ben Dooks <ben-linux@fluff.org>,
+        linux-kernel@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
+        devicetree-discuss@lists.ozlabs.org, linux-i2c@vger.kernel.org,
+        Jean Delvare <khali@linux-fr.org>,
+        Albert Herranz <albert_herranz@yahoo.es>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 31, 2011 at 05:16:59PM -0500, Greg KH wrote:
-> On Mon, Jan 24, 2011 at 04:28:57PM +0100, Borislav Petkov wrote:
-> > From: Borislav Petkov <borislav.petkov@amd.com>
-> > 
-> > When encountering an error while executing the driver's ->add method, we
-> > should cancel registration and unwind what we've regged so far. The low
-> > level ->add methods do return proper error codes but those aren't looked
-> > at in sysdev_driver_register(). Fix that by sharing the unregistering
-> > code.
-> 
-> Have you actually hit this before?  If so, where?
+Hi,
 
-Sorta. I want to be paranoid when loading the microcode image file and
-in patch 3/7 (http://marc.info/?l=linux-kernel&m=129588287409770) I
-propagate the error in case loading the microcode fails. If we don't
-cleanup here, the driver remains loaded and takes up resources. And if
-you load it again, you get a sysfs warning about duplicated entries.
+On Mon, Jan 31, 2011 at 12:09 AM, Grant Likely
+<grant.likely@secretlab.ca> wrote:
+> On Sun, Jan 30, 2011 at 8:26 PM, Håvard Skinnemoen
+> <hskinnemoen@gmail.com> wrote:
+>> Hi,
+>>
+>> On Sun, Jan 30, 2011 at 7:56 AM, Thomas Chou <thomas@wytron.com.tw> wrote:
+>>> From: Albert Herranz <albert_herranz@yahoo.es>
+>>>
+>>> This patch is based on an earlier patch from Albert Herranz,
+>>> http://git.infradead.org/users/herraa1/gc-linux-2.6.git/commit/
+>>> 9854eb78607c641ab5ae85bcbe3c9d14ac113733
+>>
+>> That commit has a single-line description of which I don't understand
+>> a single word (unless "wii" is what I think it is, which seems
+>> likely). Could you please explain how that commit relates to this
+>> patch?
+>
+> The URL got wrapped.  Try this one (assuming my mailer doesn't wrap it):
+>
+> http://git.infradead.org/users/herraa1/gc-linux-2.6.git/commit/9854eb78607c641ab5ae85bcbe3c9d14ac113733
 
-> > Also, fixup warning messages formatting while at it.
-> 
-> Please, no, one patch per thing.  Please break this up into two
-> different patches.
+Ok, that seems to be a _bit_ more related, but not that much. I'd
+really prefer a patch description which can stand on its own.
 
-Yes, will do.
+>>> The dts binding is modified as Grant suggested. The of probing
+>>> is merged inline instead of a separate file. It uses the newer
+>>> of gpio probe.
+>>
+>> It seems like a terrible idea to merge firmware-specific code into the
+>> driver. Is there are reason why of-based platforms can't just pass the
+>> data they need in pdata like everyone else?
+>
+> Overall Thomas is doing the right thing here.  The driver data has to
+> be decoded *somewhere*, but since that code is definitely
+> driver-specific (as opposed to platform, subsystem, or arch specific)
+> putting it into the driver is absolutely the right thing to do.  Quite
+> a few drivers now do exactly this.
 
-> And, in the future, let me know that you need this for other work.
+Ok, I'm convinced that this is the right thing to do.
 
-Will do.
+> It is however generally a wise practice to limit the of-support code
+> to a hook in the drivers probe hook, and as you point out, care must
+> be taken to make sure both CONFIG_OF and !CONFIG_OF kernel builds
+> work.
+>
+>>
+>> Not saying that it necessarily _is_ a terrible idea, but I think the
+>> reasoning behind it needs to be included in the patch description.
+>
+> Nah, he doesn't really need to defend this since it is a well
+> established pattern.  device tree support is in core code now (see
+> of_node an of_match_table in include/linux/device.h), and other
+> drivers do exactly this.
 
-> Actually, why did you send this to Ingo in your pull request?  What does
-> your microcode patches need from this patch?  It should go through my
-> tree, especially as there is other sysdev work happening at the moment.
+Well, perhaps you're right, but I still think the patch description is
+a bit on the thin side. In particular, terms like "as Grant suggested"
+isn't very helpful for people like me who don't know what you
+suggested (even though I'm sure it was a good suggestion).
 
-Sorry about that, I did not mean to bypass/offend you in any way.
+I think the patch lacks a good description of what's being changed and
+why. The references may be nice to have as a supplement to that, but
+describing things entirely in terms of some unknown e-mail discussion
+that happened earlier is not very helpful for people who want to
+figure out what's going on a couple of months or years from now.
 
-> so, no, please don't send this on to anyone else right now.
-
-Do you need the patches rediffed against a some tree of yours?
-
-@Ingo: please disregard my pull request from today:
-http://marc.info/?l=linux-kernel&m=129648061017908
-
-Guys, sorry again if I've caused any trouble.
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Havard
