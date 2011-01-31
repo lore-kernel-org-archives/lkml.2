@@ -1,55 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755810Ab1AaNwW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 08:52:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33268 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755535Ab1AaNwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 08:52:20 -0500
-Date: Mon, 31 Jan 2011 08:52:18 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Sebastian =?iso-8859-1?Q?F=E4rber?= <faerber@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Hard LOCKUP with 2.6.32.28 (maybe scheduler/tick related?)
-Message-ID: <20110131135218.GA12173@redhat.com>
-References: <AANLkTikk7ZyMFKTP=WuZR5QhJoEdmpCRy9BW=FiE160z@mail.gmail.com>
+	id S1755573Ab1AaNyW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 08:54:22 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:39110 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753566Ab1AaNyV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 08:54:21 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:content-transfer-encoding:user-agent;
+        b=EFvqrcxKu9s+mJ6ZpxFVniDt8pbJIu95b1ZaB6+I89zQulisXGwsieLk8r45XeWQ+x
+         J9lxttQfDdmiCODUd/+YP4K/qWYXEAnI0h//bNhSEYx9B2XMjdmDkvDbLzqpUaQuN1Rz
+         u38FCDybf0Dp3LrIvgLSkBFyuxEnPXwRBKVWs=
+Date: Mon, 31 Jan 2011 16:54:17 +0300
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Grazvydas Ignotas <notasas@gmail.com>
+Cc: Rodolfo Giometti <giometti@linux.it>, linux-kernel@vger.kernel.org,
+        Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
+Subject: Fwd: [PATCH] bq27x00_battery: Some fixes
+Message-ID: <20110131135417.GC3883@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikk7ZyMFKTP=WuZR5QhJoEdmpCRy9BW=FiE160z@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 31, 2011 at 12:05:58PM +0100, Sebastian F�rber wrote:
-> Hi,
-> 
-> i recently upgraded some servers from 2.6.32.9 to 2.6.32.28 and see
-> frequent "hard lockups" on
-> a few of them now. I've compiled a kernel with debugging support and
-> enabled the "NMI Watchdog"
-> to get more information.
-> I've attached my .config and the stack traces from the nmi watchdog,
-> captured via a serial console.
-> To me it looks like there is some problem in run_posix_cpu_timers and
-> the problem is also
-> triggering WARNING: at kernel/sched_fair.c:979 hrtick_start_fair.
-> 
-> Note that the kernel is patched with grsecurity and i'm running CONFIG_NO_HZ.
-> There were no problems with 2.6.32.9.
-> Would be great if someone could have a look at this, i can provide
-> more information if neccessary.
+The same is for this patch.
 
-Your attached 'crash' details had another stacktrace first.  That one
-shows the nmi_watchdog triggering because a spin_lock is spinning forever
-in 'd_real_path'.  I couldn't find that code in any upstream tree, then
-again I was too lazy to clone the stable trees.  So I don't know what the
-exact problem is, but if you look through the git history of 2.6.32.28 and
-revert things that relate to 'd_real_path', you can probably workaround
-the problem for now, until someone who knows that stuff better than me can
-give you a better answer.
+Comments, Reviewed-by or Acked-by?
 
-Cheers,
-Don
+p.s. FWIW, I already asked Pali to factor out bq27x00_battery_time()
+     fix to a separate patch.
+
+----- Forwarded message from Pali Rohár <pali.rohar@gmail.com> -----
+
+Date: Wed, 26 Jan 2011 21:42:39 +0100
+From: Pali Rohár <pali.rohar@gmail.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH] bq27x00_battery
+
+This patch fix reporting correct (devided by resistor sense) values on
+bq27000/bq27200 batteries.
+
+Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+Tested-by: Pali Rohár <pali.rohar@gmail.com>
+
+--- a/drivers/power/bq27x00_battery.c	2011-01-26 21:30:40.000000000 +0100
++++ b/drivers/power/bq27x00_battery.c	2011-01-26 21:32:34.000000000 +0100
+@@ -37,10 +37,11 @@
+ #define BQ27x00_REG_TTF			0x18
+ #define BQ27x00_REG_TTECP		0x26
+
++#define BQ27000_RS			20 /* Resistor sense */
+ #define BQ27000_REG_RSOC		0x0B /* Relative State-of-Charge */
+ #define BQ27000_FLAG_CHGS		BIT(7)
+
+-#define BQ27500_REG_SOC			0x2c
++#define BQ27500_REG_SOC			0x2C
+ #define BQ27500_FLAG_DSC		BIT(0)
+ #define BQ27500_FLAG_FC			BIT(9)
+
+@@ -112,7 +113,7 @@ static int bq27x00_battery_temperature(s
+ }
+
+ /*
+- * Return the battery Voltage in milivolts
++ * Return the battery Voltage in µV
+  * Or < 0 if something fails.
+  */
+ static int bq27x00_battery_voltage(struct bq27x00_device_info *di)
+@@ -130,7 +131,7 @@ static int bq27x00_battery_voltage(struc
+ }
+
+ /*
+- * Return the battery average current
++ * Return the battery average current in µA
+  * Note that current can be negative signed as well
+  * Or 0 if something fails.
+  */
+@@ -149,6 +150,7 @@ static int bq27x00_battery_current(struc
+ 	if (di->chip == BQ27500) {
+ 		/* bq27500 returns signed value */
+ 		curr = (int)(s16)curr;
++		curr *= 1000;
+ 	} else {
+ 		ret = bq27x00_read(BQ27x00_REG_FLAGS, &flags, 0, di);
+ 		if (ret < 0) {
+@@ -159,9 +161,10 @@ static int bq27x00_battery_current(struc
+ 			dev_dbg(di->dev, "negative current!\n");
+ 			curr = -curr;
+ 		}
++		curr = curr * 3570 / BQ27000_RS;
+ 	}
+
+-	return curr * 1000;
++	return curr;
+ }
+
+ /*
+@@ -233,7 +236,7 @@ static int bq27x00_battery_time(struct b
+ 	}
+
+ 	if (tval == 65535)
+-		return -ENODATA;
++		tval = 0;
+
+ 	val->intval = tval * 60;
+ 	return 0;
+
+----- End forwarded message -----
