@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756637Ab1AaWRP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 17:17:15 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:55263 "EHLO ogre.sisk.pl"
+	id S1756674Ab1AaWRS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 17:17:18 -0500
+Received: from kroah.org ([198.145.64.141]:53640 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754113Ab1AaWRO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 17:17:14 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [RFC][PATCH] Power domains for platform bus type
-Date: Mon, 31 Jan 2011 23:16:51 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc2+; KDE/4.4.4; x86_64; ; )
-Cc: Magnus Damm <magnus.damm@gmail.com>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>
-References: <Pine.LNX.4.44L0.1101311442100.1931-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1101311442100.1931-100000@iolanthe.rowland.org>
+	id S1756651Ab1AaWRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 17:17:16 -0500
+Date: Mon, 31 Jan 2011 14:14:54 -0800
+From: Greg KH <greg@kroah.com>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: Greg KH <gregkh@suse.de>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH 1/3] tty: move hvc drivers to drivers/tty/hvc/
+Message-ID: <20110131221454.GA14884@kroah.com>
+References: <20110120174910.GA30124@kroah.com>
+ <1295546625-30681-1-git-send-email-gregkh@suse.de>
+ <20110127182916.GA4688@amit-x200.redhat.com>
+ <201101272253.29223.arnd@arndb.de>
+ <20110128025725.GA2822@amit-x200.redhat.com>
+ <20110128042125.GA1844@suse.de>
+ <20110128055904.GA9218@amit-x200.redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101312316.52116.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110128055904.GA9218@amit-x200.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 31, 2011, Alan Stern wrote:
-> On Mon, 31 Jan 2011, Rafael J. Wysocki wrote:
-> 
-> > On Monday, January 31, 2011, Alan Stern wrote:
-> > > On Sun, 30 Jan 2011, Rafael J. Wysocki wrote:
-> > > 
-> > > > > One thing about this implementation is slightly questionable.  The new
-> > > > > power_domain callbacks were added to the __weak platform PM routines,
-> > > > > which means they will have to be included in every overriding routine
-> > > > > provided by a platform imiplementation.
-> > > > > 
-> > > > > Would it be better to separate these things?  Have the power_domain 
-> > > > > callbacks occur in a static outer function which then calls a public 
-> > > > > __weak inner function that can be overridden?
+On Fri, Jan 28, 2011 at 11:29:04AM +0530, Amit Shah wrote:
+> On (Thu) Jan 27 2011 [20:21:25], Greg KH wrote:
+> > > > Sorry about this, the idea to move this file was mine and my original
+> > > > patch did this as well. I remembered the code from when it was a simple
+> > > > console driver based on hvc and never noticed that it had evolved into
+> > > > a generic host/guest communication stack.
 > > > > 
-> > > > That certainly is a good idea, but I wasn't sure how to do that.  It looks
-> > > > like I could keep the __weak functions as they are and modify
-> > > > platform_dev_pm_ops instead to point to a new set of function that in turn
-> > > > would call the __weak ones.  For example, the .suspend pointer in
-> > > > platform_dev_pm_ops might point to a new function, say
-> > > > platform_pm_full_suspend() that would call the power domain functions and
-> > > > the "original" platform_pm_suspend().  Is that what you mean?
+> > > > > Can you please move it back?
+> > > > 
+> > > > No objection from me here in general, though as Greg writes above, it's
+> > > > a bit ugly when hvc_console.h is in a different directory.
 > > > 
-> > > Yes.  But what about the platform_bus_set_pm_ops() interface?  Should
-> > > platform-specific replacements for the pm_ops functions also include
-> > > the power_domain callbacks?
+> > > Greg, can you do this please?  (A way to do it with preservig git
+> > > history of the file would be great as well, but I think only a revert
+> > > will do that?)
 > > 
-> > Well, whoever uses platform_bus_set_pm_ops(), he can simply prevent power
-> > domains from being used by not defining them in the first place. :-)
+> > So just move the one file, virtio_console.c?  If so, yes, I can move it
+> > back.
 > 
-> But what about the case where the user _does_ want to have power
-> domains?
+> Yes, just the one file.
+> 
+> > > > > I could perhaps think of a way of splitting the file so the hvc bits can
+> > > > > be moved to drivers/tty/hvc/ and having the core stay in drivers/char/,
+> > > > > but that'll have to wait for the next cycle.
+> > 
+> > That would be great, care to send me those patches now so I can queue it
+> > up for .39?
+> 
+> It was just a thought; I don't have patches yet.  I'll send them your
+> way once they're ready.
 
-Ah, OK.  The caller of platform_bus_set_pm_ops() will replace the original
-platform_dev_pm_ops with his own set of operations, so he will not see the
-power domains.
+Actually, can you send me the patch to do this rename back now?  I can't
+test the build to verify that I got it correct, and I'd like to properly
+credit you with it as well.
 
-> Do you want to make the replacement routines responsible for
-> invoking the power-domain callbacks, or should the platform core handle
-> this automatically?
+thanks,
 
-Well, if someone replaces the entire platform_dev_pm_ops object, this means
-that on his platform power management is substantially different from the
-generic one.  In that case, IMO, he should be responsible for handling all
-of the subsystem-level aspects of power management, including power domains.
-
-Rafael
+greg k-h
