@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756343Ab1AaVDz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 16:03:55 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56870 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754137Ab1AaVDy (ORCPT
+	id S1756376Ab1AaVED (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 16:04:03 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:40962 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756361Ab1AaVEA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 16:03:54 -0500
-Subject: [PATCH v2 0/6] Basic ARM device support
+	Mon, 31 Jan 2011 16:04:00 -0500
+Subject: [PATCH v2 1/6] arm/dt: Make __vet_atags also accept a dtb image
 To: nicolas.pitre@linaro.org, Russell King <linux@arm.linux.org.uk>,
         Catalin Marinas <catalin.marinas@arm.com>,
         devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         buytenh@wantstofly.org, Olof Johansson <olof@lixom.net>,
         john.linn@xilinx.com, linux-arm-kernel@lists.infradead.org
 From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 31 Jan 2011 14:03:50 -0700
-Message-ID: <20110131203626.15105.64302.stgit@localhost6.localdomain6>
+Date: Mon, 31 Jan 2011 14:03:55 -0700
+Message-ID: <20110131210355.15105.55634.stgit@localhost6.localdomain6>
+In-Reply-To: <20110131203626.15105.64302.stgit@localhost6.localdomain6>
+References: <20110131203626.15105.64302.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -24,88 +26,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Second posting.  v2 reworks the handling of the dtb during early init.
-Instead of trying to reserve the memory region containing the dtb,
-this version instead copies it into an allocated buffer because the
-dtb may have been loaded by firmware into an unsafe region (like the
-interrupt vectors at the base of RAM).  Nicolas, can you please
-take a look at patch #4 and commenting on whether or not I'm
-handling it safely?
+The dtb is passed to the kernel via register r2, which is the same
+method that is used to pass an atags pointer.  This patch modifies
+__vet_atags to not clear r2 when it encounters a dtb image.
 
-Once again, I'm not looking to get these patches merged into mainline
-yet.
+v2: fixed bugs pointed out by Nicolas Pitre
 
-...
-
-This patch series allows CONFIG_OF to be enabled on ARM and allows the
-kernel to accept a dtb pointer from boot firmware instead of atags.
-If a dtb is passed, then the kernel will use the root 'compatible'
-property to find a matching machine_desc, and it will use it to obtain
-the memory layout, initrd location and kernel parameters string.
-
-Only limited device tree support is enabled here.  It does not perform
-any kind of device registration from device tree data.  That support
-will be enabled in a later patch set.  Rather, this series is a stable
-base that other engineers can use to start working on device tree
-support for their platforms.
-
-Tested on Versatile (qemu) and nVidia Tegra Harmony.  Kernel compiles
-an boot with CONFIG_OF both on and off, both with and without passing
-a device tree blob.
-
-This series is reflected in the following branch:
-
- git://git.secretlab.ca/git/linux-2.6 devicetree/arm
-
-The 'clean' patches (rebased) can be found here:
-
- git://git.secretlab.ca/git/linux-2.6 devicetree/test
-
-The way I've managed the devicetree/test branch in the past has made
-it hard for other engineers to work with the device tree support, so
-I'm changing the way I'm handling it.  I will *not* rebase this new
-branch.  My intention is to keep it in essentially 'merge-ready' state
-at all times.  ie. I'm only going to put patches into this branch that
-I consider complete and are required to enable arm device tree
-support.  ie. core dt infrastructure and dt board support.  Device
-drivers should be submitted directly to their respective
-lists/maintainers.  I'll also be soliciting acks from platform
-maintainers before I pick up board support patches into this branch.
-
-Cheers,
-g.
-
-
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
+ arch/arm/kernel/head-common.S |   24 ++++++++++++++++++------
+ arch/arm/kernel/head.S        |    8 ++++----
+ 2 files changed, 22 insertions(+), 10 deletions(-)
 
-Grant Likely (5):
-      arm/dt: Make __vet_atags also accept a dtb image
-      arm/dt: consolidate atags setup into setup_machine_atags
-      arm/dt: probe for platforms via the device tree
-      arm/dt: Basic versatile devicetree support
-      arm/dt: Basic tegra devicetree support
+diff --git a/arch/arm/kernel/head-common.S b/arch/arm/kernel/head-common.S
+index 8f57515..882c292 100644
+--- a/arch/arm/kernel/head-common.S
++++ b/arch/arm/kernel/head-common.S
+@@ -15,6 +15,12 @@
+ #define ATAG_CORE_SIZE ((2*4 + 3*4) >> 2)
+ #define ATAG_CORE_SIZE_EMPTY ((2*4) >> 2)
+ 
++#ifdef CONFIG_CPU_BIG_ENDIAN
++#define OF_DT_MAGIC 0xd00dfeed
++#else
++#define OF_DT_MAGIC 0xedfe0dd0 /* 0xd00dfeed in big-endian */
++#endif
++
+ /*
+  * Exception handling.  Something went wrong and we can't proceed.  We
+  * ought to tell the user, but since we don't have any guarantee that
+@@ -105,22 +111,28 @@ __lookup_machine_type_data:
+ 
+ /* Determine validity of the r2 atags pointer.  The heuristic requires
+  * that the pointer be aligned, in the first 16k of physical RAM and
+- * that the ATAG_CORE marker is first and present.  Future revisions
++ * that the ATAG_CORE marker is first and present.  If CONFIG_OF_FLATTREE
++ * is selected, then it will also accept a dtb pointer.  Future revisions
+  * of this function may be more lenient with the physical address and
+  * may also be able to move the ATAGS block if necessary.
+  *
+  * r8  = machinfo
+  *
+  * Returns:
+- *  r2 either valid atags pointer, or zero
++ *  r2 either valid atags pointer, valid dtb pointer, or zero
+  *  r5, r6 corrupted
+  */
+ __vet_atags:
+ 	tst	r2, #0x3			@ aligned?
+ 	bne	1f
+ 
+-	ldr	r5, [r2, #0]			@ is first tag ATAG_CORE?
+-	cmp	r5, #ATAG_CORE_SIZE
++	ldr	r5, [r2, #0]
++#ifdef CONFIG_OF_FLATTREE
++	ldr	r6, =OF_DT_MAGIC		@ is it a DTB?
++	cmp	r5, r6
++	beq	2f
++#endif
++	cmp	r5, #ATAG_CORE_SIZE		@ is first tag ATAG_CORE?
+ 	cmpne	r5, #ATAG_CORE_SIZE_EMPTY
+ 	bne	1f
+ 	ldr	r5, [r2, #4]
+@@ -128,7 +140,7 @@ __vet_atags:
+ 	cmp	r5, r6
+ 	bne	1f
+ 
+-	mov	pc, lr				@ atag pointer is ok
++2:	mov	pc, lr				@ atag/dtb pointer is ok
+ 
+ 1:	mov	r2, #0
+ 	mov	pc, lr
+@@ -140,7 +152,7 @@ ENDPROC(__vet_atags)
+  *
+  *  r0  = cp#15 control register
+  *  r1  = machine ID
+- *  r2  = atags pointer
++ *  r2  = atags/dtb pointer
+  *  r9  = processor ID
+  */
+ 	__INIT
+diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
+index f17d9a0..65d9489 100644
+--- a/arch/arm/kernel/head.S
++++ b/arch/arm/kernel/head.S
+@@ -66,7 +66,7 @@
+  *
+  * This is normally called from the decompressor code.  The requirements
+  * are: MMU = off, D-cache = off, I-cache = dont care, r0 = 0,
+- * r1 = machine nr, r2 = atags pointer.
++ * r1 = machine nr, r2 = atags or dtb pointer.
+  *
+  * This code is mostly position independent, so if you link the kernel at
+  * 0xc0008000, you call this at __pa(0xc0008000).
+@@ -93,7 +93,7 @@ ENTRY(stext)
+ 	beq	__error_a			@ yes, error 'a'
+ 
+ 	/*
+-	 * r1 = machine no, r2 = atags,
++	 * r1 = machine no, r2 = atags or dtb,
+ 	 * r8 = machinfo, r9 = cpuid, r10 = procinfo
+ 	 */
+ 	bl	__vet_atags
+@@ -335,7 +335,7 @@ __secondary_data:
+  *
+  *  r0  = cp#15 control register
+  *  r1  = machine ID
+- *  r2  = atags pointer
++ *  r2  = atags or dtb pointer
+  *  r4  = page table pointer
+  *  r9  = processor ID
+  *  r13 = *virtual* address to jump to upon completion
+@@ -372,7 +372,7 @@ ENDPROC(__enable_mmu)
+  *
+  *  r0  = cp#15 control register
+  *  r1  = machine ID
+- *  r2  = atags pointer
++ *  r2  = atags or dtb pointer
+  *  r9  = processor ID
+  *  r13 = *virtual* address to jump to upon completion
+  *
 
-Jeremy Kerr (1):
-      arm/dt: Allow CONFIG_OF on ARM
-
-
- arch/arm/Kconfig                       |    7 ++
- arch/arm/include/asm/mach/arch.h       |    2 
- arch/arm/include/asm/prom.h            |   36 +++++++++
- arch/arm/include/asm/setup.h           |    3 +
- arch/arm/kernel/Makefile               |    1 
- arch/arm/kernel/devtree.c              |  134 ++++++++++++++++++++++++++++++++
- arch/arm/kernel/head-common.S          |   24 ++++--
- arch/arm/kernel/head.S                 |    8 +-
- arch/arm/kernel/setup.c                |   78 ++++++++++---------
- arch/arm/mach-tegra/board-harmony.c    |    6 +
- arch/arm/mach-tegra/gpio.c             |    4 -
- arch/arm/mach-versatile/versatile_ab.c |    6 +
- arch/arm/mach-versatile/versatile_pb.c |    6 +
- arch/arm/mm/init.c                     |    8 ++
- 14 files changed, 276 insertions(+), 47 deletions(-)
- create mode 100644 arch/arm/include/asm/prom.h
- create mode 100644 arch/arm/kernel/devtree.c
-
--- 
-Signature
