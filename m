@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756325Ab1AaUja (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 15:39:30 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:55020 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754042Ab1AaUj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 15:39:28 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Thomas Meyer <thomas@m3y3r.de>
-Subject: Re: 2.6.38-rc2: acpi backlight control missing
-Date: Mon, 31 Jan 2011 21:39:03 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc2+; KDE/4.4.4; x86_64; ; )
-Cc: rui.zhang@intel.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-References: <1295693349.2120.3.camel@localhost.localdomain> <201101222043.07703.rjw@sisk.pl> <1296249125.2006.7.camel@localhost.localdomain>
-In-Reply-To: <1296249125.2006.7.camel@localhost.localdomain>
+	id S1756241Ab1AaUmu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 15:42:50 -0500
+Received: from lider.pardus.org.tr ([193.140.100.216]:38015 "EHLO
+	lider.pardus.org.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753672Ab1AaUmt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 15:42:49 -0500
+Message-ID: <4D471EC9.6030308@pardus.org.tr>
+Date: Mon, 31 Jan 2011 22:42:49 +0200
+From: =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozan@pardus.org.tr>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201101312139.03634.rjw@sisk.pl>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: =?UTF-8?B?UmljaGFyZCBTY2jDvHR6?= <r.schtz@t-online.de>,
+        Lionel Debroux <lionel_debroux@yahoo.fr>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+Subject: Re: Common boot/shutdown issues with the latest 2.6.37 (Mostly Asus
+ laptops)
+References: <556624.21214.qm@web28409.mail.ukl.yahoo.com> <201101311933.38050.rjw@sisk.pl> <4D4701B7.8030004@pardus.org.tr> <201101312012.42393.rjw@sisk.pl> <4D471D2F.7010008@pardus.org.tr>
+In-Reply-To: <4D471D2F.7010008@pardus.org.tr>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 28, 2011, Thomas Meyer wrote:
-> Am Samstag, den 22.01.2011, 20:43 +0100 schrieb Rafael J. Wysocki:
-> > On Saturday, January 22, 2011, Thomas Meyer wrote:
-> > > with 2.6.38-rc2 the acpi backlight is gone:
-> > > 
-> > > any ideas?
-> > 
-> > Not really, but Matthew may have some (CCed).
-> 
-> Okay, found the problem.
-> 
-> This commit broke my backlight:
-> 
-> commit 677bd810eedce61edf15452491781ff046b92edc
-> Author: Zhang Rui <rui.zhang@intel.com>
-> Date:   Mon Dec 6 15:04:21 2010 +0800
-> 
->     ACPI video: remove output switching control
-> 
-> This is because in function
-> "acpi_is_video_device()" (drivers/acpi/video_detect.c) the backlight
-> device is only checked when some video capabilities were found, but by
-> removing the check for the VIDEO_OUTPUT_SWITCHING (that seems to be the
-> only video capability on my system) the check for the backlight device
-> isn't done anymore.
-> 
-> by reverting above commit, the backlight is back again.
+On 31.01.2011 22:35, Ozan Çağlayan wrote:
 
-Is it the same issue as https://bugzilla.kernel.org/show_bug.cgi?id=27702 ?
-In case it is, can you test the patch in there, please?
+> Well the only-booting-with-nolapic one doesn't boot with maxcpus=0. Pff,
+> are there any compile-time(Kconfig) or runtime parameters related to
+> debugging various subsystems that you'll suggest which will show where
+> the boot hangs? That way we can maybe pinpoint the issue to a specific
+> function call.
+>
+>
 
-Rafael
+Well I've actually a screenshot of the boot hang with tons of debugging 
+parameters passed to kernel. Maybe it will give you a clue. It hangs 
+right after printing e820 system memory map.
+
+http://bugs.pardus.org.tr/attachment.cgi?id=6554
+
+-- 
+Pardus Linux
+http://www.pardus.org.tr/eng
