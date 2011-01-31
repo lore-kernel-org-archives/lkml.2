@@ -1,42 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872Ab1AaSis (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 13:38:48 -0500
-Received: from lider.pardus.org.tr ([193.140.100.216]:52536 "EHLO
-	lider.pardus.org.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755761Ab1AaSir (ORCPT
+	id S1755894Ab1AaSl7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 13:41:59 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:44377 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752143Ab1AaSl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 13:38:47 -0500
-Message-ID: <4D4701B7.8030004@pardus.org.tr>
-Date: Mon, 31 Jan 2011 20:38:47 +0200
-From: =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozan@pardus.org.tr>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Mon, 31 Jan 2011 13:41:58 -0500
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: v9fs-developer@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH -V1 0/7] Buffered write and writeable mmap support for 9P
+In-Reply-To: <E1PjqD4-0000dZ-UN@pomaz-ex.szeredi.hu>
+References: <1296329186-23807-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <E1PjqD4-0000dZ-UN@pomaz-ex.szeredi.hu>
+User-Agent: Notmuch/0.5-64-gc3ae51d (http://notmuchmail.org) Emacs/23.1.1 (i486-pc-linux-gnu)
+Date: Tue, 01 Feb 2011 00:11:51 +0530
+Message-ID: <877hdk9aq8.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: =?UTF-8?B?UmljaGFyZCBTY2jDvHR6?= <r.schtz@t-online.de>,
-        Lionel Debroux <lionel_debroux@yahoo.fr>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        colin.king@canonical.com
-Subject: Re: Common boot/shutdown issues with the latest 2.6.37 (Mostly Asus
- laptops)
-References: <556624.21214.qm@web28409.mail.ukl.yahoo.com> <201101311924.33098.rjw@sisk.pl> <4D46FF82.1090704@pardus.org.tr> <201101311933.38050.rjw@sisk.pl>
-In-Reply-To: <201101311933.38050.rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31.01.2011 20:33, Rafael J. Wysocki wrote:
+On Mon, 31 Jan 2011 10:38:10 +0100, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> On Sun, 30 Jan 2011, Aneesh Kumar K.V wrote:
+> > The patch series implement buffered write and writeable mmap for 9P
+> 
+> P9 is supposed to work with servers on the local machine, right?
 
->
-> Would it be possible to check if running the kernel in uniprocessor mode
-> makes the problem go away?
+Yes
 
-If that's the equivalent of booting with maxcpus=0, I now told them to 
-give it a try.
+> 
+> In that case you need to think about various deadlock scenarios.  An
+> example: the P9 server needs a large order allocation while serving
+> the buffered write request.  That may trigger the page reclaim and go
+> into synchronous writeback, possibly waiting on the exact page which
+> the P9 server is just trying to finish writing out.
+> 
+> This is not easy to deal with, see commit 3be5a52b for the fuse
+> solution.  I'm not saying it's the only way, there may be a better
+> one.
+> 
 
+Thanks for the commit info. I will look at the details and see how best
+we can solve this in 9P
 
--- 
-Pardus Linux
-http://www.pardus.org.tr/eng
+-aneesh
