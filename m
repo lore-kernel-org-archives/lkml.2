@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869Ab1AaFp4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 00:45:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59529 "EHLO mx1.redhat.com"
+	id S1752299Ab1AaGBe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 01:01:34 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:54038 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750978Ab1AaFpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 00:45:55 -0500
-Message-ID: <4D464C6F.7010601@redhat.com>
-Date: Mon, 31 Jan 2011 13:45:19 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: linux-kernel@vger.kernel.org, Stephen Hemminger <shemminger@vyatta.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jamie Lokier <jamie@shareable.org>, Thomas Weber <swirl@gmx.li>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Andy Fleming <afleming@freescale.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Neil Horman <nhorman@redhat.com>
-Subject: Re: [RFC Patch] virtio: export model and type in /sys
-References: <1296442381-21652-1-git-send-email-amwang@redhat.com> <201101311435.24531.rusty@rustcorp.com.au>
-In-Reply-To: <201101311435.24531.rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1751815Ab1AaGBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 01:01:33 -0500
+Date: Mon, 31 Jan 2011 17:01:23 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        linux-net-drivers@solarflare.com, Tom Herbert <therbert@google.com>
+Subject: linux-next: build failure after merge of the final tree (net and
+ tip tree related)
+Message-Id: <20110131170123.9ee51a40.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__31_Jan_2011_17_01_23_+1100__m0n40exP0oGnQ0y"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Adding Neil into Cc.)
+--Signature=_Mon__31_Jan_2011_17_01_23_+1100__m0n40exP0oGnQ0y
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-于 2011年01月31日 12:05, Rusty Russell 写道:
-> On Mon, 31 Jan 2011 01:23:00 pm Amerigo Wang wrote:
->> Our kdump script needs /sys/block/X/device/{vendor, model, type},
->> but virtio devices don't have {model, type}, this patch adds them.
->> Actually, I don't know how to fill the model field, other block devices
->> seem read it from SCSI. Any comments?
->
-> This seems deeply wrong.  Can't you fix your script?
+Hi all,
 
-Well, we use (vendor, model, type) to identify a disk, and so far we only
-see virtio devices don't have this. So, we hope virtio at least provides
-some dummy files for us.
+After merging the final tree, today's linux-next build (sparc64 defconfig)
+failed like this:
 
->
-> Model might sanely map to the feature bits, but making the type the same
-> as the PCI type is weird...
->
+kernel/irq/manage.c: In function 'irq_affinity_notify':
+kernel/irq/manage.c:182: error: 'struct irq_desc' has no member named 'affi=
+nity'
 
-Yeah, that is why I mark the patch as RFC, I don't know which is the correct way
-to fill these two values. Providing some dummy values is also fine for us.
+Caused by commit cd7eab44e9946c28d595abe3e9a43e945bc49141 ("genirq: Add
+IRQ affinity notifiers").  This build has
+CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED=3Dy.
 
-Thanks.
+I have just left it broken for today.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__31_Jan_2011_17_01_23_+1100__m0n40exP0oGnQ0y
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNRlAzAAoJEDMEi1NhKgbsVnYIAJq2+t92If/U59zDFsPv8lKx
+6wPf404DUYV7AcAb+doQKt4gDqZCatUnrz7dch5cray4P+dKK9DzcCyhbAC/MOU9
+Gzk2ylofFWKfiwKMuEPYrMtjneRfRR4qy1BCLBiWP9fbT9AYCo0uZdc/Qe3BMuVI
+lfr49Hg3jkde3TnPCiBkP5kcBODN/kzmRLIrgquxNns+kItgTwnP6Y0mHfK7VSjQ
+YAoL2TxOXRNpzRVi4gTuHMb4YLAz9FKxwpKvP61E+Dvdw/EozJEQiQtxLOpvMSE1
+oD+qie9lHKNEcWjAjhXhVJQmrMLYkBdQqKKl2CDdUKd524IxNOJKIVr4m4218j4=
+=H4Kt
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__31_Jan_2011_17_01_23_+1100__m0n40exP0oGnQ0y--
