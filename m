@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603Ab1AaLgv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 06:36:51 -0500
-Received: from www.tglx.de ([62.245.132.106]:52469 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755468Ab1AaLgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 06:36:51 -0500
-Date: Mon, 31 Jan 2011 12:36:33 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Torben Hohn <torbenh@gmx.de>
-cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        johnstul@us.ibm.com, yong.zhang0@gmail.com, hch@infradead.org
-Subject: Re: [PATCH v2 02/20] move get_jiffies_64 to kernel/time/jiffies.c
-In-Reply-To: <20110127145900.23248.73352.stgit@localhost>
-Message-ID: <alpine.LFD.2.00.1101311231270.31804@localhost6.localdomain6>
-References: <20110127145741.23248.68098.stgit@localhost> <20110127145900.23248.73352.stgit@localhost>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755626Ab1AaLhm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 06:37:42 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:36592 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754022Ab1AaLhk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 06:37:40 -0500
+Date: Mon, 31 Jan 2011 06:36:57 -0500
+From: Josh Boyer <jwboyer@linux.vnet.ibm.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: devicetree-discuss@lists.ozlabs.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, sam@ravnborg.org,
+        benh@kernel.crashing.org
+Subject: Re: [PATCH 2/3] dt: Remove obsolete description of powerpc boot
+ interface
+Message-ID: <20110131113657.GC13541@zod.rchland.ibm.com>
+References: <20110131073918.9058.37628.stgit@localhost6.localdomain6>
+ <20110131074502.9058.11473.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-2085710590-1296473796=:31804"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110131074502.9058.11473.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Mon, Jan 31, 2011 at 12:45:05AM -0700, Grant Likely wrote:
+>32 and 64 bit powerpc support has been merged for a while now, but
+>the booting-without-of.txt document still describes 32 bit as not
+>supporting multiplatform, which is no longer true.  This patch fixes
+>the documentation.
+>
+>Also remove references to powerpc-specific details outside of section
+>I in preparation to add details for other architectures.
 
----1463795968-2085710590-1296473796=:31804
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+There's a line around 500 that starts:
 
-On Thu, 27 Jan 2011, Torben Hohn wrote:
+	"The kernel powerpc generic code does..."
 
-> in order to make the xtime_lock local to kernel/time
-> all users of this lock need to be moved there.
+Perhaps the powerpc reference should be dropped there?
 
-Did you even compile that ?
+Also, there are several mentions of "real Open Firmware", which are
+probably just fine, and prom_init(), which are probably arch specific.
 
-kernel/time/jiffies.c:83: warning: data definition has no type or storage class
-kernel/time/jiffies.c:83: warning: type defaults to ‘int’ in declaration of ‘EXPORT_SYMBOL’
-kernel/time/jiffies.c:83: warning: parameter names (without types) in function declaration
+There is a section that talks about ranges that starts with:
 
-That misses an #include <linux/module.h>
+	"For a new 64-bit powerpc board, I...".
 
-I fixed that up. Please be more careful next time.
+Section III 5) has all kinds of powerpc specific stuff.  CHRP,
+pSeries, PAPR in the root node.  The references to Apple machines for
+examples are probably OK, but it shouldn't make PowerPC items as
+explicit requirements.
 
-Thanks,
+Section III 5e) references a file that doesn't exist:
+arch/ppc64/kernel/setup.c
 
-	tglx
----1463795968-2085710590-1296473796=:31804--
+Section V, paragraph 2 references a file that doesn't exist:
+arch/ppc64/kernel/prom.c
+
+Hope that helps you...
+
+josh
