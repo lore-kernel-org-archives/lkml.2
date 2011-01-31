@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027Ab1AaT2V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 14:28:21 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:52314 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753746Ab1AaT2T (ORCPT
+	id S1756125Ab1AaT3Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 14:29:24 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64889 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753746Ab1AaT3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 14:28:19 -0500
-Subject: Re: Q: perf_install_in_context/perf_event_enable are racy?
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>, Prasad <prasad@linux.vnet.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20110131191109.GA10906@redhat.com>
-References: <1296134077.15234.161.camel@laptop>
-	 <20110127165712.GC25060@redhat.com> <1296148294.15234.242.camel@laptop>
-	 <20110127221856.GA10539@redhat.com> <1296215577.15234.333.camel@laptop>
-	 <1296226667.15234.337.camel@laptop> <20110128162847.GA25088@redhat.com>
-	 <1296238278.15234.340.camel@laptop> <20110131172626.GA5407@redhat.com>
-	 <1296498205.26581.54.camel@laptop>  <20110131191109.GA10906@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 31 Jan 2011 20:29:14 +0100
-Message-ID: <1296502154.26581.72.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Mon, 31 Jan 2011 14:29:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding
+         :content-disposition:message-id;
+        b=UbBpRthowOazUFkOFf8cxNxaZY6q0QXm9P4QY4zEr1S/Lq8cta2eOajb6ZoiTH51ip
+         FIzKx69ggXyFLJA4cntXOT3n4T07nJwLRcIfeLFxPy1YZjacPYy5sW++BYlzlDNmW4AU
+         eAzS8izICE9ZUAwxCLpoqpX32NNiJomQw6m+o=
+From: Chris Clayton <chris2553@googlemail.com>
+Reply-To: chris2553@googlemail.com
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.38-rc2+ - regresiion copying DVD's
+Date: Mon, 31 Jan 2011 19:29:05 +0000
+User-Agent: KMail/1.9.10
+Cc: simon@fire.lp0.eu, tj@kernel.org, kay.sievers@vrfy.org
+References: <201101301550.59272.chris2553@googlemail.com>
+In-Reply-To: <201101301550.59272.chris2553@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201101311929.05290.chris2553@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-31 at 20:11 +0100, Oleg Nesterov wrote:
-> 
-> > > >   raw_spin_lock(&ctx->lock);
-> > > > - ctx->is_active = 1;
-> > > > + WARN_ON_ONCE(!ctx->is_active);
-> > >
-> > > This looks wrong if ctx->task == NULL.
-> >
-> > cpuctx->ctx should still have ->is_active = 1 I think.
-> 
-> Unless this is the first cpu counter, no? 
+On Sunday 30 January 2011, Chris Clayton wrote:
+> Hi,
+>
+> Firstly, I'm not subscribed, so please cc me on any reply.
+>
+> I'm trying to copy the3 contents of a video DVD from one disc to another,
+> but it fails. There are no messages in the kernel log file, but K3B reports
+> the following:
+>
+<snip>
 
-Ah, indeed.. 
+Simon's patch at http://marc.info/?l=linux-kernel&m=129649842110692&w=4 fixes 
+this problem, so feel free to add
 
+Tested-by: Chris Clayton <chris2553@googlemail.com>
+
+Thanks Simon
+
+-- 
+The more I see, the more I know. The more I know, the less I understand. 
+Changing Man - Paul Weller
