@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936Ab1BARqu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 12:46:50 -0500
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:43101 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755784Ab1BARqt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 12:46:49 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=mKK3ulOAHn1qsgTluflVaGDZRb2Dm+Y+OppYfoF5Hhxnvv/MdT8+X6OLwmVKk+2RT5cW1OqCzXfj/H17j0zH1F4oZlAMRuZylYD1QIKC76b8cPgKgbi/Jtb3Aj6d8rGo;
-Date: Tue, 1 Feb 2011 09:46:43 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Mario Kleiner <mario.kleiner@tuebingen.mpg.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm/i915: Suppress spurious vblank interrupts
-Message-ID: <20110201094643.366bc073@jbarnes-desktop>
-In-Reply-To: <alpine.LSU.2.00.1102010909270.1586@sister.anvils>
-References: <849307$bc24ct@azsmga001.ch.intel.com>
-	<1296471462-8578-1-git-send-email-chris@chris-wilson.co.uk>
-	<alpine.LSU.2.00.1102010909270.1586@sister.anvils>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+	id S1755968Ab1BARrB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 12:47:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28945 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755784Ab1BARrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 12:47:00 -0500
+Date: Tue, 1 Feb 2011 19:46:07 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Amerigo Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Jamie Lokier <jamie@shareable.org>, Thomas Weber <swirl@gmx.li>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Andy Fleming <afleming@freescale.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [RFC Patch] virtio: export model and type in /sys
+Message-ID: <20110201174607.GA24924@redhat.com>
+References: <1296442381-21652-1-git-send-email-amwang@redhat.com>
+ <20110201173738.GA18526@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110201173738.GA18526@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Feb 2011 09:34:12 -0800 (PST)
-Hugh Dickins <hughd@google.com> wrote:
+On Tue, Feb 01, 2011 at 12:37:38PM -0500, Christoph Hellwig wrote:
+> On Mon, Jan 31, 2011 at 10:53:00AM +0800, Amerigo Wang wrote:
+> > Our kdump script needs /sys/block/X/device/{vendor, model, type},
+> > but virtio devices don't have {model, type}, this patch adds them.
+> > Actually, I don't know how to fill the model field, other block devices
+> > seem read it from SCSI. Any comments?
+> 
+> It does not make any sense to fill this at all in virtio.  The
+> attributes are simply exporting the SCSI INQUIRY data, and do not make
+> any sense at all outside a SCSI context.
+>  In fact the type field even
+> contains numbers from the scsi protocol spec that just don't make sense.
 
-> On Mon, 31 Jan 2011, Chris Wilson wrote:
-> 
-> > Hugh Dickins found that characters in xterm were going missing and oft
-> > delayed. Being the curious type, he managed to associate this with the
-> > new high-precision vblank patches; disabling these he found, restored
-> > the orderliness of his characters.
-> > 
-> > The oddness begins when one realised that Hugh was not using vblanks at
-> > all on his system (fvwm and some xterms). Instead, all he had to go on
-> > were warning of a pipe underrun, curiously enough at around 60Hz. He
-> > poked and found that in addition to the underrun warning, the hardware
-> > was flagging the start of a new frame, a vblank, which in turn was
-> > kicking off the pending vblank processing code.
-> > 
-> > There is little we can do for the underruns on Hugh's machine, a
-> > Crestline [965GM], which must have its FIFO watermarks set to 8.
-> > However, we do not need to process the vblank if we know that they are
-> > disabled...
-> > 
-> > Reported-by: Hugh Dickins <hughd@google.com>
-> > Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-> 
-> Thanks a lot for devising this, Chris, I really appreciate it.
-> 
-> But so far I can't be more enthusiastic than "seems to be a good
-> improvement most of the time" - though I've not spent long on this
-> laptop since putting it on to -rc3.
-> 
-> I've not seen it go wrong on x86_64, but my first boot with it on
-> i386 behaved just as badly as before; thereafter it's not gone wrong
-> yet (and I had to double-check boot.omsg to make sure I'd really been
-> running what I thought I was running the first time).  I'm relying
-> upon it to type this mail, which I wouldn't have managed before.
-> 
-> As you know (I went off-list to send more info at the weekend), this
-> behaviour is very elusive, probably depends on more than one issue,
-> comes and goes with irrelevant patches and config changes and reboots.
+ide seems to export these too.
 
-Are you still seeing underruns during normal activity?  I wonder if the
-ones you were seeing before were only reported at 60Hz due to vblank
-interrupt processing.  If we failed to clear the underrun status, we'd
-report one every time we got a vblank interrupt (since the underruns
-don't report interrupts by themselves).
+$ cat /sys/class/block/sr0/device/model 
+DVDRAM GSA-U20N 
 
-If so, that may just be a red herring in this case.
+and I am pretty sure my dvd isn't scsi ...
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
