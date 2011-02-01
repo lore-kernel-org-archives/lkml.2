@@ -1,129 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755422Ab1BAROm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 12:14:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37670 "EHLO mail.zytor.com"
+	id S1755565Ab1BARPy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 12:15:54 -0500
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:49522 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751949Ab1BAROl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 12:14:41 -0500
-X-User-Agent: K-9 Mail for Android
-References: <1296513876-31415-1-git-send-email-konrad.wilk@oracle.com> <1296513876-31415-7-git-send-email-konrad.wilk@oracle.com> <1296572896.13091.240.camel@zakaz.uk.xensource.com>
-In-Reply-To: <1296572896.13091.240.camel@zakaz.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 06/11] xen/setup: Skip over 1st gap after System RAM.
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 01 Feb 2011 09:14:22 -0800
-To: Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        "konrad@kernel.org" <konrad@kernel.org>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Message-ID: <5e6ddb2e-fd31-4552-a986-2bf4e68a3f0c@email.android.com>
+	id S1751949Ab1BARPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 12:15:52 -0500
+Subject: Re: [RFC][PATCH 0/6] more detailed per-process transparent
+ hugepage statistics
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Michael J Wolf <mjwolf@us.ibm.com>
+In-Reply-To: <20110201153857.GA18740@random.random>
+References: <20110201003357.D6F0BE0D@kernel>
+	 <20110201153857.GA18740@random.random>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Tue, 01 Feb 2011 09:15:47 -0800
+Message-ID: <1296580547.27022.3370.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not merely possible, it's fairly common.
+On Tue, 2011-02-01 at 16:38 +0100, Andrea Arcangeli wrote:
+> On Mon, Jan 31, 2011 at 04:33:57PM -0800, Dave Hansen wrote:
+> > I'm working on some more reports that transparent huge pages and
+> > KSM do not play nicely together.  Basically, whenever THP's are
+> > present along with KSM, there is a lot of attrition over time,
+> > and we do not see much overall progress keeping THP's around:
+> > 
+> > 	http://sr71.net/~dave/ibm/038_System_Anonymous_Pages.png
+> > 
+> > (That's Karl Rister's graph, thanks Karl!)
+> 
+> Well if the pages_sharing/pages_shared count goes up, this is a
+> feature not a bug.... You need to print that too in the chart to show
+> this is not ok
 
-"Ian Campbell" <Ian.Campbell@eu.citrix.com> wrote:
+Here are the KSM sharing bits for the same run:
 
->On Mon, 2011-01-31 at 22:44 +0000, Konrad Rzeszutek Wilk wrote:
->> If the kernel is booted with dom0_mem=max:512MB and the
->> machine has more than 512MB of RAM, the E820 we get is:
->> 
->> Xen: 0000000000100000 - 0000000020000000 (usable)
->> Xen: 00000000b7ee0000 - 00000000b7ee3000 (ACPI NVS)
->> 
->> while in actuality it is:
->> 
->> (XEN)  0000000000100000 - 00000000b7ee0000 (usable)
->> (XEN)  00000000b7ee0000 - 00000000b7ee3000 (ACPI NVS)
->> 
->> Based on that, we would determine that the "gap" between
->> 0x20000 -> 0xb7ee0 is not System RAM and try to assign it to
->> 1-1 mapping. This meant that later on when we setup the page tables
->> we would try to assign those regions to DOMID_IO and the
->> Xen hypervisor would fail such operation. This patch
->> guards against that and sets the "gap" to be after the first
->> non-RAM E820 region.
->
->This seems dodgy to me and makes assumptions about the sanity of the
->BIOS provided e820 maps. e.g. it's not impossible that there are
->systems
->out there with 2 or more little holes under 1M etc.
->
->The truncation (from 0xb7ee0000 to 0x20000000 in this case) happens in
->the dom0 kernel not the hypervisor right? So we can at least know that
->we've done it.
->
->Can we do the identity setup before that truncation happens? If not can
->can we not remember the untruncated map too and refer to it as
->necessary. One way of doing that might be to insert an e820 region
->covering the truncated region to identify it as such (perhaps
->E820_UNUSABLE?) or maybe integrating e.g. with the memblock
->reservations
->(or whatever the early enough allocator is).
->
->The scheme we have is that all pre-ballooned memory goes at the end of
->the e820 right, as opposed to allowing it to first fill truncated
->regions such as this? 
->
->Ian.
->
->> 
->> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->> ---
->>  arch/x86/xen/setup.c |   20 ++++++++++++++++++--
->>  1 files changed, 18 insertions(+), 2 deletions(-)
->> 
->> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
->> index c2a5b5f..5b2ae49 100644
->> --- a/arch/x86/xen/setup.c
->> +++ b/arch/x86/xen/setup.c
->> @@ -147,6 +147,7 @@ static unsigned long __init
->xen_set_identity(const struct e820map *e820)
->>  {
->>  	phys_addr_t last = xen_initial_domain() ? 0 : ISA_END_ADDRESS;
->>  	phys_addr_t start_pci = last;
->> +	phys_addr_t ram_end = last;
->>  	int i;
->>  	unsigned long identity = 0;
->>  
->> @@ -168,11 +169,26 @@ static unsigned long __init
->xen_set_identity(const struct e820map *e820)
->>  			if (start > start_pci)
->>  				identity += set_phys_range_identity(
->>  					PFN_UP(start_pci), PFN_DOWN(start));
->> -			start_pci = end;
->>  			/* Without saving 'last' we would gooble RAM too. */
->> -			last = end;
->> +			start_pci = last = ram_end = end;
->>  			continue;
->>  		}
->> +		/* Gap found right after the 1st RAM region. Skip over it.
->> +		 * Why? That is b/c if we pass in dom0_mem=max:512MB and
->> +		 * have in reality 1GB, the E820 is clipped at 512MB.
->> +		 * In xen_set_pte_init we end up calling xen_set_domain_pte
->> +		 * which asks Xen hypervisor to alter the ownership of the MFN
->> +		 * to DOMID_IO. We would try to set that on PFNs from 512MB
->> +		 * up to the next System RAM region (likely from 0x20000->
->> +		 * 0x100000). But changing the ownership on "real" RAM regions
->> +		 * will infuriate Xen hypervisor and we will fail (WARN).
->> +		 * So instead of trying to set IDENTITY mapping on the gap
->> +		 * between the System RAM and the first non-RAM E820 region
->> +		 * we start at the non-RAM E820 region.*/
->> +		if (ram_end && start >= ram_end) {
->> +			start_pci = start;
->> +			ram_end = 0;
->> +		}
->>  		start_pci = min(start, start_pci);
->>  		last = end;
->>  	}
+	http://sr71.net/~dave/ibm/009_KSM_Pages.png
 
--- 
-Sent from my mobile phone.  Please pardon any lack of formatting.
+It bounces around a little bit on the ends, but it's fairly static
+during the test, even when there's a good downward slope on the THP's.
+
+Hot of the presses, Karl also managed to do a run last night with the
+khugepaged scanning rates turned all the way up:
+
+	http://sr71.net/~dave/ibm/038_System_Anonymous_Pages-scan-always.png
+
+The THP's there are a lot more stable.  I'd read that as saying that the
+scanning probably just isn't keeping up with whatever is breaking the
+pages up.
+
+> KSM will slowdown performance also during copy-on-writes when
+> pages_sharing goes up, not only because of creating non-linearity
+> inside 2m chunks (which makes mandatory to use ptes and not hugepmd,
+> it's not an inefficiency of some sort that can be optimized away
+> unfortunately). We sure could change KSM to merge 2M pages instead of
+> 4k pages, but then the memory-density would decrease of several order
+> of magnitudes making the KSM scan almost useless (ok, with guest
+> heavily using THP that may change, but all pagecache is still 4k... so
+> for now it'd be next to useless).
+
+Yup, unless we do something special, the odds of sharing those 2MB
+suckers are near zero.
+
+> I would prefer to close the issues that you just previously reported,
+> sometime with mmap_sem and issues like that, before adding more
+> features though but I don't want to defer things either so it's up to
+> you.
+
+I'm happy to hold on to them for another release.  I'm actually going to
+go look at the freezes I saw now that I have these out in the wild.
+I'll probably stick them in a git tree and keep them up to date.
+
+Are there any other THP issues you're chasing at the moment?
+
+-- Dave
+
