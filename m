@@ -1,109 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756975Ab1BAOQe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 09:16:34 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:11060 "EHLO relay.sw.ru"
+	id S1756996Ab1BAORo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 09:17:44 -0500
+Received: from kroah.org ([198.145.64.141]:46224 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756911Ab1BAOQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 09:16:32 -0500
-Message-ID: <4D4815BD.5090404@parallels.com>
-Date: Tue, 01 Feb 2011 17:16:29 +0300
-From: Konstantin Khorenko <khorenko@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1753196Ab1BAORn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 09:17:43 -0500
+Date: Tue, 1 Feb 2011 06:17:25 -0800
+From: Greg KH <greg@kroah.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Tony Lindgren <tony@atomide.com>, Benoit Cousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>, Suman Anna <s-anna@ti.com>,
+        Kevin Hilman <khilman@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Paul Walmsley <paul@pwsan.com>,
+        Hari Kanigeri <hari.kanigeri@gmail.com>,
+        Simon Que <simonque@gmail.com>, Russell King <rmk@arm.linux.org.uk>
+Subject: Re: [PATCH v4 1/4] drivers: hwspinlock: add framework
+Message-ID: <20110201141725.GB28833@kroah.com>
+References: <1296470024-26854-1-git-send-email-ohad@wizery.com>
+ <1296470024-26854-2-git-send-email-ohad@wizery.com>
+ <20110131153831.dca62146.akpm@linux-foundation.org>
+ <AANLkTik-fgCF_W0-DBE6UVTpjqF6Jf=u7bQYkcweEegQ@mail.gmail.com>
+ <20110131223859.27169db0.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>
-CC: linux-nfs@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] NFSD: memory corruption due to writing beyond the stat array
-Content-Type: multipart/mixed;
- boundary="------------090602070308090607020401"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110131223859.27169db0.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090602070308090607020401
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+On Mon, Jan 31, 2011 at 10:38:59PM -0800, Andrew Morton wrote:
+> On Tue, 1 Feb 2011 08:20:13 +0200 Ohad Ben-Cohen <ohad@wizery.com> wrote:
+> 
+> > On Tue, Feb 1, 2011 at 1:38 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> > > It's a little irritating having two hwspinlock.h's.
+> > > hwspinlock_internal.h wold be a conventional approach. __But it's not a
+> > > big deal.
+> > ...
+> > 
+> > >> +/**
+> > >> + * __hwspin_lock_timeout() - lock an hwspinlock with timeout limit
+> > >> + * @hwlock: the hwspinlock to be locked
+> > >> + * @timeout: timeout value in jiffies
+> > >
+> > > hm, why in jiffies?
+> > >
+> > > The problem here is that lazy programmers will use
+> > >
+> > > __ __ __ __hwspin_lock_timeout(lock, 10, ...)
+> > >
+> > > and their code will work happily with HZ=100 but will explode with HZ=1000.
+> > >
+> > > IOW, this interface *requires* that all callers perform a
+> > > seconds-to-jiffies conversion before calling hwspin_lock_timeout(). __So
+> > > why not reduce their effort and their ability to make mistakes by
+> > > defining the API to take seconds?
+> > 
+> > I considered that, but then decided to use jiffies in order to be
+> > consistent with wait_event_timeout/schedule_timeout (although I don't
+> > return the remaining jiffies in case the lock is taken before the
+> > timeout elapses), and also to allow user-selected granularity.
+> > 
+> > But I do kind of like the idea of not using jiffies. We can probably
+> > even move to msecs, since anyway this is an error condition, and
+> > people who needs a quick check should just use the trylock() version.
+> > 
+> > I'll do a quick respin of the patches with that and the
+> > hwspinlock_internal.h comment above.
+> 
+> OK..
+> 
+> The patch series looks OK to me.  But there isn't a lot of point in me
+> putting them into my tree.  Maybe Tony or Russell or Greg can grab them
+> if they like the look of it all?
 
-Hi All,
+As it's an arm-specific thing, it should probably go through Russell's
+tree.
 
-i've found a bug which makes NFSD to corrupt memory due to writing beyond the stat array.
+thanks,
 
-Initially this issue was found on 2.6.18-x RHEL5 kernel, but the same seems to be true for the current mainstream kernel (checked on 2.6.38-rc3).
-
-./fs/nfsd/vfs.c:
-static inline struct raparms *
-nfsd_get_raparms(dev_t dev, ino_t ino)
-{
-...
-       // here we searched our file in a readahead cache
-       // but not found it
-...
-         depth = nfsdstats.ra_size*11/10;
-...
-       // some stuff, but "depth" is not changed
-...
-         nfsdstats.ra_depth[depth*10/nfsdstats.ra_size]++;
-...
-}
-
-And here we write to the 12th array element
-(nfsdstats.ra_size*11/10*10/nfsdstats.ra_size == 11), while ra_depth has only
-11 elements:
-
-struct nfsd_stats {
-...
-        unsigned int    ra_depth[11];   /* number of times ra entry was found that deep
-                                         * in the cache (10percentiles). [10] = not found */
-#ifdef CONFIG_NFSD_V4
-        unsigned int    nfs4_opcount[LAST_NFS4_OP + 1]; /* count of individual
-nfsv4 operations */
-#endif
-};
-
-This means that each time we did not find a file in a readahead cache we
-corrupt memory. Fortunately in a kernel with NFSDv4 compiled in it corrupts
-(inc) NFS4 ops counter, but in a kernel with NFSDv4 disabled it corrupts (inc)
-some other data, that lays in the memory beyond nfsdstats.
-
-Proposed fix is attached.
-
---
-Best regards,
-
-Konstantin Khorenko
-
---------------090602070308090607020401
-Content-Type: text/plain;
- name="diff-ms-nfsd-write-beyond-stat-array"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="diff-ms-nfsd-write-beyond-stat-array"
-
-NFSD: The patch fixes writing beyond the array.
-
-If nfsd fails to find an exported via NFS file in the readahead cache,
-it should increment corresponding nfsdstats counter (ra_depth[10]), but
-due to a bug writes beside the stat array, corrupting following field.
-
-In a kernel with NFSDv4 compiled in it corrupts (inc) NFS4 counter:
-the number of individual nfsv4 operations.
-In a kernel with NFSDv4 disabled it corrupts (inc) some other data,
-that lays in the memory beyond nfsdstats.
-
-Signed-off-by: Konstantin Khorenko <khorenko@openvz.org>
-
---- a/fs/nfsd/vfs.c.nfsd	2011-01-05 03:50:19.000000000 +0300
-+++ b/fs/nfsd/vfs.c	2011-02-01 16:39:28.000000000 +0300
-@@ -809,7 +809,7 @@ nfsd_get_raparms(dev_t dev, ino_t ino)
- 		if (ra->p_count == 0)
- 			frap = rap;
- 	}
--	depth = nfsdstats.ra_size*11/10;
-+	depth = nfsdstats.ra_size;
- 	if (!frap) {	
- 		spin_unlock(&rab->pb_lock);
- 		return NULL;
-
---------------090602070308090607020401--
+greg k-h
