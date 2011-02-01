@@ -1,209 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853Ab1BAQYn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 11:24:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54779 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752380Ab1BAQYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 11:24:42 -0500
-Date: Tue, 1 Feb 2011 17:24:38 +0100
-From: Jan Kara <jack@suse.cz>
-To: Nick Piggin <npiggin@gmail.com>
-Cc: paulmck@linux.vnet.ibm.com, Jeff Moyer <jmoyer@redhat.com>,
-        Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] fs: aio fix rcu lookup
-Message-ID: <20110201162438.GC2059@quack.suse.cz>
-References: <x49ei88d7vl.fsf@segfault.boston.devel.redhat.com>
- <x49aaiwd6cs.fsf@segfault.boston.devel.redhat.com>
- <AANLkTiniSG3tfXx1iUtzf53sSsr=R6pmvmWrSV8FiYE9@mail.gmail.com>
- <x491v48d47d.fsf@segfault.boston.devel.redhat.com>
- <AANLkTi=ChBc3+o_GcdKKn4HZykNkQ70mxPLu9HYDfeFj@mail.gmail.com>
- <x49wrm0bo7g.fsf@segfault.boston.devel.redhat.com>
- <AANLkTikTJ-eCR2M73=G4q=0AAsb9aVosrFdwP+uY7enB@mail.gmail.com>
- <20110120040308.GD8476@linux.vnet.ibm.com>
- <AANLkTi=RdmWV9MLWzDxe6N_kWZQA+a2o8jg-PkB-7QGk@mail.gmail.com>
- <20110120201602.GA19797@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110120201602.GA19797@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751682Ab1BAQ1J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 11:27:09 -0500
+Received: from science.horizon.com ([71.41.210.146]:35593 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751167Ab1BAQ1H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 11:27:07 -0500
+Date: 1 Feb 2011 11:27:03 -0500
+Message-ID: <20110201162703.2284.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux-kernel@vger.kernel.org
+Subject: 2.6.38-rc2: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Cc: linux@horizon.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 20-01-11 21:16:02, Jan Kara wrote:
-> On Fri 21-01-11 05:31:53, Nick Piggin wrote:
-> > On Thu, Jan 20, 2011 at 3:03 PM, Paul E. McKenney
-> > <paulmck@linux.vnet.ibm.com> wrote:
-> > > On Thu, Jan 20, 2011 at 08:20:00AM +1100, Nick Piggin wrote:
-> > >> On Thu, Jan 20, 2011 at 8:03 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
-> > >> >> I don't know exactly how all programs use io_destroy -- of the small
-> > >> >> number that do, probably an even smaller number would care here. But I
-> > >> >> don't think it simplifies things enough to use synchronize_rcu for it.
-> > >> >
-> > >> > Above it sounded like you didn't think AIO should be using RCU at all.
-> > >>
-> > >> synchronize_rcu of course, not RCU (typo).
-> > >
-> > > I think that Nick is suggesting that call_rcu() be used instead.
-> > > Perhaps also very sparing use of synchronize_rcu_expedited(), which
-> > > is faster than synchronize_rcu(), but which which uses more CPU time.
-> > 
-> > call_rcu() is the obvious alternative, yes.
-> > 
-> > Basically, once we give in to synchronize_rcu() we're basically giving
-> > up. That's certainly a very good tradeoff for something like filesystem
-> > unregistration or module unload, it buys big simplifications in real
-> > fastpaths. But I just don't think it should be taken lightly.
-> So in the end, I've realized I don't need synchronize_rcu() at all and
-> in fact everything is OK even without call_rcu() if I base my fix on top
-> of your patch.
-> 
-> Attached is your patch with added comment I proposed and also a patch
-> fixing the second race. Better?
-  Nick, any opinion on this? Should I push the patches upstream?
+Since upgrading to -rc2 (-rc3 is compiling right now), I've been getting
+complaints at irregular intervals.  This didn't used to happen with 2.6.37.
 
-									Honza
+It's an old crappy 1.6 GHz P4 (HP Pavilion) with an ASUS P4B266LA
+motherboard and a 2001 Award BIOS.
 
-> From 68857d7f2087edbbc5ee1d828f151ac46406f3be Mon Sep 17 00:00:00 2001
-> From: Nick Piggin <npiggin@gmail.com>
-> Date: Thu, 20 Jan 2011 20:08:52 +0100
-> Subject: [PATCH 1/2] fs: Fix aio rcu ioctx lookup
-> 
-> aio-dio-invalidate-failure GPFs in aio_put_req from io_submit.
-> 
-> lookup_ioctx doesn't implement the rcu lookup pattern properly.  rcu_read_lock
-> does not prevent refcount going to zero, so we might take a refcount on a zero
-> count ioctx.
-> 
-> Fix the bug by atomically testing for zero refcount before incrementing.
-> 
-> [JK: Added comment into the code]
-> 
-> Signed-off-by: Nick Piggin <npiggin@kernel.dk>
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> ---
->  fs/aio.c |   35 ++++++++++++++++++++++++-----------
->  1 files changed, 24 insertions(+), 11 deletions(-)
-> 
-> diff --git a/fs/aio.c b/fs/aio.c
-> index fc557a3..b4dd668 100644
-> --- a/fs/aio.c
-> +++ b/fs/aio.c
-> @@ -239,15 +239,23 @@ static void __put_ioctx(struct kioctx *ctx)
->  	call_rcu(&ctx->rcu_head, ctx_rcu_free);
->  }
->  
-> -#define get_ioctx(kioctx) do {						\
-> -	BUG_ON(atomic_read(&(kioctx)->users) <= 0);			\
-> -	atomic_inc(&(kioctx)->users);					\
-> -} while (0)
-> -#define put_ioctx(kioctx) do {						\
-> -	BUG_ON(atomic_read(&(kioctx)->users) <= 0);			\
-> -	if (unlikely(atomic_dec_and_test(&(kioctx)->users))) 		\
-> -		__put_ioctx(kioctx);					\
-> -} while (0)
-> +static inline void get_ioctx(struct kioctx *kioctx)
-> +{
-> +	BUG_ON(atomic_read(&kioctx->users) <= 0);
-> +	atomic_inc(&kioctx->users);
-> +}
-> +
-> +static inline int try_get_ioctx(struct kioctx *kioctx)
-> +{
-> +	return atomic_inc_not_zero(&kioctx->users);
-> +}
-> +
-> +static inline void put_ioctx(struct kioctx *kioctx)
-> +{
-> +	BUG_ON(atomic_read(&kioctx->users) <= 0);
-> +	if (unlikely(atomic_dec_and_test(&kioctx->users)))
-> +		__put_ioctx(kioctx);
-> +}
->  
->  /* ioctx_alloc
->   *	Allocates and initializes an ioctx.  Returns an ERR_PTR if it failed.
-> @@ -601,8 +609,13 @@ static struct kioctx *lookup_ioctx(unsigned long ctx_id)
->  	rcu_read_lock();
->  
->  	hlist_for_each_entry_rcu(ctx, n, &mm->ioctx_list, list) {
-> -		if (ctx->user_id == ctx_id && !ctx->dead) {
-> -			get_ioctx(ctx);
-> +		/*
-> +		 * RCU protects us against accessing freed memory but
-> +		 * we have to be careful not to get a reference when the
-> +		 * reference count already dropped to 0 (ctx->dead test
-> +		 * is unreliable because of races).
-> +		 */
-> +		if (ctx->user_id == ctx_id && !ctx->dead && try_get_ioctx(ctx)){
->  			ret = ctx;
->  			break;
->  		}
-> -- 
-> 1.7.1
-> 
+00:00.0 Host bridge [0600]: Intel Corporation 82845 845 [Brookdale] Chipset Host Bridge [8086:1a30] (rev 04)
+00:01.0 PCI bridge [0604]: Intel Corporation 82845 845 [Brookdale] Chipset AGP Bridge [8086:1a31] (rev 04)
+00:1e.0 PCI bridge [0604]: Intel Corporation 82801 PCI Bridge [8086:244e] (rev 05)
+00:1f.0 ISA bridge [0601]: Intel Corporation 82801BA ISA Bridge (LPC) [8086:2440] (rev 05)
+00:1f.1 IDE interface [0101]: Intel Corporation 82801BA IDE U100 Controller [8086:244b] (rev 05)
+00:1f.2 USB Controller [0c03]: Intel Corporation 82801BA/BAM USB Controller #1 [8086:2442] (rev 05)
+00:1f.3 SMBus [0c05]: Intel Corporation 82801BA/BAM SMBus Controller [8086:2443] (rev 05)
+00:1f.4 USB Controller [0c03]: Intel Corporation 82801BA/BAM USB Controller #1 [8086:2444] (rev 05)
+00:1f.5 Multimedia audio controller [0401]: Intel Corporation 82801BA/BAM AC'97 Audio Controller [8086:2445] (rev 05)
+01:00.0 VGA compatible controller [0300]: ATI Technologies Inc Radeon RV250 If [Radeon 9000] [1002:4966] (rev 01)
+01:00.1 Display controller [0380]: ATI Technologies Inc Radeon RV250 [Radeon 9000] (Secondary) [1002:496e] (rev 01)
+02:08.0 Ethernet controller [0200]: Intel Corporation 82801BA/BAM/CA/CAM Ethernet Controller [8086:2449] (rev 03)
+02:09.0 FireWire (IEEE 1394) [0c00]: Texas Instruments TSB12LV26 IEEE-1394 Controller (Link) [104c:8020]
 
-> From 6d5375d55b5d88e8ceda739052566e033be620c2 Mon Sep 17 00:00:00 2001
-> From: Jan Kara <jack@suse.cz>
-> Date: Wed, 19 Jan 2011 00:37:48 +0100
-> Subject: [PATCH 2/2] fs: Fix race between io_destroy() and io_submit() in AIO
-> 
-> A race can occur when io_submit() races with io_destroy():
-> 
->  CPU1						CPU2
-> io_submit()
->   do_io_submit()
->     ...
->     ctx = lookup_ioctx(ctx_id);
-> 						io_destroy()
->     Now do_io_submit() holds the last reference to ctx.
->     ...
->     queue new AIO
->     put_ioctx(ctx) - frees ctx with active AIOs
-> 
-> We solve this issue by checking whether ctx is being destroyed
-> in AIO submission path after adding new AIO to ctx. Then we
-> are guaranteed that either io_destroy() waits for new AIO or
-> we see that ctx is being destroyed and bail out.
-> 
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> ---
->  fs/aio.c |   15 +++++++++++++++
->  1 files changed, 15 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/aio.c b/fs/aio.c
-> index b4dd668..0244c04 100644
-> --- a/fs/aio.c
-> +++ b/fs/aio.c
-> @@ -1642,6 +1642,21 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
->  		goto out_put_req;
->  
->  	spin_lock_irq(&ctx->ctx_lock);
-> +	/*
-> +	 * We could have raced with io_destroy() and are currently holding a
-> +	 * reference to ctx which should be destroyed. We cannot submit IO
-> +	 * since ctx gets freed as soon as io_submit() puts its reference.
-> +	 * The check here is reliable since io_destroy() sets ctx->dead before
-> +	 * waiting for outstanding IO. Thus if we don't see ctx->dead set here,
-> +	 * io_destroy() waits for our IO to finish.
-> +	 * The check is inside ctx->ctx_lock to avoid extra memory barrier
-> +	 * in this fast path...
-> +	 */
-> +	if (ctx->dead) {
-> +		spin_unlock_irq(&ctx->ctx_lock);
-> +		ret = -EINVAL;
-> +		goto out_put_req;
-> +	}
->  	aio_run_iocb(req);
->  	if (!list_empty(&ctx->run_list)) {
->  		/* drain the run list */
-> -- 
-> 1.7.1
-> 
 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Should I bisect this, or does someone know what might be happening?
+
+Thank you!
+
+
+Jan 30 13:13:25 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Jan 30 13:13:25 kernel: Do you have a strange power saving mode enabled?
+Jan 30 13:13:25 kernel: Dazed and confused, but trying to continue
+Jan 30 17:51:10 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Jan 30 17:51:10 kernel: Do you have a strange power saving mode enabled?
+Jan 30 17:51:10 kernel: Dazed and confused, but trying to continue
+Jan 30 18:05:11 kernel: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Jan 30 18:05:11 kernel: Do you have a strange power saving mode enabled?
+Jan 30 18:05:11 kernel: Dazed and confused, but trying to continue
+Jan 30 18:19:16 kernel: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Jan 30 18:19:16 kernel: Do you have a strange power saving mode enabled?
+Jan 30 18:19:16 kernel: Dazed and confused, but trying to continue
+Jan 30 18:33:33 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Jan 30 18:33:33 kernel: Do you have a strange power saving mode enabled?
+Jan 30 18:33:33 kernel: Dazed and confused, but trying to continue
+Jan 30 18:48:23 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Jan 30 18:48:23 kernel: Do you have a strange power saving mode enabled?
+Jan 30 18:48:23 kernel: Dazed and confused, but trying to continue
+Jan 30 21:39:58 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Jan 30 21:39:58 kernel: Do you have a strange power saving mode enabled?
+Jan 30 21:39:58 kernel: Dazed and confused, but trying to continue
+Jan 30 22:01:46 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Jan 30 22:01:46 kernel: Do you have a strange power saving mode enabled?
+Jan 30 22:01:46 kernel: Dazed and confused, but trying to continue
+Jan 30 22:03:13 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Jan 30 22:03:13 kernel: Do you have a strange power saving mode enabled?
+Jan 30 22:03:13 kernel: Dazed and confused, but trying to continue
+Jan 30 22:04:38 kernel: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Jan 30 22:04:38 kernel: Do you have a strange power saving mode enabled?
+Jan 30 22:04:38 kernel: Dazed and confused, but trying to continue
+Jan 30 22:06:03 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Jan 30 22:06:03 kernel: Do you have a strange power saving mode enabled?
+Jan 30 22:06:03 kernel: Dazed and confused, but trying to continue
+Jan 30 22:07:23 kernel: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Jan 30 22:07:23 kernel: Do you have a strange power saving mode enabled?
+Jan 30 22:07:23 kernel: Dazed and confused, but trying to continue
+Jan 31 01:00:28 kernel: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Jan 31 01:00:28 kernel: Do you have a strange power saving mode enabled?
+Jan 31 01:00:28 kernel: Dazed and confused, but trying to continue
+Jan 31 03:00:02 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Jan 31 03:00:02 kernel: Do you have a strange power saving mode enabled?
+Jan 31 03:00:02 kernel: Dazed and confused, but trying to continue
+Jan 31 06:27:52 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Jan 31 06:27:52 kernel: Do you have a strange power saving mode enabled?
+Jan 31 06:27:52 kernel: Dazed and confused, but trying to continue
+Jan 31 07:36:54 kernel: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Jan 31 07:36:54 kernel: Do you have a strange power saving mode enabled?
+Jan 31 07:36:54 kernel: Dazed and confused, but trying to continue
+Jan 31 10:08:08 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Jan 31 10:08:08 kernel: Do you have a strange power saving mode enabled?
+Jan 31 10:08:08 kernel: Dazed and confused, but trying to continue
+Jan 31 16:42:02 kernel: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Jan 31 16:42:02 kernel: Do you have a strange power saving mode enabled?
+Jan 31 16:42:02 kernel: Dazed and confused, but trying to continue
+Jan 31 20:05:21 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Jan 31 20:05:21 kernel: Do you have a strange power saving mode enabled?
+Jan 31 20:05:21 kernel: Dazed and confused, but trying to continue
+Feb  1 01:00:19 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Feb  1 01:00:19 kernel: Do you have a strange power saving mode enabled?
+Feb  1 01:00:19 kernel: Dazed and confused, but trying to continue
+Feb  1 01:36:42 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Feb  1 01:36:42 kernel: Do you have a strange power saving mode enabled?
+Feb  1 01:36:42 kernel: Dazed and confused, but trying to continue
+Feb  1 02:01:04 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Feb  1 02:01:04 kernel: Do you have a strange power saving mode enabled?
+Feb  1 02:01:04 kernel: Dazed and confused, but trying to continue
+Feb  1 05:58:05 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Feb  1 05:58:05 kernel: Do you have a strange power saving mode enabled?
+Feb  1 05:58:05 kernel: Dazed and confused, but trying to continue
+Feb  1 06:28:18 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Feb  1 06:28:18 kernel: Do you have a strange power saving mode enabled?
+Feb  1 06:28:18 kernel: Dazed and confused, but trying to continue
+Feb  1 08:59:18 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Feb  1 08:59:18 kernel: Do you have a strange power saving mode enabled?
+Feb  1 08:59:18 kernel: Dazed and confused, but trying to continue
+Feb  1 11:04:43 kernel: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Feb  1 11:04:43 kernel: Do you have a strange power saving mode enabled?
+Feb  1 11:04:43 kernel: Dazed and confused, but trying to continue
+Feb  1 11:05:47 kernel: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Feb  1 11:05:47 kernel: Do you have a strange power saving mode enabled?
+Feb  1 11:05:47 kernel: Dazed and confused, but trying to continue
+Feb  1 11:06:48 kernel: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Feb  1 11:06:48 kernel: Do you have a strange power saving mode enabled?
+Feb  1 11:06:48 kernel: Dazed and confused, but trying to continue
+Feb  1 11:07:50 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Feb  1 11:07:50 kernel: Do you have a strange power saving mode enabled?
+Feb  1 11:07:50 kernel: Dazed and confused, but trying to continue
+Feb  1 11:08:52 kernel: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Feb  1 11:08:52 kernel: Do you have a strange power saving mode enabled?
+Feb  1 11:08:52 kernel: Dazed and confused, but trying to continue
+Feb  1 11:09:54 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Feb  1 11:09:54 kernel: Do you have a strange power saving mode enabled?
+Feb  1 11:09:54 kernel: Dazed and confused, but trying to continue
+Feb  1 11:10:56 kernel: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Feb  1 11:10:56 kernel: Do you have a strange power saving mode enabled?
+Feb  1 11:10:56 kernel: Dazed and confused, but trying to continue
+Feb  1 11:11:58 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Feb  1 11:11:58 kernel: Do you have a strange power saving mode enabled?
+Feb  1 11:11:58 kernel: Dazed and confused, but trying to continue
+Feb  1 11:13:00 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Feb  1 11:13:00 kernel: Do you have a strange power saving mode enabled?
+Feb  1 11:13:00 kernel: Dazed and confused, but trying to continue
+Feb  1 11:14:01 kernel: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Feb  1 11:14:01 kernel: Do you have a strange power saving mode enabled?
+Feb  1 11:14:01 kernel: Dazed and confused, but trying to continue
+Feb  1 11:15:04 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Feb  1 11:15:04 kernel: Do you have a strange power saving mode enabled?
+Feb  1 11:15:04 kernel: Dazed and confused, but trying to continue
+Feb  1 11:16:05 kernel: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Feb  1 11:16:05 kernel: Do you have a strange power saving mode enabled?
+Feb  1 11:16:05 kernel: Dazed and confused, but trying to continue
+Feb  1 11:17:07 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Feb  1 11:17:07 kernel: Do you have a strange power saving mode enabled?
+Feb  1 11:17:07 kernel: Dazed and confused, but trying to continue
+Feb  1 11:18:33 kernel: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Feb  1 11:18:33 kernel: Do you have a strange power saving mode enabled?
+Feb  1 11:18:33 kernel: Dazed and confused, but trying to continue
