@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab1BAKwr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 05:52:47 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:57009 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753132Ab1BAKwq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 05:52:46 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Hilman <khilman@ti.com>
-Subject: Re: [RFC][PATCH] Power domains for platform bus type
-Date: Tue, 1 Feb 2011 11:52:20 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc2+; KDE/4.4.4; x86_64; ; )
-Cc: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Grant Likely <grant.likely@secretlab.ca>, Len Brown <lenb@kernel.org>
-References: <201101300107.19389.rjw@sisk.pl> <878vy01udd.fsf@ti.com>
-In-Reply-To: <878vy01udd.fsf@ti.com>
+	id S1754659Ab1BAKwy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 05:52:54 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:65170 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754633Ab1BAKww (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 05:52:52 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=veIkiXMa8clo54q0iu8zNAajZTIRNxRE3acUjoKBY0TzW1k+KzLbuqC48gv4rELW53
+         1ylVa0UweWM/8EB28o74fkFKNWxscI89qKjLtAyrZkpoVsBR90QopHIOsBgXzMSA4X+X
+         6VJef+UMoUTpImM19fMOtImNW4fciWg1RcDKk=
+Date: Tue, 1 Feb 2011 11:52:46 +0100
+From: Tejun Heo <tj@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Dan Williams <dcbw@redhat.com>, libertas-dev@lists.infradead.org
+Subject: Re: [PATCH 15/32] wireless/libertas[_tf]: use system_wq instead of
+ dedicated workqueues
+Message-ID: <20110201105246.GK14211@htj.dyndns.org>
+References: <1294062595-30097-1-git-send-email-tj@kernel.org>
+ <1294062595-30097-16-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102011152.21200.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1294062595-30097-16-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 01, 2011, Kevin Hilman wrote:
-> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+On Mon, Jan 03, 2011 at 02:49:38PM +0100, Tejun Heo wrote:
+> With cmwq, there's no reason to use separate workqueues in
+> libertas[_tf] drivers.  Drop them and use system_wq instead.  All used
+> work items are sync flushed/canceled on driver detach.
 > 
-> > Hi,
-> >
-> > This is something we discussed during the last Linux Plumbers Conference.
-> >
-> > The problem appears to be that the same device may be used in different
-> > systems in different configurations such that actions necessary for the
-> > device's power management can vary from one system to another.  In those
-> > cases the drivers' power management callbacks are generally not sufficient,
-> > because they can't take the configuration of the whole system into account.
-> >
-> > I think this issue may be addressed by adding objects that will represent
-> > power domains and will provide power management callbacks to be executed
-> > in addition to the device driver's PM callbacks, which is done by the patch
-> > below.
-> >
-> > Please have a look at it and tell me what you think.
-> >
-> 
-> FYI... I just tested this patch on OMAP by converting our existing use
-> of platform_bus_set_ops() to use this approach by adding a powerdomain
-> to each omap_device.   
-> 
-> Note we're currently only overriding the runtime_[suspend|resume]
-> methods, so those are the only paths I've tested.
+> Cc: Dan Williams <dcbw@redhat.com>
+> Cc: libertas-dev@lists.infradead.org
+> ---
+> Only compile tested.  Please feel free to take it into the subsystem
+> tree or simply ack - I'll route it through the wq tree.
 
-Thanks a lot for the testing!
+Dan, ping?
 
-I'm going to prepare a new version of the patch that will add power domain
-objects at the core level (ie. struct device).
-
-Rafael
+-- 
+tejun
