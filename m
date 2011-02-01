@@ -1,105 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756464Ab1BAAFK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 19:05:10 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:38949 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756321Ab1BAAFJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 19:05:09 -0500
-Date: Tue, 1 Feb 2011 01:04:55 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: kamezawa.hiroyu@jp.fujitsu.com, nishimura@mxp.nes.nec.co.jp,
-        balbir@linux.vnet.ibm.com, minchan.kim@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/3] memcg: prevent endless loop when charging huge pages
- to near-limit group
-Message-ID: <20110201000455.GB19534@cmpxchg.org>
-References: <1296482635-13421-1-git-send-email-hannes@cmpxchg.org>
- <1296482635-13421-3-git-send-email-hannes@cmpxchg.org>
- <20110131144131.6733aa3a.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110131144131.6733aa3a.akpm@linux-foundation.org>
+	id S1756650Ab1BAAOb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 19:14:31 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:55447 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754352Ab1BAAOY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 19:14:24 -0500
+From: Simon Horman <horms@verge.net.au>
+To: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lvs-devel@vger.kernel.org
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Hans Schillstrom <hans@schillstrom.com>,
+        Patrick McHardy <kaber@trash.net>, Simon Horman <horms@verge.net.au>
+Subject: [PATCH 4/4] IPVS: Allow compilation with CONFIG_SYSCTL disabled
+Date: Tue,  1 Feb 2011 11:14:15 +1100
+Message-Id: <1296519255-10602-5-git-send-email-horms@verge.net.au>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1296519255-10602-1-git-send-email-horms@verge.net.au>
+References: <1296519255-10602-1-git-send-email-horms@verge.net.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 31, 2011 at 02:41:31PM -0800, Andrew Morton wrote:
-> On Mon, 31 Jan 2011 15:03:54 +0100
-> Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > @@ -1111,6 +1111,15 @@ static bool mem_cgroup_check_under_limit(struct mem_cgroup *mem)
-> >  	return false;
-> >  }
-> >  
-> > +static bool mem_cgroup_check_margin(struct mem_cgroup *mem, unsigned long bytes)
-> > +{
-> > +	if (!res_counter_check_margin(&mem->res, bytes))
-> > +		return false;
-> > +	if (do_swap_account && !res_counter_check_margin(&mem->memsw, bytes))
-> > +		return false;
-> > +	return true;
-> > +}
-> 
-> argh.
-> 
-> If you ever have a function with the string "check" in its name, it's a
-> good sign that you did something wrong.
-> 
-> Check what?  Against what?  Returning what?
-> 
-> mem_cgroup_check_under_limit() isn't toooo bad - the name tells you
-> what's being checked and tells you what to expect the return value to
-> mean.
-> 
-> But "res_counter_check_margin" and "mem_cgroup_check_margin" are just
-> awful.  Something like
-> 
-> 	bool res_counter_may_charge(counter, bytes)
-> 
-> would be much clearer.
+This is a rather naieve approach to allowing PVS to compile with
+CONFIG_SYSCTL disabled.  I am working on a more comprehensive patch which
+will remove compilation of all sysctl-related IPVS code when CONFIG_SYSCTL
+is disabled.
 
-That makes sense for the hard limit.  But the oh-so-generic resource
-counters also have a soft limit, and you don't ask for that when you
-want to charge.  Right now, I do not feel creative enough to come up
-with a symmetric-sounding counterpart.
-
-> If we really want to stick with the "check" names (perhaps as an ironic
-> reference to res_counter's past mistakes) then please at least document
-> the sorry things?
-
-I cowardly went with this option and have a patch below to fold into
-this fix.
-
-Maybe it would be better to use res_counter_margin(cnt) >= wanted
-throughout the code.  Or still better, make memcg work on pages and
-res_counters on unsigned longs so the locking is no longer needed,
-together with an API for most obvious maths.  I will work something
-out and submit it separately.
-
+Cc: Hans Schillstrom <hans@schillstrom.com>
+Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Simon Horman <horms@verge.net.au>
 ---
-Subject: [patch fixup] res_counter: document res_counter_check_margin()
+ net/netfilter/ipvs/ip_vs_ctl.c   |   14 +++++++++-----
+ net/netfilter/ipvs/ip_vs_lblc.c  |   20 ++++++++++----------
+ net/netfilter/ipvs/ip_vs_lblcr.c |   20 ++++++++++----------
+ 3 files changed, 29 insertions(+), 25 deletions(-)
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
-
-diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
-index 5cfd78a..a5930cb 100644
---- a/include/linux/res_counter.h
-+++ b/include/linux/res_counter.h
-@@ -182,6 +182,14 @@ static inline bool res_counter_check_under_limit(struct res_counter *cnt)
- 	return ret;
+diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
+index d7c2fa8..c73b0c8 100644
+--- a/net/netfilter/ipvs/ip_vs_ctl.c
++++ b/net/netfilter/ipvs/ip_vs_ctl.c
+@@ -3552,10 +3552,15 @@ int __net_init __ip_vs_control_init(struct net *net)
+ 	tbl[idx++].data = &ipvs->sysctl_nat_icmp_send;
+ 
+ 
++#ifdef CONFIG_SYSCTL
+ 	ipvs->sysctl_hdr = register_net_sysctl_table(net, net_vs_ctl_path,
+ 						     tbl);
+-	if (ipvs->sysctl_hdr == NULL)
+-		goto err_reg;
++	if (ipvs->sysctl_hdr == NULL) {
++		if (!net_eq(net, &init_net))
++			kfree(tbl);
++		goto err_dup;
++	}
++#endif
+ 	ip_vs_new_estimator(net, ipvs->tot_stats);
+ 	ipvs->sysctl_tbl = tbl;
+ 	/* Schedule defense work */
+@@ -3563,9 +3568,6 @@ int __net_init __ip_vs_control_init(struct net *net)
+ 	schedule_delayed_work(&ipvs->defense_work, DEFENSE_TIMER_PERIOD);
+ 	return 0;
+ 
+-err_reg:
+-	if (!net_eq(net, &init_net))
+-		kfree(tbl);
+ err_dup:
+ 	free_percpu(ipvs->cpustats);
+ err_alloc:
+@@ -3581,7 +3583,9 @@ static void __net_exit __ip_vs_control_cleanup(struct net *net)
+ 	ip_vs_kill_estimator(net, ipvs->tot_stats);
+ 	cancel_delayed_work_sync(&ipvs->defense_work);
+ 	cancel_work_sync(&ipvs->defense_work.work);
++#ifdef CONFIG_SYSCTL
+ 	unregister_net_sysctl_table(ipvs->sysctl_hdr);
++#endif
+ 	proc_net_remove(net, "ip_vs_stats_percpu");
+ 	proc_net_remove(net, "ip_vs_stats");
+ 	proc_net_remove(net, "ip_vs");
+diff --git a/net/netfilter/ipvs/ip_vs_lblc.c b/net/netfilter/ipvs/ip_vs_lblc.c
+index d5bec33..00b5ffa 100644
+--- a/net/netfilter/ipvs/ip_vs_lblc.c
++++ b/net/netfilter/ipvs/ip_vs_lblc.c
+@@ -554,33 +554,33 @@ static int __net_init __ip_vs_lblc_init(struct net *net)
+ 						sizeof(vs_vars_table),
+ 						GFP_KERNEL);
+ 		if (ipvs->lblc_ctl_table == NULL)
+-			goto err_dup;
++			return -ENOMEM;
+ 	} else
+ 		ipvs->lblc_ctl_table = vs_vars_table;
+ 	ipvs->sysctl_lblc_expiration = 24*60*60*HZ;
+ 	ipvs->lblc_ctl_table[0].data = &ipvs->sysctl_lblc_expiration;
+ 
++#ifdef CONFIG_SYSCTL
+ 	ipvs->lblc_ctl_header =
+ 		register_net_sysctl_table(net, net_vs_ctl_path,
+ 					  ipvs->lblc_ctl_table);
+-	if (!ipvs->lblc_ctl_header)
+-		goto err_reg;
++	if (!ipvs->lblc_ctl_header) {
++		if (!net_eq(net, &init_net))
++			kfree(ipvs->lblc_ctl_table);
++		return -ENOMEM;
++	}
++#endif
+ 
+ 	return 0;
+-
+-err_reg:
+-	if (!net_eq(net, &init_net))
+-		kfree(ipvs->lblc_ctl_table);
+-
+-err_dup:
+-	return -ENOMEM;
  }
  
-+/**
-+ * res_counter_check_margin - check if the counter allows charging
-+ * @cnt: the resource counter to check
-+ * @bytes: the number of bytes to check the remaining space against
-+ *
-+ * Returns a boolean value on whether the counter can be charged
-+ * @bytes or whether this would exceed the limit.
-+ */
- static inline bool res_counter_check_margin(struct res_counter *cnt,
- 					    unsigned long bytes)
+ static void __net_exit __ip_vs_lblc_exit(struct net *net)
  {
+ 	struct netns_ipvs *ipvs = net_ipvs(net);
+ 
++#ifdef CONFIG_SYSCTL
+ 	unregister_net_sysctl_table(ipvs->lblc_ctl_header);
++#endif
+ 
+ 	if (!net_eq(net, &init_net))
+ 		kfree(ipvs->lblc_ctl_table);
+diff --git a/net/netfilter/ipvs/ip_vs_lblcr.c b/net/netfilter/ipvs/ip_vs_lblcr.c
+index 61ae8cf..bfa25f1 100644
+--- a/net/netfilter/ipvs/ip_vs_lblcr.c
++++ b/net/netfilter/ipvs/ip_vs_lblcr.c
+@@ -754,33 +754,33 @@ static int __net_init __ip_vs_lblcr_init(struct net *net)
+ 						sizeof(vs_vars_table),
+ 						GFP_KERNEL);
+ 		if (ipvs->lblcr_ctl_table == NULL)
+-			goto err_dup;
++			return -ENOMEM;
+ 	} else
+ 		ipvs->lblcr_ctl_table = vs_vars_table;
+ 	ipvs->sysctl_lblcr_expiration = 24*60*60*HZ;
+ 	ipvs->lblcr_ctl_table[0].data = &ipvs->sysctl_lblcr_expiration;
+ 
++#ifdef CONFIG_SYSCTL
+ 	ipvs->lblcr_ctl_header =
+ 		register_net_sysctl_table(net, net_vs_ctl_path,
+ 					  ipvs->lblcr_ctl_table);
+-	if (!ipvs->lblcr_ctl_header)
+-		goto err_reg;
++	if (!ipvs->lblcr_ctl_header) {
++		if (!net_eq(net, &init_net))
++			kfree(ipvs->lblcr_ctl_table);
++		return -ENOMEM;
++	}
++#endif
+ 
+ 	return 0;
+-
+-err_reg:
+-	if (!net_eq(net, &init_net))
+-		kfree(ipvs->lblcr_ctl_table);
+-
+-err_dup:
+-	return -ENOMEM;
+ }
+ 
+ static void __net_exit __ip_vs_lblcr_exit(struct net *net)
+ {
+ 	struct netns_ipvs *ipvs = net_ipvs(net);
+ 
++#ifdef CONFIG_SYSCTL
+ 	unregister_net_sysctl_table(ipvs->lblcr_ctl_header);
++#endif
+ 
+ 	if (!net_eq(net, &init_net))
+ 		kfree(ipvs->lblcr_ctl_table);
+-- 
+1.7.2.3
+
