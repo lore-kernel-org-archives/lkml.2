@@ -1,32 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086Ab1BAQ11 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 11:27:27 -0500
-Received: from mail127.messagelabs.com ([216.82.250.115]:18345 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752020Ab1BAQ10 convert rfc822-to-8bit (ORCPT
+	id S1752115Ab1BAQ30 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 11:29:26 -0500
+Received: from ausxippc101.us.dell.com ([143.166.85.207]:16943 "EHLO
+	ausxippc101.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751439Ab1BAQ3Y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 11:27:26 -0500
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-3.tower-127.messagelabs.com!1296577645!9085316!2
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [216.166.12.31]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 1 Feb 2011 10:27:23 -0600
-Subject: RE: [leds-pca9532] Add gpio capability
-Thread-Topic: [leds-pca9532] Add gpio capability
-Thread-Index: AcvB5krfbSW/sZjwSWeAgHXNlt+hawARbEsg
-Message-ID: <0D753D10438DA54287A00B027084269764CEEDAC85@AUSP01VMBX24.collaborationhost.net>
-References: <0D753D10438DA54287A00B027084269764CEEDA479@AUSP01VMBX24.collaborationhost.net>
- <20110201080146.GA27955@pengutronix.de>
-In-Reply-To: <20110201080146.GA27955@pengutronix.de>
+	Tue, 1 Feb 2011 11:29:24 -0500
+X-Loopcount0: from 10.175.216.250
+From: <Narendra_K@Dell.com>
+To: <jbarnes@virtuousgeek.org>
+CC: <sfr@canb.auug.org.au>, <lenb@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-next@vger.kernel.org>, <Matt_Domsch@Dell.com>,
+        <Charles_Rose@Dell.com>, <Surya_Prabhakar@Dell.com>
+Date: Tue, 1 Feb 2011 08:28:55 -0800
+Subject: Re: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by
+ allmodconfig
+Thread-Topic: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by
+ allmodconfig
+Thread-Index: AcvCLR55SQWnMOqGRKqdFpnN3k8kJQ==
+Message-ID: <20110201165116.GA29873@fedora14-r610.oslab.blr.amer.dell.com>
+References: <20110112160229.7b8d82c1@jbarnes-desktop>
+ <alpine.LFD.2.02.1101122217370.19754@x980>
+ <20110113075556.789ac3c3@jbarnes-vaio.home>
+ <20110113162755.GA5872@fedora14-r610.oslab.blr.amer.dell.com>
+ <20110114154458.GA18289@fedora14-r610.oslab.blr.amer.dell.com>
+ <20110115080949.62176a3c.sfr@canb.auug.org.au>
+ <20110117195215.GA2708@fedora14-r610.oslab.blr.amer.dell.com>
+ <20110120190459.GA30978@fedora14-r610.oslab.blr.amer.dell.com>
+ <20110128155337.GA27642@fedora14-r610.oslab.blr.amer.dell.com>
+ <20110128084518.7783091e@jbarnes-desktop>
+In-Reply-To: <20110128084518.7783091e@jbarnes-desktop>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
+user-agent: Mutt/1.5.21 (2010-09-15)
 acceptlanguage: en-US
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
@@ -35,41 +44,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 01, 2011 1:02 AM, Wolfram Sang wrote:
->> From the datasheet:
->>[...]
->> So, you should provide both a direction_input and direction_output.
->
-> He did in V2 of this patch (what made me also download the datasheet ;)).
+On Fri, Jan 28, 2011 at 10:15:18PM +0530, Jesse Barnes wrote:
+> > > > > 
+> > > > > Even on platforms that don't support ACPI or DMI ...
+> > > > > 
+> > > > > You should really restrict this to CONFIG_ACPI || CONFIG_DMI ||
+> > > > > CONFIG_NLS ... maybe create a CONFIG_NLS_BASE that is selected by ACPI,
+> > > > > DMI and NLS?
+> > > > 
+> > > > Hi Stephen,
+> > > > 
+> > > > Thank you for the suggestions. 
+> > > > 
+> > > > I agree with your suggestion that we should compile nls_base.o
+> > > > conditionally, only when ACPI || DMI || NLS. I have introduced a bew
+> > > > config option CONFIG_NLS_BASE and made ACPI, DMI and NLS select it.
+> > > > 
+> > > > V1 -> V2:
+> > > > 
+> > > > 1. Conditionally compile fs/nls/nls_base.c by introducing a new config
+> > > > option CONFIG_NLS_BASE, which is selected by (ACPI || DMI || NLS).
+> > > > Behavior of the rest of the files under fs/nls is not changed.
+> > > > 
+> > > > From: Narendra K <narendra_k@dell.com>
+> > > > Subject: [PATCH V2] Fix build failure when CONFIG_NLS is set to 'm' by allmodconfig
+> > > 
+> > > Hi,
+> > > 
+> > > Please let me know if there are any concerns with Version 2 of the patch.
+> > > If it looks good please consider it for inclusion.
+> > 
+> > Hi Jesse,
+> > 
+> > Please let me know if there are any concerns with this patch. If it is
+> > acceptable, please consider this for inclusion.
+> 
+> I think the fs stuff will have to get an ack from Al.  If he doesn't
+> like it, see my earlier mail for another suggestion.
 
-Ok.  Just looked at the v2 patch.
+Hi Al,
 
-> +static int pca9532_gpio_direction_input(struct gpio_chip *gc, unsigned offset)
-> +{
-> + struct pca9532_data *data = container_of(gc, struct pca9532_data, gpio);
-> + struct pca9532_led *led = &data->leds[offset];
-> +
-> + /* To use as input ensure pin is not driven */
-> + led->state = PCA9532_OFF;
-> + pca9532_setled(led);
-> +
-> + return 0;
-> +}
-> +
+Please let me know if there are any concerns with this patch. If not,
+please ack this patch.
 
-This looks good.  When configured as an input the pin needs to be set high-impedance,
-00 which is PCA9532_OFF).
+I have attached the patch here for your reference -
 
-> +static int pca9532_gpio_direction_output(struct gpio_chip *gc,
-> unsigned offset, int val)
-> +{
-> + return 0;
-> +}
-> +
+From: Narendra K <narendra_k@dell.com>
+Subject: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by allmodconfig
 
-Not good.  When the pin is configured as an output, the direction_output method also
-requests that the pin be set to a desired level.  For this driver that means that the
-pca9532_gpio_direction_output function just needs to call pca9532_gpio_set_value.
+This patch fixes the following build breakage introduced by the patch
+PCI:export ACPI _DSM provided firmware instance number and string to sysfs.
+(previously commit a6247cd4be20cb5439db5cb7b0b6cc67fdc8e2a2).
 
-Regards,
-Hartley
+http://marc.info/?l=linux-pci&m=129313294112736&w=1
+
+drivers/built-in.o: In function `T.647':
+pci-label.c:(.text+0x28514): undefined reference to `utf16s_to_utf8s'
+
+This happens because 'make allmodconfig' sets CONFIG_NLS=m and makes
+'utf16s_to_utf8s` unavailable to drivers/pci/pci-label.o which is built
+into vmlinux.
+
+This is fixed by making fs/nls/nls_base.c compile conditionally into
+vmlinux by introducing a new config option CONFIG_NLS_BASE which is
+selected by (ACPI || DMI || NLS).
+
+Signed-off-by: Narendra K <narendra_k@dell.com>
+---
+ fs/Makefile     |    2 +-
+ fs/nls/Kconfig  |   14 ++++++++++++++
+ fs/nls/Makefile |    2 +-
+ 3 files changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/fs/Makefile b/fs/Makefile
+index a7f7cef..1e78b9b 100644
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -86,7 +86,7 @@ obj-$(CONFIG_NFS_FS)		+= nfs/
+ obj-$(CONFIG_EXPORTFS)		+= exportfs/
+ obj-$(CONFIG_NFSD)		+= nfsd/
+ obj-$(CONFIG_LOCKD)		+= lockd/
+-obj-$(CONFIG_NLS)		+= nls/
++obj-y				+= nls/
+ obj-$(CONFIG_SYSV_FS)		+= sysv/
+ obj-$(CONFIG_CIFS)		+= cifs/
+ obj-$(CONFIG_NCP_FS)		+= ncpfs/
+diff --git a/fs/nls/Kconfig b/fs/nls/Kconfig
+index a39edc4..2fb92e5 100644
+--- a/fs/nls/Kconfig
++++ b/fs/nls/Kconfig
+@@ -4,6 +4,7 @@
+ 
+ menuconfig NLS
+ 	tristate "Native language support"
++	select NLS_BASE
+ 	---help---
+ 	  The base Native Language Support. A number of filesystems
+ 	  depend on it (e.g. FAT, JOLIET, NT, BEOS filesystems), as well
+@@ -17,6 +18,19 @@ menuconfig NLS
+ 
+ if NLS
+ 
++config NLS_BASE
++	bool "Base NLS functions"
++	depends on ACPI || DMI
++	default y
++	---help---
++	  The base NLS support functions which handle unicode traslations.
++
++	  If unsure, say Y.
++
++	  This config option is selected by ACPI && DMI && NLS as the
++	  functions defined here are needed in vmlinux and if built as
++	  module cause build issues.
++
+ config NLS_DEFAULT
+ 	string "Default NLS Option"
+ 	default "iso8859-1"
+diff --git a/fs/nls/Makefile b/fs/nls/Makefile
+index f499dd7..dde741f 100644
+--- a/fs/nls/Makefile
++++ b/fs/nls/Makefile
+@@ -2,7 +2,7 @@
+ # Makefile for native language support
+ #
+ 
+-obj-$(CONFIG_NLS)		+= nls_base.o
++obj-$(CONFIG_NLS_BASE)		+= nls_base.o
+ 
+ obj-$(CONFIG_NLS_CODEPAGE_437)	+= nls_cp437.o
+ obj-$(CONFIG_NLS_CODEPAGE_737)	+= nls_cp737.o
+-- 
+1.7.3.1
+
+With regards,
+Narendra K
