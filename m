@@ -1,138 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756706Ab1BALzS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 06:55:18 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60084 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754665Ab1BALzP convert rfc822-to-8bit (ORCPT
+	id S1756606Ab1BAL6w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 06:58:52 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:44290 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754633Ab1BAL6u convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 06:55:15 -0500
+	Tue, 1 Feb 2011 06:58:50 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=t2AzYHnIYFxWUYGQ+O2ZrScbKJdtimISYRWdDhqFehlr1CVO+XxJEtMHAkdnjREP/9
-         rjGYquKo53FwxawrQVqQ0Q3oiJxI2k2mJdqNWCBQl0NaCRzyfWgEfYDSUQ8CEpdxEGuo
-         ZpWH9vFdZCa+u7xeTuTZwj4sTgP8y9t85ZcaM=
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=knMXYB6trpuW3Kto69MoykdZhl3rkYvIOxYRMlvda0zroHe7zvcq58kr/CKPBev4dW
+         Bzjw/kKX3pxWGRMDnsleCeOJB1bX6jC4OyOp2qnFO+/KSCLdtb/MJysoBDbrPZjZd76z
+         f1oQn8Mdu2LzJjaFc3TgypiX7KLlqSCRYWaV4=
 MIME-Version: 1.0
-In-Reply-To: <20110131130826.GC16804@shadowen.org>
-References: <20110131130826.GC16804@shadowen.org>
-Date: Tue, 1 Feb 2011 22:55:13 +1100
-Message-ID: <AANLkTik-ywwtNg2AxAXtsKYJviDp=1zCZ-43JXp9i3g6@mail.gmail.com>
-Subject: Re: x25: possible skb leak on bad facilities
-From: Andrew Hendry <andrew.hendry@gmail.com>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: "David S. Miller" <davem@davemloft.net>, John Hughes <john@calva.com>,
-        linux-x25@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tim Gardner <tim.gardner@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <AANLkTi=wj05GrQ2r-GAbaX1zSQzMN8FJV_2d7c-kv33L@mail.gmail.com>
+References: <AANLkTi=wj05GrQ2r-GAbaX1zSQzMN8FJV_2d7c-kv33L@mail.gmail.com>
+Date: Tue, 1 Feb 2011 12:58:48 +0100
+Message-ID: <AANLkTin_a-y2RGrgR5kmei=japaKKE6uyuyDcR8PCYrb@mail.gmail.com>
+Subject: =?UTF-8?B?UmU6IGxpbnV4LW5leHQ6IFRyZWUgZm9yIEZlYnJ1YXJ5IDEgWyBzdGFnaW5nL3VzYnZpZA==?=
+	=?UTF-8?B?ZW8vdmljYW0uYzogZXJyb3I6IGV4cGVjdGVkIOKAmDvigJkgYmVmb3JlIOKAmCnigJkgdG9rZW4gXQ==?=
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Timo von Holtz <tvh@informatik.uni-kiel.de>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>, Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are two callers, when I was crashing it I don't remember it
-using the backlog path.
-x25_process_rx_frame is called from both x25_backlog_rcv and also
-x25_receive_data (via x25_lapb_receive_frame)
+On Tue, Feb 1, 2011 at 9:32 AM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+> On Tue, Feb 1, 2011 at 5:34 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> Hi all,
+>>
+>> Changes since 20110131:
+>>
+>> Dropped tree: xen
+>>
+>> The tty.current tree lost its conflict.
+>>
+>> The slab tree still has its build failure so I used the version from
+>> next-20110121.
+>>
+>> The suspend tree lost its build failure.
+>>
+>> The sparc64 defconfig build has been fixed.
+>>
+>> The powerpc allyesconfig build has been broken by some obscure bloating
+>> of the low memory code.
+>>
+>> ----------------------------------------------------------------------------
+>
+> [ CC greg-kh ]
+>
+> Build error:
+> ...
+> drivers/staging/usbvideo/vicam.c:222:57: error: expected â€˜;â€™ before â€˜)â€™ token
+> drivers/staging/usbvideo/vicam.c:222:57: error: expected statement
+> before â€˜)â€™ token
+> ...
+>
+> This should be fixed by:
+>
+> Index: linux-next-20110201/drivers/staging/usbvideo/vicam.c
+> ===================================================================
+> --- linux-next-20110201.orig/drivers/staging/usbvideo/vicam.c
+> +++ linux-next-20110201/drivers/staging/usbvideo/vicam.c
+> @@ -219,7 +219,7 @@ set_camera_power(struct vicam_camera *ca
+> Â {
+> Â  Â  Â  Â int status;
+>
+> - Â  Â  Â  status = send_control_msg(cam, 0x50, state, 0, NULL, 0));
+> + Â  Â  Â  status = send_control_msg(cam, 0x50, state, 0, NULL, 0);
+> Â  Â  Â  Â if (status < 0)
+> Â  Â  Â  Â  Â  Â  Â  Â return status;
+>
+> - Sedat -
+>
 
-But reviewing that second path now it looks like it will also leak, -1
-would make it skip the kfree_skb there as well.
-So patch looks good to me, when I have some time I'll run it through
-the environment I had setup originally to confirm.
+[ Changed... TO Timo von Holtz + CC sfr ]
 
-On Tue, Feb 1, 2011 at 12:08 AM, Andy Whitcroft <apw@canonical.com> wrote:
-> Looking at the changes introduced in the commit below, we seem to
-> introduce an skb leak when a packet with bad facilities are present:
->
->    commit a6331d6f9a4298173b413cf99a40cc86a9d92c37
->    Author: andrew hendry <andrew.hendry@gmail.com>
->    Date:   Wed Nov 3 12:54:53 2010 +0000
->
->        memory corruption in X.25 facilities parsing
->
-> If I am understanding things correctly then we trigger a -1 return to
-> the main packet dispatch loop, this being non-zero implies that we have
-> requeued the skb and it should not be freed.  As it was not requeued,
-> I believe the skb is no longer referenced and then is leaked.
->
-> Perhaps someone better aquainted with this code could review my analysis
-> in the patch leader below.  If accurate I believe we need the patch below
-> to resolve this.  If it is not then I suspect a comment is required on
-> the -1 return.
->
-> Thoughts?
->
-> -apw
->
-> From 5728c05fb669e8ee1e6d20fb7a71916362039411 Mon Sep 17 00:00:00 2001
-> From: Andy Whitcroft <apw@canonical.com>
-> Date: Mon, 31 Jan 2011 10:37:36 +0000
-> Subject: [PATCH] x25: drop packet on invalid facility headers
->
-> The commit below introduced additional checks for invalid facilities,
-> and a new return path when these were detected:
->
->    commit a6331d6f9a4298173b413cf99a40cc86a9d92c37
->    Author: andrew hendry <andrew.hendry@gmail.com>
->    Date:   Wed Nov 3 12:54:53 2010 +0000
->
->        memory corruption in X.25 facilities parsing
->
-> This new return path short circuits packet handling, the new return -1
-> below:
->
->    static int x25_state1_machine(struct sock *sk, struct sk_buff *skb,
->                                                            int frametype)
->    {
->    [...]
->                        len = x25_parse_facilities(skb, &x25->facilities,
->                                                &x25->dte_facilities,
->                                                &x25->vc_facil_mask);
->                        if (len > 0)
->                                skb_pull(skb, len);
->                        else
->                                return -1;
->    [...]
->
-> This return code is passed back up the chain (via x25_process_rx_frame)
-> and is interpreted as below by the caller:
->
->    int x25_backlog_rcv(struct sock *sk, struct sk_buff *skb)
->    {
->        int queued = x25_process_rx_frame(sk, skb);
->
->        if (!queued)
->                kfree_skb(skb);
->
->        return 0;
->    }
->
-> Here we interpret the non-zero status as indicating the skb has been
-> requeued and should be preserved.  As we have not actually done so it
-> will be leaked.
->
-> Fix this up by indicating that the packet should be dropped.
->
-> Signed-off-by: Andy Whitcroft <apw@canonical.com>
-> ---
->  net/x25/x25_in.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/net/x25/x25_in.c b/net/x25/x25_in.c
-> index f729f02..213b93a 100644
-> --- a/net/x25/x25_in.c
-> +++ b/net/x25/x25_in.c
-> @@ -120,7 +120,7 @@ static int x25_state1_machine(struct sock *sk, struct sk_buff *skb, int frametyp
->                        if (len > 0)
->                                skb_pull(skb, len);
->                        else
-> -                               return -1;
-> +                               return 0;
->                        /*
->                         *      Copy any Call User Data.
->                         */
-> --
-> 1.7.1
->
->
+Just FYI:
+
+The problem was introduced in staging-next GIT branch:
+
+commit 046d747e0d2cb597e0b6fa4a79c32b43e97ed792
+"taging: usbvideo: vicam: fixed some coding style issues"
+
+- Sedat -
+
+[1] http://git.kernel.org/?p=linux/kernel/git/gregkh/staging-2.6.git;a=commit;h=046d747e0d2cb597e0b6fa4a79c32b43e97ed792
