@@ -1,89 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481Ab1BAKE1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 05:04:27 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:56777 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916Ab1BAKEZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 05:04:25 -0500
-Date: Tue, 1 Feb 2011 21:04:21 +1100
-From: Simon Horman <horms@verge.net.au>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lvs-devel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Hans Schillstrom <hans@schillstrom.com>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: [GIT PULL nf-next-2.6] IPVS build fixes and clean-ups
-Message-ID: <20110201100421.GA13325@verge.net.au>
-References: <1296519255-10602-1-git-send-email-horms@verge.net.au>
- <20110131165009.66999952.randy.dunlap@oracle.com>
- <20110201040634.GA2351@verge.net.au>
+	id S1755955Ab1BAKEj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 05:04:39 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:45031 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753918Ab1BAKEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 05:04:37 -0500
+Date: Tue, 1 Feb 2011 11:04:34 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Michael J Wolf <mjwolf@us.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [RFC][PATCH 2/6] pagewalk: only split huge pages when necessary
+Message-ID: <20110201100433.GH19534@cmpxchg.org>
+References: <20110201003357.D6F0BE0D@kernel>
+ <20110201003359.8DDFF665@kernel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110201040634.GA2351@verge.net.au>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110201003359.8DDFF665@kernel>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 01, 2011 at 03:06:37PM +1100, Simon Horman wrote:
-> On Mon, Jan 31, 2011 at 04:50:09PM -0800, Randy Dunlap wrote:
-> > On Tue,  1 Feb 2011 11:14:11 +1100 Simon Horman wrote:
-> > 
-> > > Hi,
-> > > 
-> > > This short patch series addresses two linux-next build problems
-> > > raised by Randy Dunlap:
-> > > 
-> > > * net/netfilter/ipvs/ip_vs_core.c:1891: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'unsigned int'
-> > > * ERROR: "unregister_net_sysctl_table" [net/netfilter/ipvs/ip_vs.ko]
-> > >   ERROR: "register_net_sysctl_table" [net/netfilter/ipvs/ip_vs.ko] undefined!
-> > > 
-> > > The remainder of the changset is cleanups that I noticed along the way.
-> > 
-> > These 4 patches build successfully for me.
-> > However, I do see these warnings (sorry I missed them earlier):
-> > 
-> > WARNING: net/netfilter/ipvs/ip_vs.o(.init.text+0x161): Section mismatch in reference from the function init_module() to the function .exit.text:ip_vs_sync_cleanup()
-> > WARNING: net/netfilter/ipvs/ip_vs.o(.init.text+0x161): Section mismatch in reference from the function init_module() to the function .exit.text:ip_vs_sync_cleanup()
+On Mon, Jan 31, 2011 at 04:33:59PM -0800, Dave Hansen wrote:
 > 
-> Thanks, I'll look into that. I will be travelling for a good portion of the
-> next day and a bit so I apologise in advance if that delays my next patch.
+> Right now, if a mm_walk has either ->pte_entry or ->pmd_entry
+> set, it will unconditionally split and transparent huge pages
+> it runs in to.  In practice, that means that anyone doing a
+> 
+> 	cat /proc/$pid/smaps
+> 
+> will unconditionally break down every huge page in the process
+> and depend on khugepaged to re-collapse it later.  This is
+> fairly suboptimal.
+> 
+> This patch changes that behavior.  It teaches each ->pmd_entry
+> handler (there are three) that they must break down the THPs
+> themselves.  Also, the _generic_ code will never break down
+> a THP unless a ->pte_entry handler is actually set.
+> 
+> This means that the ->pmd_entry handlers can now choose to
+> deal with THPs without breaking them down.
 
-Hi,
-
-I the following patch seems to be the right fix for this to me.
-I will send an amended pull request.
-
-IPVS: Remove ip_vs_sync_cleanup from section __exit
-
-ip_vs_sync_cleanup() may be called from ip_vs_init() on error
-and thus needs to be accesible from section __init
-
-Reporte-by: Randy Dunlap <randy.dunlap@oracle.com>
-Signed-off-by: Simon Horman <horms@verge.net.au>
----
- net/netfilter/ipvs/ip_vs_sync.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/net/netfilter/ipvs/ip_vs_sync.c b/net/netfilter/ipvs/ip_vs_sync.c
-index d5a6e64..2a2a836 100644
---- a/net/netfilter/ipvs/ip_vs_sync.c
-+++ b/net/netfilter/ipvs/ip_vs_sync.c
-@@ -1686,7 +1686,7 @@ int __init ip_vs_sync_init(void)
- 	return register_pernet_subsys(&ipvs_sync_ops);
- }
- 
--void __exit ip_vs_sync_cleanup(void)
-+void ip_vs_sync_cleanup(void)
- {
- 	unregister_pernet_subsys(&ipvs_sync_ops);
- }
--- 
-1.7.2.3
-
-
+Makes perfect sense.  But you forgot to push down the splitting into
+the two handlers in mm/memcontrol.c.
