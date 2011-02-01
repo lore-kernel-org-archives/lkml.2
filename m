@@ -1,80 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752087Ab1BAGmS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 01:42:18 -0500
-Received: from 2605ds1-ynoe.0.fullrate.dk ([90.184.12.24]:44830 "EHLO
-	shrek.krogh.cc" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750859Ab1BAGmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 01:42:16 -0500
-X-Greylist: delayed 418 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Feb 2011 01:42:16 EST
-Message-ID: <4D47A99A.6050204@krogh.cc>
-Date: Tue, 01 Feb 2011 07:35:06 +0100
-From: Jesper Krogh <jesper@krogh.cc>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>, jack@suse.cz
-Subject: sync hangs - 2.6.35.10
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752032Ab1BAGso (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 01:48:44 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:38338 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828Ab1BAGsn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 01:48:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=jFidL1FvYpQCb/5RpOpIbqAOa6neFbs9XX4Jme1KPcOPtNib2PDeztyIYKLq3qoEKF
+         qbhzEw16yyPQiJ7w0D8LwHWgY44dV+3bYeWkVwxiqYiTmt067V5/PcoFQdF/l5wAZsNr
+         AcAQfQgVtAjtHnn6k4Q0RHL09NlwPkFbMpvZs=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH]drivers:staging:pohmelfs Fix some typos, and comments.
+Date: Mon, 31 Jan 2011 22:48:25 -0800
+Message-Id: <1296542905-27118-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.6.5.GIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+The patch below fixes some typos, and makes some comments sound more proper.
 
-I've just setup a 48 core server with 128GB of memory in a typical
-HPC setup. The only IO-activity happens over NFS and the applications
-are cpu-hogs.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-The system is fully working and everthing looks apparently fine, but 
-anything that
-issue a sync is hung for eternity.
+---
+ drivers/staging/pohmelfs/config.c |    2 +-
+ drivers/staging/pohmelfs/inode.c  |   10 +++++-----
+ drivers/staging/pohmelfs/netfs.h  |    2 +-
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
-root fs is ext4 and it appears that sync hitting that drive get hung due
-to some other things going on. There is only logging activity on that 
-drive.
-
-[  508.778695] Btrfs loaded
-[ 7208.780233] INFO: task grub-probe:14787 blocked for more than 120 
-seconds.
-[ 7208.780316] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" 
-disables this message.
-[ 7208.780397] grub-probe    D 0000000000000000     0 14787  14768 
-0x00000000
-[ 7208.780402]  ffff882005f8fbb8 0000000000000086 ffff882000000000 
-0000000000015880
-[ 7208.780406]  ffff882005f8ffd8 0000000000015880 ffff882005f8ffd8 
-ffff88200cd70000
-[ 7208.780410]  0000000000015880 0000000000015880 ffff882005f8ffd8 
-0000000000015880
-[ 7208.780413] Call Trace:
-[ 7208.780424]  [<ffffffff8155d3cd>] schedule_timeout+0x22d/0x310
-[ 7208.780430]  [<ffffffff8102ccae>] ? physflat_send_IPI_mask+0xe/0x10
-[ 7208.780433]  [<ffffffff8155c666>] wait_for_common+0xd6/0x180
-[ 7208.780439]  [<ffffffff810533b0>] ? default_wake_function+0x0/0x20
-[ 7208.780441]  [<ffffffff8155c7ed>] wait_for_completion+0x1d/0x20
-[ 7208.780446]  [<ffffffff81160ff3>] writeback_inodes_sb+0xb3/0xe0
-[ 7208.780449]  [<ffffffff81165c4e>] __sync_filesystem+0x4e/0xa0
-[ 7208.780452]  [<ffffffff81165d7a>] sync_filesystem+0x3a/0x70
-[ 7208.780456]  [<ffffffff8116f9fe>] fsync_bdev+0x2e/0x60
-[ 7208.780460]  [<ffffffff8128e5ce>] blkdev_ioctl+0x4ee/0x820
-[ 7208.780463]  [<ffffffff8116dfcc>] block_ioctl+0x3c/0x40
-[ 7208.780468]  [<ffffffff8114edad>] vfs_ioctl+0x3d/0xd0
-[ 7208.780471]  [<ffffffff8114f3b8>] do_vfs_ioctl+0x88/0x540
-[ 7208.780475]  [<ffffffff811586fa>] ? alloc_fd+0x10a/0x150
-[ 7208.780478]  [<ffffffff8114f8f1>] sys_ioctl+0x81/0xa0
-[ 7208.780483]  [<ffffffff8100a032>] system_call_fastpath+0x16/0x1b
-
-Full dmesg here: http://shrek.krogh.cc/~jesper/bonnie-dmesg.txt
-
-It seems like the problems about broken sync writeback discussed
-about a year ago .. last discussions in late january this year.
-
-http://thread.gmane.org/gmane.linux.kernel/949268/focus=1090266
-
-Any patches that may be relevant?
-
-Thanks
+diff --git a/drivers/staging/pohmelfs/config.c b/drivers/staging/pohmelfs/config.c
+index 89279ba..ed91330 100644
+--- a/drivers/staging/pohmelfs/config.c
++++ b/drivers/staging/pohmelfs/config.c
+@@ -134,7 +134,7 @@ int pohmelfs_copy_config(struct pohmelfs_sb *psb)
+ 		goto out_unlock;
+ 
+ 	/*
+-	 * Run over all entries in given config group and try to crate and
++	 * Run over all entries in given config group and try to create and
+ 	 * initialize those, which do not exist in superblock list.
+ 	 * Skip all existing entries.
+ 	 */
+diff --git a/drivers/staging/pohmelfs/inode.c b/drivers/staging/pohmelfs/inode.c
+index 56d3a4e..c93ef20 100644
+--- a/drivers/staging/pohmelfs/inode.c
++++ b/drivers/staging/pohmelfs/inode.c
+@@ -834,7 +834,7 @@ static void pohmelfs_i_callback(struct rcu_head *head)
+ }
+ 
+ /*
+- * ->detroy_inode() callback. Deletes inode from the caches
++ * ->destroy_inode() callback. Deletes inode from the caches
+  *  and frees private data.
+  */
+ static void pohmelfs_destroy_inode(struct inode *inode)
+@@ -1127,18 +1127,18 @@ static ssize_t pohmelfs_getxattr(struct dentry *dentry, const char *name,
+ 
+ 		/*
+ 		 * This loop is a bit ugly, since it waits until reference counter
+-		 * hits 1 and then put object here. Main goal is to prevent race with
+-		 * network thread, when it can start processing given request, i.e.
++		 * hits 1 and then puts the object here. Main goal is to prevent race with
++		 * the network thread, when it can start processing the given request, i.e.
+ 		 * increase its reference counter but yet not complete it, while
+ 		 * we will exit from ->getxattr() with timeout, and although request
+ 		 * will not be freed (its reference counter was increased by network
+ 		 * thread), data pointer provided by user may be released, so we will
+-		 * overwrite already freed area in network thread.
++		 * overwrite an already freed area in the network thread.
+ 		 *
+ 		 * Now after timeout we remove request from the cache, so it can not be
+ 		 * found by network thread, and wait for its reference counter to hit 1,
+ 		 * i.e. if network thread already started to process this request, we wait
+-		 * it to finish, and then free object locally. If reference counter is
++		 * for it to finish, and then free object locally. If reference counter is
+ 		 * already 1, i.e. request is not used by anyone else, we can free it without
+ 		 * problem.
+ 		 */
+diff --git a/drivers/staging/pohmelfs/netfs.h b/drivers/staging/pohmelfs/netfs.h
+index 63391d2..985b6b7 100644
+--- a/drivers/staging/pohmelfs/netfs.h
++++ b/drivers/staging/pohmelfs/netfs.h
+@@ -191,7 +191,7 @@ enum {
+ /*
+  * POHMELFS capabilities: information about supported
+  * crypto operations (hash/cipher, modes, key sizes and so on),
+- * root informaion (used/available size, number of objects, permissions)
++ * root information (used/available size, number of objects, permissions)
+  */
+ enum pohmelfs_capabilities {
+ 	POHMELFS_CRYPTO_CAPABILITIES = 0,
 -- 
-Jesper
+1.6.5.GIT
+
