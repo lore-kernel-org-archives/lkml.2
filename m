@@ -1,120 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757367Ab1BAOzO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 09:55:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19901 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757263Ab1BAOyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 09:54:11 -0500
-Date: Tue, 1 Feb 2011 09:53:28 -0500
-From: Rik van Riel <riel@redhat.com>
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Avi Kiviti <avi@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>,
-        "Nakajima, Jun" <jun.nakajima@intel.com>
-Subject: [PATCH -v8a 7/7] kvm: use yield_to instead of sleep in
- kvm_vcpu_on_spin
-Message-ID: <20110201095328.03284fcb@annuminas.surriel.com>
-In-Reply-To: <20110201094433.72829892@annuminas.surriel.com>
-References: <20110201094433.72829892@annuminas.surriel.com>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754667Ab1BAO6S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 09:58:18 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:64490 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751923Ab1BAO6Q convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 09:58:16 -0500
+MIME-Version: 1.0
+In-Reply-To: <1294867725.3237.230.camel@localhost.localdomain>
+References: <1294867725.3237.230.camel@localhost.localdomain>
+Date: Tue, 1 Feb 2011 09:58:13 -0500
+Message-ID: <AANLkTi=tmzKqLL30q9Mq+9u7s-M3sG2-MKz7pUJ1R08Z@mail.gmail.com>
+Subject: Re: Using ftrace/perf as a basis for generic seccomp
+From: Eric Paris <eparis@parisplace.org>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, agl@google.com,
+        fweisbec@gmail.com, tzanussi@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of sleeping in kvm_vcpu_on_spin, which can cause gigantic
-slowdowns of certain workloads, we instead use yield_to to get
-another VCPU in the same KVM guest to run sooner.
+On Wed, Jan 12, 2011 at 4:28 PM, Eric Paris <eparis@redhat.com> wrote:
+> Some time ago Adam posted a patch to allow for a generic seccomp
+> implementation (unlike the current seccomp where your choice is all
+> syscalls or only read, write, sigreturn, and exit) which got little
+> traction and it was suggested he instead do the same thing somehow using
+> the tracing code:
+> http://thread.gmane.org/gmane.linux.kernel/833556
+> The actual method that this could be achieved was apparently left as an
+> exercise for the reader.  Since I'd like to do something similar (and
+> actually basically reimplemented Adam's code before I found this thread)
+> I guess that makes me the reader.  I've never touched
+> perf/ftrace/whatever so I'm not even knowledgeably enough to ask good
+> questions so please, try to talk to me like a 2 year old.
+>
+> I started playing a bit having no idea where to start decided to see
+> where something like:
+> perf stat -e syscalls:sys_enter_read -e syscalls:sys_enter_write -- ./seccomp_test
+> Ended up in the kernel.  It ended up I saw in perf_syscall_enter().  So
+> I decided to do a little hacking and added this little patch segment:
+>
+> diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+> index bac752f..6653995 100644
+> --- a/kernel/trace/trace_syscalls.c
+> +++ b/kernel/trace/trace_syscalls.c
+> @@ -495,8 +495,12 @@ static void perf_syscall_enter(void *ignore, struct pt_regs *regs, long id)
+>        int size;
+>
+>        syscall_nr = syscall_get_nr(current, regs);
+> -       if (!test_bit(syscall_nr, enabled_perf_enter_syscalls))
+> +
+> +       if (!test_bit(syscall_nr, enabled_perf_enter_syscalls)) {
+> +               if (current->seccomp.mode == 2)
+> +                       do_exit(SIGKILL);
+>                return;
+> +       }
+>
+>        sys_data = syscall_nr_to_meta(syscall_nr);
+>        if (!sys_data)
+>
+> Which appears to be a necessary, but not sufficient, requirement, since
+> another unrelated task could also have a 'watch?' on other syscalls.  So
+> I hacked in this little PoS into the filter code.
+>
+> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+> index eac7e33..d8c1c8f 100644
+> --- a/kernel/perf_event.c
+> +++ b/kernel/perf_event.c
+> @@ -4780,15 +4780,19 @@ void perf_tp_event(u64 addr, u64 count, void *record, int entry_size,
+>                .size = entry_size,
+>                .data = record,
+>        };
+> +       int found = 0;
+>
+>        perf_sample_data_init(&data, addr);
+>        data.raw = &raw;
+>
+>        hlist_for_each_entry_rcu(event, node, head, hlist_entry) {
+> -               if (perf_tp_event_match(event, &data, regs))
+> +               if (perf_tp_event_match(event, &data, regs)) {
+> +                       found = 1;
+>                        perf_swevent_event(event, count, 1, &data, regs);
+> +               }
+>        }
+> -
+> +       if (current->seccomp.mode == 2 && !found)
+> +               do_exit(SIGKILL);
+>        perf_swevent_put_recursion_context(rctx);
+>  }
+>  EXPORT_SYMBOL_GPL(perf_tp_event);
+>
+> Which seems to get me a 'working' version of generic seccomp on top of
+> ftrace.  Problem is it makes me feel dirty, I'm logging a bunch of trace
+> stuff I don't care about, and I'm sure its being done wrong 1001 ways.
+> I know that do_exit(SIGKILL) is actually really wrong since it ends up
+> giving me this crap (but i don't know how to do it better from there)
+>
+> note: seccomp-test[2485] exited with preempt_count 1
+> BUG: sleeping function called from invalid context at kernel/rwsem.c:21
+>
+> So, finally, onto the question.  How would you guys do it?  The tracing
+> code seems to me to be built on the idea of recording information on a
+> very small limited set of events, not blocking access on the complement
+> of a small limited set of events.
+>
+> I'm not seeing how the tracing code is better than the generic seccomp
+> code that Adam wrote, but hopefully someone can enlighten me as to how
+> this can be done reasonably.  I need all the guidance you can offer
+> because I don't really see what next steps should be!
 
-This seems to give a 10-15% speedup in certain workloads.
+Ping tracing people.  I'm not seeing steps forward.  At this point I'm
+going to start looking at Adam's code again.  I can think of a couple
+of cleanups and simplifications to his code.  I just don't see how
+using tracing is supposed to work better.....
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 9d56ed5..fab2250 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -187,6 +187,7 @@ struct kvm {
- #endif
- 	struct kvm_vcpu *vcpus[KVM_MAX_VCPUS];
- 	atomic_t online_vcpus;
-+	int last_boosted_vcpu;
- 	struct list_head vm_list;
- 	struct mutex lock;
- 	struct kvm_io_bus *buses[KVM_NR_BUSES];
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 86c4905..8b761ba 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -1292,18 +1292,55 @@ void kvm_resched(struct kvm_vcpu *vcpu)
- }
- EXPORT_SYMBOL_GPL(kvm_resched);
- 
--void kvm_vcpu_on_spin(struct kvm_vcpu *vcpu)
-+void kvm_vcpu_on_spin(struct kvm_vcpu *me)
- {
--	ktime_t expires;
--	DEFINE_WAIT(wait);
--
--	prepare_to_wait(&vcpu->wq, &wait, TASK_INTERRUPTIBLE);
--
--	/* Sleep for 100 us, and hope lock-holder got scheduled */
--	expires = ktime_add_ns(ktime_get(), 100000UL);
--	schedule_hrtimeout(&expires, HRTIMER_MODE_ABS);
-+	struct kvm *kvm = me->kvm;
-+	struct kvm_vcpu *vcpu;
-+	int last_boosted_vcpu = me->kvm->last_boosted_vcpu;
-+	int yielded = 0;
-+	int pass;
-+	int i;
- 
--	finish_wait(&vcpu->wq, &wait);
-+	/*
-+	 * We boost the priority of a VCPU that is runnable but not
-+	 * currently running, because it got preempted by something
-+	 * else and called schedule in __vcpu_run.  Hopefully that
-+	 * VCPU is holding the lock that we need and will release it.
-+	 * We approximate round-robin by starting at the last boosted VCPU.
-+	 */
-+	for (pass = 0; pass < 2 && !yielded; pass++) {
-+		kvm_for_each_vcpu(i, vcpu, kvm) {
-+			struct task_struct *task = NULL;
-+			struct pid *pid;
-+			if (!pass && i < last_boosted_vcpu) {
-+				i = last_boosted_vcpu;
-+				continue;
-+			} else if (pass && i > last_boosted_vcpu)
-+				break;
-+			if (vcpu == me)
-+				continue;
-+			if (waitqueue_active(&vcpu->wq))
-+				continue;
-+			rcu_read_lock();
-+			pid = rcu_dereference(vcpu->pid);
-+			if (pid)
-+				task = get_pid_task(vcpu->pid, PIDTYPE_PID);
-+			rcu_read_unlock();
-+			if (!task)
-+				continue;
-+			if (task->flags & PF_VCPU) {
-+				put_task_struct(task);
-+				continue;
-+			}
-+			if (yield_to(task, 1)) {
-+				put_task_struct(task);
-+				kvm->last_boosted_vcpu = i;
-+				yielded = 1;
-+				break;
-+			}
-+			put_task_struct(task);
-+		}
-+	}
- }
- EXPORT_SYMBOL_GPL(kvm_vcpu_on_spin);
- 
+-Eric
