@@ -1,81 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755388Ab1BARJy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 12:09:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61491 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752683Ab1BARJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 12:09:53 -0500
-Message-ID: <4D483E43.5060904@redhat.com>
-Date: Tue, 01 Feb 2011 19:09:23 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1755399Ab1BARMG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 12:12:06 -0500
+Received: from smtp-gw11.han.skanova.net ([81.236.55.20]:54637 "EHLO
+	smtp-gw11.han.skanova.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291Ab1BARMD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 12:12:03 -0500
 MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
-        Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH v2 2/6] KVM-HV: KVM Steal time implementation
-References: <1296244340-15173-1-git-send-email-glommer@redhat.com>	 <1296244340-15173-3-git-send-email-glommer@redhat.com>	 <4D4563EB.3000203@redhat.com> <1296575320.5081.8.camel@mothafucka.localdomain>
-In-Reply-To: <1296575320.5081.8.camel@mothafucka.localdomain>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Mailer: AfterLogic WebMail PHP
+X-Originating-IP: 194.237.142.5
+X-Priority: 3 (Normal)
+Message-ID: <7j2t3lt.112d3171f5f31f2acb18786b51a8e1ac@obelix.schillstrom.com>
+From: "Hans Schillstrom" <hans@schillstrom.com>
+To: "Simon Horman" <horms@verge.net.au>
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lvs-devel@vger.kernel.org,
+        "Randy Dunlap" <randy.dunlap@oracle.com>,
+        "Stephen Rothwell" <sfr@canb.auug.org.au>,
+        "Patrick McHardy" <kaber@trash.net>
+Subject: Re: [PATCH 4/5] IPVS: Allow compilation with CONFIG_SYSCTL 
+	disabled
+Date: Tue, 1 Feb 2011 18:11:55 +0100 (CET)
+Content-Type: text/plain;
+	charset="utf-8"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2011 05:48 PM, Glauber Costa wrote:
-> >  >  @@ -2106,6 +2120,25 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
-> >  >    			kvm_migrate_timers(vcpu);
-> >  >    		vcpu->cpu = cpu;
-> >  >    	}
-> >  >  +
-> >  >  +	if (vcpu->arch.this_time_out) {
-> >  >  +		u64 to = (get_kernel_ns() - vcpu->arch.this_time_out);
-> >  >  +		/*
-> >  >  +		 * using nanoseconds introduces noise, which accumulates easily
-> >  >  +		 * leading to big steal time values. We want, however, to keep the
-> >  >  +		 * interface nanosecond-based for future-proofness.
-> >  >  +		 */
-> >  >  +		to /= NSEC_PER_USEC;
-> >  >  +		to *= NSEC_PER_USEC;
-> >
-> >  Seems there is a real problem and that this is just papering it over.
-> >  I'd like to understand the root cause.
-> Okay, my self-explanation seemed reasonable to me, but since both you
-> and Peter dislike it, I think it is important enough to get a more
-> thorough investigation before a second round.
+>---- Original Message ----
+>From: Simon Horman <horms@verge.net.au>
+>To: netdev@vger.kernel.org, linux-next@vger.kernel.org, linux-kernel@vger.kernel.org, lvs-devel@vger.kernel.org
+>Cc: "Randy Dunlap" <randy.dunlap@oracle.com>, "Stephen Rothwell" <sfr@canb.auug.org.au>, "Hans Schillstrom" <hans@schillstrom.com>, "Patrick McHardy" <kaber@trash.net>, "Simon Horman" <horms@verge.net.au>
+>Sent: Tue, Feb 1, 2011, 11:11 AM
+>Subject: [PATCH 4/5] IPVS: Allow compilation with CONFIG_SYSCTL disabled
+>
+>This is a rather naieve approach to allowing PVS to compile with
+>CONFIG_SYSCTL disabled.  I am working on a more comprehensive patch which
+>will remove compilation of all sysctl-related IPVS code when CONFIG_SYSCTL
+>is disabled.
+>
+>Cc: Hans Schillstrom <hans@schillstrom.com>
+>Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+>Signed-off-by: Simon Horman <horms@verge.net.au>
 
-Yes please.
+Signed-off-by: Hans Schillstrom <hans@schillstrom.com>
+Tested-by: Hans Schillstrom <hans@schillstrom.com>
 
-> But in this case,
-> I keep that using nanoseconds may then not be the best approach here. We
-> also have to keep in mind that the host and guest clocks may be running
-> at different resolutions.
-
-We need to choose a resolution for the clock (or negotiate one), an 
-nanoseconds seems as good as any from a range and precision 
-considerations, and is convenient for the host and Linux guests.  So why 
-not pick it?
-
-> >  >  +		vcpu->arch.sversion += 2;
-> >
-> >  Doesn't survive live migration.  You need to use the version from the
-> >  guest area.
-> Why not? Who said versions need to always increase? If current version
-> is 102324, and we live migrate and it becomes 0, what is the problem?
-
-Guest reads version (result: 2)
-Guest starts reading data
-Live migration; vcpu->arch.sversion is zeroed
-Steal time update; vcpu->arch.sversion += 2; write to guest
-Guest continues reading data
-Guest reads version (result: 2)
-
-So the guest is unaware that an update has occurred while it was reading 
-the data.
-
--- 
-error compiling committee.c: too many arguments to function
+>---
+> net/netfilter/ipvs/ip_vs_ctl.c   |   14 +++++++++-----
+> net/netfilter/ipvs/ip_vs_lblc.c  |   20 ++++++++++----------
+> net/netfilter/ipvs/ip_vs_lblcr.c |   20 ++++++++++----------
+> 3 files changed, 29 insertions(+), 25 deletions(-)
+>
+>diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
+>index d7c2fa8..c73b0c8 100644
+>--- a/net/netfilter/ipvs/ip_vs_ctl.c
+>+++ b/net/netfilter/ipvs/ip_vs_ctl.c
+>@@ -3552,10 +3552,15 @@ int __net_init __ip_vs_control_init(struct net *net)
+> 	tbl[idx++].data = &ipvs->sysctl_nat_icmp_send;
+> 
+> 
+>+#ifdef CONFIG_SYSCTL
+> 	ipvs->sysctl_hdr = register_net_sysctl_table(net, net_vs_ctl_path,
+> 						     tbl);
+>-	if (ipvs->sysctl_hdr == NULL)
+>-		goto err_reg;
+>+	if (ipvs->sysctl_hdr == NULL) {
+>+		if (!net_eq(net, &init_net))
+>+			kfree(tbl);
+>+		goto err_dup;
+>+	}
+>+#endif
+> 	ip_vs_new_estimator(net, ipvs->tot_stats);
+> 	ipvs->sysctl_tbl = tbl;
+> 	/* Schedule defense work */
+>@@ -3563,9 +3568,6 @@ int __net_init __ip_vs_control_init(struct net *net)
+> 	schedule_delayed_work(&ipvs->defense_work, DEFENSE_TIMER_PERIOD);
+> 	return 0;
+> 
+>-err_reg:
+>-	if (!net_eq(net, &init_net))
+>-		kfree(tbl);
+> err_dup:
+> 	free_percpu(ipvs->cpustats);
+> err_alloc:
+>@@ -3581,7 +3583,9 @@ static void __net_exit __ip_vs_control_cleanup(struct net *net)
+> 	ip_vs_kill_estimator(net, ipvs->tot_stats);
+> 	cancel_delayed_work_sync(&ipvs->defense_work);
+> 	cancel_work_sync(&ipvs->defense_work.work);
+>+#ifdef CONFIG_SYSCTL
+> 	unregister_net_sysctl_table(ipvs->sysctl_hdr);
+>+#endif
+> 	proc_net_remove(net, "ip_vs_stats_percpu");
+> 	proc_net_remove(net, "ip_vs_stats");
+> 	proc_net_remove(net, "ip_vs");
+>diff --git a/net/netfilter/ipvs/ip_vs_lblc.c b/net/netfilter/ipvs/ip_vs_lblc.c
+>index d5bec33..00b5ffa 100644
+>--- a/net/netfilter/ipvs/ip_vs_lblc.c
+>+++ b/net/netfilter/ipvs/ip_vs_lblc.c
+>@@ -554,33 +554,33 @@ static int __net_init __ip_vs_lblc_init(struct net *net)
+> 						sizeof(vs_vars_table),
+> 						GFP_KERNEL);
+> 		if (ipvs->lblc_ctl_table == NULL)
+>-			goto err_dup;
+>+			return -ENOMEM;
+> 	} else
+> 		ipvs->lblc_ctl_table = vs_vars_table;
+> 	ipvs->sysctl_lblc_expiration = 24*60*60*HZ;
+> 	ipvs->lblc_ctl_table[0].data = &ipvs->sysctl_lblc_expiration;
+> 
+>+#ifdef CONFIG_SYSCTL
+> 	ipvs->lblc_ctl_header =
+> 		register_net_sysctl_table(net, net_vs_ctl_path,
+> 					  ipvs->lblc_ctl_table);
+>-	if (!ipvs->lblc_ctl_header)
+>-		goto err_reg;
+>+	if (!ipvs->lblc_ctl_header) {
+>+		if (!net_eq(net, &init_net))
+>+			kfree(ipvs->lblc_ctl_table);
+>+		return -ENOMEM;
+>+	}
+>+#endif
+> 
+> 	return 0;
+>-
+>-err_reg:
+>-	if (!net_eq(net, &init_net))
+>-		kfree(ipvs->lblc_ctl_table);
+>-
+>-err_dup:
+>-	return -ENOMEM;
+> }
+> 
+> static void __net_exit __ip_vs_lblc_exit(struct net *net)
+> {
+> 	struct netns_ipvs *ipvs = net_ipvs(net);
+> 
+>+#ifdef CONFIG_SYSCTL
+> 	unregister_net_sysctl_table(ipvs->lblc_ctl_header);
+>+#endif
+> 
+> 	if (!net_eq(net, &init_net))
+> 		kfree(ipvs->lblc_ctl_table);
+>diff --git a/net/netfilter/ipvs/ip_vs_lblcr.c b/net/netfilter/ipvs/ip_vs_lblcr.c
+>index 61ae8cf..bfa25f1 100644
+>--- a/net/netfilter/ipvs/ip_vs_lblcr.c
+>+++ b/net/netfilter/ipvs/ip_vs_lblcr.c
+>@@ -754,33 +754,33 @@ static int __net_init __ip_vs_lblcr_init(struct net *net)
+> 						sizeof(vs_vars_table),
+> 						GFP_KERNEL);
+> 		if (ipvs->lblcr_ctl_table == NULL)
+>-			goto err_dup;
+>+			return -ENOMEM;
+> 	} else
+> 		ipvs->lblcr_ctl_table = vs_vars_table;
+> 	ipvs->sysctl_lblcr_expiration = 24*60*60*HZ;
+> 	ipvs->lblcr_ctl_table[0].data = &ipvs->sysctl_lblcr_expiration;
+> 
+>+#ifdef CONFIG_SYSCTL
+> 	ipvs->lblcr_ctl_header =
+> 		register_net_sysctl_table(net, net_vs_ctl_path,
+> 					  ipvs->lblcr_ctl_table);
+>-	if (!ipvs->lblcr_ctl_header)
+>-		goto err_reg;
+>+	if (!ipvs->lblcr_ctl_header) {
+>+		if (!net_eq(net, &init_net))
+>+			kfree(ipvs->lblcr_ctl_table);
+>+		return -ENOMEM;
+>+	}
+>+#endif
+> 
+> 	return 0;
+>-
+>-err_reg:
+>-	if (!net_eq(net, &init_net))
+>-		kfree(ipvs->lblcr_ctl_table);
+>-
+>-err_dup:
+>-	return -ENOMEM;
+> }
+> 
+> static void __net_exit __ip_vs_lblcr_exit(struct net *net)
+> {
+> 	struct netns_ipvs *ipvs = net_ipvs(net);
+> 
+>+#ifdef CONFIG_SYSCTL
+> 	unregister_net_sysctl_table(ipvs->lblcr_ctl_header);
+>+#endif
+> 
+> 	if (!net_eq(net, &init_net))
+> 		kfree(ipvs->lblcr_ctl_table);
+>-- 
+>1.7.2.3
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe lvs-devel" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
