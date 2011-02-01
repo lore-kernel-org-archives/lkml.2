@@ -1,37 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666Ab1BANHX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 08:07:23 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:54154 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753086Ab1BANHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 08:07:22 -0500
-Message-ID: <1296565633.4d4805812c3f5@imp.free.fr>
-Date: Tue, 01 Feb 2011 14:07:13 +0100
-From: castet.matthieu@free.fr
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: matthieu castet <castet.matthieu@free.fr>, Ingo Molnar <mingo@elte.hu>,
-        Kees Cook <kees.cook@canonical.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [BUG] broken ebba638ae723d8a8fc2f7abce5ec18b688b791d7
-References: <4D41E86D.8060205@free.fr> <20110131213847.GF4557@outflux.net> <4D474194.2000709@free.fr> <201102010017.40986.rjw@sisk.pl>
-In-Reply-To: <201102010017.40986.rjw@sisk.pl>
-MIME-Version: 1.0
+	id S1756660Ab1BANJg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 08:09:36 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:30488 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753113Ab1BANJf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 08:09:35 -0500
+Date: Tue, 1 Feb 2011 14:09:13 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Timo von Holtz <tvh@informatik.uni-kiel.de>
+Cc: gregkh@suse.de, mchehab@redhat.com, d.belimov@gmail.com,
+        stefan.ringel@arcor.de, michel.ludwig@gmail.com,
+        c.pascoe@itee.uq.edu.au, ruslan@rpisarev.org.ua,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: tm6000: fixed some coding style issues
+Message-ID: <20110201140913.491912fd@endymion.delvare>
+In-Reply-To: <1296564547-26619-1-git-send-email-tvh@informatik.uni-kiel.de>
+References: <1296564547-26619-1-git-send-email-tvh@informatik.uni-kiel.de>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-User-Agent: Internet Messaging Program (IMP) 3.2.8
-X-Originating-IP: 93.1.148.69
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting "Rafael J. Wysocki" <rjw@sisk.pl>:
+On Tue,  1 Feb 2011 13:49:07 +0100, Timo von Holtz wrote:
+> Fixed all of the following coding style issues:
+> 
+> ERROR: return is not a function, parentheses are not required
+> WARNING: __func__ should be used instead of gcc specific __FUNCTION__
+> ERROR: trailing whitespace
+> ERROR: spaces required around that '=' (ctx:VxV)
+> WARNING: please, no space before tabs
+> WARNING: please, no spaces at the start of a line
+> ERROR: space required after that ',' (ctx:VxV)
+> WARNING: space prohibited between function name and open parenthesis '('
+> ERROR: spaces required around that '<' (ctx:VxV)
+> ERROR: spaces required around that '==' (ctx:VxV)
+> 
+> Signed-off-by: Timo von Holtz <tvh@informatik.uni-kiel.de>
 
-> On Tuesday, February 01, 2011, matthieu castet wrote:
-> Well, in my not so humble opinion the amount of random fixes required by the
-> entire NX protection of kernel "data" pages is simply unacceptable.
+Acked-by: Jean Delvare <khali@linux-fr.org>
 
-What's the relation between this bug and NX protection of kernel "data" ?
+Thanks, Timo.
 
-Matthieu
+-- 
+Jean Delvare
