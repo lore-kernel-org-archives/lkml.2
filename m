@@ -1,67 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756400Ab1BAADO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 19:03:14 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:40809 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753867Ab1BAADN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 19:03:13 -0500
-Date: Tue, 1 Feb 2011 11:03:07 +1100
-From: Simon Horman <horms@verge.net.au>
-To: David Miller <davem@davemloft.net>
-Cc: randy.dunlap@oracle.com, sfr@canb.auug.org.au, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for January 31 (ip_vs)
-Message-ID: <20110201000302.GA9482@verge.net.au>
-References: <20110131101829.b842da44.randy.dunlap@oracle.com>
- <20110131211846.GH2389@verge.net.au>
- <20110131225727.GA23992@verge.net.au>
- <20110131.150031.70194609.davem@davemloft.net>
+	id S1756464Ab1BAAFK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 19:05:10 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:38949 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756321Ab1BAAFJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 19:05:09 -0500
+Date: Tue, 1 Feb 2011 01:04:55 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: kamezawa.hiroyu@jp.fujitsu.com, nishimura@mxp.nes.nec.co.jp,
+        balbir@linux.vnet.ibm.com, minchan.kim@gmail.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/3] memcg: prevent endless loop when charging huge pages
+ to near-limit group
+Message-ID: <20110201000455.GB19534@cmpxchg.org>
+References: <1296482635-13421-1-git-send-email-hannes@cmpxchg.org>
+ <1296482635-13421-3-git-send-email-hannes@cmpxchg.org>
+ <20110131144131.6733aa3a.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110131.150031.70194609.davem@davemloft.net>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110131144131.6733aa3a.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 31, 2011 at 03:00:31PM -0800, David Miller wrote:
-> From: Simon Horman <horms@verge.net.au>
-> Date: Tue, 1 Feb 2011 09:57:28 +1100
+On Mon, Jan 31, 2011 at 02:41:31PM -0800, Andrew Morton wrote:
+> On Mon, 31 Jan 2011 15:03:54 +0100
+> Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > @@ -1111,6 +1111,15 @@ static bool mem_cgroup_check_under_limit(struct mem_cgroup *mem)
+> >  	return false;
+> >  }
+> >  
+> > +static bool mem_cgroup_check_margin(struct mem_cgroup *mem, unsigned long bytes)
+> > +{
+> > +	if (!res_counter_check_margin(&mem->res, bytes))
+> > +		return false;
+> > +	if (do_swap_account && !res_counter_check_margin(&mem->memsw, bytes))
+> > +		return false;
+> > +	return true;
+> > +}
 > 
-> > On Tue, Feb 01, 2011 at 08:18:47AM +1100, Simon Horman wrote:
-> >> On Mon, Jan 31, 2011 at 10:18:29AM -0800, Randy Dunlap wrote:
-> >> > On Mon, 31 Jan 2011 17:41:13 +1100 Stephen Rothwell wrote:
-> >> > 
-> >> > > Hi all,
-> >> > > 
-> >> > > Changes since 20110121:
-> >> > > 
-> >> > > The net tree lost its build failure.
-> >> > 
-> >> > 
-> >> > When CONFIG_SYSCTL is not enabled:
-> >> > 
-> >> > net/netfilter/ipvs/ip_vs_core.c:1891: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'unsigned int'
-> >> > ERROR: "unregister_net_sysctl_table" [net/netfilter/ipvs/ip_vs.ko] undefined!
-> >> > ERROR: "register_net_sysctl_table" [net/netfilter/ipvs/ip_vs.ko] undefined!
-> >> 
-> >> Thanks, I'm looking into it.
-> > 
-> > On a related note, does IPVS need to handle the case
-> > where CONFIG_PROC_FS is not enabled?
+> argh.
 > 
-> Yes.
+> If you ever have a function with the string "check" in its name, it's a
+> good sign that you did something wrong.
+> 
+> Check what?  Against what?  Returning what?
+> 
+> mem_cgroup_check_under_limit() isn't toooo bad - the name tells you
+> what's being checked and tells you what to expect the return value to
+> mean.
+> 
+> But "res_counter_check_margin" and "mem_cgroup_check_margin" are just
+> awful.  Something like
+> 
+> 	bool res_counter_may_charge(counter, bytes)
+> 
+> would be much clearer.
 
-Thanks.
+That makes sense for the hard limit.  But the oh-so-generic resource
+counters also have a soft limit, and you don't ask for that when you
+want to charge.  Right now, I do not feel creative enough to come up
+with a symmetric-sounding counterpart.
 
-I checked and it does seem to compile without CONFIG_PROC_FS
-and now also without CONFIG_SYSCTL, I'll send a patch for that right
-after I finish this email.
+> If we really want to stick with the "check" names (perhaps as an ironic
+> reference to res_counter's past mistakes) then please at least document
+> the sorry things?
 
-I think that in both cases there is dead code, I'll clean that up next.
+I cowardly went with this option and have a patch below to fold into
+this fix.
 
+Maybe it would be better to use res_counter_margin(cnt) >= wanted
+throughout the code.  Or still better, make memcg work on pages and
+res_counters on unsigned longs so the locking is no longer needed,
+together with an API for most obvious maths.  I will work something
+out and submit it separately.
 
+---
+Subject: [patch fixup] res_counter: document res_counter_check_margin()
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+
+diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
+index 5cfd78a..a5930cb 100644
+--- a/include/linux/res_counter.h
++++ b/include/linux/res_counter.h
+@@ -182,6 +182,14 @@ static inline bool res_counter_check_under_limit(struct res_counter *cnt)
+ 	return ret;
+ }
+ 
++/**
++ * res_counter_check_margin - check if the counter allows charging
++ * @cnt: the resource counter to check
++ * @bytes: the number of bytes to check the remaining space against
++ *
++ * Returns a boolean value on whether the counter can be charged
++ * @bytes or whether this would exceed the limit.
++ */
+ static inline bool res_counter_check_margin(struct res_counter *cnt,
+ 					    unsigned long bytes)
+ {
