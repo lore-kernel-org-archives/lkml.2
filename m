@@ -1,167 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751484Ab1BAUGl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 15:06:41 -0500
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:38221 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751286Ab1BAUGj convert rfc822-to-8bit (ORCPT
+	id S1751661Ab1BAUOT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 15:14:19 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:58010 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117Ab1BAUOQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 15:06:39 -0500
-Subject: Re: [PATCH 2/2] security: remove unused security_sysctl hook
-References: <1296578542-5902-1-git-send-email-lucian.grijincu@gmail.com> <1296578696-5989-1-git-send-email-lucian.grijincu@gmail.com> <1296587121.12605.30.camel@moss-pluto>
+	Tue, 1 Feb 2011 15:14:16 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Cc: Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
+        Eric Paris <eparis@parisplace.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+References: <1296578246.12605.22.camel@moss-pluto>
+	<1296578542-5902-1-git-send-email-lucian.grijincu@gmail.com>
+	<m1r5brr1mn.fsf@fess.ebiederm.org>
+	<AANLkTik+N5J-MDrbMbtwRPwz==J4y8sbBkhir=1K3g=B@mail.gmail.com>
+Date: Tue, 01 Feb 2011 12:14:10 -0800
+In-Reply-To: <AANLkTik+N5J-MDrbMbtwRPwz==J4y8sbBkhir=1K3g=B@mail.gmail.com>
+	(Lucian Adrian Grijincu's message of "Tue, 1 Feb 2011 21:46:42 +0200")
+Message-ID: <m1k4hjqzql.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
-From: Eric Paris <eparis@redhat.com>
-Content-Type: text/plain;
-	charset=us-ascii
-In-Reply-To: <1296587121.12605.30.camel@moss-pluto>
-Message-Id: <658335B0-9138-4293-9E25-B557AE0DEF7A@redhat.com>
-Date: Tue, 1 Feb 2011 15:06:35 -0500 (EST)
-To: Stephen Smalley <sds@tycho.nsa.gov>
-Cc: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
-        James Morris <jmorris@namei.org>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>
-Mime-Version: 1.0
-X-Mailer: Zimbra 6.0.9_GA_2686 (MobileSync - Apple-iPhone1C2/802.117)
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18VpzgyRn80DlVQj5hHKaYI290f8X/kRak=
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 1/2] security/selinux: fix /proc/sys/ labeling
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Lucian Adrian Grijincu <lucian.grijincu@gmail.com> writes:
 
+> On Tue, Feb 1, 2011 at 9:33 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+>> What kernel has a dentry_path_raw?  Perhaps you mean __dentry_path?
+>
+>
+> See the function here:
+> https://github.com/mirrors/linux-2.6/blob/70d1f365568e0cdbc9f4ab92428e1830fdb09ab0/fs/dcache.c
+>
+> The last patches were against 2.6.38-rc2 because the dcache layer got
+> rewritten in 2.6.38 http://lwn.net/Articles/421784/
+>
+> __dentry_path is now static (in fs/dcache.c) and does not take the
+> necessary locks.
 
+Thanks.  I thought I was looking at the latest source but it turns out
+I fat fingered something and my tree was still 2.6.36-rc3.  Sigh.
 
+dentry_path_raw does seem reasonable.
 
-On Feb 1, 2011, at 2:05 PM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
-
-> On Tue, 2011-02-01 at 18:44 +0200, Lucian Adrian Grijincu wrote:
->> The only user for this hook was selinux. sysctl routes every call
->> through /proc/sys/. Selinux and other security modules use the file
->> system checks for sysctl too, so no need for this hook any more.
->> 
->> Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-> 
-> Acked-by:  Stephen Smalley <sds@tycho.nsa.gov>
-
-I've applied both to the selinux tree. Thanks
-
--Eric 
-> 
->> ---
->> include/linux/security.h |   13 -------------
->> kernel/sysctl.c          |    5 -----
->> security/capability.c    |    6 ------
->> security/security.c      |    5 -----
->> 4 files changed, 0 insertions(+), 29 deletions(-)
->> 
->> diff --git a/include/linux/security.h b/include/linux/security.h
->> index c642bb8..e7b48dc 100644
->> --- a/include/linux/security.h
->> +++ b/include/linux/security.h
->> @@ -1257,12 +1257,6 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
->>  *    @cap contains the capability <include/linux/capability.h>.
->>  *    @audit: Whether to write an audit message or not
->>  *    Return 0 if the capability is granted for @tsk.
->> - * @sysctl:
->> - *    Check permission before accessing the @table sysctl variable in the
->> - *    manner specified by @op.
->> - *    @table contains the ctl_table structure for the sysctl variable.
->> - *    @op contains the operation (001 = search, 002 = write, 004 = read).
->> - *    Return 0 if permission is granted.
->>  * @syslog:
->>  *    Check permission before accessing the kernel message ring or changing
->>  *    logging to the console.
->> @@ -1383,7 +1377,6 @@ struct security_operations {
->>               const kernel_cap_t *permitted);
->>    int (*capable) (struct task_struct *tsk, const struct cred *cred,
->>            int cap, int audit);
->> -    int (*sysctl) (struct ctl_table *table, int op);
->>    int (*quotactl) (int cmds, int type, int id, struct super_block *sb);
->>    int (*quota_on) (struct dentry *dentry);
->>    int (*syslog) (int type);
->> @@ -1665,7 +1658,6 @@ int security_capset(struct cred *new, const struct cred *old,
->> int security_capable(int cap);
->> int security_real_capable(struct task_struct *tsk, int cap);
->> int security_real_capable_noaudit(struct task_struct *tsk, int cap);
->> -int security_sysctl(struct ctl_table *table, int op);
->> int security_quotactl(int cmds, int type, int id, struct super_block *sb);
->> int security_quota_on(struct dentry *dentry);
->> int security_syslog(int type);
->> @@ -1883,11 +1875,6 @@ int security_real_capable_noaudit(struct task_struct *tsk, int cap)
->>    return ret;
->> }
->> 
->> -static inline int security_sysctl(struct ctl_table *table, int op)
->> -{
->> -    return 0;
->> -}
->> -
->> static inline int security_quotactl(int cmds, int type, int id,
->>                     struct super_block *sb)
->> {
->> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
->> index 0f1bd83..56f6fc1 100644
->> --- a/kernel/sysctl.c
->> +++ b/kernel/sysctl.c
->> @@ -1685,13 +1685,8 @@ static int test_perm(int mode, int op)
->> 
->> int sysctl_perm(struct ctl_table_root *root, struct ctl_table *table, int op)
->> {
->> -    int error;
->>    int mode;
->> 
->> -    error = security_sysctl(table, op & (MAY_READ | MAY_WRITE | MAY_EXEC));
->> -    if (error)
->> -        return error;
->> -
->>    if (root->permissions)
->>        mode = root->permissions(root, current->nsproxy, table);
->>    else
->> diff --git a/security/capability.c b/security/capability.c
->> index 2a5df2b..ebe3b5d 100644
->> --- a/security/capability.c
->> +++ b/security/capability.c
->> @@ -12,11 +12,6 @@
->> 
->> #include <linux/security.h>
->> 
->> -static int cap_sysctl(ctl_table *table, int op)
->> -{
->> -    return 0;
->> -}
->> -
->> static int cap_syslog(int type)
->> {
->>    return 0;
->> @@ -880,7 +875,6 @@ void __init security_fixup_ops(struct security_operations *ops)
->>    set_to_cap_if_null(ops, capable);
->>    set_to_cap_if_null(ops, quotactl);
->>    set_to_cap_if_null(ops, quota_on);
->> -    set_to_cap_if_null(ops, sysctl);
->>    set_to_cap_if_null(ops, syslog);
->>    set_to_cap_if_null(ops, settime);
->>    set_to_cap_if_null(ops, vm_enough_memory);
->> diff --git a/security/security.c b/security/security.c
->> index 739e403..53d793a 100644
->> --- a/security/security.c
->> +++ b/security/security.c
->> @@ -182,11 +182,6 @@ int security_real_capable_noaudit(struct task_struct *tsk, int cap)
->>    return ret;
->> }
->> 
->> -int security_sysctl(struct ctl_table *table, int op)
->> -{
->> -    return security_ops->sysctl(table, op);
->> -}
->> -
->> int security_quotactl(int cmds, int type, int id, struct super_block *sb)
->> {
->>    return security_ops->quotactl(cmds, type, id, sb);
->> -- 
->> 1.7.4.rc1.7.g2cf08.dirty
-> 
-> -- 
-> Stephen Smalley
-> National Security Agency
-> 
+Eric
