@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756547Ab1BAJUx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 04:20:53 -0500
-Received: from hera.kernel.org ([140.211.167.34]:45483 "EHLO hera.kernel.org"
+	id S1756621Ab1BAJVj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 04:21:39 -0500
+Received: from hera.kernel.org ([140.211.167.34]:45522 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753670Ab1BAJUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 04:20:49 -0500
-Date: Tue, 1 Feb 2011 09:20:25 GMT
+	id S1754293Ab1BAJVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 04:21:35 -0500
+Date: Tue, 1 Feb 2011 09:21:09 GMT
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
@@ -19,39 +19,33 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
 In-Reply-To: <new-submission>
 References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf top: Introduce slang based TUI
-Message-ID: <tip-c0443df1b69b59675fc6790e0ddce87c8ca00abf@git.kernel.org>
-Git-Commit-ID: c0443df1b69b59675fc6790e0ddce87c8ca00abf
+Subject: [tip:perf/core] perf python: Fix build on 32-bit
+Message-ID: <tip-f6bbc1daac964da551130dbf01809d3fbd178b2d@git.kernel.org>
+Git-Commit-ID: f6bbc1daac964da551130dbf01809d3fbd178b2d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 01 Feb 2011 09:20:25 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 01 Feb 2011 09:21:10 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c0443df1b69b59675fc6790e0ddce87c8ca00abf
-Gitweb:     http://git.kernel.org/tip/c0443df1b69b59675fc6790e0ddce87c8ca00abf
+Commit-ID:  f6bbc1daac964da551130dbf01809d3fbd178b2d
+Gitweb:     http://git.kernel.org/tip/f6bbc1daac964da551130dbf01809d3fbd178b2d
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 31 Jan 2011 18:19:33 -0200
+AuthorDate: Mon, 31 Jan 2011 20:56:27 -0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 31 Jan 2011 18:19:33 -0200
+CommitDate: Mon, 31 Jan 2011 20:56:27 -0200
 
-perf top: Introduce slang based TUI
+perf python: Fix build on 32-bit
 
-Disabled by default as there are features found in the stdio based one
-that aren't implemented, like live annotation, filtering knobs data
-entry.
-
-Annotation hopefully will get somehow merged with the 'perf annotate'
-code.
-
-To use it:
-
-perf top --tui
+Where there are lots of errors related to python methods receiving
+'char *' for things like file open mode, which break the build, also
+disable strict aliasing and fixup some other warnings. Now builds on
+both 32-bit and 64-bit fedora systems.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -63,325 +57,168 @@ Cc: Tom Zanussi <tzanussi@gmail.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile               |    4 +
- tools/perf/builtin-top.c          |   35 ++++++++--
- tools/perf/util/top.c             |    7 ++-
- tools/perf/util/top.h             |   15 ++++-
- tools/perf/util/ui/browsers/top.c |  136 +++++++++++++++++++++++++++++++++++++
- 5 files changed, 189 insertions(+), 8 deletions(-)
+ tools/perf/util/python.c |   52 +++++++++++++++++++++++-----------------------
+ tools/perf/util/setup.py |    3 +-
+ 2 files changed, 28 insertions(+), 27 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index edc660e..67a9f4d 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -621,6 +621,7 @@ else
- 		LIB_OBJS += $(OUTPUT)util/ui/browsers/annotate.o
- 		LIB_OBJS += $(OUTPUT)util/ui/browsers/hists.o
- 		LIB_OBJS += $(OUTPUT)util/ui/browsers/map.o
-+		LIB_OBJS += $(OUTPUT)util/ui/browsers/top.o
- 		LIB_OBJS += $(OUTPUT)util/ui/helpline.o
- 		LIB_OBJS += $(OUTPUT)util/ui/progress.o
- 		LIB_OBJS += $(OUTPUT)util/ui/util.o
-@@ -1050,6 +1051,9 @@ $(OUTPUT)util/ui/browser.o: util/ui/browser.c $(OUTPUT)PERF-CFLAGS
- $(OUTPUT)util/ui/browsers/annotate.o: util/ui/browsers/annotate.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
- 
-+$(OUTPUT)util/ui/browsers/top.o: util/ui/browsers/top.c $(OUTPUT)PERF-CFLAGS
-+	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
-+
- $(OUTPUT)util/ui/browsers/hists.o: util/ui/browsers/hists.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
- 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 3c9ba94..104de9a 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -20,6 +20,7 @@
- 
- #include "perf.h"
- 
-+#include "util/cache.h"
- #include "util/color.h"
- #include "util/evlist.h"
- #include "util/evsel.h"
-@@ -75,6 +76,8 @@ static struct perf_top top = {
- 
- static bool			system_wide			=  false;
- 
-+static bool			use_tui, use_stdio;
-+
- static int			default_interval		=      0;
- 
- static bool			inherit				=  false;
-@@ -96,11 +99,6 @@ static int			sym_pcnt_filter			=      5;
-  * Source functions
-  */
- 
--static inline struct symbol *sym_entry__symbol(struct sym_entry *self)
--{
--       return ((void *)self) + symbol_conf.priv_size;
--}
--
- void get_term_dimensions(struct winsize *ws)
- {
- 	char *s = getenv("LINES");
-@@ -695,6 +693,14 @@ static void handle_keypress(struct perf_session *session, int c)
- 	}
- }
- 
-+static void *display_thread_tui(void *arg __used)
-+{
-+	perf_top__tui_browser(&top);
-+	exit_browser(0);
-+	exit(0);
-+	return NULL;
-+}
-+
- static void *display_thread(void *arg __used)
- {
- 	struct pollfd stdin_poll = { .fd = 0, .events = POLLIN };
-@@ -1005,7 +1011,8 @@ static int __cmd_top(void)
- 
- 	perf_session__mmap_read(session);
- 
--	if (pthread_create(&thread, NULL, display_thread, session)) {
-+	if (pthread_create(&thread, NULL, (use_browser > 0 ? display_thread_tui :
-+							     display_thread), session)) {
- 		printf("Could not create display thread.\n");
- 		exit(-1);
- 	}
-@@ -1078,6 +1085,8 @@ static const struct option options[] = {
- 		    "display this many functions"),
- 	OPT_BOOLEAN('U', "hide_user_symbols", &top.hide_user_symbols,
- 		    "hide user symbols"),
-+	OPT_BOOLEAN(0, "tui", &use_tui, "Use the TUI interface"),
-+	OPT_BOOLEAN(0, "stdio", &use_stdio, "Use the stdio interface"),
- 	OPT_INCR('v', "verbose", &verbose,
- 		    "be more verbose (show counter open errors, etc)"),
- 	OPT_END()
-@@ -1098,6 +1107,20 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
- 	if (argc)
- 		usage_with_options(top_usage, options);
- 
-+	/*
-+ 	 * XXX For now start disabled, only using TUI if explicitely asked for.
-+ 	 * Change that when handle_keys equivalent gets written, live annotation
-+ 	 * done, etc.
-+ 	 */
-+	use_browser = 0;
-+
-+	if (use_stdio)
-+		use_browser = 0;
-+	else if (use_tui)
-+		use_browser = 1;
-+
-+	setup_browser(false);
-+
- 	/* CPU and PID are mutually exclusive */
- 	if (top.target_tid > 0 && top.cpu_list) {
- 		printf("WARNING: PID switch overriding CPU\n");
-diff --git a/tools/perf/util/top.c b/tools/perf/util/top.c
-index c06cc53..1d2e265 100644
---- a/tools/perf/util/top.c
-+++ b/tools/perf/util/top.c
-@@ -158,6 +158,7 @@ float perf_top__decay_samples(struct perf_top *top, struct rb_root *root)
- 	syme = list_entry(top->active_symbols.next, struct sym_entry, node);
- 	pthread_mutex_unlock(&top->active_symbols_lock);
- 
-+	top->rb_entries = 0;
- 	list_for_each_entry_safe_from(syme, n, &top->active_symbols, node) {
- 		syme->snap_count = syme->count[snap];
- 		if (syme->snap_count != 0) {
-@@ -170,7 +171,11 @@ float perf_top__decay_samples(struct perf_top *top, struct rb_root *root)
- 				continue;
- 			}
- 			syme->weight = sym_weight(syme, top);
--			rb_insert_active_sym(root, syme);
-+
-+			if ((int)syme->snap_count >= top->count_filter) {
-+				rb_insert_active_sym(root, syme);
-+				++top->rb_entries;
-+			}
- 			sum_ksamples += syme->snap_count;
- 
- 			for (j = 0; j < top->evlist->nr_entries; j++)
-diff --git a/tools/perf/util/top.h b/tools/perf/util/top.h
-index 0467b26..611370f 100644
---- a/tools/perf/util/top.h
-+++ b/tools/perf/util/top.h
-@@ -38,6 +38,11 @@ struct sym_entry {
- 	unsigned long		count[0];
+diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
+index d2d5217..5317ef2 100644
+--- a/tools/perf/util/python.c
++++ b/tools/perf/util/python.c
+@@ -15,6 +15,8 @@ struct throttle_event {
+ 	u64			 stream_id;
  };
  
-+static inline struct symbol *sym_entry__symbol(struct sym_entry *self)
-+{
-+       return ((void *)self) + symbol_conf.priv_size;
-+}
++PyMODINIT_FUNC initperf(void);
 +
- struct perf_top {
- 	struct perf_evlist *evlist;
- 	/*
-@@ -51,7 +56,7 @@ struct perf_top {
- 	u64		   exact_samples;
- 	u64		   guest_us_samples, guest_kernel_samples;
- 	int		   print_entries, count_filter, delay_secs;
--	int		   display_weighted, freq;
-+	int		   display_weighted, freq, rb_entries;
- 	int		   sym_counter, target_pid, target_tid;
- 	bool		   hide_kernel_symbols, hide_user_symbols, zero;
- 	const char	   *cpu_list;
-@@ -64,4 +69,12 @@ float perf_top__decay_samples(struct perf_top *top, struct rb_root *root);
- void perf_top__find_widths(struct perf_top *top, struct rb_root *root,
- 			   int *dso_width, int *dso_short_width, int *sym_width);
+ #define member_def(type, member, ptype, help) \
+ 	{ #member, ptype, \
+ 	  offsetof(struct pyrf_event, event) + offsetof(struct type, member), \
+@@ -31,17 +33,15 @@ struct pyrf_event {
+ 	union perf_event   event;
+ };
  
-+#ifdef NO_NEWT_SUPPORT
-+static inline int perf_top__tui_browser(struct perf_top *top __used)
-+{
-+	return 0;
-+}
-+#else
-+int perf_top__tui_browser(struct perf_top *top);
-+#endif
- #endif /* __PERF_TOP_H */
-diff --git a/tools/perf/util/ui/browsers/top.c b/tools/perf/util/ui/browsers/top.c
-new file mode 100644
-index 0000000..ca60624
---- /dev/null
-+++ b/tools/perf/util/ui/browsers/top.c
-@@ -0,0 +1,136 @@
-+/*
-+ * Copyright (C) 2011, Red Hat Inc, Arnaldo Carvalho de Melo <acme@redhat.com>
-+ *
-+ * Parts came from builtin-{top,stat,record}.c, see those files for further
-+ * copyright notes.
-+ *
-+ * Released under the GPL v2. (and only v2, not any later version)
-+ */
-+#include "../browser.h"
-+#include "../helpline.h"
-+#include "../libslang.h"
-+#include "../../evlist.h"
-+#include "../../hist.h"
-+#include "../../sort.h"
-+#include "../../symbol.h"
-+#include "../../top.h"
-+
-+struct perf_top_browser {
-+	struct ui_browser b;
-+	struct rb_root	  root;
-+	float		  sum_ksamples;
-+	int		  dso_width;
-+	int		  dso_short_width;
-+	int		  sym_width;
-+};
-+
-+static void perf_top_browser__write(struct ui_browser *browser, void *entry, int row)
-+{
-+	struct perf_top_browser *top_browser = container_of(browser, struct perf_top_browser, b);
-+	struct sym_entry *syme = rb_entry(entry, struct sym_entry, rb_node);
-+	bool current_entry = ui_browser__is_current_entry(browser, row);
-+	struct symbol *symbol = sym_entry__symbol(syme);
-+	struct perf_top *top = browser->priv;
-+	int width = browser->width;
-+	double pcnt;
-+
-+	pcnt = 100.0 - (100.0 * ((top_browser->sum_ksamples - syme->snap_count) /
-+				 top_browser->sum_ksamples));
-+	ui_browser__set_percent_color(browser, pcnt, current_entry);
-+
-+	if (top->evlist->nr_entries == 1 || !top->display_weighted) {
-+		slsmg_printf("%20.2f ", syme->weight);
-+		width -= 24;
-+	} else {
-+		slsmg_printf("%9.1f %10ld ", syme->weight, syme->snap_count);
-+		width -= 23;
-+	}
-+
-+	slsmg_printf("%4.1f%%", pcnt);
-+	width -= 7;
-+
-+	if (verbose) {
-+		slsmg_printf(" %016" PRIx64, symbol->start);
-+		width -= 17;
-+	}
-+
-+	slsmg_printf(" %-*.*s ", top_browser->sym_width, top_browser->sym_width,
-+		     symbol->name);
-+	width -= top_browser->sym_width;
-+	slsmg_write_nstring(width >= syme->map->dso->long_name_len ?
-+				syme->map->dso->long_name :
-+				syme->map->dso->short_name, width);
-+}
-+
-+static void perf_top_browser__update_rb_tree(struct perf_top_browser *browser)
-+{
-+	struct perf_top *top = browser->b.priv;
-+
-+	browser->root = RB_ROOT;
-+	browser->b.top = NULL;
-+	browser->sum_ksamples = perf_top__decay_samples(top, &browser->root);
-+	perf_top__find_widths(top, &browser->root, &browser->dso_width,
-+			      &browser->dso_short_width,
-+                              &browser->sym_width);
-+	if (browser->sym_width + browser->dso_width > browser->b.width - 29) {
-+		browser->dso_width = browser->dso_short_width;
-+		if (browser->sym_width + browser->dso_width > browser->b.width - 29)
-+			browser->sym_width = browser->b.width - browser->dso_width - 29;
-+	}
-+	browser->b.nr_entries = top->rb_entries;
-+}
-+
-+static int perf_top_browser__run(struct perf_top_browser *browser)
-+{
-+	int key;
-+	char title[160];
-+	struct perf_top *top = browser->b.priv;
-+	int delay_msecs = top->delay_secs * 1000;
-+
-+	perf_top_browser__update_rb_tree(browser);
-+        perf_top__header_snprintf(top, title, sizeof(title));
-+        perf_top__reset_sample_counters(top);
-+
-+	if (ui_browser__show(&browser->b, title, "ESC: exit") < 0)
-+		return -1;
-+
-+	newtFormSetTimer(browser->b.form, delay_msecs);
-+
-+	while (1) {
-+		key = ui_browser__run(&browser->b);
-+
-+		switch (key) {
-+		case -1:
-+			/* FIXME we need to check if it was es.reason == NEWT_EXIT_TIMER */
-+			perf_top_browser__update_rb_tree(browser);
-+			perf_top__header_snprintf(top, title, sizeof(title));
-+			perf_top__reset_sample_counters(top);
-+			ui_browser__set_color(&browser->b, NEWT_COLORSET_ROOT);
-+			SLsmg_gotorc(0, 0);
-+			slsmg_write_nstring(title, browser->b.width);
-+			break;
-+		case NEWT_KEY_TAB:
-+		default:
-+			goto out;
-+		}
-+	}
-+out:
-+	ui_browser__hide(&browser->b);
-+	return key;
-+}
-+
-+int perf_top__tui_browser(struct perf_top *top)
-+{
-+	struct perf_top_browser browser = {
-+		.b = {
-+			.entries = &browser.root,
-+			.refresh = ui_browser__rb_tree_refresh,
-+			.seek	 = ui_browser__rb_tree_seek,
-+			.write	 = perf_top_browser__write,
-+			.priv	 = top,
-+		},
-+	};
-+
-+	ui_helpline__push("Press <- or ESC to exit");
-+	return perf_top_browser__run(&browser);
-+}
+-#define T_ULONG_LONG T_ULONG
+-
+ #define sample_members \
+-	sample_member_def(sample_ip, ip, T_ULONG_LONG, "event type"),			 \
++	sample_member_def(sample_ip, ip, T_ULONGLONG, "event type"),			 \
+ 	sample_member_def(sample_pid, pid, T_INT, "event pid"),			 \
+ 	sample_member_def(sample_tid, tid, T_INT, "event tid"),			 \
+-	sample_member_def(sample_time, time, T_ULONG_LONG, "event timestamp"),		 \
+-	sample_member_def(sample_addr, addr, T_ULONG_LONG, "event addr"),		 \
+-	sample_member_def(sample_id, id, T_ULONG_LONG, "event id"),			 \
+-	sample_member_def(sample_stream_id, stream_id, T_ULONG_LONG, "event stream id"), \
+-	sample_member_def(sample_period, period, T_ULONG_LONG, "event period"),		 \
++	sample_member_def(sample_time, time, T_ULONGLONG, "event timestamp"),		 \
++	sample_member_def(sample_addr, addr, T_ULONGLONG, "event addr"),		 \
++	sample_member_def(sample_id, id, T_ULONGLONG, "event id"),			 \
++	sample_member_def(sample_stream_id, stream_id, T_ULONGLONG, "event stream id"), \
++	sample_member_def(sample_period, period, T_ULONGLONG, "event period"),		 \
+ 	sample_member_def(sample_cpu, cpu, T_UINT, "event cpu"),
+ 
+ static char pyrf_mmap_event__doc[] = PyDoc_STR("perf mmap event object.");
+@@ -51,11 +51,11 @@ static PyMemberDef pyrf_mmap_event__members[] = {
+ 	member_def(perf_event_header, type, T_UINT, "event type"),
+ 	member_def(mmap_event, pid, T_UINT, "event pid"),
+ 	member_def(mmap_event, tid, T_UINT, "event tid"),
+-	member_def(mmap_event, start, T_ULONG_LONG, "start of the map"),
+-	member_def(mmap_event, len, T_ULONG_LONG, "map length"),
+-	member_def(mmap_event, pgoff, T_ULONG_LONG, "page offset"),
++	member_def(mmap_event, start, T_ULONGLONG, "start of the map"),
++	member_def(mmap_event, len, T_ULONGLONG, "map length"),
++	member_def(mmap_event, pgoff, T_ULONGLONG, "page offset"),
+ 	member_def(mmap_event, filename, T_STRING_INPLACE, "backing store"),
+-	{ NULL, },
++	{ .name = NULL, },
+ };
+ 
+ static PyObject *pyrf_mmap_event__repr(struct pyrf_event *pevent)
+@@ -96,8 +96,8 @@ static PyMemberDef pyrf_task_event__members[] = {
+ 	member_def(fork_event, ppid, T_UINT, "event ppid"),
+ 	member_def(fork_event, tid, T_UINT, "event tid"),
+ 	member_def(fork_event, ptid, T_UINT, "event ptid"),
+-	member_def(fork_event, time, T_ULONG_LONG, "timestamp"),
+-	{ NULL, },
++	member_def(fork_event, time, T_ULONGLONG, "timestamp"),
++	{ .name = NULL, },
+ };
+ 
+ static PyObject *pyrf_task_event__repr(struct pyrf_event *pevent)
+@@ -130,7 +130,7 @@ static PyMemberDef pyrf_comm_event__members[] = {
+ 	member_def(comm_event, pid, T_UINT, "event pid"),
+ 	member_def(comm_event, tid, T_UINT, "event tid"),
+ 	member_def(comm_event, comm, T_STRING_INPLACE, "process name"),
+-	{ NULL, },
++	{ .name = NULL, },
+ };
+ 
+ static PyObject *pyrf_comm_event__repr(struct pyrf_event *pevent)
+@@ -156,10 +156,10 @@ static char pyrf_throttle_event__doc[] = PyDoc_STR("perf throttle event object."
+ static PyMemberDef pyrf_throttle_event__members[] = {
+ 	sample_members
+ 	member_def(perf_event_header, type, T_UINT, "event type"),
+-	member_def(throttle_event, time, T_ULONG_LONG, "timestamp"),
+-	member_def(throttle_event, id, T_ULONG_LONG, "event id"),
+-	member_def(throttle_event, stream_id, T_ULONG_LONG, "event stream id"),
+-	{ NULL, },
++	member_def(throttle_event, time, T_ULONGLONG, "timestamp"),
++	member_def(throttle_event, id, T_ULONGLONG, "event id"),
++	member_def(throttle_event, stream_id, T_ULONGLONG, "event stream id"),
++	{ .name = NULL, },
+ };
+ 
+ static PyObject *pyrf_throttle_event__repr(struct pyrf_event *pevent)
+@@ -522,7 +522,7 @@ static PyMethodDef pyrf_evsel__methods[] = {
+ 		.ml_flags = METH_VARARGS | METH_KEYWORDS,
+ 		.ml_doc	  = PyDoc_STR("open the event selector file descriptor table.")
+ 	},
+-	{ NULL, }
++	{ .ml_name = NULL, }
+ };
+ 
+ static char pyrf_evsel__doc[] = PyDoc_STR("perf event selector list object.");
+@@ -551,7 +551,7 @@ struct pyrf_evlist {
+ };
+ 
+ static int pyrf_evlist__init(struct pyrf_evlist *pevlist,
+-			     PyObject *args, PyObject *kwargs)
++			     PyObject *args, PyObject *kwargs __used)
+ {
+ 	PyObject *pcpus = NULL, *pthreads = NULL;
+ 	struct cpu_map *cpus;
+@@ -613,7 +613,7 @@ static PyObject *pyrf_evlist__poll(struct pyrf_evlist *pevlist,
+ }
+ 
+ static PyObject *pyrf_evlist__get_pollfd(struct pyrf_evlist *pevlist,
+-					 PyObject *args, PyObject *kwargs)
++					 PyObject *args __used, PyObject *kwargs __used)
+ {
+ 	struct perf_evlist *evlist = &pevlist->evlist;
+         PyObject *list = PyList_New(0);
+@@ -645,7 +645,7 @@ free_list:
+ 
+ 
+ static PyObject *pyrf_evlist__add(struct pyrf_evlist *pevlist,
+-				  PyObject *args, PyObject *kwargs)
++				  PyObject *args, PyObject *kwargs __used)
+ {
+ 	struct perf_evlist *evlist = &pevlist->evlist;
+ 	PyObject *pevsel;
+@@ -724,7 +724,7 @@ static PyMethodDef pyrf_evlist__methods[] = {
+ 		.ml_flags = METH_VARARGS | METH_KEYWORDS,
+ 		.ml_doc	  = PyDoc_STR("reads an event.")
+ 	},
+-	{ NULL, }
++	{ .ml_name = NULL, }
+ };
+ 
+ static Py_ssize_t pyrf_evlist__length(PyObject *obj)
+@@ -840,11 +840,11 @@ static struct {
+ 	{ "RECORD_FORK",       PERF_RECORD_FORK },
+ 	{ "RECORD_READ",       PERF_RECORD_READ },
+ 	{ "RECORD_SAMPLE",     PERF_RECORD_SAMPLE },
+-	{ NULL, },
++	{ .name = NULL, },
+ };
+ 
+ static PyMethodDef perf__methods[] = {
+-	{ NULL, NULL }
++	{ .ml_name = NULL, }
+ };
+ 
+ PyMODINIT_FUNC initperf(void)
+diff --git a/tools/perf/util/setup.py b/tools/perf/util/setup.py
+index 496d7f4..1947b04 100644
+--- a/tools/perf/util/setup.py
++++ b/tools/perf/util/setup.py
+@@ -6,7 +6,8 @@ perf = Extension('perf',
+ 		  sources = ['util/python.c', 'util/ctype.c', 'util/evlist.c',
+ 			     'util/evsel.c', 'util/cpumap.c', 'util/thread_map.c',
+ 			     'util/util.c', 'util/xyarray.c'],
+-		  include_dirs = ['util/include'])
++		  include_dirs = ['util/include'],
++		  extra_compile_args = ['-fno-strict-aliasing', '-Wno-write-strings'])
+ 
+ setup(name='perf',
+       version='0.1',
