@@ -1,144 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848Ab1BAXQt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 18:16:49 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:46634 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751183Ab1BAXQs (ORCPT
+	id S1751661Ab1BAXZs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 18:25:48 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:34335 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052Ab1BAXZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 18:16:48 -0500
-Date: Tue, 1 Feb 2011 17:16:42 -0600
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-To: Roberto Sassu <roberto.sassu@polito.it>
-Cc: kirkland@canonical.com, dhowells@redhat.com, keyrings@linux-nfs.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] eCryptfs: lock requested keys for writing
-Message-ID: <20110201231641.GC23518@boyd.l.tihix.com>
-References: <1296211326-2437-1-git-send-email-roberto.sassu@polito.it>
- <1296211326-2437-2-git-send-email-roberto.sassu@polito.it>
+	Tue, 1 Feb 2011 18:25:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=KUrKXwl49T/MIxSJ+9qYXQcbZfJHl5kgWIhprw1xwizjNSUxUQZEQrTa5eZR/iaLJd
+         p0YSFg0NSPRY1F0vFCLh3ZWW+fekPhzVGg8w/1iJWtcUoYG4rbFp2d6LUyCIXFPEM8xH
+         JcQqvODhEbXnZaj2BF84lYtsDlwabDVTxZnFE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296211326-2437-2-git-send-email-roberto.sassu@polito.it>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Wed, 2 Feb 2011 00:25:46 +0100
+Message-ID: <AANLkTikFBZT6+8_MAJ6xd+uPrwJnomPbhX9toNuncm0N@mail.gmail.com>
+Subject: Change DECOMPRESS_LZMA to boolean
+From: Marcel Korpel <marcel.lists@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri Jan 28, 2011 at 11:42:04AM +0100, Roberto Sassu <roberto.sassu@polito.it> wrote:
-> Keys requested by eCryptfs are exclusively locked in order to prevent
-> modifications by other subjects. In particular those which description is
-> specified at mount time are locked until the filesystem is unmounted, these
+On Sun, 03 Jan 2010 00:55:55 +0000 Phillip Lougher wrote:
+> Randy Dunlap wrote:
+> > From: Randy Dunlap <randy.dunlap@oracle.com>
+> >
+> > When CONFIG_SQUASHFS=m and CONFIG_DECOMPRESS_LZMA=m, decompress_lzma
+> > is built but then discarded from the library because no built-in code
+> > uses it, so change it from a lib- to an obj- to force it to be kept
+> > in the library.
+> >
+> > ERROR: "unlzma" [fs/squashfs/squashfs.ko] undefined!
+> >
+>
+> Thanks for fixing this, I should have spotted it in my various
+> config tests but didn't.  I could add this to my squashfs-next patches
+> to stop the linux-next tree breakage, however, should it go into
+> Michal's kbuild -next tree instead?
+>
+> This patch raises a small additional issue, why is DECOMPRESS_LZMA
+> (and DECOMPRESS_GZIP/DECOMPRESS_BZIP2) and defined as tristate?
+> None of the above compressors can be built as modules.
 
-I don't think the approach taken for the mount wide keys will work for a
-couple reasons. The first is that lockdep reports this after a mount:
+I just ran into this exact same issue, when disabling DEV_BLK_INITRD
+and setting SQUASHFS to "m" and selecting SQUASHFS_LZMA. The option
+then evaluates to:
 
-================================================
-[ BUG: lock held when returning to user space! ]
-------------------------------------------------
-mount/1019 is leaving the kernel with locks still held!
-1 lock held by mount/1019:
-#0:  (&key->sem){+.+.+.}, at: [<ffffffffa021ff12>] ecryptfs_keyring_auth_tok_for_sig+0xe6/0x195 [ecryptfs]
+  DECOMPRESS_LZMA [=m]
+  Selected by: RD_LZMA [=n] && BLK_DEV_INITRD [=n] ||
+  SQUASHFS_LZMA [=y] && MISC_FILESYSTEMS [=y] && SQUASHFS [=m]
 
-The second is that while this does prevent key_update() from updating
-the key underneath us, it just results in `keyctl update` on a mount key
-to become a hung task until unmounting the eCryptfs mount.
+With these settings the linker complains:
 
-It looks like we'll have to have more efficient locking for mount keys.
+  Error: "unlzma" [fs/squashfs/squashfs.ko] undefined
 
-Tyler
+Please change DECOMPRESS_LZMA (and perhaps the other DECOMPRESS_*
+symbols) to boolean.
 
-> required to decrypt a single file are unlocked immediately after the open.
-> 
-> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
-> Reported-by: David Howells <dhowells@redhat.com>
-> ---
->  fs/ecryptfs/crypto.c   |    4 +++-
->  fs/ecryptfs/keystore.c |   15 ++++++++++++---
->  2 files changed, 15 insertions(+), 4 deletions(-)
-> 
-> diff --git a/fs/ecryptfs/crypto.c b/fs/ecryptfs/crypto.c
-> index bfd8b68..6b32776 100644
-> --- a/fs/ecryptfs/crypto.c
-> +++ b/fs/ecryptfs/crypto.c
-> @@ -268,8 +268,10 @@ void ecryptfs_destroy_mount_crypt_stat(
->  		list_del(&auth_tok->mount_crypt_stat_list);
->  		mount_crypt_stat->num_global_auth_toks--;
->  		if (auth_tok->global_auth_tok_key
-> -		    && !(auth_tok->flags & ECRYPTFS_AUTH_TOK_INVALID))
-> +		    && !(auth_tok->flags & ECRYPTFS_AUTH_TOK_INVALID)) {
-> +			up_write(&(auth_tok->global_auth_tok_key->sem));
->  			key_put(auth_tok->global_auth_tok_key);
-> +		}
->  		kmem_cache_free(ecryptfs_global_auth_tok_cache, auth_tok);
->  	}
->  	mutex_unlock(&mount_crypt_stat->global_auth_tok_list_mutex);
-> diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
-> index 4feb78c..c90456a 100644
-> --- a/fs/ecryptfs/keystore.c
-> +++ b/fs/ecryptfs/keystore.c
-> @@ -765,8 +765,10 @@ out_free_unlock:
->  out_unlock:
->  	mutex_unlock(s->tfm_mutex);
->  out:
-> -	if (auth_tok_key)
-> +	if (auth_tok_key) {
-> +		up_write(&(auth_tok_key->sem));
->  		key_put(auth_tok_key);
-> +	}
->  	kfree(s);
->  	return rc;
->  }
-> @@ -1002,8 +1004,10 @@ out:
->  		(*filename_size) = 0;
->  		(*filename) = NULL;
->  	}
-> -	if (auth_tok_key)
-> +	if (auth_tok_key) {
-> +		up_write(&(auth_tok_key->sem));
->  		key_put(auth_tok_key);
-> +	}
->  	kfree(s);
->  	return rc;
->  }
-> @@ -1566,6 +1570,7 @@ int ecryptfs_keyring_auth_tok_for_sig(struct key **auth_tok_key,
->  		(*auth_tok_key) = NULL;
->  		goto out;
->  	}
-> +	down_write(&((*auth_tok_key)->sem));
->  	(*auth_tok) = ecryptfs_get_key_payload_data(*auth_tok_key);
->  	if (ecryptfs_verify_version((*auth_tok)->version)) {
->  		printk(KERN_ERR
-> @@ -1587,6 +1592,7 @@ int ecryptfs_keyring_auth_tok_for_sig(struct key **auth_tok_key,
->  	}
->  out_release_key:
->  	if (rc) {
-> +		up_write(&((*auth_tok_key)->sem));
->  		key_put(*auth_tok_key);
->  		(*auth_tok_key) = NULL;
->  	}
-> @@ -1810,6 +1816,7 @@ int ecryptfs_parse_packet_set(struct ecryptfs_crypt_stat *crypt_stat,
->  find_next_matching_auth_tok:
->  	found_auth_tok = 0;
->  	if (auth_tok_key) {
-> +		up_write(&(auth_tok_key->sem));
->  		key_put(auth_tok_key);
->  		auth_tok_key = NULL;
->  	}
-> @@ -1896,8 +1903,10 @@ found_matching_auth_tok:
->  out_wipe_list:
->  	wipe_auth_tok_list(&auth_tok_list);
->  out:
-> -	if (auth_tok_key)
-> +	if (auth_tok_key) {
-> +		up_write(&(auth_tok_key->sem));
->  		key_put(auth_tok_key);
-> +	}
->  	return rc;
->  }
-> 
-> -- 
-> 1.7.3.4
-> 
-
-
+Regards,
+Marcel
