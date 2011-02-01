@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785Ab1BAPyF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 10:54:05 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45364 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752949Ab1BAPyC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 10:54:02 -0500
-Date: Tue, 1 Feb 2011 16:53:44 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Jeremy Kerr <jeremy.kerr@canonical.com>, Dima Zavin <dmitriyz@google.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        linux-sh@vger.kernel.org, Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>, Ben Dooks <ben-linux@fluff.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: Re: Locking in the clk API, part 2: clk_prepare/clk_unprepare
-Message-ID: <20110201155344.GF1147@pengutronix.de>
-References: <201102011711.31258.jeremy.kerr@canonical.com>
- <20110201105449.GY1147@pengutronix.de>
- <20110201131512.GH31216@n2100.arm.linux.org.uk>
- <20110201141837.GA1147@pengutronix.de>
- <20110201143932.GK31216@n2100.arm.linux.org.uk>
- <20110201151846.GD1147@pengutronix.de>
- <20110201152458.GP31216@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110201152458.GP31216@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1754098Ab1BAPyo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 10:54:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14307 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751436Ab1BAPyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 10:54:43 -0500
+Subject: Re: [PATCH v2 6/6] Describe KVM_MSR_STEAL_TIME
+From: Glauber Costa <glommer@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com
+In-Reply-To: <4D456555.2030606@redhat.com>
+References: <1296244340-15173-1-git-send-email-glommer@redhat.com>
+	 <1296244340-15173-7-git-send-email-glommer@redhat.com>
+	 <4D456555.2030606@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat
+Date: Tue, 01 Feb 2011 13:54:40 -0200
+Message-ID: <1296575680.5081.14.camel@mothafucka.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 01, 2011 at 03:24:58PM +0000, Russell King - ARM Linux wrote:
-> On Tue, Feb 01, 2011 at 04:18:46PM +0100, Uwe Kleine-König wrote:
-> > yeah, didn't thought about multiple consumers, so (as Jeremy suggested)
-> > the right thing is to sleep until CLK_BUSY is cleared.
+On Sun, 2011-01-30 at 15:19 +0200, Avi Kivity wrote:
+> On 01/28/2011 09:52 PM, Glauber Costa wrote:
+> > This patch adds documentation about usage of the newly
+> > introduced KVM_MSR_STEAL_TIME.
+> >
+> >
+> > +
+> > +MSR_KVM_STEAL_TIME: 0x4b564d03
+> > +
+> > +	data: 4-byte alignment physical address of a memory area which must be
+> > +	in guest RAM, plus an enable bit in bit 0.
 > 
-> A simpler way to write this is:
+> 64-byte aligned:
+> - avoids wrapping around a page boundary, which may let us optimize 
+> things later on (see kvm_write_guest_cached()).
+> - gives us 5 more unused bits to enable more options
 > 
-> int clk_prepare(struct clk *clk)
-> {
-> 	int ret = 0;
+> >   This memory is expected to
+> > +	hold a copy of the following structure:
+> > +
+> > +	struct kvm_steal_time {
+> > +	  	__u64 steal;
+> > + 		__u32 version;
+> > + 		__u32 flags;
+> > +	 	__u32 pad[6];
+> > +	}
+> > +
+> > +	whose data will be filled in by the hypervisor periodically. Only one
+> > +	write, or registration, is needed for each VCPU. The interval between
+> > +	updates of this structure is arbitrary and implementation-dependent.
+> > +	The hypervisor may update this structure at any time it sees fit until
+> > +	anything with bit0 == 0 is written to it.
+> > +
+> > +	Fields have the following meanings:
+> > +
+> > +		version: guest has to check version before and after grabbing
+> > +		time information and check that they are both equal and even.
+> > +		An odd version indicates an in-progress update.
+> > +
+> > +		flags: At this point, always zero. May be used to indicate
+> > +		changes in this structure in the future.
+> > +
+> > +		steal: the amount of time in which this vCPU did not run, in
+> > +		nanoseconds.
+> > +
 > 
-> 	mutex_lock(&clk->mutex);
-> 	if (clk->prepared == 0)
-> 		ret = clk->ops->prepare(clk);
-> 	if (ret == 0)
-> 		clk->prepared++;
-> 	mutex_unlock(&clk->mutex);
-> 
-> 	return ret;
-> }
-But you cannot call this in atomic context when you know the clock is
-already prepared.
+> The guest must initialize the entire 64-byte structure to zero before 
+> enabling the feature.
 
-Best regards
-Uwe
+I honestly don't see why. But I also don't see why not... 
+Will update it.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
