@@ -1,58 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756868Ab1BANhQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 08:37:16 -0500
-Received: from smtp-gw21.han.skanova.net ([81.236.55.21]:52442 "EHLO
-	smtp-gw21.han.skanova.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753273Ab1BANhO convert rfc822-to-8bit (ORCPT
+	id S1754686Ab1BANsA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 08:48:00 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:11136 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751935Ab1BANr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 08:37:14 -0500
-MIME-Version: 1.0
-X-Mailer: AfterLogic WebMail PHP
-X-Originating-IP: 194.237.142.5
-X-Priority: 3 (Normal)
-Message-ID: <7j2t3lt.0ab80c5ea7f72ca6b614a185210e9698@obelix.schillstrom.com>
-From: "Hans Schillstrom" <hans@schillstrom.com>
-To: "Simon Horman" <horms@verge.net.au>
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lvs-devel@vger.kernel.org,
-        "Randy Dunlap" <randy.dunlap@oracle.com>,
-        "Stephen Rothwell" <sfr@canb.auug.org.au>,
-        "Patrick McHardy" <kaber@trash.net>
-Subject: Re: [GIT PULL nf-next-2.6 v2] IPVS build fixes and clean-ups
-Date: Tue, 1 Feb 2011 14:36:59 +0100 (CET)
-Content-Type: text/plain;
-	charset="utf-8"
-Content-Transfer-Encoding: 8BIT
+	Tue, 1 Feb 2011 08:47:58 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6243"; a="72780212"
+From: Anirudh Ghayal <aghayal@codeaurora.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-input@vger.kernel.org, rtc-linux@googlegroups.com,
+        linux-arm-msm@vger.kernel.org, Anirudh Ghayal <aghayal@codeaurora.org>
+Subject: [RFC v2 PATCH 0/7] Qualcomm PMIC8058 sub-device drivers
+Date: Tue,  1 Feb 2011 19:17:36 +0530
+Message-Id: <1296568063-12010-1-git-send-email-aghayal@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->---- Original Message ----
->From: Simon Horman <horms@verge.net.au>
->To: netdev@vger.kernel.org, linux-next@vger.kernel.org, linux-kernel@vger.kernel.org, lvs-devel@vger.kernel.org
->Cc: "Randy Dunlap" <randy.dunlap@oracle.com>, "Stephen Rothwell" <sfr@canb.auug.org.au>, "Hans Schillstrom" <hans@schillstrom.com>, "Patrick McHardy" <kaber@trash.net>
->Sent: Tue, Feb 1, 2011, 11:11 AM
->Subject: [GIT PULL nf-next-2.6 v2] IPVS build fixes and clean-ups
->
->This short patch series addresses two linux-next build problems
->raised by Randy Dunlap:
->
->* net/netfilter/ipvs/ip_vs_core.c:1891: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'unsigned int'
->* ERROR: "unregister_net_sysctl_table" [net/netfilter/ipvs/ip_vs.ko]
->  ERROR: "register_net_sysctl_table" [net/netfilter/ipvs/ip_vs.ko] undefined!
->* WARNING: net/netfilter/ipvs/ip_vs.o(.init.text+0x161): Section mismatch in reference from the function init_module() to the function .exit.text:ip_vs_sync_cleanup()
->
->The remainder of the changsets are cleanups that I noticed along the way.
->
->The changes are available at
->git://git.kernel.org/pub/scm/linux/kernel/git/horms/lvs-test-2.6.git master
->
->They are currently compile-tested only.
->
+This patch series contains the V2 RFC version of sub-device drivers
+for Qualcomm PMIC8058. It is submitted here as RFC, due the dependent
+drivers like PMIC8058 core driver and SSBI bus driver are not yet
+merged into the mainline. We are sending these patches early to get
+the feedback from the community.
 
-I will try to test this today
+In this V2 version we have added one new driver- PM8058 based vibrator.
 
-Regards
-Hans Schillstrom <hans@schillstrom.com>
+If you want to refer the PMIC8058 core and SSBI driver they are available
+here:
+
+PMIC8058 core driver:
+https://www.codeaurora.org/gitweb/quic/la/?p=kernel/msm.git;a=blob;f=drivers/mfd/pmic8058.c;h=dc561988c474721d76178ab1a2f82a3a4d1b03a1;hb=refs/heads/msm-2.6.35
+
+SSBI driver:
+https://www.codeaurora.org/gitweb/quic/la/?p=kernel/msm.git;a=blob;f=drivers/i2c/busses/i2c-ssbi.c;h=5bfcf3cb96f0c2e0f1a6b7f789458d2faf67f260;hb=refs/heads/msm-2.6.35
+
+Amy Maloche (1):
+  input: misc: Add support for PM8058 based vibrator driver
+
+Anirudh Ghayal (2):
+  input: pmic8058-othc: Add support for PM8058 based OTHC
+  drivers: rtc: Add support for Qualcomm PMIC8058 RTC
+
+Trilok Soni (4):
+  matrix_keypad: Increase the max limit of rows and columns
+  input: pm8058_keypad: Qualcomm PMIC8058 keypad controller driver
+  led: pmic8058: Add PMIC8058 leds driver
+  input: pmic8058_pwrkey: Add support for power key
+
+ drivers/input/keyboard/Kconfig           |   11 +
+ drivers/input/keyboard/Makefile          |    1 +
+ drivers/input/keyboard/pmic8058-keypad.c |  754 ++++++++++++++++++++++++++++++
+ drivers/input/misc/Kconfig               |   32 ++
+ drivers/input/misc/Makefile              |    3 +
+ drivers/input/misc/pmic8058-othc.c       |  535 +++++++++++++++++++++
+ drivers/input/misc/pmic8058-pwrkey.c     |  318 +++++++++++++
+ drivers/input/misc/pmic8058-vibrator.c   |  306 ++++++++++++
+ drivers/leds/Kconfig                     |   11 +
+ drivers/leds/Makefile                    |    1 +
+ drivers/leds/leds-pmic8058.c             |  360 ++++++++++++++
+ drivers/rtc/Kconfig                      |    9 +
+ drivers/rtc/Makefile                     |    1 +
+ drivers/rtc/rtc-pm8058.c                 |  488 +++++++++++++++++++
+ include/linux/input/matrix_keypad.h      |    4 +-
+ include/linux/input/pmic8058-keypad.h    |   53 +++
+ include/linux/input/pmic8058-othc.h      |  117 +++++
+ include/linux/input/pmic8058-pwrkey.h    |   37 ++
+ include/linux/leds-pmic8058.h            |   61 +++
+ include/linux/rtc/rtc-pm8058.h           |   29 ++
+ 20 files changed, 3129 insertions(+), 2 deletions(-)
+ create mode 100644 drivers/input/keyboard/pmic8058-keypad.c
+ create mode 100644 drivers/input/misc/pmic8058-othc.c
+ create mode 100644 drivers/input/misc/pmic8058-pwrkey.c
+ create mode 100644 drivers/input/misc/pmic8058-vibrator.c
+ create mode 100644 drivers/leds/leds-pmic8058.c
+ create mode 100644 drivers/rtc/rtc-pm8058.c
+ create mode 100644 include/linux/input/pmic8058-keypad.h
+ create mode 100644 include/linux/input/pmic8058-othc.h
+ create mode 100644 include/linux/input/pmic8058-pwrkey.h
+ create mode 100644 include/linux/leds-pmic8058.h
+ create mode 100644 include/linux/rtc/rtc-pm8058.h
+
+-- 
+1.7.3.5
 
