@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab1BARdz (ORCPT <rfc822;w@1wt.eu>);
+	id S1755338Ab1BARdz (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 1 Feb 2011 12:33:55 -0500
-Received: from verein.lst.de ([213.95.11.210]:47343 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753912Ab1BARdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+Received: from rcsinet10.oracle.com ([148.87.113.121]:52586 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752241Ab1BARdx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Feb 2011 12:33:53 -0500
-Date: Tue, 1 Feb 2011 18:33:12 +0100
-From: Christoph Hellwig <hch@lst.de>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Christoph Hellwig <hch@lst.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        linux-kernel@vger.kernel.org, virtualization@lists.osdl.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH] virtio_blk: allow re-reading config space at runtime
-Message-ID: <20110201173312.GD16883@lst.de>
-References: <20110114160137.GA18721@lst.de> <20110127153220.GB4898@redhat.com>
+Date: Tue, 1 Feb 2011 09:32:56 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for February 1 (sound/soc)
+Message-Id: <20110201093256.f5ff0252.randy.dunlap@oracle.com>
+In-Reply-To: <20110201153403.b3a251a3.sfr@canb.auug.org.au>
+References: <20110201153403.b3a251a3.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110127153220.GB4898@redhat.com>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 27, 2011 at 05:32:21PM +0200, Michael S. Tsirkin wrote:
-> This needs to be flushed on device removal, I think,
-> otherwise the vdev pointer will go stale.
+On Tue, 1 Feb 2011 15:34:03 +1100 Stephen Rothwell wrote:
 
-Indeed.
-
+> Hi all,
 > 
-> > +}
-> > +
-> > +
-> 
-> Two empty lines :)
+> Changes since 20110131:
 
 
-I'll fix it up.
+When CONFIG_PM_SLEEP is not enabled:
 
+sound/soc/soc-core.c:1785: error: 'soc_resume_deferred' undeclared (first use in this function)
+
+That function call is surrounded by CONFIG_PM but the function itself is
+surrounded by CONFIG_PM_SLEEP.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
