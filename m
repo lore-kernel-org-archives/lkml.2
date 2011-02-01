@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540Ab1BAIcx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 03:32:53 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:39807 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204Ab1BAIcw convert rfc822-to-8bit (ORCPT
+	id S1752592Ab1BAIon (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 03:44:43 -0500
+Received: from mail4.comsite.net ([205.238.176.238]:43056 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293Ab1BAIom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 03:32:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:date:message-id:subject:from:to:cc
-         :content-type:content-transfer-encoding;
-        b=iqnizxj9/4UwwjhhOjoRIbi5Tvjq3daiJAxa4BuvzKsrs5i8WHQ50EwAzL4R87HtbK
-         xISim5yRrEb5wbsqBHfwflrReZP+Mu4iNXOrGgVv5393cuzQTuzWgytmDqc0RvU8a1/S
-         ZfNMxUG3U1ZMOHD+rhlU5M07i+3tx5DSbmtI4=
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Tue, 1 Feb 2011 09:32:51 +0100
-Message-ID: <AANLkTi=wj05GrQ2r-GAbaX1zSQzMN8FJV_2d7c-kv33L@mail.gmail.com>
-Subject: =?UTF-8?B?UmU6IGxpbnV4LW5leHQ6IFRyZWUgZm9yIEZlYnJ1YXJ5IDEgWyBzdGFnaW5nL3VzYnZpZA==?=
-	=?UTF-8?B?ZW8vdmljYW0uYzogZXJyb3I6IGV4cGVjdGVkIOKAmDvigJkgYmVmb3JlIOKAmCnigJkgdG9rZW4gXQ==?=
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 1 Feb 2011 03:44:42 -0500
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
+From: Milton Miller <miltonm@bga.com>
+In-Reply-To: <4D47D21E020000780002F9FB@vpn.id2.novell.com>
+References: <4D47D21E020000780002F9FB@vpn.id2.novell.com>
+To: Jan Beulich <JBeulich@novell.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: Re: calling smp_call_function_many() with non-stable CPU mask
+Date: Tue, 01 Feb 2011 02:44:41 -0600
+X-Originating-IP: 71.22.127.106
+Message-ID: <1296549881_6450@mail4.comsite.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 1, 2011 at 5:34 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> Changes since 20110131:
->
-> Dropped tree: xen
->
-> The tty.current tree lost its conflict.
->
-> The slab tree still has its build failure so I used the version from
-> next-20110121.
->
-> The suspend tree lost its build failure.
->
-> The sparc64 defconfig build has been fixed.
->
-> The powerpc allyesconfig build has been broken by some obscure bloating
-> of the low memory code.
->
-> ----------------------------------------------------------------------------
+> There are a couple of examples of smp_call_function_many() getting
+> called with mm_cpumask() as the first argument. Since that mask
+> generally can change while smp_call_function_many() is executing,
+> it seems there might be a problem with the case where that mask
+> becomes empty after the initial checks, but before the mask is made
+> permanent (by copying into data->cpumask).
+> 
+> Shouldn't there be a check of data->refs being zero right after
+> setting it (to avoid having csd_lock_wait() wait for a remote CPU
+> to clear the lock flag, and to avoid adding the entry to
+> call_function.queue)?
+> 
+> If that isn't considered necessary, is it then incorrect to pass
+> in-flight CPU masks to smp_call_function_many() (and should
+> this requirement then be documented somewhere, and the
+> existing calls all be inspected for correctness)?
+> 
 
-[ CC greg-kh ]
+Mike Galbraith just brought this up, and I supplied a patch, and even
+a rediff on top of other changes:
 
-Build error:
-...
-drivers/staging/usbvideo/vicam.c:222:57: error: expected ‘;’ before ‘)’ token
-drivers/staging/usbvideo/vicam.c:222:57: error: expected statement
-before ‘)’ token
-...
+http://lkml.indiana.edu/hypermail/linux/kernel/1101.3/02813.html
+http://lkml.indiana.edu/hypermail/linux/kernel/1101.3/03172.html
 
-This should be fixed by:
+http://lkml.indiana.edu/hypermail/linux/kernel/1102.0/00017.html
 
-Index: linux-next-20110201/drivers/staging/usbvideo/vicam.c
-===================================================================
---- linux-next-20110201.orig/drivers/staging/usbvideo/vicam.c
-+++ linux-next-20110201/drivers/staging/usbvideo/vicam.c
-@@ -219,7 +219,7 @@ set_camera_power(struct vicam_camera *ca
- {
-        int status;
 
--       status = send_control_msg(cam, 0x50, state, 0, NULL, 0));
-+       status = send_control_msg(cam, 0x50, state, 0, NULL, 0);
-        if (status < 0)
-                return status;
+This doesn't address https://bugzilla.kernel.org/show_bug.cgi?id=23042 
+which is x86 not expecting the mask to be cleared while its thinking
+about the mask.
 
-- Sedat -
+milton
