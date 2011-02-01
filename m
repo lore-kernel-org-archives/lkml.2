@@ -1,102 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032Ab1BAGso (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 01:48:44 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:38338 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828Ab1BAGsn (ORCPT
+	id S1751754Ab1BAHMU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 02:12:20 -0500
+Received: from mail4.comsite.net ([205.238.176.238]:43649 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859Ab1BAHMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 01:48:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=jFidL1FvYpQCb/5RpOpIbqAOa6neFbs9XX4Jme1KPcOPtNib2PDeztyIYKLq3qoEKF
-         qbhzEw16yyPQiJ7w0D8LwHWgY44dV+3bYeWkVwxiqYiTmt067V5/PcoFQdF/l5wAZsNr
-         AcAQfQgVtAjtHnn6k4Q0RHL09NlwPkFbMpvZs=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH]drivers:staging:pohmelfs Fix some typos, and comments.
-Date: Mon, 31 Jan 2011 22:48:25 -0800
-Message-Id: <1296542905-27118-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.6.5.GIT
+	Tue, 1 Feb 2011 02:12:19 -0500
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
+Subject: [PATCH 1/3 v2] call_function_many: fix list delete vs add race
+From: Milton Miller <miltonm@bga.com>
+To: Peter Zijlstra <peterz@infradead.org>, akpm@linux-foundation.org
+Cc: Anton Blanchard <anton@samba.org>, xiaoguangrong@cn.fujitsu.com,
+        mingo@elte.hu, jaxboe@fusionio.com, npiggin@gmail.com,
+        rusty@rustcorp.com.au, efault@gmx.de, torvalds@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, benh@kernel.crashing.org,
+        linux-kernel@vger.kernel.org
+References: <20110112150740.77dde58c@kryten>
+	 <1295288253.30950.280.camel@laptop>
+	 <smp-call-function-peter-reply@mdm.bga.com>
+	 <smp-call-function-move-writes@mdm.bga.com>
+	 <1296145360.15234.234.camel@laptop> 
+	 <smp-call-function-list-race@mdm.bga.com>
+	 <smp-call-function-list-race-fix@mdm.bga.com>
+	 <ipi-list-reply@mdm.bga.com>
+In-Reply-To: <ipi-list-reply@mdm.bga.com>
+Message-ID: <smp-call-function-list-race-fix-v2@mdm.bga.com>
+Date: Tue, 01 Feb 2011 01:12:18 -0600
+X-Originating-IP: 71.22.127.106
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch below fixes some typos, and makes some comments sound more proper.
+Peter pointed out there was nothing preventing the list_del_rcu in
+smp_call_function_interrupt from running before the list_add_rcu in
+smp_call_function_many.   Fix this by not setting refs until we
+have gotten the lock for the list.  Take advantage of the wmb in
+list_add_rcu to save an explicit additional one.
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-
+Reported-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Milton Miller <miltonm@bga.com>
 ---
- drivers/staging/pohmelfs/config.c |    2 +-
- drivers/staging/pohmelfs/inode.c  |   10 +++++-----
- drivers/staging/pohmelfs/netfs.h  |    2 +-
- 3 files changed, 7 insertions(+), 7 deletions(-)
+v2: rely on wmb in list_add_rcu not combined partial ordering of spin
+lock and unlock, which may not provide the needed guarantees.
 
-diff --git a/drivers/staging/pohmelfs/config.c b/drivers/staging/pohmelfs/config.c
-index 89279ba..ed91330 100644
---- a/drivers/staging/pohmelfs/config.c
-+++ b/drivers/staging/pohmelfs/config.c
-@@ -134,7 +134,7 @@ int pohmelfs_copy_config(struct pohmelfs_sb *psb)
- 		goto out_unlock;
+I tried to force this race with a udelay before the lock & list_add
+and by mixing all 64 online cpus with just 3 random cpus in the mask,
+but was unsuccessful.  Still, inspection shows a valid race, and the
+fix is a extension of the existing protection window in the current code.
+
+Index: linux-2.6/kernel/smp.c
+===================================================================
+--- linux-2.6.orig/kernel/smp.c	2011-01-31 17:44:47.182756513 -0600
++++ linux-2.6/kernel/smp.c	2011-01-31 18:25:47.266755387 -0600
+@@ -491,14 +491,15 @@ void smp_call_function_many(const struct
+ 	cpumask_clear_cpu(this_cpu, data->cpumask);
  
  	/*
--	 * Run over all entries in given config group and try to crate and
-+	 * Run over all entries in given config group and try to create and
- 	 * initialize those, which do not exist in superblock list.
- 	 * Skip all existing entries.
+-	 * To ensure the interrupt handler gets an complete view
+-	 * we order the cpumask and refs writes and order the read
+-	 * of them in the interrupt handler.  In addition we may
+-	 * only clear our own cpu bit from the mask.
++	 * We reuse the call function data without waiting for any grace
++	 * period after some other cpu removes it from the global queue.
++	 * This means a cpu might find our data block as it is writen.
++	 * The interrupt handler waits until it sees refs filled out
++	 * while its cpu mask bit is set; here we may only clear our
++	 * own cpu mask bit, and must wait to set refs until we are sure
++	 * previous writes are complete and we have obtained the lock to
++	 * add the element to the queue.
  	 */
-diff --git a/drivers/staging/pohmelfs/inode.c b/drivers/staging/pohmelfs/inode.c
-index 56d3a4e..c93ef20 100644
---- a/drivers/staging/pohmelfs/inode.c
-+++ b/drivers/staging/pohmelfs/inode.c
-@@ -834,7 +834,7 @@ static void pohmelfs_i_callback(struct rcu_head *head)
- }
+-	smp_wmb();
+-
+-	atomic_set(&data->refs, cpumask_weight(data->cpumask));
  
- /*
-- * ->detroy_inode() callback. Deletes inode from the caches
-+ * ->destroy_inode() callback. Deletes inode from the caches
-  *  and frees private data.
-  */
- static void pohmelfs_destroy_inode(struct inode *inode)
-@@ -1127,18 +1127,18 @@ static ssize_t pohmelfs_getxattr(struct dentry *dentry, const char *name,
+ 	raw_spin_lock_irqsave(&call_function.lock, flags);
+ 	/*
+@@ -507,6 +508,11 @@ void smp_call_function_many(const struct
+ 	 * will not miss any other list entries:
+ 	 */
+ 	list_add_rcu(&data->csd.list, &call_function.queue);
++	/*
++	 * We rely on the wmb() in list_add_rcu to order the writes
++	 * to func, data, and cpumask before this write to refs.
++	 */
++	atomic_set(&data->refs, cpumask_weight(data->cpumask));
+ 	raw_spin_unlock_irqrestore(&call_function.lock, flags);
  
- 		/*
- 		 * This loop is a bit ugly, since it waits until reference counter
--		 * hits 1 and then put object here. Main goal is to prevent race with
--		 * network thread, when it can start processing given request, i.e.
-+		 * hits 1 and then puts the object here. Main goal is to prevent race with
-+		 * the network thread, when it can start processing the given request, i.e.
- 		 * increase its reference counter but yet not complete it, while
- 		 * we will exit from ->getxattr() with timeout, and although request
- 		 * will not be freed (its reference counter was increased by network
- 		 * thread), data pointer provided by user may be released, so we will
--		 * overwrite already freed area in network thread.
-+		 * overwrite an already freed area in the network thread.
- 		 *
- 		 * Now after timeout we remove request from the cache, so it can not be
- 		 * found by network thread, and wait for its reference counter to hit 1,
- 		 * i.e. if network thread already started to process this request, we wait
--		 * it to finish, and then free object locally. If reference counter is
-+		 * for it to finish, and then free object locally. If reference counter is
- 		 * already 1, i.e. request is not used by anyone else, we can free it without
- 		 * problem.
- 		 */
-diff --git a/drivers/staging/pohmelfs/netfs.h b/drivers/staging/pohmelfs/netfs.h
-index 63391d2..985b6b7 100644
---- a/drivers/staging/pohmelfs/netfs.h
-+++ b/drivers/staging/pohmelfs/netfs.h
-@@ -191,7 +191,7 @@ enum {
- /*
-  * POHMELFS capabilities: information about supported
-  * crypto operations (hash/cipher, modes, key sizes and so on),
-- * root informaion (used/available size, number of objects, permissions)
-+ * root information (used/available size, number of objects, permissions)
-  */
- enum pohmelfs_capabilities {
- 	POHMELFS_CRYPTO_CAPABILITIES = 0,
--- 
-1.6.5.GIT
-
+ 	/*
