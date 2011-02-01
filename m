@@ -1,67 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751793Ab1BAWmi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 17:42:38 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:38462 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751020Ab1BAWmh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 17:42:37 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=W69yw2WiJTHJClTv4qztBH0I92YzAGBjAfYuVDSsnI7bcgBkkJP+FphquiAY4OCcMg
-         y3xxHtzySHdUB3DYZfE+GsNfAjNFEabqTY719AuvqahMOnUOFC+ZRNZ9O6JadcLZlVpg
-         iXMf9EKdMFSkZ+nL9BIrRckggvX78scJhQjLw=
-Message-ID: <4D488C5A.7020107@gmail.com>
-Date: Tue, 01 Feb 2011 16:42:34 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: devicetree-discuss@lists.ozlabs.org, jeremy.kerr@canonical.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        nicolas.pitre@linaro.org
-Subject: Re: [RFC PATCH 3/5] of: add clock providers
-References: <20110126043338.16410.75019.stgit@localhost6.localdomain6> <20110126044416.16410.68942.stgit@localhost6.localdomain6>
-In-Reply-To: <20110126044416.16410.68942.stgit@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751759Ab1BAWoR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 17:44:17 -0500
+Received: from mga02.intel.com ([134.134.136.20]:9683 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751578Ab1BAWoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 17:44:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
+   d="scan'208";a="702996921"
+From: jacob.jun.pan@linux.intel.com
+To: LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Paul Menage <menage@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        container cgroup <containers@lists.linux-foundation.org>
+Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH] cgroups: respect cgroup timer slack value in prctl
+Date: Tue,  1 Feb 2011 14:41:43 -0800
+Message-Id: <1296600103-15726-1-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant,
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
 
-On 01/25/2011 10:44 PM, Grant Likely wrote:
-> +struct clk *of_clk_get(struct device *dev, const char *id)
+Per cgroup timer slack value is used to manage task groups
+for more friendly power management behavior. Once a task is
+attached to a cgroup, we should not allow user to change
+(escape) the per cgroup restriction unless a more relaxed
+timer slack value is given by user via prctl.
 
-It would help if this took a struct device_node rather than struct 
-device. This would allow using of_clk_get directly for cases where you 
-don't have a struct device. This is fairly common in core platform core 
-which are not full drivers. The case I have run into is the timer init 
-code. To make clk_get work, I would have to create a dummy struct device.
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+---
+ include/linux/cgroup.h      |   13 +++++++++++++
+ kernel/cgroup_timer_slack.c |    4 ----
+ kernel/sys.c                |   21 ++++++++++++++++++++-
+ 3 files changed, 33 insertions(+), 5 deletions(-)
 
-Alternatively, an of_clk_get_sys function is needed.
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index ed4ba11..4405666 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -627,6 +627,19 @@ bool css_is_ancestor(struct cgroup_subsys_state *cg,
+ unsigned short css_id(struct cgroup_subsys_state *css);
+ unsigned short css_depth(struct cgroup_subsys_state *css);
+ 
++#ifdef CONFIG_CGROUP_TIMER_SLACK
++struct timer_slack_cgroup {
++	struct cgroup_subsys_state css;
++	unsigned long timer_slack_ns;
++};
++
++static inline struct timer_slack_cgroup *task_timer_slack(struct task_struct *task)
++{
++	return container_of(task_subsys_state(task, timer_slack_subsys_id),
++			    struct timer_slack_cgroup, css);
++}
++#endif
++
+ #else /* !CONFIG_CGROUPS */
+ 
+ static inline int cgroup_init_early(void) { return 0; }
+diff --git a/kernel/cgroup_timer_slack.c b/kernel/cgroup_timer_slack.c
+index daa452d..1de122a 100644
+--- a/kernel/cgroup_timer_slack.c
++++ b/kernel/cgroup_timer_slack.c
+@@ -4,10 +4,6 @@
+ #include <linux/slab.h>
+ 
+ struct cgroup_subsys timer_slack_subsys;
+-struct timer_slack_cgroup {
+-	struct cgroup_subsys_state css;
+-	unsigned long timer_slack_ns;
+-};
+ 
+ static struct timer_slack_cgroup *cgroup_to_tslack_cgroup(struct cgroup *cgroup)
+ {
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 7f5a0cd..433fcdb 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -37,6 +37,8 @@
+ #include <linux/ptrace.h>
+ #include <linux/fs_struct.h>
+ #include <linux/gfp.h>
++#include <linux/cgroup.h>
++#include <linux/init_task.h>
+ 
+ #include <linux/compat.h>
+ #include <linux/syscalls.h>
+@@ -1688,8 +1690,25 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 			if (arg2 <= 0)
+ 				current->timer_slack_ns =
+ 					current->default_timer_slack_ns;
+-			else
++			else {
++#ifdef CONFIG_CGROUP_TIMER_SLACK
++				/* only allow more relaxed slack value than
++				 * the attached timer slack cgroup allows.
++				 */
++				unsigned long cg_timer_slack;
++
++				rcu_read_lock();
++				cg_timer_slack = task_timer_slack(current)->timer_slack_ns;
++				rcu_read_unlock();
++				if (cg_timer_slack < arg2 || cg_timer_slack
++					== TIMER_SLACK_NS_DEFAULT)
++					current->timer_slack_ns = arg2;
++				else
++					return -EINVAL;
++#else
+ 				current->timer_slack_ns = arg2;
++#endif
++			}
+ 			error = 0;
+ 			break;
+ 		case PR_MCE_KILL:
+-- 
+1.7.0.4
 
- > +{
-> +	struct device_node *provnode;
-> +	u32 provhandle;
-> +	int sz;
-> +	struct clk *clk;
-> +	char prop_name[32]; /* 32 is max size of property name */
-> +	const void *prop;
-> +
-> +	dev_dbg(dev, "Looking up %s-clock from device tree\n", id);
-> +
-> +	snprintf(prop_name, 32, "%s-clock", id ? id : "bus");
-
-Many times a module just has 1 clock and id will be NULL. Is "bus-clock" 
-really the best choice of name? A bus clock may exist, but be 
-transparent to s/w. How about allowing "clock" or "%s-clock"?
-
-If bus-clock is the default, then you should add this to the clock 
-binding wiki page.
-
-Rob
