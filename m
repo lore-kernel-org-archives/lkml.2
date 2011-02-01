@@ -1,58 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756047Ab1BASfp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 13:35:45 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:51022 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752664Ab1BASfn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 13:35:43 -0500
-Subject: Re: [PATCH 2/2] hrtimers: Add CLOCK_BOOTTIME clockid, hrtimerbase
- and posix interface
-From: John Stultz <john.stultz@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jamie Lokier <jamie@shareable.org>,
-        Alexander Shishkin <virtuoso@slind.org>,
-        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
-In-Reply-To: <alpine.LFD.2.00.1102011510570.31804@localhost6.localdomain6>
-References: <1296531837-12879-1-git-send-email-john.stultz@linaro.org>
-	 <1296531837-12879-3-git-send-email-john.stultz@linaro.org>
-	 <alpine.LFD.2.00.1102011510570.31804@localhost6.localdomain6>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Feb 2011 10:35:31 -0800
-Message-ID: <1296585331.3336.14.camel@work-vm>
+	id S1756072Ab1BASge (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 13:36:34 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:56734 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752664Ab1BASgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 13:36:33 -0500
+Date: Tue, 1 Feb 2011 10:36:17 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Daniel Drake <dsd@laptop.org>, Grant Likely <grant.likely@secretlab.ca>,
+        linux-kernel@vger.kernel.org, sodaville@linutronix.de, x86@kernel.org,
+        dirk.brandewie@gmail.com
+Subject: Re: [PATCH v2 01/15] x86/e820: remove conditional early mapping in
+ parse_e820_ext
+Message-ID: <20110201103617.2c3aa118@debxo>
+In-Reply-To: <4D4808D2.3080701@linutronix.de>
+References: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de>
+	<1292600033-12271-2-git-send-email-bigeasy@linutronix.de>
+	<20101230083745.GC11721@angua.secretlab.ca>
+	<20110104130839.GA21359@www.tglx.de>
+	<20110114081446.GC21832@angua.secretlab.ca>
+	<20110114105709.GA7562@www.tglx.de>
+	<20110114134345.712e2e29@queued.net>
+	<AANLkTimyrGkqtjo99+aV+N4KcrC2_3PprpRD2tRo_NtC@mail.gmail.com>
+	<4D4808D2.3080701@linutronix.de>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-01 at 15:16 +0100, Thomas Gleixner wrote:
-> On Mon, 31 Jan 2011, John Stultz wrote:
+On Tue, 01 Feb 2011 14:21:22 +0100
+Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
+
+> Daniel Drake wrote:
+> > Hi,
+> Hi,
 > 
-> > CLOCK_MONOTONIC stops while the system is in suspend. This is because
-> > to applications system suspend is invisible. However, there is a
-> > growing set of applications that are wanting to be suspend-aware,
-> > but do not want to deal with the complicatoins of CLOCK_REALTIME
-> > (which might jump around if settimeofday is called).
+> > Context: https://patchwork.kernel.org/patch/450681/
 > > 
-> > For these applications, I propose a new clockid: CLOCK_BOOTTIME.
-> > CLOCK_BOOTTIME is idential to CLOCK_MONOTONIC, except it also
-> > includes any time spent in suspend.
+> > This patch will indeed cause problems for OLPC. Thanks for bringing
+> > it to our attention.
 > > 
-> > This patch adds the new CLOCK_BOOTTIME clockid, as well as the
-> > infrastructure needed to support hrtimers against it, and the
-> > wiring to expose it out via the posix interface.
+> > On OLPC, the device tree is not used as a source of devices like on
+> > other platforms, it is simply used to present information to the
+> > kernel and userspace (in read-only fashion).
+> > 
+> > If I understand it correctly, the above patch is saying: if we have
+> > a device tree, don't add the standard x86 RTC device.
+> Yes.
 > 
-> Can you please split that into parts:
+> > However, what we need it to say is: if we have a device tree *and*
+> > the device tree is being used as a source of devices, don't add the
+> > standard x86 RTC device.
+> > 
+> > Therefore in the OLPC case, this particular bail-out condition will
+> > never be met, because the device tree is not being used as a source
+> > of devices.
+> So it is not case now. Will it ever be?
 > 
->     - Add the new functions
->     - Wire up hrtimers, posix-timers
 
-Will do. And will rebase to tip/timers/core.
+That is unclear.  For now, it's not, and there aren't plans to make it
+so.
 
-thanks
--john
+> > 
+> > Does that make sense?
+> 
+> I don't quite get how or what for do you use the device tree. Could
+> you please answer me the following questions:
+> - is the variable allnodes NULL in your case?
 
+No.
 
+> - variable initial_boot_params should be NULL in your case, right?
+
+Yes.
+
+> - how should I checked for "device tree is being used as a source of
+>    devices"? The nodes on in the device tree are not probed unless one
+>    calls of_platform_bus_probe() with a few ids. However I do this now
+>    unconditionally which is not a problem unless you have a device
+> tree ...
+
+Perhaps it should be specifically checking for a fdt (by way of
+initial_boot_params)?   Sparc also does not have initial_boot_params,
+so one might even be able to drop an #ifdef in the process.
