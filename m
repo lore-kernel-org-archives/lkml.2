@@ -1,124 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756671Ab1BAAeL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 19:34:11 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:38298 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754501Ab1BAAeD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 19:34:03 -0500
-Subject: [RFC][PATCH 1/6] count transparent hugepage splits
+	id S1756714Ab1BAAeV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 19:34:21 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:52008 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752920Ab1BAAeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 19:34:19 -0500
+Subject: [RFC][PATCH 2/6] pagewalk: only split huge pages when necessary
 To: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org, Michael J Wolf <mjwolf@us.ibm.com>,
         Andrea Arcangeli <aarcange@redhat.com>,
         Dave Hansen <dave@linux.vnet.ibm.com>
 From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Mon, 31 Jan 2011 16:33:58 -0800
+Date: Mon, 31 Jan 2011 16:33:59 -0800
 References: <20110201003357.D6F0BE0D@kernel>
 In-Reply-To: <20110201003357.D6F0BE0D@kernel>
-Message-Id: <20110201003358.98826457@kernel>
+Message-Id: <20110201003359.8DDFF665@kernel>
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-The khugepaged process collapses transparent hugepages for us.  Whenever
-it collapses a page into a transparent hugepage, we increment a nice
-global counter exported in sysfs:
+Right now, if a mm_walk has either ->pte_entry or ->pmd_entry
+set, it will unconditionally split and transparent huge pages
+it runs in to.  In practice, that means that anyone doing a
 
-	/sys/kernel/mm/transparent_hugepage/khugepaged/pages_collapsed
+	cat /proc/$pid/smaps
 
-But, transparent hugepages also get broken down in quite a few
-places in the kernel.  We do not have a good idea how how many of
-those collpased pages are "new" versus how many are just fixing up
-spots that got split a moment before.
+will unconditionally break down every huge page in the process
+and depend on khugepaged to re-collapse it later.  This is
+fairly suboptimal.
 
-Note: "splits" and "collapses" are opposites in this context.
+This patch changes that behavior.  It teaches each ->pmd_entry
+handler (there are three) that they must break down the THPs
+themselves.  Also, the _generic_ code will never break down
+a THP unless a ->pte_entry handler is actually set.
 
-This patch adds a new sysfs file:
+This means that the ->pmd_entry handlers can now choose to
+deal with THPs without breaking them down.
 
-	/sys/kernel/mm/transparent_hugepage/pages_split
 
-It is global, like "pages_collapsed", and is incremented whenever any
-transparent hugepage on the system has been broken down in to normal
-PAGE_SIZE base pages.  This way, we can get an idea how well khugepaged
-is keeping up collapsing pages that have been split.
-
-I put it under /sys/kernel/mm/transparent_hugepage/ instead of the
-khugepaged/ directory since it is not strictly related to
-khugepaged; it can get incremented on pages other than those
-collapsed by khugepaged.
-
-The variable storing this is a plain integer.  I needs the same
-amount of locking that 'khugepaged_pages_collapsed' has, for
-instance.
-
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
 ---
 
- linux-2.6.git-dave/Documentation/vm/transhuge.txt |    8 ++++++++
- linux-2.6.git-dave/mm/huge_memory.c               |   12 ++++++++++++
- 2 files changed, 20 insertions(+)
+ linux-2.6.git-dave/fs/proc/task_mmu.c |    6 ++++++
+ linux-2.6.git-dave/mm/pagewalk.c      |   24 ++++++++++++++++++++----
+ 2 files changed, 26 insertions(+), 4 deletions(-)
 
-diff -puN mm/huge_memory.c~count-thp-splits mm/huge_memory.c
---- linux-2.6.git/mm/huge_memory.c~count-thp-splits	2011-01-31 11:05:51.484526127 -0800
-+++ linux-2.6.git-dave/mm/huge_memory.c	2011-01-31 11:05:51.508526113 -0800
-@@ -38,6 +38,8 @@ unsigned long transparent_hugepage_flags
- 	(1<<TRANSPARENT_HUGEPAGE_DEFRAG_FLAG)|
- 	(1<<TRANSPARENT_HUGEPAGE_DEFRAG_KHUGEPAGED_FLAG);
+diff -puN mm/pagewalk.c~pagewalk-dont-always-split-thp mm/pagewalk.c
+--- linux-2.6.git/mm/pagewalk.c~pagewalk-dont-always-split-thp	2011-01-27 10:57:02.309914973 -0800
++++ linux-2.6.git-dave/mm/pagewalk.c	2011-01-27 10:57:02.317914965 -0800
+@@ -33,19 +33,35 @@ static int walk_pmd_range(pud_t *pud, un
  
-+static unsigned int huge_pages_split;
+ 	pmd = pmd_offset(pud, addr);
+ 	do {
++	again:
+ 		next = pmd_addr_end(addr, end);
+-		split_huge_page_pmd(walk->mm, pmd);
+-		if (pmd_none_or_clear_bad(pmd)) {
++		if (pmd_none(*pmd)) {
+ 			if (walk->pte_hole)
+ 				err = walk->pte_hole(addr, next, walk);
+ 			if (err)
+ 				break;
+ 			continue;
+ 		}
++		/*
++		 * This implies that each ->pmd_entry() handler
++		 * needs to know about pmd_trans_huge() pmds
++		 */
+ 		if (walk->pmd_entry)
+ 			err = walk->pmd_entry(pmd, addr, next, walk);
+-		if (!err && walk->pte_entry)
+-			err = walk_pte_range(pmd, addr, next, walk);
++		if (err)
++			break;
 +
- /* default scan 8*512 pte (or vmas) every 30 second */
- static unsigned int khugepaged_pages_to_scan __read_mostly = HPAGE_PMD_NR*8;
- static unsigned int khugepaged_pages_collapsed;
-@@ -307,12 +309,20 @@ static struct kobj_attribute debug_cow_a
- 	__ATTR(debug_cow, 0644, debug_cow_show, debug_cow_store);
- #endif /* CONFIG_DEBUG_VM */
- 
-+static ssize_t pages_split_show(struct kobject *kobj,
-+				struct kobj_attribute *attr, char *buf)
-+{
-+	return sprintf(buf, "%u\n", huge_pages_split);
-+}
-+static struct kobj_attribute pages_split_attr = __ATTR_RO(pages_split);
++		/*
++		 * Check this here so we only break down trans_huge
++		 * pages when we _need_ to
++		 */
++		if (!walk->pte_entry)
++			continue;
 +
- static struct attribute *hugepage_attr[] = {
- 	&enabled_attr.attr,
- 	&defrag_attr.attr,
- #ifdef CONFIG_DEBUG_VM
- 	&debug_cow_attr.attr,
- #endif
-+	&pages_split_attr.attr,
- 	NULL,
- };
++		split_huge_page_pmd(walk->mm, pmd);
++		if (pmd_none_or_clear_bad(pmd))
++			goto again;
++		err = walk_pte_range(pmd, addr, next, walk);
+ 		if (err)
+ 			break;
+ 	} while (pmd++, addr = next, addr != end);
+diff -puN fs/proc/task_mmu.c~pagewalk-dont-always-split-thp fs/proc/task_mmu.c
+--- linux-2.6.git/fs/proc/task_mmu.c~pagewalk-dont-always-split-thp	2011-01-27 10:57:02.313914969 -0800
++++ linux-2.6.git-dave/fs/proc/task_mmu.c	2011-01-27 10:57:02.321914961 -0800
+@@ -343,6 +343,8 @@ static int smaps_pte_range(pmd_t *pmd, u
+ 	struct page *page;
+ 	int mapcount;
  
-@@ -1314,6 +1324,8 @@ static int __split_huge_page_map(struct 
- 	}
- 	spin_unlock(&mm->page_table_lock);
- 
-+	if (ret)
-+		huge_pages_split++;
- 	return ret;
- }
- 
-diff -puN fs/proc/meminfo.c~count-thp-splits fs/proc/meminfo.c
-diff -puN Documentation/vm/transhuge.txt~count-thp-splits Documentation/vm/transhuge.txt
---- linux-2.6.git/Documentation/vm/transhuge.txt~count-thp-splits	2011-01-31 11:05:51.500526118 -0800
-+++ linux-2.6.git-dave/Documentation/vm/transhuge.txt	2011-01-31 11:05:51.508526113 -0800
-@@ -120,6 +120,14 @@ khugepaged will be automatically started
- transparent_hugepage/enabled is set to "always" or "madvise, and it'll
- be automatically shutdown if it's set to "never".
- 
-+Not all kernel code is aware of transparent hugepages.  Sometimes,
-+it is necessary to fall back to small pages so that this kernel
-+code can deal with small pages.  This might also happen if, for
-+instance, munmap() was called in the middle of a transparent huge
-+page.  We track these splits in:
++	split_huge_page_pmd(walk->mm, pmd);
 +
-+	/sys/kernel/mm/transparent_hugepage/pages_split
+ 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+ 	for (; addr != end; pte++, addr += PAGE_SIZE) {
+ 		ptent = *pte;
+@@ -467,6 +469,8 @@ static int clear_refs_pte_range(pmd_t *p
+ 	spinlock_t *ptl;
+ 	struct page *page;
+ 
++	split_huge_page_pmd(walk->mm, pmd);
 +
- khugepaged runs usually at low frequency so while one may not want to
- invoke defrag algorithms synchronously during the page faults, it
- should be worth invoking defrag at least in khugepaged. However it's
+ 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+ 	for (; addr != end; pte++, addr += PAGE_SIZE) {
+ 		ptent = *pte;
+@@ -623,6 +627,8 @@ static int pagemap_pte_range(pmd_t *pmd,
+ 	pte_t *pte;
+ 	int err = 0;
+ 
++	split_huge_page_pmd(walk->mm, pmd);
++
+ 	/* find the first VMA at or above 'addr' */
+ 	vma = find_vma(walk->mm, addr);
+ 	for (; addr != end; addr += PAGE_SIZE) {
 _
