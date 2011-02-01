@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754326Ab1BAKob (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 05:44:31 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48260 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951Ab1BAKo2 (ORCPT
+	id S1754449Ab1BAKqM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 05:46:12 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:43625 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753113Ab1BAKqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 05:44:28 -0500
+	Tue, 1 Feb 2011 05:46:11 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=Tkdz4Et2lJY0JiWpwKavCNaq1Xzpgw4I+b7ItRiSVq18EW0/9BMqTI10/MjUx2AkLA
-         gdWAued7aTTny0KK6kKWE82XnzVccUWQ72ieDckRBiPTLhqhDlQVF4ClOM52eAv/wtfa
-         1T7WXIoSPduiDESL9zESR25T3vaz2l99NHTBI=
-Date: Tue, 1 Feb 2011 11:44:21 +0100
-From: Tejun Heo <tj@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, davej@redhat.com,
-        cpufreq@vger.kernel.org, Markus.Lidel@shadowconnect.com,
-        tomas.winkler@intel.com, jayamohank@serverengines.com,
-        andrew.vasquez@qlogic.com, James.Bottomley@HansenPartnership.com,
-        linux-scsi@vger.kernel.org, tomof@acm.org, stf_xl@wp.pl,
-        linux-usb@vger.kernel.org, tytso@mit.edu, mfasheh@suse.com,
-        joel.becker@oracle.com, reiserfs-devel@vger.kernel.org, aelder@sgi.com,
-        hch@infradead.org, ericvh@gmail.com, rminnich@sandia.gov,
-        v9fs-developer@lists.sourceforge.net, lucho@ionkov.net,
-        andy.grover@oracle.com
-Subject: Re: [PATCHSET] workqueue: update workqueue users - replace
- create_workqueue()
-Message-ID: <20110201104421.GJ14211@htj.dyndns.org>
-References: <1294062595-30097-1-git-send-email-tj@kernel.org>
- <20110125142921.GB27510@htj.dyndns.org>
+        b=agB1jhcODTxj2rqUJnifR6qXF8pU/hREsDJIL6XR4f4hfrh6+IvG2j5ZoQ4XIoHT4v
+         888FnCM+UHiCPSu6HL6yvMqUHk8Y7CU0IowLgwy80IVApSMSoM0nyPCD6hDCHiMANL+k
+         58KM7pUwKUhNugaeOlsqjYXZM9j2ItNGEbRoU=
+Date: Tue, 1 Feb 2011 18:46:02 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Kazuhisa Ichikawa <ki@epsilou.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Subject: Re: Why one of the 2 patches to fix "autogroup" sched problem on
+ UP machines is missing in -rc3?
+Message-ID: <20110201104602.GA3397@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <AANLkTikYw73nixqMtNSDzus2M5RCN2Zy4PzfbPAxtTBC@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110125142921.GB27510@htj.dyndns.org>
+In-Reply-To: <AANLkTikYw73nixqMtNSDzus2M5RCN2Zy4PzfbPAxtTBC@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 25, 2011 at 03:29:21PM +0100, Tejun Heo wrote:
-> Hello,
+On Tue, Feb 01, 2011 at 06:05:23PM +0900, Kazuhisa Ichikawa wrote:
+> Hi Yong,
 > 
-> There was no response for the following patches and I'm planning on
-> routing them through workqueue#for-2.6.39.  If you have an objection
-> or want to take the patch through a different tree, please let me
-> know.
+> Now 2.6.38-rc3 is out, and I think one of the 2 patches you wrote to
+> fix "autogroup" sched problem on UP machines is missing there.
+
+Actually the merged one hide the initialising problem.
+Because when we enqueue a process to an empty group, update_cfs_shares()
+will be called, thus tg->se->load is updated.
+enqueue_task_fair()
+  update_cfs_shares()
+    reweight_entity()
+      update_load_set()
+
 > 
->  0006-acpi-kacpi-_wq-don-t-need-WQ_MEM_RECLAIM.patch
->  0007-cpufreq-use-system_wq-instead-of-dedicated-workqueue.patch
->  0012-i2o-use-alloc_workqueue-instead-of-create_workqueue.patch
->  0013-misc-iwmc3200top-use-system_wq-instead-of-dedicated-.patch
->  0016-scsi-be2iscsi-qla2xxx-convert-to-alloc_workqueue.patch
->  0018-scsi-scsi_tgt_lib-scsi_tgtd-isn-t-used-in-memory-rec.patch
->  0019-usb-ueagle-atm-use-system_wq-instead-of-dedicated-wo.patch
->  0025-ext4-convert-to-alloc_workqueue.patch
->  0026-ocfs2-use-system_wq-instead-of-ocfs2_quota_wq.patch
->  0027-reiserfs-make-commit_wq-use-the-default-concurrency-.patch
->  0028-xfs-convert-to-alloc_workqueue.patch
->  0029-net-9p-use-system_wq-instead-of-p9_mux_wq.patch
->  0030-net-9p-replace-p9_poll_task-with-a-work.patch
->  0031-rds-ib-use-system_wq-instead-of-rds_ib_fmr_wq.patch
+> More precisely, your first patch for kernel/sched.c (titled:?sched:
+> tg->se->load should be initialised to tg->shares) is missing, while
+> the second one for kernel/sched_fair.c (titled:?sched: Fix poor
+> interactivity on UP systems due to group scheduler nice tune bug) is
+> in -rc3.
 
-Patches applied to wq#for-2.6.39 w/ collected acks added.
+See my above answer.
 
-Thank you.
+> 
+> So what happened to the first patch? Was it superseded and made
+> obsolete by the second patch?
 
--- 
-tejun
+Yes.
+
+> 
+> # Sorry for not replying to your original post. I'm not subscribing to
+> linux kernel mailing list.
+
+Thanks for taking care of this issue :)
+
+Thanks,
+Yong
