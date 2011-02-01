@@ -1,44 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294Ab1BACv3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 21:51:29 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52845 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751789Ab1BACv2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 21:51:28 -0500
+	id S1754434Ab1BADHc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 22:07:32 -0500
+Received: from ozlabs.org ([203.10.76.45]:35726 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751789Ab1BADHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 22:07:31 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] virtio: update MAINTAINERS
+Date: Tue, 1 Feb 2011 13:37:28 +1030
+User-Agent: KMail/1.13.5 (Linux/2.6.35-24-generic; KDE/4.5.1; i686; ; )
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        "Michael S. Tsirkin" <mst@redhat.com>
+References: <201101311646.20873.rusty@rustcorp.com.au> <AANLkTi=m5AFmRPRESfbXUFqUv3Pom5x4X2LKX8DD0x=3@mail.gmail.com>
+In-Reply-To: <AANLkTi=m5AFmRPRESfbXUFqUv3Pom5x4X2LKX8DD0x=3@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110201021831.GB2158@linux.vnet.ibm.com>
-References: <20110112150740.77dde58c@kryten> <1295288253.30950.280.camel@laptop>
- <smp-call-function-peter-reply@mdm.bga.com> <smp-call-function-move-writes@mdm.bga.com>
- <1296145360.15234.234.camel@laptop> <smp-call-function-list-race@mdm.bga.com>
- <smp-call-function-list-race-fix@mdm.bga.com> <1296508677.26581.84.camel@laptop>
- <1296519764.2349.325.camel@pasglop> <AANLkTikEo4Bbqn27nCO_xjwEuy9rkoqBjoOb_HeGw18D@mail.gmail.com>
- <20110201021831.GB2158@linux.vnet.ibm.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 1 Feb 2011 12:43:56 +1000
-Message-ID: <AANLkTimb7bpTa0fO2VU4pSxO-a3-eQNA6zA_ikAReXsQ@mail.gmail.com>
-Subject: Re: call_function_many: fix list delete vs add race
-To: paulmck@linux.vnet.ibm.com
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Peter Zijlstra <peterz@infradead.org>, Milton Miller <miltonm@bga.com>,
-        akpm@linux-foundation.org, Anton Blanchard <anton@samba.org>,
-        xiaoguangrong@cn.fujitsu.com, mingo@elte.hu, jaxboe@fusionio.com,
-        npiggin@gmail.com, rusty@rustcorp.com.au, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102011337.29363.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 1, 2011 at 12:18 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
->
-> Documentation/memory-barriers.txt specifies this.
+On Tue, 1 Feb 2011 08:41:44 am Linus Torvalds wrote:
+> On Mon, Jan 31, 2011 at 4:16 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> > Patches should keep coming through Rusty but it
+> > helps if I'm Cc'd as well.
+> 
+> This commit log makes no sense as being yours. It's clearly frm
+> Michael, but you're missing that vital piece of information, ie the
+> "From: Michael S Tsirkin .." line at the top.
+> 
+> Please don't drop patch authorship attributions.
 
-Good, so it really is documented, with both cases explicitly mentioned.
+Sorry, my mistake.  He sent it pasted to the bottom of another mail, and
+I over-cleaned the headers.
 
-That said, I do think that if your memory ordering is much weaker than
-x86, you are going to see bugs that most testers don't see, and it
-simply might not be worth it.
-
-               Linus
+Thanks for fixing,
+Rusty.
