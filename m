@@ -1,96 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab1BAPPL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 10:15:11 -0500
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:46642
-	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751618Ab1BAPPG (ORCPT
+	id S1753062Ab1BAPPd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 10:15:33 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44894 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584Ab1BAPPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 10:15:06 -0500
-X-SpamScore: -20
-X-BigFish: VPS-20(zz1418M1432N98dN1fa4Lzz1202hzzz32i637h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LFY2CX-01-99D-02
-X-M-MSG: 
-Date: Tue, 1 Feb 2011 16:14:55 +0100
-From: Hans Rosenfeld <hans.rosenfeld@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: "hpa@zytor.com" <hpa@zytor.com>, "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-Subject: Re: [PATCH 4/4] x86, amd: Support L3 Cache Partitioning on AMD
- family 0x15 CPUs
-Message-ID: <20110201151455.GA9507@escobedo.osrc.amd.com>
-References: <20110126105637.GA27809@elte.hu>
- <1296061716-185599-1-git-send-email-hans.rosenfeld@amd.com>
- <20110126205608.GA14361@elte.hu>
- <20110127115017.GH877@escobedo.osrc.amd.com>
- <20110127124756.GA16094@elte.hu>
+	Tue, 1 Feb 2011 10:15:31 -0500
+Date: Tue, 1 Feb 2011 15:14:18 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Jassi Brar <jassisinghbrar@gmail.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        linux-sh@vger.kernel.org, Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
+        Dima Zavin <dmitriyz@google.com>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Locking in the clk API, part 2: clk_prepare/clk_unprepare
+Message-ID: <20110201151418.GN31216@n2100.arm.linux.org.uk>
+References: <201102011711.31258.jeremy.kerr@canonical.com> <20110201105449.GY1147@pengutronix.de> <AANLkTimayMAfr+zA6uO_yUmZqsOLmJ3fiiS696mL_evn@mail.gmail.com> <20110201140024.GZ1147@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110127124756.GA16094@elte.hu>
-Organization: Advanced Micro Devices GmbH, Einsteinring 24, 85609 Dornach b.
- Muenchen; Geschaeftsfuehrer: Andrew Bowd, Alberto Bozzo; Sitz: Dornach,
- Gemeinde Aschheim, Landkreis Muenchen; Registergericht Muenchen, HRB Nr.
- 43632
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110201140024.GZ1147@pengutronix.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 27, 2011 at 07:47:56AM -0500, Ingo Molnar wrote:
-> > The problem is that cpuinfo_x86.compute_unit_id etc. don't exist unless
-> > CONFIG_SMP is enabled. I don't think there is any reason why this should
-> > be that way, but changing this just for this particular L3 feature seems
-> > too intrusive. Do you really want me to do that?
-> 
-> All the CONFIG_X86_HT #ifdefs in arch/x86/kernel/cpu/amd.c look pretty ugly too - 
-> and it's not really a properly modularized solution.
-> 
-> We generally want to unify the SMP and UP kernels as much as possible. 'CONFIG_SMP' 
-> is not really a property of the hardware, it's a property of the software.
-> 
-> If some topology information should be excluded then it can already be done by 
-> turning off CONFIG_CPU_SUP_AMD under CONFIG_EXPERT.
+On Tue, Feb 01, 2011 at 03:00:24PM +0100, Uwe Kleine-König wrote:
+> On Tue, Feb 01, 2011 at 10:05:56PM +0900, Jassi Brar wrote:
+> > 2011/2/1 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
+> > 
+> > .....
+> > 
+> > > Do you plan to handle the case that clk_enable is called while prepare
+> > > isn't completed (considering the special case "not called at all")?
+> > > Maybe BUG_ON(clk->ops->prepare && !clk->prepare_count)?
+> > Sounds better than the second option.
+> > 
+> > > Alternatively don't force the sleep in clk_prepare (e.g. by protecting
+> > > prepare_count by a spinlock (probably enable_lock)) and call clk_prepare
+> > > before calling clk->ops->enable?
+> > That might result in a driver working on some platforms(those have
+> > atomic clk_prepare)
+> > and not on others(those have sleeping).
+> The first option has the same result.  E.g. on some platforms
+> clk->ops->prepare might be NULL, on others it's not.
 
-I see several solutions to resolve this issue:
+If clk->ops->prepare is NULL, then clk_prepare() better return success
+as it should mean "no preparation necessary", not "someone didn't
+implement it so its an error".
 
-1. Remove #ifdef CONFIG_SMP around compute_unit_id in struct cpuinfo_x86
-   and then use my original patch. This would work without introducing
-   new #ifdef ugliness with the L3 cache partitioning, but it would
-   increase #ifdef ugliness in struct cpuinfo_x86. Also, compute_unit_id
-   would just so happen to be initialized to 0, there would be no other
-   code using it for CONFIG_SMP. L3 cache partitioning would be the
-   first SMP-specific feature to be available in non-SMP kernels.
+Calling clk->ops->enable() with a spinlock held will ensure that no one
+tries to make that method sleep, so if people want sleeping stuff they
+have to use the clk_prepare() stuff.  It's a self-enforcing API which
+ensures that we don't get sleeping stuff inside clk_enable().
 
-2. Same as #1, but remove CONFIG_SMP completely from struct cpuinfo_x86.
-   This would mean less #ifdef ugliness there, but then we would have a
-   bunch of unused fields in there in non-SMP kernels, which would also
-   just be initialized to 0. I don't think that would be correct for
-   booted_cores, but as it is unused I don't see an immediate problem
-   with that. Of course, this is also neither correct nor less ugly.
-
-3. Same as #2, but also rework all code using those fields to be usable
-   on non-SMP kernels. This would be essentially a rework of all that
-   CONFIG_SMP stuff, and I think thats too much to ask for just for a
-   little extra L3 feature.
-
-Maybe I'm missing something here, but I don't see how this could be
-done cleanly in any other way at this time.
-
-Of course, you could just take the modified patch I sent you. That would
-be ugly, but not more so than the existing code. If this is not
-acceptable, please tell me which of the other two ugly solutions you
-would prefer.
-
-
-Hans
-
-
--- 
-%SYSTEM-F-ANARCHISM, The operating system has been overthrown
-
+And with a check in clk_enable() for a preparation, it helps to ensure
+that drivers do call clk_prepare() before clk_enable() - though it can't
+guarantee it in every case.
