@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751294Ab1BAFFw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 00:05:52 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:53530 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750846Ab1BAFFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 00:05:50 -0500
-From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
-To: "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
-        "'Xuetao Guan'" <epip.guan@gmail.com>
-Cc: <dmitry.torokhov@gmail.com>, <arnd@arndb.de>, <gregkh@suse.de>,
-        <dtor@mail.ru>, <jbarnes@virtuousgeek.org>,
-        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <AANLkTimKUV=RQezzME9qUUQjUjnHt9Qe79hOpK-cFC3i@mail.gmail.com> <20110201093852.32c951b6.sfr@canb.auug.org.au>
-In-Reply-To: <20110201093852.32c951b6.sfr@canb.auug.org.au>
-Subject: RE: Request (2nd) for unicore32 architecture codes to merge into linux-next
-Date: Tue, 1 Feb 2011 13:05:09 +0800
-Message-ID: <015d01cbc1cd$9b01e440$d105acc0$@mprc.pku.edu.cn>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
+	id S1751396Ab1BAFKm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 00:10:42 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:44232
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750828Ab1BAFKm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 00:10:42 -0500
+Date: Mon, 31 Jan 2011 21:11:16 -0800 (PST)
+Message-Id: <20110131.211116.115946085.davem@davemloft.net>
+To: jesper.nilsson@axis.com
+Cc: richm@oldelvet.org.uk, 609371@bugs.debian.org, ben@decadent.org.uk,
+        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        jeffm@suse.com
+Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
+ Unknown relocation: 36
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110117090557.GF9874@axis.com>
+References: <20110115.211722.39173519.davem@davemloft.net>
+	<20110116.220755.179947617.davem@davemloft.net>
+	<20110117090557.GF9874@axis.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQIVfHgUb1V/E3RAdxK8gz2tBQHXgQIENA7Vk0iAXRA=
-Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+Date: Mon, 17 Jan 2011 10:05:57 +0100
 
-> -----Original Message-----
-> From: linux-next-owner@vger.kernel.org [mailto:linux-next-owner@vger.kernel.org] On Behalf Of Stephen Rothwell
-> Sent: Tuesday, February 01, 2011 6:39 AM
-> To: Xuetao Guan
-> Cc: dmitry.torokhov@gmail.com; arnd@arndb.de; gregkh@suse.de; dtor@mail.ru; jbarnes@virtuousgeek.org; linux-
-> next@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: Request (2nd) for unicore32 architecture codes to merge into linux-next
+> On Mon, Jan 17, 2011 at 07:07:55AM +0100, David Miller wrote:
+>> Ugh, and I just noticed that include/linux/klist.h does this fixed
+>> alignment of "4" too, where is this stuff coming from?  It's
+>> wrong on 64-bit, at best.  But I can't see the impetus behind doing
+>> this at all in the first place.
+>> 
+>> Oh, this is some CRIS thing, because it only byte aligns.  See:
+>> 
+>> commit c0e69a5bbc6fc74184aa043aadb9a53bc58f953b
+>> Author: Jesper Nilsson <Jesper.Nilsson@axis.com>
+>> Date:   Wed Jan 14 11:19:08 2009 +0100
+>> 
+>>     klist.c: bit 0 in pointer can't be used as flag
+>> 
+>> That's where the klist one comes from.
 > 
-> Hi,
-> 
-> On Sat, 22 Jan 2011 21:52:11 +0800 Xuetao Guan <epip.guan@gmail.com> wrote:
-> >
-> > I want to merge unicore32 repo into linux-next tree, the position is
-> > (unicore32 branch):
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/epip/linux-2.6-unicore32.git
-> 
-> Included from next-20110131.
-> 
-> Thanks for adding your subsystem tree as a participant of linux-next.  As
-> you may know, this is not a judgment of your code.  The purpose of
-> linux-next is for integration testing and to lower the impact of
-> conflicts between subsystems in the next merge window.
-> 
-> You will need to ensure that the patches/commits in your tree/series have
-> been:
->      * submitted under GPL v2 (or later) and include the Contributor's
-> 	Signed-off-by,
->      * posted to the relevant mailing list,
->      * reviewed by you (or another maintainer of your subsystem tree),
->      * successfully unit tested, and
->      * destined for the current or next Linux merge window.
-> 
-> Basically, this should be just what you would send to Linus (or ask him
-> to fetch).  It is allowed to be rebased if you deem it necessary.
-> 
-> --
-> Cheers,
-> Stephen Rothwell
-> sfr@canb.auug.org.au
+> Yup, this one could instead be solved by introducing a "flags" field
+> in the struct, but that was considered a too large impact fix.
 
-Thanks.
+Jesper, could you please review this?
 
-Guan Xuetao
+--------------------
+klist: Fix object alignment on 64-bit.
 
+Commit c0e69a5bbc6fc74184aa043aadb9a53bc58f953b ("klist.c: bit 0 in
+pointer can't be used as flag") intended to make sure that all klist
+objects were at least pointer size aligned, but used the constant "4"
+which only works on 32-bit.
+
+Use "sizeof(void *)" which is correct in all cases.
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
+
+diff --git a/include/linux/klist.h b/include/linux/klist.h
+index e91a4e5..a370ce5 100644
+--- a/include/linux/klist.h
++++ b/include/linux/klist.h
+@@ -22,7 +22,7 @@ struct klist {
+ 	struct list_head	k_list;
+ 	void			(*get)(struct klist_node *);
+ 	void			(*put)(struct klist_node *);
+-} __attribute__ ((aligned (4)));
++} __attribute__ ((aligned (sizeof(void *))));
+ 
+ #define KLIST_INIT(_name, _get, _put)					\
+ 	{ .k_lock	= __SPIN_LOCK_UNLOCKED(_name.k_lock),		\
