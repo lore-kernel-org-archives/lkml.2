@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851Ab1BANZo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 08:25:44 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:56547 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753088Ab1BANZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 08:25:42 -0500
-Message-ID: <1296566732.4d4809cc1f963@imp.free.fr>
-Date: Tue, 01 Feb 2011 14:25:32 +0100
-From: castet.matthieu@free.fr
-To: Ingo Molnar <mingo@elte.hu>
-Cc: matthieu castet <castet.matthieu@free.fr>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-security-module@vger.kernel.org, Matthias Hopf <mhopf@suse.de>,
-        rjw@sisk.pl, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] NX protection for kernel data : fix 32 bits S3 suspend
-References: <4D473FD5.1090903@free.fr> <20110201080223.GB20372@elte.hu>
-In-Reply-To: <20110201080223.GB20372@elte.hu>
+	id S1756868Ab1BANhQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 08:37:16 -0500
+Received: from smtp-gw21.han.skanova.net ([81.236.55.21]:52442 "EHLO
+	smtp-gw21.han.skanova.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753273Ab1BANhO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 08:37:14 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-User-Agent: Internet Messaging Program (IMP) 3.2.8
-X-Originating-IP: 93.1.148.69
+X-Mailer: AfterLogic WebMail PHP
+X-Originating-IP: 194.237.142.5
+X-Priority: 3 (Normal)
+Message-ID: <7j2t3lt.0ab80c5ea7f72ca6b614a185210e9698@obelix.schillstrom.com>
+From: "Hans Schillstrom" <hans@schillstrom.com>
+To: "Simon Horman" <horms@verge.net.au>
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lvs-devel@vger.kernel.org,
+        "Randy Dunlap" <randy.dunlap@oracle.com>,
+        "Stephen Rothwell" <sfr@canb.auug.org.au>,
+        "Patrick McHardy" <kaber@trash.net>
+Subject: Re: [GIT PULL nf-next-2.6 v2] IPVS build fixes and clean-ups
+Date: Tue, 1 Feb 2011 14:36:59 +0100 (CET)
+Content-Type: text/plain;
+	charset="utf-8"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Ingo Molnar <mingo@elte.hu>:
-
+>---- Original Message ----
+>From: Simon Horman <horms@verge.net.au>
+>To: netdev@vger.kernel.org, linux-next@vger.kernel.org, linux-kernel@vger.kernel.org, lvs-devel@vger.kernel.org
+>Cc: "Randy Dunlap" <randy.dunlap@oracle.com>, "Stephen Rothwell" <sfr@canb.auug.org.au>, "Hans Schillstrom" <hans@schillstrom.com>, "Patrick McHardy" <kaber@trash.net>
+>Sent: Tue, Feb 1, 2011, 11:11 AM
+>Subject: [GIT PULL nf-next-2.6 v2] IPVS build fixes and clean-ups
 >
-> * matthieu castet <castet.matthieu@free.fr> wrote:
+>This short patch series addresses two linux-next build problems
+>raised by Randy Dunlap:
 >
-> >  static inline int is_kernel_text(unsigned long addr)
-> >  {
-> > +#if defined(CONFIG_X86_32) && defined(CONFIG_ACPI_SLEEP)
-> > +	/*
-> > +	 * We need to make the wakeup trampoline in first 1MB !NX
-> > +	 */
-> > +	if (addr >= PAGE_OFFSET && addr <= (PAGE_OFFSET + (1<<20)))
-> > +		return 1;
-> > +#endif
+>* net/netfilter/ipvs/ip_vs_core.c:1891: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'unsigned int'
+>* ERROR: "unregister_net_sysctl_table" [net/netfilter/ipvs/ip_vs.ko]
+>  ERROR: "register_net_sysctl_table" [net/netfilter/ipvs/ip_vs.ko] undefined!
+>* WARNING: net/netfilter/ipvs/ip_vs.o(.init.text+0x161): Section mismatch in reference from the function init_module() to the function .exit.text:ip_vs_sync_cleanup()
 >
-> That's pretty ugly. Why not use set_memory_x()/set_memory_nx(), and only for
-> the
-> trampoline itself? Does the whole 1MB need to be marked X?
-The previous code was doing that.
-
-If you prefer I can revert to the old code :
-
-static inline int is_kernel_text(unsigned long addr)
-{
-    if (addr >= PAGE_OFFSET && addr <= (unsigned long)__init_end)
-        return 1;
-    return 0;
-}
-
-The proper fix will be done in 2.6.29, when S3 resume 32 bit trampoline will be
-merged with 64 bit (ie call smp trampoline) [1]
-
+>The remainder of the changsets are cleanups that I noticed along the way.
 >
-> Same goes for the Xen fix.
+>The changes are available at
+>git://git.kernel.org/pub/scm/linux/kernel/git/horms/lvs-test-2.6.git master
 >
-The Xen fix reverts code to old behavior.
-We can't assume that all data/bss will be RW. And I see no way to detect witch
-page in data/bss we should not force to RW in static protection.
-So we assume the code that change protection of data/bss knows what it is doing
-(that what was doing old code).
+>They are currently compile-tested only.
+>
 
-Matthieu
+I will try to test this today
 
+Regards
+Hans Schillstrom <hans@schillstrom.com>
 
-[1]http://marc.info/?l=linux-kernel&m=129616541603610&w=2
