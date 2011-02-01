@@ -1,41 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267Ab1BAUg7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 15:36:59 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33126 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167Ab1BAUg6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 15:36:58 -0500
-Date: Tue, 1 Feb 2011 20:36:25 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        linux-sh@vger.kernel.org, Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
-        Dima Zavin <dmitriyz@google.com>, Ben Dooks <ben-linux@fluff.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Locking in the clk API, part 2: clk_prepare/clk_unprepare
-Message-ID: <20110201203625.GT31216@n2100.arm.linux.org.uk>
-References: <201102011711.31258.jeremy.kerr@canonical.com> <20110201105449.GY1147@pengutronix.de> <20110201131512.GH31216@n2100.arm.linux.org.uk> <20110201141837.GA1147@pengutronix.de> <20110201143932.GK31216@n2100.arm.linux.org.uk> <20110201151846.GD1147@pengutronix.de> <20110201152458.GP31216@n2100.arm.linux.org.uk> <4D486E08.9000709@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D486E08.9000709@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1752494Ab1BAUiB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 15:38:01 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:38971 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751966Ab1BAUiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 15:38:00 -0500
+Subject: Re: [patch 05/28] posix-timers: Introduce clockid_to_kclock()
+From: john stultz <johnstul@us.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Richard Cochran <richard.cochran@omicron.at>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+In-Reply-To: <20110201134417.938447839@linutronix.de>
+References: <20110201134320.688829863@linutronix.de>
+	 <20110201134417.938447839@linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Feb 2011 12:37:54 -0800
+Message-ID: <1296592674.3336.22.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 01, 2011 at 12:33:12PM -0800, Saravana Kannan wrote:
-> Looks like this is the best acknowledgment/response I can expect to get  
-> from Russell on this point that I raised.
+On Tue, 2011-02-01 at 13:51 +0000, Thomas Gleixner wrote:
+> plain text document attachment
+> (posix-timers-introduce-clockid-to-kclock.patch)
+> New function to find the kclock for a given clockid.
+> 
+> Returns a pointer to clock_posix_cpu if clockid < 0. If clockid >=
+> MAXCLOCK or if the clock_getres pointer is not set it returns
+> -EINVAL. For valid clocks it returns a pointer to the matching
+> posix_clock.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Richard Cochran <richard.cochran@omicron.at>
 
-Sorry, I've been up to my eyeballs with other stuff over the last few
-weeks.  Yes, I think clk_set_rate() needs to be sleep-able too.
+Acked-by: John Stultz <johnstul@us.ibm.com>
+
+
