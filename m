@@ -1,39 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480Ab1BARXt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 12:23:49 -0500
-Received: from stinky.trash.net ([213.144.137.162]:46255 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972Ab1BARXs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 12:23:48 -0500
-Message-ID: <4D4841A0.1000800@trash.net>
-Date: Tue, 01 Feb 2011 18:23:44 +0100
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1755318Ab1BAR03 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 12:26:29 -0500
+Received: from tac.ki.iif.hu ([193.6.222.43]:57470 "EHLO tac.ki.iif.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751913Ab1BAR02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 12:26:28 -0500
+From: Ferenc Wagner <wferi@niif.hu>
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: ucb1400_gpio driver Kconfig entry
+References: <87bp2vsy5y.fsf@tac.ki.iif.hu>
+	<201102011816.24029.marek.vasut@gmail.com>
+Date: Tue, 01 Feb 2011 18:26:24 +0100
+In-Reply-To: <201102011816.24029.marek.vasut@gmail.com> (Marek Vasut's message
+	of "Tue, 1 Feb 2011 18:16:23 +0100")
+Message-ID: <87ipx3r7i7.fsf@tac.ki.iif.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Hans Schillstrom <hans@schillstrom.com>
-CC: Simon Horman <horms@verge.net.au>, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lvs-devel@vger.kernel.org, Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH 1/5] IPVS: use z modifier for sizeof() argument
-References: <7j2t3lt.0bb71e5c0a810a6ca8a0973db50566ea@obelix.schillstrom.com>
-In-Reply-To: <7j2t3lt.0bb71e5c0a810a6ca8a0973db50566ea@obelix.schillstrom.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 01.02.2011 18:06, schrieb Hans Schillstrom:
->> >[PATCH 1/5] IPVS: use z modifier for sizeof() argument
->> >
->> >Cc: Hans Schillstrom <hans@schillstrom.com>
->> >Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
->> >Signed-off-by: Simon Horman <horms@verge.net.au>
-> Signed-off-by: Hans Schillstrom <hans@schillstrom.com>
-> Tested-by: Hans Schillstrom <hans@schillstrom.com>
-> 
+Marek Vasut <marek.vasut@gmail.com> writes:
 
-Applied, thanks everyone.
+> On Tuesday 01 February 2011 14:05:13 Ferenc Wagner wrote:
+> 
+>> drivers/gpio/Kconfig says:
+>> 
+>> config GPIO_UCB1400
+>>         bool "Philips UCB1400 GPIO"
+>>         depends on UCB1400_CORE
+>>         help
+>>           This enables support for the Philips UCB1400 GPIO pins.
+>>           The UCB1400 is an AC97 audio codec.
+>> 
+>>           To compile this driver as a module, choose M here: the
+>>           module will be called ucb1400_gpio.
+>> 
+>> But you use bool above, so choosing M isn't actually an option.
+>> Maybe you want to resolve this inconsistency.
+>
+> I don't really have any device with ucb1400 available now. I will have
+> some probably sometimes soon though. On the other hand, if you know
+> it's a correct fix, you can send a patch.
+
+This note hasn't got much to do with the driver code itself.  Either you
+want to enable compiling the driver as a module, then use tristate
+instead of bool; or it isn't an option and then remove the corresponding
+paragraph from the documentation.  The latter is improbable, and a
+quick look at the code seems to confirm that the driver was actually
+intended to be used as a module.  So I suggest replacing bool with
+tristate.  But I don't know anything at all about this driver or device.
+-- 
+Regards,
+Feri.
