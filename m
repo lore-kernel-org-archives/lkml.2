@@ -1,36 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754330Ab1BABMI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 20:12:08 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44753 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752920Ab1BABMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 20:12:07 -0500
-Message-ID: <4D475DB5.1020300@zytor.com>
-Date: Mon, 31 Jan 2011 17:11:17 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1754396Ab1BABV6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 20:21:58 -0500
+Received: from [210.176.113.209] ([210.176.113.209]:54199 "EHLO
+	mail.paragonplush.com.hk" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753867Ab1BABV5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 20:21:57 -0500
+X-Greylist: delayed 2181 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 Jan 2011 20:21:56 EST
+From: "Admin Service" <info@programmer.net>
+Reply-To: ssystem@programmer.net
+Subject: Service alert. . .
+Date: Mon, 31 Jan 2011 12:44:56 -1200
+Message-Id: <20110201003733.M68203@programmer.net>
+X-Mailer: OpenWebMail 2.52 20060502
+X-OriginatingIP: 65.120.57.66 (beatrice)
 MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@elte.hu>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Xen Devel <Xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH 0/2] x86/microcode: support for microcode update in Xen
- dom0
-References: <cover.1296259339.git.jeremy.fitzhardinge@citrix.com> <20110130113356.GA27967@liondog.tnic> <4D461FB9.5050807@goop.org> <20110131070241.GA22071@liondog.tnic> <4D46FC9F.6090309@goop.org> <20110131234131.GA16095@liondog.tnic> <4D475099.1080004@goop.org>
-In-Reply-To: <4D475099.1080004@goop.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset=iso-8859-1
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note: Xen may not have devices, but it is already using multiboot to 
-load multiple modules.  It could load the microcode blob that way.
+"Dear webmail user"
 
-That would enable an earlier loading of microcode, which is a very good 
-thing.
+"This message is from webmail messaging center to all webmail
+email account owners. On Friday,February 1st, 2011,
+all Mailhub systems will undergo regularly scheduled maintenance.
 
-	-hpa
+Access to your e-mail via the mail client will be unavailable for some time
+during this maintenance window. We are currently upgrading our data base
+and e-mail account center see homepage. We are deleting all unsuncribed email
+accounts to create more space for new accounts.
+
+To complete and keep your webmail account, you must reply to this email
+immediately and enter your username here (-------------------) and password 
+here 
+(--------) Failure to do this will immediately render your email address here 
+(===================== deactivated from our database.
+
+You can also confirm your email address by logging into your account:.
+
+Thank you for using webmail"
