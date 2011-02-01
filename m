@@ -1,79 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551Ab1BAPxr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 10:53:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59084 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751297Ab1BAPxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 10:53:45 -0500
-Subject: Re: [PATCH v2 4/6] KVM-GST: KVM Steal time registration
-From: Glauber Costa <glommer@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
-        Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <4D45649A.4090709@redhat.com>
-References: <1296244340-15173-1-git-send-email-glommer@redhat.com>
-	 <1296244340-15173-5-git-send-email-glommer@redhat.com>
-	 <4D45649A.4090709@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat
-Date: Tue, 01 Feb 2011 13:53:38 -0200
-Message-ID: <1296575618.5081.13.camel@mothafucka.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753949Ab1BAPyG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 10:54:06 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:57219 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141Ab1BAPyC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 10:54:02 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=PHOfGJKksCcoEbpa9m62uK19VRS/Q+JFn2sIO0hSWnGUsQ3yofcgTP4UvDrNsqrwpC
+         7fiJFffyGnEnyzAVB7i1smZRgJPX6EAYG/uFRI4yuEtLONptrNtkeHqSlWCy1lMnlRf9
+         8PkJ/rCn4ykIYc2y2H8q1Xi6ajZ0UEtv9tR08=
+MIME-Version: 1.0
+In-Reply-To: <1296572538.12605.4.camel@moss-pluto>
+References: <1296519474-15714-1-git-send-email-lucian.grijincu@gmail.com> <1296572538.12605.4.camel@moss-pluto>
+From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Date: Tue, 1 Feb 2011 17:53:40 +0200
+Message-ID: <AANLkTimiV_2SAwXuH-SjGav5XJixN=SnjrPrtFRRQF05@mail.gmail.com>
+Subject: Re: [PATCH] security/selinux: fix /proc/sys/ labeling
+To: Stephen Smalley <sds@tycho.nsa.gov>
+Cc: James Morris <jmorris@namei.org>, Eric Paris <eparis@parisplace.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-01-30 at 15:16 +0200, Avi Kivity wrote:
-> On 01/28/2011 09:52 PM, Glauber Costa wrote:
-> > Register steal time within KVM. Everytime we sample the steal time
-> > information, we update a local variable that tells what was the
-> > last time read. We then account the difference.
-> >
-> >
-> >
-> >   static void kvm_guest_cpu_offline(void *dummy)
-> >   {
-> >   	kvm_pv_disable_apf(NULL);
-> > +	native_write_msr(MSR_KVM_STEAL_TIME, 0, 0);
-> >   	apf_task_wake_all();
-> >   }
-> 
-> Don't use the native_ versions, they override the pvops implementation.  
-> It doesn't matter for kvm, but we're not supposed to know this.
-
-fair.
-
-> > +	/*
-> > +	 * using nanoseconds introduces noise, which accumulates easily
-> > +	 * leading to big steal time values. We want, however, to keep the
-> > +	 * interface nanosecond-based for future-proofness. The hypervisor may
-> > +	 * adopt a similar strategy, but we can't rely on that.
-> > +	 */
-> > +	delta /= NSEC_PER_MSEC;
-> > +	delta *= NSEC_PER_MSEC;
-> 
-> You're working around this problem both in the guest and host.  So even 
-> if we fix it in one, it will still be broken in the other.
-
-And if you notice, in two different ways:
-I am (was) forcing to usecs in the host, and msecs in the guest.
-One of the problems here, is that if we account steal time, we refrain
-from accounting user / system time. Reason being, that if we account it,
-we'll end up with more than HZ ticks per HZ, since we'll account ticks
-as both steal and real.
-
-And since the granularity of the cpu accounting is too coarse, we end up
-with much more steal time than we should, because things that are less
-than 1 unity of cputime, are often rounded up to 1 unity of cputime.
-
-Now, I've already said that I will investigate further, and I'm ready to
-back of from all of this. But assuming my analysis is right so far, what
-if we keep things in nsecs or msecs, and only convert to cputime in the
-time of read? This would allow us to just subtract steal time from
-user/system time, in a more fine grained way.
+On Tue, Feb 1, 2011 at 5:02 PM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
+> Is this patch really from Eric or just derived from an earlier patch by him?
 
 
+No, sorry for the confusion.
+I seem to have triggered a git send-email bug.
+
+>> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+>
+> And did Eric truly sign off on this patch or just on an earlier one?
+
+
+Just the earlier one. I added his sign-off because of this paragraph
+in SubmittingPatches:
+| The Signed-off-by: tag indicates that the signer was involved in the
+| development of the patch, or that he/she was in the patch's delivery path.
+
+>
+>> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+>> index e276eb4..7c5dfb1 100644
+>> --- a/security/selinux/hooks.c
+>> +++ b/security/selinux/hooks.c
+>> @@ -1317,9 +1311,9 @@ static int inode_doinit_with_dentry(struct inode *inode, struct dentry *opt_dent
+>>
+>>               if ((sbsec->flags & SE_SBPROC) && !S_ISLNK(inode->i_mode)) {
+>>                       struct proc_inode *proci = PROC_I(inode);
+>> -                     if (proci->pde) {
+>> +                     if (opt_dentry && (proci->pde || proci->sysctl)) {
+>>                               isec->sclass = inode_mode_to_security_class(inode->i_mode);
+>> -                             rc = selinux_proc_get_sid(proci->pde,
+>> +                             rc = selinux_proc_get_sid(opt_dentry,
+>>                                                         isec->sclass,
+>>                                                         &sid);
+>>                               if (rc)
+>
+> It would be nice if we could eliminate the last remaining piece of proc
+> internal knowledge from this code - why do we need the proci->pde ||
+> proci->sysctl test here?  What changes without it?
+
+
+Without we label all nodes in /proc/ through selinux_proc_get_sid.
+
+/proc/1/limits should not get it's sid from here, but from
+security_task_to_inode -> selinux_task_to_inode.
+
+Without the check we send "/1/limits" to selinux_proc_get_sid, which
+strips off "/1" leaving "/limits". This will be labeled with "proc_t"
+IIRC.
+
+
+-- 
+ .
+..: Lucian
