@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108Ab1BASiq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 13:38:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22403 "EHLO mx1.redhat.com"
+	id S1752198Ab1BASkP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 13:40:15 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:33266 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751297Ab1BASip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 13:38:45 -0500
-Date: Tue, 1 Feb 2011 20:38:27 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Christoph Hellwig <hch@lst.de>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio_blk: allow re-reading config space at runtime
-Message-ID: <20110201183827.GB24924@redhat.com>
-References: <20110114160137.GA18721@lst.de>
- <201101181138.50421.rusty@rustcorp.com.au>
- <20110118122751.GA27997@lst.de>
- <201101190956.10137.rusty@rustcorp.com.au>
- <20110118235401.GA16219@lst.de>
- <20110127152926.GA4898@redhat.com>
- <20110201173234.GC16883@lst.de>
+	id S1751432Ab1BASkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 13:40:14 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kevin Hilman <khilman@ti.com>
+Subject: Re: [RFC][PATCH] Power domains for platform bus type
+Date: Tue, 1 Feb 2011 19:39:49 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc2+; KDE/4.4.4; x86_64; ; )
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Len Brown <lenb@kernel.org>
+References: <201101300107.19389.rjw@sisk.pl> <201102011158.46312.rjw@sisk.pl> <87sjw7wvjl.fsf@ti.com>
+In-Reply-To: <87sjw7wvjl.fsf@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110201173234.GC16883@lst.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102011939.49793.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 01, 2011 at 06:32:34PM +0100, Christoph Hellwig wrote:
-> On Thu, Jan 27, 2011 at 05:29:26PM +0200, Michael S. Tsirkin wrote:
-> > Yes but in that specific situation (double schedule before
-> > it runs once) discarding one change notification
-> > would not hurt at all.
+On Tuesday, February 01, 2011, Kevin Hilman wrote:
+> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
 > 
-> Except that you can't easily do it.  We can't simply reuse a work
-> structure embedded in say struct virtio_blk without first doing a
-> flush_work_sync/cancel_work_sync to remove it from the internal
-> workqueue.c queues.
->  And those calls can sleep and thus can't be called
-> from interrupt context either.
+> [...]
+> 
+> > Also, I'm going to move the power domain hook to the struct device level, so
+> > that we have:
+> >
+> > struct device {
+> >     ...
+> >     struct power_domain *domain;
+> >     ...
+> > };
+> >
+> > struct power_domain {
+> >     struct dev_pm_ops ops;
+> > };
+> >
+> 
+> Great, thanks.
+> 
+> Any opinion on my idea to name this 'struct dev_power_domain' to avoid
+> confusion with existing powerdomain structs in SoC code?  For example,
+> on OMAP we already have a 'struct powerdomain'.
 
-Should not be hard to solve.
-If it's running, it is ok to requeue.  I don't remember offhand if it's
-ok to requeue if it's queued but not running, if not we could have a
-flag that signals that's the case.
+Fine by me.
 
+Thanks,
+Rafael
