@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab1BAMYb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 07:24:31 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:37902 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751640Ab1BAMYa (ORCPT
+	id S1756796Ab1BAMlJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 07:41:09 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:49165 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754634Ab1BAMlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 07:24:30 -0500
-Date: Tue, 1 Feb 2011 13:23:59 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Timo von Holtz <tvh@informatik.uni-kiel.de>
-Cc: gregkh@suse.de, mchehab@redhat.com, d.belimov@gmail.com,
-        stefan.ringel@arcor.de, michel.ludwig@gmail.com,
-        c.pascoe@itee.uq.edu.au, ruslan@rpisarev.org.ua,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: tm6000: fixed some coding style issues
-Message-ID: <20110201132359.4f4f9e89@endymion.delvare>
-In-Reply-To: <1296559341-24438-1-git-send-email-tvh@informatik.uni-kiel.de>
-References: <1296559341-24438-1-git-send-email-tvh@informatik.uni-kiel.de>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 1 Feb 2011 07:41:07 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Amit Shah <amit.shah@redhat.com>
+Subject: Re: [PATCH] virtio: console: Move file back to drivers/char/
+Date: Tue, 1 Feb 2011 13:40:55 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Greg KH <greg@kroah.com>
+References: <20110131221454.GA14884@kroah.com> <bd7e7969221007e205ef0d2bf144d2f3109036da.1296532834.git.amit.shah@redhat.com>
+In-Reply-To: <bd7e7969221007e205ef0d2bf144d2f3109036da.1296532834.git.amit.shah@redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201102011340.56125.arnd@arndb.de>
+X-Provags-ID: V02:K0:CGrg+omr/VviHsS8nCZJsTgYJRQOBPHW/Ume+/UuNXn
+ wgfuuEdeUMTWeoHIoW50wLnRZ0+AD4a4XmznxRR0N46uwpwp22
+ IBSRiu9ufjC7RxSXpda7pJRWKvqsFY+g5aoEd1n8qXHtg02JxY
+ mZhk/W/MCd7gzv69LiRPGaeaau84Mudzt1jv01MC3pyoTn2LH/
+ n4RvJNhdj6evplKV1ZeJQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Timo,
-
-On Tue,  1 Feb 2011 12:22:21 +0100, Timo von Holtz wrote:
-> Fixed all of the following coding style issues:
+On Tuesday 01 February 2011, Amit Shah wrote:
+> Commit 728674a7e466628df2aeec6d11a2ae1ef968fb67 moved virtio_console.c
+> to drivers/tty/hvc/ under the perception of this being an hvc driver.
+> It was such once, but these days it has generic communication
+> capabilities as well, so move it to drivers/char/.
 > 
-> ERROR: return is not a function, parentheses are not required
-> WARNING: __func__ should be used instead of gcc specific __FUNCTION__
-
-You messed up and replaced with __func instead of __func__.
-
-> ERROR: trailing whitespace
-> ERROR: spaces required around that '=' (ctx:VxV)
-> WARNING: please, no space before tabs
-> WARNING: please, no spaces at the start of a line
-> ERROR: space required after that ',' (ctx:VxV)
-> WARNING: space prohibited between function name and open parenthesis '('
-> ERROR: spaces required around that '<' (ctx:VxV)
-> ERROR: spaces required around that '==' (ctx:VxV)
+> In the future, the hvc part from this file can be split off and moved
+> under drivers/tty/hvc/.
 > 
-> Signed-off-by: Timo von Holtz <tvh@informatik.uni-kiel.de>
-> ---
->  drivers/staging/tm6000/tm6000-alsa.c     |    6 +++---
->  drivers/staging/tm6000/tm6000-core.c     |    4 ++--
->  drivers/staging/tm6000/tm6000-dvb.c      |   10 +++++-----
->  drivers/staging/tm6000/tm6000-i2c.c      |    2 +-
->  drivers/staging/tm6000/tm6000-regs.h     |    2 +-
->  drivers/staging/tm6000/tm6000-usb-isoc.h |    2 +-
->  drivers/staging/tm6000/tm6000-video.c    |   28 ++++++++++++++--------------
->  drivers/staging/tm6000/tm6000.h          |    4 ++--
->  8 files changed, 29 insertions(+), 29 deletions(-)
-> (...)
-> --- a/drivers/staging/tm6000/tm6000-usb-isoc.h
-> +++ b/drivers/staging/tm6000/tm6000-usb-isoc.h
-> @@ -46,5 +46,5 @@ struct usb_isoc_ctl {
->  	int				tmp_buf_len;
->  
->  		/* Stores already requested buffers */
-> -	struct tm6000_buffer    	*buf;
-> +	struct tm6000_buffer	*buf;
+> CC: Rusty Russell <rusty@rustcorp.com.au>
+> CC: Greg KH <greg@kroah.com>
+> CC: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Amit Shah <amit.shah@redhat.com>
 
-You want one more tab to keep the struct elements aligned.
-
-Other than that, this patch looks mostly good.
-
--- 
-Jean Delvare
+Acked-by: Arnd Bergmann <arnd@arndb.de>
