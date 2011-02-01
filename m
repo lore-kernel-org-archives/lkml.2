@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751800Ab1BAWwQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 17:52:16 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:23482 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222Ab1BAWwP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 17:52:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=XTDgCenBMbou9YSE0xilFSeU64zsKzBHwyTzXDS2f7IsNPeFwAar+uJPJ2pE3RAEMO
-         QP/I31f71dzB6PhfSoow==
+	id S1751936Ab1BAWwm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 17:52:42 -0500
+Received: from claw.goop.org ([74.207.240.146]:39094 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751222Ab1BAWwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 17:52:41 -0500
+Message-ID: <4D488EB1.9020803@goop.org>
+Date: Tue, 01 Feb 2011 14:52:33 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <201102011002.09819.jordipujolp@gmail.com>
-References: <201102011002.09819.jordipujolp@gmail.com>
-From: Paul Menage <menage@google.com>
-Date: Tue, 1 Feb 2011 14:44:56 -0800
-Message-ID: <AANLkTineUvbe4w53zVEyfafs_ERt1NPbRo83KeAH89KF@mail.gmail.com>
-Subject: Re: [RFC/RFT PATCH] cgroup: enable write permission for the group of users
-To: Jordi Pujol <jordipujolp@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@elte.hu>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Xen Devel <Xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 0/2] x86/microcode: support for microcode update in Xen
+ dom0
+References: <cover.1296259339.git.jeremy.fitzhardinge@citrix.com> <20110130113356.GA27967@liondog.tnic> <4D461FB9.5050807@goop.org> <20110131070241.GA22071@liondog.tnic> <4D46FC9F.6090309@goop.org> <20110131234131.GA16095@liondog.tnic> <4D475099.1080004@goop.org> <4D475DB5.1020300@zytor.com>
+In-Reply-To: <4D475DB5.1020300@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 1, 2011 at 1:02 AM, Jordi Pujol <jordipujolp@gmail.com> wrote:
-> Hello,
+On 01/31/2011 05:11 PM, H. Peter Anvin wrote:
+> Note: Xen may not have devices, but it is already using multiboot to
+> load multiple modules.  It could load the microcode blob that way.
 >
-> Working in a development that uses control groups and libcgroup, I have found
-> that the files in control groups directories need write permission for the
-> group of users also.
+> That would enable an earlier loading of microcode, which is a very
+> good thing.
 
-This can be configured from userspace - chmod() works just fine on
-control files in cgroupfs.
+Yes, that is a thought, but it would require some distro support to make
+sure the firmware is copied into /boot, and grub updated appropriately.
 
-Paul
+The principle advantage of updating the microcode driver is that it Just
+Works regardless of whether the system is booting native or Xen.
+
+    J
