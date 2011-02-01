@@ -1,51 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756773Ab1BAKJP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 05:09:15 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:44292 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753944Ab1BAKID (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 05:08:03 -0500
-From: Simon Horman <horms@verge.net.au>
-To: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lvs-devel@vger.kernel.org
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Hans Schillstrom <hans@schillstrom.com>,
-        Patrick McHardy <kaber@trash.net>, Simon Horman <horms@verge.net.au>
-Subject: [PATCH 5/5] IPVS: Remove ip_vs_sync_cleanup from section __exit
-Date: Tue,  1 Feb 2011 21:07:48 +1100
-Message-Id: <1296554868-17002-6-git-send-email-horms@verge.net.au>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1296554868-17002-1-git-send-email-horms@verge.net.au>
-References: <1296554868-17002-1-git-send-email-horms@verge.net.au>
+	id S1756684Ab1BAKJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 05:09:28 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:48261 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753825Ab1BAKJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 05:09:14 -0500
+Date: Tue, 1 Feb 2011 11:09:12 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Michael J Wolf <mjwolf@us.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [RFC][PATCH 4/6] pass pte size argument in to smaps_pte_entry()
+Message-ID: <20110201100912.GJ19534@cmpxchg.org>
+References: <20110201003357.D6F0BE0D@kernel>
+ <20110201003402.5FFC58F0@kernel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110201003402.5FFC58F0@kernel>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ip_vs_sync_cleanup() may be called from ip_vs_init() on error
-and thus needs to be accesible from section __init
+On Mon, Jan 31, 2011 at 04:34:02PM -0800, Dave Hansen wrote:
+> 
+> This patch adds an argument to the new smaps_pte_entry()
+> function to let it account in things other than PAGE_SIZE
+> units.  I changed all of the PAGE_SIZE sites, even though
+> not all of them can be reached for transparent huge pages,
+> just so this will continue to work without changes as THPs
+> are improved.
 
-Reporte-by: Randy Dunlap <randy.dunlap@oracle.com>
-Signed-off-by: Simon Horman <horms@verge.net.au>
----
- net/netfilter/ipvs/ip_vs_sync.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/net/netfilter/ipvs/ip_vs_sync.c b/net/netfilter/ipvs/ip_vs_sync.c
-index d5a6e64..2a2a836 100644
---- a/net/netfilter/ipvs/ip_vs_sync.c
-+++ b/net/netfilter/ipvs/ip_vs_sync.c
-@@ -1686,7 +1686,7 @@ int __init ip_vs_sync_init(void)
- 	return register_pernet_subsys(&ipvs_sync_ops);
- }
- 
--void __exit ip_vs_sync_cleanup(void)
-+void ip_vs_sync_cleanup(void)
- {
- 	unregister_pernet_subsys(&ipvs_sync_ops);
- }
--- 
-1.7.2.3
-
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
