@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751450Ab1BAH6r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 02:58:47 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53507 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156Ab1BAH6q (ORCPT
+	id S1751800Ab1BAIBs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 03:01:48 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:32914 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751156Ab1BAIBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 02:58:46 -0500
-Message-ID: <4D47BD31.6000608@monstr.eu>
-Date: Tue, 01 Feb 2011 08:58:41 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	Tue, 1 Feb 2011 03:01:47 -0500
+Date: Tue, 1 Feb 2011 09:01:46 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [leds-pca9532] Add gpio capability
+Message-ID: <20110201080146.GA27955@pengutronix.de>
+References: <0D753D10438DA54287A00B027084269764CEEDA479@AUSP01VMBX24.collaborationhost.net>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] arch/microblaze changes for 2.6.38-rc4
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zhXaljGHf11kAtnf"
+Content-Disposition: inline
+In-Reply-To: <0D753D10438DA54287A00B027084269764CEEDA479@AUSP01VMBX24.collaborationhost.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-please pull the following bug fixes for microblaze.
+--zhXaljGHf11kAtnf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Michal
+> From the datasheet:
+[...]
+> So, you should provide both a direction_input and direction_output.
 
-The following changes since commit 1f0324caefd39985e9fe052fac97da31694db31e:
-   Linus Torvalds (1):
-         Merge branch 'stable/bug-fixes-rc2' of git://git.kernel.org/.../konrad/xen
+He did in V2 of this patch (what made me also download the datasheet ;)).
 
-are available in the git repository at:
+Regards,
 
-   git://git.monstr.eu/linux-2.6-microblaze.git next
+   Wolfram
 
-Michal Simek (3):
-       microblaze: Fix DTB passing from bootloader
-       microblaze: Fix unaligned issue on MMU system with BS=0 DIV=1
-       microblaze: Fix ASM optimized code for LE
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
-  arch/microblaze/kernel/head.S                 |   14 ++++++++++++--
-  arch/microblaze/kernel/hw_exception_handler.S |    4 ----
-  arch/microblaze/lib/fastcopy.S                |    4 ++++
-  3 files changed, 16 insertions(+), 6 deletions(-)
+--zhXaljGHf11kAtnf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+iEYEARECAAYFAk1HveoACgkQD27XaX1/VRspcQCeMTEzhksszWpP5wpeAMnrBH8T
+ue8AoKv6SE1y6nbvLC9cWKcxt4Lmiq2Q
+=VS+E
+-----END PGP SIGNATURE-----
+
+--zhXaljGHf11kAtnf--
