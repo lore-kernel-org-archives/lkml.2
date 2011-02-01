@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755468Ab1BARHU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 12:07:20 -0500
-Received: from smtp-gw11.han.skanova.net ([81.236.55.20]:52019 "EHLO
-	smtp-gw11.han.skanova.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755422Ab1BARHS convert rfc822-to-8bit (ORCPT
+	id S1755492Ab1BARHq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 12:07:46 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56254 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752658Ab1BARHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 12:07:18 -0500
+	Tue, 1 Feb 2011 12:07:45 -0500
+Date: Tue, 1 Feb 2011 17:06:37 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>, Dima Zavin <dmitriyz@google.com>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        linux-sh@vger.kernel.org, Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>, Ben Dooks <ben-linux@fluff.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: Re: Locking in the clk API, part 2: clk_prepare/clk_unprepare
+Message-ID: <20110201170637.GR31216@n2100.arm.linux.org.uk>
+References: <201102011711.31258.jeremy.kerr@canonical.com> <20110201105449.GY1147@pengutronix.de> <20110201131512.GH31216@n2100.arm.linux.org.uk> <20110201141837.GA1147@pengutronix.de> <20110201143932.GK31216@n2100.arm.linux.org.uk> <20110201151846.GD1147@pengutronix.de> <20110201152458.GP31216@n2100.arm.linux.org.uk> <20110201155344.GF1147@pengutronix.de>
 MIME-Version: 1.0
-X-Mailer: AfterLogic WebMail PHP
-X-Originating-IP: 194.237.142.5
-X-Priority: 3 (Normal)
-Message-ID: <7j2t3lt.8dc16aed303bfc25a870d65e413a99d5@obelix.schillstrom.com>
-From: "Hans Schillstrom" <hans@schillstrom.com>
-To: "Simon Horman" <horms@verge.net.au>
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lvs-devel@vger.kernel.org,
-        "Randy Dunlap" <randy.dunlap@oracle.com>,
-        "Stephen Rothwell" <sfr@canb.auug.org.au>,
-        "Patrick McHardy" <kaber@trash.net>
-Subject: Re: [PATCH 3/5] IPVS: Remove unused variables
-Date: Tue, 1 Feb 2011 18:07:10 +0100 (CET)
-Content-Type: text/plain;
-	charset="utf-8"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110201155344.GF1147@pengutronix.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->---- Original Message ----
->From: Simon Horman <horms@verge.net.au>
->To: netdev@vger.kernel.org, linux-next@vger.kernel.org, linux-kernel@vger.kernel.org, lvs-devel@vger.kernel.org
->Cc: "Randy Dunlap" <randy.dunlap@oracle.com>, "Stephen Rothwell" <sfr@canb.auug.org.au>, "Hans Schillstrom" <hans@schillstrom.com>, "Patrick McHardy" <kaber@trash.net>, "Simon Horman" <horms@verge.net.au>
->Sent: Tue, Feb 1, 2011, 11:11 AM
->Subject: [PATCH 3/5] IPVS: Remove unused variables
->
->These variables are unused as a result of the recent netns work.
->
->Cc: Hans Schillstrom <hans@schillstrom.com>
->Signed-off-by: Simon Horman <horms@verge.net.au>
-Signed-off-by: Hans Schillstrom <hans@schillstrom.com>
-Tested-by: Hans Schillstrom <hans@schillstrom.com>
+On Tue, Feb 01, 2011 at 04:53:44PM +0100, Uwe Kleine-König wrote:
+> On Tue, Feb 01, 2011 at 03:24:58PM +0000, Russell King - ARM Linux wrote:
+> > On Tue, Feb 01, 2011 at 04:18:46PM +0100, Uwe Kleine-König wrote:
+> > > yeah, didn't thought about multiple consumers, so (as Jeremy suggested)
+> > > the right thing is to sleep until CLK_BUSY is cleared.
+> > 
+> > A simpler way to write this is:
+> > 
+> > int clk_prepare(struct clk *clk)
+> > {
+> > 	int ret = 0;
+> > 
+> > 	mutex_lock(&clk->mutex);
+> > 	if (clk->prepared == 0)
+> > 		ret = clk->ops->prepare(clk);
+> > 	if (ret == 0)
+> > 		clk->prepared++;
+> > 	mutex_unlock(&clk->mutex);
+> > 
+> > 	return ret;
+> > }
+> But you cannot call this in atomic context when you know the clock is
+> already prepared.
 
->---
-> include/net/ip_vs.h |    2 --
-> 1 files changed, 0 insertions(+), 2 deletions(-)
->
->diff --git a/include/net/ip_vs.h b/include/net/ip_vs.h
->index b23bea6..5d75fea 100644
->--- a/include/net/ip_vs.h
->+++ b/include/net/ip_vs.h
->@@ -1109,8 +1109,6 @@ extern int ip_vs_icmp_xmit_v6
->  *	we are loaded. Just set ip_vs_drop_rate to 'n' and
->  *	we start to drop 1/rate of the packets
->  */
->-extern int ip_vs_drop_rate;
->-extern int ip_vs_drop_counter;
-> 
-> static inline int ip_vs_todrop(struct netns_ipvs *ipvs)
-> {
->-- 
->1.7.2.3
->
->--
->To unsubscribe from this list: send the line "unsubscribe lvs-devel" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+So?  You're not _supposed_ to call it from any atomic context ever.
