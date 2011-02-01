@@ -1,63 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408Ab1BAB2k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 20:28:40 -0500
-Received: from sh.osrg.net ([192.16.179.4]:39024 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754251Ab1BAB2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 20:28:39 -0500
-Date: Tue, 1 Feb 2011 10:28:00 +0900
-To: hancockrwd@gmail.com
-Cc: ak@linux.intel.com, cebbert@redhat.com, linux-kernel@vger.kernel.org,
-        dwmw2@infradead.org
-Subject: Re: b44 driver causes panic when using swiotlb
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <4D4759BD.2000006@gmail.com>
-References: <20110131105412.7252a09c@katamari>
-	<20110131163639.GA32095@tassilo.jf.intel.com>
-	<4D4759BD.2000006@gmail.com>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20110201102707C.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 01 Feb 2011 10:28:01 +0900 (JST)
+	id S1756417Ab1BABeF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 20:34:05 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:40116 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754401Ab1BABeD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 20:34:03 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=pMZrdk5YXRnIwA5y1MHS+gpl/L0UyTVEDinEk/E1eVJS6pNxD/TOc8WNw5j9P5/JUv
+         uzgCxmChve18FjGqx3MbfdGOEJKF8G1DCxuXfAQA+ak+kp58vb+Sg6vZGtEFyBGdq4/O
+         xqt4f6xYdet5Fx30xofrZoT0jVD2Bk6uEIoUA=
+From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+To: James Morris <jmorris@namei.org>, Eric Paris <eparis@redhat.com>,
+        Stephen Smalley <sds@tycho.nsa.gov>, ebiederm@xmission.com,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Cc: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Subject: [PATCH] security: remove unused security_sysctl hook
+Date: Tue,  1 Feb 2011 03:32:56 +0200
+Message-Id: <1296523976-25853-1-git-send-email-lucian.grijincu@gmail.com>
+X-Mailer: git-send-email 1.7.4.rc1.7.g2cf08.dirty
+In-Reply-To: <1296519474-15714-1-git-send-email-lucian.grijincu@gmail.com>
+References: <1296519474-15714-1-git-send-email-lucian.grijincu@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 Jan 2011 18:54:21 -0600
-Robert Hancock <hancockrwd@gmail.com> wrote:
+The only user for this hook was selinux. sysctl routes every call
+through /proc/sys/. Selinux and other security modules use the file
+system checks for sysctl too, so no need for this hook any more.
 
-> On 01/31/2011 10:36 AM, Andi Kleen wrote:
-> > On Mon, Jan 31, 2011 at 10:54:12AM -0500, Chuck Ebbert wrote:
-> >> The b44 driver is triggering this panic in swiotlb_map_page():
-> >>
-> >>          if (!dma_capable(dev, dev_addr, size))
-> >>                  panic("map_single: bounce buffer is not DMA'ble");
-> >>
-> >> The kernel log says the bounce buffers are at 0xdb400000, but b44 can
-> >> only do DMA to the first 1GB of memory:
-> >
-> > b44 needs to use GFP_DMA then and do its own custom bouncing.
-> > The standard pci_map_* bounce buffering is only designed for at least
-> > 32bit capable devices.
-> 
-> That seems wrong - it's a documented API and that restriction isn't 
-> documented. Either it should comply with the request or return a failure 
-> if it can't accomodate it, not just blow up internally. There's no 
-> reason the driver should have to deal with this on its own.
-> 
-> In this case the DMA mapping code  should really be falling back to 
-> GFP_DMA automatically if the IOMMU aperture is outside the DMA mask of 
-> the device.
+Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+---
+ include/linux/security.h |   13 -------------
+ kernel/sysctl.c          |    5 -----
+ security/capability.c    |    6 ------
+ security/security.c      |    5 -----
+ 4 files changed, 0 insertions(+), 29 deletions(-)
 
-swiotlb allocates the bounce buffer when a system boots up. We can't
-allocate much in GFP_DMA. swiotlb uses somewhere under 4GB. So it
-can't help devices that have odd dma_mask (that is, except for 4GB).
+diff --git a/include/linux/security.h b/include/linux/security.h
+index c642bb8..e7b48dc 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -1257,12 +1257,6 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
+  *	@cap contains the capability <include/linux/capability.h>.
+  *	@audit: Whether to write an audit message or not
+  *	Return 0 if the capability is granted for @tsk.
+- * @sysctl:
+- *	Check permission before accessing the @table sysctl variable in the
+- *	manner specified by @op.
+- *	@table contains the ctl_table structure for the sysctl variable.
+- *	@op contains the operation (001 = search, 002 = write, 004 = read).
+- *	Return 0 if permission is granted.
+  * @syslog:
+  *	Check permission before accessing the kernel message ring or changing
+  *	logging to the console.
+@@ -1383,7 +1377,6 @@ struct security_operations {
+ 		       const kernel_cap_t *permitted);
+ 	int (*capable) (struct task_struct *tsk, const struct cred *cred,
+ 			int cap, int audit);
+-	int (*sysctl) (struct ctl_table *table, int op);
+ 	int (*quotactl) (int cmds, int type, int id, struct super_block *sb);
+ 	int (*quota_on) (struct dentry *dentry);
+ 	int (*syslog) (int type);
+@@ -1665,7 +1658,6 @@ int security_capset(struct cred *new, const struct cred *old,
+ int security_capable(int cap);
+ int security_real_capable(struct task_struct *tsk, int cap);
+ int security_real_capable_noaudit(struct task_struct *tsk, int cap);
+-int security_sysctl(struct ctl_table *table, int op);
+ int security_quotactl(int cmds, int type, int id, struct super_block *sb);
+ int security_quota_on(struct dentry *dentry);
+ int security_syslog(int type);
+@@ -1883,11 +1875,6 @@ int security_real_capable_noaudit(struct task_struct *tsk, int cap)
+ 	return ret;
+ }
+ 
+-static inline int security_sysctl(struct ctl_table *table, int op)
+-{
+-	return 0;
+-}
+-
+ static inline int security_quotactl(int cmds, int type, int id,
+ 				     struct super_block *sb)
+ {
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 0f1bd83..56f6fc1 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1685,13 +1685,8 @@ static int test_perm(int mode, int op)
+ 
+ int sysctl_perm(struct ctl_table_root *root, struct ctl_table *table, int op)
+ {
+-	int error;
+ 	int mode;
+ 
+-	error = security_sysctl(table, op & (MAY_READ | MAY_WRITE | MAY_EXEC));
+-	if (error)
+-		return error;
+-
+ 	if (root->permissions)
+ 		mode = root->permissions(root, current->nsproxy, table);
+ 	else
+diff --git a/security/capability.c b/security/capability.c
+index 2a5df2b..ebe3b5d 100644
+--- a/security/capability.c
++++ b/security/capability.c
+@@ -12,11 +12,6 @@
+ 
+ #include <linux/security.h>
+ 
+-static int cap_sysctl(ctl_table *table, int op)
+-{
+-	return 0;
+-}
+-
+ static int cap_syslog(int type)
+ {
+ 	return 0;
+@@ -880,7 +875,6 @@ void __init security_fixup_ops(struct security_operations *ops)
+ 	set_to_cap_if_null(ops, capable);
+ 	set_to_cap_if_null(ops, quotactl);
+ 	set_to_cap_if_null(ops, quota_on);
+-	set_to_cap_if_null(ops, sysctl);
+ 	set_to_cap_if_null(ops, syslog);
+ 	set_to_cap_if_null(ops, settime);
+ 	set_to_cap_if_null(ops, vm_enough_memory);
+diff --git a/security/security.c b/security/security.c
+index 739e403..53d793a 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -182,11 +182,6 @@ int security_real_capable_noaudit(struct task_struct *tsk, int cap)
+ 	return ret;
+ }
+ 
+-int security_sysctl(struct ctl_table *table, int op)
+-{
+-	return security_ops->sysctl(table, op);
+-}
+-
+ int security_quotactl(int cmds, int type, int id, struct super_block *sb)
+ {
+ 	return security_ops->quotactl(cmds, type, id, sb);
+-- 
+1.7.4.rc1.7.g2cf08.dirty
 
-Unfortunately, Such device needs to do own custom bouncing or needs
-their subsystem to does that.
-
-Some ideas to implement something that works for such device were
-discussed. Seems that the conclusion is that it's doesn't worth making
-the common code complicated for such minor and insane devices.
