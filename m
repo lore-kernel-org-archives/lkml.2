@@ -1,75 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929Ab1BAUVs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 15:21:48 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:31796 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751621Ab1BAUVr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 15:21:47 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6244"; a="72824962"
-Message-ID: <4D486B59.6010106@codeaurora.org>
-Date: Tue, 01 Feb 2011 12:21:45 -0800
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Dima Zavin <dmitriyz@google.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Locking in the clk API, part 2: clk_prepare/clk_unprepare
-References: <201102011711.31258.jeremy.kerr@canonical.com>	<20110201105449.GY1147@pengutronix.de>	<20110201131512.GH31216@n2100.arm.linux.org.uk>	<20110201141837.GA1147@pengutronix.de>	<20110201143932.GK31216@n2100.arm.linux.org.uk>	<20110201151846.GD1147@pengutronix.de>	<20110201152458.GP31216@n2100.arm.linux.org.uk>	<20110201155344.GF1147@pengutronix.de>	<20110201170637.GR31216@n2100.arm.linux.org.uk>	<20110201193201.GH1147@pengutronix.de> <20110201195604.GS31216@n2100.arm.linux.org.uk>
-In-Reply-To: <20110201195604.GS31216@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1752030Ab1BAUYZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 15:24:25 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:39205 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751837Ab1BAUYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 15:24:24 -0500
+From: Omar Ramirez Luna <omar.ramirez@ti.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        lk <linux-kernel@vger.kernel.org>, devel <devel@driverdev.osuosl.org>
+Subject: [GIT PULL] staging: tidspbridge for 2.6.39
+Date: Tue,  1 Feb 2011 14:13:04 -0600
+Message-Id: <1296591184-31554-1-git-send-email-omar.ramirez@ti.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2011 11:56 AM, Russell King - ARM Linux wrote:
-> On Tue, Feb 01, 2011 at 08:32:01PM +0100, Uwe Kleine-König wrote:
->> On Tue, Feb 01, 2011 at 05:06:37PM +0000, Russell King - ARM Linux wrote:
->>> So?  You're not _supposed_ to call it from any atomic context ever.
->>
->> My motivation for a more complicated clk_prepare was to make clk_prepare
->> atomic when that's possible (i.e. when the clk is already prepared) and
->> call it before the enable callback in clk_enable.  Then everything
->> behaves nicely even if clk_enable is called from atomic context provided
->> that the clock was prepared before (or doesn't need to).
->
-> You really don't get the point of clk_prepare() do you.  I'm not
-> going to bother trying to educate you anymore.
->
-> Hopefully someone with more patience can give you the necessary
-> teaching to make you understand.
+The following changes since commit c56eb8fb6dccb83d9fe62fd4dc00c834de9bc470:
 
-Uwe,
+  Linux 2.6.38-rc1 (2011-01-18 15:14:02 -0800)
 
-If the driver is calling clk_prepare() right next to clk_enable() 
-knowing it's been already prepared and will hence be "atomic" (this is 
-actually not true), then by your description, it's pointless to call 
-clk_prepare().
+are available in the git repository at:
+  git://dev.omapzoom.org/pub/scm/tidspbridge/kernel-dspbridge.git tidspbridge-for-2.6.39
 
-If you want the driver to call clk_prepare() in atomic context because 
-it will be atomic in most cases -- well, that's wrong. It's either 
-atomic or is NOT atomic. There is no in between. If a call is NOT 
-atomic, it can't be called in atomic context. Long story short, if you 
-expect clk_prepare() to be atomic under any circumstance, it beats the 
-point of introducing clk_prepare().
+Armando Uribe (6):
+      staging: tidspbridge: Eliminate direct manipulation of OMAP_SYSC_BASE
+      staging: tidspbridge: Remove unused defined constants
+      staging: tidspbridge: Remove unused functions
+      staging: tidspbridge: Remove unused structs
+      staging: tidspbridge: Remove unused typedefs
+      staging: tidspbridge: Remove trivial header files
 
-Hope I helped.
+Felipe Contreras (1):
+      staging: tidspbridge: fix mgr_enum_node_info
 
--Saravana
+Guzman Lugo, Fernando (2):
+      staging: tidspbridge: configure full L1 MMU range
+      staging: tidspbridge: make sync_wait_on_event interruptible
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Ionut Nicu (13):
+      staging: tidspbridge: mgr_enum_node_info cleanup
+      staging: tidspbridge: fix kernel oops in bridge_io_get_proc_load
+      staging: tidspbridge: remove gs memory allocator
+      staging: tidspbridge: remove utildefs
+      staging: tidspbridge: switch to linux bitmap API
+      staging: tidspbridge: remove gb bitmap implementation
+      staging: tidspbridge: convert core to list_head
+      staging: tidspbridge: convert pmgr to list_head
+      staging: tidspbridge: convert rmgr to list_head
+      staging: tidspbridge: remove custom linked list
+      staging: tidspbridge: core code cleanup
+      staging: tidspbridge: pmgr code cleanup
+      staging: tidspbridge: rmgr/node.c code cleanup
+
+Laurent Pinchart (1):
+      staging: tidspbridge: Fix atoi to support hexadecimal numbers correctly
+
+Omar Ramirez Luna (2):
+      staging: tidspbridge: replace mbox callback with notifier_call
+      staging: tidspbridge: use the right type for list_is_last
+
+Ramos Falcon, Ernesto (1):
+      staging: tidspbridge: remove code referred by OPT_ZERO_COPY_LOADER
+
+Rene Sapiens (12):
+      staging: tidspbridge: set1 remove hungarian from structs
+      staging: tidspbridge: set2 remove hungarian from structs
+      staging: tidspbridge: set3 remove hungarian from structs
+      staging: tidspbridge: set4 remove hungarian from structs
+      staging: tidspbridge: set5 remove hungarian from structs
+      staging: tidspbridge: set6 remove hungarian from structs
+      staging: tidspbridge: set7 remove hungarian from structs
+      staging: tidspbridge: set8 remove hungarian from structs
+      staging: tidspbridge: set9 remove hungarian from structs
+      staging: tidspbridge: set10 remove hungarian from structs
+      staging: tidspbridge: set11 remove hungarian from structs
+      staging: tidspbridge: set12 remove hungarian from structs
+
+Sapiens, Rene (1):
+      staging: tidspbridge: overwrite DSP error codes
+
+ drivers/staging/tidspbridge/Makefile               |    2 +-
+ drivers/staging/tidspbridge/TODO                   |    1 -
+ drivers/staging/tidspbridge/core/_deh.h            |    2 +-
+ drivers/staging/tidspbridge/core/_msg_sm.h         |   16 +-
+ drivers/staging/tidspbridge/core/_tiomap.h         |   30 +-
+ drivers/staging/tidspbridge/core/chnl_sm.c         |  676 ++++++-------
+ drivers/staging/tidspbridge/core/dsp-clock.c       |   52 +-
+ drivers/staging/tidspbridge/core/io_sm.c           |  680 ++++++-------
+ drivers/staging/tidspbridge/core/msg_sm.c          |  619 +++++-------
+ drivers/staging/tidspbridge/core/tiomap3430.c      |  214 ++--
+ drivers/staging/tidspbridge/core/tiomap3430_pwr.c  |  112 +-
+ drivers/staging/tidspbridge/core/tiomap_io.c       |   96 +-
+ drivers/staging/tidspbridge/core/ue_deh.c          |   28 +-
+ drivers/staging/tidspbridge/dynload/cload.c        |  102 +--
+ .../staging/tidspbridge/dynload/dload_internal.h   |    6 +-
+ drivers/staging/tidspbridge/gen/gb.c               |  166 ---
+ drivers/staging/tidspbridge/gen/gh.c               |   38 +-
+ drivers/staging/tidspbridge/gen/gs.c               |   88 --
+ drivers/staging/tidspbridge/gen/uuidutil.c         |   22 +-
+ .../tidspbridge/include/dspbridge/_chnl_sm.h       |   26 +-
+ .../tidspbridge/include/dspbridge/brddefs.h        |    2 -
+ .../tidspbridge/include/dspbridge/cfgdefs.h        |   50 +-
+ .../staging/tidspbridge/include/dspbridge/chnl.h   |   21 -
+ .../tidspbridge/include/dspbridge/chnldefs.h       |    9 +-
+ .../tidspbridge/include/dspbridge/chnlpriv.h       |   21 +-
+ .../staging/tidspbridge/include/dspbridge/cmm.h    |    2 +-
+ .../tidspbridge/include/dspbridge/cmmdefs.h        |   39 +-
+ .../staging/tidspbridge/include/dspbridge/cod.h    |   13 +-
+ .../tidspbridge/include/dspbridge/dbdcddef.h       |   14 +-
+ .../staging/tidspbridge/include/dspbridge/dbdefs.h |   98 +--
+ .../tidspbridge/include/dspbridge/dbldefs.h        |  141 ---
+ .../staging/tidspbridge/include/dspbridge/dbll.h   |    6 -
+ .../tidspbridge/include/dspbridge/dblldefs.h       |   65 --
+ .../tidspbridge/include/dspbridge/dehdefs.h        |   32 -
+ .../staging/tidspbridge/include/dspbridge/dev.h    |   65 +--
+ .../staging/tidspbridge/include/dspbridge/disp.h   |   15 +-
+ .../tidspbridge/include/dspbridge/dispdefs.h       |   35 -
+ .../staging/tidspbridge/include/dspbridge/drv.h    |   40 +-
+ .../tidspbridge/include/dspbridge/drvdefs.h        |   25 -
+ .../tidspbridge/include/dspbridge/dspapi-ioctl.h   |  216 ++--
+ .../tidspbridge/include/dspbridge/dspdefs.h        |   88 +-
+ .../staging/tidspbridge/include/dspbridge/dspdrv.h |    2 -
+ .../staging/tidspbridge/include/dspbridge/dspio.h  |    4 +-
+ .../tidspbridge/include/dspbridge/dspioctl.h       |   13 +-
+ .../tidspbridge/include/dspbridge/dynamic_loader.h |    2 -
+ drivers/staging/tidspbridge/include/dspbridge/gb.h |   79 --
+ drivers/staging/tidspbridge/include/dspbridge/gs.h |   59 --
+ .../tidspbridge/include/dspbridge/host_os.h        |    9 -
+ drivers/staging/tidspbridge/include/dspbridge/io.h |   29 +-
+ .../staging/tidspbridge/include/dspbridge/io_sm.h  |  164 +---
+ .../staging/tidspbridge/include/dspbridge/iodefs.h |   36 -
+ .../staging/tidspbridge/include/dspbridge/ldr.h    |   29 -
+ .../staging/tidspbridge/include/dspbridge/list.h   |  225 ----
+ .../staging/tidspbridge/include/dspbridge/mbx_sh.h |   40 -
+ .../tidspbridge/include/dspbridge/mgrpriv.h        |    4 +-
+ .../tidspbridge/include/dspbridge/nldrdefs.h       |   24 +-
+ .../staging/tidspbridge/include/dspbridge/node.h   |   20 +-
+ .../tidspbridge/include/dspbridge/nodepriv.h       |   10 +-
+ .../staging/tidspbridge/include/dspbridge/pwr.h    |    8 +-
+ .../staging/tidspbridge/include/dspbridge/pwr_sh.h |   33 -
+ .../include/dspbridge/resourcecleanup.h            |   11 -
+ .../staging/tidspbridge/include/dspbridge/rms_sh.h |    9 -
+ .../staging/tidspbridge/include/dspbridge/strm.h   |   62 --
+ .../tidspbridge/include/dspbridge/strmdefs.h       |    6 +-
+ .../staging/tidspbridge/include/dspbridge/sync.h   |   14 +-
+ .../tidspbridge/include/dspbridge/utildefs.h       |   39 -
+ drivers/staging/tidspbridge/pmgr/chnl.c            |    4 +-
+ drivers/staging/tidspbridge/pmgr/cmm.c             |  675 +++++-------
+ drivers/staging/tidspbridge/pmgr/cod.c             |   20 +-
+ drivers/staging/tidspbridge/pmgr/dbll.c            |   53 +-
+ drivers/staging/tidspbridge/pmgr/dev.c             |  355 +++----
+ drivers/staging/tidspbridge/pmgr/dspapi.c          |  272 +++---
+ drivers/staging/tidspbridge/pmgr/io.c              |    9 +-
+ drivers/staging/tidspbridge/pmgr/ioobj.h           |    4 +-
+ drivers/staging/tidspbridge/pmgr/msg.c             |    4 +-
+ drivers/staging/tidspbridge/rmgr/dbdcd.c           |   66 +-
+ drivers/staging/tidspbridge/rmgr/disp.c            |  124 +--
+ drivers/staging/tidspbridge/rmgr/drv.c             |  202 ++---
+ drivers/staging/tidspbridge/rmgr/drv_interface.c   |    1 -
+ drivers/staging/tidspbridge/rmgr/mgr.c             |   66 +-
+ drivers/staging/tidspbridge/rmgr/nldr.c            |  117 +--
+ drivers/staging/tidspbridge/rmgr/node.c            | 1092 +++++++++-----------
+ drivers/staging/tidspbridge/rmgr/proc.c            |  170 ++--
+ drivers/staging/tidspbridge/rmgr/pwr.c             |    8 +-
+ drivers/staging/tidspbridge/rmgr/rmm.c             |   93 +--
+ drivers/staging/tidspbridge/rmgr/strm.c            |   86 +-
+ 86 files changed, 3028 insertions(+), 5297 deletions(-)
+ delete mode 100644 drivers/staging/tidspbridge/gen/gb.c
+ delete mode 100644 drivers/staging/tidspbridge/gen/gs.c
+ delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/dbldefs.h
+ delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/dehdefs.h
+ delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/dispdefs.h
+ delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/drvdefs.h
+ delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/gb.h
+ delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/gs.h
+ delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/iodefs.h
+ delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/ldr.h
+ delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/list.h
+ delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/pwr_sh.h
+ delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/utildefs.h
+
+Regards,
+
+Omar
