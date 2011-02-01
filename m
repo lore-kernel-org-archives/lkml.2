@@ -1,53 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756022Ab1BAR4L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 12:56:11 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:52723 "EHLO
+	id S1755882Ab1BASHY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 13:07:24 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:56909 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477Ab1BAR4J (ORCPT
+	with ESMTP id S1754857Ab1BASHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 12:56:09 -0500
-Date: Tue, 1 Feb 2011 12:56:08 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Amerigo Wang <amwang@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jamie Lokier <jamie@shareable.org>, Thomas Weber <swirl@gmx.li>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Andy Fleming <afleming@freescale.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [RFC Patch] virtio: export model and type in /sys
-Message-ID: <20110201175608.GA28913@infradead.org>
-References: <1296442381-21652-1-git-send-email-amwang@redhat.com>
- <20110201173738.GA18526@infradead.org>
- <20110201174607.GA24924@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110201174607.GA24924@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 1 Feb 2011 13:07:22 -0500
+Subject: Re: [PATCH] perf: Cure task_oncpu_function_call() races
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>, Prasad <prasad@linux.vnet.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20110201172757.GA4586@redhat.com>
+References: <20110127221856.GA10539@redhat.com>
+	 <1296215577.15234.333.camel@laptop> <1296226667.15234.337.camel@laptop>
+	 <20110128162847.GA25088@redhat.com> <1296238278.15234.340.camel@laptop>
+	 <20110131172626.GA5407@redhat.com> <1296498205.26581.54.camel@laptop>
+	 <20110131191109.GA10906@redhat.com> <1296502154.26581.72.camel@laptop>
+	 <1296569037.26581.194.camel@laptop>  <20110201172757.GA4586@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Feb 2011 19:08:18 +0100
+Message-ID: <1296583698.26581.279.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 01, 2011 at 07:46:07PM +0200, Michael S. Tsirkin wrote:
-> ide seems to export these too.
+On Tue, 2011-02-01 at 18:27 +0100, Oleg Nesterov wrote:
+> On 02/01, Peter Zijlstra wrote:
+> >
+> > Oleg, I've actually run-tested the below and all seems well (clearly
+> > I've never actually hit the races found before either, so in that
+> > respect its not a conclusive test).
+> >
+> > Can you agree with this patch?
 > 
-> $ cat /sys/class/block/sr0/device/model 
-> DVDRAM GSA-U20N 
-> 
-> and I am pretty sure my dvd isn't scsi ...
+> You know, I already wrote the i-think-it-is-correct email. But then
+> I decided to read it once again.
 
-And I'm pretty sure it is, not just in one but two different ways.
-For one all ATA attached CDROMS are ATAPI, which just means a SCSI
-command set (MMC in this case) tunneled over an ATA transport.  Second
-libata always is a scsi low level driver, even when talking to ATA
-disk, it just responds to the SCSI commands by translating them to
-equivalent ATA commands or faking them up.
+:-)
+
+> > -static void __perf_event_remove_from_context(void *info)
+> > +static int __perf_remove_from_context(void *info)
+> >  {
+> >  	struct perf_event *event = info;
+> >  	struct perf_event_context *ctx = event->ctx;
+> >  	struct perf_cpu_context *cpuctx = __get_cpu_context(ctx);
+> >
+> > -	/*
+> > -	 * If this is a task context, we need to check whether it is
+> > -	 * the current task context of this cpu. If not it has been
+> > -	 * scheduled out before the smp call arrived.
+> > -	 */
+> > -	if (ctx->task && cpuctx->task_ctx != ctx)
+> > -		return;
+> 
+> OK, I think this is right... event_sched_out() will see
+> PERF_EVENT_STATE_INACTIVE if perf_event_task_sched_in() was not
+> called yet.
+
+Right
+
+> But,
+> 
+> > -static void perf_event_remove_from_context(struct perf_event *event)
+> > +static void perf_remove_from_context(struct perf_event *event)
+> >  {
+> > ...
+> >  	raw_spin_lock_irq(&ctx->lock);
+> >  	/*
+> > -	 * If the context is active we need to retry the smp call.
+> > +	 * If we failed to find a running task, but find it running now that
+> > +	 * we've acquired the ctx->lock, retry.
+> >  	 */
+> > -	if (ctx->nr_active && !list_empty(&event->group_entry)) {
+> > +	if (task_curr(task)) {
+> >  		raw_spin_unlock_irq(&ctx->lock);
+> >  		goto retry;
+> >  	}
+> >
+> >  	/*
+> > -	 * The lock prevents that this context is scheduled in so we
+> > -	 * can remove the event safely, if the call above did not
+> > -	 * succeed.
+> > +	 * Since the task isn't running, its safe to remove the event, us
+> > +	 * holding the ctx->lock ensures the task won't get scheduled in.
+> >  	 */
+> > -	if (!list_empty(&event->group_entry))
+> > -		list_del_event(event, ctx);
+> > +	list_del_event(event, ctx);
+> 
+> this looks suspicious (the same for perf_install_in_context).
+> 
+> Unlike the IPI handler, this can see schedule-in-progress in any state.
+> In particular, we can see rq->curr == next (so that task_curr() == F),
+> but before "prev" has already called perf_event_task_sched_out().
+> 
+> So we have to check ctx->is_active, or schedule() should change rq->curr
+> after perf_event_task_sched_out().
+
+I only considered current == next in that case, not current == prev, let
+me undo some of those sched.c bits and put a comment.
+
+> > @@ -753,13 +819,13 @@ void perf_event_disable(struct perf_event *event)
+> > ...
+> >  	 */
+> >  	if (event->state == PERF_EVENT_STATE_ACTIVE) {
+> >  		raw_spin_unlock_irq(&ctx->lock);
+> > +		/*
+> > +		 * Reload the task pointer, it might have been changed by
+> > +		 * a concurrent perf_event_context_sched_out().
+> > +		 */
+> > +		task = ctx->task;
+> >  		goto retry;
+> 
+> I am wondering why only perf_event_disable() needs this...
+
+perf_event_enable() also has it, but you made me re-asses all that and I
+think there's more to it.
+
+perf_install_in_context() works on a ctx obtained by find_get_context(),
+that context is either new (uncloned) or existing in which case it
+called unclone_ctx(). So I was thinking there was no race with the ctx
+flipping in perf_event_context_sched_out(), _however_ since it only
+acquires ctx->mutex after calling unclone_ctx() there is a race window
+with perf_event_init_task().
+
+This race we should fix with perf_pin_task_context()
+
+perf_remove_from_context() seems ok though, we only call that on the
+install ctx, which we should fix above, or on a dying uncloned context
+(no race with fork because exit doesn't clone).
+
+> Just curious, this is equally needed without this patch?
+
+Yes, I think it is a pre-existing problem.
+
 
