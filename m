@@ -1,122 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752242Ab1BAPIV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 10:08:21 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:1728 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751447Ab1BAPIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 10:08:19 -0500
-X-IronPort-AV: E=Sophos;i="4.60,410,1291611600"; 
-   d="scan'208";a="133749487"
-Subject: Re: [PATCH 06/11] xen/setup: Skip over 1st gap after System RAM.
-From: Ian Campbell <Ian.Campbell@eu.citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        "konrad@kernel.org" <konrad@kernel.org>,
-        "jeremy@goop.org" <jeremy@goop.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-In-Reply-To: <1296513876-31415-7-git-send-email-konrad.wilk@oracle.com>
-References: <1296513876-31415-1-git-send-email-konrad.wilk@oracle.com>
-	 <1296513876-31415-7-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Tue, 1 Feb 2011 15:08:16 +0000
-Message-ID: <1296572896.13091.240.camel@zakaz.uk.xensource.com>
+	id S1752618Ab1BAPPL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 10:15:11 -0500
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:46642
+	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751618Ab1BAPPG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 10:15:06 -0500
+X-SpamScore: -20
+X-BigFish: VPS-20(zz1418M1432N98dN1fa4Lzz1202hzzz32i637h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LFY2CX-01-99D-02
+X-M-MSG: 
+Date: Tue, 1 Feb 2011 16:14:55 +0100
+From: Hans Rosenfeld <hans.rosenfeld@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: "hpa@zytor.com" <hpa@zytor.com>, "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>
+Subject: Re: [PATCH 4/4] x86, amd: Support L3 Cache Partitioning on AMD
+ family 0x15 CPUs
+Message-ID: <20110201151455.GA9507@escobedo.osrc.amd.com>
+References: <20110126105637.GA27809@elte.hu>
+ <1296061716-185599-1-git-send-email-hans.rosenfeld@amd.com>
+ <20110126205608.GA14361@elte.hu>
+ <20110127115017.GH877@escobedo.osrc.amd.com>
+ <20110127124756.GA16094@elte.hu>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110127124756.GA16094@elte.hu>
+Organization: Advanced Micro Devices GmbH, Einsteinring 24, 85609 Dornach b.
+ Muenchen; Geschaeftsfuehrer: Andrew Bowd, Alberto Bozzo; Sitz: Dornach,
+ Gemeinde Aschheim, Landkreis Muenchen; Registergericht Muenchen, HRB Nr.
+ 43632
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-31 at 22:44 +0000, Konrad Rzeszutek Wilk wrote:
-> If the kernel is booted with dom0_mem=max:512MB and the
-> machine has more than 512MB of RAM, the E820 we get is:
+On Thu, Jan 27, 2011 at 07:47:56AM -0500, Ingo Molnar wrote:
+> > The problem is that cpuinfo_x86.compute_unit_id etc. don't exist unless
+> > CONFIG_SMP is enabled. I don't think there is any reason why this should
+> > be that way, but changing this just for this particular L3 feature seems
+> > too intrusive. Do you really want me to do that?
 > 
-> Xen: 0000000000100000 - 0000000020000000 (usable)
-> Xen: 00000000b7ee0000 - 00000000b7ee3000 (ACPI NVS)
+> All the CONFIG_X86_HT #ifdefs in arch/x86/kernel/cpu/amd.c look pretty ugly too - 
+> and it's not really a properly modularized solution.
 > 
-> while in actuality it is:
+> We generally want to unify the SMP and UP kernels as much as possible. 'CONFIG_SMP' 
+> is not really a property of the hardware, it's a property of the software.
 > 
-> (XEN)  0000000000100000 - 00000000b7ee0000 (usable)
-> (XEN)  00000000b7ee0000 - 00000000b7ee3000 (ACPI NVS)
-> 
-> Based on that, we would determine that the "gap" between
-> 0x20000 -> 0xb7ee0 is not System RAM and try to assign it to
-> 1-1 mapping. This meant that later on when we setup the page tables
-> we would try to assign those regions to DOMID_IO and the
-> Xen hypervisor would fail such operation. This patch
-> guards against that and sets the "gap" to be after the first
-> non-RAM E820 region.
+> If some topology information should be excluded then it can already be done by 
+> turning off CONFIG_CPU_SUP_AMD under CONFIG_EXPERT.
 
-This seems dodgy to me and makes assumptions about the sanity of the
-BIOS provided e820 maps. e.g. it's not impossible that there are systems
-out there with 2 or more little holes under 1M etc.
+I see several solutions to resolve this issue:
 
-The truncation (from 0xb7ee0000 to 0x20000000 in this case) happens in
-the dom0 kernel not the hypervisor right? So we can at least know that
-we've done it.
+1. Remove #ifdef CONFIG_SMP around compute_unit_id in struct cpuinfo_x86
+   and then use my original patch. This would work without introducing
+   new #ifdef ugliness with the L3 cache partitioning, but it would
+   increase #ifdef ugliness in struct cpuinfo_x86. Also, compute_unit_id
+   would just so happen to be initialized to 0, there would be no other
+   code using it for CONFIG_SMP. L3 cache partitioning would be the
+   first SMP-specific feature to be available in non-SMP kernels.
 
-Can we do the identity setup before that truncation happens? If not can
-can we not remember the untruncated map too and refer to it as
-necessary. One way of doing that might be to insert an e820 region
-covering the truncated region to identify it as such (perhaps
-E820_UNUSABLE?) or maybe integrating e.g. with the memblock reservations
-(or whatever the early enough allocator is).
+2. Same as #1, but remove CONFIG_SMP completely from struct cpuinfo_x86.
+   This would mean less #ifdef ugliness there, but then we would have a
+   bunch of unused fields in there in non-SMP kernels, which would also
+   just be initialized to 0. I don't think that would be correct for
+   booted_cores, but as it is unused I don't see an immediate problem
+   with that. Of course, this is also neither correct nor less ugly.
 
-The scheme we have is that all pre-ballooned memory goes at the end of
-the e820 right, as opposed to allowing it to first fill truncated
-regions such as this? 
+3. Same as #2, but also rework all code using those fields to be usable
+   on non-SMP kernels. This would be essentially a rework of all that
+   CONFIG_SMP stuff, and I think thats too much to ask for just for a
+   little extra L3 feature.
 
-Ian.
+Maybe I'm missing something here, but I don't see how this could be
+done cleanly in any other way at this time.
 
-> 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/xen/setup.c |   20 ++++++++++++++++++--
->  1 files changed, 18 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-> index c2a5b5f..5b2ae49 100644
-> --- a/arch/x86/xen/setup.c
-> +++ b/arch/x86/xen/setup.c
-> @@ -147,6 +147,7 @@ static unsigned long __init xen_set_identity(const struct e820map *e820)
->  {
->  	phys_addr_t last = xen_initial_domain() ? 0 : ISA_END_ADDRESS;
->  	phys_addr_t start_pci = last;
-> +	phys_addr_t ram_end = last;
->  	int i;
->  	unsigned long identity = 0;
->  
-> @@ -168,11 +169,26 @@ static unsigned long __init xen_set_identity(const struct e820map *e820)
->  			if (start > start_pci)
->  				identity += set_phys_range_identity(
->  					PFN_UP(start_pci), PFN_DOWN(start));
-> -			start_pci = end;
->  			/* Without saving 'last' we would gooble RAM too. */
-> -			last = end;
-> +			start_pci = last = ram_end = end;
->  			continue;
->  		}
-> +		/* Gap found right after the 1st RAM region. Skip over it.
-> +		 * Why? That is b/c if we pass in dom0_mem=max:512MB and
-> +		 * have in reality 1GB, the E820 is clipped at 512MB.
-> +		 * In xen_set_pte_init we end up calling xen_set_domain_pte
-> +		 * which asks Xen hypervisor to alter the ownership of the MFN
-> +		 * to DOMID_IO. We would try to set that on PFNs from 512MB
-> +		 * up to the next System RAM region (likely from 0x20000->
-> +		 * 0x100000). But changing the ownership on "real" RAM regions
-> +		 * will infuriate Xen hypervisor and we will fail (WARN).
-> +		 * So instead of trying to set IDENTITY mapping on the gap
-> +		 * between the System RAM and the first non-RAM E820 region
-> +		 * we start at the non-RAM E820 region.*/
-> +		if (ram_end && start >= ram_end) {
-> +			start_pci = start;
-> +			ram_end = 0;
-> +		}
->  		start_pci = min(start, start_pci);
->  		last = end;
->  	}
+Of course, you could just take the modified patch I sent you. That would
+be ugly, but not more so than the existing code. If this is not
+acceptable, please tell me which of the other two ugly solutions you
+would prefer.
 
+
+Hans
+
+
+-- 
+%SYSTEM-F-ANARCHISM, The operating system has been overthrown
 
