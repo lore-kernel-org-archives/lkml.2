@@ -1,34 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752447Ab1BAIbh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 03:31:37 -0500
-Received: from lo.gmane.org ([80.91.229.12]:59401 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751248Ab1BAIbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 03:31:36 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: WANG Cong <xiyou.wangcong@gmail.com>
-Subject: Re: [PATCH] checkpatch.pl: be more specific about what is wrong
- with Kconfig help
-Date: Tue, 1 Feb 2011 08:31:22 +0000 (UTC)
-Message-ID: <ii8gcq$8dp$2@dough.gmane.org>
-References: <1296475251-6470-1-git-send-email-tomas.winkler@intel.com>
-Mime-Version: 1.0
+	id S1752540Ab1BAIcx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 03:32:53 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:39807 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204Ab1BAIcw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 03:32:52 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:date:message-id:subject:from:to:cc
+         :content-type:content-transfer-encoding;
+        b=iqnizxj9/4UwwjhhOjoRIbi5Tvjq3daiJAxa4BuvzKsrs5i8WHQ50EwAzL4R87HtbK
+         xISim5yRrEb5wbsqBHfwflrReZP+Mu4iNXOrGgVv5393cuzQTuzWgytmDqc0RvU8a1/S
+         ZfNMxUG3U1ZMOHD+rhlU5M07i+3tx5DSbmtI4=
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+Date: Tue, 1 Feb 2011 09:32:51 +0100
+Message-ID: <AANLkTi=wj05GrQ2r-GAbaX1zSQzMN8FJV_2d7c-kv33L@mail.gmail.com>
+Subject: =?UTF-8?B?UmU6IGxpbnV4LW5leHQ6IFRyZWUgZm9yIEZlYnJ1YXJ5IDEgWyBzdGFnaW5nL3VzYnZpZA==?=
+	=?UTF-8?B?ZW8vdmljYW0uYzogZXJyb3I6IGV4cGVjdGVkIOKAmDvigJkgYmVmb3JlIOKAmCnigJkgdG9rZW4gXQ==?=
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@suse.de>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 60.247.97.98
-User-Agent: Pan/0.133 (House of Butterflies)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 Jan 2011 14:00:51 +0200, Tomas Winkler wrote:
+On Tue, Feb 1, 2011 at 5:34 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> Changes since 20110131:
+>
+> Dropped tree: xen
+>
+> The tty.current tree lost its conflict.
+>
+> The slab tree still has its build failure so I used the version from
+> next-20110121.
+>
+> The suspend tree lost its build failure.
+>
+> The sparc64 defconfig build has been fixed.
+>
+> The powerpc allyesconfig build has been broken by some obscure bloating
+> of the low memory code.
+>
+> ----------------------------------------------------------------------------
 
-> explain that Kconfig help paragraphs is expected to be at least 4 lines
-> long
-> 
+[ CC greg-kh ]
 
-Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
+Build error:
+...
+drivers/staging/usbvideo/vicam.c:222:57: error: expected ‘;’ before ‘)’ token
+drivers/staging/usbvideo/vicam.c:222:57: error: expected statement
+before ‘)’ token
+...
 
+This should be fixed by:
+
+Index: linux-next-20110201/drivers/staging/usbvideo/vicam.c
+===================================================================
+--- linux-next-20110201.orig/drivers/staging/usbvideo/vicam.c
++++ linux-next-20110201/drivers/staging/usbvideo/vicam.c
+@@ -219,7 +219,7 @@ set_camera_power(struct vicam_camera *ca
+ {
+        int status;
+
+-       status = send_control_msg(cam, 0x50, state, 0, NULL, 0));
++       status = send_control_msg(cam, 0x50, state, 0, NULL, 0);
+        if (status < 0)
+                return status;
+
+- Sedat -
