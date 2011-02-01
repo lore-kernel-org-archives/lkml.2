@@ -1,33 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916Ab1BAWJN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 17:09:13 -0500
-Received: from verein.lst.de ([213.95.11.210]:58033 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751315Ab1BAWJM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 17:09:12 -0500
-Date: Tue, 1 Feb 2011 23:08:57 +0100
-From: Christoph Hellwig <hch@lst.de>
-To: Chuck Ebbert <cebbert@redhat.com>
-Cc: Christoph Hellwig <hch@tuxera.com>, linux-kernel@vger.kernel.org
-Subject: Re: [Patch 1/4] hfsplus: Don't leak buffer on error
-Message-ID: <20110201220857.GB23889@lst.de>
-References: <20110201162802.2dd07201@katamari> <20110201164155.1a4c9ff6@katamari>
+	id S1752128Ab1BAWMo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 17:12:44 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:59203 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751470Ab1BAWMn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 17:12:43 -0500
+Subject: Re: 2.6.38-rc3 regression on parisc: segfaults
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Meelis Roos <mroos@linux.ee>
+Cc: linux-parisc@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+In-Reply-To: <alpine.SOC.1.00.1102012342200.25944@math.ut.ee>
+References: <alpine.SOC.1.00.1102012342200.25944@math.ut.ee>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Feb 2011 16:12:40 -0600
+Message-ID: <1296598360.18277.11.camel@mulgrave.site>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110201164155.1a4c9ff6@katamari>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This one looks good though, I'll put it in.
+On Wed, 2011-02-02 at 00:00 +0200, Meelis Roos wrote:
+> I have been testing devel kernels on SMP L1000 successfully until 
+> 2.6.38-rc2-00324-g70d1f36 included. The testing means booting the new 
+> kernel and running aptitude to update to current debian unstable.
+> 
+> Now I tried 2.6.38-rc3 and got a crash from aptitude on 2 out of 2 
+> tries. Maybe aptitude was broken inbetween but it looks like a kernel 
+> bug. Retried 2.6.38-rc2-00324-g70d1f36 and that seemed to work fine so 
+> it's more likely a kernel problem.
+> 
+> What additional information can I provide?
 
-On Tue, Feb 01, 2011 at 04:41:55PM -0500, Chuck Ebbert wrote:
-> hfsplus: Don't leak buffer on error
+Probably a bisection, if you could.  There have been no parisc patches
+between -rc2 and -rc3, so it's coming from outside the architecture.
 
-That's already said in the subject, no need to repeat it in the mail
-body.
+Thanks,
+
+James
+
 
