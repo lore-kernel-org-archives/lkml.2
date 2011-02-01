@@ -1,68 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160Ab1BAKDL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 05:03:11 -0500
-Received: from ra.se.axis.com ([195.60.68.13]:35561 "EHLO ra.se.axis.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751394Ab1BAKDJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 05:03:09 -0500
-Date: Tue, 1 Feb 2011 11:03:05 +0100
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: David Miller <davem@davemloft.net>
-Cc: "richm@oldelvet.org.uk" <richm@oldelvet.org.uk>,
-        "609371@bugs.debian.org" <609371@bugs.debian.org>,
-        "ben@decadent.org.uk" <ben@decadent.org.uk>,
-        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "jeffm@suse.com" <jeffm@suse.com>
-Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
-	Unknown relocation: 36
-Message-ID: <20110201100305.GF9874@axis.com>
-References: <20110115.211722.39173519.davem@davemloft.net> <20110116.220755.179947617.davem@davemloft.net> <20110117090557.GF9874@axis.com> <20110131.211116.115946085.davem@davemloft.net>
+	id S1753481Ab1BAKE1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 05:04:27 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:56777 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916Ab1BAKEZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 05:04:25 -0500
+Date: Tue, 1 Feb 2011 21:04:21 +1100
+From: Simon Horman <horms@verge.net.au>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lvs-devel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Hans Schillstrom <hans@schillstrom.com>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: [GIT PULL nf-next-2.6] IPVS build fixes and clean-ups
+Message-ID: <20110201100421.GA13325@verge.net.au>
+References: <1296519255-10602-1-git-send-email-horms@verge.net.au>
+ <20110131165009.66999952.randy.dunlap@oracle.com>
+ <20110201040634.GA2351@verge.net.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110131.211116.115946085.davem@davemloft.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110201040634.GA2351@verge.net.au>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 01, 2011 at 06:11:16AM +0100, David Miller wrote:
-> Jesper, could you please review this?
+On Tue, Feb 01, 2011 at 03:06:37PM +1100, Simon Horman wrote:
+> On Mon, Jan 31, 2011 at 04:50:09PM -0800, Randy Dunlap wrote:
+> > On Tue,  1 Feb 2011 11:14:11 +1100 Simon Horman wrote:
+> > 
+> > > Hi,
+> > > 
+> > > This short patch series addresses two linux-next build problems
+> > > raised by Randy Dunlap:
+> > > 
+> > > * net/netfilter/ipvs/ip_vs_core.c:1891: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'unsigned int'
+> > > * ERROR: "unregister_net_sysctl_table" [net/netfilter/ipvs/ip_vs.ko]
+> > >   ERROR: "register_net_sysctl_table" [net/netfilter/ipvs/ip_vs.ko] undefined!
+> > > 
+> > > The remainder of the changset is cleanups that I noticed along the way.
+> > 
+> > These 4 patches build successfully for me.
+> > However, I do see these warnings (sorry I missed them earlier):
+> > 
+> > WARNING: net/netfilter/ipvs/ip_vs.o(.init.text+0x161): Section mismatch in reference from the function init_module() to the function .exit.text:ip_vs_sync_cleanup()
+> > WARNING: net/netfilter/ipvs/ip_vs.o(.init.text+0x161): Section mismatch in reference from the function init_module() to the function .exit.text:ip_vs_sync_cleanup()
+> 
+> Thanks, I'll look into that. I will be travelling for a good portion of the
+> next day and a bit so I apologise in advance if that delays my next patch.
 
-Looks good!
+Hi,
 
-Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+I the following patch seems to be the right fix for this to me.
+I will send an amended pull request.
 
-> --------------------
-> klist: Fix object alignment on 64-bit.
-> 
-> Commit c0e69a5bbc6fc74184aa043aadb9a53bc58f953b ("klist.c: bit 0 in
-> pointer can't be used as flag") intended to make sure that all klist
-> objects were at least pointer size aligned, but used the constant "4"
-> which only works on 32-bit.
-> 
-> Use "sizeof(void *)" which is correct in all cases.
-> 
-> Signed-off-by: David S. Miller <davem@davemloft.net>
-> 
-> diff --git a/include/linux/klist.h b/include/linux/klist.h
-> index e91a4e5..a370ce5 100644
-> --- a/include/linux/klist.h
-> +++ b/include/linux/klist.h
-> @@ -22,7 +22,7 @@ struct klist {
->  	struct list_head	k_list;
->  	void			(*get)(struct klist_node *);
->  	void			(*put)(struct klist_node *);
-> -} __attribute__ ((aligned (4)));
-> +} __attribute__ ((aligned (sizeof(void *))));
->  
->  #define KLIST_INIT(_name, _get, _put)					\
->  	{ .k_lock	= __SPIN_LOCK_UNLOCKED(_name.k_lock),		\
-/^JN - Jesper Nilsson
+IPVS: Remove ip_vs_sync_cleanup from section __exit
+
+ip_vs_sync_cleanup() may be called from ip_vs_init() on error
+and thus needs to be accesible from section __init
+
+Reporte-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Simon Horman <horms@verge.net.au>
+---
+ net/netfilter/ipvs/ip_vs_sync.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/net/netfilter/ipvs/ip_vs_sync.c b/net/netfilter/ipvs/ip_vs_sync.c
+index d5a6e64..2a2a836 100644
+--- a/net/netfilter/ipvs/ip_vs_sync.c
++++ b/net/netfilter/ipvs/ip_vs_sync.c
+@@ -1686,7 +1686,7 @@ int __init ip_vs_sync_init(void)
+ 	return register_pernet_subsys(&ipvs_sync_ops);
+ }
+ 
+-void __exit ip_vs_sync_cleanup(void)
++void ip_vs_sync_cleanup(void)
+ {
+ 	unregister_pernet_subsys(&ipvs_sync_ops);
+ }
 -- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+1.7.2.3
+
+
