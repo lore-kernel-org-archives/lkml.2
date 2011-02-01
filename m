@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381Ab1BAWD2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 17:03:28 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36926 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752895Ab1BAWDZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 17:03:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Q5fgosuJyG7SQSSQt2RBcCexzuBtEpSRdabKKZECYyK8QALYLwe9fu92TR4IDChMTL
-         4XIjCvHjbJQy9al/nT0gvjb6SUgNAIU5TSzkw8EzeLD5VbGBuk6AqYmvN7U87Ypni2Ru
-         PidIh9LePWlTc90CaYfATPcUYA5pTWSUNKA74=
+	id S1753175Ab1BAWFH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 17:05:07 -0500
+Received: from www.tglx.de ([62.245.132.106]:40034 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751698Ab1BAWFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 17:05:06 -0500
+Date: Tue, 1 Feb 2011 23:04:47 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: john stultz <johnstul@us.ibm.com>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Richard Cochran <richard.cochran@omicron.at>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch 28/28] posix clocks: Introduce dynamic clocks
+In-Reply-To: <1296596987.3336.83.camel@work-vm>
+Message-ID: <alpine.LFD.2.00.1102012301090.31804@localhost6.localdomain6>
+References: <20110201134320.688829863@linutronix.de>  <20110201134420.164172635@linutronix.de> <1296596987.3336.83.camel@work-vm>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110201210944.GA12348@dtor-ws.eng.vmware.com>
-References: <AANLkTin4gOnEMruLDM=TkNYsNf5S370WqbcDVJzT7_Z4@mail.gmail.com>
-	<20110201210944.GA12348@dtor-ws.eng.vmware.com>
-Date: Tue, 1 Feb 2011 23:03:23 +0100
-X-Google-Sender-Auth: i4dUUtSUg8MP4x1uFiR1z6UmFv8
-Message-ID: <AANLkTimv=KqtuR36dMNa+=OMi0mgd8JK4qsb_SpmKmhs@mail.gmail.com>
-Subject: Re: Early crash (was: Re: module: show version information for
- built-in modules in sysfs)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Dmitry Torokhov <dtor@vmware.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 1, 2011 at 22:09, Dmitry Torokhov <dtor@vmware.com> wrote:
-> On Tue, Feb 01, 2011 at 12:33:29PM -0800, Geert Uytterhoeven wrote:
->> On Mon, Jan 24, 2011 at 11:59, Linux Kernel Mailing List
->> <linux-kernel@vger.kernel.org> wrote:
->> > Gitweb:     http://git.kernel.org/linus/e94965ed5beb23c6fabf7ed31f625e66d7ff28de
->>
->> >    module: show version information for built-in modules in sysfs
->> >
->> >    Currently only drivers that are built as modules have their versions
->> >    shown in /sys/module/<module_name>/version, but this information might
->> >    also be useful for built-in drivers as well. This especially important
->> >    for drivers that do not define any parameters - such drivers, if
->> >    built-in, are completely invisible from userspace.
->> >
->> >    This patch changes MODULE_VERSION() macro so that in case when we are
->> >    compiling built-in module, version information is stored in a separate
->> >    section. Kernel then uses this data to create 'version' sysfs attribute
->> >    in the same fashion it creates attributes for module parameters.
->>
->> This commit causes the crash below on m68k (ARAnyM).
->> Reverting this commit and its dependency
->> 3b90a5b292321b2acac3921f77046ae195aef53f
->> ("module: fix linker error for MODULE_VERSION when !MODULE and CONFIG_SYSFS=n")
->> makes it boot again.
->>
->
-> Hi Geert,
->
-> Does the follwing help by any chance?
->
-> From d6fd4a6e0fc2d3f0a74962d4a6f663a46d230ecd Mon Sep 17 00:00:00 2001
-> diff --git a/arch/m68knommu/kernel/vmlinux.lds.S b/arch/m68knommu/kernel/vmlinux.lds.S
-> index ef33213..47e15eb 100644
-> --- a/arch/m68knommu/kernel/vmlinux.lds.S
-> +++ b/arch/m68knommu/kernel/vmlinux.lds.S
+On Tue, 1 Feb 2011, john stultz wrote:
 
-The crash happened on m68k with MMU, not m68knommu.
+> On Tue, 2011-02-01 at 13:52 +0000, Thomas Gleixner wrote:
+> > plain text document attachment
+> > (posix-clocks-introduce-dynamic-clocks.patch)
+> > From: Richard Cochran <richardcochran@gmail.com>
+> > 
+> > This patch adds support for adding and removing posix clocks. The
+> > clock lifetime cycle is patterned after usb devices. Each clock is
+> > represented by a standard character device. In addition, the driver
+> > may optionally implement custom character device operations.
+> > 
+> > The posix clock and timer system calls listed below now work with
+> > dynamic posix clocks, as well as the traditional static clocks.
+> > The following system calls are affected:
+> > 
+> >    - clock_adjtime (brand new syscall)
+> >    - clock_gettime
+> >    - clock_getres
+> >    - clock_settime
+> >    - timer_create
+> >    - timer_delete
+> >    - timer_gettime
+> >    - timer_settime
+> > 
+> > [ tglx: Adapted to the posix-timer cleanup. Moved clock_posix_dynamic
+> >   	to posix-clock.c and made all referenced functions static ]
+> 
+> I sort of worry about the naming collision with the term posix-clock, as
+> this is just one type of posix clock (I suspect most folks think of a
+> posix clock as the clockid passed to the existing posix api).
 
-Gr{oetje,eeting}s,
+Well that's kernel internal and not the posix-timer syscalls.
+ 
+> Could we maybe use posix-dynclock or posix-fdclock or something? I know
+> its already been changed from clkdev, so sorry for being finicky here
+> and not catching this earlier.
 
-                        Geert
+I'm fine with the name as is and it's well documented.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Thanks,
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+	tglx
