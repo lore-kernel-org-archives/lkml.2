@@ -1,73 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753643Ab1BAK0Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 05:26:24 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34565 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951Ab1BAK0W (ORCPT
+	id S1752880Ab1BAKaG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 05:30:06 -0500
+Received: from spams.crous-amiens.fr ([194.57.108.9]:42165 "EHLO
+	spams.crous-amiens.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751328Ab1BAKaE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 05:26:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=XueBDchXnQiszARKwT1FFhehRzmnDIX+nddmlkd/d0wQi8YLxvEbhWI/oD/sPUyP8q
-         /vgstwdR0fS9d4fVPo0OlwK+l6mROCYfCOkEglH6u6OU7riiz/8eBwUjnXi6TYvTdw35
-         hA6ZhUpSGEldYP2hxOovnZ7RnLsV8Ff3VHVs4=
-Date: Tue, 1 Feb 2011 11:26:18 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Roland McGrath <roland@redhat.com>
-Cc: oleg@redhat.com, jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: [PATCH] ptrace: use safer wake up on ptrace_detach()
-Message-ID: <20110201102618.GE14211@htj.dyndns.org>
-References: <1296227324-25295-1-git-send-email-tj@kernel.org>
- <1296227324-25295-3-git-send-email-tj@kernel.org>
- <20110128184601.CBF7C180996@magilla.sf.frob.com>
- <20110131103855.GD7459@htj.dyndns.org>
+	Tue, 1 Feb 2011 05:30:04 -0500
+X-Greylist: delayed 555 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Feb 2011 05:30:04 EST
+X-MIB-FROM: c.holleville@crous-amiens.fr
+X-MIBTO: nmachary@utmb.edu,herbert.gaisano@utoronto.ca,vuorinen@utu.fi,hafiz.ahmad@utusan.com.my,hesham.idris@utusan.com.my,pengarang@utusan.com.my,sukan@utusan.com.my,James.Smith@uwe.ac.uk,secretariaat@vbbb.be,nayak@veccal.ernet.in,usp@veccal.ernet.in,linux-kernel@vger.kernel.org,milman@vsnl.com,manikuntala@vsnl.net,drgarga@vsnl.net.in,mzalich@vt.edu,andrew.charleson@vuw.ac.nz,sudershan@vyom.co.in,wbw@waba.org.my,KRohsted@wiley.com
+From: "Carole Holleville" <c.holleville@crous-amiens.fr>
+Subject: Screw Upgrade Account 
+To: undisclosed-recipients:;
+Message-ID: <20110201112036.326a2842@webmail.crous-amiens.fr>
+Date: Tue, 01 Feb 2011 11:20:36 +0100
+X-User-Agent: Opera/9.64 (Windows NT 5.1; U; en) Presto/2.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110131103855.GD7459@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The wake_up_process() call in ptrace_detach() is spurious and not
-interlocked with the tracee state.  IOW, the tracee could be running
-or sleeping in any place in the kernel by the time wake_up_process()
-is called.  This can lead to the tracee waking up unexpectedly which
-can be dangerous.
+Screw Upgrade Account 
 
-The wake_up is spurious and should be removed but for now reduce its
-toxicity by only waking up if the tracee is in TRACED or STOPPED
-state.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Roland McGrath <roland@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: stable@kernel.org
----
-So, something like this.  Roland, Oleg, can you guys please ack this?
-Also, should these ptrace patches be routed?  Shall I set up a git
-tree?
+We are currently upgrading our database and central email accounts View homepage either. We will delete email accounts that are no longer of working age to create more space for new accounts users.we also innovated a security audit system-wide to improve and enhance our current security. 
 
-Thank you.
+To continue using our services, you will need to update and re-confirm your account information by clicking this link http://zynetsw.com/forms/use/administrator/form1.html To complete your new account confirmation, you need to complete your account information and then submit, your account will be immediately confirmed. 
 
- kernel/ptrace.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: work/kernel/ptrace.c
-===================================================================
---- work.orig/kernel/ptrace.c
-+++ work/kernel/ptrace.c
-@@ -313,7 +313,7 @@ int ptrace_detach(struct task_struct *ch
- 		child->exit_code = data;
- 		dead = __ptrace_detach(current, child);
- 		if (!child->exit_state)
--			wake_up_process(child);
-+			wake_up_state(child, TASK_TRACED | TASK_STOPPED);
- 	}
- 	write_unlock_irq(&tasklist_lock);
- 
+SERVICE CENTER WEB.
