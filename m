@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751754Ab1BAWYL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 17:24:11 -0500
-Received: from cantor.suse.de ([195.135.220.2]:60323 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750998Ab1BAWYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 17:24:09 -0500
-Date: Tue, 1 Feb 2011 14:23:42 -0800
-From: Greg KH <gregkh@suse.de>
-To: Kevin Hilman <khilman@ti.com>
-Cc: linux-omap@vger.kernel.org, "Govindraj.R" <govindraj.raja@ti.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        Thomas Weber <weber@corscience.de>
-Subject: Re: [PATCHv4] OMAP: Enable Magic SysRq on serial console ttyOx
-Message-ID: <20110201222342.GA19137@suse.de>
-References: <1296545441-17070-1-git-send-email-weber@corscience.de>
- <87ei7ryavx.fsf@ti.com>
+	id S1751450Ab1BAW0j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 17:26:39 -0500
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:22013 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750998Ab1BAW0h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 17:26:37 -0500
+Date: Tue, 1 Feb 2011 14:26:37 -0800
+From: Dmitry Torokhov <dtor@vmware.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>
+Subject: Re: Early crash (was: Re: module: show version information for
+ built-in modules in sysfs)
+Message-ID: <20110201222637.GA17521@dtor-ws.eng.vmware.com>
+References: <AANLkTin4gOnEMruLDM=TkNYsNf5S370WqbcDVJzT7_Z4@mail.gmail.com>
+ <20110201210944.GA12348@dtor-ws.eng.vmware.com>
+ <AANLkTimv=KqtuR36dMNa+=OMi0mgd8JK4qsb_SpmKmhs@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <87ei7ryavx.fsf@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimv=KqtuR36dMNa+=OMi0mgd8JK4qsb_SpmKmhs@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 01, 2011 at 08:31:30AM -0800, Kevin Hilman wrote:
-> Thomas Weber <weber@corscience.de> writes:
-> 
-> > Magic SysRq key is not working for OMAP on new serial
-> > console ttyOx because SUPPORT_SYSRQ is not defined
-> > for omap-serial.
+On Tue, Feb 01, 2011 at 02:03:23PM -0800, Geert Uytterhoeven wrote:
+> On Tue, Feb 1, 2011 at 22:09, Dmitry Torokhov <dtor@vmware.com> wrote:
+> > On Tue, Feb 01, 2011 at 12:33:29PM -0800, Geert Uytterhoeven wrote:
+> >> On Mon, Jan 24, 2011 at 11:59, Linux Kernel Mailing List
+> >> <linux-kernel@vger.kernel.org> wrote:
+> >> > Gitweb:     http://git.kernel.org/linus/e94965ed5beb23c6fabf7ed31f625e66d7ff28de
+> >>
+> >> >    module: show version information for built-in modules in sysfs
+> >> >
+> >> >    Currently only drivers that are built as modules have their versions
+> >> >    shown in /sys/module/<module_name>/version, but this information might
+> >> >    also be useful for built-in drivers as well. This especially important
+> >> >    for drivers that do not define any parameters - such drivers, if
+> >> >    built-in, are completely invisible from userspace.
+> >> >
+> >> >    This patch changes MODULE_VERSION() macro so that in case when we are
+> >> >    compiling built-in module, version information is stored in a separate
+> >> >    section. Kernel then uses this data to create 'version' sysfs attribute
+> >> >    in the same fashion it creates attributes for module parameters.
+> >>
+> >> This commit causes the crash below on m68k (ARAnyM).
+> >> Reverting this commit and its dependency
+> >> 3b90a5b292321b2acac3921f77046ae195aef53f
+> >> ("module: fix linker error for MODULE_VERSION when !MODULE and CONFIG_SYSFS=n")
+> >> makes it boot again.
+> >>
 > >
-> > This patch defines SUPPORT_SYSRQ in omap-serial and
-> > enables handling of Magic SysRq character.
+> > Hi Geert,
 > >
-> > Further there is an issue of losing first break character.
-> > Removing the reset of the lsr_break_flag fixes this issue.
+> > Does the follwing help by any chance?
 > >
-> > Signed-off-by: Thomas Weber <weber@corscience.de>
-> > Acked-by: Govindraj.R <govindraj.raja@ti.com>
-> > Tested-by: Manjunath G Kondaiah <manjugk@ti.com>
-> > Acked-by: Kevin Hilman <khilman@ti.com>
+> > From d6fd4a6e0fc2d3f0a74962d4a6f663a46d230ecd Mon Sep 17 00:00:00 2001
+> > diff --git a/arch/m68knommu/kernel/vmlinux.lds.S b/arch/m68knommu/kernel/vmlinux.lds.S
+> > index ef33213..47e15eb 100644
+> > --- a/arch/m68knommu/kernel/vmlinux.lds.S
+> > +++ b/arch/m68knommu/kernel/vmlinux.lds.S
 > 
-> Greg,
+> The crash happened on m68k with MMU, not m68knommu.
 > 
-> Will you be taking this?  If you prefer, we can take it via OMAP tree
-> with your ack.
 
-I can take it if it's not a problem for you.  Or if you want to, please
-add:
-	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
-to the patch.
+Hmm, OK then. Could you please see if the crash happens if you return
+early in kernel/params.c::version_sysfs_builtin() ? Also, do you see
+anything in __modev section of your build?
 
-Let me know which is easier for you.
+Thanks,
+Dmitry
 
-thanks,
-
-greg k-h
