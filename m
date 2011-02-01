@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab1BAWW0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 17:22:26 -0500
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:54227 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751708Ab1BAWWY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 17:22:24 -0500
-From: Kevin Hilman <khilman@ti.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: linux-kernel@vger.kernel.org, walter harms <wharms@bfs.de>,
-        kernel-janitors@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] arm: mach-omap2: potential NULL dereference
-Organization: Texas Instruments, Inc.
-References: <1295258922-31242-1-git-send-email-segoon@openwall.com>
-	<4D341C35.80506@bfs.de> <20110119125721.GA9203@albatros>
-Date: Tue, 01 Feb 2011 14:22:19 -0800
-In-Reply-To: <20110119125721.GA9203@albatros> (Vasiliy Kulikov's message of
-	"Wed, 19 Jan 2011 15:57:22 +0300")
-Message-ID: <87lj1zpf8k.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	id S1751754Ab1BAWYL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 17:24:11 -0500
+Received: from cantor.suse.de ([195.135.220.2]:60323 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750998Ab1BAWYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 17:24:09 -0500
+Date: Tue, 1 Feb 2011 14:23:42 -0800
+From: Greg KH <gregkh@suse.de>
+To: Kevin Hilman <khilman@ti.com>
+Cc: linux-omap@vger.kernel.org, "Govindraj.R" <govindraj.raja@ti.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        Thomas Weber <weber@corscience.de>
+Subject: Re: [PATCHv4] OMAP: Enable Magic SysRq on serial console ttyOx
+Message-ID: <20110201222342.GA19137@suse.de>
+References: <1296545441-17070-1-git-send-email-weber@corscience.de>
+ <87ei7ryavx.fsf@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ei7ryavx.fsf@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vasiliy Kulikov <segoon@openwall.com> writes:
+On Tue, Feb 01, 2011 at 08:31:30AM -0800, Kevin Hilman wrote:
+> Thomas Weber <weber@corscience.de> writes:
+> 
+> > Magic SysRq key is not working for OMAP on new serial
+> > console ttyOx because SUPPORT_SYSRQ is not defined
+> > for omap-serial.
+> >
+> > This patch defines SUPPORT_SYSRQ in omap-serial and
+> > enables handling of Magic SysRq character.
+> >
+> > Further there is an issue of losing first break character.
+> > Removing the reset of the lsr_break_flag fixes this issue.
+> >
+> > Signed-off-by: Thomas Weber <weber@corscience.de>
+> > Acked-by: Govindraj.R <govindraj.raja@ti.com>
+> > Tested-by: Manjunath G Kondaiah <manjugk@ti.com>
+> > Acked-by: Kevin Hilman <khilman@ti.com>
+> 
+> Greg,
+> 
+> Will you be taking this?  If you prefer, we can take it via OMAP tree
+> with your ack.
 
-> kzalloc() may fail, if so return -ENOMEM.  Also Walter Harms suggested
-> to use kasprintf() instead of kzalloc+strcpy+strcat.
->
-> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-> ---
->  Cannot compile this driver, so it is not tested at all.
+I can take it if it's not a problem for you.  Or if you want to, please
+add:
+	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+to the patch.
 
-Boot tested on 3430/n900 and 3630/Zoom3.
+Let me know which is easier for you.
 
-Queueing for 2.6.39 (branch: for_2.6.39/pm-misc)
+thanks,
 
-Kevin
-
->  arch/arm/mach-omap2/smartreflex.c |    8 +++++---
->  1 files changed, 5 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-omap2/smartreflex.c
-> index 77ecebf..697d8d4 100644
-> --- a/arch/arm/mach-omap2/smartreflex.c
-> +++ b/arch/arm/mach-omap2/smartreflex.c
-> @@ -260,9 +260,11 @@ static int sr_late_init(struct omap_sr *sr_info)
->  	if (sr_class->class_type == SR_CLASS2 &&
->  		sr_class->notify_flags && sr_info->irq) {
->  
-> -		name = kzalloc(SMARTREFLEX_NAME_LEN + 1, GFP_KERNEL);
-> -		strcpy(name, "sr_");
-> -		strcat(name, sr_info->voltdm->name);
-> +		name = kasprintf(GFP_KERNEL, "sr_%s", sr_info->voltdm->name);
-> +		if (name == NULL) {
-> +			ret = -ENOMEM;
-> +			goto error;
-> +		}
->  		ret = request_irq(sr_info->irq, sr_interrupt,
->  				0, name, (void *)sr_info);
->  		if (ret)
+greg k-h
