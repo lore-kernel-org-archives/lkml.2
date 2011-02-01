@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197Ab1BAVtx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 16:49:53 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:39505 "EHLO e9.ny.us.ibm.com"
+	id S1752962Ab1BAWAS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 17:00:18 -0500
+Received: from smtp2.it.da.ut.ee ([193.40.5.67]:38873 "EHLO smtp2.it.da.ut.ee"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751425Ab1BAVtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 16:49:52 -0500
-Subject: Re: [patch 28/28] posix clocks: Introduce dynamic clocks
-From: john stultz <johnstul@us.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Richard Cochran <richard.cochran@omicron.at>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <20110201134420.164172635@linutronix.de>
-References: <20110201134320.688829863@linutronix.de>
-	 <20110201134420.164172635@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Feb 2011 13:49:47 -0800
-Message-ID: <1296596987.3336.83.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1752118Ab1BAWAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 17:00:16 -0500
+Date: Wed, 2 Feb 2011 00:00:13 +0200 (EET)
+From: Meelis Roos <mroos@linux.ee>
+To: linux-parisc@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: 2.6.38-rc3 regression on parisc: segfaults
+Message-ID: <alpine.SOC.1.00.1102012342200.25944@math.ut.ee>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-01 at 13:52 +0000, Thomas Gleixner wrote:
-> plain text document attachment
-> (posix-clocks-introduce-dynamic-clocks.patch)
-> From: Richard Cochran <richardcochran@gmail.com>
-> 
-> This patch adds support for adding and removing posix clocks. The
-> clock lifetime cycle is patterned after usb devices. Each clock is
-> represented by a standard character device. In addition, the driver
-> may optionally implement custom character device operations.
-> 
-> The posix clock and timer system calls listed below now work with
-> dynamic posix clocks, as well as the traditional static clocks.
-> The following system calls are affected:
-> 
->    - clock_adjtime (brand new syscall)
->    - clock_gettime
->    - clock_getres
->    - clock_settime
->    - timer_create
->    - timer_delete
->    - timer_gettime
->    - timer_settime
-> 
-> [ tglx: Adapted to the posix-timer cleanup. Moved clock_posix_dynamic
->   	to posix-clock.c and made all referenced functions static ]
+I have been testing devel kernels on SMP L1000 successfully until 
+2.6.38-rc2-00324-g70d1f36 included. The testing means booting the new 
+kernel and running aptitude to update to current debian unstable.
 
-I sort of worry about the naming collision with the term posix-clock, as
-this is just one type of posix clock (I suspect most folks think of a
-posix clock as the clockid passed to the existing posix api).
+Now I tried 2.6.38-rc3 and got a crash from aptitude on 2 out of 2 
+tries. Maybe aptitude was broken inbetween but it looks like a kernel 
+bug. Retried 2.6.38-rc2-00324-g70d1f36 and that seemed to work fine so 
+it's more likely a kernel problem.
 
-Could we maybe use posix-dynclock or posix-fdclock or something? I know
-its already been changed from clkdev, so sorry for being finicky here
-and not catching this earlier.
+What additional information can I provide?
 
-thanks
--john
+[   74.590000]
+[   74.590000] do_page_fault() pid=979 command='aptitude' type=15 address=0x0000002d
+[   74.590000]
+[   74.590000]      YZrvWESTHLNXBCVMcbcbcbcbOGFRQPDI
+[   74.590000] PSW: 00000000000001001111111100001111 Not tainted
+[   74.590000] r00-03  000000ff0004ff0f 000000004027b5ac 00000000405df23b 000000004067e884
+[   74.590000] r04-07  000000004067c860 000000004067e6d0 000000004067e880 00000000c014b7d0
+[   74.590000] r08-11  0000000000000001 0000000000000001 000000004067c860 0000000041b082c8
+[   74.590000] r12-15  000000004067e730 000000004067e6d0 000000004067c860 000000004067c860
+[   74.590000] r16-19  000000004067c860 000000004067e060 0000000000000000 000000004067c860
+[   74.590000] r20-23  0000000000000229 0000000000000000 0000000000000000 0000000000000000
+[   74.590000] r24-27  fffffffffffffff5 ffffffffffffffd3 000000004067e730 00000000004227a4
+[   74.590000] r28-31  000000000000002d 0000000000000000 00000000c014b8c0 00000000402688db
+[   74.590000] sr00-03  0000000000228800 0000000000228800 0000000000000000 0000000000228800
+[   74.590000] sr04-07  0000000000228800 0000000000228800 0000000000228800 0000000000228800
+[   74.590000]
+[   74.590000]       VZOUICununcqcqcqcqcqcrmunTDVZOUI
+[   74.590000] FPSR: 00001000001000100010000000000000
+[   74.590000] FPER1: 00000000
+[   74.590000] fr00-03  0822200000000000 0000000000000000 0000000000000000 0000000000000000
+[   74.590000] fr04-07  0000000a00000000 0000000000000000 0000000000000000 0000000000000000
+[   74.590000] fr08-11  0000000000000000 00000000406cf120 00000000401563e8 00000000404c59d8
+[   74.590000] fr12-15  000000000804000f 000000000800000f 00000000401563e8 00000000ffc60460
+[   74.590000] fr16-19  00000000406cf120 0000000040639d54 0000000000000046 0000000040599294
+[   74.590000] fr20-23  00000000ffc60348 00000000406dd920 0000000000000038 4038000000000000
+[   74.590000] fr24-27  0000000000000000 0000000000000000 3ff0000000000000 412e848c00000000
+[   74.590000] fr28-31  0000000040599250 00000000ffc60357 00000000ffc60357 00000000405dfba8
+[   74.590000]
+[   74.590000] IASQ: 0000000000228800 0000000000228800 IAOQ: 00000000405df25b 00000000405df25f
+[   74.590000]  IIR: 0f80108b    ISR: 0000000000228800  IOR: 000000000000002d
+[   74.590000]  CPU:        0   CR30: 00000000fe050000 CR31: 0000000000008020
+[   74.590000]  ORIG_R28: 0000000000000080
+[   74.590000]  IAOQ[0]: 00000000405df25b
+[   74.590000]  IAOQ[1]: 00000000405df25f
+[   74.590000]  RP(r2): 00000000405df23b
 
 
+-- 
+Meelis Roos (mroos@linux.ee)
