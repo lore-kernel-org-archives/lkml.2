@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757Ab1BAVIu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 16:08:50 -0500
-Received: from www.tglx.de ([62.245.132.106]:49028 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751633Ab1BAVIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 16:08:49 -0500
-Date: Tue, 1 Feb 2011 22:08:40 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: John Stultz <john.stultz@linaro.org>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        Richard Cochran <richard.cochran@omicron.at>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [patch 07/28] posix-timers: Convert clock_nanosleep_restart to
- clockid_to_kclock()
-In-Reply-To: <alpine.LFD.2.00.1102012145500.31804@localhost6.localdomain6>
-Message-ID: <alpine.LFD.2.00.1102012207130.31804@localhost6.localdomain6>
-References: <20110201134320.688829863@linutronix.de>  <20110201134418.131263211@linutronix.de> <1296592977.3336.25.camel@work-vm> <alpine.LFD.2.00.1102012145500.31804@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752905Ab1BAVJq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 16:09:46 -0500
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:16483 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751633Ab1BAVJp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 16:09:45 -0500
+Date: Tue, 1 Feb 2011 13:09:44 -0800
+From: Dmitry Torokhov <dtor@vmware.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>
+Subject: Re: Early crash (was: Re: module: show version information for
+ built-in modules in sysfs)
+Message-ID: <20110201210944.GA12348@dtor-ws.eng.vmware.com>
+References: <AANLkTin4gOnEMruLDM=TkNYsNf5S370WqbcDVJzT7_Z4@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTin4gOnEMruLDM=TkNYsNf5S370WqbcDVJzT7_Z4@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Feb 2011, Thomas Gleixner wrote:
-> On Tue, 1 Feb 2011, John Stultz wrote:
+On Tue, Feb 01, 2011 at 12:33:29PM -0800, Geert Uytterhoeven wrote:
+> On Mon, Jan 24, 2011 at 11:59, Linux Kernel Mailing List
+> <linux-kernel@vger.kernel.org> wrote:
+> > Gitweb:     http://git.kernel.org/linus/e94965ed5beb23c6fabf7ed31f625e66d7ff28de
 > 
-> > On Tue, 2011-02-01 at 13:51 +0000, Thomas Gleixner wrote:
-> > > plain text document attachment
-> > > (posix-timers-convert-nanosleep-restart.patch)
-> > > Use the new kclock decoding function in clock_nanosleep_restart. No
-> > > need to check kclock here as the restart block always contains a valid
-> > > clockid. If not, we are in serious trouble anyway.
-> > > 
-> > > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> > > Cc: John Stultz <john.stultz@linaro.org>
-> > > Cc: Richard Cochran <richard.cochran@omicron.at>
-> > 
-> > One nit.
-> > 
-> > > -long
-> > > -clock_nanosleep_restart(struct restart_block *restart_block)
-> > > +long clock_nanosleep_restart(struct restart_block *restart_block)
-> > >  {
-> > >  	clockid_t which_clock = restart_block->arg0;
-> > > +	struct k_clock *kc = clockid_to_kclock(which_clock);
-> > > 
-> > > -	return CLOCK_DISPATCH(which_clock, nsleep_restart,
-> > > -			      (restart_block));
-> > > +	return kc->nsleep_restart(restart_block);
-> > >  }
-> > 
-> > 
-> > Should you be checking if kc is null before dereferencing? Or am I being
-> > overly paranoid?
+> >    module: show version information for built-in modules in sysfs
+> >
+> >    Currently only drivers that are built as modules have their versions
+> >    shown in /sys/module/<module_name>/version, but this information might
+> >    also be useful for built-in drivers as well. This especially important
+> >    for drivers that do not define any parameters - such drivers, if
+> >    built-in, are completely invisible from userspace.
+> >
+> >    This patch changes MODULE_VERSION() macro so that in case when we are
+> >    compiling built-in module, version information is stored in a separate
+> >    section. Kernel then uses this data to create 'version' sysfs attribute
+> >    in the same fashion it creates attributes for module parameters.
 > 
-> See changelog. If we get a corrupted restart_block then checking kc is
-> probably the least of our worries.
+> This commit causes the crash below on m68k (ARAnyM).
+> Reverting this commit and its dependency
+> 3b90a5b292321b2acac3921f77046ae195aef53f
+> ("module: fix linker error for MODULE_VERSION when !MODULE and CONFIG_SYSFS=n")
+> makes it boot again.
+> 
 
-Ok, I'll add the checks for nsleep_restart and timer_get/set/del, but
-I make them a WARN_ON_ONCE() as this is serious data corruption in the
-kernel.
+Hi Geert,
+
+Does the follwing help by any chance?
+
+>From d6fd4a6e0fc2d3f0a74962d4a6f663a46d230ecd Mon Sep 17 00:00:00 2001
+diff --git a/arch/m68knommu/kernel/vmlinux.lds.S b/arch/m68knommu/kernel/vmlinux.lds.S
+index ef33213..47e15eb 100644
+--- a/arch/m68knommu/kernel/vmlinux.lds.S
++++ b/arch/m68knommu/kernel/vmlinux.lds.S
+@@ -141,6 +141,12 @@ SECTIONS {
+ 		*(__param)
+ 		__stop___param = .;
+ 
++		/* Built-in module versions */
++		. = ALIGN(4) ;
++		__start___modver = .;
++		*(__modver)
++		__stop___modver = .;
++
+ 		. = ALIGN(4) ;
+ 		_etext = . ;
+ 	} > TEXT
 
 Thanks,
 
-	tglx
+Dmitry
+
