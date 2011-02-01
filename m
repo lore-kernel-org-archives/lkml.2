@@ -1,92 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab1BAP7n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 10:59:43 -0500
-Received: from msux-gh1-uea02.nsa.gov ([63.239.65.40]:39177 "EHLO
-	msux-gh1-uea02.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115Ab1BAP7l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 10:59:41 -0500
-Subject: Re: [PATCH] security/selinux: fix /proc/sys/ labeling
-From: Stephen Smalley <sds@tycho.nsa.gov>
-To: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Cc: James Morris <jmorris@namei.org>, Eric Paris <eparis@parisplace.org>,
-        Nick Piggin <npiggin@kernel.dk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-In-Reply-To: <AANLkTimiV_2SAwXuH-SjGav5XJixN=SnjrPrtFRRQF05@mail.gmail.com>
-References: <1296519474-15714-1-git-send-email-lucian.grijincu@gmail.com>
-	 <1296572538.12605.4.camel@moss-pluto>
-	 <AANLkTimiV_2SAwXuH-SjGav5XJixN=SnjrPrtFRRQF05@mail.gmail.com>
+	id S1754217Ab1BAQAG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 11:00:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34449 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752081Ab1BAQAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 11:00:04 -0500
+Subject: Re: [PATCH v2 5/6] KVM-GST: adjust scheduler cpu power
+From: Glauber Costa <glommer@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
+        Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Avi Kivity <avi@redhat.com>
+In-Reply-To: <1296473120.15234.375.camel@laptop>
+References: <1296244340-15173-1-git-send-email-glommer@redhat.com>
+	 <1296244340-15173-6-git-send-email-glommer@redhat.com>
+	 <1296473120.15234.375.camel@laptop>
 Content-Type: text/plain; charset="UTF-8"
-Organization: National Security Agency
-Date: Tue, 01 Feb 2011 10:59:35 -0500
-Message-ID: <1296575975.12605.18.camel@moss-pluto>
+Organization: Red Hat
+Date: Tue, 01 Feb 2011 13:59:56 -0200
+Message-ID: <1296575996.5081.20.camel@mothafucka.localdomain>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-01 at 17:53 +0200, Lucian Adrian Grijincu wrote:
-> On Tue, Feb 1, 2011 at 5:02 PM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
-> > Is this patch really from Eric or just derived from an earlier patch by him?
+On Mon, 2011-01-31 at 12:25 +0100, Peter Zijlstra wrote:
+> On Fri, 2011-01-28 at 14:52 -0500, Glauber Costa wrote:
+> 
+> > +#ifdef CONFIG_PARAVIRT_TIME_ACCOUNTING
+> > +static DEFINE_PER_CPU(u64, cpu_steal_time);
+> > +
+> > +#ifndef CONFIG_64BIT
+> > +static DEFINE_PER_CPU(seqcount_t, steal_time_seq);
+> > +
+> > +static inline void steal_time_write_begin(void)
+> > +{
+> > +	__this_cpu_inc(steal_time_seq.sequence);
+> > +	smp_wmb();
+> > +}
+> > +
+> > +static inline void steal_time_write_end(void)
+> > +{
+> > +	smp_wmb();
+> > +	__this_cpu_inc(steal_time_seq.sequence);
+> > +}
+> > +
+> > +static inline u64 steal_time_read(int cpu)
+> > +{
+> > +	u64 steal_time;
+> > +	unsigned seq;
+> > +
+> > +	do {
+> > +		seq = read_seqcount_begin(&per_cpu(steal_time_seq, cpu));
+> > +		steal_time = per_cpu(cpu_steal_time, cpu);
+> > +	} while (read_seqcount_retry(&per_cpu(steal_time_seq, cpu), seq));
+> > +
+> > +	return steal_time;
+> > +}
+> > +#else /* CONFIG_64BIT */
+> > +static inline void steal_time_write_begin(void)
+> > +{
+> > +}
+> > +
+> > +static inline void steal_time_write_end(void)
+> > +{
+> > +}
+> > +
+> > +static inline u64 steal_time_read(int cpu)
+> > +{
+> > +	return per_cpu(cpu_steal_time, cpu);
+> > +}
 > 
 > 
-> No, sorry for the confusion.
-> I seem to have triggered a git send-email bug.
-> 
-> >> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-> >
-> > And did Eric truly sign off on this patch or just on an earlier one?
-> 
-> 
-> Just the earlier one. I added his sign-off because of this paragraph
-> in SubmittingPatches:
-> | The Signed-off-by: tag indicates that the signer was involved in the
-> | development of the patch, or that he/she was in the patch's delivery path.
-> 
-> >
-> >> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-> >> index e276eb4..7c5dfb1 100644
-> >> --- a/security/selinux/hooks.c
-> >> +++ b/security/selinux/hooks.c
-> >> @@ -1317,9 +1311,9 @@ static int inode_doinit_with_dentry(struct inode *inode, struct dentry *opt_dent
-> >>
-> >>               if ((sbsec->flags & SE_SBPROC) && !S_ISLNK(inode->i_mode)) {
-> >>                       struct proc_inode *proci = PROC_I(inode);
-> >> -                     if (proci->pde) {
-> >> +                     if (opt_dentry && (proci->pde || proci->sysctl)) {
-> >>                               isec->sclass = inode_mode_to_security_class(inode->i_mode);
-> >> -                             rc = selinux_proc_get_sid(proci->pde,
-> >> +                             rc = selinux_proc_get_sid(opt_dentry,
-> >>                                                         isec->sclass,
-> >>                                                         &sid);
-> >>                               if (rc)
-> >
-> > It would be nice if we could eliminate the last remaining piece of proc
-> > internal knowledge from this code - why do we need the proci->pde ||
-> > proci->sysctl test here?  What changes without it?
+> > @@ -3536,6 +3592,11 @@ static int touch_steal_time(int is_idle)
+> >  
+> >  	if (st) {
+> >  		account_steal_time(st);
+> > +#ifdef CONFIG_PARAVIRT_TIME_ACCOUNTING
+> > +		steal_time_write_begin();
+> > +		__this_cpu_add(cpu_steal_time, steal);
+> > +		steal_time_write_end();
+> > +#endif
+> >  		return 1;
+> >  	}
+> >  	return 0;
 > 
 > 
-> Without we label all nodes in /proc/ through selinux_proc_get_sid.
-> 
-> /proc/1/limits should not get it's sid from here, but from
-> security_task_to_inode -> selinux_task_to_inode.
-> 
-> Without the check we send "/1/limits" to selinux_proc_get_sid, which
-> strips off "/1" leaving "/limits". This will be labeled with "proc_t"
-> IIRC.
+> Why replicate all logic you've already got in patch 4? That too is
+> reading steal time in a loop in kvm_account_steal_time(), why not extend
+> that interface to take a cpu argument and be done with it?
 
-Are you sure?  Those inodes should be labeled by proc_pid_make_inode()
--> security_task_to_inode() -> selinux_task_to_inode(), which will set
-the inode SID to match the associated task SID, and set the
-isec->initialized flag.  Then when inode_doinit_with_dentry gets called
-later, it should bail immediately due to isec->initialized already being
-set.
+Because that part is kvm-specific, and this is scheduler general.
+It seemed cleaner to me to do it this way. But I can do it differently,
+certainly.
 
--- 
-Stephen Smalley
-National Security Agency
+> 
+
 
