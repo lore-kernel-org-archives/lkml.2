@@ -1,193 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462Ab1BAFWL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 00:22:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13173 "EHLO mx1.redhat.com"
+	id S1751873Ab1BAFW3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 00:22:29 -0500
+Received: from sh.osrg.net ([192.16.179.4]:54502 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750859Ab1BAFWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 00:22:10 -0500
-From: Amerigo Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>, WANG Cong <amwang@redhat.com>,
-        linux-cachefs@redhat.com
-Subject: [Patch] fscache: remove dead code under CONFIG_WORKQUEUE_DEBUGFS
-Date: Tue,  1 Feb 2011 13:21:51 +0800
-Message-Id: <1296537712-14059-1-git-send-email-amwang@redhat.com>
+	id S1751187Ab1BAFW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 00:22:28 -0500
+Date: Tue, 1 Feb 2011 14:22:01 +0900
+To: hancockrwd@gmail.com
+Cc: fujita.tomonori@lab.ntt.co.jp, ak@linux.intel.com, cebbert@redhat.com,
+        linux-kernel@vger.kernel.org, dwmw2@infradead.org
+Subject: Re: b44 driver causes panic when using swiotlb
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <4D477C6F.8000906@gmail.com>
+References: <4D4759BD.2000006@gmail.com>
+	<20110201102707C.fujita.tomonori@lab.ntt.co.jp>
+	<4D477C6F.8000906@gmail.com>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20110201142103M.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 01 Feb 2011 14:22:02 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no CONFIG_WORKQUEUE_DEBUGFS any more, these code are dead.
+On Mon, 31 Jan 2011 21:22:23 -0600
+Robert Hancock <hancockrwd@gmail.com> wrote:
 
-Cc: David Howells <dhowells@redhat.com>
-Signed-off-by: WANG Cong <amwang@redhat.com>
+> > Some ideas to implement something that works for such device were
+> > discussed. Seems that the conclusion is that it's doesn't worth making
+> > the common code complicated for such minor and insane devices.
+> 
+> I don't think this is the only device that has sub-32-bit DMA 
+> restrictions, this will just lead to a bunch of duplicated code.
 
----
-diff --git a/fs/fscache/operation.c b/fs/fscache/operation.c
-index 48a18f1..30afdfa 100644
---- a/fs/fscache/operation.c
-+++ b/fs/fscache/operation.c
-@@ -33,8 +33,6 @@ void fscache_enqueue_operation(struct fscache_operation *op)
- 	_enter("{OBJ%x OP%x,%u}",
- 	       op->object->debug_id, op->debug_id, atomic_read(&op->usage));
- 
--	fscache_set_op_state(op, "EnQ");
--
- 	ASSERT(list_empty(&op->pend_link));
- 	ASSERT(op->processor != NULL);
- 	ASSERTCMP(op->object->state, >=, FSCACHE_OBJECT_AVAILABLE);
-@@ -66,8 +64,6 @@ EXPORT_SYMBOL(fscache_enqueue_operation);
- static void fscache_run_op(struct fscache_object *object,
- 			   struct fscache_operation *op)
- {
--	fscache_set_op_state(op, "Run");
--
- 	object->n_in_progress++;
- 	if (test_and_clear_bit(FSCACHE_OP_WAITING, &op->flags))
- 		wake_up_bit(&op->flags, FSCACHE_OP_WAITING);
-@@ -88,8 +84,6 @@ int fscache_submit_exclusive_op(struct fscache_object *object,
- 
- 	_enter("{OBJ%x OP%x},", object->debug_id, op->debug_id);
- 
--	fscache_set_op_state(op, "SubmitX");
--
- 	spin_lock(&object->lock);
- 	ASSERTCMP(object->n_ops, >=, object->n_in_progress);
- 	ASSERTCMP(object->n_ops, >=, object->n_exclusive);
-@@ -194,8 +188,6 @@ int fscache_submit_op(struct fscache_object *object,
- 
- 	ASSERTCMP(atomic_read(&op->usage), >, 0);
- 
--	fscache_set_op_state(op, "Submit");
--
- 	spin_lock(&object->lock);
- 	ASSERTCMP(object->n_ops, >=, object->n_in_progress);
- 	ASSERTCMP(object->n_ops, >=, object->n_exclusive);
-@@ -335,8 +327,6 @@ void fscache_put_operation(struct fscache_operation *op)
- 	if (!atomic_dec_and_test(&op->usage))
- 		return;
- 
--	fscache_set_op_state(op, "Put");
--
- 	_debug("PUT OP");
- 	if (test_and_set_bit(FSCACHE_OP_DEAD, &op->flags))
- 		BUG();
-diff --git a/fs/fscache/page.c b/fs/fscache/page.c
-index 41c441c..a2a5d19 100644
---- a/fs/fscache/page.c
-+++ b/fs/fscache/page.c
-@@ -155,11 +155,9 @@ static void fscache_attr_changed_op(struct fscache_operation *op)
- 	fscache_stat(&fscache_n_attr_changed_calls);
- 
- 	if (fscache_object_is_active(object)) {
--		fscache_set_op_state(op, "CallFS");
- 		fscache_stat(&fscache_n_cop_attr_changed);
- 		ret = object->cache->ops->attr_changed(object);
- 		fscache_stat_d(&fscache_n_cop_attr_changed);
--		fscache_set_op_state(op, "Done");
- 		if (ret < 0)
- 			fscache_abort_object(object);
- 	}
-@@ -190,7 +188,6 @@ int __fscache_attr_changed(struct fscache_cookie *cookie)
- 
- 	fscache_operation_init(op, fscache_attr_changed_op, NULL);
- 	op->flags = FSCACHE_OP_ASYNC | (1 << FSCACHE_OP_EXCLUSIVE);
--	fscache_set_op_name(op, "Attr");
- 
- 	spin_lock(&cookie->lock);
- 
-@@ -257,7 +254,6 @@ static struct fscache_retrieval *fscache_alloc_retrieval(
- 	op->context	= context;
- 	op->start_time	= jiffies;
- 	INIT_LIST_HEAD(&op->to_do);
--	fscache_set_op_name(&op->op, "Retr");
- 	return op;
- }
- 
-@@ -368,7 +364,6 @@ int __fscache_read_or_alloc_page(struct fscache_cookie *cookie,
- 		_leave(" = -ENOMEM");
- 		return -ENOMEM;
- 	}
--	fscache_set_op_name(&op->op, "RetrRA1");
- 
- 	spin_lock(&cookie->lock);
- 
-@@ -487,7 +482,6 @@ int __fscache_read_or_alloc_pages(struct fscache_cookie *cookie,
- 	op = fscache_alloc_retrieval(mapping, end_io_func, context);
- 	if (!op)
- 		return -ENOMEM;
--	fscache_set_op_name(&op->op, "RetrRAN");
- 
- 	spin_lock(&cookie->lock);
- 
-@@ -589,7 +583,6 @@ int __fscache_alloc_page(struct fscache_cookie *cookie,
- 	op = fscache_alloc_retrieval(page->mapping, NULL, NULL);
- 	if (!op)
- 		return -ENOMEM;
--	fscache_set_op_name(&op->op, "RetrAL1");
- 
- 	spin_lock(&cookie->lock);
- 
-@@ -662,8 +655,6 @@ static void fscache_write_op(struct fscache_operation *_op)
- 
- 	_enter("{OP%x,%d}", op->op.debug_id, atomic_read(&op->op.usage));
- 
--	fscache_set_op_state(&op->op, "GetPage");
--
- 	spin_lock(&object->lock);
- 	cookie = object->cookie;
- 
-@@ -698,15 +689,12 @@ static void fscache_write_op(struct fscache_operation *_op)
- 	spin_unlock(&cookie->stores_lock);
- 	spin_unlock(&object->lock);
- 
--	fscache_set_op_state(&op->op, "Store");
- 	fscache_stat(&fscache_n_store_pages);
- 	fscache_stat(&fscache_n_cop_write_page);
- 	ret = object->cache->ops->write_page(op, page);
- 	fscache_stat_d(&fscache_n_cop_write_page);
--	fscache_set_op_state(&op->op, "EndWrite");
- 	fscache_end_page_write(object, page);
- 	if (ret < 0) {
--		fscache_set_op_state(&op->op, "Abort");
- 		fscache_abort_object(object);
- 	} else {
- 		fscache_enqueue_operation(&op->op);
-@@ -778,7 +766,6 @@ int __fscache_write_page(struct fscache_cookie *cookie,
- 	fscache_operation_init(&op->op, fscache_write_op,
- 			       fscache_release_write_op);
- 	op->op.flags = FSCACHE_OP_ASYNC | (1 << FSCACHE_OP_WAITING);
--	fscache_set_op_name(&op->op, "Write1");
- 
- 	ret = radix_tree_preload(gfp & ~__GFP_HIGHMEM);
- 	if (ret < 0)
-diff --git a/include/linux/fscache-cache.h b/include/linux/fscache-cache.h
-index b8581c0..31b18a7 100644
---- a/include/linux/fscache-cache.h
-+++ b/include/linux/fscache-cache.h
-@@ -100,17 +100,6 @@ struct fscache_operation {
- 
- 	/* operation releaser */
- 	fscache_operation_release_t release;
--
--#ifdef CONFIG_WORKQUEUE_DEBUGFS
--	struct work_struct put_work;	/* work to delay operation put */
--	const char *name;		/* operation name */
--	const char *state;		/* operation state */
--#define fscache_set_op_name(OP, N)	do { (OP)->name  = (N); } while(0)
--#define fscache_set_op_state(OP, S)	do { (OP)->state = (S); } while(0)
--#else
--#define fscache_set_op_name(OP, N)	do { } while(0)
--#define fscache_set_op_state(OP, S)	do { } while(0)
--#endif
- };
- 
- extern atomic_t fscache_op_debug_id;
-@@ -137,7 +126,6 @@ static inline void fscache_operation_init(struct fscache_operation *op,
- 	op->processor = processor;
- 	op->release = release;
- 	INIT_LIST_HEAD(&op->pend_link);
--	fscache_set_op_state(op, "Init");
- }
- 
- /*
+Yeah, not only device but not many.
+
+The block layer has the own bouncing mechanism. Some network drivers
+have the similar bouncing code. I don't know if there are other kinds
+of drivers that have the own bouncing code.
+
+I thought that we can make mm/bounce.c (used for block drivers now)
+work any drivers without complicating it. We could make swiotlb to do
+but it's too complicated and it doesn't worth.
+
+
+> In 
+> particular, how is LPC DMA supposed to work?
+
+LPC DMA can't do 32bit dma?
+
+
+> At the very least we should be allowing the driver to deal with the 
+> failure instead of panicing the system. Otherwise we are just leaving a 
+> land mine for people to trip over.
+
+Agreed. swiotlb shouldn't panic in this case. I'll take care of it.
