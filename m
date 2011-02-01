@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183Ab1BAH1m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 02:27:42 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:37877 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297Ab1BAH1l (ORCPT
+	id S1752114Ab1BAHbY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 02:31:24 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:62131 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751328Ab1BAHbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 02:27:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=qZ1TJxlE9XVuc01di3ObFjMtQrzWBw82R2vkka5qbxGcAsjOwAJUMmcdBsWkkihqIn
-         itU8fG6mYENVogRSIAMmYXmF5XTcqRuXa+jCtiernHvshAmeNRFm/2GtMVgsTN6j4g8m
-         kv2jApb/lm5UVBS6pL/xCVas0gMgUaECIO7SU=
-Date: Tue, 1 Feb 2011 15:19:50 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: kosaki.motohiro@jp.fujitsu.com,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jarod Wilson <jwilson@redhat.com>
-Subject: Re: Query about kdump_msg hook into crash_kexec()
-Message-ID: <20110201071933.GA21239@cr0.nay.redhat.com>
-References: <20110131225939.GH11974@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110131225939.GH11974@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 1 Feb 2011 02:31:22 -0500
+From: Thomas Weber <weber@corscience.de>
+To: linux-omap@vger.kernel.org
+Cc: Thomas Weber <weber@corscience.de>,
+        Kevin Hilman <khilman@ti.com> (commit_signer:1/2=50%),
+        "Govindraj.R" <govindraj.raja@ti.com> (commit_signer:1/2=50%),
+        Greg Kroah-Hartman <gregkh@suse.de> (commit_signer:1/2=50%),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCHv4] OMAP: Enable Magic SysRq on serial console ttyOx
+Date: Tue,  1 Feb 2011 08:30:41 +0100
+Message-Id: <1296545441-17070-1-git-send-email-weber@corscience.de>
+X-Mailer: git-send-email 1.7.4.rc3
+X-Provags-ID: V02:K0:VLHioMEPPJdYSIBRsSdUAPnKl3KpasfNhggF6QqXa50
+ qVBH+W11Bz+J0gZv5+QI2+Blfs1YXLGnbA3ztkS8mW2TiktzJJ
+ usVq321o8+v/Au+wcQorRjK77sinRTqNLXGNZv0a4mzufFMPWS
+ Qj6nMB1UYB2LS8gjOg2vddGHomZsO7n7ylcpgcUhN5ViHgl9uB
+ 9pP35AKBagFw/Yo3wbRYQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 31, 2011 at 05:59:39PM -0500, Vivek Goyal wrote:
->
->Anyway, if an image is loaded and we have setup to capture dump also
->why do we need to save kmsg with the help of an helper. I am assuming
->this is more of a debugging aid if we have no other way to capture the
->kernel log buffer. So if somebody has setup kdump to capture the
->vmcore, why to call another handler which tries to save part of the
->vmcore (kmsg) separately.
->
+Magic SysRq key is not working for OMAP on new serial
+console ttyOx because SUPPORT_SYSRQ is not defined
+for omap-serial.
 
-Well, kmsg dumper is not only for panic/oops, it can also save kernel
-messages when the system is reboot/halt.
+This patch defines SUPPORT_SYSRQ in omap-serial and
+enables handling of Magic SysRq character.
 
-Yeah, it is true that vmcore contains log_buf, but I think the users
-of ramoops/mtdoops are mainly those who don't have kdump configured
-in their kernels, they are cheaper than kdump, but less powerful.
+Further there is an issue of losing first break character.
+Removing the reset of the lsr_break_flag fixes this issue.
 
-Thanks.
+Signed-off-by: Thomas Weber <weber@corscience.de>
+Acked-by: Govindraj.R <govindraj.raja@ti.com>
+Tested-by: Manjunath G Kondaiah <manjugk@ti.com>
+Acked-by: Kevin Hilman <khilman@ti.com>
+---
+v3->v4
+	Rebased to 2.6.38-rc2 after move of drivers/serial to drivers/tty/serial
+	Added Acked-by and Tested-by
+
+ drivers/tty/serial/omap-serial.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
+index 7f2f010..699b344 100644
+--- a/drivers/tty/serial/omap-serial.c
++++ b/drivers/tty/serial/omap-serial.c
+@@ -20,6 +20,10 @@
+  * this driver as required for the omap-platform.
+  */
+ 
++#if defined(CONFIG_SERIAL_OMAP_CONSOLE) && defined(CONFIG_MAGIC_SYSRQ)
++#define SUPPORT_SYSRQ
++#endif
++
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/console.h>
+@@ -190,7 +194,6 @@ static inline void receive_chars(struct uart_omap_port *up, int *status)
+ 			if (up->port.line == up->port.cons->index) {
+ 				/* Recover the break flag from console xmit */
+ 				lsr |= up->lsr_break_flag;
+-				up->lsr_break_flag = 0;
+ 			}
+ #endif
+ 			if (lsr & UART_LSR_BI)
+-- 
+1.7.4.rc3
+
