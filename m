@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756368Ab1BAAXj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 19:23:39 -0500
-Received: from gate.crashing.org ([63.228.1.57]:39635 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754246Ab1BAAXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 19:23:38 -0500
-Subject: Re: call_function_many: fix list delete vs add race
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Milton Miller <miltonm@bga.com>, akpm@linux-foundation.org,
-        Anton Blanchard <anton@samba.org>, xiaoguangrong@cn.fujitsu.com,
-        mingo@elte.hu, jaxboe@fusionio.com, npiggin@gmail.com,
-        rusty@rustcorp.com.au, torvalds@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-In-Reply-To: <1296508677.26581.84.camel@laptop>
-References: <20110112150740.77dde58c@kryten>
-	 <1295288253.30950.280.camel@laptop>
-	 <smp-call-function-peter-reply@mdm.bga.com>
-	 <smp-call-function-move-writes@mdm.bga.com>
-	 <1296145360.15234.234.camel@laptop>
-	 <smp-call-function-list-race@mdm.bga.com>
-	 <smp-call-function-list-race-fix@mdm.bga.com>
-	 <1296508677.26581.84.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Feb 2011 11:22:44 +1100
-Message-ID: <1296519764.2349.325.camel@pasglop>
+	id S1756633Ab1BAAZK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 19:25:10 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51225 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754297Ab1BAAZH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 19:25:07 -0500
+Date: Mon, 31 Jan 2011 16:24:48 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: kamezawa.hiroyu@jp.fujitsu.com, nishimura@mxp.nes.nec.co.jp,
+        balbir@linux.vnet.ibm.com, minchan.kim@gmail.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/3] memcg: prevent endless loop when charging huge
+ pages to near-limit group
+Message-Id: <20110131162448.e791f0ae.akpm@linux-foundation.org>
+In-Reply-To: <20110201000455.GB19534@cmpxchg.org>
+References: <1296482635-13421-1-git-send-email-hannes@cmpxchg.org>
+	<1296482635-13421-3-git-send-email-hannes@cmpxchg.org>
+	<20110131144131.6733aa3a.akpm@linux-foundation.org>
+	<20110201000455.GB19534@cmpxchg.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-31 at 22:17 +0100, Peter Zijlstra wrote:
-> That's wrong:
-> 
->  ->foo =
->  LOCK
->  UNLOCK
->  ->bar =
-> 
-> can be re-ordered as:
-> 
->  LOCK
->  ->bar =
->  ->foo =
->  UNLOCK
+On Tue, 1 Feb 2011 01:04:55 +0100
+Johannes Weiner <hannes@cmpxchg.org> wrote:
 
-Can it ? I though UNLOCK had a write barrier semantic ? It does on power
-at least :-) It should have since it shall prevent stores inside the
-lock region to pass the store of the unlock itself anyways.
+> Maybe it would be better to use res_counter_margin(cnt) >= wanted
+> throughout the code.
 
-So yes, ->bar = can leak into the lock, as can ->foo =, but they can't
-be re-ordered vs. each other because the implied barrier will keep ->foo
-= in the same "domain" as the unlock itself.
+yup.
 
-Or do other archs do something really nasty here that don't provide this
-guarantee ?
+> --- a/include/linux/res_counter.h
+> +++ b/include/linux/res_counter.h
+> @@ -182,6 +182,14 @@ static inline bool res_counter_check_under_limit(struct res_counter *cnt)
+>  	return ret;
+>  }
+>  
+> +/**
+> + * res_counter_check_margin - check if the counter allows charging
+> + * @cnt: the resource counter to check
+> + * @bytes: the number of bytes to check the remaining space against
+> + *
+> + * Returns a boolean value on whether the counter can be charged
+> + * @bytes or whether this would exceed the limit.
+> + */
+>  static inline bool res_counter_check_margin(struct res_counter *cnt,
+>  					    unsigned long bytes)
+>  {
 
-Cheers,
-Ben.
-
-
+mem_cgroup_check_margin() needs some lipstick too.
