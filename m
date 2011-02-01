@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757151Ab1BAO21 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 09:28:27 -0500
-Received: from casper.infradead.org ([85.118.1.10]:37131 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757043Ab1BAO2Y (ORCPT
+	id S1757083Ab1BAO3x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 09:29:53 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50265 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640Ab1BAO3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 09:28:24 -0500
-Date: Tue, 1 Feb 2011 12:28:11 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [GIT PULL 0/5] perf/core improvements
-Message-ID: <20110201142811.GA20938@ghostprotocols.net>
-References: <1296509362-28054-1-git-send-email-acme@infradead.org>
- <20110201091447.GA27297@elte.hu>
+	Tue, 1 Feb 2011 09:29:52 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=n4IbEi8EGLfKxPPaYu17XyzSm5NYx5FkLt4SWaRyOOECtNfRLy8GTdPp1Frh5wnXJB
+         fGb46g44WbGuwzvAEm6j8lzBAWEXXJCQToqMbpVdcH5E9RPuaxfARBgXzDuff4ll1cLm
+         qWqkG2azpetfZp46SVdQNKNv4LNKEYEoxP/U4=
+Date: Tue, 1 Feb 2011 15:29:46 +0100
+From: Tejun Heo <tj@kernel.org>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: bvanassche@acm.org, linux-kernel@vger.kernel.org,
+        James.Bottomley@hansenpartnership.com, linux-scsi@vger.kernel.org,
+        brking@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com
+Subject: Re: [PATCH 17/32] scsi/ibmvstgt: use system_wq instead of vtgtd
+ workqueue
+Message-ID: <20110201142946.GN14211@htj.dyndns.org>
+References: <AANLkTi=Fg8wjf-XfVsq0X4RWx7i8F1V7gC6-8Y5LPbnL@mail.gmail.com>
+ <20110124162414.GD27510@htj.dyndns.org>
+ <20110201104043.GH14211@htj.dyndns.org>
+ <20110201231836D.fujita.tomonori@lab.ntt.co.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110201091447.GA27297@elte.hu>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20110201231836D.fujita.tomonori@lab.ntt.co.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Feb 01, 2011 at 10:14:47AM +0100, Ingo Molnar escreveu:
+On Tue, Feb 01, 2011 at 11:18:54PM +0900, FUJITA Tomonori wrote:
+> > Ping.  Are you interested in doing the conversion?
 > 
-> * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
-> 
-> > Hi Ingo,
-> > 
-> >         Please consider pulling from:
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
-> > 
-> 
-> Pulled, thanks Arnaldo!
-> 
-> Note, there's a beauty wart i noticed, while building perf on 32-bit Fedora: the build output
-> includes new, unintended lines:
-> 
->     CC util/scripting-engines/trace-event-perl.o
->     CC scripts/perl/Perf-Trace-Util/Context.o
->     CC util/scripting-engines/trace-event-python.o
->     CC scripts/python/Perf-Trace-Util/Context.o
->     CC perf.o
->     CC builtin-help.o
-> gcc -pthread -fno-strict-aliasing -DNDEBUG -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=4 -m32 -march=i686 -mtune=atom -fasynchronous-unwind-tables -D_GNU_SOURCE -fPIC -fwrapv -fPIC -Iutil/include -I/usr/include/python2.6 -c util/evlist.c -o temp.linux-i686-2.6/util/evlist.o -fno-strict-aliasing -Wno-write-strings
-> gcc -pthread -fno-strict-aliasing -DNDEBUG -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=4 -m32 -march=i686 -mtune=atom -fasynchronous-unwind-tables -D_GNU_SOURCE -fPIC -fwrapv -fPIC -Iutil/include -I/usr/include/python2.6 -c util/evsel.c -o temp.linux-i686-2.6/util/evsel.o -fno-strict-aliasing -Wno-write-strings
+> FYI, this driver will be replaced shortly. Now I have the working
+> ibmvscsis driver for the new target framework. I'll submit it this
+> week. So this driver will be removed soon or later (if James prefer to
+> go through the proper Documentation/feature-removal-schedule.txt
+> process, it'll be for some time). You could leave this alone, I guess.
 
-Yeah, I noticed that too, its on my todo list, its the setup.py python
-building part, I need to either make it silent and provide just one:
+I see.  I'll drop the patch then.  Please keep in mind that I'm
+planning on marking flush_scheduled_work() deprecated in linux-next in
+a month or so.  create_singlethread_workqueue() will follow in the
+next cycle and then create_workqueue() the next.
 
-PYTHON perf.so
+Thank you.
 
-message or to ditch using setup.py and do everything directly, which I
-may need to do anyway because 'python setup.py --build-base" (or
-equivalent, that I haven't found) doesn't work with 'install', just with
-'build'.
-
-For now its just a nuisance, not something crucial, but I'll get that
-nailed.
-
-- Arnaldo
+-- 
+tejun
