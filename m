@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469Ab1BAUcr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 15:32:47 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:37819 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129Ab1BAUcq (ORCPT
+	id S1752622Ab1BAUdV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 15:33:21 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:52889 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752555Ab1BAUdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 15:32:46 -0500
-Subject: Re: [patch 02/28] posix-timers: Define nanosleep not supported
- error separate
-From: John Stultz <john.stultz@linaro.org>
+	Tue, 1 Feb 2011 15:33:20 -0500
+Subject: Re: [patch 03/28] posix-timers: Cleanup struct initializers
+From: john stultz <jstultz@us.ibm.com>
 To: Thomas Gleixner <tglx@linutronix.de>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Richard Cochran <richard.cochran@omicron.at>,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <20110201134417.643486574@linutronix.de>
+In-Reply-To: <20110201134417.745627057@linutronix.de>
 References: <20110201134320.688829863@linutronix.de>
-	 <20110201134417.643486574@linutronix.de>
+	 <20110201134417.745627057@linutronix.de>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Feb 2011 12:32:38 -0800
-Message-ID: <1296592358.3336.19.camel@work-vm>
+Date: Tue, 01 Feb 2011 12:33:14 -0800
+Message-ID: <1296592394.3336.20.camel@work-vm>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -29,14 +28,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, 2011-02-01 at 13:51 +0000, Thomas Gleixner wrote:
 > plain text document attachment
-> (posix-clocks-splitout-nanosleep-notsup-error.patch)
-> Define the conditional nanosleep not supported error value outside of
-> do_posix_clock_nonanosleep(). Preparatory patch for further cleanups. 
+> (posix-timers-cleanup-struct-initializers-codingstyle.patch)
+> Cosmetic. No functional change
 > 
 > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 > Cc: John Stultz <john.stultz@linaro.org>
 > Cc: Richard Cochran <richard.cochran@omicron.at>
 
 Acked-by: John Stultz <johnstul@us.ibm.com>
+
+> ---
+>  drivers/char/mmtimer.c    |   14 +++++++-------
+>  kernel/posix-cpu-timers.c |   24 ++++++++++++------------
+>  kernel/posix-timers.c     |   38 +++++++++++++++++++-------------------
+>  3 files changed, 38 insertions(+), 38 deletions(-)
+> 
+> Index: linux-2.6-tip/drivers/char/mmtimer.c
+> ===================================================================
+> --- linux-2.6-tip.orig/drivers/char/mmtimer.c
+> +++ linux-2.6-tip/drivers/char/mmtimer.c
+> @@ -765,13 +765,13 @@ static int sgi_timer_set(struct k_itimer
+> 
+>  static struct k_clock sgi_clock = {
+>  	.res = 0,
+> -	.clock_set = sgi_clock_set,
+> -	.clock_get = sgi_clock_get,
+> -	.timer_create = sgi_timer_create,
+> -	.nsleep = do_posix_clock_nonanosleep,
+> -	.timer_set = sgi_timer_set,
+> -	.timer_del = sgi_timer_del,
+> -	.timer_get = sgi_timer_get
+> +	.clock_set	= sgi_clock_set,
+> +	.clock_get	= sgi_clock_get,
+> +	.timer_create	= sgi_timer_create,
+> +	.nsleep		= do_posix_clock_nonanosleep,
+> +	.timer_set	= sgi_timer_set,
+> +	.timer_del	= sgi_timer_del,
+> +	.timer_get	= sgi_timer_get
+>  };
+> 
+>  /**
+> Index: linux-2.6-tip/kernel/posix-cpu-timers.c
+> ===================================================================
+> --- linux-2.6-tip.orig/kernel/posix-cpu-timers.c
+> +++ linux-2.6-tip/kernel/posix-cpu-timers.c
+> @@ -1607,20 +1607,20 @@ static long thread_cpu_nsleep_restart(st
+>  static __init int init_posix_cpu_timers(void)
+>  {
+>  	struct k_clock process = {
+> -		.clock_getres = process_cpu_clock_getres,
+> -		.clock_get = process_cpu_clock_get,
+> -		.clock_set = do_posix_clock_nosettime,
+> -		.timer_create = process_cpu_timer_create,
+> -		.nsleep = process_cpu_nsleep,
+> -		.nsleep_restart = process_cpu_nsleep_restart,
+> +		.clock_getres	= process_cpu_clock_getres,
+> +		.clock_get	= process_cpu_clock_get,
+> +		.clock_set	= do_posix_clock_nosettime,
+> +		.timer_create	= process_cpu_timer_create,
+> +		.nsleep		= process_cpu_nsleep,
+> +		.nsleep_restart	= process_cpu_nsleep_restart,
+>  	};
+>  	struct k_clock thread = {
+> -		.clock_getres = thread_cpu_clock_getres,
+> -		.clock_get = thread_cpu_clock_get,
+> -		.clock_set = do_posix_clock_nosettime,
+> -		.timer_create = thread_cpu_timer_create,
+> -		.nsleep = thread_cpu_nsleep,
+> -		.nsleep_restart = thread_cpu_nsleep_restart,
+> +		.clock_getres	= thread_cpu_clock_getres,
+> +		.clock_get	= thread_cpu_clock_get,
+> +		.clock_set	= do_posix_clock_nosettime,
+> +		.timer_create	= thread_cpu_timer_create,
+> +		.nsleep		= thread_cpu_nsleep,
+> +		.nsleep_restart	= thread_cpu_nsleep_restart,
+>  	};
+>  	struct timespec ts;
+> 
+> Index: linux-2.6-tip/kernel/posix-timers.c
+> ===================================================================
+> --- linux-2.6-tip.orig/kernel/posix-timers.c
+> +++ linux-2.6-tip/kernel/posix-timers.c
+> @@ -281,33 +281,33 @@ static int posix_get_coarse_res(const cl
+>  static __init int init_posix_timers(void)
+>  {
+>  	struct k_clock clock_realtime = {
+> -		.clock_getres = hrtimer_get_res,
+> +		.clock_getres	= hrtimer_get_res,
+>  	};
+>  	struct k_clock clock_monotonic = {
+> -		.clock_getres = hrtimer_get_res,
+> -		.clock_get = posix_ktime_get_ts,
+> -		.clock_set = do_posix_clock_nosettime,
+> +		.clock_getres	= hrtimer_get_res,
+> +		.clock_get	= posix_ktime_get_ts,
+> +		.clock_set	= do_posix_clock_nosettime,
+>  	};
+>  	struct k_clock clock_monotonic_raw = {
+> -		.clock_getres = hrtimer_get_res,
+> -		.clock_get = posix_get_monotonic_raw,
+> -		.clock_set = do_posix_clock_nosettime,
+> -		.timer_create = no_timer_create,
+> -		.nsleep = no_nsleep,
+> +		.clock_getres	= hrtimer_get_res,
+> +		.clock_get	= posix_get_monotonic_raw,
+> +		.clock_set	= do_posix_clock_nosettime,
+> +		.timer_create	= no_timer_create,
+> +		.nsleep		= no_nsleep,
+>  	};
+>  	struct k_clock clock_realtime_coarse = {
+> -		.clock_getres = posix_get_coarse_res,
+> -		.clock_get = posix_get_realtime_coarse,
+> -		.clock_set = do_posix_clock_nosettime,
+> -		.timer_create = no_timer_create,
+> -		.nsleep = no_nsleep,
+> +		.clock_getres	= posix_get_coarse_res,
+> +		.clock_get	= posix_get_realtime_coarse,
+> +		.clock_set	= do_posix_clock_nosettime,
+> +		.timer_create	= no_timer_create,
+> +		.nsleep		= no_nsleep,
+>  	};
+>  	struct k_clock clock_monotonic_coarse = {
+> -		.clock_getres = posix_get_coarse_res,
+> -		.clock_get = posix_get_monotonic_coarse,
+> -		.clock_set = do_posix_clock_nosettime,
+> -		.timer_create = no_timer_create,
+> -		.nsleep = no_nsleep,
+> +		.clock_getres	= posix_get_coarse_res,
+> +		.clock_get	= posix_get_monotonic_coarse,
+> +		.clock_set	= do_posix_clock_nosettime,
+> +		.timer_create	= no_timer_create,
+> +		.nsleep		= no_nsleep,
+>  	};
+> 
+>  	register_posix_clock(CLOCK_REALTIME, &clock_realtime);
+> 
+> 
 
 
