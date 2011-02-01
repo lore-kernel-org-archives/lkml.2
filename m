@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354Ab1BAWCt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 17:02:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42795 "EHLO mx1.redhat.com"
+	id S1753395Ab1BAWCx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 17:02:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13388 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752798Ab1BAWCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 17:02:48 -0500
-Date: Tue, 1 Feb 2011 16:45:07 -0500
+	id S1753358Ab1BAWCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 17:02:52 -0500
+Date: Tue, 1 Feb 2011 16:56:46 -0500
 From: Chuck Ebbert <cebbert@redhat.com>
 To: Christoph Hellwig <hch@tuxera.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: [Patch 3/4] hfsplus: Clear volume header pointers on failure
-Message-ID: <20110201164507.3e642bb3@katamari>
+Subject: [Patch 4/4] hfsplus: Check for NULL volume header in put_super()
+Message-ID: <20110201165646.008dce36@katamari>
 In-Reply-To: <20110201162802.2dd07201@katamari>
 References: <20110201162802.2dd07201@katamari>
 Organization: Red Hat, Inc.
@@ -22,42 +22,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hfsplus: Clear volume header pointers on failure
+hfsplus: Check for NULL volume header in put_super()
 
-The next patch will use NULL volume header to determine whether
-to flush the superblock. Also fix two failure cases so they
-clear the headers before exiting.
+If volume header is null there is not much to do in put_super().
 
 Signed-Off-By: Chuck Ebbert <cebbert@redhat.com>
 
---- vanilla-2.6.38-rc2-git9.orig/fs/hfsplus/wrapper.c
-+++ vanilla-2.6.38-rc2-git9/fs/hfsplus/wrapper.c
-@@ -167,7 +167,7 @@ reread:
- 		break;
- 	case cpu_to_be16(HFSP_WRAP_MAGIC):
- 		if (!hfsplus_read_mdb(sbi->s_vhdr, &wd))
--			goto out;
-+			goto out_free_backup_vhdr;
- 		wd.ablk_size >>= HFSPLUS_SECTOR_SHIFT;
- 		part_start += wd.ablk_start + wd.embed_start * wd.ablk_size;
- 		part_size = wd.embed_count * wd.ablk_size;
-@@ -179,7 +179,7 @@ reread:
- 		 * (should do this only for cdrom/loop though)
- 		 */
- 		if (hfs_part_find(sb, &part_start, &part_size))
--			goto out;
-+			goto out_free_backup_vhdr;
- 		goto reread;
- 	}
+--- vanilla-2.6.38-rc2-git9.orig/fs/hfsplus/super.c
++++ vanilla-2.6.38-rc2-git9/fs/hfsplus/super.c
+@@ -237,7 +237,10 @@ static void hfsplus_put_super(struct sup
+ 	if (!sb->s_fs_info)
+ 		return;
  
-@@ -230,8 +230,10 @@ reread:
+-	if (!(sb->s_flags & MS_RDONLY) && sbi->s_vhdr) {
++	if (!sbi->s_vhdr)
++		goto out_unload_nls;
++
++	if (!(sb->s_flags & MS_RDONLY)) {
+ 		struct hfsplus_vh *vhdr = sbi->s_vhdr;
  
- out_free_backup_vhdr:
- 	kfree(sbi->s_backup_vhdr);
-+	sbi->s_backup_vhdr = NULL;
- out_free_vhdr:
+ 		vhdr->modify_date = hfsp_now2mt();
+@@ -253,6 +256,7 @@ static void hfsplus_put_super(struct sup
+ 	iput(sbi->hidden_dir);
  	kfree(sbi->s_vhdr);
-+	sbi->s_vhdr = NULL;
- out:
- 	return error;
- }
+ 	kfree(sbi->s_backup_vhdr);
++out_unload_nls:
+ 	unload_nls(sbi->nls);
+ 	kfree(sb->s_fs_info);
+ 	sb->s_fs_info = NULL;
