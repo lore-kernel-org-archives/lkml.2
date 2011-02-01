@@ -1,122 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104Ab1BAU20 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 15:28:26 -0500
-Received: from fmmailgate01.web.de ([217.72.192.221]:34897 "EHLO
-	fmmailgate01.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751635Ab1BAU2Z (ORCPT
+	id S1752192Ab1BAU3i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 15:29:38 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39913
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751635Ab1BAU3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 15:28:25 -0500
-Message-ID: <4D486CE6.4050601@web.de>
-Date: Tue, 01 Feb 2011 21:28:22 +0100
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com
-Subject: Re: [PATCH v2] release kvmclock page on reset
-References: <1296587800-19589-1-git-send-email-glommer@redhat.com>
-In-Reply-To: <1296587800-19589-1-git-send-email-glommer@redhat.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig3F61A481B64C76B076A57E61"
-X-Provags-ID: V01U2FsdGVkX1/BpYstyeoo6odwG6BJ2PdLg0CLcolFElGHVLbl
-	5IwmMb7t++s7VT6PmBL+S+4Y47eMmyNpxTGMbqZoIYh6pT2ioE
-	MeCKLPQFY=
+	Tue, 1 Feb 2011 15:29:37 -0500
+Date: Tue, 01 Feb 2011 12:30:12 -0800 (PST)
+Message-Id: <20110201.123012.193709953.davem@davemloft.net>
+To: Ramkrishna.Vepa@exar.com
+Cc: weil@mail.berlios.de, Sivakumar.Subramani@exar.com,
+        Sreenivasa.Honnur@exar.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jon.Mason@exar.com
+Subject: Re: [PATCH] vxge: Fix wrong boolean operator {nodisc}
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <FCA91A92EE52B041906A0358FC28FCC38EFBE64996@FRE1EXCH02.hq.exar.com>
+References: <1296253817-7668-1-git-send-email-weil@mail.berlios.de>
+	<FCA91A92EE52B041906A0358FC28FCC38EFBE64996@FRE1EXCH02.hq.exar.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig3F61A481B64C76B076A57E61
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+From: Ramkrishna Vepa <Ramkrishna.Vepa@exar.com>
+Date: Mon, 31 Jan 2011 23:26:40 -0800
 
-On 2011-02-01 20:16, Glauber Costa wrote:
-> When a vcpu is reset, kvmclock page keeps being writen to this days.
-> This is wrong and inconsistent: a cpu reset should take it to its
-> initial state.
->=20
-> Signed-off-by: Glauber Costa <glommer@redhat.com>
-> CC: Jan Kiszka <jan.kiszka@siemens.com>
-> ---
->  arch/x86/kvm/x86.c |   20 ++++++++++++--------
->  1 files changed, 12 insertions(+), 8 deletions(-)
->=20
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index bcc0efc..c39ab4a 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -1453,6 +1453,14 @@ static int kvm_pv_enable_async_pf(struct kvm_vcp=
-u *vcpu, u64 data)
->  	return 0;
->  }
-> =20
-> +static void kvmclock_reset(struct kvm_vcpu *vcpu)
-> +{
-> +	if (vcpu->arch.time_page) {
-> +		kvm_release_page_dirty(vcpu->arch.time_page);
-> +		vcpu->arch.time_page =3D NULL;
-> +	}
-> +}
-> +
->  int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
->  {
->  	switch (msr) {
-> @@ -1510,10 +1518,7 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u3=
-2 msr, u64 data)
->  		break;
->  	case MSR_KVM_SYSTEM_TIME_NEW:
->  	case MSR_KVM_SYSTEM_TIME: {
-> -		if (vcpu->arch.time_page) {
-> -			kvm_release_page_dirty(vcpu->arch.time_page);
-> -			vcpu->arch.time_page =3D NULL;
-> -		}
-> +		kvmclock_reset(vcpu);
-> =20
->  		vcpu->arch.time =3D data;
->  		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
-> @@ -5814,10 +5819,7 @@ void kvm_put_guest_fpu(struct kvm_vcpu *vcpu)
-> =20
->  void kvm_arch_vcpu_free(struct kvm_vcpu *vcpu)
->  {
-> -	if (vcpu->arch.time_page) {
-> -		kvm_release_page_dirty(vcpu->arch.time_page);
-> -		vcpu->arch.time_page =3D NULL;
-> -	}
-> +	kvmclock_reset(vcpu);
-> =20
->  	free_cpumask_var(vcpu->arch.wbinvd_dirty_mask);
->  	fx_free(vcpu);
-> @@ -5878,6 +5880,8 @@ int kvm_arch_vcpu_reset(struct kvm_vcpu *vcpu)
->  	kvm_make_request(KVM_REQ_EVENT, vcpu);
->  	vcpu->arch.apf.msr_val =3D 0;
-> =20
-> +	kvmclock_reset(vcpu);
-> +
->  	kvm_clear_async_pf_completion_queue(vcpu);
->  	kvm_async_pf_hash_reset(vcpu);
->  	vcpu->arch.apf.halted =3D false;
+>> This error is reported by cppcheck:
+>> drivers/net/vxge/vxge-config.c:3693: warning: Mutual exclusion over ||
+>> always evaluates to true. Did you intend to use && instead?
+>> 
+>> It looks like cppcheck is correct, so fix this. No test was run.
+>> 
+>> Signed-off-by: Stefan Weil <weil@mail.berlios.de>
+...
+> Fix looks good. Thanks!
+> 
+> Acked-by: Ram Vepa <ram.vepa@exar.com>
 
-Looks good.
-
-Thanks,
-Jan
-
-
---------------enig3F61A481B64C76B076A57E61
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.15 (GNU/Linux)
-Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk1IbOYACgkQitSsb3rl5xScsgCeNt64RhvEyRS36bPL6LPA65o9
-YqIAoJQj+Djs73dmOCJJqEwVvaMzsW2K
-=hQzJ
------END PGP SIGNATURE-----
-
---------------enig3F61A481B64C76B076A57E61--
+Thanks for reviewing, applied.
