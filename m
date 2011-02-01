@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209Ab1BAKll (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 05:41:41 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46648 "EHLO
+	id S1754326Ab1BAKob (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 05:44:31 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48260 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751603Ab1BAKlk (ORCPT
+	with ESMTP id S1750951Ab1BAKo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 05:41:40 -0500
+	Tue, 1 Feb 2011 05:44:28 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=I27VieEc2wcxhlUt70MZcylSY5mtjnxpUwIp5R543e5YFG2d24z4Ov6Odl5wl0VmrW
-         Cs1Zwa8Cc9+7OLXIo0VLYQnTDRva1VkAsEZ2fWNLRBlk8wnVLSg6stvJSHaLdcBkJgCl
-         Z1Uw7+KDgNrKOSliKP9Ftt0AIKf5yvrzAzMdc=
-Date: Tue, 1 Feb 2011 11:41:35 +0100
+        b=Tkdz4Et2lJY0JiWpwKavCNaq1Xzpgw4I+b7ItRiSVq18EW0/9BMqTI10/MjUx2AkLA
+         gdWAued7aTTny0KK6kKWE82XnzVccUWQ72ieDckRBiPTLhqhDlQVF4ClOM52eAv/wtfa
+         1T7WXIoSPduiDESL9zESR25T3vaz2l99NHTBI=
+Date: Tue, 1 Feb 2011 11:44:21 +0100
 From: Tejun Heo <tj@kernel.org>
-To: Ben Skeggs <skeggsb@gmail.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH UPDATED 08/32] drm/nouveau: use system_wq instead of
- dev_priv->wq
-Message-ID: <20110201104135.GI14211@htj.dyndns.org>
+To: linux-kernel@vger.kernel.org
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, davej@redhat.com,
+        cpufreq@vger.kernel.org, Markus.Lidel@shadowconnect.com,
+        tomas.winkler@intel.com, jayamohank@serverengines.com,
+        andrew.vasquez@qlogic.com, James.Bottomley@HansenPartnership.com,
+        linux-scsi@vger.kernel.org, tomof@acm.org, stf_xl@wp.pl,
+        linux-usb@vger.kernel.org, tytso@mit.edu, mfasheh@suse.com,
+        joel.becker@oracle.com, reiserfs-devel@vger.kernel.org, aelder@sgi.com,
+        hch@infradead.org, ericvh@gmail.com, rminnich@sandia.gov,
+        v9fs-developer@lists.sourceforge.net, lucho@ionkov.net,
+        andy.grover@oracle.com
+Subject: Re: [PATCHSET] workqueue: update workqueue users - replace
+ create_workqueue()
+Message-ID: <20110201104421.GJ14211@htj.dyndns.org>
 References: <1294062595-30097-1-git-send-email-tj@kernel.org>
- <1294062595-30097-9-git-send-email-tj@kernel.org>
- <1294189627.2276.0.camel@nisroch>
- <1294190172.2276.2.camel@nisroch>
- <20110106172922.GA29580@mtj.dyndns.org>
- <20110126164918.GQ12520@htj.dyndns.org>
+ <20110125142921.GB27510@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110126164918.GQ12520@htj.dyndns.org>
+In-Reply-To: <20110125142921.GB27510@htj.dyndns.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 26, 2011 at 05:49:18PM +0100, Tejun Heo wrote:
-> With cmwq, there's no reason for nouveau to use a dedicated workqueue.
-> Drop dev_priv->wq and use system_wq instead.  Each work item is sync
-> flushed when the containing structure is unregistered/destroyed.
+On Tue, Jan 25, 2011 at 03:29:21PM +0100, Tejun Heo wrote:
+> Hello,
 > 
-> Note that this change also makes sure that nv50_gpio_handler is not
-> freed while the contained work item is still running.
+> There was no response for the following patches and I'm planning on
+> routing them through workqueue#for-2.6.39.  If you have an objection
+> or want to take the patch through a different tree, please let me
+> know.
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: David Airlie <airlied@linux.ie>
-> Cc: dri-devel@lists.freedesktop.org
+>  0006-acpi-kacpi-_wq-don-t-need-WQ_MEM_RECLAIM.patch
+>  0007-cpufreq-use-system_wq-instead-of-dedicated-workqueue.patch
+>  0012-i2o-use-alloc_workqueue-instead-of-create_workqueue.patch
+>  0013-misc-iwmc3200top-use-system_wq-instead-of-dedicated-.patch
+>  0016-scsi-be2iscsi-qla2xxx-convert-to-alloc_workqueue.patch
+>  0018-scsi-scsi_tgt_lib-scsi_tgtd-isn-t-used-in-memory-rec.patch
+>  0019-usb-ueagle-atm-use-system_wq-instead-of-dedicated-wo.patch
+>  0025-ext4-convert-to-alloc_workqueue.patch
+>  0026-ocfs2-use-system_wq-instead-of-ocfs2_quota_wq.patch
+>  0027-reiserfs-make-commit_wq-use-the-default-concurrency-.patch
+>  0028-xfs-convert-to-alloc_workqueue.patch
+>  0029-net-9p-use-system_wq-instead-of-p9_mux_wq.patch
+>  0030-net-9p-replace-p9_poll_task-with-a-work.patch
+>  0031-rds-ib-use-system_wq-instead-of-rds_ib_fmr_wq.patch
 
-Ping.  Can you please put this through the drm tree?
+Patches applied to wq#for-2.6.39 w/ collected acks added.
 
 Thank you.
 
