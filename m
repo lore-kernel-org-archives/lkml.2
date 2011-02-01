@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751396Ab1BAFKm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 00:10:42 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:44232
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750828Ab1BAFKm (ORCPT
+	id S1751222Ab1BAFPT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 00:15:19 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:46254 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828Ab1BAFPS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 00:10:42 -0500
-Date: Mon, 31 Jan 2011 21:11:16 -0800 (PST)
-Message-Id: <20110131.211116.115946085.davem@davemloft.net>
-To: jesper.nilsson@axis.com
-Cc: richm@oldelvet.org.uk, 609371@bugs.debian.org, ben@decadent.org.uk,
-        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        jeffm@suse.com
-Subject: Re: Bug#609371: linux-image-2.6.37-trunk-sparc64: module scsi_mod:
- Unknown relocation: 36
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110117090557.GF9874@axis.com>
-References: <20110115.211722.39173519.davem@davemloft.net>
-	<20110116.220755.179947617.davem@davemloft.net>
-	<20110117090557.GF9874@axis.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Feb 2011 00:15:18 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=SudI/tPajY5QkYz4yMVXajN5ZREdz6n8F8oClxoMC9mnhG3haumSC/ppKJ7OrKDBqP
+         cTtMM8i+PnN0CzO2g5t0v9WSYP5dzTe6UFZdj29kiTwTOQRhTCFlLBGvPpzhMkxHwd4p
+         j0rr2xL4bKLjX7nTDlE8Gt9httOOWBBw6n1sw=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTik4WQreo35jGLMQA16u+R-Ed036B3okrrx2nBGy@mail.gmail.com>
+References: <AANLkTik4WQreo35jGLMQA16u+R-Ed036B3okrrx2nBGy@mail.gmail.com>
+Date: Tue, 1 Feb 2011 10:45:16 +0530
+Message-ID: <AANLkTinKnHs=oV+7wJdSZcNHTyMmWgPiEev6bBmL==R9@mail.gmail.com>
+Subject: Re: what is spinlock depth
+From: Rajat Sharma <fs.rajat@gmail.com>
+To: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
+Cc: Kernel-newbies <kernelnewbies@nl.linux.org>,
+        linux-kernel-mail <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-Date: Mon, 17 Jan 2011 10:05:57 +0100
+lockdep finds out dependency in locking order at runtime. More on this
+in kernel documentation linux/Documentation/lockdep-design.txt
 
-> On Mon, Jan 17, 2011 at 07:07:55AM +0100, David Miller wrote:
->> Ugh, and I just noticed that include/linux/klist.h does this fixed
->> alignment of "4" too, where is this stuff coming from?  It's
->> wrong on 64-bit, at best.  But I can't see the impetus behind doing
->> this at all in the first place.
->> 
->> Oh, this is some CRIS thing, because it only byte aligns.  See:
->> 
->> commit c0e69a5bbc6fc74184aa043aadb9a53bc58f953b
->> Author: Jesper Nilsson <Jesper.Nilsson@axis.com>
->> Date:   Wed Jan 14 11:19:08 2009 +0100
->> 
->>     klist.c: bit 0 in pointer can't be used as flag
->> 
->> That's where the klist one comes from.
-> 
-> Yup, this one could instead be solved by introducing a "flags" field
-> in the struct, but that was considered a too large impact fix.
+Rajat
 
-Jesper, could you please review this?
-
---------------------
-klist: Fix object alignment on 64-bit.
-
-Commit c0e69a5bbc6fc74184aa043aadb9a53bc58f953b ("klist.c: bit 0 in
-pointer can't be used as flag") intended to make sure that all klist
-objects were at least pointer size aligned, but used the constant "4"
-which only works on 32-bit.
-
-Use "sizeof(void *)" which is correct in all cases.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
-
-diff --git a/include/linux/klist.h b/include/linux/klist.h
-index e91a4e5..a370ce5 100644
---- a/include/linux/klist.h
-+++ b/include/linux/klist.h
-@@ -22,7 +22,7 @@ struct klist {
- 	struct list_head	k_list;
- 	void			(*get)(struct klist_node *);
- 	void			(*put)(struct klist_node *);
--} __attribute__ ((aligned (4)));
-+} __attribute__ ((aligned (sizeof(void *))));
- 
- #define KLIST_INIT(_name, _get, _put)					\
- 	{ .k_lock	= __SPIN_LOCK_UNLOCKED(_name.k_lock),		\
+On Tue, Feb 1, 2011 at 1:57 AM, Sri Ram Vemulpali
+<sri.ram.gmu06@gmail.com> wrote:
+> Hi all,
+>
+> I am reading spinlock code and looking at struct raw_spinlock. I found
+> struct lockdep_map as member.
+> which is defined as
+>
+> struct lockdep_map {
+>       struct lock_class_key           *key;
+>       struct lock_class               *class_cache[NR_LOCKDEP_CACHING_CLASSES];
+>       const char                      *name;
+> #ifdef CONFIG_LOCK_STAT
+>       int                             cpu;
+>      unsigned long                   ip;
+> #endif
+> };
+>
+> Can anyone help me explain, how this struct helps the spinlock. Why do
+> we need lockdepth.
+> Thanks for help in advance.
+> --
+> Regards,
+> Sri.
+>
+> _______________________________________________
+> Kernelnewbies mailing list
+> Kernelnewbies@kernelnewbies.org
+> http://lists.kernelnewbies.org/mailman/listinfo/kernelnewbies
+>
