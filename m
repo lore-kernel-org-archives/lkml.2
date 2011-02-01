@@ -1,38 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069Ab1BACog (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 21:44:36 -0500
-Received: from cantor.suse.de ([195.135.220.2]:49085 "EHLO mx1.suse.de"
+	id S1754464Ab1BACrz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 21:47:55 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:45865 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751789Ab1BACof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 21:44:35 -0500
-Date: Mon, 31 Jan 2011 18:42:49 -0800
-From: Greg KH <gregkh@suse.de>
-To: Timo von Holtz <tvh@informatik.uni-kiel.de>
-Cc: shemminger@vyatta.com, error27@gmail.com, arnd@arndb.de, jj@chaosbits.net,
-        joe@perches.com, eric.dumazet@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: bcm: fixed coding style issues
-Message-ID: <20110201024249.GB2634@suse.de>
-References: <1296525024-21898-1-git-send-email-tvh@informatik.uni-kiel.de>
+	id S1753664Ab1BACry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 21:47:54 -0500
+Date: Mon, 31 Jan 2011 18:47:54 -0800
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Douglas Gilbert <dgilbert@interlog.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] scsi_debug: Fix 32-bit overflow in do_device_access
+Message-ID: <20110201024754.GS27190@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1296525024-21898-1-git-send-email-tvh@informatik.uni-kiel.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 01, 2011 at 02:50:24AM +0100, Timo von Holtz wrote:
-> Fixed some coding style issues
+If I create a scsi_debug device that is larger than 4GB, the multiplication of
+(block * scsi_debug_sector_size) can produce a 64-bit value.  Unfortunately,
+the compiler sees two 32-bit quantities and performs a 32-bit multiplication,
+thus truncating the bits above 2^32.  This causes the wrong memory location to
+be read or written.  Change block and rest to be unsigned long long.
 
-Which ones?
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+---
 
-With such a huge patch, it's best to break it down by type of coding
-style cleanup, to make it easier to review and apply.  This is almost
-too big to review as-is :(
+ drivers/scsi/scsi_debug.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-thanks,
-
-greg k-h
+diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
+index 7b31093..a6b2d72 100644
+--- a/drivers/scsi/scsi_debug.c
++++ b/drivers/scsi/scsi_debug.c
+@@ -1671,7 +1671,7 @@ static int do_device_access(struct scsi_cmnd *scmd,
+ 			    unsigned long long lba, unsigned int num, int write)
+ {
+ 	int ret;
+-	unsigned int block, rest = 0;
++	unsigned long long block, rest = 0;
+ 	int (*func)(struct scsi_cmnd *, unsigned char *, int);
+ 
+ 	func = write ? fetch_to_dev_buffer : fill_from_dev_buffer;
