@@ -1,37 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755507Ab1BARRv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 12:17:51 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:51138 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751949Ab1BARRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 12:17:50 -0500
-Subject: Re: kswapd hung tasks in 2.6.38-rc1
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: CAI Qian <caiqian@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110131231301.GP16981@random.random>
-References: <1150342867.83404.1295513748640.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
-	 <1296507528.7797.4609.camel@nimitz> <1296513616.7797.4929.camel@nimitz>
-	 <20110131231301.GP16981@random.random>
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Tue, 01 Feb 2011 09:17:42 -0800
-Message-ID: <1296580662.27022.3379.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755580Ab1BART7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 12:19:59 -0500
+Received: from stinky.trash.net ([213.144.137.162]:46136 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751949Ab1BART6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 12:19:58 -0500
+Message-ID: <4D4840BC.4050303@trash.net>
+Date: Tue, 01 Feb 2011 18:19:56 +0100
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Simon Horman <horms@verge.net.au>, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lvs-devel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Hans Schillstrom <hans@schillstrom.com>
+Subject: Re: [GIT PULL nf-next-2.6] IPVS build fixes and clean-ups
+References: <1296519255-10602-1-git-send-email-horms@verge.net.au> <20110131165009.66999952.randy.dunlap@oracle.com> <20110201040634.GA2351@verge.net.au> <20110201100421.GA13325@verge.net.au> <4D483D6E.5070007@oracle.com>
+In-Reply-To: <4D483D6E.5070007@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrea,
+Am 01.02.2011 18:05, schrieb Randy Dunlap:
+> On 02/01/11 02:04, Simon Horman wrote:
+>> On Tue, Feb 01, 2011 at 03:06:37PM +1100, Simon Horman wrote:
+>>> On Mon, Jan 31, 2011 at 04:50:09PM -0800, Randy Dunlap wrote:
+>>>> On Tue,  1 Feb 2011 11:14:11 +1100 Simon Horman wrote:
+>>>>
+>>>>> Hi,
+>>>>>
+>>>>> This short patch series addresses two linux-next build problems
+>>>>> raised by Randy Dunlap:
+>>>>>
+>>>>> * net/netfilter/ipvs/ip_vs_core.c:1891: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'unsigned int'
+>>>>> * ERROR: "unregister_net_sysctl_table" [net/netfilter/ipvs/ip_vs.ko]
+>>>>>   ERROR: "register_net_sysctl_table" [net/netfilter/ipvs/ip_vs.ko] undefined!
+>>>>>
+>>>>> The remainder of the changset is cleanups that I noticed along the way.
+>>>>
+>>>> These 4 patches build successfully for me.
+>>>> However, I do see these warnings (sorry I missed them earlier):
+>>>>
+>>>> WARNING: net/netfilter/ipvs/ip_vs.o(.init.text+0x161): Section mismatch in reference from the function init_module() to the function .exit.text:ip_vs_sync_cleanup()
+>>>> WARNING: net/netfilter/ipvs/ip_vs.o(.init.text+0x161): Section mismatch in reference from the function init_module() to the function .exit.text:ip_vs_sync_cleanup()
+>>>
+>>> Thanks, I'll look into that. I will be travelling for a good portion of the
+>>> next day and a bit so I apologise in advance if that delays my next patch.
+>>
+>> Hi,
+>>
+>> I the following patch seems to be the right fix for this to me.
+>> I will send an amended pull request.
+>>
+>> IPVS: Remove ip_vs_sync_cleanup from section __exit
+>>
+>> ip_vs_sync_cleanup() may be called from ip_vs_init() on error
+>> and thus needs to be accesible from section __init
+>>
+>> Reporte-by: Randy Dunlap <randy.dunlap@oracle.com>
+>   Reported-by:
+> 
+>> Signed-off-by: Simon Horman <horms@verge.net.au>
+> 
+> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-One more data point: Same kernel binary, but with THP disabled in sysfs,
-it ran all night, no problems.
-
-I'll go dig in to it a bit more.
-
--- Dave
-
+Thanks, since Simon is travelling, I'll apply the patches now
+with your and Hans's Acks and will push them to Dave later.
