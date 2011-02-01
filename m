@@ -1,43 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754037Ab1BANDw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 08:03:52 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49258 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751640Ab1BANDv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 08:03:51 -0500
-Date: Tue, 1 Feb 2011 13:03:11 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Colin Cross <ccross@android.com>
-Cc: linux-tegra@vger.kernel.org, konkers@android.com,
-        Gary King <gking@nvidia.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
-        linux-kernel@vger.kernel.org, olof@lixom.net,
-        linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@stericsson.com>
-Subject: Re: [PATCH v2 02/28] ARM: gic: Add functions to save and restore
-	gic state
-Message-ID: <20110201130311.GG31216@n2100.arm.linux.org.uk>
-References: <1295834493-5019-1-git-send-email-ccross@android.com> <1295834493-5019-3-git-send-email-ccross@android.com>
+	id S1754608Ab1BANFS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 08:05:18 -0500
+Received: from tac.ki.iif.hu ([193.6.222.43]:32825 "EHLO tac.ki.iif.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751640Ab1BANFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 08:05:17 -0500
+From: Ferenc Wagner <wferi@niif.hu>
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: ucb1400_gpio driver Kconfig entry
+Date: Tue, 01 Feb 2011 14:05:13 +0100
+Message-ID: <87bp2vsy5y.fsf@tac.ki.iif.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1295834493-5019-3-git-send-email-ccross@android.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 23, 2011 at 06:01:07PM -0800, Colin Cross wrote:
-> on systems with idle states which power-gate the logic including
-> the gic, such as tegra, the gic distributor needs to be shut down
-> and restored on entry and exit from the architecture idle code
+Hi Marek,
 
-I'd rather not add this and then have to weed it back out when we have a
-proper interface for dealign with idle shutdown stuff.
+drivers/gpio/Kconfig says:
 
-Can some effort please be put into coming up with a proper interface
-such as an idle notifier list rather than calling directly into random
-parts of the kernel on idle.
+config GPIO_UCB1400
+        bool "Philips UCB1400 GPIO"
+        depends on UCB1400_CORE
+        help
+          This enables support for the Philips UCB1400 GPIO pins.
+          The UCB1400 is an AC97 audio codec.
+
+          To compile this driver as a module, choose M here: the
+          module will be called ucb1400_gpio.
+
+But you use bool above, so choosing M isn't actually an option.
+Maybe you want to resolve this inconsistency.
+-- 
+Regards,
+Feri.
