@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592Ab1BAIon (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 03:44:43 -0500
-Received: from mail4.comsite.net ([205.238.176.238]:43056 "EHLO
+	id S1753693Ab1BAIo7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 03:44:59 -0500
+Received: from mail4.comsite.net ([205.238.176.238]:27861 "EHLO
 	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751293Ab1BAIom (ORCPT
+	with ESMTP id S1752697Ab1BAIow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 03:44:42 -0500
+	Tue, 1 Feb 2011 03:44:52 -0500
 X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
 From: Milton Miller <miltonm@bga.com>
 In-Reply-To: <4D47D21E020000780002F9FB@vpn.id2.novell.com>
@@ -14,9 +14,9 @@ References: <4D47D21E020000780002F9FB@vpn.id2.novell.com>
 To: Jan Beulich <JBeulich@novell.com>
 Cc: <linux-kernel@vger.kernel.org>
 Subject: Re: calling smp_call_function_many() with non-stable CPU mask
-Date: Tue, 01 Feb 2011 02:44:41 -0600
+Date: Tue, 01 Feb 2011 02:44:52 -0600
 X-Originating-IP: 71.22.127.106
-Message-ID: <1296549881_6450@mail4.comsite.net>
+Message-ID: <1296549892_6451@mail4.comsite.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
