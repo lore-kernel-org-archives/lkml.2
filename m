@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621Ab1BAI6f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 03:58:35 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:32836 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751248Ab1BAI6e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 03:58:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ksjxpaqGHLTQeaonDTxQyw6wujsadwzckRJjBasEgdeeySVRU0bxmtQoM06DT2LsS2
-         in82oPrix9F9hWTUxRvLbuGWjp5rKND7dbtqnGT3QpAmEOJw8NaxLcZMVfovEhxaSIJE
-         kZILqxizMy0IXeQ01B/Mn/DMIz/iWaPtcAJL4=
-Date: Tue, 1 Feb 2011 00:58:23 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: tapio.vihuri@nokia.com
-Cc: peter.ujfalusi@nokia.com, randy.dunlap@oracle.com,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        ilkka.koskinen@nokia.com, samu.p.onkalo@nokia.com
-Subject: Re: [PATCH v6 0/3] input: Add support for ECI (multimedia)
- accessories
-Message-ID: <20110201085823.GB17706@core.coreip.homeip.net>
-References: <1296482634-31666-1-git-send-email-tapio.vihuri@nokia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296482634-31666-1-git-send-email-tapio.vihuri@nokia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752878Ab1BAJAb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 04:00:31 -0500
+Received: from victor.provo.novell.com ([137.65.250.26]:47389 "EHLO
+	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751248Ab1BAJAa (ORCPT
+	<rfc822;groupwise-MGalbraith@novell.com:0:0>);
+	Tue, 1 Feb 2011 04:00:30 -0500
+X-Greylist: delayed 1212 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Feb 2011 04:00:30 EST
+Subject: Re: calling smp_call_function_many() with non-stable CPU mask
+From: Mike Galbraith <mgalbraith@novell.com>
+To: Jan Beulich <JBeulich@novell.com>
+Cc: lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D47D21E020000780002F9FB@novell.com>
+References: <4D47D21E020000780002F9FB@novell.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Feb 2011 09:40:01 +0100
+Message-ID: <1296549601.5653.4.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tapio,
-
-On Mon, Jan 31, 2011 at 04:03:51PM +0200, tapio.vihuri@nokia.com wrote:
+On Tue, 2011-02-01 at 09:27 +0100, Jan Beulich wrote:
+> There are a couple of examples of smp_call_function_many() getting
+> called with mm_cpumask() as the first argument. Since that mask
+> generally can change while smp_call_function_many() is executing,
+> it seems there might be a problem with the case where that mask
+> becomes empty after the initial checks, but before the mask is made
+> permanent (by copying into data->cpumask).
 > 
-> This patch set introduce Multimedia Headset Accessory support for
-> Nokia phones. Technically those are known as ECI (Enhancement Control Interface)
-> 	
-> If headset has many buttons, like play, vol+, vol- etc. then it is propably ECI
-> accessory.
+> Shouldn't there be a check of data->refs being zero right after
+> setting it (to avoid having csd_lock_wait() wait for a remote CPU
+> to clear the lock flag, and to avoid adding the entry to
+> call_function.queue)?
 > 
-> Among several buttons ECI accessories contains memory for storing several
-> parameters.
-> 
-> This ECI input driver provides the following features:
->  - reading ECI configuration memory
->  - ECI buttons as input events
-> 
-> Drive is constructed as follows:
->  - ECI accessory input driver deals with headset accessory
->  - ECI bus control driver deals the HW transfering data to/from headset
->  - platform data match used HW
+> If that isn't considered necessary, is it then incorrect to pass
+> in-flight CPU masks to smp_call_function_many() (and should
+> this requirement then be documented somewhere, and the
+> existing calls all be inspected for correctness)?
 
-I finally had a chance to look though the patches more closely and I do
-not understand why you decided to introduce the platform device in
-addition to I2C device. You end up with 2 artificially separated bodies of
-code that are not viable on their own. The ECI module with it's platform
-device is not usable without the controller; the controller can not be
-registered without the ECI device initialized; there are ordering
-issues, both initialization and PM-wise and you are forced to support
-only one device.
 
-Is there going to be an SPI interface as well? If not then fold it all
-together and have I2C device as the only device involved. If SPI is a
-possibility then look in drivers such as adxl34x, ad714x and others that
-are split into core module and bus interface implementations.
+Freshly baked.
 
-Thanks.
+http://www.google.de/url?sa=t&source=web&cd=1&ved=0CBUQFjAA&url=http%3A%
+2F%2Flkml.org%2Flkml%2F2011%2F2%2F1%2F18&rct=j&q=PATCH%202%2F3%20v2%5D%
+20smp_call_function_many%3A%20handle%20concurrent%20clearing%20of%
+20mask&ei=M8ZHTda-LILCswaE6uyVAw&usg=AFQjCNE4M55BFGih2jXsHoAkNd5oTzpQvQ&cad=rja
 
--- 
-Dmitry
+	-Mike
+
