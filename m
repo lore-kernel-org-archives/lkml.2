@@ -1,106 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566Ab1BAAzv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 19:55:51 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:52619 "EHLO e8.ny.us.ibm.com"
+	id S1754602Ab1BABKX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 20:10:23 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39463 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754121Ab1BAAzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 19:55:50 -0500
-Subject: [RFC][PATCH] trace transparent huge page splits
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, Michael J Wolf <mjwolf@us.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Mon, 31 Jan 2011 16:55:47 -0800
-Message-Id: <20110201005547.85774260@kernel>
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1753918Ab1BABKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 20:10:22 -0500
+Message-ID: <4D475D6B.4030508@zytor.com>
+Date: Mon, 31 Jan 2011 17:10:03 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Kees Cook <kees.cook@canonical.com>
+CC: matthieu castet <castet.matthieu@free.fr>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: [BUG] broken ebba638ae723d8a8fc2f7abce5ec18b688b791d7
+References: <4D41E86D.8060205@free.fr> <20110127230013.GO4981@outflux.net> <4D4228CE.5090601@zytor.com> <20110131213847.GF4557@outflux.net> <4D474194.2000709@free.fr> <20110131235231.GJ4557@outflux.net>
+In-Reply-To: <20110131235231.GJ4557@outflux.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/31/2011 03:52 PM, Kees Cook wrote:
+>
+> This worked, thanks! If this tests cleanly for you in qemu, we should get
+> this committed.
+>
 
-When we see transparent huge pages being broken down, we generally
-have no idea of finding anything out about how it happened, or what
-it affected.
+This is wrong for at least one reason; possibly two:
 
-A simple static tracepoint like this should at least get us some
-minimal information like a stack trace, the virtual address, and
-the mm that it happened to.
+a) it ignores the control to not reload the segment registers (not sure 
+if anything still uses them, but...)
 
-I'm not sure if there is a better way to do this with any of the
-other tracing mechanisms, but this seems to work at least for me.
-Does anybody else have a better way?  Is it worth merging this
-kind of stuff, or is it best left out of tree as a debugging
-patch?
+b) I'm not sure that init_thread_union is safe for the non-BSP CPU here.
 
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
----
-
- linux-2.6.git-dave/include/trace/events/huge_memory.h |   32 ++++++++++++++++++
- linux-2.6.git-dave/mm/huge_memory.c                   |    5 ++
- 2 files changed, 37 insertions(+)
-
-diff -puN /dev/null include/trace/events/huge_memory.h
---- /dev/null	2011-01-21 14:16:26.635488000 -0800
-+++ linux-2.6.git-dave/include/trace/events/huge_memory.h	2011-01-31 16:42:37.607926454 -0800
-@@ -0,0 +1,32 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM huge_memory
-+
-+#if !defined(_TRACE_HUGE_MEMORY_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_HUGE_MEMORY_H
-+
-+#include <linux/types.h>
-+#include <linux/tracepoint.h>
-+
-+TRACE_EVENT(mm_huge_memory_split,
-+
-+	TP_PROTO(struct mm_struct *mm, unsigned long address),
-+
-+	TP_ARGS(mm, address),
-+
-+	TP_STRUCT__entry(
-+		__field(struct mm_struct *, mm)
-+		__field(unsigned long,	    address)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->mm	 = mm;
-+		__entry->address = address;
-+	),
-+
-+	TP_printk("mm=%p address=%p", __entry->mm, (void *)__entry->address)
-+);
-+
-+#endif /* _TRACE_HUGE_MEMORY_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
-diff -puN include/linux/huge_mm.h~huge_mem_trace include/linux/huge_mm.h
-diff -puN mm/huge_memory.c~huge_mem_trace mm/huge_memory.c
---- linux-2.6.git/mm/huge_memory.c~huge_mem_trace	2011-01-31 16:40:38.752014520 -0800
-+++ linux-2.6.git-dave/mm/huge_memory.c	2011-01-31 16:41:15.671987202 -0800
-@@ -21,6 +21,9 @@
- #include <asm/pgalloc.h>
- #include "internal.h"
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/huge_memory.h>
-+
- /*
-  * By default transparent hugepage support is enabled for all mappings
-  * and khugepaged scans all mappings. Defrag is only invoked by
-@@ -1254,6 +1257,8 @@ static int __split_huge_page_map(struct 
- 	pgtable_t pgtable;
- 	unsigned long haddr;
- 
-+	trace_mm_huge_memory_split(vma->vm_mm, address);
-+
- 	spin_lock(&mm->page_table_lock);
- 	pmd = page_check_address_pmd(page, mm, address,
- 				     PAGE_CHECK_ADDRESS_PMD_SPLITTING_FLAG);
-diff -puN mm/vmscan.c~huge_mem_trace mm/vmscan.c
-diff -puN mm/page_io.c~huge_mem_trace mm/page_io.c
-diff -puN block/blk-core.c~huge_mem_trace block/blk-core.c
-_
+	-hpa
