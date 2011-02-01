@@ -1,88 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686Ab1BANsA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 08:48:00 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:11136 "EHLO
+	id S1756890Ab1BANsU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 08:48:20 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:19991 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751935Ab1BANr6 (ORCPT
+	with ESMTP id S1756790Ab1BANsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 08:47:58 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6243"; a="72780212"
+	Tue, 1 Feb 2011 08:48:09 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6243"; a="72780239"
 From: Anirudh Ghayal <aghayal@codeaurora.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-input@vger.kernel.org, rtc-linux@googlegroups.com,
-        linux-arm-msm@vger.kernel.org, Anirudh Ghayal <aghayal@codeaurora.org>
-Subject: [RFC v2 PATCH 0/7] Qualcomm PMIC8058 sub-device drivers
-Date: Tue,  1 Feb 2011 19:17:36 +0530
-Message-Id: <1296568063-12010-1-git-send-email-aghayal@codeaurora.org>
+        linux-arm-msm@vger.kernel.org, Trilok Soni <tsoni@codeaurora.org>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [RFC v2 PATCH 1/7] matrix_keypad: Increase the max limit of rows and columns
+Date: Tue,  1 Feb 2011 19:17:37 +0530
+Message-Id: <1296568063-12010-2-git-send-email-aghayal@codeaurora.org>
 X-Mailer: git-send-email 1.7.3.5
+In-Reply-To: <1296568063-12010-1-git-send-email-aghayal@codeaurora.org>
+References: <1296568063-12010-1-git-send-email-aghayal@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series contains the V2 RFC version of sub-device drivers
-for Qualcomm PMIC8058. It is submitted here as RFC, due the dependent
-drivers like PMIC8058 core driver and SSBI bus driver are not yet
-merged into the mainline. We are sending these patches early to get
-the feedback from the community.
+From: Trilok Soni <tsoni@codeaurora.org>
 
-In this V2 version we have added one new driver- PM8058 based vibrator.
+Some keyboard controller have support for more than
+16 columns and rows. Moving this value to 32.
 
-If you want to refer the PMIC8058 core and SSBI driver they are available
-here:
+Cc: Eric Miao <eric.y.miao@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Trilok Soni <tsoni@codeaurora.org>
+---
+Changes from v1:
+Moved the max columns and rows to 32
 
-PMIC8058 core driver:
-https://www.codeaurora.org/gitweb/quic/la/?p=kernel/msm.git;a=blob;f=drivers/mfd/pmic8058.c;h=dc561988c474721d76178ab1a2f82a3a4d1b03a1;hb=refs/heads/msm-2.6.35
+ include/linux/input/matrix_keypad.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-SSBI driver:
-https://www.codeaurora.org/gitweb/quic/la/?p=kernel/msm.git;a=blob;f=drivers/i2c/busses/i2c-ssbi.c;h=5bfcf3cb96f0c2e0f1a6b7f789458d2faf67f260;hb=refs/heads/msm-2.6.35
-
-Amy Maloche (1):
-  input: misc: Add support for PM8058 based vibrator driver
-
-Anirudh Ghayal (2):
-  input: pmic8058-othc: Add support for PM8058 based OTHC
-  drivers: rtc: Add support for Qualcomm PMIC8058 RTC
-
-Trilok Soni (4):
-  matrix_keypad: Increase the max limit of rows and columns
-  input: pm8058_keypad: Qualcomm PMIC8058 keypad controller driver
-  led: pmic8058: Add PMIC8058 leds driver
-  input: pmic8058_pwrkey: Add support for power key
-
- drivers/input/keyboard/Kconfig           |   11 +
- drivers/input/keyboard/Makefile          |    1 +
- drivers/input/keyboard/pmic8058-keypad.c |  754 ++++++++++++++++++++++++++++++
- drivers/input/misc/Kconfig               |   32 ++
- drivers/input/misc/Makefile              |    3 +
- drivers/input/misc/pmic8058-othc.c       |  535 +++++++++++++++++++++
- drivers/input/misc/pmic8058-pwrkey.c     |  318 +++++++++++++
- drivers/input/misc/pmic8058-vibrator.c   |  306 ++++++++++++
- drivers/leds/Kconfig                     |   11 +
- drivers/leds/Makefile                    |    1 +
- drivers/leds/leds-pmic8058.c             |  360 ++++++++++++++
- drivers/rtc/Kconfig                      |    9 +
- drivers/rtc/Makefile                     |    1 +
- drivers/rtc/rtc-pm8058.c                 |  488 +++++++++++++++++++
- include/linux/input/matrix_keypad.h      |    4 +-
- include/linux/input/pmic8058-keypad.h    |   53 +++
- include/linux/input/pmic8058-othc.h      |  117 +++++
- include/linux/input/pmic8058-pwrkey.h    |   37 ++
- include/linux/leds-pmic8058.h            |   61 +++
- include/linux/rtc/rtc-pm8058.h           |   29 ++
- 20 files changed, 3129 insertions(+), 2 deletions(-)
- create mode 100644 drivers/input/keyboard/pmic8058-keypad.c
- create mode 100644 drivers/input/misc/pmic8058-othc.c
- create mode 100644 drivers/input/misc/pmic8058-pwrkey.c
- create mode 100644 drivers/input/misc/pmic8058-vibrator.c
- create mode 100644 drivers/leds/leds-pmic8058.c
- create mode 100644 drivers/rtc/rtc-pm8058.c
- create mode 100644 include/linux/input/pmic8058-keypad.h
- create mode 100644 include/linux/input/pmic8058-othc.h
- create mode 100644 include/linux/input/pmic8058-pwrkey.h
- create mode 100644 include/linux/leds-pmic8058.h
- create mode 100644 include/linux/rtc/rtc-pm8058.h
-
+diff --git a/include/linux/input/matrix_keypad.h b/include/linux/input/matrix_keypad.h
+index 6974746..fe7c4b9 100644
+--- a/include/linux/input/matrix_keypad.h
++++ b/include/linux/input/matrix_keypad.h
+@@ -4,8 +4,8 @@
+ #include <linux/types.h>
+ #include <linux/input.h>
+ 
+-#define MATRIX_MAX_ROWS		16
+-#define MATRIX_MAX_COLS		16
++#define MATRIX_MAX_ROWS		32
++#define MATRIX_MAX_COLS		32
+ 
+ #define KEY(row, col, val)	((((row) & (MATRIX_MAX_ROWS - 1)) << 24) |\
+ 				 (((col) & (MATRIX_MAX_COLS - 1)) << 16) |\
 -- 
 1.7.3.5
 
