@@ -1,69 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754491Ab1BARGQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 12:06:16 -0500
-Received: from smtp-gw21.han.skanova.net ([81.236.55.21]:43264 "EHLO
-	smtp-gw21.han.skanova.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477Ab1BARGP convert rfc822-to-8bit (ORCPT
+	id S1755298Ab1BARG2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 12:06:28 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:39828 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754855Ab1BARGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 12:06:15 -0500
+	Tue, 1 Feb 2011 12:06:25 -0500
+Message-ID: <4D483D6E.5070007@oracle.com>
+Date: Tue, 01 Feb 2011 09:05:50 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-X-Mailer: AfterLogic WebMail PHP
-X-Originating-IP: 194.237.142.5
-X-Priority: 3 (Normal)
-Message-ID: <7j2t3lt.0bb71e5c0a810a6ca8a0973db50566ea@obelix.schillstrom.com>
-From: "Hans Schillstrom" <hans@schillstrom.com>
-To: "Simon Horman" <horms@verge.net.au>
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+To: Simon Horman <horms@verge.net.au>
+CC: netdev@vger.kernel.org, linux-next@vger.kernel.org,
         linux-kernel@vger.kernel.org, lvs-devel@vger.kernel.org,
-        "Randy Dunlap" <randy.dunlap@oracle.com>,
-        "Stephen Rothwell" <sfr@canb.auug.org.au>,
-        "Patrick McHardy" <kaber@trash.net>
-Subject: Re: [PATCH 1/5] IPVS: use z modifier for sizeof() argument
-Date: Tue, 1 Feb 2011 18:06:04 +0100 (CET)
-Content-Type: text/plain;
-	charset="utf-8"
-Content-Transfer-Encoding: 8BIT
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Hans Schillstrom <hans@schillstrom.com>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: [GIT PULL nf-next-2.6] IPVS build fixes and clean-ups
+References: <1296519255-10602-1-git-send-email-horms@verge.net.au> <20110131165009.66999952.randy.dunlap@oracle.com> <20110201040634.GA2351@verge.net.au> <20110201100421.GA13325@verge.net.au>
+In-Reply-To: <20110201100421.GA13325@verge.net.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->---- Original Message ----
->From: Simon Horman <horms@verge.net.au>
->To: netdev@vger.kernel.org, linux-next@vger.kernel.org, linux-kernel@vger.kernel.org, lvs-devel@vger.kernel.org
->Cc: "Randy Dunlap" <randy.dunlap@oracle.com>, "Stephen Rothwell" <sfr@canb.auug.org.au>, "Hans Schillstrom" <hans@schillstrom.com>, "Patrick McHardy" <kaber@trash.net>, "Simon Horman" <horms@verge.net.au>
->Sent: Tue, Feb 1, 2011, 11:08 AM
->Subject: [PATCH 1/5] IPVS: use z modifier for sizeof() argument
->
->Cc: Hans Schillstrom <hans@schillstrom.com>
->Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
->Signed-off-by: Simon Horman <horms@verge.net.au>
+On 02/01/11 02:04, Simon Horman wrote:
+> On Tue, Feb 01, 2011 at 03:06:37PM +1100, Simon Horman wrote:
+>> On Mon, Jan 31, 2011 at 04:50:09PM -0800, Randy Dunlap wrote:
+>>> On Tue,  1 Feb 2011 11:14:11 +1100 Simon Horman wrote:
+>>>
+>>>> Hi,
+>>>>
+>>>> This short patch series addresses two linux-next build problems
+>>>> raised by Randy Dunlap:
+>>>>
+>>>> * net/netfilter/ipvs/ip_vs_core.c:1891: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'unsigned int'
+>>>> * ERROR: "unregister_net_sysctl_table" [net/netfilter/ipvs/ip_vs.ko]
+>>>>   ERROR: "register_net_sysctl_table" [net/netfilter/ipvs/ip_vs.ko] undefined!
+>>>>
+>>>> The remainder of the changset is cleanups that I noticed along the way.
+>>>
+>>> These 4 patches build successfully for me.
+>>> However, I do see these warnings (sorry I missed them earlier):
+>>>
+>>> WARNING: net/netfilter/ipvs/ip_vs.o(.init.text+0x161): Section mismatch in reference from the function init_module() to the function .exit.text:ip_vs_sync_cleanup()
+>>> WARNING: net/netfilter/ipvs/ip_vs.o(.init.text+0x161): Section mismatch in reference from the function init_module() to the function .exit.text:ip_vs_sync_cleanup()
+>>
+>> Thanks, I'll look into that. I will be travelling for a good portion of the
+>> next day and a bit so I apologise in advance if that delays my next patch.
+> 
+> Hi,
+> 
+> I the following patch seems to be the right fix for this to me.
+> I will send an amended pull request.
+> 
+> IPVS: Remove ip_vs_sync_cleanup from section __exit
+> 
+> ip_vs_sync_cleanup() may be called from ip_vs_init() on error
+> and thus needs to be accesible from section __init
+> 
+> Reporte-by: Randy Dunlap <randy.dunlap@oracle.com>
+  Reported-by:
 
-Signed-off-by: Hans Schillstrom <hans@schillstrom.com>
-Tested-by: Hans Schillstrom <hans@schillstrom.com>
+> Signed-off-by: Simon Horman <horms@verge.net.au>
 
->---
-> net/netfilter/ipvs/ip_vs_core.c |    2 +-
-> 1 files changed, 1 insertions(+), 1 deletions(-)
->
->diff --git a/net/netfilter/ipvs/ip_vs_core.c b/net/netfilter/ipvs/ip_vs_core.c
->index d889f4f..4d06617 100644
->--- a/net/netfilter/ipvs/ip_vs_core.c
->+++ b/net/netfilter/ipvs/ip_vs_core.c
->@@ -1887,7 +1887,7 @@ static int __net_init __ip_vs_init(struct net *net)
-> 	ipvs->gen = atomic_read(&ipvs_netns_cnt);
-> 	atomic_inc(&ipvs_netns_cnt);
-> 	net->ipvs = ipvs;
->-	printk(KERN_INFO "IPVS: Creating netns size=%lu id=%d\n",
->+	printk(KERN_INFO "IPVS: Creating netns size=%zu id=%d\n",
-> 			 sizeof(struct netns_ipvs), ipvs->gen);
-> 	return 0;
-> }
->-- 
->1.7.2.3
->
->--
->To unsubscribe from this list: send the line "unsubscribe lvs-devel" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
+Thanks.
+
+> ---
+>  net/netfilter/ipvs/ip_vs_sync.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/net/netfilter/ipvs/ip_vs_sync.c b/net/netfilter/ipvs/ip_vs_sync.c
+> index d5a6e64..2a2a836 100644
+> --- a/net/netfilter/ipvs/ip_vs_sync.c
+> +++ b/net/netfilter/ipvs/ip_vs_sync.c
+> @@ -1686,7 +1686,7 @@ int __init ip_vs_sync_init(void)
+>  	return register_pernet_subsys(&ipvs_sync_ops);
+>  }
+>  
+> -void __exit ip_vs_sync_cleanup(void)
+> +void ip_vs_sync_cleanup(void)
+>  {
+>  	unregister_pernet_subsys(&ipvs_sync_ops);
+>  }
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
