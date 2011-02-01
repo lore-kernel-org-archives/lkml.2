@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873Ab1BAFW3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 00:22:29 -0500
-Received: from sh.osrg.net ([192.16.179.4]:54502 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751187Ab1BAFW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 00:22:28 -0500
-Date: Tue, 1 Feb 2011 14:22:01 +0900
-To: hancockrwd@gmail.com
-Cc: fujita.tomonori@lab.ntt.co.jp, ak@linux.intel.com, cebbert@redhat.com,
-        linux-kernel@vger.kernel.org, dwmw2@infradead.org
-Subject: Re: b44 driver causes panic when using swiotlb
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <4D477C6F.8000906@gmail.com>
-References: <4D4759BD.2000006@gmail.com>
-	<20110201102707C.fujita.tomonori@lab.ntt.co.jp>
-	<4D477C6F.8000906@gmail.com>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20110201142103M.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 01 Feb 2011 14:22:02 +0900 (JST)
+	id S1751613Ab1BAF1g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 00:27:36 -0500
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:53119 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750859Ab1BAF1f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 00:27:35 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+References: <1296496389-30647-1-git-send-email-will.deacon@arm.com>
+MIME-Version: 1.0
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <1296496389-30647-1-git-send-email-will.deacon@arm.com>
+Thread-Index: AcvBb8FfZo3TFthgQ/C2PNeiq9AMXwAYOjZA
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
+Date: Tue, 1 Feb 2011 10:57:32 +0530
+Message-ID: <1db705ac90529708ef559eee9708b648@mail.gmail.com>
+Subject: RE: [PATCH v2] oprofile: add SMP barriers for hrtimer hotplug code
+To: Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        oprofile-list@lists.sf.net
+Cc: Robert Richter <robert.richter@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 Jan 2011 21:22:23 -0600
-Robert Hancock <hancockrwd@gmail.com> wrote:
+> -----Original Message-----
+> From: Will Deacon [mailto:will.deacon@arm.com]
+> Sent: Monday, January 31, 2011 11:23 PM
+> To: linux-kernel@vger.kernel.org; oprofile-list@lists.sf.net
+> Cc: Will Deacon; Santosh Shilimkar; Robert Richter
+> Subject: [PATCH v2] oprofile: add SMP barriers for hrtimer hotplug
+> code
+>
+> OProfile uses a CPU notifier to start and stop any hrtimers when
+> CPUs change
+> between ONLINE and DEAD. A static int ctr_running is used to keep
+> track of
+> the counter state.
+>
+> This can lead to problems where writes to the state variable are re-
+> ordered
+> with repect to reads of the variable occurring on other CPUs,
+> meaning that
+> __oprofile_hrtimer_start may read ctr_running as 0 and not
+> initialise the
+> hrtimer. Potential deadlock can occur in __oprofile_hrtimer_stop
+> because
+> lock_hrtimer_base will poll until timer->base != NULL, which will
+> never
+> happen.
+>
+> This patch adds an smp_mb() before initialising the hrtimers to
+> ensure that
+> ctr_running mirrors the correct counter state.
+>
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: Robert Richter <robert.richter@amd.com>
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> ---
+>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-> > Some ideas to implement something that works for such device were
-> > discussed. Seems that the conclusion is that it's doesn't worth making
-> > the common code complicated for such minor and insane devices.
-> 
-> I don't think this is the only device that has sub-32-bit DMA 
-> restrictions, this will just lead to a bunch of duplicated code.
-
-Yeah, not only device but not many.
-
-The block layer has the own bouncing mechanism. Some network drivers
-have the similar bouncing code. I don't know if there are other kinds
-of drivers that have the own bouncing code.
-
-I thought that we can make mm/bounce.c (used for block drivers now)
-work any drivers without complicating it. We could make swiotlb to do
-but it's too complicated and it doesn't worth.
-
-
-> In 
-> particular, how is LPC DMA supposed to work?
-
-LPC DMA can't do 32bit dma?
-
-
-> At the very least we should be allowing the driver to deal with the 
-> failure instead of panicing the system. Otherwise we are just leaving a 
-> land mine for people to trip over.
-
-Agreed. swiotlb shouldn't panic in this case. I'll take care of it.
+> Changes since v1: Removed redundant barrier from stop() code.
+>
+>  drivers/oprofile/timer_int.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/oprofile/timer_int.c
+> b/drivers/oprofile/timer_int.c
+> index 0107251..a3a94ea 100644
+> --- a/drivers/oprofile/timer_int.c
+> +++ b/drivers/oprofile/timer_int.c
+> @@ -48,6 +48,7 @@ static int oprofile_hrtimer_start(void)
+>  {
+>  	get_online_cpus();
+>  	ctr_running = 1;
+> +	smp_mb();
+>  	on_each_cpu(__oprofile_hrtimer_start, NULL, 1);
+>  	put_online_cpus();
+>  	return 0;
+> --
+> 1.7.0.4
+>
