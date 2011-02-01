@@ -1,42 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755844Ab1BARll (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 12:41:41 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:17395 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752693Ab1BARlj (ORCPT
+	id S1755805Ab1BARnR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 12:43:17 -0500
+Received: from casper.infradead.org ([85.118.1.10]:48714 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753603Ab1BARnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 12:41:39 -0500
-Date: Tue, 1 Feb 2011 09:16:20 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for February 1 (ip_vs)
-Message-Id: <20110201091620.64536300.randy.dunlap@oracle.com>
-In-Reply-To: <20110201153403.b3a251a3.sfr@canb.auug.org.au>
-References: <20110201153403.b3a251a3.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Tue, 1 Feb 2011 12:43:15 -0500
+Subject: Re: [PATCH v2 4/6] KVM-GST: KVM Steal time registration
+From: Peter Zijlstra <peterz@infradead.org>
+To: Glauber Costa <glommer@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
+        Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Venkatesh Pallipadi <venki@google.com>
+In-Reply-To: <1296579641.5081.27.camel@mothafucka.localdomain>
+References: <1296244340-15173-1-git-send-email-glommer@redhat.com>
+	 <1296244340-15173-5-git-send-email-glommer@redhat.com>
+	 <4D45649A.4090709@redhat.com>
+	 <1296575618.5081.13.camel@mothafucka.localdomain>
+	 <1296577030.26581.236.camel@laptop>
+	 <1296579641.5081.27.camel@mothafucka.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Feb 2011 18:44:12 +0100
+Message-ID: <1296582252.26581.255.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Feb 2011 15:34:03 +1100 Stephen Rothwell wrote:
-
-> Hi all,
+On Tue, 2011-02-01 at 15:00 -0200, Glauber Costa wrote:
 > 
-> Changes since 20110131:
+> > What you can do is: steal_ticks = steal_time_clock() / TICK_NSEC, or
+> > simply keep a steal time delta and every time it overflows
+> > cputime_one_jiffy insert a steal-time tick.
+> 
+> What do you think about keeping accounting in msec/usec resolution and
+> (thus allowing us to compute half a tick to user/system, other half to
+> steal time) only change it to cputime in the last minute?
 
+its only accounting full tick..
 
-When CONFIG_IP_VS_PROTO_TCP is not set:
-
-net/netfilter/ipvs/ip_vs_proto_sctp.c:1104: error: 'struct netns_ipvs' has no member named 'tcp_app_lock'
-net/netfilter/ipvs/ip_vs_proto_sctp.c:1104: error: 'struct netns_ipvs' has no member named 'tcp_app_lock'
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
