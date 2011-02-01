@@ -1,36 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479Ab1BACeK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 21:34:10 -0500
-Received: from outgoing.hosting.tp.pl ([193.110.120.20]:31067 "EHLO
-	mta6.hosting.tp.pl" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753664Ab1BACeI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 21:34:08 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=Windows-1251
-Message-id: <0LFX00MYY3409S10@mta6.hosting.tp.pl>
-Reply-to: stevelindsey112@kkwl.ac.th
-From: steve lindsey <jerzy.drazkiewicz@neostrada.pl>
-Subject: LOAN
-Date: Tue, 01 Feb 2011 10:34:04 -0800
-X-Priority: 3
-X-MSMail-priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MIMEOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-To: unlisted-recipients:; (no To-header on input)
+	id S1754069Ab1BACog (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 21:44:36 -0500
+Received: from cantor.suse.de ([195.135.220.2]:49085 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751789Ab1BACof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 21:44:35 -0500
+Date: Mon, 31 Jan 2011 18:42:49 -0800
+From: Greg KH <gregkh@suse.de>
+To: Timo von Holtz <tvh@informatik.uni-kiel.de>
+Cc: shemminger@vyatta.com, error27@gmail.com, arnd@arndb.de, jj@chaosbits.net,
+        joe@perches.com, eric.dumazet@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: bcm: fixed coding style issues
+Message-ID: <20110201024249.GB2634@suse.de>
+References: <1296525024-21898-1-git-send-email-tvh@informatik.uni-kiel.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1296525024-21898-1-git-send-email-tvh@informatik.uni-kiel.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is to inform you that Private company is Granting New Year loan facilities to it's old and new customers 
-at two percent interest rate Within minimum range of $5,000 to Maximum of $500,000,000. Please provide
- the following if interested as shown below:
-Name----
-Amount----
-Duration----
-Phone number---
+On Tue, Feb 01, 2011 at 02:50:24AM +0100, Timo von Holtz wrote:
+> Fixed some coding style issues
 
-Best Regard:Steve Lindsey.
-Email:stevelindsey112@kkwl.ac.th
+Which ones?
+
+With such a huge patch, it's best to break it down by type of coding
+style cleanup, to make it easier to review and apply.  This is almost
+too big to review as-is :(
+
+thanks,
+
+greg k-h
