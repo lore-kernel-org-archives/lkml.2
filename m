@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751661Ab1BAUOT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 15:14:19 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:58010 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751117Ab1BAUOQ convert rfc822-to-8bit (ORCPT
+	id S1751806Ab1BAUUq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 15:20:46 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:63392 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751463Ab1BAUUo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 15:14:16 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Cc: Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
-        Eric Paris <eparis@parisplace.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-References: <1296578246.12605.22.camel@moss-pluto>
-	<1296578542-5902-1-git-send-email-lucian.grijincu@gmail.com>
-	<m1r5brr1mn.fsf@fess.ebiederm.org>
-	<AANLkTik+N5J-MDrbMbtwRPwz==J4y8sbBkhir=1K3g=B@mail.gmail.com>
-Date: Tue, 01 Feb 2011 12:14:10 -0800
-In-Reply-To: <AANLkTik+N5J-MDrbMbtwRPwz==J4y8sbBkhir=1K3g=B@mail.gmail.com>
-	(Lucian Adrian Grijincu's message of "Tue, 1 Feb 2011 21:46:42 +0200")
-Message-ID: <m1k4hjqzql.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Tue, 1 Feb 2011 15:20:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Z+mhRjJN0bZDejd/9x81BL+eoGmG+ZoDYCIAcyDZr/9DXif7WD2jM05+SCxANfG2FU
+         pQL1Szf05QX1Jq8xS7dg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18VpzgyRn80DlVQj5hHKaYI290f8X/kRak=
-X-SA-Exim-Connect-IP: 98.207.157.188
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 1/2] security/selinux: fix /proc/sys/ labeling
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+In-Reply-To: <1296582252.26581.255.camel@laptop>
+References: <1296244340-15173-1-git-send-email-glommer@redhat.com>
+	<1296244340-15173-5-git-send-email-glommer@redhat.com>
+	<4D45649A.4090709@redhat.com>
+	<1296575618.5081.13.camel@mothafucka.localdomain>
+	<1296577030.26581.236.camel@laptop>
+	<1296579641.5081.27.camel@mothafucka.localdomain>
+	<1296582252.26581.255.camel@laptop>
+Date: Tue, 1 Feb 2011 12:20:39 -0800
+Message-ID: <AANLkTinAa+SYE__enUpnuuQXJJweyBF4dFBEUsfhS41A@mail.gmail.com>
+Subject: Re: [PATCH v2 4/6] KVM-GST: KVM Steal time registration
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Glauber Costa <glommer@redhat.com>, Avi Kivity <avi@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
+        Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lucian Adrian Grijincu <lucian.grijincu@gmail.com> writes:
-
-> On Tue, Feb 1, 2011 at 9:33 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
->> What kernel has a dentry_path_raw?  Perhaps you mean __dentry_path?
+On Tue, Feb 1, 2011 at 9:44 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, 2011-02-01 at 15:00 -0200, Glauber Costa wrote:
+>>
+>> > What you can do is: steal_ticks = steal_time_clock() / TICK_NSEC, or
+>> > simply keep a steal time delta and every time it overflows
+>> > cputime_one_jiffy insert a steal-time tick.
+>>
+>> What do you think about keeping accounting in msec/usec resolution and
+>> (thus allowing us to compute half a tick to user/system, other half to
+>> steal time) only change it to cputime in the last minute?
 >
+> its only accounting full tick..
 >
-> See the function here:
-> https://github.com/mirrors/linux-2.6/blob/70d1f365568e0cdbc9f4ab92428e1830fdb09ab0/fs/dcache.c
->
-> The last patches were against 2.6.38-rc2 because the dcache layer got
-> rewritten in 2.6.38 http://lwn.net/Articles/421784/
->
-> __dentry_path is now static (in fs/dcache.c) and does not take the
-> necessary locks.
 
-Thanks.  I thought I was looking at the latest source but it turns out
-I fat fingered something and my tree was still 2.6.36-rc3.  Sigh.
+Yes. The way we ended up dealing with this in irq time case is track
+it in fine granularity and accumulate over time (internally) but
+account it (make it visible externally) only in terms of ticks, only
+when the value being accumulated crosses the tick boundary. This does
+has a hole when we use 99% of time on tick on irq and use 1% just
+before the tick on some system, then whole tick will be system and on
+next tick if there is 1% irq and 99% system then that will be
+accounted as irq as our accumulated value crosses the tick boundary
+then. But, such holes on avg should not be worse than not having fine
+granularity.
 
-dentry_path_raw does seem reasonable.
-
-Eric
+Thanks,
+Venki
