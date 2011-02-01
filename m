@@ -1,73 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755580Ab1BART7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 12:19:59 -0500
-Received: from stinky.trash.net ([213.144.137.162]:46136 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949Ab1BART6 (ORCPT
+	id S1754880Ab1BARWX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 12:22:23 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:40959 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640Ab1BARWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 12:19:58 -0500
-Message-ID: <4D4840BC.4050303@trash.net>
-Date: Tue, 01 Feb 2011 18:19:56 +0100
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	Tue, 1 Feb 2011 12:22:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=DKaJ5+vj9b6A6jBUAIUqtVKBOwzCQ8HRmW2AqjZHE8y53uKIwtN26ktfZClJAnLBrA
+         aeRTY3Mm0gFSkD8UozxOoLS9AtgtZbs9nKyux+R8Va5q91IeRDLFR84Eq3Jgy1pA+Ut1
+         9gFmp9qet4Jxfo8fNJSgqBg/88Ni1P5bmepa0=
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Simon Horman <horms@verge.net.au>, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lvs-devel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Hans Schillstrom <hans@schillstrom.com>
-Subject: Re: [GIT PULL nf-next-2.6] IPVS build fixes and clean-ups
-References: <1296519255-10602-1-git-send-email-horms@verge.net.au> <20110131165009.66999952.randy.dunlap@oracle.com> <20110201040634.GA2351@verge.net.au> <20110201100421.GA13325@verge.net.au> <4D483D6E.5070007@oracle.com>
-In-Reply-To: <4D483D6E.5070007@oracle.com>
+In-Reply-To: <0D753D10438DA54287A00B027084269764CEEDAC85@AUSP01VMBX24.collaborationhost.net>
+References: <0D753D10438DA54287A00B027084269764CEEDA479@AUSP01VMBX24.collaborationhost.net>
+	<20110201080146.GA27955@pengutronix.de>
+	<0D753D10438DA54287A00B027084269764CEEDAC85@AUSP01VMBX24.collaborationhost.net>
+Date: Tue, 1 Feb 2011 18:22:20 +0100
+Message-ID: <AANLkTi=PQzr+6FupmsgzJB3SKJiH83KV9WJu+D=g3rtV@mail.gmail.com>
+Subject: Re: [leds-pca9532] Add gpio capability
+From: Joachim Eastwood <manabian@gmail.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Wolfram Sang <w.sang@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 01.02.2011 18:05, schrieb Randy Dunlap:
-> On 02/01/11 02:04, Simon Horman wrote:
->> On Tue, Feb 01, 2011 at 03:06:37PM +1100, Simon Horman wrote:
->>> On Mon, Jan 31, 2011 at 04:50:09PM -0800, Randy Dunlap wrote:
->>>> On Tue,  1 Feb 2011 11:14:11 +1100 Simon Horman wrote:
->>>>
->>>>> Hi,
->>>>>
->>>>> This short patch series addresses two linux-next build problems
->>>>> raised by Randy Dunlap:
->>>>>
->>>>> * net/netfilter/ipvs/ip_vs_core.c:1891: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'unsigned int'
->>>>> * ERROR: "unregister_net_sysctl_table" [net/netfilter/ipvs/ip_vs.ko]
->>>>>   ERROR: "register_net_sysctl_table" [net/netfilter/ipvs/ip_vs.ko] undefined!
->>>>>
->>>>> The remainder of the changset is cleanups that I noticed along the way.
->>>>
->>>> These 4 patches build successfully for me.
->>>> However, I do see these warnings (sorry I missed them earlier):
->>>>
->>>> WARNING: net/netfilter/ipvs/ip_vs.o(.init.text+0x161): Section mismatch in reference from the function init_module() to the function .exit.text:ip_vs_sync_cleanup()
->>>> WARNING: net/netfilter/ipvs/ip_vs.o(.init.text+0x161): Section mismatch in reference from the function init_module() to the function .exit.text:ip_vs_sync_cleanup()
->>>
->>> Thanks, I'll look into that. I will be travelling for a good portion of the
->>> next day and a bit so I apologise in advance if that delays my next patch.
+On 2/1/11, H Hartley Sweeten <hartleys@visionengravers.com> wrote:
+> On Tuesday, February 01, 2011 1:02 AM, Wolfram Sang wrote:
+>>> From the datasheet:
+>>>[...]
+>>> So, you should provide both a direction_input and direction_output.
 >>
->> Hi,
->>
->> I the following patch seems to be the right fix for this to me.
->> I will send an amended pull request.
->>
->> IPVS: Remove ip_vs_sync_cleanup from section __exit
->>
->> ip_vs_sync_cleanup() may be called from ip_vs_init() on error
->> and thus needs to be accesible from section __init
->>
->> Reporte-by: Randy Dunlap <randy.dunlap@oracle.com>
->   Reported-by:
-> 
->> Signed-off-by: Simon Horman <horms@verge.net.au>
-> 
-> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+>> He did in V2 of this patch (what made me also download the datasheet ;)).
+>
+> Ok.  Just looked at the v2 patch.
+>
+>> +static int pca9532_gpio_direction_input(struct gpio_chip *gc, unsigned
+>> offset)
+>> +{
+>> + struct pca9532_data *data = container_of(gc, struct pca9532_data, gpio);
+>> + struct pca9532_led *led = &data->leds[offset];
+>> +
+>> + /* To use as input ensure pin is not driven */
+>> + led->state = PCA9532_OFF;
+>> + pca9532_setled(led);
+>> +
+>> + return 0;
+>> +}
+>> +
+>
+> This looks good.  When configured as an input the pin needs to be set
+> high-impedance,
+> 00 which is PCA9532_OFF).
+>
+>> +static int pca9532_gpio_direction_output(struct gpio_chip *gc,
+>> unsigned offset, int val)
+>> +{
+>> + return 0;
+>> +}
+>> +
+>
+> Not good.  When the pin is configured as an output, the direction_output
+> method also
+> requests that the pin be set to a desired level.  For this driver that means
+> that the
+> pca9532_gpio_direction_output function just needs to call
+> pca9532_gpio_set_value.
 
-Thanks, since Simon is travelling, I'll apply the patches now
-with your and Hans's Acks and will push them to Dave later.
+ops, I overlooked the 'val' parameter in the direction_output
+function.  I will create a v3.
+
+Seems like I have been a bit careless with the direction setting... I
+didn't really think through it since PCA9532 has no explicit direction
+register.
+
+Thanks for looking!
+
+regards
+Joachim Eastwood
+
+> Regards,
+> Hartley
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
