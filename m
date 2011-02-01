@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521Ab1BAAv7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 19:51:59 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:40411 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753147Ab1BAAv6 (ORCPT
+	id S1754433Ab1BAAyZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 19:54:25 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43061 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753875Ab1BAAyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 19:51:58 -0500
-Date: Mon, 31 Jan 2011 16:50:09 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Simon Horman <horms@verge.net.au>
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lvs-devel@vger.kernel.org,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Hans Schillstrom <hans@schillstrom.com>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: [GIT PULL nf-next-2.6] IPVS build fixes and clean-ups
-Message-Id: <20110131165009.66999952.randy.dunlap@oracle.com>
-In-Reply-To: <1296519255-10602-1-git-send-email-horms@verge.net.au>
-References: <1296519255-10602-1-git-send-email-horms@verge.net.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 31 Jan 2011 19:54:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=wtae7s021FBYoQKlX7v31fKfOY1k9wtG0yE/fH0dD2VtQzs8Vx3/d5TXp82V8JuZZR
+         v8v2/7Lnfkptn+uZJmldFk7z6zkpKAPcWXXX974qtn5KCzLkfEIw0toM+OxEuC2Xhacu
+         NIfZf8tSTB8Rb/VOuvjhy7enY7vTX5Kgcb0Ek=
+Message-ID: <4D4759BD.2000006@gmail.com>
+Date: Mon, 31 Jan 2011 18:54:21 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Andi Kleen <ak@linux.intel.com>
+CC: Chuck Ebbert <cebbert@redhat.com>, linux-kernel@vger.kernel.org,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: b44 driver causes panic when using swiotlb
+References: <20110131105412.7252a09c@katamari> <20110131163639.GA32095@tassilo.jf.intel.com>
+In-Reply-To: <20110131163639.GA32095@tassilo.jf.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  1 Feb 2011 11:14:11 +1100 Simon Horman wrote:
+On 01/31/2011 10:36 AM, Andi Kleen wrote:
+> On Mon, Jan 31, 2011 at 10:54:12AM -0500, Chuck Ebbert wrote:
+>> The b44 driver is triggering this panic in swiotlb_map_page():
+>>
+>>          if (!dma_capable(dev, dev_addr, size))
+>>                  panic("map_single: bounce buffer is not DMA'ble");
+>>
+>> The kernel log says the bounce buffers are at 0xdb400000, but b44 can
+>> only do DMA to the first 1GB of memory:
+>
+> b44 needs to use GFP_DMA then and do its own custom bouncing.
+> The standard pci_map_* bounce buffering is only designed for at least
+> 32bit capable devices.
 
-> Hi,
-> 
-> This short patch series addresses two linux-next build problems
-> raised by Randy Dunlap:
-> 
-> * net/netfilter/ipvs/ip_vs_core.c:1891: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'unsigned int'
-> * ERROR: "unregister_net_sysctl_table" [net/netfilter/ipvs/ip_vs.ko]
->   ERROR: "register_net_sysctl_table" [net/netfilter/ipvs/ip_vs.ko] undefined!
-> 
-> The remainder of the changset is cleanups that I noticed along the way.
+That seems wrong - it's a documented API and that restriction isn't 
+documented. Either it should comply with the request or return a failure 
+if it can't accomodate it, not just blow up internally. There's no 
+reason the driver should have to deal with this on its own.
 
-These 4 patches build successfully for me.
-However, I do see these warnings (sorry I missed them earlier):
+In this case the DMA mapping code  should really be falling back to 
+GFP_DMA automatically if the IOMMU aperture is outside the DMA mask of 
+the device.
 
-WARNING: net/netfilter/ipvs/ip_vs.o(.init.text+0x161): Section mismatch in reference from the function init_module() to the function .exit.text:ip_vs_sync_cleanup()
-WARNING: net/netfilter/ipvs/ip_vs.o(.init.text+0x161): Section mismatch in reference from the function init_module() to the function .exit.text:ip_vs_sync_cleanup()
+>
+> BTW I'm pretty sure this worked at some point, must have regressed
+> somehow.
 
-
-Thanks for the patch series.
-
-> The changes are available at
-> git://git.kernel.org/pub/scm/linux/kernel/git/horms/lvs-test-2.6.git master
-> 
-> They are currently compile-tested only.
-> 
->  include/net/ip_vs.h              |    2 --
->  net/netfilter/ipvs/ip_vs_core.c  |    2 +-
->  net/netfilter/ipvs/ip_vs_ctl.c   |   17 +++++++++--------
->  net/netfilter/ipvs/ip_vs_lblc.c  |   20 ++++++++++----------
->  net/netfilter/ipvs/ip_vs_lblcr.c |   20 ++++++++++----------
->  5 files changed, 30 insertions(+), 31 deletions(-)
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
