@@ -1,46 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805Ab1BARnR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 12:43:17 -0500
-Received: from casper.infradead.org ([85.118.1.10]:48714 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753603Ab1BARnP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 12:43:15 -0500
-Subject: Re: [PATCH v2 4/6] KVM-GST: KVM Steal time registration
-From: Peter Zijlstra <peterz@infradead.org>
-To: Glauber Costa <glommer@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
-        Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Venkatesh Pallipadi <venki@google.com>
-In-Reply-To: <1296579641.5081.27.camel@mothafucka.localdomain>
-References: <1296244340-15173-1-git-send-email-glommer@redhat.com>
-	 <1296244340-15173-5-git-send-email-glommer@redhat.com>
-	 <4D45649A.4090709@redhat.com>
-	 <1296575618.5081.13.camel@mothafucka.localdomain>
-	 <1296577030.26581.236.camel@laptop>
-	 <1296579641.5081.27.camel@mothafucka.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Feb 2011 18:44:12 +0100
-Message-ID: <1296582252.26581.255.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755662Ab1BARqV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 12:46:21 -0500
+Received: from mga02.intel.com ([134.134.136.20]:33059 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752603Ab1BARqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 12:46:20 -0500
+Message-Id: <0d30dc$kuat3i@orsmga001.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,411,1291622400"; 
+   d="scan'208";a="702903410"
+Date: Tue, 01 Feb 2011 17:46:05 +0000
+To: Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH] drm/i915: Suppress spurious vblank interrupts
+Cc: Mario Kleiner <mario.kleiner@tuebingen.mpg.de>,
+        linux-kernel@vger.kernel.org
+References: <849307$bc24ct@azsmga001.ch.intel.com> <1296471462-8578-1-git-send-email-chris@chris-wilson.co.uk> <alpine.LSU.2.00.1102010909270.1586@sister.anvils>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <alpine.LSU.2.00.1102010909270.1586@sister.anvils>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-01 at 15:00 -0200, Glauber Costa wrote:
+On Tue, 1 Feb 2011 09:34:12 -0800 (PST), Hugh Dickins <hughd@google.com> wrote:
+> Thanks a lot for devising this, Chris, I really appreciate it.
 > 
-> > What you can do is: steal_ticks = steal_time_clock() / TICK_NSEC, or
-> > simply keep a steal time delta and every time it overflows
-> > cputime_one_jiffy insert a steal-time tick.
-> 
-> What do you think about keeping accounting in msec/usec resolution and
-> (thus allowing us to compute half a tick to user/system, other half to
-> steal time) only change it to cputime in the last minute?
+> But so far I can't be more enthusiastic than "seems to be a good
+> improvement most of the time" - though I've not spent long on this
+> laptop since putting it on to -rc3.
 
-its only accounting full tick..
+Yeah, this is really just an interim patch. Removes one instance of doing
+work when we don't need to, but it does not answer why the vblank patches
+made your machines worse (since the same spurious interrupt bug is present
+in 2.6.37 and earlier).
+-Chris
 
+-- 
+Chris Wilson, Intel Open Source Technology Centre
