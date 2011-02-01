@@ -1,224 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756621Ab1BAJVj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 04:21:39 -0500
-Received: from hera.kernel.org ([140.211.167.34]:45522 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754293Ab1BAJVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 04:21:35 -0500
-Date: Tue, 1 Feb 2011 09:21:09 GMT
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
-        peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
-        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <new-submission>
-References: <new-submission>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf python: Fix build on 32-bit
-Message-ID: <tip-f6bbc1daac964da551130dbf01809d3fbd178b2d@git.kernel.org>
-Git-Commit-ID: f6bbc1daac964da551130dbf01809d3fbd178b2d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1756584Ab1BAJVh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 04:21:37 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:52406 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753670Ab1BAJVe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 04:21:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=RugQRNDiclCNZZTXonYnVFo7T/n01jW123DBA2u8lTyMMyqNvenjQW4HRZlvxz19sq
+         JID8tXOol8SSZUtTM4C7gMmX8fFCbtLkKGaPbaRq710/EE//Q1CYmrfYG69d/8DHOtmW
+         0ChWdNbHntYp/nFlpMWebYCs4Kp+j+uSXCUpk=
+Date: Tue, 1 Feb 2011 01:21:26 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Duncan Laurie <dlaurie@chromium.org>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: serio - clear serio event queue after sysfs
+ driver rebind
+Message-ID: <20110201092126.GC17706@core.coreip.homeip.net>
+References: <1290467390-25302-1-git-send-email-dlaurie@chromium.org>
+ <20101127084153.GC28745@core.coreip.homeip.net>
+ <AANLkTik1TE9zgKaiLQZ=1uFgMyZt43xp8VJBWfxdVyMY@mail.gmail.com>
+ <20101208051211.GB4140@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 01 Feb 2011 09:21:10 +0000 (UTC)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101208051211.GB4140@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f6bbc1daac964da551130dbf01809d3fbd178b2d
-Gitweb:     http://git.kernel.org/tip/f6bbc1daac964da551130dbf01809d3fbd178b2d
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 31 Jan 2011 20:56:27 -0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 31 Jan 2011 20:56:27 -0200
+On Tue, Dec 07, 2010 at 09:12:11PM -0800, Dmitry Torokhov wrote:
+> On Mon, Nov 29, 2010 at 01:37:35PM -0800, Duncan Laurie wrote:
+> > On Sat, Nov 27, 2010 at 12:41 AM, Dmitry Torokhov
+> > <dmitry.torokhov@gmail.com> wrote:
+> > > Hi Duncan,
+> > >
+> > > On Mon, Nov 22, 2010 at 03:09:50PM -0800, Duncan Laurie wrote:
+> > >> When rebinding a serio driver via sysfs drvctl interface it is possible for
+> > >> an interrupt to trigger after the disconnect of the existing driver and
+> > >> before the binding of the new driver.  This will cause the serio interrupt
+> > >> handler to queue a rescan event which will disconnect the new driver
+> > >> immediately after it is attached.
+> > >>
+> > >> This change clears the serio event queue after processing the drvctl
+> > >> request but before releasing the serio mutex, which will clear any queued
+> > >> rescans before they can get processed.
+> > >>
+> > >> Reproduction involves issuing a rebind of device port from psmouse driver
+> > >> to serio_raw driver while generating input to trigger interrupts.  Then
+> > >> checking to see if the corresponding i8042/serio4/driver is correctly
+> > >> attached to the serio_raw driver instead of psmouse.
+> > >>
+> > >> Signed-off-by: Duncan Laurie <dlaurie@chromium.org>
+> > >> ---
+> > >>  drivers/input/serio/serio.c |    1 +
+> > >>  1 files changed, 1 insertions(+), 0 deletions(-)
+> > >>
+> > >> diff --git a/drivers/input/serio/serio.c b/drivers/input/serio/serio.c
+> > >> index 405bf21..a66307e 100644
+> > >> --- a/drivers/input/serio/serio.c
+> > >> +++ b/drivers/input/serio/serio.c
+> > >> @@ -454,6 +454,7 @@ static ssize_t serio_rebind_driver(struct device *dev, struct device_attribute *
+> > >>               serio_disconnect_port(serio);
+> > >>               error = serio_bind_driver(serio, to_serio_driver(drv));
+> > >>               put_driver(drv);
+> > >> +             serio_remove_pending_events(serio);
+> > >
+> > > Hmm, makes sense, although should we limit events being removed to
+> > > rescan events only?
+> > >
+> > 
+> > 
+> > That seems reasonable.  It would mean adding a new function or a
+> > parameter to the existing serio_remove_pending_events function, do you
+> > have a preference?
+> > 
+> 
+> I wonder if a boolean parameter (rescan_only) would not be the best
+> option.
+> 
 
-perf python: Fix build on 32-bit
+Hi Duncan,
 
-Where there are lots of errors related to python methods receiving
-'char *' for things like file open mode, which break the build, also
-disable strict aliasing and fixup some other warnings. Now builds on
-both 32-bit and 64-bit fedora systems.
+I eneded up with the following patch, could you please try and see if
+it still works for you? 
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Thanks.
+
+-- 
+Dmitry
+
+Input: serio - clear pending rescans after sysfs driver rebind
+
+From: Duncan Laurie <dlaurie@chromium.org>
+
+When rebinding a serio driver via sysfs drvctl interface it is
+possible for an interrupt to trigger after the disconnect of the
+existing driver and before the binding of the new driver.  This will
+cause the serio interrupt handler to queue a rescan event which will
+disconnect the new driver immediately after it is attached.
+
+This change removes pending rescans from the serio event queue after
+processing the drvctl request but before releasing the serio mutex.
+
+Reproduction involves issuing a rebind of device port from psmouse
+driver to serio_raw driver while generating input to trigger
+interrupts.  Then checking to see if the corresponding
+i8042/serio4/driver is correctly attached to the serio_raw driver
+instead of psmouse.
+
+Signed-off-by: Duncan Laurie <dlaurie@chromium.org>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 ---
- tools/perf/util/python.c |   52 +++++++++++++++++++++++-----------------------
- tools/perf/util/setup.py |    3 +-
- 2 files changed, 28 insertions(+), 27 deletions(-)
 
-diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
-index d2d5217..5317ef2 100644
---- a/tools/perf/util/python.c
-+++ b/tools/perf/util/python.c
-@@ -15,6 +15,8 @@ struct throttle_event {
- 	u64			 stream_id;
- };
- 
-+PyMODINIT_FUNC initperf(void);
-+
- #define member_def(type, member, ptype, help) \
- 	{ #member, ptype, \
- 	  offsetof(struct pyrf_event, event) + offsetof(struct type, member), \
-@@ -31,17 +33,15 @@ struct pyrf_event {
- 	union perf_event   event;
- };
- 
--#define T_ULONG_LONG T_ULONG
--
- #define sample_members \
--	sample_member_def(sample_ip, ip, T_ULONG_LONG, "event type"),			 \
-+	sample_member_def(sample_ip, ip, T_ULONGLONG, "event type"),			 \
- 	sample_member_def(sample_pid, pid, T_INT, "event pid"),			 \
- 	sample_member_def(sample_tid, tid, T_INT, "event tid"),			 \
--	sample_member_def(sample_time, time, T_ULONG_LONG, "event timestamp"),		 \
--	sample_member_def(sample_addr, addr, T_ULONG_LONG, "event addr"),		 \
--	sample_member_def(sample_id, id, T_ULONG_LONG, "event id"),			 \
--	sample_member_def(sample_stream_id, stream_id, T_ULONG_LONG, "event stream id"), \
--	sample_member_def(sample_period, period, T_ULONG_LONG, "event period"),		 \
-+	sample_member_def(sample_time, time, T_ULONGLONG, "event timestamp"),		 \
-+	sample_member_def(sample_addr, addr, T_ULONGLONG, "event addr"),		 \
-+	sample_member_def(sample_id, id, T_ULONGLONG, "event id"),			 \
-+	sample_member_def(sample_stream_id, stream_id, T_ULONGLONG, "event stream id"), \
-+	sample_member_def(sample_period, period, T_ULONGLONG, "event period"),		 \
- 	sample_member_def(sample_cpu, cpu, T_UINT, "event cpu"),
- 
- static char pyrf_mmap_event__doc[] = PyDoc_STR("perf mmap event object.");
-@@ -51,11 +51,11 @@ static PyMemberDef pyrf_mmap_event__members[] = {
- 	member_def(perf_event_header, type, T_UINT, "event type"),
- 	member_def(mmap_event, pid, T_UINT, "event pid"),
- 	member_def(mmap_event, tid, T_UINT, "event tid"),
--	member_def(mmap_event, start, T_ULONG_LONG, "start of the map"),
--	member_def(mmap_event, len, T_ULONG_LONG, "map length"),
--	member_def(mmap_event, pgoff, T_ULONG_LONG, "page offset"),
-+	member_def(mmap_event, start, T_ULONGLONG, "start of the map"),
-+	member_def(mmap_event, len, T_ULONGLONG, "map length"),
-+	member_def(mmap_event, pgoff, T_ULONGLONG, "page offset"),
- 	member_def(mmap_event, filename, T_STRING_INPLACE, "backing store"),
--	{ NULL, },
-+	{ .name = NULL, },
- };
- 
- static PyObject *pyrf_mmap_event__repr(struct pyrf_event *pevent)
-@@ -96,8 +96,8 @@ static PyMemberDef pyrf_task_event__members[] = {
- 	member_def(fork_event, ppid, T_UINT, "event ppid"),
- 	member_def(fork_event, tid, T_UINT, "event tid"),
- 	member_def(fork_event, ptid, T_UINT, "event ptid"),
--	member_def(fork_event, time, T_ULONG_LONG, "timestamp"),
--	{ NULL, },
-+	member_def(fork_event, time, T_ULONGLONG, "timestamp"),
-+	{ .name = NULL, },
- };
- 
- static PyObject *pyrf_task_event__repr(struct pyrf_event *pevent)
-@@ -130,7 +130,7 @@ static PyMemberDef pyrf_comm_event__members[] = {
- 	member_def(comm_event, pid, T_UINT, "event pid"),
- 	member_def(comm_event, tid, T_UINT, "event tid"),
- 	member_def(comm_event, comm, T_STRING_INPLACE, "process name"),
--	{ NULL, },
-+	{ .name = NULL, },
- };
- 
- static PyObject *pyrf_comm_event__repr(struct pyrf_event *pevent)
-@@ -156,10 +156,10 @@ static char pyrf_throttle_event__doc[] = PyDoc_STR("perf throttle event object."
- static PyMemberDef pyrf_throttle_event__members[] = {
- 	sample_members
- 	member_def(perf_event_header, type, T_UINT, "event type"),
--	member_def(throttle_event, time, T_ULONG_LONG, "timestamp"),
--	member_def(throttle_event, id, T_ULONG_LONG, "event id"),
--	member_def(throttle_event, stream_id, T_ULONG_LONG, "event stream id"),
--	{ NULL, },
-+	member_def(throttle_event, time, T_ULONGLONG, "timestamp"),
-+	member_def(throttle_event, id, T_ULONGLONG, "event id"),
-+	member_def(throttle_event, stream_id, T_ULONGLONG, "event stream id"),
-+	{ .name = NULL, },
- };
- 
- static PyObject *pyrf_throttle_event__repr(struct pyrf_event *pevent)
-@@ -522,7 +522,7 @@ static PyMethodDef pyrf_evsel__methods[] = {
- 		.ml_flags = METH_VARARGS | METH_KEYWORDS,
- 		.ml_doc	  = PyDoc_STR("open the event selector file descriptor table.")
- 	},
--	{ NULL, }
-+	{ .ml_name = NULL, }
- };
- 
- static char pyrf_evsel__doc[] = PyDoc_STR("perf event selector list object.");
-@@ -551,7 +551,7 @@ struct pyrf_evlist {
- };
- 
- static int pyrf_evlist__init(struct pyrf_evlist *pevlist,
--			     PyObject *args, PyObject *kwargs)
-+			     PyObject *args, PyObject *kwargs __used)
- {
- 	PyObject *pcpus = NULL, *pthreads = NULL;
- 	struct cpu_map *cpus;
-@@ -613,7 +613,7 @@ static PyObject *pyrf_evlist__poll(struct pyrf_evlist *pevlist,
+ drivers/input/serio/serio.c |   11 +++++++----
+ 1 files changed, 7 insertions(+), 4 deletions(-)
+
+
+diff --git a/drivers/input/serio/serio.c b/drivers/input/serio/serio.c
+index db5b0bc..7c38d1f 100644
+--- a/drivers/input/serio/serio.c
++++ b/drivers/input/serio/serio.c
+@@ -188,7 +188,8 @@ static void serio_free_event(struct serio_event *event)
+ 	kfree(event);
  }
  
- static PyObject *pyrf_evlist__get_pollfd(struct pyrf_evlist *pevlist,
--					 PyObject *args, PyObject *kwargs)
-+					 PyObject *args __used, PyObject *kwargs __used)
+-static void serio_remove_duplicate_events(struct serio_event *event)
++static void serio_remove_duplicate_events(void *object,
++					  enum serio_event_type type)
  {
- 	struct perf_evlist *evlist = &pevlist->evlist;
-         PyObject *list = PyList_New(0);
-@@ -645,7 +645,7 @@ free_list:
+ 	struct serio_event *e, *next;
+ 	unsigned long flags;
+@@ -196,13 +197,13 @@ static void serio_remove_duplicate_events(struct serio_event *event)
+ 	spin_lock_irqsave(&serio_event_lock, flags);
  
+ 	list_for_each_entry_safe(e, next, &serio_event_list, node) {
+-		if (event->object == e->object) {
++		if (object == e->object) {
+ 			/*
+ 			 * If this event is of different type we should not
+ 			 * look further - we only suppress duplicate events
+ 			 * that were sent back-to-back.
+ 			 */
+-			if (event->type != e->type)
++			if (type != e->type)
+ 				break;
  
- static PyObject *pyrf_evlist__add(struct pyrf_evlist *pevlist,
--				  PyObject *args, PyObject *kwargs)
-+				  PyObject *args, PyObject *kwargs __used)
- {
- 	struct perf_evlist *evlist = &pevlist->evlist;
- 	PyObject *pevsel;
-@@ -724,7 +724,7 @@ static PyMethodDef pyrf_evlist__methods[] = {
- 		.ml_flags = METH_VARARGS | METH_KEYWORDS,
- 		.ml_doc	  = PyDoc_STR("reads an event.")
- 	},
--	{ NULL, }
-+	{ .ml_name = NULL, }
- };
+ 			list_del_init(&e->node);
+@@ -245,7 +246,7 @@ static void serio_handle_event(struct work_struct *work)
+ 			break;
+ 		}
  
- static Py_ssize_t pyrf_evlist__length(PyObject *obj)
-@@ -840,11 +840,11 @@ static struct {
- 	{ "RECORD_FORK",       PERF_RECORD_FORK },
- 	{ "RECORD_READ",       PERF_RECORD_READ },
- 	{ "RECORD_SAMPLE",     PERF_RECORD_SAMPLE },
--	{ NULL, },
-+	{ .name = NULL, },
- };
+-		serio_remove_duplicate_events(event);
++		serio_remove_duplicate_events(event->object, event->type);
+ 		serio_free_event(event);
+ 	}
  
- static PyMethodDef perf__methods[] = {
--	{ NULL, NULL }
-+	{ .ml_name = NULL, }
- };
- 
- PyMODINIT_FUNC initperf(void)
-diff --git a/tools/perf/util/setup.py b/tools/perf/util/setup.py
-index 496d7f4..1947b04 100644
---- a/tools/perf/util/setup.py
-+++ b/tools/perf/util/setup.py
-@@ -6,7 +6,8 @@ perf = Extension('perf',
- 		  sources = ['util/python.c', 'util/ctype.c', 'util/evlist.c',
- 			     'util/evsel.c', 'util/cpumap.c', 'util/thread_map.c',
- 			     'util/util.c', 'util/xyarray.c'],
--		  include_dirs = ['util/include'])
-+		  include_dirs = ['util/include'],
-+		  extra_compile_args = ['-fno-strict-aliasing', '-Wno-write-strings'])
- 
- setup(name='perf',
-       version='0.1',
+@@ -436,10 +437,12 @@ static ssize_t serio_rebind_driver(struct device *dev, struct device_attribute *
+ 	} else if (!strncmp(buf, "rescan", count)) {
+ 		serio_disconnect_port(serio);
+ 		serio_find_driver(serio);
++		serio_remove_duplicate_events(serio, SERIO_RESCAN_PORT);
+ 	} else if ((drv = driver_find(buf, &serio_bus)) != NULL) {
+ 		serio_disconnect_port(serio);
+ 		error = serio_bind_driver(serio, to_serio_driver(drv));
+ 		put_driver(drv);
++		serio_remove_duplicate_events(serio, SERIO_RESCAN_PORT);
+ 	} else {
+ 		error = -EINVAL;
+ 	}
