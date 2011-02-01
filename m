@@ -1,92 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752418Ab1BAUeN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 15:34:13 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:37070 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023Ab1BAUeM (ORCPT
+	id S1752267Ab1BAUg7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 15:36:59 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33126 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab1BAUg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 15:34:12 -0500
-Subject: Re: [patch 04/28] posix-timers: Introduce clock_posix_cpu
-From: john stultz <johnstul@us.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Richard Cochran <richard.cochran@omicron.at>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <20110201134417.841974553@linutronix.de>
-References: <20110201134320.688829863@linutronix.de>
-	 <20110201134417.841974553@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Feb 2011 12:34:04 -0800
-Message-ID: <1296592444.3336.21.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Feb 2011 15:36:58 -0500
+Date: Tue, 1 Feb 2011 20:36:25 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        linux-sh@vger.kernel.org, Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
+        Dima Zavin <dmitriyz@google.com>, Ben Dooks <ben-linux@fluff.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Locking in the clk API, part 2: clk_prepare/clk_unprepare
+Message-ID: <20110201203625.GT31216@n2100.arm.linux.org.uk>
+References: <201102011711.31258.jeremy.kerr@canonical.com> <20110201105449.GY1147@pengutronix.de> <20110201131512.GH31216@n2100.arm.linux.org.uk> <20110201141837.GA1147@pengutronix.de> <20110201143932.GK31216@n2100.arm.linux.org.uk> <20110201151846.GD1147@pengutronix.de> <20110201152458.GP31216@n2100.arm.linux.org.uk> <4D486E08.9000709@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D486E08.9000709@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-01 at 13:51 +0000, Thomas Gleixner wrote:
-> plain text document attachment
-> (posix-timers-introduce-local-posix-cpu-clockid.patch)
-> The CLOCK_DISPATCH() macro is a horrible magic. We call common
-> functions if a function pointer is not set. That's just backwards.
-> 
-> To support dynamic file decriptor based clocks we need to cleanup that
-> dispatch logic.
-> 
-> Create a k_clock struct clock_posix_cpu which has all the
-> posix-cpu-timer functions filled in. After the cleanup the functions
-> can be made static.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Cc: Richard Cochran <richard.cochran@omicron.at>
+On Tue, Feb 01, 2011 at 12:33:12PM -0800, Saravana Kannan wrote:
+> Looks like this is the best acknowledgment/response I can expect to get  
+> from Russell on this point that I raised.
 
-Acked-by: John Stultz <johnstul@us.ibm.com>
-
-> ---
->  include/linux/posix-timers.h |    2 ++
->  kernel/posix-cpu-timers.c    |   12 ++++++++++++
->  2 files changed, 14 insertions(+)
-> 
-> Index: linux-2.6-tip/include/linux/posix-timers.h
-> ===================================================================
-> --- linux-2.6-tip.orig/include/linux/posix-timers.h
-> +++ linux-2.6-tip/include/linux/posix-timers.h
-> @@ -85,6 +85,8 @@ struct k_clock {
->  			   struct itimerspec * cur_setting);
->  };
-> 
-> +extern struct k_clock clock_posix_cpu;
-> +
->  void register_posix_clock(const clockid_t clock_id, struct k_clock *new_clock);
-> 
->  /* error handlers for timer_create, nanosleep and settime */
-> Index: linux-2.6-tip/kernel/posix-cpu-timers.c
-> ===================================================================
-> --- linux-2.6-tip.orig/kernel/posix-cpu-timers.c
-> +++ linux-2.6-tip/kernel/posix-cpu-timers.c
-> @@ -1604,6 +1604,18 @@ static long thread_cpu_nsleep_restart(st
->  	return -EINVAL;
->  }
-> 
-> +struct k_clock clock_posix_cpu = {
-> +	.clock_getres	= posix_cpu_clock_getres,
-> +	.clock_set	= posix_cpu_clock_set,
-> +	.clock_get	= posix_cpu_clock_get,
-> +	.timer_create	= posix_cpu_timer_create,
-> +	.nsleep		= posix_cpu_nsleep,
-> +	.nsleep_restart	= posix_cpu_nsleep_restart,
-> +	.timer_set	= posix_cpu_timer_set,
-> +	.timer_del	= posix_cpu_timer_del,
-> +	.timer_get	= posix_cpu_timer_get,
-> +};
-> +
->  static __init int init_posix_cpu_timers(void)
->  {
->  	struct k_clock process = {
-> 
-> 
-
-
+Sorry, I've been up to my eyeballs with other stuff over the last few
+weeks.  Yes, I think clk_set_rate() needs to be sleep-able too.
