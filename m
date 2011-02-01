@@ -1,97 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044Ab1BADPr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 22:15:47 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:34149 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751789Ab1BADPq (ORCPT
+	id S1754553Ab1BADTH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 22:19:07 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42279 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753581Ab1BADTF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 22:15:46 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+s15RlisusR2f9WnRSFAXXKd7rnO50E7eknGfXV2
-	kjrsPXAwSsWNAx
-Subject: Re: [PATCH] smp_call_function_many: handle concurrent clearing of
- mask
-From: Mike Galbraith <efault@gmx.de>
-To: Milton Miller <miltonm@bga.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, akpm@linux-foundation.org,
-        Anton Blanchard <anton@samba.org>, xiaoguangrong@cn.fujitsu.com,
-        mingo@elte.hu, jaxboe@fusionio.com, npiggin@gmail.com,
-        rusty@rustcorp.com.au, torvalds@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, benh@kernel.crashing.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <smp-ipi-mike@mdm.bga.com>
-References: <20110112150740.77dde58c@kryten>
-	 <1295288253.30950.280.camel@laptop>
-	 <smp-call-function-peter-reply@mdm.bga.com>
-	 <smp-call-function-move-writes@mdm.bga.com>
-	 <1296145360.15234.234.camel@laptop>
-	 <smp-call-function-list-race@mdm.bga.com>
-	 <smp-call-function-list-race-fix@mdm.bga.com>
-	 <1296458482.7889.175.camel@marge.simson.net>  <smp-ipi-mike@mdm.bga.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Feb 2011 04:15:36 +0100
-Message-ID: <1296530136.7862.22.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Mon, 31 Jan 2011 22:19:05 -0500
+MIME-Version: 1.0
+In-Reply-To: <871v3s3ahe.fsf@ti.com>
+References: <201101300107.19389.rjw@sisk.pl> <20110131225902.GD27856@angua.secretlab.ca>
+ <201102010010.46096.rjw@sisk.pl> <871v3s3ahe.fsf@ti.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 31 Jan 2011 20:18:44 -0700
+X-Google-Sender-Auth: A9FFOdAvCIo7AIJpnAcv2PwBFRU
+Message-ID: <AANLkTinEsUOZQURXOfAVoTU5=k0mi8PC0_Gte6gACDFj@mail.gmail.com>
+Subject: Re: [RFC][PATCH] Power domains for platform bus type
+To: Kevin Hilman <khilman@ti.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Len Brown <lenb@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-31 at 14:26 -0600, Milton Miller wrote:
-> On Mon, 31 Jan 2011 about 08:21:22 +0100,  Mike Galbraith wrote:
-> > Wondering if a final sanity check makes sense.  I've got a perma-spin
-> > bug where comment apparently happened.  Another CPU's diddle the mask
-> > IPI may make this CPU do horrible things to itself as it's setting up to
-> > IPI others with that mask.
-> > 
-> > ---
-> >  kernel/smp.c |    3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > Index: linux-2.6.38.git/kernel/smp.c
-> > ===================================================================
-> > --- linux-2.6.38.git.orig/kernel/smp.c
-> > +++ linux-2.6.38.git/kernel/smp.c
-> > @@ -490,6 +490,9 @@ void smp_call_function_many(const struct
-> >  	cpumask_and(data->cpumask, mask, cpu_online_mask);
-> >  	cpumask_clear_cpu(this_cpu, data->cpumask);
-> >  
-> > +	/* Did you pass me a mask that can be changed/emptied under me? */
-> > +	BUG_ON(cpumask_empty(data->cpumask));
-> > +
-> 
-> I was thinking of this as "the ipi cpumask was cleared", but I realize now
-> you are saying the caller passed in a cpumask, but between the cpu_first/
-> cpu_next calls above and the cpumask_and another cpu cleared all the cpus?
-> 
-> I could see how that could happen on say a mask of cpus that might have a
-> translation context, or cpus that need a push to complete an rcu window.
-> Instead of the BUG_ON, we can handle the mask being cleared.
-> 
-> The arch code to send the IPI must handle an empty mask, as the other
-> cpus are racing to clear their bit while its trying to send the IPI.
-> In fact that expected race is the cause of the x86 warning in bz 23042
-> https://bugzilla.kernel.org/show_bug.cgi?id=23042  that Andrew pointed
-> out.
-> 
-> 
-> How about this [untested] patch?
-> 
-> Mike Galbraith reported finding a lockup where aparently the passed in
-> cpumask was cleared on other cpu(s) while this cpu was preparing its
-> smp_call_function_many block.   Detect this race and unlock the call
-> data block.  Note: arch_send_call_function_ipi_mask must still handle an
-> empty mask because the element is globally visable before it is called.
-> And obviously there are no guarantees to which cpus are notified if the
-> mask is changed during the call.
+On Mon, Jan 31, 2011 at 4:43 PM, Kevin Hilman <khilman@ti.com> wrote:
+> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+>
+>>> Also, what is the use case for having 2 sets of power_domain ops?  My
+>>> gut tells me that you'd only want to do post ops on the
+>>> {freeze,suspend,poweroff} path and pre ops on the {resume,thaw,restore}
+>>> path.  It seems overly engineered to me, but I may be missing
+>>> something fundamental.
+>>
+>> Well, that's a part of the RFC, actually. :-)
+>>
+>> For the subsystems I've worked with (PCI, ACPI, PNP to some extent) one set
+>> would be sufficient, but I don't know of every possible use case.
+>
+> For the on-chip SoC devices we're managing with OMAP, we're currently
+> only using one set: post ops on [runtime_]suspend and pre ops on
+> [runtime_]resume.
+>
+> However, I could imagine (at least conceptually) using the pre ops on
+> suspend to do some constraints checking and/or possibly some
+> management/notification of dependent devices.  Another possiblity
+> (although possibly racy) would be using the pre ops on suspend to
+> initiate some high-latency operations.
+>
+> I guess the main problem with two sets is wasted space.  e.g, if I move
+> OMAP to this (already hacking on it) there will be only 2 functions used
+> in post ops: [runtime_]suspend() and 2 used in pre ops [runtime_]_resume().
 
-Yes, that would work.  In my case, it was passed mm_cpumask(mm).  What
-is unclear is whether mask at call time was what the programmer needed
-action on, ie mask changing may be intolerable information loss/gain.
+There's a conceptual load added to the (human) reader too.  Every
+additional hook point is an additional piece other engineers need to
+fit into their mental model.  I'm resistant to having the two sets of
+ops without a definite use case for it when conceptually I can only
+imagine a need for one set.
 
-	-Mike
-
-
+g.
