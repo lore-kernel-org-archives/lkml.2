@@ -1,57 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943Ab1BATcu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 14:32:50 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:41148 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751727Ab1BATct (ORCPT
+	id S1753079Ab1BATc4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 14:32:56 -0500
+Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:58998 "HELO
+	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752167Ab1BATcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 14:32:49 -0500
-Message-ID: <4D485F7E.8020800@kernel.org>
-Date: Tue, 01 Feb 2011 11:31:10 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: mingo@redhat.com, hpa@zytor.com, paulus@samba.org, eranian@google.com,
-        linux-kernel@vger.kernel.org, tzanussi@gmail.com, efault@gmx.de,
-        peterz@infradead.org, fweisbec@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] perf top: Introduce slang based TUI
-References: <new-submission> <tip-c0443df1b69b59675fc6790e0ddce87c8ca00abf@git.kernel.org> <4D48562B.20006@kernel.org> <20110201192808.GD25544@ghostprotocols.net>
-In-Reply-To: <20110201192808.GD25544@ghostprotocols.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 1 Feb 2011 14:32:54 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=eNSeP7qZrAFxTlilx2G4VE4NZPDwpvY4shLt5Cn31qY6EVE87/HLuN56VqQRRitjPSaiSt0MyVIZLOrPphe+lwLTJ1h7SaAvnUk7LzRLaHFsvzYNbgtHwKSLsd6D2iAI;
+Date: Tue, 1 Feb 2011 11:32:38 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Mario Kleiner <mario.kleiner@tuebingen.mpg.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drm/i915: Suppress spurious vblank interrupts
+Message-ID: <20110201113238.60b33ff9@jbarnes-desktop>
+In-Reply-To: <AANLkTim4kL9OjBDiQQ1MBfOCzThxmDonBic11N45NKxj@mail.gmail.com>
+References: <849307$bc24ct@azsmga001.ch.intel.com>
+	<1296471462-8578-1-git-send-email-chris@chris-wilson.co.uk>
+	<alpine.LSU.2.00.1102010909270.1586@sister.anvils>
+	<20110201094643.366bc073@jbarnes-desktop>
+	<20110201100833.3219687e@jbarnes-desktop>
+	<AANLkTim4kL9OjBDiQQ1MBfOCzThxmDonBic11N45NKxj@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2011 11:28 AM, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Feb 01, 2011 at 10:51:23AM -0800, Yinghai Lu escreveu:
->> On 02/01/2011 01:20 AM, tip-bot for Arnaldo Carvalho de Melo wrote:
->>> +	slsmg_write_nstring(width >= syme->map->dso->long_name_len ?
->>> +				syme->map->dso->long_name :
->>> +				syme->map->dso->short_name, width);
->>
->>
->> need update macro for that calling
->>
->> [PATCH] perf: fix compiling for perf top tui
->>
->> util/ui/browsers/top.c: In function ‘perf_top_browser__write’:
->> util/ui/browsers/top.c:60:2: error: cast to pointer from integer of different size
->> util/ui/browsers/top.c:60:2: error: comparison between pointer and integer
->> util/ui/browsers/top.c:60:2: error: passing argument 1 of ‘SLsmg_write_nstring’ discards qualifiers from pointer target type
->> /usr/include/slang.h:1728:16: note: expected ‘char *’ but argument is of type ‘const char *’
->> make: *** [util/ui/browsers/top.o] Error 1
->>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+On Tue, 1 Feb 2011 10:46:17 -0800
+Hugh Dickins <hughd@google.com> wrote:
+
+> On Tue, Feb 1, 2011 at 10:08 AM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> > On Tue, 1 Feb 2011 09:46:43 -0800
+> > Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> >>
+> >> Are you still seeing underruns during normal activity?
 > 
-> Good catch, why I didn't got this here is a mistery... anyway, applying,
-> thanks,
+> Yes.  That is, I see the "pipe a underrun" messages when I set drm
+> debug 7: I'm unaware of any ill-effect from them, unless they are
+> indeed a factor in my unflushed text issue.
 
-my laptop have opensuse 11.3...
+They can cause your display to shake or flicker, or the memory
+controller to get confused enough to hang your system.
 
-assume would not have that setup.
+> I was surprised that i915_driver_irq_handler  "Clear the PIPE(A|B)STAT
+> regs" writes back precisely the pipea_stats it reads in, I'd have
+> expected to clear something there (and did earlier experiment with
+> writing back 0: black screen at boot!).  But assumed the protocol is
+> such that it acknowledges the status bits by writing same back.
 
-Yinghai
+Exactly.  High bits are the interrupt enable bits, low bits are set for
+status, write of 1 to clear status.
+
+> Right.  I haven't double-checked the logic, but I believe it's because
+> of bits set in the underrunning pipea_stats.  I did one time modify
+> the underrun message to print out pipea_stats, over five seconds most
+> (265) values were 0x80440207
+> (there were also 14 occurrences of 0x80440007, 5 of 0x80440004 and 3
+> of 0x80440204).
+
+Well, vblank interrupts are enabled (though they shouldn't be for your
+config as far as we know), so the interrupt status and handling is
+occurring as expected.
+
+What I find strange is that you're seeing flip pending interrupts.  Are
+your symptoms affected if you remove the
+I915_DISPLAY_PLANE_[AB]_FLIP_PENDING_INTERRUPT lines from
+I915_INTERRUPT_ENABLE_FIX at the top of i915_irq.c?
+
+Do you see any calls to drm_mode_page_flip_ioctl() in your environment?
+
+> I just tried i915.powersave=0 but the underruns still appeared.  I
+> then tried earlier kernels, and was surprised to find no underruns
+> with 2.6.34, 2.6.36: the underruns appeared with 2.6.37.
+
+Ok, that rules out self-refresh then I think.
+
+-- 
+Jesse Barnes, Intel Open Source Technology Center
