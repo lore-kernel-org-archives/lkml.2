@@ -1,144 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947Ab1BASLo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 13:11:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15973 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751366Ab1BASLm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 13:11:42 -0500
-Date: Tue, 1 Feb 2011 12:38:46 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, tytso@mit.edu, djwong@us.ibm.com, shli@kernel.org,
-        neilb@suse.de, adilger.kernel@dilger.ca, jack@suse.cz,
-        linux-kernel@vger.kernel.org, kmannth@us.ibm.com, cmm@us.ibm.com,
-        linux-ext4@vger.kernel.org, rwheeler@redhat.com, hch@lst.de,
-        josef@redhat.com, jmoyer@redhat.com
-Subject: Re: [RFC PATCH 4/3] block: skip elevator initialization for flush
- requests
-Message-ID: <20110201173846.GA25252@redhat.com>
-References: <1295625598-15203-1-git-send-email-tj@kernel.org>
- <1295625598-15203-4-git-send-email-tj@kernel.org>
- <20110125204158.GA3013@redhat.com>
- <20110126100322.GC12520@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110126100322.GC12520@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755438Ab1BASRQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 13:17:16 -0500
+Received: from casper.infradead.org ([85.118.1.10]:49337 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751950Ab1BASRP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 13:17:15 -0500
+Subject: Re: [PATCH] perf: Cure task_oncpu_function_call() races
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>, Prasad <prasad@linux.vnet.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <1296583698.26581.279.camel@laptop>
+References: <20110127221856.GA10539@redhat.com>
+	 <1296215577.15234.333.camel@laptop> <1296226667.15234.337.camel@laptop>
+	 <20110128162847.GA25088@redhat.com> <1296238278.15234.340.camel@laptop>
+	 <20110131172626.GA5407@redhat.com> <1296498205.26581.54.camel@laptop>
+	 <20110131191109.GA10906@redhat.com> <1296502154.26581.72.camel@laptop>
+	 <1296569037.26581.194.camel@laptop>  <20110201172757.GA4586@redhat.com>
+	 <1296583698.26581.279.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Feb 2011 19:18:13 +0100
+Message-ID: <1296584293.26581.281.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 26 2011 at  5:03am -0500,
-Tejun Heo <tj@kernel.org> wrote:
-
-> > diff --git a/block/blk-core.c b/block/blk-core.c
-> > index 72dd23b..f507888 100644
-> > --- a/block/blk-core.c
-> > +++ b/block/blk-core.c
-> > @@ -764,7 +764,7 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
-> >  	struct request_list *rl = &q->rq;
-> >  	struct io_context *ioc = NULL;
-> >  	const bool is_sync = rw_is_sync(rw_flags) != 0;
-> > -	int may_queue, priv;
-> > +	int may_queue, priv = 0;
-> >  
-> >  	may_queue = elv_may_queue(q, rw_flags);
-> >  	if (may_queue == ELV_MQUEUE_NO)
-> > @@ -808,9 +808,14 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
-> >  	rl->count[is_sync]++;
-> >  	rl->starved[is_sync] = 0;
-> >  
-> > -	priv = !test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags);
-> > -	if (priv)
-> > -		rl->elvpriv++;
-> > +	/*
-> > +	 * Skip elevator initialization for flush requests
-> > +	 */
-> > +	if (!(bio && (bio->bi_rw & (REQ_FLUSH | REQ_FUA)))) {
-> > +		priv = !test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags);
-> > +		if (priv)
-> > +			rl->elvpriv++;
-> > +	}
+On Tue, 2011-02-01 at 19:08 +0100, Peter Zijlstra wrote:
+> > > +static void perf_remove_from_context(struct perf_event *event)
+> > >  {
+> > > ...
+> > >     raw_spin_lock_irq(&ctx->lock);
+> > >     /*
+> > > +    * If we failed to find a running task, but find it running now that
+> > > +    * we've acquired the ctx->lock, retry.
+> > >      */
+> > > +   if (task_curr(task)) {
+> > >             raw_spin_unlock_irq(&ctx->lock);
+> > >             goto retry;
+> > >     }
+> > >
+> > >     /*
+> > > +    * Since the task isn't running, its safe to remove the event, us
+> > > +    * holding the ctx->lock ensures the task won't get scheduled in.
+> > >      */
+> > > +   list_del_event(event, ctx);
+> > 
+> > this looks suspicious (the same for perf_install_in_context).
+> > 
+> > Unlike the IPI handler, this can see schedule-in-progress in any state.
+> > In particular, we can see rq->curr == next (so that task_curr() == F),
+> > but before "prev" has already called perf_event_task_sched_out().
+> > 
+> > So we have to check ctx->is_active, or schedule() should change rq->curr
+> > after perf_event_task_sched_out().
 > 
-> I thought about doing it this way but I think we're burying the
-> REQ_FLUSH|REQ_FUA test logic too deep.  get_request() shouldn't
-> "magically" know not to allocate elevator data.
+> I only considered current == next in that case, not current == prev, let
+> me undo some of those sched.c bits and put a comment. 
 
-There is already a considerable amount of REQ_FLUSH|REQ_FUA special
-casing magic sprinkled though-out the block layer.  Why is this
-get_request() change the case that goes too far?
+On second thought, your proposed ->is_active check seems to result in
+much nicer code in sched.c. Let me think through that.
 
-> The decision should
-> be made higher in the stack and passed down to get_request().  e.g. if
-> REQ_SORTED is set in @rw, elevator data is allocated; otherwise, not.
-
-Considering REQ_SORTED is set in elv_insert(), well after get_request() 
-is called, I'm not seeing what you're suggesting.
-
-Anyway, I agree that ideally we'd have a mechanism to explicitly
-short-circuit elevator initialization.  But doing so in a meaningful way
-would likely require a fair amount of refactoring of get_request* and
-its callers.  I'll come back to this and have another look but my gut is
-this interface churn wouldn't _really_ help -- all things considered.
-
-> > diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-> > index 8a082a5..0c569ec 100644
-> > --- a/include/linux/blkdev.h
-> > +++ b/include/linux/blkdev.h
-> > @@ -99,25 +99,29 @@ struct request {
-> >  	/*
-> >  	 * The rb_node is only used inside the io scheduler, requests
-> >  	 * are pruned when moved to the dispatch queue. So let the
-> > -	 * flush fields share space with the rb_node.
-> > +	 * completion_data share space with the rb_node.
-> >  	 */
-> >  	union {
-> >  		struct rb_node rb_node;	/* sort/lookup */
-> > -		struct {
-> > -			unsigned int			seq;
-> > -			struct list_head		list;
-> > -		} flush;
-> > +		void *completion_data;
-> >  	};
-> >  
-> > -	void *completion_data;
-> > -
-> >  	/*
-> >  	 * Three pointers are available for the IO schedulers, if they need
-> > -	 * more they have to dynamically allocate it.
-> > +	 * more they have to dynamically allocate it.  Let the flush fields
-> > +	 * share space with these three pointers.
-> >  	 */
-> > -	void *elevator_private;
-> > -	void *elevator_private2;
-> > -	void *elevator_private3;
-> > +	union {
-> > +		struct {
-> > +			void *private;
-> > +			void *private2;
-> > +			void *private3;
-> > +		} elevator;
-> > +		struct {
-> > +			unsigned int			seq;
-> > +			struct list_head		list;
-> > +		} flush;
-> > +	};
-> 
-> Another thing is, can we please make private* an array?  The number
-> postfixes are irksome.  It's even one based instead of zero!
-
-Sure, I can sort that out.
-
-> > Also, it would be great to better describe the lifetime difference
-> > between the first and the second unions and why it has be organized
-> > this way (rb_node and completion_data can live together but rb_node
-> > and flush can't).
->
-> Oops, what can't live together are elevator_private* and
-> completion_data.
-
-I'll better describe the 2nd union's sharing in the next revision.
-
-Mike
