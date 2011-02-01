@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503Ab1BAQs3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 11:48:29 -0500
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:44602 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752075Ab1BAQs2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 11:48:28 -0500
-From: Kevin Hilman <khilman@ti.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Len Brown <lenb@kernel.org>
-Subject: Re: [RFC][PATCH] Power domains for platform bus type
-Organization: Texas Instruments, Inc.
-References: <201101300107.19389.rjw@sisk.pl> <871v3s3ahe.fsf@ti.com>
-	<AANLkTinEsUOZQURXOfAVoTU5=k0mi8PC0_Gte6gACDFj@mail.gmail.com>
-	<201102011158.46312.rjw@sisk.pl>
-Date: Tue, 01 Feb 2011 08:48:14 -0800
-In-Reply-To: <201102011158.46312.rjw@sisk.pl> (Rafael J. Wysocki's message of
-	"Tue, 1 Feb 2011 11:58:46 +0100")
-Message-ID: <87sjw7wvjl.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	id S1754523Ab1BAQtN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 11:49:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41973 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751432Ab1BAQtM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 11:49:12 -0500
+Message-ID: <4D483954.20600@redhat.com>
+Date: Tue, 01 Feb 2011 11:48:20 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Gleb Natapov <gleb@redhat.com>
+CC: avi@redhat.com, mtosatti@redhat.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/2] Allow GUP to fail instead of waiting on a page.
+References: <1296559307-14637-1-git-send-email-gleb@redhat.com> <1296559307-14637-2-git-send-email-gleb@redhat.com>
+In-Reply-To: <1296559307-14637-2-git-send-email-gleb@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@sisk.pl> writes:
-
-[...]
-
-> Also, I'm going to move the power domain hook to the struct device level, so
-> that we have:
+On 02/01/2011 06:21 AM, Gleb Natapov wrote:
+> GUP user may want to try to acquire a reference to a page if it is already
+> in memory, but not if IO, to bring it in, is needed. For example KVM may
+> tell vcpu to schedule another guest process if current one is trying to
+> access swapped out page. Meanwhile, the page will be swapped in and the
+> guest process, that depends on it, will be able to run again.
 >
-> struct device {
->     ...
->     struct power_domain *domain;
->     ...
-> };
+> This patch adds FAULT_FLAG_RETRY_NOWAIT (suggested by Linus) and
+> FOLL_NOWAIT follow_page flags. FAULT_FLAG_RETRY_NOWAIT, when used in
+> conjunction with VM_FAULT_ALLOW_RETRY, indicates to handle_mm_fault that
+> it shouldn't drop mmap_sem and wait on a page, but return VM_FAULT_RETRY
+> instead.
 >
-> struct power_domain {
->     struct dev_pm_ops ops;
-> };
->
+> Signed-off-by: Gleb Natapov<gleb@redhat.com>
+> CC: Linus Torvalds<torvalds@linux-foundation.org>
+> CC: Rik van Riel<riel@redhat.com>
+> CC: Hugh Dickins<hughd@google.com>
+> CC: Andrew Morton<akpm@linux-foundation.org>
 
-Great, thanks.
+Acked-by: Rik van Riel <riel@redhat.com>
 
-Any opinion on my idea to name this 'struct dev_power_domain' to avoid
-confusion with existing powerdomain structs in SoC code?  For example,
-on OMAP we already have a 'struct powerdomain'.
-
-Kevin
+-- 
+All rights reversed
