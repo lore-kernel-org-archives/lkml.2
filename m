@@ -1,62 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756264Ab1BANGA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 08:06:00 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53833 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752474Ab1BANF6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 08:05:58 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=EnSewu8a6j8JYQR3l1MHL0KW+p1Tl+R8NCsEQql3v7dm3OovEwhZGAtDWZCT/hpwM3
-         KtMivkXlR14fYD+NQbhUuGtV57fLkx9N+WdsYuIMt6aEDGFY2UmhJrD+HWoPQEvhqi0p
-         xUXQblAL78Z1yPHNWuxaDqWEYgm+mPQ6aPlgo=
+	id S1754666Ab1BANHX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 08:07:23 -0500
+Received: from smtp3-g21.free.fr ([212.27.42.3]:54154 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753086Ab1BANHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 08:07:22 -0500
+Message-ID: <1296565633.4d4805812c3f5@imp.free.fr>
+Date: Tue, 01 Feb 2011 14:07:13 +0100
+From: castet.matthieu@free.fr
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: matthieu castet <castet.matthieu@free.fr>, Ingo Molnar <mingo@elte.hu>,
+        Kees Cook <kees.cook@canonical.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: [BUG] broken ebba638ae723d8a8fc2f7abce5ec18b688b791d7
+References: <4D41E86D.8060205@free.fr> <20110131213847.GF4557@outflux.net> <4D474194.2000709@free.fr> <201102010017.40986.rjw@sisk.pl>
+In-Reply-To: <201102010017.40986.rjw@sisk.pl>
 MIME-Version: 1.0
-In-Reply-To: <20110201105449.GY1147@pengutronix.de>
-References: <201102011711.31258.jeremy.kerr@canonical.com>
-	<20110201105449.GY1147@pengutronix.de>
-Date: Tue, 1 Feb 2011 22:05:56 +0900
-Message-ID: <AANLkTimayMAfr+zA6uO_yUmZqsOLmJ3fiiS696mL_evn@mail.gmail.com>
-Subject: Re: Locking in the clk API, part 2: clk_prepare/clk_unprepare
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-sh@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
-        Dima Zavin <dmitriyz@google.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+User-Agent: Internet Messaging Program (IMP) 3.2.8
+X-Originating-IP: 93.1.148.69
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/2/1 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
+Quoting "Rafael J. Wysocki" <rjw@sisk.pl>:
 
-.....
+> On Tuesday, February 01, 2011, matthieu castet wrote:
+> Well, in my not so humble opinion the amount of random fixes required by the
+> entire NX protection of kernel "data" pages is simply unacceptable.
 
-> Do you plan to handle the case that clk_enable is called while prepare
-> isn't completed (considering the special case "not called at all")?
-> Maybe BUG_ON(clk->ops->prepare && !clk->prepare_count)?
-Sounds better than the second option.
+What's the relation between this bug and NX protection of kernel "data" ?
 
-> Alternatively don't force the sleep in clk_prepare (e.g. by protecting
-> prepare_count by a spinlock (probably enable_lock)) and call clk_prepare
-> before calling clk->ops->enable?
-That might result in a driver working on some platforms(those have
-atomic clk_prepare)
-and not on others(those have sleeping).
-
-
-Njoi!
+Matthieu
