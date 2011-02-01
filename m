@@ -1,84 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756656Ab1BAMLi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 07:11:38 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:42348 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951Ab1BAMLg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 07:11:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=I/TGaTIKuRKFtUzGp9Rt/feXfNeO8MNkULatwyZH5UKFophPUdlDB3kTC9XUVGmE4E
-         D43ce9W61dPrexgHuIVQUbXwwwi6wBd8d8Q0t2LjMXlY8GSeeq2kEgIzw+WpGGc0sQNS
-         E7A3ddLtA2W/nP7rlxlXRuYQ6aduHkdCR4qFI=
+	id S1756747Ab1BAMPB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 07:15:01 -0500
+Received: from cantor.suse.de ([195.135.220.2]:35804 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752348Ab1BAMO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 07:14:59 -0500
+Date: Tue, 1 Feb 2011 13:14:57 +0100
+From: Jan Kara <jack@suse.cz>
+To: Jesper Krogh <jesper@krogh.cc>
+Cc: linux-kernel@vger.kernel.org,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>, jack@suse.cz
+Subject: Re: sync hangs - 2.6.35.10
+Message-ID: <20110201121457.GA2059@quack.suse.cz>
+References: <4D47A99A.6050204@krogh.cc>
 MIME-Version: 1.0
-In-Reply-To: <m24o8o7k6o.fsf@linux.intel.com>
-References: <1295440968.2276.46.camel@dell>
-	<ih8qf2$41t$3@dough.gmane.org>
-	<4D380279.4070502@suse.cz>
-	<1295594371.27658.3.camel@dell>
-	<20110121101755.GP16804@shadowen.org>
-	<1296461958.4168.5.camel@dell>
-	<AANLkTi=0Gpvtvi8RyHbPAeh__YWLLPz+dE7iMdFbgGEW@mail.gmail.com>
-	<20110131134252.GD16804@shadowen.org>
-	<AANLkTim4r0J9WAm6dPT3-d7CXUtvKtmNe5hpyW=Tvgr0@mail.gmail.com>
-	<m24o8o7k6o.fsf@linux.intel.com>
-Date: Tue, 1 Feb 2011 14:11:35 +0200
-Message-ID: <AANLkTi=64=wShhFbTK_Fdpwdnm3ryXK3VTrJCctGdB4J@mail.gmail.com>
-Subject: Re: Checkpatch problem with Kconfig help symbol ?
-From: Tomas Winkler <tomasw@gmail.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Andy Whitcroft <apw@canonical.com>, tapio.vihuri@nokia.com,
-        ext Michal Marek <mmarek@suse.cz>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D47A99A.6050204@krogh.cc>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 1, 2011 at 1:00 AM, Andi Kleen <ak@linux.intel.com> wrote:
-> Tomas Winkler <tomasw@gmail.com> writes:
->
->>>
->>> Yeah that is a little better.  I do remind you that if the description
->>> is good enough shorter than 4 lines then you can ignore checkpatch.  It
->>> is a style guide not a style enforcer.  You are allowed to ignore things
->>> if you can justify it.
->>
->> Please consider patch I've posted
->> http://marc.info/?l=linux-kernel&m=129647530611677&w=2
->
-> I originally didn't put in the number intentionally to make
-> it harder to game it. Most likely for a whole driver
-> or whole subsystems 4 lines are not enough to describe
-> it properly.
->
-> But yes if it's just for a debug feature you can ignore it.
-> But then most likely your debug feature shouldn't be
-> in Kconfig in the first place, but some runtime setting
->
-> (rule of thumb: if it controls less than 1KB of code it's
-> likely a bad idea in Kconfig)
->
-> And more complex debug features that do actually carry
-> significant code should have proper description.
->
-> I think a better change would be to describe this
-> more fully, not add the number.
+  Hello,
 
-These are all valid points but current message just leave you puzzled
-and you have to look inside checkpatch.pl to figure out what it wants.
-I'm not sure how would you lay your thoughts concisely  in one line
-warning or script them into the script.
+On Tue 01-02-11 07:35:06, Jesper Krogh wrote:
+> I've just setup a 48 core server with 128GB of memory in a typical
+> HPC setup. The only IO-activity happens over NFS and the applications
+> are cpu-hogs.
+> 
+> The system is fully working and everthing looks apparently fine, but
+> anything that issue a sync is hung for eternity.
+> 
+> root fs is ext4 and it appears that sync hitting that drive get hung due
+> to some other things going on. There is only logging activity on
+> that drive.
+  OK, if that logging activity is continuous, then it would explain the
+issue.
 
-My guess would be that most of the developers  tends to come witch
-checkpatch.pl clean and even when you expose the number 4 it still
-make them stop and think how to fill them properly. Maybe you can
-squeeze into the waring  pointer to CodyingStyle section.
+> [  508.778695] Btrfs loaded
+> [ 7208.780233] INFO: task grub-probe:14787 blocked for more than 120
+> seconds.
+> [ 7208.780316] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+> disables this message.
+> [ 7208.780397] grub-probe    D 0000000000000000     0 14787  14768
+> 0x00000000
+> [ 7208.780402]  ffff882005f8fbb8 0000000000000086 ffff882000000000
+> 0000000000015880
+> [ 7208.780406]  ffff882005f8ffd8 0000000000015880 ffff882005f8ffd8
+> ffff88200cd70000
+> [ 7208.780410]  0000000000015880 0000000000015880 ffff882005f8ffd8
+> 0000000000015880
+> [ 7208.780413] Call Trace:
+> [ 7208.780424]  [<ffffffff8155d3cd>] schedule_timeout+0x22d/0x310
+> [ 7208.780430]  [<ffffffff8102ccae>] ? physflat_send_IPI_mask+0xe/0x10
+> [ 7208.780433]  [<ffffffff8155c666>] wait_for_common+0xd6/0x180
+> [ 7208.780439]  [<ffffffff810533b0>] ? default_wake_function+0x0/0x20
+> [ 7208.780441]  [<ffffffff8155c7ed>] wait_for_completion+0x1d/0x20
+> [ 7208.780446]  [<ffffffff81160ff3>] writeback_inodes_sb+0xb3/0xe0
+> [ 7208.780449]  [<ffffffff81165c4e>] __sync_filesystem+0x4e/0xa0
+> [ 7208.780452]  [<ffffffff81165d7a>] sync_filesystem+0x3a/0x70
+> [ 7208.780456]  [<ffffffff8116f9fe>] fsync_bdev+0x2e/0x60
+> [ 7208.780460]  [<ffffffff8128e5ce>] blkdev_ioctl+0x4ee/0x820
+> [ 7208.780463]  [<ffffffff8116dfcc>] block_ioctl+0x3c/0x40
+> [ 7208.780468]  [<ffffffff8114edad>] vfs_ioctl+0x3d/0xd0
+> [ 7208.780471]  [<ffffffff8114f3b8>] do_vfs_ioctl+0x88/0x540
+> [ 7208.780475]  [<ffffffff811586fa>] ? alloc_fd+0x10a/0x150
+> [ 7208.780478]  [<ffffffff8114f8f1>] sys_ioctl+0x81/0xa0
+> [ 7208.780483]  [<ffffffff8100a032>] system_call_fastpath+0x16/0x1b
+> 
+> Full dmesg here: http://shrek.krogh.cc/~jesper/bonnie-dmesg.txt
+> 
+> It seems like the problems about broken sync writeback discussed
+> about a year ago .. last discussions in late january this year.
+> 
+> http://thread.gmane.org/gmane.linux.kernel/949268/focus=1090266
+> 
+> Any patches that may be relevant?
+  Definitely. There have been several patches fixing livelock issues
+in this area under various conditions. Considering your use case, you
+might be hit by problems being fixed by commits:
+6585027a5e8cb490e3a761b2f3f3c3acf722aff2
+aa373cf550994623efb5d49a4d8775bafd10bbc1
+b9543dac5bbc4aef0a598965b6b34f6259ab9a9b
+(went into 2.6.38-rc1)
 
-Thanks
-Tomas
+possibly also older
+7624ee72aa09334af072853457a5d46d9901c3f8
+(in 2.6.36-rc1)
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
