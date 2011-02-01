@@ -1,52 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753077Ab1BAV0O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 16:26:14 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:48809 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751622Ab1BAV0M (ORCPT
+	id S1753101Ab1BAV2Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 16:28:16 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:50424 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752950Ab1BAV2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 16:26:12 -0500
-Date: Tue, 1 Feb 2011 15:26:05 -0600
-From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Steve Grubb <sgrubb@redhat.com>,
-        "Andrew G. Morgan" <morgan@kernel.org>,
-        "Serge E. Hallyn" <serge@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] System Wide Capability Bounding Set
-Message-ID: <20110201212605.GB5294@localhost>
-References: <1294266337.3237.45.camel@localhost.localdomain>
- <201101270942.07689.sgrubb@redhat.com>
- <20110128184901.GA5134@localhost>
- <201101281410.29794.sgrubb@redhat.com>
- <20110128193809.GB8854@localhost>
- <1296584221.3145.12.camel@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296584221.3145.12.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 1 Feb 2011 16:28:15 -0500
+Subject: Re: [patch 20/28] posix-timers: Make posix-cpu-timers functions
+ static
+From: John Stultz <john.stultz@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Richard Cochran <richard.cochran@omicron.at>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+In-Reply-To: <20110201134419.389755466@linutronix.de>
+References: <20110201134320.688829863@linutronix.de>
+	 <20110201134419.389755466@linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Feb 2011 13:28:10 -0800
+Message-ID: <1296595690.3336.66.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric Paris (eparis@redhat.com):
-> What are we thinking?  Any suggestions how to do what we need other than
+On Tue, 2011-02-01 at 13:52 +0000, Thomas Gleixner wrote:
+> plain text document attachment
+> (posix-timer-make-posix-cpu-timer-functions-static.patch)
+> All functions are accessed via clock_posix_cpu now. So make them static.
 > 
-> global bounding such that  pP' = gbset & (fI | pI)
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Richard Cochran <richard.cochran@omicron.at>
 
-That should be sufficient for what you want.
+This patch seems to have more then just making functions static in it.
 
-I would however like to hear whether Andrew has had any other ideas
-given the broader picture.
+> @@ -1481,68 +1483,67 @@ static int do_cpu_nanosleep(const clocki
+>  	return error;
+>  }
+> 
+> -int posix_cpu_nsleep(const clockid_t which_clock, int flags,
+> -		     struct timespec *rqtp, struct timespec __user *rmtp)
+> +static long posix_cpu_nsleep_restart(struct restart_block *restart_block)
+>  {
+> -	struct restart_block *restart_block =
+> -		&current_thread_info()->restart_block;
+> +	clockid_t which_clock = restart_block->nanosleep.index;
+> +	struct timespec t;
+>  	struct itimerspec it;
+>  	int error;
+> 
+> -	/*
+> -	 * Diagnose required errors first.
+> -	 */
+> -	if (CPUCLOCK_PERTHREAD(which_clock) &&
+> -	    (CPUCLOCK_PID(which_clock) == 0 ||
+> -	     CPUCLOCK_PID(which_clock) == current->pid))
+> -		return -EINVAL;
+> +	t = ns_to_timespec(restart_block->nanosleep.expires);
+> 
+> -	error = do_cpu_nanosleep(which_clock, flags, rqtp, &it);
+> +	error = do_cpu_nanosleep(which_clock, TIMER_ABSTIME, &t, &it);
+> 
+>  	if (error == -ERESTART_RESTARTBLOCK) {
+> -
+> -		if (flags & TIMER_ABSTIME)
+> -			return -ERESTARTNOHAND;
+> +		struct timespec __user *rmtp = restart_block->nanosleep.rmtp;
+>  		/*
+>  		 * Report back to the user the time still remaining.
+>  		 */
+>  		if (rmtp && copy_to_user(rmtp, &it.it_value, sizeof *rmtp))
+>  			return -EFAULT;
+> 
+> -		restart_block->fn = posix_cpu_nsleep_restart;
+> -		restart_block->nanosleep.index = which_clock;
+> -		restart_block->nanosleep.rmtp = rmtp;
+> -		restart_block->nanosleep.expires = timespec_to_ns(rqtp);
+> +		restart_block->nanosleep.expires = timespec_to_ns(&t);
+>  	}
+>  	return error;
+> +
+>  }
+> 
+> -long posix_cpu_nsleep_restart(struct restart_block *restart_block)
+> +static int posix_cpu_nsleep(const clockid_t which_clock, int flags,
+> +			    struct timespec *rqtp, struct timespec __user *rmtp)
+>  {
+> -	clockid_t which_clock = restart_block->nanosleep.index;
+> -	struct timespec t;
+> +	struct restart_block *restart_block =
+> +		&current_thread_info()->restart_block;
+>  	struct itimerspec it;
+>  	int error;
+> 
+> -	t = ns_to_timespec(restart_block->nanosleep.expires);
+> +	/*
+> +	 * Diagnose required errors first.
+> +	 */
+> +	if (CPUCLOCK_PERTHREAD(which_clock) &&
+> +	    (CPUCLOCK_PID(which_clock) == 0 ||
+> +	     CPUCLOCK_PID(which_clock) == current->pid))
+> +		return -EINVAL;
+> 
+> -	error = do_cpu_nanosleep(which_clock, TIMER_ABSTIME, &t, &it);
+> +	error = do_cpu_nanosleep(which_clock, flags, rqtp, &it);
+> 
+>  	if (error == -ERESTART_RESTARTBLOCK) {
+> -		struct timespec __user *rmtp = restart_block->nanosleep.rmtp;
+> +
+> +		if (flags & TIMER_ABSTIME)
+> +			return -ERESTARTNOHAND;
+>  		/*
+>  		 * Report back to the user the time still remaining.
+>  		 */
+>  		if (rmtp && copy_to_user(rmtp, &it.it_value, sizeof *rmtp))
+>  			return -EFAULT;
+> 
+> -		restart_block->nanosleep.expires = timespec_to_ns(&t);
+> +		restart_block->fn = posix_cpu_nsleep_restart;
+> +		restart_block->nanosleep.index = which_clock;
+> +		restart_block->nanosleep.rmtp = rmtp;
+> +		restart_block->nanosleep.expires = timespec_to_ns(rqtp);
+>  	}
+>  	return error;
+> -
+>  }
 
-> Or an interface in which I can force things out of the bset and pI of
-> other tasks?  Possibly the interface could be specific to the "khelper"
-> thread?
+Maybe split that out?
 
-No no no no no :)
+thanks
+-john
 
-thanks,
--serge
+
