@@ -1,40 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511Ab1BAEfW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 23:35:22 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:53938
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753719Ab1BAEfV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 23:35:21 -0500
-Date: Mon, 31 Jan 2011 20:35:56 -0800 (PST)
-Message-Id: <20110131.203556.193730771.davem@davemloft.net>
-To: ratbert.chuang@gmail.com
-Cc: mirqus@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhutchings@solarflare.com, eric.dumazet@gmail.com, joe@perches.com,
-        dilinger@queued.net, ratbert@faraday-tech.com
-Subject: Re: [PATCH v4] net: add Faraday FTMAC100 10/100 Ethernet driver
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <AANLkTikgDsM15DO7u2SP15xx=Y_pg6JdCLrie8ACobJP@mail.gmail.com>
-References: <AANLkTimWuBfeYPOsOFpTiAGS5uHysevAHiOg0svBQ4zW@mail.gmail.com>
-	<AANLkTimz7gx7BAQG8RBswDCxnTuVtt3u+YoBZk8+RgEz@mail.gmail.com>
-	<AANLkTikgDsM15DO7u2SP15xx=Y_pg6JdCLrie8ACobJP@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1756341Ab1BAEpW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 23:45:22 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:57608 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754104Ab1BAEpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 23:45:21 -0500
+Date: Mon, 31 Jan 2011 20:45:17 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Peter Zijlstra <peterz@infradead.org>, Milton Miller <miltonm@bga.com>,
+        akpm@linux-foundation.org, Anton Blanchard <anton@samba.org>,
+        xiaoguangrong@cn.fujitsu.com, mingo@elte.hu, jaxboe@fusionio.com,
+        npiggin@gmail.com, rusty@rustcorp.com.au, linux-kernel@vger.kernel.org
+Subject: Re: call_function_many: fix list delete vs add race
+Message-ID: <20110201044517.GC2158@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <smp-call-function-peter-reply@mdm.bga.com>
+ <smp-call-function-move-writes@mdm.bga.com>
+ <1296145360.15234.234.camel@laptop>
+ <smp-call-function-list-race@mdm.bga.com>
+ <smp-call-function-list-race-fix@mdm.bga.com>
+ <1296508677.26581.84.camel@laptop>
+ <1296519764.2349.325.camel@pasglop>
+ <AANLkTikEo4Bbqn27nCO_xjwEuy9rkoqBjoOb_HeGw18D@mail.gmail.com>
+ <20110201021831.GB2158@linux.vnet.ibm.com>
+ <AANLkTimb7bpTa0fO2VU4pSxO-a3-eQNA6zA_ikAReXsQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimb7bpTa0fO2VU4pSxO-a3-eQNA6zA_ikAReXsQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Po-Yu Chuang <ratbert.chuang@gmail.com>
-Date: Tue, 1 Feb 2011 11:56:16 +0800
+On Tue, Feb 01, 2011 at 12:43:56PM +1000, Linus Torvalds wrote:
+> On Tue, Feb 1, 2011 at 12:18 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> >
+> > Documentation/memory-barriers.txt specifies this.
+> 
+> Good, so it really is documented, with both cases explicitly mentioned.
+> 
+> That said, I do think that if your memory ordering is much weaker than
+> x86, you are going to see bugs that most testers don't see, and it
+> simply might not be worth it.
 
-> If I simply allocate a page for each rx ring entry, I still need to allocate
-> an skb and copy at least packet header in first page to skb->data. Then
-> add the page of rest of payload to skb by skb_fill_page_desc().
+IBM's CPUs do split the difference, with s390 having somewhat stronger
+ordering than x86, and with powerpc being rather weaker (along with arm,
+ia64, and some flavors of mips, but stronger than alpha).  But yes, this
+does mean that there are bugs that don't show up on x86 and s390, but
+that do on powerpc, arm, ia64, and some mips, to say nothing of alpha.
+Similarly, there are bugs that show up on x86 due to unsynchronized
+timestamp counters that powerpc and s390 avoid due to the guaranteed
+synchronization on those platforms.
 
-You should attach the pages, the use __pskb_pull_tail() to bring in the
-headers to the linear skb->data area.
+Whether the weaker ordering provides worthwhile benefits is an interesting
+debate that I do not believe we will be able to resolve here.  ;-)
 
-See drivers/net/niu.c:niu_process_rx_pkt().
+							Thanx, Paul
