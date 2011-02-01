@@ -1,46 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874Ab1BARaf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 12:30:35 -0500
-Received: from casper.infradead.org ([85.118.1.10]:47610 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755837Ab1BARad (ORCPT
+	id S1755897Ab1BARbY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 12:31:24 -0500
+Received: from stinky.trash.net ([213.144.137.162]:46401 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755713Ab1BARbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 12:30:33 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [GIT PULL 0/2] perf/core improvements and fixes
-Date: Tue,  1 Feb 2011 15:29:53 -0200
-Message-Id: <1296581395-30663-1-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 1 Feb 2011 12:31:22 -0500
+Message-ID: <4D484368.9060904@trash.net>
+Date: Tue, 01 Feb 2011 18:31:20 +0100
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Hans Schillstrom <hans@schillstrom.com>
+CC: Simon Horman <horms@verge.net.au>, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lvs-devel@vger.kernel.org, Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH 5/5] IPVS: Remove ip_vs_sync_cleanup from section 	__exit
+References: <7j2t3lt.e4ea73185e9c52a3d68dc337ed04b422@obelix.schillstrom.com>
+In-Reply-To: <7j2t3lt.e4ea73185e9c52a3d68dc337ed04b422@obelix.schillstrom.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+Am 01.02.2011 18:12, schrieb Hans Schillstrom:
+>> [PATCH 5/5] IPVS: Remove ip_vs_sync_cleanup from section __exit
+>> >
+>> >ip_vs_sync_cleanup() may be called from ip_vs_init() on error
+>> >and thus needs to be accesible from section __init
+>> >
+>> >Reporte-by: Randy Dunlap <randy.dunlap@oracle.com>
+>> >Signed-off-by: Simon Horman <horms@verge.net.au>
+> Signed-off-by: Hans Schillstrom <hans@schillstrom.com>
+> Tested-by: Hans Schillstrom <hans@schillstrom.com>
+> 
 
-        Please consider pulling from:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
-
-Regards,
-
-- Arnaldo
-
-Arnaldo Carvalho de Melo (2):
-  perf tools: Remove verbose build messages for the python binding
-  perf tools: Fix up 'make clean' target
-
- tools/perf/Makefile |   16 +++++++++-------
- 1 files changed, 9 insertions(+), 7 deletions(-)
-
+Applied, thanks.
