@@ -1,91 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751566Ab1BAFPu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 00:15:50 -0500
-Received: from mprc.pku.edu.cn ([162.105.203.9]:37430 "EHLO mprc.pku.edu.cn"
+	id S1751462Ab1BAFWL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 00:22:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13173 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750859Ab1BAFPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 00:15:49 -0500
-From: "Guan Xuetao" <gxt@mprc.pku.edu.cn>
-To: "'Linus Torvalds'" <torvalds@linux-foundation.org>
-Cc: <sfr@canb.auug.org.au>, "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "Arnd Bergmann" <arnd@arndb.de>, <gregkh@suse.de>,
-        <linux-kernel@vger.kernel.org>
-References: <AANLkTimKUV=RQezzME9qUUQjUjnHt9Qe79hOpK-cFC3i@mail.gmail.com> <20110201093852.32c951b6.sfr@canb.auug.org.au>
-In-Reply-To: <20110201093852.32c951b6.sfr@canb.auug.org.au>
-Subject: FW: Request (2nd) for unicore32 architecture codes to merge into linux-next
-Date: Tue, 1 Feb 2011 13:14:56 +0800
-Message-ID: <016001cbc1ce$f83b7120$e8b25360$@mprc.pku.edu.cn>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQIVfHgUb1V/E3RAdxK8gz2tBQHXgQIENA7Vk0iApVA=
-Content-Language: zh-cn
+	id S1750859Ab1BAFWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 00:22:10 -0500
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Howells <dhowells@redhat.com>, WANG Cong <amwang@redhat.com>,
+        linux-cachefs@redhat.com
+Subject: [Patch] fscache: remove dead code under CONFIG_WORKQUEUE_DEBUGFS
+Date: Tue,  1 Feb 2011 13:21:51 +0800
+Message-Id: <1296537712-14059-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus:
-  Due to helps from many kindly peoples, unicore32 branch could be a candidate to merge into linux kernel.
-  The position is (unicore32 branch):
-    git://git.kernel.org/pub/scm/linux/kernel/git/epip/linux-2.6-unicore32.git 
-  which had been integration tested from linux-next-20110131.
+There is no CONFIG_WORKQUEUE_DEBUGFS any more, these code are dead.
 
-Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: David Howells <dhowells@redhat.com>
+Signed-off-by: WANG Cong <amwang@redhat.com>
 
-Guan Xuetao
-
-> -----Original Message-----
-> From: linux-next-owner@vger.kernel.org [mailto:linux-next-owner@vger.kernel.org] On Behalf Of Stephen Rothwell
-> Sent: Tuesday, February 01, 2011 6:39 AM
-> To: Xuetao Guan
-> Cc: dmitry.torokhov@gmail.com; arnd@arndb.de; gregkh@suse.de; dtor@mail.ru; jbarnes@virtuousgeek.org; linux-
-> next@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: Request (2nd) for unicore32 architecture codes to merge into linux-next
-> 
-> Hi,
-> 
-> On Sat, 22 Jan 2011 21:52:11 +0800 Xuetao Guan <epip.guan@gmail.com> wrote:
-> >
-> > I want to merge unicore32 repo into linux-next tree, the position is
-> > (unicore32 branch):
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/epip/linux-2.6-unicore32.git
-> 
-> Included from next-20110131.
-> 
-> Thanks for adding your subsystem tree as a participant of linux-next.  As
-> you may know, this is not a judgment of your code.  The purpose of
-> linux-next is for integration testing and to lower the impact of
-> conflicts between subsystems in the next merge window.
-> 
-> You will need to ensure that the patches/commits in your tree/series have
-> been:
->      * submitted under GPL v2 (or later) and include the Contributor's
-> 	Signed-off-by,
->      * posted to the relevant mailing list,
->      * reviewed by you (or another maintainer of your subsystem tree),
->      * successfully unit tested, and
->      * destined for the current or next Linux merge window.
-> 
-> Basically, this should be just what you would send to Linus (or ask him
-> to fetch).  It is allowed to be rebased if you deem it necessary.
-> 
-> --
-> Cheers,
-> Stephen Rothwell
-> sfr@canb.auug.org.au
-> 
-> Legal Stuff:
-> By participating in linux-next, your subsystem tree contributions are
-> public and will be included in the linux-next trees.  You may be sent
-> e-mail messages indicating errors or other issues when the
-> patches/commits from your subsystem tree are merged and tested in
-> linux-next.  These messages may also be cross-posted to the linux-next
-> mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-> project and IBM (my employer) make no warranties regarding the linux-next
-> project, the testing procedures, the results, the e-mails, etc.  If you
-> don't agree to these ground rules, let me know and I'll remove your tree
-> from participation in linux-next.
-
+---
+diff --git a/fs/fscache/operation.c b/fs/fscache/operation.c
+index 48a18f1..30afdfa 100644
+--- a/fs/fscache/operation.c
++++ b/fs/fscache/operation.c
+@@ -33,8 +33,6 @@ void fscache_enqueue_operation(struct fscache_operation *op)
+ 	_enter("{OBJ%x OP%x,%u}",
+ 	       op->object->debug_id, op->debug_id, atomic_read(&op->usage));
+ 
+-	fscache_set_op_state(op, "EnQ");
+-
+ 	ASSERT(list_empty(&op->pend_link));
+ 	ASSERT(op->processor != NULL);
+ 	ASSERTCMP(op->object->state, >=, FSCACHE_OBJECT_AVAILABLE);
+@@ -66,8 +64,6 @@ EXPORT_SYMBOL(fscache_enqueue_operation);
+ static void fscache_run_op(struct fscache_object *object,
+ 			   struct fscache_operation *op)
+ {
+-	fscache_set_op_state(op, "Run");
+-
+ 	object->n_in_progress++;
+ 	if (test_and_clear_bit(FSCACHE_OP_WAITING, &op->flags))
+ 		wake_up_bit(&op->flags, FSCACHE_OP_WAITING);
+@@ -88,8 +84,6 @@ int fscache_submit_exclusive_op(struct fscache_object *object,
+ 
+ 	_enter("{OBJ%x OP%x},", object->debug_id, op->debug_id);
+ 
+-	fscache_set_op_state(op, "SubmitX");
+-
+ 	spin_lock(&object->lock);
+ 	ASSERTCMP(object->n_ops, >=, object->n_in_progress);
+ 	ASSERTCMP(object->n_ops, >=, object->n_exclusive);
+@@ -194,8 +188,6 @@ int fscache_submit_op(struct fscache_object *object,
+ 
+ 	ASSERTCMP(atomic_read(&op->usage), >, 0);
+ 
+-	fscache_set_op_state(op, "Submit");
+-
+ 	spin_lock(&object->lock);
+ 	ASSERTCMP(object->n_ops, >=, object->n_in_progress);
+ 	ASSERTCMP(object->n_ops, >=, object->n_exclusive);
+@@ -335,8 +327,6 @@ void fscache_put_operation(struct fscache_operation *op)
+ 	if (!atomic_dec_and_test(&op->usage))
+ 		return;
+ 
+-	fscache_set_op_state(op, "Put");
+-
+ 	_debug("PUT OP");
+ 	if (test_and_set_bit(FSCACHE_OP_DEAD, &op->flags))
+ 		BUG();
+diff --git a/fs/fscache/page.c b/fs/fscache/page.c
+index 41c441c..a2a5d19 100644
+--- a/fs/fscache/page.c
++++ b/fs/fscache/page.c
+@@ -155,11 +155,9 @@ static void fscache_attr_changed_op(struct fscache_operation *op)
+ 	fscache_stat(&fscache_n_attr_changed_calls);
+ 
+ 	if (fscache_object_is_active(object)) {
+-		fscache_set_op_state(op, "CallFS");
+ 		fscache_stat(&fscache_n_cop_attr_changed);
+ 		ret = object->cache->ops->attr_changed(object);
+ 		fscache_stat_d(&fscache_n_cop_attr_changed);
+-		fscache_set_op_state(op, "Done");
+ 		if (ret < 0)
+ 			fscache_abort_object(object);
+ 	}
+@@ -190,7 +188,6 @@ int __fscache_attr_changed(struct fscache_cookie *cookie)
+ 
+ 	fscache_operation_init(op, fscache_attr_changed_op, NULL);
+ 	op->flags = FSCACHE_OP_ASYNC | (1 << FSCACHE_OP_EXCLUSIVE);
+-	fscache_set_op_name(op, "Attr");
+ 
+ 	spin_lock(&cookie->lock);
+ 
+@@ -257,7 +254,6 @@ static struct fscache_retrieval *fscache_alloc_retrieval(
+ 	op->context	= context;
+ 	op->start_time	= jiffies;
+ 	INIT_LIST_HEAD(&op->to_do);
+-	fscache_set_op_name(&op->op, "Retr");
+ 	return op;
+ }
+ 
+@@ -368,7 +364,6 @@ int __fscache_read_or_alloc_page(struct fscache_cookie *cookie,
+ 		_leave(" = -ENOMEM");
+ 		return -ENOMEM;
+ 	}
+-	fscache_set_op_name(&op->op, "RetrRA1");
+ 
+ 	spin_lock(&cookie->lock);
+ 
+@@ -487,7 +482,6 @@ int __fscache_read_or_alloc_pages(struct fscache_cookie *cookie,
+ 	op = fscache_alloc_retrieval(mapping, end_io_func, context);
+ 	if (!op)
+ 		return -ENOMEM;
+-	fscache_set_op_name(&op->op, "RetrRAN");
+ 
+ 	spin_lock(&cookie->lock);
+ 
+@@ -589,7 +583,6 @@ int __fscache_alloc_page(struct fscache_cookie *cookie,
+ 	op = fscache_alloc_retrieval(page->mapping, NULL, NULL);
+ 	if (!op)
+ 		return -ENOMEM;
+-	fscache_set_op_name(&op->op, "RetrAL1");
+ 
+ 	spin_lock(&cookie->lock);
+ 
+@@ -662,8 +655,6 @@ static void fscache_write_op(struct fscache_operation *_op)
+ 
+ 	_enter("{OP%x,%d}", op->op.debug_id, atomic_read(&op->op.usage));
+ 
+-	fscache_set_op_state(&op->op, "GetPage");
+-
+ 	spin_lock(&object->lock);
+ 	cookie = object->cookie;
+ 
+@@ -698,15 +689,12 @@ static void fscache_write_op(struct fscache_operation *_op)
+ 	spin_unlock(&cookie->stores_lock);
+ 	spin_unlock(&object->lock);
+ 
+-	fscache_set_op_state(&op->op, "Store");
+ 	fscache_stat(&fscache_n_store_pages);
+ 	fscache_stat(&fscache_n_cop_write_page);
+ 	ret = object->cache->ops->write_page(op, page);
+ 	fscache_stat_d(&fscache_n_cop_write_page);
+-	fscache_set_op_state(&op->op, "EndWrite");
+ 	fscache_end_page_write(object, page);
+ 	if (ret < 0) {
+-		fscache_set_op_state(&op->op, "Abort");
+ 		fscache_abort_object(object);
+ 	} else {
+ 		fscache_enqueue_operation(&op->op);
+@@ -778,7 +766,6 @@ int __fscache_write_page(struct fscache_cookie *cookie,
+ 	fscache_operation_init(&op->op, fscache_write_op,
+ 			       fscache_release_write_op);
+ 	op->op.flags = FSCACHE_OP_ASYNC | (1 << FSCACHE_OP_WAITING);
+-	fscache_set_op_name(&op->op, "Write1");
+ 
+ 	ret = radix_tree_preload(gfp & ~__GFP_HIGHMEM);
+ 	if (ret < 0)
+diff --git a/include/linux/fscache-cache.h b/include/linux/fscache-cache.h
+index b8581c0..31b18a7 100644
+--- a/include/linux/fscache-cache.h
++++ b/include/linux/fscache-cache.h
+@@ -100,17 +100,6 @@ struct fscache_operation {
+ 
+ 	/* operation releaser */
+ 	fscache_operation_release_t release;
+-
+-#ifdef CONFIG_WORKQUEUE_DEBUGFS
+-	struct work_struct put_work;	/* work to delay operation put */
+-	const char *name;		/* operation name */
+-	const char *state;		/* operation state */
+-#define fscache_set_op_name(OP, N)	do { (OP)->name  = (N); } while(0)
+-#define fscache_set_op_state(OP, S)	do { (OP)->state = (S); } while(0)
+-#else
+-#define fscache_set_op_name(OP, N)	do { } while(0)
+-#define fscache_set_op_state(OP, S)	do { } while(0)
+-#endif
+ };
+ 
+ extern atomic_t fscache_op_debug_id;
+@@ -137,7 +126,6 @@ static inline void fscache_operation_init(struct fscache_operation *op,
+ 	op->processor = processor;
+ 	op->release = release;
+ 	INIT_LIST_HEAD(&op->pend_link);
+-	fscache_set_op_state(op, "Init");
+ }
+ 
+ /*
