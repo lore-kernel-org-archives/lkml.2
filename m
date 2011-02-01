@@ -1,34 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab1BAKaG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 05:30:06 -0500
-Received: from spams.crous-amiens.fr ([194.57.108.9]:42165 "EHLO
-	spams.crous-amiens.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328Ab1BAKaE convert rfc822-to-8bit (ORCPT
+	id S1753284Ab1BAKbt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 05:31:49 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52204 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751752Ab1BAKbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 05:30:04 -0500
-X-Greylist: delayed 555 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Feb 2011 05:30:04 EST
-X-MIB-FROM: c.holleville@crous-amiens.fr
-X-MIBTO: nmachary@utmb.edu,herbert.gaisano@utoronto.ca,vuorinen@utu.fi,hafiz.ahmad@utusan.com.my,hesham.idris@utusan.com.my,pengarang@utusan.com.my,sukan@utusan.com.my,James.Smith@uwe.ac.uk,secretariaat@vbbb.be,nayak@veccal.ernet.in,usp@veccal.ernet.in,linux-kernel@vger.kernel.org,milman@vsnl.com,manikuntala@vsnl.net,drgarga@vsnl.net.in,mzalich@vt.edu,andrew.charleson@vuw.ac.nz,sudershan@vyom.co.in,wbw@waba.org.my,KRohsted@wiley.com
-From: "Carole Holleville" <c.holleville@crous-amiens.fr>
-Subject: Screw Upgrade Account 
-To: undisclosed-recipients:;
-Message-ID: <20110201112036.326a2842@webmail.crous-amiens.fr>
-Date: Tue, 01 Feb 2011 11:20:36 +0100
-X-User-Agent: Opera/9.64 (Windows NT 5.1; U; en) Presto/2.1.1
+	Tue, 1 Feb 2011 05:31:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=o09zc3qx68MxelzD745QuglTmkg2NQvwUWQaXQapwf8qN/GivyK9zNTB05c5IVoKml
+         cF7AomFaWltP6vODV+DzECFgZBiS4QOSHMQzqCbR5lvWW0Ha1al8xZ/KAvmXbpsR3ZPI
+         URfImUh4B4+PBUwZZhaoygctUWuXOX9glfoBQ=
+Date: Tue, 1 Feb 2011 11:31:43 +0100
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org,
+        hch@infradead.org
+Subject: Re: [PATCHSET] block: convert block drivers to ->check_events()
+Message-ID: <20110201103143.GF14211@htj.dyndns.org>
+References: <1293557352-10592-1-git-send-email-tj@kernel.org>
+ <20110125130638.GS27510@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110125130638.GS27510@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Screw Upgrade Account 
+On Tue, Jan 25, 2011 at 02:06:38PM +0100, Tejun Heo wrote:
+> Hello, Jens.
+> 
+> On Tue, Dec 28, 2010 at 06:28:56PM +0100, Tejun Heo wrote:
+> >  0001-block-don-t-implicitly-trigger-event-check-on-disk_u.patch
+> >  0002-block-don-t-check-events-on-close-unless-it-was-bloc.patch
+> >  0003-block-don-t-check-events-while-open-is-in-progress.patch
+> >  0004-ide-convert-to-bdops-check_events.patch
+> >  0005-floppy-ami-ata-flop-convert-to-bdops-check_events.patch
+> >  0006-gdrom-viocd-convert-to-bdops-check_events.patch
+> >  0007-paride-convert-to-bdops-check_events.patch
+> >  0008-dac960-convert-to-bdops-check_events.patch
+> >  0009-swim-3-convert-to-bdops-check_events.patch
+> >  0010-ub-convert-to-bdops-check_events.patch
+> >  0011-xsysace-convert-to-bdops-check_events.patch
+> >  0012-i2o_block-convert-to-bdops-check_events.patch
+> >  0013-s390-tape_block-convert-to-bdops-check_events.patch
+> >  0014-umem-drop-dummy-media_changed.patch
+> >  0015-pktcdvd-convert-to-bdops-check_events.patch
+> >  0016-staging-convert-to-bdops-check_events.patch
+> 
+> This series seems to have been forgotten.  I think 0001-0003 better go
+> in for 2.6.38 as they affect user-visible behavior (in not too
+> significant way but still).
+> 
+> The other patches can go in for 2.6.39.  0005 gets an easy-to-resolve
+> context conflict but all other patches apply as-is.  I'll post the
+> refreshed version of 0005 as a reply to the original patch.  If you
+> want the whole series reposted, please let me know.
 
+This will now create some minor conflicts on top of the mainline.
+Please let me know when you're ready to apply this.  I'll refresh and
+repost.
 
-We are currently upgrading our database and central email accounts View homepage either. We will delete email accounts that are no longer of working age to create more space for new accounts users.we also innovated a security audit system-wide to improve and enhance our current security. 
+Thank you.
 
-To continue using our services, you will need to update and re-confirm your account information by clicking this link http://zynetsw.com/forms/use/administrator/form1.html To complete your new account confirmation, you need to complete your account information and then submit, your account will be immediately confirmed. 
-
-SERVICE CENTER WEB.
+-- 
+tejun
