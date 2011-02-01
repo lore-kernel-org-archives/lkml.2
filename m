@@ -1,87 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753644Ab1BALT7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 06:19:59 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:58572 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290Ab1BALT6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 06:19:58 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=OvRZbymGAE5z1uJcWlNi9tRE28uJLIEG7Dj43K4zIQZJnaOzEWrhqdnhAzh7mgPuKS
-         bLLZn/iHrykpUqWido9/Gb4a3hqxN0sIrkSSE7e1DTA/DB/VnxoQjF4MvCBNOMk1zKmz
-         2oegk0bSqiXHspg2QYXH5yFFhUQbBtVWnaAkw=
-MIME-Version: 1.0
-In-Reply-To: <20110201104602.GA3397@zhy>
-References: <AANLkTikYw73nixqMtNSDzus2M5RCN2Zy4PzfbPAxtTBC@mail.gmail.com>
-	<20110201104602.GA3397@zhy>
-Date: Tue, 1 Feb 2011 20:19:57 +0900
-X-Google-Sender-Auth: K3c-Ulv5FG6qva7fbqvD8KZwlUE
-Message-ID: <AANLkTim8Rk1RyH=m2B6CDaGUVYCzc+ceB1xKxTmtasgD@mail.gmail.com>
-Subject: Re: Why one of the 2 patches to fix "autogroup" sched problem on UP
- machines is missing in -rc3?
-From: Kazuhisa Ichikawa <ki@epsilou.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754615Ab1BALVw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 06:21:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63500 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751935Ab1BALVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 06:21:50 -0500
+From: Gleb Natapov <gleb@redhat.com>
+To: avi@redhat.com, mtosatti@redhat.com
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] KVM: Enable async page fault processing.
+Date: Tue,  1 Feb 2011 13:21:47 +0200
+Message-Id: <1296559307-14637-3-git-send-email-gleb@redhat.com>
+In-Reply-To: <1296559307-14637-1-git-send-email-gleb@redhat.com>
+References: <1296559307-14637-1-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Actually the merged one hide the initialising problem.
-> Because when we enqueue a process to an empty group, update_cfs_shares()
-> will be called, thus tg->se->load is updated.
-> enqueue_task_fair()
->  update_cfs_shares()
->    reweight_entity()
->      update_load_set()
+If asynchronous hva_to_pfn() is requested call GUP with FOLL_NOWAIT to
+avoid sleeping on IO. Check for hwpoison is done at the same time,
+otherwise check_user_page_hwpoison() will call GUP again and will put
+vcpu to sleep.
 
-Ah, I see. Thanks for the clarification!
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+---
+ virt/kvm/kvm_main.c |   23 +++++++++++++++++++++--
+ 1 files changed, 21 insertions(+), 2 deletions(-)
 
-- Kazuhisa
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 74d032a..80f42ab 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1029,6 +1029,17 @@ static pfn_t get_fault_pfn(void)
+ 	return fault_pfn;
+ }
+ 
++int get_user_page_nowait(struct task_struct *tsk, struct mm_struct *mm,
++	unsigned long start, int write, struct page **page)
++{
++	int flags = FOLL_TOUCH | FOLL_NOWAIT | FOLL_HWPOISON | FOLL_GET;
++
++	if (write)
++		flags |= FOLL_WRITE;
++
++	return __get_user_pages(tsk, mm, start, 1, flags, page, NULL, NULL);
++}
++
+ static inline int check_user_page_hwpoison(unsigned long addr)
+ {
+ 	int rc, flags = FOLL_TOUCH | FOLL_HWPOISON | FOLL_WRITE;
+@@ -1062,7 +1073,14 @@ static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr, bool atomic,
+ 		if (writable)
+ 			*writable = write_fault;
+ 
+-		npages = get_user_pages_fast(addr, 1, write_fault, page);
++		if (async) {
++			down_read(&current->mm->mmap_sem);
++			npages = get_user_page_nowait(current, current->mm,
++						     addr, write_fault, page);
++			up_read(&current->mm->mmap_sem);
++		} else
++			npages = get_user_pages_fast(addr, 1, write_fault,
++						     page);
+ 
+ 		/* map read fault as writable if possible */
+ 		if (unlikely(!write_fault) && npages == 1) {
+@@ -1085,7 +1103,8 @@ static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr, bool atomic,
+ 			return get_fault_pfn();
+ 
+ 		down_read(&current->mm->mmap_sem);
+-		if (check_user_page_hwpoison(addr)) {
++		if (npages == -EHWPOISON ||
++			(!async && check_user_page_hwpoison(addr))) {
+ 			up_read(&current->mm->mmap_sem);
+ 			get_page(hwpoison_page);
+ 			return page_to_pfn(hwpoison_page);
+-- 
+1.7.1
 
-
-2011/2/1 Yong Zhang <yong.zhang0@gmail.com>:
-> On Tue, Feb 01, 2011 at 06:05:23PM +0900, Kazuhisa Ichikawa wrote:
->> Hi Yong,
->>
->> Now 2.6.38-rc3 is out, and I think one of the 2 patches you wrote to
->> fix "autogroup" sched problem on UP machines is missing there.
->
-> Actually the merged one hide the initialising problem.
-> Because when we enqueue a process to an empty group, update_cfs_shares()
-> will be called, thus tg->se->load is updated.
-> enqueue_task_fair()
->  update_cfs_shares()
->    reweight_entity()
->      update_load_set()
->
->>
->> More precisely, your first patch for kernel/sched.c (titled:?sched:
->> tg->se->load should be initialised to tg->shares) is missing, while
->> the second one for kernel/sched_fair.c (titled:?sched: Fix poor
->> interactivity on UP systems due to group scheduler nice tune bug) is
->> in -rc3.
->
-> See my above answer.
->
->>
->> So what happened to the first patch? Was it superseded and made
->> obsolete by the second patch?
->
-> Yes.
->
->>
->> # Sorry for not replying to your original post. I'm not subscribing to
->> linux kernel mailing list.
->
-> Thanks for taking care of this issue :)
->
-> Thanks,
-> Yong
->
