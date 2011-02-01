@@ -1,51 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654Ab1BAT5w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 14:57:52 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43852 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751752Ab1BAT5v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 14:57:51 -0500
-Date: Tue, 1 Feb 2011 19:56:04 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Saravana Kannan <skannan@codeaurora.org>, linux-sh@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
-        Dima Zavin <dmitriyz@google.com>, Ben Dooks <ben-linux@fluff.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Locking in the clk API, part 2: clk_prepare/clk_unprepare
-Message-ID: <20110201195604.GS31216@n2100.arm.linux.org.uk>
-References: <201102011711.31258.jeremy.kerr@canonical.com> <20110201105449.GY1147@pengutronix.de> <20110201131512.GH31216@n2100.arm.linux.org.uk> <20110201141837.GA1147@pengutronix.de> <20110201143932.GK31216@n2100.arm.linux.org.uk> <20110201151846.GD1147@pengutronix.de> <20110201152458.GP31216@n2100.arm.linux.org.uk> <20110201155344.GF1147@pengutronix.de> <20110201170637.GR31216@n2100.arm.linux.org.uk> <20110201193201.GH1147@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110201193201.GH1147@pengutronix.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1752914Ab1BAT6h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 14:58:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5364 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751723Ab1BAT6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 14:58:36 -0500
+Subject: Re: [PATCH v2 2/6] KVM-HV: KVM Steal time implementation
+From: Glauber Costa <glommer@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
+        Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>
+In-Reply-To: <4D483E43.5060904@redhat.com>
+References: <1296244340-15173-1-git-send-email-glommer@redhat.com>
+	 <1296244340-15173-3-git-send-email-glommer@redhat.com>
+	 <4D4563EB.3000203@redhat.com>
+	 <1296575320.5081.8.camel@mothafucka.localdomain>
+	 <4D483E43.5060904@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat
+Date: Tue, 01 Feb 2011 17:58:30 -0200
+Message-ID: <1296590310.5081.136.camel@mothafucka.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 01, 2011 at 08:32:01PM +0100, Uwe Kleine-König wrote:
-> On Tue, Feb 01, 2011 at 05:06:37PM +0000, Russell King - ARM Linux wrote:
-> > So?  You're not _supposed_ to call it from any atomic context ever.
->
-> My motivation for a more complicated clk_prepare was to make clk_prepare
-> atomic when that's possible (i.e. when the clk is already prepared) and
-> call it before the enable callback in clk_enable.  Then everything
-> behaves nicely even if clk_enable is called from atomic context provided
-> that the clock was prepared before (or doesn't need to).
+On Tue, 2011-02-01 at 19:09 +0200, Avi Kivity wrote:
+> On 02/01/2011 05:48 PM, Glauber Costa wrote:
+> > >  >  @@ -2106,6 +2120,25 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+> > >  >    			kvm_migrate_timers(vcpu);
+> > >  >    		vcpu->cpu = cpu;
+> > >  >    	}
+> > >  >  +
+> > >  >  +	if (vcpu->arch.this_time_out) {
+> > >  >  +		u64 to = (get_kernel_ns() - vcpu->arch.this_time_out);
+> > >  >  +		/*
+> > >  >  +		 * using nanoseconds introduces noise, which accumulates easily
+> > >  >  +		 * leading to big steal time values. We want, however, to keep the
+> > >  >  +		 * interface nanosecond-based for future-proofness.
+> > >  >  +		 */
+> > >  >  +		to /= NSEC_PER_USEC;
+> > >  >  +		to *= NSEC_PER_USEC;
+> > >
+> > >  Seems there is a real problem and that this is just papering it over.
+> > >  I'd like to understand the root cause.
+> > Okay, my self-explanation seemed reasonable to me, but since both you
+> > and Peter dislike it, I think it is important enough to get a more
+> > thorough investigation before a second round.
+> 
+> Yes please.
+> 
+> > But in this case,
+> > I keep that using nanoseconds may then not be the best approach here. We
+> > also have to keep in mind that the host and guest clocks may be running
+> > at different resolutions.
+> 
+> We need to choose a resolution for the clock (or negotiate one), an 
+> nanoseconds seems as good as any from a range and precision 
+> considerations, and is convenient for the host and Linux guests.  So why 
+> not pick it?
+> 
+> > >  >  +		vcpu->arch.sversion += 2;
+> > >
+> > >  Doesn't survive live migration.  You need to use the version from the
+> > >  guest area.
+> > Why not? Who said versions need to always increase? If current version
+> > is 102324, and we live migrate and it becomes 0, what is the problem?
+> 
+> Guest reads version (result: 2)
+> Guest starts reading data
+> Live migration; vcpu->arch.sversion is zeroed
+> Steal time update; vcpu->arch.sversion += 2; write to guest
+> Guest continues reading data
+> Guest reads version (result: 2)
+> 
+> So the guest is unaware that an update has occurred while it was reading 
+> the data.
+Ok, fair.
 
-You really don't get the point of clk_prepare() do you.  I'm not
-going to bother trying to educate you anymore.
+By the way, kvmclock have the same problem, then
+> 
 
-Hopefully someone with more patience can give you the necessary
-teaching to make you understand.
+
