@@ -1,102 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab1BAWqf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 17:46:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47954 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751806Ab1BAWqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 17:46:32 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>
-Cc: tytso@mit.edu, djwong@us.ibm.com, shli@kernel.org, neilb@suse.de,
-        adilger.kernel@dilger.ca, jack@suse.cz, linux-kernel@vger.kernel.org,
-        kmannth@us.ibm.com, cmm@us.ibm.com, linux-ext4@vger.kernel.org,
-        rwheeler@redhat.com, hch@lst.de, josef@redhat.com, jmoyer@redhat.com,
-        vgoyal@redhat.com, snitzer@redhat.com
-Subject: [PATCH v2 1/2] block: skip elevator initialization for flush requests
-Date: Tue,  1 Feb 2011 17:46:12 -0500
-Message-Id: <1296600373-6906-1-git-send-email-snitzer@redhat.com>
-In-Reply-To: <20110201185225.GT14211@htj.dyndns.org>
-References: <20110201185225.GT14211@htj.dyndns.org>
+	id S1751800Ab1BAWwQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 17:52:16 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:23482 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222Ab1BAWwP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 17:52:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=XTDgCenBMbou9YSE0xilFSeU64zsKzBHwyTzXDS2f7IsNPeFwAar+uJPJ2pE3RAEMO
+         QP/I31f71dzB6PhfSoow==
+MIME-Version: 1.0
+In-Reply-To: <201102011002.09819.jordipujolp@gmail.com>
+References: <201102011002.09819.jordipujolp@gmail.com>
+From: Paul Menage <menage@google.com>
+Date: Tue, 1 Feb 2011 14:44:56 -0800
+Message-ID: <AANLkTineUvbe4w53zVEyfafs_ERt1NPbRo83KeAH89KF@mail.gmail.com>
+Subject: Re: [RFC/RFT PATCH] cgroup: enable write permission for the group of users
+To: Jordi Pujol <jordipujolp@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Skip elevator initialization during request allocation if REQ_SORTED
-is not set in the @rw_flags passed to the request allocator.
+On Tue, Feb 1, 2011 at 1:02 AM, Jordi Pujol <jordipujolp@gmail.com> wrote:
+> Hello,
+>
+> Working in a development that uses control groups and libcgroup, I have found
+> that the files in control groups directories need write permission for the
+> group of users also.
 
-Set REQ_SORTED for all requests that may be put on IO scheduler.  Flush
-requests are not put on IO scheduler so REQ_SORTED is not set for
-them.
+This can be configured from userspace - chmod() works just fine on
+control files in cgroupfs.
 
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
----
- block/blk-core.c |   24 +++++++++++++++++++-----
- 1 files changed, 19 insertions(+), 5 deletions(-)
-
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 72dd23b..f6fcc64 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -764,7 +764,7 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
- 	struct request_list *rl = &q->rq;
- 	struct io_context *ioc = NULL;
- 	const bool is_sync = rw_is_sync(rw_flags) != 0;
--	int may_queue, priv;
-+	int may_queue, priv = 0;
- 
- 	may_queue = elv_may_queue(q, rw_flags);
- 	if (may_queue == ELV_MQUEUE_NO)
-@@ -808,9 +808,14 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
- 	rl->count[is_sync]++;
- 	rl->starved[is_sync] = 0;
- 
--	priv = !test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags);
--	if (priv)
--		rl->elvpriv++;
-+	/*
-+	 * Only initialize elevator data if REQ_SORTED is set.
-+	 */
-+	if (rw_flags & REQ_SORTED) {
-+		priv = !test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags);
-+		if (priv)
-+			rl->elvpriv++;
-+	}
- 
- 	if (blk_queue_io_stat(q))
- 		rw_flags |= REQ_IO_STAT;
-@@ -1197,6 +1202,7 @@ static int __make_request(struct request_queue *q, struct bio *bio)
- 	const unsigned short prio = bio_prio(bio);
- 	const bool sync = !!(bio->bi_rw & REQ_SYNC);
- 	const bool unplug = !!(bio->bi_rw & REQ_UNPLUG);
-+	const bool flush = !!(bio->bi_rw & (REQ_FLUSH | REQ_FUA));
- 	const unsigned long ff = bio->bi_rw & REQ_FAILFAST_MASK;
- 	int where = ELEVATOR_INSERT_SORT;
- 	int rw_flags;
-@@ -1210,7 +1216,7 @@ static int __make_request(struct request_queue *q, struct bio *bio)
- 
- 	spin_lock_irq(q->queue_lock);
- 
--	if (bio->bi_rw & (REQ_FLUSH | REQ_FUA)) {
-+	if (flush) {
- 		where = ELEVATOR_INSERT_FLUSH;
- 		goto get_rq;
- 	}
-@@ -1293,6 +1299,14 @@ get_rq:
- 		rw_flags |= REQ_SYNC;
- 
- 	/*
-+	 * Set REQ_SORTED for all requests that may be put on IO scheduler.
-+	 * The request allocator's IO scheduler initialization will be skipped
-+	 * if REQ_SORTED is not set.
-+	 */
-+	if (!flush)
-+		rw_flags |= REQ_SORTED;
-+
-+	/*
- 	 * Grab a free request. This is might sleep but can not fail.
- 	 * Returns with the queue unlocked.
- 	 */
--- 
-1.7.3.4
-
+Paul
