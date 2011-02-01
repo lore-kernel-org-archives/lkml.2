@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756734Ab1BAAfK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Jan 2011 19:35:10 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:44506 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756573Ab1BAAfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Jan 2011 19:35:06 -0500
-Date: Tue, 1 Feb 2011 01:34:51 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: kamezawa.hiroyu@jp.fujitsu.com, nishimura@mxp.nes.nec.co.jp,
-        balbir@linux.vnet.ibm.com, minchan.kim@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/3] memcg: prevent endless loop when charging huge pages
- to near-limit group
-Message-ID: <20110201003451.GC19534@cmpxchg.org>
-References: <1296482635-13421-1-git-send-email-hannes@cmpxchg.org>
- <1296482635-13421-3-git-send-email-hannes@cmpxchg.org>
- <20110131144131.6733aa3a.akpm@linux-foundation.org>
- <20110201000455.GB19534@cmpxchg.org>
- <20110131162448.e791f0ae.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110131162448.e791f0ae.akpm@linux-foundation.org>
+	id S1756673Ab1BAAe4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Jan 2011 19:34:56 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:38313 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756536Ab1BAAeH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Jan 2011 19:34:07 -0500
+Subject: [RFC][PATCH 6/6] have smaps show transparent huge pages
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, Michael J Wolf <mjwolf@us.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+Date: Mon, 31 Jan 2011 16:34:05 -0800
+References: <20110201003357.D6F0BE0D@kernel>
+In-Reply-To: <20110201003357.D6F0BE0D@kernel>
+Message-Id: <20110201003405.FC58B813@kernel>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 31, 2011 at 04:24:48PM -0800, Andrew Morton wrote:
-> On Tue, 1 Feb 2011 01:04:55 +0100
-> Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > @@ -182,6 +182,14 @@ static inline bool res_counter_check_under_limit(struct res_counter *cnt)
-> >  	return ret;
-> >  }
-> >  
-> > +/**
-> > + * res_counter_check_margin - check if the counter allows charging
-> > + * @cnt: the resource counter to check
-> > + * @bytes: the number of bytes to check the remaining space against
-> > + *
-> > + * Returns a boolean value on whether the counter can be charged
-> > + * @bytes or whether this would exceed the limit.
-> > + */
-> >  static inline bool res_counter_check_margin(struct res_counter *cnt,
-> >  					    unsigned long bytes)
-> >  {
-> 
-> mem_cgroup_check_margin() needs some lipstick too.
 
-*oink*
+Now that the mere act of _looking_ at /proc/$pid/smaps will not
+destroy transparent huge pages, tell how much of the VMA is
+actually mapped with them.
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+This way, we can make sure that we're getting THPs where we
+expect to see them.
+
+Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
 ---
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 9e5de7c..6c07554 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1111,6 +1111,14 @@ static bool mem_cgroup_check_under_limit(struct mem_cgroup *mem)
- 	return false;
- }
- 
-+/**
-+ * mem_cgroup_check_margin - check if the memory cgroup allows charging
-+ * @mem: memory cgroup to check
-+ * @bytes: the number of bytes the caller intends to charge
-+ *
-+ * Returns a boolean value on whether @mem can be charged @bytes or
-+ * whether this would exceed the limit.
-+ */
- static bool mem_cgroup_check_margin(struct mem_cgroup *mem, unsigned long bytes)
- {
- 	if (!res_counter_check_margin(&mem->res, bytes))
+ linux-2.6.git-dave/fs/proc/task_mmu.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff -puN fs/proc/task_mmu.c~teach-smaps-thp fs/proc/task_mmu.c
+--- linux-2.6.git/fs/proc/task_mmu.c~teach-smaps-thp	2011-01-31 16:25:15.948685305 -0800
++++ linux-2.6.git-dave/fs/proc/task_mmu.c	2011-01-31 16:25:34.600671992 -0800
+@@ -331,6 +331,7 @@ struct mem_size_stats {
+ 	unsigned long private_dirty;
+ 	unsigned long referenced;
+ 	unsigned long anonymous;
++	unsigned long anonymous_thp;
+ 	unsigned long swap;
+ 	u64 pss;
+ };
+@@ -394,6 +395,7 @@ static int smaps_pte_range(pmd_t *pmd, u
+ 			spin_lock(&walk->mm->page_table_lock);
+ 			goto normal_ptes;
+ 		}
++		mss->anonymous_thp += HPAGE_SIZE;
+ 		smaps_pte_entry(*(pte_t *)pmd, addr, HPAGE_SIZE, walk);
+ 		return 0;
+ 	}
+@@ -438,6 +440,7 @@ static int show_smap(struct seq_file *m,
+ 		   "Private_Dirty:  %8lu kB\n"
+ 		   "Referenced:     %8lu kB\n"
+ 		   "Anonymous:      %8lu kB\n"
++		   "AnonHugePages:  %8lu kB\n"
+ 		   "Swap:           %8lu kB\n"
+ 		   "KernelPageSize: %8lu kB\n"
+ 		   "MMUPageSize:    %8lu kB\n"
+@@ -451,6 +454,7 @@ static int show_smap(struct seq_file *m,
+ 		   mss.private_dirty >> 10,
+ 		   mss.referenced >> 10,
+ 		   mss.anonymous >> 10,
++		   mss.anonymous_thp >> 10,
+ 		   mss.swap >> 10,
+ 		   vma_kernel_pagesize(vma) >> 10,
+ 		   vma_mmu_pagesize(vma) >> 10,
+_
