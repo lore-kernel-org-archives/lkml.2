@@ -1,189 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752030Ab1BAUYZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 15:24:25 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:39205 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751837Ab1BAUYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 15:24:24 -0500
-From: Omar Ramirez Luna <omar.ramirez@ti.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        lk <linux-kernel@vger.kernel.org>, devel <devel@driverdev.osuosl.org>
-Subject: [GIT PULL] staging: tidspbridge for 2.6.39
-Date: Tue,  1 Feb 2011 14:13:04 -0600
-Message-Id: <1296591184-31554-1-git-send-email-omar.ramirez@ti.com>
-X-Mailer: git-send-email 1.7.1
+	id S1752104Ab1BAU20 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 15:28:26 -0500
+Received: from fmmailgate01.web.de ([217.72.192.221]:34897 "EHLO
+	fmmailgate01.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751635Ab1BAU2Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 15:28:25 -0500
+Message-ID: <4D486CE6.4050601@web.de>
+Date: Tue, 01 Feb 2011 21:28:22 +0100
+From: Jan Kiszka <jan.kiszka@web.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Glauber Costa <glommer@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com
+Subject: Re: [PATCH v2] release kvmclock page on reset
+References: <1296587800-19589-1-git-send-email-glommer@redhat.com>
+In-Reply-To: <1296587800-19589-1-git-send-email-glommer@redhat.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig3F61A481B64C76B076A57E61"
+X-Provags-ID: V01U2FsdGVkX1/BpYstyeoo6odwG6BJ2PdLg0CLcolFElGHVLbl
+	5IwmMb7t++s7VT6PmBL+S+4Y47eMmyNpxTGMbqZoIYh6pT2ioE
+	MeCKLPQFY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit c56eb8fb6dccb83d9fe62fd4dc00c834de9bc470:
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig3F61A481B64C76B076A57E61
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-  Linux 2.6.38-rc1 (2011-01-18 15:14:02 -0800)
+On 2011-02-01 20:16, Glauber Costa wrote:
+> When a vcpu is reset, kvmclock page keeps being writen to this days.
+> This is wrong and inconsistent: a cpu reset should take it to its
+> initial state.
+>=20
+> Signed-off-by: Glauber Costa <glommer@redhat.com>
+> CC: Jan Kiszka <jan.kiszka@siemens.com>
+> ---
+>  arch/x86/kvm/x86.c |   20 ++++++++++++--------
+>  1 files changed, 12 insertions(+), 8 deletions(-)
+>=20
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index bcc0efc..c39ab4a 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -1453,6 +1453,14 @@ static int kvm_pv_enable_async_pf(struct kvm_vcp=
+u *vcpu, u64 data)
+>  	return 0;
+>  }
+> =20
+> +static void kvmclock_reset(struct kvm_vcpu *vcpu)
+> +{
+> +	if (vcpu->arch.time_page) {
+> +		kvm_release_page_dirty(vcpu->arch.time_page);
+> +		vcpu->arch.time_page =3D NULL;
+> +	}
+> +}
+> +
+>  int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+>  {
+>  	switch (msr) {
+> @@ -1510,10 +1518,7 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u3=
+2 msr, u64 data)
+>  		break;
+>  	case MSR_KVM_SYSTEM_TIME_NEW:
+>  	case MSR_KVM_SYSTEM_TIME: {
+> -		if (vcpu->arch.time_page) {
+> -			kvm_release_page_dirty(vcpu->arch.time_page);
+> -			vcpu->arch.time_page =3D NULL;
+> -		}
+> +		kvmclock_reset(vcpu);
+> =20
+>  		vcpu->arch.time =3D data;
+>  		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+> @@ -5814,10 +5819,7 @@ void kvm_put_guest_fpu(struct kvm_vcpu *vcpu)
+> =20
+>  void kvm_arch_vcpu_free(struct kvm_vcpu *vcpu)
+>  {
+> -	if (vcpu->arch.time_page) {
+> -		kvm_release_page_dirty(vcpu->arch.time_page);
+> -		vcpu->arch.time_page =3D NULL;
+> -	}
+> +	kvmclock_reset(vcpu);
+> =20
+>  	free_cpumask_var(vcpu->arch.wbinvd_dirty_mask);
+>  	fx_free(vcpu);
+> @@ -5878,6 +5880,8 @@ int kvm_arch_vcpu_reset(struct kvm_vcpu *vcpu)
+>  	kvm_make_request(KVM_REQ_EVENT, vcpu);
+>  	vcpu->arch.apf.msr_val =3D 0;
+> =20
+> +	kvmclock_reset(vcpu);
+> +
+>  	kvm_clear_async_pf_completion_queue(vcpu);
+>  	kvm_async_pf_hash_reset(vcpu);
+>  	vcpu->arch.apf.halted =3D false;
 
-are available in the git repository at:
-  git://dev.omapzoom.org/pub/scm/tidspbridge/kernel-dspbridge.git tidspbridge-for-2.6.39
+Looks good.
 
-Armando Uribe (6):
-      staging: tidspbridge: Eliminate direct manipulation of OMAP_SYSC_BASE
-      staging: tidspbridge: Remove unused defined constants
-      staging: tidspbridge: Remove unused functions
-      staging: tidspbridge: Remove unused structs
-      staging: tidspbridge: Remove unused typedefs
-      staging: tidspbridge: Remove trivial header files
+Thanks,
+Jan
 
-Felipe Contreras (1):
-      staging: tidspbridge: fix mgr_enum_node_info
 
-Guzman Lugo, Fernando (2):
-      staging: tidspbridge: configure full L1 MMU range
-      staging: tidspbridge: make sync_wait_on_event interruptible
+--------------enig3F61A481B64C76B076A57E61
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Ionut Nicu (13):
-      staging: tidspbridge: mgr_enum_node_info cleanup
-      staging: tidspbridge: fix kernel oops in bridge_io_get_proc_load
-      staging: tidspbridge: remove gs memory allocator
-      staging: tidspbridge: remove utildefs
-      staging: tidspbridge: switch to linux bitmap API
-      staging: tidspbridge: remove gb bitmap implementation
-      staging: tidspbridge: convert core to list_head
-      staging: tidspbridge: convert pmgr to list_head
-      staging: tidspbridge: convert rmgr to list_head
-      staging: tidspbridge: remove custom linked list
-      staging: tidspbridge: core code cleanup
-      staging: tidspbridge: pmgr code cleanup
-      staging: tidspbridge: rmgr/node.c code cleanup
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.15 (GNU/Linux)
+Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
 
-Laurent Pinchart (1):
-      staging: tidspbridge: Fix atoi to support hexadecimal numbers correctly
+iEYEARECAAYFAk1IbOYACgkQitSsb3rl5xScsgCeNt64RhvEyRS36bPL6LPA65o9
+YqIAoJQj+Djs73dmOCJJqEwVvaMzsW2K
+=hQzJ
+-----END PGP SIGNATURE-----
 
-Omar Ramirez Luna (2):
-      staging: tidspbridge: replace mbox callback with notifier_call
-      staging: tidspbridge: use the right type for list_is_last
-
-Ramos Falcon, Ernesto (1):
-      staging: tidspbridge: remove code referred by OPT_ZERO_COPY_LOADER
-
-Rene Sapiens (12):
-      staging: tidspbridge: set1 remove hungarian from structs
-      staging: tidspbridge: set2 remove hungarian from structs
-      staging: tidspbridge: set3 remove hungarian from structs
-      staging: tidspbridge: set4 remove hungarian from structs
-      staging: tidspbridge: set5 remove hungarian from structs
-      staging: tidspbridge: set6 remove hungarian from structs
-      staging: tidspbridge: set7 remove hungarian from structs
-      staging: tidspbridge: set8 remove hungarian from structs
-      staging: tidspbridge: set9 remove hungarian from structs
-      staging: tidspbridge: set10 remove hungarian from structs
-      staging: tidspbridge: set11 remove hungarian from structs
-      staging: tidspbridge: set12 remove hungarian from structs
-
-Sapiens, Rene (1):
-      staging: tidspbridge: overwrite DSP error codes
-
- drivers/staging/tidspbridge/Makefile               |    2 +-
- drivers/staging/tidspbridge/TODO                   |    1 -
- drivers/staging/tidspbridge/core/_deh.h            |    2 +-
- drivers/staging/tidspbridge/core/_msg_sm.h         |   16 +-
- drivers/staging/tidspbridge/core/_tiomap.h         |   30 +-
- drivers/staging/tidspbridge/core/chnl_sm.c         |  676 ++++++-------
- drivers/staging/tidspbridge/core/dsp-clock.c       |   52 +-
- drivers/staging/tidspbridge/core/io_sm.c           |  680 ++++++-------
- drivers/staging/tidspbridge/core/msg_sm.c          |  619 +++++-------
- drivers/staging/tidspbridge/core/tiomap3430.c      |  214 ++--
- drivers/staging/tidspbridge/core/tiomap3430_pwr.c  |  112 +-
- drivers/staging/tidspbridge/core/tiomap_io.c       |   96 +-
- drivers/staging/tidspbridge/core/ue_deh.c          |   28 +-
- drivers/staging/tidspbridge/dynload/cload.c        |  102 +--
- .../staging/tidspbridge/dynload/dload_internal.h   |    6 +-
- drivers/staging/tidspbridge/gen/gb.c               |  166 ---
- drivers/staging/tidspbridge/gen/gh.c               |   38 +-
- drivers/staging/tidspbridge/gen/gs.c               |   88 --
- drivers/staging/tidspbridge/gen/uuidutil.c         |   22 +-
- .../tidspbridge/include/dspbridge/_chnl_sm.h       |   26 +-
- .../tidspbridge/include/dspbridge/brddefs.h        |    2 -
- .../tidspbridge/include/dspbridge/cfgdefs.h        |   50 +-
- .../staging/tidspbridge/include/dspbridge/chnl.h   |   21 -
- .../tidspbridge/include/dspbridge/chnldefs.h       |    9 +-
- .../tidspbridge/include/dspbridge/chnlpriv.h       |   21 +-
- .../staging/tidspbridge/include/dspbridge/cmm.h    |    2 +-
- .../tidspbridge/include/dspbridge/cmmdefs.h        |   39 +-
- .../staging/tidspbridge/include/dspbridge/cod.h    |   13 +-
- .../tidspbridge/include/dspbridge/dbdcddef.h       |   14 +-
- .../staging/tidspbridge/include/dspbridge/dbdefs.h |   98 +--
- .../tidspbridge/include/dspbridge/dbldefs.h        |  141 ---
- .../staging/tidspbridge/include/dspbridge/dbll.h   |    6 -
- .../tidspbridge/include/dspbridge/dblldefs.h       |   65 --
- .../tidspbridge/include/dspbridge/dehdefs.h        |   32 -
- .../staging/tidspbridge/include/dspbridge/dev.h    |   65 +--
- .../staging/tidspbridge/include/dspbridge/disp.h   |   15 +-
- .../tidspbridge/include/dspbridge/dispdefs.h       |   35 -
- .../staging/tidspbridge/include/dspbridge/drv.h    |   40 +-
- .../tidspbridge/include/dspbridge/drvdefs.h        |   25 -
- .../tidspbridge/include/dspbridge/dspapi-ioctl.h   |  216 ++--
- .../tidspbridge/include/dspbridge/dspdefs.h        |   88 +-
- .../staging/tidspbridge/include/dspbridge/dspdrv.h |    2 -
- .../staging/tidspbridge/include/dspbridge/dspio.h  |    4 +-
- .../tidspbridge/include/dspbridge/dspioctl.h       |   13 +-
- .../tidspbridge/include/dspbridge/dynamic_loader.h |    2 -
- drivers/staging/tidspbridge/include/dspbridge/gb.h |   79 --
- drivers/staging/tidspbridge/include/dspbridge/gs.h |   59 --
- .../tidspbridge/include/dspbridge/host_os.h        |    9 -
- drivers/staging/tidspbridge/include/dspbridge/io.h |   29 +-
- .../staging/tidspbridge/include/dspbridge/io_sm.h  |  164 +---
- .../staging/tidspbridge/include/dspbridge/iodefs.h |   36 -
- .../staging/tidspbridge/include/dspbridge/ldr.h    |   29 -
- .../staging/tidspbridge/include/dspbridge/list.h   |  225 ----
- .../staging/tidspbridge/include/dspbridge/mbx_sh.h |   40 -
- .../tidspbridge/include/dspbridge/mgrpriv.h        |    4 +-
- .../tidspbridge/include/dspbridge/nldrdefs.h       |   24 +-
- .../staging/tidspbridge/include/dspbridge/node.h   |   20 +-
- .../tidspbridge/include/dspbridge/nodepriv.h       |   10 +-
- .../staging/tidspbridge/include/dspbridge/pwr.h    |    8 +-
- .../staging/tidspbridge/include/dspbridge/pwr_sh.h |   33 -
- .../include/dspbridge/resourcecleanup.h            |   11 -
- .../staging/tidspbridge/include/dspbridge/rms_sh.h |    9 -
- .../staging/tidspbridge/include/dspbridge/strm.h   |   62 --
- .../tidspbridge/include/dspbridge/strmdefs.h       |    6 +-
- .../staging/tidspbridge/include/dspbridge/sync.h   |   14 +-
- .../tidspbridge/include/dspbridge/utildefs.h       |   39 -
- drivers/staging/tidspbridge/pmgr/chnl.c            |    4 +-
- drivers/staging/tidspbridge/pmgr/cmm.c             |  675 +++++-------
- drivers/staging/tidspbridge/pmgr/cod.c             |   20 +-
- drivers/staging/tidspbridge/pmgr/dbll.c            |   53 +-
- drivers/staging/tidspbridge/pmgr/dev.c             |  355 +++----
- drivers/staging/tidspbridge/pmgr/dspapi.c          |  272 +++---
- drivers/staging/tidspbridge/pmgr/io.c              |    9 +-
- drivers/staging/tidspbridge/pmgr/ioobj.h           |    4 +-
- drivers/staging/tidspbridge/pmgr/msg.c             |    4 +-
- drivers/staging/tidspbridge/rmgr/dbdcd.c           |   66 +-
- drivers/staging/tidspbridge/rmgr/disp.c            |  124 +--
- drivers/staging/tidspbridge/rmgr/drv.c             |  202 ++---
- drivers/staging/tidspbridge/rmgr/drv_interface.c   |    1 -
- drivers/staging/tidspbridge/rmgr/mgr.c             |   66 +-
- drivers/staging/tidspbridge/rmgr/nldr.c            |  117 +--
- drivers/staging/tidspbridge/rmgr/node.c            | 1092 +++++++++-----------
- drivers/staging/tidspbridge/rmgr/proc.c            |  170 ++--
- drivers/staging/tidspbridge/rmgr/pwr.c             |    8 +-
- drivers/staging/tidspbridge/rmgr/rmm.c             |   93 +--
- drivers/staging/tidspbridge/rmgr/strm.c            |   86 +-
- 86 files changed, 3028 insertions(+), 5297 deletions(-)
- delete mode 100644 drivers/staging/tidspbridge/gen/gb.c
- delete mode 100644 drivers/staging/tidspbridge/gen/gs.c
- delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/dbldefs.h
- delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/dehdefs.h
- delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/dispdefs.h
- delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/drvdefs.h
- delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/gb.h
- delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/gs.h
- delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/iodefs.h
- delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/ldr.h
- delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/list.h
- delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/pwr_sh.h
- delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/utildefs.h
-
-Regards,
-
-Omar
+--------------enig3F61A481B64C76B076A57E61--
