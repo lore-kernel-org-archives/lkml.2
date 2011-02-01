@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab1BARGv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 12:06:51 -0500
-Received: from smtp-gw21.han.skanova.net ([81.236.55.21]:43573 "EHLO
-	smtp-gw21.han.skanova.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477Ab1BARGt convert rfc822-to-8bit (ORCPT
+	id S1755468Ab1BARHU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 12:07:20 -0500
+Received: from smtp-gw11.han.skanova.net ([81.236.55.20]:52019 "EHLO
+	smtp-gw11.han.skanova.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755422Ab1BARHS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 12:06:49 -0500
+	Tue, 1 Feb 2011 12:07:18 -0500
 MIME-Version: 1.0
 X-Mailer: AfterLogic WebMail PHP
 X-Originating-IP: 194.237.142.5
 X-Priority: 3 (Normal)
-Message-ID: <7j2t3lt.4903adc7917a92d71d2d5a0cc8fed87a@obelix.schillstrom.com>
+Message-ID: <7j2t3lt.8dc16aed303bfc25a870d65e413a99d5@obelix.schillstrom.com>
 From: "Hans Schillstrom" <hans@schillstrom.com>
 To: "Simon Horman" <horms@verge.net.au>
 Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
@@ -19,9 +19,8 @@ Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
         "Randy Dunlap" <randy.dunlap@oracle.com>,
         "Stephen Rothwell" <sfr@canb.auug.org.au>,
         "Patrick McHardy" <kaber@trash.net>
-Subject: Re: [PATCH 2/5] IPVS: remove duplicate initialisation or 
-	rs_table
-Date: Tue, 1 Feb 2011 18:06:42 +0100 (CET)
+Subject: Re: [PATCH 3/5] IPVS: Remove unused variables
+Date: Tue, 1 Feb 2011 18:07:10 +0100 (CET)
 Content-Type: text/plain;
 	charset="utf-8"
 Content-Transfer-Encoding: 8BIT
@@ -34,32 +33,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 >To: netdev@vger.kernel.org, linux-next@vger.kernel.org, linux-kernel@vger.kernel.org, lvs-devel@vger.kernel.org
 >Cc: "Randy Dunlap" <randy.dunlap@oracle.com>, "Stephen Rothwell" <sfr@canb.auug.org.au>, "Hans Schillstrom" <hans@schillstrom.com>, "Patrick McHardy" <kaber@trash.net>, "Simon Horman" <horms@verge.net.au>
 >Sent: Tue, Feb 1, 2011, 11:11 AM
->Subject: [PATCH 2/5] IPVS: remove duplicate initialisation or rs_table
+>Subject: [PATCH 3/5] IPVS: Remove unused variables
+>
+>These variables are unused as a result of the recent netns work.
 >
 >Cc: Hans Schillstrom <hans@schillstrom.com>
 >Signed-off-by: Simon Horman <horms@verge.net.au>
-
 Signed-off-by: Hans Schillstrom <hans@schillstrom.com>
 Tested-by: Hans Schillstrom <hans@schillstrom.com>
 
 >---
-> net/netfilter/ipvs/ip_vs_ctl.c |    3 ---
-> 1 files changed, 0 insertions(+), 3 deletions(-)
+> include/net/ip_vs.h |    2 --
+> 1 files changed, 0 insertions(+), 2 deletions(-)
 >
->diff --git a/net/netfilter/ipvs/ip_vs_ctl.c b/net/netfilter/ipvs/ip_vs_ctl.c
->index 98df59a..d7c2fa8 100644
->--- a/net/netfilter/ipvs/ip_vs_ctl.c
->+++ b/net/netfilter/ipvs/ip_vs_ctl.c
->@@ -3515,9 +3515,6 @@ int __net_init __ip_vs_control_init(struct net *net)
-> 	}
-> 	spin_lock_init(&ipvs->tot_stats->lock);
+>diff --git a/include/net/ip_vs.h b/include/net/ip_vs.h
+>index b23bea6..5d75fea 100644
+>--- a/include/net/ip_vs.h
+>+++ b/include/net/ip_vs.h
+>@@ -1109,8 +1109,6 @@ extern int ip_vs_icmp_xmit_v6
+>  *	we are loaded. Just set ip_vs_drop_rate to 'n' and
+>  *	we start to drop 1/rate of the packets
+>  */
+>-extern int ip_vs_drop_rate;
+>-extern int ip_vs_drop_counter;
 > 
->-	for (idx = 0; idx < IP_VS_RTAB_SIZE; idx++)
->-		INIT_LIST_HEAD(&ipvs->rs_table[idx]);
->-
-> 	proc_net_fops_create(net, "ip_vs", 0, &ip_vs_info_fops);
-> 	proc_net_fops_create(net, "ip_vs_stats", 0, &ip_vs_stats_fops);
-> 	proc_net_fops_create(net, "ip_vs_stats_percpu", 0,
+> static inline int ip_vs_todrop(struct netns_ipvs *ipvs)
+> {
 >-- 
 >1.7.2.3
 >
