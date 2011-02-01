@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab1BAKYW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 05:24:22 -0500
-Received: from a.mx.secunet.com ([195.81.216.161]:40007 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750951Ab1BAKYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 05:24:20 -0500
-Date: Tue, 1 Feb 2011 11:24:18 +0100
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Eric Paris <eparis@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] flex_array: Change behaviour on zero size allocations
-Message-ID: <20110201102417.GL3070@secunet.com>
-References: <20110131085213.GK3070@secunet.com>
- <1296491497.7797.3792.camel@nimitz>
+	id S1753643Ab1BAK0Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 05:26:24 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34565 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951Ab1BAK0W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 05:26:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=XueBDchXnQiszARKwT1FFhehRzmnDIX+nddmlkd/d0wQi8YLxvEbhWI/oD/sPUyP8q
+         /vgstwdR0fS9d4fVPo0OlwK+l6mROCYfCOkEglH6u6OU7riiz/8eBwUjnXi6TYvTdw35
+         hA6ZhUpSGEldYP2hxOovnZ7RnLsV8Ff3VHVs4=
+Date: Tue, 1 Feb 2011 11:26:18 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Roland McGrath <roland@redhat.com>
+Cc: oleg@redhat.com, jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Subject: [PATCH] ptrace: use safer wake up on ptrace_detach()
+Message-ID: <20110201102618.GE14211@htj.dyndns.org>
+References: <1296227324-25295-1-git-send-email-tj@kernel.org>
+ <1296227324-25295-3-git-send-email-tj@kernel.org>
+ <20110128184601.CBF7C180996@magilla.sf.frob.com>
+ <20110131103855.GD7459@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1296491497.7797.3792.camel@nimitz>
+In-Reply-To: <20110131103855.GD7459@htj.dyndns.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 01 Feb 2011 10:24:18.0715 (UTC) FILETIME=[2F254EB0:01CBC1FA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 31, 2011 at 08:31:37AM -0800, Dave Hansen wrote:
-> 
-> I think this still has some of the issues of the earlier patch.  The
-> zero-size check needs to be moved after the ->total_nr_elements check.
-> Otherwise, this won't produce any errors:
-> 
-> 	fa = flex_array_alloc(0, 100, GFP_KERNEL);
-> 	flex_array_put(fa, 1001, ptr, GFP_KERNEL);
-> 
-> > @@ -284,6 +297,8 @@ void *flex_array_get(struct flex_array *fa, unsigned int element_nr)
-> >         int part_nr = fa_element_to_part_nr(fa, element_nr);
-> >         struct flex_array_part *part;
-> > 
-> > +       if (!fa->total_nr_elements || !fa->element_size)
-> > +               return NULL;
-> >         if (element_nr >= fa->total_nr_elements)
-> >                 return NULL;
-> >         if (elements_fit_in_base(fa))
-> 
-> Do you really need to check fa->total_nr_elements both for zero and
-> against element_nr?  Seems a but superfluous to me.
-> 
+The wake_up_process() call in ptrace_detach() is spurious and not
+interlocked with the tracee state.  IOW, the tracee could be running
+or sleeping in any place in the kernel by the time wake_up_process()
+is called.  This can lead to the tracee waking up unexpectedly which
+can be dangerous.
 
-Both objections are correct, I'll send an updated patch.
+The wake_up is spurious and should be removed but for now reduce its
+toxicity by only waking up if the tracee is in TRACED or STOPPED
+state.
 
-Steffen
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Roland McGrath <roland@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: stable@kernel.org
+---
+So, something like this.  Roland, Oleg, can you guys please ack this?
+Also, should these ptrace patches be routed?  Shall I set up a git
+tree?
+
+Thank you.
+
+ kernel/ptrace.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: work/kernel/ptrace.c
+===================================================================
+--- work.orig/kernel/ptrace.c
++++ work/kernel/ptrace.c
+@@ -313,7 +313,7 @@ int ptrace_detach(struct task_struct *ch
+ 		child->exit_code = data;
+ 		dead = __ptrace_detach(current, child);
+ 		if (!child->exit_state)
+-			wake_up_process(child);
++			wake_up_state(child, TASK_TRACED | TASK_STOPPED);
+ 	}
+ 	write_unlock_irq(&tasklist_lock);
+ 
