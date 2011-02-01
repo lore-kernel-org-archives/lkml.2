@@ -1,151 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753771Ab1BAJLv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 04:11:51 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:40178 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481Ab1BAJLs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 04:11:48 -0500
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
-To: Russell King <linux@arm.linux.org.uk>
-Subject: Locking in the clk API, part 2: clk_prepare/clk_unprepare
-Date: Tue, 1 Feb 2011 17:11:29 +0800
-User-Agent: KMail/1.13.5 (Linux/2.6.35-24-generic; KDE/4.5.1; x86_64; ; )
-Cc: Dima Zavin <dmitriyz@google.com>, Saravana Kannan <skannan@codeaurora.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        linux-sh@vger.kernel.org, Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>, Ben Dooks <ben-linux@fluff.org>,
-        "Uwe =?utf-8?q?Kleine-K=C3=B6nig?=" <u.kleine-koenig@pengutronix.de>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
+	id S1753996Ab1BAJPI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 04:15:08 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:54105 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751916Ab1BAJPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 04:15:05 -0500
+Date: Tue, 1 Feb 2011 10:14:47 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [GIT PULL 0/5] perf/core improvements
+Message-ID: <20110201091447.GA27297@elte.hu>
+References: <1296509362-28054-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102011711.31258.jeremy.kerr@canonical.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1296509362-28054-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
 
-> I suggested that clk_prepare() be callable only from non-atomic contexts,
-> and do whatever's required to ensure that the clock is available.  That
-> may end up enabling the clock as a result.
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-I think that clk_prepare/clk_unprepare looks like the most promising solution, 
-so will try to get some preliminary patches done. Here's what I'm planning:
+> Hi Ingo,
+> 
+>         Please consider pulling from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
+> 
+> Regards,
+> 
+> - Arnaldo
+> 
+> Arnaldo Carvalho de Melo (5):
+>   perf evlist: Move evlist methods to evlist.c
+>   perf evlist: Store pointer to the cpu and thread maps
+>   perf top: Move display agnostic routines to util/top.[ch]
+>   perf tools: Don't fallback to setup_pager unconditionally
+>   perf top: Introduce slang based TUI
+> 
+>  tools/perf/Makefile               |    6 +
+>  tools/perf/builtin-annotate.c     |    2 +-
+>  tools/perf/builtin-record.c       |   44 ++--
+>  tools/perf/builtin-report.c       |    2 +-
+>  tools/perf/builtin-stat.c         |   45 ++--
+>  tools/perf/builtin-test.c         |    6 +-
+>  tools/perf/builtin-top.c          |  530 ++++++++++++-------------------------
+>  tools/perf/python/twatch.py       |    4 +-
+>  tools/perf/util/cache.h           |    7 +-
+>  tools/perf/util/evlist.c          |  185 +++++++++++++-
+>  tools/perf/util/evlist.h          |   28 ++-
+>  tools/perf/util/evsel.c           |  144 +----------
+>  tools/perf/util/evsel.h           |    4 -
+>  tools/perf/util/python.c          |   25 +-
+>  tools/perf/util/top.c             |  217 +++++++++++++++
+>  tools/perf/util/top.h             |   80 ++++++
+>  tools/perf/util/ui/browsers/top.c |  136 ++++++++++
+>  tools/perf/util/ui/setup.c        |    5 +-
+>  18 files changed, 887 insertions(+), 583 deletions(-)
+>  create mode 100644 tools/perf/util/top.c
+>  create mode 100644 tools/perf/util/top.h
+>  create mode 100644 tools/perf/util/ui/browsers/top.c
 
------
+Pulled, thanks Arnaldo!
 
-The changes to the API are essentially:
+Note, there's a beauty wart i noticed, while building perf on 32-bit Fedora: the build output
+includes new, unintended lines:
 
-1) Document clk_enable/clk_disable as callable from atomic contexts, and
-   so clock implementations must not sleep within this function.
+    CC util/scripting-engines/trace-event-perl.o
+    CC scripts/perl/Perf-Trace-Util/Context.o
+    CC util/scripting-engines/trace-event-python.o
+    CC scripts/python/Perf-Trace-Util/Context.o
+    CC perf.o
+    CC builtin-help.o
+gcc -pthread -fno-strict-aliasing -DNDEBUG -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=4 -m32 -march=i686 -mtune=atom -fasynchronous-unwind-tables -D_GNU_SOURCE -fPIC -fwrapv -fPIC -Iutil/include -I/usr/include/python2.6 -c util/evlist.c -o temp.linux-i686-2.6/util/evlist.o -fno-strict-aliasing -Wno-write-strings
+gcc -pthread -fno-strict-aliasing -DNDEBUG -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=4 -m32 -march=i686 -mtune=atom -fasynchronous-unwind-tables -D_GNU_SOURCE -fPIC -fwrapv -fPIC -Iutil/include -I/usr/include/python2.6 -c util/evsel.c -o temp.linux-i686-2.6/util/evsel.o -fno-strict-aliasing -Wno-write-strings
+gcc -pthread -fno-strict-aliasing -DNDEBUG -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=4 -m32 -march=i686 -mtune=atom -fasynchronous-unwind-tables -D_GNU_SOURCE -fPIC -fwrapv -fPIC -Iutil/include -I/usr/include/python2.6 -c util/cpumap.c -o temp.linux-i686-2.6/util/cpumap.o -fno-strict-aliasing -Wno-write-strings
+gcc -pthread -fno-strict-aliasing -DNDEBUG -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=4 -m32 -march=i686 -mtune=atom -fasynchronous-unwind-tables -D_GNU_SOURCE -fPIC -fwrapv -fPIC -Iutil/include -I/usr/include/python2.6 -c util/thread_map.c -o temp.linux-i686-2.6/util/thread_map.o -fno-strict-aliasing -Wno-write-strings
+gcc -pthread -fno-strict-aliasing -DNDEBUG -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=4 -m32 -march=i686 -mtune=atom -fasynchronous-unwind-tables -D_GNU_SOURCE -fPIC -fwrapv -fPIC -Iutil/include -I/usr/include/python2.6 -c util/util.c -o temp.linux-i686-2.6/util/util.o -fno-strict-aliasing -Wno-write-strings
+gcc -pthread -fno-strict-aliasing -DNDEBUG -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector --param=ssp-buffer-size=4 -m32 -march=i686 -mtune=atom -fasynchronous-unwind-tables -D_GNU_SOURCE -fPIC -fwrapv -fPIC -Iutil/include -I/usr/include/python2.6 -c util/xyarray.c -o temp.linux-i686-2.6/util/xyarray.o -fno-strict-aliasing -Wno-write-strings
+gcc -pthread -shared temp.linux-i686-2.6/util/python.o temp.linux-i686-2.6/util/ctype.o temp.linux-i686-2.6/util/evlist.o temp.linux-i686-2.6/util/evsel.o temp.linux-i686-2.6/util/cpumap.o temp.linux-i686-2.6/util/thread_map.o temp.linux-i686-2.6/util/util.o temp.linux-i686-2.6/util/xyarray.o -L/usr/lib -lpython2.6 -o lib.linux-i686-2.6/perf.so
+    AR libperf.a
+    LINK perf
 
-2) For clock implementations that may sleep to turn on a clock, we add a
-   new pair of functions to the clock API: clk_prepare and clk_unprepare.
+See all tose 'gcc -pthread ...' lines? Those should have the simplified 'CC '-alike 
+output as well i suspect.
 
-   These will provide hooks for the clock implmentation to do any sleepable
-   work (eg, wait for PLLs to settle) in preparation for a later clk_enable.
+Thanks,
 
-   For the most common clock implemntation cases (where clocks can be enabled 
-   atomically), these functions will be a no-op, and all of the enable/disable
-   work can be done in clk_enable/clk_disable.
-
-   For implementations where clocks require blocking on enable/disable, most
-   of the work will be done in clk_prepare/clk_unprepare. The clk_enable
-   and clk_disable functions may be no-ops.
-
-For drivers, this means that clk_prepare must be called (and have returned) 
-before calling clk_enable.
-
-== Enable/Prepare counts ==
-
-I intend to do the enable and prepare "counting" in the core clock API, 
-meaning that that the clk_ops callbacks will only invoked on the first 
-prepare/enable and the last unprepare/disable.
-
-== Concurrency ==
-
-Splitting the prepare and enable stages introduces the concurrency 
-requirements:
-
-1) clk_enable must not return before the clock is outputting a valid clock 
-   signal.
-
-2) clk_prepare must not return before the clock is fully prepared (ie, it is 
-   safe to call clk_enable).
-
-It is not possible for clk_enable to wait for the clock to be prepared, 
-because that would require synchronisation with clk_prepare, which may then 
-require blocking. Therefore:
-
-3) The clock consumer *must* respect the proper ordering of clk_prepare and 
-   clk_enable. For example, drivers that call clk_enable during an interrupt 
-   must ensure that the interrupt handler will not be invoked until 
-   clk_prepare has returned.
-
-== Other considerations ==
-
-The time that a clock spends "prepared" is a superset of the the time that a 
-clock spends "enabled". Therefore, clocks that are switched on during 
-clk_prepare (ie, non-atomic clocks) will be running for a larger amount of 
-time. In some cases, this can be mitigated by moving some of the final 
-(atomic) switching functionality to the clk_enable function.
-
-== Implementation ==
-
-Basically:
-
-struct clk {
-	const struct clk_ops *ops
-	int                  enable_count;
-	spinlock_t           enable_lock;
-	int                  prepare_count;
-	struct mutex         prepare_lock;
-};
-
-int clk_enable(struct clk *clk)
-{
-	int ret = 0;
-
-	spin_lock(&clk->enable_lock);
-	if (!clk->enable_count)
-		ret = clk->ops->enable(clk);
-
-	if (!ret)
-		clk->enable_count++;
-	spin_unlock(&clk->enable_lock);
-
-	return ret;
-}
-
-int clk_prepare(struct clk *clk)
-{
-	int ret = 0;
-
-	mutex_lock(&clk->prepare_lock);
-	if (!clk->prepare_count)
-		ret = clk->ops->prepare(clk);
-
-	if (!ret)
-		clk->prepare_count++;
-	mutex_unlock(&clk->prepare_lock);
-
-	return ret;
-}
-
------
-
-Comments welcome, code coming soon.
-
-Cheers,
-
-
-Jeremy
-
+	Ingo
