@@ -1,114 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755900Ab1BARgK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 12:36:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45714 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755840Ab1BARgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 12:36:07 -0500
-Date: Tue, 1 Feb 2011 18:27:57 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Alan Stern <stern@rowland.harvard.edu>,
+	id S1755854Ab1BARgI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 12:36:08 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:52783 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755715Ab1BARgF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 12:36:05 -0500
+Subject: Re: [PATCH 1/2] perf tools: Remove verbose build messages for the
+ python binding
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>, Prasad <prasad@linux.vnet.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf: Cure task_oncpu_function_call() races
-Message-ID: <20110201172757.GA4586@redhat.com>
-References: <20110127221856.GA10539@redhat.com> <1296215577.15234.333.camel@laptop> <1296226667.15234.337.camel@laptop> <20110128162847.GA25088@redhat.com> <1296238278.15234.340.camel@laptop> <20110131172626.GA5407@redhat.com> <1296498205.26581.54.camel@laptop> <20110131191109.GA10906@redhat.com> <1296502154.26581.72.camel@laptop> <1296569037.26581.194.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296569037.26581.194.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+In-Reply-To: <1296581395-30663-2-git-send-email-acme@infradead.org>
+References: <1296581395-30663-1-git-send-email-acme@infradead.org>
+	 <1296581395-30663-2-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Feb 2011 18:36:59 +0100
+Message-ID: <1296581819.26581.247.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01, Peter Zijlstra wrote:
->
-> Oleg, I've actually run-tested the below and all seems well (clearly
-> I've never actually hit the races found before either, so in that
-> respect its not a conclusive test).
->
-> Can you agree with this patch?
+On Tue, 2011-02-01 at 15:29 -0200, Arnaldo Carvalho de Melo wrote:
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> Also now it builds it in a well known location:
+> 
+> [acme@felicio linux]$ rm -rf ../build/perf/
+> [acme@felicio linux]$ mkdir ../build/perf
+> [acme@felicio linux]$ make -j2 O=~acme/git/build/perf -C tools/perf/
+> <SNIP>
+> [acme@felicio linux]$ ls -la ../build/perf/python/
+> total 152
+> -rwxrwxr-x 1 acme acme 147957 Feb  1 14:56 perf.so
+> drwxrwxr-x 3 acme acme     17 Feb  1 14:56 temp
+> [acme@felicio linux]$
+> 
+> [root@felicio ~]# strip ~acme/git/build/perf/python/perf.so
+> [root@felicio ~]# ls -la ~acme/git/build/perf/python/perf.so
+> -rwxrwxr-x 1 acme acme 46264 Feb  1 14:58 /home/acme/git/build/perf/python/perf.so
+> 
+> [root@felicio ~]# export PYTHONPATH=~acme/git/build/perf/python/
+> [root@felicio ~]# ~acme/git/linux/tools/perf/python/twatch.py
+> cpu:  0, pid: 7751, tid: 7751 { type: exit, pid: 7751, ppid: 7751, tid: 7751, ptid: 7751, time: 54562393512356}
+> cpu:  0, pid: 13700, tid: 13700 { type: fork, pid: 7756, ppid: 13700, tid: 7756, ptid: 13700, time: 54562393746739}
+> cpu:  1, pid: 7756, tid: 7756 { type: fork, pid: 7757, ppid: 7756, tid: 7757, ptid: 7756, time: 54562394246152}
+> cpu:  1, pid: 7757, tid: 7757 { type: comm, pid: 7757, tid: 7757, comm: awk }
+> cpu:  1, pid: 7757, tid: 7757 { type: exit, pid: 7757, ppid: 7757, tid: 7757, ptid: 7757, time: 54562395456813}
 
-You know, I already wrote the i-think-it-is-correct email. But then
-I decided to read it once again.
+This won't fix this, right?
 
-> -static void __perf_event_remove_from_context(void *info)
-> +static int __perf_remove_from_context(void *info)
->  {
->  	struct perf_event *event = info;
->  	struct perf_event_context *ctx = event->ctx;
->  	struct perf_cpu_context *cpuctx = __get_cpu_context(ctx);
->
-> -	/*
-> -	 * If this is a task context, we need to check whether it is
-> -	 * the current task context of this cpu. If not it has been
-> -	 * scheduled out before the smp call arrived.
-> -	 */
-> -	if (ctx->task && cpuctx->task_ctx != ctx)
-> -		return;
+running build_ext
+error: invalid Python installation: unable to open /usr/lib64/python2.6/config/Makefile (No such file or directory)
+make: *** [pyrf] Error 1
 
-OK, I think this is right... event_sched_out() will see
-PERF_EVENT_STATE_INACTIVE if perf_event_task_sched_in() was not
-called yet.
-
-But,
-
-> -static void perf_event_remove_from_context(struct perf_event *event)
-> +static void perf_remove_from_context(struct perf_event *event)
->  {
-> ...
->  	raw_spin_lock_irq(&ctx->lock);
->  	/*
-> -	 * If the context is active we need to retry the smp call.
-> +	 * If we failed to find a running task, but find it running now that
-> +	 * we've acquired the ctx->lock, retry.
->  	 */
-> -	if (ctx->nr_active && !list_empty(&event->group_entry)) {
-> +	if (task_curr(task)) {
->  		raw_spin_unlock_irq(&ctx->lock);
->  		goto retry;
->  	}
->
->  	/*
-> -	 * The lock prevents that this context is scheduled in so we
-> -	 * can remove the event safely, if the call above did not
-> -	 * succeed.
-> +	 * Since the task isn't running, its safe to remove the event, us
-> +	 * holding the ctx->lock ensures the task won't get scheduled in.
->  	 */
-> -	if (!list_empty(&event->group_entry))
-> -		list_del_event(event, ctx);
-> +	list_del_event(event, ctx);
-
-this looks suspicious (the same for perf_install_in_context).
-
-Unlike the IPI handler, this can see schedule-in-progress in any state.
-In particular, we can see rq->curr == next (so that task_curr() == F),
-but before "prev" has already called perf_event_task_sched_out().
-
-So we have to check ctx->is_active, or schedule() should change rq->curr
-after perf_event_task_sched_out().
-
-> @@ -753,13 +819,13 @@ void perf_event_disable(struct perf_event *event)
-> ...
->  	 */
->  	if (event->state == PERF_EVENT_STATE_ACTIVE) {
->  		raw_spin_unlock_irq(&ctx->lock);
-> +		/*
-> +		 * Reload the task pointer, it might have been changed by
-> +		 * a concurrent perf_event_context_sched_out().
-> +		 */
-> +		task = ctx->task;
->  		goto retry;
-
-I am wondering why only perf_event_disable() needs this...
-
-Just curious, this is equally needed without this patch?
-
-Oleg.
 
