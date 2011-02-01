@@ -1,127 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757109Ab1BANv5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 08:51:57 -0500
-Received: from www.tglx.de ([62.245.132.106]:47202 "EHLO www.tglx.de"
+	id S1757136Ab1BANwC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 08:52:02 -0500
+Received: from www.tglx.de ([62.245.132.106]:47222 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757095Ab1BANvz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 08:51:55 -0500
-Message-Id: <20110201134418.232288779@linutronix.de>
+	id S1757108Ab1BANv6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 08:51:58 -0500
+Message-Id: <20110201134418.422446502@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Tue, 01 Feb 2011 13:51:20 -0000
+Date: Tue, 01 Feb 2011 13:51:45 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
         Richard Cochran <richard.cochran@omicron.at>,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 08/28] posix-timers: Cleanup restart_block usage
+Subject: [patch 10/28] posix-cpu-timers: Remove the stub nanosleep functions
 References: <20110201134320.688829863@linutronix.de>
-Content-Disposition: inline; filename=posix-timers-cleanup-restart-block.patch
+Content-Disposition: inline;
+	filename=posix-cpu-timers-use-default-nsleep-notsup.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-posix timers still use the legacy arg0-arg3 members of
-restart_block. Use restart_block.nanosleep instead
+CLOCK_THREAD_CPUTIME_ID implements stub functions for nanosleep and
+nanosleep_restart, which return -EINVAL. That return value is
+wrong. The correct return value is -ENOTSUP.
+
+Remove the stubs and let the new dispatch code return the correct
+error code.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: John Stultz <john.stultz@linaro.org>
 Cc: Richard Cochran <richard.cochran@omicron.at>
 ---
- kernel/posix-cpu-timers.c |   38 +++++++++++++++-----------------------
- kernel/posix-timers.c     |    2 +-
- 2 files changed, 16 insertions(+), 24 deletions(-)
+ kernel/posix-cpu-timers.c |   11 -----------
+ 1 file changed, 11 deletions(-)
 
 Index: linux-2.6-tip/kernel/posix-cpu-timers.c
 ===================================================================
 --- linux-2.6-tip.orig/kernel/posix-cpu-timers.c
 +++ linux-2.6-tip/kernel/posix-cpu-timers.c
-@@ -1485,7 +1485,7 @@ int posix_cpu_nsleep(const clockid_t whi
- 		     struct timespec *rqtp, struct timespec __user *rmtp)
- {
- 	struct restart_block *restart_block =
--	    &current_thread_info()->restart_block;
-+		&current_thread_info()->restart_block;
- 	struct itimerspec it;
- 	int error;
- 
-@@ -1501,50 +1501,42 @@ int posix_cpu_nsleep(const clockid_t whi
- 
- 	if (error == -ERESTART_RESTARTBLOCK) {
- 
--	       	if (flags & TIMER_ABSTIME)
-+		if (flags & TIMER_ABSTIME)
- 			return -ERESTARTNOHAND;
- 		/*
--	 	 * Report back to the user the time still remaining.
--	 	 */
--		if (rmtp != NULL && copy_to_user(rmtp, &it.it_value, sizeof *rmtp))
-+		 * Report back to the user the time still remaining.
-+		 */
-+		if (rmtp && copy_to_user(rmtp, &it.it_value, sizeof *rmtp))
- 			return -EFAULT;
- 
- 		restart_block->fn = posix_cpu_nsleep_restart;
--		restart_block->arg0 = which_clock;
--		restart_block->arg1 = (unsigned long) rmtp;
--		restart_block->arg2 = rqtp->tv_sec;
--		restart_block->arg3 = rqtp->tv_nsec;
-+		restart_block->nanosleep.index = which_clock;
-+		restart_block->nanosleep.rmtp = rmtp;
-+		restart_block->nanosleep.expires = timespec_to_ns(rqtp);
- 	}
- 	return error;
+@@ -1586,15 +1586,6 @@ static int thread_cpu_timer_create(struc
+ 	timer->it_clock = THREAD_CLOCK;
+ 	return posix_cpu_timer_create(timer);
  }
+-static int thread_cpu_nsleep(const clockid_t which_clock, int flags,
+-			      struct timespec *rqtp, struct timespec __user *rmtp)
+-{
+-	return -EINVAL;
+-}
+-static long thread_cpu_nsleep_restart(struct restart_block *restart_block)
+-{
+-	return -EINVAL;
+-}
  
- long posix_cpu_nsleep_restart(struct restart_block *restart_block)
- {
--	clockid_t which_clock = restart_block->arg0;
--	struct timespec __user *rmtp;
-+	clockid_t which_clock = restart_block->nanosleep.index;
- 	struct timespec t;
- 	struct itimerspec it;
- 	int error;
+ struct k_clock clock_posix_cpu = {
+ 	.clock_getres	= posix_cpu_clock_getres,
+@@ -1623,8 +1614,6 @@ static __init int init_posix_cpu_timers(
+ 		.clock_get	= thread_cpu_clock_get,
+ 		.clock_set	= do_posix_clock_nosettime,
+ 		.timer_create	= thread_cpu_timer_create,
+-		.nsleep		= thread_cpu_nsleep,
+-		.nsleep_restart	= thread_cpu_nsleep_restart,
+ 	};
+ 	struct timespec ts;
  
--	rmtp = (struct timespec __user *) restart_block->arg1;
--	t.tv_sec = restart_block->arg2;
--	t.tv_nsec = restart_block->arg3;
-+	t = ns_to_timespec(restart_block->nanosleep.expires);
- 
--	restart_block->fn = do_no_restart_syscall;
- 	error = do_cpu_nanosleep(which_clock, TIMER_ABSTIME, &t, &it);
- 
- 	if (error == -ERESTART_RESTARTBLOCK) {
-+		struct timespec __user *rmtp = restart_block->nanosleep.rmtp;
- 		/*
--	 	 * Report back to the user the time still remaining.
--	 	 */
--		if (rmtp != NULL && copy_to_user(rmtp, &it.it_value, sizeof *rmtp))
-+		 * Report back to the user the time still remaining.
-+		 */
-+		if (rmtp && copy_to_user(rmtp, &it.it_value, sizeof *rmtp))
- 			return -EFAULT;
- 
--		restart_block->fn = posix_cpu_nsleep_restart;
--		restart_block->arg0 = which_clock;
--		restart_block->arg1 = (unsigned long) rmtp;
--		restart_block->arg2 = t.tv_sec;
--		restart_block->arg3 = t.tv_nsec;
-+		restart_block->nanosleep.expires = timespec_to_ns(&t);
- 	}
- 	return error;
- 
-Index: linux-2.6-tip/kernel/posix-timers.c
-===================================================================
---- linux-2.6-tip.orig/kernel/posix-timers.c
-+++ linux-2.6-tip/kernel/posix-timers.c
-@@ -1034,7 +1034,7 @@ SYSCALL_DEFINE4(clock_nanosleep, const c
-  */
- long clock_nanosleep_restart(struct restart_block *restart_block)
- {
--	clockid_t which_clock = restart_block->arg0;
-+	clockid_t which_clock = restart_block->nanosleep.index;
- 	struct k_clock *kc = clockid_to_kclock(which_clock);
- 
- 	return kc->nsleep_restart(restart_block);
 
 
