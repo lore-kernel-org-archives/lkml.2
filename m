@@ -1,181 +1,348 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115Ab1BAQ30 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 11:29:26 -0500
-Received: from ausxippc101.us.dell.com ([143.166.85.207]:16943 "EHLO
-	ausxippc101.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439Ab1BAQ3Y convert rfc822-to-8bit (ORCPT
+	id S1752177Ab1BAQao (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 11:30:44 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:42858 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320Ab1BAQan (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 11:29:24 -0500
-X-Loopcount0: from 10.175.216.250
-From: <Narendra_K@Dell.com>
-To: <jbarnes@virtuousgeek.org>
-CC: <sfr@canb.auug.org.au>, <lenb@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-next@vger.kernel.org>, <Matt_Domsch@Dell.com>,
-        <Charles_Rose@Dell.com>, <Surya_Prabhakar@Dell.com>
-Date: Tue, 1 Feb 2011 08:28:55 -0800
-Subject: Re: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by
- allmodconfig
-Thread-Topic: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by
- allmodconfig
-Thread-Index: AcvCLR55SQWnMOqGRKqdFpnN3k8kJQ==
-Message-ID: <20110201165116.GA29873@fedora14-r610.oslab.blr.amer.dell.com>
-References: <20110112160229.7b8d82c1@jbarnes-desktop>
- <alpine.LFD.2.02.1101122217370.19754@x980>
- <20110113075556.789ac3c3@jbarnes-vaio.home>
- <20110113162755.GA5872@fedora14-r610.oslab.blr.amer.dell.com>
- <20110114154458.GA18289@fedora14-r610.oslab.blr.amer.dell.com>
- <20110115080949.62176a3c.sfr@canb.auug.org.au>
- <20110117195215.GA2708@fedora14-r610.oslab.blr.amer.dell.com>
- <20110120190459.GA30978@fedora14-r610.oslab.blr.amer.dell.com>
- <20110128155337.GA27642@fedora14-r610.oslab.blr.amer.dell.com>
- <20110128084518.7783091e@jbarnes-desktop>
-In-Reply-To: <20110128084518.7783091e@jbarnes-desktop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mutt/1.5.21 (2010-09-15)
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 1 Feb 2011 11:30:43 -0500
+From: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+To: mroberto@cpti.cetuc.puc-rio.br, a.zummo@towertech.it,
+        john.stultz@linaro.org
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] RTC: Fix for issues in the kernel RTC API.
+Date: Tue,  1 Feb 2011 14:30:20 -0200
+Message-Id: <1296577820-27456-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 28, 2011 at 10:15:18PM +0530, Jesse Barnes wrote:
-> > > > > 
-> > > > > Even on platforms that don't support ACPI or DMI ...
-> > > > > 
-> > > > > You should really restrict this to CONFIG_ACPI || CONFIG_DMI ||
-> > > > > CONFIG_NLS ... maybe create a CONFIG_NLS_BASE that is selected by ACPI,
-> > > > > DMI and NLS?
-> > > > 
-> > > > Hi Stephen,
-> > > > 
-> > > > Thank you for the suggestions. 
-> > > > 
-> > > > I agree with your suggestion that we should compile nls_base.o
-> > > > conditionally, only when ACPI || DMI || NLS. I have introduced a bew
-> > > > config option CONFIG_NLS_BASE and made ACPI, DMI and NLS select it.
-> > > > 
-> > > > V1 -> V2:
-> > > > 
-> > > > 1. Conditionally compile fs/nls/nls_base.c by introducing a new config
-> > > > option CONFIG_NLS_BASE, which is selected by (ACPI || DMI || NLS).
-> > > > Behavior of the rest of the files under fs/nls is not changed.
-> > > > 
-> > > > From: Narendra K <narendra_k@dell.com>
-> > > > Subject: [PATCH V2] Fix build failure when CONFIG_NLS is set to 'm' by allmodconfig
-> > > 
-> > > Hi,
-> > > 
-> > > Please let me know if there are any concerns with Version 2 of the patch.
-> > > If it looks good please consider it for inclusion.
-> > 
-> > Hi Jesse,
-> > 
-> > Please let me know if there are any concerns with this patch. If it is
-> > acceptable, please consider this for inclusion.
-> 
-> I think the fs stuff will have to get an ack from Al.  If he doesn't
-> like it, see my earlier mail for another suggestion.
+This patch fixes the following issues with the RTC API:
 
-Hi Al,
+1 - The alarm_irq_enable() and the update_irq_enable() callbacks were
+not beeing called anywhere in the code. They are necessary if you want
+to write a driver that does not use the kernel pre-existent timer
+implemented alarm and update interrupts.
 
-Please let me know if there are any concerns with this patch. If not,
-please ack this patch.
+2 - In the current configuration, an update interrupt, for example,
+would be a trigger for an alarm interrupt as well, even though the mode
+variable stated it was an update interrupt. To avoid that, mode is
+beeing checked inside rtc_handle_legacy_irq(). That used to be the
+previous user space behaviour.
 
-I have attached the patch here for your reference -
+3 - The irq_set_freq() and rtc_irq_set_state() functions are entry
+points to the RTC API, and were not calling the irq_set_state() and
+irq_set_freq() callbacks. These are also necessary overrides to provide
+a proper independent RTC implementation.
 
-From: Narendra K <narendra_k@dell.com>
-Subject: [PATCH] Fix build failure when CONFIG_NLS is set to 'm' by allmodconfig
+4 - The rtc-test kernel RTC driver has been updated to work properly
+with the new kernel RTC timer infrastructure. This driver has been used
+together with the rtctest.c source code present in the file
+Documentation/rtc.txt to test the user space behaviour of all the
+modifications in this patch.
 
-This patch fixes the following build breakage introduced by the patch
-PCI:export ACPI _DSM provided firmware instance number and string to sysfs.
-(previously commit a6247cd4be20cb5439db5cb7b0b6cc67fdc8e2a2).
-
-http://marc.info/?l=linux-pci&m=129313294112736&w=1
-
-drivers/built-in.o: In function `T.647':
-pci-label.c:(.text+0x28514): undefined reference to `utf16s_to_utf8s'
-
-This happens because 'make allmodconfig' sets CONFIG_NLS=m and makes
-'utf16s_to_utf8s` unavailable to drivers/pci/pci-label.o which is built
-into vmlinux.
-
-This is fixed by making fs/nls/nls_base.c compile conditionally into
-vmlinux by introducing a new config option CONFIG_NLS_BASE which is
-selected by (ACPI || DMI || NLS).
-
-Signed-off-by: Narendra K <narendra_k@dell.com>
+Signed-off-by: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
 ---
- fs/Makefile     |    2 +-
- fs/nls/Kconfig  |   14 ++++++++++++++
- fs/nls/Makefile |    2 +-
- 3 files changed, 16 insertions(+), 2 deletions(-)
+ drivers/rtc/interface.c |   63 +++++++++++++++++++++++++++++---------
+ drivers/rtc/rtc-dev.c   |   12 ++++----
+ drivers/rtc/rtc-test.c  |   77 ++++++++++++++++++++++++++++++++++++++++------
+ 3 files changed, 121 insertions(+), 31 deletions(-)
 
-diff --git a/fs/Makefile b/fs/Makefile
-index a7f7cef..1e78b9b 100644
---- a/fs/Makefile
-+++ b/fs/Makefile
-@@ -86,7 +86,7 @@ obj-$(CONFIG_NFS_FS)		+= nfs/
- obj-$(CONFIG_EXPORTFS)		+= exportfs/
- obj-$(CONFIG_NFSD)		+= nfsd/
- obj-$(CONFIG_LOCKD)		+= lockd/
--obj-$(CONFIG_NLS)		+= nls/
-+obj-y				+= nls/
- obj-$(CONFIG_SYSV_FS)		+= sysv/
- obj-$(CONFIG_CIFS)		+= cifs/
- obj-$(CONFIG_NCP_FS)		+= ncpfs/
-diff --git a/fs/nls/Kconfig b/fs/nls/Kconfig
-index a39edc4..2fb92e5 100644
---- a/fs/nls/Kconfig
-+++ b/fs/nls/Kconfig
-@@ -4,6 +4,7 @@
+diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
+index 90384b9..6cb4b65 100644
+--- a/drivers/rtc/interface.c
++++ b/drivers/rtc/interface.c
+@@ -194,6 +194,11 @@ int rtc_alarm_irq_enable(struct rtc_device *rtc, unsigned int enabled)
+ 	if (err)
+ 		return err;
  
- menuconfig NLS
- 	tristate "Native language support"
-+	select NLS_BASE
- 	---help---
- 	  The base Native Language Support. A number of filesystems
- 	  depend on it (e.g. FAT, JOLIET, NT, BEOS filesystems), as well
-@@ -17,6 +18,19 @@ menuconfig NLS
- 
- if NLS
- 
-+config NLS_BASE
-+	bool "Base NLS functions"
-+	depends on ACPI || DMI
-+	default y
-+	---help---
-+	  The base NLS support functions which handle unicode traslations.
++	if (rtc->ops->alarm_irq_enable) {
++		err = rtc->ops->alarm_irq_enable(rtc->dev.parent, enabled);
++		goto out;
++	}
 +
-+	  If unsure, say Y.
-+
-+	  This config option is selected by ACPI && DMI && NLS as the
-+	  functions defined here are needed in vmlinux and if built as
-+	  module cause build issues.
-+
- config NLS_DEFAULT
- 	string "Default NLS Option"
- 	default "iso8859-1"
-diff --git a/fs/nls/Makefile b/fs/nls/Makefile
-index f499dd7..dde741f 100644
---- a/fs/nls/Makefile
-+++ b/fs/nls/Makefile
-@@ -2,7 +2,7 @@
- # Makefile for native language support
- #
+ 	if (rtc->aie_timer.enabled != enabled) {
+ 		if (enabled) {
+ 			rtc->aie_timer.enabled = 1;
+@@ -211,6 +216,7 @@ int rtc_alarm_irq_enable(struct rtc_device *rtc, unsigned int enabled)
+ 	else
+ 		err = rtc->ops->alarm_irq_enable(rtc->dev.parent, enabled);
  
--obj-$(CONFIG_NLS)		+= nls_base.o
-+obj-$(CONFIG_NLS_BASE)		+= nls_base.o
++out:
+ 	mutex_unlock(&rtc->ops_lock);
+ 	return err;
+ }
+@@ -222,6 +228,11 @@ int rtc_update_irq_enable(struct rtc_device *rtc, unsigned int enabled)
+ 	if (err)
+ 		return err;
  
- obj-$(CONFIG_NLS_CODEPAGE_437)	+= nls_cp437.o
- obj-$(CONFIG_NLS_CODEPAGE_737)	+= nls_cp737.o
++	if (rtc->ops->update_irq_enable) {
++		err = rtc->ops->update_irq_enable(rtc->dev.parent, enabled);
++		goto out;
++	}
++
+ 	/* make sure we're changing state */
+ 	if (rtc->uie_rtctimer.enabled == enabled)
+ 		goto out;
+@@ -263,19 +274,23 @@ static void rtc_handle_legacy_irq(struct rtc_device *rtc, int num, int mode)
+ {
+ 	unsigned long flags;
+ 
+-	/* mark one irq of the appropriate mode */
+-	spin_lock_irqsave(&rtc->irq_lock, flags);
+-	rtc->irq_data = (rtc->irq_data + (num << 8)) | (RTC_IRQF|mode);
+-	spin_unlock_irqrestore(&rtc->irq_lock, flags);
+-
+-	/* call the task func */
+-	spin_lock_irqsave(&rtc->irq_task_lock, flags);
+-	if (rtc->irq_task)
+-		rtc->irq_task->func(rtc->irq_task->private_data);
+-	spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
+-
+-	wake_up_interruptible(&rtc->irq_queue);
+-	kill_fasync(&rtc->async_queue, SIGIO, POLL_IN);
++	if (((mode & RTC_UF) && rtc->uie_rtctimer.enabled) ||
++	    ((mode & RTC_AF) && rtc->aie_timer.enabled) ||
++	    ((mode & RTC_PF) && rtc->pie_enabled)) {
++		/* mark one irq of the appropriate mode */
++		spin_lock_irqsave(&rtc->irq_lock, flags);
++		rtc->irq_data = (rtc->irq_data + (num << 8)) | (RTC_IRQF|mode);
++		spin_unlock_irqrestore(&rtc->irq_lock, flags);
++
++		/* call the task func */
++		spin_lock_irqsave(&rtc->irq_task_lock, flags);
++		if (rtc->irq_task)
++			rtc->irq_task->func(rtc->irq_task->private_data);
++		spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
++
++		wake_up_interruptible(&rtc->irq_queue);
++		kill_fasync(&rtc->async_queue, SIGIO, POLL_IN);
++	}
+ }
+ 
+ 
+@@ -423,9 +438,18 @@ EXPORT_SYMBOL_GPL(rtc_irq_unregister);
+  */
+ int rtc_irq_set_state(struct rtc_device *rtc, struct rtc_task *task, int enabled)
+ {
+-	int err = 0;
+ 	unsigned long flags;
+ 
++	int err = mutex_lock_interruptible(&rtc->ops_lock);
++	if (err)
++		return err;
++	if (rtc->ops->irq_set_state) {
++		err = rtc->ops->irq_set_state(rtc->dev.parent, enabled);
++		mutex_unlock(&rtc->ops_lock);
++		return err;
++	}
++	mutex_unlock(&rtc->ops_lock);
++
+ 	spin_lock_irqsave(&rtc->irq_task_lock, flags);
+ 	if (rtc->irq_task != NULL && task == NULL)
+ 		err = -EBUSY;
+@@ -457,9 +481,18 @@ EXPORT_SYMBOL_GPL(rtc_irq_set_state);
+  */
+ int rtc_irq_set_freq(struct rtc_device *rtc, struct rtc_task *task, int freq)
+ {
+-	int err = 0;
+ 	unsigned long flags;
+ 
++	int err = mutex_lock_interruptible(&rtc->ops_lock);
++	if (err)
++		return err;
++	if (rtc->ops->irq_set_freq) {
++		err = rtc->ops->irq_set_freq(rtc->dev.parent, freq);
++		mutex_unlock(&rtc->ops_lock);
++		return err;
++	}
++	mutex_unlock(&rtc->ops_lock);
++
+ 	spin_lock_irqsave(&rtc->irq_task_lock, flags);
+ 	if (rtc->irq_task != NULL && task == NULL)
+ 		err = -EBUSY;
+diff --git a/drivers/rtc/rtc-dev.c b/drivers/rtc/rtc-dev.c
+index 212b16e..d901160 100644
+--- a/drivers/rtc/rtc-dev.c
++++ b/drivers/rtc/rtc-dev.c
+@@ -261,12 +261,12 @@ static long rtc_dev_ioctl(struct file *file,
+ 		return rtc_set_time(rtc, &tm);
+ 
+ 	case RTC_PIE_ON:
+-		err = rtc_irq_set_state(rtc, NULL, 1);
+-		break;
++		mutex_unlock(&rtc->ops_lock);
++		return rtc_irq_set_state(rtc, NULL, 1);
+ 
+ 	case RTC_PIE_OFF:
+-		err = rtc_irq_set_state(rtc, NULL, 0);
+-		break;
++		mutex_unlock(&rtc->ops_lock);
++		return rtc_irq_set_state(rtc, NULL, 0);
+ 
+ 	case RTC_AIE_ON:
+ 		mutex_unlock(&rtc->ops_lock);
+@@ -285,8 +285,8 @@ static long rtc_dev_ioctl(struct file *file,
+ 		return rtc_update_irq_enable(rtc, 0);
+ 
+ 	case RTC_IRQP_SET:
+-		err = rtc_irq_set_freq(rtc, NULL, arg);
+-		break;
++		mutex_unlock(&rtc->ops_lock);
++		return rtc_irq_set_freq(rtc, NULL, arg);
+ 
+ 	case RTC_IRQP_READ:
+ 		err = put_user(rtc->irq_freq, (unsigned long __user *)uarg);
+diff --git a/drivers/rtc/rtc-test.c b/drivers/rtc/rtc-test.c
+index 51725f7..7cbe3e3 100644
+--- a/drivers/rtc/rtc-test.c
++++ b/drivers/rtc/rtc-test.c
+@@ -13,6 +13,8 @@
+ #include <linux/rtc.h>
+ #include <linux/platform_device.h>
+ 
++static const unsigned long RTC_DEFAULT_PERIODIC_FREQ = 1024;
++
+ static struct platform_device *test0 = NULL, *test1 = NULL;
+ 
+ static int test_rtc_read_alarm(struct device *dev,
+@@ -31,12 +33,54 @@ static int test_rtc_read_time(struct device *dev,
+ 	struct rtc_time *tm)
+ {
+ 	rtc_time_to_tm(get_seconds(), tm);
++
+ 	return 0;
+ }
+ 
+ static int test_rtc_set_mmss(struct device *dev, unsigned long secs)
+ {
+ 	dev_info(dev, "%s, secs = %lu\n", __func__, secs);
++
++	return 0;
++}
++
++static int test_rtc_irq_set_state(struct device *dev, int enabled)
++{
++	struct platform_device *plat_dev = to_platform_device(dev);
++	struct rtc_device *rtc = platform_get_drvdata(plat_dev);
++
++	rtc->pie_enabled = enabled;
++
++	return 0;
++}
++
++static int test_rtc_irq_set_freq(struct device *dev, int freq)
++{
++	struct platform_device *plat_dev = to_platform_device(dev);
++	struct rtc_device *rtc = platform_get_drvdata(plat_dev);
++
++	rtc->irq_freq = freq;
++
++	return 0;
++}
++
++static int test_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
++{
++	struct platform_device *plat_dev = to_platform_device(dev);
++	struct rtc_device *rtc = platform_get_drvdata(plat_dev);
++
++	rtc->aie_timer.enabled = enabled;
++
++	return 0;
++}
++
++static int test_rtc_update_irq_enable(struct device *dev, unsigned int enabled)
++{
++	struct platform_device *plat_dev = to_platform_device(dev);
++	struct rtc_device *rtc = platform_get_drvdata(plat_dev);
++
++	rtc->uie_rtctimer.enabled = enabled;
++
+ 	return 0;
+ }
+ 
+@@ -50,12 +94,11 @@ static int test_rtc_proc(struct device *dev, struct seq_file *seq)
+ 	return 0;
+ }
+ 
++/* As this is a test device, I am leaving the ioctl() code here to make it
++ * simpler for those want to test. The code currently does nothing. */
+ static int test_rtc_ioctl(struct device *dev, unsigned int cmd,
+ 	unsigned long arg)
+ {
+-	/* We do support interrupts, they're generated
+-	 * using the sysfs interface.
+-	 */
+ 	switch (cmd) {
+ 	case RTC_PIE_ON:
+ 	case RTC_PIE_OFF:
+@@ -63,7 +106,9 @@ static int test_rtc_ioctl(struct device *dev, unsigned int cmd,
+ 	case RTC_UIE_OFF:
+ 	case RTC_AIE_ON:
+ 	case RTC_AIE_OFF:
+-		return 0;
++		/* Return zero in case you want to process the ioctl() */
++		/*return 0;*/
++		return -ENOIOCTLCMD;
+ 
+ 	default:
+ 		return -ENOIOCTLCMD;
+@@ -77,16 +122,22 @@ static const struct rtc_class_ops test_rtc_ops = {
+ 	.set_alarm = test_rtc_set_alarm,
+ 	.set_mmss = test_rtc_set_mmss,
+ 	.ioctl = test_rtc_ioctl,
++	.irq_set_state = test_rtc_irq_set_state,
++	.irq_set_freq = test_rtc_irq_set_freq,
++	.alarm_irq_enable = test_rtc_alarm_irq_enable,
++	.update_irq_enable = test_rtc_update_irq_enable,
+ };
+ 
+ static ssize_t test_irq_show(struct device *dev,
+-				struct device_attribute *attr, char *buf)
++	struct device_attribute *attr, char *buf)
+ {
+ 	return sprintf(buf, "%d\n", 42);
+ }
++
++/* We support interrupts generated using the sysfs interface. */
+ static ssize_t test_irq_store(struct device *dev,
+-				struct device_attribute *attr,
+-				const char *buf, size_t count)
++	struct device_attribute *attr,
++	const char *buf, size_t count)
+ {
+ 	int retval;
+ 	struct platform_device *plat_dev = to_platform_device(dev);
+@@ -94,11 +145,11 @@ static ssize_t test_irq_store(struct device *dev,
+ 
+ 	retval = count;
+ 	if (strncmp(buf, "tick", 4) == 0)
+-		rtc_update_irq(rtc, 1, RTC_PF | RTC_IRQF);
++		rtc_pie_update_irq(&rtc->pie_timer);
+ 	else if (strncmp(buf, "alarm", 5) == 0)
+-		rtc_update_irq(rtc, 1, RTC_AF | RTC_IRQF);
++		rtc_aie_update_irq(rtc);
+ 	else if (strncmp(buf, "update", 6) == 0)
+-		rtc_update_irq(rtc, 1, RTC_UF | RTC_IRQF);
++		rtc_uie_update_irq(rtc);
+ 	else
+ 		retval = -EINVAL;
+ 
+@@ -120,6 +171,12 @@ static int test_probe(struct platform_device *plat_dev)
+ 	if (err)
+ 		goto err;
+ 
++	/* If we don't set rtc->irq_freq here, a spurious periodic interrup
++	 * can cause a division by zero in the kernel. And with this driver
++	 * we certainly can generate spurious interrupts through the sys
++	 * interface. */
++	rtc->irq_freq = RTC_DEFAULT_PERIODIC_FREQ;
++
+ 	platform_set_drvdata(plat_dev, rtc);
+ 
+ 	return 0;
 -- 
-1.7.3.1
+1.7.3.4
 
-With regards,
-Narendra K
