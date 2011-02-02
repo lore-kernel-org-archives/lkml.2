@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab1BBAtq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 19:49:46 -0500
-Received: from mga14.intel.com ([143.182.124.37]:3685 "EHLO mga14.intel.com"
+	id S1753928Ab1BBAuC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 19:50:02 -0500
+Received: from mga11.intel.com ([192.55.52.93]:43069 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753869Ab1BBApL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:45:11 -0500
+	id S1753880Ab1BBApK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:45:10 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="382960976"
+   d="scan'208";a="653505339"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110201443.618138584@firstfloor.org>
 In-Reply-To: <20110201443.618138584@firstfloor.org>
-To: alexdeucher@gmail.com, airlied@redhat.com, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [122/139] drm/radeon/kms: reorder display resume to avoid problems
-Message-Id: <20110202004521.70CFA3E09BD@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:45:21 -0800 (PST)
+To: alexdeucher@gmail.com, ak@linux.intel.com, jglisse@redhat.com,
+        airlied@redhat.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: [PATCH] [121/139] drm/radeon/kms: fix evergreen asic reset
+Message-Id: <20110202004520.65E9B3E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:45:20 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,63 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 From: Alex Deucher <alexdeucher@gmail.com>
 
-commit a93f344d3c04e4b84490c65f2a574387c593be40 upstream.
+commit 9f0c4f9c2f835eee1bbb93f96bf9483d56f1892b upstream.
 
-On resume, we were attemping to unblank the displays before the
-timing and plls had be reprogrammed which led to atom timeouts
-waiting for things that are not yet programmed.  Re-program
-the mode first, then reset the dpms state.
-
-This fixes the infamous atombios timeouts on resume.
+Only reset the grbm blocks, srbm tends to lock the GPU
+if not done properly and in most cases is not necessary.
+Also, no need to call asic init after reset the grbm blocks.
 
 Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Reviewed-by: Jerome Glisse <jglisse@redhat.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/gpu/drm/radeon/atombios_crtc.c |    3 ++-
- drivers/gpu/drm/radeon/radeon_device.c |    9 ++++-----
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/radeon/evergreen.c |   15 ---------------
+ 1 file changed, 15 deletions(-)
 
-Index: linux-2.6.35.y/drivers/gpu/drm/radeon/atombios_crtc.c
+Index: linux-2.6.35.y/drivers/gpu/drm/radeon/evergreen.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/gpu/drm/radeon/atombios_crtc.c
-+++ linux-2.6.35.y/drivers/gpu/drm/radeon/atombios_crtc.c
-@@ -259,7 +259,8 @@ void atombios_crtc_dpms(struct drm_crtc 
- 	case DRM_MODE_DPMS_SUSPEND:
- 	case DRM_MODE_DPMS_OFF:
- 		drm_vblank_pre_modeset(dev, radeon_crtc->crtc_id);
--		atombios_blank_crtc(crtc, ATOM_ENABLE);
-+		if (radeon_crtc->enabled)
-+			atombios_blank_crtc(crtc, ATOM_ENABLE);
- 		if (ASIC_IS_DCE3(rdev))
- 			atombios_enable_crtc_memreq(crtc, ATOM_DISABLE);
- 		atombios_enable_crtc(crtc, ATOM_DISABLE);
-Index: linux-2.6.35.y/drivers/gpu/drm/radeon/radeon_device.c
-===================================================================
---- linux-2.6.35.y.orig/drivers/gpu/drm/radeon/radeon_device.c
-+++ linux-2.6.35.y/drivers/gpu/drm/radeon/radeon_device.c
-@@ -799,11 +799,6 @@ int radeon_resume_kms(struct drm_device 
- 	radeon_pm_resume(rdev);
- 	radeon_restore_bios_scratch_regs(rdev);
+--- linux-2.6.35.y.orig/drivers/gpu/drm/radeon/evergreen.c
++++ linux-2.6.35.y/drivers/gpu/drm/radeon/evergreen.c
+@@ -1406,7 +1406,6 @@ bool evergreen_gpu_is_lockup(struct rade
+ static int evergreen_gpu_soft_reset(struct radeon_device *rdev)
+ {
+ 	struct evergreen_mc_save save;
+-	u32 srbm_reset = 0;
+ 	u32 grbm_reset = 0;
  
--	/* turn on display hw */
--	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
--		drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
--	}
+ 	dev_info(rdev->dev, "GPU softreset \n");
+@@ -1445,16 +1444,6 @@ static int evergreen_gpu_soft_reset(stru
+ 	udelay(50);
+ 	WREG32(GRBM_SOFT_RESET, 0);
+ 	(void)RREG32(GRBM_SOFT_RESET);
 -
- 	radeon_fbdev_set_suspend(rdev, 0);
- 	release_console_sem();
- 
-@@ -811,6 +806,10 @@ int radeon_resume_kms(struct drm_device 
- 	radeon_hpd_init(rdev);
- 	/* blat the mode back in */
- 	drm_helper_resume_force_mode(dev);
-+	/* turn on display hw */
-+	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
-+		drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
-+	}
+-	/* reset all the system blocks */
+-	srbm_reset = SRBM_SOFT_RESET_ALL_MASK;
+-
+-	dev_info(rdev->dev, "  SRBM_SOFT_RESET=0x%08X\n", srbm_reset);
+-	WREG32(SRBM_SOFT_RESET, srbm_reset);
+-	(void)RREG32(SRBM_SOFT_RESET);
+-	udelay(50);
+-	WREG32(SRBM_SOFT_RESET, 0);
+-	(void)RREG32(SRBM_SOFT_RESET);
+ 	/* Wait a little for things to settle down */
+ 	udelay(50);
+ 	dev_info(rdev->dev, "  GRBM_STATUS=0x%08X\n",
+@@ -1465,10 +1454,6 @@ static int evergreen_gpu_soft_reset(stru
+ 		RREG32(GRBM_STATUS_SE1));
+ 	dev_info(rdev->dev, "  SRBM_STATUS=0x%08X\n",
+ 		RREG32(SRBM_STATUS));
+-	/* After reset we need to reinit the asic as GPU often endup in an
+-	 * incoherent state.
+-	 */
+-	atom_asic_init(rdev->mode_info.atom_context);
+ 	evergreen_mc_resume(rdev, &save);
  	return 0;
  }
- 
