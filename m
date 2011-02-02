@@ -1,111 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579Ab1BBQhI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 11:37:08 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:65409 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754345Ab1BBQhH convert rfc822-to-8bit (ORCPT
+	id S1754661Ab1BBQhf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 11:37:35 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:34968 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754597Ab1BBQhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 11:37:07 -0500
-Date: Wed, 2 Feb 2011 14:37:34 -0200
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: =?iso-8859-1?Q?Rog=E9rio?= Brito <rbrito@ime.usp.br>
-Cc: linux-kernel@vger.kernel.org,
-        Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>,
-        Alexander Holler <holler@ahsoftware.de>
-Subject: Re: [PATCH] ath3k: Avoid duplication of code
-Message-ID: <20110202163734.GE2273@joana>
-References: <20110127232453.GA3531@ime.usp.br>
- <4D4284D7.8000200@ahsoftware.de>
- <20110128221807.GA9741@ime.usp.br>
+	Wed, 2 Feb 2011 11:37:32 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=LHbO82oCzVK5CUEaTQImqftDUrz06J7HorLFOylQ7hG5fnEbczkULFSU9CALRAOZlt
+         xgWKfA6d4Jna1Zrr5ZxSuOnMCh2Kdj8aRVn2V6T2eA3cTLE2vVRQoQO7spF80ka6NDzZ
+         9l8MVrhS5oc1j2DVQB0/mpmtsTCMTeZVcXtQU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20110128221807.GA9741@ime.usp.br>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110202133839.GA14904@jm.kir.nu>
+References: <AANLkTikbrzLeeY8Gosw+7Aic1=V=5f+sD382sXwGDWbA@mail.gmail.com>
+ <AANLkTi=_gHfEKKC2rsA0pc6Otu5FU4CtVKA2UR85b+GV@mail.gmail.com>
+ <AANLkTim9uNH8BzjDM5Ekt3ayBe+7QfE4vnXR0bc-=-Yn@mail.gmail.com>
+ <AANLkTikasAe2H+HyoWDr=NbuxW6LJAET-JqATWMmMmq0@mail.gmail.com>
+ <1296633772.3624.2.camel@jlt3.sipsolutions.net> <20110202113052.GA14126@jm.kir.nu>
+ <1296646434.5671.1.camel@jlt3.sipsolutions.net> <20110202133839.GA14904@jm.kir.nu>
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Wed, 2 Feb 2011 08:37:11 -0800
+Message-ID: <AANLkTimimuho23cY7LR+HN0+VXf4Xo+i4S8EHHz3ORhK@mail.gmail.com>
+Subject: Re: Support for Android for mac80211 / cfg80211 802.11 drivers
+To: Jouni Malinen <j@w1.fi>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        Bob Copeland <me@bobcopeland.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Amod Bodas <Amod.Bodas@atheros.com>,
+        Senthilkumar Balasubramanian 
+	<Senthilkumar.Balasubramanian@atheros.com>,
+        Sree Durbha <Sree.Durbha@atheros.com>,
+        Deepak Dhamdhere <Deepak.Dhamdhere@atheros.com>,
+        Xin Jin <Xin.Jin@atheros.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rogério,
+On Wed, Feb 2, 2011 at 5:38 AM, Jouni Malinen <j@w1.fi> wrote:
+> On Wed, Feb 02, 2011 at 12:33:54PM +0100, Johannes Berg wrote:
+>> What's the driver_cmd things they use? If we they add support for
+>> whatever it is to nl80211, why can those not be normal supplicant
+>> interfaces?
+>
+> I have not reviewed what exactly gets used and how, so this is only
+> based on what the modification for wpa_supplicant are exposing.
+>
+> There seems to be some kind of mechanism for stopping/starting/reloading
+> the driver which I do not fully understand. It includes some kind of
+> driver hang detection and maybe recovery from that etc..
+>
+> Then there is a very generic mechanism of passing any command from user
+> space (i.e., command string to a SIOCSIWPRIV) and that goes
+> transparently through wpa_supplicant.. The response comes back as a
+> string. In other words, you could implement pretty much anything in a
+> driver specific way with that.. At least following commands are used or
+> have used with that: RSSI, LINKSPEED, MACADDR, GETPOWER, GETBAND.
+>
+> Since it is difficult to tell just from wpa_supplicant changes what
+> exactly is done with these interfaces, the answer to the question of
+> why these could not be normal supplicant interfaces is not immediately
+> clear to me. I would assume that some of this functionality could
+> certainly be added once identified clearly what is needed. Some may
+> already be available (like MACADDR; assuming it is used to fetch local
+> MAC address).
 
-* Rogério Brito <rbrito@ime.usp.br> [2011-01-28 20:18:10 -0200]:
+Sounds like Android kernel guys need to get their shit together. Why
+is this so hard?
 
-> 
-> Hi.
-> 
-> In commit 86e09287e4f8c81831b4d4118a48597565f0d21b, to reduce memory
-> usage, the functions of the ath3k module were rewritten to release the
-> firmware blob after it has been loaded (successfully or not).
-> 
-> The resuting code has some redundancy and the compiler can potentially
-> produce better code if we omit a function call that is unconditionally
-> executed in
-> 
-> ,----
-> | 	if (ath3k_load_firmware(udev, firmware)) {
-> | 		release_firmware(firmware);
-> | 		return -EIO;
-> |	}
-> |	release_firmware(firmware);
-> |
-> |	return 0;
-> | }
-> `----
-> 
-> It may also be argued that the rewritten code becomes easier to read,
-> and also to see the code coverage of the snippet in question.
-> 
-> 
-> Signed-off-by: Rogério Brito <rbrito@ime.usp.br>
-> Cc: Alexander Holler <holler@ahsoftware.de>
-> Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>
-> Cc: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
-
-Please send me your patch in a 'git format-patch' way, so I can apply it
-without having to edit the commit message. And add "Bluetooth:" to the
-beginning of the commit title.
-
-> 
-> ---
-> 
-> Thanks for all the feedback on the previous patches. The one that didn't
-> compile before was sent without a hunk. This time everything all the
-> basics are verified.
-> 
-> 
-> diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
-> index a126e61..42fa531 100644
-> --- a/drivers/bluetooth/ath3k.c
-> +++ b/drivers/bluetooth/ath3k.c
-> @@ -106,6 +106,7 @@ static int ath3k_probe(struct usb_interface *intf,
->  {
->  	const struct firmware *firmware;
->  	struct usb_device *udev = interface_to_usbdev(intf);
-> +	int ret;
->  
->  	BT_DBG("intf %p id %p", intf, id);
->  
-> @@ -116,13 +117,10 @@ static int ath3k_probe(struct usb_interface *intf,
->  		return -EIO;
->  	}
->  
-> -	if (ath3k_load_firmware(udev, firmware)) {
-> -		release_firmware(firmware);
-> -		return -EIO;
-> -	}
-> +	ret = ath3k_load_firmware(udev, firmware);
->  	release_firmware(firmware);
->  
-> -	return 0;
-> +	return ret ? -EIO : 0;
-
-just return ret;
-It is enough.
-
-Regards,
-
--- 
-Gustavo F. Padovan
-http://profusion.mobi
+  Luis
