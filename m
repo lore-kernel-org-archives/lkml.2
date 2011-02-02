@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705Ab1BBAng (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 19:43:36 -0500
-Received: from mga09.intel.com ([134.134.136.24]:44408 "EHLO mga09.intel.com"
+	id S1753215Ab1BBBHu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 20:07:50 -0500
+Received: from mga09.intel.com ([134.134.136.24]:36336 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752666Ab1BBAnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:43:33 -0500
+	id S1752691Ab1BBAnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:43:35 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="598622322"
+   d="scan'208";a="703028321"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110201443.618138584@firstfloor.org>
 In-Reply-To: <20110201443.618138584@firstfloor.org>
-To: vbarshak@mvista.com, gdavis@mvista.com, catalin.marinas@arm.com,
-        rmk+kernel@arm.linux.org.uk, gregkh@suse.de, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [28/139] ARM: 6535/1: V6 MPCore v6_dma_inv_range and v6_dma_flush_range RWFO fix
-Message-Id: <20110202004343.1E1833E09C6@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:43:43 -0800 (PST)
+To: eric.dumazet@gmail.com, ak@linux.intel.com, opurdila@ixiacom.com,
+        davem@davemloft.net, gregkh@suse.de, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: [PATCH] [31/139] llc: fix a device refcount imbalance
+Message-Id: <20110202004346.444503E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:43:46 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,105 +25,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Valentine Barshak <vbarshak@mvista.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-commit 85b093bcc5322baa811a03ec73de0909c157f181 upstream.
+commit 35d9b0c906ad92d32a0b8db5daa6fabfcc2f068d upstream.
 
-Cache ownership must be acquired by reading/writing data from the
-cache line to make cache operation have the desired effect on the
-SMP MPCore CPU. However, the ownership is never acquired in the
-v6_dma_inv_range function when cleaning the first line and
-flushing the last one, in case the address is not aligned
-to D_CACHE_LINE_SIZE boundary.
-Fix this by reading/writing data if needed, before performing
-cache operations.
-While at it, fix v6_dma_flush_range to prevent RWFO outside
-the buffer.
+Le dimanche 05 décembre 2010 à 12:23 +0100, Eric Dumazet a écrit :
+> Le dimanche 05 décembre 2010 à 09:19 +0100, Eric Dumazet a écrit :
+>
+> > Hmm..
+> >
+> > If somebody can explain why RTNL is held in arp_ioctl() (and therefore
+> > in arp_req_delete()), we might first remove RTNL use in arp_ioctl() so
+> > that your patch can be applied.
+> >
+> > Right now it is not good, because RTNL wont be necessarly held when you
+> > are going to call arp_invalidate() ?
+>
+> While doing this analysis, I found a refcount bug in llc, I'll send a
+> patch for net-2.6
 
-Signed-off-by: Valentine Barshak <vbarshak@mvista.com>
-Signed-off-by: George G. Davis <gdavis@mvista.com>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Oh well, of course I must first fix the bug in net-2.6, and wait David
+pull the fix in net-next-2.6 before sending this rcu conversion.
+
+Note: this patch should be sent to stable teams (2.6.34 and up)
+
+[PATCH net-2.6] llc: fix a device refcount imbalance
+
+commit abf9d537fea225 (llc: add support for SO_BINDTODEVICE) added one
+refcount imbalance in llc_ui_bind(), because dev_getbyhwaddr() doesnt
+take a reference on device, while dev_get_by_index() does.
+
+Fix this using RCU locking. And since an RCU conversion will be done for
+2.6.38 for dev_getbyhwaddr(), put the rcu_read_lock/unlock exactly at
+their final place.
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Cc: Octavian Purdila <opurdila@ixiacom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mm/cache-v6.S |   28 ++++++++++++++++++++--------
- 1 file changed, 20 insertions(+), 8 deletions(-)
+ net/llc/af_llc.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-Index: linux-2.6.35.y/arch/arm/mm/cache-v6.S
+Index: linux-2.6.35.y/net/llc/af_llc.c
 ===================================================================
---- linux-2.6.35.y.orig/arch/arm/mm/cache-v6.S
-+++ linux-2.6.35.y/arch/arm/mm/cache-v6.S
-@@ -196,6 +196,10 @@ ENTRY(v6_flush_kern_dcache_area)
-  *	- end     - virtual end address of region
-  */
- v6_dma_inv_range:
-+#ifdef CONFIG_DMA_CACHE_RWFO
-+	ldrb	r2, [r0]			@ read for ownership
-+	strb	r2, [r0]			@ write for ownership
-+#endif
- 	tst	r0, #D_CACHE_LINE_SIZE - 1
- 	bic	r0, r0, #D_CACHE_LINE_SIZE - 1
- #ifdef HARVARD_CACHE
-@@ -204,6 +208,10 @@ v6_dma_inv_range:
- 	mcrne	p15, 0, r0, c7, c11, 1		@ clean unified line
- #endif
- 	tst	r1, #D_CACHE_LINE_SIZE - 1
-+#ifdef CONFIG_DMA_CACHE_RWFO
-+	ldrneb	r2, [r1, #-1]			@ read for ownership
-+	strneb	r2, [r1, #-1]			@ write for ownership
-+#endif
- 	bic	r1, r1, #D_CACHE_LINE_SIZE - 1
- #ifdef HARVARD_CACHE
- 	mcrne	p15, 0, r1, c7, c14, 1		@ clean & invalidate D line
-@@ -211,10 +219,6 @@ v6_dma_inv_range:
- 	mcrne	p15, 0, r1, c7, c15, 1		@ clean & invalidate unified line
- #endif
- 1:
--#ifdef CONFIG_DMA_CACHE_RWFO
--	ldr	r2, [r0]			@ read for ownership
--	str	r2, [r0]			@ write for ownership
--#endif
- #ifdef HARVARD_CACHE
- 	mcr	p15, 0, r0, c7, c6, 1		@ invalidate D line
- #else
-@@ -222,6 +226,10 @@ v6_dma_inv_range:
- #endif
- 	add	r0, r0, #D_CACHE_LINE_SIZE
- 	cmp	r0, r1
-+#ifdef CONFIG_DMA_CACHE_RWFO
-+	ldrlo	r2, [r0]			@ read for ownership
-+	strlo	r2, [r0]			@ write for ownership
-+#endif
- 	blo	1b
- 	mov	r0, #0
- 	mcr	p15, 0, r0, c7, c10, 4		@ drain write buffer
-@@ -256,12 +264,12 @@ v6_dma_clean_range:
-  *	- end     - virtual end address of region
-  */
- ENTRY(v6_dma_flush_range)
--	bic	r0, r0, #D_CACHE_LINE_SIZE - 1
--1:
- #ifdef CONFIG_DMA_CACHE_RWFO
--	ldr	r2, [r0]			@ read for ownership
--	str	r2, [r0]			@ write for ownership
-+	ldrb	r2, [r0]		@ read for ownership
-+	strb	r2, [r0]		@ write for ownership
- #endif
-+	bic	r0, r0, #D_CACHE_LINE_SIZE - 1
-+1:
- #ifdef HARVARD_CACHE
- 	mcr	p15, 0, r0, c7, c14, 1		@ clean & invalidate D line
- #else
-@@ -269,6 +277,10 @@ ENTRY(v6_dma_flush_range)
- #endif
- 	add	r0, r0, #D_CACHE_LINE_SIZE
- 	cmp	r0, r1
-+#ifdef CONFIG_DMA_CACHE_RWFO
-+	ldrlob	r2, [r0]			@ read for ownership
-+	strlob	r2, [r0]			@ write for ownership
-+#endif
- 	blo	1b
- 	mov	r0, #0
- 	mcr	p15, 0, r0, c7, c10, 4		@ drain write buffer
+--- linux-2.6.35.y.orig/net/llc/af_llc.c
++++ linux-2.6.35.y/net/llc/af_llc.c
+@@ -317,8 +317,9 @@ static int llc_ui_bind(struct socket *so
+ 		goto out;
+ 	rc = -ENODEV;
+ 	rtnl_lock();
++	rcu_read_lock();
+ 	if (sk->sk_bound_dev_if) {
+-		llc->dev = dev_get_by_index(&init_net, sk->sk_bound_dev_if);
++		llc->dev = dev_get_by_index_rcu(&init_net, sk->sk_bound_dev_if);
+ 		if (llc->dev) {
+ 			if (!addr->sllc_arphrd)
+ 				addr->sllc_arphrd = llc->dev->type;
+@@ -329,13 +330,13 @@ static int llc_ui_bind(struct socket *so
+ 			    !llc_mac_match(addr->sllc_mac,
+ 					   llc->dev->dev_addr)) {
+ 				rc = -EINVAL;
+-				dev_put(llc->dev);
+ 				llc->dev = NULL;
+ 			}
+ 		}
+ 	} else
+ 		llc->dev = dev_getbyhwaddr(&init_net, addr->sllc_arphrd,
+ 					   addr->sllc_mac);
++	rcu_read_unlock();
+ 	rtnl_unlock();
+ 	if (!llc->dev)
+ 		goto out;
