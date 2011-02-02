@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225Ab1BBAyU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 19:54:20 -0500
-Received: from mga02.intel.com ([134.134.136.20]:54182 "EHLO mga02.intel.com"
+	id S1754014Ab1BBAyS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 19:54:18 -0500
+Received: from mga02.intel.com ([134.134.136.20]:42502 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753675Ab1BBAou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753678Ab1BBAou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Feb 2011 19:44:50 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="703028561"
+   d="scan'208";a="703028563"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110201443.618138584@firstfloor.org>
 In-Reply-To: <20110201443.618138584@firstfloor.org>
-To: kaneshige.kenji@jp.fujitsu.com, ak@linux.intel.com,
-        suresh.b.siddha@intel.com, chrisw@sous-sol.org,
-        indou.takao@jp.fujitsu.com, hpa@linux.intel.com, gregkh@suse.de,
+To: vitty@altlinux.ru, stern@rowland.harvard.edu, ak@linux.intel.com,
+        mdharm-usb@one-eyed-alien.net, gregkh@suse.de,
         linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [92/139] x86, vt-d: Fix the vt-d fault handling irq migration in the x2apic mode
-Message-Id: <20110202004450.1045D3E09BD@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:44:50 -0800 (PST)
+Subject: [PATCH] [100/139] USB: usb-storage: unusual_devs entry for the Samsung YP-CP3
+Message-Id: <20110202004458.68F603E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:44:58 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,36 +25,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+From: Vitaly Kuznetsov <vitty@altlinux.ru>
 
-commit 086e8ced65d9bcc4a8e8f1cd39b09640f2883f90 upstream.
+commit d73a9b3001f29271c2e9f2a806b05a431c5d9591 upstream.
 
-In x2apic mode, we need to set the upper address register of the fault
-handling interrupt register of the vt-d hardware. Without this
-irq migration of the vt-d fault handling interrupt is broken.
+Add an unusual_devs entry for the Samsung YP-CP3 MP4 player.
 
-Signed-off-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+User was getting the following errors in dmesg:
+ usb 2-6: reset high speed USB device using ehci_hcd and address 2
+ usb 2-6: reset high speed USB device using ehci_hcd and address 2
+ usb 2-6: reset high speed USB device using ehci_hcd and address 2
+ usb 2-6: USB disconnect, address 2
+ sd 3:0:0:0: [sdb] Assuming drive cache: write through
+ sdb:<2>ldm_validate_partition_table(): Disk read failed.
+ Dev sdb: unable to read RDB block 0
+  unable to read partition table
+
+Signed-off-by: Vitaly Kuznetsov <vitty@altlinux.ru>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
-LKML-Reference: <1291225233.2648.39.camel@sbsiddha-MOBL3>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Acked-by: Chris Wright <chrisw@sous-sol.org>
-Tested-by: Takao Indoh <indou.takao@jp.fujitsu.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/apic/io_apic.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/storage/unusual_devs.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Index: linux-2.6.35.y/arch/x86/kernel/apic/io_apic.c
+Index: linux-2.6.35.y/drivers/usb/storage/unusual_devs.h
 ===================================================================
---- linux-2.6.35.y.orig/arch/x86/kernel/apic/io_apic.c
-+++ linux-2.6.35.y/arch/x86/kernel/apic/io_apic.c
-@@ -3626,6 +3626,7 @@ static int dmar_msi_set_affinity(unsigne
- 	msg.data |= MSI_DATA_VECTOR(cfg->vector);
- 	msg.address_lo &= ~MSI_ADDR_DEST_ID_MASK;
- 	msg.address_lo |= MSI_ADDR_DEST_ID(dest);
-+	msg.address_hi = MSI_ADDR_BASE_HI | MSI_ADDR_EXT_DEST_ID(dest);
+--- linux-2.6.35.y.orig/drivers/usb/storage/unusual_devs.h
++++ linux-2.6.35.y/drivers/usb/storage/unusual_devs.h
+@@ -481,6 +481,13 @@ UNUSUAL_DEV(  0x04e8, 0x507c, 0x0220, 0x
+ 		US_SC_DEVICE, US_PR_DEVICE, NULL,
+ 		US_FL_MAX_SECTORS_64),
  
- 	dmar_msi_write(irq, &msg);
- 
++/* Reported by Vitaly Kuznetsov <vitty@altlinux.ru> */
++UNUSUAL_DEV(  0x04e8, 0x5122, 0x0000, 0x9999,
++		"Samsung",
++		"YP-CP3",
++		US_SC_DEVICE, US_PR_DEVICE, NULL,
++		US_FL_MAX_SECTORS_64 | US_FL_BULK_IGNORE_TAG),
++
+ /* Entry and supporting patch by Theodore Kilgore <kilgota@auburn.edu>.
+  * Device uses standards-violating 32-byte Bulk Command Block Wrappers and
+  * reports itself as "Proprietary SCSI Bulk." Cf. device entry 0x084d:0x0011.
