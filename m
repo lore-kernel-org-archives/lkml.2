@@ -1,95 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195Ab1BBWDr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 17:03:47 -0500
-Received: from hera.kernel.org ([140.211.167.34]:50096 "EHLO hera.kernel.org"
+	id S1755210Ab1BBWEH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 17:04:07 -0500
+Received: from hera.kernel.org ([140.211.167.34]:50108 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754826Ab1BBWDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 17:03:46 -0500
-Date: Wed, 2 Feb 2011 22:03:28 GMT
-From: tip-bot for Richard Cochran <richardcochran@gmail.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        johnstul@us.ibm.com, richardcochran@gmail.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        johnstul@us.ibm.com, richardcochran@gmail.com, tglx@linutronix.de
-In-Reply-To: <20110201134419.487708516@linutronix.de>
-References: <20110201134419.487708516@linutronix.de>
+	id S1754826Ab1BBWEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 17:04:05 -0500
+Date: Wed, 2 Feb 2011 22:03:49 GMT
+From: tip-bot for John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, hpa@zytor.com,
+        mingo@redhat.com, tglx@linutronix.de, richard.cochran@omicron.at
+Reply-To: mingo@redhat.com, hpa@zytor.com, john.stultz@linaro.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        richard.cochran@omicron.at
+In-Reply-To: <20110201134419.584311693@linutronix.de>
+References: <20110201134419.584311693@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] posix-timer: Update comment
-Message-ID: <tip-0061748dd2400d0bcd4d49d258db5d7b5d106ca0@git.kernel.org>
-Git-Commit-ID: 0061748dd2400d0bcd4d49d258db5d7b5d106ca0
+Subject: [tip:timers/core] time: Introduce timekeeping_inject_offset
+Message-ID: <tip-c528f7c6c208f1fae6b4025957173dec045e5f21@git.kernel.org>
+Git-Commit-ID: c528f7c6c208f1fae6b4025957173dec045e5f21
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 02 Feb 2011 22:03:28 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 02 Feb 2011 22:03:49 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0061748dd2400d0bcd4d49d258db5d7b5d106ca0
-Gitweb:     http://git.kernel.org/tip/0061748dd2400d0bcd4d49d258db5d7b5d106ca0
-Author:     Richard Cochran <richardcochran@gmail.com>
-AuthorDate: Tue, 1 Feb 2011 13:52:15 +0000
+Commit-ID:  c528f7c6c208f1fae6b4025957173dec045e5f21
+Gitweb:     http://git.kernel.org/tip/c528f7c6c208f1fae6b4025957173dec045e5f21
+Author:     John Stultz <john.stultz@linaro.org>
+AuthorDate: Tue, 1 Feb 2011 13:52:17 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Wed, 2 Feb 2011 15:28:18 +0100
 
-posix-timer: Update comment
+time: Introduce timekeeping_inject_offset
 
-Pick the cleanup to the comment in posix-timers.c from Richards all in
-one conversion patch.
+This adds a kernel-internal timekeeping interface to add or subtract
+a fixed amount from CLOCK_REALTIME. This makes it so kernel users or
+interfaces trying to do so do not have to read the time, then add an
+offset and then call settimeofday(), which adds some extra error in
+comparision to just simply adding the offset in the kernel timekeeping
+core.
 
-Originally-from: Richard Cochran <richardcochran@gmail.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
+LKML-Reference: <20110201134419.584311693@linutronix.de>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Acked-by: John Stultz <johnstul@us.ibm.com>
-LKML-Reference: <20110201134419.487708516@linutronix.de>
 ---
- kernel/posix-timers.c |   25 +++++++------------------
- 1 files changed, 7 insertions(+), 18 deletions(-)
+ include/linux/time.h      |    1 +
+ kernel/time/timekeeping.c |   36 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 37 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index ad154df..a3fdfd4 100644
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -102,11 +102,7 @@ static DEFINE_SPINLOCK(idr_lock);
- /*
-  * CLOCKs: The POSIX standard calls for a couple of clocks and allows us
-  *	    to implement others.  This structure defines the various
-- *	    clocks and allows the possibility of adding others.	 We
-- *	    provide an interface to add clocks to the table and expect
-- *	    the "arch" code to add at least one clock that is high
-- *	    resolution.	 Here we define the standard CLOCK_REALTIME as a
-- *	    1/HZ resolution clock.
-+ *	    clocks.
+diff --git a/include/linux/time.h b/include/linux/time.h
+index 7c44e77..379b903 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -166,6 +166,7 @@ extern struct timespec timespec_trunc(struct timespec t, unsigned gran);
+ extern int timekeeping_valid_for_hres(void);
+ extern u64 timekeeping_max_deferment(void);
+ extern void timekeeping_leap_insert(int leapsecond);
++extern int timekeeping_inject_offset(struct timespec *ts);
+ 
+ struct tms;
+ extern void do_sys_times(struct tms *);
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 4f9f65b..6262c1d 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -387,6 +387,42 @@ int do_settimeofday(const struct timespec *tv)
+ 
+ EXPORT_SYMBOL(do_settimeofday);
+ 
++
++/**
++ * timekeeping_inject_offset - Adds or subtracts from the current time.
++ * @tv:		pointer to the timespec variable containing the offset
++ *
++ * Adds or subtracts an offset value from the current time.
++ */
++int timekeeping_inject_offset(struct timespec *ts)
++{
++	unsigned long flags;
++
++	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
++		return -EINVAL;
++
++	write_seqlock_irqsave(&xtime_lock, flags);
++
++	timekeeping_forward_now();
++
++	xtime = timespec_add(xtime, *ts);
++	wall_to_monotonic = timespec_sub(wall_to_monotonic, *ts);
++
++	timekeeper.ntp_error = 0;
++	ntp_clear();
++
++	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
++				timekeeper.mult);
++
++	write_sequnlock_irqrestore(&xtime_lock, flags);
++
++	/* signal hrtimers about time change */
++	clock_was_set();
++
++	return 0;
++}
++EXPORT_SYMBOL(timekeeping_inject_offset);
++
+ /**
+  * change_clocksource - Swaps clocksources if a new one is available
   *
-  * RESOLUTION: Clock resolution is used to round up timer and interval
-  *	    times, NOT to report clock times, which are reported with as
-@@ -116,20 +112,13 @@ static DEFINE_SPINLOCK(idr_lock);
-  *	    necessary code is written.	The standard says we should say
-  *	    something about this issue in the documentation...
-  *
-- * FUNCTIONS: The CLOCKs structure defines possible functions to handle
-- *	    various clock functions.  For clocks that use the standard
-- *	    system timer code these entries should be NULL.  This will
-- *	    allow dispatch without the overhead of indirect function
-- *	    calls.  CLOCKS that depend on other sources (e.g. WWV or GPS)
-- *	    must supply functions here, even if the function just returns
-- *	    ENOSYS.  The standard POSIX timer management code assumes the
-- *	    following: 1.) The k_itimer struct (sched.h) is used for the
-- *	    timer.  2.) The list, it_lock, it_clock, it_id and it_pid
-- *	    fields are not modified by timer code.
-+ * FUNCTIONS: The CLOCKs structure defines possible functions to
-+ *	    handle various clock functions.
-  *
-- *          At this time all functions EXCEPT clock_nanosleep can be
-- *          redirected by the CLOCKS structure.  Clock_nanosleep is in
-- *          there, but the code ignores it.
-+ *	    The standard POSIX timer management code assumes the
-+ *	    following: 1.) The k_itimer struct (sched.h) is used for
-+ *	    the timer.  2.) The list, it_lock, it_clock, it_id and
-+ *	    it_pid fields are not modified by timer code.
-  *
-  * Permissions: It is assumed that the clock_settime() function defined
-  *	    for each clock will take care of permission checks.	 Some
