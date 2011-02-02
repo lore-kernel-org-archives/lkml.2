@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab1BBHvK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 02:51:10 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:40745 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753016Ab1BBHvI (ORCPT
+	id S1753461Ab1BBHv6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 02:51:58 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:63647 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753016Ab1BBHv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 02:51:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=AA4iAcBXBFRxg3j8quM2SZlVtQh34dmmaHASYYqAcpC+H3OluLJC+ounn2tWPLEasC
-         y+UCwEFEb4ESPM8Etv7pkItxUl2oIc+ebDqo44rcZ3TkYbrhlilZ8azVs4fIjyR/sqQz
-         OqRm/pL7ztwsmi4p1Mp/Hkum69QN+Jto5LLLY=
-Date: Wed, 2 Feb 2011 08:50:59 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Richard Cochran <richard.cochran@omicron.at>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [patch 28/28] posix clocks: Introduce dynamic clocks
-Message-ID: <20110202075058.GA2747@riccoc20.at.omicron.at>
-References: <20110201134320.688829863@linutronix.de>
- <20110201134420.164172635@linutronix.de>
- <1296596987.3336.83.camel@work-vm>
+	Wed, 2 Feb 2011 02:51:57 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6244"; a="72886651"
+Message-ID: <4D490D16.3030601@codeaurora.org>
+Date: Wed, 02 Feb 2011 13:21:50 +0530
+From: Trilok Soni <tsoni@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296596987.3336.83.camel@work-vm>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Anirudh Ghayal <aghayal@codeaurora.org>,
+        Shubhrajyoti Datta <shubhrajyoti@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [rtc-linux] [RFC v2 PATCH 5/7] input: pmic8058-othc: Add	support
+ for PM8058 based OTHC
+References: <1296568063-12010-1-git-send-email-aghayal@codeaurora.org> <1296568063-12010-6-git-send-email-aghayal@codeaurora.org> <20110201143356.GB20088@sirena.org.uk>
+In-Reply-To: <20110201143356.GB20088@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 01, 2011 at 01:49:47PM -0800, john stultz wrote:
-> I sort of worry about the naming collision with the term posix-clock, as
-> this is just one type of posix clock (I suspect most folks think of a
-> posix clock as the clockid passed to the existing posix api).
+Hi Mark,
+
+On 2/1/2011 8:03 PM, Mark Brown wrote:
+> On Tue, Feb 01, 2011 at 07:17:41PM +0530, Anirudh Ghayal wrote:
+>> One-touch headset controller is a hardware module in Qualcomm's PMIC8058.
+>> It supports headset insert/remove and switch press/release detection events
+>> over 3 MIC BIAS lines. The MIC BIAS lines can be configured to support
+>> headset detection or act as regular BIAS lines.
 > 
-> Could we maybe use posix-dynclock or posix-fdclock or something? I know
-> its already been changed from clkdev, so sorry for being finicky here
-> and not catching this earlier.
+> This should probably be integrated with ASoC for management of the
+> biases if nothing else, though it'd also allow other stuff.  ALSA has
+> support for creating input devices from jacks already.
+> 
+>> +	input_set_capability(ipd, EV_SW, SW_HEADPHONE_INSERT);
+>> +	input_set_capability(ipd, EV_KEY, KEY_MEDIA);
+> 
+> The ALSA (well, ASoC) stuff would also allow the input device to be
+> merged with that for other detection methods so if you've got a headset
+> jack capable of detecting other things (eg, mechanical insertion or
+> separate mic and headphone detection).
 
-A rose by any other name...
+Thanks for the review. We will analyze on how much we should be able to move
+from this OTHC driver to ALSA jack detection.
 
-I agree that naming (even internal APIs) is important and have no
-objection to changing the name. I did spend a bit of time considering
-various alternatives, and now I'm out of ideas.
+---Trilok Soni
 
-So, please do change the name if you have a better one.
-
-Thanks,
-Richard
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
