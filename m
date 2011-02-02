@@ -1,121 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920Ab1BBAII (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 19:08:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1647 "EHLO mx1.redhat.com"
+	id S1751863Ab1BBAKZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 19:10:25 -0500
+Received: from sh.osrg.net ([192.16.179.4]:49303 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751432Ab1BBAIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:08:06 -0500
-Date: Wed, 2 Feb 2011 01:07:50 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Michael J Wolf <mjwolf@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH 0/6] more detailed per-process transparent
- hugepage statistics
-Message-ID: <20110202000750.GC16981@random.random>
-References: <20110201003357.D6F0BE0D@kernel>
- <20110201153857.GA18740@random.random>
- <1296580547.27022.3370.camel@nimitz>
- <20110201203936.GB16981@random.random>
- <1296593801.27022.3920.camel@nimitz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296593801.27022.3920.camel@nimitz>
+	id S1751266Ab1BBAKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:10:24 -0500
+Date: Wed, 2 Feb 2011 09:09:22 +0900
+To: fujita.tomonori@lab.ntt.co.jp
+Cc: cebbert@redhat.com, hancockrwd@gmail.com, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, dwmw2@infradead.org
+Subject: Re: b44 driver causes panic when using swiotlb
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20110202090615Q.fujita.tomonori@lab.ntt.co.jp>
+References: <20110201102707C.fujita.tomonori@lab.ntt.co.jp>
+	<20110201161859.467676b0@katamari>
+	<20110202090615Q.fujita.tomonori@lab.ntt.co.jp>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20110202090903P.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 02 Feb 2011 09:09:23 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 01, 2011 at 12:56:41PM -0800, Dave Hansen wrote:
-> On Tue, 2011-02-01 at 21:39 +0100, Andrea Arcangeli wrote:
-> > So now the speedup
-> > from hugepages needs to also offset the cost of the more frequent
-> > split/collapse events that didn't happen before.
+On Wed, 2 Feb 2011 09:06:34 +0900
+FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
+
+> On Tue, 1 Feb 2011 16:18:59 -0500
+> Chuck Ebbert <cebbert@redhat.com> wrote:
 > 
-> My concern here is the downward slope.  I interpret that as saying that
-> we'll eventually have _zero_ THPs.  Plus, the benefits are decreasing
-> constantly, even though the scanning overhead is fixed (or increasing
-> even).
-
-It doesn't seem a downward slope, it seems to level out at 900000
-pages. As shown by the other chart a faster khugepaged scan rate would
-make it level out at an higher percentage of memory being huge with an
-increased cost in khugepaged but it may very well payoff for the final
-performance (especially on plenty-core).
-
-> I guess we could also try and figure out whether the khugepaged CPU
-> overhead really comes from the scanning or the collapsing operations
-> themselves.  Should be as easy as some oprofiling.
-
-Actually I already know, the scanning is super fast. So it's no real
-big deal to increase the scanning. It's big deal only if there are
-plenty more of collapse/split. Compared to the KSM scan, the
-khugepaged scan costs nothing.
-
-> If it really is the scanning, I bet we could be a lot more efficient
-> with khugepaged as well.  In the case of KVM guests, we're going to have
-> awfully fixed virtual addresses and processes where collapsing can take
-> place.
+> > > swiotlb allocates the bounce buffer when a system boots up. We can't
+> > > allocate much in GFP_DMA. swiotlb uses somewhere under 4GB. So it
+> > > can't help devices that have odd dma_mask (that is, except for 4GB).
+> > > 
+> > > Unfortunately, Such device needs to do own custom bouncing or needs
+> > > their subsystem to does that.
+> > 
+> > I think we're chasing the wrong problem here.
+> > 
+> > swiotlb uses alloc_bootmem_low_pages() to try to get buffers as low
+> > in memory as possible. I asked someone who is hitting this bug to
+> > try 2.6.36 and he reports the buffers really are low there:
+> > 
+> > 2.6.36:  5c00000
+> > 2.6.37: db600000
+> > 
+> > So something happened very early in the 2.6.37-rc cycle that changed
+> > this behavior. I tried looking at the bootmem code but could not see
+> > the problem. The only related option I could find in .config was this:
+> > 
+> > # CONFIG_NO_BOOTMEM is not set
+> > 
+> > It was set this way in both .36 and .37.
 > 
-> It might make sense to just have split_huge_page() stick the vaddr and
-> the mm in a queue.  khugepaged could scan those addresses first instead
-> of just going after the system as a whole.
+> I don't think this matters because we can't guarantee that swiotlb
+> can't allocate ZONE_DMA.
 
-That would apply to KSM and swapping only though, not to all
-split_huge_page. It may not be bad idea. But the scanning really is
-fast. So it may not be necessary. Clearly the more memory you have,
-the faster the scanning has to be to obtain the same percentage of
-memory in hugepages in presence of KSM.
+Oops, I meant that, we can't guarantee that swiotlb allocates
+ZONE_DMA.
 
-Also note: did you tune the ksmd scanning values? Or you only run echo
-1 >run?  Clearly if you increased the ksmd scanning values decreasing
-the scan_sleep_millisecs or increased the pages_scanned, you've to
-increase the khugepaged scanning values too accordingly. Not saying
-the current default is ok for such an huge system that you're
-using. But I doubt the ksm default is ok either for such an huge
-system. So if you go tweak ksmd at 100% cpu load (which will also
-cause more false sharing as the interval between the cksum comparsion
-before adding to unstable tree decreases significantly) and khugepaged
-doesn't collapse the false-sharing regions, it's normal. (in that case
-either slowdown ksm or speedup khugepaged would help, slowing down ksm
-may actually lead to better performance and not much less memory used)
-
-In fact the "keep track" of split_huge_page location for khugepaged,
-may actually hide issues in KSM if there's a piece of memory flipped
-twice fast but that stays at the same value all the time, then the
-cksum heuristic that decides if the page is constant enough to be
-added to the unstable tree, may get false positives from the cksum. If
-we notice in KSM the page cows fast after after sharing it for a
-couple of times we should stop merging it. It'd be better to improve
-KSM intelligence to avoid false sharing in that case. Now I don't have
-enough data (I don't even know what runs in guest) clearly to tell if
-this could ever be because of 1) undetectable false sharing from KSM
-through the cksum, 2) a too fast ksm scan invalidating the ckshm, 3)
-or genuine khugepaged scan too slow not keeping up with KSM optimal
-changes (which would be perfectly normal if ksmd scan rate has been
-increased a lot but khugepaged wasn't accordingly).
-
-In short I don't issues at the moment with this workload if increasing
-khugepaged (or slowing down ksm) optimizes it.
-
-> For cases where the page got split, but wasn't modified, should we have
-> a non-copying, non-allocating fastpath to re-merge it?
-
-Even if it's modified it's ok, as long as the pages are still
-physically contiguous collapse can happen in place. I never dreamed to
-attempt it only because of the increased complexity,
-__split_huge_page_refcount is complex enough so because I could avoid
-converting from regular page to hugepage in place I happily avoided it
-;). That BUG_ON(page_mapcount != mapcount) I can have nightmares at
-night with it, so I was pleased not to have more of those. Anyway I
-think it's not important optimization we should spend more energy in
-making sure split_huge_page is never called for nothing. However in
-the mid term I'm not against it, it may always happen sometime that
-the hugepage is splitted by memory pressure but then the subpages
-aren't swapped out.
-
-There's also one other thing to optimize that I think has more
-priority (it's not going to benefit KVM though) that is to collapse
-readonly shared anon pages, which currently it can't do.
+> Obviously, the default swiotlb bouncing
+> buffer size, 64MB, is too large for ZONE_DMA.
+> 
+> If you are lucky, you sometimes can allocate lower memory if swiotlb
+> allocates lower memory at the boot time. But you can't assume
+> that. swiotlb isn't designed to handle such.
+> 
+> Can you try the patch that I sent you? As I wrote, b44 has the own
+> bouncing mechanism, so we should be fine if swiotlb returns an
+> appropriate error instead of just panicking.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
