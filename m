@@ -1,105 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806Ab1BBR56 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 12:57:58 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:56505 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754491Ab1BBR54 (ORCPT
+	id S1754818Ab1BBR6o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 12:58:44 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:37592 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754491Ab1BBR6n convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 12:57:56 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:content-type;
-        b=LCPG42ds9T8R/7BENFSYee9CswXBVWDKwGgzb19ldFV1aKUYTdGE6uO07SDmrMqFnM
-         kQGMOoeeARW+OvfVJfvDBbM42BxYoPziWDj6Qe6Jknf184es/EvYUBbXGAPP/fic7LPq
-         Xh8gFBuwOvX8Vle2YJvm8cwM+rqFD8xxcZ4hw=
+	Wed, 2 Feb 2011 12:58:43 -0500
 MIME-Version: 1.0
-In-Reply-To: <20110202042347.GA3870@maclin>
-References: <1296595418-2457-1-git-send-email-abogani@kernel.org>
-	<20110202042347.GA3870@maclin>
-Date: Wed, 2 Feb 2011 18:57:55 +0100
-X-Google-Sender-Auth: -NnH-6FwpBnyGcnzLLkJYzSiUYs
-Message-ID: <AANLkTimGHPtSVKhBaLhN_DJYNaoBMAb4SUaG3O-ieQTK@mail.gmail.com>
-Subject: Re: [PATCH] ufs: Check if page has buffers before calling page_buffers()
-From: Alessio Igor Bogani <abogani@kernel.org>
-To: Evgeniy Dushistov <dushistov@mail.ru>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1296615605.3336.239.camel@work-vm>
+References: <1296577820-27456-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br> <1296615605.3336.239.camel@work-vm>
+From: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+Date: Wed, 2 Feb 2011 15:58:21 -0200
+Message-ID: <AANLkTincYETuV-P5DG9cpgUL-hSoqAG=oQvS2kRUmAkb@mail.gmail.com>
+Subject: Re: [PATCH] RTC: Fix for issues in the kernel RTC API.
+To: John Stultz <john.stultz@linaro.org>
+Cc: a.zummo@towertech.it, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Evgeniy,
+Hi John,
 
-2011/2/2 Evgeniy Dushistov <dushistov@mail.ru>:
-[...]
-> So in our case we reach (during realocation) point when
-> !page_has_buffers(page) (how?)
-[...]
+Thank you for the quick answer.
 
-kernel BUG at fs/ufs/balloc.c:279!
-invalid opcode: 0000 [#1] PREEMPT SMP
-last sysfs file: /sys/devices/pci0000:00/0000:00:1d.7/usb2/2-0:1.0/uevent
-CPU 1
-Modules linked in: ufs aes_generic fbcon tileblit font bitblit
-softcursor rfcomm sco nouveau bridge arc4 iwlagn binfmt_misc iwlcore
-snd_hda_codec_idt ppdev stp bnep l2cap snd_hda_intel mac80211
-snd_hda_codec snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcm ttm
-snd_seq_dummy drm_kms_helper snd_seq_oss drm joydev snd_seq_midi_event
-snd_seq cfg80211 btusb psmouse snd_timer snd_seq_device bluetooth
-uvcvideo videodev v4l2_compat_ioctl32 i2c_algo_bit video snd
-sony_laptop tifm_7xx1 lp tifm_core output serio_raw intel_agp parport
-intel_gtt soundcore snd_page_alloc usbhid hid ahci libahci sky2 [last
-unloaded: v4l2_compat_ioctl32]
+My original motivation was to rewrite the strongarm rtc, which
+recently got broken due to the last changes. In the process, I tested
+with the rtc-test kernel RTC driver to make it work as it did before,
+but I may have got some semantics wrong.
 
-Pid: 1679, comm: fsstress Not tainted 2.6.37 #244 VAIO/VGN-FZ21M
-RIP: 0010:[<ffffffffa042a2f9>]  [<ffffffffa042a2f9>]
-ufs_new_fragments+0xed9/0xf20 [ufs]
-RSP: 0018:ffff88005a91f808  EFLAGS: 00010246
-RAX: 010000000000002d RBX: ffff88000ef0e2c0 RCX: 0000000000000001
-RDX: 0000000000000000 RSI: 0000000000000146 RDI: ffffffff8176b26e
-RBP: ffff88005a91f928 R08: 0000000000000000 R09: ffff88005a9986f8
-R10: 0000000000000008 R11: 0000000000000000 R12: ffffea0000d8efd0
-R13: 0000000000000004 R14: 0000000000000008 R15: 000000000000000e
-FS:  00007fa2891ae700(0000) GS:ffff88007f400000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00007f54e12410d8 CR3: 000000006e229000 CR4: 00000000000006e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process fsstress (pid: 1679, threadinfo ffff88005a91e000, task ffff88005a998000)
-Stack:
- ffff88005a91f828 0000000000000020 ffff88006a0d3000 0000000000000000
- 00000008000001bc 0000000000000008 000000085a91f858 0000000000000008
- ffff88000ef0e228 0000000e7f5d31d0 0000000000000001 0000000281082d75
-Call Trace:
- [<ffffffffa042ee8c>] ufs_inode_getfrag+0x23c/0x650 [ufs]
- [<ffffffffa042f7a8>] ufs_getfrag_block+0x508/0x710 [ufs]
- [<ffffffff815309f5>] ? _raw_spin_unlock+0x35/0x60
- [<ffffffff81188de4>] __block_write_begin+0x204/0x640
- [<ffffffffa042f2a0>] ? ufs_getfrag_block+0x0/0x710 [ufs]
- [<ffffffff8110291c>] ? grab_cache_page_write_begin+0x9c/0xc0
- [<ffffffffa042f2a0>] ? ufs_getfrag_block+0x0/0x710 [ufs]
- [<ffffffff81189386>] block_write_begin+0x56/0x90
- [<ffffffffa042d404>] ufs_write_begin+0x44/0x80 [ufs]
- [<ffffffff81104104>] generic_file_buffered_write+0x114/0x2a0
- [<ffffffff815348dd>] ? sub_preempt_count+0x9d/0xd0
- [<ffffffff811044eb>] __generic_file_aio_write+0x25b/0x490
- [<ffffffff81104774>] ? generic_file_aio_write+0x54/0xd0
- [<ffffffff81104787>] generic_file_aio_write+0x67/0xd0
- [<ffffffff811587ca>] do_sync_write+0xda/0x120
- [<ffffffff81044e51>] ? get_parent_ip+0x11/0x50
- [<ffffffff8152e425>] ? __mutex_unlock_slowpath+0xf5/0x170
- [<ffffffff8126ab63>] ? security_file_permission+0x23/0x90
- [<ffffffff81158af0>] vfs_write+0xd0/0x1a0
- [<ffffffff811594f4>] sys_write+0x54/0x90
- [<ffffffff8100312b>] system_call_fastpath+0x16/0x1b
-Code: 48 8d 7c 90 34 e8 78 d0 ff ff 44 8b 9d f8 fe ff ff 4c 8b 95 e8
-fe ff ff 4c 8b 8d e0 fe ff ff 4c 8b 85 f0 fe ff ff e9 52 f7 ff ff <0f>
-0b eb fe 48 8b bb 50 02 00 00 4c 89 e9 48 c7 c2 00 6b 43 a0
-RIP  [<ffffffffa042a2f9>] ufs_new_fragments+0xed9/0xf20 [ufs]
- RSP <ffff88005a91f808>
+On Wed, Feb 2, 2011 at 01:00, John Stultz <john.stultz@linaro.org> wrote:
+> On Tue, 2011-02-01 at 14:30 -0200, Marcelo Roberto Jimenez wrote:
+>> This patch fixes the following issues with the RTC API:
+>>
+>> 1 - The alarm_irq_enable() and the update_irq_enable() callbacks were
+>> not beeing called anywhere in the code. They are necessary if you want
+>> to write a driver that does not use the kernel pre-existent timer
+>> implemented alarm and update interrupts.
+>
+> I'm not sure I totally follow this one. alarm_irq_enable is still being
+> called in that function.
+>
+> There are some callbacks that are no longer being made because the
+> functionality is now virtualized internally to the kernel. Could you
+> expand on the rational for this a bit more? Possibly showing a userland
+> example why the virtualized implementation isn't sufficient?
+>
+> I will admit that I probably should clean out the callback hooks and
+> remove them from the drivers, as that probably adds to some of the
+> confusion here.
 
-Ciao,
-Alessio
+You are right, alarm_irq_enable() is already being called, but after
+the timer enqueue/remove code. My original intention was to change the
+order but I missed the removal of the old code, sorry for that.
+
+I understood that this callback was there in case one wants to
+implement an alternative to the current kernel RTC implementation, but
+maybe I got that wrong.
+
+The reason I added it before was that the user space behavior of the
+rtc-test kernel RTC driver had changed, but maybe its previous
+behavior is is no longer acceptable. Alarm interrupts were hand
+generated by the user by echoing to the sys interface, but it does not
+make sense to even have a timer in that case. That way,
+alarm_irq_enable() would bypass the kernel implementation.
+
+Also, the way it is today, the programmer implementing the driver
+_must_ define alarm_irq_enable(), even if this function does nothing,
+otherwise you get EINVAL.
+
+Maybe I got alarm_irq_enable() completely wrong and it should just be removed.
+
+>> 2 - In the current configuration, an update interrupt, for example,
+>> would be a trigger for an alarm interrupt as well, even though the mode
+>> variable stated it was an update interrupt. To avoid that, mode is
+>> beeing checked inside rtc_handle_legacy_irq(). That used to be the
+>> previous user space behaviour.
+>
+> Right, we internally use recurring alarm interrupts to emulate the
+> update interrupt mode. Although I believe I provided the right behavior
+> to userland, so I'm not sure I see the issue or how your changes correct
+> things.
+
+Again, what the rtc-test kernel RTC and the strongarm RTC user space
+behavior have changed. Alarm interrupts and update interrupts were
+generated by a different interrupts in the strongarm driver, and the
+rtc-test driver also behaved similarly, i.e., an update interrupt did
+not trigger an alarm interrupt. Currently, rtc_handle_legacy_irq()
+centralizes the irq processing, and by not checking the generated
+interrupt, it allows the new behavior, which seemed broken to me.
+
+>> 3 - The irq_set_freq() and rtc_irq_set_state() functions are entry
+>> points to the RTC API, and were not calling the irq_set_state() and
+>> irq_set_freq() callbacks. These are also necessary overrides to provide
+>> a proper independent RTC implementation.
+>
+> Again, the freq is handled via a hrtimer now, so we shouldn't be calling
+> out to the hardware specific rtc driver anymore.
+
+My reasoning here goes along the same lines as in the
+alarm_irq_enable() case, so I believe those callbacks should also be
+removed, right?
+
+For rtc_irq_set_freq(), I believe that the current code allows a user
+space program to call the RTC_IRQP_SET ioclt() with freq == 0 and have
+a division by zero in the kernel code. I'll send a separate patch for
+that.
+
+>> 4 - The rtc-test kernel RTC driver has been updated to work properly
+>> with the new kernel RTC timer infrastructure. This driver has been used
+>> together with the rtctest.c source code present in the file
+>> Documentation/rtc.txt to test the user space behaviour of all the
+>> modifications in this patch.
+>
+> So forgive me, as I might just be missing what you're describing. It
+> might be easier if you break fixes up into multiple patches?
+
+The original purpose of the patch was to bring back the previous
+rtc-test driver behaviour, I think that anything less would be to
+commit broken work in progress code.
+
+Anyway, this rtc-test driver has been handy before for debugging
+purposes, I guess we should decide if it still makes sense to have it
+around. Currently, it is broken.
+
+> More comments in the code below.
+>
+> ...
+>
+> So first, you're not checking if rtc->ops is valid before dereferencing.
+> Second, I'm not sure I see why you would call it and then avoid the new
+> virtualized rtc layer? Esp since we do end up calling the same
+> alarm_irq_enable function later (see the top of your second chunk).
+>
+> ...
+>
+> Same issue above here.
+
+Ok, I have answered that on my first paragraph.
+
+>> @@ -263,19 +274,23 @@ static void rtc_handle_legacy_irq(struct rtc_device *rtc, int num, int mode)
+>>  {
+>>       unsigned long flags;
+>>
+>> -     /* mark one irq of the appropriate mode */
+>> -     spin_lock_irqsave(&rtc->irq_lock, flags);
+>> -     rtc->irq_data = (rtc->irq_data + (num << 8)) | (RTC_IRQF|mode);
+>> -     spin_unlock_irqrestore(&rtc->irq_lock, flags);
+>> -
+>> -     /* call the task func */
+>> -     spin_lock_irqsave(&rtc->irq_task_lock, flags);
+>> -     if (rtc->irq_task)
+>> -             rtc->irq_task->func(rtc->irq_task->private_data);
+>> -     spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
+>> -
+>> -     wake_up_interruptible(&rtc->irq_queue);
+>> -     kill_fasync(&rtc->async_queue, SIGIO, POLL_IN);
+>> +     if (((mode & RTC_UF) && rtc->uie_rtctimer.enabled) ||
+>> +         ((mode & RTC_AF) && rtc->aie_timer.enabled) ||
+>> +         ((mode & RTC_PF) && rtc->pie_enabled)) {
+>> +             /* mark one irq of the appropriate mode */
+>> +             spin_lock_irqsave(&rtc->irq_lock, flags);
+>> +             rtc->irq_data = (rtc->irq_data + (num << 8)) | (RTC_IRQF|mode);
+>> +             spin_unlock_irqrestore(&rtc->irq_lock, flags);
+>> +
+>> +             /* call the task func */
+>> +             spin_lock_irqsave(&rtc->irq_task_lock, flags);
+>> +             if (rtc->irq_task)
+>> +                     rtc->irq_task->func(rtc->irq_task->private_data);
+>> +             spin_unlock_irqrestore(&rtc->irq_task_lock, flags);
+>> +
+>> +             wake_up_interruptible(&rtc->irq_queue);
+>> +             kill_fasync(&rtc->async_queue, SIGIO, POLL_IN);
+>> +     }
+>>  }
+>
+> I don't quite understand what this is doing.
+
+This is preventing interpreting an alarm interrupt as an update interrupt.
+
+> ...
+>
+> Again, not checking rtc->ops and irq_set_state shouldn't be called
+> anymore, as the hrtimer handles periodic mode irq emulation now.
+>
+> ...
+>
+> Same as the last comment here. irq_set_freq is handled by generic
+> emulation code now.
+
+Ok, addressed before too.
+
+>
+>
+>> diff --git a/drivers/rtc/rtc-dev.c b/drivers/rtc/rtc-dev.c
+>> index 212b16e..d901160 100644
+>> --- a/drivers/rtc/rtc-dev.c
+>> +++ b/drivers/rtc/rtc-dev.c
+>> @@ -261,12 +261,12 @@ static long rtc_dev_ioctl(struct file *file,
+>>               return rtc_set_time(rtc, &tm);
+>>
+>>       case RTC_PIE_ON:
+>> -             err = rtc_irq_set_state(rtc, NULL, 1);
+>> -             break;
+>> +             mutex_unlock(&rtc->ops_lock);
+>> +             return rtc_irq_set_state(rtc, NULL, 1);
+>>
+>>       case RTC_PIE_OFF:
+>> -             err = rtc_irq_set_state(rtc, NULL, 0);
+>> -             break;
+>> +             mutex_unlock(&rtc->ops_lock);
+>> +             return rtc_irq_set_state(rtc, NULL, 0);
+>>
+>>       case RTC_AIE_ON:
+>>               mutex_unlock(&rtc->ops_lock);
+>> @@ -285,8 +285,8 @@ static long rtc_dev_ioctl(struct file *file,
+>>               return rtc_update_irq_enable(rtc, 0);
+>>
+>>       case RTC_IRQP_SET:
+>> -             err = rtc_irq_set_freq(rtc, NULL, arg);
+>> -             break;
+>> +             mutex_unlock(&rtc->ops_lock);
+>> +             return rtc_irq_set_freq(rtc, NULL, arg);
+>>
+>>       case RTC_IRQP_READ:
+>
+> Why the unlock/return change here?
+
+Because the mutex had to be taken inside rtc_irq_set_state() and
+rtc_irq_set_freq() in order to perform the callbacks. And being entry
+points, the mutex must no be taken. Breaking instead of returning
+would release the mutex twice.
+
+> If I'm being totally daft here, my apologies and please let me know. The
+> rework I did was fairly large, and its quite possible there are issues
+> lurking. But I'm not connecting your patch to specific breakage yet.
+>
+> thanks
+> -john
+
+Thanks for your comments, I will leave the rtc-driver aside, as its
+old behaviour probably no longer makes sense and concentrate on the
+sa1100 driver.
+
+Regards,
+Marcelo.
