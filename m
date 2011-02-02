@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116Ab1BBM3o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 07:29:44 -0500
-Received: from mail.deathmatch.net ([72.66.92.28]:1203 "EHLO
-	mail.deathmatch.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753617Ab1BBM3n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 07:29:43 -0500
-X-Greylist: delayed 1806 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Feb 2011 07:29:43 EST
-Date: Wed, 2 Feb 2011 06:57:43 -0500
-From: Bob Copeland <me@bobcopeland.com>
-To: Jouni Malinen <j@w1.fi>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        "Luis R. Rodriguez" <mcgrof@gmail.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Amod Bodas <Amod.Bodas@atheros.com>,
-        Senthilkumar Balasubramanian 
-	<Senthilkumar.Balasubramanian@atheros.com>,
-        Sree Durbha <Sree.Durbha@atheros.com>,
-        Deepak Dhamdhere <Deepak.Dhamdhere@atheros.com>,
-        Xin Jin <Xin.Jin@atheros.com>
-Subject: Re: Support for Android for mac80211 / cfg80211 802.11 drivers
-Message-ID: <20110202115743.GA12386@hash.localnet>
-References: <AANLkTikbrzLeeY8Gosw+7Aic1=V=5f+sD382sXwGDWbA@mail.gmail.com> <AANLkTi=_gHfEKKC2rsA0pc6Otu5FU4CtVKA2UR85b+GV@mail.gmail.com> <AANLkTim9uNH8BzjDM5Ekt3ayBe+7QfE4vnXR0bc-=-Yn@mail.gmail.com> <AANLkTikasAe2H+HyoWDr=NbuxW6LJAET-JqATWMmMmq0@mail.gmail.com> <1296633772.3624.2.camel@jlt3.sipsolutions.net> <20110202113052.GA14126@jm.kir.nu>
+	id S1754038Ab1BBMje (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 07:39:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1336 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752113Ab1BBMjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 07:39:33 -0500
+Message-ID: <4D495062.2070802@redhat.com>
+Date: Wed, 02 Feb 2011 10:38:58 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110202113052.GA14126@jm.kir.nu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL for v2.6.38-rc5] V4L/DVB fixes
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 02, 2011 at 01:30:52PM +0200, Jouni Malinen wrote:
-> If it is fine to remove the custom wpa_supplicant modifications from
-> Android, this is obviously a moot point, but until that happens, the
-> easiest approach seems to be to provide a custom driver_*.c based on
-> nl80211 to isolate the custom changes to user space and to small part of
-> it at that. I don't really want to see new drivers trying to provide
-> WEXT support with private ioctls to address need for making it work with
-> Android..
+Linus,
 
-I guess my argument is if Atheros is spending resources on porting
-drivers to Android, it would be nice to take the time to fix Android's
-userspace too.  At any rate, I disagree with the wiki's wording "the
-proper approach" as opposed to maybe "the straight-forward approach."
+Please pull from:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git media_fixes
 
-Android already has a custom userspace library that sits between wpa_s
-and their Java stack where they could probably stick all of this stuff.
-If there is something that is truly missing from the kernel, then by
-all means we can add it to nl80211 for everyone's benefit.
+For:
+	- some fixes on some Remote Controller drivers;
+	- some gspca/zc3xx fixes;
+	- a trivial one-line fix for saa7111 detection.
 
--- 
-Bob Copeland %% www.bobcopeland.com
+The following changes since commit 1bae4ce27c9c90344f23c65ea6966c50ffeae2f5:
+
+  Linux 2.6.38-rc2 (2011-01-21 19:01:34 -0800)
+
+are available in the git repository at:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git media_fixes
+
+Jarod Wilson (8):
+      [media] rc/mce: add mappings for missing keys
+      [media] hdpvr: fix up i2c device registration
+      [media] lirc_zilog: z8 on usb doesn't like back-to-back i2c_master_send
+      [media] ir-kbd-i2c: improve remote behavior with z8 behind usb
+      [media] rc/ir-lirc-codec: add back debug spew
+      [media] rc: use time unit conversion macros correctly
+      [media] mceusb: really fix remaining keybounce issues
+      [media] rc/streamzap: fix reporting response times
+
+Jean-François Moine (3):
+      [media] gspca - zc3xx: Bad delay when given by a table
+      [media] gspca - zc3xx: Fix bad images with the sensor hv7131r
+      [media] gspca - zc3xx: Discard the partial frames
+
+Russell King (1):
+      [media] fix saa7111 non-detection
+
+ drivers/media/rc/ir-lirc-codec.c               |    6 +++-
+ drivers/media/rc/keymaps/rc-rc6-mce.c          |    6 ++++
+ drivers/media/rc/mceusb.c                      |    9 ++++--
+ drivers/media/rc/nuvoton-cir.c                 |    6 ++--
+ drivers/media/rc/streamzap.c                   |   14 ++++++----
+ drivers/media/video/gspca/zc3xx.c              |   31 +++++++++++++++++++---
+ drivers/media/video/hdpvr/hdpvr-core.c         |   24 +++++++++++++++---
+ drivers/media/video/hdpvr/hdpvr-i2c.c          |   30 ++++++++++++++--------
+ drivers/media/video/hdpvr/hdpvr.h              |    3 +-
+ drivers/media/video/ir-kbd-i2c.c               |   13 +++++++++
+ drivers/media/video/pvrusb2/pvrusb2-i2c-core.c |    1 -
+ drivers/media/video/saa7115.c                  |    2 +-
+ drivers/staging/lirc/lirc_zilog.c              |   32 +++++++++++++++++++----
+ 13 files changed, 135 insertions(+), 42 deletions(-)
 
