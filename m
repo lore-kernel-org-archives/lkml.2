@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753888Ab1BBLWL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 06:22:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35077 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753764Ab1BBLWJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 06:22:09 -0500
-Date: Wed, 2 Feb 2011 13:21:39 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org
-Subject: [PATCH] Fix EDD3.0 data verification.
-Message-ID: <20110202112139.GD14984@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+	id S1753924Ab1BBLZR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 06:25:17 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45439 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753770Ab1BBLZP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 06:25:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=mbycrNUN5VIbS2FE5GUCTj6RnZsdtnZ5q3PVHPtk0D5CpmE23PQYWej89hGcdpEBsy
+         EByH8nr2rGd7S16MporsDcOP7ymKxkT4hmwFsVW+aEk6hpcKupbf3YPAnlLkjBcAZXtV
+         z2dzlklu82HZLp2W9lVgcHijGL0E9UM8ovPxA=
+Subject: Re: kernel 2.6.37 : oops in cleanup_once
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Yann Dupont <Yann.Dupont@univ-nantes.fr>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+In-Reply-To: <1296643972.20445.9.camel@edumazet-laptop>
+References: <4D491B8D.1000107@univ-nantes.fr>
+	 <1296643972.20445.9.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 02 Feb 2011 12:24:47 +0100
+Message-ID: <1296645887.20445.11.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check for nonzero path in edd_has_edd30() has no sense. First, it looks
-at the wrong memory. Device path starts at offset 30 of the info->params
-structure which is at offset 8 from the beginning of info structure, but
-code looks at info + 4 instead. This was correct when code was introduced,
-but around v2.6.4 three more fields were added to edd_info structure
-(commit 66b61a5c in history.git). Second, even if it will check correct
-memory it will always succeed since at offset 30 (params->key) there will
-be non-zero values otherwise previous check would fail.
+Le mercredi 02 février 2011 à 11:52 +0100, Eric Dumazet a écrit :
+> Le mercredi 02 février 2011 à 09:53 +0100, Yann Dupont a écrit :
+> > Hello.
+> > We recently upgraded one machine with vanilla 2.6.37, and experienced 2 
+> > kernel oops since. Each oops is after ~1 week of uptime.
+> > The last oops was last night but we didn't had any trace.
 
-The patch replaces this bogus check with one that verifies checksum.
+oops, 2.6.37 "only"
 
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
-diff --git a/arch/x86/boot/edd.c b/arch/x86/boot/edd.c
-index c501a5b..6c1ac02 100644
---- a/arch/x86/boot/edd.c
-+++ b/arch/x86/boot/edd.c
-@@ -97,6 +97,13 @@ static int get_edd_info(u8 devno, struct edd_info *ei)
- 
- 	/* Extended Get Device Parameters */
- 
-+	/*
-+	 * The sum of bytes 30-73 in params structure should be zero after
-+	 * int13 call. Set them to 1 to catch the case when bios works
-+	 * according to phoenix spec and return 66 bytes. If we left them
-+	 * to be zero, checksum will not catch that data is in wrong format.
-+	 */
-+	memset(&ei->params.key, 1, 74);
- 	ei->params.length = sizeof(ei->params);
- 	ireg.ah = 0x48;
- 	ireg.si = (size_t)&ei->params;
-diff --git a/drivers/firmware/edd.c b/drivers/firmware/edd.c
-index 96c25d9..5e3baac 100644
---- a/drivers/firmware/edd.c
-+++ b/drivers/firmware/edd.c
-@@ -531,8 +531,8 @@ static int
- edd_has_edd30(struct edd_device *edev)
- {
- 	struct edd_info *info;
--	int i, nonzero_path = 0;
--	char c;
-+	int i;
-+	u8 csum = 0;
- 
- 	if (!edev)
- 		return 0;
-@@ -544,16 +544,11 @@ edd_has_edd30(struct edd_device *edev)
- 		return 0;
- 	}
- 
--	for (i = 30; i <= 73; i++) {
--		c = *(((uint8_t *) info) + i + 4);
--		if (c) {
--			nonzero_path++;
--			break;
--		}
--	}
--	if (!nonzero_path) {
-+	for (i = 30; i <= 73; i++)
-+		csum += *(((u8 *)&info->params) + i);
-+
-+	if (csum)
- 		return 0;
--	}
- 
- 	return 1;
- }
---
-			Gleb.
+> Yes this is a known problem.
+> 
+> Please try commit 3408404a4c2a4eead9d73b0bbbfe3f225b65f492
+> (inetpeer: Use correct AVL tree base pointer in inet_getpeer())
+> 
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=3408404a4c2a4eead9d73b0bbbfe3f225b65f492
+> 
+> I believe David will send it to stable team shortly, if not already
+> done :)
+
+Please ignore, this patch was for linux-2.6 tree, 2.6.37 was not
+affected by the problem.
+
+So its another problem... Is there anything particular you do on this
+machine ?
+
+
+
+
