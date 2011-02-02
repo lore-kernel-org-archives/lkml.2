@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752797Ab1BBGWL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 01:22:11 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:46739 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752425Ab1BBGWK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 01:22:10 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18ZAQ5keo4ZgT422M8sNlKl41Ci88miQTP9kwHvX5
-	nhXblvqzoxVDHh
-Subject: Re: [PATCH 1/3 v2] call_function_many: fix list delete vs add race
-From: Mike Galbraith <efault@gmx.de>
-To: Milton Miller <miltonm@bga.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, akpm@linux-foundation.org,
-        Anton Blanchard <anton@samba.org>, xiaoguangrong@cn.fujitsu.com,
-        mingo@elte.hu, jaxboe@fusionio.com, npiggin@gmail.com,
-        JBeulich@novell.com, rusty@rustcorp.com.au,
-        torvalds@linux-foundation.org, benh@kernel.crashing.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <ipi-paul-reply@mdm.bga.com>
-References: <20110112150740.77dde58c@kryten>
-	 <1295288253.30950.280.camel@laptop>
-	 <smp-call-function-peter-reply@mdm.bga.com>
-	 <smp-call-function-move-writes@mdm.bga.com>
-	 <1296145360.15234.234.camel@laptop>
-	 <smp-call-function-list-race@mdm.bga.com>
-	 <smp-call-function-list-race-fix@mdm.bga.com> <ipi-list-reply@mdm.bga.com>
-	 <smp-call-function-list-race-fix-v2@mdm.bga.com>
-	 <20110201220026.GD2142@linux.vnet.ibm.com>  <ipi-paul-reply@mdm.bga.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 02 Feb 2011 07:22:01 +0100
-Message-ID: <1296627721.7858.3.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1752756Ab1BBG1I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 01:27:08 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:54891 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752421Ab1BBG1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 01:27:06 -0500
+Date: Wed, 2 Feb 2011 07:26:32 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: castet.matthieu@free.fr
+Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-security-module@vger.kernel.org, Matthias Hopf <mhopf@suse.de>,
+        rjw@sisk.pl, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] NX protection for kernel data : fix 32 bits S3 suspend
+Message-ID: <20110202062632.GA12256@elte.hu>
+References: <4D473FD5.1090903@free.fr>
+ <20110201080223.GB20372@elte.hu>
+ <1296566732.4d4809cc1f963@imp.free.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1296566732.4d4809cc1f963@imp.free.fr>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-01 at 14:00 -0800, Milton Miller wrote:
-> On Tue, 1 Feb 2011 about 14:00:26 -0800, "Paul E. McKenney" wrote:
 
-> > Starting with smp_call_function_many():
-> > 
-> > o	The check for refs is redundant:
-> > 
-> > 		/* some callers might race with other cpus changing the mask */
-> > 		if (unlikely(!refs)) {
-> > 			csd_unlock(&data->csd);
-> > 			return;
-> > 		}
-> > 
-> > 	The memory barriers and atomic functions in
-> > 	generic_smp_call_function_interrupt() prevent the callback from
-> > 	being reused before the cpumask bits have all been cleared, right?
+* castet.matthieu@free.fr <castet.matthieu@free.fr> wrote:
+
+> Quoting Ingo Molnar <mingo@elte.hu>:
 > 
-> The issue is not the cpumask in the csd, but the mask passed in from the
-> caller.  If other cpus clear the mask between the cpumask_first and and
-> cpumask_next above (where we established there were at least two cpus not
-> ourself) and the cpumask_copy, then this can happen.  Both Mike Galbraith
-> and Jan Beulich saw this in practice (Mikes case was mm_cpumask(mm)).
+> >
+> > * matthieu castet <castet.matthieu@free.fr> wrote:
+> >
+> > >  static inline int is_kernel_text(unsigned long addr)
+> > >  {
+> > > +#if defined(CONFIG_X86_32) && defined(CONFIG_ACPI_SLEEP)
+> > > +	/*
+> > > +	 * We need to make the wakeup trampoline in first 1MB !NX
+> > > +	 */
+> > > +	if (addr >= PAGE_OFFSET && addr <= (PAGE_OFFSET + (1<<20)))
+> > > +		return 1;
+> > > +#endif
+> >
+> > That's pretty ugly. Why not use set_memory_x()/set_memory_nx(), and only for
+> > the
+> > trampoline itself? Does the whole 1MB need to be marked X?
+>
+> The previous code was doing that.
 
-Mine (and Jan's) is a flavor of one hit and fixed via copy in ia64.
+So why not call set_memory_x() in your patch? Mind trying that?
 
-http://git2.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=75c1c91cb92806f960fcd6e53d2a0c21f343081c
+Thanks,
 
-
-	-Mike
-
+	Ingo
