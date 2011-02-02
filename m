@@ -1,88 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970Ab1BBTt0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 14:49:26 -0500
-Received: from nitrogen.linux2go.dk ([178.63.73.81]:40318 "EHLO
-	nitrogen.linux2go.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754Ab1BBTtZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 14:49:25 -0500
-From: Soren Hansen <soren@linux2go.dk>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, serge.hallyn@canonical.com,
-        Soren Hansen <soren@linux2go.dk>
-Subject: [PATCH] nbd: Remove module-level ioctl mutex
-Date: Wed,  2 Feb 2011 20:48:46 +0100
-Message-Id: <1296676126-7252-1-git-send-email-soren@linux2go.dk>
-X-Mailer: git-send-email 1.7.2.3
+	id S1752057Ab1BBTxS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 14:53:18 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59200 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751503Ab1BBTxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 14:53:17 -0500
+Message-ID: <4D49B5F6.5010606@zytor.com>
+Date: Wed, 02 Feb 2011 11:52:22 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@elte.hu>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Xen Devel <Xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 0/2] x86/microcode: support for microcode update in Xen
+ dom0
+References: <cover.1296259339.git.jeremy.fitzhardinge@citrix.com> <20110130113356.GA27967@liondog.tnic> <4D461FB9.5050807@goop.org> <20110131070241.GA22071@liondog.tnic> <4D46FC9F.6090309@goop.org> <20110131234131.GA16095@liondog.tnic> <4D475099.1080004@goop.org> <4D475DB5.1020300@zytor.com> <4D488EB1.9020803@goop.org>
+In-Reply-To: <4D488EB1.9020803@goop.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2a48fc0ab24241755dc93bfd4f01d68efab47f5a replaced uses of the BKL in
-the nbd driver with mutex operations. Since then, I've been been seeing
-these lock ups:
+On 02/01/2011 02:52 PM, Jeremy Fitzhardinge wrote:
+> On 01/31/2011 05:11 PM, H. Peter Anvin wrote:
+>> Note: Xen may not have devices, but it is already using multiboot to
+>> load multiple modules.  It could load the microcode blob that way.
+>>
+>> That would enable an earlier loading of microcode, which is a very
+>> good thing.
+> 
+> Yes, that is a thought, but it would require some distro support to make
+> sure the firmware is copied into /boot, and grub updated appropriately.
+> 
+> The principle advantage of updating the microcode driver is that it Just
+> Works regardless of whether the system is booting native or Xen.
+> 
 
- INFO: task qemu-nbd:16115 blocked for more than 120 seconds.
- "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
- qemu-nbd      D 0000000000000001     0 16115  16114 0x00000004
-  ffff88007d775d98 0000000000000082 ffff88007d775fd8 ffff88007d774000
-  0000000000013a80 ffff8800020347e0 ffff88007d775fd8 0000000000013a80
-  ffff880133730000 ffff880002034440 ffffea0004333db8 ffffffffa071c020
- Call Trace:
-  [<ffffffff815b9997>] __mutex_lock_slowpath+0xf7/0x180
-  [<ffffffff81132f13>] ? handle_mm_fault+0x1c3/0x410
-  [<ffffffff815b93eb>] mutex_lock+0x2b/0x50
-  [<ffffffffa071a21c>] nbd_ioctl+0x6c/0x1c0 [nbd]
-  [<ffffffff812cb970>] blkdev_ioctl+0x230/0x730
-  [<ffffffff811967a1>] block_ioctl+0x41/0x50
-  [<ffffffff81175c03>] do_vfs_ioctl+0x93/0x370
-  [<ffffffff8116fa83>] ? putname+0x33/0x50
-  [<ffffffff81175f61>] sys_ioctl+0x81/0xa0
-  [<ffffffff8100c0c2>] system_call_fastpath+0x16/0x1b
+As I mentioned on IRC...
 
-Instrumenting the nbd module's ioctl handler with some extra logging
-clearly shows the NBD_DO_IT ioctl being invoked which is a long-lived
-ioctl in the sense that it doesn't return until another ioctl asks the
-driver to disconnect. However, that other ioctl blocks, waiting for the
-module-level mutex that replaced the BKL, and then we're stuck.
+1. Xen already uses Multiboot, so it's a fairly trivial thing to add
+another item to the list for the boot loader to get.
 
-This patch removes the module-level mutex altogether. It's clearly
-wrong, and as far as I can see, it's entirely unnecessary, since the
-nbd driver maintains per-device mutexes, and I don't see anything that
-would require a module-level (or kernel-level, for that matter) mutex.
+2. The only reason we don't currently install microcode from the boot
+loader is because of the considerable complexity in adding SMP support
+to boot loaders, as it requires handling the APIC system.
 
-Signed-off-by: Soren Hansen <soren@linux2go.dk>
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Acked-by: Paul Clements <paul.clements@steeleye.com>
----
- drivers/block/nbd.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+3. Arguably on native hardware we should still load the microcode into
+RAM in the boot loader, and install it on the very early CPU bringup
+path.  That means locking down some (currently) 400K of RAM to handle
+different combinations of CPUs, or the additional complexity of
+jettisoning microcode which cannot be used while still be able to deal
+with hotplug.  I think there is a strong case for this model, which
+would mean moving the microcode into /boot anyway.
 
-diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-index a32fb41..e6fc716 100644
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -53,7 +53,6 @@
- #define DBG_BLKDEV      0x0100
- #define DBG_RX          0x0200
- #define DBG_TX          0x0400
--static DEFINE_MUTEX(nbd_mutex);
- static unsigned int debugflags;
- #endif /* NDEBUG */
- 
-@@ -718,11 +717,9 @@ static int nbd_ioctl(struct block_device *bdev, fmode_t mode,
- 	dprintk(DBG_IOCTL, "%s: nbd_ioctl cmd=%s(0x%x) arg=%lu\n",
- 			lo->disk->disk_name, ioctl_cmd_to_ascii(cmd), cmd, arg);
- 
--	mutex_lock(&nbd_mutex);
- 	mutex_lock(&lo->tx_lock);
- 	error = __nbd_ioctl(bdev, lo, cmd, arg);
- 	mutex_unlock(&lo->tx_lock);
--	mutex_unlock(&nbd_mutex);
- 
- 	return error;
- }
--- 
-1.7.2.3
-
+	-hpa
