@@ -1,87 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626Ab1BBQva (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 11:51:30 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:43596 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754038Ab1BBQv2 convert rfc822-to-8bit (ORCPT
+	id S1754657Ab1BBQws (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 11:52:48 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:42781 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754611Ab1BBQwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 11:51:28 -0500
+	Wed, 2 Feb 2011 11:52:47 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=VCKxbvzSlK925LKJHxCJOgnpKsItI04I3ZQJNGkOHCD62aa8je+gOfCy01rvORYqlO
-         GaND6g57giuIt4FK1VbrumkTyMJ1Q+XOhyPcqyMH4jKPPS0kokcRnposlespdh9AZ6vU
-         h2e6HTre8Bu8s1Hct4bYZ13BZAMoK5yfglcDA=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=FwYTy4zirfzGZu68tBHSUlECauT3zeGo9AueIS5d/jQW+q4MRf/WherY/yfD3eAS90
+         3vNQmrr7Vsz4ZnTTJ9dlPLHz16MMgMNspSL78bCZSD1eJjOVZRNViGdyUKEZjqMAKrF0
+         2taWXzdKoithG2xuPN4nbcxAm1DL3ug3j5F4Q=
+Date: Wed, 2 Feb 2011 08:52:36 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 2.6.38-rc3: FUSE (sshfs) hangs under load
+Message-ID: <20110202165236.GA3178@core.coreip.homeip.net>
+References: <20110201175452.GB518@core.coreip.homeip.net>
+ <E1PkbGG-0005Rf-QL@pomaz-ex.szeredi.hu>
 MIME-Version: 1.0
-In-Reply-To: <201102021700.20683.arnd@arndb.de>
-References: <201102021700.20683.arnd@arndb.de>
-Date: Wed, 2 Feb 2011 17:51:27 +0100
-Message-ID: <AANLkTin6qEeN7XZuwePNWqS8i_aDY586V+sOqgD5pPQA@mail.gmail.com>
-Subject: Re: ARM unaligned MMIO access with attribute((packed))
-From: Richard Guenther <richard.guenther@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        Ulrich Weigand <Ulrich.Weigand@de.ibm.com>,
-        linux-kernel@vger.kernel.org, gcc@gcc.gnu.org,
-        Peter Maydell <peter.maydell@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1PkbGG-0005Rf-QL@pomaz-ex.szeredi.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 2, 2011 at 5:00 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> As noticed by Peter Maydell, the EHCI device driver in Linux gets
-> miscompiled by some versions of arm-gcc (still need to find out which)
-> due to a combination of problems:
->
-> 1. In include/linux/usb/ehci_def.h, struct ehci_caps is defined
-> with __attribute__((packed)), for no good reason. This is clearly
-> a bug and needs to get fixed, but other drivers have the same bug
-> and it used to work. The attribute forces byte access on all members
-> accessed through pointer dereference, which is not allowed on
-> MMIO accesses in general. The specific code triggering the problem
-> in Peter's case is in ehci-omap.c:
->        omap->ehci->regs = hcd->regs
->                + HC_LENGTH(readl(&omap->ehci->caps->hc_capbase));
->
->
-> 2. The ARM version of the readl() function is implemented as a macro
-> doing a direct pointer dereference with a typecast:
->
-> #define __raw_readl(a)          (__chk_io_ptr(a), *(volatile unsigned int __force   *)(a))
-> #define readl_relaxed(c) ({ u32 __v = le32_to_cpu((__force __le32) \
->                                        __raw_readl(__mem_pci(c))); __v; })
-> #define readl(c)                ({ u32 __v = readl_relaxed(c); __iormb(); __v; })
->
-> On other architectures, readl() is implemented using an inline assembly
-> specifically to prevent gcc from issuing anything but a single 32-bit
-> load instruction. readl() only makes sense on aligned memory, so in case
-> of a misaligned pointer argument, it should cause a trap anyway.
->
-> 3. gcc does not seem to clearly define what happens during a cast between
-> aligned an packed pointers. In this case, the original pointer is packed
-> (byte aligned), while the access is done through a 32-bit aligned
-> volatile unsigned int pointer. In gcc-4.4, casting from "unsigned int
-> __attribute__((packed))" to "volatile unsigned int" resulted in a 32-bit
-> aligned access, while casting to "unsigned int" (without volatile) resulted
-> in four byte accesses. gcc-4.5 seems to have changed this to always do
-> a byte access in both cases, but still does not document the behavior.
-> (need to confirm this).
->
-> I would suggest fixing this by:
->
-> 1. auditing all uses of __attribute__((packed)) in the Linux USB code
-> and other drivers, removing the ones that are potentially harmful.
->
-> 2. Changing the ARM MMIO functions to use inline assembly instead of
-> direct pointer dereference.
->
-> 3. Documenting the gcc behavior as undefined.
+On Wed, Feb 02, 2011 at 12:52:36PM +0100, Miklos Szeredi wrote:
+> On Tue, 1 Feb 2011, Dmitry Torokhov wrote:
+> > Hi,
+> > 
+> > After installing 2.6.38-rc3 (plus a few input patches) sshfs started to
+> > misbehave on me under load. It starts off fine but when I try to compile
+> > a few modules against kernel sources residing on the other box the
+> > processes go into 'D' state and just sit there doing nothing.
+> 
+> Can you please post a stack trace from SysRq-T?
+> 
 
-The pointer conversions already invoke undefined behavior as specified by the
-C standard (6.3.2.3/7).
+Will do tonight. In the meantime I tried bisecting, but failure is not
+always triggered on the first attempt so results are iffy. The log so
+far:
 
-Richard.
+# bad: [7d44b0440147d83a65270205b22e7d365de28948] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse
+# good: [3c0eee3fe6a3a1c745379547c7e7c904aa64f6d5] Linux 2.6.37
+git bisect start '7d44b0440147d83a65270205b22e7d365de28948' 'v2.6.37'
+# bad: [84b7290cca16c61a167c7e1912cd84a479852165] Merge git://git.kernel.org/pub/scm/linux/kernel/git/lethal/fbdev-2.6
+git bisect bad 84b7290cca16c61a167c7e1912cd84a479852165
+# good: [fea9294c5f2902c45613681ad995ca27899d2016] pch_can: Optimize "if" condition in rx/tx processing
+git bisect good fea9294c5f2902c45613681ad995ca27899d2016
+# bad: [c96e96354a6c9456cdf1f150eca504e2ea35301e] Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-next-2.6 into for-davem
+git bisect bad c96e96354a6c9456cdf1f150eca504e2ea35301e
+# good: [003ea98195eebdfcf476317b517e8c29a25b9d10] iwlwifi: remove reference to Gen2
+git bisect good 003ea98195eebdfcf476317b517e8c29a25b9d10
+
+The last good must have been also bad as sshfs got stuck while I was
+installing next bisect step over it.
+
+Thanks.
+
+-- 
+Dmitry
