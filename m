@@ -1,82 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab1BBQ6P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 11:58:15 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:38328 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754452Ab1BBQ6N (ORCPT
+	id S1754690Ab1BBRBi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 12:01:38 -0500
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:45554
+	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754612Ab1BBRBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 11:58:13 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=CTnBVb+u2nDFRrU8gwD482/8Yh+yneIpovRprZ4+OpR74OaWdUBKWhXuMSaGu16E2S
-         vG+D0iw8n3u2qV0Bc7VosqA00ubWAFIdeB4qAL3qIKp+DOv5XAMqrJVQR8yQYrCYaKV5
-         NfHsYOcBDlhSTyIDiNLMuMaXXioIkK7kp8q+o=
-Date: Wed, 2 Feb 2011 08:58:00 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: Mark Lord <kernel@teksavvy.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org, kraxel@redhat.com
-Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils ?
-Message-ID: <20110202165800.GB3178@core.coreip.homeip.net>
-References: <4D3C5F73.2050408@teksavvy.com>
- <4D496AAC.1010106@canonical.com>
+	Wed, 2 Feb 2011 12:01:37 -0500
+X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Feb 2011 12:01:36 EST
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LG019D-01-OAC-02
+X-M-MSG: 
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH 4/5] perf, x86: Store perfctr msr addresses in config_base/event_base
+Date: Wed, 2 Feb 2011 17:40:59 +0100
+Message-ID: <1296664860-10886-5-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1296664860-10886-1-git-send-email-robert.richter@amd.com>
+References: <1296664860-10886-1-git-send-email-robert.richter@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D496AAC.1010106@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 02, 2011 at 09:31:08AM -0500, Chase Douglas wrote:
-> On 01/23/2011 12:03 PM, Mark Lord wrote:
-> > As of the 2.6.36 kernel, the userspace commands lsinput and input-kbd
-> > no longer work.  And if I grab newer/patched versions of those from the latest
-> > Ubuntu 10.10, then those newer/patched versions do not work with kernels
-> > *before* 2.6.36.
-> 
-> I planned on taking another look at this before we release Ubuntu 11.04
-> at the end of April. That doesn't prevent someone else from helping out
-> :), but I'll make sure the utility is working again if not.
-> 
+Instead of storing the base addresses we can store the counter's msr
+addresses directly in config_base/event_base of struct hw_perf_event.
+This avoids recalculating the address with each msr access. The
+addresses are configured one time. We also need this change to later
+modify the address calculation.
 
-Here you go:
-
->From dbe48c8044987da6e64036fa3f36d7b2826994d5 Mon Sep 17 00:00:00 2001
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Date: Mon, 24 Jan 2011 22:06:10 -0800
-Subject: [PATCH 1/2] Do not require exact version of EVDEV protocol, we can work with
- other versions too.
-
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 ---
- input.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c    |   21 ++++++++-------------
+ arch/x86/kernel/cpu/perf_event_p4.c |   10 +++++-----
+ arch/x86/kernel/cpu/perf_event_p6.c |    4 ++--
+ 3 files changed, 15 insertions(+), 20 deletions(-)
 
-diff --git a/input.c b/input.c
-index 73d5df1..08f4046 100644
---- a/input.c
-+++ b/input.c
-@@ -101,9 +101,11 @@ int device_open(int nr, int verbose)
- 		close(fd);
- 		return -1;
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index ee40c1ad..3161943 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -298,7 +298,7 @@ x86_perf_event_update(struct perf_event *event)
+ 	 */
+ again:
+ 	prev_raw_count = local64_read(&hwc->prev_count);
+-	rdmsrl(hwc->event_base + idx, new_raw_count);
++	rdmsrl(hwc->event_base, new_raw_count);
+ 
+ 	if (local64_cmpxchg(&hwc->prev_count, prev_raw_count,
+ 					new_raw_count) != prev_raw_count)
+@@ -655,7 +655,7 @@ static void x86_pmu_disable(struct pmu *pmu)
+ static inline void __x86_pmu_enable_event(struct hw_perf_event *hwc,
+ 					  u64 enable_mask)
+ {
+-	wrmsrl(hwc->config_base + hwc->idx, hwc->config | enable_mask);
++	wrmsrl(hwc->config_base, hwc->config | enable_mask);
+ }
+ 
+ static void x86_pmu_enable_all(int added)
+@@ -834,15 +834,10 @@ static inline void x86_assign_hw_event(struct perf_event *event,
+ 		hwc->event_base	= 0;
+ 	} else if (hwc->idx >= X86_PMC_IDX_FIXED) {
+ 		hwc->config_base = MSR_ARCH_PERFMON_FIXED_CTR_CTRL;
+-		/*
+-		 * We set it so that event_base + idx in wrmsr/rdmsr maps to
+-		 * MSR_ARCH_PERFMON_FIXED_CTR0 ... CTR2:
+-		 */
+-		hwc->event_base =
+-			MSR_ARCH_PERFMON_FIXED_CTR0 - X86_PMC_IDX_FIXED;
++		hwc->event_base = MSR_ARCH_PERFMON_FIXED_CTR0;
+ 	} else {
+-		hwc->config_base = x86_pmu.eventsel;
+-		hwc->event_base  = x86_pmu.perfctr;
++		hwc->config_base = x86_pmu_config_addr(hwc->idx);
++		hwc->event_base  = x86_pmu_event_addr(hwc->idx);
  	}
--	if (EV_VERSION != version) {
--		fprintf(stderr, "protocol version mismatch (expected %d, got %d)\n",
--			EV_VERSION, version);
-+
-+#define EVDEV_MIN_VERSION 0x10000
-+	if (version < EVDEV_MIN_VERSION) {
-+		fprintf(stderr, "protocol version mismatch (need at least %d, got %d)\n",
-+			EVDEV_MIN_VERSION, version);
- 		close(fd);
- 		return -1;
+ }
+ 
+@@ -932,7 +927,7 @@ static inline void x86_pmu_disable_event(struct perf_event *event)
+ {
+ 	struct hw_perf_event *hwc = &event->hw;
+ 
+-	wrmsrl(hwc->config_base + hwc->idx, hwc->config);
++	wrmsrl(hwc->config_base, hwc->config);
+ }
+ 
+ static DEFINE_PER_CPU(u64 [X86_PMC_IDX_MAX], pmc_prev_left);
+@@ -985,7 +980,7 @@ x86_perf_event_set_period(struct perf_event *event)
+ 	 */
+ 	local64_set(&hwc->prev_count, (u64)-left);
+ 
+-	wrmsrl(hwc->event_base + idx, (u64)(-left) & x86_pmu.cntval_mask);
++	wrmsrl(hwc->event_base, (u64)(-left) & x86_pmu.cntval_mask);
+ 
+ 	/*
+ 	 * Due to erratum on certan cpu we need
+@@ -993,7 +988,7 @@ x86_perf_event_set_period(struct perf_event *event)
+ 	 * is updated properly
+ 	 */
+ 	if (x86_pmu.perfctr_second_write) {
+-		wrmsrl(hwc->event_base + idx,
++		wrmsrl(hwc->event_base,
+ 			(u64)(-left) & x86_pmu.cntval_mask);
  	}
-
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index e56b9bf..c0f1747 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -756,14 +756,14 @@ static inline int p4_pmu_clear_cccr_ovf(struct hw_perf_event *hwc)
+ 	u64 v;
+ 
+ 	/* an official way for overflow indication */
+-	rdmsrl(hwc->config_base + hwc->idx, v);
++	rdmsrl(hwc->config_base, v);
+ 	if (v & P4_CCCR_OVF) {
+-		wrmsrl(hwc->config_base + hwc->idx, v & ~P4_CCCR_OVF);
++		wrmsrl(hwc->config_base, v & ~P4_CCCR_OVF);
+ 		return 1;
+ 	}
+ 
+ 	/* it might be unflagged overflow */
+-	rdmsrl(hwc->event_base + hwc->idx, v);
++	rdmsrl(hwc->event_base, v);
+ 	if (!(v & ARCH_P4_CNTRVAL_MASK))
+ 		return 1;
+ 
+@@ -802,7 +802,7 @@ static inline void p4_pmu_disable_event(struct perf_event *event)
+ 	 * state we need to clear P4_CCCR_OVF, otherwise interrupt get
+ 	 * asserted again and again
+ 	 */
+-	(void)checking_wrmsrl(hwc->config_base + hwc->idx,
++	(void)checking_wrmsrl(hwc->config_base,
+ 		(u64)(p4_config_unpack_cccr(hwc->config)) &
+ 			~P4_CCCR_ENABLE & ~P4_CCCR_OVF & ~P4_CCCR_RESERVED);
+ }
+@@ -872,7 +872,7 @@ static void p4_pmu_enable_event(struct perf_event *event)
+ 	p4_pmu_enable_pebs(hwc->config);
+ 
+ 	(void)checking_wrmsrl(escr_addr, escr_conf);
+-	(void)checking_wrmsrl(hwc->config_base + hwc->idx,
++	(void)checking_wrmsrl(hwc->config_base,
+ 				(cccr & ~P4_CCCR_RESERVED) | P4_CCCR_ENABLE);
+ }
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_p6.c b/arch/x86/kernel/cpu/perf_event_p6.c
+index 34ba07b..20c097e 100644
+--- a/arch/x86/kernel/cpu/perf_event_p6.c
++++ b/arch/x86/kernel/cpu/perf_event_p6.c
+@@ -68,7 +68,7 @@ p6_pmu_disable_event(struct perf_event *event)
+ 	if (cpuc->enabled)
+ 		val |= ARCH_PERFMON_EVENTSEL_ENABLE;
+ 
+-	(void)checking_wrmsrl(hwc->config_base + hwc->idx, val);
++	(void)checking_wrmsrl(hwc->config_base, val);
+ }
+ 
+ static void p6_pmu_enable_event(struct perf_event *event)
+@@ -81,7 +81,7 @@ static void p6_pmu_enable_event(struct perf_event *event)
+ 	if (cpuc->enabled)
+ 		val |= ARCH_PERFMON_EVENTSEL_ENABLE;
+ 
+-	(void)checking_wrmsrl(hwc->config_base + hwc->idx, val);
++	(void)checking_wrmsrl(hwc->config_base, val);
+ }
+ 
+ static __initconst const struct x86_pmu p6_pmu = {
 -- 
-Dmitry
+1.7.3.4
+
+
