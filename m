@@ -1,155 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595Ab1BBVxK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 16:53:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13052 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754307Ab1BBVxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 16:53:09 -0500
-Date: Wed, 2 Feb 2011 16:52:55 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>, tytso@mit.edu,
-        djwong@us.ibm.com, shli@kernel.org, neilb@suse.de,
-        adilger.kernel@dilger.ca, jack@suse.cz, linux-kernel@vger.kernel.org,
-        kmannth@us.ibm.com, cmm@us.ibm.com, linux-ext4@vger.kernel.org,
-        rwheeler@redhat.com, hch@lst.de, josef@redhat.com, jmoyer@redhat.com
-Subject: Re: [PATCH v2 2/2] block: share request flush fields with
- elevator_private
-Message-ID: <20110202215254.GD12559@redhat.com>
-References: <20110201185225.GT14211@htj.dyndns.org>
- <1296600373-6906-2-git-send-email-snitzer@redhat.com>
+	id S1754647Ab1BBVyy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 16:54:54 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:49167 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754431Ab1BBVyx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 16:54:53 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBABBhSU1Ld/sX/2dsb2JhbAAMhAvNW5A9gSeDN3UEhHg
+X-IronPort-AV: E=Sophos;i="4.60,416,1291611600"; 
+   d="scan'208";a="90370145"
+Message-ID: <4D49D2AA.20201@teksavvy.com>
+Date: Wed, 02 Feb 2011 16:54:50 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296600373-6906-2-git-send-email-snitzer@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chase Douglas <chase.douglas@canonical.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org, kraxel@redhat.com
+Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils
+ ?
+References: <4D3C5F73.2050408@teksavvy.com> <4D496AAC.1010106@canonical.com> <20110202165800.GB3178@core.coreip.homeip.net> <4D49B7D7.9020003@canonical.com>
+In-Reply-To: <4D49B7D7.9020003@canonical.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 01, 2011 at 05:46:13PM -0500, Mike Snitzer wrote:
-> Flush requests are never put on the IO scheduler.  Convert request
-> structure's elevator_private* into an array and have the flush fields
-> share a union with it.
-> 
-> Reclaim the space lost in 'struct request' by moving 'completion_data'
-> back in the union with 'rb_node'.
-> 
+On 11-02-02 03:00 PM, Chase Douglas wrote:
+> On 02/02/2011 11:58 AM, Dmitry Torokhov wrote:
+>> On Wed, Feb 02, 2011 at 09:31:08AM -0500, Chase Douglas wrote:
+>>> On 01/23/2011 12:03 PM, Mark Lord wrote:
+>>>> As of the 2.6.36 kernel, the userspace commands lsinput and input-kbd
+>>>> no longer work.  And if I grab newer/patched versions of those from the latest
+>>>> Ubuntu 10.10, then those newer/patched versions do not work with kernels
+>>>> *before* 2.6.36.
+>>>
+>>> I planned on taking another look at this before we release Ubuntu 11.04
+>>> at the end of April. That doesn't prevent someone else from helping out
+>>> :), but I'll make sure the utility is working again if not.
+>>>
+>>
+>> Here you go:
 
-Looks good to me.
+That patch was not enough for me to get input-kbd working here on Ubuntu-10.10.
+It would still only let me map 10 keys of my 56(?) button remote.
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+I also had to hack it to ignore the read-in map->size value when writing-out
+the new keymap.
 
-Vivek
-
-> Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-> ---
->  block/cfq-iosched.c    |   18 +++++++++---------
->  block/elevator.c       |    2 +-
->  include/linux/blkdev.h |   23 ++++++++++++-----------
->  3 files changed, 22 insertions(+), 21 deletions(-)
-> 
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index 501ffdf..8692958 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -54,9 +54,9 @@ static const int cfq_hist_divisor = 4;
->  #define CFQQ_SEEKY(cfqq)	(hweight32(cfqq->seek_history) > 32/8)
->  
->  #define RQ_CIC(rq)		\
-> -	((struct cfq_io_context *) (rq)->elevator_private)
-> -#define RQ_CFQQ(rq)		(struct cfq_queue *) ((rq)->elevator_private2)
-> -#define RQ_CFQG(rq)		(struct cfq_group *) ((rq)->elevator_private3)
-> +	((struct cfq_io_context *) (rq)->elevator_private[0])
-> +#define RQ_CFQQ(rq)		(struct cfq_queue *) ((rq)->elevator_private[1])
-> +#define RQ_CFQG(rq)		(struct cfq_group *) ((rq)->elevator_private[2])
->  
->  static struct kmem_cache *cfq_pool;
->  static struct kmem_cache *cfq_ioc_pool;
-> @@ -3609,12 +3609,12 @@ static void cfq_put_request(struct request *rq)
->  
->  		put_io_context(RQ_CIC(rq)->ioc);
->  
-> -		rq->elevator_private = NULL;
-> -		rq->elevator_private2 = NULL;
-> +		rq->elevator_private[0] = NULL;
-> +		rq->elevator_private[1] = NULL;
->  
->  		/* Put down rq reference on cfqg */
->  		cfq_put_cfqg(RQ_CFQG(rq));
-> -		rq->elevator_private3 = NULL;
-> +		rq->elevator_private[2] = NULL;
->  
->  		cfq_put_queue(cfqq);
->  	}
-> @@ -3702,9 +3702,9 @@ new_queue:
->  
->  	cfqq->allocated[rw]++;
->  	cfqq->ref++;
-> -	rq->elevator_private = cic;
-> -	rq->elevator_private2 = cfqq;
-> -	rq->elevator_private3 = cfq_ref_get_cfqg(cfqq->cfqg);
-> +	rq->elevator_private[0] = cic;
-> +	rq->elevator_private[1] = cfqq;
-> +	rq->elevator_private[2] = cfq_ref_get_cfqg(cfqq->cfqg);
->  
->  	spin_unlock_irqrestore(q->queue_lock, flags);
->  
-> diff --git a/block/elevator.c b/block/elevator.c
-> index 270e097..f98e92e 100644
-> --- a/block/elevator.c
-> +++ b/block/elevator.c
-> @@ -764,7 +764,7 @@ int elv_set_request(struct request_queue *q, struct request *rq, gfp_t gfp_mask)
->  	if (e->ops->elevator_set_req_fn)
->  		return e->ops->elevator_set_req_fn(q, rq, gfp_mask);
->  
-> -	rq->elevator_private = NULL;
-> +	rq->elevator_private[0] = NULL;
->  	return 0;
->  }
->  
-> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-> index 8a082a5..e3ee74f 100644
-> --- a/include/linux/blkdev.h
-> +++ b/include/linux/blkdev.h
-> @@ -99,25 +99,26 @@ struct request {
->  	/*
->  	 * The rb_node is only used inside the io scheduler, requests
->  	 * are pruned when moved to the dispatch queue. So let the
-> -	 * flush fields share space with the rb_node.
-> +	 * completion_data share space with the rb_node.
->  	 */
->  	union {
->  		struct rb_node rb_node;	/* sort/lookup */
-> -		struct {
-> -			unsigned int			seq;
-> -			struct list_head		list;
-> -		} flush;
-> +		void *completion_data;
->  	};
->  
-> -	void *completion_data;
-> -
->  	/*
->  	 * Three pointers are available for the IO schedulers, if they need
-> -	 * more they have to dynamically allocate it.
-> +	 * more they have to dynamically allocate it.  Flush requests are
-> +	 * never put on the IO scheduler. So let the flush fields share
-> +	 * space with the three elevator_private pointers.
->  	 */
-> -	void *elevator_private;
-> -	void *elevator_private2;
-> -	void *elevator_private3;
-> +	union {
-> +		void *elevator_private[3];
-> +		struct {
-> +			unsigned int		seq;
-> +			struct list_head	list;
-> +		} flush;
-> +	};
->  
->  	struct gendisk *rq_disk;
->  	struct hd_struct *part;
-> -- 
-> 1.7.3.4
+Cheers
