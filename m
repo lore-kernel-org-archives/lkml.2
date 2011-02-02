@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249Ab1BBUAb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 15:00:31 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:34007 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751558Ab1BBUAa (ORCPT
+	id S1752300Ab1BBUBQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 15:01:16 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47746 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014Ab1BBUBP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 15:00:30 -0500
-Message-ID: <4D49B7D7.9020003@canonical.com>
-Date: Wed, 02 Feb 2011 15:00:23 -0500
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Wed, 2 Feb 2011 15:01:15 -0500
+Date: Wed, 2 Feb 2011 20:00:31 +0000
+From: Russell King <rmk@arm.linux.org.uk>
+To: Greg KH <greg@kroah.com>
+Cc: David Brown <davidb@codeaurora.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Stepan Moskovchenko <stepanm@codeaurora.org>
+Subject: Re: linux-next: manual merge of the msm tree with the arm tree
+Message-ID: <20110202200030.GA26104@flint.arm.linux.org.uk>
+References: <20110131131401.5d6c7646.sfr@canb.auug.org.au> <8ya4o8m70jp.fsf@huya.qualcomm.com> <20110202194359.GC27065@kroah.com>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Mark Lord <kernel@teksavvy.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org, kraxel@redhat.com
-Subject: Re: 2.6.36/2.6.37: broken compatibility with userspace input-utils
- ?
-References: <4D3C5F73.2050408@teksavvy.com> <4D496AAC.1010106@canonical.com> <20110202165800.GB3178@core.coreip.homeip.net>
-In-Reply-To: <20110202165800.GB3178@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110202194359.GC27065@kroah.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02/2011 11:58 AM, Dmitry Torokhov wrote:
-> On Wed, Feb 02, 2011 at 09:31:08AM -0500, Chase Douglas wrote:
->> On 01/23/2011 12:03 PM, Mark Lord wrote:
->>> As of the 2.6.36 kernel, the userspace commands lsinput and input-kbd
->>> no longer work.  And if I grab newer/patched versions of those from the latest
->>> Ubuntu 10.10, then those newer/patched versions do not work with kernels
->>> *before* 2.6.36.
->>
->> I planned on taking another look at this before we release Ubuntu 11.04
->> at the end of April. That doesn't prevent someone else from helping out
->> :), but I'll make sure the utility is working again if not.
->>
+On Wed, Feb 02, 2011 at 11:43:59AM -0800, Greg KH wrote:
+> On Wed, Feb 02, 2011 at 10:29:14AM -0800, David Brown wrote:
+> > On Sun, Jan 30 2011, Stephen Rothwell wrote:
+> > 
+> > > Hi David,
+> > >
+> > > Today's linux-next merge of the msm tree got conflicts in
+> > > arch/arm/mach-msm/board-msm7x27.c, arch/arm/mach-msm/board-msm7x30.c,
+> > > arch/arm/mach-msm/board-qsd8x50.c and arch/arm/mach-msm/board-sapphire.c
+> > > between commit eda53d6d032effb653410b79e1b49e652a881744 ("ARM: P2V: avoid
+> > > initializers and assembly using PHYS_OFFSET") from the arm tree and
+> > > commit 07a3cc4814f790354d4c7be2c9dc6143a714a07a ("msm: Clean up useless
+> > > ifdefs") from the msm tree.
+> > >
+> > > I fixed it up (see below) and can carry the fix as necessary.
+> > 
+> > What is the best way to resolve this?  I can't really merge against
+> > Russell's tree, since he may need to rebase his tree before the merge
+> > window?
 > 
-> Here you go:
-> 
-> From dbe48c8044987da6e64036fa3f36d7b2826994d5 Mon Sep 17 00:00:00 2001
-> From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Date: Mon, 24 Jan 2011 22:06:10 -0800
-> Subject: [PATCH 1/2] Do not require exact version of EVDEV protocol, we can work with
->  other versions too.
-> 
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Public trees should never be rebased, so that shouldn't happen.
 
-Yeah that's the easy part :). I need to find time to go through the
-packaging and bug handling churn...
+No.  I refuse to operate in a rigid environment.
 
-Thanks,
+My tree is made available on the basis that the 'devel' branch is
+constantly remerged (sometimes many times a day) from the individual
+topic branches; 'devel' is a convenient branch for sfr to pull into
+linux-next, and for others to see what's in the tree.
 
--- Chase
+I am not permitted by people in the community to keep my development
+work unpublished.
+
+All the requirements from various different people are incompatible,
+so I've chosen a way which satisfies the majority on the ARM community,
+which is the community my tree serves.  It does not serve mainline
+community interests.
+
+So I do not operate a "commit the patch and its fixed" policy except
+for branches which people need to be fixed; they need to discuss their
+requirements with me to achieve that.
+
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
