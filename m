@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104Ab1BBAt3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 19:49:29 -0500
-Received: from mga14.intel.com ([143.182.124.37]:3685 "EHLO mga14.intel.com"
+	id S1753898Ab1BBApK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 19:45:10 -0500
+Received: from mga02.intel.com ([134.134.136.20]:35533 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753915Ab1BBApM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:45:12 -0500
+	id S1753869Ab1BBApI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:45:08 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="382960980"
+   d="scan'208";a="598622684"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110201443.618138584@firstfloor.org>
 In-Reply-To: <20110201443.618138584@firstfloor.org>
-To: davidf@rd.bbc.co.uk, ak@linux.intel.com, chris@chris-wilson.co.uk,
-        gregkh@suse.de, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [123/139] drm/i915/dp: Fix I2C/EDID handling with active DisplayPort to DVI converter
-Message-Id: <20110202004522.7B5DD3E09BD@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:45:22 -0800 (PST)
+To: broonie@opensource.wolfsonmicro.com, sameo@linux.intel.com, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [119/139] mfd: Supply IRQ base for WM832x devices
+Message-Id: <20110202004518.50DD63E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:45:18 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,127 +24,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: David Flynn <davidf@rd.bbc.co.uk>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 8316f33766a82907c694267ff911e45e256f09f9 upstream.
+commit bd7c72ed18d719c1fb0fdf6ff9042d8ab78fdf71 upstream.
 
-The DisplayPort standard (1.1a) states that:
-  The I2C-over-AUX Reply field is valid only when Native AUX CH Reply
-  field is AUX_ACK (00). When Native AUX CH Reply field is not 00, then,
-  I2C-over-AUX Reply field must be 00 and be ignored.
+Without this the IRQ base will not be correctly configured for the
+subdevices.
 
-This fixes broken EDID reading when using an active DisplayPort to
-duallink DVI converter.  If the AUX CH replier chooses to defer the
-transaction, a short read occurs and erroneous data is returned as
-the i2c reply due to a lack of length checking and failure to check
-for AUX ACK.
-
-As a result, broken EDIDs can look like:
-     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f    0123456789abcdef
-00: bc bc bc ff bc bc bc ff bc bc bc ac bc bc bc 45    ???.???.???????E
-10: bc bc bc 10 bc bc bc 34 bc bc bc ee bc bc bc 4c    ???????4???????L
-20: bc bc bc 50 bc bc bc 00 bc bc bc 40 bc bc bc 00    ???P???.???@???.
-30: bc bc bc 01 bc bc bc 01 bc bc bc a0 bc bc bc 40    ???????????????@
-40: bc bc bc 00 bc bc bc 00 bc bc bc 00 bc bc bc 55    ???.???.???.???U
-50: bc bc bc 35 bc bc bc 31 bc bc bc 20 bc bc bc fc    ???5???1??? ????
-60: bc bc bc 4c bc bc bc 34 bc bc bc 46 bc bc bc 00    ???L???4???F???.
-70: bc bc bc 38 bc bc bc 11 bc bc bc 20 bc bc bc 20    ???8??????? ???
-80: bc bc bc ff bc bc bc ff bc bc bc ff bc bc bc ff    ???.???.???.???.
-...
-
-which can lead to:
-[drm:drm_edid_block_valid] *ERROR* EDID checksum is invalid, remainder
-[drm:drm_edid_block_valid] *ERROR* Raw EDID:
-<3>30 30 30 30 30 30 30 32 38 32 30 32 63 63 31 61  000000028202cc1a
-<3>28 00 02 8c 00 00 00 00 18 00 00 00 00 00 00 00  (...............
-<3>20 4c 61 73 74 20 62 65 61 63 6f 6e 3a 20 33 32   Last beacon: 32
-<3>32 30 6d 73 20 61 67 6f 46 00 05 8c 00 00 00 00  20ms agoF.......
-<3>36 00 00 00 00 00 00 00 00 0c 57 69 2d 46 69 20  6.........Wi-Fi
-<3>52 6f 75 74 65 72 01 08 82 84 8b 96 24 30 48 6c  Router......$0Hl
-<3>03 01 01 06 02 00 00 2a 01 00 2f 01 00 32 04 0c  .......*../..2..
-<3>12 18 60 dd 09 00 10 18 02 00 00 01 00 00 18 00  ..`.............
-
-Signed-off-by: David Flynn <davidf@rd.bbc.co.uk>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-[ickle: fix up some surrounding checkpatch warnings]
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/gpu/drm/i915/intel_dp.c |   37 ++++++++++++++++++++++++++++++-------
- 1 file changed, 30 insertions(+), 7 deletions(-)
+ drivers/mfd/wm831x-core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux-2.6.35.y/drivers/gpu/drm/i915/intel_dp.c
+Index: linux-2.6.35.y/drivers/mfd/wm831x-core.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/gpu/drm/i915/intel_dp.c
-+++ linux-2.6.35.y/drivers/gpu/drm/i915/intel_dp.c
-@@ -416,6 +416,7 @@ intel_dp_i2c_aux_ch(struct i2c_adapter *
- 	uint16_t address = algo_data->address;
- 	uint8_t msg[5];
- 	uint8_t reply[2];
-+	unsigned retry;
- 	int msg_bytes;
- 	int reply_bytes;
- 	int ret;
-@@ -450,14 +451,33 @@ intel_dp_i2c_aux_ch(struct i2c_adapter *
+--- linux-2.6.35.y.orig/drivers/mfd/wm831x-core.c
++++ linux-2.6.35.y/drivers/mfd/wm831x-core.c
+@@ -1608,7 +1608,7 @@ static int wm831x_device_init(struct wm8
+ 	case WM8320:
+ 		ret = mfd_add_devices(wm831x->dev, -1,
+ 				      wm8320_devs, ARRAY_SIZE(wm8320_devs),
+-				      NULL, 0);
++				      NULL, wm831x->irq_base);
  		break;
- 	}
  
--	for (;;) {
--	  ret = intel_dp_aux_ch(intel_encoder,
--				msg, msg_bytes,
--				reply, reply_bytes);
-+	for (retry = 0; retry < 5; retry++) {
-+		ret = intel_dp_aux_ch(intel_encoder,
-+				      msg, msg_bytes,
-+				      reply, reply_bytes);
- 		if (ret < 0) {
- 			DRM_DEBUG_KMS("aux_ch failed %d\n", ret);
- 			return ret;
- 		}
-+
-+		switch (reply[0] & AUX_NATIVE_REPLY_MASK) {
-+		case AUX_NATIVE_REPLY_ACK:
-+			/* I2C-over-AUX Reply field is only valid
-+			 * when paired with AUX ACK.
-+			 */
-+			break;
-+		case AUX_NATIVE_REPLY_NACK:
-+			DRM_DEBUG_KMS("aux_ch native nack\n");
-+			return -EREMOTEIO;
-+		case AUX_NATIVE_REPLY_DEFER:
-+			udelay(100);
-+			continue;
-+		default:
-+			DRM_ERROR("aux_ch invalid native reply 0x%02x\n",
-+				  reply[0]);
-+			return -EREMOTEIO;
-+		}
-+
- 		switch (reply[0] & AUX_I2C_REPLY_MASK) {
- 		case AUX_I2C_REPLY_ACK:
- 			if (mode == MODE_I2C_READ) {
-@@ -465,17 +485,20 @@ intel_dp_i2c_aux_ch(struct i2c_adapter *
- 			}
- 			return reply_bytes - 1;
- 		case AUX_I2C_REPLY_NACK:
--			DRM_DEBUG_KMS("aux_ch nack\n");
-+			DRM_DEBUG_KMS("aux_i2c nack\n");
- 			return -EREMOTEIO;
- 		case AUX_I2C_REPLY_DEFER:
--			DRM_DEBUG_KMS("aux_ch defer\n");
-+			DRM_DEBUG_KMS("aux_i2c defer\n");
- 			udelay(100);
- 			break;
- 		default:
--			DRM_ERROR("aux_ch invalid reply 0x%02x\n", reply[0]);
-+			DRM_ERROR("aux_i2c invalid reply 0x%02x\n", reply[0]);
- 			return -EREMOTEIO;
- 		}
- 	}
-+
-+	DRM_ERROR("too many retries, giving up\n");
-+	return -EREMOTEIO;
- }
- 
- static int
+ 	default:
