@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250Ab1BBW34 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 17:29:56 -0500
-Received: from sncsmrelay2.nai.com ([67.97.80.206]:40042 "EHLO
-	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755108Ab1BBW3z (ORCPT
+	id S1755265Ab1BBWcH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 17:32:07 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:54537 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755108Ab1BBWcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 17:29:55 -0500
-Message-ID: <4D49DA5B.10308@snapgear.com>
-Date: Thu, 3 Feb 2011 08:27:39 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Wed, 2 Feb 2011 17:32:04 -0500
+Date: Thu, 3 Feb 2011 07:31:59 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for February 1 (ip_vs)
+Message-ID: <20110202223159.GB2248@verge.net.au>
+References: <20110201153403.b3a251a3.sfr@canb.auug.org.au>
+ <20110201091620.64536300.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Greg Ungerer <gerg@uclinux.org>
-Subject: Re: [patch 7/8] m68knommu: 5772: Replace private irq flow handler
-References: <20110202212258.546660886@linutronix.de> <20110202212552.413849952@linutronix.de>
-In-Reply-To: <20110202212552.413849952@linutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110201091620.64536300.randy.dunlap@oracle.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Feb 01, 2011 at 09:16:20AM -0800, Randy Dunlap wrote:
+> On Tue, 1 Feb 2011 15:34:03 +1100 Stephen Rothwell wrote:
+> 
+> > Hi all,
+> > 
+> > Changes since 20110131:
+> 
+> 
+> When CONFIG_IP_VS_PROTO_TCP is not set:
+> 
+> net/netfilter/ipvs/ip_vs_proto_sctp.c:1104: error: 'struct netns_ipvs' has no member named 'tcp_app_lock'
+> net/netfilter/ipvs/ip_vs_proto_sctp.c:1104: error: 'struct netns_ipvs' has no member named 'tcp_app_lock'
 
-Hi Thomas,
+Thanks, the following patch should resolve this problem.
+Hans, could you verify this change?
 
-On 03/02/11 07:41, Thomas Gleixner wrote:
-> That handler lacks the minimal checks for action being zero etc. Keep
-> the weird flow - ack before handling - intact and call into
-> handle_simple_irq which does the right thing.
->
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Greg Ungerer <gerg@uclinux.org>
-
-Acked-by: Greg Ungerer <gerg@uclinux.org>
-
-(I can't test this change for a week or two at least, I don't
-have access to any 5272 based boards at the moment.)
-
-Do you want me to push it through the m68knommu tree,
-or are you going to do that yourself?
-
-Regards
-Greg
+The change is available at
+git://git.kernel.org/pub/scm/linux/kernel/git/horms/lvs-test-2.6.git master
 
 
-> ---
->  arch/m68knommu/platform/5272/intc.c |    5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
->
-> Index: linux-2.6-tip/arch/m68knommu/platform/5272/intc.c
-> ===================================================================
-> --- linux-2.6-tip.orig/arch/m68knommu/platform/5272/intc.c
-> +++ linux-2.6-tip/arch/m68knommu/platform/5272/intc.c
-> @@ -137,11 +137,8 @@ static int intc_irq_set_type(unsigned in
->   */
->  static void intc_external_irq(unsigned int irq, struct irq_desc *desc)
->  {
-> -	kstat_incr_irqs_this_cpu(irq, desc);
-> -	desc->status |= IRQ_INPROGRESS;
->  	desc->chip->ack(irq);
-> -	handle_IRQ_event(irq, desc->action);
-> -	desc->status &= ~IRQ_INPROGRESS;
-> +	handle_simple_irq(irq, desc);
->  }
->
->  static struct irq_chip intc_irq_chip = {
+From: Simon Horman <horms@verge.net.au>
 
+IPVS: Use correct lock in SCTP module
+
+Use sctp_app_lock instead of tcp_app_lock in the SCTP protocol module.
+
+This appears to be a typo introduced by the netns changes.
+
+Cc: Hans Schillstrom <hans@schillstrom.com>
+Signed-off-by: Simon Horman <horms@verge.net.au>
+---
+ net/netfilter/ipvs/ip_vs_proto_sctp.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/net/netfilter/ipvs/ip_vs_proto_sctp.c b/net/netfilter/ipvs/ip_vs_proto_sctp.c
+index fb2d04a..b027ccc 100644
+--- a/net/netfilter/ipvs/ip_vs_proto_sctp.c
++++ b/net/netfilter/ipvs/ip_vs_proto_sctp.c
+@@ -1101,7 +1101,7 @@ static void __ip_vs_sctp_init(struct net *net, struct ip_vs_proto_data *pd)
+ 	struct netns_ipvs *ipvs = net_ipvs(net);
+ 
+ 	ip_vs_init_hash_table(ipvs->sctp_apps, SCTP_APP_TAB_SIZE);
+-	spin_lock_init(&ipvs->tcp_app_lock);
++	spin_lock_init(&ipvs->sctp_app_lock);
+ 	pd->timeout_table = ip_vs_create_timeout_table((int *)sctp_timeouts,
+ 							sizeof(sctp_timeouts));
+ }
 -- 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+1.7.2.3
+
+
+
