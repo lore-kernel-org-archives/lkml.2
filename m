@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544Ab1BBBLT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 20:11:19 -0500
-Received: from mga09.intel.com ([134.134.136.24]:14330 "EHLO mga09.intel.com"
+	id S1752480Ab1BBBLh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 20:11:37 -0500
+Received: from mga11.intel.com ([192.55.52.93]:1497 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752327Ab1BBAnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:43:16 -0500
+	id S1752317Ab1BBAnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:43:15 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="598622246"
+   d="scan'208";a="883417930"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110201443.618138584@firstfloor.org>
 In-Reply-To: <20110201443.618138584@firstfloor.org>
-To: chuck.lever@oracle.com, stefan.bader@canonical.com,
-        Trond.Myklebust@netapp.com, gregkh@suse.de, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [12/139] NFS: Fix panic after nfs_umount()
-Message-Id: <20110202004326.4C3CA3E09BD@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:43:26 -0800 (PST)
+To: heiko.carstens@de.ibm.com, a.p.zijlstra@chello.nl, ak@linux.intel.com,
+        mingo@elte.hu, gregkh@suse.de, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: [PATCH] [11/139] nohz: Fix get_next_timer_interrupt() vs cpu hotplug
+Message-Id: <20110202004325.3B8823E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:43:25 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,57 +25,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Chuck Lever <chuck.lever@oracle.com>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit 5b362ac3799ff4225c40935500f520cad4d7ed66 upstream.
+commit dbd87b5af055a0cc9bba17795c9a2b0d17795389 upstream.
 
-After a few unsuccessful NFS mount attempts in which the client and
-server cannot agree on an authentication flavor both support, the
-client panics.  nfs_umount() is invoked in the kernel in this case.
+This fixes a bug as seen on 2.6.32 based kernels where timers got
+enqueued on offline cpus.
 
-Turns out nfs_umount()'s UMNT RPC invocation causes the RPC client to
-write off the end of the rpc_clnt's iostat array.  This is because the
-mount client's nrprocs field is initialized with the count of defined
-procedures (two: MNT and UMNT), rather than the size of the client's
-proc array (four).
+If a cpu goes offline it might still have pending timers. These will
+be migrated during CPU_DEAD handling after the cpu is offline.
+However while the cpu is going offline it will schedule the idle task
+which will then call tick_nohz_stop_sched_tick().
 
-The fix is to use the same initialization technique used by most other
-upper layer clients in the kernel.
+That function in turn will call get_next_timer_intterupt() to figure
+out if the tick of the cpu can be stopped or not. If it turns out that
+the next tick is just one jiffy off (delta_jiffies == 1)
+tick_nohz_stop_sched_tick() incorrectly assumes that the tick should
+not stop and takes an early exit and thus it won't update the load
+balancer cpu.
 
-Introduced by commit 0b524123, which failed to update nrprocs when
-support was added for UMNT in the kernel.
+Just afterwards the cpu will be killed and the load balancer cpu could
+be the offline cpu.
 
-BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=24302
-BugLink: http://bugs.launchpad.net/bugs/683938
+On 2.6.32 based kernel get_nohz_load_balancer() gets called to decide
+on which cpu a timer should be enqueued (see __mod_timer()). Which
+leads to the possibility that timers get enqueued on an offline cpu.
+These will never expire and can cause a system hang.
 
-Reported-by: Stefan Bader <stefan.bader@canonical.com>
-Tested-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+This has been observed 2.6.32 kernels. On current kernels
+__mod_timer() uses get_nohz_timer_target() which doesn't have that
+problem. However there might be other problems because of the too
+early exit tick_nohz_stop_sched_tick() in case a cpu goes offline.
+
+The easiest and probably safest fix seems to be to let
+get_next_timer_interrupt() just lie and let it say there isn't any
+pending timer if the current cpu is offline.
+
+I also thought of moving migrate_[hr]timers() from CPU_DEAD to
+CPU_DYING, but seeing that there already have been fixes at least in
+the hrtimer code in this area I'm afraid that this could add new
+subtle bugs.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
+LKML-Reference: <20101201091109.GA8984@osiris.boeblingen.de.ibm.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/mount_clnt.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/timer.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-Index: linux-2.6.35.y/fs/nfs/mount_clnt.c
+Index: linux-2.6.35.y/kernel/timer.c
 ===================================================================
---- linux-2.6.35.y.orig/fs/nfs/mount_clnt.c
-+++ linux-2.6.35.y/fs/nfs/mount_clnt.c
-@@ -503,13 +503,13 @@ static struct rpc_procinfo mnt3_procedur
+--- linux-2.6.35.y.orig/kernel/timer.c
++++ linux-2.6.35.y/kernel/timer.c
+@@ -1237,6 +1237,12 @@ unsigned long get_next_timer_interrupt(u
+ 	struct tvec_base *base = __get_cpu_var(tvec_bases);
+ 	unsigned long expires;
  
- static struct rpc_version mnt_version1 = {
- 	.number		= 1,
--	.nrprocs	= 2,
-+	.nrprocs	= ARRAY_SIZE(mnt_procedures),
- 	.procs		= mnt_procedures,
- };
- 
- static struct rpc_version mnt_version3 = {
- 	.number		= 3,
--	.nrprocs	= 2,
-+	.nrprocs	= ARRAY_SIZE(mnt3_procedures),
- 	.procs		= mnt3_procedures,
- };
- 
++	/*
++	 * Pretend that there is no timer pending if the cpu is offline.
++	 * Possible pending timers will be migrated later to an active cpu.
++	 */
++	if (cpu_is_offline(smp_processor_id()))
++		return now + NEXT_TIMER_MAX_DELTA;
+ 	spin_lock(&base->lock);
+ 	if (time_before_eq(base->next_timer, base->timer_jiffies))
+ 		base->next_timer = __next_timer_interrupt(base);
