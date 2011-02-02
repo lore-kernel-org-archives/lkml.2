@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265Ab1BBWcH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 17:32:07 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:54537 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755108Ab1BBWcE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 17:32:04 -0500
-Date: Thu, 3 Feb 2011 07:31:59 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for February 1 (ip_vs)
-Message-ID: <20110202223159.GB2248@verge.net.au>
-References: <20110201153403.b3a251a3.sfr@canb.auug.org.au>
- <20110201091620.64536300.randy.dunlap@oracle.com>
+	id S1755274Ab1BBWiH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 17:38:07 -0500
+Received: from www.tglx.de ([62.245.132.106]:36900 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755155Ab1BBWiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 17:38:04 -0500
+Date: Wed, 2 Feb 2011 23:37:01 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Greg Ungerer <gerg@snapgear.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, Greg Ungerer <gerg@uclinux.org>
+Subject: Re: [patch 7/8] m68knommu: 5772: Replace private irq flow handler
+In-Reply-To: <4D49DA5B.10308@snapgear.com>
+Message-ID: <alpine.LFD.2.00.1102022336090.31804@localhost6.localdomain6>
+References: <20110202212258.546660886@linutronix.de> <20110202212552.413849952@linutronix.de> <4D49DA5B.10308@snapgear.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110201091620.64536300.randy.dunlap@oracle.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 01, 2011 at 09:16:20AM -0800, Randy Dunlap wrote:
-> On Tue, 1 Feb 2011 15:34:03 +1100 Stephen Rothwell wrote:
+On Thu, 3 Feb 2011, Greg Ungerer wrote:
+
 > 
-> > Hi all,
+> Hi Thomas,
+> 
+> On 03/02/11 07:41, Thomas Gleixner wrote:
+> > That handler lacks the minimal checks for action being zero etc. Keep
+> > the weird flow - ack before handling - intact and call into
+> > handle_simple_irq which does the right thing.
 > > 
-> > Changes since 20110131:
+> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: Greg Ungerer <gerg@uclinux.org>
 > 
+> Acked-by: Greg Ungerer <gerg@uclinux.org>
 > 
-> When CONFIG_IP_VS_PROTO_TCP is not set:
+> (I can't test this change for a week or two at least, I don't
+> have access to any 5272 based boards at the moment.)
 > 
-> net/netfilter/ipvs/ip_vs_proto_sctp.c:1104: error: 'struct netns_ipvs' has no member named 'tcp_app_lock'
-> net/netfilter/ipvs/ip_vs_proto_sctp.c:1104: error: 'struct netns_ipvs' has no member named 'tcp_app_lock'
+> Do you want me to push it through the m68knommu tree,
+> or are you going to do that yourself?
 
-Thanks, the following patch should resolve this problem.
-Hans, could you verify this change?
+If it does not conflict with your stuff, I'd prefer to push it myself,
+so I can apply the depending patches as well.
 
-The change is available at
-git://git.kernel.org/pub/scm/linux/kernel/git/horms/lvs-test-2.6.git master
+Thanks,
 
-
-From: Simon Horman <horms@verge.net.au>
-
-IPVS: Use correct lock in SCTP module
-
-Use sctp_app_lock instead of tcp_app_lock in the SCTP protocol module.
-
-This appears to be a typo introduced by the netns changes.
-
-Cc: Hans Schillstrom <hans@schillstrom.com>
-Signed-off-by: Simon Horman <horms@verge.net.au>
----
- net/netfilter/ipvs/ip_vs_proto_sctp.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/net/netfilter/ipvs/ip_vs_proto_sctp.c b/net/netfilter/ipvs/ip_vs_proto_sctp.c
-index fb2d04a..b027ccc 100644
---- a/net/netfilter/ipvs/ip_vs_proto_sctp.c
-+++ b/net/netfilter/ipvs/ip_vs_proto_sctp.c
-@@ -1101,7 +1101,7 @@ static void __ip_vs_sctp_init(struct net *net, struct ip_vs_proto_data *pd)
- 	struct netns_ipvs *ipvs = net_ipvs(net);
- 
- 	ip_vs_init_hash_table(ipvs->sctp_apps, SCTP_APP_TAB_SIZE);
--	spin_lock_init(&ipvs->tcp_app_lock);
-+	spin_lock_init(&ipvs->sctp_app_lock);
- 	pd->timeout_table = ip_vs_create_timeout_table((int *)sctp_timeouts,
- 							sizeof(sctp_timeouts));
- }
--- 
-1.7.2.3
-
-
-
+	tglx
