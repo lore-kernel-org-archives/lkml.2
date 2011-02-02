@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020Ab1BBHMX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 02:12:23 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:56356 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752660Ab1BBHMW (ORCPT
+	id S1753074Ab1BBHNR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 02:13:17 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:56500 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752882Ab1BBHMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 02:12:22 -0500
+	Wed, 2 Feb 2011 02:12:23 -0500
 From: "Ian Munsie" <imunsie@au1.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andreas Dilger <adilger@dilger.ca>,
@@ -21,54 +21,45 @@ Cc: Andreas Dilger <adilger@dilger.ca>,
         Scott Wood <scottwood@freescale.com>, Nathan Lynch <ntl@pobox.com>,
         Avantika Mathur <mathur@linux.vnet.ibm.com>,
         David Gibson <dwg@au1.ibm.com>, Andreas Schwab <schwab@linux-m68k.org>,
-        Namhyung Kim <namhyung@gmail.com>
-Subject: PowerPC, ftrace: Add PPC raw syscall tracepoints & ftrace fixes (mimimal subset only) v3
-Date: Wed,  2 Feb 2011 18:11:52 +1100
-Message-Id: <1296630718-17537-1-git-send-email-imunsie@au1.ibm.com>
+        Namhyung Kim <namhyung@gmail.com>, Ian Munsie <imunsie@au1.ibm.com>
+Subject: [PATCH 6/6] trace syscalls: Early terminate search for sys_ni_syscall
+Date: Wed,  2 Feb 2011 18:11:58 +1100
+Message-Id: <1296630718-17537-7-git-send-email-imunsie@au1.ibm.com>
 X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1296630718-17537-1-git-send-email-imunsie@au1.ibm.com>
+References: <1296630718-17537-1-git-send-email-imunsie@au1.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-git send-email just failed to save or send this message, so retyping...
+From: Ian Munsie <imunsie@au1.ibm.com>
 
+Many system calls are unimplemented and mapped to sys_ni_syscall, but at
+boot ftrace would still search through every syscall metadata entry for
+a match which wouldn't be there.
 
-Hi All,
+This patch adds causes the search to terminate early if the system call
+is not mapped.
 
-This is a partial version of my 'ftrace syscalls, PowerPC: Various fixes,
-Compat Syscall support and PowerPC implementation'.
+Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+---
+ kernel/trace/trace_syscalls.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-I finally found some time this week to go back and work on this patchset, but
-now I've been hit with another more pressing work item, so this will once again
-have to go on the backburner :-(. Even though I haven't finished fixing up the
-complete 40 patch series I would still like to get this smaller minimal subset
-in. I've had a request for the raw syscall tracepoints on PowerPC that this
-subset implements, and these patches have proven to be pretty stable.
-
-This subset also fixes ftrace syscalls to ensure that events will only be
-created for syscalls that successfully map their metadata to a syscall number,
-so that non-working phantom events are not created. Patches #2 and #6 in this
-series are not strictly necessary for this, they just optimise ftrace syscalls
-a bit.
-
-What's missing from this series that was in the v2 is the conversion of
-all the syscalls implemented under /arch/powerpc, Jason Baron's compat
-syscall support and the conversion of the remaining native and compat
-syscalls to this infrastructure.
-
-
-This is based on tip/master. The PowerPC specific patch will need Ben's ACK
-before it goes in.
-
-Changes from the last subset I posted:
-- Rather than removing the redundant syscall_nr checks completely, I have
-  turned them into WARN_ON_ONCE to catch possible future regressions, from
-  Steven Rostedt's suggestion.
-- From Mike Frysinger's suggestion, arch_syscall_addr is now a macro rather
-  than a weak function to minimise the overhead at boot. Archs with special
-  requirements (such as ppc64) can define their own macro in asm/ftrace.h.
-  Steven Rostedt suggested this be made a static inline function, but I don't
-  see how this would be possible (at least without #defines and #ifndefs) given
-  that it has to be weak to allow archs to override it (Unless I misunderstood
-  something?  Steven?).
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 76bffba..ff070aa 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -71,6 +71,9 @@ static struct syscall_metadata *find_syscall_meta(unsigned long syscall)
+ 	stop = (struct syscall_metadata *)__stop_syscalls_metadata;
+ 	kallsyms_lookup(syscall, NULL, NULL, NULL, str);
+ 
++	if (arch_syscall_match_sym_name(str, "sys_ni_syscall"))
++		return NULL;
++
+ 	for ( ; start < stop; start++) {
+ 		if (start->name && arch_syscall_match_sym_name(str, start->name))
+ 			return start;
+-- 
+1.7.2.3
 
