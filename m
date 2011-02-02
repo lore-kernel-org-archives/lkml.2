@@ -1,72 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab1BBNI4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 08:08:56 -0500
-Received: from smtp-tls1.univ-nantes.fr ([193.52.101.145]:34938 "EHLO
-	smtp-tls.univ-nantes.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754015Ab1BBNIz (ORCPT
+	id S1754163Ab1BBNXp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 08:23:45 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:58251 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754038Ab1BBNXo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 08:08:55 -0500
-Message-ID: <4D495765.4090806@univ-nantes.fr>
-Date: Wed, 02 Feb 2011 14:08:53 +0100
-From: Yann Dupont <Yann.Dupont@univ-nantes.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14pre) Gecko/20110118 Shredder/3.1.8pre
+	Wed, 2 Feb 2011 08:23:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=OnEiCU+/bSB2eJ32pY2mQpZgoHuKc0lQS0fLtPV2aaSyOLmvJ2mvXbCdksx/XWoNx+
+         wjOu8HvblT541iJvc+ZHIOEOs54TENIzflFp4tkXh22+8+pKmYYNsDnYF56+YTQ6KYuS
+         cxDerBWieLWGcGzTGhfurgEgUTiHkG2YEsROo=
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Subject: Re: kernel 2.6.37 : oops in cleanup_once
-References: <4D491B8D.1000107@univ-nantes.fr>	 <1296643972.20445.9.camel@edumazet-laptop> <1296645887.20445.11.camel@edumazet-laptop>
-In-Reply-To: <1296645887.20445.11.camel@edumazet-laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1296651097-29288-1-git-send-email-glommer@redhat.com>
+References: <1296651097-29288-1-git-send-email-glommer@redhat.com>
+Date: Wed, 2 Feb 2011 11:23:43 -0200
+Message-ID: <AANLkTimgKG=fB6ZTL2LrXTwz0OMMcYWH5TLtYg7Pfwcn@mail.gmail.com>
+Subject: Re: [PATCH] use guest value of version field in kvmclock
+From: Glauber Costa <glommer@gmail.com>
+To: Glauber Costa <glommer@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Avi Kivity <avi@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 02/02/2011 12:24, Eric Dumazet a écrit :
-> Le mercredi 02 février 2011 à 11:52 +0100, Eric Dumazet a écrit :
->> Le mercredi 02 février 2011 à 09:53 +0100, Yann Dupont a écrit :
->>> Hello.
->>> We recently upgraded one machine with vanilla 2.6.37, and experienced 2
->>> kernel oops since. Each oops is after ~1 week of uptime.
->>> The last oops was last night but we didn't had any trace.
-> oops, 2.6.37 "only"
+On Wed, Feb 2, 2011 at 10:51 AM, Glauber Costa <glommer@redhat.com> wrote:
+> Avi noticed that we have to use guest's value for the version field,
+> instead of keeping track of it ourselves. If we don't do that,
+> the following situation can arise:
 >
->> Yes this is a known problem.
->>
->> Please try commit 3408404a4c2a4eead9d73b0bbbfe3f225b65f492
->> (inetpeer: Use correct AVL tree base pointer in inet_getpeer())
->>
->> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=3408404a4c2a4eead9d73b0bbbfe3f225b65f492
->>
->> I believe David will send it to stable team shortly, if not already
->> done :)
-> Please ignore, this patch was for linux-2.6 tree, 2.6.37 was not
-> affected by the problem.
->
-> So its another problem... Is there anything particular you do on this
-> machine ?
->
->
->
->
-Nothing really special there, we run a lot (20) of KVM guest (mainly 
-linux firewalls for lots of differents vlan), so we have a lot of 
-bridges vlan & tun/tap.
-Oh, and CONFIG_BRIDGE_IGMP_SNOOPING is set to n (because of  the other 
-bug already sent to netdev - more to come on next mail)
+>  vcpu->arch.hv_clock.version is initialized to zero.
+>  Guest reads version (result: 2)
+>  Guest starts reading data
+>  Live migration; vcpu->arch.hv_clock.version is zeroed
+>  Steal time update; vcpu->arch.hv_clock.version += 2; write to guest
+>  Guest continues reading data
+>  Guest reads version (result: 2)
+Please ignore it. I did test this patch but appearently used the wrong
+module, and it tricked me
+this version is obviously wrong.
 
-Hard to say if this BUG is new in 2.6.37. This host was running fine 
-with 2.6.34.2 since August 2010.
-Bisecting will be hard due to the time to trigger the bug (and the fact 
-that this machine is a production machine)
+>
+> Signed-off-by: Glauber Costa <glommer@redhat.com>
+> CC: Avi Kivity <avi@redhat.com>
+> ---
+>  arch/x86/kvm/x86.c |    9 ++++++---
+>  1 files changed, 6 insertions(+), 3 deletions(-)
+>
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index c39ab4a..7fdc84a 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -1151,15 +1151,18 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
+>        vcpu->last_guest_tsc = tsc_timestamp;
+>        vcpu->hv_clock.flags = 0;
+>
+> +       shared_kaddr = kmap_atomic(vcpu->time_page, KM_USER0);
+> +
+>        /*
+>         * The interface expects us to write an even number signaling that the
+>         * update is finished. Since the guest won't see the intermediate
+> -        * state, we just increase by 2 at the end.
+> +        * state, we just increase by 2 at the end. We use the guest's value as
+> +        * a basis to make it migration-safe.
+>         */
+> +       memcpy(&vcpu->hv_clock, shared_kaddr + vcpu->time_offset,
+> +              sizeof(vcpu->hv_clock));
+>        vcpu->hv_clock.version += 2;
+>
+> -       shared_kaddr = kmap_atomic(vcpu->time_page, KM_USER0);
+> -
+>        memcpy(shared_kaddr + vcpu->time_offset, &vcpu->hv_clock,
+>               sizeof(vcpu->hv_clock));
+>
+> --
+> 1.7.2.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-Anyway, I can test with a specific kernel version if you suspect something.
-
-Regards,
 
 
 -- 
-Yann Dupont - Service IRTS, DSI Université de Nantes
-Tel : 02.53.48.49.20 - Mail/Jabber : Yann.Dupont@univ-nantes.fr
-
+Sent from my Atari.
