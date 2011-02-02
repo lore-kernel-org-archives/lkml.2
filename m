@@ -1,72 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851Ab1BBSR7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 13:17:59 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:64074 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754637Ab1BBSR6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 13:17:58 -0500
-X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=mwaJKvhHZ3QA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=D19gQVrFAAAA:8 a=V5fybmPF-PxOupvM8XkA:9 a=gpwl8YynUTC4k4i_FOUixmbaIhkA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: Using ftrace/perf as a basis for generic seccomp
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Eric Paris <eparis@redhat.com>, Tom Zanussi <tzanussi@gmail.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Eric Paris <eparis@parisplace.org>, linux-kernel@vger.kernel.org,
-        agl@google.com, Jason Baron <jbaron@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        2nddept-manager@sdl.hitachi.co.jp
-In-Reply-To: <20110202175556.GA13948@elte.hu>
-References: <1294867725.3237.230.camel@localhost.localdomain>
-	 <AANLkTi=tmzKqLL30q9Mq+9u7s-M3sG2-MKz7pUJ1R08Z@mail.gmail.com>
-	 <4D494AB1.1040508@hitachi.com> <20110202122620.GA11427@elte.hu>
-	 <1296665124.3145.17.camel@localhost.localdomain>
-	 <20110202175556.GA13948@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 02 Feb 2011 13:17:55 -0500
-Message-ID: <1296670675.10797.58.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754868Ab1BBSTW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 13:19:22 -0500
+Received: from fieldses.org ([174.143.236.118]:58684 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754642Ab1BBSTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 13:19:21 -0500
+Date: Wed, 2 Feb 2011 13:19:17 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Konstantin Khorenko <khorenko@parallels.com>
+Cc: Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] NFSD: memory corruption due to writing beyond the stat
+ array
+Message-ID: <20110202181917.GD3015@fieldses.org>
+References: <4D4815BD.5090404@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D4815BD.5090404@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-02-02 at 18:55 +0100, Ingo Molnar wrote:
-
-> The filter expression engine executes in the kernel, when the event happens. The 
-> user-space perf tool parses the --filter parameter and passes it to the kernel as a 
-> string in essence. The kerner parses this into atomic predicaments which are linked 
-> to the event structure. When the event happens the predicaments are executed by the 
-> filter engine.
+On Tue, Feb 01, 2011 at 05:16:29PM +0300, Konstantin Khorenko wrote:
+> Hi All,
 > 
-> The expressions are simple, but rather flexible, so you can do 'fd==0||fd==1' and 
-> more complex expressions, etc. The engine could also be extended.
+> i've found a bug which makes NFSD to corrupt memory due to writing beyond the stat array.
 > 
-> The kernel code is mostly in kernel/trace/trace_events_filter.c.
+> Initially this issue was found on 2.6.18-x RHEL5 kernel, but the same seems to be true for the current mainstream kernel (checked on 2.6.38-rc3).
 > 
-> I've Cc:-ed Tom, Frederic, Steve, Li Zefan and Arnaldo who have worked on the filter 
-> engine, in case something is broken with this functionality or if there are other 
-> questions :)
+> ./fs/nfsd/vfs.c:
+> static inline struct raparms *
+> nfsd_get_raparms(dev_t dev, ino_t ino)
+> {
+> ...
+>        // here we searched our file in a readahead cache
+>        // but not found it
+> ...
+>          depth = nfsdstats.ra_size*11/10;
+> ...
+>        // some stuff, but "depth" is not changed
+> ...
+>          nfsdstats.ra_depth[depth*10/nfsdstats.ra_size]++;
+> ...
+> }
+> 
+> And here we write to the 12th array element
+> (nfsdstats.ra_size*11/10*10/nfsdstats.ra_size == 11),
 
-Yep, and I'm currently working on them as well. As they currently have a
-32 pred limit (may seem like a lot, but I actually hit it). And I've
-also added short circuits (0 && .... no need to process more).
+Actually, I think that's true only if ra_size is divisible by 10; if
+not, then depth will be something *less* than ra_size*11/10, so
+depth*10/ra_size will be something less than 11 (namely 10).
 
-I posted an RFC:
+> This means that each time we did not find a file in a readahead cache we
+> corrupt memory.
 
-https://lkml.org/lkml/2011/1/27/438
+... and ra_size is set to 16 * min(2, numthreads/8), so I think you'll
+hit this only if min(2, numthreads/8) (rounded down) is a multiple of 5?
+So for example someone using a number of threads that's a power of 2
+shouldn't hit this case.
 
-and I'm again working on finishing it. Just a few more things to do. I
-got side tracked because my employer actually asked me to do something
-for them ;)
+> Fortunately in a kernel with NFSDv4 compiled in it corrupts
+> (inc) NFS4 ops counter, but in a kernel with NFSDv4 disabled it corrupts (inc)
+> some other data, that lays in the memory beyond nfsdstats.
+> 
+> Proposed fix is attached.
 
--- Steve
+So after the fix:
 
+> -	depth = nfsdstats.ra_size*11/10;
+> +	depth = nfsdstats.ra_size;
 
+depth*10/nfsdstats will always be 10 in this case.  Looks good.
+
+Thanks for finding this!
+
+--b.
