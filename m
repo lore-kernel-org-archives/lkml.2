@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab1BBA5F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 19:57:05 -0500
-Received: from mga09.intel.com ([134.134.136.24]:10285 "EHLO mga09.intel.com"
+	id S1753508Ab1BBAo3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 19:44:29 -0500
+Received: from mga09.intel.com ([134.134.136.24]:33759 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753544Ab1BBAoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:44:37 -0500
+	id S1753496Ab1BBAo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:44:27 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="598622533"
+   d="scan'208";a="598622478"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110201443.618138584@firstfloor.org>
 In-Reply-To: <20110201443.618138584@firstfloor.org>
-To: kaneshige.kenji@jp.fujitsu.com, ak@linux.intel.com,
-        suresh.b.siddha@intel.com, chrisw@sous-sol.org, hpa@linux.intel.com,
-        gregkh@suse.de, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [90/139] x86: Enable the intr-remap fault handling after local APIC setup
-Message-Id: <20110202004447.EEFC13E09BD@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:44:47 -0800 (PST)
+To: luto@mit.edu, bskeggs@redhat.com, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [76/139] nouveau: Acknowledge HPD irq in handler, not bottom half
+Message-Id: <20110202004433.522DD3E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:44:33 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,70 +24,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+From: Andy Lutomirski <luto@mit.edu>
 
-commit 7f7fbf45c6b748074546f7f16b9488ca71de99c1 upstream.
+commit ab838338a2a9e0cb8346eb0cab9977be13e8dce5 upstream.
 
-Interrupt-remapping gets enabled very early in the boot, as it determines the
-apic mode that the processor can use. And the current code enables the vt-d
-fault handling before the setup_local_APIC(). And hence the APIC LDR registers
-and data structure in the memory may not be initialized. So the vt-d fault
-handling in logical xapic/x2apic modes were broken.
+The old code generated an interrupt storm bad enough to completely
+take down my system.
 
-Fix this by enabling the vt-d fault handling in the end_local_APIC_setup()
-
-A cleaner fix of enabling fault handling while enabling intr-remapping
-will be addressed for v2.6.38. [ Enabling intr-remapping determines the
-usage of x2apic mode and the apic mode determines the fault-handling
-configuration. ]
-
-Signed-off-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-LKML-Reference: <20101201062244.541996375@intel.com>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Acked-by: Chris Wright <chrisw@sous-sol.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Andy Lutomirski <luto@mit.edu>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- arch/x86/kernel/apic/apic.c     |    8 ++++++++
- arch/x86/kernel/apic/probe_64.c |    7 -------
- 2 files changed, 8 insertions(+), 7 deletions(-)
+ drivers/gpu/drm/nouveau/nouveau_drv.h  |    6 +++++
+ drivers/gpu/drm/nouveau/nouveau_irq.c  |    1 
+ drivers/gpu/drm/nouveau/nv50_display.c |   35 ++++++++++++++++++++++++---------
+ 3 files changed, 33 insertions(+), 9 deletions(-)
 
-Index: linux-2.6.35.y/arch/x86/kernel/apic/apic.c
+Index: linux-2.6.35.y/drivers/gpu/drm/nouveau/nouveau_drv.h
 ===================================================================
---- linux-2.6.35.y.orig/arch/x86/kernel/apic/apic.c
-+++ linux-2.6.35.y/arch/x86/kernel/apic/apic.c
-@@ -1340,6 +1340,14 @@ void __cpuinit end_local_APIC_setup(void
+--- linux-2.6.35.y.orig/drivers/gpu/drm/nouveau/nouveau_drv.h
++++ linux-2.6.35.y/drivers/gpu/drm/nouveau/nouveau_drv.h
+@@ -522,6 +522,12 @@ struct drm_nouveau_private {
+ 	struct work_struct irq_work;
+ 	struct work_struct hpd_work;
  
- 	setup_apic_nmi_watchdog(NULL);
- 	apic_pm_activate();
++	struct {
++		spinlock_t lock;
++		uint32_t hpd0_bits;
++		uint32_t hpd1_bits;
++	} hpd_state;
 +
-+	/*
-+	 * Now that local APIC setup is completed for BP, configure the fault
-+	 * handling for interrupt remapping.
-+	 */
-+	if (!smp_processor_id() && intr_remapping_enabled)
-+		enable_drhd_fault_handling();
-+
- }
+ 	struct list_head vbl_waiting;
  
- #ifdef CONFIG_X86_X2APIC
-Index: linux-2.6.35.y/arch/x86/kernel/apic/probe_64.c
+ 	struct {
+Index: linux-2.6.35.y/drivers/gpu/drm/nouveau/nouveau_irq.c
 ===================================================================
---- linux-2.6.35.y.orig/arch/x86/kernel/apic/probe_64.c
-+++ linux-2.6.35.y/arch/x86/kernel/apic/probe_64.c
-@@ -76,13 +76,6 @@ void __init default_setup_apic_routing(v
- 		/* need to update phys_pkg_id */
- 		apic->phys_pkg_id = apicid_phys_pkg_id;
+--- linux-2.6.35.y.orig/drivers/gpu/drm/nouveau/nouveau_irq.c
++++ linux-2.6.35.y/drivers/gpu/drm/nouveau/nouveau_irq.c
+@@ -52,6 +52,7 @@ nouveau_irq_preinstall(struct drm_device
+ 	if (dev_priv->card_type == NV_50) {
+ 		INIT_WORK(&dev_priv->irq_work, nv50_display_irq_handler_bh);
+ 		INIT_WORK(&dev_priv->hpd_work, nv50_display_irq_hotplug_bh);
++		spin_lock_init(&dev_priv->hpd_state.lock);
+ 		INIT_LIST_HEAD(&dev_priv->vbl_waiting);
  	}
+ }
+Index: linux-2.6.35.y/drivers/gpu/drm/nouveau/nv50_display.c
+===================================================================
+--- linux-2.6.35.y.orig/drivers/gpu/drm/nouveau/nv50_display.c
++++ linux-2.6.35.y/drivers/gpu/drm/nouveau/nv50_display.c
+@@ -930,11 +930,18 @@ nv50_display_irq_hotplug_bh(struct work_
+ 	struct drm_connector *connector;
+ 	const uint32_t gpio_reg[4] = { 0xe104, 0xe108, 0xe280, 0xe284 };
+ 	uint32_t unplug_mask, plug_mask, change_mask;
+-	uint32_t hpd0, hpd1 = 0;
++	uint32_t hpd0, hpd1;
+ 
+-	hpd0 = nv_rd32(dev, 0xe054) & nv_rd32(dev, 0xe050);
++	spin_lock_irq(&dev_priv->hpd_state.lock);
++	hpd0 = dev_priv->hpd_state.hpd0_bits;
++	dev_priv->hpd_state.hpd0_bits = 0;
++	hpd1 = dev_priv->hpd_state.hpd1_bits;
++	dev_priv->hpd_state.hpd1_bits = 0;
++	spin_unlock_irq(&dev_priv->hpd_state.lock);
++
++	hpd0 &= nv_rd32(dev, 0xe050);
+ 	if (dev_priv->chipset >= 0x90)
+-		hpd1 = nv_rd32(dev, 0xe074) & nv_rd32(dev, 0xe070);
++		hpd1 &= nv_rd32(dev, 0xe070);
+ 
+ 	plug_mask   = (hpd0 & 0x0000ffff) | (hpd1 << 16);
+ 	unplug_mask = (hpd0 >> 16) | (hpd1 & 0xffff0000);
+@@ -976,10 +983,6 @@ nv50_display_irq_hotplug_bh(struct work_
+ 			helper->dpms(connector->encoder, DRM_MODE_DPMS_OFF);
+ 	}
+ 
+-	nv_wr32(dev, 0xe054, nv_rd32(dev, 0xe054));
+-	if (dev_priv->chipset >= 0x90)
+-		nv_wr32(dev, 0xe074, nv_rd32(dev, 0xe074));
 -
--	/*
--	 * Now that apic routing model is selected, configure the
--	 * fault handling for intr remapping.
--	 */
--	if (intr_remapping_enabled)
--		enable_drhd_fault_handling();
+ 	drm_helper_hpd_irq_event(dev);
  }
  
- /* Same for both flat and physical. */
+@@ -990,8 +993,22 @@ nv50_display_irq_handler(struct drm_devi
+ 	uint32_t delayed = 0;
+ 
+ 	if (nv_rd32(dev, NV50_PMC_INTR_0) & NV50_PMC_INTR_0_HOTPLUG) {
+-		if (!work_pending(&dev_priv->hpd_work))
+-			queue_work(dev_priv->wq, &dev_priv->hpd_work);
++		uint32_t hpd0_bits, hpd1_bits = 0;
++
++		hpd0_bits = nv_rd32(dev, 0xe054);
++		nv_wr32(dev, 0xe054, hpd0_bits);
++
++		if (dev_priv->chipset >= 0x90) {
++			hpd1_bits = nv_rd32(dev, 0xe074);
++			nv_wr32(dev, 0xe074, hpd1_bits);
++		}
++
++		spin_lock(&dev_priv->hpd_state.lock);
++		dev_priv->hpd_state.hpd0_bits |= hpd0_bits;
++		dev_priv->hpd_state.hpd1_bits |= hpd1_bits;
++		spin_unlock(&dev_priv->hpd_state.lock);
++
++		queue_work(dev_priv->wq, &dev_priv->hpd_work);
+ 	}
+ 
+ 	while (nv_rd32(dev, NV50_PMC_INTR_0) & NV50_PMC_INTR_0_DISPLAY) {
