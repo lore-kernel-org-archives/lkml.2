@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461Ab1BBBBw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 20:01:52 -0500
-Received: from mga09.intel.com ([134.134.136.24]:58186 "EHLO mga09.intel.com"
+	id S1753503Ab1BBBCF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 20:02:05 -0500
+Received: from mga01.intel.com ([192.55.52.88]:7970 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753263Ab1BBAoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:44:06 -0500
+	id S1753256Ab1BBAoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:44:05 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="703028418"
+   d="scan'208";a="653505063"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110201443.618138584@firstfloor.org>
 In-Reply-To: <20110201443.618138584@firstfloor.org>
-To: segooon@gmail.com, davem@davemloft.net, gregkh@suse.de, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [60/139] net: ax25: fix information leak to userland
-Message-Id: <20110202004416.9AA9B3E09BD@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:44:16 -0800 (PST)
+To: eric.dumazet@gmail.com, davem@davemloft.net, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [59/139] af_unix: limit recursion level
+Message-Id: <20110202004415.902363E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:44:15 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,41 +25,181 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasiliy Kulikov <segooon@gmail.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit fe10ae53384e48c51996941b7720ee16995cbcb7 ]
+[ Upstream commit 25888e30319f8896fc656fc68643e6a078263060 ]
 
-Sometimes ax25_getname() doesn't initialize all members of fsa_digipeater
-field of fsa struct, also the struct has padding bytes between
-sax25_call and sax25_ndigis fields.  This structure is then copied to
-userland.  It leads to leaking of contents of kernel stack memory.
+Its easy to eat all kernel memory and trigger NMI watchdog, using an
+exploit program that queues unix sockets on top of others.
 
-Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+lkml ref : http://lkml.org/lkml/2010/11/25/8
+
+This mechanism is used in applications, one choice we have is to have a
+recursion limit.
+
+Other limits might be needed as well (if we queue other types of files),
+since the passfd mechanism is currently limited by socket receive queue
+sizes only.
+
+Add a recursion_level to unix socket, allowing up to 4 levels.
+
+Each time we send an unix socket through sendfd mechanism, we copy its
+recursion level (plus one) to receiver. This recursion level is cleared
+when socket receive queue is emptied.
+
+Reported-by: Марк Коренберг <socketpair@gmail.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- net/ax25/af_ax25.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/net/af_unix.h |    2 ++
+ net/unix/af_unix.c    |   37 ++++++++++++++++++++++++++++++++-----
+ net/unix/garbage.c    |    2 +-
+ 3 files changed, 35 insertions(+), 6 deletions(-)
 
-Index: linux-2.6.35.y/net/ax25/af_ax25.c
+Index: linux-2.6.35.y/include/net/af_unix.h
 ===================================================================
---- linux-2.6.35.y.orig/net/ax25/af_ax25.c
-+++ linux-2.6.35.y/net/ax25/af_ax25.c
-@@ -1392,6 +1392,7 @@ static int ax25_getname(struct socket *s
- 	ax25_cb *ax25;
- 	int err = 0;
+--- linux-2.6.35.y.orig/include/net/af_unix.h
++++ linux-2.6.35.y/include/net/af_unix.h
+@@ -10,6 +10,7 @@ extern void unix_inflight(struct file *f
+ extern void unix_notinflight(struct file *fp);
+ extern void unix_gc(void);
+ extern void wait_for_unix_gc(void);
++extern struct sock *unix_get_socket(struct file *filp);
  
-+	memset(fsa, 0, sizeof(fsa));
- 	lock_sock(sk);
- 	ax25 = ax25_sk(sk);
+ #define UNIX_HASH_SIZE	256
  
-@@ -1403,7 +1404,6 @@ static int ax25_getname(struct socket *s
+@@ -56,6 +57,7 @@ struct unix_sock {
+ 	spinlock_t		lock;
+ 	unsigned int		gc_candidate : 1;
+ 	unsigned int		gc_maybe_cycle : 1;
++	unsigned char		recursion_level;
+ 	struct socket_wq	peer_wq;
+ };
+ #define unix_sk(__sk) ((struct unix_sock *)__sk)
+Index: linux-2.6.35.y/net/unix/af_unix.c
+===================================================================
+--- linux-2.6.35.y.orig/net/unix/af_unix.c
++++ linux-2.6.35.y/net/unix/af_unix.c
+@@ -1327,9 +1327,25 @@ static void unix_destruct_scm(struct sk_
+ 	sock_wfree(skb);
+ }
  
- 		fsa->fsa_ax25.sax25_family = AF_AX25;
- 		fsa->fsa_ax25.sax25_call   = ax25->dest_addr;
--		fsa->fsa_ax25.sax25_ndigis = 0;
++#define MAX_RECURSION_LEVEL 4
++
+ static int unix_attach_fds(struct scm_cookie *scm, struct sk_buff *skb)
+ {
+ 	int i;
++	unsigned char max_level = 0;
++	int unix_sock_count = 0;
++
++	for (i = scm->fp->count - 1; i >= 0; i--) {
++		struct sock *sk = unix_get_socket(scm->fp->fp[i]);
++
++		if (sk) {
++			unix_sock_count++;
++			max_level = max(max_level,
++					unix_sk(sk)->recursion_level);
++		}
++	}
++	if (unlikely(max_level > MAX_RECURSION_LEVEL))
++		return -ETOOMANYREFS;
  
- 		if (ax25->digipeat != NULL) {
- 			ndigi = ax25->digipeat->ndigi;
+ 	/*
+ 	 * Need to duplicate file references for the sake of garbage
+@@ -1340,9 +1356,11 @@ static int unix_attach_fds(struct scm_co
+ 	if (!UNIXCB(skb).fp)
+ 		return -ENOMEM;
+ 
+-	for (i = scm->fp->count-1; i >= 0; i--)
+-		unix_inflight(scm->fp->fp[i]);
+-	return 0;
++	if (unix_sock_count) {
++		for (i = scm->fp->count - 1; i >= 0; i--)
++			unix_inflight(scm->fp->fp[i]);
++	}
++	return max_level;
+ }
+ 
+ static int unix_scm_to_skb(struct scm_cookie *scm, struct sk_buff *skb, bool send_fds)
+@@ -1377,6 +1395,7 @@ static int unix_dgram_sendmsg(struct kio
+ 	struct sk_buff *skb;
+ 	long timeo;
+ 	struct scm_cookie tmp_scm;
++	int max_level;
+ 
+ 	if (NULL == siocb->scm)
+ 		siocb->scm = &tmp_scm;
+@@ -1415,8 +1434,9 @@ static int unix_dgram_sendmsg(struct kio
+ 		goto out;
+ 
+ 	err = unix_scm_to_skb(siocb->scm, skb, true);
+-	if (err)
++	if (err < 0)
+ 		goto out_free;
++	max_level = err + 1;
+ 	unix_get_secdata(siocb->scm, skb);
+ 
+ 	skb_reset_transport_header(skb);
+@@ -1496,6 +1516,8 @@ restart:
+ 	}
+ 
+ 	skb_queue_tail(&other->sk_receive_queue, skb);
++	if (max_level > unix_sk(other)->recursion_level)
++		unix_sk(other)->recursion_level = max_level;
+ 	unix_state_unlock(other);
+ 	other->sk_data_ready(other, len);
+ 	sock_put(other);
+@@ -1526,6 +1548,7 @@ static int unix_stream_sendmsg(struct ki
+ 	int sent = 0;
+ 	struct scm_cookie tmp_scm;
+ 	bool fds_sent = false;
++	int max_level;
+ 
+ 	if (NULL == siocb->scm)
+ 		siocb->scm = &tmp_scm;
+@@ -1589,10 +1612,11 @@ static int unix_stream_sendmsg(struct ki
+ 
+ 		/* Only send the fds in the first buffer */
+ 		err = unix_scm_to_skb(siocb->scm, skb, !fds_sent);
+-		if (err) {
++		if (err < 0) {
+ 			kfree_skb(skb);
+ 			goto out_err;
+ 		}
++		max_level = err + 1;
+ 		fds_sent = true;
+ 
+ 		err = memcpy_fromiovec(skb_put(skb, size), msg->msg_iov, size);
+@@ -1608,6 +1632,8 @@ static int unix_stream_sendmsg(struct ki
+ 			goto pipe_err_free;
+ 
+ 		skb_queue_tail(&other->sk_receive_queue, skb);
++		if (max_level > unix_sk(other)->recursion_level)
++			unix_sk(other)->recursion_level = max_level;
+ 		unix_state_unlock(other);
+ 		other->sk_data_ready(other, size);
+ 		sent += size;
+@@ -1824,6 +1850,7 @@ static int unix_stream_recvmsg(struct ki
+ 		unix_state_lock(sk);
+ 		skb = skb_dequeue(&sk->sk_receive_queue);
+ 		if (skb == NULL) {
++			unix_sk(sk)->recursion_level = 0;
+ 			if (copied >= target)
+ 				goto unlock;
+ 
+Index: linux-2.6.35.y/net/unix/garbage.c
+===================================================================
+--- linux-2.6.35.y.orig/net/unix/garbage.c
++++ linux-2.6.35.y/net/unix/garbage.c
+@@ -96,7 +96,7 @@ static DECLARE_WAIT_QUEUE_HEAD(unix_gc_w
+ unsigned int unix_tot_inflight;
+ 
+ 
+-static struct sock *unix_get_socket(struct file *filp)
++struct sock *unix_get_socket(struct file *filp)
+ {
+ 	struct sock *u_sock = NULL;
+ 	struct inode *inode = filp->f_path.dentry->d_inode;
