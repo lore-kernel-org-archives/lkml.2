@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849Ab1BBJJd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 04:09:33 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:65184 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405Ab1BBJJb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 04:09:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=L2fbURzxhiks+XRMHGqUC3rdpcudX5L8y1sS8R339bgScFyzEZNgAqYCQvZ9GQrpMR
-         TnXQ1CwQOsUPGeIBHvQ2iqu1BTKywUSwGVk/CTDVBbhdCDruYoRr3Qo5+Aa+t7rhgkZi
-         DXjNtN9rNWZNNGnT6R0KyT5yLS23fhlfA28t0=
-Date: Wed, 2 Feb 2011 10:09:22 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Richard Cochran <richard.cochran@omicron.at>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [patch 12/28] posix-timers: Convert clock_gettime() to
- clockid_to_kclock()
-Message-ID: <20110202090922.GD2747@riccoc20.at.omicron.at>
-References: <20110201134320.688829863@linutronix.de>
- <20110201134418.611097203@linutronix.de>
+	id S1752185Ab1BBJLA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 04:11:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17879 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752019Ab1BBJK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 04:10:58 -0500
+Message-ID: <4D491F94.6070803@redhat.com>
+Date: Wed, 02 Feb 2011 11:10:44 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110201134418.611097203@linutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: sedat.dilek@gmail.com
+CC: Sedat Dilek <sedat.dilek@googlemail.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, riel@redhat.com,
+        gleb@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: Fix section mismatch derived from kvm_guest_cpu_online()
+References: <1294009289-28802-1-git-send-email-sedat.dilek@gmail.com>	<20110104210307.GB6130@amt.cnet> <AANLkTi=V6PvG42bBmE=7qcm=5vvk=SeUJ6a8oMKOcihb@mail.gmail.com>
+In-Reply-To: <AANLkTi=V6PvG42bBmE=7qcm=5vvk=SeUJ6a8oMKOcihb@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 01, 2011 at 01:51:50PM -0000, Thomas Gleixner wrote:
-> --- linux-2.6-tip.orig/kernel/posix-timers.c
-> +++ linux-2.6-tip/kernel/posix-timers.c
+On 02/02/2011 09:55 AM, Sedat Dilek wrote:
+> On Tue, Jan 4, 2011 at 10:03 PM, Marcelo Tosatti<mtosatti@redhat.com>  wrote:
+> >  On Mon, Jan 03, 2011 at 12:01:29AM +0100, Sedat Dilek wrote:
+> >>  > From my build.log:
+> >>
+> >>  WARNING: arch/x86/built-in.o(.text+0x1bb74): Section mismatch in reference from the function kvm_guest_cpu_online() to the function .cpuinit.text:kvm_guest_cpu_init()
+> >>  The function kvm_guest_cpu_online() references
+> >>  the function __cpuinit kvm_guest_cpu_init().
+> >>  This is often because kvm_guest_cpu_online lacks a __cpuinit
+> >>  annotation or the annotation of kvm_guest_cpu_init is wrong.
+> >>
+> >>  This patch fixes the warning.
+> >>
+> >>  Tested with linux-next (next-20101231)
+> >>
+> >>  Signed-off-by: Sedat Dilek<sedat.dilek@gmail.com>
+> >
+> >  Applied, thanks.
+> >
+> >
+>
+> PING!
+>
+> Was this patch really applied? I have it still in my patch-series.
+>
 
-> @@ -956,18 +955,21 @@ SYSCALL_DEFINE2(clock_settime, const clo
->  SYSCALL_DEFINE2(clock_gettime, const clockid_t, which_clock,
->  		struct timespec __user *,tp)
->  {
-> +	struct k_clock *kc = clockid_to_kclock(which_clock);
->  	struct timespec kernel_tp;
->  	int error;
->  
-> -	if (invalid_clockid(which_clock))
-> +	if (!kc)
->  		return -EINVAL;
-> -	error = CLOCK_DISPATCH(which_clock, clock_get,
-> -			       (which_clock, &kernel_tp));
-> +	if (!kc->clock_get)
-> +		return -EOPNOTSUPP;
+It was applied to kvm.git and will find its way upstream eventually.
 
-An unreadable clock?
+-- 
+error compiling committee.c: too many arguments to function
 
-I would think that we can require k_clocks to provide the read
-function. This could be checked and enforced in register_posix_clock().
-
-> +
-> +	error = kc->clock_get(which_clock, &kernel_tp);
-> +
->  	if (!error && copy_to_user(tp, &kernel_tp, sizeof (kernel_tp)))
->  		error = -EFAULT;
->  
->  	return error;
-> -
->  }
-
-Thanks,
-Richard
