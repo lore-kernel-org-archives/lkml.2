@@ -1,54 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751706Ab1BBB1k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 20:27:40 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:48405 "EHLO mx3.mail.elte.hu"
+	id S1751796Ab1BBB1q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 20:27:46 -0500
+Received: from mail.perches.com ([173.55.12.10]:3521 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751334Ab1BBB1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751566Ab1BBB1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Feb 2011 20:27:39 -0500
-Date: Wed, 2 Feb 2011 02:27:33 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Paul Menage <menage@google.com>
-Cc: Jordi Pujol <jordipujolp@gmail.com>, linux-kernel@vger.kernel.org,
-        Mike Galbraith <efault@gmx.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC/RFT PATCH] cgroup: enable write permission for the group of
- users
-Message-ID: <20110202012733.GA30557@elte.hu>
-References: <201102011002.09819.jordipujolp@gmail.com>
- <AANLkTineUvbe4w53zVEyfafs_ERt1NPbRo83KeAH89KF@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTineUvbe4w53zVEyfafs_ERt1NPbRo83KeAH89KF@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Subject: Re: [PATCH 2/2] hex_dump_dbg: replace all calls to print_hex_dump
+ with level KERN_DEBUG
+From: Joe Perches <joe@perches.com>
+To: Roman Fietze <roman.fietze@telemotive.de>
+Cc: Jason Baron <jbaron@redhat.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <201102011348.18978.roman.fietze@telemotive.de>
+References: <201012031517.35062.roman.fietze@telemotive.de>
+	 <1295029146.4099.71.camel@Joe-Laptop>
+	 <201102011345.30618.roman.fietze@telemotive.de>
+	 <201102011348.18978.roman.fietze@telemotive.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Feb 2011 17:27:37 -0800
+Message-ID: <1296610057.4425.50.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2011-02-01 at 13:48 +0100, Roman Fietze wrote:
+> And here, just in case it's wanted or needed, a bigger patch replacing
+> all print_hex_dump calls using KERN_DEBUG.
 
-* Paul Menage <menage@google.com> wrote:
+[]
 
-> On Tue, Feb 1, 2011 at 1:02 AM, Jordi Pujol <jordipujolp@gmail.com> wrote:
-> > Hello,
-> >
-> > Working in a development that uses control groups and libcgroup, I have found
-> > that the files in control groups directories need write permission for the
-> > group of users also.
-> 
-> This can be configured from userspace - chmod() works just fine on
-> control files in cgroupfs.
+I think a lot of these changes are senseless.
 
-Sure, many things can be worked around in user-space, but the question is, does the 
-+g make sense as default cgroupfs permissions?
+print_hex_dump is a perfectly good call and doesn't
+always need to be replaced by something else.
 
-Thanks,
+For instance:
 
-	Ingo
+> diff --git a/net/atm/lec.c b/net/atm/lec.c
+> index 38754fd..6be1be1 100644
+> --- a/net/atm/lec.c
+> +++ b/net/atm/lec.c
+> @@ -318,8 +318,8 @@ static netdev_tx_t lec_start_xmit(struct sk_buff *skb,
+>  #if DUMP_PACKETS >= 1
+>  	printk(KERN_DEBUG "%s: send datalen:%ld lecid:%4.4x\n",
+>  	       dev->name, skb->len, priv->lecid);
+> -	print_hex_dump(KERN_DEBUG, "", DUMP_OFFSET, 16, 1,
+> -		       skb->data, min(skb->len, MAX_DUMP_SKB), true);
+> +	hex_dump_dbg("", DUMP_OFFSET, 16, 1,
+> +		     skb->data, min(skb->len, MAX_DUMP_SKB), true);
+
+print_hex_dump is already guarded by an #if block.
+Adding another DEBUG guard and optional on/off
+control does not add any utility.
+
+> diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
+[]
+> @@ -2390,19 +2390,19 @@ void ceph_msg_dump(struct ceph_msg *msg)
+>  {
+>  	pr_debug("msg_dump %p (front_max %d nr_pages %d)\n", msg,
+>  		 msg->front_max, msg->nr_pages);
+> -	print_hex_dump(KERN_DEBUG, "header: ",
+> -		       DUMP_PREFIX_OFFSET, 16, 1,
+> -		       &msg->hdr, sizeof(msg->hdr), true);
+> -	print_hex_dump(KERN_DEBUG, " front: ",
+> -		       DUMP_PREFIX_OFFSET, 16, 1,
+> -		       msg->front.iov_base, msg->front.iov_len, true);
+> +	hex_dump_dbg("header: ",
+> +		     DUMP_PREFIX_OFFSET, 16, 1,
+> +		     &msg->hdr, sizeof(msg->hdr), true);
+> +	hex_dump_dbg(" front: ",
+> +		     DUMP_PREFIX_OFFSET, 16, 1,
+> +		     msg->front.iov_base, msg->front.iov_len, true);
+
+These are sensible, as there is no other guard and
+the immediately preceding message uses pr_debug and so
+these uses should not always be output.
+
+Could you please not just do
+s/print_hex_dump(KERN_DEBUG, /hex_dump_dbg(/g
+and inspect each instance for appropriateness.
+
+
+
