@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab1BBBCF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 20:02:05 -0500
+	id S1753243Ab1BBAoE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 19:44:04 -0500
 Received: from mga01.intel.com ([192.55.52.88]:7970 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753256Ab1BBAoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:44:05 -0500
+	id S1753206Ab1BBAoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:44:02 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="653505063"
+   d="scan'208";a="883418091"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110201443.618138584@firstfloor.org>
 In-Reply-To: <20110201443.618138584@firstfloor.org>
-To: eric.dumazet@gmail.com, davem@davemloft.net, gregkh@suse.de,
+To: ebiederm@xmission.com, serue@us.ibm.com, davem@davemloft.net,
         ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [59/139] af_unix: limit recursion level
-Message-Id: <20110202004415.902363E09BD@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:44:15 -0800 (PST)
+Subject: [PATCH] [56/139] user_ns: Introduce user_nsmap_uid and user_ns_map_gid.
+Message-Id: <20110202004412.6E16E3E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:44:12 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,182 +24,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
+Upstream commit 5c1469de7545a35a16ff2b902e217044a7d2f8a5
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+Define what happens when a we view a uid from one user_namespace
+in another user_namepece.
 
-[ Upstream commit 25888e30319f8896fc656fc68643e6a078263060 ]
+- If the user namespaces are the same no mapping is necessary.
 
-Its easy to eat all kernel memory and trigger NMI watchdog, using an
-exploit program that queues unix sockets on top of others.
+- For most cases of difference use overflowuid and overflowgid,
+  the uid and gid currently used for 16bit apis when we have a 32bit uid
+  that does fit in 16bits.  Effectively the situation is the same,
+  we want to return a uid or gid that is not assigned to any user.
 
-lkml ref : http://lkml.org/lkml/2010/11/25/8
+- For the case when we happen to be mapping the uid or gid of the
+  creator of the target user namespace use uid 0 and gid as confusing
+  that user with root is not a problem.
 
-This mechanism is used in applications, one choice we have is to have a
-recursion limit.
-
-Other limits might be needed as well (if we queue other types of files),
-since the passfd mechanism is currently limited by socket receive queue
-sizes only.
-
-Add a recursion_level to unix socket, allowing up to 4 levels.
-
-Each time we send an unix socket through sendfd mechanism, we copy its
-recursion level (plus one) to receiver. This recursion level is cleared
-when socket receive queue is emptied.
-
-Reported-by: Марк Коренберг <socketpair@gmail.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+Acked-by: Serge E. Hallyn <serue@us.ibm.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
----
- include/net/af_unix.h |    2 ++
- net/unix/af_unix.c    |   37 ++++++++++++++++++++++++++++++++-----
- net/unix/garbage.c    |    2 +-
- 3 files changed, 35 insertions(+), 6 deletions(-)
-
-Index: linux-2.6.35.y/include/net/af_unix.h
+Index: linux-2.6.35.y/include/linux/user_namespace.h
 ===================================================================
---- linux-2.6.35.y.orig/include/net/af_unix.h
-+++ linux-2.6.35.y/include/net/af_unix.h
-@@ -10,6 +10,7 @@ extern void unix_inflight(struct file *f
- extern void unix_notinflight(struct file *fp);
- extern void unix_gc(void);
- extern void wait_for_unix_gc(void);
-+extern struct sock *unix_get_socket(struct file *filp);
- 
- #define UNIX_HASH_SIZE	256
- 
-@@ -56,6 +57,7 @@ struct unix_sock {
- 	spinlock_t		lock;
- 	unsigned int		gc_candidate : 1;
- 	unsigned int		gc_maybe_cycle : 1;
-+	unsigned char		recursion_level;
- 	struct socket_wq	peer_wq;
- };
- #define unix_sk(__sk) ((struct unix_sock *)__sk)
-Index: linux-2.6.35.y/net/unix/af_unix.c
-===================================================================
---- linux-2.6.35.y.orig/net/unix/af_unix.c
-+++ linux-2.6.35.y/net/unix/af_unix.c
-@@ -1327,9 +1327,25 @@ static void unix_destruct_scm(struct sk_
- 	sock_wfree(skb);
+--- linux-2.6.35.y.orig/include/linux/user_namespace.h
++++ linux-2.6.35.y/include/linux/user_namespace.h
+@@ -36,6 +36,9 @@ static inline void put_user_ns(struct us
+ 		kref_put(&ns->kref, free_user_ns);
  }
  
-+#define MAX_RECURSION_LEVEL 4
++uid_t user_ns_map_uid(struct user_namespace *to, const struct cred *cred, uid_t uid);
++gid_t user_ns_map_gid(struct user_namespace *to, const struct cred *cred, gid_t gid);
 +
- static int unix_attach_fds(struct scm_cookie *scm, struct sk_buff *skb)
+ #else
+ 
+ static inline struct user_namespace *get_user_ns(struct user_namespace *ns)
+@@ -52,6 +55,17 @@ static inline void put_user_ns(struct us
  {
- 	int i;
-+	unsigned char max_level = 0;
-+	int unix_sock_count = 0;
+ }
+ 
++static inline uid_t user_ns_map_uid(struct user_namespace *to,
++	const struct cred *cred, uid_t uid)
++{
++	return uid;
++}
++static inline gid_t user_ns_map_gid(struct user_namespace *to,
++	const struct cred *cred, gid_t gid)
++{
++	return gid;
++}
 +
-+	for (i = scm->fp->count - 1; i >= 0; i--) {
-+		struct sock *sk = unix_get_socket(scm->fp->fp[i]);
+ #endif
+ 
+ #endif /* _LINUX_USER_H */
+Index: linux-2.6.35.y/kernel/user_namespace.c
+===================================================================
+--- linux-2.6.35.y.orig/kernel/user_namespace.c
++++ linux-2.6.35.y/kernel/user_namespace.c
+@@ -9,6 +9,7 @@
+ #include <linux/nsproxy.h>
+ #include <linux/slab.h>
+ #include <linux/user_namespace.h>
++#include <linux/highuid.h>
+ #include <linux/cred.h>
+ 
+ /*
+@@ -82,3 +83,46 @@ void free_user_ns(struct kref *kref)
+ 	schedule_work(&ns->destroyer);
+ }
+ EXPORT_SYMBOL(free_user_ns);
 +
-+		if (sk) {
-+			unix_sock_count++;
-+			max_level = max(max_level,
-+					unix_sk(sk)->recursion_level);
++uid_t user_ns_map_uid(struct user_namespace *to, const struct cred *cred, uid_t uid)
++{
++	struct user_namespace *tmp;
++
++	if (likely(to == cred->user->user_ns))
++		return uid;
++
++
++	/* Is cred->user the creator of the target user_ns
++	 * or the creator of one of it's parents?
++	 */
++	for ( tmp = to; tmp != &init_user_ns;
++	      tmp = tmp->creator->user_ns ) {
++		if (cred->user == tmp->creator) {
++			return (uid_t)0;
 +		}
 +	}
-+	if (unlikely(max_level > MAX_RECURSION_LEVEL))
-+		return -ETOOMANYREFS;
- 
- 	/*
- 	 * Need to duplicate file references for the sake of garbage
-@@ -1340,9 +1356,11 @@ static int unix_attach_fds(struct scm_co
- 	if (!UNIXCB(skb).fp)
- 		return -ENOMEM;
- 
--	for (i = scm->fp->count-1; i >= 0; i--)
--		unix_inflight(scm->fp->fp[i]);
--	return 0;
-+	if (unix_sock_count) {
-+		for (i = scm->fp->count - 1; i >= 0; i--)
-+			unix_inflight(scm->fp->fp[i]);
++
++	/* No useful relationship so no mapping */
++	return overflowuid;
++}
++
++gid_t user_ns_map_gid(struct user_namespace *to, const struct cred *cred, gid_t gid)
++{
++	struct user_namespace *tmp;
++
++	if (likely(to == cred->user->user_ns))
++		return gid;
++
++	/* Is cred->user the creator of the target user_ns
++	 * or the creator of one of it's parents?
++	 */
++	for ( tmp = to; tmp != &init_user_ns;
++	      tmp = tmp->creator->user_ns ) {
++		if (cred->user == tmp->creator) {
++			return (gid_t)0;
++		}
 +	}
-+	return max_level;
- }
- 
- static int unix_scm_to_skb(struct scm_cookie *scm, struct sk_buff *skb, bool send_fds)
-@@ -1377,6 +1395,7 @@ static int unix_dgram_sendmsg(struct kio
- 	struct sk_buff *skb;
- 	long timeo;
- 	struct scm_cookie tmp_scm;
-+	int max_level;
- 
- 	if (NULL == siocb->scm)
- 		siocb->scm = &tmp_scm;
-@@ -1415,8 +1434,9 @@ static int unix_dgram_sendmsg(struct kio
- 		goto out;
- 
- 	err = unix_scm_to_skb(siocb->scm, skb, true);
--	if (err)
-+	if (err < 0)
- 		goto out_free;
-+	max_level = err + 1;
- 	unix_get_secdata(siocb->scm, skb);
- 
- 	skb_reset_transport_header(skb);
-@@ -1496,6 +1516,8 @@ restart:
- 	}
- 
- 	skb_queue_tail(&other->sk_receive_queue, skb);
-+	if (max_level > unix_sk(other)->recursion_level)
-+		unix_sk(other)->recursion_level = max_level;
- 	unix_state_unlock(other);
- 	other->sk_data_ready(other, len);
- 	sock_put(other);
-@@ -1526,6 +1548,7 @@ static int unix_stream_sendmsg(struct ki
- 	int sent = 0;
- 	struct scm_cookie tmp_scm;
- 	bool fds_sent = false;
-+	int max_level;
- 
- 	if (NULL == siocb->scm)
- 		siocb->scm = &tmp_scm;
-@@ -1589,10 +1612,11 @@ static int unix_stream_sendmsg(struct ki
- 
- 		/* Only send the fds in the first buffer */
- 		err = unix_scm_to_skb(siocb->scm, skb, !fds_sent);
--		if (err) {
-+		if (err < 0) {
- 			kfree_skb(skb);
- 			goto out_err;
- 		}
-+		max_level = err + 1;
- 		fds_sent = true;
- 
- 		err = memcpy_fromiovec(skb_put(skb, size), msg->msg_iov, size);
-@@ -1608,6 +1632,8 @@ static int unix_stream_sendmsg(struct ki
- 			goto pipe_err_free;
- 
- 		skb_queue_tail(&other->sk_receive_queue, skb);
-+		if (max_level > unix_sk(other)->recursion_level)
-+			unix_sk(other)->recursion_level = max_level;
- 		unix_state_unlock(other);
- 		other->sk_data_ready(other, size);
- 		sent += size;
-@@ -1824,6 +1850,7 @@ static int unix_stream_recvmsg(struct ki
- 		unix_state_lock(sk);
- 		skb = skb_dequeue(&sk->sk_receive_queue);
- 		if (skb == NULL) {
-+			unix_sk(sk)->recursion_level = 0;
- 			if (copied >= target)
- 				goto unlock;
- 
-Index: linux-2.6.35.y/net/unix/garbage.c
-===================================================================
---- linux-2.6.35.y.orig/net/unix/garbage.c
-+++ linux-2.6.35.y/net/unix/garbage.c
-@@ -96,7 +96,7 @@ static DECLARE_WAIT_QUEUE_HEAD(unix_gc_w
- unsigned int unix_tot_inflight;
- 
- 
--static struct sock *unix_get_socket(struct file *filp)
-+struct sock *unix_get_socket(struct file *filp)
- {
- 	struct sock *u_sock = NULL;
- 	struct inode *inode = filp->f_path.dentry->d_inode;
++
++	/* No useful relationship so no mapping */
++	return overflowgid;
++}
