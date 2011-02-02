@@ -1,56 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755498Ab1BBXXQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 18:23:16 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:37509
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751278Ab1BBXXP convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 18:23:15 -0500
-Date: Wed, 02 Feb 2011 15:23:50 -0800 (PST)
-Message-Id: <20110202.152350.28800670.davem@davemloft.net>
-To: mans@mansr.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, gcc@gcc.gnu.org
-Subject: Re: ARM unaligned MMIO access with attribute((packed))
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <yw1xei7qm3vy.fsf@unicorn.mansr.com>
-References: <20110202163702.GA23240@n2100.arm.linux.org.uk>
-	<20110202.133831.193702414.davem@davemloft.net>
-	<yw1xei7qm3vy.fsf@unicorn.mansr.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
+	id S1755521Ab1BBXXm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 18:23:42 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:61075 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755180Ab1BBXXk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 18:23:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=X1zZej52wwHx6MO1VgWLKAjHWHLeP8WTBdG/eieRnXa8lETA9R/7wi/mmF6pqbrka6
+         STIqnvW2lmAR/sYQr4Uw==
+MIME-Version: 1.0
+In-Reply-To: <1296679656-31163-3-git-send-email-kirill@shutemov.name>
+References: <1296679656-31163-1-git-send-email-kirill@shutemov.name> <1296679656-31163-3-git-send-email-kirill@shutemov.name>
+From: Paul Menage <menage@google.com>
+Date: Wed, 2 Feb 2011 15:23:15 -0800
+Message-ID: <AANLkTikAbmFmQNGgYMYhTOS8L5nU39edcTjQXNpdxGy2@mail.gmail.com>
+Subject: Re: [PATCH, v3 2/2] cgroups: introduce timer slack subsystem
+To: "Kirill A. Shutsemov" <kirill@shutemov.name>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        jacob.jun.pan@linux.intel.com,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Måns Rullgård <mans@mansr.com>
-Date: Wed, 02 Feb 2011 23:08:01 +0000
+On Wed, Feb 2, 2011 at 12:47 PM, Kirill A. Shutsemov
+<kirill@shutemov.name> wrote:
+> From: Kirill A. Shutemov <kirill@shutemov.name>
+>
+> Provides a way of tasks grouping by timer slack value. Introduces per
+> cgroup max and min timer slack value. When a task attaches to a cgroup,
+> its timer slack value adjusts (if needed) to fit min-max range.
+>
+> It also provides a way to set timer slack value for all tasks in the
+> cgroup at once.
+>
+> This functionality is useful in mobile devices where certain background
+> apps are attached to a cgroup and minimum wakeups are desired.
 
-> David Miller <davem@davemloft.net> writes:
-> 
->> From: Russell King - ARM Linux <linux@arm.linux.org.uk>
->> Date: Wed, 2 Feb 2011 16:37:02 +0000
->>
->>> 1. there's no way to tell GCC that the inline assembly is a load
->>>    instruction and therefore it needs to schedule the following
->>>    instructions appropriately.
->>
->> Just add a dummy '"m" (pointer)' asm input argument to the inline asm
->> statement.  Just make sure "typeof(pointer)" has a size matching the
->> size of the load your are performing.
-> 
-> That should be "m"(*pointer).
+If you really want to be able to make this modular, I'd be inclined to
+make the check_timer_slack hook just default to NULL, rather than
+introducing dummy_timer_slack_check()
 
-Right, thanks for the correction.
 
->> But you really need that memory clobber there whether you like it or
->> not, see above.
-> 
-> I don't know of any device where the side-effects are not explicitly
-> indicated by other means in the code triggering them, so it probably
-> is safe without the clobber as Russel says.
+> +
+> +static int tslack_write_range(struct cgroup *cgroup, struct cftype *cft,
+> +               u64 val)
+> +{
+> +       struct timer_slack_cgroup *tslack_cgroup;
+> +       struct cgroup_iter it;
+> +       struct task_struct *task;
+> +
+> +       if (!val)
+> +               return -EINVAL;
+> +
+> +       tslack_cgroup = cgroup_to_tslack_cgroup(cgroup);
+> +       switch (cft->private) {
+> +       case TIMER_SLACK_MIN:
+> +               if (val > tslack_cgroup->max_slack_ns)
+> +                       return -EINVAL;
+> +               tslack_cgroup->min_slack_ns = val;
+> +               break;
+> +       case TIMER_SLACK_MAX:
+> +               if (val < tslack_cgroup->min_slack_ns)
+> +                       return -EINVAL;
+> +               tslack_cgroup->max_slack_ns = val;
+> +               break;
+> +       default:
+> +               BUG();
+> +       }
+> +
 
-You're probably right.
+Don't we want to keep the min/max applied hierarchically as well? i.e.
+a child can't set its min/max outside the range of its parents?
+
+> +
+> +static int __init init_cgroup_timer_slack(void)
+> +{
+> +       BUG_ON(timer_slack_check != dummy_timer_slack_check);
+
+Better to make this just fail the initialization if someone else has
+already claimed the hook, rather than crashing.
+
+Paul
