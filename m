@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019Ab1BBAnu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 19:43:50 -0500
-Received: from mga01.intel.com ([192.55.52.88]:4194 "EHLO mga01.intel.com"
+	id S1753193Ab1BBAoB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 19:44:01 -0500
+Received: from mga01.intel.com ([192.55.52.88]:7970 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752982Ab1BBAns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:43:48 -0500
+	id S1753175Ab1BBAn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:43:59 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="653504974"
+   d="scan'208";a="883418080"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110201443.618138584@firstfloor.org>
 In-Reply-To: <20110201443.618138584@firstfloor.org>
-To: davem@davemloft.net, gregkh@suse.de, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [43/139] sparc: Delete prom_*getchar().
-Message-Id: <20110202004358.C63023E09BD@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:43:58 -0800 (PST)
+To: eric.dumazet@gmail.com, davem@davemloft.net, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [53/139] af_unix: limit unix_tot_inflight
+Message-Id: <20110202004409.4E70E3E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:44:09 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,161 +25,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David S. Miller <davem@davemloft.net>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit 12c7a35ee6a1c605e740733f2cbd5b5079f09f0f ]
+[ Upstream commit 9915672d41273f5b77f1b3c29b391ffb7732b84b ]
 
-Completely unused.
+Vegard Nossum found a unix socket OOM was possible, posting an exploit
+program.
 
+My analysis is we can eat all LOWMEM memory before unix_gc() being
+called from unix_release_sock(). Moreover, the thread blocked in
+unix_gc() can consume huge amount of time to perform cleanup because of
+huge working set.
+
+One way to handle this is to have a sensible limit on unix_tot_inflight,
+tested from wait_for_unix_gc() and to force a call to unix_gc() if this
+limit is hit.
+
+This solves the OOM and also reduce overall latencies, and should not
+slowdown normal workloads.
+
+Reported-by: Vegard Nossum <vegard.nossum@gmail.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- arch/sparc/include/asm/oplib_32.h |    5 ----
- arch/sparc/include/asm/oplib_64.h |    5 ----
- arch/sparc/prom/console_32.c      |   41 --------------------------------------
- arch/sparc/prom/console_64.c      |   32 -----------------------------
- 4 files changed, 83 deletions(-)
+ net/unix/garbage.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Index: linux-2.6.35.y/arch/sparc/include/asm/oplib_32.h
+Index: linux-2.6.35.y/net/unix/garbage.c
 ===================================================================
---- linux-2.6.35.y.orig/arch/sparc/include/asm/oplib_32.h
-+++ linux-2.6.35.y/arch/sparc/include/asm/oplib_32.h
-@@ -102,11 +102,6 @@ extern int prom_getrev(void);
- /* Get the prom firmware revision. */
- extern int prom_getprev(void);
- 
--/* Character operations to/from the console.... */
--
--/* Blocking get character from console. */
--extern void prom_getchar(char *buf);
--
- /* Blocking put character to console. */
- extern void prom_putchar(const char *buf);
- 
-Index: linux-2.6.35.y/arch/sparc/include/asm/oplib_64.h
-===================================================================
---- linux-2.6.35.y.orig/arch/sparc/include/asm/oplib_64.h
-+++ linux-2.6.35.y/arch/sparc/include/asm/oplib_64.h
-@@ -94,11 +94,6 @@ extern void prom_halt_power_off(void) __
-  */
- extern unsigned char prom_get_idprom(char *idp_buffer, int idpbuf_size);
- 
--/* Character operations to/from the console.... */
--
--/* Blocking get character from console. */
--extern void prom_getchar(char *buf);
--
- /* Blocking put character to console. */
- extern void prom_putchar(const char *buf);
- 
-Index: linux-2.6.35.y/arch/sparc/prom/console_32.c
-===================================================================
---- linux-2.6.35.y.orig/arch/sparc/prom/console_32.c
-+++ linux-2.6.35.y/arch/sparc/prom/console_32.c
-@@ -16,37 +16,6 @@
- 
- extern void restore_current(void);
- 
--/* Non blocking get character from console input device, returns -1
-- * if no input was taken.  This can be used for polling.
-- */
--static int prom_nbgetchar(char *buf)
--{
--	unsigned long flags;
--	int i = -1;
--
--	spin_lock_irqsave(&prom_lock, flags);
--	switch(prom_vers) {
--	case PROM_V0:
--		i = (*(romvec->pv_nbgetchar))();
--		if (i != -1) {
--			*buf = i;
--			i = 0;
--		}
--		break;
--	case PROM_V2:
--	case PROM_V3:
--		if ((*(romvec->pv_v2devops).v2_dev_read)(*romvec->pv_v2bootargs.fd_stdin,
--							 buf, 0x1) == 1)
--			i = 0;
--		break;
--	default:
--		break;
--	};
--	restore_current();
--	spin_unlock_irqrestore(&prom_lock, flags);
--	return i; /* Ugh, we could spin forever on unsupported proms ;( */
--}
--
- /* Non blocking put character to console device, returns -1 if
-  * unsuccessful.
-  */
-@@ -74,16 +43,6 @@ static int prom_nbputchar(const char *bu
- 	return i; /* Ugh, we could spin forever on unsupported proms ;( */
+--- linux-2.6.35.y.orig/net/unix/garbage.c
++++ linux-2.6.35.y/net/unix/garbage.c
+@@ -259,9 +259,16 @@ static void inc_inflight_move_tail(struc
  }
  
--/* Blocking version of get character routine above. */
--void prom_getchar(char *buf)
--{
--	while (1) {
--		int err = prom_nbgetchar(buf);
--		if (!err)
--			break;
--	}
--}
--
- /* Blocking version of put character routine above. */
- void prom_putchar(const char *buf)
+ static bool gc_in_progress = false;
++#define UNIX_INFLIGHT_TRIGGER_GC 16000
+ 
+ void wait_for_unix_gc(void)
  {
-Index: linux-2.6.35.y/arch/sparc/prom/console_64.c
-===================================================================
---- linux-2.6.35.y.orig/arch/sparc/prom/console_64.c
-+++ linux-2.6.35.y/arch/sparc/prom/console_64.c
-@@ -15,28 +15,6 @@
- 
- extern int prom_stdin, prom_stdout;
- 
--/* Non blocking get character from console input device, returns -1
-- * if no input was taken.  This can be used for polling.
-- */
--static int prom_nbgetchar(char *buf)
--{
--	unsigned long args[7];
--
--	args[0] = (unsigned long) "read";
--	args[1] = 3;
--	args[2] = 1;
--	args[3] = (unsigned int) prom_stdin;
--	args[4] = (unsigned long) buf;
--	args[5] = 1;
--	args[6] = (unsigned long) -1;
--
--	p1275_cmd_direct(args);
--
--	if (args[6] == 1)
--		return 0;
--	return -1;
--}
--
- /* Non blocking put character to console device, returns -1 if
-  * unsuccessful.
-  */
-@@ -60,16 +38,6 @@ static int prom_nbputchar(const char *bu
- 		return -1;
++	/*
++	 * If number of inflight sockets is insane,
++	 * force a garbage collect right now.
++	 */
++	if (unix_tot_inflight > UNIX_INFLIGHT_TRIGGER_GC && !gc_in_progress)
++		unix_gc();
+ 	wait_event(unix_gc_wait, gc_in_progress == false);
  }
  
--/* Blocking version of get character routine above. */
--void prom_getchar(char *buf)
--{
--	while (1) {
--		int err = prom_nbgetchar(buf);
--		if (!err)
--			break;
--	}
--}
--
- /* Blocking version of put character routine above. */
- void prom_putchar(const char *buf)
- {
