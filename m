@@ -1,41 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673Ab1BBUR0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 15:17:26 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57596 "EHLO
+	id S1752713Ab1BBUTS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 15:19:18 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57608 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752470Ab1BBURZ (ORCPT
+	by vger.kernel.org with ESMTP id S1752464Ab1BBUTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 15:17:25 -0500
+	Wed, 2 Feb 2011 15:19:15 -0500
+Date: Wed, 2 Feb 2011 20:19:14 +0000
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regulator: Fix warning with CONFIG_BUG disabled
-Date: Wed,  2 Feb 2011 20:17:22 +0000
-Message-Id: <1296677842-26867-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.3
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: Re: Build regressions/improvements in v2.6.38-rc3
+Message-ID: <20110202201913.GD28705@opensource.wolfsonmicro.com>
+References: <alpine.DEB.2.00.1102021504550.31867@ayla.of.borg>
+ <20110202144924.GD9810@sirena.org.uk>
+ <AANLkTindwELkXft9phmiaduyB5icMCbAorbKxZMYP2bw@mail.gmail.com>
+ <20110202201023.GC28705@opensource.wolfsonmicro.com>
+ <AANLkTi=RZoqS1D3qQXJNupbBOcWLHdWiCNWmiVvvKV++@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=RZoqS1D3qQXJNupbBOcWLHdWiCNWmiVvvKV++@mail.gmail.com>
+X-Cookie: Your present plans will be successful.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/regulator/wm831x-dcdc.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+On Wed, Feb 02, 2011 at 03:16:41PM -0500, Arnaud Lacombe wrote:
+> On Wed, Feb 2, 2011 at 3:10 PM, Mark Brown
 
-diff --git a/drivers/regulator/wm831x-dcdc.c b/drivers/regulator/wm831x-dcdc.c
-index 8b0d2c4..06df898 100644
---- a/drivers/regulator/wm831x-dcdc.c
-+++ b/drivers/regulator/wm831x-dcdc.c
-@@ -120,6 +120,7 @@ static unsigned int wm831x_dcdc_get_mode(struct regulator_dev *rdev)
- 		return REGULATOR_MODE_IDLE;
- 	default:
- 		BUG();
-+		return -EINVAL;
- 	}
- }
- 
--- 
-1.7.2.3
+> > Oh no, not another one :(
 
+> Care to explain ?
+
+It's a config option which is pretty much always has one setting and
+causes build hassle if the other setting is chosen.
