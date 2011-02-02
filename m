@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab1BBK5b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 05:57:31 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:50280 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753113Ab1BBK5a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 05:57:30 -0500
-From: Bernhard Walle <walle@corscience.de>
-To: dbrownell@users.sourceforge.net, grant.likely@secretlab.ca
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, arnd@arndb.de
-Subject: [PATCH] spi: spidev: Add 32 bit compat ioctl()
-Date: Wed,  2 Feb 2011 11:57:15 +0100
-Message-Id: <1296644235-23933-1-git-send-email-walle@corscience.de>
-X-Mailer: git-send-email 1.7.1
-X-Provags-ID: V02:K0:zRe9rdUCRMj8i5OEK2M572VanoWeuD2VKgkH5KZ8QXm
- a/nHJOmXzTuhFszL0B5oWtV3cp7HwP8/kFAZdsfNV7UaD66sSb
- acxvQOXArwa0eACDBK5YCEXzyL2q6DlpjKSH5P1STamRxAp9Aq
- kr8s8VW2U5SzrwKPIFLw8trVJz58E9yfBOcq72BJG81T/vP/63
- FJGeKMkI0D0IwuFhv2yeg==
+	id S1753514Ab1BBLA6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 06:00:58 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:55076 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753113Ab1BBLAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 06:00:55 -0500
+From: pavan_savoy@ti.com
+To: linux-kernel@vger.kernel.org, gregkh@suse.de
+Cc: Pavan Savoy <pavan_savoy@ti.com>
+Subject: [PATCH 0/7] TI ST patches for new requirements
+Date: Wed,  2 Feb 2011 05:00:41 -0600
+Message-Id: <1296644448-29667-1-git-send-email-pavan_savoy@ti.com>
+X-Mailer: git-send-email 1.5.6.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the compat_ioctl for operations on /dev/spi* so that 32 bit
-userspace applications can access SPI. As far as I can see all data
-structure are already prepared for that, so no additional conversion has
-to be done.
+From: Pavan Savoy <pavan_savoy@ti.com>
 
-My use case is MIPS with N32 userspace ABI and toolchain, and that was
-also the platform where I tested it successfully (Cavium Octeon).
+Greg,
 
-Signed-off-by: Bernhard Walle <walle@corscience.de>
----
- drivers/spi/spidev.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+The following 7 patches are some major updates that has been going on
+in the Texas Instrument's shared transport driver.
+These contain few new requirements and some cleanup patches.
 
-diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
-index 4e6245e..95c3f10 100644
---- a/drivers/spi/spidev.c
-+++ b/drivers/spi/spidev.c
-@@ -471,6 +471,14 @@ spidev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 	return retval;
- }
- 
-+#ifdef CONFIG_COMPAT
-+static long
-+spidev_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
-+{
-+	return spidev_ioctl(filp, cmd, (unsigned long)compat_ptr(arg));
-+}
-+#endif /* CONFIG_COMPAT */
-+
- static int spidev_open(struct inode *inode, struct file *filp)
- {
- 	struct spidev_data	*spidev;
-@@ -543,6 +551,9 @@ static const struct file_operations spidev_fops = {
- 	.write =	spidev_write,
- 	.read =		spidev_read,
- 	.unlocked_ioctl = spidev_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl = spidev_compat_ioctl,
-+#endif
- 	.open =		spidev_open,
- 	.release =	spidev_release,
- 	.llseek =	no_llseek,
--- 
-1.7.1
+The major 2 changes are the first 2 patches.
+
+1. The change from protocol based registration to packet/channel based
+registration has been conceptually ACKed by Gustavo (Bluetooth Maintainer).
+With this TI-ST now no longer refers to bluetooth headers which was a concern
+previously.
+
+2. The 2nd major change is from rfkill based communication to normal sysfs
+entry based communication.
+This has been conceptually ACKed by Samuel Ortiz (MFD Maintainer).
+Previously when the line discipline driver wanted the UART to be opened
+and ldisc to be installed, it ab-used the rfkill device node to notify the
+user-space daemon, Now it notifies using simpler sysfs entries & making use
+of sysfs_notify.
+This also allows the UART specifics to be shared with user-space.
+
+Other patches include fixing left over error codes, correcting few dbug logs,
+fixes for bugs found during stress testing, firmware change & cleanup.
+
+Pavan Savoy (7):
+  drivers:misc: ti-st: register with channel IDs
+  drivers:misc: ti-st: move from rfkill to sysfs
+  drivers:misc: ti-st: fix error codes
+  drivers:misc: ti-st: set right debug levels for logs
+  drivers:misc: ti-st: firmware download optimization
+  drivers:misc: ti-st: fix hci-ll on wake_ind collision
+  drivers:misc: ti-st: remove multiple gpio handling
+
+ drivers/misc/ti-st/st_core.c |  413 +++++++++++++----------------------
+ drivers/misc/ti-st/st_kim.c  |  491 +++++++++++++++++++++---------------------
+ drivers/misc/ti-st/st_ll.c   |   10 +-
+ include/linux/ti_wilink_st.h |   76 +++++---
+ 4 files changed, 446 insertions(+), 544 deletions(-)
 
