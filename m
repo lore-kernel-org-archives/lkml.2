@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753151Ab1BBKhO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 05:37:14 -0500
-Received: from www.tglx.de ([62.245.132.106]:57400 "EHLO www.tglx.de"
+	id S1753243Ab1BBKvd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 05:51:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55855 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752289Ab1BBKhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 05:37:12 -0500
-Date: Wed, 2 Feb 2011 11:37:02 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Richard Cochran <richardcochran@gmail.com>
-cc: john stultz <johnstul@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Richard Cochran <richard.cochran@omicron.at>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [patch 28/28] posix clocks: Introduce dynamic clocks
-In-Reply-To: <20110202075058.GA2747@riccoc20.at.omicron.at>
-Message-ID: <alpine.LFD.2.00.1102021134520.31804@localhost6.localdomain6>
-References: <20110201134320.688829863@linutronix.de> <20110201134420.164172635@linutronix.de> <1296596987.3336.83.camel@work-vm> <20110202075058.GA2747@riccoc20.at.omicron.at>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752480Ab1BBKvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 05:51:32 -0500
+Message-ID: <4D493725.402@redhat.com>
+Date: Wed, 02 Feb 2011 12:51:17 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Glauber Costa <glommer@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
+        Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH v2 3/6] KVM-GST: KVM Steal time accounting
+References: <1296244340-15173-1-git-send-email-glommer@redhat.com>	 <1296244340-15173-4-git-send-email-glommer@redhat.com>	 <4D456FF9.2010309@redhat.com> <1296575824.5081.17.camel@mothafucka.localdomain> <4D492DBA.9050603@redhat.com>
+In-Reply-To: <4D492DBA.9050603@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Feb 2011, Richard Cochran wrote:
+On 02/02/2011 12:11 PM, Avi Kivity wrote:
+> On 02/01/2011 05:57 PM, Glauber Costa wrote:
+>> On Sun, 2011-01-30 at 16:04 +0200, Avi Kivity wrote:
+>> >  On 01/28/2011 09:52 PM, Glauber Costa wrote:
+>> > >  This patch accounts steal time time in kernel/sched.
+>> > >  I kept it from last proposal, because I still see advantages
+>> > >  in it: Doing it here will give us easier access from scheduler
+>> > >  variables such as the cpu rq. The next patch shows an example of
+>> > >  usage for it.
+>> > >
+>> > >  Since functions like account_idle_time() can be called from
+>> > >  multiple places, not only account_process_tick(), steal time
+>> > >  grabbing is repeated in each account function separatedely.
+>> > >
+>> >
+>> >  I accept that steal time is worthwhile, but do you have some way to
+>> >  demonstrate that the implementation actually works and is beneficial?
+>> >
+>> >  Perhaps run two cpu-bound compute processes on one vcpu, 
+>> overcommit that
+>> >  vcpu, and see what happens to the processing rate with and without 
+>> steal
+>> >  time accounting.  I'd expect a fairer response with steal time 
+>> accounting.
+>>
+>> Avi,
+>>
+>> There are two things here:
+>> One of them, which is solely the accounting of steal time, (patches 1 to
+>> 4) has absolutely nothing to do with what you said. Its sole purpose is
+>> to provide the user with information about "why is my process slow if I
+>> am using 100 % of my cpu?")
+>
+> Right.  Like irq and softirq time, we need to report this to the user, 
+> as it's potentially much higher.
 
-> On Tue, Feb 01, 2011 at 01:49:47PM -0800, john stultz wrote:
-> > I sort of worry about the naming collision with the term posix-clock, as
-> > this is just one type of posix clock (I suspect most folks think of a
-> > posix clock as the clockid passed to the existing posix api).
-> > 
-> > Could we maybe use posix-dynclock or posix-fdclock or something? I know
-> > its already been changed from clkdev, so sorry for being finicky here
-> > and not catching this earlier.
-> 
-> A rose by any other name...
-> 
-> I agree that naming (even internal APIs) is important and have no
-> objection to changing the name. I did spend a bit of time considering
-> various alternatives, and now I'm out of ideas.
-> 
-> So, please do change the name if you have a better one.
+Of course, it's not enough to just account for this time, you also have 
+to expose it somewhere, and update tools like top(1) to display it.
 
-We have a clear distinction between posix-timers and those new
-posix-clocks. Adding some artificial "fd", "dyn" or whatever will not
-make it much better.
+-- 
+error compiling committee.c: too many arguments to function
 
-Thanks,
-
-	tglx
