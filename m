@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab1BBH4V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 02:56:21 -0500
-Received: from mga03.intel.com ([143.182.124.21]:47433 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753086Ab1BBH4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 02:56:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,413,1291622400"; 
-   d="scan'208";a="383062217"
-Subject: Re: [PATCH] [128/139] mac80211: fix mesh forwarding
-From: Johannes Berg <johannes.berg@intel.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "javier@cozybit.com" <javier@cozybit.com>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>
-In-Reply-To: <20110202004527.B26AE3E09BD@tassilo.jf.intel.com>
-References: <20110201443.618138584@firstfloor.org>
-	 <20110202004527.B26AE3E09BD@tassilo.jf.intel.com>
-Date: Wed, 02 Feb 2011 08:56:14 +0100
-Message-ID: <1296633374.3624.1.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Type: text/plain; charset="utf-8"
+	id S1753483Ab1BBH5z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 02:57:55 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:62047 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753016Ab1BBH5y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 02:57:54 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=b6NPCNgX9Oj7B4YdpVqGp/hVujAGiMEw51ZGSddskNjT/neq+1jaXI0LIHHQq9P/qH
+         hj9U2frQXyJAZNSOjv9Q==
+MIME-Version: 1.0
+In-Reply-To: <20110202012733.GA30557@elte.hu>
+References: <201102011002.09819.jordipujolp@gmail.com> <AANLkTineUvbe4w53zVEyfafs_ERt1NPbRo83KeAH89KF@mail.gmail.com>
+ <20110202012733.GA30557@elte.hu>
+From: Paul Menage <menage@google.com>
+Date: Tue, 1 Feb 2011 23:57:29 -0800
+Message-ID: <AANLkTimLo-ioh2+R0otCBQs93wx1hBDNTR5diXo93EQw@mail.gmail.com>
+Subject: Re: [RFC/RFT PATCH] cgroup: enable write permission for the group of users
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Jordi Pujol <jordipujolp@gmail.com>, linux-kernel@vger.kernel.org,
+        Mike Galbraith <efault@gmx.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p127uUkj014863
 
-On Wed, 2011-02-02 at 00:45 +0000, Andi Kleen wrote:
+On Tue, Feb 1, 2011 at 5:27 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> Sure, many things can be worked around in user-space, but the question is, does the
+> +g make sense as default cgroupfs permissions?
 
-> -			if (!fwd_skb && net_ratelimit())
-> +			if (!fwd_skb && net_ratelimit()) {
->  				printk(KERN_DEBUG "%s: failed to clone mesh frame\n",
->  						   sdata->name);
-> +				goto out;
-> +			}
+It's certainly arguable that group-writable permissions might have
+made sense as the default when cgroupfs was first introduced. I don't
+particularly think there was a strong argument either way, and this
+was one of the semantics that was inherited from cpusets to simplify
+backwards-compatibility.
 
-The net_ratelimit() here cause an obvious bug that I missed and a patch
-for that was submitted later -- you may want to pick that one up and/or
-fold it in (commit 919bbad580445801c22ef6ccbe624551fee652bd).
+But given the current default file mode, and given than the default
+gid for a cgroupfs file is 0, any cgroups controller in user-space
+that wants to make it group-accessible needs to chown() the file to
+set the group appropriately. So doing an additional chmod() is really
+no significant amount of extra work/code. Since any kernel from the
+last four years will have cgroupfs files that default to mode 644,
+even if we change the default mode to 664 said controller will need to
+include the chmod code in case it's running on an older kernel. So I
+don't see a real benefit in changing the default, and there's always
+the slight change of introducing a security hole in a controller that
+assumes the 644 default.
 
-johannes
-
---------------------------------------------------------------------------------------
-Intel GmbH
-Dornacher Strasse 1
-85622 Feldkirchen/Muenchen, Deutschland 
-Sitz der Gesellschaft: Feldkirchen bei Muenchen
-Geschaeftsfuehrer: Douglas Lusk, Peter Gleissner, Hannes Schwaderer
-Registergericht: Muenchen HRB 47456 
-Ust.-IdNr./VAT Registration No.: DE129385895
-Citibank Frankfurt a.M. (BLZ 502 109 00) 600119052
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Paul
