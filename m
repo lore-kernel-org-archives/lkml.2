@@ -1,74 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038Ab1BBMje (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 07:39:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1336 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752113Ab1BBMjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 07:39:33 -0500
-Message-ID: <4D495062.2070802@redhat.com>
-Date: Wed, 02 Feb 2011 10:38:58 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1754137Ab1BBMnr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 07:43:47 -0500
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:42952 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752113Ab1BBMnp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 07:43:45 -0500
+Date: Wed, 2 Feb 2011 18:13:33 +0530
+From: Ankita Garg <ankita@in.ibm.com>
+To: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Johan MOSSBERG <johan.xx.mossberg@stericsson.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mel Gorman <mel@csn.ul.ie>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCHv8 07/12] mm: cma: Contiguous Memory Allocator added
+Message-ID: <20110202124333.GB26396@in.ibm.com>
+Reply-To: Ankita Garg <ankita@in.ibm.com>
+References: <cover.1292443200.git.m.nazarewicz@samsung.com>
+ <eb8f43235c8ff2816ada7b56ffe371ea6140cae8.1292443200.git.m.nazarewicz@samsung.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL for v2.6.38-rc5] V4L/DVB fixes
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <eb8f43235c8ff2816ada7b56ffe371ea6140cae8.1292443200.git.m.nazarewicz@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Hi Michal,
 
-Please pull from:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git media_fixes
+On Wed, Dec 15, 2010 at 09:34:27PM +0100, Michal Nazarewicz wrote:
+> The Contiguous Memory Allocator is a set of functions that lets
+> one initialise a region of memory which then can be used to perform
+> allocations of contiguous memory chunks from.
+> 
+> CMA allows for creation of private and non-private contexts.
+> The former is reserved for CMA and no other kernel subsystem can
+> use it.  The latter allows for movable pages to be allocated within
+> CMA's managed memory so that it can be used for page cache when
+> CMA devices do not use it.
+> 
+> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+> 
 
-For:
-	- some fixes on some Remote Controller drivers;
-	- some gspca/zc3xx fixes;
-	- a trivial one-line fix for saa7111 detection.
+<snip>
 
-The following changes since commit 1bae4ce27c9c90344f23c65ea6966c50ffeae2f5:
+> +/************************* Initialise CMA *************************/
+> +
+> +unsigned long cma_reserve(unsigned long start, unsigned long size,
+> +			  unsigned long alignment)
+> +{
+> +	pr_debug("%s(%p+%p/%p)\n", __func__, (void *)start, (void *)size,
+> +		 (void *)alignment);
+> +
+> +	/* Sanity checks */
+> +	if (!size || (alignment & (alignment - 1)))
+> +		return (unsigned long)-EINVAL;
+> +
+> +	/* Sanitise input arguments */
+> +	start = PAGE_ALIGN(start);
+> +	size  = PAGE_ALIGN(size);
+> +	if (alignment < PAGE_SIZE)
+> +		alignment = PAGE_SIZE;
+> +
+> +	/* Reserve memory */
+> +	if (start) {
+> +		if (memblock_is_region_reserved(start, size) ||
+> +		    memblock_reserve(start, size) < 0)
+> +			return (unsigned long)-EBUSY;
+> +	} else {
+> +		/*
+> +		 * Use __memblock_alloc_base() since
+> +		 * memblock_alloc_base() panic()s.
+> +		 */
+> +		u64 addr = __memblock_alloc_base(size, alignment, 0);
+> +		if (!addr) {
+> +			return (unsigned long)-ENOMEM;
+> +		} else if (addr + size > ~(unsigned long)0) {
+> +			memblock_free(addr, size);
+> +			return (unsigned long)-EOVERFLOW;
+> +		} else {
+> +			start = addr;
+> +		}
+> +	}
+> +
 
-  Linux 2.6.38-rc2 (2011-01-21 19:01:34 -0800)
+Reserving the areas of memory belonging to CMA using memblock_reserve,
+would preclude that range from the zones, due to which it would not be
+available for buddy allocations right ?
 
-are available in the git repository at:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git media_fixes
+> +	return start;
+> +}
+> +
+> +
 
-Jarod Wilson (8):
-      [media] rc/mce: add mappings for missing keys
-      [media] hdpvr: fix up i2c device registration
-      [media] lirc_zilog: z8 on usb doesn't like back-to-back i2c_master_send
-      [media] ir-kbd-i2c: improve remote behavior with z8 behind usb
-      [media] rc/ir-lirc-codec: add back debug spew
-      [media] rc: use time unit conversion macros correctly
-      [media] mceusb: really fix remaining keybounce issues
-      [media] rc/streamzap: fix reporting response times
-
-Jean-François Moine (3):
-      [media] gspca - zc3xx: Bad delay when given by a table
-      [media] gspca - zc3xx: Fix bad images with the sensor hv7131r
-      [media] gspca - zc3xx: Discard the partial frames
-
-Russell King (1):
-      [media] fix saa7111 non-detection
-
- drivers/media/rc/ir-lirc-codec.c               |    6 +++-
- drivers/media/rc/keymaps/rc-rc6-mce.c          |    6 ++++
- drivers/media/rc/mceusb.c                      |    9 ++++--
- drivers/media/rc/nuvoton-cir.c                 |    6 ++--
- drivers/media/rc/streamzap.c                   |   14 ++++++----
- drivers/media/video/gspca/zc3xx.c              |   31 +++++++++++++++++++---
- drivers/media/video/hdpvr/hdpvr-core.c         |   24 +++++++++++++++---
- drivers/media/video/hdpvr/hdpvr-i2c.c          |   30 ++++++++++++++--------
- drivers/media/video/hdpvr/hdpvr.h              |    3 +-
- drivers/media/video/ir-kbd-i2c.c               |   13 +++++++++
- drivers/media/video/pvrusb2/pvrusb2-i2c-core.c |    1 -
- drivers/media/video/saa7115.c                  |    2 +-
- drivers/staging/lirc/lirc_zilog.c              |   32 +++++++++++++++++++----
- 13 files changed, 135 insertions(+), 42 deletions(-)
-
+-- 
+Regards,
+Ankita Garg (ankita@in.ibm.com)
+Linux Technology Center
+IBM India Systems & Technology Labs,
+Bangalore, India
