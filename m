@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab1BBL2Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 06:28:25 -0500
-Received: from casper.infradead.org ([85.118.1.10]:40800 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753069Ab1BBL2Y (ORCPT
+	id S1753700Ab1BBLbX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 06:31:23 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:63730 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753069Ab1BBLbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 06:28:24 -0500
-Subject: Re: [PATCH 1/2] perf_events: add cgroup support (v8)
-From: Peter Zijlstra <peterz@infradead.org>
-To: eranian@google.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
-        eranian@gmail.com, robert.richter@amd.com, acme@redhat.com,
-        lizf@cn.fujitsu.com, Paul Menage <menage@google.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-In-Reply-To: <1295534345.28776.175.camel@laptop>
-References: <4d384700.2308e30a.70bc.ffffd532@mx.google.com>
-	 <1295534345.28776.175.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 02 Feb 2011 12:29:20 +0100
-Message-ID: <1296646160.26581.315.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Feb 2011 06:31:22 -0500
+From: Bernhard Walle <walle@corscience.de>
+To: dbrownell@users.sourceforge.net, grant.likely@secretlab.ca
+Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, arnd@arndb.de
+Subject: [PATCH] spi: spidev: Add 32 bit compat ioctl()
+Date: Wed,  2 Feb 2011 12:30:40 +0100
+Message-Id: <1296646240-31778-1-git-send-email-walle@corscience.de>
+X-Mailer: git-send-email 1.7.1
+X-Provags-ID: V02:K0:tdJ91RpVN4S/Hhp7s5FWnrNGSspcUga/pDjJNdsYyRS
+ +Cgw4TGW7nvQlkuLg6azhr3tuZoGBNIR12a5C2WOa2b1jm0lye
+ TUIFfAFlCezpE2obRr0iqWFV6DF0oKxuD1dO/vD6wxq+pGqthv
+ SREMB7Si7Zt9AxggXC02vSXT9aaFvu7sRNT2jxdGAqv1Gjs8Io
+ NfOuWi6UfKOqEX2OHw+PQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-01-20 at 15:39 +0100, Peter Zijlstra wrote:
-> On Thu, 2011-01-20 at 15:30 +0200, Stephane Eranian wrote:
-> > @@ -4259,8 +4261,20 @@ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
-> >  
-> >         /* Reassign the task to the init_css_set. */
-> >         task_lock(tsk);
-> > +       /*
-> > +        * we mask interrupts to prevent:
-> > +        * - timer tick to cause event rotation which
-> > +        *   could schedule back in cgroup events after
-> > +        *   they were switched out by perf_cgroup_sched_out()
-> > +        *
-> > +        * - preemption which could schedule back in cgroup events
-> > +        */
-> > +       local_irq_save(flags);
-> > +       perf_cgroup_sched_out(tsk);
-> >         cg = tsk->cgroups;
-> >         tsk->cgroups = &init_css_set;
-> > +       perf_cgroup_sched_in(tsk);
-> > +       local_irq_restore(flags);
-> >         task_unlock(tsk);
-> >         if (cg)
-> >                 put_css_set_taskexit(cg); 
-> 
-> So you too need a callback on cgroup change there.. Li, Paul, any chance
-> we can fix this cgroup_subsys::exit callback? The scheduler code needs
-> to do funny thing because its in the wrong place as well.
+Add the compat_ioctl for operations on /dev/spi* so that 32 bit
+userspace applications can access SPI. As far as I can see all data
+structure are already prepared for that, so no additional conversion has
+to be done.
 
-cgroup guys? Shall I just fix this exit thing since the only user seems
-to be the scheduler and now perf for both of which its unfortunate at
-best?
+My use case is MIPS with N32 userspace ABI and toolchain, and that was
+also the platform where I tested it successfully (Cavium Octeon).
 
-Balbir, memcontrol.c uses pre_destroy(), I pose that using this method
-is broken per definition since it makes the cgroup empty notification
-void.
+Signed-off-by: Bernhard Walle <walle@corscience.de>
+---
+ drivers/spi/spidev.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
-
+diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
+index 4e6245e..95c3f10 100644
+--- a/drivers/spi/spidev.c
++++ b/drivers/spi/spidev.c
+@@ -471,6 +471,14 @@ spidev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 	return retval;
+ }
+ 
++#ifdef CONFIG_COMPAT
++static long
++spidev_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
++{
++	return spidev_ioctl(filp, cmd, (unsigned long)compat_ptr(arg));
++}
++#endif /* CONFIG_COMPAT */
++
+ static int spidev_open(struct inode *inode, struct file *filp)
+ {
+ 	struct spidev_data	*spidev;
+@@ -543,6 +551,9 @@ static const struct file_operations spidev_fops = {
+ 	.write =	spidev_write,
+ 	.read =		spidev_read,
+ 	.unlocked_ioctl = spidev_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl = spidev_compat_ioctl,
++#endif
+ 	.open =		spidev_open,
+ 	.release =	spidev_release,
+ 	.llseek =	no_llseek,
+-- 
+1.7.1
 
