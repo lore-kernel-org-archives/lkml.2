@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256Ab1BBHPM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 02:15:12 -0500
-Received: from shutemov.name ([188.40.19.243]:60771 "EHLO shutemov.name"
+	id S1753330Ab1BBHXQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 02:23:16 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:46299 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752841Ab1BBHPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 02:15:11 -0500
-Date: Wed, 2 Feb 2011 09:15:09 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
+	id S1752841Ab1BBHXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 02:23:15 -0500
+Date: Tue, 1 Feb 2011 23:23:11 -0800
+From: Matt Helsley <matthltc@us.ibm.com>
 To: Matt Helsley <matthltc@us.ibm.com>
-Cc: jacob.jun.pan@linux.intel.com, LKML <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizf@cn.fujitsu.com>,
+Cc: jacob.jun.pan@linux.intel.com,
+        container cgroup <containers@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Menage <menage@google.com>,
         Arjan van de Ven <arjan@linux.intel.com>,
-        Paul Menage <menage@google.com>,
-        container cgroup <containers@lists.linux-foundation.org>
+        "Kirill A. Shutsemov" <kirill@shutemov.name>
 Subject: Re: [PATCH] cgroups: respect cgroup timer slack value in prctl
-Message-ID: <20110202071509.GB25262@shutemov.name>
+Message-ID: <20110202072311.GP16432@count0.beaverton.ibm.com>
 References: <1296600103-15726-1-git-send-email-jacob.jun.pan@linux.intel.com>
  <20110202070743.GO16432@count0.beaverton.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <20110202070743.GO16432@count0.beaverton.ibm.com>
-User-Agent: Mutt/1.5.20 (2010-08-04)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -48,9 +49,12 @@ On Tue, Feb 01, 2011 at 11:07:43PM -0800, Matt Helsley wrote:
 > 
 > ) were not sent to containers@lists.linux-foundation.org ?
 
-Hm.. 
+Oops, I didn't see the patches from Kirill A. Shutsemov that this
+apparently applies to, sorry. Odd, my mail client doesn't show a
+Cc for him on this thread... (added)
 
-https://lists.linux-foundation.org/pipermail/containers/2011-February/026415.html
+Cheers,
+	-Matt
 
 > 
 > >  kernel/sys.c                |   21 ++++++++++++++++++++-
@@ -147,12 +151,7 @@ https://lists.linux-foundation.org/pipermail/containers/2011-February/026415.htm
 > Incidentally, shouldn't that really be -EPERM since it's not an invalid
 > value -- just one that's not permitted due to restrictions imposed by
 > the cgroup subsystem?
-
-I guess better to add more functionality to the cgroup subsystem.
-I'm going to implement timer_slack.min_slack_ns and timer_slack.max_slack_ns.
-prctl(2) will be modified to check these limits.
-
-
+> 
 > >  				current->timer_slack_ns = arg2;
 > > +#endif
 > > +			}
@@ -166,6 +165,7 @@ prctl(2) will be modified to check these limits.
 > > Containers mailing list
 > > Containers@lists.linux-foundation.org
 > > https://lists.linux-foundation.org/mailman/listinfo/containers
-
--- 
- Kirill A. Shutemov
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linux-foundation.org/mailman/listinfo/containers
