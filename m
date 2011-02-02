@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483Ab1BBH5z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 02:57:55 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:62047 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753016Ab1BBH5y (ORCPT
+	id S1753605Ab1BBIDD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 03:03:03 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:45803 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753551Ab1BBIDA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 02:57:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=b6NPCNgX9Oj7B4YdpVqGp/hVujAGiMEw51ZGSddskNjT/neq+1jaXI0LIHHQq9P/qH
-         hj9U2frQXyJAZNSOjv9Q==
-MIME-Version: 1.0
-In-Reply-To: <20110202012733.GA30557@elte.hu>
-References: <201102011002.09819.jordipujolp@gmail.com> <AANLkTineUvbe4w53zVEyfafs_ERt1NPbRo83KeAH89KF@mail.gmail.com>
- <20110202012733.GA30557@elte.hu>
-From: Paul Menage <menage@google.com>
-Date: Tue, 1 Feb 2011 23:57:29 -0800
-Message-ID: <AANLkTimLo-ioh2+R0otCBQs93wx1hBDNTR5diXo93EQw@mail.gmail.com>
-Subject: Re: [RFC/RFT PATCH] cgroup: enable write permission for the group of users
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Jordi Pujol <jordipujolp@gmail.com>, linux-kernel@vger.kernel.org,
-        Mike Galbraith <efault@gmx.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Wed, 2 Feb 2011 03:03:00 -0500
+Subject: Re: Support for Android for mac80211 / cfg80211 802.11 drivers
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Bob Copeland <me@bobcopeland.com>
+Cc: "Luis R. Rodriguez" <mcgrof@gmail.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Amod Bodas <Amod.Bodas@atheros.com>,
+        Senthilkumar Balasubramanian 
+	<Senthilkumar.Balasubramanian@atheros.com>,
+        Sree Durbha <Sree.Durbha@atheros.com>,
+        Deepak Dhamdhere <Deepak.Dhamdhere@atheros.com>,
+        Xin Jin <Xin.Jin@atheros.com>
+In-Reply-To: <AANLkTikasAe2H+HyoWDr=NbuxW6LJAET-JqATWMmMmq0@mail.gmail.com>
+References: <AANLkTikbrzLeeY8Gosw+7Aic1=V=5f+sD382sXwGDWbA@mail.gmail.com>
+	 <AANLkTi=_gHfEKKC2rsA0pc6Otu5FU4CtVKA2UR85b+GV@mail.gmail.com>
+	 <AANLkTim9uNH8BzjDM5Ekt3ayBe+7QfE4vnXR0bc-=-Yn@mail.gmail.com>
+	 <AANLkTikasAe2H+HyoWDr=NbuxW6LJAET-JqATWMmMmq0@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 02 Feb 2011 09:02:52 +0100
+Message-ID: <1296633772.3624.2.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 1, 2011 at 5:27 PM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> Sure, many things can be worked around in user-space, but the question is, does the
-> +g make sense as default cgroupfs permissions?
+On Tue, 2011-02-01 at 21:41 -0500, Bob Copeland wrote:
+> On Tue, Feb 1, 2011 at 7:50 PM, Luis R. Rodriguez <mcgrof@gmail.com> wrote:
+> 
+> >> I don't think it's good to advocate a custom driver.  They should be able
+> >> to use stock wpa_supplicant w/ nl80211 and put the extensions in the
+> >> hardware layer.
+> >
+> > Can you elaborate?
+> 
+> From the wiki:
+> 
+> "The proper approach would be to provide a custom driver_nl80211_android.c
+> wrapper for the modified wpa_supplicant in Android."
+> 
+> I just don't think it's strictly necessary to ship a modified wpa_s.
+> Why is Android special when bog standard Linux gets by ok with
+> driver_nl80211?
 
-It's certainly arguable that group-writable permissions might have
-made sense as the default when cgroupfs was first introduced. I don't
-particularly think there was a strong argument either way, and this
-was one of the semantics that was inherited from cpusets to simplify
-backwards-compatibility.
+Agree, that is a dumb idea. What's that driver going to do? Use custom
+nl80211 extensions?! That way lies insanity.
 
-But given the current default file mode, and given than the default
-gid for a cgroupfs file is 0, any cgroups controller in user-space
-that wants to make it group-accessible needs to chown() the file to
-set the group appropriately. So doing an additional chmod() is really
-no significant amount of extra work/code. Since any kernel from the
-last four years will have cgroupfs files that default to mode 644,
-even if we change the default mode to 664 said controller will need to
-include the chmod code in case it's running on an older kernel. So I
-don't see a real benefit in changing the default, and there's always
-the slight change of introducing a security hole in a controller that
-assumes the 644 default.
+johannes
 
-Paul
