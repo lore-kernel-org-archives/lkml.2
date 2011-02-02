@@ -1,157 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752981Ab1BBHHv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 02:07:51 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:48258 "EHLO e6.ny.us.ibm.com"
+	id S1753105Ab1BBHIB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 02:08:01 -0500
+Received: from hera.kernel.org ([140.211.167.34]:49331 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752903Ab1BBHHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 02:07:48 -0500
-Date: Tue, 1 Feb 2011 23:07:43 -0800
-From: Matt Helsley <matthltc@us.ibm.com>
-To: jacob.jun.pan@linux.intel.com
-Cc: LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Paul Menage <menage@google.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        container cgroup <containers@lists.linux-foundation.org>
-Subject: Re: [PATCH] cgroups: respect cgroup timer slack value in prctl
-Message-ID: <20110202070743.GO16432@count0.beaverton.ibm.com>
-References: <1296600103-15726-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	id S1752910Ab1BBHHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 02:07:49 -0500
+Date: Wed, 2 Feb 2011 07:06:54 GMT
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
+        peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
+        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <new-submission>
+References: <new-submission>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Remove verbose build messages for the python binding
+Message-ID: <tip-067187fc9f1d09738fc833392e117f125cb6bbad@git.kernel.org>
+Git-Commit-ID: 067187fc9f1d09738fc833392e117f125cb6bbad
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1296600103-15726-1-git-send-email-jacob.jun.pan@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 02 Feb 2011 07:06:55 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 01, 2011 at 02:41:43PM -0800, jacob.jun.pan@linux.intel.com wrote:
-> From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> 
-> Per cgroup timer slack value is used to manage task groups
-> for more friendly power management behavior. Once a task is
-> attached to a cgroup, we should not allow user to change
-> (escape) the per cgroup restriction unless a more relaxed
-> timer slack value is given by user via prctl.
-> 
-> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Commit-ID:  067187fc9f1d09738fc833392e117f125cb6bbad
+Gitweb:     http://git.kernel.org/tip/067187fc9f1d09738fc833392e117f125cb6bbad
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Tue, 1 Feb 2011 14:57:02 -0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 1 Feb 2011 14:57:02 -0200
 
-> ---
->  include/linux/cgroup.h      |   13 +++++++++++++
+perf tools: Remove verbose build messages for the python binding
 
-Looks like the original two patches (one or more implementing:
+Also now it builds it in a well known location:
 
->  kernel/cgroup_timer_slack.c |    4 ----
+[acme@felicio linux]$ rm -rf ../build/perf/
+[acme@felicio linux]$ mkdir ../build/perf
+[acme@felicio linux]$ make -j2 O=~acme/git/build/perf -C tools/perf/
+<SNIP>
+[acme@felicio linux]$ ls -la ../build/perf/python/
+total 152
+-rwxrwxr-x 1 acme acme 147957 Feb  1 14:56 perf.so
+drwxrwxr-x 3 acme acme     17 Feb  1 14:56 temp
+[acme@felicio linux]$
 
-) were not sent to containers@lists.linux-foundation.org ?
+[root@felicio ~]# strip ~acme/git/build/perf/python/perf.so
+[root@felicio ~]# ls -la ~acme/git/build/perf/python/perf.so
+-rwxrwxr-x 1 acme acme 46264 Feb  1 14:58 /home/acme/git/build/perf/python/perf.so
 
->  kernel/sys.c                |   21 ++++++++++++++++++++-
->  3 files changed, 33 insertions(+), 5 deletions(-)
-> 
-> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-> index ed4ba11..4405666 100644
-> --- a/include/linux/cgroup.h
-> +++ b/include/linux/cgroup.h
-> @@ -627,6 +627,19 @@ bool css_is_ancestor(struct cgroup_subsys_state *cg,
->  unsigned short css_id(struct cgroup_subsys_state *css);
->  unsigned short css_depth(struct cgroup_subsys_state *css);
-> 
-> +#ifdef CONFIG_CGROUP_TIMER_SLACK
-> +struct timer_slack_cgroup {
-> +	struct cgroup_subsys_state css;
-> +	unsigned long timer_slack_ns;
-> +};
-> +
-> +static inline struct timer_slack_cgroup *task_timer_slack(struct task_struct *task)
-> +{
-> +	return container_of(task_subsys_state(task, timer_slack_subsys_id),
-> +			    struct timer_slack_cgroup, css);
-> +}
-> +#endif
-> +
->  #else /* !CONFIG_CGROUPS */
-> 
->  static inline int cgroup_init_early(void) { return 0; }
-> diff --git a/kernel/cgroup_timer_slack.c b/kernel/cgroup_timer_slack.c
-> index daa452d..1de122a 100644
-> --- a/kernel/cgroup_timer_slack.c
-> +++ b/kernel/cgroup_timer_slack.c
-> @@ -4,10 +4,6 @@
->  #include <linux/slab.h>
-> 
->  struct cgroup_subsys timer_slack_subsys;
-> -struct timer_slack_cgroup {
-> -	struct cgroup_subsys_state css;
-> -	unsigned long timer_slack_ns;
-> -};
-> 
->  static struct timer_slack_cgroup *cgroup_to_tslack_cgroup(struct cgroup *cgroup)
->  {
-> diff --git a/kernel/sys.c b/kernel/sys.c
-> index 7f5a0cd..433fcdb 100644
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-> @@ -37,6 +37,8 @@
->  #include <linux/ptrace.h>
->  #include <linux/fs_struct.h>
->  #include <linux/gfp.h>
-> +#include <linux/cgroup.h>
-> +#include <linux/init_task.h>
-> 
->  #include <linux/compat.h>
->  #include <linux/syscalls.h>
-> @@ -1688,8 +1690,25 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
->  			if (arg2 <= 0)
->  				current->timer_slack_ns =
->  					current->default_timer_slack_ns;
-> -			else
-> +			else {
-> +#ifdef CONFIG_CGROUP_TIMER_SLACK
-> +				/* only allow more relaxed slack value than
-> +				 * the attached timer slack cgroup allows.
-> +				 */
-> +				unsigned long cg_timer_slack;
-> +
-> +				rcu_read_lock();
-> +				cg_timer_slack = task_timer_slack(current)->timer_slack_ns;
-> +				rcu_read_unlock();
-> +				if (cg_timer_slack < arg2 || cg_timer_slack
-> +					== TIMER_SLACK_NS_DEFAULT)
-> +					current->timer_slack_ns = arg2;
-> +				else
-> +					return -EINVAL;
-> +#else
+[root@felicio ~]# export PYTHONPATH=~acme/git/build/perf/python/
+[root@felicio ~]# ~acme/git/linux/tools/perf/python/twatch.py
+cpu:  0, pid: 7751, tid: 7751 { type: exit, pid: 7751, ppid: 7751, tid: 7751, ptid: 7751, time: 54562393512356}
+cpu:  0, pid: 13700, tid: 13700 { type: fork, pid: 7756, ppid: 13700, tid: 7756, ptid: 13700, time: 54562393746739}
+cpu:  1, pid: 7756, tid: 7756 { type: fork, pid: 7757, ppid: 7756, tid: 7757, ptid: 7756, time: 54562394246152}
+cpu:  1, pid: 7757, tid: 7757 { type: comm, pid: 7757, tid: 7757, comm: awk }
+cpu:  1, pid: 7757, tid: 7757 { type: exit, pid: 7757, ppid: 7757, tid: 7757, ptid: 7757, time: 54562395456813}
 
-Looks like this could be an inline function which returns the
-minimum timer slack allowed for the task. Then the code here would be:
+Reported-by: Ingo Molnar <mingo@elte.hu>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile |   12 ++++++++----
+ 1 files changed, 8 insertions(+), 4 deletions(-)
 
-if (arg2 <= 0)
-	current->timer_slack_ns = current->default_timer_slack_ns;
-else {
-	if (arg2 < min_timer_slack_ns(tsk))
-		return -EINVAL; /* Can't set less than the minimum */
-	current->timer_slack_ns = arg2;
-}
-
-and the #ifdef CONFIG_CGROUP_TIMER_SLACK bits could be in a header as
-usual.
-
-Incidentally, shouldn't that really be -EPERM since it's not an invalid
-value -- just one that's not permitted due to restrictions imposed by
-the cgroup subsystem?
-
->  				current->timer_slack_ns = arg2;
-> +#endif
-> +			}
->  			error = 0;
->  			break;
->  		case PR_MCE_KILL:
-> -- 
-> 1.7.0.4
-> 
-> _______________________________________________
-> Containers mailing list
-> Containers@lists.linux-foundation.org
-> https://lists.linux-foundation.org/mailman/listinfo/containers
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 67a9f4d..d1984ee 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -325,9 +325,9 @@ SCRIPT_SH += perf-archive.sh
+ grep-libs = $(filter -l%,$(1))
+ strip-libs = $(filter-out -l%,$(1))
+ 
+-pyrf: $(PYRF_OBJS)
+-	python util/setup.py build --build-base='$(OUTPUT)'
+-
++$(OUTPUT)python/perf.so: $(PYRF_OBJS)
++	@python util/setup.py --quiet  build_ext --build-lib='$(OUTPUT)python' \
++						--build-temp='$(OUTPUT)python/temp'
+ #
+ # No Perl scripts right now:
+ #
+@@ -348,12 +348,14 @@ PROGRAMS += $(EXTRA_PROGRAMS)
+ #
+ PROGRAMS += $(OUTPUT)perf
+ 
++LANG_BINDINGS = $(OUTPUT)python/perf.so
++
+ # List built-in command $C whose implementation cmd_$C() is not in
+ # builtin-$C.o but is linked in as part of some other command.
+ #
+ 
+ # what 'all' will build and 'install' will install, in perfexecdir
+-ALL_PROGRAMS = $(PROGRAMS) $(SCRIPTS) pyrf
++ALL_PROGRAMS = $(PROGRAMS) $(SCRIPTS) $(LANG_BINDINGS)
+ 
+ # what 'all' will build but not install in perfexecdir
+ OTHER_PROGRAMS = $(OUTPUT)perf$X
+@@ -1298,6 +1300,8 @@ clean:
+ 	$(RM) $(htmldocs).tar.gz $(manpages).tar.gz
+ 	$(MAKE) -C Documentation/ clean
+ 	$(RM) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS $(OUTPUT)PERF-BUILD-OPTIONS
++	@python util/setup.py clean --build-lib='$(OUTPUT)python' \
++				   --build-temp='$(OUTPUT)python/temp'
+ 
+ .PHONY: all install clean strip
+ .PHONY: shell_compatibility_test please_set_SHELL_PATH_to_a_more_modern_shell
