@@ -1,191 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826Ab1BBR7u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 12:59:50 -0500
-Received: from smtp-tls2.univ-nantes.fr ([193.52.101.146]:45732 "EHLO
-	smtp-tls.univ-nantes.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754637Ab1BBR7s (ORCPT
+	id S1754795Ab1BBSER (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 13:04:17 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:41948 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754547Ab1BBSEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 12:59:48 -0500
-Message-ID: <4D499B91.7080701@univ-nantes.fr>
-Date: Wed, 02 Feb 2011 18:59:45 +0100
-From: Yann Dupont <Yann.Dupont@univ-nantes.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15pre) Gecko/20110201 Shredder/3.1.9pre
-MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Subject: Re: kernel 2.6.37 : oops in cleanup_once
-References: <4D491B8D.1000107@univ-nantes.fr>	 <1296643972.20445.9.camel@edumazet-laptop>	 <1296645887.20445.11.camel@edumazet-laptop>	 <4D495765.4090806@univ-nantes.fr>	 <1296658407.20445.19.camel@edumazet-laptop>	 <4D49726C.6020103@univ-nantes.fr> <1296659336.20445.22.camel@edumazet-laptop>
-In-Reply-To: <1296659336.20445.22.camel@edumazet-laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Wed, 2 Feb 2011 13:04:16 -0500
+From: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+To: mroberto@cpti.cetuc.puc-rio.br, a.zummo@towertech.it,
+        john.stultz@linaro.org
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] RTC: Prevents a division by zero in kernel code.
+Date: Wed,  2 Feb 2011 16:04:02 -0200
+Message-Id: <1296669842-32611-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 02/02/2011 16:08, Eric Dumazet a écrit :
-> Le mercredi 02 février 2011 à 16:04 +0100, Yann Dupont a écrit :
->> Ok, will do it at 18:30 CET (to minimize impact)
->> It the suspected bug SLUB related ?
->>
-> no : It can be a corruption from another part of kernel.
->
->> The 2.6.34.2 kernel previously used on that server used SLAB.
->>
->>
->> 2 questions :
->> -How can I be sure slub_nomerge is active ? Boot message ?
->
-> # ls -l /sys/kernel/slab/
->
-> If you have symlinks : merge is on (default)
->
-> If you dont have symlinks : nomerge is in action
->
->> -Is there a very severe impact on performance ?
->>
-> not at all
->
->> Regards,
->>
->
-well. The server had the good taste to oops at 18H05, 25 minutes before 
-the planned reboot :)
+This patch prevents a user space program from calling the RTC_IRQP_SET
+ioctl with a negative value of frequency. Also, if this call is make
+with a zero value of frequency, there would be a division by zero in the
+kernel code.
 
-here is the oops (I think it's quite the same) :
+Signed-off-by: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+---
+ drivers/rtc/interface.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.128042] 
-BUG: unable to handle kernel NULL pointer dereference at 000000000000000d
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.128097] 
-IP: [<ffffffff8130e6bf>] cleanup_once+0x3f/0xa0
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.128146] PGD 0
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.128173] 
-Oops: 0002 [#1] SMP
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.128200] 
-last sysfs file: /sys/devices/system/cpu/cpu7/cache/index2/shared_cpu_map
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.128250] CPU 7
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.128260] 
-Modules linked in: dell_rbu acpi_cpufreq freq_table mperf nls_utf8 
-nls_cp437 btrfs zlib_deflate crc32c libcrc32c ufs qnx4 hfsplus hfs minix 
-ntfs vfat msdos fat jfs rei
-serfs ext4 jbd2 crc16 ext3 jbd tun ipt_MASQUERADE iptable_nat nf_nat 
-ipt_REJECT kvm_intel kvm xt_physdev ip6t_LOG nf_conntrack_ipv6 
-nf_defrag_ipv6 ip6table_filter ip6_tables ipt_LOG xt_multiport xt_limit 
-xt_tcpudp xt_state iptable_filter
-  ip_tables x_tables nf_conntrack_tftp nf_conntrack_ftp 
-nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 ipv6 8021q bridge stp ext2 
-mbcache fuse snd_pcm snd_timer ghes hed button snd soundcore i5000_edac 
-edac_core processor shpchp tpm_tis pc
-i_hotplug tpm rng_core snd_page_alloc i5k_amb dcdbas tpm_bios joydev 
-evdev psmouse pcspkr serio_raw thermal_sys xfs exportfs dm_mod sg sr_mod 
-cdrom sd_mod usbhid hid usb_storage qla2xxx scsi_transport_fc scsi_tgt 
-uhci_hcd mptsas mptscsih
-  mptbase bnx2 scsi_transport_sas scsi_mod ehci_hcd [last unloaded: 
-scsi_wait_scan]
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.128834]
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.128855] 
-Pid: 0, comm: kworker/0:1 Not tainted 2.6.37-dsiun-110105 #17 
-0MY736/PowerEdge M600
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.128901] 
-RIP: 0010:[<ffffffff8130e6bf>]  [<ffffffff8130e6bf>] cleanup_once+0x3f/0xa0
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.128948] 
-RSP: 0018:ffff8800cfdc3e20  EFLAGS: 00010206
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.128974] 
-RAX: ffff8803a7e0ea18 RBX: ffff8803a7e0ea00 RCX: 0000000000000005
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129003] 
-RDX: adde806c0d860b00 RSI: 0000000000000096 RDI: ffffffff8152a970
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129032] 
-RBP: 00000000000248f6 R08: 00000000003d0900 R09: 0000000000000000
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129062] 
-R10: dead000000200200 R11: 0000000000000000 R12: ffff8800cfdc3ea0
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129091] 
-R13: 0000000000000100 R14: ffff88040fd29fd8 R15: 0000000000000000
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129121] 
-FS:  0000000000000000(0000) GS:ffff8800cfdc0000(0000) knlGS:0000000000000000
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129166] 
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129193] 
-CR2: 000000000000000d CR3: 00000000014f1000 CR4: 00000000000026e0
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129223] 
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129252] 
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129282] 
-Process kworker/0:1 (pid: 0, threadinfo ffff88040fd28000, task 
-ffff88040fce6450)
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129327] Stack:
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129347]  
-0000000000000082 00000001008d3b66 00000000000248f6 ffffffff8130e988
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129397]  
-ffff88040fd24000 ffff88040fd24000 ffffffff8152a9a0 ffffffff8105e95f
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129446]  
-ffff8800cfdc3e58 ffff88040fd25020 ffffffff8130e950 ffff88040fd29fd8
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129496] 
-Call Trace:
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129523] <IRQ>
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129551]  
-[<ffffffff8130e988>] ? peer_check_expire+0x38/0x110
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129581]  
-[<ffffffff8105e95f>] ? run_timer_softirq+0x16f/0x350
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129609]  
-[<ffffffff8130e950>] ? peer_check_expire+0x0/0x110
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129638]  
-[<ffffffff81079c6b>] ? ktime_get+0x5b/0xe0
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129666]  
-[<ffffffff8105685a>] ? __do_softirq+0xaa/0x1e0
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129694]  
-[<ffffffff81003ddc>] ? call_softirq+0x1c/0x30
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129722]  
-[<ffffffff81005f75>] ? do_softirq+0x65/0xa0
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129748]  
-[<ffffffff81056745>] ? irq_exit+0x85/0x90
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129776]  
-[<ffffffff8102137a>] ? smp_apic_timer_interrupt+0x6a/0xa0
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129806]  
-[<ffffffff81003893>] ? apic_timer_interrupt+0x13/0x20
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129833] <EOI>
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129857]  
-[<ffffffff8123f5ce>] ? acpi_hw_register_read+0x54/0xe2
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129890]  
-[<ffffffffa01c52b8>] ? acpi_idle_enter_simple+0xf4/0x126 [processor]
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.129936]  
-[<ffffffffa01c52b1>] ? acpi_idle_enter_simple+0xed/0x126 [processor]
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.131555]  
-[<ffffffffa01c5034>] ? acpi_idle_enter_bm+0xeb/0x27b [processor]
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.131591]  
-[<ffffffff812c0deb>] ? cpuidle_idle_call+0x8b/0x140
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.131619]  
-[<ffffffff8100208a>] ? cpu_idle+0x6a/0xf0
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.131645] 
-Code: 00 48 8b 05 c4 c2 21 00 48 3d 60 a9 52 81 74 5c 48 8d 58 e8 48 8b 
-15 11 02 24 00 2b 53 28 48 39 ea 72 49 48 8b 4b 18 48 8b 53 20 <48> 89 
-51 08 48 89 0a 48 89 43 18 48 89 43 20 f0 ff 40 14 48 c7
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.131847] 
-RIP  [<ffffffff8130e6bf>] cleanup_once+0x3f/0xa0
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.131876]  
-RSP <ffff8800cfdc3e20>
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.131898] 
-CR2: 000000000000000d
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.132280] 
----[ end trace a9f45436c3b7c143 ]---
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.132350] 
-Kernel panic - not syncing: Fatal exception in interrupt
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.132422] 
-Pid: 0, comm: kworker/0:1 Tainted: G      D     2.6.37-dsiun-110105 #17
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.132510] 
-Call Trace:
-Feb  2 18:05:33 linkwood.u11.univ-nantes.prive kernel: [37323.132574] 
-<IRQ>  [<ffffffff8137c75e>] ? panic+0x92/0x1a2
-
-and I also have a screenshot with more details. I'll send it in a 
-private message.
-
-
-
-Since 18H30, the server runs with slub_nomerge.
-
+diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
+index 925006d..a0c0196 100644
+--- a/drivers/rtc/interface.c
++++ b/drivers/rtc/interface.c
+@@ -464,6 +464,9 @@ int rtc_irq_set_freq(struct rtc_device *rtc, struct rtc_task *task, int freq)
+ 	int err = 0;
+ 	unsigned long flags;
+ 
++	if (freq <= 0)
++		return -EINVAL;
++
+ 	spin_lock_irqsave(&rtc->irq_task_lock, flags);
+ 	if (rtc->irq_task != NULL && task == NULL)
+ 		err = -EBUSY;
 -- 
-Yann Dupont - Service IRTS, DSI Université de Nantes
-Tel : 02.53.48.49.20 - Mail/Jabber : Yann.Dupont@univ-nantes.fr
+1.7.3.4
 
