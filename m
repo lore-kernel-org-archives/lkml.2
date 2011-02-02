@@ -1,71 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab1BBAnb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 19:43:31 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55346 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752404Ab1BBAn1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:43:27 -0500
-Date: Tue, 1 Feb 2011 16:42:40 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: avi@redhat.com, mtosatti@redhat.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 1/2] Allow GUP to fail instead of waiting on a page.
-Message-Id: <20110201164240.9a5c06e9.akpm@linux-foundation.org>
-In-Reply-To: <1296559307-14637-2-git-send-email-gleb@redhat.com>
-References: <1296559307-14637-1-git-send-email-gleb@redhat.com>
-	<1296559307-14637-2-git-send-email-gleb@redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753019Ab1BBAnu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 19:43:50 -0500
+Received: from mga01.intel.com ([192.55.52.88]:4194 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752982Ab1BBAns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:43:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
+   d="scan'208";a="653504974"
+From: Andi Kleen <andi@firstfloor.org>
+References: <20110201443.618138584@firstfloor.org>
+In-Reply-To: <20110201443.618138584@firstfloor.org>
+To: davem@davemloft.net, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [43/139] sparc: Delete prom_*getchar().
+Message-Id: <20110202004358.C63023E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:43:58 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  1 Feb 2011 13:21:46 +0200
-Gleb Natapov <gleb@redhat.com> wrote:
+2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
-> GUP user may want to try to acquire a reference to a page if it is already
-> in memory, but not if IO, to bring it in, is needed. For example KVM may
-> tell vcpu to schedule another guest process if current one is trying to
-> access swapped out page. Meanwhile, the page will be swapped in and the
-> guest process, that depends on it, will be able to run again.
-> 
-> This patch adds FAULT_FLAG_RETRY_NOWAIT (suggested by Linus) and
-> FOLL_NOWAIT follow_page flags. FAULT_FLAG_RETRY_NOWAIT, when used in
-> conjunction with VM_FAULT_ALLOW_RETRY, indicates to handle_mm_fault that
-> it shouldn't drop mmap_sem and wait on a page, but return VM_FAULT_RETRY
-> instead.
->
-> ...
->
-> +#define FOLL_NOWAIT	0x20	/* return if disk transfer is needed */
+------------------
 
-The comment is a little misleading.  Or incomplete.
+From: David S. Miller <davem@davemloft.net>
 
-For both swap-backed and file-backed pages, the code will initiate the
-disk transfer and will then return without waiting for it to complete. 
-This (important!) information isn't really presented in either the
-changelog or the code itself.
+[ Upstream commit 12c7a35ee6a1c605e740733f2cbd5b5079f09f0f ]
 
-This?
+Completely unused.
 
---- a/include/linux/mm.h~mm-allow-gup-to-fail-instead-of-waiting-on-a-page-fix
-+++ a/include/linux/mm.h
-@@ -1537,7 +1537,8 @@ struct page *follow_page(struct vm_area_
- #define FOLL_GET	0x04	/* do get_page on page */
- #define FOLL_DUMP	0x08	/* give error on hole if it would be zero */
- #define FOLL_FORCE	0x10	/* get_user_pages read/write w/o permission */
--#define FOLL_NOWAIT	0x20	/* return if disk transfer is needed */
-+#define FOLL_NOWAIT	0x20	/* if a disk transfer is needed, start the IO
-+				 * and return without waiting upon it */
- #define FOLL_MLOCK	0x40	/* mark page as mlocked */
- #define FOLL_SPLIT	0x80	/* don't return transhuge pages, split them */
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+
+---
+ arch/sparc/include/asm/oplib_32.h |    5 ----
+ arch/sparc/include/asm/oplib_64.h |    5 ----
+ arch/sparc/prom/console_32.c      |   41 --------------------------------------
+ arch/sparc/prom/console_64.c      |   32 -----------------------------
+ 4 files changed, 83 deletions(-)
+
+Index: linux-2.6.35.y/arch/sparc/include/asm/oplib_32.h
+===================================================================
+--- linux-2.6.35.y.orig/arch/sparc/include/asm/oplib_32.h
++++ linux-2.6.35.y/arch/sparc/include/asm/oplib_32.h
+@@ -102,11 +102,6 @@ extern int prom_getrev(void);
+ /* Get the prom firmware revision. */
+ extern int prom_getprev(void);
  
-_
-
+-/* Character operations to/from the console.... */
+-
+-/* Blocking get character from console. */
+-extern void prom_getchar(char *buf);
+-
+ /* Blocking put character to console. */
+ extern void prom_putchar(const char *buf);
+ 
+Index: linux-2.6.35.y/arch/sparc/include/asm/oplib_64.h
+===================================================================
+--- linux-2.6.35.y.orig/arch/sparc/include/asm/oplib_64.h
++++ linux-2.6.35.y/arch/sparc/include/asm/oplib_64.h
+@@ -94,11 +94,6 @@ extern void prom_halt_power_off(void) __
+  */
+ extern unsigned char prom_get_idprom(char *idp_buffer, int idpbuf_size);
+ 
+-/* Character operations to/from the console.... */
+-
+-/* Blocking get character from console. */
+-extern void prom_getchar(char *buf);
+-
+ /* Blocking put character to console. */
+ extern void prom_putchar(const char *buf);
+ 
+Index: linux-2.6.35.y/arch/sparc/prom/console_32.c
+===================================================================
+--- linux-2.6.35.y.orig/arch/sparc/prom/console_32.c
++++ linux-2.6.35.y/arch/sparc/prom/console_32.c
+@@ -16,37 +16,6 @@
+ 
+ extern void restore_current(void);
+ 
+-/* Non blocking get character from console input device, returns -1
+- * if no input was taken.  This can be used for polling.
+- */
+-static int prom_nbgetchar(char *buf)
+-{
+-	unsigned long flags;
+-	int i = -1;
+-
+-	spin_lock_irqsave(&prom_lock, flags);
+-	switch(prom_vers) {
+-	case PROM_V0:
+-		i = (*(romvec->pv_nbgetchar))();
+-		if (i != -1) {
+-			*buf = i;
+-			i = 0;
+-		}
+-		break;
+-	case PROM_V2:
+-	case PROM_V3:
+-		if ((*(romvec->pv_v2devops).v2_dev_read)(*romvec->pv_v2bootargs.fd_stdin,
+-							 buf, 0x1) == 1)
+-			i = 0;
+-		break;
+-	default:
+-		break;
+-	};
+-	restore_current();
+-	spin_unlock_irqrestore(&prom_lock, flags);
+-	return i; /* Ugh, we could spin forever on unsupported proms ;( */
+-}
+-
+ /* Non blocking put character to console device, returns -1 if
+  * unsuccessful.
+  */
+@@ -74,16 +43,6 @@ static int prom_nbputchar(const char *bu
+ 	return i; /* Ugh, we could spin forever on unsupported proms ;( */
+ }
+ 
+-/* Blocking version of get character routine above. */
+-void prom_getchar(char *buf)
+-{
+-	while (1) {
+-		int err = prom_nbgetchar(buf);
+-		if (!err)
+-			break;
+-	}
+-}
+-
+ /* Blocking version of put character routine above. */
+ void prom_putchar(const char *buf)
+ {
+Index: linux-2.6.35.y/arch/sparc/prom/console_64.c
+===================================================================
+--- linux-2.6.35.y.orig/arch/sparc/prom/console_64.c
++++ linux-2.6.35.y/arch/sparc/prom/console_64.c
+@@ -15,28 +15,6 @@
+ 
+ extern int prom_stdin, prom_stdout;
+ 
+-/* Non blocking get character from console input device, returns -1
+- * if no input was taken.  This can be used for polling.
+- */
+-static int prom_nbgetchar(char *buf)
+-{
+-	unsigned long args[7];
+-
+-	args[0] = (unsigned long) "read";
+-	args[1] = 3;
+-	args[2] = 1;
+-	args[3] = (unsigned int) prom_stdin;
+-	args[4] = (unsigned long) buf;
+-	args[5] = 1;
+-	args[6] = (unsigned long) -1;
+-
+-	p1275_cmd_direct(args);
+-
+-	if (args[6] == 1)
+-		return 0;
+-	return -1;
+-}
+-
+ /* Non blocking put character to console device, returns -1 if
+  * unsuccessful.
+  */
+@@ -60,16 +38,6 @@ static int prom_nbputchar(const char *bu
+ 		return -1;
+ }
+ 
+-/* Blocking version of get character routine above. */
+-void prom_getchar(char *buf)
+-{
+-	while (1) {
+-		int err = prom_nbgetchar(buf);
+-		if (!err)
+-			break;
+-	}
+-}
+-
+ /* Blocking version of put character routine above. */
+ void prom_putchar(const char *buf)
+ {
