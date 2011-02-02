@@ -1,110 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302Ab1BBHNd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 02:13:33 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:57778 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752880Ab1BBHMX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 02:12:23 -0500
-From: "Ian Munsie" <imunsie@au1.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andreas Dilger <adilger@dilger.ca>,
-        Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Jason Baron <jbaron@redhat.com>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Alexander Graf <agraf@suse.de>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Scott Wood <scottwood@freescale.com>, Nathan Lynch <ntl@pobox.com>,
-        Avantika Mathur <mathur@linux.vnet.ibm.com>,
-        David Gibson <dwg@au1.ibm.com>, Andreas Schwab <schwab@linux-m68k.org>,
-        Namhyung Kim <namhyung@gmail.com>, Ian Munsie <imunsie@au1.ibm.com>,
-        linux-doc@vger.kernel.org (open list:DOCUMENTATION)
-Subject: [PATCH 4/6] ftrace syscalls: Allow arch specific syscall symbol matching
-Date: Wed,  2 Feb 2011 18:11:56 +1100
-Message-Id: <1296630718-17537-5-git-send-email-imunsie@au1.ibm.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1296630718-17537-1-git-send-email-imunsie@au1.ibm.com>
-References: <1296630718-17537-1-git-send-email-imunsie@au1.ibm.com>
+	id S1753256Ab1BBHPM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 02:15:12 -0500
+Received: from shutemov.name ([188.40.19.243]:60771 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752841Ab1BBHPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 02:15:11 -0500
+Date: Wed, 2 Feb 2011 09:15:09 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Matt Helsley <matthltc@us.ibm.com>
+Cc: jacob.jun.pan@linux.intel.com, LKML <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizf@cn.fujitsu.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Paul Menage <menage@google.com>,
+        container cgroup <containers@lists.linux-foundation.org>
+Subject: Re: [PATCH] cgroups: respect cgroup timer slack value in prctl
+Message-ID: <20110202071509.GB25262@shutemov.name>
+References: <1296600103-15726-1-git-send-email-jacob.jun.pan@linux.intel.com>
+ <20110202070743.GO16432@count0.beaverton.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110202070743.GO16432@count0.beaverton.ibm.com>
+User-Agent: Mutt/1.5.20 (2010-08-04)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Munsie <imunsie@au1.ibm.com>
+On Tue, Feb 01, 2011 at 11:07:43PM -0800, Matt Helsley wrote:
+> On Tue, Feb 01, 2011 at 02:41:43PM -0800, jacob.jun.pan@linux.intel.com wrote:
+> > From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> > 
+> > Per cgroup timer slack value is used to manage task groups
+> > for more friendly power management behavior. Once a task is
+> > attached to a cgroup, we should not allow user to change
+> > (escape) the per cgroup restriction unless a more relaxed
+> > timer slack value is given by user via prctl.
+> > 
+> > Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> 
+> > ---
+> >  include/linux/cgroup.h      |   13 +++++++++++++
+> 
+> Looks like the original two patches (one or more implementing:
+> 
+> >  kernel/cgroup_timer_slack.c |    4 ----
+> 
+> ) were not sent to containers@lists.linux-foundation.org ?
 
-Some architectures have unusual symbol names and the generic code to
-match the symbol name with the function name for the syscall metadata
-will fail. For example, symbols on PPC64 start with a period and the
-generic code will fail to match them.
+Hm.. 
 
-This patch moves the match logic out into a macro which can be
-overridden by defining arch_syscall_match_sym_name in an archs
-asm/ftrace.h if needed.
+https://lists.linux-foundation.org/pipermail/containers/2011-February/026415.html
 
-Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
----
- Documentation/trace/ftrace-design.txt |    4 ++++
- include/linux/ftrace.h                |    9 +++++++++
- kernel/trace/trace_syscalls.c         |    8 +-------
- 3 files changed, 14 insertions(+), 7 deletions(-)
+> 
+> >  kernel/sys.c                |   21 ++++++++++++++++++++-
+> >  3 files changed, 33 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+> > index ed4ba11..4405666 100644
+> > --- a/include/linux/cgroup.h
+> > +++ b/include/linux/cgroup.h
+> > @@ -627,6 +627,19 @@ bool css_is_ancestor(struct cgroup_subsys_state *cg,
+> >  unsigned short css_id(struct cgroup_subsys_state *css);
+> >  unsigned short css_depth(struct cgroup_subsys_state *css);
+> > 
+> > +#ifdef CONFIG_CGROUP_TIMER_SLACK
+> > +struct timer_slack_cgroup {
+> > +	struct cgroup_subsys_state css;
+> > +	unsigned long timer_slack_ns;
+> > +};
+> > +
+> > +static inline struct timer_slack_cgroup *task_timer_slack(struct task_struct *task)
+> > +{
+> > +	return container_of(task_subsys_state(task, timer_slack_subsys_id),
+> > +			    struct timer_slack_cgroup, css);
+> > +}
+> > +#endif
+> > +
+> >  #else /* !CONFIG_CGROUPS */
+> > 
+> >  static inline int cgroup_init_early(void) { return 0; }
+> > diff --git a/kernel/cgroup_timer_slack.c b/kernel/cgroup_timer_slack.c
+> > index daa452d..1de122a 100644
+> > --- a/kernel/cgroup_timer_slack.c
+> > +++ b/kernel/cgroup_timer_slack.c
+> > @@ -4,10 +4,6 @@
+> >  #include <linux/slab.h>
+> > 
+> >  struct cgroup_subsys timer_slack_subsys;
+> > -struct timer_slack_cgroup {
+> > -	struct cgroup_subsys_state css;
+> > -	unsigned long timer_slack_ns;
+> > -};
+> > 
+> >  static struct timer_slack_cgroup *cgroup_to_tslack_cgroup(struct cgroup *cgroup)
+> >  {
+> > diff --git a/kernel/sys.c b/kernel/sys.c
+> > index 7f5a0cd..433fcdb 100644
+> > --- a/kernel/sys.c
+> > +++ b/kernel/sys.c
+> > @@ -37,6 +37,8 @@
+> >  #include <linux/ptrace.h>
+> >  #include <linux/fs_struct.h>
+> >  #include <linux/gfp.h>
+> > +#include <linux/cgroup.h>
+> > +#include <linux/init_task.h>
+> > 
+> >  #include <linux/compat.h>
+> >  #include <linux/syscalls.h>
+> > @@ -1688,8 +1690,25 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+> >  			if (arg2 <= 0)
+> >  				current->timer_slack_ns =
+> >  					current->default_timer_slack_ns;
+> > -			else
+> > +			else {
+> > +#ifdef CONFIG_CGROUP_TIMER_SLACK
+> > +				/* only allow more relaxed slack value than
+> > +				 * the attached timer slack cgroup allows.
+> > +				 */
+> > +				unsigned long cg_timer_slack;
+> > +
+> > +				rcu_read_lock();
+> > +				cg_timer_slack = task_timer_slack(current)->timer_slack_ns;
+> > +				rcu_read_unlock();
+> > +				if (cg_timer_slack < arg2 || cg_timer_slack
+> > +					== TIMER_SLACK_NS_DEFAULT)
+> > +					current->timer_slack_ns = arg2;
+> > +				else
+> > +					return -EINVAL;
+> > +#else
+> 
+> Looks like this could be an inline function which returns the
+> minimum timer slack allowed for the task. Then the code here would be:
+> 
+> if (arg2 <= 0)
+> 	current->timer_slack_ns = current->default_timer_slack_ns;
+> else {
+> 	if (arg2 < min_timer_slack_ns(tsk))
+> 		return -EINVAL; /* Can't set less than the minimum */
+> 	current->timer_slack_ns = arg2;
+> }
+> 
+> and the #ifdef CONFIG_CGROUP_TIMER_SLACK bits could be in a header as
+> usual.
+> 
+> Incidentally, shouldn't that really be -EPERM since it's not an invalid
+> value -- just one that's not permitted due to restrictions imposed by
+> the cgroup subsystem?
 
-diff --git a/Documentation/trace/ftrace-design.txt b/Documentation/trace/ftrace-design.txt
-index 6fca17b..e1eaeb1 100644
---- a/Documentation/trace/ftrace-design.txt
-+++ b/Documentation/trace/ftrace-design.txt
-@@ -250,6 +250,10 @@ You need very few things to get the syscalls tracing in an arch.
- - If the system call table on this arch is more complicated than a simple array
-   of addresses of the system calls, implement an arch_syscall_addr to return
-   the address of a given system call.
-+- If the symbol names of the system calls do not match the function names on
-+  this arch, define the arch_syscall_match_sym_name macro in asm/ftrace.h with
-+  the appropriate logic to return non zero if the function name corresponds
-+  with the symbol name.
- - Tag this arch as HAVE_SYSCALL_TRACEPOINTS.
- 
- 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index dcd6a7c..0d0e109 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -527,6 +527,15 @@ extern enum ftrace_dump_mode ftrace_dump_on_oops;
- #ifdef CONFIG_FTRACE_SYSCALLS
- 
- unsigned long arch_syscall_addr(int nr);
-+#ifndef arch_syscall_match_sym_name
-+/*
-+ * Only compare after the "sys" prefix. Archs that use
-+ * syscall wrappers may have syscalls symbols aliases prefixed
-+ * with "SyS" instead of "sys", leading to an unwanted
-+ * mismatch.
-+ */
-+#define arch_syscall_match_sym_name(sym, name) !strcmp(sym + 3, name + 3)
-+#endif
- 
- #endif /* CONFIG_FTRACE_SYSCALLS */
- 
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 33360b9..76bffba 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -72,13 +72,7 @@ static struct syscall_metadata *find_syscall_meta(unsigned long syscall)
- 	kallsyms_lookup(syscall, NULL, NULL, NULL, str);
- 
- 	for ( ; start < stop; start++) {
--		/*
--		 * Only compare after the "sys" prefix. Archs that use
--		 * syscall wrappers may have syscalls symbols aliases prefixed
--		 * with "SyS" instead of "sys", leading to an unwanted
--		 * mismatch.
--		 */
--		if (start->name && !strcmp(start->name + 3, str + 3))
-+		if (start->name && arch_syscall_match_sym_name(str, start->name))
- 			return start;
- 	}
- 	return NULL;
+I guess better to add more functionality to the cgroup subsystem.
+I'm going to implement timer_slack.min_slack_ns and timer_slack.max_slack_ns.
+prctl(2) will be modified to check these limits.
+
+
+> >  				current->timer_slack_ns = arg2;
+> > +#endif
+> > +			}
+> >  			error = 0;
+> >  			break;
+> >  		case PR_MCE_KILL:
+> > -- 
+> > 1.7.0.4
+> > 
+> > _______________________________________________
+> > Containers mailing list
+> > Containers@lists.linux-foundation.org
+> > https://lists.linux-foundation.org/mailman/listinfo/containers
+
 -- 
-1.7.2.3
-
+ Kirill A. Shutemov
