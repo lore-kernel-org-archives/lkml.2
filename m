@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617Ab1BBGMK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 01:12:10 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:46219 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752393Ab1BBGMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 01:12:09 -0500
-Date: Wed, 2 Feb 2011 07:11:56 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [GIT PULL 0/2] perf/core improvements and fixes
-Message-ID: <20110202061156.GA11268@elte.hu>
-References: <1296581395-30663-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296581395-30663-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1752631Ab1BBGOr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 01:14:47 -0500
+Received: from mail4.comsite.net ([205.238.176.238]:50948 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752421Ab1BBGOq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 01:14:46 -0500
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
+From: Milton Miller <miltonm@bga.com>
+To: Chuck Lever <chuck.lever@oracle.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] adjust suspicious memset in nfsacl_encode()
+Message-id: <nfsacl-suspicous-memset@mdm.bga.com>
+Date: Wed, 02 Feb 2011 00:14:45 -0600
+X-Originating-IP: 71.22.127.106
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+commit f61f6da0d53842e849bab7f69e1431bd3de1136d "NFS: Prevent memory
+allocation failure in nfsacl_encode()" added a memset whose length was
+the size of the pointer.  Change this to the size of the pointed struct
+that is later passed to posix_acl_init().  The 4 entries that are the
+remainder of the parent struct will be set and therefore should not
+need zeroing.
 
-> Hi Ingo,
-> 
->         Please consider pulling from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Arnaldo Carvalho de Melo (2):
->   perf tools: Remove verbose build messages for the python binding
->   perf tools: Fix up 'make clean' target
-> 
->  tools/perf/Makefile |   16 +++++++++-------
->  1 files changed, 9 insertions(+), 7 deletions(-)
+Alternatively we could remove the memset as posix_acl_init sets all
+fields with storage in struct posix_acl and we won't reference any
+implicit padding.
 
-Pulled (the other commits as well), thanks Arnaldo!
+Signed-off-by: Milton Miller <miltonm@bga.com>
+---
+While I was reviewing changes merged post rc2 I saw this suspicious memset.
 
-	Ingo
+diff --git a/fs/nfs_common/nfsacl.c b/fs/nfs_common/nfsacl.c
+index 84c27d6..bc6d81b 100644
+--- a/fs/nfs_common/nfsacl.c
++++ b/fs/nfs_common/nfsacl.c
+@@ -117,7 +117,7 @@ int nfsacl_encode(struct xdr_buf *buf, unsigned int base, struct inode *inode,
+ 		 * invoked in contexts where a memory allocation failure is
+ 		 * fatal.  Fortunately this fake ACL is small enough to
+ 		 * construct on the stack. */
+-		memset(acl2, 0, sizeof(acl2));
++		memset(acl2, 0, sizeof(*acl2));
+ 		posix_acl_init(acl2, 4);
+ 
+ 		/* Insert entries in canonical order: other orders seem
