@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751613Ab1BBBXl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 20:23:41 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:43603 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751286Ab1BBBXk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 20:23:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=or+ZdnHGiHsvkZo1IQOWNIaaifFa4vs2otSaVHvL0nrMjRqci1WTP73NXN5BExv5W3
-         HlLpCo9eWoxqU7871WqyndmpqMkWq641mdpcdaNaaXQ3qrLbm3Ndtwu3uH9HiSCs05YX
-         EUZdepTgKxiHu6uAJ0I10cluUd6r3gG89qmx0=
-Message-ID: <4D48B24B.8020305@lwfinger.net>
-Date: Tue, 01 Feb 2011 19:24:27 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1751706Ab1BBB1k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 20:27:40 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:48405 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751334Ab1BBB1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 20:27:39 -0500
+Date: Wed, 2 Feb 2011 02:27:33 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Paul Menage <menage@google.com>
+Cc: Jordi Pujol <jordipujolp@gmail.com>, linux-kernel@vger.kernel.org,
+        Mike Galbraith <efault@gmx.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC/RFT PATCH] cgroup: enable write permission for the group of
+ users
+Message-ID: <20110202012733.GA30557@elte.hu>
+References: <201102011002.09819.jordipujolp@gmail.com>
+ <AANLkTineUvbe4w53zVEyfafs_ERt1NPbRo83KeAH89KF@mail.gmail.com>
 MIME-Version: 1.0
-To: Mark Einon <mark.einon@gmail.com>
-CC: greg@kroah.com, florian.c.schilhabel@googlemail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: rtl8712: Switch from large inline firmware file
- to use the firmware interface
-References: <1296607614-5326-1-git-send-email-mark.einon@gmail.com>
-In-Reply-To: <1296607614-5326-1-git-send-email-mark.einon@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTineUvbe4w53zVEyfafs_ERt1NPbRo83KeAH89KF@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2011 06:46 PM, Mark Einon wrote:
-> As per the drivers/staging/rtl8712/TODO file. Relevant firmware
-> already present in linux-firmware package.
+
+* Paul Menage <menage@google.com> wrote:
+
+> On Tue, Feb 1, 2011 at 1:02 AM, Jordi Pujol <jordipujolp@gmail.com> wrote:
+> > Hello,
+> >
+> > Working in a development that uses control groups and libcgroup, I have found
+> > that the files in control groups directories need write permission for the
+> > group of users also.
 > 
-> Signed-off-by: Mark Einon <mark.einon@gmail.com>
-> ---
->  drivers/staging/rtl8712/farray.h   |10197 ------------------------------------
->  drivers/staging/rtl8712/hal_init.c |   36 +-
->  2 files changed, 16 insertions(+), 10217 deletions(-)
->  delete mode 100644 drivers/staging/rtl8712/farray.h
+> This can be configured from userspace - chmod() works just fine on
+> control files in cgroupfs.
 
-The equivalent of this patch was sent to GregKH on January 14,
+Sure, many things can be worked around in user-space, but the question is, does the 
++g make sense as default cgroupfs permissions?
 
-Larry
+Thanks,
+
+	Ingo
