@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab1BBBHu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 20:07:50 -0500
+	id S1753285Ab1BBBID (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 20:08:03 -0500
 Received: from mga09.intel.com ([134.134.136.24]:36336 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752691Ab1BBAnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752677Ab1BBAnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Feb 2011 19:43:35 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="703028321"
+   d="scan'208";a="598622326"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110201443.618138584@firstfloor.org>
 In-Reply-To: <20110201443.618138584@firstfloor.org>
-To: eric.dumazet@gmail.com, ak@linux.intel.com, opurdila@ixiacom.com,
-        davem@davemloft.net, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Subject: [PATCH] [31/139] llc: fix a device refcount imbalance
-Message-Id: <20110202004346.444503E09BD@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:43:46 -0800 (PST)
+To: michael.hernandez@qlogic.com, Madhu.Iyengar@qlogic.com,
+        James.Bottomley@suse.de, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [30/139] qla2xxx: Populate Command Type 6 LUN field properly.
+Message-Id: <20110202004345.39BE63E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:43:45 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,77 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Mike Hernandez <michael.hernandez@qlogic.com>
 
-commit 35d9b0c906ad92d32a0b8db5daa6fabfcc2f068d upstream.
+commit 85727e1f78bd8392a0657ad6a4ff85fef1cc4a6d upstream.
 
-Le dimanche 05 décembre 2010 à 12:23 +0100, Eric Dumazet a écrit :
-> Le dimanche 05 décembre 2010 à 09:19 +0100, Eric Dumazet a écrit :
->
-> > Hmm..
-> >
-> > If somebody can explain why RTNL is held in arp_ioctl() (and therefore
-> > in arp_req_delete()), we might first remove RTNL use in arp_ioctl() so
-> > that your patch can be applied.
-> >
-> > Right now it is not good, because RTNL wont be necessarly held when you
-> > are going to call arp_invalidate() ?
->
-> While doing this analysis, I found a refcount bug in llc, I'll send a
-> patch for net-2.6
+Use the host_to_fcp_swap call to correctly populate the LUN field
+in the Command Type 6 path.  This field is used during LUN reset
+cleanup and must match the field used in the FCP command.
 
-Oh well, of course I must first fix the bug in net-2.6, and wait David
-pull the fix in net-next-2.6 before sending this rcu conversion.
-
-Note: this patch should be sent to stable teams (2.6.34 and up)
-
-[PATCH net-2.6] llc: fix a device refcount imbalance
-
-commit abf9d537fea225 (llc: add support for SO_BINDTODEVICE) added one
-refcount imbalance in llc_ui_bind(), because dev_getbyhwaddr() doesnt
-take a reference on device, while dev_get_by_index() does.
-
-Fix this using RCU locking. And since an RCU conversion will be done for
-2.6.38 for dev_getbyhwaddr(), put the rcu_read_lock/unlock exactly at
-their final place.
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Cc: Octavian Purdila <opurdila@ixiacom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Mike Hernandez <michael.hernandez@qlogic.com>
+Signed-off-by: Madhuranath Iyengar <Madhu.Iyengar@qlogic.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- net/llc/af_llc.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/scsi/qla2xxx/qla_iocb.c |    1 +
+ drivers/scsi/qla2xxx/qla_nx.c   |    1 +
+ 2 files changed, 2 insertions(+)
 
-Index: linux-2.6.35.y/net/llc/af_llc.c
+Index: linux-2.6.35.y/drivers/scsi/qla2xxx/qla_iocb.c
 ===================================================================
---- linux-2.6.35.y.orig/net/llc/af_llc.c
-+++ linux-2.6.35.y/net/llc/af_llc.c
-@@ -317,8 +317,9 @@ static int llc_ui_bind(struct socket *so
- 		goto out;
- 	rc = -ENODEV;
- 	rtnl_lock();
-+	rcu_read_lock();
- 	if (sk->sk_bound_dev_if) {
--		llc->dev = dev_get_by_index(&init_net, sk->sk_bound_dev_if);
-+		llc->dev = dev_get_by_index_rcu(&init_net, sk->sk_bound_dev_if);
- 		if (llc->dev) {
- 			if (!addr->sllc_arphrd)
- 				addr->sllc_arphrd = llc->dev->type;
-@@ -329,13 +330,13 @@ static int llc_ui_bind(struct socket *so
- 			    !llc_mac_match(addr->sllc_mac,
- 					   llc->dev->dev_addr)) {
- 				rc = -EINVAL;
--				dev_put(llc->dev);
- 				llc->dev = NULL;
- 			}
- 		}
- 	} else
- 		llc->dev = dev_getbyhwaddr(&init_net, addr->sllc_arphrd,
- 					   addr->sllc_mac);
-+	rcu_read_unlock();
- 	rtnl_unlock();
- 	if (!llc->dev)
- 		goto out;
+--- linux-2.6.35.y.orig/drivers/scsi/qla2xxx/qla_iocb.c
++++ linux-2.6.35.y/drivers/scsi/qla2xxx/qla_iocb.c
+@@ -1122,6 +1122,7 @@ qla24xx_build_scsi_crc_2_iocbs(srb_t *sp
+ 		fcp_cmnd->additional_cdb_len |= 2;
+ 
+ 	int_to_scsilun(sp->cmd->device->lun, &fcp_cmnd->lun);
++	host_to_fcp_swap((uint8_t *)&fcp_cmnd->lun, sizeof(fcp_cmnd->lun));
+ 	memcpy(fcp_cmnd->cdb, cmd->cmnd, cmd->cmd_len);
+ 	cmd_pkt->fcp_cmnd_dseg_len = cpu_to_le16(fcp_cmnd_len);
+ 	cmd_pkt->fcp_cmnd_dseg_address[0] = cpu_to_le32(
+Index: linux-2.6.35.y/drivers/scsi/qla2xxx/qla_nx.c
+===================================================================
+--- linux-2.6.35.y.orig/drivers/scsi/qla2xxx/qla_nx.c
++++ linux-2.6.35.y/drivers/scsi/qla2xxx/qla_nx.c
+@@ -2798,6 +2798,7 @@ sufficient_dsds:
+ 			goto queuing_error_fcp_cmnd;
+ 
+ 		int_to_scsilun(sp->cmd->device->lun, &cmd_pkt->lun);
++		host_to_fcp_swap((uint8_t *)&cmd_pkt->lun, sizeof(cmd_pkt->lun));
+ 
+ 		/* build FCP_CMND IU */
+ 		memset(ctx->fcp_cmnd, 0, sizeof(struct fcp_cmnd));
