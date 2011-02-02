@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754014Ab1BBAyS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 19:54:18 -0500
-Received: from mga02.intel.com ([134.134.136.20]:42502 "EHLO mga02.intel.com"
+	id S1754085Ab1BBAym (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 19:54:42 -0500
+Received: from mga02.intel.com ([134.134.136.20]:59105 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753678Ab1BBAou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753671Ab1BBAou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Feb 2011 19:44:50 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="703028563"
+   d="scan'208";a="703028556"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110201443.618138584@firstfloor.org>
 In-Reply-To: <20110201443.618138584@firstfloor.org>
-To: vitty@altlinux.ru, stern@rowland.harvard.edu, ak@linux.intel.com,
-        mdharm-usb@one-eyed-alien.net, gregkh@suse.de,
+To: taviso@cmpxchg8b.com, taviso@google.com, kees@ubuntu.com,
+        swiecki@google.com, ak@linux.intel.com, jmorris@namei.org,
+        torvalds@linux-foundation.org, gregkh@suse.de,
         linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [100/139] USB: usb-storage: unusual_devs entry for the Samsung YP-CP3
-Message-Id: <20110202004458.68F603E09BD@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:44:58 -0800 (PST)
+Subject: [PATCH] [97/139] install_special_mapping skips security_file_mmap check.
+Message-Id: <20110202004455.474BD3E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:44:55 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,47 +26,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Vitaly Kuznetsov <vitty@altlinux.ru>
+From: Tavis Ormandy <taviso@cmpxchg8b.com>
 
-commit d73a9b3001f29271c2e9f2a806b05a431c5d9591 upstream.
+commit 462e635e5b73ba9a4c03913b77138cd57ce4b050 upstream.
 
-Add an unusual_devs entry for the Samsung YP-CP3 MP4 player.
+The install_special_mapping routine (used, for example, to setup the
+vdso) skips the security check before insert_vm_struct, allowing a local
+attacker to bypass the mmap_min_addr security restriction by limiting
+the available pages for special mappings.
 
-User was getting the following errors in dmesg:
- usb 2-6: reset high speed USB device using ehci_hcd and address 2
- usb 2-6: reset high speed USB device using ehci_hcd and address 2
- usb 2-6: reset high speed USB device using ehci_hcd and address 2
- usb 2-6: USB disconnect, address 2
- sd 3:0:0:0: [sdb] Assuming drive cache: write through
- sdb:<2>ldm_validate_partition_table(): Disk read failed.
- Dev sdb: unable to read RDB block 0
-  unable to read partition table
+bprm_mm_init() also skips the check, and although I don't think this can
+be used to bypass any restrictions, I don't see any reason not to have
+the security check.
 
-Signed-off-by: Vitaly Kuznetsov <vitty@altlinux.ru>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+  $ uname -m
+  x86_64
+  $ cat /proc/sys/vm/mmap_min_addr
+  65536
+  $ cat install_special_mapping.s
+  section .bss
+      resb BSS_SIZE
+  section .text
+      global _start
+      _start:
+          mov     eax, __NR_pause
+          int     0x80
+  $ nasm -D__NR_pause=29 -DBSS_SIZE=0xfffed000 -f elf -o install_special_mapping.o install_special_mapping.s
+  $ ld -m elf_i386 -Ttext=0x10000 -Tbss=0x11000 -o install_special_mapping install_special_mapping.o
+  $ ./install_special_mapping &
+  [1] 14303
+  $ cat /proc/14303/maps
+  0000f000-00010000 r-xp 00000000 00:00 0                                  [vdso]
+  00010000-00011000 r-xp 00001000 00:19 2453665                            /home/taviso/install_special_mapping
+  00011000-ffffe000 rwxp 00000000 00:00 0                                  [stack]
+
+It's worth noting that Red Hat are shipping with mmap_min_addr set to
+4096.
+
+Signed-off-by: Tavis Ormandy <taviso@google.com>
+Acked-by: Kees Cook <kees@ubuntu.com>
+Acked-by: Robert Swiecki <swiecki@google.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
-CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+[ Changed to not drop the error code - akpm ]
+Reviewed-by: James Morris <jmorris@namei.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/storage/unusual_devs.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ fs/exec.c |    5 +++++
+ mm/mmap.c |   16 ++++++++++++----
+ 2 files changed, 17 insertions(+), 4 deletions(-)
 
-Index: linux-2.6.35.y/drivers/usb/storage/unusual_devs.h
+Index: linux-2.6.35.y/fs/exec.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/usb/storage/unusual_devs.h
-+++ linux-2.6.35.y/drivers/usb/storage/unusual_devs.h
-@@ -481,6 +481,13 @@ UNUSUAL_DEV(  0x04e8, 0x507c, 0x0220, 0x
- 		US_SC_DEVICE, US_PR_DEVICE, NULL,
- 		US_FL_MAX_SECTORS_64),
- 
-+/* Reported by Vitaly Kuznetsov <vitty@altlinux.ru> */
-+UNUSUAL_DEV(  0x04e8, 0x5122, 0x0000, 0x9999,
-+		"Samsung",
-+		"YP-CP3",
-+		US_SC_DEVICE, US_PR_DEVICE, NULL,
-+		US_FL_MAX_SECTORS_64 | US_FL_BULK_IGNORE_TAG),
+--- linux-2.6.35.y.orig/fs/exec.c
++++ linux-2.6.35.y/fs/exec.c
+@@ -265,6 +265,11 @@ static int __bprm_mm_init(struct linux_b
+ 	vma->vm_flags = VM_STACK_FLAGS | VM_STACK_INCOMPLETE_SETUP;
+ 	vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
+ 	INIT_LIST_HEAD(&vma->anon_vma_chain);
 +
- /* Entry and supporting patch by Theodore Kilgore <kilgota@auburn.edu>.
-  * Device uses standards-violating 32-byte Bulk Command Block Wrappers and
-  * reports itself as "Proprietary SCSI Bulk." Cf. device entry 0x084d:0x0011.
++	err = security_file_mmap(NULL, 0, 0, 0, vma->vm_start, 1);
++	if (err)
++		goto err;
++
+ 	err = insert_vm_struct(mm, vma);
+ 	if (err)
+ 		goto err;
+Index: linux-2.6.35.y/mm/mmap.c
+===================================================================
+--- linux-2.6.35.y.orig/mm/mmap.c
++++ linux-2.6.35.y/mm/mmap.c
+@@ -2444,6 +2444,7 @@ int install_special_mapping(struct mm_st
+ 			    unsigned long addr, unsigned long len,
+ 			    unsigned long vm_flags, struct page **pages)
+ {
++	int ret;
+ 	struct vm_area_struct *vma;
+ 
+ 	vma = kmem_cache_zalloc(vm_area_cachep, GFP_KERNEL);
+@@ -2461,16 +2462,23 @@ int install_special_mapping(struct mm_st
+ 	vma->vm_ops = &special_mapping_vmops;
+ 	vma->vm_private_data = pages;
+ 
+-	if (unlikely(insert_vm_struct(mm, vma))) {
+-		kmem_cache_free(vm_area_cachep, vma);
+-		return -ENOMEM;
+-	}
++	ret = security_file_mmap(NULL, 0, 0, 0, vma->vm_start, 1);
++	if (ret)
++		goto out;
++
++	ret = insert_vm_struct(mm, vma);
++	if (ret)
++		goto out;
+ 
+ 	mm->total_vm += len >> PAGE_SHIFT;
+ 
+ 	perf_event_mmap(vma);
+ 
+ 	return 0;
++
++out:
++	kmem_cache_free(vm_area_cachep, vma);
++	return ret;
+ }
+ 
+ static DEFINE_MUTEX(mm_all_locks_mutex);
