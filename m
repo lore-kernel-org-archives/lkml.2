@@ -1,145 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752458Ab1BBCPb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 21:15:31 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:54194 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752070Ab1BBCPa (ORCPT
+	id S1752693Ab1BBCb5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 21:31:57 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:35129 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752393Ab1BBCbz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 21:15:30 -0500
-Subject: [PATCH] [resend] vt: Add virtual console keyboard mode OFF
-From: Arthur Taylor <art@ified.ca>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Pavel Machek <pavel@ucw.cz>
-In-Reply-To: <20110131174622.GA25097@suse.de>
-References: <AANLkTikZe1EuvNQHceNUdKFpmmeAbQG8H+34AG9fw43u@mail.gmail.com>
-	 <20110131174622.GA25097@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Feb 2011 18:07:32 -0800
-Message-ID: <1296612452.28176.52.camel@art-x200>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Feb 2011 21:31:55 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=obW8vUcfrNu8HoSXWiN7AwZJp/dXHIjfk94KzqTFx20IUG96THOnVLtRYvznsjoqhg
+         57UFfT1xWm0dB3CNiQpctUyMAjMzi/OkPen4qwZ/Wlz0tKyI7JQu5zwrS5D0ZE22iJBd
+         qxhpsXJHsHUpd6nBIyrWyoMeRGCU9/0QQDG1o=
+MIME-Version: 1.0
+In-Reply-To: <20110201152820.GQ31216@n2100.arm.linux.org.uk>
+References: <201102011711.31258.jeremy.kerr@canonical.com>
+	<20110201105449.GY1147@pengutronix.de>
+	<AANLkTimayMAfr+zA6uO_yUmZqsOLmJ3fiiS696mL_evn@mail.gmail.com>
+	<20110201140024.GZ1147@pengutronix.de>
+	<20110201151418.GN31216@n2100.arm.linux.org.uk>
+	<20110201152203.GE1147@pengutronix.de>
+	<20110201152820.GQ31216@n2100.arm.linux.org.uk>
+Date: Wed, 2 Feb 2011 11:31:53 +0900
+Message-ID: <AANLkTik_QFqas7yTWDpWhMfxfdOvKNh--DDFxY8x8v51@mail.gmail.com>
+Subject: Re: Locking in the clk API, part 2: clk_prepare/clk_unprepare
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        linux-sh@vger.kernel.org, Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
+        Dima Zavin <dmitriyz@google.com>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-31 at 09:46 -0800, Greg KH wrote:
-> Care to document this somewhere (i.e. Documentation/ABI?)
-Sure. Can it wait for a future patch though as currently all VT IOCTLs
-aren't documented in the source tree. I'm willing to write said
-documentation.
+2011/2/2 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+> On Tue, Feb 01, 2011 at 04:22:03PM +0100, Uwe Kleine-König wrote:
+>> Full ack.  (I wonder if you misunderstood me or wanted to put my
+>> statement into more words.  Jassi didn't like that a clk_enable without
+>> a previous clk_prepare worked on some platforms and on others it
+>> doesn't.  With BUG_ON(clk->ops->prepare && !clk->prepare_count) in
+>> clk_enable we have exactly this situation.)
+>
+> Even with a NULL clk->ops->prepare function, we still want drivers to
+> have called clk_prepare().  So we can do something like:
+>
+>        if (WARN_ON(clk->prepare_count == 0))
+>                return -EINVAL;
+>
+> in clk_enable() should be sufficient and noisy enough not to be missed.
+>
+> I'd avoid BUG_ON() here as that will take the system down, which may
+> increase the chances of getting useful bug reports.
 
-> Your patch is line-wrapped and can not be applied :(
-Fixed in this mail (hopefully).
+Having thought about it, I think it's not necessary to immediately catch
+drivers that work on some platforms and not on others -- a mere comment
+'please add clk_prepare' during code review or a patch adding 'clk_prepare'
+later upon stumbling across a platform on which the driver doesn't work,
+should be OK. Let us not fret about it.
 
-> Are you sure you can change the size of this structure and no one is
-> going to have problems?
->From what I can tell, no. kbd_struct and it's members are defined in the
-non-exported kbd_kern.h, and it is never packed into weird places. Is
-that sufficient? What else should be checked?
+That leaves us with only having to ensure that :-
+a) No two calls to clk_prepare/unprepare _hooks_ are consecutive.
+b) clk_prepare is done on the clock (not necessarily by the driver
+    under consideration) before calls to clk_enable.
 
-> Also, what userspace code is going to use this new feature?  Has it been
-> tested to work properly?
-Xorg is the intended user. In short, reasons for the feature are:
-      * Removes having to flush unnecessary duplicate data.
-      * Fixes an Xorg corner case.
-      * Less code run in both kernel and userspace per key event (I know
-        kinda meh, but hey, it's a plus.)
+I think (a) is already easily managed by having the prepare_count,
+and (b) can be reasonably managed by what Russell suggests above.
 
-Since the switch to evdev and automatic input device detection, Xorg
-sets the console to RAW to disable kernel special key handling and
-flushes the console input buffer per key event.
+So, FWIW, I am for the idea.
 
-If Xorg is configured with static input device definitions, it can't
-flush the input in case the older kbd driver is in use, leading to the
-buffer filling. If the console input buffer fills, bad things happen
-(which I'm currently looking into as well.)
-
-I modified my xserver to use this feature. I tested Xorg with the
-input-evdev and input-kbd drivers for keyboard events. Since input-kbd
-sets the keyboard back to RAW when needed, everything is fine. If
-input-kbd isn't in use, the keyboard stays in OFF and he input buffer is
-always kept empty, things always work. Shift key states are maintained,
-and SysRq's unRaw function is still works as expected.
-
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Pavel Machek <pavel@ucw.cz>
-Signed-off-by: Arthur Taylor <art@ified.ca>
----
- drivers/tty/vt/keyboard.c |    5 +++--
- drivers/tty/vt/vt_ioctl.c |    3 +++
- include/linux/kbd_kern.h  |    3 ++-
- include/linux/kd.h        |    1 +
- 4 files changed, 9 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
-index e95d787..6dd3c68 100644
---- a/drivers/tty/vt/keyboard.c
-+++ b/drivers/tty/vt/keyboard.c
-@@ -654,7 +654,8 @@ static void k_spec(struct vc_data *vc, unsigned char value, char up_flag)
- 	if (value >= ARRAY_SIZE(fn_handler))
- 		return;
- 	if ((kbd->kbdmode == VC_RAW ||
--	     kbd->kbdmode == VC_MEDIUMRAW) &&
-+	     kbd->kbdmode == VC_MEDIUMRAW ||
-+	     kbd->kbdmode == VC_OFF) &&
- 	     value != KVAL(K_SAK))
- 		return;		/* SAK is allowed even in raw mode */
- 	fn_handler[value](vc);
-@@ -1295,7 +1296,7 @@ static void kbd_keycode(unsigned int keycode, int down, int hw_raw)
- 	if (rc == NOTIFY_STOP)
- 		return;
- 
--	if (raw_mode && type != KT_SPEC && type != KT_SHIFT)
-+	if ((raw_mode || kbd->kbdmode == VC_OFF) && type != KT_SPEC && type != KT_SHIFT)
- 		return;
- 
- 	(*k_handler[type])(vc, keysym & 0xff, !down);
-diff --git a/drivers/tty/vt/vt_ioctl.c b/drivers/tty/vt/vt_ioctl.c
-index 1235ebd..6bcf05b 100644
---- a/drivers/tty/vt/vt_ioctl.c
-+++ b/drivers/tty/vt/vt_ioctl.c
-@@ -688,6 +688,9 @@ int vt_ioctl(struct tty_struct *tty, struct file * file,
- 			kbd->kbdmode = VC_UNICODE;
- 			compute_shiftstate();
- 			break;
-+		  case K_OFF:
-+			kbd->kbdmode = VC_OFF;
-+			break;
- 		  default:
- 			ret = -EINVAL;
- 			goto out;
-diff --git a/include/linux/kbd_kern.h b/include/linux/kbd_kern.h
-index 506ad20..4b0761c 100644
---- a/include/linux/kbd_kern.h
-+++ b/include/linux/kbd_kern.h
-@@ -50,11 +50,12 @@ struct kbd_struct {
- #define VC_CAPSLOCK	2	/* capslock mode */
- #define VC_KANALOCK	3	/* kanalock mode */
- 
--	unsigned char kbdmode:2;	/* one 2-bit value */
-+	unsigned char kbdmode:3;	/* one 3-bit value */
- #define VC_XLATE	0	/* translate keycodes using keymap */
- #define VC_MEDIUMRAW	1	/* medium raw (keycode) mode */
- #define VC_RAW		2	/* raw (scancode) mode */
- #define VC_UNICODE	3	/* Unicode mode */
-+#define VC_OFF		4	/* disabled mode */
- 
- 	unsigned char modeflags:5;
- #define VC_APPLIC	0	/* application key mode */
-diff --git a/include/linux/kd.h b/include/linux/kd.h
-index 15f2853..c36d847 100644
---- a/include/linux/kd.h
-+++ b/include/linux/kd.h
-@@ -81,6 +81,7 @@ struct unimapinit {
- #define		K_XLATE		0x01
- #define		K_MEDIUMRAW	0x02
- #define		K_UNICODE	0x03
-+#define		K_OFF		0x04
- #define KDGKBMODE	0x4B44	/* gets current keyboard mode */
- #define KDSKBMODE	0x4B45	/* sets current keyboard mode */
- 
-
+Njoi!
