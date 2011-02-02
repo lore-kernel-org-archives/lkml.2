@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474Ab1BBAnW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 19:43:22 -0500
-Received: from mga09.intel.com ([134.134.136.24]:14330 "EHLO mga09.intel.com"
+	id S1753289Ab1BBBJo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 20:09:44 -0500
+Received: from mga11.intel.com ([192.55.52.93]:1497 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752384Ab1BBAnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:43:18 -0500
+	id S1752476Ab1BBAnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:43:22 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="598622254"
+   d="scan'208";a="653504902"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110201443.618138584@firstfloor.org>
 In-Reply-To: <20110201443.618138584@firstfloor.org>
-To: neilb@suse.de, bfields@redhat.com, gregkh@suse.de, ak@linux.intel.com,
+To: borislav.petkov@amd.com, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [13/139] nfsd: Fix possible BUG_ON firing in set_change_info
-Message-Id: <20110202004327.571743E09BD@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:43:27 -0800 (PST)
+Subject: [PATCH] [18/139] EDAC: Fix workqueue-related crashes
+Message-Id: <20110202004332.A483C3E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:43:32 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,80 +24,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Neil Brown <neilb@suse.de>
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-commit c1ac3ffcd0bc7e9617f62be8c7043d53ab84deac upstream.
+commit bb31b3122c0dd07d2d958da17a50ad771ce79e2b upstream.
 
-If vfs_getattr in fill_post_wcc returns an error, we don't
-set fh_post_change.
-For NFSv4, this can result in set_change_info triggering a BUG_ON.
-i.e. fh_post_saved being zero isn't really a bug.
+00740c58541b6087d78418cebca1fcb86dc6077d changed edac_core to
+un-/register a workqueue item only if a lowlevel driver supplies a
+polling routine. Normally, when we remove a polling low-level driver, we
+go and cancel all the queued work. However, the workqueue unreg happens
+based on the ->op_state setting, and edac_mc_del_mc() sets this to
+OP_OFFLINE _before_ we cancel the work item, leading to NULL ptr oops on
+the workqueue list.
 
-So:
- - instead of BUGging when fh_post_saved is zero, just clear ->atomic.
- - if vfs_getattr fails in fill_post_wcc, take a copy of i_ctime anyway.
-   This will be used i seg_change_info, but not overly trusted.
- - While we are there, remove the pointless 'if' statements in set_change_info.
-   There is no harm setting all the values.
+Fix it by putting the unreg stuff in proper order.
 
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Reported-and-tested-by: Tobias Karnat <tobias.karnat@googlemail.com>
+LKML-Reference: <1291201307.3029.21.camel@Tobias-Karnat>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- fs/nfsd/nfs3xdr.c |    6 ++++--
- fs/nfsd/xdr4.h    |   21 ++++++++++-----------
- 2 files changed, 14 insertions(+), 13 deletions(-)
+ drivers/edac/edac_mc.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-Index: linux-2.6.35.y/fs/nfsd/nfs3xdr.c
+Index: linux-2.6.35.y/drivers/edac/edac_mc.c
 ===================================================================
---- linux-2.6.35.y.orig/fs/nfsd/nfs3xdr.c
-+++ linux-2.6.35.y/fs/nfsd/nfs3xdr.c
-@@ -260,9 +260,11 @@ void fill_post_wcc(struct svc_fh *fhp)
- 	err = vfs_getattr(fhp->fh_export->ex_path.mnt, fhp->fh_dentry,
- 			&fhp->fh_post_attr);
- 	fhp->fh_post_change = fhp->fh_dentry->d_inode->i_version;
--	if (err)
-+	if (err) {
- 		fhp->fh_post_saved = 0;
--	else
-+		/* Grab the ctime anyway - set_change_info might use it */
-+		fhp->fh_post_attr.ctime = fhp->fh_dentry->d_inode->i_ctime;
-+	} else
- 		fhp->fh_post_saved = 1;
- }
+--- linux-2.6.35.y.orig/drivers/edac/edac_mc.c
++++ linux-2.6.35.y/drivers/edac/edac_mc.c
+@@ -575,14 +575,16 @@ struct mem_ctl_info *edac_mc_del_mc(stru
+ 		return NULL;
+ 	}
  
-Index: linux-2.6.35.y/fs/nfsd/xdr4.h
-===================================================================
---- linux-2.6.35.y.orig/fs/nfsd/xdr4.h
-+++ linux-2.6.35.y/fs/nfsd/xdr4.h
-@@ -484,18 +484,17 @@ static inline bool nfsd4_not_cached(stru
- static inline void
- set_change_info(struct nfsd4_change_info *cinfo, struct svc_fh *fhp)
- {
--	BUG_ON(!fhp->fh_pre_saved || !fhp->fh_post_saved);
--	cinfo->atomic = 1;
-+	BUG_ON(!fhp->fh_pre_saved);
-+	cinfo->atomic = fhp->fh_post_saved;
- 	cinfo->change_supported = IS_I_VERSION(fhp->fh_dentry->d_inode);
--	if (cinfo->change_supported) {
--		cinfo->before_change = fhp->fh_pre_change;
--		cinfo->after_change = fhp->fh_post_change;
--	} else {
--		cinfo->before_ctime_sec = fhp->fh_pre_ctime.tv_sec;
--		cinfo->before_ctime_nsec = fhp->fh_pre_ctime.tv_nsec;
--		cinfo->after_ctime_sec = fhp->fh_post_attr.ctime.tv_sec;
--		cinfo->after_ctime_nsec = fhp->fh_post_attr.ctime.tv_nsec;
--	}
-+
-+	cinfo->before_change = fhp->fh_pre_change;
-+	cinfo->after_change = fhp->fh_post_change;
-+	cinfo->before_ctime_sec = fhp->fh_pre_ctime.tv_sec;
-+	cinfo->before_ctime_nsec = fhp->fh_pre_ctime.tv_nsec;
-+	cinfo->after_ctime_sec = fhp->fh_post_attr.ctime.tv_sec;
-+	cinfo->after_ctime_nsec = fhp->fh_post_attr.ctime.tv_nsec;
-+
- }
+-	/* marking MCI offline */
+-	mci->op_state = OP_OFFLINE;
+-
+ 	del_mc_from_global_list(mci);
+ 	mutex_unlock(&mem_ctls_mutex);
  
- int nfs4svc_encode_voidres(struct svc_rqst *, __be32 *, void *);
+-	/* flush workq processes and remove sysfs */
++	/* flush workq processes */
+ 	edac_mc_workq_teardown(mci);
++
++	/* marking MCI offline */
++	mci->op_state = OP_OFFLINE;
++
++	/* remove from sysfs */
+ 	edac_remove_sysfs_mci_device(mci);
+ 
+ 	edac_printk(KERN_INFO, EDAC_MC,
