@@ -1,78 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692Ab1BBQrS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 11:47:18 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:47312 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752959Ab1BBQrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 11:47:15 -0500
-From: Julia Lawall <julia@diku.dk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: kernel-janitors@vger.kernel.org, Torben Hohn <torbenh@gmx.de>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/char/bfin_jtag_comm.c: avoid calling put_tty_driver on NULL
-Date: Wed,  2 Feb 2011 18:07:30 +0100
-Message-Id: <1296666450-15563-1-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.1
+	id S1754626Ab1BBQva (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 11:51:30 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:43596 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754038Ab1BBQv2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 11:51:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=VCKxbvzSlK925LKJHxCJOgnpKsItI04I3ZQJNGkOHCD62aa8je+gOfCy01rvORYqlO
+         GaND6g57giuIt4FK1VbrumkTyMJ1Q+XOhyPcqyMH4jKPPS0kokcRnposlespdh9AZ6vU
+         h2e6HTre8Bu8s1Hct4bYZ13BZAMoK5yfglcDA=
+MIME-Version: 1.0
+In-Reply-To: <201102021700.20683.arnd@arndb.de>
+References: <201102021700.20683.arnd@arndb.de>
+Date: Wed, 2 Feb 2011 17:51:27 +0100
+Message-ID: <AANLkTin6qEeN7XZuwePNWqS8i_aDY586V+sOqgD5pPQA@mail.gmail.com>
+Subject: Re: ARM unaligned MMIO access with attribute((packed))
+From: Richard Guenther <richard.guenther@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        Ulrich Weigand <Ulrich.Weigand@de.ibm.com>,
+        linux-kernel@vger.kernel.org, gcc@gcc.gnu.org,
+        Peter Maydell <peter.maydell@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-put_tty_driver calls tty_driver_kref_put on its argument, and then
-tty_driver_kref_put calls kref_put on the address of a field of this
-argument.  kref_put checks for NULL, but in this case the field is likely
-to have some offset and so the result of taking its address will not be
-NULL.  Labels are added to be able to skip over the call to put_tty_driver
-when the argument will be NULL.
+On Wed, Feb 2, 2011 at 5:00 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> As noticed by Peter Maydell, the EHCI device driver in Linux gets
+> miscompiled by some versions of arm-gcc (still need to find out which)
+> due to a combination of problems:
+>
+> 1. In include/linux/usb/ehci_def.h, struct ehci_caps is defined
+> with __attribute__((packed)), for no good reason. This is clearly
+> a bug and needs to get fixed, but other drivers have the same bug
+> and it used to work. The attribute forces byte access on all members
+> accessed through pointer dereference, which is not allowed on
+> MMIO accesses in general. The specific code triggering the problem
+> in Peter's case is in ehci-omap.c:
+>        omap->ehci->regs = hcd->regs
+>                + HC_LENGTH(readl(&omap->ehci->caps->hc_capbase));
+>
+>
+> 2. The ARM version of the readl() function is implemented as a macro
+> doing a direct pointer dereference with a typecast:
+>
+> #define __raw_readl(a)          (__chk_io_ptr(a), *(volatile unsigned int __force   *)(a))
+> #define readl_relaxed(c) ({ u32 __v = le32_to_cpu((__force __le32) \
+>                                        __raw_readl(__mem_pci(c))); __v; })
+> #define readl(c)                ({ u32 __v = readl_relaxed(c); __iormb(); __v; })
+>
+> On other architectures, readl() is implemented using an inline assembly
+> specifically to prevent gcc from issuing anything but a single 32-bit
+> load instruction. readl() only makes sense on aligned memory, so in case
+> of a misaligned pointer argument, it should cause a trap anyway.
+>
+> 3. gcc does not seem to clearly define what happens during a cast between
+> aligned an packed pointers. In this case, the original pointer is packed
+> (byte aligned), while the access is done through a 32-bit aligned
+> volatile unsigned int pointer. In gcc-4.4, casting from "unsigned int
+> __attribute__((packed))" to "volatile unsigned int" resulted in a 32-bit
+> aligned access, while casting to "unsigned int" (without volatile) resulted
+> in four byte accesses. gcc-4.5 seems to have changed this to always do
+> a byte access in both cases, but still does not document the behavior.
+> (need to confirm this).
+>
+> I would suggest fixing this by:
+>
+> 1. auditing all uses of __attribute__((packed)) in the Linux USB code
+> and other drivers, removing the ones that are potentially harmful.
+>
+> 2. Changing the ARM MMIO functions to use inline assembly instead of
+> direct pointer dereference.
+>
+> 3. Documenting the gcc behavior as undefined.
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+The pointer conversions already invoke undefined behavior as specified by the
+C standard (6.3.2.3/7).
 
-// <smpl>
-@@
-expression *x;
-@@
-
-*if (x == NULL)
-{ ...
-* put_tty_driver(x);
-  ...
-  return ...;
-}
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
- drivers/char/bfin_jtag_comm.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/char/bfin_jtag_comm.c b/drivers/char/bfin_jtag_comm.c
-index 1640244..03c285b 100644
---- a/drivers/char/bfin_jtag_comm.c
-+++ b/drivers/char/bfin_jtag_comm.c
-@@ -251,11 +251,11 @@ static int __init bfin_jc_init(void)
- 	bfin_jc_write_buf.head = bfin_jc_write_buf.tail = 0;
- 	bfin_jc_write_buf.buf = kmalloc(CIRC_SIZE, GFP_KERNEL);
- 	if (!bfin_jc_write_buf.buf)
--		goto err;
-+		goto err_buf;
- 
- 	bfin_jc_driver = alloc_tty_driver(1);
- 	if (!bfin_jc_driver)
--		goto err;
-+		goto err_driver;
- 
- 	bfin_jc_driver->owner        = THIS_MODULE;
- 	bfin_jc_driver->driver_name  = DRV_NAME;
-@@ -275,7 +275,9 @@ static int __init bfin_jc_init(void)
- 
-  err:
- 	put_tty_driver(bfin_jc_driver);
-+ err_driver:
- 	kfree(bfin_jc_write_buf.buf);
-+ err_buf:
- 	kthread_stop(bfin_jc_kthread);
- 	return ret;
- }
-
+Richard.
