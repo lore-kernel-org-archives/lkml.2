@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751863Ab1BBAKZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 19:10:25 -0500
-Received: from sh.osrg.net ([192.16.179.4]:49303 "EHLO sh.osrg.net"
+	id S1751987Ab1BBAY0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 19:24:26 -0500
+Received: from cantor.suse.de ([195.135.220.2]:35939 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751266Ab1BBAKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:10:24 -0500
-Date: Wed, 2 Feb 2011 09:09:22 +0900
-To: fujita.tomonori@lab.ntt.co.jp
-Cc: cebbert@redhat.com, hancockrwd@gmail.com, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, dwmw2@infradead.org
-Subject: Re: b44 driver causes panic when using swiotlb
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20110202090615Q.fujita.tomonori@lab.ntt.co.jp>
-References: <20110201102707C.fujita.tomonori@lab.ntt.co.jp>
-	<20110201161859.467676b0@katamari>
-	<20110202090615Q.fujita.tomonori@lab.ntt.co.jp>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20110202090903P.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 02 Feb 2011 09:09:23 +0900 (JST)
+	id S1751522Ab1BBAYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:24:25 -0500
+Date: Tue, 1 Feb 2011 16:12:17 -0800
+From: Greg KH <gregkh@suse.de>
+To: Kevin Hilman <khilman@ti.com>
+Cc: linux-omap@vger.kernel.org, "Govindraj.R" <govindraj.raja@ti.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        Thomas Weber <weber@corscience.de>
+Subject: Re: [PATCHv4] OMAP: Enable Magic SysRq on serial console ttyOx
+Message-ID: <20110202001217.GA19277@suse.de>
+References: <1296545441-17070-1-git-send-email-weber@corscience.de>
+ <87ei7ryavx.fsf@ti.com>
+ <20110201222342.GA19137@suse.de>
+ <87oc6vnyfj.fsf@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87oc6vnyfj.fsf@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Feb 2011 09:06:34 +0900
-FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
+On Tue, Feb 01, 2011 at 03:10:40PM -0800, Kevin Hilman wrote:
+> Greg KH <gregkh@suse.de> writes:
+> 
+> > On Tue, Feb 01, 2011 at 08:31:30AM -0800, Kevin Hilman wrote:
+> >> Thomas Weber <weber@corscience.de> writes:
+> >> 
+> >> > Magic SysRq key is not working for OMAP on new serial
+> >> > console ttyOx because SUPPORT_SYSRQ is not defined
+> >> > for omap-serial.
+> >> >
+> >> > This patch defines SUPPORT_SYSRQ in omap-serial and
+> >> > enables handling of Magic SysRq character.
+> >> >
+> >> > Further there is an issue of losing first break character.
+> >> > Removing the reset of the lsr_break_flag fixes this issue.
+> >> >
+> >> > Signed-off-by: Thomas Weber <weber@corscience.de>
+> >> > Acked-by: Govindraj.R <govindraj.raja@ti.com>
+> >> > Tested-by: Manjunath G Kondaiah <manjugk@ti.com>
+> >> > Acked-by: Kevin Hilman <khilman@ti.com>
+> >> 
+> >> Greg,
+> >> 
+> >> Will you be taking this?  If you prefer, we can take it via OMAP tree
+> >> with your ack.
+> >
+> > I can take it if it's not a problem for you.  Or if you want to, please
+> > add:
+> > 	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+> > to the patch.
+> >
+> > Let me know which is easier for you.
+> 
+> Since there are no dependencies on arch/arm/*omap*, you can merge it.
 
-> On Tue, 1 Feb 2011 16:18:59 -0500
-> Chuck Ebbert <cebbert@redhat.com> wrote:
-> 
-> > > swiotlb allocates the bounce buffer when a system boots up. We can't
-> > > allocate much in GFP_DMA. swiotlb uses somewhere under 4GB. So it
-> > > can't help devices that have odd dma_mask (that is, except for 4GB).
-> > > 
-> > > Unfortunately, Such device needs to do own custom bouncing or needs
-> > > their subsystem to does that.
-> > 
-> > I think we're chasing the wrong problem here.
-> > 
-> > swiotlb uses alloc_bootmem_low_pages() to try to get buffers as low
-> > in memory as possible. I asked someone who is hitting this bug to
-> > try 2.6.36 and he reports the buffers really are low there:
-> > 
-> > 2.6.36:  5c00000
-> > 2.6.37: db600000
-> > 
-> > So something happened very early in the 2.6.37-rc cycle that changed
-> > this behavior. I tried looking at the bootmem code but could not see
-> > the problem. The only related option I could find in .config was this:
-> > 
-> > # CONFIG_NO_BOOTMEM is not set
-> > 
-> > It was set this way in both .36 and .37.
-> 
-> I don't think this matters because we can't guarantee that swiotlb
-> can't allocate ZONE_DMA.
+Ok, will do.
 
-Oops, I meant that, we can't guarantee that swiotlb allocates
-ZONE_DMA.
+thanks,
 
-> Obviously, the default swiotlb bouncing
-> buffer size, 64MB, is too large for ZONE_DMA.
-> 
-> If you are lucky, you sometimes can allocate lower memory if swiotlb
-> allocates lower memory at the boot time. But you can't assume
-> that. swiotlb isn't designed to handle such.
-> 
-> Can you try the patch that I sent you? As I wrote, b44 has the own
-> bouncing mechanism, so we should be fine if swiotlb returns an
-> appropriate error instead of just panicking.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+greg k-h
