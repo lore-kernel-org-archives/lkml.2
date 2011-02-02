@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754250Ab1BBNch (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 08:32:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26815 "EHLO mx1.redhat.com"
+	id S1754262Ab1BBNjL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 08:39:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51952 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754210Ab1BBNcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 08:32:36 -0500
-Date: Wed, 2 Feb 2011 15:31:57 +0200
+	id S1753473Ab1BBNjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 08:39:09 -0500
+Date: Wed, 2 Feb 2011 15:38:58 +0200
 From: Gleb Natapov <gleb@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: avi@redhat.com, mtosatti@redhat.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 1/2] Allow GUP to fail instead of waiting on a page.
-Message-ID: <20110202133157.GI14984@redhat.com>
-References: <1296559307-14637-1-git-send-email-gleb@redhat.com>
- <1296559307-14637-2-git-send-email-gleb@redhat.com>
- <20110201164240.9a5c06e9.akpm@linux-foundation.org>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org
+Subject: Re: [PATCH] Fix EDD3.0 data verification.
+Message-ID: <20110202133858.GJ14984@redhat.com>
+References: <20110202112139.GD14984@redhat.com>
+ <20110202133035.GF9737@khazad-dum.debian.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110201164240.9a5c06e9.akpm@linux-foundation.org>
+In-Reply-To: <20110202133035.GF9737@khazad-dum.debian.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 01, 2011 at 04:42:40PM -0800, Andrew Morton wrote:
-> On Tue,  1 Feb 2011 13:21:46 +0200
-> Gleb Natapov <gleb@redhat.com> wrote:
+On Wed, Feb 02, 2011 at 11:30:36AM -0200, Henrique de Moraes Holschuh wrote:
+> On Wed, 02 Feb 2011, Gleb Natapov wrote:
+> > Check for nonzero path in edd_has_edd30() has no sense. First, it looks
+> > at the wrong memory. Device path starts at offset 30 of the info->params
+> > structure which is at offset 8 from the beginning of info structure, but
+> > code looks at info + 4 instead. This was correct when code was introduced,
+> > but around v2.6.4 three more fields were added to edd_info structure
+> > (commit 66b61a5c in history.git). Second, even if it will check correct
+> > memory it will always succeed since at offset 30 (params->key) there will
+> > be non-zero values otherwise previous check would fail.
 > 
-> > GUP user may want to try to acquire a reference to a page if it is already
-> > in memory, but not if IO, to bring it in, is needed. For example KVM may
-> > tell vcpu to schedule another guest process if current one is trying to
-> > access swapped out page. Meanwhile, the page will be swapped in and the
-> > guest process, that depends on it, will be able to run again.
-> > 
-> > This patch adds FAULT_FLAG_RETRY_NOWAIT (suggested by Linus) and
-> > FOLL_NOWAIT follow_page flags. FAULT_FLAG_RETRY_NOWAIT, when used in
-> > conjunction with VM_FAULT_ALLOW_RETRY, indicates to handle_mm_fault that
-> > it shouldn't drop mmap_sem and wait on a page, but return VM_FAULT_RETRY
-> > instead.
-> >
-> > ...
-> >
-> > +#define FOLL_NOWAIT	0x20	/* return if disk transfer is needed */
+> Hmm, would that be a reason for boot lockups on some systems ?  I've
+> seen that happen on Intel D875PBZ and Debian stable (2.6.26).  We
+> dropped EDD support then.
 > 
-> The comment is a little misleading.  Or incomplete.
-> 
-> For both swap-backed and file-backed pages, the code will initiate the
-> disk transfer and will then return without waiting for it to complete. 
-> This (important!) information isn't really presented in either the
-> changelog or the code itself.
-> 
-> This?
-> 
-Yes, this is better. Thanks you. I see that the patch below is in your queue
-already. Should I re-spin my patch with improved comment anyway?
-
-> --- a/include/linux/mm.h~mm-allow-gup-to-fail-instead-of-waiting-on-a-page-fix
-> +++ a/include/linux/mm.h
-> @@ -1537,7 +1537,8 @@ struct page *follow_page(struct vm_area_
->  #define FOLL_GET	0x04	/* do get_page on page */
->  #define FOLL_DUMP	0x08	/* give error on hole if it would be zero */
->  #define FOLL_FORCE	0x10	/* get_user_pages read/write w/o permission */
-> -#define FOLL_NOWAIT	0x20	/* return if disk transfer is needed */
-> +#define FOLL_NOWAIT	0x20	/* if a disk transfer is needed, start the IO
-> +				 * and return without waiting upon it */
->  #define FOLL_MLOCK	0x40	/* mark page as mlocked */
->  #define FOLL_SPLIT	0x80	/* don't return transhuge pages, split them */
->  
-> _
+Unlikely. Edd module is not loaded by default and the code that the
+patch changes works on in-memory data that was read from BIOS during
+boot. It is theoretically possible that BIOS, that works according to
+phoenix spec, will do something bad when int13_48 is called with buffer
+bigger then 66 bytes, but my patch does not fix that.
 
 --
 			Gleb.
