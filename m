@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429Ab1BBHnc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 02:43:32 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:17440 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753016Ab1BBHna (ORCPT
+	id S1753442Ab1BBHvK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 02:51:10 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40745 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753016Ab1BBHvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 02:43:30 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6244"; a="72677473"
-Message-ID: <4D490B1B.2060403@codeaurora.org>
-Date: Wed, 02 Feb 2011 13:13:23 +0530
-From: Trilok Soni <tsoni@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Wed, 2 Feb 2011 02:51:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=AA4iAcBXBFRxg3j8quM2SZlVtQh34dmmaHASYYqAcpC+H3OluLJC+ounn2tWPLEasC
+         y+UCwEFEb4ESPM8Etv7pkItxUl2oIc+ebDqo44rcZ3TkYbrhlilZ8azVs4fIjyR/sqQz
+         OqRm/pL7ztwsmi4p1Mp/Hkum69QN+Jto5LLLY=
+Date: Wed, 2 Feb 2011 08:50:59 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: john stultz <johnstul@us.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Richard Cochran <richard.cochran@omicron.at>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch 28/28] posix clocks: Introduce dynamic clocks
+Message-ID: <20110202075058.GA2747@riccoc20.at.omicron.at>
+References: <20110201134320.688829863@linutronix.de>
+ <20110201134420.164172635@linutronix.de>
+ <1296596987.3336.83.camel@work-vm>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Anirudh Ghayal <aghayal@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, rtc-linux@googlegroups.com,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [RFC v2 PATCH 4/7] input: pmic8058_pwrkey: Add support for power
- key
-References: <1296568063-12010-1-git-send-email-aghayal@codeaurora.org> <1296568063-12010-5-git-send-email-aghayal@codeaurora.org> <20110201174911.GA518@core.coreip.homeip.net>
-In-Reply-To: <20110201174911.GA518@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1296596987.3336.83.camel@work-vm>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
-
-On 2/1/2011 11:19 PM, Dmitry Torokhov wrote:
-> On Tue, Feb 01, 2011 at 07:17:40PM +0530, Anirudh Ghayal wrote:
->> From: Trilok Soni <tsoni@codeaurora.org>
->>
->> Add support for PMIC8058 power key driven over dedicated
->> KYPD_PWR_N pin. It allows the user to specify the amount
->> of time by which the power key reporting can be delayed.
->>
->> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
->> Signed-off-by: Trilok Soni <tsoni@codeaurora.org>
->> ---
->> Changes from v1:
->> Addressed review comments from Dmitry.
->> Added KEY_SCREENLOCK instead of KEY_END.
+On Tue, Feb 01, 2011 at 01:49:47PM -0800, john stultz wrote:
+> I sort of worry about the naming collision with the term posix-clock, as
+> this is just one type of posix clock (I suspect most folks think of a
+> posix clock as the clockid passed to the existing posix api).
 > 
-> ...
->> +	input_report_key(pwrkey->pwr, KEY_SCROLLLOCK, 1);
-> ...
->> +	input_report_key(pwrkey->pwr, KEY_SCREENLOCK, 0);
-> ...
->> +	input_set_capability(pwr, EV_KEY, KEY_SCROLLLOCK);
-> 
-> 
-> You are confused about the event you are sending.
+> Could we maybe use posix-dynclock or posix-fdclock or something? I know
+> its already been changed from clkdev, so sorry for being finicky here
+> and not catching this earlier.
 
-My mistake. I will fix this to KEY_SCREENLOCK in v3.
+A rose by any other name...
 
----Trilok Soni
+I agree that naming (even internal APIs) is important and have no
+objection to changing the name. I did spend a bit of time considering
+various alternatives, and now I'm out of ideas.
 
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+So, please do change the name if you have a better one.
+
+Thanks,
+Richard
