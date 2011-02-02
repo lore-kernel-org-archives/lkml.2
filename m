@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753168Ab1BBHMZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 02:12:25 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:46428 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752812Ab1BBHMW (ORCPT
+	id S1753020Ab1BBHMX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 02:12:23 -0500
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:56356 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752660Ab1BBHMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Feb 2011 02:12:22 -0500
 From: "Ian Munsie" <imunsie@au1.ibm.com>
@@ -21,78 +21,54 @@ Cc: Andreas Dilger <adilger@dilger.ca>,
         Scott Wood <scottwood@freescale.com>, Nathan Lynch <ntl@pobox.com>,
         Avantika Mathur <mathur@linux.vnet.ibm.com>,
         David Gibson <dwg@au1.ibm.com>, Andreas Schwab <schwab@linux-m68k.org>,
-        Namhyung Kim <namhyung@gmail.com>, Ian Munsie <imunsie@au1.ibm.com>
-Subject: [PATCH 1/6] ftrace syscalls: don't add events for unmapped syscalls
-Date: Wed,  2 Feb 2011 18:11:53 +1100
-Message-Id: <1296630718-17537-2-git-send-email-imunsie@au1.ibm.com>
+        Namhyung Kim <namhyung@gmail.com>
+Subject: PowerPC, ftrace: Add PPC raw syscall tracepoints & ftrace fixes (mimimal subset only) v3
+Date: Wed,  2 Feb 2011 18:11:52 +1100
+Message-Id: <1296630718-17537-1-git-send-email-imunsie@au1.ibm.com>
 X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1296630718-17537-1-git-send-email-imunsie@au1.ibm.com>
-References: <1296630718-17537-1-git-send-email-imunsie@au1.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Munsie <imunsie@au1.ibm.com>
+git send-email just failed to save or send this message, so retyping...
 
-FTRACE_SYSCALLS would create events for each and every system call, even
-if it had failed to map the system call's name with it's number. This
-resulted in a number of events being created that would not behave as
-expected.
 
-This could happen, for example, on architectures who's symbol names are
-unusual and will not match the system call name. It could also happen
-with system calls which were mapped to sys_ni_syscall.
+Hi All,
 
-This patch changes the default system call number in the metadata to -1.
-If the system call name from the metadata is not successfully mapped to
-a system call number during boot, than the event initialisation routine
-will now return an error, preventing the event from being created.
+This is a partial version of my 'ftrace syscalls, PowerPC: Various fixes,
+Compat Syscall support and PowerPC implementation'.
 
-Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
----
- include/linux/syscalls.h      |    2 ++
- kernel/trace/trace_syscalls.c |    8 ++++++++
- 2 files changed, 10 insertions(+), 0 deletions(-)
+I finally found some time this week to go back and work on this patchset, but
+now I've been hit with another more pressing work item, so this will once again
+have to go on the backburner :-(. Even though I haven't finished fixing up the
+complete 40 patch series I would still like to get this smaller minimal subset
+in. I've had a request for the raw syscall tracepoints on PowerPC that this
+subset implements, and these patches have proven to be pretty stable.
 
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 18cd068..2e5a68d 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -160,6 +160,7 @@ extern struct trace_event_functions exit_syscall_print_funcs;
- 	  __attribute__((section("__syscalls_metadata")))	\
- 	  __syscall_meta_##sname = {				\
- 		.name 		= "sys"#sname,			\
-+		.syscall_nr	= -1,	/* Filled in at boot */	\
- 		.nb_args 	= nb,				\
- 		.types		= types_##sname,		\
- 		.args		= args_##sname,			\
-@@ -176,6 +177,7 @@ extern struct trace_event_functions exit_syscall_print_funcs;
- 	  __attribute__((section("__syscalls_metadata")))	\
- 	  __syscall_meta__##sname = {				\
- 		.name 		= "sys_"#sname,			\
-+		.syscall_nr	= -1,	/* Filled in at boot */	\
- 		.nb_args 	= 0,				\
- 		.enter_event	= &event_enter__##sname,	\
- 		.exit_event	= &event_exit__##sname,		\
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index b706529..a66bc13 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -423,6 +423,14 @@ void unreg_event_syscall_exit(struct ftrace_event_call *call)
- int init_syscall_trace(struct ftrace_event_call *call)
- {
- 	int id;
-+	int num;
-+
-+	num = ((struct syscall_metadata *)call->data)->syscall_nr;
-+	if (num < 0 || num >= NR_syscalls) {
-+		pr_debug("syscall %s metadata not mapped, disabling ftrace event\n",
-+				((struct syscall_metadata *)call->data)->name);
-+		return -ENOSYS;
-+	}
- 
- 	if (set_syscall_print_fmt(call) < 0)
- 		return -ENOMEM;
--- 
-1.7.2.3
+This subset also fixes ftrace syscalls to ensure that events will only be
+created for syscalls that successfully map their metadata to a syscall number,
+so that non-working phantom events are not created. Patches #2 and #6 in this
+series are not strictly necessary for this, they just optimise ftrace syscalls
+a bit.
+
+What's missing from this series that was in the v2 is the conversion of
+all the syscalls implemented under /arch/powerpc, Jason Baron's compat
+syscall support and the conversion of the remaining native and compat
+syscalls to this infrastructure.
+
+
+This is based on tip/master. The PowerPC specific patch will need Ben's ACK
+before it goes in.
+
+Changes from the last subset I posted:
+- Rather than removing the redundant syscall_nr checks completely, I have
+  turned them into WARN_ON_ONCE to catch possible future regressions, from
+  Steven Rostedt's suggestion.
+- From Mike Frysinger's suggestion, arch_syscall_addr is now a macro rather
+  than a weak function to minimise the overhead at boot. Archs with special
+  requirements (such as ppc64) can define their own macro in asm/ftrace.h.
+  Steven Rostedt suggested this be made a static inline function, but I don't
+  see how this would be possible (at least without #defines and #ifndefs) given
+  that it has to be weak to allow archs to override it (Unless I misunderstood
+  something?  Steven?).
 
