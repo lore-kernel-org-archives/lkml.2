@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784Ab1BBJzW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 04:55:22 -0500
-Received: from www.tglx.de ([62.245.132.106]:48123 "EHLO www.tglx.de"
+	id S1752754Ab1BBKJd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 05:09:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42271 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752617Ab1BBJzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 04:55:20 -0500
-Date: Wed, 2 Feb 2011 10:55:06 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Richard Cochran <richardcochran@gmail.com>
-cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
-        Richard Cochran <richard.cochran@omicron.at>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [patch 12/28] posix-timers: Convert clock_gettime() to
- clockid_to_kclock()
-In-Reply-To: <20110202090922.GD2747@riccoc20.at.omicron.at>
-Message-ID: <alpine.LFD.2.00.1102021054190.31804@localhost6.localdomain6>
-References: <20110201134320.688829863@linutronix.de> <20110201134418.611097203@linutronix.de> <20110202090922.GD2747@riccoc20.at.omicron.at>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751677Ab1BBKJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 05:09:28 -0500
+Message-ID: <4D492D49.6010408@redhat.com>
+Date: Wed, 02 Feb 2011 12:09:13 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Glauber Costa <glommer@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
+        Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH v2 2/6] KVM-HV: KVM Steal time implementation
+References: <1296244340-15173-1-git-send-email-glommer@redhat.com>	 <1296244340-15173-3-git-send-email-glommer@redhat.com>	 <4D4563EB.3000203@redhat.com>	 <1296575320.5081.8.camel@mothafucka.localdomain>	 <4D483E43.5060904@redhat.com> <1296590310.5081.136.camel@mothafucka.localdomain>
+In-Reply-To: <1296590310.5081.136.camel@mothafucka.localdomain>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Feb 2011, Richard Cochran wrote:
+On 02/01/2011 09:58 PM, Glauber Costa wrote:
+> >
+> >  Guest reads version (result: 2)
+> >  Guest starts reading data
+> >  Live migration; vcpu->arch.sversion is zeroed
+> >  Steal time update; vcpu->arch.sversion += 2; write to guest
+> >  Guest continues reading data
+> >  Guest reads version (result: 2)
+> >
+> >  So the guest is unaware that an update has occurred while it was reading
+> >  the data.
+> Ok, fair.
+>
+> By the way, kvmclock have the same problem, then
+>
 
-> On Tue, Feb 01, 2011 at 01:51:50PM -0000, Thomas Gleixner wrote:
-> > --- linux-2.6-tip.orig/kernel/posix-timers.c
-> > +++ linux-2.6-tip/kernel/posix-timers.c
-> 
-> > @@ -956,18 +955,21 @@ SYSCALL_DEFINE2(clock_settime, const clo
-> >  SYSCALL_DEFINE2(clock_gettime, const clockid_t, which_clock,
-> >  		struct timespec __user *,tp)
-> >  {
-> > +	struct k_clock *kc = clockid_to_kclock(which_clock);
-> >  	struct timespec kernel_tp;
-> >  	int error;
-> >  
-> > -	if (invalid_clockid(which_clock))
-> > +	if (!kc)
-> >  		return -EINVAL;
-> > -	error = CLOCK_DISPATCH(which_clock, clock_get,
-> > -			       (which_clock, &kernel_tp));
-> > +	if (!kc->clock_get)
-> > +		return -EOPNOTSUPP;
-> 
-> An unreadable clock?
-> 
-> I would think that we can require k_clocks to provide the read
-> function. This could be checked and enforced in register_posix_clock().
+It needs the same fix then.
 
-Fair enough. Though, we should do that in a separate step.
 
-Thanks,
+-- 
+error compiling committee.c: too many arguments to function
 
-	tglx
