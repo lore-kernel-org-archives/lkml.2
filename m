@@ -1,110 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331Ab1BBW4L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 17:56:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32727 "EHLO mx1.redhat.com"
+	id S1755340Ab1BBW6S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 17:58:18 -0500
+Received: from mga09.intel.com ([134.134.136.24]:52813 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755268Ab1BBW4K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 17:56:10 -0500
-Date: Wed, 2 Feb 2011 17:55:49 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>
-Cc: tytso@mit.edu, djwong@us.ibm.com, shli@kernel.org, neilb@suse.de,
-        adilger.kernel@dilger.ca, jack@suse.cz, linux-kernel@vger.kernel.org,
-        kmannth@us.ibm.com, cmm@us.ibm.com, linux-ext4@vger.kernel.org,
-        rwheeler@redhat.com, hch@lst.de, josef@redhat.com, jmoyer@redhat.com,
-        vgoyal@redhat.com
-Subject: [PATCH v3 1/2] block: skip elevator data initialization for flush
- requests
-Message-ID: <20110202225549.GA28109@redhat.com>
-References: <20110201185225.GT14211@htj.dyndns.org>
- <1296600373-6906-1-git-send-email-snitzer@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296600373-6906-1-git-send-email-snitzer@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755268Ab1BBW6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 17:58:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,416,1291622400"; 
+   d="scan'208";a="598935385"
+Date: Wed, 2 Feb 2011 14:56:05 -0800
+From: jacob pan <jacob.jun.pan@linux.intel.com>
+To: "Kirill A. Shutsemov" <kirill@shutemov.name>
+Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>
+Subject: Re: [PATCH, v3 2/2] cgroups: introduce timer slack subsystem
+Message-ID: <20110202145605.6c9006fa@putvin>
+In-Reply-To: <1296679656-31163-3-git-send-email-kirill@shutemov.name>
+References: <1296679656-31163-1-git-send-email-kirill@shutemov.name>
+	<1296679656-31163-3-git-send-email-kirill@shutemov.name>
+Organization: OTC
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set REQ_SORTED, in the @rw_flags passed to the request allocator, for
-any request that may be put on IO scheduler.  Skip elevator data
-initialization during request allocation if REQ_SORTED is not set.
+On Wed,  2 Feb 2011 22:47:36 +0200
+"Kirill A. Shutsemov" <kirill@shutemov.name> wrote:
 
-REQ_SORTED is not set for flush requests because they are never put on
-the IO scheduler.
+> From: Kirill A. Shutemov <kirill@shutemov.name>
+> 
+> Provides a way of tasks grouping by timer slack value. Introduces per
+> cgroup max and min timer slack value. When a task attaches to a
+> cgroup, its timer slack value adjusts (if needed) to fit min-max
+> range.
+> 
+> It also provides a way to set timer slack value for all tasks in the
+> cgroup at once.
+> 
+> This functionality is useful in mobile devices where certain
+> background apps are attached to a cgroup and minimum wakeups are
+> desired.
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+> Idea-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> ---
+>  include/linux/cgroup_subsys.h |    6 +
+>  include/linux/init_task.h     |    4 +-
+>  init/Kconfig                  |   10 ++
+>  kernel/Makefile               |    1 +
+>  kernel/cgroup_timer_slack.c   |  242
+> +++++++++++++++++++++++++++++++++++++++++
 
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
----
- block/blk-core.c |   26 +++++++++++++++++++++-----
- 1 file changed, 21 insertions(+), 5 deletions(-)
+> +
+> +static int cgroup_timer_slack_check(struct task_struct *task,
+> +		unsigned long slack_ns)
+> +{
+> +	struct cgroup_subsys_state *css;
+> +	struct timer_slack_cgroup *tslack_cgroup;
+> +
 
-v3: edits to patch header and __make_request() comment
+use rcu_read_lock()/unlock?
+lockdep complains unprotected rcu dereference check.
 
-Index: linux-2.6/block/blk-core.c
-===================================================================
---- linux-2.6.orig/block/blk-core.c
-+++ linux-2.6/block/blk-core.c
-@@ -764,7 +764,7 @@ static struct request *get_request(struc
- 	struct request_list *rl = &q->rq;
- 	struct io_context *ioc = NULL;
- 	const bool is_sync = rw_is_sync(rw_flags) != 0;
--	int may_queue, priv;
-+	int may_queue, priv = 0;
- 
- 	may_queue = elv_may_queue(q, rw_flags);
- 	if (may_queue == ELV_MQUEUE_NO)
-@@ -808,9 +808,14 @@ static struct request *get_request(struc
- 	rl->count[is_sync]++;
- 	rl->starved[is_sync] = 0;
- 
--	priv = !test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags);
--	if (priv)
--		rl->elvpriv++;
-+	/*
-+	 * Only initialize elevator data if REQ_SORTED is set.
-+	 */
-+	if (rw_flags & REQ_SORTED) {
-+		priv = !test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags);
-+		if (priv)
-+			rl->elvpriv++;
-+	}
- 
- 	if (blk_queue_io_stat(q))
- 		rw_flags |= REQ_IO_STAT;
-@@ -1197,6 +1202,7 @@ static int __make_request(struct request
- 	const unsigned short prio = bio_prio(bio);
- 	const bool sync = !!(bio->bi_rw & REQ_SYNC);
- 	const bool unplug = !!(bio->bi_rw & REQ_UNPLUG);
-+	const bool flush = !!(bio->bi_rw & (REQ_FLUSH | REQ_FUA));
- 	const unsigned long ff = bio->bi_rw & REQ_FAILFAST_MASK;
- 	int where = ELEVATOR_INSERT_SORT;
- 	int rw_flags;
-@@ -1210,7 +1216,7 @@ static int __make_request(struct request
- 
- 	spin_lock_irq(q->queue_lock);
- 
--	if (bio->bi_rw & (REQ_FLUSH | REQ_FUA)) {
-+	if (flush) {
- 		where = ELEVATOR_INSERT_FLUSH;
- 		goto get_rq;
- 	}
-@@ -1293,6 +1299,16 @@ get_rq:
- 		rw_flags |= REQ_SYNC;
- 
- 	/*
-+	 * Set REQ_SORTED for all requests that may be put on IO scheduler.
-+	 * The request allocator's IO scheduler initialization will be skipped
-+	 * if REQ_SORTED is not set -- elv_set_request() is avoided so that
-+	 * that the allocated request's elevator_private pointers are not
-+	 * initialized and that space can be used by flush request data.
-+	 */
-+	if (!flush)
-+		rw_flags |= REQ_SORTED;
-+
-+	/*
- 	 * Grab a free request. This is might sleep but can not fail.
- 	 * Returns with the queue unlocked.
- 	 */
+> +	css = task_subsys_state(task, timer_slack_subsys.subsys_id);
+> +	tslack_cgroup = container_of(css, struct timer_slack_cgroup,
+> css); +
+> +	if (slack_ns < tslack_cgroup->min_slack_ns)
+> +		return -EPERM;
+> +	if (slack_ns > tslack_cgroup->max_slack_ns)
+> +		return -EPERM;
+> +	return 0;
+> +}
+> +
+
+> +
+> +static struct cftype files[] = {
+> +	{
+> +		.name = "set_slack_ns",
+> +		.write_u64 = tslack_write_set_slack_ns,
+> +	},
+should we also allow reading of the current slack_ns?
+
+
+> +	{
+> +		.name = "min_slack_ns",
+> +		.private = TIMER_SLACK_MIN,
+> +		.read_u64 = tslack_read_range,
+> +		.write_u64 = tslack_write_range,
+> +	},
+> +	{
+> +		.name = "max_slack_ns",
+> +		.private = TIMER_SLACK_MAX,
+> +		.read_u64 = tslack_read_range,
+> +		.write_u64 = tslack_write_range,
+> +	},
+> +};
+> +
