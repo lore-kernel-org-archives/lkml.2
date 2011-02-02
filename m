@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724Ab1BBRCT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 12:02:19 -0500
-Received: from casper.infradead.org ([85.118.1.10]:42770 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754612Ab1BBRCS (ORCPT
+	id S1754686Ab1BBRKY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 12:10:24 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58209 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754503Ab1BBRKW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 12:02:18 -0500
-Subject: Re: [PATCH 5/5] perf, x86: Add support for AMD family 15h core
- counters
-From: Peter Zijlstra <peterz@infradead.org>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1296664860-10886-6-git-send-email-robert.richter@amd.com>
-References: <1296664860-10886-1-git-send-email-robert.richter@amd.com>
-	 <1296664860-10886-6-git-send-email-robert.richter@amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 02 Feb 2011 18:03:18 +0100
-Message-ID: <1296666198.26581.343.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Feb 2011 12:10:22 -0500
+Date: Wed, 2 Feb 2011 17:09:59 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Richard Guenther <richard.guenther@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Peter Maydell <peter.maydell@linaro.org>,
+        gcc@gcc.gnu.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Ulrich Weigand <Ulrich.Weigand@de.ibm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: ARM unaligned MMIO access with attribute((packed))
+Message-ID: <20110202170959.GA31043@n2100.arm.linux.org.uk>
+References: <201102021700.20683.arnd@arndb.de> <AANLkTin6qEeN7XZuwePNWqS8i_aDY586V+sOqgD5pPQA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTin6qEeN7XZuwePNWqS8i_aDY586V+sOqgD5pPQA@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-02-02 at 17:41 +0100, Robert Richter wrote:
-> +       unsigned int    eventsel;
-> +       unsigned int    perfctr;
-> +       unsigned int    *eventsel_map;
-> +       unsigned int    *perfctr_map;
->         u64             (*event_map)(int);
->         int             max_events;
->         int             num_counters;
-> @@ -323,11 +325,17 @@ again:
->  
->  static inline unsigned int x86_pmu_config_addr(int index)
->  {
-> +       if (x86_pmu.eventsel_map)
-> +               return x86_pmu.eventsel_map[index];
-> +
->         return x86_pmu.eventsel + index;
->  }
->  
->  static inline unsigned int x86_pmu_event_addr(int index)
->  {
-> +       if (x86_pmu.perfctr_map)
-> +               return x86_pmu.perfctr_map[index];
-> +
->         return x86_pmu.perfctr + index;
->  } 
+On Wed, Feb 02, 2011 at 05:51:27PM +0100, Richard Guenther wrote:
+> > I would suggest fixing this by:
+> >
+> > 1. auditing all uses of __attribute__((packed)) in the Linux USB code
+> > and other drivers, removing the ones that are potentially harmful.
+> >
+> > 2. Changing the ARM MMIO functions to use inline assembly instead of
+> > direct pointer dereference.
+> >
+> > 3. Documenting the gcc behavior as undefined.
+> 
+> The pointer conversions already invoke undefined behavior as specified by the
+> C standard (6.3.2.3/7).
 
-Why this and not something like x86_pmu.perfctr + (index << 1)?
-You could even use alternatives.
+Just to be clear: you are not saying that the ARM implementation is
+undefined.
 
+What you're saying is that converting from a pointer with less strict
+alignment requirements to a pointer with more strict alignment
+requirements is undefined.
 
+IOW:
 
+unsigned long *blah(unsigned char *c)
+{
+	return (unsigned long *)c;
+}
+
+would be undefined, but:
+
+unsigned char *blah(unsigned long *c)
+{
+	return (unsigned char *)c;
+}
+
+would not be.
+
+If you're saying something else, please explain with reference to the
+point in the C standard you quote above.
