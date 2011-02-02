@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180Ab1BBMxJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 07:53:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3327 "EHLO mx1.redhat.com"
+	id S1754190Ab1BBMzc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 07:55:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34079 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752113Ab1BBMxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 07:53:08 -0500
-From: Glauber Costa <glommer@redhat.com>
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>
-Subject: [PATCH] use guest value of version field in kvmclock
-Date: Wed,  2 Feb 2011 07:51:37 -0500
-Message-Id: <1296651097-29288-1-git-send-email-glommer@redhat.com>
+	id S1754023Ab1BBMzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 07:55:31 -0500
+Message-ID: <4D49543F.4070300@redhat.com>
+Date: Wed, 02 Feb 2011 10:55:27 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Patrick Boettcher <pboettcher@kernellabs.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL for 2.6.38-rc2] V4L/DVB patches
+References: <4D386A69.3080000@redhat.com> <4D398755.7040107@redhat.com> <201101312155.59363.pboettcher@kernellabs.com>
+In-Reply-To: <201101312155.59363.pboettcher@kernellabs.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avi noticed that we have to use guest's value for the version field,
-instead of keeping track of it ourselves. If we don't do that,
-the following situation can arise:
+Em 31-01-2011 18:55, Patrick Boettcher escreveu:
+> Hi Mauro,
+> 
+> On Friday 21 January 2011 14:17:09 Mauro Carvalho Chehab wrote:
+>> Linus,
+>>
+>> Em 20-01-2011 15:01, Mauro Carvalho Chehab escreveu:
+>>> Hi Linus,
+>>>
+>>> Those are some changes that I tried to prepare to send you during the
+>>> merge window, but, unfortunately, the new videobuf2 driver took me a
+>>> longer time to review/test than I originally expected.
+>>>
+>>> Please pull from:
+>>>   ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
+>>>   v4l_for_linus
+>>
+>> Please, don't pull yet. There are some changesets that have some
+>> weird stuff, like this:
+>>
+>> diff --git a/drivers/staging/vme/bridges/Module.symvers
+>> b/drivers/staging/vme/bridges/Module.symvers deleted file mode 100644
+>> index e69de29..0000000
+>>
+>> I have no idea why those things appeared, as I never handled any patch
+>> that touched inside drivers/staging/vme. I need to further investigate
+>> the entire patchset and see if other weird stuff happened there.
+>>
+>> I'll send you another pull request after fixing those things.
+> 
+> Do you think those changesets will make it into 2.6.38 at some point? I'm 
+> asking because this is where the technisat-driver is currently residing on his 
+> way into the kernel.  I understand that there is a problem in this branch, but 
+> still I'd like to see the technisat-usb2 being merged.
+> 
+> I'm getting a little bit desperate. :-(
+> 
+> Can I do something to help?
 
- vcpu->arch.hv_clock.version is initialized to zero.
- Guest reads version (result: 2)
- Guest starts reading data
- Live migration; vcpu->arch.hv_clock.version is zeroed
- Steal time update; vcpu->arch.hv_clock.version += 2; write to guest
- Guest continues reading data
- Guest reads version (result: 2)
+Sent a new pull request today. Linus was at LCA last week. So, I opted
+to wait for his return before re-sending this series.
 
-Signed-off-by: Glauber Costa <glommer@redhat.com>
-CC: Avi Kivity <avi@redhat.com>
----
- arch/x86/kvm/x86.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index c39ab4a..7fdc84a 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1151,15 +1151,18 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
- 	vcpu->last_guest_tsc = tsc_timestamp;
- 	vcpu->hv_clock.flags = 0;
- 
-+	shared_kaddr = kmap_atomic(vcpu->time_page, KM_USER0);
-+
- 	/*
- 	 * The interface expects us to write an even number signaling that the
- 	 * update is finished. Since the guest won't see the intermediate
--	 * state, we just increase by 2 at the end.
-+	 * state, we just increase by 2 at the end. We use the guest's value as
-+	 * a basis to make it migration-safe.
- 	 */
-+	memcpy(&vcpu->hv_clock, shared_kaddr + vcpu->time_offset,
-+	       sizeof(vcpu->hv_clock));
- 	vcpu->hv_clock.version += 2;
- 
--	shared_kaddr = kmap_atomic(vcpu->time_page, KM_USER0);
--
- 	memcpy(shared_kaddr + vcpu->time_offset, &vcpu->hv_clock,
- 	       sizeof(vcpu->hv_clock));
- 
--- 
-1.7.2.3
-
+Thanks,
+Mauro
