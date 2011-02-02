@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772Ab1BBRjc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 12:39:32 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:64969 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754491Ab1BBRjb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 12:39:31 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: ARM unaligned MMIO access with attribute((packed))
-Date: Wed, 2 Feb 2011 18:39:17 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc2+; KDE/4.5.1; x86_64; ; )
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Peter Maydell <peter.maydell@linaro.org>, gcc@gcc.gnu.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ulrich Weigand <Ulrich.Weigand@de.ibm.com>
-References: <201102021700.20683.arnd@arndb.de> <20110202163702.GA23240@n2100.arm.linux.org.uk>
-In-Reply-To: <20110202163702.GA23240@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Message-Id: <201102021839.17223.arnd@arndb.de>
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:DRKZruZnChx+zEtE8El6U+OYSdi5F4NoplegRDRGQHp
- m7jtX4TENUsWNWT9vrYAJt9FK+YUTyJW0xYe8P4tNf40KVq5oS
- H0tyfoqyul7dR9GkirOFD0EFsWEnIjYqfndgwYI51FpB5/LXSA
- 6sZekzuPAoFAy6AAYvYJQgaqM1DhUUdAkYWK7QqYeejuxDXIQm
- dLuN2oqCfS1+zU8DVk8kA==
+	id S1754782Ab1BBRkT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 12:40:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44422 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754681Ab1BBRkS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 12:40:18 -0500
+Date: Wed, 2 Feb 2011 18:40:15 +0100
+From: Marcus Meissner <meissner@suse.de>
+To: davem@davemloft.net, eric.dumazet@gmail.com, ebiederm@xmission.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gorcunov@openvz.org
+Subject: af_unix unix_getname: return size for unnamed sockets too small?
+Message-ID: <20110202174015.GB25515@suse.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: SUSE LINUX Products GmbH, GF: Markus Rex, HRB 16746 (AG Nuernberg)
+User-Agent: Mutt/1.5.9i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 02 February 2011 17:37:02 Russell King - ARM Linux wrote:
-> We used to use inline assembly at one point, but that got chucked out.
-> The problem is that using asm() for this causes GCC to generate horrid
-> code.
-> 
-> 1. there's no way to tell GCC that the inline assembly is a load
->    instruction and therefore it needs to schedule the following
->    instructions appropriately.
-> 
-> 2. GCC will needlessly reload pointers from structures and other such
->    behaviour because it can't be told clearly what the inline assembly
->    is doing, so the inline asm needs to have a "memory" clobber.
-> 
-> 3. It seems to misses out using the pre-index addressing, prefering to
->    create add/sub instructions prior to each inline assembly load/store.
-> 
-> 4. There are no (documented) constraints in GCC to allow you to represent
->    the offset format for the half-word instructions.
-> 
-> Overall, it means greater register pressure, more instructions, larger
-> functions, greater instruction cache pressure, etc.
+Hi,
 
-Another solution would be to declare the readl function extern and define
-it out of line, but I assume that this would be at least as bad as an
-inline assembly for all the points you brought up, right?
+In net/unix/af_unix.c::unix_getname() there is a small problem:
 
-Would it be possible to add the proper constraints for defining readl
-in an efficient way to a future version of gcc? That wouldn't help us
-in the near future, but we could at some points use those in a number
-of places.
+        if (!u->addr) {
+                sunaddr->sun_family = AF_UNIX;
+                sunaddr->sun_path[0] = 0;		// not copied out
+                *uaddr_len = sizeof(short);
+        } else {
+                struct unix_address *addr = u->addr;
 
-	Arnd
+                *uaddr_len = addr->len;
+                memcpy(sunaddr, addr->name, *uaddr_len);
+        }
+
+The if (!u->addr) case will not copy out the \0 in the sun_path, as
+uaddr_len is just the size of sun_family.
+
+(Shown by socat crashing after decoding gethostname return and expected
+sun_path to be a valid string (and not seeing the \0)).
+
+Should it perhaps be *uaddr_len = sizeof(short)+sizeof(char)?
+
+Ciao, Marcus
