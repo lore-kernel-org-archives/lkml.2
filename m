@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434Ab1BBFok (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 00:44:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36163 "EHLO mx1.redhat.com"
+	id S1752483Ab1BBFwE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 00:52:04 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:38830 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751399Ab1BBFoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 00:44:39 -0500
+	id S1752141Ab1BBFwB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 00:52:01 -0500
+Date: Wed, 2 Feb 2011 06:51:55 +0100 (CET)
+From: Julia Lawall <julia@diku.dk>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, paul.moore@hp.com,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] include/net/genetlink.h: Allow genlmsg_cancel to accept
+ a NULL argument
+In-Reply-To: <20110201.145410.115936566.davem@davemloft.net>
+Message-ID: <Pine.LNX.4.64.1102020650280.9302@ask.diku.dk>
+References: <Pine.LNX.4.64.1101281642080.8546@pc-004.diku.dk>
+ <20110201.145410.115936566.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-X-Fcc: ~/Mail/linus
-Cc: oleg@redhat.com, jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 06/10] signal: fix premature completion of group stop
- when interfered by ptrace
-In-Reply-To: Tejun Heo's message of  Monday, 31 January 2011 12:00:07 +0100 <20110131110007.GF7459@htj.dyndns.org>
-References: <1296227324-25295-1-git-send-email-tj@kernel.org>
-	<1296227324-25295-7-git-send-email-tj@kernel.org>
-	<20110128212257.9C18B183C1E@magilla.sf.frob.com>
-	<20110131110007.GF7459@htj.dyndns.org>
-X-Windows: the cutting edge of obsolescence.
-Message-Id: <20110202054405.D78AE183D88@magilla.sf.frob.com>
-Date: Tue,  1 Feb 2011 21:44:05 -0800 (PST)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I have plans on separate out ptrace related stuff from task_struct so
-> that they're allocate iff they're used which will save some tens of
-> bytes on the task struct, so there at least is a plan to compensate
-> for the added cruft.
+On Tue, 1 Feb 2011, David Miller wrote:
 
-My, that sounds familiar.  Oleg and I have pursued that before, though
-not in exactly the same context.  It sure gets complicated quickly in
-the corners.  But we would still like to see it get done one way or
-another.
-
-> > But I'm not entirely convinced that we'll really need them when we
-> > conclude on fully cleaning up the whole picture.
+> From: Julia Lawall <julia@diku.dk>
+> Date: Fri, 28 Jan 2011 16:43:40 +0100 (CET)
 > 
-> I really don't know at this point.  I tried to make it share one of
-> the related fields but there needs to be a per-task field which is
-> protected by siglock and there currently isn't any, so...
+> > nlmsg_cancel can accept NULL as its second argument, so for similarity,
+> > this patch extends genlmsg_cancel to be able to accept a NULL second
+> > argument as well.
+> > 
+> > Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> I did a scan of all of the cases where this interface is used, and
+> I cannot find a situation where this capability would even be useful.
+> 
+> The use pattern is always:
+> 
+> 	hdr = genlmsg_put(skb, ...);
+> 	if (!hdr)
+> 		goto out;
+> 
+> 	NLA_PUT_*();
+> 	NLA_PUT_*();
+> 	....
+> 
+> 	return genlmsg_end(skb, hdr);
+> 
+> nla_put_failure:
+> 	genlmsg_cancel(skb, hdr);
+> out:
+> 	return -EWHATEVER;
+> 
+> Always, hdr will be non-NULL.
+> 
+> We have to allocate the header first, then put the netlink
+> attributes.
+> 
+> Looking over users of nlmsg_cancel(), the situation seems to
+> match identically.
+> 
+> Therefore, it seems to me that it makes more sense to remove
+> the NULL check from nlmsg_cancel() than to add the NULL check
+> to genlmsg_cancel().
 
-My point was that I am not yet convinced we'll need any new bookkeeping of
-that sort once we fully work out the group-stop interactions.  We're still
-discussing that in the other threads.  So we'll see where that goes.
+I saw lots of cases that could be done like this, but were not; they had 
+goto nla_put_failure instead.
 
+I will double check.
 
-Thanks,
-Roland
+julia
