@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848Ab1BBSPy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 13:15:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60412 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754417Ab1BBSPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 13:15:53 -0500
-Date: Wed, 2 Feb 2011 19:59:44 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org
-Subject: Re: [PATCH] Fix EDD3.0 data verification.
-Message-ID: <20110202175944.GC24871@redhat.com>
-References: <20110202112139.GD14984@redhat.com>
- <4D4990F8.5020204@zytor.com>
- <20110202172534.GA24871@redhat.com>
- <4D49946D.8010800@zytor.com>
- <20110202173827.GB24871@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110202173827.GB24871@redhat.com>
+	id S1754851Ab1BBSR7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 13:17:59 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:64074 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754637Ab1BBSR6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 13:17:58 -0500
+X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=mwaJKvhHZ3QA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=D19gQVrFAAAA:8 a=V5fybmPF-PxOupvM8XkA:9 a=gpwl8YynUTC4k4i_FOUixmbaIhkA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: Using ftrace/perf as a basis for generic seccomp
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Eric Paris <eparis@redhat.com>, Tom Zanussi <tzanussi@gmail.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Eric Paris <eparis@parisplace.org>, linux-kernel@vger.kernel.org,
+        agl@google.com, Jason Baron <jbaron@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        2nddept-manager@sdl.hitachi.co.jp
+In-Reply-To: <20110202175556.GA13948@elte.hu>
+References: <1294867725.3237.230.camel@localhost.localdomain>
+	 <AANLkTi=tmzKqLL30q9Mq+9u7s-M3sG2-MKz7pUJ1R08Z@mail.gmail.com>
+	 <4D494AB1.1040508@hitachi.com> <20110202122620.GA11427@elte.hu>
+	 <1296665124.3145.17.camel@localhost.localdomain>
+	 <20110202175556.GA13948@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 02 Feb 2011 13:17:55 -0500
+Message-ID: <1296670675.10797.58.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 02, 2011 at 07:38:27PM +0200, Gleb Natapov wrote:
-> On Wed, Feb 02, 2011 at 09:29:17AM -0800, H. Peter Anvin wrote:
-> > On 02/02/2011 09:25 AM, Gleb Natapov wrote:
-> > > According to spec length should be set to 30 on exit.
-> > 
-> > I don't really know how this comment relates to the code, but in the
-> > code I saw a fixed number of bytes being checksummed, which is
-> > definitely wrong.
-> > 
-> What length do you propose to use? If you were referring to
-> params->length then it is incorrect since it will be always 30 on exit
-> and this has nothing to do with size we need to checksum. Spec defines
-> that the sum of bytes 30-73 should be zero. What is definitely wrong
-> about this?
+On Wed, 2011-02-02 at 18:55 +0100, Ingo Molnar wrote:
+
+> The filter expression engine executes in the kernel, when the event happens. The 
+> user-space perf tool parses the --filter parameter and passes it to the kernel as a 
+> string in essence. The kerner parses this into atomic predicaments which are linked 
+> to the event structure. When the event happens the predicaments are executed by the 
+> filter engine.
 > 
+> The expressions are simple, but rather flexible, so you can do 'fd==0||fd==1' and 
+> more complex expressions, etc. The engine could also be extended.
+> 
+> The kernel code is mostly in kernel/trace/trace_events_filter.c.
+> 
+> I've Cc:-ed Tom, Frederic, Steve, Li Zefan and Arnaldo who have worked on the filter 
+> engine, in case something is broken with this functionality or if there are other 
+> questions :)
 
-Ah I see what length you were referring to params->device_path_info_length.
-If we will use that then we will get correct checksum for BIOSes that work
-according to phoenix spec too, but edd_show_interface() and edd_show_host_bus()
-handle only T13 spec so the information they show can be incorrect. I can
-change code to check that params->device_path_info_length == 44 in addition
-to checking csum. What do you think?
+Yep, and I'm currently working on them as well. As they currently have a
+32 pred limit (may seem like a lot, but I actually hit it). And I've
+also added short circuits (0 && .... no need to process more).
 
---
-			Gleb.
+I posted an RFC:
+
+https://lkml.org/lkml/2011/1/27/438
+
+and I'm again working on finishing it. Just a few more things to do. I
+got side tracked because my employer actually asked me to do something
+for them ;)
+
+-- Steve
+
+
