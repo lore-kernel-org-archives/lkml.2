@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab1BBQYG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 11:24:06 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:35918 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754397Ab1BBQYF (ORCPT
+	id S1754558Ab1BBQcR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 11:32:17 -0500
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:38669 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752959Ab1BBQcQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 11:24:05 -0500
-Subject: Re: [PATCH] softirq: Avoid stack switch from ksoftirqd
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        David Miller <davem@davemloft.net>, Paul Mundt <lethal@linux-sh.org>
-In-Reply-To: <alpine.LFD.2.00.1102021704530.31804@localhost6.localdomain6>
-References: <alpine.LFD.2.00.1102021704530.31804@localhost6.localdomain6>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 02 Feb 2011 17:24:56 +0100
-Message-ID: <1296663896.26581.341.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Feb 2011 11:32:16 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 0/2] ARM IRQ Kconfig Changes
+Date: Wed,  2 Feb 2011 18:31:53 +0200
+Message-Id: <1296664315-32108-1-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.7.4.rc2
+Organization: Texas Instruments\n
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-02-02 at 17:10 +0100, Thomas Gleixner wrote:
-> ksoftirqd() calls do_softirq() which switches stacks on several
-> architectures. That makes no sense at all. ksoftirqd's stack is
-> sufficient.
-> 
-> Call __do_softirq() directly.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+The following two patches are simple fixes,
+the first one fixes a mistake on a previous
+commit and the second one lets OMAP use sparse
+IRQ numbering scheme.
 
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Boot tested on pandaboard. Note that this is a
+rebased version of older patchset [1] which was
+resent later [2] but nobody took action on those.
 
-> ---
->  kernel/softirq.c |    5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
-> 
-> Index: linux-2.6-tip/kernel/softirq.c
-> ===================================================================
-> --- linux-2.6-tip.orig/kernel/softirq.c
-> +++ linux-2.6-tip/kernel/softirq.c
-> @@ -738,7 +738,10 @@ static int run_ksoftirqd(void * __bind_c
->  			   don't process */
->  			if (cpu_is_offline((long)__bind_cpu))
->  				goto wait_to_die;
-> -			do_softirq();
-> +			local_irq_disable();
-> +			if (local_softirq_pending())
-> +				__do_softirq();
-> +			local_irq_enable();
->  			preempt_enable_no_resched();
->  			cond_resched();
->  			preempt_disable();
+Andrew, would you take care of these two patches
+for me provided Tony and Russell are ok with them ?
 
+[1] http://marc.info/?l=linux-omap&m=129414258508740&w=2
+[2] http://marc.info/?l=linux-omap&m=129550582206489&w=2
 
+Felipe Balbi (2):
+  arm: Kconfig: select correct HAVE_SPARSE_IRQ symbol
+  arm: Kconfig: allow OMAP to use sparse IRQ numbering
+
+ arch/arm/Kconfig |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+-- 
+1.7.4.rc2
 
