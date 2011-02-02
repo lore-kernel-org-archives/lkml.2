@@ -1,38 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174Ab1BBUlF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 15:41:05 -0500
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:55811 "EHLO sabe.cs.wisc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752793Ab1BBUlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 15:41:04 -0500
-Message-ID: <4D49C172.3040600@cs.wisc.edu>
-Date: Wed, 02 Feb 2011 14:41:22 -0600
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S1753104Ab1BBUp2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 15:45:28 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56618 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752464Ab1BBUp0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 15:45:26 -0500
+Date: Wed, 2 Feb 2011 20:44:54 +0000
+From: Russell King <rmk@arm.linux.org.uk>
+To: Greg KH <greg@kroah.com>, nico@fluxnic.net
+Cc: David Brown <davidb@codeaurora.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Stepan Moskovchenko <stepanm@codeaurora.org>
+Subject: Re: linux-next: manual merge of the msm tree with the arm tree
+Message-ID: <20110202204453.GB26104@flint.arm.linux.org.uk>
+References: <20110131131401.5d6c7646.sfr@canb.auug.org.au> <8ya4o8m70jp.fsf@huya.qualcomm.com> <20110202194359.GC27065@kroah.com> <20110202200030.GA26104@flint.arm.linux.org.uk> <20110202203252.GD28479@kroah.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org,
-        Jayamohan Kallickal <jayamohank@serverengines.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 16/32] scsi/be2iscsi,qla2xxx: convert to alloc_workqueue()
-References: <1294062595-30097-1-git-send-email-tj@kernel.org> <1294062595-30097-17-git-send-email-tj@kernel.org> <4D489B09.9010906@cs.wisc.edu> <20110202102521.GA24115@htj.dyndns.org>
-In-Reply-To: <20110202102521.GA24115@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110202203252.GD28479@kroah.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02/2011 04:25 AM, Tejun Heo wrote:
-> usually necessary.  The queue of pending works tend to be short and
-> consumed pretty fast.
+On Wed, Feb 02, 2011 at 12:32:52PM -0800, Greg KH wrote:
+> On Wed, Feb 02, 2011 at 08:00:31PM +0000, Russell King wrote:
+> > On Wed, Feb 02, 2011 at 11:43:59AM -0800, Greg KH wrote:
+> > > On Wed, Feb 02, 2011 at 10:29:14AM -0800, David Brown wrote:
+> > > > On Sun, Jan 30 2011, Stephen Rothwell wrote:
+> > > > 
+> > > > > Hi David,
+> > > > >
+> > > > > Today's linux-next merge of the msm tree got conflicts in
+> > > > > arch/arm/mach-msm/board-msm7x27.c, arch/arm/mach-msm/board-msm7x30.c,
+> > > > > arch/arm/mach-msm/board-qsd8x50.c and arch/arm/mach-msm/board-sapphire.c
+> > > > > between commit eda53d6d032effb653410b79e1b49e652a881744 ("ARM: P2V: avoid
+> > > > > initializers and assembly using PHYS_OFFSET") from the arm tree and
+> > > > > commit 07a3cc4814f790354d4c7be2c9dc6143a714a07a ("msm: Clean up useless
+> > > > > ifdefs") from the msm tree.
+> > > > >
+> > > > > I fixed it up (see below) and can carry the fix as necessary.
+> > > > 
+> > > > What is the best way to resolve this?  I can't really merge against
+> > > > Russell's tree, since he may need to rebase his tree before the merge
+> > > > window?
+> > > 
+> > > Public trees should never be rebased, so that shouldn't happen.
+> > 
+> > No.  I refuse to operate in a rigid environment.
+> > 
+> > My tree is made available on the basis that the 'devel' branch is
+> > constantly remerged (sometimes many times a day) from the individual
+> > topic branches; 'devel' is a convenient branch for sfr to pull into
+> > linux-next, and for others to see what's in the tree.
+> 
+> merging is fine, right?
+> 
+> Not rebasing, you really don't want to do that.  Linus has been all over
+> that topic in the past, I doubt he wants to bring it up again in detail.
 >
+> > I am not permitted by people in the community to keep my development
+> > work unpublished.
+> > 
+> > All the requirements from various different people are incompatible,
+> > so I've chosen a way which satisfies the majority on the ARM community,
+> > which is the community my tree serves.  It does not serve mainline
+> > community interests.
+> 
+> So the goal of the ARM community isn't for the mainline community?  That
+> sounds like a big problem.
+> 
+> > So I do not operate a "commit the patch and its fixed" policy except
+> > for branches which people need to be fixed; they need to discuss their
+> > requirements with me to achieve that.
+> 
+> I'm not telling you how to run your branches, other than the simple fact
+> of: "if it's public, it shouldn't be rebased".  See Linus's comments for
+> why this is.
 
-What if we want to do something that could take a while, like doing 
-recovery of a device/transport (so you have to send resets and 
-logouts/logins and wait for the results but they could take a while if 
-they timeout), should we be using something other than a workqueue so it 
-does not interfere with other users?
+I'm not going to get involved in an argument over this.  If people
+insist on telling me not to publish then I'll do exactly that - I'll
+make my tree hidden from public view.
+
+My personal preference was not to publish, but my hand was forced.
+
+I've added Nicolas so he can fight for having my tree visible in an
+unstable form.
+
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
