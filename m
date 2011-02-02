@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753101Ab1BBAny (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 19:43:54 -0500
-Received: from mga02.intel.com ([134.134.136.20]:46559 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752987Ab1BBAnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:43:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="703028367"
-From: Andi Kleen <andi@firstfloor.org>
-References: <20110201443.618138584@firstfloor.org>
-In-Reply-To: <20110201443.618138584@firstfloor.org>
-To: davem@davemloft.net, gregkh@suse.de, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [46/139] tcp: Increase TCP_MAXSEG socket option minimum.
-Message-Id: <20110202004401.EE00A3E09BD@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:44:01 -0800 (PST)
+	id S1752664Ab1BBAnb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 19:43:31 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55346 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752404Ab1BBAn1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:43:27 -0500
+Date: Tue, 1 Feb 2011 16:42:40 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: avi@redhat.com, mtosatti@redhat.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 1/2] Allow GUP to fail instead of waiting on a page.
+Message-Id: <20110201164240.9a5c06e9.akpm@linux-foundation.org>
+In-Reply-To: <1296559307-14637-2-git-send-email-gleb@redhat.com>
+References: <1296559307-14637-1-git-send-email-gleb@redhat.com>
+	<1296559307-14637-2-git-send-email-gleb@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+On Tue,  1 Feb 2011 13:21:46 +0200
+Gleb Natapov <gleb@redhat.com> wrote:
 
-------------------
+> GUP user may want to try to acquire a reference to a page if it is already
+> in memory, but not if IO, to bring it in, is needed. For example KVM may
+> tell vcpu to schedule another guest process if current one is trying to
+> access swapped out page. Meanwhile, the page will be swapped in and the
+> guest process, that depends on it, will be able to run again.
+> 
+> This patch adds FAULT_FLAG_RETRY_NOWAIT (suggested by Linus) and
+> FOLL_NOWAIT follow_page flags. FAULT_FLAG_RETRY_NOWAIT, when used in
+> conjunction with VM_FAULT_ALLOW_RETRY, indicates to handle_mm_fault that
+> it shouldn't drop mmap_sem and wait on a page, but return VM_FAULT_RETRY
+> instead.
+>
+> ...
+>
+> +#define FOLL_NOWAIT	0x20	/* return if disk transfer is needed */
 
-From: David S. Miller <davem@davemloft.net>
+The comment is a little misleading.  Or incomplete.
 
-[ Upstream commit 7a1abd08d52fdeddb3e9a5a33f2f15cc6a5674d2 ]
+For both swap-backed and file-backed pages, the code will initiate the
+disk transfer and will then return without waiting for it to complete. 
+This (important!) information isn't really presented in either the
+changelog or the code itself.
 
-As noted by Steve Chen, since commit
-f5fff5dc8a7a3f395b0525c02ba92c95d42b7390 ("tcp: advertise MSS
-requested by user") we can end up with a situation where
-tcp_select_initial_window() does a divide by a zero (or
-even negative) mss value.
+This?
 
-The problem is that sometimes we effectively subtract
-TCPOLEN_TSTAMP_ALIGNED and/or TCPOLEN_MD5SIG_ALIGNED from the mss.
+--- a/include/linux/mm.h~mm-allow-gup-to-fail-instead-of-waiting-on-a-page-fix
++++ a/include/linux/mm.h
+@@ -1537,7 +1537,8 @@ struct page *follow_page(struct vm_area_
+ #define FOLL_GET	0x04	/* do get_page on page */
+ #define FOLL_DUMP	0x08	/* give error on hole if it would be zero */
+ #define FOLL_FORCE	0x10	/* get_user_pages read/write w/o permission */
+-#define FOLL_NOWAIT	0x20	/* return if disk transfer is needed */
++#define FOLL_NOWAIT	0x20	/* if a disk transfer is needed, start the IO
++				 * and return without waiting upon it */
+ #define FOLL_MLOCK	0x40	/* mark page as mlocked */
+ #define FOLL_SPLIT	0x80	/* don't return transhuge pages, split them */
+ 
+_
 
-Fix this by increasing the minimum from 8 to 64.
-
-Reported-by: Steve Chen <schen@mvista.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-
----
- net/ipv4/tcp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux-2.6.35.y/net/ipv4/tcp.c
-===================================================================
---- linux-2.6.35.y.orig/net/ipv4/tcp.c
-+++ linux-2.6.35.y/net/ipv4/tcp.c
-@@ -2235,7 +2235,7 @@ static int do_tcp_setsockopt(struct sock
- 		/* Values greater than interface MTU won't take effect. However
- 		 * at the point when this call is done we typically don't yet
- 		 * know which interface is going to be used */
--		if (val < 8 || val > MAX_TCP_WINDOW) {
-+		if (val < 64 || val > MAX_TCP_WINDOW) {
- 			err = -EINVAL;
- 			break;
- 		}
