@@ -1,276 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162Ab1BBJSm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 04:18:42 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:48768 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750904Ab1BBJSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 04:18:39 -0500
-Date: Wed, 2 Feb 2011 01:18:29 -0800
-From: Matt Helsley <matthltc@us.ibm.com>
-To: "Kirill A. Shutsemov" <kirill@shutemov.name>
-Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH, v2 2/2] cgroups: introduce timer slack subsystem
-Message-ID: <20110202091829.GQ16432@count0.beaverton.ibm.com>
-References: <1296555196-23088-1-git-send-email-kirill@shutemov.name>
- <1296555196-23088-2-git-send-email-kirill@shutemov.name>
+	id S1752480Ab1BBJTK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 04:19:10 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33404 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751928Ab1BBJTI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 04:19:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=GYGax3nuM1CR5QgQpGS32wuzn5Ak5jl6DTTfAFMAV/hrOrg0jHDv/bmsIpRHHtZXNc
+         iNnBz9c52CxXR/EFnyQ5u49wvchGWCtneHqJp/kSnIVUd4zuuifJTZsMq/37u1sbywlw
+         +XYibSZl2EHc8daK5YmitnrSLfX4ZRavasgXw=
+Date: Wed, 2 Feb 2011 10:19:00 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Richard Cochran <richard.cochran@omicron.at>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch 27/28] posix-timers: Add support for fd based clocks
+Message-ID: <20110202091900.GE2747@riccoc20.at.omicron.at>
+References: <20110201134320.688829863@linutronix.de>
+ <20110201134420.062860200@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1296555196-23088-2-git-send-email-kirill@shutemov.name>
+In-Reply-To: <20110201134420.062860200@linutronix.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 01, 2011 at 12:13:16PM +0200, Kirill A. Shutsemov wrote:
-> From: Kirill A. Shutemov <kirill@shutemov.name>
-> 
-> Provides a way of tasks grouping by timer slack value. Introduces per
-> cgroup timer slack value which will override the default timer slack
-> value once a task is attached to a cgroup.
-> 
-> It's useful in mobile devices where certain background apps are
-> attached to a cgroup and minimum wakeups are desired.
-> 
-> Based on patch by Jacob Pan.
-> 
-> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
-> ---
-> 
-> Changelog:
-> v2:
->  - fixed with CONFIG_CGROUP_TIMER_SLACK=y
-> 
-> ---
->  include/linux/cgroup_subsys.h |    6 ++
->  include/linux/init_task.h     |    4 +-
->  init/Kconfig                  |   10 ++++
->  kernel/Makefile               |    1 +
->  kernel/cgroup_timer_slack.c   |  116 +++++++++++++++++++++++++++++++++++++++++
->  5 files changed, 136 insertions(+), 1 deletions(-)
->  create mode 100644 kernel/cgroup_timer_slack.c
-> 
-> diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
-> index ccefff0..e399228 100644
-> --- a/include/linux/cgroup_subsys.h
-> +++ b/include/linux/cgroup_subsys.h
-> @@ -66,3 +66,9 @@ SUBSYS(blkio)
->  #endif
-> 
->  /* */
-> +
-> +#ifdef CONFIG_CGROUP_TIMER_SLACK
-> +SUBSYS(timer_slack)
-> +#endif
-> +
-> +/* */
-> diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-> index caa151f..48eca8f 100644
-> --- a/include/linux/init_task.h
-> +++ b/include/linux/init_task.h
-> @@ -124,6 +124,8 @@ extern struct cred init_cred;
->  # define INIT_PERF_EVENTS(tsk)
->  #endif
-> 
-> +#define TIMER_SLACK_NS_DEFAULT 50000
-> +
->  /*
->   *  INIT_TASK is used to set up the first task table, touch at
->   * your own risk!. Base=0, limit=0x1fffff (=2MB)
-> @@ -177,7 +179,7 @@ extern struct cred init_cred;
->  	.cpu_timers	= INIT_CPU_TIMERS(tsk.cpu_timers),		\
->  	.fs_excl	= ATOMIC_INIT(0),				\
->  	.pi_lock	= __RAW_SPIN_LOCK_UNLOCKED(tsk.pi_lock),	\
-> -	.timer_slack_ns = 50000, /* 50 usec default slack */		\
-> +	.timer_slack_ns = TIMER_SLACK_NS_DEFAULT,			\
->  	.pids = {							\
->  		[PIDTYPE_PID]  = INIT_PID_LINK(PIDTYPE_PID),		\
->  		[PIDTYPE_PGID] = INIT_PID_LINK(PIDTYPE_PGID),		\
-> diff --git a/init/Kconfig b/init/Kconfig
-> index be788c0..f21b4ce 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -596,6 +596,16 @@ config CGROUP_FREEZER
->  	  Provides a way to freeze and unfreeze all tasks in a
->  	  cgroup.
-> 
-> +config CGROUP_TIMER_SLACK
-> +	tristate "Timer slack cgroup subsystem"
-> +	help
-> +	  Provides a way of tasks grouping by timer slack value.
-> +	  Introduces per cgroup timer slack value which will override
-> +	  the default timer slack value once a task is attached to a
-> +	  cgroup.
-> +	  It's useful in mobile devices where certain background apps
-> +	  are attached to a cgroup and minimum wakeups are desired.
+On Tue, Feb 01, 2011 at 01:52:32PM -0000, Thomas Gleixner wrote:
+> --- linux-2.6-tip.orig/include/linux/posix-timers.h
+> +++ linux-2.6-tip/include/linux/posix-timers.h
 
-nit: perhaps s/minimum/combined/ ?
+> +/*
+> + * Bit fields within a clockid:
+> + *
+> + * The most significant 29 bits hold either a pid or a file descriptor.
+> + *
+> + * Bit 2 indicates whether a cpu clock refers to a thread or a process.
+> + *
+> + * Bits 1 and 0 give the type: PROF=0, VIRT=1, SCHED=2, or FD=3.
+> + *
+> + * A clockid is invalid if bits 2, 1, and 0 all set.
 
-> +
->  config CGROUP_DEVICE
->  	bool "Device controller for cgroups"
->  	help
-> diff --git a/kernel/Makefile b/kernel/Makefile
-> index 353d3fe..0b60239 100644
-> --- a/kernel/Makefile
-> +++ b/kernel/Makefile
-> @@ -61,6 +61,7 @@ obj-$(CONFIG_BACKTRACE_SELF_TEST) += backtracetest.o
->  obj-$(CONFIG_COMPAT) += compat.o
->  obj-$(CONFIG_CGROUPS) += cgroup.o
->  obj-$(CONFIG_CGROUP_FREEZER) += cgroup_freezer.o
-> +obj-$(CONFIG_CGROUP_TIMER_SLACK) += cgroup_timer_slack.o
->  obj-$(CONFIG_CPUSETS) += cpuset.o
->  obj-$(CONFIG_CGROUP_NS) += ns_cgroup.o
->  obj-$(CONFIG_UTS_NS) += utsname.o
-> diff --git a/kernel/cgroup_timer_slack.c b/kernel/cgroup_timer_slack.c
-> new file mode 100644
-> index 0000000..daa452d
-> --- /dev/null
-> +++ b/kernel/cgroup_timer_slack.c
-> @@ -0,0 +1,116 @@
-> +#include <linux/cgroup.h>
-> +#include <linux/init_task.h>
-> +#include <linux/module.h>
-> +#include <linux/slab.h>
-> +
-> +struct cgroup_subsys timer_slack_subsys;
-> +struct timer_slack_cgroup {
-> +	struct cgroup_subsys_state css;
-> +	unsigned long timer_slack_ns;
+I should have said, "if bits 2, 1, and 0 *are* all set."
 
-rename to min_timer_slack_ns ?
-
-> +};
-> +
-> +static struct timer_slack_cgroup *cgroup_to_tslack_cgroup(struct cgroup *cgroup)
-> +{
-> +	struct cgroup_subsys_state *css;
-> +
-> +	css = cgroup_subsys_state(cgroup, timer_slack_subsys.subsys_id);
-> +	return container_of(css, struct timer_slack_cgroup, css);
-> +}
-> +
-> +static struct cgroup_subsys_state *
-> +tslack_cgroup_create(struct cgroup_subsys *subsys, struct cgroup *cgroup)
-> +{
-> +	struct timer_slack_cgroup *tslack_cgroup;
-> +	struct cgroup *parent = cgroup->parent;
-> +
-> +	tslack_cgroup = kmalloc(sizeof(*tslack_cgroup), GFP_KERNEL);
-> +	if (!tslack_cgroup)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	if (parent)
-> +		tslack_cgroup->timer_slack_ns =
-> +			cgroup_to_tslack_cgroup(parent)->timer_slack_ns;
-> +	else
-> +		tslack_cgroup->timer_slack_ns = TIMER_SLACK_NS_DEFAULT;
-> +
-> +	return &tslack_cgroup->css;
-> +}
-> +
-> +static void tslack_cgroup_destroy(struct cgroup_subsys *subsys,
-> +		struct cgroup *cgroup)
-> +{
-> +	kfree(cgroup_to_tslack_cgroup(cgroup));
-> +}
-> +
-> +static void tslack_cgroup_attach(struct cgroup_subsys *subsys,
-> +		struct cgroup *cgroup, struct cgroup *prev,
-> +		struct task_struct *tsk, bool threadgroup)
-> +{
-> +	struct timer_slack_cgroup *tslack_cgroup;
-> +
-> +	tslack_cgroup = cgroup_to_tslack_cgroup(cgroup);
-> +	task_lock(tsk);
-> +	tsk->timer_slack_ns = tslack_cgroup->timer_slack_ns;
-> +	task_unlock(tsk);
-> +}
-> +
-> +static u64 tslack_read_slack_ns(struct cgroup *cgroup, struct cftype *cft)
-> +{
-> +       return cgroup_to_tslack_cgroup(cgroup)->timer_slack_ns;
-> +}
-> +
-> +static int tslack_write_slack_ns(struct cgroup *cgroup, struct cftype *cft,
-> +		u64 val)
-> +{
-> +	struct cgroup_iter it;
-> +	struct task_struct *task;
-> +
-> +	if (!val)
-> +		return -EINVAL;
-> +
-> +	cgroup_to_tslack_cgroup(cgroup)->timer_slack_ns = val;
-> +
-> +	/* change timer slack value for all tasks in the cgroup */
-> +	cgroup_iter_start(cgroup, &it);
-> +	while ((task = cgroup_iter_next(cgroup, &it)))
-> +		task->timer_slack_ns = val;
-
-If a task in the cgroup has a larger timer slack than timer_slack_ns
-is it really necessary to change it? If not, you could do:
-
-		task->timer_slack_ns = max(task->timer_slack_ns, val);
-
-and likely get fewer wakeups than otherwise.
-
-> +	cgroup_iter_end(cgroup, &it);
-
-So this is largely just an interface to write timer slack from outside
-a task, "in bulk", and only restrict what can be done via the prctl syscall.
-It does not enforce restrictions on timer slack set via the cgroups
-interface. If I have:
-
-	root@host:/# mount -t cgroup -o slack_ns none /parent
-	root@host:/# echo 100000 > /parent/timer_slack
-	root@host:/# mkdir /parent/child
-	root@host:/# chown me.me -R /parent/child
-
-Then user "me" can set any timer slack desired rather than only timer
-slack >= 100000ns:
-
-	me@host:~$ echo $$ > /parent/child/tasks
-	me@host:~$ echo 42 > /parent/child/timer_slack
-
-Thus the only tasks in this cgroup with restricted timer slack are the
-ones unaware of the "modern" interface.
-
-Would it be more useful (though way more complex cgroup code I suppose) to
-disallow child cgroups from using less timer slack than their parents?
-
-> +
-> +	return 0;
-> +}
-> +
-> +static struct cftype cft_timer_slack = {
-> +	.name = "slack_ns",
-
-A minor nit:
-
-Interesting that you appended _ns to the subsystem name rather than...
-
-> +	.read_u64 = tslack_read_slack_ns,
-> +	.write_u64 = tslack_write_slack_ns,
-> +};
-> +
-> +static int tslack_cgroup_populate(struct cgroup_subsys *subsys,
-> +		struct cgroup *cgroup)
-> +{
-> +	return cgroup_add_file(cgroup, subsys, &cft_timer_slack);
-> +}
-> +
-> +struct cgroup_subsys timer_slack_subsys = {
-> +	.name = "timer_slack",
-
-...to the file name. That's clever -- I almost didn't notice :). Yet I
-can't help but think that appending "_ns" to the timer_slack file
-itself would make proper use of the interface more obvious and
-thus improper use less likely.
-
-Cheers,
-	-Matt Helsley
+Thanks,
+Richard
