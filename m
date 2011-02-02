@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490Ab1BBBBO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 20:01:14 -0500
+	id S1753293Ab1BBAoI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 19:44:08 -0500
 Received: from mga09.intel.com ([134.134.136.24]:58186 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753175Ab1BBAoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:44:09 -0500
+	id S1753175Ab1BBAoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:44:02 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="703028433"
+   d="scan'208";a="703028401"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110201443.618138584@firstfloor.org>
 In-Reply-To: <20110201443.618138584@firstfloor.org>
-To: dlstevens@us.ibm.com, herbert@gondor.hengli.com.au, davem@davemloft.net,
-        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Subject: [PATCH] [63/139] bridge: fix IPv6 queries for bridge multicast snooping
-Message-Id: <20110202004419.BCB813E09BD@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:44:19 -0800 (PST)
+To: ebiederm@xmission.com, xemul@openvz.org, davem@davemloft.net,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [57/139] sock: Introduce cred_to_ucred
+Message-Id: <20110202004413.7904F3E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:44:13 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,33 +24,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
+Upstream commit 3f551f9436c05a3b5eccdd6e94733df5bb98d2a5
 
-From: David Stevens <dlstevens@us.ibm.com>
+To keep the coming code clear and to allow both the sock
+code and the scm code to share the logic introduce a
+fuction to translate from struct cred to struct ucred.
 
-[ Upstream commit 76d661586c8131453ba75a2e027c1f21511a893a]
-
-This patch fixes a missing ntohs() for bridge IPv6 multicast snooping.
-
-Signed-off-by: David L Stevens <dlstevens@us.ibm.com>
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+Acked-by: Pavel Emelyanov <xemul@openvz.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
----
- net/bridge/br_multicast.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux-2.6.35.y/net/bridge/br_multicast.c
+Index: linux-2.6.35.y/include/linux/socket.h
 ===================================================================
---- linux-2.6.35.y.orig/net/bridge/br_multicast.c
-+++ linux-2.6.35.y/net/bridge/br_multicast.c
-@@ -437,7 +437,7 @@ static struct sk_buff *br_ip6_multicast_
- 	ip6h = ipv6_hdr(skb);
+--- linux-2.6.35.y.orig/include/linux/socket.h
++++ linux-2.6.35.y/include/linux/socket.h
+@@ -24,6 +24,9 @@ struct __kernel_sockaddr_storage {
+ #include <linux/types.h>		/* pid_t			*/
+ #include <linux/compiler.h>		/* __user			*/
  
- 	*(__force __be32 *)ip6h = htonl(0x60000000);
--	ip6h->payload_len = 8 + sizeof(*mldq);
-+	ip6h->payload_len = htons(8 + sizeof(*mldq));
- 	ip6h->nexthdr = IPPROTO_HOPOPTS;
- 	ip6h->hop_limit = 1;
- 	ipv6_addr_set(&ip6h->saddr, 0, 0, 0, 0);
++struct pid;
++struct cred;
++
+ #define __sockaddr_check_size(size)	\
+ 	BUILD_BUG_ON(((size) > sizeof(struct __kernel_sockaddr_storage)))
+ 
+@@ -309,6 +312,8 @@ struct ucred {
+ #define IPX_TYPE	1
+ 
+ #ifdef __KERNEL__
++extern void cred_to_ucred(struct pid *pid, const struct cred *cred, struct ucred *ucred);
++
+ extern int memcpy_fromiovec(unsigned char *kdata, struct iovec *iov, int len);
+ extern int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
+ 			       int offset, int len);
+Index: linux-2.6.35.y/net/core/sock.c
+===================================================================
+--- linux-2.6.35.y.orig/net/core/sock.c
++++ linux-2.6.35.y/net/core/sock.c
+@@ -110,6 +110,7 @@
+ #include <linux/tcp.h>
+ #include <linux/init.h>
+ #include <linux/highmem.h>
++#include <linux/user_namespace.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/system.h>
+@@ -749,6 +750,19 @@ set_rcvbuf:
+ EXPORT_SYMBOL(sock_setsockopt);
+ 
+ 
++void cred_to_ucred(struct pid *pid, const struct cred *cred,
++		   struct ucred *ucred)
++{
++	ucred->pid = pid_vnr(pid);
++	ucred->uid = ucred->gid = -1;
++	if (cred) {
++		struct user_namespace *current_ns = current_user_ns();
++
++		ucred->uid = user_ns_map_uid(current_ns, cred, cred->euid);
++		ucred->gid = user_ns_map_gid(current_ns, cred, cred->egid);
++	}
++}
++
+ int sock_getsockopt(struct socket *sock, int level, int optname,
+ 		    char __user *optval, int __user *optlen)
+ {
