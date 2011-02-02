@@ -1,168 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613Ab1BBVmv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 16:42:51 -0500
-Received: from www.tglx.de ([62.245.132.106]:38856 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753739Ab1BBVlV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 16:41:21 -0500
-Message-Id: <20110202212551.787481468@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Wed, 02 Feb 2011 21:41:14 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 2/8] genirq: Consolidate startup/shutdown of interrupts
-References: <20110202212258.546660886@linutronix.de>
-Content-Disposition: inline;
-	filename=genirq-clear-IRQ_MASKED-flag-in-startup.patch
+	id S1754210Ab1BBVp5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 16:45:57 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37288 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751679Ab1BBVp4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 16:45:56 -0500
+Date: Wed, 2 Feb 2011 21:45:22 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: arnd@arndb.de, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, Ulrich.Weigand@de.ibm.com, gcc@gcc.gnu.org,
+        linux-kernel@vger.kernel.org, peter.maydell@linaro.org
+Subject: Re: ARM unaligned MMIO access with attribute((packed))
+Message-ID: <20110202214522.GG31043@n2100.arm.linux.org.uk>
+References: <201102021700.20683.arnd@arndb.de> <20110202163702.GA23240@n2100.arm.linux.org.uk> <20110202.133831.193702414.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110202.133831.193702414.davem@davemloft.net>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Aside of duplicated code some of the startup/shutdown sites do not
-handle the MASKED/DISABLED flags and the depth field at all. Move that
-to a helper function and take care of it there.
+On Wed, Feb 02, 2011 at 01:38:31PM -0800, David Miller wrote:
+> From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+> Date: Wed, 2 Feb 2011 16:37:02 +0000
+> 
+> > 1. there's no way to tell GCC that the inline assembly is a load
+> >    instruction and therefore it needs to schedule the following
+> >    instructions appropriately.
+> 
+> Just add a dummy '"m" (pointer)' asm input argument to the inline asm
+> statement.  Just make sure "typeof(pointer)" has a size matching the
+> size of the load your are performing.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/irq/autoprobe.c |   10 +++++-----
- kernel/irq/chip.c      |   18 +++++++++++++++---
- kernel/irq/internals.h |    3 +++
- kernel/irq/manage.c    |   14 +++++---------
- 4 files changed, 28 insertions(+), 17 deletions(-)
+That involves this problematical cast from a packed struct pointer to
+an unsigned long pointer, which according to the C standard and GCC
+folk is undefined.
 
-Index: linux-2.6-tip/kernel/irq/autoprobe.c
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/autoprobe.c
-+++ linux-2.6-tip/kernel/irq/autoprobe.c
-@@ -60,7 +60,7 @@ unsigned long probe_irq_on(void)
- 			if (desc->irq_data.chip->irq_set_type)
- 				desc->irq_data.chip->irq_set_type(&desc->irq_data,
- 							 IRQ_TYPE_PROBE);
--			desc->irq_data.chip->irq_startup(&desc->irq_data);
-+			startup_irq(desc);
- 		}
- 		raw_spin_unlock_irq(&desc->lock);
- 	}
-@@ -77,7 +77,7 @@ unsigned long probe_irq_on(void)
- 		raw_spin_lock_irq(&desc->lock);
- 		if (!desc->action && !(desc->status & IRQ_NOPROBE)) {
- 			desc->status |= IRQ_AUTODETECT | IRQ_WAITING;
--			if (desc->irq_data.chip->irq_startup(&desc->irq_data))
-+			if (startup_irq(desc))
- 				desc->status |= IRQ_PENDING;
- 		}
- 		raw_spin_unlock_irq(&desc->lock);
-@@ -99,7 +99,7 @@ unsigned long probe_irq_on(void)
- 			/* It triggered already - consider it spurious. */
- 			if (!(status & IRQ_WAITING)) {
- 				desc->status = status & ~IRQ_AUTODETECT;
--				desc->irq_data.chip->irq_shutdown(&desc->irq_data);
-+				shutdown_irq(desc);
- 			} else
- 				if (i < 32)
- 					mask |= 1 << i;
-@@ -138,7 +138,7 @@ unsigned int probe_irq_mask(unsigned lon
- 				mask |= 1 << i;
- 
- 			desc->status = status & ~IRQ_AUTODETECT;
--			desc->irq_data.chip->irq_shutdown(&desc->irq_data);
-+			shutdown_irq(desc);
- 		}
- 		raw_spin_unlock_irq(&desc->lock);
- 	}
-@@ -182,7 +182,7 @@ int probe_irq_off(unsigned long val)
- 				nr_of_irqs++;
- 			}
- 			desc->status = status & ~IRQ_AUTODETECT;
--			desc->irq_data.chip->irq_shutdown(&desc->irq_data);
-+			shutdown_irq(desc);
- 		}
- 		raw_spin_unlock_irq(&desc->lock);
- 	}
-Index: linux-2.6-tip/kernel/irq/chip.c
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/chip.c
-+++ linux-2.6-tip/kernel/irq/chip.c
-@@ -190,6 +190,20 @@ void set_irq_nested_thread(unsigned int 
- }
- EXPORT_SYMBOL_GPL(set_irq_nested_thread);
- 
-+int startup_irq(struct irq_desc *desc)
-+{
-+	desc->status &= ~(IRQ_MASKED | IRQ_DISABLED);
-+	desc->depth = 0;
-+	return desc->irq_data.chip->irq_startup(&desc->irq_data);
-+}
-+
-+void shutdown_irq(struct irq_desc *desc)
-+{
-+	desc->status |= IRQ_MASKED | IRQ_DISABLED;
-+	desc->depth = 1;
-+	desc->irq_data.chip->irq_shutdown(&desc->irq_data);
-+}
-+
- /*
-  * default enable function
-  */
-@@ -731,10 +745,8 @@ __set_irq_handler(unsigned int irq, irq_
- 	desc->name = name;
- 
- 	if (handle != handle_bad_irq && is_chained) {
--		desc->status &= ~IRQ_DISABLED;
- 		desc->status |= IRQ_NOREQUEST | IRQ_NOPROBE;
--		desc->depth = 0;
--		desc->irq_data.chip->irq_startup(&desc->irq_data);
-+		startup_irq(desc);
- 	}
- 	raw_spin_unlock_irqrestore(&desc->lock, flags);
- 	chip_bus_sync_unlock(desc);
-Index: linux-2.6-tip/kernel/irq/internals.h
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/internals.h
-+++ linux-2.6-tip/kernel/irq/internals.h
-@@ -18,6 +18,9 @@ extern int __irq_set_trigger(struct irq_
- extern void __disable_irq(struct irq_desc *desc, unsigned int irq, bool susp);
- extern void __enable_irq(struct irq_desc *desc, unsigned int irq, bool resume);
- 
-+extern int startup_irq(struct irq_desc *desc);
-+extern void shutdown_irq(struct irq_desc *desc);
-+
- extern void init_kstat_irqs(struct irq_desc *desc, int node, int nr);
- 
- /* Resending of interrupts :*/
-Index: linux-2.6-tip/kernel/irq/manage.c
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/manage.c
-+++ linux-2.6-tip/kernel/irq/manage.c
-@@ -860,11 +860,9 @@ __setup_irq(unsigned int irq, struct irq
- 		if (new->flags & IRQF_ONESHOT)
- 			desc->status |= IRQ_ONESHOT;
- 
--		if (!(desc->status & IRQ_NOAUTOEN)) {
--			desc->depth = 0;
--			desc->status &= ~IRQ_DISABLED;
--			desc->irq_data.chip->irq_startup(&desc->irq_data);
--		} else
-+		if (!(desc->status & IRQ_NOAUTOEN))
-+			startup_irq(desc);
-+		else
- 			/* Undo nested disables: */
- 			desc->depth = 1;
- 
-@@ -1001,10 +999,8 @@ static struct irqaction *__free_irq(unsi
- #endif
- 
- 	/* If this was the last handler, shut down the IRQ line: */
--	if (!desc->action) {
--		desc->status |= IRQ_DISABLED;
--		desc->irq_data.chip->irq_shutdown(&desc->irq_data);
--	}
-+	if (!desc->action)
-+		shutdown_irq(desc);
- 
- #ifdef CONFIG_SMP
- 	/* make sure affinity_hint is cleaned up */
+> > 2. GCC will needlessly reload pointers from structures and other such
+> >    behaviour because it can't be told clearly what the inline assembly
+> >    is doing, so the inline asm needs to have a "memory" clobber.
+> 
+> This behavior is correct, and in fact needed.  Writing to chip registers
+> can trigger changes to arbitrary main memory locations.
 
+That is really not an argument which stands up to analysis.
 
+When does main memory locations change as a result of a write to a chip
+register?  The answer is: when DMA is performed - which could be
+many microseconds or even milliseconds after you've written the
+register, which would be long after you've exited the function doing
+the writing.
+
+Not only that, but we have the DMA API to deal with the implications of
+that.  On ARM, that's a function call, and GCC can't make any assumptions
+about memory contents across function calls where it doesn't know what
+the function does.
+
+Practice over the last 15 years on ARM has also shown that this is not
+necessary.
