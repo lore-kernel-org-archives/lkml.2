@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051Ab1BBMLM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 07:11:12 -0500
-Received: from mx1.zhaw.ch ([160.85.104.50]:61077 "EHLO mx1.zhaw.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753365Ab1BBMLL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 07:11:11 -0500
-Date: Wed, 2 Feb 2011 13:11:08 +0100
-From: Tobias Klauser <klto@zhaw.ch>
-To: <nios2-dev@sopc.et.ntust.edu.tw>
-Cc: thomas@wytron.com.tw, Grant Likely <grant.likely@secretlab.ca>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>
-Subject: Re: [Nios2-dev] [PATCH v2] altera_ps2: Add devicetree support
-Message-ID: <20110202131108.5e7a9449@fermion>
-In-Reply-To: <4D4944AA.5040900@wytron.com.tw>
-References: <20110117220415.GB17963@angua.secretlab.ca>
-	<1295848693-28472-1-git-send-email-thomas@wytron.com.tw>
-	<20110202043121.GF29148@angua.secretlab.ca>
-	<4D4944AA.5040900@wytron.com.tw>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-PMX-Version: 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.2.2.120022
-X-PerlMx-Spam: Gauge=X, Probability=10%, Report='
- TO_IN_SUBJECT 0.5, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1200_1299 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, INVALID_MSGID_NO_FQDN 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __HAS_MSGID 0, __HAS_X_MAILER 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __TO_NO_NAME 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS '
+	id S1754081Ab1BBMMQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 07:12:16 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42311 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754001Ab1BBMMP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 07:12:15 -0500
+Date: Wed, 2 Feb 2011 12:11:47 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Benoit Cousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>, Suman Anna <s-anna@ti.com>,
+        Kevin Hilman <khilman@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        Paul Walmsley <paul@pwsan.com>,
+        Hari Kanigeri <hari.kanigeri@gmail.com>,
+        Simon Que <simonque@gmail.com>
+Subject: Re: [PATCH v4 1/4] drivers: hwspinlock: add framework
+Message-ID: <20110202121147.GA24993@n2100.arm.linux.org.uk>
+References: <1296470024-26854-1-git-send-email-ohad@wizery.com> <1296470024-26854-2-git-send-email-ohad@wizery.com> <20110131153831.dca62146.akpm@linux-foundation.org> <AANLkTik-fgCF_W0-DBE6UVTpjqF6Jf=u7bQYkcweEegQ@mail.gmail.com> <20110131223859.27169db0.akpm@linux-foundation.org> <AANLkTinJLAT0B61Eu1Chn9k9rmbHXa1ZNcedo_m8TZp3@mail.gmail.com> <20110131234028.8744b5fd.akpm@linux-foundation.org> <AANLkTi=zOO_vDQ4+LWQs38xjo+VaRG0jfgo6ifvh=L-M@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=zOO_vDQ4+LWQs38xjo+VaRG0jfgo6ifvh=L-M@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Feb 2011 19:48:58 +0800 Thomas Chou <thomas@wytron.com.tw> wrote:
-> On 02/02/2011 12:31 PM, Grant Likely wrote:
-> >> +static const struct of_device_id altera_ps2_match[] = {
-> >> +	{ .compatible = "altr,ps2-1.0", },
+On Tue, Feb 01, 2011 at 10:12:38AM +0200, Ohad Ben-Cohen wrote:
+> On Tue, Feb 1, 2011 at 9:40 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> > On Tue, 1 Feb 2011 09:36:22 +0200 Ohad Ben-Cohen <ohad@wizery.com> wrote:
 > >
-> > I thought I had seen 'altera' instead of an abbreviation being used in
-> > a previous patch.  I don't care much whether 'altr' or 'altera' is
-> > used, but I'd like to know that there is consensus from the Altera
-> > users so that all the drivers use the same prefix.
+> >> On Tue, Feb 1, 2011 at 8:38 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> >> >> I'll do a quick respin of the patches with that and the
+> >> >> hwspinlock_internal.h comment above.
+> >> >
+> >> > OK..
+> >> >
+> >> > The patch series looks OK to me.
+> >>
+> >> Can I add your Acked-by on the non-omap parts when I respin the series ?
 > >
+> > spose so.  I don't normally do acked-by's.  I think it's my way of
+> > avoiding getting blamed when it all blows up.
 > 
-> We had discussed on nios2-dev mailing list, and decided to use 'altr' as 
-> Walter suggested that it saves space.
+> I don't want to be breaking old habits then :)
 > 
-> About the documentation on dts binding, shall we have a single 
-> altera.txt to describe all Altera related binding, and opencores.txt to 
-> describe all OpenCores binding? Or separate file for each core in its 
-> driver class?
+> >> > Maybe Tony or Russell or Greg can grab them
+> >> > if they like the look of it all?
+> 
+> Let's just wait a bit for Tony's or Russell's or Greg's answer.
 
-As I will submit the device tree support for the altera_uart driver
-(and the altera_jtaguart driver sometime in the future) I was asking
-myself the same question. I'd vote for the altera.txt solution, as we
-could use that for documenting the uart drivers, other Altera component
-specific drivers and also the Nios2 arch specific parameters in the
-future.
-
-Cheers
-Tobias
-
+As it touches OMAP code, it makes sense to merge it through Tony's tree
+as that should reduce the number of possible conflicts.
