@@ -1,101 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab1BBKxM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 05:53:12 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62276 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753290Ab1BBKxI (ORCPT
+	id S1753409Ab1BBKxq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 05:53:46 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62875 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753293Ab1BBKxo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 05:53:08 -0500
+	Wed, 2 Feb 2011 05:53:44 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ikZ66mX2GQIlUT23dnep4AkeIQZ4vMKPoXsNzvwJUuBLIAI4Nyk14mIioY3fDBV/eB
-         KJd5RfJMASsPOImNhFqpCQb3blMOBd29GkTnHyT0l4H5tNqxjTmZDhB09PXOozhkf7Bb
-         ynoKmqke9a6BBTFKFWV/+lUzJZOS19vMFpTDY=
-Date: Wed, 2 Feb 2011 11:53:03 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Roland McGrath <roland@redhat.com>
-Cc: oleg@redhat.com, jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 08/10] ptrace: participate in group stop from
- ptrace_stop() iff the task is trapping for group stop
-Message-ID: <20110202105303.GD24115@htj.dyndns.org>
-References: <1296227324-25295-1-git-send-email-tj@kernel.org>
- <1296227324-25295-9-git-send-email-tj@kernel.org>
- <20110128213009.340C7183C1E@magilla.sf.frob.com>
- <20110131112634.GG7459@htj.dyndns.org>
- <20110202055711.368B6183D88@magilla.sf.frob.com>
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=m64IQ3WhMi1EUIZOWVPGVsh7t8rsgabHiqES9SI/DYOOTyRpkHA7+Fhs6CtXD0JP21
+         T1x0h82oABDOA7HAD5/yTuG4e4YKGpBROlj++bT9OTpKWRTBWGkiIHgdv3b9xkJT/F+W
+         WTgaaaznpsZe/lPz5P3HxBMB28+XNYC1A7ePQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110202055711.368B6183D88@magilla.sf.frob.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110202004349.64A543E09BD@tassilo.jf.intel.com>
+References: <20110201443.618138584@firstfloor.org>
+	<20110202004349.64A543E09BD@tassilo.jf.intel.com>
+Date: Wed, 2 Feb 2011 11:53:44 +0100
+Message-ID: <AANLkTim4df7n9gky1sTgqchi+8KrrxV7JEf3mVq8O3f7@mail.gmail.com>
+Subject: Re: [PATCH] [34/139] mac80211: Fix BUG in pskb_expand_head when
+ transmitting shared skbs
+From: Helmut Schaa <helmut.schaa@googlemail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: johannes@sipsolutions.net, linville@tuxdriver.com, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Feb 2, 2011 at 1:43 AM, Andi Kleen <andi@firstfloor.org> wrote:
+> 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
-On Tue, Feb 01, 2011 at 09:57:11PM -0800, Roland McGrath wrote:
-> > The problem is that those loose ends can't be tied up without breaking
-> > the current users.  PTRACE_CONT has priority over group stop and it's
-> > a very visible from userland.  I'm afraid the window of opportunity to
-> > make that behavior the default had already passed quite some time ago.
-> 
-> I am not convinced of that at all, though I certainly wouldn't say now
-> that it's a settled question yet.  The userland expectations are
-> pretty convoluted too.  I suspect that what you are calling the
-> userland expectations for PTRACE_CONT to ignore the state of a pending
-> group stop are in fact just fallout of userland confusion about what's
-> a job control stop and what's a ptrace stop.
+There has been a followup patch to this one [1]. That should be
+considered as well.
 
-Okay, but that doesn't change the fact that currently PTRACE_CONT is
-superior to group stop.  You're suggesting to reverse the priority.  I
-can't see how that would be possible.  I'm confused because that's a
-_MUCH_ bigger change than the ones suggested here or in the whole
-series.  If we can change that, it's almost free for all, which I
-dont't mind, but isn't consistent with how things have progressed upto
-now.
+Thanks,
+Helmut
 
-We can introduce new interface which behaves that way but I don't
-think we can reverse the priority without breaking a lot of userland
-visible behaviors.
+[1] http://www.spinics.net/lists/linux-wireless/msg61531.html
 
-> I don't think I follow your logic and I certainly don't agree with
-> your conclusion.  It's simple: if a stop signal is actually delivered,
-> then every thread stops.  If one thread is traced and another is not,
-> then the tracer can prevent a signal from being delivered to one
-> thread and cannot prevent it from being delivered to another.
-
-I suppose it depends on POV and I can see your point too.
-
-> > > Once a group stop is complete, then probably the ideal is that
-> > > PTRACE_CONT would not resume a thread until a real SIGCONT cleared
-> > > the job control stop condition.  But it's likely that existing
-> > > ptrace users have expectations contrary to that, so we'll have to
-> > > see.
-> > 
-> > So, no, I don't think that would be possible or even desirable.
-> 
-> Of course it's possible.  We have to work out the entire web of
-> assumptions and ramifications to be sure what's desireable given
-> practical compatibility constraints.  I think it's just plain obvious
-> that it's the desireable thing in the abstract--that tracing stops and
-> job control stops should be independent functions.
-
-You'll have to show a lot more details on how to untangle "the entire
-web of assumptions and ramifications" so that we can reverse the
-current priority without causing noticeable behavior differences to
-the existing users.  I don't agree what you suggest is "plain
-obviously desirable" but that's almost beside the point.  I really
-can't see how that would be realistically possible at this point.
-
-So, can you please elaborate how to reverse that and at the same time
-avoid breaking existing assumptions?
-
-Thanks.
-
--- 
-tejun
+> ------------------
+> From: Helmut Schaa <helmut.schaa@googlemail.com>
+>
+> commit 7e2447075690860e2cea96b119fc9cadbaa7e83c upstream.
+>
+> mac80211 doesn't handle shared skbs correctly at the moment. As a result
+> a possible resize can trigger a BUG in pskb_expand_head.
+>
+> [  676.030000] Kernel bug detected[#1]:
+> [  676.030000] Cpu 0
+> [  676.030000] $ 0   : 00000000 00000000 819662ff 00000002
+> [  676.030000] $ 4   : 81966200 00000020 00000000 00000020
+> [  676.030000] $ 8   : 819662e0 800043c0 00000002 00020000
+> [  676.030000] $12   : 3b9aca00 00000000 00000000 00470000
+> [  676.030000] $16   : 80ea2000 00000000 00000000 00000000
+> [  676.030000] $20   : 818aa200 80ea2018 80ea2000 00000008
+> [  676.030000] $24   : 00000002 800ace5c
+> [  676.030000] $28   : 8199a000 8199bd20 81938f88 80f180d4
+> [  676.030000] Hi    : 0000026e
+> [  676.030000] Lo    : 0000757e
+> [  676.030000] epc   : 801245e4 pskb_expand_head+0x44/0x1d8
+> [  676.030000]     Not tainted
+> [  676.030000] ra    : 80f180d4 ieee80211_skb_resize+0xb0/0x114 [mac80211]
+> [  676.030000] Status: 1000a403    KERNEL EXL IE
+> [  676.030000] Cause : 10800024
+> [  676.030000] PrId  : 0001964c (MIPS 24Kc)
+> [  676.030000] Modules linked in: mac80211_hwsim rt2800lib rt2x00soc rt2x00pci rt2x00lib mac80211 crc_itu_t crc_ccitt cfg80211 compat arc4 aes_generic deflate ecb cbc [last unloaded: rt2800pci]
+> [  676.030000] Process kpktgend_0 (pid: 97, threadinfo=8199a000, task=81879f48, tls=00000000)
+> [  676.030000] Stack : ffffffff 00000000 00000000 00000014 00000004 80ea2000 00000000 00000000
+> [  676.030000]         818aa200 80f180d4 ffffffff 0000000a 81879f78 81879f48 81879f48 00000018
+> [  676.030000]         81966246 80ea2000 818432e0 80f1a420 80203050 81814d98 00000001 81879f48
+> [  676.030000]         81879f48 00000018 81966246 818432e0 0000001a 8199bdd4 0000001c 80f1b72c
+> [  676.030000]         80203020 8001292c 80ef4aa2 7f10b55d 801ab5b8 81879f48 00000188 80005c90
+> [  676.030000]         ...
+> [  676.030000] Call Trace:
+> [  676.030000] [<801245e4>] pskb_expand_head+0x44/0x1d8
+> [  676.030000] [<80f180d4>] ieee80211_skb_resize+0xb0/0x114 [mac80211]
+> [  676.030000] [<80f1a420>] ieee80211_xmit+0x150/0x22c [mac80211]
+> [  676.030000] [<80f1b72c>] ieee80211_subif_start_xmit+0x6f4/0x73c [mac80211]
+> [  676.030000] [<8014361c>] pktgen_thread_worker+0xfac/0x16f8
+> [  676.030000] [<8002ebe8>] kthread+0x7c/0x88
+> [  676.030000] [<80008e0c>] kernel_thread_helper+0x10/0x18
+> [  676.030000]
+> [  676.030000]
+> [  676.030000] Code: 24020001  10620005  2502001f <0200000d> 0804917a  00000000  2502001f  00441023  00531021
+>
+> Fix this by making a local copy of shared skbs prior to mangeling them.
+> To avoid copying the skb unnecessarily move the skb_copy call below the
+> checks that don't need write access to the skb.
+>
+> Also, move the assignment of nh_pos and h_pos below the skb_copy to point
+> to the correct skb.
+>
+> It would be possible to avoid another resize of the copied skb by using
+> skb_copy_expand instead of skb_copy but that would make the patch more
+> complex. Also, shared skbs are a corner case right now, so the resize
+> shouldn't matter much.
+>
+> Cc: Johannes Berg <johannes@sipsolutions.net>
+> Signed-off-by: Helmut Schaa <helmut.schaa@googlemail.com>
+> Signed-off-by: John W. Linville <linville@tuxdriver.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+>
+> ---
+>  net/mac80211/tx.c |   21 ++++++++++++++++++---
+>  1 file changed, 18 insertions(+), 3 deletions(-)
+>
+> Index: linux-2.6.35.y/net/mac80211/tx.c
+> ===================================================================
+> --- linux-2.6.35.y.orig/net/mac80211/tx.c
+> +++ linux-2.6.35.y/net/mac80211/tx.c
+> @@ -1679,15 +1679,13 @@ netdev_tx_t ieee80211_subif_start_xmit(s
+>        int nh_pos, h_pos;
+>        struct sta_info *sta = NULL;
+>        u32 sta_flags = 0;
+> +       struct sk_buff *tmp_skb;
+>
+>        if (unlikely(skb->len < ETH_HLEN)) {
+>                ret = NETDEV_TX_OK;
+>                goto fail;
+>        }
+>
+> -       nh_pos = skb_network_header(skb) - skb->data;
+> -       h_pos = skb_transport_header(skb) - skb->data;
+> -
+>        /* convert Ethernet header to proper 802.11 header (based on
+>         * operation mode) */
+>        ethertype = (skb->data[12] << 8) | skb->data[13];
+> @@ -1859,6 +1857,20 @@ netdev_tx_t ieee80211_subif_start_xmit(s
+>                goto fail;
+>        }
+>
+> +       /*
+> +        * If the skb is shared we need to obtain our own copy.
+> +        */
+> +       if (skb_shared(skb)) {
+> +               tmp_skb = skb;
+> +               skb = skb_copy(skb, GFP_ATOMIC);
+> +               kfree_skb(tmp_skb);
+> +
+> +               if (!skb) {
+> +                       ret = NETDEV_TX_OK;
+> +                       goto fail;
+> +               }
+> +       }
+> +
+>        hdr.frame_control = fc;
+>        hdr.duration_id = 0;
+>        hdr.seq_ctrl = 0;
+> @@ -1877,6 +1889,9 @@ netdev_tx_t ieee80211_subif_start_xmit(s
+>                encaps_len = 0;
+>        }
+>
+> +       nh_pos = skb_network_header(skb) - skb->data;
+> +       h_pos = skb_transport_header(skb) - skb->data;
+> +
+>        skb_pull(skb, skip_header_bytes);
+>        nh_pos -= skip_header_bytes;
+>        h_pos -= skip_header_bytes;
+>
