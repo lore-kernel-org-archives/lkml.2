@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907Ab1BBV67 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 16:58:59 -0500
-Received: from hera.kernel.org ([140.211.167.34]:50534 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754553Ab1BBV66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 16:58:58 -0500
-Date: Wed, 2 Feb 2011 21:58:40 GMT
-From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        johnstul@us.ibm.com, tglx@linutronix.de, richard.cochran@omicron.at
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        johnstul@us.ibm.com, tglx@linutronix.de, richard.cochran@omicron.at
-In-Reply-To: <20110201134418.422446502@linutronix.de>
-References: <20110201134418.422446502@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] posix-cpu-timers: Remove the stub nanosleep functions
-Message-ID: <tip-79c9da0d0539fb341a1b48a2a5a23d974726de90@git.kernel.org>
-Git-Commit-ID: 79c9da0d0539fb341a1b48a2a5a23d974726de90
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 02 Feb 2011 21:58:41 +0000 (UTC)
+	id S1755037Ab1BBV7U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 16:59:20 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51805
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754743Ab1BBV7T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 16:59:19 -0500
+Date: Wed, 02 Feb 2011 13:59:54 -0800 (PST)
+Message-Id: <20110202.135954.189712480.davem@davemloft.net>
+To: linux@arm.linux.org.uk
+Cc: arnd@arndb.de, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, Ulrich.Weigand@de.ibm.com, gcc@gcc.gnu.org,
+        linux-kernel@vger.kernel.org, peter.maydell@linaro.org
+Subject: Re: ARM unaligned MMIO access with attribute((packed))
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110202214522.GG31043@n2100.arm.linux.org.uk>
+References: <20110202163702.GA23240@n2100.arm.linux.org.uk>
+	<20110202.133831.193702414.davem@davemloft.net>
+	<20110202214522.GG31043@n2100.arm.linux.org.uk>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  79c9da0d0539fb341a1b48a2a5a23d974726de90
-Gitweb:     http://git.kernel.org/tip/79c9da0d0539fb341a1b48a2a5a23d974726de90
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Tue, 1 Feb 2011 13:51:45 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 2 Feb 2011 15:28:14 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Date: Wed, 2 Feb 2011 21:45:22 +0000
 
-posix-cpu-timers: Remove the stub nanosleep functions
+> On Wed, Feb 02, 2011 at 01:38:31PM -0800, David Miller wrote:
+>> From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+>> Date: Wed, 2 Feb 2011 16:37:02 +0000
+>> 
+>> > 1. there's no way to tell GCC that the inline assembly is a load
+>> >    instruction and therefore it needs to schedule the following
+>> >    instructions appropriately.
+>> 
+>> Just add a dummy '"m" (pointer)' asm input argument to the inline asm
+>> statement.  Just make sure "typeof(pointer)" has a size matching the
+>> size of the load your are performing.
+> 
+> That involves this problematical cast from a packed struct pointer to
+> an unsigned long pointer, which according to the C standard and GCC
+> folk is undefined.
 
-CLOCK_THREAD_CPUTIME_ID implements stub functions for nanosleep and
-nanosleep_restart, which return -EINVAL. That return value is
-wrong. The correct return value is -ENOTSUP.
+It's alignment may be undefined, but it's size definitely is well
+defined and that's what matters here.
 
-Remove the stubs and let the new dispatch code return the correct
-error code.
+> Practice over the last 15 years on ARM has also shown that this is not
+> necessary.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Acked-by: John Stultz <johnstul@us.ibm.com>
-Tested-by: Richard Cochran <richard.cochran@omicron.at>
-LKML-Reference: <20110201134418.422446502@linutronix.de>
----
- kernel/posix-cpu-timers.c |   11 -----------
- 1 files changed, 0 insertions(+), 11 deletions(-)
-
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index 9e617b0..8dc4cd7 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -1586,15 +1586,6 @@ static int thread_cpu_timer_create(struct k_itimer *timer)
- 	timer->it_clock = THREAD_CLOCK;
- 	return posix_cpu_timer_create(timer);
- }
--static int thread_cpu_nsleep(const clockid_t which_clock, int flags,
--			      struct timespec *rqtp, struct timespec __user *rmtp)
--{
--	return -EINVAL;
--}
--static long thread_cpu_nsleep_restart(struct restart_block *restart_block)
--{
--	return -EINVAL;
--}
- 
- struct k_clock clock_posix_cpu = {
- 	.clock_getres	= posix_cpu_clock_getres,
-@@ -1623,8 +1614,6 @@ static __init int init_posix_cpu_timers(void)
- 		.clock_get	= thread_cpu_clock_get,
- 		.clock_set	= do_posix_clock_nosettime,
- 		.timer_create	= thread_cpu_timer_create,
--		.nsleep		= thread_cpu_nsleep,
--		.nsleep_restart	= thread_cpu_nsleep_restart,
- 	};
- 	struct timespec ts;
- 
+Sorry oh big super man, little ole' me is only a kernel newbie.
