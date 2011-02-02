@@ -1,63 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755286Ab1BBWlu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 17:41:50 -0500
-Received: from sncsmrelay2.nai.com ([67.97.80.206]:52665 "EHLO
-	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753312Ab1BBWlt (ORCPT
+	id S1755305Ab1BBWl7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 17:41:59 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:44434 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755290Ab1BBWl5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 17:41:49 -0500
-Message-ID: <4D49DD93.2050709@snapgear.com>
-Date: Thu, 3 Feb 2011 08:41:23 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Wed, 2 Feb 2011 17:41:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=koj8lACORKaZNfbrR2hxWqw9vloPJyO/dmFSNi3FF9Oxpcu2qlvRWrLeHz3Ss7OJCj
+         FjOZA06FKwJ3qjpe8AkQ==
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Greg Ungerer <gerg@uclinux.org>
-Subject: Re: [patch 7/8] m68knommu: 5772: Replace private irq flow handler
-References: <20110202212258.546660886@linutronix.de> <20110202212552.413849952@linutronix.de> <4D49DA5B.10308@snapgear.com> <alpine.LFD.2.00.1102022336090.31804@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1102022336090.31804@localhost6.localdomain6>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110201092126.GC17706@core.coreip.homeip.net>
+References: <1290467390-25302-1-git-send-email-dlaurie@chromium.org>
+ <20101127084153.GC28745@core.coreip.homeip.net> <AANLkTik1TE9zgKaiLQZ=1uFgMyZt43xp8VJBWfxdVyMY@mail.gmail.com>
+ <20101208051211.GB4140@core.coreip.homeip.net> <20110201092126.GC17706@core.coreip.homeip.net>
+From: Duncan Laurie <dlaurie@chromium.org>
+Date: Wed, 2 Feb 2011 14:41:38 -0800
+X-Google-Sender-Auth: V-dee9Jp5hMXV_0F4-aXditN1yE
+Message-ID: <AANLkTiknhubSN37ChYebWxd9Wx=R4dN38ETdZv2BZYee@mail.gmail.com>
+Subject: Re: [PATCH] Input: serio - clear serio event queue after sysfs driver rebind
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/11 08:37, Thomas Gleixner wrote:
-> On Thu, 3 Feb 2011, Greg Ungerer wrote:
+On Tue, Feb 1, 2011 at 1:21 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Tue, Dec 07, 2010 at 09:12:11PM -0800, Dmitry Torokhov wrote:
+>> On Mon, Nov 29, 2010 at 01:37:35PM -0800, Duncan Laurie wrote:
+>> > On Sat, Nov 27, 2010 at 12:41 AM, Dmitry Torokhov
+>> > <dmitry.torokhov@gmail.com> wrote:
+>> > > Hi Duncan,
+>> > >
+>> > > On Mon, Nov 22, 2010 at 03:09:50PM -0800, Duncan Laurie wrote:
+>> > >> When rebinding a serio driver via sysfs drvctl interface it is possible for
+>> > >> an interrupt to trigger after the disconnect of the existing driver and
+>> > >> before the binding of the new driver.  This will cause the serio interrupt
+>> > >> handler to queue a rescan event which will disconnect the new driver
+>> > >> immediately after it is attached.
+>> > >>
+>> > >> This change clears the serio event queue after processing the drvctl
+>> > >> request but before releasing the serio mutex, which will clear any queued
+>> > >> rescans before they can get processed.
+>> > >>
+>> > >> Reproduction involves issuing a rebind of device port from psmouse driver
+>> > >> to serio_raw driver while generating input to trigger interrupts.  Then
+>> > >> checking to see if the corresponding i8042/serio4/driver is correctly
+>> > >> attached to the serio_raw driver instead of psmouse.
+>> > >>
+>> > >> Signed-off-by: Duncan Laurie <dlaurie@chromium.org>
+>> > >> ---
+>> > >>  drivers/input/serio/serio.c |    1 +
+>> > >>  1 files changed, 1 insertions(+), 0 deletions(-)
+>> > >>
+>> > >> diff --git a/drivers/input/serio/serio.c b/drivers/input/serio/serio.c
+>> > >> index 405bf21..a66307e 100644
+>> > >> --- a/drivers/input/serio/serio.c
+>> > >> +++ b/drivers/input/serio/serio.c
+>> > >> @@ -454,6 +454,7 @@ static ssize_t serio_rebind_driver(struct device *dev, struct device_attribute *
+>> > >>               serio_disconnect_port(serio);
+>> > >>               error = serio_bind_driver(serio, to_serio_driver(drv));
+>> > >>               put_driver(drv);
+>> > >> +             serio_remove_pending_events(serio);
+>> > >
+>> > > Hmm, makes sense, although should we limit events being removed to
+>> > > rescan events only?
+>> > >
+>> >
+>> >
+>> > That seems reasonable.  It would mean adding a new function or a
+>> > parameter to the existing serio_remove_pending_events function, do you
+>> > have a preference?
+>> >
+>>
+>> I wonder if a boolean parameter (rescan_only) would not be the best
+>> option.
+>>
 >
->>
->> Hi Thomas,
->>
->> On 03/02/11 07:41, Thomas Gleixner wrote:
->>> That handler lacks the minimal checks for action being zero etc. Keep
->>> the weird flow - ack before handling - intact and call into
->>> handle_simple_irq which does the right thing.
->>>
->>> Signed-off-by: Thomas Gleixner<tglx@linutronix.de>
->>> Cc: Greg Ungerer<gerg@uclinux.org>
->>
->> Acked-by: Greg Ungerer<gerg@uclinux.org>
->>
->> (I can't test this change for a week or two at least, I don't
->> have access to any 5272 based boards at the moment.)
->>
->> Do you want me to push it through the m68knommu tree,
->> or are you going to do that yourself?
+> Hi Duncan,
 >
-> If it does not conflict with your stuff, I'd prefer to push it myself,
-> so I can apply the depending patches as well.
-
-No conflicts right now, and no planned changes in that area,
-so feel free to push it yourself.
-
-Regards
-Greg
+> I eneded up with the following patch, could you please try and see if
+> it still works for you?
+>
 
 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+Hi Dmitry,
+
+I tested the patch on a CR-48 device (which is where I was seeing the
+problem because we switch to serio_raw at boot for the trackpad) and
+it does fix the problem.
+
+Thanks for sending this, it had slipped off my todo list.
+
+-duncan
