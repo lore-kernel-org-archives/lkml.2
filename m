@@ -1,91 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134Ab1BBArU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 19:47:20 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:39752 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561Ab1BBArP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:47:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=PRHStCmSJpaphQRGsRwQ8LqPgp4ptz7K9jYyXBKgPI0nCYL2PLEqlxbqn6fmEXmyK7
-         ZOrEgqezX8hKNlAlf6/SPhYNjmIOgkNpa6m8cuROP9Y5KWmasQLXMDvNAOIO67lpofmS
-         zCBFO9WDuQq7PPew9wiwmzMvGXS3r9JVdGfY8=
-MIME-Version: 1.0
-In-Reply-To: <20110201232750.GA30800@ulf>
-References: <20110201232750.GA30800@ulf>
-Date: Tue, 1 Feb 2011 19:47:14 -0500
-Message-ID: <AANLkTinuLrUYJZzkmCVu9ZAYz-z2k-_cYb7opa2+Uutm@mail.gmail.com>
-Subject: Re: [PATCH] [ANNOUNCE] kconfig: Kconfiglib: a flexible Python Kconfig parser
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Ulf Magnusson <ulfalizer.lkml@gmail.com>
-Cc: linux-kbuild@vger.kernel.org, zippel@linux-m68k.org, mmarek@suse.cz,
-        rdunlap@xenotime.net, akpm@linux-foundation.org,
-        andrea.gelmini@gelma.net, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754143Ab1BBAri (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 19:47:38 -0500
+Received: from mga01.intel.com ([192.55.52.88]:58271 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753965Ab1BBApV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:45:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
+   d="scan'208";a="883418474"
+From: Andi Kleen <andi@firstfloor.org>
+References: <20110201443.618138584@firstfloor.org>
+In-Reply-To: <20110201443.618138584@firstfloor.org>
+To: jj@chaosbits.net, tigran@aivazian.fsnet.co.uk, ak@linux.intel.com,
+        shaohua.li@intel.com, mingo@elte.hu, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [132/139] x86/microcode: Fix double vfree() and remove redundant pointer checks before vfree()
+Message-Id: <20110202004531.DCDC73E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:45:31 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
-On Tue, Feb 1, 2011 at 6:27 PM, Ulf Magnusson <ulfalizer.lkml@gmail.com> wrote:
-> Hi,
->
-> This is the initial release of Kconfiglib: a Python library for
-> scripting, debugging, and extracting information from Kconfig-based
-> configuration systems.  It can be used to programmatically generate a
-> .config when the '*conf' tools are too inflexible, to quickly find out
-> interesting information about a Kconfig configuration such as dependency
-> relations between symbols and where undefined symbols are referenced,
-> and in applications that need to parse and extract information from
-> Kconfig files.
->
-Does that mean that when a kconfig-language change will happen, one
-will not only must have to be Lex/YaCC and C fluent, but also, perl
-and python ? That seem to be a lot of duplication to me.
+------------------
+From: Jesper Juhl <jj@chaosbits.net>
 
-I'd rather see the backend be changed so that it could be used with
-SWIG to generate language bindings. I had WIP in this area, but
-changes needed are rather intrusive. That said, the testsuite might be
-interesting, I've been thinking about that for quite some time.
+commit 5cdd2de0a76d0ac47f107c8a7b32d75d25768dc1 upstream.
 
- - Arnaud
+In arch/x86/kernel/microcode_intel.c::generic_load_microcode()
+we have  this:
 
-> For a much longer introduction including multiple examples, see
-> arch/kconfig/kconfiglib.py.
->
-> Have fun!
->
-> Signed-off-by: Ulf Magnusson <ulfalizer.lkml@gmail.com>
-> ---
-> Convenience links:
->
-> Documentation, generated from kconfiglib.py with pydoc -w:
-> http://dl.dropbox.com/u/10406197/kconfiglib.html
->
-> Examples as separate files:
-> http://dl.dropbox.com/u/10406197/kconfiglib-examples.tar.gz
->
->
-> The patch should be preferably be applied to a recent kernel, i.e. Linus's
-> (2.6.38-rc3 at the time of writing).  Due to recent Kconfig changes, the
-> kconfigtest.py test suite - which compares output character-for-character -
-> will indicate failure on older (a few months old) kernels versions even though
-> the outputs are functionally equivalent.
->
->  Documentation/kbuild/kconfig-language.txt |    5 +
->  Documentation/kbuild/kconfig.txt          |    8 +
->  README                                    |   13 +
->  scripts/kconfig/Makefile                  |   26 +-
->  scripts/kconfig/kconfiglib.py             | 3918 +++++++++++++++++++++++++++++
->  scripts/kconfig/kconfigtest.py            |  396 +++
->  6 files changed, 4365 insertions(+), 1 deletions(-)
->  create mode 100644 scripts/kconfig/kconfiglib.py
->  create mode 100644 scripts/kconfig/kconfigtest.py
-> [...]
+	while (leftover) {
+		...
+		if (get_ucode_data(mc, ucode_ptr, mc_size) ||
+		    microcode_sanity_check(mc) < 0) {
+			vfree(mc);
+			break;
+		}
+		...
+	}
+
+	if (mc)
+		vfree(mc);
+
+This will cause a double free of 'mc'. This patch fixes that by
+just  removing the vfree() call in the loop since 'mc' will be
+freed nicely just  after we break out of the loop.
+
+There's also a second change in the patch. I noticed a lot of
+checks for  pointers being NULL before passing them to vfree().
+That's completely  redundant since vfree() deals gracefully with
+being passed a NULL pointer.  Removing the redundant checks
+yields a nice size decrease for the object  file.
+
+Size before the patch:
+   text    data     bss     dec     hex filename
+   4578     240    1032    5850    16da arch/x86/kernel/microcode_intel.o
+Size after the patch:
+   text    data     bss     dec     hex filename
+   4489     240     984    5713    1651 arch/x86/kernel/microcode_intel.o
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Acked-by: Tigran Aivazian <tigran@aivazian.fsnet.co.uk>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Cc: Shaohua Li <shaohua.li@intel.com>
+LKML-Reference: <alpine.LNX.2.00.1012251946100.10759@swampdragon.chaosbits.net>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ arch/x86/kernel/microcode_intel.c |   16 +++++-----------
+ 1 file changed, 5 insertions(+), 11 deletions(-)
+
+Index: linux-2.6.35.y/arch/x86/kernel/microcode_intel.c
+===================================================================
+--- linux-2.6.35.y.orig/arch/x86/kernel/microcode_intel.c
++++ linux-2.6.35.y/arch/x86/kernel/microcode_intel.c
+@@ -364,8 +364,7 @@ static enum ucode_state generic_load_mic
+ 
+ 		/* For performance reasons, reuse mc area when possible */
+ 		if (!mc || mc_size > curr_mc_size) {
+-			if (mc)
+-				vfree(mc);
++			vfree(mc);
+ 			mc = vmalloc(mc_size);
+ 			if (!mc)
+ 				break;
+@@ -374,13 +373,11 @@ static enum ucode_state generic_load_mic
+ 
+ 		if (get_ucode_data(mc, ucode_ptr, mc_size) ||
+ 		    microcode_sanity_check(mc) < 0) {
+-			vfree(mc);
+ 			break;
+ 		}
+ 
+ 		if (get_matching_microcode(&uci->cpu_sig, mc, new_rev)) {
+-			if (new_mc)
+-				vfree(new_mc);
++			vfree(new_mc);
+ 			new_rev = mc_header.rev;
+ 			new_mc  = mc;
+ 			mc = NULL;	/* trigger new vmalloc */
+@@ -390,12 +387,10 @@ static enum ucode_state generic_load_mic
+ 		leftover  -= mc_size;
+ 	}
+ 
+-	if (mc)
+-		vfree(mc);
++	vfree(mc);
+ 
+ 	if (leftover) {
+-		if (new_mc)
+-			vfree(new_mc);
++		vfree(new_mc);
+ 		state = UCODE_ERROR;
+ 		goto out;
+ 	}
+@@ -405,8 +400,7 @@ static enum ucode_state generic_load_mic
+ 		goto out;
+ 	}
+ 
+-	if (uci->mc)
+-		vfree(uci->mc);
++	vfree(uci->mc);
+ 	uci->mc = (struct microcode_intel *)new_mc;
+ 
+ 	pr_debug("CPU%d found a matching microcode update with version 0x%x (current=0x%x)\n",
