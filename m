@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754447Ab1BBPkF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 10:40:05 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49216 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754404Ab1BBPkD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 10:40:03 -0500
-Date: Wed, 2 Feb 2011 08:39:59 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Thomas Chou <thomas@wytron.com.tw>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
-        nios2-dev@sopc.et.ntust.edu.tw, linux-input@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Walter Goossens <waltergoossens@home.nl>
-Subject: Re: [PATCH v2] altera_ps2: Add devicetree support
-Message-ID: <20110202153959.GD20275@angua.secretlab.ca>
-References: <20110117220415.GB17963@angua.secretlab.ca>
- <1295848693-28472-1-git-send-email-thomas@wytron.com.tw>
- <20110202043121.GF29148@angua.secretlab.ca>
- <4D4944AA.5040900@wytron.com.tw>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D4944AA.5040900@wytron.com.tw>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754506Ab1BBP6A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 10:58:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2678 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754468Ab1BBP57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 10:57:59 -0500
+Date: Wed, 2 Feb 2011 10:55:06 -0500
+From: Chuck Ebbert <cebbert@redhat.com>
+To: Christoph Hellwig <hch@tuxera.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [Patch] hfsplus: Fix two memory leaks in wrapper.c
+Message-ID: <20110202105507.3acd4a57@katamari>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 02, 2011 at 07:48:58PM +0800, Thomas Chou wrote:
-> On 02/02/2011 12:31 PM, Grant Likely wrote:
-> >>+static const struct of_device_id altera_ps2_match[] = {
-> >>+	{ .compatible = "altr,ps2-1.0", },
-> >
-> >I thought I had seen 'altera' instead of an abbreviation being used in
-> >a previous patch.  I don't care much whether 'altr' or 'altera' is
-> >used, but I'd like to know that there is consensus from the Altera
-> >users so that all the drivers use the same prefix.
-> >
-> 
-> We had discussed on nios2-dev mailing list, and decided to use
-> 'altr' as Walter suggested that it saves space.
 
-Is altr the stock ticker symbol?  The convention is to either use the
-stock ticker in all uppercase (although the uppercase bit hasn't been
-consistently applied), or to use the full name in lowercase.
+Signed-Off-By: Chuck Ebbert <cebbert@redhat.com>
 
-g.
-
+--- vanilla-2.6.38-rc2-git9.orig/fs/hfsplus/wrapper.c
++++ vanilla-2.6.38-rc2-git9/fs/hfsplus/wrapper.c
+@@ -167,7 +167,7 @@ reread:
+ 		break;
+ 	case cpu_to_be16(HFSP_WRAP_MAGIC):
+ 		if (!hfsplus_read_mdb(sbi->s_vhdr, &wd))
+-			goto out;
++			goto out_free_backup_vhdr;
+ 		wd.ablk_size >>= HFSPLUS_SECTOR_SHIFT;
+ 		part_start += wd.ablk_start + wd.embed_start * wd.ablk_size;
+ 		part_size = wd.embed_count * wd.ablk_size;
+@@ -179,7 +179,7 @@ reread:
+ 		 * (should do this only for cdrom/loop though)
+ 		 */
+ 		if (hfs_part_find(sb, &part_start, &part_size))
+-			goto out;
++			goto out_free_backup_vhdr;
+ 		goto reread;
+ 	}
+ 
