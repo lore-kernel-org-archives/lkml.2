@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab1BBBE3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 20:04:29 -0500
-Received: from mga01.intel.com ([192.55.52.88]:4194 "EHLO mga01.intel.com"
+	id S1752983Ab1BBAns (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 19:43:48 -0500
+Received: from mga02.intel.com ([134.134.136.20]:46559 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753020Ab1BBAnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:43:50 -0500
+	id S1752798Ab1BBAnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:43:46 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="653504978"
+   d="scan'208";a="703028353"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110201443.618138584@firstfloor.org>
 In-Reply-To: <20110201443.618138584@firstfloor.org>
-To: davem@davemloft.net, ak@linux.intel.com, damian@tvk.rwth-aachen.de,
-        eric.dumazet@gmail.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Subject: [PATCH] [45/139] tcp: Don't change unlocked socket state in tcp_v4_err().
-Message-Id: <20110202004400.DD5893E09BD@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:44:00 -0800 (PST)
+To: davem@davemloft.net, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [41/139] sparc: Do not export prom_nb{get,put}char().
+Message-Id: <20110202004356.B0C4C3E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:43:56 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,54 +27,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David S. Miller <davem@davemloft.net>
 
-[ Upstream commit 8f49c2703b33519aaaccc63f571b465b9d2b3a2d ]
+[ Upstream commit 91921fef7c658b12de53376b312d071d757f7770 ]
 
-Alexey Kuznetsov noticed a regression introduced by
-commit f1ecd5d9e7366609d640ff4040304ea197fbc618
-("Revert Backoff [v3]: Revert RTO on ICMP destination unreachable")
+Never used outside of console_{32,64}.c
 
-The RTO and timer modification code added to tcp_v4_err()
-doesn't check sock_owned_by_user(), which if true means we
-don't have exclusive access to the socket and therefore cannot
-modify it's critical state.
-
-Just skip this new code block if sock_owned_by_user() is true
-and eliminate the now superfluous sock_owned_by_user() code
-block contained within.
-
-Reported-by: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-CC: Damian Lukowski <damian@tvk.rwth-aachen.de>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/ipv4/tcp_ipv4.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-Index: linux-2.6.35.y/net/ipv4/tcp_ipv4.c
+---
+ arch/sparc/include/asm/oplib_32.h |    6 ------
+ arch/sparc/include/asm/oplib_64.h |    6 ------
+ arch/sparc/prom/console_32.c      |    6 ++----
+ arch/sparc/prom/console_64.c      |    6 ++----
+ 4 files changed, 4 insertions(+), 20 deletions(-)
+
+Index: linux-2.6.35.y/arch/sparc/include/asm/oplib_32.h
 ===================================================================
---- linux-2.6.35.y.orig/net/ipv4/tcp_ipv4.c
-+++ linux-2.6.35.y/net/ipv4/tcp_ipv4.c
-@@ -411,6 +411,9 @@ void tcp_v4_err(struct sk_buff *icmp_skb
- 		    !icsk->icsk_backoff)
- 			break;
+--- linux-2.6.35.y.orig/arch/sparc/include/asm/oplib_32.h
++++ linux-2.6.35.y/arch/sparc/include/asm/oplib_32.h
+@@ -104,12 +104,6 @@ extern int prom_getprev(void);
  
-+		if (sock_owned_by_user(sk))
-+			break;
-+
- 		icsk->icsk_backoff--;
- 		inet_csk(sk)->icsk_rto = __tcp_set_rto(tp) <<
- 					 icsk->icsk_backoff;
-@@ -425,11 +428,6 @@ void tcp_v4_err(struct sk_buff *icmp_skb
- 		if (remaining) {
- 			inet_csk_reset_xmit_timer(sk, ICSK_TIME_RETRANS,
- 						  remaining, TCP_RTO_MAX);
--		} else if (sock_owned_by_user(sk)) {
--			/* RTO revert clocked out retransmission,
--			 * but socket is locked. Will defer. */
--			inet_csk_reset_xmit_timer(sk, ICSK_TIME_RETRANS,
--						  HZ/20, TCP_RTO_MAX);
- 		} else {
- 			/* RTO revert clocked out retransmission.
- 			 * Will retransmit now */
+ /* Character operations to/from the console.... */
+ 
+-/* Non-blocking get character from console. */
+-extern int prom_nbgetchar(void);
+-
+-/* Non-blocking put character to console. */
+-extern int prom_nbputchar(char character);
+-
+ /* Blocking get character from console. */
+ extern char prom_getchar(void);
+ 
+Index: linux-2.6.35.y/arch/sparc/include/asm/oplib_64.h
+===================================================================
+--- linux-2.6.35.y.orig/arch/sparc/include/asm/oplib_64.h
++++ linux-2.6.35.y/arch/sparc/include/asm/oplib_64.h
+@@ -96,12 +96,6 @@ extern unsigned char prom_get_idprom(cha
+ 
+ /* Character operations to/from the console.... */
+ 
+-/* Non-blocking get character from console. */
+-extern int prom_nbgetchar(void);
+-
+-/* Non-blocking put character to console. */
+-extern int prom_nbputchar(char character);
+-
+ /* Blocking get character from console. */
+ extern char prom_getchar(void);
+ 
+Index: linux-2.6.35.y/arch/sparc/prom/console_32.c
+===================================================================
+--- linux-2.6.35.y.orig/arch/sparc/prom/console_32.c
++++ linux-2.6.35.y/arch/sparc/prom/console_32.c
+@@ -19,8 +19,7 @@ extern void restore_current(void);
+ /* Non blocking get character from console input device, returns -1
+  * if no input was taken.  This can be used for polling.
+  */
+-int
+-prom_nbgetchar(void)
++static int prom_nbgetchar(void)
+ {
+ 	static char inc;
+ 	int i = -1;
+@@ -51,8 +50,7 @@ prom_nbgetchar(void)
+ /* Non blocking put character to console device, returns -1 if
+  * unsuccessful.
+  */
+-int
+-prom_nbputchar(char c)
++static int prom_nbputchar(char c)
+ {
+ 	static char outc;
+ 	unsigned long flags;
+Index: linux-2.6.35.y/arch/sparc/prom/console_64.c
+===================================================================
+--- linux-2.6.35.y.orig/arch/sparc/prom/console_64.c
++++ linux-2.6.35.y/arch/sparc/prom/console_64.c
+@@ -18,8 +18,7 @@ extern int prom_stdin, prom_stdout;
+ /* Non blocking get character from console input device, returns -1
+  * if no input was taken.  This can be used for polling.
+  */
+-inline int
+-prom_nbgetchar(void)
++static int prom_nbgetchar(void)
+ {
+ 	unsigned long args[7];
+ 	char inc;
+@@ -42,8 +41,7 @@ prom_nbgetchar(void)
+ /* Non blocking put character to console device, returns -1 if
+  * unsuccessful.
+  */
+-inline int
+-prom_nbputchar(char c)
++static int prom_nbputchar(char c)
+ {
+ 	unsigned long args[7];
+ 	char outc;
