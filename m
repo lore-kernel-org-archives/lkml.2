@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752756Ab1BBG1I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 01:27:08 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:54891 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752421Ab1BBG1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 01:27:06 -0500
-Date: Wed, 2 Feb 2011 07:26:32 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: castet.matthieu@free.fr
-Cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-security-module@vger.kernel.org, Matthias Hopf <mhopf@suse.de>,
-        rjw@sisk.pl, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] NX protection for kernel data : fix 32 bits S3 suspend
-Message-ID: <20110202062632.GA12256@elte.hu>
-References: <4D473FD5.1090903@free.fr>
- <20110201080223.GB20372@elte.hu>
- <1296566732.4d4809cc1f963@imp.free.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296566732.4d4809cc1f963@imp.free.fr>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1752855Ab1BBGpQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 01:45:16 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:52612 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752548Ab1BBGpN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 01:45:13 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=OSHKtcXAGTi0A2SUywa2zJqLBJ2jxGEiWxo4WrcgzFYDlpGxgqeUCMlNQe+wjQsuhw
+         BMhRikDEGd5q7nM5SxRh45hV6vawHObMCdJF1KCIFQwqqeOdBDHwOfJ6qvxqzw9aY+oz
+         sqZLV+GlBrGphck/1OIwZZ6DKhfNdoYN5Rm74=
+Subject: [PATCH] Staging: Westbridge: added ioremap_nocache instead of
+ phys_to_virt
+From: Sutharsan <sutharsan.tech@gmail.com>
+To: greg@kroah.com
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-usb@vger.kernel.org, david.cross@cypress.com, srmt@cypress.com
+Content-Type: text/plain
+Date: Tue, 01 Feb 2011 22:45:04 -0800
+Message-Id: <1296629104.3592.26.camel@sutharsan-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Sutharsan Ramamoorthy <srmt@cypress.com>
 
-* castet.matthieu@free.fr <castet.matthieu@free.fr> wrote:
+This patch removes phys_to_virt() and adds ioremap_nocache() for
+memory mapping the GPMC registers.
 
-> Quoting Ingo Molnar <mingo@elte.hu>:
-> 
-> >
-> > * matthieu castet <castet.matthieu@free.fr> wrote:
-> >
-> > >  static inline int is_kernel_text(unsigned long addr)
-> > >  {
-> > > +#if defined(CONFIG_X86_32) && defined(CONFIG_ACPI_SLEEP)
-> > > +	/*
-> > > +	 * We need to make the wakeup trampoline in first 1MB !NX
-> > > +	 */
-> > > +	if (addr >= PAGE_OFFSET && addr <= (PAGE_OFFSET + (1<<20)))
-> > > +		return 1;
-> > > +#endif
-> >
-> > That's pretty ugly. Why not use set_memory_x()/set_memory_nx(), and only for
-> > the
-> > trampoline itself? Does the whole 1MB need to be marked X?
->
-> The previous code was doing that.
+Signed-off-by: Sutharsan Ramamoorthy <srmt@cypress.com>
 
-So why not call set_memory_x() in your patch? Mind trying that?
+---
 
-Thanks,
+diff -uprN -X linux-2.6.37_vanilla/Documentation/dontdiff linux-2.6.37_vanilla/drivers/staging/westbridge/astoria/arch/arm/mach-omap2/cyashalomap_kernel.c linux-2.6.37-ptov/drivers/staging/westbridge/astoria/arch/arm/mach-omap2/cyashalomap_kernel.c
+--- linux-2.6.37_vanilla/drivers/staging/westbridge/astoria/arch/arm/mach-omap2/cyashalomap_kernel.c	2010-11-29 20:42:04.000000000 -0800
++++ linux-2.6.37-ptov/drivers/staging/westbridge/astoria/arch/arm/mach-omap2/cyashalomap_kernel.c	2011-02-01 16:00:31.214861085 -0800
+@@ -347,11 +347,8 @@ static int cy_as_hal_gpmc_init(void)
+ 	u32 tmp32;
+ 	int err;
+ 	struct gpmc_timings	timings;
+-	/*
+-	 * get GPMC i/o registers base(already been i/o mapped
+-	 * in kernel, no need for separate i/o remap)
+-	 */
+-	gpmc_base = phys_to_virt(OMAP34XX_GPMC_BASE);
++
++	gpmc_base = (u32)ioremap_nocache(OMAP34XX_GPMC_BASE, BLKSZ_4K);
+ 	DBGPRN(KERN_INFO "kernel has gpmc_base=%x , val@ the base=%x",
+ 		gpmc_base, __raw_readl(gpmc_base)
+ 	);
 
-	Ingo
