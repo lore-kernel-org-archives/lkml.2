@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985Ab1BBL6Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 06:58:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56310 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753018Ab1BBL6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 06:58:23 -0500
-Subject: Re: [PATCH v2 3/6] KVM-GST: KVM Steal time accounting
-From: Glauber Costa <glommer@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
-        Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <4D493725.402@redhat.com>
-References: <1296244340-15173-1-git-send-email-glommer@redhat.com>
-	 <1296244340-15173-4-git-send-email-glommer@redhat.com>
-	 <4D456FF9.2010309@redhat.com>
-	 <1296575824.5081.17.camel@mothafucka.localdomain>
-	 <4D492DBA.9050603@redhat.com>  <4D493725.402@redhat.com>
+	id S1753972Ab1BBMDy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 07:03:54 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:47385 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752853Ab1BBMDx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 07:03:53 -0500
+Subject: Re: Support for Android for mac80211 / cfg80211 802.11 drivers
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Bob Copeland <me@bobcopeland.com>
+Cc: Jouni Malinen <j@w1.fi>, "Luis R. Rodriguez" <mcgrof@gmail.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Amod Bodas <Amod.Bodas@atheros.com>,
+        Senthilkumar Balasubramanian 
+	<Senthilkumar.Balasubramanian@atheros.com>,
+        Sree Durbha <Sree.Durbha@atheros.com>,
+        Deepak Dhamdhere <Deepak.Dhamdhere@atheros.com>,
+        Xin Jin <Xin.Jin@atheros.com>
+In-Reply-To: <20110202115743.GA12386@hash.localnet>
+References: <AANLkTikbrzLeeY8Gosw+7Aic1=V=5f+sD382sXwGDWbA@mail.gmail.com>
+	 <AANLkTi=_gHfEKKC2rsA0pc6Otu5FU4CtVKA2UR85b+GV@mail.gmail.com>
+	 <AANLkTim9uNH8BzjDM5Ekt3ayBe+7QfE4vnXR0bc-=-Yn@mail.gmail.com>
+	 <AANLkTikasAe2H+HyoWDr=NbuxW6LJAET-JqATWMmMmq0@mail.gmail.com>
+	 <1296633772.3624.2.camel@jlt3.sipsolutions.net>
+	 <20110202113052.GA14126@jm.kir.nu>  <20110202115743.GA12386@hash.localnet>
 Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat
-Date: Wed, 02 Feb 2011 09:57:49 -0200
-Message-ID: <1296647869.5081.1098.camel@mothafucka.localdomain>
+Date: Wed, 02 Feb 2011 13:03:49 +0100
+Message-ID: <1296648229.5671.2.camel@jlt3.sipsolutions.net>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-02-02 at 12:51 +0200, Avi Kivity wrote:
-> On 02/02/2011 12:11 PM, Avi Kivity wrote:
-> > On 02/01/2011 05:57 PM, Glauber Costa wrote:
-> >> On Sun, 2011-01-30 at 16:04 +0200, Avi Kivity wrote:
-> >> >  On 01/28/2011 09:52 PM, Glauber Costa wrote:
-> >> > >  This patch accounts steal time time in kernel/sched.
-> >> > >  I kept it from last proposal, because I still see advantages
-> >> > >  in it: Doing it here will give us easier access from scheduler
-> >> > >  variables such as the cpu rq. The next patch shows an example of
-> >> > >  usage for it.
-> >> > >
-> >> > >  Since functions like account_idle_time() can be called from
-> >> > >  multiple places, not only account_process_tick(), steal time
-> >> > >  grabbing is repeated in each account function separatedely.
-> >> > >
-> >> >
-> >> >  I accept that steal time is worthwhile, but do you have some way to
-> >> >  demonstrate that the implementation actually works and is beneficial?
-> >> >
-> >> >  Perhaps run two cpu-bound compute processes on one vcpu, 
-> >> overcommit that
-> >> >  vcpu, and see what happens to the processing rate with and without 
-> >> steal
-> >> >  time accounting.  I'd expect a fairer response with steal time 
-> >> accounting.
-> >>
-> >> Avi,
-> >>
-> >> There are two things here:
-> >> One of them, which is solely the accounting of steal time, (patches 1 to
-> >> 4) has absolutely nothing to do with what you said. Its sole purpose is
-> >> to provide the user with information about "why is my process slow if I
-> >> am using 100 % of my cpu?")
-> >
-> > Right.  Like irq and softirq time, we need to report this to the user, 
-> > as it's potentially much higher.
+On Wed, 2011-02-02 at 06:57 -0500, Bob Copeland wrote:
+> On Wed, Feb 02, 2011 at 01:30:52PM +0200, Jouni Malinen wrote:
+> > If it is fine to remove the custom wpa_supplicant modifications from
+> > Android, this is obviously a moot point, but until that happens, the
+> > easiest approach seems to be to provide a custom driver_*.c based on
+> > nl80211 to isolate the custom changes to user space and to small part of
+> > it at that. I don't really want to see new drivers trying to provide
+> > WEXT support with private ioctls to address need for making it work with
+> > Android..
 > 
-> Of course, it's not enough to just account for this time, you also have 
-> to expose it somewhere, and update tools like top(1) to display it.
-Yes, what I meant is that just the accounting will just expose it to the
-tools, won't affect the scheduler in any sense.
+> I guess my argument is if Atheros is spending resources on porting
+> drivers to Android, it would be nice to take the time to fix Android's
+> userspace too.  At any rate, I disagree with the wiki's wording "the
+> proper approach" as opposed to maybe "the straight-forward approach."
 
+I couldn't let that sit there so I edited it ;-)
+
+> Android already has a custom userspace library that sits between wpa_s
+> and their Java stack where they could probably stick all of this stuff.
+> If there is something that is truly missing from the kernel, then by
+> all means we can add it to nl80211 for everyone's benefit.
+
+Right. But then stock wpa_s can also get it, and everybody is happy, no?
+
+johannes
 
