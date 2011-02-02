@@ -1,196 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754526Ab1BBVmQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 16:42:16 -0500
-Received: from www.tglx.de ([62.245.132.106]:38943 "EHLO www.tglx.de"
+	id S1754613Ab1BBVmv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 16:42:51 -0500
+Received: from www.tglx.de ([62.245.132.106]:38856 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754438Ab1BBVmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 16:42:01 -0500
-Message-Id: <20110202212552.531432946@linutronix.de>
+	id S1753739Ab1BBVlV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 16:41:21 -0500
+Message-Id: <20110202212551.787481468@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Wed, 02 Feb 2011 21:41:54 -0000
+Date: Wed, 02 Feb 2011 21:41:14 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 8/8] genirq: Make handle_IRQ_event private to the core code
+Subject: [patch 2/8] genirq: Consolidate startup/shutdown of interrupts
 References: <20110202212258.546660886@linutronix.de>
 Content-Disposition: inline;
-	filename=genirq-make-handle_IRQ_event-private-to-genirq.patch
+	filename=genirq-clear-IRQ_MASKED-flag-in-startup.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No more users outside of kernel/irq. We really want to have flow
-handlers in the core code.
+Aside of duplicated code some of the startup/shutdown sites do not
+handle the MASKED/DISABLED flags and the depth field at all. Move that
+to a helper function and take care of it there.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- Documentation/DocBook/genericirq.tmpl |   10 +++++-----
- include/linux/irq.h                   |    3 ---
- kernel/irq/chip.c                     |   10 +++++-----
- kernel/irq/handle.c                   |    4 ++--
- kernel/irq/internals.h                |    3 +++
- kernel/irq/spurious.c                 |    2 +-
- 6 files changed, 16 insertions(+), 16 deletions(-)
+ kernel/irq/autoprobe.c |   10 +++++-----
+ kernel/irq/chip.c      |   18 +++++++++++++++---
+ kernel/irq/internals.h |    3 +++
+ kernel/irq/manage.c    |   14 +++++---------
+ 4 files changed, 28 insertions(+), 17 deletions(-)
 
-Index: linux-2.6-tip/Documentation/DocBook/genericirq.tmpl
+Index: linux-2.6-tip/kernel/irq/autoprobe.c
 ===================================================================
---- linux-2.6-tip.orig/Documentation/DocBook/genericirq.tmpl
-+++ linux-2.6-tip/Documentation/DocBook/genericirq.tmpl
-@@ -285,7 +285,7 @@ noop(struct irq_data *data))
- 		The following control flow is implemented (simplified excerpt):
- 		<programlisting>
- desc->chip->irq_mask();
--handle_IRQ_event(desc->action);
-+handle_irq_event(desc->action);
- desc->chip->irq_unmask();
- 		</programlisting>
- 		</para>
-@@ -300,7 +300,7 @@ desc->chip->irq_unmask();
- 		<para>
- 		The following control flow is implemented (simplified excerpt):
- 		<programlisting>
--handle_IRQ_event(desc->action);
-+handle_irq_event(desc->action);
- desc->chip->irq_eoi();
- 		</programlisting>
- 		</para>
-@@ -325,7 +325,7 @@ do {
- 	if (desc->status &amp; masked)
- 		desc->chip->irq_unmask();
- 	desc->status &amp;= ~pending;
--	handle_IRQ_event(desc->action);
-+	handle_irq_event(desc->action);
- } while (status &amp; pending);
- desc->status &amp;= ~running;
- 		</programlisting>
-@@ -344,7 +344,7 @@ desc->status &amp;= ~running;
- 		<para>
- 		The following control flow is implemented (simplified excerpt):
- 		<programlisting>
--handle_IRQ_event(desc->action);
-+handle_irq_event(desc->action);
- 		</programlisting>
- 		</para>
-    	    </sect3>
-@@ -362,7 +362,7 @@ handle_IRQ_event(desc->action);
- 		<para>
- 		The following control flow is implemented (simplified excerpt):
- 		<programlisting>
--handle_IRQ_event(desc->action);
-+handle_irq_event(desc->action);
- if (desc->chip->irq_eoi)
-         desc->chip->irq_eoi();
- 		</programlisting>
-Index: linux-2.6-tip/include/linux/irq.h
-===================================================================
---- linux-2.6-tip.orig/include/linux/irq.h
-+++ linux-2.6-tip/include/linux/irq.h
-@@ -236,9 +236,6 @@ static inline void move_masked_irq(int i
+--- linux-2.6-tip.orig/kernel/irq/autoprobe.c
++++ linux-2.6-tip/kernel/irq/autoprobe.c
+@@ -60,7 +60,7 @@ unsigned long probe_irq_on(void)
+ 			if (desc->irq_data.chip->irq_set_type)
+ 				desc->irq_data.chip->irq_set_type(&desc->irq_data,
+ 							 IRQ_TYPE_PROBE);
+-			desc->irq_data.chip->irq_startup(&desc->irq_data);
++			startup_irq(desc);
+ 		}
+ 		raw_spin_unlock_irq(&desc->lock);
+ 	}
+@@ -77,7 +77,7 @@ unsigned long probe_irq_on(void)
+ 		raw_spin_lock_irq(&desc->lock);
+ 		if (!desc->action && !(desc->status & IRQ_NOPROBE)) {
+ 			desc->status |= IRQ_AUTODETECT | IRQ_WAITING;
+-			if (desc->irq_data.chip->irq_startup(&desc->irq_data))
++			if (startup_irq(desc))
+ 				desc->status |= IRQ_PENDING;
+ 		}
+ 		raw_spin_unlock_irq(&desc->lock);
+@@ -99,7 +99,7 @@ unsigned long probe_irq_on(void)
+ 			/* It triggered already - consider it spurious. */
+ 			if (!(status & IRQ_WAITING)) {
+ 				desc->status = status & ~IRQ_AUTODETECT;
+-				desc->irq_data.chip->irq_shutdown(&desc->irq_data);
++				shutdown_irq(desc);
+ 			} else
+ 				if (i < 32)
+ 					mask |= 1 << i;
+@@ -138,7 +138,7 @@ unsigned int probe_irq_mask(unsigned lon
+ 				mask |= 1 << i;
  
- extern int no_irq_affinity;
- 
--/* Handle irq action chains: */
--extern irqreturn_t handle_IRQ_event(unsigned int irq, struct irqaction *action);
--
- /*
-  * Built-in IRQ handlers for various IRQ types,
-  * callable via desc->handle_irq()
+ 			desc->status = status & ~IRQ_AUTODETECT;
+-			desc->irq_data.chip->irq_shutdown(&desc->irq_data);
++			shutdown_irq(desc);
+ 		}
+ 		raw_spin_unlock_irq(&desc->lock);
+ 	}
+@@ -182,7 +182,7 @@ int probe_irq_off(unsigned long val)
+ 				nr_of_irqs++;
+ 			}
+ 			desc->status = status & ~IRQ_AUTODETECT;
+-			desc->irq_data.chip->irq_shutdown(&desc->irq_data);
++			shutdown_irq(desc);
+ 		}
+ 		raw_spin_unlock_irq(&desc->lock);
+ 	}
 Index: linux-2.6-tip/kernel/irq/chip.c
 ===================================================================
 --- linux-2.6-tip.orig/kernel/irq/chip.c
 +++ linux-2.6-tip/kernel/irq/chip.c
-@@ -492,7 +492,7 @@ handle_simple_irq(unsigned int irq, stru
- 	desc->status |= IRQ_INPROGRESS;
- 	raw_spin_unlock(&desc->lock);
- 
--	action_ret = handle_IRQ_event(irq, action);
-+	action_ret = handle_irq_event(irq, action);
- 	if (!noirqdebug)
- 		note_interrupt(irq, desc, action_ret);
- 
-@@ -537,7 +537,7 @@ handle_level_irq(unsigned int irq, struc
- 	desc->status |= IRQ_INPROGRESS;
- 	raw_spin_unlock(&desc->lock);
- 
--	action_ret = handle_IRQ_event(irq, action);
-+	action_ret = handle_irq_event(irq, action);
- 	if (!noirqdebug)
- 		note_interrupt(irq, desc, action_ret);
- 
-@@ -590,7 +590,7 @@ handle_fasteoi_irq(unsigned int irq, str
- 	desc->status &= ~IRQ_PENDING;
- 	raw_spin_unlock(&desc->lock);
- 
--	action_ret = handle_IRQ_event(irq, action);
-+	action_ret = handle_irq_event(irq, action);
- 	if (!noirqdebug)
- 		note_interrupt(irq, desc, action_ret);
- 
-@@ -669,7 +669,7 @@ handle_edge_irq(unsigned int irq, struct
- 
- 		desc->status &= ~IRQ_PENDING;
- 		raw_spin_unlock(&desc->lock);
--		action_ret = handle_IRQ_event(irq, action);
-+		action_ret = handle_irq_event(irq, action);
- 		if (!noirqdebug)
- 			note_interrupt(irq, desc, action_ret);
- 		raw_spin_lock(&desc->lock);
-@@ -700,7 +700,7 @@ handle_percpu_irq(unsigned int irq, stru
- 	if (desc->irq_data.chip->irq_ack)
- 		desc->irq_data.chip->irq_ack(&desc->irq_data);
- 
--	action_ret = handle_IRQ_event(irq, desc->action);
-+	action_ret = handle_irq_event(irq, desc->action);
- 	if (!noirqdebug)
- 		note_interrupt(irq, desc, action_ret);
- 
-Index: linux-2.6-tip/kernel/irq/handle.c
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/handle.c
-+++ linux-2.6-tip/kernel/irq/handle.c
-@@ -52,13 +52,13 @@ static void warn_no_thread(unsigned int 
+@@ -190,6 +190,20 @@ void set_irq_nested_thread(unsigned int 
  }
+ EXPORT_SYMBOL_GPL(set_irq_nested_thread);
  
- /**
-- * handle_IRQ_event - irq action chain handler
-+ * handle_irq_event - irq action chain handler
-  * @irq:	the interrupt number
-  * @action:	the interrupt action chain for this irq
-  *
-  * Handles the action chain of an irq event
++int startup_irq(struct irq_desc *desc)
++{
++	desc->status &= ~(IRQ_MASKED | IRQ_DISABLED);
++	desc->depth = 0;
++	return desc->irq_data.chip->irq_startup(&desc->irq_data);
++}
++
++void shutdown_irq(struct irq_desc *desc)
++{
++	desc->status |= IRQ_MASKED | IRQ_DISABLED;
++	desc->depth = 1;
++	desc->irq_data.chip->irq_shutdown(&desc->irq_data);
++}
++
+ /*
+  * default enable function
   */
--irqreturn_t handle_IRQ_event(unsigned int irq, struct irqaction *action)
-+irqreturn_t handle_irq_event(unsigned int irq, struct irqaction *action)
- {
- 	irqreturn_t ret, retval = IRQ_NONE;
- 	unsigned int status = 0;
+@@ -731,10 +745,8 @@ __set_irq_handler(unsigned int irq, irq_
+ 	desc->name = name;
+ 
+ 	if (handle != handle_bad_irq && is_chained) {
+-		desc->status &= ~IRQ_DISABLED;
+ 		desc->status |= IRQ_NOREQUEST | IRQ_NOPROBE;
+-		desc->depth = 0;
+-		desc->irq_data.chip->irq_startup(&desc->irq_data);
++		startup_irq(desc);
+ 	}
+ 	raw_spin_unlock_irqrestore(&desc->lock, flags);
+ 	chip_bus_sync_unlock(desc);
 Index: linux-2.6-tip/kernel/irq/internals.h
 ===================================================================
 --- linux-2.6-tip.orig/kernel/irq/internals.h
 +++ linux-2.6-tip/kernel/irq/internals.h
-@@ -40,6 +40,9 @@ static inline void unregister_handler_pr
- 					   struct irqaction *action) { }
+@@ -18,6 +18,9 @@ extern int __irq_set_trigger(struct irq_
+ extern void __disable_irq(struct irq_desc *desc, unsigned int irq, bool susp);
+ extern void __enable_irq(struct irq_desc *desc, unsigned int irq, bool resume);
+ 
++extern int startup_irq(struct irq_desc *desc);
++extern void shutdown_irq(struct irq_desc *desc);
++
+ extern void init_kstat_irqs(struct irq_desc *desc, int node, int nr);
+ 
+ /* Resending of interrupts :*/
+Index: linux-2.6-tip/kernel/irq/manage.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/manage.c
++++ linux-2.6-tip/kernel/irq/manage.c
+@@ -860,11 +860,9 @@ __setup_irq(unsigned int irq, struct irq
+ 		if (new->flags & IRQF_ONESHOT)
+ 			desc->status |= IRQ_ONESHOT;
+ 
+-		if (!(desc->status & IRQ_NOAUTOEN)) {
+-			desc->depth = 0;
+-			desc->status &= ~IRQ_DISABLED;
+-			desc->irq_data.chip->irq_startup(&desc->irq_data);
+-		} else
++		if (!(desc->status & IRQ_NOAUTOEN))
++			startup_irq(desc);
++		else
+ 			/* Undo nested disables: */
+ 			desc->depth = 1;
+ 
+@@ -1001,10 +999,8 @@ static struct irqaction *__free_irq(unsi
  #endif
  
-+/* Handle irq action chains: */
-+extern irqreturn_t handle_irq_event(unsigned int irq, struct irqaction *action);
-+
- extern int irq_select_affinity_usr(unsigned int irq);
+ 	/* If this was the last handler, shut down the IRQ line: */
+-	if (!desc->action) {
+-		desc->status |= IRQ_DISABLED;
+-		desc->irq_data.chip->irq_shutdown(&desc->irq_data);
+-	}
++	if (!desc->action)
++		shutdown_irq(desc);
  
- extern void irq_set_thread_affinity(struct irq_desc *desc);
-Index: linux-2.6-tip/kernel/irq/spurious.c
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/spurious.c
-+++ linux-2.6-tip/kernel/irq/spurious.c
-@@ -71,7 +71,7 @@ static int try_one_irq(int irq, struct i
- 		 */
- 		work = 1;
- 		raw_spin_unlock(&desc->lock);
--		handle_IRQ_event(irq, action);
-+		handle_irq_event(irq, action);
- 		raw_spin_lock(&desc->lock);
- 		desc->status &= ~IRQ_PENDING;
- 	}
+ #ifdef CONFIG_SMP
+ 	/* make sure affinity_hint is cleaned up */
 
 
