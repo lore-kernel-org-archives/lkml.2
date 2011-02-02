@@ -1,48 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753617Ab1BBLML (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 06:12:11 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:33929 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753096Ab1BBLMK convert rfc822-to-8bit (ORCPT
+	id S1753687Ab1BBLN2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 06:13:28 -0500
+Received: from casper.infradead.org ([85.118.1.10]:48684 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753502Ab1BBLN1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 06:12:10 -0500
-Subject: Re: [RFC/RFT PATCH] cgroup: enable write permission for the group
- of users
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Menage <menage@google.com>, Jordi Pujol <jordipujolp@gmail.com>,
-        linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>
-In-Reply-To: <20110202012733.GA30557@elte.hu>
-References: <201102011002.09819.jordipujolp@gmail.com>
-	 <AANLkTineUvbe4w53zVEyfafs_ERt1NPbRo83KeAH89KF@mail.gmail.com>
-	 <20110202012733.GA30557@elte.hu>
+	Wed, 2 Feb 2011 06:13:27 -0500
+Subject: Re: Why does the 2.6.37 scheduler hate RT tasks?
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20110202011049.GA15084@linux.vnet.ibm.com>
+References: <20110202011049.GA15084@linux.vnet.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 02 Feb 2011 12:13:03 +0100
-Message-ID: <1296645183.26581.305.camel@laptop>
+Date: Wed, 02 Feb 2011 12:14:25 +0100
+Message-ID: <1296645265.26581.307.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-02-02 at 02:27 +0100, Ingo Molnar wrote:
-> * Paul Menage <menage@google.com> wrote:
+On Tue, 2011-02-01 at 17:10 -0800, Paul E. McKenney wrote:
+> Hello, Peter,
 > 
-> > On Tue, Feb 1, 2011 at 1:02 AM, Jordi Pujol <jordipujolp@gmail.com> wrote:
-> > > Hello,
-> > >
-> > > Working in a development that uses control groups and libcgroup, I have found
-> > > that the files in control groups directories need write permission for the
-> > > group of users also.
-> > 
-> > This can be configured from userspace - chmod() works just fine on
-> > control files in cgroupfs.
-> 
-> Sure, many things can be worked around in user-space, but the question is, does the 
-> +g make sense as default cgroupfs permissions?
+> If I create an SCHED_FIFO-priority kthread in pre-2.6.37 kernels,
+> things work nicely.  If I try in in later kernels, __disable_runtime()
+> gets upset occasionally during CPU-hotplug calls when CPUs are inserted.
+> If I make the exact same kthreads run SCHED_NORMAL, no problem.
 
-I don't think this is anything the kernel can guess, the cgroup
-filesystem is root only on initial mount time for a good reason.
-Anything thereafter is purely up to userspace.
+> PS.  The code at kernel/sched_rt.c:466 is "BUG_ON(want);" in
+>      __disable_runtime().  Config attached in case that helps.
+
+Hrmm.. weird.. ok I'll have a look at that.
+
+
