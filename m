@@ -1,114 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755353Ab1BBW6w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 17:58:52 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47231 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755268Ab1BBW6v (ORCPT
+	id S1755363Ab1BBW7T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 17:59:19 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:33260 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755268Ab1BBW7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 17:58:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=mj/rVXdQsm/QeTsEbG1FPy37T4tAJKAC9q0ZOToo1L3lKEXOKxnZRH539/JTFSq8ni
-         pNVLMIESB2dCP4GBOhwSm6vk0U3jQodaibi/BylkE1fm2XIImFhOm462FVC+Os6fBTGf
-         4fG9rx6If3x+M+n5uz9ipaTV/XQC7n2YgUYZE=
-Date: Wed, 2 Feb 2011 14:58:42 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Duncan Laurie <dlaurie@chromium.org>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: serio - clear serio event queue after sysfs
- driver rebind
-Message-ID: <20110202225842.GA25306@core.coreip.homeip.net>
-References: <1290467390-25302-1-git-send-email-dlaurie@chromium.org>
- <20101127084153.GC28745@core.coreip.homeip.net>
- <AANLkTik1TE9zgKaiLQZ=1uFgMyZt43xp8VJBWfxdVyMY@mail.gmail.com>
- <20101208051211.GB4140@core.coreip.homeip.net>
- <20110201092126.GC17706@core.coreip.homeip.net>
- <AANLkTiknhubSN37ChYebWxd9Wx=R4dN38ETdZv2BZYee@mail.gmail.com>
+	Wed, 2 Feb 2011 17:59:17 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6245"; a="72763473"
+From: David Brown <davidb@codeaurora.org>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Greg KH <greg@kroah.com>, Russell King <rmk@arm.linux.org.uk>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>
+Subject: Re: linux-next: manual merge of the msm tree with the arm tree
+In-Reply-To: <alpine.LFD.2.00.1102021557530.8212@xanadu.home> (Nicolas Pitre's
+	message of "Wed, 02 Feb 2011 16:47:12 -0500 (EST)")
+References: <20110131131401.5d6c7646.sfr@canb.auug.org.au>
+	<8ya4o8m70jp.fsf@huya.qualcomm.com> <20110202194359.GC27065@kroah.com>
+	<20110202200030.GA26104@flint.arm.linux.org.uk>
+	<20110202203252.GD28479@kroah.com>
+	<20110202204453.GB26104@flint.arm.linux.org.uk>
+	<alpine.LFD.2.00.1102021557530.8212@xanadu.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+X-Hashcash: 1:20:110202:nico@fluxnic.net::cuSh9abwiIy867yn:00x+I
+X-Hashcash: 1:20:110202:rmk@arm.linux.org.uk::Tvdh5hPSnZBurL9/:000000000000000000000000000000000000000000YzL
+X-Hashcash: 1:20:110202:linux-next@vger.kernel.org::RIWWnJPV4ZH6zIE7:000000000000000000000000000000000000fox
+X-Hashcash: 1:20:110202:greg@kroah.com::tYpvX8AUOXXWgEGC:00020zx
+X-Hashcash: 1:20:110202:sfr@canb.auug.org.au::fNnijIUYb3IYk8ud:000000000000000000000000000000000000000003PoX
+X-Hashcash: 1:20:110202:stepanm@codeaurora.org::nz8g6dDbTjoFmYUz:0000000000000000000000000000000000000004L/z
+X-Hashcash: 1:20:110202:linux-kernel@vger.kernel.org::4HTix8fYVrQPVNKF:000000000000000000000000000000000CB4y
+Date: Wed, 02 Feb 2011 14:59:16 -0800
+Message-ID: <8yaipx259h7.fsf@huya.qualcomm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTiknhubSN37ChYebWxd9Wx=R4dN38ETdZv2BZYee@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 02, 2011 at 02:41:38PM -0800, Duncan Laurie wrote:
-> On Tue, Feb 1, 2011 at 1:21 AM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> > On Tue, Dec 07, 2010 at 09:12:11PM -0800, Dmitry Torokhov wrote:
-> >> On Mon, Nov 29, 2010 at 01:37:35PM -0800, Duncan Laurie wrote:
-> >> > On Sat, Nov 27, 2010 at 12:41 AM, Dmitry Torokhov
-> >> > <dmitry.torokhov@gmail.com> wrote:
-> >> > > Hi Duncan,
-> >> > >
-> >> > > On Mon, Nov 22, 2010 at 03:09:50PM -0800, Duncan Laurie wrote:
-> >> > >> When rebinding a serio driver via sysfs drvctl interface it is possible for
-> >> > >> an interrupt to trigger after the disconnect of the existing driver and
-> >> > >> before the binding of the new driver.  This will cause the serio interrupt
-> >> > >> handler to queue a rescan event which will disconnect the new driver
-> >> > >> immediately after it is attached.
-> >> > >>
-> >> > >> This change clears the serio event queue after processing the drvctl
-> >> > >> request but before releasing the serio mutex, which will clear any queued
-> >> > >> rescans before they can get processed.
-> >> > >>
-> >> > >> Reproduction involves issuing a rebind of device port from psmouse driver
-> >> > >> to serio_raw driver while generating input to trigger interrupts.  Then
-> >> > >> checking to see if the corresponding i8042/serio4/driver is correctly
-> >> > >> attached to the serio_raw driver instead of psmouse.
-> >> > >>
-> >> > >> Signed-off-by: Duncan Laurie <dlaurie@chromium.org>
-> >> > >> ---
-> >> > >>  drivers/input/serio/serio.c |    1 +
-> >> > >>  1 files changed, 1 insertions(+), 0 deletions(-)
-> >> > >>
-> >> > >> diff --git a/drivers/input/serio/serio.c b/drivers/input/serio/serio.c
-> >> > >> index 405bf21..a66307e 100644
-> >> > >> --- a/drivers/input/serio/serio.c
-> >> > >> +++ b/drivers/input/serio/serio.c
-> >> > >> @@ -454,6 +454,7 @@ static ssize_t serio_rebind_driver(struct device *dev, struct device_attribute *
-> >> > >>               serio_disconnect_port(serio);
-> >> > >>               error = serio_bind_driver(serio, to_serio_driver(drv));
-> >> > >>               put_driver(drv);
-> >> > >> +             serio_remove_pending_events(serio);
-> >> > >
-> >> > > Hmm, makes sense, although should we limit events being removed to
-> >> > > rescan events only?
-> >> > >
-> >> >
-> >> >
-> >> > That seems reasonable.  It would mean adding a new function or a
-> >> > parameter to the existing serio_remove_pending_events function, do you
-> >> > have a preference?
-> >> >
-> >>
-> >> I wonder if a boolean parameter (rescan_only) would not be the best
-> >> option.
-> >>
-> >
-> > Hi Duncan,
-> >
-> > I eneded up with the following patch, could you please try and see if
-> > it still works for you?
-> >
-> 
-> 
-> Hi Dmitry,
-> 
-> I tested the patch on a CR-48 device (which is where I was seeing the
-> problem because we switch to serio_raw at boot for the trackpad) and
-> it does fix the problem.
-> 
-> Thanks for sending this, it had slipped off my todo list.
-> 
+On Wed, Feb 02 2011, Nicolas Pitre wrote:
 
-Great, thank you for testing.
+> The actual problem here is that some people, notably the msm folks, are 
+> bypassing the maintainer hierarchy and going straight to Linus for their 
+> pull requests instead of asking RMK to pull.  We once debated this at 
+> some point and it was agreed that completely independent SOC specific 
+> code with no dependencies on the common ARM code _could_ go straight to 
+> Linus directly if they crave for it.
+
+I also have no real problem sending pull requests to RMK instead of
+Linus, as long as it isn't a pain.  Linus gives clear directions as to
+how his tree works, and when he expects what kinds of pull requests.
+Weird web-based patch tracking systems are a pain.  Pull requests from
+git with a fairly easy way to know when they've been pulled are not.
+
+I also find that http://ftp.arm.linux.org.uk/ is frequently
+inaccessable, and usually slow.
+
+As it stands, so far, it's been a lot less work for me to send directly
+to Linus, and resolve the issues that come up when they do.
+
+David
 
 -- 
-Dmitry
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
