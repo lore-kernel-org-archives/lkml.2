@@ -1,110 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137Ab1BBMnr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 07:43:47 -0500
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:42952 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752113Ab1BBMnp (ORCPT
+	id S1754157Ab1BBMpi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 07:45:38 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:44449 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752113Ab1BBMph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 07:43:45 -0500
-Date: Wed, 2 Feb 2011 18:13:33 +0530
-From: Ankita Garg <ankita@in.ibm.com>
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Johan MOSSBERG <johan.xx.mossberg@stericsson.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mel Gorman <mel@csn.ul.ie>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCHv8 07/12] mm: cma: Contiguous Memory Allocator added
-Message-ID: <20110202124333.GB26396@in.ibm.com>
-Reply-To: Ankita Garg <ankita@in.ibm.com>
-References: <cover.1292443200.git.m.nazarewicz@samsung.com>
- <eb8f43235c8ff2816ada7b56ffe371ea6140cae8.1292443200.git.m.nazarewicz@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <eb8f43235c8ff2816ada7b56ffe371ea6140cae8.1292443200.git.m.nazarewicz@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 2 Feb 2011 07:45:37 -0500
+Subject: Re: [PATCH 1/2] perf_events: add cgroup support (v8)
+From: Peter Zijlstra <peterz@infradead.org>
+To: balbir@linux.vnet.ibm.com
+Cc: eranian@google.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+        perfmon2-devel@lists.sf.net, eranian@gmail.com, robert.richter@amd.com,
+        acme@redhat.com, lizf@cn.fujitsu.com, Paul Menage <menage@google.com>
+In-Reply-To: <20110202115012.GA16409@balbir.in.ibm.com>
+References: <4d384700.2308e30a.70bc.ffffd532@mx.google.com>
+	 <1295534345.28776.175.camel@laptop> <1296646160.26581.315.camel@laptop>
+	 <20110202115012.GA16409@balbir.in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 02 Feb 2011 13:46:32 +0100
+Message-ID: <1296650792.26581.319.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
-
-On Wed, Dec 15, 2010 at 09:34:27PM +0100, Michal Nazarewicz wrote:
-> The Contiguous Memory Allocator is a set of functions that lets
-> one initialise a region of memory which then can be used to perform
-> allocations of contiguous memory chunks from.
+On Wed, 2011-02-02 at 17:20 +0530, Balbir Singh wrote:
+> * Peter Zijlstra <peterz@infradead.org> [2011-02-02 12:29:20]:
 > 
-> CMA allows for creation of private and non-private contexts.
-> The former is reserved for CMA and no other kernel subsystem can
-> use it.  The latter allows for movable pages to be allocated within
-> CMA's managed memory so that it can be used for page cache when
-> CMA devices do not use it.
+> > On Thu, 2011-01-20 at 15:39 +0100, Peter Zijlstra wrote:
+> > > On Thu, 2011-01-20 at 15:30 +0200, Stephane Eranian wrote:
+> > > > @@ -4259,8 +4261,20 @@ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
+> > > >  
+> > > >         /* Reassign the task to the init_css_set. */
+> > > >         task_lock(tsk);
+> > > > +       /*
+> > > > +        * we mask interrupts to prevent:
+> > > > +        * - timer tick to cause event rotation which
+> > > > +        *   could schedule back in cgroup events after
+> > > > +        *   they were switched out by perf_cgroup_sched_out()
+> > > > +        *
+> > > > +        * - preemption which could schedule back in cgroup events
+> > > > +        */
+> > > > +       local_irq_save(flags);
+> > > > +       perf_cgroup_sched_out(tsk);
+> > > >         cg = tsk->cgroups;
+> > > >         tsk->cgroups = &init_css_set;
+> > > > +       perf_cgroup_sched_in(tsk);
+> > > > +       local_irq_restore(flags);
+> > > >         task_unlock(tsk);
+> > > >         if (cg)
+> > > >                 put_css_set_taskexit(cg); 
+> > > 
+> > > So you too need a callback on cgroup change there.. Li, Paul, any chance
+> > > we can fix this cgroup_subsys::exit callback? The scheduler code needs
+> > > to do funny thing because its in the wrong place as well.
+> > 
+> > cgroup guys? Shall I just fix this exit thing since the only user seems
+> > to be the scheduler and now perf for both of which its unfortunate at
+> > best?
 > 
-> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
+> Are you suggesting that the cgroup_exit on task_exit notification should be
+> pulled out?
+
+
+No, just fixed. The callback as it exists isn't useful and leads to
+hacks like the above.
+
+
+> > Balbir, memcontrol.c uses pre_destroy(), I pose that using this method
+> > is broken per definition since it makes the cgroup empty notification
+> > void.
+> >
 > 
+> We use pre_destroy() to reclaim, so that delete/rmdir() will be able
+> to clean up the node/group. I am not sure what you mean by it makes
+> the empty notification void and why pre_destroy() is broken?
 
-<snip>
+A quick look at the code looked like it could return -EBUSY (and other
+errors), in that case the rmdir of the empty cgroup will fail.
 
-> +/************************* Initialise CMA *************************/
-> +
-> +unsigned long cma_reserve(unsigned long start, unsigned long size,
-> +			  unsigned long alignment)
-> +{
-> +	pr_debug("%s(%p+%p/%p)\n", __func__, (void *)start, (void *)size,
-> +		 (void *)alignment);
-> +
-> +	/* Sanity checks */
-> +	if (!size || (alignment & (alignment - 1)))
-> +		return (unsigned long)-EINVAL;
-> +
-> +	/* Sanitise input arguments */
-> +	start = PAGE_ALIGN(start);
-> +	size  = PAGE_ALIGN(size);
-> +	if (alignment < PAGE_SIZE)
-> +		alignment = PAGE_SIZE;
-> +
-> +	/* Reserve memory */
-> +	if (start) {
-> +		if (memblock_is_region_reserved(start, size) ||
-> +		    memblock_reserve(start, size) < 0)
-> +			return (unsigned long)-EBUSY;
-> +	} else {
-> +		/*
-> +		 * Use __memblock_alloc_base() since
-> +		 * memblock_alloc_base() panic()s.
-> +		 */
-> +		u64 addr = __memblock_alloc_base(size, alignment, 0);
-> +		if (!addr) {
-> +			return (unsigned long)-ENOMEM;
-> +		} else if (addr + size > ~(unsigned long)0) {
-> +			memblock_free(addr, size);
-> +			return (unsigned long)-EOVERFLOW;
-> +		} else {
-> +			start = addr;
-> +		}
-> +	}
-> +
+Therefore it can happen that after the last task is removed, and we get
+the notification that the cgroup is empty, and we attempt the rmdir we
+will fail.
 
-Reserving the areas of memory belonging to CMA using memblock_reserve,
-would preclude that range from the zones, due to which it would not be
-available for buddy allocations right ?
+This again means that all such notification handlers must poll state,
+which is ridiculous.
 
-> +	return start;
-> +}
-> +
-> +
 
--- 
-Regards,
-Ankita Garg (ankita@in.ibm.com)
-Linux Technology Center
-IBM India Systems & Technology Labs,
-Bangalore, India
+
