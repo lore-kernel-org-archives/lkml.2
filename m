@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686Ab1BBRKY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 12:10:24 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58209 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754503Ab1BBRKW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 12:10:22 -0500
-Date: Wed, 2 Feb 2011 17:09:59 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Richard Guenther <richard.guenther@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Peter Maydell <peter.maydell@linaro.org>,
-        gcc@gcc.gnu.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Ulrich Weigand <Ulrich.Weigand@de.ibm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: ARM unaligned MMIO access with attribute((packed))
-Message-ID: <20110202170959.GA31043@n2100.arm.linux.org.uk>
-References: <201102021700.20683.arnd@arndb.de> <AANLkTin6qEeN7XZuwePNWqS8i_aDY586V+sOqgD5pPQA@mail.gmail.com>
+	id S1754712Ab1BBRO5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 12:14:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57726 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754619Ab1BBRO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 12:14:56 -0500
+Message-ID: <4D4990F8.5020204@zytor.com>
+Date: Wed, 02 Feb 2011 09:14:32 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTin6qEeN7XZuwePNWqS8i_aDY586V+sOqgD5pPQA@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Gleb Natapov <gleb@redhat.com>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org
+Subject: Re: [PATCH] Fix EDD3.0 data verification.
+References: <20110202112139.GD14984@redhat.com>
+In-Reply-To: <20110202112139.GD14984@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 02, 2011 at 05:51:27PM +0100, Richard Guenther wrote:
-> > I would suggest fixing this by:
-> >
-> > 1. auditing all uses of __attribute__((packed)) in the Linux USB code
-> > and other drivers, removing the ones that are potentially harmful.
-> >
-> > 2. Changing the ARM MMIO functions to use inline assembly instead of
-> > direct pointer dereference.
-> >
-> > 3. Documenting the gcc behavior as undefined.
+On 02/02/2011 03:21 AM, Gleb Natapov wrote:
+> Check for nonzero path in edd_has_edd30() has no sense. First, it looks
+> at the wrong memory. Device path starts at offset 30 of the info->params
+> structure which is at offset 8 from the beginning of info structure, but
+> code looks at info + 4 instead. This was correct when code was introduced,
+> but around v2.6.4 three more fields were added to edd_info structure
+> (commit 66b61a5c in history.git). Second, even if it will check correct
+> memory it will always succeed since at offset 30 (params->key) there will
+> be non-zero values otherwise previous check would fail.
 > 
-> The pointer conversions already invoke undefined behavior as specified by the
-> C standard (6.3.2.3/7).
+> The patch replaces this bogus check with one that verifies checksum.
+> 
+> Signed-off-by: Gleb Natapov <gleb@redhat.com>
 
-Just to be clear: you are not saying that the ARM implementation is
-undefined.
+This is incorrect; the right thing to do is to use the length byte to
+verify the range that should be checksummed.
 
-What you're saying is that converting from a pointer with less strict
-alignment requirements to a pointer with more strict alignment
-requirements is undefined.
+	-hpa
 
-IOW:
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-unsigned long *blah(unsigned char *c)
-{
-	return (unsigned long *)c;
-}
-
-would be undefined, but:
-
-unsigned char *blah(unsigned long *c)
-{
-	return (unsigned char *)c;
-}
-
-would not be.
-
-If you're saying something else, please explain with reference to the
-point in the C standard you quote above.
