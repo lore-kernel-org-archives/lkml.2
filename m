@@ -1,39 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753802Ab1BBVcJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 16:32:09 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45247 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753646Ab1BBVcH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 16:32:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=ADvy+JLtFM5qmjDrcilzlOSQvSK5ZuRHZLEZrbGb/q7X8HTt5A+hWhrOZCh2bdu9QD
-         hsR8s/RXM4HYCjo8KDozvEKvdh53ZVjrAlm2Pzc2VaXa6cgrti7Ohpv2BFSdrbwRXD9T
-         1morXkLspbO9+PtSEKQaMYNJvsR349hFJ0fNU=
-MIME-Version: 1.0
-Date: Wed, 2 Feb 2011 16:32:06 -0500
-Message-ID: <AANLkTinhtb8mabUwksUTrRDs2iT3G=Dz_Gh7M4euN5Uy@mail.gmail.com>
-Subject: Regarding PREEMPT_RT option
-From: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
-To: Kernel-newbies <kernelnewbies@nl.linux.org>,
-        linux-kernel-mail <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753791Ab1BBVfm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 16:35:42 -0500
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:33003
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752762Ab1BBVfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 16:35:41 -0500
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: haiyangz@microsoft.com, hjanssen@microsoft.com, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org
+Cc: stable <stable@kernel.org>
+Subject: [PATCH] staging: hv: Enable sending GARP packet after live migration
+Date: Wed,  2 Feb 2011 13:42:58 -0800
+Message-Id: <1296682978-19223-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.5.5.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+The hv_netvsc gets RNDIS_STATUS_MEDIA_CONNECT event after the VM
+is live migrated. Adding call to netif_notify_peers() for this event
+to send GARP (Gratuitous ARP) to notify network peers. Otherwise,
+the VM's network connection may stop after a live migration.
 
-       I am trying to find detailed explanation of preemption option
-in config. For desktop, server, and low-latency desktop. Can anyone
-explain in what scenarios these are useful.
+This patch should also be applied to stable kernel 2.6.32 and later.
 
-Thanks in advance
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+Cc: stable <stable@kernel.org>
+---
+ drivers/staging/hv/netvsc_drv.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-
+diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
+index 54706a1..b41c964 100644
+--- a/drivers/staging/hv/netvsc_drv.c
++++ b/drivers/staging/hv/netvsc_drv.c
+@@ -236,6 +236,7 @@ static void netvsc_linkstatus_callback(struct hv_device *device_obj,
+ 	if (status == 1) {
+ 		netif_carrier_on(net);
+ 		netif_wake_queue(net);
++		netif_notify_peers(net);
+ 	} else {
+ 		netif_carrier_off(net);
+ 		netif_stop_queue(net);
 -- 
-Regards,
-Sri.
+1.5.5.6
+
