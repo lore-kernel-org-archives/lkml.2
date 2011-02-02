@@ -1,55 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755037Ab1BBV7U (ORCPT <rfc822;w@1wt.eu>);
+	id S1755110Ab1BBV73 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 16:59:29 -0500
+Received: from hera.kernel.org ([140.211.167.34]:50549 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754926Ab1BBV7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Feb 2011 16:59:20 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51805
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754743Ab1BBV7T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 16:59:19 -0500
-Date: Wed, 02 Feb 2011 13:59:54 -0800 (PST)
-Message-Id: <20110202.135954.189712480.davem@davemloft.net>
-To: linux@arm.linux.org.uk
-Cc: arnd@arndb.de, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, Ulrich.Weigand@de.ibm.com, gcc@gcc.gnu.org,
-        linux-kernel@vger.kernel.org, peter.maydell@linaro.org
-Subject: Re: ARM unaligned MMIO access with attribute((packed))
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110202214522.GG31043@n2100.arm.linux.org.uk>
-References: <20110202163702.GA23240@n2100.arm.linux.org.uk>
-	<20110202.133831.193702414.davem@davemloft.net>
-	<20110202214522.GG31043@n2100.arm.linux.org.uk>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Date: Wed, 2 Feb 2011 21:59:06 GMT
+From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        johnstul@us.ibm.com, tglx@linutronix.de, richard.cochran@omicron.at
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        johnstul@us.ibm.com, tglx@linutronix.de, richard.cochran@omicron.at
+In-Reply-To: <20110201134418.518851246@linutronix.de>
+References: <20110201134418.518851246@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] posix-timers: Convert clock_settime to clockid_to_kclock()
+Message-ID: <tip-26f9a4796af330173d790c8d2b5e2efcc489e755@git.kernel.org>
+Git-Commit-ID: 26f9a4796af330173d790c8d2b5e2efcc489e755
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 02 Feb 2011 21:59:06 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Date: Wed, 2 Feb 2011 21:45:22 +0000
+Commit-ID:  26f9a4796af330173d790c8d2b5e2efcc489e755
+Gitweb:     http://git.kernel.org/tip/26f9a4796af330173d790c8d2b5e2efcc489e755
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Tue, 1 Feb 2011 13:51:48 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 2 Feb 2011 15:28:14 +0100
 
-> On Wed, Feb 02, 2011 at 01:38:31PM -0800, David Miller wrote:
->> From: Russell King - ARM Linux <linux@arm.linux.org.uk>
->> Date: Wed, 2 Feb 2011 16:37:02 +0000
->> 
->> > 1. there's no way to tell GCC that the inline assembly is a load
->> >    instruction and therefore it needs to schedule the following
->> >    instructions appropriately.
->> 
->> Just add a dummy '"m" (pointer)' asm input argument to the inline asm
->> statement.  Just make sure "typeof(pointer)" has a size matching the
->> size of the load your are performing.
-> 
-> That involves this problematical cast from a packed struct pointer to
-> an unsigned long pointer, which according to the C standard and GCC
-> folk is undefined.
+posix-timers: Convert clock_settime to clockid_to_kclock()
 
-It's alignment may be undefined, but it's size definitely is well
-defined and that's what matters here.
+Use the new kclock decoding function in clock_settime and cleanup all
+kclocks which use the default functions. Rename the misnomed
+common_clock_set() to posix_clock_realtime_set().
 
-> Practice over the last 15 years on ARM has also shown that this is not
-> necessary.
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: John Stultz <johnstul@us.ibm.com>
+Tested-by: Richard Cochran <richard.cochran@omicron.at>
+LKML-Reference: <20110201134418.518851246@linutronix.de>
+---
+ include/linux/posix-timers.h |    3 ---
+ kernel/posix-cpu-timers.c    |    2 --
+ kernel/posix-timers.c        |   31 ++++++++++++-------------------
+ 3 files changed, 12 insertions(+), 24 deletions(-)
 
-Sorry oh big super man, little ole' me is only a kernel newbie.
+diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
+index cd6da06..4aaf0c5 100644
+--- a/include/linux/posix-timers.h
++++ b/include/linux/posix-timers.h
+@@ -89,9 +89,6 @@ extern struct k_clock clock_posix_cpu;
+ 
+ void register_posix_clock(const clockid_t clock_id, struct k_clock *new_clock);
+ 
+-/* error handlers for timer_create, nanosleep and settime */
+-int do_posix_clock_nosettime(const clockid_t, const struct timespec *tp);
+-
+ /* function to call to trigger timer event */
+ int posix_timer_event(struct k_itimer *timr, int si_private);
+ 
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index 8dc4cd7..504fbab 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -1604,7 +1604,6 @@ static __init int init_posix_cpu_timers(void)
+ 	struct k_clock process = {
+ 		.clock_getres	= process_cpu_clock_getres,
+ 		.clock_get	= process_cpu_clock_get,
+-		.clock_set	= do_posix_clock_nosettime,
+ 		.timer_create	= process_cpu_timer_create,
+ 		.nsleep		= process_cpu_nsleep,
+ 		.nsleep_restart	= process_cpu_nsleep_restart,
+@@ -1612,7 +1611,6 @@ static __init int init_posix_cpu_timers(void)
+ 	struct k_clock thread = {
+ 		.clock_getres	= thread_cpu_clock_getres,
+ 		.clock_get	= thread_cpu_clock_get,
+-		.clock_set	= do_posix_clock_nosettime,
+ 		.timer_create	= thread_cpu_timer_create,
+ 	};
+ 	struct timespec ts;
+diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
+index 4762986..49f358c 100644
+--- a/kernel/posix-timers.c
++++ b/kernel/posix-timers.c
+@@ -199,12 +199,6 @@ static int common_clock_get(clockid_t which_clock, struct timespec *tp)
+ 	return 0;
+ }
+ 
+-static inline int common_clock_set(const clockid_t which_clock,
+-				   const struct timespec *tp)
+-{
+-	return do_sys_settimeofday(tp, NULL);
+-}
+-
+ static int common_timer_create(struct k_itimer *new_timer)
+ {
+ 	hrtimer_init(&new_timer->it.real.timer, new_timer->it_clock, 0);
+@@ -232,6 +226,13 @@ static inline int invalid_clockid(const clockid_t which_clock)
+ 	return 1;
+ }
+ 
++/* Set clock_realtime */
++static int posix_clock_realtime_set(const clockid_t which_clock,
++				    const struct timespec *tp)
++{
++	return do_sys_settimeofday(tp, NULL);
++}
++
+ /*
+  * Get monotonic time for posix timers
+  */
+@@ -276,32 +277,29 @@ static __init int init_posix_timers(void)
+ {
+ 	struct k_clock clock_realtime = {
+ 		.clock_getres	= hrtimer_get_res,
++		.clock_set	= posix_clock_realtime_set,
+ 		.nsleep		= common_nsleep,
+ 		.nsleep_restart	= hrtimer_nanosleep_restart,
+ 	};
+ 	struct k_clock clock_monotonic = {
+ 		.clock_getres	= hrtimer_get_res,
+ 		.clock_get	= posix_ktime_get_ts,
+-		.clock_set	= do_posix_clock_nosettime,
+ 		.nsleep		= common_nsleep,
+ 		.nsleep_restart	= hrtimer_nanosleep_restart,
+ 	};
+ 	struct k_clock clock_monotonic_raw = {
+ 		.clock_getres	= hrtimer_get_res,
+ 		.clock_get	= posix_get_monotonic_raw,
+-		.clock_set	= do_posix_clock_nosettime,
+ 		.timer_create	= no_timer_create,
+ 	};
+ 	struct k_clock clock_realtime_coarse = {
+ 		.clock_getres	= posix_get_coarse_res,
+ 		.clock_get	= posix_get_realtime_coarse,
+-		.clock_set	= do_posix_clock_nosettime,
+ 		.timer_create	= no_timer_create,
+ 	};
+ 	struct k_clock clock_monotonic_coarse = {
+ 		.clock_getres	= posix_get_coarse_res,
+ 		.clock_get	= posix_get_monotonic_coarse,
+-		.clock_set	= do_posix_clock_nosettime,
+ 		.timer_create	= no_timer_create,
+ 	};
+ 
+@@ -940,24 +938,19 @@ void exit_itimers(struct signal_struct *sig)
+ 	}
+ }
+ 
+-/* Not available / possible... functions */
+-int do_posix_clock_nosettime(const clockid_t clockid, const struct timespec *tp)
+-{
+-	return -EINVAL;
+-}
+-EXPORT_SYMBOL_GPL(do_posix_clock_nosettime);
+-
+ SYSCALL_DEFINE2(clock_settime, const clockid_t, which_clock,
+ 		const struct timespec __user *, tp)
+ {
++	struct k_clock *kc = clockid_to_kclock(which_clock);
+ 	struct timespec new_tp;
+ 
+-	if (invalid_clockid(which_clock))
++	if (!kc || !kc->clock_set)
+ 		return -EINVAL;
++
+ 	if (copy_from_user(&new_tp, tp, sizeof (*tp)))
+ 		return -EFAULT;
+ 
+-	return CLOCK_DISPATCH(which_clock, clock_set, (which_clock, &new_tp));
++	return kc->clock_set(which_clock, &new_tp);
+ }
+ 
+ SYSCALL_DEFINE2(clock_gettime, const clockid_t, which_clock,
