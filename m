@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217Ab1BBN32 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 08:29:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23707 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754038Ab1BBN31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 08:29:27 -0500
-From: Glauber Costa <glommer@redhat.com>
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>
-Subject: [PATCH v2] use guest value of version field in kvmclock
-Date: Wed,  2 Feb 2011 08:27:56 -0500
-Message-Id: <1296653276-31931-1-git-send-email-glommer@redhat.com>
+	id S1754228Ab1BBNaj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 08:30:39 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:58863 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754109Ab1BBNaj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 08:30:39 -0500
+X-Sasl-enc: pGaDQfK0Z9QsLVazn2hPrMOU+rcEjoz62I6IrN+lh5cw 1296653438
+Date: Wed, 2 Feb 2011 11:30:36 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org
+Subject: Re: [PATCH] Fix EDD3.0 data verification.
+Message-ID: <20110202133035.GF9737@khazad-dum.debian.net>
+References: <20110202112139.GD14984@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110202112139.GD14984@redhat.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avi noticed that we have to use guest's value for the version field,
-instead of keeping track of it ourselves. If we don't do that,
-the following situation can arise:
+On Wed, 02 Feb 2011, Gleb Natapov wrote:
+> Check for nonzero path in edd_has_edd30() has no sense. First, it looks
+> at the wrong memory. Device path starts at offset 30 of the info->params
+> structure which is at offset 8 from the beginning of info structure, but
+> code looks at info + 4 instead. This was correct when code was introduced,
+> but around v2.6.4 three more fields were added to edd_info structure
+> (commit 66b61a5c in history.git). Second, even if it will check correct
+> memory it will always succeed since at offset 30 (params->key) there will
+> be non-zero values otherwise previous check would fail.
 
- vcpu->arch.hv_clock.version is initialized to zero.
- Guest reads version (result: 2)
- Guest starts reading data
- Live migration; vcpu->arch.hv_clock.version is zeroed
- Steal time update; vcpu->arch.hv_clock.version += 2; write to guest
- Guest continues reading data
- Guest reads version (result: 2)
+Hmm, would that be a reason for boot lockups on some systems ?  I've
+seen that happen on Intel D875PBZ and Debian stable (2.6.26).  We
+dropped EDD support then.
 
-Signed-off-by: Glauber Costa <glommer@redhat.com>
-CC: Avi Kivity <avi@redhat.com>
-
----
-v2: don't get rid of the actual values =)
----
- arch/x86/kvm/x86.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index c39ab4a..5707405 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1151,15 +1151,18 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
- 	vcpu->last_guest_tsc = tsc_timestamp;
- 	vcpu->hv_clock.flags = 0;
- 
-+	shared_kaddr = kmap_atomic(vcpu->time_page, KM_USER0);
-+
- 	/*
- 	 * The interface expects us to write an even number signaling that the
- 	 * update is finished. Since the guest won't see the intermediate
--	 * state, we just increase by 2 at the end.
-+	 * state, we just increase by 2 at the end. We use the guest's value as
-+	 * a basis to make it migration-safe.
- 	 */
-+	memcpy(&vcpu->hv_clock.version, shared_kaddr + vcpu->time_offset,
-+	       sizeof(vcpu->hv_clock.version));
- 	vcpu->hv_clock.version += 2;
- 
--	shared_kaddr = kmap_atomic(vcpu->time_page, KM_USER0);
--
- 	memcpy(shared_kaddr + vcpu->time_offset, &vcpu->hv_clock,
- 	       sizeof(vcpu->hv_clock));
- 
 -- 
-1.7.2.3
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
