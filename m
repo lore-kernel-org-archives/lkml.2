@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993Ab1BBKd4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 05:33:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58615 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752388Ab1BBKdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 05:33:54 -0500
-Date: Wed, 2 Feb 2011 11:33:51 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: tony.luck@intel.com, fenghua.yu@intel.com, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, megaraidlinux@lsi.com,
-        James.Bottomley@suse.de, linux-scsi@vger.kernel.org,
-        linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-        chas@cmf.nrl.navy.mil, linux-atm-general@lists.sourceforge.net
-Subject: Re: [PATCH 1/8]arch:ia64:perfmon.h change a typo comamnd to
- command
-In-Reply-To: <1296623130-5130-1-git-send-email-justinmattock@gmail.com>
-Message-ID: <alpine.LNX.2.00.1102021132330.2160@pobox.suse.cz>
-References: <1296623130-5130-1-git-send-email-justinmattock@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753216Ab1BBKeL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 05:34:11 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63531 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753101Ab1BBKeH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 05:34:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Hd01tg0ThjNclpxXwy/MVMtIq+e2eAA+L9nXEpxqnFDA1SnrPi3YZI/cPVbBROL+kZ
+         nEx1F1JYA32rFcms+QPAU+r0x4Fd38KMap/HCD0XgKYZh5lsVAbbjKamg2gBMdmd9lI1
+         eZyLvzt+mIbc7DS49NpUWmHQ5WJfWuBNho/Hk=
+Date: Wed, 2 Feb 2011 11:34:02 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Roland McGrath <roland@redhat.com>, oleg@redhat.com,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH] ptrace: use safer wake up on ptrace_detach()
+Message-ID: <20110202103402.GB24115@htj.dyndns.org>
+References: <1296227324-25295-1-git-send-email-tj@kernel.org>
+ <1296227324-25295-3-git-send-email-tj@kernel.org>
+ <20110128184601.CBF7C180996@magilla.sf.frob.com>
+ <20110131103855.GD7459@htj.dyndns.org>
+ <20110201102618.GE14211@htj.dyndns.org>
+ <20110201162729.f75be47d.akpm@linux-foundation.org>
+ <20110202053331.C27C6183D88@magilla.sf.frob.com>
+ <20110201213828.c3df7e87.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110201213828.c3df7e87.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Feb 2011, Justin P. Mattock wrote:
+Hello,
 
-> The below patch fixes a typo comamnd to command.
+On Tue, Feb 01, 2011 at 09:38:28PM -0800, Andrew Morton wrote:
+> On Tue,  1 Feb 2011 21:33:31 -0800 (PST) Roland McGrath <roland@redhat.com> wrote:
 > 
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> > > Am unable to work out why you tagged it for backporting.  It fixes some
+> > > observed bug?  Perhaps a regression?
+> > 
+> > No observed bug, only theoretical ones (AFAIK, never even a ginned-up
+> > synthetic test case has been demonstrated).  Certainly not a regression,
+> > since it has been this (wrong) way since the dawn of time.  I don't think
+> > this first change is dangerous for -stable, but I have seen no positive
+> > rationale for pushing it there.
+> > 
 > 
-> ---
->  arch/ia64/include/asm/perfmon.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/ia64/include/asm/perfmon.h b/arch/ia64/include/asm/perfmon.h
-> index 7f3333d..d551183 100644
-> --- a/arch/ia64/include/asm/perfmon.h
-> +++ b/arch/ia64/include/asm/perfmon.h
-> @@ -7,7 +7,7 @@
->  #define _ASM_IA64_PERFMON_H
->  
->  /*
-> - * perfmon comamnds supported on all CPU models
-> + * perfmon commands supported on all CPU models
+> OK, thanks.  I shall destabilize my copy of this patch.
 
-I have consended all the patches in this thread (modulo the staging ones) 
-into one and applied.
+It can be used as an attack vector.  I don't think it will take too
+much effort to come up with an attack which triggers oops somewhere.
+Most sleeps are wrapped in condition test loops and should be safe but
+we have quite a number of places where sleep and wakeup conditions are
+expected to be interlocked.  Although the window of opportunity is
+tiny, ptrace can be used by non-privileged users and with some loading
+the window can definitely be extended and exploited.
+
+The chance of this problem being visible under normal usage is
+extremely low so no wonder there is no related bug report but that is
+very different from being safe against targeted attacks.
+
+As the likelihood of causing user noticeable breakage is very low, I
+think we better push it through -stable.
+
+Thanks.
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+tejun
