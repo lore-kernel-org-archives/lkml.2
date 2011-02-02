@@ -1,31 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751035Ab1BBTeQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 14:34:16 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45437 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750739Ab1BBTeP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 14:34:15 -0500
-Date: Wed, 2 Feb 2011 11:33:42 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Roland McGrath <roland@redhat.com>, oleg@redhat.com,
-        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org
-Subject: Re: [PATCH] ptrace: use safer wake up on ptrace_detach()
-Message-Id: <20110202113342.3775c997.akpm@linux-foundation.org>
-In-Reply-To: <20110202103402.GB24115@htj.dyndns.org>
-References: <1296227324-25295-1-git-send-email-tj@kernel.org>
-	<1296227324-25295-3-git-send-email-tj@kernel.org>
-	<20110128184601.CBF7C180996@magilla.sf.frob.com>
-	<20110131103855.GD7459@htj.dyndns.org>
-	<20110201102618.GE14211@htj.dyndns.org>
-	<20110201162729.f75be47d.akpm@linux-foundation.org>
-	<20110202053331.C27C6183D88@magilla.sf.frob.com>
-	<20110201213828.c3df7e87.akpm@linux-foundation.org>
-	<20110202103402.GB24115@htj.dyndns.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1751444Ab1BBTfI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 14:35:08 -0500
+Received: from mga02.intel.com ([134.134.136.20]:33324 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750739Ab1BBTfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 14:35:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,415,1291622400"; 
+   d="scan'208";a="598877368"
+Date: Wed, 2 Feb 2011 11:32:53 -0800
+From: jacob pan <jacob.jun.pan@linux.intel.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: container cgroup <containers@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Paul Menage <menage@google.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Matt Helsley <matthltc@us.ibm.com>
+Subject: Re: [RFC PATCH 2/2] cgroup/freezer: add per freezer duty ratio
+ control
+Message-ID: <20110202113253.789a2a85@putvin>
+In-Reply-To: <20110201142301.GA23803@shutemov.name>
+References: <1291230012-9536-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	<1291230012-9536-3-git-send-email-jacob.jun.pan@linux.intel.com>
+	<20110201142301.GA23803@shutemov.name>
+Organization: OTC
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -33,55 +33,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Feb 2011 11:34:02 +0100
-Tejun Heo <tj@kernel.org> wrote:
+On Tue, 1 Feb 2011 16:23:01 +0200
+"Kirill A. Shutemov" <kirill@shutemov.name> wrote:
 
-> Hello,
+Thanks for your review, I will fix the error handling. Please also see
+my comments on create vs populate.
+> On Wed, Dec 01, 2010 at 11:00:12AM -0800,
+> jacob.jun.pan@linux.intel.com wrote:
+> > From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+>
+> > +#define FREEZER_KH_PREFIX  "freezer_"
+> >  static int freezer_populate(struct cgroup_subsys *ss, struct
+> > cgroup *cgroup) {
+> > +	int ret = 0;
+> > +	char thread_name[32];
+> > +	struct freezer *freezer;
+> > +
+> >  	if (!cgroup->parent)
+> >  		return 0;
+> > -	return cgroup_add_files(cgroup, ss, files,
+> > ARRAY_SIZE(files)); +
+> > +	freezer = cgroup_freezer(cgroup);
+> > +	ret = cgroup_add_files(cgroup, ss, files,
+> > ARRAY_SIZE(files)); +
+> > +	snprintf(thread_name, 32, "%s%s", FREEZER_KH_PREFIX,
+> > +		cgroup->dentry->d_name.name);
+> > +	freezer->fkh = kthread_run(freezer_kh, (void *)cgroup,
+> > thread_name);
+> > +	if (!IS_ERR(freezer_task))
+> > +		return 0;
+> > +	return ret;
 > 
-> On Tue, Feb 01, 2011 at 09:38:28PM -0800, Andrew Morton wrote:
-> > On Tue,  1 Feb 2011 21:33:31 -0800 (PST) Roland McGrath <roland@redhat.com> wrote:
-> > 
-> > > > Am unable to work out why you tagged it for backporting.  It fixes some
-> > > > observed bug?  Perhaps a regression?
-> > > 
-> > > No observed bug, only theoretical ones (AFAIK, never even a ginned-up
-> > > synthetic test case has been demonstrated).  Certainly not a regression,
-> > > since it has been this (wrong) way since the dawn of time.  I don't think
-> > > this first change is dangerous for -stable, but I have seen no positive
-> > > rationale for pushing it there.
-> > > 
-> > 
-> > OK, thanks.  I shall destabilize my copy of this patch.
-> 
-> It can be used as an attack vector.  I don't think it will take too
-> much effort to come up with an attack which triggers oops somewhere.
-> Most sleeps are wrapped in condition test loops and should be safe but
-> we have quite a number of places where sleep and wakeup conditions are
-> expected to be interlocked.  Although the window of opportunity is
-> tiny, ptrace can be used by non-privileged users and with some loading
-> the window can definitely be extended and exploited.
-> 
-> The chance of this problem being visible under normal usage is
-> extremely low so no wonder there is no related bug report but that is
-> very different from being safe against targeted attacks.
-> 
-> As the likelihood of causing user noticeable breakage is very low, I
-> think we better push it through -stable.
-> 
-
-We're learning some lessons about changelogging here :(
-
-I added this:
-
-: This bug can possibly be used as an attack vector.  I don't think
-: it will take too much effort to come up with an attack which triggers
-: oops somewhere.  Most sleeps are wrapped in condition test loops and
-: should be safe but we have quite a number of places where sleep and
-: wakeup conditions are expected to be interlocked.  Although the
-: window of opportunity is tiny, ptrace can be used by non-privileged
-: users and with some loading the window can definitely be extended and
-: exploited.
-
-to the changelog so the -stable maintainers can understand why we're
-sending this patch at them.
+> Why do you create on freezer_populate, not on freezer_create?
+I want to use the cgroup directory name for the kernel thread. If I do
+that in create() instead of populate, I would have to add more changes:
+1. pass dentry to the create function since that is called before
+  cgroup_create_dir()
+2. skip the dummy root as part of the initialization.
+So I chose to use populate, are there any issues with the functionality?
 
