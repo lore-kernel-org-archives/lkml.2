@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab1BBLeB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 06:34:01 -0500
-Received: from he.sipsolutions.net ([78.46.109.217]:34438 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753602Ab1BBLd7 (ORCPT
+	id S1753945Ab1BBLs1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 06:48:27 -0500
+Received: from www.wytron.com.tw ([211.75.82.101]:60369 "EHLO
+	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753016Ab1BBLsZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 06:33:59 -0500
-Subject: Re: Support for Android for mac80211 / cfg80211 802.11 drivers
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Jouni Malinen <j@w1.fi>
-Cc: Bob Copeland <me@bobcopeland.com>, "Luis R. Rodriguez" <mcgrof@gmail.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Amod Bodas <Amod.Bodas@atheros.com>,
-        Senthilkumar Balasubramanian 
-	<Senthilkumar.Balasubramanian@atheros.com>,
-        Sree Durbha <Sree.Durbha@atheros.com>,
-        Deepak Dhamdhere <Deepak.Dhamdhere@atheros.com>,
-        Xin Jin <Xin.Jin@atheros.com>
-In-Reply-To: <20110202113052.GA14126@jm.kir.nu>
-References: <AANLkTikbrzLeeY8Gosw+7Aic1=V=5f+sD382sXwGDWbA@mail.gmail.com>
-	 <AANLkTi=_gHfEKKC2rsA0pc6Otu5FU4CtVKA2UR85b+GV@mail.gmail.com>
-	 <AANLkTim9uNH8BzjDM5Ekt3ayBe+7QfE4vnXR0bc-=-Yn@mail.gmail.com>
-	 <AANLkTikasAe2H+HyoWDr=NbuxW6LJAET-JqATWMmMmq0@mail.gmail.com>
-	 <1296633772.3624.2.camel@jlt3.sipsolutions.net>
-	 <20110202113052.GA14126@jm.kir.nu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 02 Feb 2011 12:33:54 +0100
-Message-ID: <1296646434.5671.1.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 2 Feb 2011 06:48:25 -0500
+Message-ID: <4D4944AA.5040900@wytron.com.tw>
+Date: Wed, 02 Feb 2011 19:48:58 +0800
+From: Thomas Chou <thomas@wytron.com.tw>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
+        nios2-dev@sopc.et.ntust.edu.tw, linux-input@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Walter Goossens <waltergoossens@home.nl>
+Subject: Re: [PATCH v2] altera_ps2: Add devicetree support
+References: <20110117220415.GB17963@angua.secretlab.ca> <1295848693-28472-1-git-send-email-thomas@wytron.com.tw> <20110202043121.GF29148@angua.secretlab.ca>
+In-Reply-To: <20110202043121.GF29148@angua.secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 192.168.1.250
+X-SA-Exim-Mail-From: thomas@wytron.com.tw
+X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-02-02 at 13:30 +0200, Jouni Malinen wrote:
+On 02/02/2011 12:31 PM, Grant Likely wrote:
+>> +static const struct of_device_id altera_ps2_match[] = {
+>> +	{ .compatible = "altr,ps2-1.0", },
+>
+> I thought I had seen 'altera' instead of an abbreviation being used in
+> a previous patch.  I don't care much whether 'altr' or 'altera' is
+> used, but I'd like to know that there is consensus from the Altera
+> users so that all the drivers use the same prefix.
+>
 
-> > Agree, that is a dumb idea. What's that driver going to do? Use custom
-> > nl80211 extensions?! That way lies insanity.
-> 
-> The only reason for that is to be able to support the wpa_supplicant
-> modifications used in Android that are not acceptable for upstream
-> hostap.git (mainly, driver_cmd). This would not add any custom nl80211
-> extensions; the needed functionality should be added properly to
-> upstream nl80211.
+We had discussed on nios2-dev mailing list, and decided to use 'altr' as 
+Walter suggested that it saves space.
 
-What's the driver_cmd things they use? If we they add support for
-whatever it is to nl80211, why can those not be normal supplicant
-interfaces?
+About the documentation on dts binding, shall we have a single 
+altera.txt to describe all Altera related binding, and opencores.txt to 
+describe all OpenCores binding? Or separate file for each core in its 
+driver class?
 
-> If it is fine to remove the custom wpa_supplicant modifications from
-> Android, this is obviously a moot point, but until that happens, the
-> easiest approach seems to be to provide a custom driver_*.c based on
-> nl80211 to isolate the custom changes to user space and to small part of
-> it at that. I don't really want to see new drivers trying to provide
-> WEXT support with private ioctls to address need for making it work with
-> Android..
-
-Indeed -- no way. Seems Android needs to learn upstream.
-
-johannes
-
+- Thomas
