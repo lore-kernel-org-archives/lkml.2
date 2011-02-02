@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948Ab1BBApR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 19:45:17 -0500
-Received: from mga09.intel.com ([134.134.136.24]:64699 "EHLO mga09.intel.com"
+	id S1754055Ab1BBApb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 19:45:31 -0500
+Received: from mga01.intel.com ([192.55.52.88]:26982 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753870Ab1BBApJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:45:09 -0500
+	id S1754021Ab1BBAp1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:45:27 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="703028655"
+   d="scan'208";a="883418509"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110201443.618138584@firstfloor.org>
 In-Reply-To: <20110201443.618138584@firstfloor.org>
-To: alexdeucher@gmail.com, airlied@redhat.com, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [120/139] drm/radeon/kms/evergreen: reset the grbm blocks at resume and init
-Message-Id: <20110202004519.5B65E3E09BD@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:45:19 -0800 (PST)
+To: sconklin@canonical.com, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [138/139] Revert drm/radeon/kms: properly compute group_size on 6xx/7xx
+Message-Id: <20110202004538.285EC3E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:45:38 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,47 +23,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 86f5c9edbb3bac37cc8cee6528a929005ba72aad upstream.
+From: Steve Conklin <sconklin@canonical.com>
 
-This fixes module reloading and resume as the gfx block seems to
-be left in a bad state in some cases.
+We discovered a regression for Radeon users in our latest proposed
+kernel for 2.6.35 (Maverick), and have isolated it to this patch:
 
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+http://git.kernel.org/?p=linux/kernel/git/longterm/linux-2.6.35.y.git;a=commit;h=b8e9a4a45f8427837f4dba89
++bda4d4e3f3a5c726
 
----
- drivers/gpu/drm/radeon/evergreen.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+We took that patch as part of 2.6.35.10, and one of our testers has
+reported that our build of that kernel also exhibits the problem.
 
-Index: linux-2.6.35.y/drivers/gpu/drm/radeon/evergreen.c
+These are mainline kernels built with the Ubuntu configs.
+http://kernel.ubuntu.com/~kernel-ppa/mainline/v2.6.35.10-maverick/
+
+Our bug report is here:
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/703553
+
+Upstream bug report:
+
+https://bugzilla.kernel.org/show_bug.cgi?id=24802
+
+Index: linux-2.6.35.y/drivers/gpu/drm/radeon/r600.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/gpu/drm/radeon/evergreen.c
-+++ linux-2.6.35.y/drivers/gpu/drm/radeon/evergreen.c
-@@ -2080,6 +2080,11 @@ int evergreen_resume(struct radeon_devic
- {
- 	int r;
- 
-+	/* reset the asic, the gfx blocks are often in a bad state
-+	 * after the driver is unloaded or after a resume
-+	 */
-+	if (radeon_asic_reset(rdev))
-+		dev_warn(rdev->dev, "GPU reset failed !\n");
- 	/* Do not reset GPU before posting, on rv770 hw unlike on r500 hw,
- 	 * posting will perform necessary task to bring back GPU into good
- 	 * shape.
-@@ -2181,6 +2186,11 @@ int evergreen_init(struct radeon_device 
- 	r = radeon_atombios_init(rdev);
- 	if (r)
- 		return r;
-+	/* reset the asic, the gfx blocks are often in a bad state
-+	 * after the driver is unloaded or after a resume
-+	 */
-+	if (radeon_asic_reset(rdev))
-+		dev_warn(rdev->dev, "GPU reset failed !\n");
- 	/* Post card if necessary */
- 	if (!evergreen_card_posted(rdev)) {
- 		if (!rdev->bios) {
+--- linux-2.6.35.y.orig/drivers/gpu/drm/radeon/r600.c
++++ linux-2.6.35.y/drivers/gpu/drm/radeon/r600.c
+@@ -1597,11 +1597,8 @@ void r600_gpu_init(struct radeon_device 
+ 	rdev->config.r600.tiling_npipes = rdev->config.r600.max_tile_pipes;
+ 	rdev->config.r600.tiling_nbanks = 4 << ((ramcfg & NOOFBANK_MASK) >> NOOFBANK_SHIFT);
+ 	tiling_config |= BANK_TILING((ramcfg & NOOFBANK_MASK) >> NOOFBANK_SHIFT);
+-	tiling_config |= GROUP_SIZE((ramcfg & BURSTLENGTH_MASK) >> BURSTLENGTH_SHIFT);
+-	if ((ramcfg & BURSTLENGTH_MASK) >> BURSTLENGTH_SHIFT)
+-		rdev->config.r600.tiling_group_size = 512;
+-	else
+-		rdev->config.r600.tiling_group_size = 256;
++	tiling_config |= GROUP_SIZE(0);
++	rdev->config.r600.tiling_group_size = 256;
+ 	tmp = (ramcfg & NOOFROWS_MASK) >> NOOFROWS_SHIFT;
+ 	if (tmp > 3) {
+ 		tiling_config |= ROW_TILING(3);
+Index: linux-2.6.35.y/drivers/gpu/drm/radeon/rv770.c
+===================================================================
+--- linux-2.6.35.y.orig/drivers/gpu/drm/radeon/rv770.c
++++ linux-2.6.35.y/drivers/gpu/drm/radeon/rv770.c
+@@ -627,11 +627,10 @@ static void rv770_gpu_init(struct radeon
+ 	else
+ 		gb_tiling_config |= BANK_TILING((mc_arb_ramcfg & NOOFBANK_MASK) >> NOOFBANK_SHIFT);
+ 	rdev->config.rv770.tiling_nbanks = 4 << ((gb_tiling_config >> 4) & 0x3);
+-	gb_tiling_config |= GROUP_SIZE((mc_arb_ramcfg & BURSTLENGTH_MASK) >> BURSTLENGTH_SHIFT);
+-	if ((mc_arb_ramcfg & BURSTLENGTH_MASK) >> BURSTLENGTH_SHIFT)
+-		rdev->config.rv770.tiling_group_size = 512;
+-	else
+-		rdev->config.rv770.tiling_group_size = 256;
++
++	gb_tiling_config |= GROUP_SIZE(0);
++	rdev->config.rv770.tiling_group_size = 256;
++
+ 	if (((mc_arb_ramcfg & NOOFROWS_MASK) >> NOOFROWS_SHIFT) > 3) {
+ 		gb_tiling_config |= ROW_TILING(3);
+ 		gb_tiling_config |= SAMPLE_SPLIT(3);
