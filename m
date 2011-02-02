@@ -1,91 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755119Ab1BBTcN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 14:32:13 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:55809 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754882Ab1BBTcM (ORCPT
+	id S1751035Ab1BBTeQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 14:34:16 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45437 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750739Ab1BBTeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 14:32:12 -0500
-Date: Wed, 2 Feb 2011 14:32:09 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH 2/2] Tracepoints: Fix section alignment using pointer
-	array
-Message-ID: <20110202193209.GA29590@Krystal>
-References: <20110202180613.978219945@goodmis.org> <20110202180938.471738176@goodmis.org> <20110202183138.GB27022@Krystal> <1296673015.10797.66.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296673015.10797.66.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 14:32:01 up 71 days, 35 min,  3 users,  load average: 0.02, 0.02,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 2 Feb 2011 14:34:15 -0500
+Date: Wed, 2 Feb 2011 11:33:42 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Roland McGrath <roland@redhat.com>, oleg@redhat.com,
+        jan.kratochvil@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH] ptrace: use safer wake up on ptrace_detach()
+Message-Id: <20110202113342.3775c997.akpm@linux-foundation.org>
+In-Reply-To: <20110202103402.GB24115@htj.dyndns.org>
+References: <1296227324-25295-1-git-send-email-tj@kernel.org>
+	<1296227324-25295-3-git-send-email-tj@kernel.org>
+	<20110128184601.CBF7C180996@magilla.sf.frob.com>
+	<20110131103855.GD7459@htj.dyndns.org>
+	<20110201102618.GE14211@htj.dyndns.org>
+	<20110201162729.f75be47d.akpm@linux-foundation.org>
+	<20110202053331.C27C6183D88@magilla.sf.frob.com>
+	<20110201213828.c3df7e87.akpm@linux-foundation.org>
+	<20110202103402.GB24115@htj.dyndns.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Wed, 2011-02-02 at 13:31 -0500, Mathieu Desnoyers wrote:
+On Wed, 2 Feb 2011 11:34:02 +0100
+Tejun Heo <tj@kernel.org> wrote:
+
+> Hello,
 > 
-> > > History:
-> > > 
-> > > commit 7e066fb870fcd1025ec3ba7bbde5d541094f4ce1 added the aligned(32) type and
-> > > variable attribute to the tracepoint structures to deal with gcc happily
-> > > aligning statically defined structures on 32-byte multiples.
-> > > 
-> > > commit 15e3540ce2159705f18fad6147ffedf04445ad64 tried to use a 8-byte alignment
-> > > for tracepoint structures by applying both the variable and type attribute to
-> > > tracepoint structures definitions and declarations. It worked fine with gcc
-> > > 4.5.1, but broke with gcc 4.4.4 and 4.4.5.
+> On Tue, Feb 01, 2011 at 09:38:28PM -0800, Andrew Morton wrote:
+> > On Tue,  1 Feb 2011 21:33:31 -0800 (PST) Roland McGrath <roland@redhat.com> wrote:
 > > 
-> > Small nit: this reference to commit 15e3540ce2159705f18fad6147ffedf04445ad64
-> > should be changed to a non-commit-id-related explanation, because the commit has
-> > been rolled back from -tip.
+> > > > Am unable to work out why you tagged it for backporting.  It fixes some
+> > > > observed bug?  Perhaps a regression?
+> > > 
+> > > No observed bug, only theoretical ones (AFAIK, never even a ginned-up
+> > > synthetic test case has been demonstrated).  Certainly not a regression,
+> > > since it has been this (wrong) way since the dawn of time.  I don't think
+> > > this first change is dangerous for -stable, but I have seen no positive
+> > > rationale for pushing it there.
+> > > 
+> > 
+> > OK, thanks.  I shall destabilize my copy of this patch.
 > 
-> OK, I just did a git commit --amend to fix it. Here's the new text:
+> It can be used as an attack vector.  I don't think it will take too
+> much effort to come up with an attack which triggers oops somewhere.
+> Most sleeps are wrapped in condition test loops and should be safe but
+> we have quite a number of places where sleep and wakeup conditions are
+> expected to be interlocked.  Although the window of opportunity is
+> tiny, ptrace can be used by non-privileged users and with some loading
+> the window can definitely be extended and exploited.
 > 
+> The chance of this problem being visible under normal usage is
+> extremely low so no wonder there is no related bug report but that is
+> very different from being safe against targeted attacks.
 > 
->     commit 7e066fb870fcd1025ec3ba7bbde5d541094f4ce1 added the aligned(32) type a
->     variable attribute to the tracepoint structures to deal with gcc happily
->     aligning statically defined structures on 32-byte multiples.
->     
->     One attempt was to use a 8-byte alignment for tracepoint structures by apply
->     both the variable and type attribute to tracepoint structures definitions an
->     declarations. It worked fine with gcc 4.5.1, but broke with gcc 4.4.4 and 4.
->     
->     The reason is that the "aligned" attribute only specify the _minimum_ alignm
->     for a structure, leaving both the compiler and the linker free to align on
->     larger multiples. Because tracepoint.c expects the structures to be placed a
->     array within each section, up-alignment cause NULL-pointer exceptions due to
->     extra unexpected padding.
-> 
-> This version has just been pushed. I just changed the wording to leave
-> out the reference to the reverted commit.
-
-Looks good!
-
-Thanks,
-
-Mathieu
-
-> 
-> -- Steve
-> 
+> As the likelihood of causing user noticeable breakage is very low, I
+> think we better push it through -stable.
 > 
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+We're learning some lessons about changelogging here :(
+
+I added this:
+
+: This bug can possibly be used as an attack vector.  I don't think
+: it will take too much effort to come up with an attack which triggers
+: oops somewhere.  Most sleeps are wrapped in condition test loops and
+: should be safe but we have quite a number of places where sleep and
+: wakeup conditions are expected to be interlocked.  Although the
+: window of opportunity is tiny, ptrace can be used by non-privileged
+: users and with some loading the window can definitely be extended and
+: exploited.
+
+to the changelog so the -stable maintainers can understand why we're
+sending this patch at them.
+
