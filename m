@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704Ab1BBBFV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 20:05:21 -0500
-Received: from mga01.intel.com ([192.55.52.88]:4194 "EHLO mga01.intel.com"
+	id S1752898Ab1BBAno (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 19:43:44 -0500
+Received: from mga09.intel.com ([134.134.136.24]:28597 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752910Ab1BBAnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:43:45 -0500
+	id S1752814Ab1BBAnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:43:40 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="653504967"
+   d="scan'208";a="598622336"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110201443.618138584@firstfloor.org>
 In-Reply-To: <20110201443.618138584@firstfloor.org>
-To: davem@davemloft.net, gregkh@suse.de, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [40/139] sparc64: Delete prom_setcallback().
-Message-Id: <20110202004355.A63133E09BD@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:43:55 -0800 (PST)
+To: daniel@gaisler.com, davem@davemloft.net, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [35/139] SPARC/LEON: removed constant timer initialization as if HZ=100, now it reflects the value of HZ
+Message-Id: <20110202004350.6F2943E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:43:50 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,62 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David S. Miller <davem@davemloft.net>
+From: Daniel Hellstrom <daniel@gaisler.com>
 
-[ Upstream commit c540ee70e49b573535c7ddfd0e9a0fc9d549c8b7 ]
+[ Upstream commit b690c425fe07c725e7f1f7d40303588416cba67f ]
 
-Unused.
-
+Signed-off-by: Daniel Hellstrom <daniel@gaisler.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- arch/sparc/include/asm/oplib_64.h |    8 --------
- arch/sparc/prom/misc_64.c         |   14 --------------
- 2 files changed, 22 deletions(-)
+ arch/sparc/kernel/leon_kernel.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Index: linux-2.6.35.y/arch/sparc/include/asm/oplib_64.h
+Index: linux-2.6.35.y/arch/sparc/kernel/leon_kernel.c
 ===================================================================
---- linux-2.6.35.y.orig/arch/sparc/include/asm/oplib_64.h
-+++ linux-2.6.35.y/arch/sparc/include/asm/oplib_64.h
-@@ -88,14 +88,6 @@ extern void prom_halt(void) __attribute_
- /* Halt and power-off the machine. */
- extern void prom_halt_power_off(void) __attribute__ ((noreturn));
+--- linux-2.6.35.y.orig/arch/sparc/kernel/leon_kernel.c
++++ linux-2.6.35.y/arch/sparc/kernel/leon_kernel.c
+@@ -114,7 +114,7 @@ void __init leon_init_timers(irq_handler
+ 	if (leon3_gptimer_regs && leon3_irqctrl_regs) {
+ 		LEON3_BYPASS_STORE_PA(&leon3_gptimer_regs->e[0].val, 0);
+ 		LEON3_BYPASS_STORE_PA(&leon3_gptimer_regs->e[0].rld,
+-				      (((1000000 / 100) - 1)));
++				      (((1000000 / HZ) - 1)));
+ 		LEON3_BYPASS_STORE_PA(&leon3_gptimer_regs->e[0].ctrl, 0);
  
--/* Set the PROM 'sync' callback function to the passed function pointer.
-- * When the user gives the 'sync' command at the prom prompt while the
-- * kernel is still active, the prom will call this routine.
-- *
-- */
--typedef int (*callback_func_t)(long *cmd);
--extern void prom_setcallback(callback_func_t func_ptr);
--
- /* Acquire the IDPROM of the root node in the prom device tree.  This
-  * gets passed a buffer where you would like it stuffed.  The return value
-  * is the format type of this idprom or 0xff on error.
-Index: linux-2.6.35.y/arch/sparc/prom/misc_64.c
-===================================================================
---- linux-2.6.35.y.orig/arch/sparc/prom/misc_64.c
-+++ linux-2.6.35.y/arch/sparc/prom/misc_64.c
-@@ -150,20 +150,6 @@ void prom_halt_power_off(void)
- 	prom_halt();
- }
+ #ifdef CONFIG_SMP
+@@ -128,7 +128,7 @@ void __init leon_init_timers(irq_handler
+ 		}
  
--/* Set prom sync handler to call function 'funcp'. */
--void prom_setcallback(callback_func_t funcp)
--{
--	unsigned long args[5];
--	if (!funcp)
--		return;
--	args[0] = (unsigned long) "set-callback";
--	args[1] = 1;
--	args[2] = 1;
--	args[3] = (unsigned long) funcp;
--	args[4] = (unsigned long) -1;
--	p1275_cmd_direct(args);
--}
--
- /* Get the idprom and stuff it into buffer 'idbuf'.  Returns the
-  * format type.  'num_bytes' is the number of bytes that your idbuf
-  * has space for.  Returns 0xff on error.
+ 		LEON3_BYPASS_STORE_PA(&leon3_gptimer_regs->e[1].val, 0);
+-		LEON3_BYPASS_STORE_PA(&leon3_gptimer_regs->e[1].rld, (((1000000/100) - 1)));
++		LEON3_BYPASS_STORE_PA(&leon3_gptimer_regs->e[1].rld, (((1000000/HZ) - 1)));
+ 		LEON3_BYPASS_STORE_PA(&leon3_gptimer_regs->e[1].ctrl, 0);
+ # endif
+ 
