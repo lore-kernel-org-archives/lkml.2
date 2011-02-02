@@ -1,96 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104Ab1BBUp2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 15:45:28 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56618 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752464Ab1BBUp0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 15:45:26 -0500
-Date: Wed, 2 Feb 2011 20:44:54 +0000
-From: Russell King <rmk@arm.linux.org.uk>
-To: Greg KH <greg@kroah.com>, nico@fluxnic.net
-Cc: David Brown <davidb@codeaurora.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Stepan Moskovchenko <stepanm@codeaurora.org>
-Subject: Re: linux-next: manual merge of the msm tree with the arm tree
-Message-ID: <20110202204453.GB26104@flint.arm.linux.org.uk>
-References: <20110131131401.5d6c7646.sfr@canb.auug.org.au> <8ya4o8m70jp.fsf@huya.qualcomm.com> <20110202194359.GC27065@kroah.com> <20110202200030.GA26104@flint.arm.linux.org.uk> <20110202203252.GD28479@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110202203252.GD28479@kroah.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753185Ab1BBUqg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 15:46:36 -0500
+Received: from xenotime.net ([72.52.115.56]:43849 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751754Ab1BBUqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 15:46:35 -0500
+Date: Wed, 2 Feb 2011 12:46:33 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Harry Wei <harryxiyou@gmail.com>, gregkh <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Subject: Re: A problem about linux/Documentation/SubmittingPatches
+Message-Id: <20110202124633.e2380a77.rdunlap@xenotime.net>
+In-Reply-To: <20110202174531.GA7717@gmail.com>
+References: <20110202174531.GA7717@gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 02, 2011 at 12:32:52PM -0800, Greg KH wrote:
-> On Wed, Feb 02, 2011 at 08:00:31PM +0000, Russell King wrote:
-> > On Wed, Feb 02, 2011 at 11:43:59AM -0800, Greg KH wrote:
-> > > On Wed, Feb 02, 2011 at 10:29:14AM -0800, David Brown wrote:
-> > > > On Sun, Jan 30 2011, Stephen Rothwell wrote:
-> > > > 
-> > > > > Hi David,
-> > > > >
-> > > > > Today's linux-next merge of the msm tree got conflicts in
-> > > > > arch/arm/mach-msm/board-msm7x27.c, arch/arm/mach-msm/board-msm7x30.c,
-> > > > > arch/arm/mach-msm/board-qsd8x50.c and arch/arm/mach-msm/board-sapphire.c
-> > > > > between commit eda53d6d032effb653410b79e1b49e652a881744 ("ARM: P2V: avoid
-> > > > > initializers and assembly using PHYS_OFFSET") from the arm tree and
-> > > > > commit 07a3cc4814f790354d4c7be2c9dc6143a714a07a ("msm: Clean up useless
-> > > > > ifdefs") from the msm tree.
-> > > > >
-> > > > > I fixed it up (see below) and can carry the fix as necessary.
-> > > > 
-> > > > What is the best way to resolve this?  I can't really merge against
-> > > > Russell's tree, since he may need to rebase his tree before the merge
-> > > > window?
-> > > 
-> > > Public trees should never be rebased, so that shouldn't happen.
-> > 
-> > No.  I refuse to operate in a rigid environment.
-> > 
-> > My tree is made available on the basis that the 'devel' branch is
-> > constantly remerged (sometimes many times a day) from the individual
-> > topic branches; 'devel' is a convenient branch for sfr to pull into
-> > linux-next, and for others to see what's in the tree.
-> 
-> merging is fine, right?
-> 
-> Not rebasing, you really don't want to do that.  Linus has been all over
-> that topic in the past, I doubt he wants to bring it up again in detail.
->
-> > I am not permitted by people in the community to keep my development
-> > work unpublished.
-> > 
-> > All the requirements from various different people are incompatible,
-> > so I've chosen a way which satisfies the majority on the ARM community,
-> > which is the community my tree serves.  It does not serve mainline
-> > community interests.
-> 
-> So the goal of the ARM community isn't for the mainline community?  That
-> sounds like a big problem.
-> 
-> > So I do not operate a "commit the patch and its fixed" policy except
-> > for branches which people need to be fixed; they need to discuss their
-> > requirements with me to achieve that.
-> 
-> I'm not telling you how to run your branches, other than the simple fact
-> of: "if it's public, it shouldn't be rebased".  See Linus's comments for
-> why this is.
+On Thu, 3 Feb 2011 01:45:32 +0800 Harry Wei wrote:
 
-I'm not going to get involved in an argument over this.  If people
-insist on telling me not to publish then I'll do exactly that - I'll
-make my tree hidden from public view.
+> Hi us,
+>    I have seen linux-2.6.7/Documentation/SubmittingPatches but it hasn't described how to submit a translated document to kernel. I have also sent mail to <linux-kernel@zh-kernel.org>, however, there is no response.
+>    I have translated linux-2.6.37/Decumentation/SecurityBugs(no one translated it up to now). I'd like to send it to maintainers, then add it into kernel directories. However, I don't know how i can do it. Can anyone tell me howto do it? Thanks so much :)
 
-My personal preference was not to publish, but my hand was forced.
+Hi,
 
-I've added Nicolas so he can fight for having my tree visible in an
-unstable form.
+AFAIK, Greg KH handles all of the translation merging.
 
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+Right, Greg?
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
