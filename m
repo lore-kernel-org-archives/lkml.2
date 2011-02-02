@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059Ab1BBBKJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 20:10:09 -0500
-Received: from mga14.intel.com ([143.182.124.37]:16719 "EHLO mga14.intel.com"
+	id S1752932Ab1BBBKl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 20:10:41 -0500
+Received: from mga02.intel.com ([134.134.136.20]:10973 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752447Ab1BBAnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:43:21 -0500
+	id S1752430Ab1BBAnU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:43:20 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="382960367"
+   d="scan'208";a="703028255"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110201443.618138584@firstfloor.org>
 In-Reply-To: <20110201443.618138584@firstfloor.org>
 To: gorlik@penguintown.net, khali@linux-fr.org, gregkh@suse.de,
         ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [17/139] hwmon: (adm1026) Fix setting fan_div
-Message-Id: <20110202004331.999AF3E09BD@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:43:31 -0800 (PST)
+Subject: [PATCH] [16/139] hwmon: (adm1026) Allow 1 as a valid divider value
+Message-Id: <20110202004330.8F3E13E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:43:30 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,10 +26,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 From: Gabriele Gorla <gorlik@penguintown.net>
 
-commit 52bc9802ce849d0d287cc5fe76d06b0daa3986ca upstream.
+commit 8b0f1840a46449e1946fc88860ef3ec8d6b1c2c7 upstream.
 
-Prevent setting fan_div from stomping on other fans that share the
-same I2C register.
+Allow 1 as a valid div value as specified in the ADM1026 datasheet.
 
 Signed-off-by: Gabriele Gorla <gorlik@penguintown.net>
 Signed-off-by: Jean Delvare <khali@linux-fr.org>
@@ -37,43 +36,21 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/hwmon/adm1026.c |   16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+ drivers/hwmon/adm1026.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
 Index: linux-2.6.35.y/drivers/hwmon/adm1026.c
 ===================================================================
 --- linux-2.6.35.y.orig/drivers/hwmon/adm1026.c
 +++ linux-2.6.35.y/drivers/hwmon/adm1026.c
-@@ -916,7 +916,7 @@ static ssize_t set_fan_div(struct device
- 	int nr = sensor_attr->index;
- 	struct i2c_client *client = to_i2c_client(dev);
- 	struct adm1026_data *data = i2c_get_clientdata(client);
--	int val, orig_div, new_div, shift;
-+	int val, orig_div, new_div;
+@@ -920,9 +920,7 @@ static ssize_t set_fan_div(struct device
  
  	val = simple_strtol(buf, NULL, 10);
  	new_div = DIV_TO_REG(val);
-@@ -926,15 +926,17 @@ static ssize_t set_fan_div(struct device
+-	if (new_div == 0) {
+-		return -EINVAL;
+-	}
++
+ 	mutex_lock(&data->update_lock);
+ 	orig_div = data->fan_div[nr];
  	data->fan_div[nr] = DIV_FROM_REG(new_div);
- 
- 	if (nr < 4) { /* 0 <= nr < 4 */
--		shift = 2 * nr;
- 		adm1026_write_value(client, ADM1026_REG_FAN_DIV_0_3,
--			((DIV_TO_REG(orig_div) & (~(0x03 << shift))) |
--			(new_div << shift)));
-+				    (DIV_TO_REG(data->fan_div[0]) << 0) |
-+				    (DIV_TO_REG(data->fan_div[1]) << 2) |
-+				    (DIV_TO_REG(data->fan_div[2]) << 4) |
-+				    (DIV_TO_REG(data->fan_div[3]) << 6));
- 	} else { /* 3 < nr < 8 */
--		shift = 2 * (nr - 4);
- 		adm1026_write_value(client, ADM1026_REG_FAN_DIV_4_7,
--			((DIV_TO_REG(orig_div) & (~(0x03 << (2 * shift)))) |
--			(new_div << shift)));
-+				    (DIV_TO_REG(data->fan_div[4]) << 0) |
-+				    (DIV_TO_REG(data->fan_div[5]) << 2) |
-+				    (DIV_TO_REG(data->fan_div[6]) << 4) |
-+				    (DIV_TO_REG(data->fan_div[7]) << 6));
- 	}
- 
- 	if (data->fan_div[nr] != orig_div) {
