@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839Ab1BBU2U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 15:28:20 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:52406 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752464Ab1BBU2S convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 15:28:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=LCYZ5mA/7VMxumyHj66/xxT3WFJmG7KbJa/0ruhfO/oq4X/Ib9nor8qOveUmGmgUN2
-         IIBd4O2tz7ggquKfkvEgnEw/paLT/aI7uMzGuFhlf1yA0kBt6WubngVu9SS0ClLyDXXs
-         HE1BjvBT+ytvqc/+03JvaFGiY/AC+ebj0nZIc=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Nico Schottelius <nico-kernel-20110117@schottelius.org>
-Subject: Re: New display errors in 2.6.38-rc2-00175-g6fb1b30
-Date: Wed, 2 Feb 2011 21:28:12 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc2; KDE/4.4.5; i686; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>
-References: <20110128202905.GB3395@schottelius.org>
-In-Reply-To: <20110128202905.GB3395@schottelius.org>
+	id S1752815Ab1BBUc7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 15:32:59 -0500
+Received: from kroah.org ([198.145.64.141]:53049 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751622Ab1BBUc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 15:32:57 -0500
+Date: Wed, 2 Feb 2011 12:32:52 -0800
+From: Greg KH <greg@kroah.com>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: David Brown <davidb@codeaurora.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Stepan Moskovchenko <stepanm@codeaurora.org>
+Subject: Re: linux-next: manual merge of the msm tree with the arm tree
+Message-ID: <20110202203252.GD28479@kroah.com>
+References: <20110131131401.5d6c7646.sfr@canb.auug.org.au>
+ <8ya4o8m70jp.fsf@huya.qualcomm.com>
+ <20110202194359.GC27065@kroah.com>
+ <20110202200030.GA26104@flint.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201102022128.12589.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110202200030.GA26104@flint.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On piątek, 28 stycznia 2011 o 21:29:05 Nico Schottelius wrote:
-> Hey hackers!
+On Wed, Feb 02, 2011 at 08:00:31PM +0000, Russell King wrote:
+> On Wed, Feb 02, 2011 at 11:43:59AM -0800, Greg KH wrote:
+> > On Wed, Feb 02, 2011 at 10:29:14AM -0800, David Brown wrote:
+> > > On Sun, Jan 30 2011, Stephen Rothwell wrote:
+> > > 
+> > > > Hi David,
+> > > >
+> > > > Today's linux-next merge of the msm tree got conflicts in
+> > > > arch/arm/mach-msm/board-msm7x27.c, arch/arm/mach-msm/board-msm7x30.c,
+> > > > arch/arm/mach-msm/board-qsd8x50.c and arch/arm/mach-msm/board-sapphire.c
+> > > > between commit eda53d6d032effb653410b79e1b49e652a881744 ("ARM: P2V: avoid
+> > > > initializers and assembly using PHYS_OFFSET") from the arm tree and
+> > > > commit 07a3cc4814f790354d4c7be2c9dc6143a714a07a ("msm: Clean up useless
+> > > > ifdefs") from the msm tree.
+> > > >
+> > > > I fixed it up (see below) and can carry the fix as necessary.
+> > > 
+> > > What is the best way to resolve this?  I can't really merge against
+> > > Russell's tree, since he may need to rebase his tree before the merge
+> > > window?
+> > 
+> > Public trees should never be rebased, so that shouldn't happen.
 > 
-> With 2.6.38-rc2-00175-g6fb1b30 I get a new version of broken
-> display I've never seen before: The display looks like a misconfigured
-> tv after 2-3 suspends. Switching to a different tty was possible (though
-> still same broken display, but allowed a reboot) one time, the other time
-> the system completly froze.
+> No.  I refuse to operate in a rigid environment.
 > 
-> 2.6.37, 2.6.37-05761-gf878133 and 2.6.37-07956-g8c34482 do not have this
-> bug.
+> My tree is made available on the basis that the 'devel' branch is
+> constantly remerged (sometimes many times a day) from the individual
+> topic branches; 'devel' is a convenient branch for sfr to pull into
+> linux-next, and for others to see what's in the tree.
+
+merging is fine, right?
+
+Not rebasing, you really don't want to do that.  Linus has been all over
+that topic in the past, I doubt he wants to bring it up again in detail.
+
+> I am not permitted by people in the community to keep my development
+> work unpublished.
 > 
-> Cheers,
-> 
-> Nico
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=28102
-for your bug report, please add your address to the CC list in there, thanks!
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+> All the requirements from various different people are incompatible,
+> so I've chosen a way which satisfies the majority on the ARM community,
+> which is the community my tree serves.  It does not serve mainline
+> community interests.
+
+So the goal of the ARM community isn't for the mainline community?  That
+sounds like a big problem.
+
+> So I do not operate a "commit the patch and its fixed" policy except
+> for branches which people need to be fixed; they need to discuss their
+> requirements with me to achieve that.
+
+I'm not telling you how to run your branches, other than the simple fact
+of: "if it's public, it shouldn't be rebased".  See Linus's comments for
+why this is.
+
+thanks,
+
+greg k-h
