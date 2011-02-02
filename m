@@ -1,39 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317Ab1BBUww (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 15:52:52 -0500
-Received: from mga01.intel.com ([192.55.52.88]:57533 "EHLO mga01.intel.com"
+	id S1753388Ab1BBU5L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 15:57:11 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:46746 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753047Ab1BBUwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 15:52:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,415,1291622400"; 
-   d="scan'208";a="883745636"
-From: Russ Gorby <russ.gorby@intel.com>
-To: David Brownell <dbrownell@users.sourceforge.net> (maintainer:SPI
-	SUBSYSTEM),
-        Grant Likely <grant.likely@secretlab.ca> (maintainer:SPI SUBSYSTEM),
-        Greg Kroah-Hartman <gregkh@suse.de> (commit_signer:1/1=100%),
-        linux-kernel@vger.kernel.org (open list),
-        spi-devel-general@lists.sourceforge.net (open list:SPI SUBSYSTEM)
-Subject: [PATCH 0/1] ifx6x60 expanded platform data patch: 01/26/2011
-Date: Wed,  2 Feb 2011 12:56:57 -0800
-Message-Id: <1296680218-2693-1-git-send-email-russ.gorby@intel.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <[PATCH 0/1] ifx6x60 expanded platform data patch: 01/26/2011>
-References: <[PATCH 0/1] ifx6x60 expanded platform data patch: 01/26/2011>
+	id S1753177Ab1BBU5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 15:57:10 -0500
+Date: Wed, 2 Feb 2011 21:57:05 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, Ingo Molnar <mingo@elte.hu>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Xen Devel <Xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 0/2] x86/microcode: support for microcode update in Xen
+ dom0
+Message-ID: <20110202205704.GA14752@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Jeremy Fitzhardinge <jeremy@goop.org>, Ingo Molnar <mingo@elte.hu>,
+	the arch/x86 maintainers <x86@kernel.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Xen Devel <Xen-devel@lists.xensource.com>,
+	Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+References: <cover.1296259339.git.jeremy.fitzhardinge@citrix.com>
+ <20110130113356.GA27967@liondog.tnic>
+ <4D461FB9.5050807@goop.org>
+ <20110131070241.GA22071@liondog.tnic>
+ <4D46FC9F.6090309@goop.org>
+ <20110131234131.GA16095@liondog.tnic>
+ <4D475099.1080004@goop.org>
+ <4D475DB5.1020300@zytor.com>
+ <4D488EB1.9020803@goop.org>
+ <4D49B5F6.5010606@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4D49B5F6.5010606@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all,
-I am sending a patch for the ifx6x60 driver to expand the
-information available via the platform data structure.
-I'd like these to be considred for inclusion into the Linux Kernel.
+On Wed, Feb 02, 2011 at 11:52:22AM -0800, H. Peter Anvin wrote:
+> 3. Arguably on native hardware we should still load the microcode into
+> RAM in the boot loader, and install it on the very early CPU bringup
+> path.  That means locking down some (currently) 400K of RAM to handle
+> different combinations of CPUs, or the additional complexity of
+> jettisoning microcode which cannot be used while still be able to deal
+> with hotplug.  I think there is a strong case for this model, which
+> would mean moving the microcode into /boot anyway.
 
-Additional patches will follow that will depend on these changes
-so I'd like to iron these  out first.
+/me like it, sounds very nifty. So how do we want to do that, we add
+a field to the real-mode kernel header that tells us where to find
+the microcode image and we take it and apply the ucode somewhere in
+do_boot_cpu() path?
 
-Patches were made against the repo:
-http://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-as of 01/26/2011
+-- 
+Regards/Gruss,
+    Boris.
