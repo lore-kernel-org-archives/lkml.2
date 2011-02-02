@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109Ab1BBM0e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 07:26:34 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:58314 "EHLO mx2.mail.elte.hu"
+	id S1754091Ab1BBM20 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 07:28:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19273 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753617Ab1BBM0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 07:26:33 -0500
-Date: Wed, 2 Feb 2011 13:26:20 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Eric Paris <eparis@parisplace.org>, Eric Paris <eparis@redhat.com>,
-        linux-kernel@vger.kernel.org, agl@google.com, fweisbec@gmail.com,
-        tzanussi@gmail.com, Jason Baron <jbaron@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: Using ftrace/perf as a basis for generic seccomp
-Message-ID: <20110202122620.GA11427@elte.hu>
-References: <1294867725.3237.230.camel@localhost.localdomain>
- <AANLkTi=tmzKqLL30q9Mq+9u7s-M3sG2-MKz7pUJ1R08Z@mail.gmail.com>
- <4D494AB1.1040508@hitachi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D494AB1.1040508@hitachi.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753617Ab1BBM2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 07:28:25 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org
+Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH] trace: adding unstable sched clock note to the warning
+Date: Wed,  2 Feb 2011 13:28:18 +0100
+Message-Id: <1296649698-6003-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+hi,
 
-* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+warning "Delta way too big" warning might appear on a system with
+unstable shed clock right after the system is resumed and tracing
+was enabled during the suspend.
 
-> Hi Eric,
-> 
-> (2011/02/01 23:58), Eric Paris wrote:
-> > On Wed, Jan 12, 2011 at 4:28 PM, Eric Paris <eparis@redhat.com> wrote:
-> >> Some time ago Adam posted a patch to allow for a generic seccomp
-> >> implementation (unlike the current seccomp where your choice is all
-> >> syscalls or only read, write, sigreturn, and exit) which got little
-> >> traction and it was suggested he instead do the same thing somehow using
-> >> the tracing code:
-> >> http://thread.gmane.org/gmane.linux.kernel/833556
-> 
-> Hm, interesting idea :)
-> But why would you like to use tracing code? just for hooking?
+Since it's not realy bug, and the unstable sched clock is working
+fast and reliable otherwise, Steven suggested to keep using the
+sched clock in any case and just to make note in the warning itself.
 
-What I suggested before was to reuse the scripting engine and the tracepoints.
+wbr,
+jirka
 
-I.e. the "seccomp restrictions" can be implemented via a filter expression - and the 
-scripting engine could be generalized so that such 'sandboxing' code can make use of 
-it.
 
-For example, if you want to restrict a process to only allow open() syscalls to fd 4 
-(a very restrictive sandbox), it could be done via this filter expression:
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ kernel/trace/ring_buffer.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
-	'fd == 4'
-
-etc. Note that obviously the scripting engine needs to be abstracted out somewhat - 
-but this is the basic idea, to reuse the callbacks and reuse the scripting engine 
-for runtime filtering of syscall parameters.
-
-Thanks,
-
-	Ingo
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index bd1c35a..7739893 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -2163,10 +2163,14 @@ rb_reserve_next_event(struct ring_buffer *buffer,
+ 		delta = diff;
+ 		if (unlikely(test_time_stamp(delta))) {
+ 			WARN_ONCE(delta > (1ULL << 59),
+-				  KERN_WARNING "Delta way too big! %llu ts=%llu write stamp = %llu\n",
++				  KERN_WARNING "Delta way too big! %llu ts=%llu write stamp = %llu\n%s",
+ 				  (unsigned long long)delta,
+ 				  (unsigned long long)ts,
+-				  (unsigned long long)cpu_buffer->write_stamp);
++				  (unsigned long long)cpu_buffer->write_stamp,
++				  sched_clock_stable ? "" :
++				  "If you just came from a suspend/resume,\n"
++				  "please switch to the trace global clock:\n"
++				  "  echo global > /sys/kernel/debug/tracing/trace_clock\n");
+ 			add_timestamp = 1;
+ 		}
+ 	}
