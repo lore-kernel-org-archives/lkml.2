@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752444Ab1BBJko (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 04:40:44 -0500
-Received: from citrobio921.net ([72.64.129.173]:63347 "EHLO CITROBIO.COM"
+	id S1752598Ab1BBJyN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 04:54:13 -0500
+Received: from www.tglx.de ([62.245.132.106]:48066 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750904Ab1BBJkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 04:40:43 -0500
-X-Greylist: delayed 2026 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Feb 2011 04:40:43 EST
-Message-ID: <29BABCACFC1F7775F7FB056A6E472BCB@Gdmurmjj>
-From: <sgtseo@gmail.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: I found that site I was talking about yesterday
-Date: Wed, 2 Feb 2011 04:06:44 -0500
+	id S1752223Ab1BBJyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 04:54:11 -0500
+Date: Wed, 2 Feb 2011 10:53:58 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Richard Cochran <richardcochran@gmail.com>
+cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Richard Cochran <richard.cochran@omicron.at>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch 18/28] posix-timers: Convert timer_delete() to
+ clockid_to_kclock()
+In-Reply-To: <20110202082943.GC2747@riccoc20.at.omicron.at>
+Message-ID: <alpine.LFD.2.00.1102021053350.31804@localhost6.localdomain6>
+References: <20110201134320.688829863@linutronix.de> <20110201134419.198999420@linutronix.de> <20110202082943.GC2747@riccoc20.at.omicron.at>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
-	format=flowed	reply-type=original
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5843
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
-Here's that site I was talking about to get the email lists...
-http://www.buyemailaddresslists.com
-They have a ton of targeted email lists to order.
-http://www.buyemailaddresslists.com/buy-email-address-lists/prodView.asp?idproduct=53
+On Wed, 2 Feb 2011, Richard Cochran wrote:
 
-4 billion emails for under a grand... Can you believe that?
-Get a couple in our target area and I'll meet you in the office
-to discuss and start sending.
-They also have a great sender program, AMS, 
-http://www.buyemailaddresslists.com/buy-email-address-lists/prodView.asp?idProduct=40
+> On Tue, Feb 01, 2011 at 01:52:07PM -0000, Thomas Gleixner wrote:
+> > Index: linux-2.6-tip/kernel/posix-timers.c
+> > ===================================================================
+> > --- linux-2.6-tip.orig/kernel/posix-timers.c
+> > +++ linux-2.6-tip/kernel/posix-timers.c
+> > @@ -254,6 +254,7 @@ static __init int init_posix_timers(void
+> >  		.timer_create	= common_timer_create,
+> >  		.timer_set	= common_timer_set,
+> >  		.timer_get	= common_timer_get,
+> > +		.timer_del	= common_timer_del,
+> >  	};
+> >  	struct k_clock clock_monotonic = {
+> >  		.clock_getres	= hrtimer_get_res,
+> > @@ -263,6 +264,7 @@ static __init int init_posix_timers(void
+> >  		.timer_create	= common_timer_create,
+> >  		.timer_set	= common_timer_set,
+> >  		.timer_get	= common_timer_get,
+> > +		.timer_del	= common_timer_del,
+> >  	};
+> >  	struct k_clock clock_monotonic_raw = {
+> >  		.clock_getres	= hrtimer_get_res,
+> 
+> The definition of common_timer_del() should not be "inline" since the
+> address of the function is in these tables. The declaration is not
+> inline, and gcc 4.2.4 gives a warning.
+> 
+> (But strangly, newer versions do not).
 
-That software is 60 bucks and we can send all the emails out without having to use our providers smtp account. 
-This way we don't get into trouble.
-Awesome stuff.
-Give me a call when you get them ordered and I will come back to the office.
-Thanks,
-Jeffrey
+Will fix. Thanks.
 
+     tglx
