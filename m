@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab1BBA6u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 19:58:50 -0500
-Received: from mga11.intel.com ([192.55.52.93]:8119 "EHLO mga11.intel.com"
+	id S1752895Ab1BBA73 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 19:59:29 -0500
+Received: from mga02.intel.com ([134.134.136.20]:46446 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753420Ab1BBAoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:44:24 -0500
+	id S1753429Ab1BBAoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:44:21 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="653505141"
+   d="scan'208";a="703028474"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110201443.618138584@firstfloor.org>
 In-Reply-To: <20110201443.618138584@firstfloor.org>
-To: heiko.carstens@de.ibm.com, eric.dumazet@gmail.com, a.p.zijlstra@chello.nl,
-        ak@linux.intel.com, mingo@elte.hu, gregkh@suse.de,
+To: segooon@gmail.com, davem@davemloft.net, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [77/139] printk: Fix wake_up_klogd() vs cpu hotplug
-Message-Id: <20110202004434.5D1BA3E09BD@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:44:34 -0800 (PST)
+Subject: [PATCH] [74/139] net: packet: fix information leak to userland
+Message-Id: <20110202004431.3D1CB3E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:44:31 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,45 +24,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit 49f4138346b3cec2706adff02658fe27ceb1e46f upstream.
+From: Vasiliy Kulikov <segooon@gmail.com>
 
-wake_up_klogd() may get called from preemptible context but uses
-__raw_get_cpu_var() to write to a per cpu variable. If it gets preempted
-between getting the address and writing to it, the cpu in question could be
-offline if the process gets scheduled back and hence writes to the per cpu data
-of an offline cpu.
+[ Upstream commit 67286640f638f5ad41a946b9a3dc75327950248f ]
 
-This buggy behaviour was introduced with fa33507a "printk: robustify
-printk, fix #2" which was supposed to fix a "using smp_processor_id() in
-preemptible" warning.
+packet_getname_spkt() doesn't initialize all members of sa_data field of
+sockaddr struct if strlen(dev->name) < 13.  This structure is then copied
+to userland.  It leads to leaking of contents of kernel stack memory.
+We have to fully fill sa_data with strncpy() instead of strlcpy().
 
-Let's use this_cpu_write() instead which disables preemption and makes sure
-that the outlined scenario cannot happen.
+The same with packet_getname(): it doesn't initialize sll_pkttype field of
+sockaddr_ll.  Set it to zero.
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-LKML-Reference: <20101126124247.GC7023@osiris.boeblingen.de.ibm.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- kernel/printk.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/packet/af_packet.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Index: linux-2.6.35.y/kernel/printk.c
+Index: linux-2.6.35.y/net/packet/af_packet.c
 ===================================================================
---- linux-2.6.35.y.orig/kernel/printk.c
-+++ linux-2.6.35.y/kernel/printk.c
-@@ -1042,7 +1042,7 @@ int printk_needs_cpu(int cpu)
- void wake_up_klogd(void)
- {
- 	if (waitqueue_active(&log_wait))
--		__raw_get_cpu_var(printk_pending) = 1;
-+		this_cpu_write(printk_pending, 1);
- }
- 
- /**
+--- linux-2.6.35.y.orig/net/packet/af_packet.c
++++ linux-2.6.35.y/net/packet/af_packet.c
+@@ -1706,7 +1706,7 @@ static int packet_getname_spkt(struct so
+ 	rcu_read_lock();
+ 	dev = dev_get_by_index_rcu(sock_net(sk), pkt_sk(sk)->ifindex);
+ 	if (dev)
+-		strlcpy(uaddr->sa_data, dev->name, 15);
++		strncpy(uaddr->sa_data, dev->name, 14);
+ 	else
+ 		memset(uaddr->sa_data, 0, 14);
+ 	rcu_read_unlock();
+@@ -1729,6 +1729,7 @@ static int packet_getname(struct socket 
+ 	sll->sll_family = AF_PACKET;
+ 	sll->sll_ifindex = po->ifindex;
+ 	sll->sll_protocol = po->num;
++	sll->sll_pkttype = 0;
+ 	rcu_read_lock();
+ 	dev = dev_get_by_index_rcu(sock_net(sk), po->ifindex);
+ 	if (dev) {
