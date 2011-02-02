@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab1BBBL7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 20:11:59 -0500
-Received: from mga03.intel.com ([143.182.124.21]:34886 "EHLO mga03.intel.com"
+	id S1753175Ab1BBBMQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 20:12:16 -0500
+Received: from mga03.intel.com ([143.182.124.21]:59383 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752267Ab1BBAnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:43:12 -0500
+	id S1752259Ab1BBAnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:43:11 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="382960298"
+   d="scan'208";a="382960291"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110201443.618138584@firstfloor.org>
 In-Reply-To: <20110201443.618138584@firstfloor.org>
-To: alexdeucher@gmail.com, ml@sergej.pp.ru, airlied@redhat.com, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [8/139] drm/kms: remove spaces from connector names (v2)
-Message-Id: <20110202004322.1BEBA3E09BD@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:43:22 -0800 (PST)
+To: alexdeucher@gmail.com, ak@linux.intel.com, airlied@redhat.com,
+        gregkh@suse.de, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [7/139] drm/radeon/kms: don't apply 7xx HDP flush workaround on AGP
+Message-Id: <20110202004321.10FEA3E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:43:21 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,45 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 From: Alex Deucher <alexdeucher@gmail.com>
 
-commit e76116ca9671e2e5239054a40303b94feab585ad upstream.
+commit f3886f85cfde578f1d0ba6e40ac5f9d70043923b upstream.
 
-Grub doesn't parse spaces in parameters correctly, so
-this makes it impossible to force video= parameters
-for kms on the grub kernel command line.
+It should be required for all 7xx asics, but seems to cause
+problems on some AGP 7xx chips.
 
-v2: shorten the names to make them easier to type.
+Fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=19002
 
-Reported-by: Sergej Pupykin <ml@sergej.pp.ru>
-
-Cc: Sergej Pupykin <ml@sergej.pp.ru>
 Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Reported-and-Tested-by: Duncan <1i5t5.duncan@cox.net>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/gpu/drm/drm_crtc.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/radeon/r600.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-Index: linux-2.6.35.y/drivers/gpu/drm/drm_crtc.c
+Index: linux-2.6.35.y/drivers/gpu/drm/radeon/r600.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/gpu/drm/drm_crtc.c
-+++ linux-2.6.35.y/drivers/gpu/drm/drm_crtc.c
-@@ -155,12 +155,12 @@ static struct drm_conn_prop_enum_list dr
- 	{ DRM_MODE_CONNECTOR_SVIDEO, "SVIDEO", 0 },
- 	{ DRM_MODE_CONNECTOR_LVDS, "LVDS", 0 },
- 	{ DRM_MODE_CONNECTOR_Component, "Component", 0 },
--	{ DRM_MODE_CONNECTOR_9PinDIN, "9-pin DIN", 0 },
--	{ DRM_MODE_CONNECTOR_DisplayPort, "DisplayPort", 0 },
--	{ DRM_MODE_CONNECTOR_HDMIA, "HDMI Type A", 0 },
--	{ DRM_MODE_CONNECTOR_HDMIB, "HDMI Type B", 0 },
-+	{ DRM_MODE_CONNECTOR_9PinDIN, "DIN", 0 },
-+	{ DRM_MODE_CONNECTOR_DisplayPort, "DP", 0 },
-+	{ DRM_MODE_CONNECTOR_HDMIA, "HDMI-A", 0 },
-+	{ DRM_MODE_CONNECTOR_HDMIB, "HDMI-B", 0 },
- 	{ DRM_MODE_CONNECTOR_TV, "TV", 0 },
--	{ DRM_MODE_CONNECTOR_eDP, "Embedded DisplayPort", 0 },
-+	{ DRM_MODE_CONNECTOR_eDP, "eDP", 0 },
- };
+--- linux-2.6.35.y.orig/drivers/gpu/drm/radeon/r600.c
++++ linux-2.6.35.y/drivers/gpu/drm/radeon/r600.c
+@@ -869,12 +869,15 @@ void r600_pcie_gart_tlb_flush(struct rad
+ 	u32 tmp;
  
- static struct drm_prop_enum_list drm_encoder_enum_list[] =
+ 	/* flush hdp cache so updates hit vram */
+-	if ((rdev->family >= CHIP_RV770) && (rdev->family <= CHIP_RV740)) {
++	if ((rdev->family >= CHIP_RV770) && (rdev->family <= CHIP_RV740) &&
++	    !(rdev->flags & RADEON_IS_AGP)) {
+ 		void __iomem *ptr = (void *)rdev->gart.table.vram.ptr;
+ 		u32 tmp;
+ 
+ 		/* r7xx hw bug.  write to HDP_DEBUG1 followed by fb read
+ 		 * rather than write to HDP_REG_COHERENCY_FLUSH_CNTL
++		 * This seems to cause problems on some AGP cards. Just use the old
++		 * method for them.
+ 		 */
+ 		WREG32(HDP_DEBUG1, 0);
+ 		tmp = readl((void __iomem *)ptr);
+@@ -3523,10 +3526,12 @@ int r600_debugfs_mc_info_init(struct rad
+ void r600_ioctl_wait_idle(struct radeon_device *rdev, struct radeon_bo *bo)
+ {
+ 	/* r7xx hw bug.  write to HDP_DEBUG1 followed by fb read
+-	 * rather than write to HDP_REG_COHERENCY_FLUSH_CNTL
++	 * rather than write to HDP_REG_COHERENCY_FLUSH_CNTL.
++	 * This seems to cause problems on some AGP cards. Just use the old
++	 * method for them.
+ 	 */
+ 	if ((rdev->family >= CHIP_RV770) && (rdev->family <= CHIP_RV740) &&
+-	    rdev->vram_scratch.ptr) {
++	    rdev->vram_scratch.ptr && !(rdev->flags & RADEON_IS_AGP)) {
+ 		void __iomem *ptr = (void *)rdev->vram_scratch.ptr;
+ 		u32 tmp;
+ 
