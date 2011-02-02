@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185Ab1BBJLA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 04:11:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17879 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752019Ab1BBJK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 04:10:58 -0500
-Message-ID: <4D491F94.6070803@redhat.com>
-Date: Wed, 02 Feb 2011 11:10:44 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1752388Ab1BBJOA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 04:14:00 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63571 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693Ab1BBJN6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 04:13:58 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=O88PKSTzrS29uERqhafKWPBEl9sjm2ub8lVpccPe5tL9dbrsFupr0XrFzMCWrNHlUJ
+         r3dtWrw90PZrTBlE/KarQWI07TfP6Dh4/6JtqA2KWjdqfZGR5HRIlqBI6yGl4xJ/dtIK
+         IQeWkiZoFv9KZNm0Yp/lU1aAA9XxfR6a2Bu2o=
 MIME-Version: 1.0
-To: sedat.dilek@gmail.com
-CC: Sedat Dilek <sedat.dilek@googlemail.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, riel@redhat.com,
-        gleb@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kvm: Fix section mismatch derived from kvm_guest_cpu_online()
-References: <1294009289-28802-1-git-send-email-sedat.dilek@gmail.com>	<20110104210307.GB6130@amt.cnet> <AANLkTi=V6PvG42bBmE=7qcm=5vvk=SeUJ6a8oMKOcihb@mail.gmail.com>
-In-Reply-To: <AANLkTi=V6PvG42bBmE=7qcm=5vvk=SeUJ6a8oMKOcihb@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4D48B24B.8020305@lwfinger.net>
+References: <1296607614-5326-1-git-send-email-mark.einon@gmail.com>
+	<4D48B24B.8020305@lwfinger.net>
+Date: Wed, 2 Feb 2011 09:13:57 +0000
+Message-ID: <AANLkTikXfScGU93epfcgHXrBQwDELdGS1y8zeHkpu=n4@mail.gmail.com>
+Subject: Re: [PATCH] Staging: rtl8712: Switch from large inline firmware file
+ to use the firmware interface
+From: Mark Einon <mark.einon@gmail.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: greg@kroah.com, florian.c.schilhabel@googlemail.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02/2011 09:55 AM, Sedat Dilek wrote:
-> On Tue, Jan 4, 2011 at 10:03 PM, Marcelo Tosatti<mtosatti@redhat.com>  wrote:
-> >  On Mon, Jan 03, 2011 at 12:01:29AM +0100, Sedat Dilek wrote:
-> >>  > From my build.log:
-> >>
-> >>  WARNING: arch/x86/built-in.o(.text+0x1bb74): Section mismatch in reference from the function kvm_guest_cpu_online() to the function .cpuinit.text:kvm_guest_cpu_init()
-> >>  The function kvm_guest_cpu_online() references
-> >>  the function __cpuinit kvm_guest_cpu_init().
-> >>  This is often because kvm_guest_cpu_online lacks a __cpuinit
-> >>  annotation or the annotation of kvm_guest_cpu_init is wrong.
-> >>
-> >>  This patch fixes the warning.
-> >>
-> >>  Tested with linux-next (next-20101231)
-> >>
-> >>  Signed-off-by: Sedat Dilek<sedat.dilek@gmail.com>
-> >
-> >  Applied, thanks.
-> >
-> >
->
-> PING!
->
-> Was this patch really applied? I have it still in my patch-series.
->
+Hi Larry,
 
-It was applied to kvm.git and will find its way upstream eventually.
+    I don't think these patches are equivalent, could you explain what
+you mean? I can't find an equivalent use of request_firmware() in the
+driver prior to this patch, or from the Jan 14 changes.
 
--- 
-error compiling committee.c: too many arguments to function
+Regards,
 
+  Mark
+
+On 2 February 2011 01:24, Larry Finger <Larry.Finger@lwfinger.net> wrote:
+>
+> On 02/01/2011 06:46 PM, Mark Einon wrote:
+> > As per the drivers/staging/rtl8712/TODO file. Relevant firmware
+> > already present in linux-firmware package.
+> >
+> > Signed-off-by: Mark Einon <mark.einon@gmail.com>
+> > ---
+> >  drivers/staging/rtl8712/farray.h   |10197 ------------------------------------
+> >  drivers/staging/rtl8712/hal_init.c |   36 +-
+> >  2 files changed, 16 insertions(+), 10217 deletions(-)
+> >  delete mode 100644 drivers/staging/rtl8712/farray.h
+>
+> The equivalent of this patch was sent to GregKH on January 14,
+>
+> Larry
