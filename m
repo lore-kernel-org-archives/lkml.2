@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208Ab1BBAuo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 19:50:44 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33720 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753573Ab1BBAum convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:50:42 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=VXqBFqepGkWLM7OfVh7fR1fSJmaj7TX/4MoYNXTpfeD9ji9nmtLWe0T4XfYZnQ80RY
-         KerlRvgoaVjlQOO0TuhCO/YMsXta/Zst+ymjgQNNnBzv2Xm+hSgJRPy+lHTX/lTygzY9
-         idw9SbPcxupzcaHZJpMDDIa1kvO/9Xb7NkjQI=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=_gHfEKKC2rsA0pc6Otu5FU4CtVKA2UR85b+GV@mail.gmail.com>
-References: <AANLkTikbrzLeeY8Gosw+7Aic1=V=5f+sD382sXwGDWbA@mail.gmail.com> <AANLkTi=_gHfEKKC2rsA0pc6Otu5FU4CtVKA2UR85b+GV@mail.gmail.com>
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Tue, 1 Feb 2011 16:50:21 -0800
-Message-ID: <AANLkTim9uNH8BzjDM5Ekt3ayBe+7QfE4vnXR0bc-=-Yn@mail.gmail.com>
-Subject: Re: Support for Android for mac80211 / cfg80211 802.11 drivers
-To: Bob Copeland <me@bobcopeland.com>
-Cc: linux-wireless <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Amod Bodas <Amod.Bodas@atheros.com>,
-        Senthilkumar Balasubramanian 
-	<Senthilkumar.Balasubramanian@atheros.com>,
-        Sree Durbha <Sree.Durbha@atheros.com>,
-        Deepak Dhamdhere <Deepak.Dhamdhere@atheros.com>,
-        Xin Jin <Xin.Jin@atheros.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754116Ab1BBAua (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 19:50:30 -0500
+Received: from mga01.intel.com ([192.55.52.88]:58722 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752494Ab1BBApG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:45:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
+   d="scan'208";a="653505251"
+From: Andi Kleen <andi@firstfloor.org>
+References: <20110201443.618138584@firstfloor.org>
+In-Reply-To: <20110201443.618138584@firstfloor.org>
+To: nicolas.ferre@atmel.com, plagnioj@jcrosoft.com, cjb@laptop.org,
+        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: [PATCH] [111/139] mmc: atmel-mci: fix multiblock SDIO transfers
+Message-Id: <20110202004509.E9D753E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:45:09 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 1, 2011 at 4:45 PM, Bob Copeland <me@bobcopeland.com> wrote:
-> On Tue, Feb 1, 2011 at 6:29 PM, Luis R. Rodriguez <mcgrof@gmail.com> wrote:
->> We get poked every now and then for Android support for mac80211 or
->> cfg80211 drivers. Since the questions is quite common I figured It'd
->> be good to document what needs to get done for this. Android folks,
->> you listening?
->>
->> http://wireless.kernel.org/en/developers/Documentation/Android
->>
->> If you already have worked on this or are going to please feel free to
->> update the wiki so no one else re-invents the wheel.
->
-> I don't think it's good to advocate a custom driver.  They should be able
-> to use stock wpa_supplicant w/ nl80211 and put the extensions in the
-> hardware layer.
+2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
-Can you elaborate?
+------------------
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
 
- Luis
+commit 2f1d791882d21a4002a719fb016a1ac21c8bd6b7 upstream.
+
+Based on report made by Yauhen in:
+"MMC: Fix multiblock SDIO transfers in AT91 MCI" patch,
+I report those changes to the brother driver: atmel-mci.
+
+So, this patch sets SDIO transfer types: SDIO block and SDIO byte
+transfers instead of using ordinary MMC block transfers.
+It is checking opcode for SDIO CMD53 and setting transfer
+type in MCI_CMDR register properly.
+
+Reported-by: Yauhen Kharuzhy <yauhen.kharuzhy@promwad.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+
+---
+ drivers/mmc/host/atmel-mci.c |   18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
+
+Index: linux-2.6.35.y/drivers/mmc/host/atmel-mci.c
+===================================================================
+--- linux-2.6.35.y.orig/drivers/mmc/host/atmel-mci.c
++++ linux-2.6.35.y/drivers/mmc/host/atmel-mci.c
+@@ -26,6 +26,7 @@
+ #include <linux/stat.h>
+ 
+ #include <linux/mmc/host.h>
++#include <linux/mmc/sdio.h>
+ 
+ #include <mach/atmel-mci.h>
+ #include <linux/atmel-mci.h>
+@@ -532,12 +533,17 @@ static u32 atmci_prepare_command(struct 
+ 	data = cmd->data;
+ 	if (data) {
+ 		cmdr |= MCI_CMDR_START_XFER;
+-		if (data->flags & MMC_DATA_STREAM)
+-			cmdr |= MCI_CMDR_STREAM;
+-		else if (data->blocks > 1)
+-			cmdr |= MCI_CMDR_MULTI_BLOCK;
+-		else
+-			cmdr |= MCI_CMDR_BLOCK;
++
++		if (cmd->opcode == SD_IO_RW_EXTENDED) {
++			cmdr |= MCI_CMDR_SDIO_BLOCK;
++		} else {
++			if (data->flags & MMC_DATA_STREAM)
++				cmdr |= MCI_CMDR_STREAM;
++			else if (data->blocks > 1)
++				cmdr |= MCI_CMDR_MULTI_BLOCK;
++			else
++				cmdr |= MCI_CMDR_BLOCK;
++		}
+ 
+ 		if (data->flags & MMC_DATA_READ)
+ 			cmdr |= MCI_CMDR_TRDIR_READ;
