@@ -1,97 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104Ab1BBOxk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 09:53:40 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34283 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752157Ab1BBOxi (ORCPT
+	id S1754169Ab1BBOzA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 09:55:00 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:44793 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754000Ab1BBOy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 09:53:38 -0500
+	Wed, 2 Feb 2011 09:54:58 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=SmfwUtGh3OMbdCdg01809a4qwOzQkX6M7COgw+98brDPe9/6YpV6JIyVdrv8+Dedha
-         FkMxnZNFb8OX3hHdzLK3JEccSIYNXbIzqaIAoBCT3a3lMeE+F/SgDczKQ1ZpFvBV+BS/
-         7k4mxVq6rWmwfrk0oNQ2TVvV9Llm0+xMUOupc=
-Subject: Re: kernel 2.6.37 : oops in cleanup_once
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Yann Dupont <Yann.Dupont@univ-nantes.fr>
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-In-Reply-To: <4D495765.4090806@univ-nantes.fr>
-References: <4D491B8D.1000107@univ-nantes.fr>
-	 <1296643972.20445.9.camel@edumazet-laptop>
-	 <1296645887.20445.11.camel@edumazet-laptop>
-	 <4D495765.4090806@univ-nantes.fr>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 02 Feb 2011 15:53:27 +0100
-Message-ID: <1296658407.20445.19.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=EHt2V9DxxA7wY5MhtDgQGk750HEeDUMabyC7q2NokKePIjkd+G0Wea2rA9qj6f9HPh
+         hiNe9XDrwxIZpL3qcWWG/6Mi9hM109vfjCHWsn3GyoUqnBOm+yoZ6MuspbAhQNfAP1aW
+         VTXySYqN0kxL+d1wE0ypgrzMt2/OFksmgv8Jo=
+Message-ID: <4D497073.4000109@lwfinger.net>
+Date: Wed, 02 Feb 2011 08:55:47 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+MIME-Version: 1.0
+To: Mark Einon <mark.einon@gmail.com>
+CC: greg@kroah.com, florian.c.schilhabel@googlemail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: rtl8712: Switch from large inline firmware file
+ to use the firmware interface
+References: <1296607614-5326-1-git-send-email-mark.einon@gmail.com>	<4D48B24B.8020305@lwfinger.net> <AANLkTikXfScGU93epfcgHXrBQwDELdGS1y8zeHkpu=n4@mail.gmail.com>
+In-Reply-To: <AANLkTikXfScGU93epfcgHXrBQwDELdGS1y8zeHkpu=n4@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 02 février 2011 à 14:08 +0100, Yann Dupont a écrit :
-> Le 02/02/2011 12:24, Eric Dumazet a écrit :
-> > Le mercredi 02 février 2011 à 11:52 +0100, Eric Dumazet a écrit :
-> >> Le mercredi 02 février 2011 à 09:53 +0100, Yann Dupont a écrit :
-> >>> Hello.
-> >>> We recently upgraded one machine with vanilla 2.6.37, and experienced 2
-> >>> kernel oops since. Each oops is after ~1 week of uptime.
-> >>> The last oops was last night but we didn't had any trace.
-> > oops, 2.6.37 "only"
-> >
-> >> Yes this is a known problem.
-> >>
-> >> Please try commit 3408404a4c2a4eead9d73b0bbbfe3f225b65f492
-> >> (inetpeer: Use correct AVL tree base pointer in inet_getpeer())
-> >>
-> >> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=3408404a4c2a4eead9d73b0bbbfe3f225b65f492
-> >>
-> >> I believe David will send it to stable team shortly, if not already
-> >> done :)
-> > Please ignore, this patch was for linux-2.6 tree, 2.6.37 was not
-> > affected by the problem.
-> >
-> > So its another problem... Is there anything particular you do on this
-> > machine ?
-> >
-> >
-> >
-> >
-> Nothing really special there, we run a lot (20) of KVM guest (mainly 
-> linux firewalls for lots of differents vlan), so we have a lot of 
-> bridges vlan & tun/tap.
-> Oh, and CONFIG_BRIDGE_IGMP_SNOOPING is set to n (because of  the other 
-> bug already sent to netdev - more to come on next mail)
+On 02/02/2011 03:13 AM, Mark Einon wrote:
+> Hi Larry,
 > 
-> Hard to say if this BUG is new in 2.6.37. This host was running fine 
-> with 2.6.34.2 since August 2010.
-> Bisecting will be hard due to the time to trigger the bug (and the fact 
-> that this machine is a production machine)
-> 
-> Anyway, I can test with a specific kernel version if you suspect something.
-> 
+>     I don't think these patches are equivalent, could you explain what
+> you mean? I can't find an equivalent use of request_firmware() in the
+> driver prior to this patch, or from the Jan 14 changes.
 
-I suspect a mem corruption from another layer (not inetpeer)
+---
+Here is patch 3 of 4:
 
-Unfortunately many kmem caches share the "64 bytes" cache.
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+---
+ drivers/staging/rtl8712/TODO       |    2 --
+ drivers/staging/rtl8712/hal_init.c |   22 +++++++++++++++++-----
+ 2 files changed, 17 insertions(+), 7 deletions(-)
 
-Could you please add "slub_nomerge" on your boot command ?
+diff --git a/drivers/staging/rtl8712/TODO b/drivers/staging/rtl8712/TODO
+index 2aa5deb..d8dfe5b 100644
+--- a/drivers/staging/rtl8712/TODO
++++ b/drivers/staging/rtl8712/TODO
+@@ -3,8 +3,6 @@ TODO:
+ - switch to use LIB80211
+ - switch to use MAC80211
+ - checkpatch.pl fixes - only a few remain
+-- switch from large inline firmware file to use the firmware interface
+-  and add the file to the linux-firmware package.
+
+ Please send any patches to Greg Kroah-Hartman <greg@kroah.com>,
+ Larry Finger <Larry.Finger@lwfinger.net> and
+diff --git a/drivers/staging/rtl8712/hal_init.c b/drivers/staging/rtl8712/hal_init.c
+index 84be383..52ab2d5 100644
+--- a/drivers/staging/rtl8712/hal_init.c
++++ b/drivers/staging/rtl8712/hal_init.c
+@@ -31,7 +31,6 @@
+ #include "osdep_service.h"
+ #include "drv_types.h"
+ #include "rtl871x_byteorder.h"
+-#include "farray.h"
+ #include "usb_osintf.h"
+
+ #define FWBUFF_ALIGN_SZ 512
+@@ -40,11 +39,24 @@
+ static u32 rtl871x_open_fw(struct _adapter *padapter, void **pphfwfile_hdl,
+ 		    const u8 **ppmappedfw)
+ {
+-	u32 len;
++	int rc;
++	const char firmware_file[] = "rtl8712u/rtl8712u.bin";
++	const struct firmware **praw = (const struct firmware **)
++				       (pphfwfile_hdl);
++	struct dvobj_priv *pdvobjpriv = (struct dvobj_priv *)
++					(&padapter->dvobjpriv);
++	struct usb_device *pusbdev = pdvobjpriv->pusbdev;
+
+-	*ppmappedfw = f_array;
+-	len = sizeof(f_array);
+-	return len;
++	printk(KERN_INFO "r8712u: Loading firmware from \"%s\"\n",
++	       firmware_file);
++	rc = request_firmware(praw, firmware_file, &pusbdev->dev);
++	if (rc < 0) {
++		printk(KERN_ERR "r8712u: Unable to load firmware\n");
++		printk(KERN_ERR "r8712u: Install latest linux-firmware\n");
++		return 0;
++	}
++	*ppmappedfw = (u8 *)((*praw)->data);
++	return (*praw)->size;
+ }
+
+ static void fill_fwpriv(struct _adapter *padapter, struct fw_priv *pfwpriv)
+-- 1.7.1
+
+The large farray.h is deleted in 4 of 4:
+
+ drivers/staging/rtl8712/Kconfig    |    1 +
+ drivers/staging/rtl8712/farray.h   |10197 ------------------------------------
+ drivers/staging/rtl8712/hal_init.c |    3 +-
+ 3 files changed, 3 insertions(+), 10198 deletions(-)
+ delete mode 100644 drivers/staging/rtl8712/farray.h
 
 
-This way, we can separate corruptions on each cache.
+Note that inclusion of the "git rm" command with git generating the patch avoids
+spamming the list with the 10,198 lines that were deleted.
 
-
-On your crash, one inetpeer contain garbage on unused_lists next/prev
-pointers :
-
-RCX: 0000000000000005
-RDX: 0b000209f1beadde
-
-Definitly something overwrote these values with non pointers values.
-
-
-
+Larry
