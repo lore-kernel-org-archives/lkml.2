@@ -1,33 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753610Ab1BBU5u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 15:57:50 -0500
-Received: from mga14.intel.com ([143.182.124.37]:40687 "EHLO mga14.intel.com"
+	id S1753905Ab1BBU61 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 15:58:27 -0500
+Received: from kroah.org ([198.145.64.141]:56909 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753280Ab1BBU5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 15:57:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,415,1291622400"; 
-   d="scan'208";a="383371412"
-From: Russ Gorby <russ.gorby@intel.com>
-To: David Brownell <dbrownell@users.sourceforge.net> (maintainer:SPI
-	SUBSYSTEM),
-        Grant Likely <grant.likely@secretlab.ca> (maintainer:SPI SUBSYSTEM),
-        spi-devel-general@lists.sourceforge.net (open list:SPI SUBSYSTEM),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 0/1] Adding intel_mid_ssp_spi driver : 01/27/2011
-Date: Wed,  2 Feb 2011 13:01:51 -0800
-Message-Id: <1296680512-2758-1-git-send-email-russ.gorby@intel.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <[PATCH 0/1] Adding intel_mid_ssp_spi driver : 01/27/2011>
-References: <[PATCH 0/1] Adding intel_mid_ssp_spi driver : 01/27/2011>
+	id S1753289Ab1BBU60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 15:58:26 -0500
+Date: Wed, 2 Feb 2011 12:53:52 -0800
+From: Greg KH <greg@kroah.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Harry Wei <harryxiyou@gmail.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org
+Subject: Re: A problem about linux/Documentation/SubmittingPatches
+Message-ID: <20110202205352.GA29053@kroah.com>
+References: <20110202174531.GA7717@gmail.com>
+ <20110202124633.e2380a77.rdunlap@xenotime.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110202124633.e2380a77.rdunlap@xenotime.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello SPI maintainers,
-I am sending a patch for the (new) intel_mid_ssp_spi driver for
-consideration for inclusion in the Linux Kernel. This is a SPI master
-controller driver that is being used for the intel MID platform (Medfield).
-It uses the on-board Bulverde SSP controller configured for SPI (spibus #3)
-running at 25Mhz.
+On Wed, Feb 02, 2011 at 12:46:33PM -0800, Randy Dunlap wrote:
+> On Thu, 3 Feb 2011 01:45:32 +0800 Harry Wei wrote:
+> 
+> > Hi us,
+> >    I have seen linux-2.6.7/Documentation/SubmittingPatches but it hasn't described how to submit a translated document to kernel. I have also sent mail to <linux-kernel@zh-kernel.org>, however, there is no response.
+> >    I have translated linux-2.6.37/Decumentation/SecurityBugs(no one translated it up to now). I'd like to send it to maintainers, then add it into kernel directories. However, I don't know how i can do it. Can anyone tell me howto do it? Thanks so much :)
+> 
+> Hi,
+> 
+> AFAIK, Greg KH handles all of the translation merging.
+> 
+> Right, Greg?
+
+Yes, please feel free to send me any translations in patch form and I
+will be glad to merge them.
+
+thanks,
+
+greg k-h
