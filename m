@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753607Ab1BBAop (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 19:44:45 -0500
-Received: from mga11.intel.com ([192.55.52.93]:31213 "EHLO mga11.intel.com"
+	id S1753643Ab1BBAor (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 19:44:47 -0500
+Received: from mga09.intel.com ([134.134.136.24]:35413 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752374Ab1BBAon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:44:43 -0500
+	id S1753586Ab1BBAoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:44:46 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="883418236"
+   d="scan'208";a="598622554"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110201443.618138584@firstfloor.org>
 In-Reply-To: <20110201443.618138584@firstfloor.org>
-To: manoj.iyer@canonical.com, tiwai@suse.de, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [95/139] ALSA: hda - Enable jack sense for Thinkpad Edge 11
-Message-Id: <20110202004453.31E2A3E09BD@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:44:53 -0800 (PST)
+To: t.sailer@alumni.ethz.ch, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [98/139] USB: misc: uss720.c: add another vendor/product ID
+Message-Id: <20110202004456.51CE83E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:44:56 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,30 +24,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Manoj Iyer <manoj.iyer@canonical.com>
+From: Thomas Sailer <t.sailer@alumni.ethz.ch>
 
-commit 6027277e77df2d2893d906c42f5c9f9abcb731e0 upstream.
+commit ecc1624a2fff45780959efbcb73ace18fdb3c58d upstream.
 
-Add a quirk entry for Thinkpad Edge 11 as well as other TP Edge models.
+Fabio Battaglia report that he has another cable that works with this
+driver, so this patch adds its vendor/product ID.
 
-Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Thomas Sailer <t.sailer@alumni.ethz.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- sound/pci/hda/patch_conexant.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/misc/uss720.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Index: linux-2.6.35.y/sound/pci/hda/patch_conexant.c
+Index: linux-2.6.35.y/drivers/usb/misc/uss720.c
 ===================================================================
---- linux-2.6.35.y.orig/sound/pci/hda/patch_conexant.c
-+++ linux-2.6.35.y/sound/pci/hda/patch_conexant.c
-@@ -3039,6 +3039,7 @@ static struct snd_pci_quirk cxt5066_cfg_
- 	SND_PCI_QUIRK(0x17aa, 0x21b2, "Thinkpad X100e", CXT5066_IDEAPAD),
- 	SND_PCI_QUIRK(0x17aa, 0x21b3, "Thinkpad Edge 13 (197)", CXT5066_IDEAPAD),
- 	SND_PCI_QUIRK(0x17aa, 0x21b4, "Thinkpad Edge", CXT5066_IDEAPAD),
-+	SND_PCI_QUIRK(0x17aa, 0x21c8, "Thinkpad Edge 11", CXT5066_IDEAPAD),
- 	SND_PCI_QUIRK(0x17aa, 0x3a0d, "ideapad", CXT5066_IDEAPAD),
- 	SND_PCI_QUIRK(0x17aa, 0x215e, "Lenovo Thinkpad", CXT5066_THINKPAD),
- 	{}
+--- linux-2.6.35.y.orig/drivers/usb/misc/uss720.c
++++ linux-2.6.35.y/drivers/usb/misc/uss720.c
+@@ -3,7 +3,7 @@
+ /*
+  *	uss720.c  --  USS720 USB Parport Cable.
+  *
+- *	Copyright (C) 1999, 2005
++ *	Copyright (C) 1999, 2005, 2010
+  *	    Thomas Sailer (t.sailer@alumni.ethz.ch)
+  *
+  *	This program is free software; you can redistribute it and/or modify
+@@ -776,6 +776,8 @@ static const struct usb_device_id uss720
+ 	{ USB_DEVICE(0x0557, 0x2001) },
+ 	{ USB_DEVICE(0x0729, 0x1284) },
+ 	{ USB_DEVICE(0x1293, 0x0002) },
++	{ USB_DEVICE(0x1293, 0x0002) },
++	{ USB_DEVICE(0x050d, 0x0002) },
+ 	{ }						/* Terminating entry */
+ };
+ 
