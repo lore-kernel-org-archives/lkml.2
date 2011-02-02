@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752818Ab1BBBJW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 20:09:22 -0500
-Received: from mga11.intel.com ([192.55.52.93]:1497 "EHLO mga11.intel.com"
+	id S1752474Ab1BBAnW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 19:43:22 -0500
+Received: from mga09.intel.com ([134.134.136.24]:14330 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752524Ab1BBAn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:43:26 -0500
+	id S1752384Ab1BBAnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:43:18 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="653504911"
+   d="scan'208";a="598622254"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110201443.618138584@firstfloor.org>
 In-Reply-To: <20110201443.618138584@firstfloor.org>
-To: sw.youn@samsung.com, lrg@slimlogic.co.uk,
-        broonie@opensource.wolfsonmicro.com, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [22/139] ASoC: WM8580: Fix R8 initial value
-Message-Id: <20110202004336.D2B643E09BD@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:43:36 -0800 (PST)
+To: neilb@suse.de, bfields@redhat.com, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [13/139] nfsd: Fix possible BUG_ON firing in set_change_info
+Message-Id: <20110202004327.571743E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:43:27 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,32 +24,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Seungwhan Youn <sw.youn@samsung.com>
+From: Neil Brown <neilb@suse.de>
 
-commit a0968628097380be52db8b4664da98fc425546a5 upstream.
+commit c1ac3ffcd0bc7e9617f62be8c7043d53ab84deac upstream.
 
-Acc to WM8580 manual, the default value for R8 is 0x10, not 0x1c.
+If vfs_getattr in fill_post_wcc returns an error, we don't
+set fh_post_change.
+For NFSv4, this can result in set_change_info triggering a BUG_ON.
+i.e. fh_post_saved being zero isn't really a bug.
 
-Signed-off-by: Seungwhan Youn <sw.youn@samsung.com>
-Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+So:
+ - instead of BUGging when fh_post_saved is zero, just clear ->atomic.
+ - if vfs_getattr fails in fill_post_wcc, take a copy of i_ctime anyway.
+   This will be used i seg_change_info, but not overly trusted.
+ - While we are there, remove the pointless 'if' statements in set_change_info.
+   There is no harm setting all the values.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- sound/soc/codecs/wm8580.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfsd/nfs3xdr.c |    6 ++++--
+ fs/nfsd/xdr4.h    |   21 ++++++++++-----------
+ 2 files changed, 14 insertions(+), 13 deletions(-)
 
-Index: linux-2.6.35.y/sound/soc/codecs/wm8580.c
+Index: linux-2.6.35.y/fs/nfsd/nfs3xdr.c
 ===================================================================
---- linux-2.6.35.y.orig/sound/soc/codecs/wm8580.c
-+++ linux-2.6.35.y/sound/soc/codecs/wm8580.c
-@@ -171,7 +171,7 @@
- static const u16 wm8580_reg[] = {
- 	0x0121, 0x017e, 0x007d, 0x0014, /*R3*/
- 	0x0121, 0x017e, 0x007d, 0x0194, /*R7*/
--	0x001c, 0x0002, 0x0002, 0x00c2, /*R11*/
-+	0x0010, 0x0002, 0x0002, 0x00c2, /*R11*/
- 	0x0182, 0x0082, 0x000a, 0x0024, /*R15*/
- 	0x0009, 0x0000, 0x00ff, 0x0000, /*R19*/
- 	0x00ff, 0x00ff, 0x00ff, 0x00ff, /*R23*/
+--- linux-2.6.35.y.orig/fs/nfsd/nfs3xdr.c
++++ linux-2.6.35.y/fs/nfsd/nfs3xdr.c
+@@ -260,9 +260,11 @@ void fill_post_wcc(struct svc_fh *fhp)
+ 	err = vfs_getattr(fhp->fh_export->ex_path.mnt, fhp->fh_dentry,
+ 			&fhp->fh_post_attr);
+ 	fhp->fh_post_change = fhp->fh_dentry->d_inode->i_version;
+-	if (err)
++	if (err) {
+ 		fhp->fh_post_saved = 0;
+-	else
++		/* Grab the ctime anyway - set_change_info might use it */
++		fhp->fh_post_attr.ctime = fhp->fh_dentry->d_inode->i_ctime;
++	} else
+ 		fhp->fh_post_saved = 1;
+ }
+ 
+Index: linux-2.6.35.y/fs/nfsd/xdr4.h
+===================================================================
+--- linux-2.6.35.y.orig/fs/nfsd/xdr4.h
++++ linux-2.6.35.y/fs/nfsd/xdr4.h
+@@ -484,18 +484,17 @@ static inline bool nfsd4_not_cached(stru
+ static inline void
+ set_change_info(struct nfsd4_change_info *cinfo, struct svc_fh *fhp)
+ {
+-	BUG_ON(!fhp->fh_pre_saved || !fhp->fh_post_saved);
+-	cinfo->atomic = 1;
++	BUG_ON(!fhp->fh_pre_saved);
++	cinfo->atomic = fhp->fh_post_saved;
+ 	cinfo->change_supported = IS_I_VERSION(fhp->fh_dentry->d_inode);
+-	if (cinfo->change_supported) {
+-		cinfo->before_change = fhp->fh_pre_change;
+-		cinfo->after_change = fhp->fh_post_change;
+-	} else {
+-		cinfo->before_ctime_sec = fhp->fh_pre_ctime.tv_sec;
+-		cinfo->before_ctime_nsec = fhp->fh_pre_ctime.tv_nsec;
+-		cinfo->after_ctime_sec = fhp->fh_post_attr.ctime.tv_sec;
+-		cinfo->after_ctime_nsec = fhp->fh_post_attr.ctime.tv_nsec;
+-	}
++
++	cinfo->before_change = fhp->fh_pre_change;
++	cinfo->after_change = fhp->fh_post_change;
++	cinfo->before_ctime_sec = fhp->fh_pre_ctime.tv_sec;
++	cinfo->before_ctime_nsec = fhp->fh_pre_ctime.tv_nsec;
++	cinfo->after_ctime_sec = fhp->fh_post_attr.ctime.tv_sec;
++	cinfo->after_ctime_nsec = fhp->fh_post_attr.ctime.tv_nsec;
++
+ }
+ 
+ int nfs4svc_encode_voidres(struct svc_rqst *, __be32 *, void *);
