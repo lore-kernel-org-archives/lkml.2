@@ -1,52 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631Ab1BBGOr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 01:14:47 -0500
-Received: from mail4.comsite.net ([205.238.176.238]:50948 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752421Ab1BBGOq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 01:14:46 -0500
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
-From: Milton Miller <miltonm@bga.com>
-To: Chuck Lever <chuck.lever@oracle.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] adjust suspicious memset in nfsacl_encode()
-Message-id: <nfsacl-suspicous-memset@mdm.bga.com>
-Date: Wed, 02 Feb 2011 00:14:45 -0600
-X-Originating-IP: 71.22.127.106
+	id S1752692Ab1BBGRg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 01:17:36 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:55753 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752421Ab1BBGRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 01:17:34 -0500
+Date: Wed, 2 Feb 2011 07:17:29 +0100 (CET)
+From: Julia Lawall <julia@diku.dk>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, paul.moore@hp.com,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] include/net/genetlink.h: Allow genlmsg_cancel to accept
+ a NULL argument
+In-Reply-To: <20110201.145410.115936566.davem@davemloft.net>
+Message-ID: <Pine.LNX.4.64.1102020659520.9302@ask.diku.dk>
+References: <Pine.LNX.4.64.1101281642080.8546@pc-004.diku.dk>
+ <20110201.145410.115936566.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 1 Feb 2011, David Miller wrote:
 
-commit f61f6da0d53842e849bab7f69e1431bd3de1136d "NFS: Prevent memory
-allocation failure in nfsacl_encode()" added a memset whose length was
-the size of the pointer.  Change this to the size of the pointed struct
-that is later passed to posix_acl_init().  The 4 entries that are the
-remainder of the parent struct will be set and therefore should not
-need zeroing.
+> From: Julia Lawall <julia@diku.dk>
+> Date: Fri, 28 Jan 2011 16:43:40 +0100 (CET)
+> 
+> > nlmsg_cancel can accept NULL as its second argument, so for similarity,
+> > this patch extends genlmsg_cancel to be able to accept a NULL second
+> > argument as well.
+> > 
+> > Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> I did a scan of all of the cases where this interface is used, and
+> I cannot find a situation where this capability would even be useful.
+> 
+> The use pattern is always:
+> 
+> 	hdr = genlmsg_put(skb, ...);
+> 	if (!hdr)
+> 		goto out;
+> 
+> 	NLA_PUT_*();
+> 	NLA_PUT_*();
+> 	....
+> 
+> 	return genlmsg_end(skb, hdr);
+> 
+> nla_put_failure:
+> 	genlmsg_cancel(skb, hdr);
+> out:
+> 	return -EWHATEVER;
 
-Alternatively we could remove the memset as posix_acl_init sets all
-fields with storage in struct posix_acl and we won't reference any
-implicit padding.
+This pattern occurred in eg:
 
-Signed-off-by: Milton Miller <miltonm@bga.com>
----
-While I was reviewing changes merged post rc2 I saw this suspicious memset.
+net/netlabel/netlabel_unlabeled.c
 
-diff --git a/fs/nfs_common/nfsacl.c b/fs/nfs_common/nfsacl.c
-index 84c27d6..bc6d81b 100644
---- a/fs/nfs_common/nfsacl.c
-+++ b/fs/nfs_common/nfsacl.c
-@@ -117,7 +117,7 @@ int nfsacl_encode(struct xdr_buf *buf, unsigned int base, struct inode *inode,
- 		 * invoked in contexts where a memory allocation failure is
- 		 * fatal.  Fortunately this fake ACL is small enough to
- 		 * construct on the stack. */
--		memset(acl2, 0, sizeof(acl2));
-+		memset(acl2, 0, sizeof(*acl2));
- 		posix_acl_init(acl2, 4);
- 
- 		/* Insert entries in canonical order: other orders seem
+in the function netlbl_unlabel_staticlist_gen and in other netlabel code, 
+as well as in net/wireless/nl80211.c, but with the function nl80211hdr_put 
+instead of genlmsg_put.  I submitted patches for all of these cases, so 
+that is perhaps why you don't see them.  But someone suggested to change 
+genlmsg_cancel as well, to be as permissive as nlmsg_cancel.
+
+For nlmsg_cancel, there are two occurrences in 
+net/netfilter/nf_conntrack_netlink.c where nlmsg_cancel is reachable with 
+the second argument NULL.
+
+For nlmsg_cancel the ability to accept NULL as a second argument comes 
+from the fact that it only calls nlmsg_trim, which does nothing if NULL is 
+the second argument.  nlmsg_trim is also called by nla_nest_cancel.  There 
+are many calls to nla_nest_cancel with NULL as the second argument in the 
+directory net/sched, for example in the function gred_dump in 
+net/sched/sch_gred.c.  net/sched also contains a call to nlmsg_trim with 
+NULL as the second argument, in the function flow_dump, in 
+net/sched/cls_flow.c.
+
+The whole thing seems somewhat sloppy.  I'm sure that all of the 
+above-cited occurrences could be rewritten as outlined above to skip over 
+the cancel/trim function.
+
+julia
