@@ -1,102 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754999Ab1BBWFj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 17:05:39 -0500
-Received: from hera.kernel.org ([140.211.167.34]:50166 "EHLO hera.kernel.org"
+	id S1755219Ab1BBWGF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 17:06:05 -0500
+Received: from hera.kernel.org ([140.211.167.34]:50185 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755142Ab1BBWFh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 17:05:37 -0500
-Date: Wed, 2 Feb 2011 22:05:22 GMT
+	id S1755143Ab1BBWGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 17:06:03 -0500
+Date: Wed, 2 Feb 2011 22:05:43 GMT
 From: tip-bot for Richard Cochran <richard.cochran@omicron.at>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         johnstul@us.ibm.com, tglx@linutronix.de, richard.cochran@omicron.at
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         johnstul@us.ibm.com, tglx@linutronix.de, richard.cochran@omicron.at
-In-Reply-To: <20110201134419.968905083@linutronix.de>
-References: <20110201134419.968905083@linutronix.de>
+In-Reply-To: <20110201134420.062860200@linutronix.de>
+References: <20110201134420.062860200@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] x86: Add clock_adjtime for x86
-Message-ID: <tip-ce26efdefa5e8f22d933df72d7f7482725091d6d@git.kernel.org>
-Git-Commit-ID: ce26efdefa5e8f22d933df72d7f7482725091d6d
+Subject: [tip:timers/core] posix-timers: Add support for fd based clocks
+Message-ID: <tip-81e294cba2596f5f10848bbe19d98b344c2a2d5c@git.kernel.org>
+Git-Commit-ID: 81e294cba2596f5f10848bbe19d98b344c2a2d5c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 02 Feb 2011 22:05:22 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 02 Feb 2011 22:05:44 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ce26efdefa5e8f22d933df72d7f7482725091d6d
-Gitweb:     http://git.kernel.org/tip/ce26efdefa5e8f22d933df72d7f7482725091d6d
+Commit-ID:  81e294cba2596f5f10848bbe19d98b344c2a2d5c
+Gitweb:     http://git.kernel.org/tip/81e294cba2596f5f10848bbe19d98b344c2a2d5c
 Author:     Richard Cochran <richard.cochran@omicron.at>
-AuthorDate: Tue, 1 Feb 2011 13:52:30 +0000
+AuthorDate: Tue, 1 Feb 2011 13:52:32 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Wed, 2 Feb 2011 15:28:19 +0100
 
-x86: Add clock_adjtime for x86
+posix-timers: Add support for fd based clocks
 
-This patch adds the clock_adjtime system call to the x86 architecture.
+Extend the negative clockids which are currently used by posix cpu
+timers to encode the PID with a file descriptor based type which
+encodes the fd in the upper bits.
 
-Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
-Acked-by: John Stultz <johnstul@us.ibm.com>
-LKML-Reference: <20110201134419.968905083@linutronix.de>
+Originally-from: Richard Cochran <richard.cochran@omicron.at>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: John Stultz <johnstul@us.ibm.com>
+LKML-Reference: <20110201134420.062860200@linutronix.de>
 ---
- arch/x86/ia32/ia32entry.S          |    1 +
- arch/x86/include/asm/unistd_32.h   |    3 ++-
- arch/x86/include/asm/unistd_64.h   |    2 ++
- arch/x86/kernel/syscall_table_32.S |    1 +
- 4 files changed, 6 insertions(+), 1 deletions(-)
+ include/linux/posix-timers.h |   13 +++++++++++++
+ kernel/posix-timers.c        |    2 +-
+ 2 files changed, 14 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index 518bb99..0ed7896 100644
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -851,4 +851,5 @@ ia32_sys_call_table:
- 	.quad sys_fanotify_init
- 	.quad sys32_fanotify_mark
- 	.quad sys_prlimit64		/* 340 */
-+	.quad compat_sys_clock_adjtime
- ia32_syscall_end:
-diff --git a/arch/x86/include/asm/unistd_32.h b/arch/x86/include/asm/unistd_32.h
-index b766a5e..b6f73f1 100644
---- a/arch/x86/include/asm/unistd_32.h
-+++ b/arch/x86/include/asm/unistd_32.h
-@@ -346,10 +346,11 @@
- #define __NR_fanotify_init	338
- #define __NR_fanotify_mark	339
- #define __NR_prlimit64		340
-+#define __NR_clock_adjtime	341
+diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
+index 79a1cea..88b9256 100644
+--- a/include/linux/posix-timers.h
++++ b/include/linux/posix-timers.h
+@@ -18,6 +18,17 @@ struct cpu_timer_list {
+ 	int firing;
+ };
  
- #ifdef __KERNEL__
++/*
++ * Bit fields within a clockid:
++ *
++ * The most significant 29 bits hold either a pid or a file descriptor.
++ *
++ * Bit 2 indicates whether a cpu clock refers to a thread or a process.
++ *
++ * Bits 1 and 0 give the type: PROF=0, VIRT=1, SCHED=2, or FD=3.
++ *
++ * A clockid is invalid if bits 2, 1, and 0 are all set.
++ */
+ #define CPUCLOCK_PID(clock)		((pid_t) ~((clock) >> 3))
+ #define CPUCLOCK_PERTHREAD(clock) \
+ 	(((clock) & (clockid_t) CPUCLOCK_PERTHREAD_MASK) != 0)
+@@ -29,6 +40,8 @@ struct cpu_timer_list {
+ #define CPUCLOCK_VIRT		1
+ #define CPUCLOCK_SCHED		2
+ #define CPUCLOCK_MAX		3
++#define CLOCKFD			CPUCLOCK_MAX
++#define CLOCKFD_MASK		(CPUCLOCK_PERTHREAD_MASK|CPUCLOCK_CLOCK_MASK)
  
--#define NR_syscalls 341
-+#define NR_syscalls 342
+ #define MAKE_PROCESS_CPUCLOCK(pid, clock) \
+ 	((~(clockid_t) (pid) << 3) | (clockid_t) (clock))
+diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
+index 5a5a4f1..df629d8 100644
+--- a/kernel/posix-timers.c
++++ b/kernel/posix-timers.c
+@@ -488,7 +488,7 @@ static void release_posix_timer(struct k_itimer *tmr, int it_id_set)
+ static struct k_clock *clockid_to_kclock(const clockid_t id)
+ {
+ 	if (id < 0)
+-		return &clock_posix_cpu;
++		return (id & CLOCKFD_MASK) == CLOCKFD ? NULL : &clock_posix_cpu;
  
- #define __ARCH_WANT_IPC_PARSE_VERSION
- #define __ARCH_WANT_OLD_READDIR
-diff --git a/arch/x86/include/asm/unistd_64.h b/arch/x86/include/asm/unistd_64.h
-index 363e9b8..5ee3085 100644
---- a/arch/x86/include/asm/unistd_64.h
-+++ b/arch/x86/include/asm/unistd_64.h
-@@ -669,6 +669,8 @@ __SYSCALL(__NR_fanotify_init, sys_fanotify_init)
- __SYSCALL(__NR_fanotify_mark, sys_fanotify_mark)
- #define __NR_prlimit64				302
- __SYSCALL(__NR_prlimit64, sys_prlimit64)
-+#define __NR_clock_adjtime			303
-+__SYSCALL(__NR_clock_adjtime, sys_clock_adjtime)
- 
- #ifndef __NO_STUBS
- #define __ARCH_WANT_OLD_READDIR
-diff --git a/arch/x86/kernel/syscall_table_32.S b/arch/x86/kernel/syscall_table_32.S
-index b35786d..68c7b9a 100644
---- a/arch/x86/kernel/syscall_table_32.S
-+++ b/arch/x86/kernel/syscall_table_32.S
-@@ -340,3 +340,4 @@ ENTRY(sys_call_table)
- 	.long sys_fanotify_init
- 	.long sys_fanotify_mark
- 	.long sys_prlimit64		/* 340 */
-+	.long sys_clock_adjtime
+ 	if (id >= MAX_CLOCKS || !posix_clocks[id].clock_getres)
+ 		return NULL;
