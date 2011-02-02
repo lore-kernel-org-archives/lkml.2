@@ -1,38 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752776Ab1BBKPE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 05:15:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15263 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751677Ab1BBKPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 05:15:02 -0500
-Message-ID: <4D492E9C.9040000@redhat.com>
-Date: Wed, 02 Feb 2011 12:14:52 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1752853Ab1BBKZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 05:25:29 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58657 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751677Ab1BBKZ1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 05:25:27 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Hz71TJhRLgV2ZY+XFwIL3Mz1dyTDd8WICoVb42UL7d2Y1jL7e1ye8zZkxpsq1lhn9H
+         qWWH5trko/0ZRAAIsxS3Ia56aJn4DimrDT91stT2Q4SC26o3upzrw+rxqTGe6cberYVw
+         iTRRh3A+NRHd/akfFc1GD2oXOkqfbkJ7B9NyQ=
+Date: Wed, 2 Feb 2011 11:25:21 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Mike Christie <michaelc@cs.wisc.edu>
+Cc: linux-kernel@vger.kernel.org,
+        Jayamohan Kallickal <jayamohank@serverengines.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 16/32] scsi/be2iscsi,qla2xxx: convert to
+ alloc_workqueue()
+Message-ID: <20110202102521.GA24115@htj.dyndns.org>
+References: <1294062595-30097-1-git-send-email-tj@kernel.org>
+ <1294062595-30097-17-git-send-email-tj@kernel.org>
+ <4D489B09.9010906@cs.wisc.edu>
 MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com
-Subject: Re: [PATCH v2 6/6] Describe KVM_MSR_STEAL_TIME
-References: <1296244340-15173-1-git-send-email-glommer@redhat.com>	 <1296244340-15173-7-git-send-email-glommer@redhat.com>	 <4D456555.2030606@redhat.com> <1296575680.5081.14.camel@mothafucka.localdomain>
-In-Reply-To: <1296575680.5081.14.camel@mothafucka.localdomain>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D489B09.9010906@cs.wisc.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2011 05:54 PM, Glauber Costa wrote:
-> >
-> >  The guest must initialize the entire 64-byte structure to zero before
-> >  enabling the feature.
->
-> I honestly don't see why. But I also don't see why not...
-> Will update it.
+Hello,
 
-Requiring the guest to initialize it to zero allows us to later assign 
-meanings to various fields, as long as a zero value is backwards compatible.
+On Tue, Feb 01, 2011 at 05:45:13PM -0600, Mike Christie wrote:
+> I think these are used in the main IO path, so would you also want
+> WQ_HIGHPRI | WQ_CPU_INTENSIVE to be set?
+
+Maybe HIGHPRI but definitely not CPU_INTENSIVE, but even HIGHPRI isn't
+usually necessary.  The queue of pending works tend to be short and
+consumed pretty fast.
+
+> I think qla2xxx was using this in a path they expected to have high
+> throughput/low latency, and from the interrupt handler they would
+> try to queue the work on the same cpu the isr was answered on. With
+> the new workqueue code could you possibly get queued onto a
+> workqueue that is doing other work for other drivers?
+
+There are no separate workqueues.  There's one per cpu which is used
+by all workqueue users.  HIGHPRI boosts the queueing order in that
+queue.
+
+> Should qla2xxx be using the blkiopoll framework instead of a
+> workqueue or will workqueues still provide the same performance when
+> setting WQ_HIGHPRI | WQ_CPU_INTENSIVE?
+
+CPU_INTENSIVE isn't applicable at all unless you want to run crypto or
+zlib from the driver.
+
+blk_iopoll runs off softirq and will always have lower latency than
+workqueue which requires scheduling, so it depends on the
+requirements.  I guess the best thing would be playing with things a
+bit and make decisions on test results.  It shouldn't be too difficult
+to switch among them.
+
+Thanks.
 
 -- 
-error compiling committee.c: too many arguments to function
-
+tejun
