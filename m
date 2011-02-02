@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354Ab1BBA5x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 19:57:53 -0500
-Received: from mga09.intel.com ([134.134.136.24]:33759 "EHLO mga09.intel.com"
+	id S1754000Ab1BBA6I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 19:58:08 -0500
+Received: from mga11.intel.com ([192.55.52.93]:8119 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753482Ab1BBAo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753478Ab1BBAo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Feb 2011 19:44:26 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="598622473"
+   d="scan'208";a="883418177"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110201443.618138584@firstfloor.org>
 In-Reply-To: <20110201443.618138584@firstfloor.org>
-To: robert.moore@intel.com, ming.m.lin@intel.com, len.brown@intel.com,
-        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+To: a.p.zijlstra@chello.nl, damien.wyart@free.fr, orion@cora.nwra.com,
+        kyle@mcmartin.ca, ak@linux.intel.com, chase.douglas@canonical.com,
+        mingo@elte.hu, gregkh@suse.de, linux-kernel@vger.kernel.org,
         stable@kernel.org
-Subject: [PATCH] [75/139] ACPICA: Fix Scope() op in module level code
-Message-Id: <20110202004432.47A5C3E09BD@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:44:32 -0800 (PST)
+Subject: [PATCH] [79/139] sched: Cure more NO_HZ load average woes
+Message-Id: <20110202004436.785A93E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:44:36 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,69 +26,264 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Bob Moore <robert.moore@intel.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit 8df3fc981dc12d9fdcaef4100a2193b605024d7a upstream.
+commit 0f004f5a696a9434b7214d0d3cbd0525ee77d428 upstream.
 
-Some Panasonic Toughbooks create nodes in module level code.
-Module level code is the executable AML code outside of control method,
-for example, below AML code creates a node \_SB.PCI0.GFX0.DD02.CUBL
+There's a long-running regression that proved difficult to fix and
+which is hitting certain people and is rather annoying in its effects.
 
-        If (\_OSI ("Windows 2006"))
-        {
-            Scope (\_SB.PCI0.GFX0.DD02)
-            {
-                Name (CUBL, Ones)
-                ...
-            }
-        }
+Damien reported that after 74f5187ac8 (sched: Cure load average vs
+NO_HZ woes) his load average is unnaturally high, he also noted that
+even with that patch reverted the load avgerage numbers are not
+correct.
 
-Scope() op does not actually create a new object, it refers to an
-existing object(\_SB.PCI0.GFX0.DD02 in above example). However, for
-Scope(), we want to indeed open a new scope, so the child nodes(CUBL in
-above example) can be created correctly under it.
+The problem is that the previous patch only solved half the NO_HZ
+problem, it addressed the part of going into NO_HZ mode, not of
+comming out of NO_HZ mode. This patch implements that missing half.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=19462
+When comming out of NO_HZ mode there are two important things to take
+care of:
 
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+ - Folding the pending idle delta into the global active count.
+ - Correctly aging the averages for the idle-duration.
+
+So with this patch the NO_HZ interaction should be complete and
+behaviour between CONFIG_NO_HZ=[yn] should be equivalent.
+
+Furthermore, this patch slightly changes the load average computation
+by adding a rounding term to the fixed point multiplication.
+
+Reported-by: Damien Wyart <damien.wyart@free.fr>
+Reported-by: Tim McGrath <tmhikaru@gmail.com>
+Tested-by: Damien Wyart <damien.wyart@free.fr>
+Tested-by: Orion Poplawski <orion@cora.nwra.com>
+Tested-by: Kyle McMartin <kyle@mcmartin.ca>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Cc: Chase Douglas <chase.douglas@canonical.com>
+LKML-Reference: <1291129145.32004.874.camel@laptop>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/acpi/acpica/dswexec.c |   19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
+ include/linux/sched.h |    2 
+ kernel/sched.c        |  150 ++++++++++++++++++++++++++++++++++++++++++++++----
+ kernel/timer.c        |    2 
+ 3 files changed, 141 insertions(+), 13 deletions(-)
 
-Index: linux-2.6.35.y/drivers/acpi/acpica/dswexec.c
+Index: linux-2.6.35.y/include/linux/sched.h
 ===================================================================
---- linux-2.6.35.y.orig/drivers/acpi/acpica/dswexec.c
-+++ linux-2.6.35.y/drivers/acpi/acpica/dswexec.c
-@@ -300,10 +300,25 @@ acpi_ds_exec_begin_op(struct acpi_walk_s
- 			 * we must enter this object into the namespace.  The created
- 			 * object is temporary and will be deleted upon completion of
- 			 * the execution of this method.
-+			 *
-+			 * Note 10/2010: Except for the Scope() op. This opcode does
-+			 * not actually create a new object, it refers to an existing
-+			 * object. However, for Scope(), we want to indeed open a
-+			 * new scope.
- 			 */
--			status = acpi_ds_load2_begin_op(walk_state, NULL);
-+			if (op->common.aml_opcode != AML_SCOPE_OP) {
-+				status =
-+				    acpi_ds_load2_begin_op(walk_state, NULL);
-+			} else {
-+				status =
-+				    acpi_ds_scope_stack_push(op->named.node,
-+							     op->named.node->
-+							     type, walk_state);
-+				if (ACPI_FAILURE(status)) {
-+					return_ACPI_STATUS(status);
-+				}
-+			}
- 		}
--
- 		break;
+--- linux-2.6.35.y.orig/include/linux/sched.h
++++ linux-2.6.35.y/include/linux/sched.h
+@@ -143,7 +143,7 @@ extern unsigned long nr_iowait_cpu(int c
+ extern unsigned long this_cpu_load(void);
  
- 	case AML_CLASS_EXECUTE:
+ 
+-extern void calc_global_load(void);
++extern void calc_global_load(unsigned long ticks);
+ 
+ extern unsigned long get_parent_ip(unsigned long addr);
+ 
+Index: linux-2.6.35.y/kernel/sched.c
+===================================================================
+--- linux-2.6.35.y.orig/kernel/sched.c
++++ linux-2.6.35.y/kernel/sched.c
+@@ -2890,6 +2890,15 @@ static long calc_load_fold_active(struct
+ 	return delta;
+ }
+ 
++static unsigned long
++calc_load(unsigned long load, unsigned long exp, unsigned long active)
++{
++	load *= exp;
++	load += active * (FIXED_1 - exp);
++	load += 1UL << (FSHIFT - 1);
++	return load >> FSHIFT;
++}
++
+ #ifdef CONFIG_NO_HZ
+ /*
+  * For NO_HZ we delay the active fold to the next LOAD_FREQ update.
+@@ -2919,6 +2928,128 @@ static long calc_load_fold_idle(void)
+ 
+ 	return delta;
+ }
++
++/**
++ * fixed_power_int - compute: x^n, in O(log n) time
++ *
++ * @x:         base of the power
++ * @frac_bits: fractional bits of @x
++ * @n:         power to raise @x to.
++ *
++ * By exploiting the relation between the definition of the natural power
++ * function: x^n := x*x*...*x (x multiplied by itself for n times), and
++ * the binary encoding of numbers used by computers: n := \Sum n_i * 2^i,
++ * (where: n_i \elem {0, 1}, the binary vector representing n),
++ * we find: x^n := x^(\Sum n_i * 2^i) := \Prod x^(n_i * 2^i), which is
++ * of course trivially computable in O(log_2 n), the length of our binary
++ * vector.
++ */
++static unsigned long
++fixed_power_int(unsigned long x, unsigned int frac_bits, unsigned int n)
++{
++	unsigned long result = 1UL << frac_bits;
++
++	if (n) for (;;) {
++		if (n & 1) {
++			result *= x;
++			result += 1UL << (frac_bits - 1);
++			result >>= frac_bits;
++		}
++		n >>= 1;
++		if (!n)
++			break;
++		x *= x;
++		x += 1UL << (frac_bits - 1);
++		x >>= frac_bits;
++	}
++
++	return result;
++}
++
++/*
++ * a1 = a0 * e + a * (1 - e)
++ *
++ * a2 = a1 * e + a * (1 - e)
++ *    = (a0 * e + a * (1 - e)) * e + a * (1 - e)
++ *    = a0 * e^2 + a * (1 - e) * (1 + e)
++ *
++ * a3 = a2 * e + a * (1 - e)
++ *    = (a0 * e^2 + a * (1 - e) * (1 + e)) * e + a * (1 - e)
++ *    = a0 * e^3 + a * (1 - e) * (1 + e + e^2)
++ *
++ *  ...
++ *
++ * an = a0 * e^n + a * (1 - e) * (1 + e + ... + e^n-1) [1]
++ *    = a0 * e^n + a * (1 - e) * (1 - e^n)/(1 - e)
++ *    = a0 * e^n + a * (1 - e^n)
++ *
++ * [1] application of the geometric series:
++ *
++ *              n         1 - x^(n+1)
++ *     S_n := \Sum x^i = -------------
++ *             i=0          1 - x
++ */
++static unsigned long
++calc_load_n(unsigned long load, unsigned long exp,
++	    unsigned long active, unsigned int n)
++{
++
++	return calc_load(load, fixed_power_int(exp, FSHIFT, n), active);
++}
++
++/*
++ * NO_HZ can leave us missing all per-cpu ticks calling
++ * calc_load_account_active(), but since an idle CPU folds its delta into
++ * calc_load_tasks_idle per calc_load_account_idle(), all we need to do is fold
++ * in the pending idle delta if our idle period crossed a load cycle boundary.
++ *
++ * Once we've updated the global active value, we need to apply the exponential
++ * weights adjusted to the number of cycles missed.
++ */
++static void calc_global_nohz(unsigned long ticks)
++{
++	long delta, active, n;
++
++	if (time_before(jiffies, calc_load_update))
++		return;
++
++	/*
++	 * If we crossed a calc_load_update boundary, make sure to fold
++	 * any pending idle changes, the respective CPUs might have
++	 * missed the tick driven calc_load_account_active() update
++	 * due to NO_HZ.
++	 */
++	delta = calc_load_fold_idle();
++	if (delta)
++		atomic_long_add(delta, &calc_load_tasks);
++
++	/*
++	 * If we were idle for multiple load cycles, apply them.
++	 */
++	if (ticks >= LOAD_FREQ) {
++		n = ticks / LOAD_FREQ;
++
++		active = atomic_long_read(&calc_load_tasks);
++		active = active > 0 ? active * FIXED_1 : 0;
++
++		avenrun[0] = calc_load_n(avenrun[0], EXP_1, active, n);
++		avenrun[1] = calc_load_n(avenrun[1], EXP_5, active, n);
++		avenrun[2] = calc_load_n(avenrun[2], EXP_15, active, n);
++
++		calc_load_update += n * LOAD_FREQ;
++	}
++
++	/*
++	 * Its possible the remainder of the above division also crosses
++	 * a LOAD_FREQ period, the regular check in calc_global_load()
++	 * which comes after this will take care of that.
++	 *
++	 * Consider us being 11 ticks before a cycle completion, and us
++	 * sleeping for 4*LOAD_FREQ + 22 ticks, then the above code will
++	 * age us 4 cycles, and the test in calc_global_load() will
++	 * pick up the final one.
++	 */
++}
+ #else
+ static void calc_load_account_idle(struct rq *this_rq)
+ {
+@@ -2928,6 +3059,10 @@ static inline long calc_load_fold_idle(v
+ {
+ 	return 0;
+ }
++
++static void calc_global_nohz(unsigned long ticks)
++{
++}
+ #endif
+ 
+ /**
+@@ -2945,24 +3080,17 @@ void get_avenrun(unsigned long *loads, u
+ 	loads[2] = (avenrun[2] + offset) << shift;
+ }
+ 
+-static unsigned long
+-calc_load(unsigned long load, unsigned long exp, unsigned long active)
+-{
+-	load *= exp;
+-	load += active * (FIXED_1 - exp);
+-	return load >> FSHIFT;
+-}
+-
+ /*
+  * calc_load - update the avenrun load estimates 10 ticks after the
+  * CPUs have updated calc_load_tasks.
+  */
+-void calc_global_load(void)
++void calc_global_load(unsigned long ticks)
+ {
+-	unsigned long upd = calc_load_update + 10;
+ 	long active;
+ 
+-	if (time_before(jiffies, upd))
++	calc_global_nohz(ticks);
++
++	if (time_before(jiffies, calc_load_update + 10))
+ 		return;
+ 
+ 	active = atomic_long_read(&calc_load_tasks);
+Index: linux-2.6.35.y/kernel/timer.c
+===================================================================
+--- linux-2.6.35.y.orig/kernel/timer.c
++++ linux-2.6.35.y/kernel/timer.c
+@@ -1308,7 +1308,7 @@ void do_timer(unsigned long ticks)
+ {
+ 	jiffies_64 += ticks;
+ 	update_wall_time();
+-	calc_global_load();
++	calc_global_load(ticks);
+ }
+ 
+ #ifdef __ARCH_WANT_SYS_ALARM
