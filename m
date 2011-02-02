@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832Ab1BBLd2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 06:33:28 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:61286 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446Ab1BBLd1 (ORCPT
+	id S1753947Ab1BBLeB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 06:34:01 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:34438 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753602Ab1BBLd7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 06:33:27 -0500
-Message-ID: <4D4940E0.8070306@corscience.de>
-Date: Wed, 02 Feb 2011 12:32:48 +0100
-From: Bernhard Walle <walle@corscience.de>
-Organization: Corscience GmbH & Co. KG
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: dbrownell@users.sourceforge.net, grant.likely@secretlab.ca,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH] spi: spidev: Add 32 bit compat ioctl()
-References: <1296644235-23933-1-git-send-email-walle@corscience.de> <201102021215.29002.arnd@arndb.de>
-In-Reply-To: <201102021215.29002.arnd@arndb.de>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-15
+	Wed, 2 Feb 2011 06:33:59 -0500
+Subject: Re: Support for Android for mac80211 / cfg80211 802.11 drivers
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Jouni Malinen <j@w1.fi>
+Cc: Bob Copeland <me@bobcopeland.com>, "Luis R. Rodriguez" <mcgrof@gmail.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Amod Bodas <Amod.Bodas@atheros.com>,
+        Senthilkumar Balasubramanian 
+	<Senthilkumar.Balasubramanian@atheros.com>,
+        Sree Durbha <Sree.Durbha@atheros.com>,
+        Deepak Dhamdhere <Deepak.Dhamdhere@atheros.com>,
+        Xin Jin <Xin.Jin@atheros.com>
+In-Reply-To: <20110202113052.GA14126@jm.kir.nu>
+References: <AANLkTikbrzLeeY8Gosw+7Aic1=V=5f+sD382sXwGDWbA@mail.gmail.com>
+	 <AANLkTi=_gHfEKKC2rsA0pc6Otu5FU4CtVKA2UR85b+GV@mail.gmail.com>
+	 <AANLkTim9uNH8BzjDM5Ekt3ayBe+7QfE4vnXR0bc-=-Yn@mail.gmail.com>
+	 <AANLkTikasAe2H+HyoWDr=NbuxW6LJAET-JqATWMmMmq0@mail.gmail.com>
+	 <1296633772.3624.2.camel@jlt3.sipsolutions.net>
+	 <20110202113052.GA14126@jm.kir.nu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 02 Feb 2011 12:33:54 +0100
+Message-ID: <1296646434.5671.1.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:z6aPLKLmVYqftezoEoZ162zOIO3W09C+qGKi8phCYKU
- XD5VJMaYSZEm6fCfRsmla6oLBw6PjSf9r5MU3ATuALcvpvbLeZ
- Ow/wdumNoVW4nTUQsgsjXBYCiJTxoNaNL48VNGEcXEeMjKl2l8
- sIxJ/2iLgMIRnryZEYy0IMTlVXpAmapjxag9fwQrU3hFvt2YTG
- bR3+FcH+fqBVoyXwek6jQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 02.02.2011 12:15, schrieb Arnd Bergmann:
-> On Wednesday 02 February 2011, Bernhard Walle wrote:
->> Add the compat_ioctl for operations on /dev/spi* so that 32 bit
->> userspace applications can access SPI. As far as I can see all data
->> structure are already prepared for that, so no additional conversion has
->> to be done.
->>
->> My use case is MIPS with N32 userspace ABI and toolchain, and that was
->> also the platform where I tested it successfully (Cavium Octeon).
->>
->> Signed-off-by: Bernhard Walle <walle@corscience.de>
+On Wed, 2011-02-02 at 13:30 +0200, Jouni Malinen wrote:
+
+> > Agree, that is a dumb idea. What's that driver going to do? Use custom
+> > nl80211 extensions?! That way lies insanity.
 > 
-> I think you now need to #include <linux/compat.h> as well, to get the
-> definition of compat_ptr(). Otherwise looks good.
+> The only reason for that is to be able to support the wpa_supplicant
+> modifications used in Android that are not acceptable for upstream
+> hostap.git (mainly, driver_cmd). This would not add any custom nl80211
+> extensions; the needed functionality should be added properly to
+> upstream nl80211.
 
-It compiled on my MIPS test environment without that include, but I
-adjusted the patch and posted again.
+What's the driver_cmd things they use? If we they add support for
+whatever it is to nl80211, why can those not be normal supplicant
+interfaces?
 
-Thanks for reviewing, Arnd!
+> If it is fine to remove the custom wpa_supplicant modifications from
+> Android, this is obviously a moot point, but until that happens, the
+> easiest approach seems to be to provide a custom driver_*.c based on
+> nl80211 to isolate the custom changes to user space and to small part of
+> it at that. I don't really want to see new drivers trying to provide
+> WEXT support with private ioctls to address need for making it work with
+> Android..
 
+Indeed -- no way. Seems Android needs to learn upstream.
 
-Regards,
-Bernhard
+johannes
+
