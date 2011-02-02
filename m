@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190Ab1BBMzc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 07:55:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34079 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754023Ab1BBMzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 07:55:31 -0500
-Message-ID: <4D49543F.4070300@redhat.com>
-Date: Wed, 02 Feb 2011 10:55:27 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
+	id S1754128Ab1BBNI4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 08:08:56 -0500
+Received: from smtp-tls1.univ-nantes.fr ([193.52.101.145]:34938 "EHLO
+	smtp-tls.univ-nantes.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754015Ab1BBNIz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 08:08:55 -0500
+Message-ID: <4D495765.4090806@univ-nantes.fr>
+Date: Wed, 02 Feb 2011 14:08:53 +0100
+From: Yann Dupont <Yann.Dupont@univ-nantes.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14pre) Gecko/20110118 Shredder/3.1.8pre
 MIME-Version: 1.0
-To: Patrick Boettcher <pboettcher@kernellabs.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL for 2.6.38-rc2] V4L/DVB patches
-References: <4D386A69.3080000@redhat.com> <4D398755.7040107@redhat.com> <201101312155.59363.pboettcher@kernellabs.com>
-In-Reply-To: <201101312155.59363.pboettcher@kernellabs.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+Subject: Re: kernel 2.6.37 : oops in cleanup_once
+References: <4D491B8D.1000107@univ-nantes.fr>	 <1296643972.20445.9.camel@edumazet-laptop> <1296645887.20445.11.camel@edumazet-laptop>
+In-Reply-To: <1296645887.20445.11.camel@edumazet-laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 31-01-2011 18:55, Patrick Boettcher escreveu:
-> Hi Mauro,
-> 
-> On Friday 21 January 2011 14:17:09 Mauro Carvalho Chehab wrote:
->> Linus,
+Le 02/02/2011 12:24, Eric Dumazet a écrit :
+> Le mercredi 02 février 2011 à 11:52 +0100, Eric Dumazet a écrit :
+>> Le mercredi 02 février 2011 à 09:53 +0100, Yann Dupont a écrit :
+>>> Hello.
+>>> We recently upgraded one machine with vanilla 2.6.37, and experienced 2
+>>> kernel oops since. Each oops is after ~1 week of uptime.
+>>> The last oops was last night but we didn't had any trace.
+> oops, 2.6.37 "only"
+>
+>> Yes this is a known problem.
 >>
->> Em 20-01-2011 15:01, Mauro Carvalho Chehab escreveu:
->>> Hi Linus,
->>>
->>> Those are some changes that I tried to prepare to send you during the
->>> merge window, but, unfortunately, the new videobuf2 driver took me a
->>> longer time to review/test than I originally expected.
->>>
->>> Please pull from:
->>>   ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
->>>   v4l_for_linus
+>> Please try commit 3408404a4c2a4eead9d73b0bbbfe3f225b65f492
+>> (inetpeer: Use correct AVL tree base pointer in inet_getpeer())
 >>
->> Please, don't pull yet. There are some changesets that have some
->> weird stuff, like this:
+>> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=3408404a4c2a4eead9d73b0bbbfe3f225b65f492
 >>
->> diff --git a/drivers/staging/vme/bridges/Module.symvers
->> b/drivers/staging/vme/bridges/Module.symvers deleted file mode 100644
->> index e69de29..0000000
->>
->> I have no idea why those things appeared, as I never handled any patch
->> that touched inside drivers/staging/vme. I need to further investigate
->> the entire patchset and see if other weird stuff happened there.
->>
->> I'll send you another pull request after fixing those things.
-> 
-> Do you think those changesets will make it into 2.6.38 at some point? I'm 
-> asking because this is where the technisat-driver is currently residing on his 
-> way into the kernel.  I understand that there is a problem in this branch, but 
-> still I'd like to see the technisat-usb2 being merged.
-> 
-> I'm getting a little bit desperate. :-(
-> 
-> Can I do something to help?
+>> I believe David will send it to stable team shortly, if not already
+>> done :)
+> Please ignore, this patch was for linux-2.6 tree, 2.6.37 was not
+> affected by the problem.
+>
+> So its another problem... Is there anything particular you do on this
+> machine ?
+>
+>
+>
+>
+Nothing really special there, we run a lot (20) of KVM guest (mainly 
+linux firewalls for lots of differents vlan), so we have a lot of 
+bridges vlan & tun/tap.
+Oh, and CONFIG_BRIDGE_IGMP_SNOOPING is set to n (because of  the other 
+bug already sent to netdev - more to come on next mail)
 
-Sent a new pull request today. Linus was at LCA last week. So, I opted
-to wait for his return before re-sending this series.
+Hard to say if this BUG is new in 2.6.37. This host was running fine 
+with 2.6.34.2 since August 2010.
+Bisecting will be hard due to the time to trigger the bug (and the fact 
+that this machine is a production machine)
 
-Thanks,
-Mauro
+Anyway, I can test with a specific kernel version if you suspect something.
+
+Regards,
+
+
+-- 
+Yann Dupont - Service IRTS, DSI Université de Nantes
+Tel : 02.53.48.49.20 - Mail/Jabber : Yann.Dupont@univ-nantes.fr
+
