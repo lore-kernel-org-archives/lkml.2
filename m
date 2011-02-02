@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752812Ab1BBAnk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Feb 2011 19:43:40 -0500
-Received: from mga14.intel.com ([143.182.124.37]:48181 "EHLO mga14.intel.com"
+	id S1752932Ab1BBAnp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Feb 2011 19:43:45 -0500
+Received: from mga09.intel.com ([134.134.136.24]:36336 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752404Ab1BBAnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Feb 2011 19:43:33 -0500
+	id S1752798Ab1BBAnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Feb 2011 19:43:40 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,412,1291622400"; 
-   d="scan'208";a="382960424"
+   d="scan'208";a="598622333"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110201443.618138584@firstfloor.org>
 In-Reply-To: <20110201443.618138584@firstfloor.org>
-To: mad_soft@inbox.ru, lrg@slimlogic.co.uk,
-        broonie@opensource.wolfsonmicro.com, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH] [23/139] ASoC: fix deemphasis control in wm8904/55/60 codecs
-Message-Id: <20110202004337.DDA373E09BD@tassilo.jf.intel.com>
-Date: Tue,  1 Feb 2011 16:43:37 -0800 (PST)
+To: helmut.schaa@googlemail.com, johannes@sipsolutions.net,
+        linville@tuxdriver.com, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] [34/139] mac80211: Fix BUG in pskb_expand_head when transmitting shared skbs
+Message-Id: <20110202004349.64A543E09BD@tassilo.jf.intel.com>
+Date: Tue,  1 Feb 2011 16:43:49 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,51 +25,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Dmitry Artamonow <mad_soft@inbox.ru>
+From: Helmut Schaa <helmut.schaa@googlemail.com>
 
-commit 3f343f8512c7882a3637d9aea4ec6b3801cbcdc5 upstream.
+commit 7e2447075690860e2cea96b119fc9cadbaa7e83c upstream.
 
-Deemphasis control's .get callback should update control's value instead
-of returning it - return value of callback function is used for indicating
-error or success of operation.
+mac80211 doesn't handle shared skbs correctly at the moment. As a result
+a possible resize can trigger a BUG in pskb_expand_head.
 
-Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
-Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+[  676.030000] Kernel bug detected[#1]:
+[  676.030000] Cpu 0
+[  676.030000] $ 0   : 00000000 00000000 819662ff 00000002
+[  676.030000] $ 4   : 81966200 00000020 00000000 00000020
+[  676.030000] $ 8   : 819662e0 800043c0 00000002 00020000
+[  676.030000] $12   : 3b9aca00 00000000 00000000 00470000
+[  676.030000] $16   : 80ea2000 00000000 00000000 00000000
+[  676.030000] $20   : 818aa200 80ea2018 80ea2000 00000008
+[  676.030000] $24   : 00000002 800ace5c
+[  676.030000] $28   : 8199a000 8199bd20 81938f88 80f180d4
+[  676.030000] Hi    : 0000026e
+[  676.030000] Lo    : 0000757e
+[  676.030000] epc   : 801245e4 pskb_expand_head+0x44/0x1d8
+[  676.030000]     Not tainted
+[  676.030000] ra    : 80f180d4 ieee80211_skb_resize+0xb0/0x114 [mac80211]
+[  676.030000] Status: 1000a403    KERNEL EXL IE
+[  676.030000] Cause : 10800024
+[  676.030000] PrId  : 0001964c (MIPS 24Kc)
+[  676.030000] Modules linked in: mac80211_hwsim rt2800lib rt2x00soc rt2x00pci rt2x00lib mac80211 crc_itu_t crc_ccitt cfg80211 compat arc4 aes_generic deflate ecb cbc [last unloaded: rt2800pci]
+[  676.030000] Process kpktgend_0 (pid: 97, threadinfo=8199a000, task=81879f48, tls=00000000)
+[  676.030000] Stack : ffffffff 00000000 00000000 00000014 00000004 80ea2000 00000000 00000000
+[  676.030000]         818aa200 80f180d4 ffffffff 0000000a 81879f78 81879f48 81879f48 00000018
+[  676.030000]         81966246 80ea2000 818432e0 80f1a420 80203050 81814d98 00000001 81879f48
+[  676.030000]         81879f48 00000018 81966246 818432e0 0000001a 8199bdd4 0000001c 80f1b72c
+[  676.030000]         80203020 8001292c 80ef4aa2 7f10b55d 801ab5b8 81879f48 00000188 80005c90
+[  676.030000]         ...
+[  676.030000] Call Trace:
+[  676.030000] [<801245e4>] pskb_expand_head+0x44/0x1d8
+[  676.030000] [<80f180d4>] ieee80211_skb_resize+0xb0/0x114 [mac80211]
+[  676.030000] [<80f1a420>] ieee80211_xmit+0x150/0x22c [mac80211]
+[  676.030000] [<80f1b72c>] ieee80211_subif_start_xmit+0x6f4/0x73c [mac80211]
+[  676.030000] [<8014361c>] pktgen_thread_worker+0xfac/0x16f8
+[  676.030000] [<8002ebe8>] kthread+0x7c/0x88
+[  676.030000] [<80008e0c>] kernel_thread_helper+0x10/0x18
+[  676.030000]
+[  676.030000]
+[  676.030000] Code: 24020001  10620005  2502001f <0200000d> 0804917a  00000000  2502001f  00441023  00531021
+
+Fix this by making a local copy of shared skbs prior to mangeling them.
+To avoid copying the skb unnecessarily move the skb_copy call below the
+checks that don't need write access to the skb.
+
+Also, move the assignment of nh_pos and h_pos below the skb_copy to point
+to the correct skb.
+
+It would be possible to avoid another resize of the copied skb by using
+skb_copy_expand instead of skb_copy but that would make the patch more
+complex. Also, shared skbs are a corner case right now, so the resize
+shouldn't matter much.
+
+Cc: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: Helmut Schaa <helmut.schaa@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- sound/soc/codecs/wm8904.c |    3 ++-
- sound/soc/codecs/wm8955.c |    3 ++-
- sound/soc/codecs/wm8960.c |    3 ++-
- 3 files changed, 6 insertions(+), 3 deletions(-)
+ net/mac80211/tx.c |   21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
 
-Index: linux-2.6.35.y/sound/soc/codecs/wm8904.c
+Index: linux-2.6.35.y/net/mac80211/tx.c
 ===================================================================
---- linux-2.6.35.y.orig/sound/soc/codecs/wm8904.c
-+++ linux-2.6.35.y/sound/soc/codecs/wm8904.c
-@@ -820,7 +820,8 @@ static int wm8904_get_deemph(struct snd_
- 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
- 	struct wm8904_priv *wm8904 = snd_soc_codec_get_drvdata(codec);
+--- linux-2.6.35.y.orig/net/mac80211/tx.c
++++ linux-2.6.35.y/net/mac80211/tx.c
+@@ -1679,15 +1679,13 @@ netdev_tx_t ieee80211_subif_start_xmit(s
+ 	int nh_pos, h_pos;
+ 	struct sta_info *sta = NULL;
+ 	u32 sta_flags = 0;
++	struct sk_buff *tmp_skb;
  
--	return wm8904->deemph;
-+	ucontrol->value.enumerated.item[0] = wm8904->deemph;
-+	return 0;
- }
+ 	if (unlikely(skb->len < ETH_HLEN)) {
+ 		ret = NETDEV_TX_OK;
+ 		goto fail;
+ 	}
  
- static int wm8904_put_deemph(struct snd_kcontrol *kcontrol,
-Index: linux-2.6.35.y/sound/soc/codecs/wm8955.c
-===================================================================
---- linux-2.6.35.y.orig/sound/soc/codecs/wm8955.c
-+++ linux-2.6.35.y/sound/soc/codecs/wm8955.c
-@@ -384,7 +384,8 @@ static int wm8955_get_deemph(struct snd_
- 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
- 	struct wm8955_priv *wm8955 = snd_soc_codec_get_drvdata(codec);
+-	nh_pos = skb_network_header(skb) - skb->data;
+-	h_pos = skb_transport_header(skb) - skb->data;
+-
+ 	/* convert Ethernet header to proper 802.11 header (based on
+ 	 * operation mode) */
+ 	ethertype = (skb->data[12] << 8) | skb->data[13];
+@@ -1859,6 +1857,20 @@ netdev_tx_t ieee80211_subif_start_xmit(s
+ 		goto fail;
+ 	}
  
--	return wm8955->deemph;
-+	ucontrol->value.enumerated.item[0] = wm8955->deemph;
-+	return 0;
- }
++	/*
++	 * If the skb is shared we need to obtain our own copy.
++	 */
++	if (skb_shared(skb)) {
++		tmp_skb = skb;
++		skb = skb_copy(skb, GFP_ATOMIC);
++		kfree_skb(tmp_skb);
++
++		if (!skb) {
++			ret = NETDEV_TX_OK;
++			goto fail;
++		}
++	}
++
+ 	hdr.frame_control = fc;
+ 	hdr.duration_id = 0;
+ 	hdr.seq_ctrl = 0;
+@@ -1877,6 +1889,9 @@ netdev_tx_t ieee80211_subif_start_xmit(s
+ 		encaps_len = 0;
+ 	}
  
- static int wm8955_put_deemph(struct snd_kcontrol *kcontrol,
++	nh_pos = skb_network_header(skb) - skb->data;
++	h_pos = skb_transport_header(skb) - skb->data;
++
+ 	skb_pull(skb, skip_header_bytes);
+ 	nh_pos -= skip_header_bytes;
+ 	h_pos -= skip_header_bytes;
