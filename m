@@ -1,115 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755050Ab1BBTDI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 14:03:08 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:47224 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755002Ab1BBTDG (ORCPT
+	id S1755046Ab1BBTOy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 14:14:54 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:49638 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754879Ab1BBTOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 14:03:06 -0500
-Date: Thu, 3 Feb 2011 00:32:51 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: eranian@google.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-        perfmon2-devel@lists.sf.net, eranian@gmail.com, robert.richter@amd.com,
-        acme@redhat.com, lizf@cn.fujitsu.com, Paul Menage <menage@google.com>
-Subject: Re: [PATCH 1/2] perf_events: add cgroup support (v8)
-Message-ID: <20110202190251.GB16409@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <4d384700.2308e30a.70bc.ffffd532@mx.google.com>
- <1295534345.28776.175.camel@laptop>
- <1296646160.26581.315.camel@laptop>
- <20110202115012.GA16409@balbir.in.ibm.com>
- <1296650792.26581.319.camel@laptop>
+	Wed, 2 Feb 2011 14:14:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=kwkYujEAp3UayBwa4MkP45fdGfg7B6X8w3re76Ulc2aVHEmy+LnaImEL8m/lzKz0Ud
+         7ety9WII3PtqygA58peA==
+From: Ian Lance Taylor <iant@google.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Peter Maydell <peter.maydell@linaro.org>, gcc@gcc.gnu.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ulrich Weigand <Ulrich.Weigand@de.ibm.com>
+Subject: Re: ARM unaligned MMIO access with attribute((packed))
+References: <201102021700.20683.arnd@arndb.de>
+	<20110202163702.GA23240@n2100.arm.linux.org.uk>
+	<201102021839.17223.arnd@arndb.de>
+Date: Wed, 02 Feb 2011 11:14:45 -0800
+In-Reply-To: <201102021839.17223.arnd@arndb.de> (Arnd Bergmann's message of
+	"Wed, 2 Feb 2011 18:39:17 +0100")
+Message-ID: <mcrpqrafdui.fsf@google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1296650792.26581.319.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=us-ascii
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2011-02-02 13:46:32]:
+Arnd Bergmann <arnd@arndb.de> writes:
 
-> On Wed, 2011-02-02 at 17:20 +0530, Balbir Singh wrote:
-> > * Peter Zijlstra <peterz@infradead.org> [2011-02-02 12:29:20]:
-> > 
-> > > On Thu, 2011-01-20 at 15:39 +0100, Peter Zijlstra wrote:
-> > > > On Thu, 2011-01-20 at 15:30 +0200, Stephane Eranian wrote:
-> > > > > @@ -4259,8 +4261,20 @@ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
-> > > > >  
-> > > > >         /* Reassign the task to the init_css_set. */
-> > > > >         task_lock(tsk);
-> > > > > +       /*
-> > > > > +        * we mask interrupts to prevent:
-> > > > > +        * - timer tick to cause event rotation which
-> > > > > +        *   could schedule back in cgroup events after
-> > > > > +        *   they were switched out by perf_cgroup_sched_out()
-> > > > > +        *
-> > > > > +        * - preemption which could schedule back in cgroup events
-> > > > > +        */
-> > > > > +       local_irq_save(flags);
-> > > > > +       perf_cgroup_sched_out(tsk);
-> > > > >         cg = tsk->cgroups;
-> > > > >         tsk->cgroups = &init_css_set;
-> > > > > +       perf_cgroup_sched_in(tsk);
-> > > > > +       local_irq_restore(flags);
-> > > > >         task_unlock(tsk);
-> > > > >         if (cg)
-> > > > >                 put_css_set_taskexit(cg); 
-> > > > 
-> > > > So you too need a callback on cgroup change there.. Li, Paul, any chance
-> > > > we can fix this cgroup_subsys::exit callback? The scheduler code needs
-> > > > to do funny thing because its in the wrong place as well.
-> > > 
-> > > cgroup guys? Shall I just fix this exit thing since the only user seems
-> > > to be the scheduler and now perf for both of which its unfortunate at
-> > > best?
-> > 
-> > Are you suggesting that the cgroup_exit on task_exit notification should be
-> > pulled out?
-> 
-> 
-> No, just fixed. The callback as it exists isn't useful and leads to
-> hacks like the above.
+> On Wednesday 02 February 2011 17:37:02 Russell King - ARM Linux wrote:
+>> We used to use inline assembly at one point, but that got chucked out.
+>> The problem is that using asm() for this causes GCC to generate horrid
+>> code.
+>> 
+>> 1. there's no way to tell GCC that the inline assembly is a load
+>>    instruction and therefore it needs to schedule the following
+>>    instructions appropriately.
+>> 
+>> 2. GCC will needlessly reload pointers from structures and other such
+>>    behaviour because it can't be told clearly what the inline assembly
+>>    is doing, so the inline asm needs to have a "memory" clobber.
+>> 
+>> 3. It seems to misses out using the pre-index addressing, prefering to
+>>    create add/sub instructions prior to each inline assembly load/store.
+>> 
+>> 4. There are no (documented) constraints in GCC to allow you to represent
+>>    the offset format for the half-word instructions.
+>> 
+>> Overall, it means greater register pressure, more instructions, larger
+>> functions, greater instruction cache pressure, etc.
 >
+> Another solution would be to declare the readl function extern and define
+> it out of line, but I assume that this would be at least as bad as an
+> inline assembly for all the points you brought up, right?
+>
+> Would it be possible to add the proper constraints for defining readl
+> in an efficient way to a future version of gcc? That wouldn't help us
+> in the near future, but we could at some points use those in a number
+> of places.
 
-OK
- 
-> 
-> > > Balbir, memcontrol.c uses pre_destroy(), I pose that using this method
-> > > is broken per definition since it makes the cgroup empty notification
-> > > void.
-> > >
-> > 
-> > We use pre_destroy() to reclaim, so that delete/rmdir() will be able
-> > to clean up the node/group. I am not sure what you mean by it makes
-> > the empty notification void and why pre_destroy() is broken?
-> 
-> A quick look at the code looked like it could return -EBUSY (and other
-> errors), in that case the rmdir of the empty cgroup will fail.
-> 
-> Therefore it can happen that after the last task is removed, and we get
-> the notification that the cgroup is empty, and we attempt the rmdir we
-> will fail.
-> 
-> This again means that all such notification handlers must poll state,
-> which is ridiculous.
+I think it would be quite difficult to implement item 1 above in a way
+that was actually usable.  It would require some way to describe the
+scheduling requirements of an asm.  But the details of scheduling are
+backend specific.  Internally there are define_insn_reservation
+structures which have names, but the names are processor specific which
+is not what you want in source code (by processor specific I mean
+specific to particular CPUs within a family).  There are define_cpu_unit
+structures which also have names, but are again processor specific.
+What you want here is some non-processor-specific way to describe the
+characteristics of an instruction.  gcc does not have that today.
 
-The reason why the failure occurs is because someone has an active
-reference to the cgroup structure. In the case of memory, it was every
-page_cgroup earlier. The only reason why a notification would have to
-poll state is if
+Even if somebody implemented all that, most inline asms are not a single
+instructions and thus would find it difficult to take advantage of it.
+I don't see this as paying off in the long run.
 
-1. notification is sent that there are no references, this group can
-be cleaned up
-2. A new reference is acquired before the cleanup
+A more likely payoff would be to develop builtin functions for whatever
+functionality is required that can not expressed in source code.
 
-1 and 2 are unlikely
+Item 2 above can be done.  It is possible to describe precisely which
+areas of memory are clobbered.
 
+Item 3 above seems impossible to me.  There is no way to combine
+compiler generated instructions with user written inline asm such that
+pre-index addressing can be used.  Perhaps I misunderstand.
 
--- 
-	Three Cheers,
-	Balbir
+Item 4 can be implemented; please consider opening a feature request in
+bugzilla.
+
+Ian
