@@ -1,73 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310Ab1BBWvW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 17:51:22 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:53616
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754442Ab1BBWvV (ORCPT
+	id S1755325Ab1BBWwL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 17:52:11 -0500
+Received: from mail-out.m-online.net ([212.18.0.10]:54471 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754442Ab1BBWwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 17:51:21 -0500
-Date: Wed, 02 Feb 2011 14:51:57 -0800 (PST)
-Message-Id: <20110202.145157.39164499.davem@davemloft.net>
-To: rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, akpm@linux-foundation.org,
-        fweisbec@gmail.com, mathieu.desnoyers@efficios.com, tglx@linutronix.de,
-        peterz@infradead.org, rusty@rustcorp.com.au
-Subject: Re: [PATCH 2/2] Tracepoints: Fix section alignment using pointer
- array
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110202180938.471738176@goodmis.org>
-References: <20110202180613.978219945@goodmis.org>
-	<20110202180938.471738176@goodmis.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Feb 2011 17:52:09 -0500
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Dmitry Torokhov <dtor@vmware.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: Early crash (was: Re: module: show version information for built-in modules in sysfs)
+References: <AANLkTin4gOnEMruLDM=TkNYsNf5S370WqbcDVJzT7_Z4@mail.gmail.com>
+	<20110201210944.GA12348@dtor-ws.eng.vmware.com>
+	<AANLkTimv=KqtuR36dMNa+=OMi0mgd8JK4qsb_SpmKmhs@mail.gmail.com>
+	<20110201222637.GA17521@dtor-ws.eng.vmware.com>
+	<AANLkTikWVt8NEyHN+=yD4EWSXUQt0gt5nLJtKQDw397M@mail.gmail.com>
+	<20110202194227.GA13794@dtor-ws.eng.vmware.com>
+X-Yow: ..  If I had heart failure right now, I couldn't be a more fortunate man!!
+Date: Wed, 02 Feb 2011 23:52:04 +0100
+In-Reply-To: <20110202194227.GA13794@dtor-ws.eng.vmware.com> (Dmitry
+	Torokhov's message of "Wed, 2 Feb 2011 11:42:27 -0800")
+Message-ID: <m2ipx2dp7v.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2.93 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
-Date: Wed, 02 Feb 2011 13:06:15 -0500
+Dmitry Torokhov <dtor@vmware.com> writes:
 
-> From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> 
-> Make the tracepoints more robust, making them solid enough to handle compiler
-> changes by not relying on anything based on compiler-specific behavior with
-> respect to structure alignment. Implement an approach proposed by David Miller:
-> use an array of const pointers to refer to the individual structures, and export
-> this pointer array through the linker script rather than the structures per se.
-> It will consume 32 extra bytes per tracepoint (24 for structure padding and 8
-> for the pointers), but are less likely to break due to compiler changes.
-> 
-> History:
-> 
-> commit 7e066fb870fcd1025ec3ba7bbde5d541094f4ce1 added the aligned(32) type and
-> variable attribute to the tracepoint structures to deal with gcc happily
-> aligning statically defined structures on 32-byte multiples.
-> 
-> commit 15e3540ce2159705f18fad6147ffedf04445ad64 tried to use a 8-byte alignment
-> for tracepoint structures by applying both the variable and type attribute to
-> tracepoint structures definitions and declarations. It worked fine with gcc
-> 4.5.1, but broke with gcc 4.4.4 and 4.4.5.
-> 
-> The reason is that the "aligned" attribute only specify the _minimum_ alignment
-> for a structure, leaving both the compiler and the linker free to align on
-> larger multiples. Because tracepoint.c expects the structures to be placed as an
-> array within each section, up-alignment cause NULL-pointer exceptions due to the
-> extra unexpected padding.
-> 
-> (this patch applies on top of -tip)
-> 
-> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> LKML-Reference: <20110126222622.GA10794@Krystal>
-> CC: David Miller <davem@davemloft.net>
-> CC: Frederic Weisbecker <fweisbec@gmail.com>
-> CC: Ingo Molnar <mingo@elte.hu>
-> CC: Thomas Gleixner <tglx@linutronix.de>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: Peter Zijlstra <peterz@infradead.org>
-> CC: Rusty Russell <rusty@rustcorp.com.au>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> But why is it aligned on 2-byte boundary and why m64k is not happy with
+> module_version_attribute but is happy with kernel_param which is also
+> aligned similarly?
 
-Acked-by: David S. Miller <davem@davemloft.net>
+struct kernel_parm doesn't contain internal padding on 32 bit
+architectures (it does on 64bit architectures though).
+
+> If we unroll module_version_attribute it woud look like this:
+>
+> struct module_version_attribute {
+>
+> 	struct module_attribute {
+>
+> 		struct attribute {
+> 			const char *name;
+> 			mode_t mode;
+> 		} attr;
+> 		...
+>
+> 	} mattr;
+>
+> 	const char *module_name;
+> 	const char *version;
+> };
+>
+> So I would expect it be aligned on (char *) boundary which should be the
+> same as (void *).
+
+mode_t is a 16 bit type, thus any following member becomes aligned on an
+odd 2 byte boundary.  On 32bit architectures with 4 byte alignment and
+16 bit mode_t struct attribute contains 2 bytes of internal padding.
+(64bit architectures typically have a 32bit mode_t, and there are 4
+bytes of padding.)
+
+> Will it help if we rearrange module_version_attribute definition to
+> explicitly have first field being a pointer so it is more like
+> kernel_param, like this:
+>
+> struct module_version_attribute {
+> 	const char *module_name;
+> 	const char *version;
+> 	struct module_attribute mattr;
+> };
+
+That won't change the total size of the structure.
+
+Andreas.
+
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
