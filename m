@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755692Ab1BBXcw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 18:32:52 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:51845 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755678Ab1BBXct (ORCPT
+	id S1755732Ab1BBXdK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 18:33:10 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:38286 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755575Ab1BBXcP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 18:32:49 -0500
-X-SpamScore: -15
-X-BigFish: VPS-15(zzbb2dK1432N98dNzz1202hzz8275bh8275dhz2fh2a8h637h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4D49E985.7070806@am.sony.com>
-Date: Wed, 2 Feb 2011 15:32:21 -0800
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.1) Gecko/20090814 Fedora/3.0-2.6.b3.fc11 Thunderbird/3.0b3
+	Wed, 2 Feb 2011 18:32:15 -0500
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        "Michael Karcher" <kernel@mkarcher.dialup.fu-berlin.de>,
+        "Norbert Preining" <preining@logic.at>
+References: <QUnbpYCwS-F.A.vaC.VHeSNB@chimera>
+In-Reply-To: <QUnbpYCwS-F.A.vaC.VHeSNB@chimera>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        David Miller <davem@davemloft.net>, Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH] softirq: Avoid stack switch from ksoftirqd
-References: <alpine.LFD.2.00.1102021704530.31804@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1102021704530.31804@localhost6.localdomain6>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Content-Disposition: inline
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <ibChAs1xEQI.A.7HD.vHeSNB@chimera>
+Subject: [Bug #27702] regression 2.6.37 -> 2.6.38-rc1: after suspend backlight cannot be adjusted
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu,  3 Feb 2011 00:31:28 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02/11 08:10, Thomas Gleixner wrote:
-> ksoftirqd() calls do_softirq() which switches stacks on several
-> architectures. That makes no sense at all. ksoftirqd's stack is
-> sufficient.
-> 
-> Call __do_softirq() directly.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+This message has been generated automatically as a part of a summary report
+of recent regressions.
 
-Reviewed-by: Frank Rowand <frank.rowand@am.sony.com>
+The following bug entry is on the current list of known regressions
+from 2.6.37.  Please verify if it still should be listed and let the tracking team
+know (either way).
 
-> ---
->  kernel/softirq.c |    5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
-> 
-> Index: linux-2.6-tip/kernel/softirq.c
-> ===================================================================
-> --- linux-2.6-tip.orig/kernel/softirq.c
-> +++ linux-2.6-tip/kernel/softirq.c
-> @@ -738,7 +738,10 @@ static int run_ksoftirqd(void * __bind_c
->  			   don't process */
->  			if (cpu_is_offline((long)__bind_cpu))
->  				goto wait_to_die;
-> -			do_softirq();
-> +			local_irq_disable();
-> +			if (local_softirq_pending())
-> +				__do_softirq();
-> +			local_irq_enable();
->  			preempt_enable_no_resched();
->  			cond_resched();
->  			preempt_disable();
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27702
+Subject		: regression 2.6.37 -> 2.6.38-rc1: after suspend backlight cannot be adjusted
+Submitter	: Norbert Preining <preining@logic.at>
+Date		: 2011-01-21 1:55 (13 days old)
+Message-ID	: <20110121015529.GD9796@gamma.logic.tuwien.ac.at>
+References	: http://marc.info/?l=linux-kernel&m=129557717826819&w=2
+Handled-By	: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+Patch		: https://patchwork.kernel.org/patch/499221/
 
 
