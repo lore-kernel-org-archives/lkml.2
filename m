@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756485Ab1BCQUI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 11:20:08 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43078 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448Ab1BCQUG (ORCPT
+	id S932161Ab1BCQZk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 11:25:40 -0500
+Received: from router-fw.net-space.pl ([89.174.63.77]:33888 "EHLO
+	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756316Ab1BCQZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 11:20:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=GEJTfuz0rDVUCBeUqPHr4KOJkoN+HwM+zUVdYTTf5IVDMZIhpqat0OOmQNshtvfrk3
-         RRD5cj4YFbaSiWc8pyvfXLYyHGqeeeuoq6CthmuPW97/Kh/BbLl24IViOmM/5s4GGCE+
-         GWfrx5HvCn0RcjQ/ZLrSxlM3PCk/aiZj2AKsk=
-Date: Thu, 3 Feb 2011 17:19:06 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Faisal Latif <faisal.latif@intel.com>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Alessandro Rubini <rubini@cvml.unipv.it>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Yong Zhang <yong.zhang0@gmail.com>
-Subject: Re: [PATCH 4/4] workqueue: Remove now superfluous
- cancel_delayed_work() calls
-Message-ID: <20110203161906.GG2570@htj.dyndns.org>
-References: <20110203140940.072679794@chello.nl>
- <20110203141548.346089735@chello.nl>
-MIME-Version: 1.0
+	Thu, 3 Feb 2011 11:25:39 -0500
+Date: Thu, 3 Feb 2011 17:23:45 +0100
+From: Daniel Kiper <dkiper@net-space.pl>
+To: ian.campbell@citrix.com, akpm@linux-foundation.org, andi.kleen@intel.com,
+        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
+        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
+        v.tolstov@selfip.ru, pasik@iki.fi, dave@linux.vnet.ibm.com,
+        wdauchy@gmail.com, rientjes@google.com, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH R3 0/7] xen/balloon: Memory hotplug support for Xen balloon driver
+Message-ID: <20110203162345.GC1364@router-fw-old.local.net-space.pl>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110203141548.346089735@chello.nl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.3.28i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Peter.
+Hi,
 
-On Thu, Feb 03, 2011 at 03:09:44PM +0100, Peter Zijlstra wrote:
-> Since queue_delayed_work() can now deal with existing timers, we don't
-> need to explicitly call cancel_delayed_work() anymore.
+I am sending next version of memory hotplug
+support for Xen balloon driver patch. It applies
+to Linus' git tree, v2.6.38-rc3 tag. Most of
+suggestions were taken into account. Thanks for
+everybody who tested and/or sent suggestions
+to my work.
 
-This is nice but there's small complication with the way
-queue_delayed_work() behaves.  If a delayed work item is already
-pending, another queue_delayed_work() doesn't modify the delay whether
-the new delay is longer or shorter than the current one.  The previous
-patch doesn't really change the behavior as the whole thing is gated
-with WORK_STRUCT_PENDING_BIT.
+There are a few prerequisite patches which fixes
+some problems found during work on memory hotplug
+patch or add some futures which are needed by
+memory hotplug patch.
 
-So, cancel_delayed_work() followed by queue_delayed_work() schedules
-the work to be executed at the specified time regardless of the
-current pending state while queue_delayed_work() takes effect iff
-currently the work item is not pending.
+Full list of fixes/futures:
+  - mm: Add add_registered_memory() to memory hotplug API,
+  - xen/balloon: Removal of driver_pages,
+  - xen/balloon: HVM mode support,
+  - xen/balloon: Migration from mod_timer() to schedule_delayed_work(),
+  - xen/balloon: Protect against CPU exhaust by event/x process,
+  - xen/balloon: Minor notation fixes,
+  - xen/balloon: Memory hotplug support for Xen balloon driver.
 
-The current behavior is weird and it often is easier to use explicit
-timer + work item if the timer needs to be modified, but it has been
-that way from the beginning so I don't think changing it would be a
-good idea.  We can introduce a new interface (mod_delayed_work()
-maybe) for this tho.
+Additionally, I suggest to apply patch prepared by Steffano Stabellini
+(https://lkml.org/lkml/2011/1/31/232) which fixes memory management
+issue in Xen guest. I was not able boot guest machine without
+above mentioned patch.
 
-Thanks.
+I have received notice that this series of patches broke
+machine migration under Xen. I am going to solve that problem ASAP.
+I do not have received any notices about other problems till now.
 
--- 
-tejun
+Daniel
