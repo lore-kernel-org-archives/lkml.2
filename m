@@ -1,103 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756017Ab1BCOzQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 09:55:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33340 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755855Ab1BCOzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 09:55:14 -0500
-Date: Thu, 3 Feb 2011 09:54:57 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Tejun Heo <tj@kernel.org>, "tytso@mit.edu" <tytso@mit.edu>,
-        "djwong@us.ibm.com" <djwong@us.ibm.com>,
-        "shli@kernel.org" <shli@kernel.org>, "neilb@suse.de" <neilb@suse.de>,
-        "adilger.kernel@dilger.ca" <adilger.kernel@dilger.ca>,
-        "jack@suse.cz" <jack@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kmannth@us.ibm.com" <kmannth@us.ibm.com>,
-        "cmm@us.ibm.com" <cmm@us.ibm.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "rwheeler@redhat.com" <rwheeler@redhat.com>, "hch@lst.de" <hch@lst.de>,
-        "josef@redhat.com" <josef@redhat.com>,
-        "jmoyer@redhat.com" <jmoyer@redhat.com>,
-        "vgoyal@redhat.com" <vgoyal@redhat.com>
-Subject: Re: [PATCH v3 1/2] block: skip elevator data initialization for
- flush requests
-Message-ID: <20110203145457.GB19801@redhat.com>
-References: <20110201185225.GT14211@htj.dyndns.org>
- <1296600373-6906-1-git-send-email-snitzer@redhat.com>
- <20110202225549.GA28109@redhat.com>
- <4D4AAC9A.4050407@fusionio.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D4AAC9A.4050407@fusionio.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756077Ab1BCPCf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 10:02:35 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60183 "EHLO
+	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755571Ab1BCPCe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 10:02:34 -0500
+Date: Thu, 3 Feb 2011 15:04:32 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Russ Gorby <russ.gorby@intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "open list:SPI SUBSYSTEM" <spi-devel-general@lists.sourceforge.net>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] spi: intel_mid_ssp_spi: new SPI driver for intel
+ Medfield platform
+Message-ID: <20110203150432.40cd74c4@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110203132800.GA17825@sirena.org.uk>
+References: <1296680512-2758-2-git-send-email-russ.gorby@intel.com>
+	<20110202224054.7916e7af@lxorguk.ukuu.org.uk>
+	<20110203132800.GA17825@sirena.org.uk>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 03 2011 at  8:24am -0500,
-Jens Axboe <jaxboe@fusionio.com> wrote:
+On Thu, 3 Feb 2011 13:28:00 +0000
+Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
 
-> On 2011-02-02 23:55, Mike Snitzer wrote:
-> > Set REQ_SORTED, in the @rw_flags passed to the request allocator, for
-> > any request that may be put on IO scheduler.  Skip elevator data
-> > initialization during request allocation if REQ_SORTED is not set.
-> > 
-> > REQ_SORTED is not set for flush requests because they are never put on
-> > the IO scheduler.
+> On Wed, Feb 02, 2011 at 10:40:54PM +0000, Alan Cox wrote:
 > 
-> That looks very wrong. REQ_SORTED gets set _when_ the request is sorted
-> into the IO scheduler.
+> > And this is the unified one that handles all the devices, but I gather
+> > may need some fixing/test work on Medfield.
+> 
+> I've got the same question here as I had with Russ' patch: it looks like
+> there's some overlap with the SSP ports used for audio (it's just a
+> generic programmable serial port so even if it's not normally used for
+> audio that's a possiblity), how is that handled?
 
-Yes, considerable oversight on my part.
+The SSP has PCI configuration indicating how it is being assigned, which
+is in vendor capability byte 6. The low 3 bits indicte the mode, where
+mode 1 is an SPI master/slave, and in that case bit 6 is set for a slave.
 
-> This is gross misuse, a bad hack.
+The SSP/SPI driver will only grab ports that have been assigned to that
+purpose as part of the system design.
 
-As my recently posted v4 stated, even without the bug it is still a hack.
+I'm just putting the other bits from the generic driver back into the
+more featured/tested specific driver that Russ posted.
 
-My initial version didn't get so cute with overloading flags, etc, e.g:
-
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 72dd23b..e098598 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -764,7 +764,7 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
- 	struct request_list *rl = &q->rq;
- 	struct io_context *ioc = NULL;
- 	const bool is_sync = rw_is_sync(rw_flags) != 0;
--	int may_queue, priv;
-+	int may_queue, priv = 0;
- 
- 	may_queue = elv_may_queue(q, rw_flags);
- 	if (may_queue == ELV_MQUEUE_NO)
-@@ -808,9 +808,14 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
- 	rl->count[is_sync]++;
- 	rl->starved[is_sync] = 0;
- 
--	priv = !test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags);
--	if (priv)
--		rl->elvpriv++;
-+	/*
-+	 * Skip elevator data initialization for flush requests.
-+	 */
-+	if (!(bio && (bio->bi_rw & (REQ_FLUSH | REQ_FUA)))) {
-+		priv = !test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags);
-+		if (priv)
-+			rl->elvpriv++;
-+	}
- 
- 	if (blk_queue_io_stat(q))
- 		rw_flags |= REQ_IO_STAT;
-
-
-I ran with Tejun's suggestion of overloading @rw_flags when it became
-clear he wasn't happy with the above (because it spread FLUSH/FUA
-special casing too thin).
-
-Regardless, other ideas for how to convey this info to get_request()
-would be appreciated.
-
-Mike
+Alan
