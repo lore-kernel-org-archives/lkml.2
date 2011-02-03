@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756726Ab1BCTtJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 14:49:09 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44548 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756588Ab1BCTtG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 14:49:06 -0500
-MIME-Version: 1.0
-In-Reply-To: <1296761671.4418.1558.camel@sbsiddha-MOBL3.sc.intel.com>
-References: <1296677247.4418.103.camel@sbsiddha-MOBL3.sc.intel.com>
- <AANLkTi=P+aoY4GY32xa8D8gHbDP73QpPmzvKbB4VM7g2@mail.gmail.com>
- <AANLkTinvQatNF0ZJqmvuKYNq7oKXqfR5Ke1FuaSLFNEF@mail.gmail.com>
- <1296757637.4418.1482.camel@sbsiddha-MOBL3.sc.intel.com> <AANLkTimuSV273ksidN_vQ4o1rLr6D--9Q3dNnBiB13-K@mail.gmail.com>
- <1296761671.4418.1558.camel@sbsiddha-MOBL3.sc.intel.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 3 Feb 2011 11:48:41 -0800
-Message-ID: <AANLkTimjYAYPLf=QG22hFHm7yhABCQj7q=kOpB6HcB5e@mail.gmail.com>
-Subject: Re: [patch] x86, mm: avoid stale tlb entries by clearing prev
- mm_cpumask after switching mm
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756687Ab1BCT74 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 14:59:56 -0500
+Received: from mga02.intel.com ([134.134.136.20]:41151 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756342Ab1BCT7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 14:59:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,421,1291622400"; 
+   d="scan'208";a="599229847"
+Date: Thu, 3 Feb 2011 11:57:43 -0800
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: Paul Menage <menage@google.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH, v3 2/2] cgroups: introduce timer slack subsystem
+Message-ID: <20110203115743.1ef9a4c2@putvin>
+In-Reply-To: <AANLkTikvkUT8+U=bX6X2n7kMbnAt6evxTy1BqiX+TWpH@mail.gmail.com>
+References: <1296679656-31163-1-git-send-email-kirill@shutemov.name>
+	<1296679656-31163-3-git-send-email-kirill@shutemov.name>
+	<20110202145605.6c9006fa@putvin>
+	<20110203092229.GB1083@shutemov.name>
+	<20110203095117.76a568fc@putvin>
+	<AANLkTikvkUT8+U=bX6X2n7kMbnAt6evxTy1BqiX+TWpH@mail.gmail.com>
+Organization: OTC
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 3, 2011 at 11:34 AM, Suresh Siddha
-<suresh.b.siddha@intel.com> wrote:
->
-> True. 'stale' is the wrong word. Do you want me to send a corrected one
-> by replacing it with 'bogus'?
+On Thu, 3 Feb 2011 10:12:51 -0800
+Paul Menage <menage@google.com> wrote:
 
-Please.
+> On Thu, Feb 3, 2011 at 9:51 AM, Jacob Pan
+> <jacob.jun.pan@linux.intel.com> wrote:
+> >
+> > I think this logic defeats the purpose of having timer_slack
+> > subsystem in the first place. IMHO, the original intention was to
+> > have grouping effect of tasks in the cgroup.
+> 
+> You can get the semantics you want by just setting min_slack_ns =
+> max_slack_ns.
+> 
+true. it will just make set fail when min = max. it is awkward and
+counter intuitive when you want to change the group timer_slack. you
+will have to move both min and max to clamp the value, where set
+function can not be used.
 
-> my understanding is that unless we end up using that TLB entry, we will
-> not have the issues like machine checks due to cacheability issues etc.
-> If it is not global, upcoming cr3 change will flush it and meanwhile I
-> don't think there is a scenario where we refer to these user-addresses.
+In addition, when a parent changes min = max, I don't see the current
+code enforce new settings on the children. Am i missing something?
 
-Quite possible. The situation I envisioned was the same speculative
-memory access that causes the TLB fill to also cause a cache fill -
-for a noncacheable region (because the bogus TLB entry sets the random
-address to cacheable).
-
-And then what happens when somebody else accesses the same memory
-noncacheably (through a valid TLB entry), and finds it in the cache?
-
-I dunno. Not really important. The important part is the "possible
-random bogus TLB entry", the fact that the CPU can act strangely after
-that is pretty much a given.
-
-                            Linus
+In my use case, i want to put some apps into a managed group where
+relaxed slack value is used, but when time comes to move the app out of
+that cgroup, we would like to resore the original timer slack. I see
+having a current value per cgroup can be useful if we let timer code
+pick whether to use task slack value or the cgroup slack value.
+Or we have to cache the old value per task
