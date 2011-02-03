@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756580Ab1BCRMS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 12:12:18 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59342 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756065Ab1BCRMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 12:12:17 -0500
-Message-ID: <4D4AE1DF.9030106@zytor.com>
-Date: Thu, 03 Feb 2011 09:11:59 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>, Kees Cook <kees.cook@canonical.com>,
-        matthieu castet <castet.matthieu@free.fr>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [BUG] broken ebba638ae723d8a8fc2f7abce5ec18b688b791d7
-References: <4D41E86D.8060205@free.fr> <201102031230.13759.rusty@rustcorp.com.au> <3ba4a711-ac8b-46aa-b585-51c8b9881c8c@email.android.com> <201102032032.08848.rusty@rustcorp.com.au>
-In-Reply-To: <201102032032.08848.rusty@rustcorp.com.au>
+	id S1756575Ab1BCRN4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 12:13:56 -0500
+Received: from service87.mimecast.com ([94.185.240.25]:45887 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755168Ab1BCRNz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 12:13:55 -0500
+Subject: Re: [PATCH v4 06/19] ARM: LPAE: Add (pte|pmd|pgd|pgprot)val_t type
+ definitions as u32
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1295891761-18366-7-git-send-email-catalin.marinas@arm.com>
+References: <1295891761-18366-1-git-send-email-catalin.marinas@arm.com>
+	 <1295891761-18366-7-git-send-email-catalin.marinas@arm.com>
+Organization: ARM Limited
+Date: Thu, 03 Feb 2011 17:13:49 +0000
+Message-ID: <1296753229.28466.20.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1
+X-OriginalArrivalTime: 03 Feb 2011 17:13:51.0266 (UTC) FILETIME=[BA5A8820:01CBC3C5]
+X-MC-Unique: 111020317135301601
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2011 02:02 AM, Rusty Russell wrote:
-> On Thu, 3 Feb 2011 01:05:44 pm H. Peter Anvin wrote:
->> Can we completely kill the "don't reload segments" flag, then?
-> 
-> We can as far as *I* am concerned, but of course it's a separate issue...
+On Mon, 2011-01-24 at 17:55 +0000, Catalin Marinas wrote:
+> --- a/arch/arm/mm/mmu.c
+> +++ b/arch/arm/mm/mmu.c
+> @@ -290,7 +290,7 @@ static void __init build_mem_type_table(void)
+>  {
+>         struct cachepolicy *cp;
+>         unsigned int cr = get_cr();
+> -       unsigned int user_pgprot, kern_pgprot, vecs_pgprot;
+> +       pgprotval_t user_pgprot, kern_pgprot, vecs_pgprot;
+>         int cpu_arch = cpu_architecture();
+>         int i;
 
-I'm trying to figure out if there is any actual user of it.  I thought
-it was Xen which needed it, but Jeremy says it doesn't; I don't know
-what else would possible need it.  If it is is something that isn't used
-then it would be better to get rid of it.
+I have an additional hunk for this file as pmd's have are 64-bit long
+with LPAE (fixup pushed to the arm-lpae branch):
 
-	-hpa
+@@ -62,7 +62,7 @@ EXPORT_SYMBOL(pgprot_kernel);
+ struct cachepolicy {
+ 	const char	policy[16];
+ 	unsigned int	cr_mask;
+-	unsigned int	pmd;
++	pmdval_t	pmd;
+ 	pteval_t	pte;
+ }; 
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Catalin
+
 
