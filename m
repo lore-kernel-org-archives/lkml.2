@@ -1,64 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093Ab1BCVQU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 16:16:20 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:62873 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752799Ab1BCVQT convert rfc822-to-8bit (ORCPT
+	id S1753183Ab1BCVSv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 16:18:51 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:11831 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752568Ab1BCVSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 16:16:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Fg/42CZW3lyhMG/ndVaakcmrgjwgwfFZob0UlvX1YsnSRqer3gPuMdaUnMI73uY/Ad
-         9udLbWO96WQ2a30tAjWOtr192Jbk28S+BuKX7VSPNnw4P7dFteExgerPkhGSHyu3PfYQ
-         q5oGXXi1fVsgAC2BDI2QCDtBx/Amf5hPn5jVg=
+	Thu, 3 Feb 2011 16:18:50 -0500
+Date: Thu, 3 Feb 2011 22:17:53 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org, x86@kernel.org, linux-mm@kvack.org,
+        Tejun Heo <tj@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Rohit Seth <rohit.seth@intel.com>
+Subject: Re: [PATCH] Huge TLB: Potential NULL deref in
+ arch/x86/mm/hugetlbpage.c:huge_pmd_share()
+In-Reply-To: <20110203130150.7031c61f.akpm@linux-foundation.org>
+Message-ID: <alpine.LNX.2.00.1102032214350.1369@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1102032142580.15101@swampdragon.chaosbits.net> <20110203130150.7031c61f.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110203190612.GL5843@random.random>
-References: <AANLkTi=uOpN0PwWdGh6iri-vJwuMS+WMPxmaZjv0-TrV@mail.gmail.com>
-	<20110201154947.GX16981@random.random>
-	<20110203132407.GF11958@csn.ul.ie>
-	<20110203190612.GL5843@random.random>
-Date: Thu, 3 Feb 2011 22:16:17 +0100
-Message-ID: <AANLkTimRE-=vB=oTFmc64fqJKHUTUT=3X_Gzx78PZ7Xu@mail.gmail.com>
-Subject: Re: khugepaged: gets stuck when writing to USB flash, 2.6.38-rc2
-From: =?ISO-8859-2?Q?Jind=F8ich_Makovi=E8ka?= <makovick@gmail.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 3, 2011 at 20:06, Andrea Arcangeli <aarcange@redhat.com> wrote:
-> On Thu, Feb 03, 2011 at 01:24:08PM +0000, Mel Gorman wrote:
->> This is very likely. Compaction calls into migration which will wait on
->> dirty pages after a time. With a large number of dirty pages backed by a
->> slow drive such as a USB stick, it could be getting stalled there for a
->> long period of time.
->>
->> Whether migration sleeps or not can be controlled by the sync parameter
->> passed into try_to_compact_memory which could be always forced to false
->> if GFP_NO_KSWAPD?
->
-> I would expect that to hide any regression we could have because of
-> more dirty cache in the system, yes.
->
-> However Jindřich reported not being able to reproduce anything anymore
-> in -rc3, so I'm unsure if we should make that change anymore. I asked
-> to try again cause it should too easy that got fixed magically
+On Thu, 3 Feb 2011, Andrew Morton wrote:
 
-I tried again and reproduced with -rc3 too, sorry for misinformation.
+> On Thu, 3 Feb 2011 21:50:04 +0100 (CET)
+> Jesper Juhl <jj@chaosbits.net> wrote:
+> 
+> > In arch/x86/mm/hugetlbpage.c:huge_pmd_share() we call find_vma(mm, addr) 
+> > and then subsequently dereference the pointer returned without checking if 
+> > it was NULL. I can't find anything that guarantees that find_vma() will 
+> > never return NULL in this case, so I believe there's a genuine bug. 
+> > However, I'd greatly appreciate it if someone would take the time to 
+> > double check me.
+> > This patch implements what I believe to be the correct handling of a NULL 
+> > return from find_vma(). Please consider for inclusion.
+> > 
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > ---
+> >  hugetlbpage.c |   11 ++++++++---
+> >  1 file changed, 8 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
+> > index 069ce7c..0ebd3d0 100644
+> > --- a/arch/x86/mm/hugetlbpage.c
+> > +++ b/arch/x86/mm/hugetlbpage.c
+> > @@ -61,14 +61,19 @@ static int vma_shareable(struct vm_area_struct *vma, unsigned long addr)
+> >  static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
+> >  {
+> >  	struct vm_area_struct *vma = find_vma(mm, addr);
+> > -	struct address_space *mapping = vma->vm_file->f_mapping;
+> > -	pgoff_t idx = ((addr - vma->vm_start) >> PAGE_SHIFT) +
+> > -			vma->vm_pgoff;
+> > +	struct address_space *mapping;
+> > +	pgoff_t idx;
+> >  	struct prio_tree_iter iter;
+> >  	struct vm_area_struct *svma;
+> >  	unsigned long saddr;
+> >  	pte_t *spte = NULL;
+> >  
+> > +	if (!vma)
+> > +		return;
+> > +
+> > +	mapping = vma->vm_file->f_mapping;
+> > +	idx = ((addr - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
+> > +
+> >  	if (!vma_shareable(vma, addr))
+> >  		return;
+> 
+> mmap_sem is held and the caller (copy_hugetlb_page_range) knows that
+> the virtual address at `addr' is within a vma.  So it's a "can't happen".
+> 
+> The code's all undocumented and you got fooled.  Cause, effect.
 
-I also tried echo never >  /sys/kernel/mm/transparent_hugepage/defrag
-, and it seems preventing the system freeze, but still the copying
-itself sometimes comes to almost complete stop (GkrellM shows short
-spikes of tens of kB/s on the USB /dev/sdX). In this case, khugepaged
-is also in DN. I still didn't observe this problem when disabling THP
-completely by echo never > enabled .
+Thank you very much for taking the time to check and explain.
+
+How about we then merge the following patch instead, so noone else gets 
+fooled in the future?
+
+
+Document that NULL deref will never happen post find_vma() in 
+huge_pmd_share().
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ hugetlbpage.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
+index 069ce7c..7dd2d5f 100644
+--- a/arch/x86/mm/hugetlbpage.c
++++ b/arch/x86/mm/hugetlbpage.c
+@@ -61,6 +61,11 @@ static int vma_shareable(struct vm_area_struct *vma, unsigned long addr)
+ static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
+ {
+ 	struct vm_area_struct *vma = find_vma(mm, addr);
++	/*
++	 * There is no potential NULL deref here. mmap_sem is held and
++	 * caller knows that the virtual address at `addr' is within a
++	 * vma, so find_vma() will never return NULL here.
++	 */
+ 	struct address_space *mapping = vma->vm_file->f_mapping;
+ 	pgoff_t idx = ((addr - vma->vm_start) >> PAGE_SHIFT) +
+ 			vma->vm_pgoff;
+
 
 -- 
-Jindrich Makovicka
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
