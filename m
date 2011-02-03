@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756660Ab1BCTnu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 14:43:50 -0500
-Received: from mvp.visionpro.com ([63.91.95.19]:39415 "EHLO
-	extern.visionpro.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756491Ab1BCTnt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 14:43:49 -0500
-User-Agent: Microsoft-Entourage/12.28.0.101117
-Date: Thu, 03 Feb 2011 11:43:46 -0800
-Subject: Memset very slow
-From: "Brian D. McGrew" <brian@visionpro.com>
-To: <linux-kernel@vger.kernel.org>
-Message-ID: <C9704572.4797C%brian@visionpro.com>
-Thread-Topic: Memset very slow
-Thread-Index: AcvD2qui0ZuNMyexxECaW+q0w1/TUQ==
-Mime-version: 1.0
-Content-type: text/plain;
-	charset="US-ASCII"
-Content-transfer-encoding: 7bit
-X-OriginalArrivalTime: 03 Feb 2011 19:43:46.0147 (UTC) FILETIME=[ABB87330:01CBC3DA]
+	id S1756703Ab1BCToQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 14:44:16 -0500
+Received: from mga01.intel.com ([192.55.52.88]:8750 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756491Ab1BCToP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 14:44:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,421,1291622400"; 
+   d="scan'208";a="884095321"
+Message-ID: <4D4B058F.9030208@linux.intel.com>
+Date: Thu, 03 Feb 2011 11:44:15 -0800
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+Organization: Intel Open Source Technology Center
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Andres Salomon <dilinger@queued.net>
+CC: Grant Likely <grant.likely@secretlab.ca>, Daniel Drake <dsd@laptop.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, sodaville@linutronix.de
+Subject: Re: [sodaville] [PATCH v2 01/15] x86/e820: remove conditional early
+ mapping in parse_e820_ext
+References: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de>	<1292600033-12271-2-git-send-email-bigeasy@linutronix.de>	<20101230083745.GC11721@angua.secretlab.ca>	<20110104130839.GA21359@www.tglx.de>	<20110114081446.GC21832@angua.secretlab.ca>	<20110114105709.GA7562@www.tglx.de>	<20110114134345.712e2e29@queued.net>	<AANLkTimyrGkqtjo99+aV+N4KcrC2_3PprpRD2tRo_NtC@mail.gmail.com>	<4D4808D2.3080701@linutronix.de> <20110201103617.2c3aa118@debxo>	<AANLkTi=kXaD0qhpHx30tFKN92pmAESSrXE1mz_55yuQO@mail.gmail.com> <20110203104051.12cdfbe5@queued.net>
+In-Reply-To: <20110203104051.12cdfbe5@queued.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello All!
+On 02/03/2011 10:40 AM, Andres Salomon wrote:
+> 
+> That's actually what the plan is; the code just depends on PM features,
+> which is still being worked on.
+> 
 
-We're using Dell T5500 workstations and a kernel-2.6.18.194 in CentOS
-5.5_x86-64. When we get these Dells, we have to flash the BIOS back to rev
-A02 or else everything is so slow its unusable.  Now, the "new" T5500's are
-here and we don't have the option to flash the BIOS back to A02 since it's a
-faster processor and memory and a new motherboard.
+I really don't understand what this is supposed to mean in this context
+at all.
 
-We do memset in lots of places in our code, and in a couple places, the
-memset is as large as 3GB.  Using the old machines with old BIOS, we were
-fine but with a newer (current) BIOS on the new machines or the old
-machines, memset is so slow it renders the system unusable.  But also after
-using memset and that taking too long, everything else is slow, especially
-system() calls.
-
-On a properly configured "old" machine with the "old" BIOS, I can memset
-3GBx2 in about .45 seconds and system calls return in under .25 seconds.
-However, sing the new BIOS on either machine, that same memset takes about
-20 seconds and system calls 6 to 7 seconds.
-
-I grabbed the bleeding edge 2.6.37 from Elrepo and everything works fine,
-new or old boxes and/or BIOS.
-
-So, my question is, can someone explain to me what is going on here?  I am
-not convinced this is a kernel problem just because a new kernel fixed it;
-but, if there were changes related to this in the kernel, then what is the
-oldest version I should be looking at to fix my issues?
-
-Thanks!
-
--brian
-
+	-hpa
