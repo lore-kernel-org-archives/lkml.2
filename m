@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752988Ab1BCBW6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 20:22:58 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:61272 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751920Ab1BCBW5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 20:22:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=YwgzggO1fTMUIZfwifNHYzPVtG+zPmswLfEUz3Iqg6o7CkmVVypgc+Gb5IGkCHznPt
-         E0w+twO1Ntb1LYx6dJyQ==
+	id S1753649Ab1BCBX6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 20:23:58 -0500
+Received: from mga09.intel.com ([134.134.136.24]:51445 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751711Ab1BCBX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 20:23:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,416,1291622400"; 
+   d="scan'208";a="598973099"
+From: Andi Kleen <andi@firstfloor.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Mallick\, Asit K" <asit.k.mallick@intel.com>
+Subject: Re: [patch] x86, mm: avoid stale tlb entries by clearing prev mm_cpumask after switching mm
+References: <1296677247.4418.103.camel@sbsiddha-MOBL3.sc.intel.com>
+Date: Wed, 02 Feb 2011 17:23:53 -0800
+In-Reply-To: <1296677247.4418.103.camel@sbsiddha-MOBL3.sc.intel.com> (Suresh
+	Siddha's message of "Wed, 02 Feb 2011 12:07:27 -0800")
+Message-ID: <m2d3n9ap1y.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikrV3fQ-qsOANG5X7zes1wxbO9mX1eev3xB_OzF@mail.gmail.com>
-References: <AANLkTikrV3fQ-qsOANG5X7zes1wxbO9mX1eev3xB_OzF@mail.gmail.com>
-From: Tipp Moseley <tipp@google.com>
-Date: Wed, 2 Feb 2011 17:22:33 -0800
-Message-ID: <AANLkTikAphF5zMoeiiXA5b9zcMpq+DCw1tbZoqsRwOFe@mail.gmail.com>
-Subject: Fwd: perf report/stat and symbolic event names
-To: acme@redhat.com
-Cc: perfmon2-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Arnaldo, Stephane suggested I mail you for this feature request to
-the perf tool.
-When I collect a "raw" event using perf record, perf report's output
-is pretty useless.  E.g.:
-# Events: 833  raw 0x3d500a0
-So when I collect multiple events, I have to refer to the command line
-used to collect the profile and line up the event flags to figure out
-what I was collecting.  With multiple collection runs, this can become
-quite confusing.
-The perf.data file doesn't seem to have the symbolic name of the event present.
-Do you think it would be reasonable to add a field to the profile to
-include the symbolic description of the event as it was given on the
-command line (e.g., "RS_UOPS_DISPATCHED:u:i:e:c=3")?
-Tipp
+Suresh Siddha <suresh.b.siddha@intel.com> writes:
+
+> For the prev mm that is handing over the cpu to another mm, clear the cpu
+> from the mm_cpumask(prev) after the cr3 is changed.
+>
+> Otherwise, clearing the mm_cpumask early will avoid the flush tlb IPI's while
+> the cr3 and TLB's are still pointing to the prev mm. And this window can lead
+> to the stale (global) TLB entries.
+>
+> Marking it for -stable, though we haven't seen any reported failure that
+> can be attributed to this.
+
+Would it be safer to add a memory barrier between the load_cr3 and the
+cpumask_clear_cpu()? As far as I can see cpumask_clear_cpu doesn't
+imply a general one and load_cr3 doesn't either. There's this
+__force_order hack in system.h, but I don't think it will enforce
+order here.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
