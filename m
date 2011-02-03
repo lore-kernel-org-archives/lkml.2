@@ -1,74 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594Ab1BCTe1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 14:34:27 -0500
-Received: from mga09.intel.com ([134.134.136.24]:55268 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754878Ab1BCTe0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 14:34:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,421,1291622400"; 
-   d="scan'208";a="703766361"
-Subject: Re: [patch] x86, mm: avoid stale tlb entries by clearing prev
- mm_cpumask after switching mm
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>
-In-Reply-To: <AANLkTimuSV273ksidN_vQ4o1rLr6D--9Q3dNnBiB13-K@mail.gmail.com>
-References: <1296677247.4418.103.camel@sbsiddha-MOBL3.sc.intel.com>
-	 <AANLkTi=P+aoY4GY32xa8D8gHbDP73QpPmzvKbB4VM7g2@mail.gmail.com>
-	 <AANLkTinvQatNF0ZJqmvuKYNq7oKXqfR5Ke1FuaSLFNEF@mail.gmail.com>
-	 <1296757637.4418.1482.camel@sbsiddha-MOBL3.sc.intel.com>
-	 <AANLkTimuSV273ksidN_vQ4o1rLr6D--9Q3dNnBiB13-K@mail.gmail.com>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Thu, 03 Feb 2011 11:34:31 -0800
-Message-Id: <1296761671.4418.1558.camel@sbsiddha-MOBL3.sc.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	id S1756614Ab1BCTl0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 14:41:26 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:33891 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756491Ab1BCTlZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 14:41:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=F/pYVA+ovr1asFU48uBYutz3UJcCL99T1XucpFuUztgD+R5xhMePFCMdVeoSjmKERo
+         CTm9IBKL13qlUS6IUIO4W9aEls4DbhIz0HY1HHCi/HCPsGYdnFaYlO+p8tvkkt2RWLYr
+         F2IhFKLwj8Wd1l/6gjKFS8S0O09C1GGaRWFqM=
+Date: Thu, 3 Feb 2011 11:41:15 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 2.6.38-rc3: FUSE (sshfs) hangs under load
+Message-ID: <20110203194115.GA14159@core.coreip.homeip.net>
+References: <20110201175452.GB518@core.coreip.homeip.net>
+ <E1PkbGG-0005Rf-QL@pomaz-ex.szeredi.hu>
+ <20110202165236.GA3178@core.coreip.homeip.net>
+ <20110203065541.GB5592@core.coreip.homeip.net>
+ <E1Pkx7s-00073l-5B@pomaz-ex.szeredi.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1Pkx7s-00073l-5B@pomaz-ex.szeredi.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-03 at 11:13 -0800, Linus Torvalds wrote:
-> On Thu, Feb 3, 2011 at 10:27 AM, Suresh Siddha
-> <suresh.b.siddha@intel.com> wrote:
-> >> Actually, for normal entries I could well imagine the code that wants
-> >> to do a flush before freeing the page caring.
-> >>
-> >> So I think the _patch_ may be correct, but the changelog is definitely
-> >> not correct, and needs serious surgery to explain what the bug that
-> >> this fixes actually is.
-> >
-> > Linus, I updated the changelog to explain the failing case in more
-> > detail. Please review. Thanks.
+On Thu, Feb 03, 2011 at 12:13:24PM +0100, Miklos Szeredi wrote:
+> On Wed, 2 Feb 2011, Dmitry Torokhov wrote:
+> > --/9DWx/yDrRhgMJTb
+> > Content-Type: text/plain; charset=us-ascii
+> > Content-Disposition: inline
+> > 
+> > On Wed, Feb 02, 2011 at 08:52:36AM -0800, Dmitry Torokhov wrote:
+> > > On Wed, Feb 02, 2011 at 12:52:36PM +0100, Miklos Szeredi wrote:
+> > > > On Tue, 1 Feb 2011, Dmitry Torokhov wrote:
+> > > > > Hi,
+> > > > > 
+> > > > > After installing 2.6.38-rc3 (plus a few input patches) sshfs started to
+> > > > > misbehave on me under load. It starts off fine but when I try to compile
+> > > > > a few modules against kernel sources residing on the other box the
+> > > > > processes go into 'D' state and just sit there doing nothing.
+> > > > 
+> > > > Can you please post a stack trace from SysRq-T?
+> > > > 
+> > > 
+> > > Will do tonight. In the meantime I tried bisecting, but failure is not
+> > > always triggered on the first attempt so results are iffy. The log so
+> > > far:
+> > > 
+> > > # bad: [7d44b0440147d83a65270205b22e7d365de28948] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse
+> > > # good: [3c0eee3fe6a3a1c745379547c7e7c904aa64f6d5] Linux 2.6.37
+> > > git bisect start '7d44b0440147d83a65270205b22e7d365de28948' 'v2.6.37'
+> > > # bad: [84b7290cca16c61a167c7e1912cd84a479852165] Merge git://git.kernel.org/pub/scm/linux/kernel/git/lethal/fbdev-2.6
+> > > git bisect bad 84b7290cca16c61a167c7e1912cd84a479852165
+> > > # good: [fea9294c5f2902c45613681ad995ca27899d2016] pch_can: Optimize "if" condition in rx/tx processing
+> > > git bisect good fea9294c5f2902c45613681ad995ca27899d2016
+> > > # bad: [c96e96354a6c9456cdf1f150eca504e2ea35301e] Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-next-2.6 into for-davem
+> > > git bisect bad c96e96354a6c9456cdf1f150eca504e2ea35301e
+> > > # good: [003ea98195eebdfcf476317b517e8c29a25b9d10] iwlwifi: remove reference to Gen2
+> > > git bisect good 003ea98195eebdfcf476317b517e8c29a25b9d10
+> > > 
+> > > The last good must have been also bad as sshfs got stuck while I was
+> > > installing next bisect step over it.
+> > > 
+> > 
+> > OK, so here are the stack traces you requested. First one is snapshot of
+> > when compile got stuck, the 2nd one is when I interrupted make which
+> > caused gcc to go to 'D' state.
 > 
-> So this explains the bug, and the explanation looks good. Except for
-> one (large) detail: it has nothing to do with "stale" entries.
+> There doesn't appear anything abnormal there.
 > 
-> The problematic entries are simply _bogus_, not stale. They were never
-> valid to begin with. So the subject and the initial part is very
-> misleading.
+> It's going into D state after it has received an interrupt and sent it
+> along to the userspace filesystem.  Then it will go into
+> uninterruptible sleep until the answer is received.
+> 
+> So the hang is because the answer to an open request is not being
+> received.  I can't tell where it got stuck, apparently not anywhere on
+> the local machine.
+> 
+> Can you please get a log from sshfs with "-odebug,sshfs_debug" and
+> redirect stderr to a file?  That might tell a bit more about the
+> situation.  Or it might not...
 
-True. 'stale' is the wrong word. Do you want me to send a corrected one
-by replacing it with 'bogus'?
+Hmm, it might be just the network itself, last night mutt in ssh session
+froze on me as well. I guess I'll just have to finish my bisect
+exercise.
 
-> The global bit seems to be largely irrelevant too, except for the fact
-> that a global bogus entry obviously stays around and causes way more
-> trouble. But I could imagine that there could be trouble with entries
-> that have conflicting PSE or cacheability issues (causing machine
-> checks or something) even if they are ephemeral and not global.
+Thanks.
 
-my understanding is that unless we end up using that TLB entry, we will
-not have the issues like machine checks due to cacheability issues etc.
-If it is not global, upcoming cr3 change will flush it and meanwhile I
-don't think there is a scenario where we refer to these user-addresses.
-
-thanks,
-suresh
-
+-- 
+Dmitry
