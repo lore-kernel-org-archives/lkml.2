@@ -1,65 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756047Ab1BCAsc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 19:48:32 -0500
-Received: from www.tglx.de ([62.245.132.106]:37635 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756020Ab1BCArW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 19:47:22 -0500
-Message-Id: <20110203004210.240154507@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Thu, 03 Feb 2011 00:46:51 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ralf Baechle <ralf@linux-mips.org>, Tony Luck <tony.luck@intel.com>,
-        David Howells <dhowells@redhat.com>, Michal Simek <monstr@monstr.eu>
-Subject: [patch 3/8] microblaze: Remove stale irq_chip.end
-References: <20110203003745.371989282@linutronix.de>
-Content-Disposition: inline;
-	filename=microblaze-remove-stale-irq_chip-end.patch
+	id S1756148Ab1BCAsn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 19:48:43 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49056
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756127Ab1BCAsl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 19:48:41 -0500
+Date: Wed, 02 Feb 2011 16:49:17 -0800 (PST)
+Message-Id: <20110202.164917.232759278.davem@davemloft.net>
+To: rostedt@goodmis.org
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, akpm@linux-foundation.org,
+        fweisbec@gmail.com, mathieu.desnoyers@efficios.com
+Subject: Re: [PATCH 1/2] tracing: Replace trace_event struct array with
+ pointer array
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1296694018.10797.78.camel@gandalf.stny.rr.com>
+References: <20110202180938.106599012@goodmis.org>
+	<20110202.145023.183036454.davem@davemloft.net>
+	<1296694018.10797.78.camel@gandalf.stny.rr.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-irq_chip.end got obsolete with the removal of __do_IRQ().
+From: Steven Rostedt <rostedt@goodmis.org>
+Date: Wed, 02 Feb 2011 19:46:58 -0500
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Michal Simek <monstr@monstr.eu>
----
- arch/microblaze/kernel/intc.c |   13 -------------
- 1 file changed, 13 deletions(-)
+> Did you want to test this patch too. I'm still running it through my
+> tests, but here's a heads up on it.
 
-Index: linux-2.6-tip/arch/microblaze/kernel/intc.c
-===================================================================
---- linux-2.6-tip.orig/arch/microblaze/kernel/intc.c
-+++ linux-2.6-tip/arch/microblaze/kernel/intc.c
-@@ -74,25 +74,12 @@ static void intc_mask_ack(unsigned int i
- 	out_be32(INTC_BASE + IAR, mask);
- }
- 
--static void intc_end(unsigned int irq)
--{
--	unsigned long mask = 1 << irq;
--	pr_debug("end: %d\n", irq);
--	if (!(irq_desc[irq].status & (IRQ_DISABLED | IRQ_INPROGRESS))) {
--		out_be32(INTC_BASE + SIE, mask);
--		/* ack level sensitive intr */
--		if (irq_desc[irq].status & IRQ_LEVEL)
--			out_be32(INTC_BASE + IAR, mask);
--	}
--}
--
- static struct irq_chip intc_dev = {
- 	.name = "Xilinx INTC",
- 	.unmask = intc_enable_or_unmask,
- 	.mask = intc_disable_or_mask,
- 	.ack = intc_ack,
- 	.mask_ack = intc_mask_ack,
--	.end = intc_end,
- };
- 
- unsigned int get_irq(struct pt_regs *regs)
+I'll do some testing when you repost the series.  And you can toss
+my ACK onto this one right now if you like:
 
+Acked-by: David S. Miller <davem@davemloft.net>
 
+Thanks Steven.
