@@ -1,81 +1,327 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210Ab1BCH4Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 02:56:25 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49677 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753752Ab1BCH4Y (ORCPT
+	id S1754289Ab1BCH4u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 02:56:50 -0500
+Received: from www.wytron.com.tw ([211.75.82.101]:48095 "EHLO
+	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753704Ab1BCH4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 02:56:24 -0500
-Date: Thu, 3 Feb 2011 08:56:23 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [patch 6/8] arm: ns9xxx: Remove private irq flow handler
-Message-ID: <20110203075623.GB30452@pengutronix.de>
-References: <20110202212258.546660886@linutronix.de>
- <20110202212552.299898447@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110202212552.299898447@linutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 3 Feb 2011 02:56:49 -0500
+From: Thomas Chou <thomas@wytron.com.tw>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org,
+        Thomas Chou <thomas@wytron.com.tw>
+Subject: [PATCH v2] gpio: add new Altera PIO driver
+Date: Thu,  3 Feb 2011 15:56:57 +0800
+Message-Id: <1296719817-3007-1-git-send-email-thomas@wytron.com.tw>
+X-Mailer: git-send-email 1.7.3.5
+In-Reply-To: <201101262237.p0QMb95f008734@imap1.linux-foundation.org>
+References: <201101262237.p0QMb95f008734@imap1.linux-foundation.org>
+X-SA-Exim-Connect-IP: 192.168.1.250
+X-SA-Exim-Mail-From: thomas@wytron.com.tw
+X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+This driver supports the Altera PIO core.
 
-On Wed, Feb 02, 2011 at 09:41:27PM -0000, Thomas Gleixner wrote:
-> handle_prio_irq is almost identical with handle_fasteoi_irq. The
-> subtle differences are
-> 
-> 1) The handler checks for IRQ_DISABLED after the device handler has
->    been called. In case it's set it masks the interrupt.
-> 
-> 2) When the handler sees IRQ_DISABLED on entry it masks the interupt
->    in the same way as handle_fastoei_irq, but does not set the
->    IRQ_PENDING flag.
-> 
-> 3) Instead of gracefully handling a recursive interrupt it crashes the
->    kernel.
-> 
-> #1 is just relevant when a device handler calls disable_irq_nosync()
->    and it does not matter whether we mask the interrupt right away or
->    not. We handle lazy masking for disable_irq anyway, so there is no
->    real reason to have this extra mask in place.
-> 
-> #2 will prevent the resend of a pending interrupt, which can result in
->    lost interrupts for edge type interrupts. For level type interrupts
->    the resend is a noop in the generic code. According to the
->    datasheet all interrupts are level type, so marking them as such
->    will result in the exact same behaviour as the private
->    handle_prio_irq implementation.
-> 
-> #3 is just stupid. Crashing the kernel instead of handling a problem
->    gracefully is just wrong. With the current semantics- all handlers
->    run with interrupts disabled - this is even more wrong.
-> 
-> Rename ack to eoi, remove the unused mask_ack, switch to
-> handle_fasteoi_irq and remove the private function.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
-> Cc: linux-arm-kernel@lists.infradead.org
-I have no access to a ns9xxx machine, but this looks sane.
+Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
+---
+v2 change compatible vendor to uppercase, ALTR.
+   add dts binding doc.
 
-Acked-by: Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
+ .../devicetree/bindings/gpio/altera_gpio.txt       |    7 +
+ drivers/gpio/Kconfig                               |    6 +
+ drivers/gpio/Makefile                              |    1 +
+ drivers/gpio/altera_gpio.c                         |  233 ++++++++++++++++++++
+ 4 files changed, 247 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/gpio/altera_gpio.txt
+ create mode 100644 drivers/gpio/altera_gpio.c
 
-Thanks
-Uwe
-
+diff --git a/Documentation/devicetree/bindings/gpio/altera_gpio.txt b/Documentation/devicetree/bindings/gpio/altera_gpio.txt
+new file mode 100644
+index 0000000..5ab751a
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/altera_gpio.txt
+@@ -0,0 +1,7 @@
++Altera GPIO
++
++Required properties:
++- compatible : should be "ALTR,pio-1.0".
++Optional properties:
++- resetvalue : the reset value of the output port.
++- width : the width of the port in number of bits.
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 664660e..40271f0 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -70,6 +70,12 @@ config GPIO_MAX730X
+ 
+ comment "Memory mapped GPIO expanders:"
+ 
++config GPIO_ALTERA
++	bool "Altera GPIO"
++	depends on OF
++	help
++	  Say yes here to support the Altera PIO device
++
+ config GPIO_BASIC_MMIO
+ 	tristate "Basic memory-mapped GPIO controllers support"
+ 	help
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 3351cf8..ed11932 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -8,6 +8,7 @@ ccflags-$(CONFIG_DEBUG_GPIO)	+= -DDEBUG
+ 
+ obj-$(CONFIG_GPIOLIB)		+= gpiolib.o
+ 
++obj-$(CONFIG_GPIO_ALTERA)	+= altera_gpio.o
+ obj-$(CONFIG_GPIO_ADP5520)	+= adp5520-gpio.o
+ obj-$(CONFIG_GPIO_ADP5588)	+= adp5588-gpio.o
+ obj-$(CONFIG_GPIO_BASIC_MMIO)	+= basic_mmio_gpio.o
+diff --git a/drivers/gpio/altera_gpio.c b/drivers/gpio/altera_gpio.c
+new file mode 100644
+index 0000000..a173eb3
+--- /dev/null
++++ b/drivers/gpio/altera_gpio.c
+@@ -0,0 +1,233 @@
++/*
++ * Altera GPIO driver
++ *
++ * Copyright (C) 2011 Thomas Chou <thomas@wytron.com.tw>
++ *
++ * Based on Xilinx gpio driver, which is
++ * Copyright 2008 Xilinx, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2
++ * as published by the Free Software Foundation.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#include <linux/init.h>
++#include <linux/errno.h>
++#include <linux/of_device.h>
++#include <linux/of_platform.h>
++#include <linux/of_gpio.h>
++#include <linux/io.h>
++#include <linux/gpio.h>
++#include <linux/slab.h>
++
++#define DRV_NAME "altera_gpio"
++
++/* Register Offset Definitions */
++#define ALTERA_GPIO_DATA_OFFSET   0x0	/* Data register  */
++#define ALTERA_GPIO_DIR_OFFSET    0x4	/* I/O direction register  */
++
++struct altera_gpio_instance {
++	struct of_mm_gpio_chip mmchip;
++	u32 gpio_state;		/* GPIO state shadow register */
++	u32 gpio_dir;		/* GPIO direction shadow register */
++	spinlock_t gpio_lock;	/* Lock used for synchronization */
++};
++
++/*
++ * altera_gpio_get - Read the specified signal of the GPIO device.
++ * @gc:     Pointer to gpio_chip device structure.
++ * @gpio:   GPIO signal number.
++ *
++ * This function reads the specified signal of the GPIO device. It returns 0 if
++ * the signal clear, 1 if signal is set or negative value on error.
++ */
++static int altera_gpio_get(struct gpio_chip *gc, unsigned int gpio)
++{
++	struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
++
++	return (readl(mm_gc->regs + ALTERA_GPIO_DATA_OFFSET) >> gpio) & 1;
++}
++
++/*
++ * altera_gpio_set - Write the specified signal of the GPIO device.
++ * @gc:     Pointer to gpio_chip device structure.
++ * @gpio:   GPIO signal number.
++ * @val:    Value to be written to specified signal.
++ *
++ * This function writes the specified value in to the specified signal of the
++ * GPIO device.
++ */
++static void altera_gpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
++{
++	unsigned long flags;
++	struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
++	struct altera_gpio_instance *chip =
++	    container_of(mm_gc, struct altera_gpio_instance, mmchip);
++
++	spin_lock_irqsave(&chip->gpio_lock, flags);
++
++	/* Write to shadow register and output */
++	if (val)
++		chip->gpio_state |= 1 << gpio;
++	else
++		chip->gpio_state &= ~(1 << gpio);
++	writel(chip->gpio_state, mm_gc->regs + ALTERA_GPIO_DATA_OFFSET);
++
++	spin_unlock_irqrestore(&chip->gpio_lock, flags);
++}
++
++/*
++ * altera_gpio_dir_in - Set the direction of the specified GPIO signal as input.
++ * @gc:     Pointer to gpio_chip device structure.
++ * @gpio:   GPIO signal number.
++ *
++ * This function sets the direction of specified GPIO signal as input.
++ * It returns 0 if direction of GPIO signals is set as input otherwise it
++ * returns negative error value.
++ */
++static int altera_gpio_dir_in(struct gpio_chip *gc, unsigned int gpio)
++{
++	unsigned long flags;
++	struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
++	struct altera_gpio_instance *chip =
++	    container_of(mm_gc, struct altera_gpio_instance, mmchip);
++
++	spin_lock_irqsave(&chip->gpio_lock, flags);
++
++	/* Clear the GPIO bit in shadow register and set direction as input */
++	chip->gpio_dir &= ~(1 << gpio);
++	writel(chip->gpio_dir, mm_gc->regs + ALTERA_GPIO_DIR_OFFSET);
++
++	spin_unlock_irqrestore(&chip->gpio_lock, flags);
++
++	return 0;
++}
++
++/*
++ * altera_gpio_dir_out - Set the direction of the specified GPIO as output.
++ * @gc:     Pointer to gpio_chip device structure.
++ * @gpio:   GPIO signal number.
++ * @val:    Value to be written to specified signal.
++ *
++ * This function sets the direction of specified GPIO signal as output. If all
++ * GPIO signals of GPIO chip is configured as input then it returns
++ * error otherwise it returns 0.
++ */
++static int altera_gpio_dir_out(struct gpio_chip *gc, unsigned int gpio, int val)
++{
++	unsigned long flags;
++	struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
++	struct altera_gpio_instance *chip =
++	    container_of(mm_gc, struct altera_gpio_instance, mmchip);
++
++	spin_lock_irqsave(&chip->gpio_lock, flags);
++
++	/* Write state of GPIO signal */
++	if (val)
++		chip->gpio_state |= 1 << gpio;
++	else
++		chip->gpio_state &= ~(1 << gpio);
++	writel(chip->gpio_state, mm_gc->regs + ALTERA_GPIO_DATA_OFFSET);
++
++	/* Set the GPIO bit in shadow register and set direction as output */
++	chip->gpio_dir |= (1 << gpio);
++	writel(chip->gpio_dir, mm_gc->regs + ALTERA_GPIO_DIR_OFFSET);
++
++	spin_unlock_irqrestore(&chip->gpio_lock, flags);
++
++	return 0;
++}
++
++/*
++ * altera_gpio_save_regs - Set initial values of GPIO pins
++ * @mm_gc: pointer to memory mapped GPIO chip structure
++ */
++static void altera_gpio_save_regs(struct of_mm_gpio_chip *mm_gc)
++{
++	struct altera_gpio_instance *chip =
++	    container_of(mm_gc, struct altera_gpio_instance, mmchip);
++
++	writel(chip->gpio_state, mm_gc->regs + ALTERA_GPIO_DATA_OFFSET);
++	writel(chip->gpio_dir, mm_gc->regs + ALTERA_GPIO_DIR_OFFSET);
++}
++
++/*
++ * altera_gpio_of_probe - Probe method for the GPIO device.
++ * @np: pointer to device tree node
++ *
++ * This function probes the GPIO device in the device tree. It initializes the
++ * driver data structure. It returns 0, if the driver is bound to the GPIO
++ * device, or a negative value if there is an error.
++ */
++static int __devinit altera_gpio_of_probe(struct device_node *np)
++{
++	struct altera_gpio_instance *chip;
++	int status = 0;
++	const u32 *tree_info;
++
++	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
++	if (!chip)
++		return -ENOMEM;
++
++	/* Update GPIO state shadow register with default value */
++	tree_info = of_get_property(np, "resetvalue", NULL);
++	if (tree_info)
++		chip->gpio_state = be32_to_cpup(tree_info);
++
++	/* Update GPIO direction shadow register with default value */
++	chip->gpio_dir = 0; /* By default, all pins are inputs */
++
++	/* Check device node for device width */
++	chip->mmchip.gc.ngpio = 32; /* By default assume full GPIO controller */
++	tree_info = of_get_property(np, "width", NULL);
++	if (tree_info)
++		chip->mmchip.gc.ngpio = be32_to_cpup(tree_info);
++
++	spin_lock_init(&chip->gpio_lock);
++
++	chip->mmchip.gc.direction_input = altera_gpio_dir_in;
++	chip->mmchip.gc.direction_output = altera_gpio_dir_out;
++	chip->mmchip.gc.get = altera_gpio_get;
++	chip->mmchip.gc.set = altera_gpio_set;
++
++	chip->mmchip.save_regs = altera_gpio_save_regs;
++
++	/* Call the OF gpio helper to setup and register the GPIO device */
++	status = of_mm_gpiochip_add(np, &chip->mmchip);
++	if (status) {
++		kfree(chip);
++		pr_err("%s: error in probe function with status %d\n",
++		       np->full_name, status);
++		return status;
++	}
++	pr_info(DRV_NAME ": %s: registered\n", np->full_name);
++	return 0;
++}
++
++static struct of_device_id altera_gpio_of_match[] __devinitdata = {
++	{ .compatible = "ALTR,pio-1.0", },
++	{},
++};
++
++static int __init altera_gpio_init(void)
++{
++	struct device_node *np;
++
++	for_each_matching_node(np, altera_gpio_of_match)
++		altera_gpio_of_probe(np);
++
++	return 0;
++}
++
++/* Make sure we get initialized before anyone else tries to use us */
++subsys_initcall(altera_gpio_init);
++/* No exit call at the moment as we cannot unregister of GPIO chips */
++
++MODULE_DESCRIPTION("Altera GPIO driver");
++MODULE_AUTHOR("Thomas Chou <thomas@wytron.com.tw>");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:" DRV_NAME);
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+1.7.3.5
+
