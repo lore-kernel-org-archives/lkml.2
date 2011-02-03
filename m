@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039Ab1BCJbi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 04:31:38 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38475 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756002Ab1BCJbg (ORCPT
+	id S1756002Ab1BCJhJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 04:37:09 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:52054 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755438Ab1BCJhG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 04:31:36 -0500
-Date: Thu, 3 Feb 2011 09:31:54 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Andres Salomon <dilinger@queued.net>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Peter Ujfalusi <peter.ujfalusi@nokia.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Timur Tabi <timur@freescale.com>,
-        linux-input@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: Re: [PATCH 12/19] twl4030: mfd_cell is now implicitly available to
- drivers
-Message-ID: <20110203093154.GC21591@opensource.wolfsonmicro.com>
-References: <20110202195417.228e2656@queued.net>
- <20110202201522.72d37f1e@queued.net>
- <20110203060521.GA25739@core.coreip.homeip.net>
- <20110202223959.244b4a01@queued.net>
- <20110203065339.GA5592@core.coreip.homeip.net>
- <20110202230326.167fe873@queued.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110202230326.167fe873@queued.net>
-X-Cookie: A is for Apple.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 3 Feb 2011 04:37:06 -0500
+Subject: Re: [PATCH 5/5] perf, x86: Add support for AMD family 15h core
+ counters
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110203090001.GG5874@erda.amd.com>
+References: <1296664860-10886-1-git-send-email-robert.richter@amd.com>
+	 <1296664860-10886-6-git-send-email-robert.richter@amd.com>
+	 <1296666198.26581.343.camel@laptop> <20110202172419.GB5874@erda.amd.com>
+	 <1296667777.26581.349.camel@laptop>
+	 <AANLkTikdLUkv3y6-g=OegtJD5bXS0vPPjLMR1jmQjCZz@mail.gmail.com>
+	 <20110203090001.GG5874@erda.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Feb 2011 10:38:03 +0100
+Message-ID: <1296725883.26581.359.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 02, 2011 at 11:03:26PM -0800, Andres Salomon wrote:
-> Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+On Thu, 2011-02-03 at 10:00 +0100, Robert Richter wrote:
+> 
+> 
+> ok, nb events may be implemented independent from core events in a
+> separate struct pmu.
+> 
+> I still would prefer a lookup table for counter addresses. Adding a
+> shift parameter to struct x86_pmu to do a
+> 
+>       addr = base + (index << shift)
+> 
+> seems to me a quite special solution that may not be reused in other
+> implementations
 
-> > Then they are doing it incorrectly. One possible way is to have parent
-> > device carry relevant data in its drvdata and have children get it
-> > from there.
+What other implementations? I hope people will not re-arrange the MSR
+layout on every new model, that'd be quite annoying.
 
-> I believe some drivers are even using the parent device already.  See
-> drivers/leds/leds-mc13783.c, for example, whose parent device drvdata
-> is used to pass around a struct mc13783 to its children.  Sounds
-> like a possibility, will need to look into it further.
+>  while a lookup table is more generic. I also don't
+> see a performance or memory impact there.
 
-That's the current best practice approach.
+Well it is an extra pointer chase and data cache hit just to get
+something you can trivially compute.
+
+> Anyway, a shift parameter would work too. What do you think? 
+
+I think the alternatives thing is probably nicest, except for having to
+write the bits in asm.
+
