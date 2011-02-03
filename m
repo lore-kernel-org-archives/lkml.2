@@ -1,90 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145Ab1BCWLl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 17:11:41 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53826 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751540Ab1BCWLj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 17:11:39 -0500
-Message-ID: <4D4B27F5.8020701@zytor.com>
-Date: Thu, 03 Feb 2011 14:11:01 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+	id S1753887Ab1BCWNY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 17:13:24 -0500
+Received: from lider.pardus.org.tr ([193.140.100.216]:46640 "EHLO
+	lider.pardus.org.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752407Ab1BCWNV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 17:13:21 -0500
+Message-ID: <4D4B2883.4020701@pardus.org.tr>
+Date: Fri, 04 Feb 2011 00:13:23 +0200
+From: =?UTF-8?B?T3phbiDDh2HEn2xheWFu?= <ozan@pardus.org.tr>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: castet.matthieu@free.fr, Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-security-module@vger.kernel.org, Matthias Hopf <mhopf@suse.de>,
-        rjw@sisk.pl, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] NX protection for kernel data : fix 32 bits S3 suspend
-References: <4D473FD5.1090903@free.fr> <20110201080223.GB20372@elte.hu> <1296566732.4d4809cc1f963@imp.free.fr> <20110202062632.GA12256@elte.hu>
-In-Reply-To: <20110202062632.GA12256@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: =?UTF-8?B?UmljaGFyZCBTY2jDvHR6?= <r.schtz@t-online.de>,
+        Lionel Debroux <lionel_debroux@yahoo.fr>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+Subject: Re: Common boot/shutdown issues with the latest 2.6.37 (Mostly Asus
+ laptops)
+References: <556624.21214.qm@web28409.mail.ukl.yahoo.com> <201101312352.30883.rjw@sisk.pl> <4D4B19D3.2080800@pardus.org.tr> <201102032304.46724.rjw@sisk.pl>
+In-Reply-To: <201102032304.46724.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/2011 10:26 PM, Ingo Molnar wrote:
-> 
-> * castet.matthieu@free.fr <castet.matthieu@free.fr> wrote:
-> 
->> Quoting Ingo Molnar <mingo@elte.hu>:
->>
->>>
->>> * matthieu castet <castet.matthieu@free.fr> wrote:
->>>
->>>>  static inline int is_kernel_text(unsigned long addr)
->>>>  {
->>>> +#if defined(CONFIG_X86_32) && defined(CONFIG_ACPI_SLEEP)
->>>> +	/*
->>>> +	 * We need to make the wakeup trampoline in first 1MB !NX
->>>> +	 */
->>>> +	if (addr >= PAGE_OFFSET && addr <= (PAGE_OFFSET + (1<<20)))
->>>> +		return 1;
->>>> +#endif
->>>
->>> That's pretty ugly. Why not use set_memory_x()/set_memory_nx(), and only for
->>> the
->>> trampoline itself? Does the whole 1MB need to be marked X?
->>
->> The previous code was doing that.
-> 
-> So why not call set_memory_x() in your patch? Mind trying that?
-> 
+On 04.02.2011 00:04, Rafael J. Wysocki wrote:
 
-OK, there seems to be considerable duplication between
-static_protections() and local invocation.  Consider PCI BIOS, which is
-another X-needed region.
+>
+> I guess we see a few different problems here.
+>
+> Can you remind me, please, what the known workarounds are?
 
-In static_protections() we have:
+OK in summary:
 
->         /*
->          * The BIOS area between 640k and 1Mb needs to be executable for
->          * PCI BIOS based config access (CONFIG_PCI_GOBIOS) support.
->          */
-> #ifdef CONFIG_PCI_BIOS
->         if (pcibios_enabled && within(pfn, BIOS_BEGIN >> PAGE_SHIFT, BIOS_END >> PAGE_SHIFT))
->                 pgprot_val(forbidden) |= _PAGE_NX;
-> #endif
+ASUS X71S - Doesn't boot without nolapic
+ASUS F50SV - Doesn't boot without nolapic (latest tried and working 2.6.31)
+ASUS N61JQ - X out of Y shutdown hangs (Cured with nolapic too)
 
-... however, in arch/x86/pci/pcbios.c:
+Note that nolapic is the finer grained fix. acpi=off fixes the issue too.
 
-> static inline void set_bios_x(void)
-> {
->         pcibios_enabled = 1;
->         set_memory_x(PAGE_OFFSET + BIOS_BEGIN, (BIOS_END - BIOS_BEGIN) >> PAGE_SHIFT);
->         if (__supported_pte_mask & _PAGE_NX)
->                 printk(KERN_INFO "PCI : PCI BIOS aera is rw and x. Use pci=nobios if you want it NX.\n");
-> }
+Doesn't seem to be related to idle as processor.max_cstates=0 didn't help.
 
-This is blatant and insanely ugly code duplication!  In particular,
-static_protections() is "action at a distance" which has no business
-existing at all.
+This is 2.6.37, intel_idle enabled with 2 upstream patches mentioned 
+before + the mm fix.
 
-What I want to know is if static_protections() can somehow override
-set_bios_x() in this context (in which case it's a serious design
-error), or if it is plain redundant -- in the latter case we should
-simply use the same technique elsewhere.
 
-	-hpa
+-- 
+Pardus Linux
+http://www.pardus.org.tr/eng
