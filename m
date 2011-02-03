@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752112Ab1BCUi6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 15:38:58 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:62458 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751640Ab1BCUi5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 15:38:57 -0500
-Message-ID: <4D4B1214.20603@kernel.org>
-Date: Thu, 03 Feb 2011 12:37:40 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH - resend] memblock: Don't adjust size in memblock_find_base()
-References: <AANLkTikknHfA4TQw+SMH-EyJBHoNHXk8Rheq4=K4jNWA@mail.gmail.com>	<alpine.DEB.2.00.1012291637270.6040@chino.kir.corp.google.com>	<4D1BD928.50701@zytor.com>	<alpine.DEB.2.00.1012291702180.7374@chino.kir.corp.google.com>	<4D1BE615.4000700@zytor.com>	<20101230090648.GB7306@elte.hu>	<20101230102815.GA29822@elte.hu>	<20101230103002.GA30020@elte.hu>	<AANLkTimeqrLzDuqBoSvmkSJWMc7u3PeRf37vjzBca2Lh@mail.gmail.com>	<AANLkTimpyRXS9dNFATh4GqtA46uynutAvK7Qb5S7WPFO@mail.gmail.com>	<20110105134434.GA22816@elte.hu>	<4D43615B.9060203@kernel.org> <20110203122505.8369330f.akpm@linux-foundation.org>
-In-Reply-To: <20110203122505.8369330f.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752192Ab1BCUjw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 15:39:52 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:37419 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751640Ab1BCUjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 15:39:51 -0500
+Date: Thu, 3 Feb 2011 12:39:46 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Daniel Drake <dsd@laptop.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, sodaville@linutronix.de
+Subject: Re: [sodaville] [PATCH v2 01/15] x86/e820: remove conditional early
+ mapping in parse_e820_ext
+Message-ID: <20110203123946.701f74a2@queued.net>
+In-Reply-To: <4D4B0D18.9010309@linux.intel.com>
+References: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de>
+	<1292600033-12271-2-git-send-email-bigeasy@linutronix.de>
+	<20101230083745.GC11721@angua.secretlab.ca>
+	<20110104130839.GA21359@www.tglx.de>
+	<20110114081446.GC21832@angua.secretlab.ca>
+	<20110114105709.GA7562@www.tglx.de>
+	<20110114134345.712e2e29@queued.net>
+	<AANLkTimyrGkqtjo99+aV+N4KcrC2_3PprpRD2tRo_NtC@mail.gmail.com>
+	<4D4808D2.3080701@linutronix.de>
+	<20110201103617.2c3aa118@debxo>
+	<AANLkTi=kXaD0qhpHx30tFKN92pmAESSrXE1mz_55yuQO@mail.gmail.com>
+	<20110203104051.12cdfbe5@queued.net>
+	<4D4B058F.9030208@linux.intel.com>
+	<20110203120942.1a8fc98c@queued.net>
+	<4D4B0D18.9010309@linux.intel.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4D4B1249.027A,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2011 12:25 PM, Andrew Morton wrote:
-> On Fri, 28 Jan 2011 16:37:47 -0800
-> Yinghai Lu <yinghai@kernel.org> wrote:
+On Thu, 03 Feb 2011 12:16:24 -0800
+"H. Peter Anvin" <hpa@linux.intel.com> wrote:
+
+> On 02/03/2011 12:09 PM, Andres Salomon wrote:
+> > 
+> > Daniel has a patch set that includes the following:
+> > 
+> > 0010-OLPC-add-XO-1-rtc-driver.patch
+> > 
+> > +++ b/arch/x86/platform/olpc/olpc.c
+> > @@ -311,6 +311,8 @@ static int __init add_xo1_platform_devices(void)
+> >  {
+> >         struct platform_device *pdev;
+> > 
+> > +       olpc_xo1_rtc_init();
+> > +
+> >         pdev = platform_device_register_simple("xo1-rfkill", -1,
+> > NULL, 0);
+> > 
+> > 
+> > This registers a specific rtc device for XO-1 machines (using the
+> > CS5536 RTC).  XO-1.5 uses ACPI and a Via-based board, so the RTC
+> > device should be handled there automatically.  The corner case is
+> > for machines where the OLPC DT is enabled, but OLPC_XO1_RTC is not
+> > enabled.  We still need to figure out what to do in that case, but
+> > I think it's more appropriate to focus on getting the PM and
+> > XO1_RTC stuff upstream first.  As of right now, it's the *only*
+> > case.  We'll change that, by getting OLPC_XO1_RTC upstream.
 > 
->>
->> While applying patch to use memblock to find aperture for 64bit x86.
->> Ingo found system with 1g + force_iommu
->>
->>> No AGP bridge found
->>> Node 0: aperture @ 38000000 size 32 MB
->>> Aperture pointing to e820 RAM. Ignoring.
->>> Your BIOS doesn't leave a aperture memory hole
->>> Please enable the IOMMU option in the BIOS setup
->>> This costs you 64 MB of RAM
->>> Cannot allocate aperture memory hole (0,65536K)
+> OK, so how about "you're -----d anyway, so please don't block other
+> development because you haven't gotten your own driver upstream?"
 > 
-> I'm trying to work out if we should backport this fix into earlier
-> kernels and as is often the case, I wasn't given enough information.
-> 
-> What are the end-user visible effects of this?  The kernel cannot use
-> the AGP bridge?  64MB of RAM wasted?  Something else?
+> 	-hpa
 
-that is needed for further cleanup memblock with x86.
-
-http://git.kernel.org/?p=linux/kernel/git/tip/linux-2.6-tip.git;a=shortlog;h=refs/heads/x86/bootmem
-
-but it triggers another old bug in core memblock on one Ingo test machine. (with 1g ram but have iommu forced set for debug)
-end-user is not supposed to have this conf.
-
-Thanks
-
-Yinghai
-
-
+Sorry if I hadn't made that clear, but that's what I was saying.  Go
+ahead with the x86 DT stuff, we'll deal with OLPC breakage later.
