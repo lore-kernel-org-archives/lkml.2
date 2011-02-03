@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752404Ab1BCCHl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 21:07:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51572 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751278Ab1BCCHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 21:07:40 -0500
-Date: Wed, 2 Feb 2011 21:07:03 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Americo Wang <xiyou.wangcong@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jarod Wilson <jwilson@redhat.com>, akpm@linux-foundation.org
-Subject: Re: [Patch] kexec: remove KMSG_DUMP_KEXEC (was Re: Query about
- kdump_msg hook into crash_kexec())
-Message-ID: <20110203020703.GB21603@redhat.com>
-References: <20110201073853.GB21239@cr0.nay.redhat.com>
- <20110201081313.GC21239@cr0.nay.redhat.com>
- <20110203095837.93A2.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110203095837.93A2.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754973Ab1BCCO7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 21:14:59 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:34072 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754489Ab1BCCO4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 21:14:56 -0500
+From: John Stultz <john.stultz@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 1/4] RTC: Prevents a division by zero in kernel code.
+Date: Wed,  2 Feb 2011 18:14:40 -0800
+Message-Id: <1296699283-6784-2-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
+In-Reply-To: <1296699283-6784-1-git-send-email-john.stultz@linaro.org>
+References: <1296699283-6784-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 03, 2011 at 09:59:04AM +0900, KOSAKI Motohiro wrote:
-> > On Tue, Feb 01, 2011 at 03:38:53PM +0800, Américo Wang wrote:
-> > >On Mon, Jan 31, 2011 at 11:33:15PM -0800, Eric W. Biederman wrote:
-> > >>The issue is the inane call inside crash_kexec.
-> > >>
-> > >>It requires both a kexec kernel to be loaded and it requires you to be
-> > >>crashing.  Given that when I audited the kmsg_dump handlers they really
-> > >>weren't safe in a crash dump scenario we should just remove it.
-> > >>
-> > >
-> > >Probably, I think we need to get rid of KMSG_DUMP_KEXEC.
-> > >
-> > 
-> > Here we go.
-> > 
-> > --------->
-> > 
-> > KMSG_DUMP_KEXEC is useless because we already save kernel messages
-> > inside /proc/vmcore, and it is unsafe to allow modules to do
-> > other stuffs in a crash dump scenario.
-> > 
-> > Reported-by: Vivek Goyal <vgoyal@redhat.com>
-> > Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-> > Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
-> 
-> I wrote why this is no good idea by another mail. Please see it.
-> Anyway you have a right to don't use this feature.
-> 
+From: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
 
-But you have not explained that why do you need to hook into crash_kexec()
-and you have also not explained why do you need to send out kdump_msg()
-notification if kdump is configured.
+This patch prevents a user space program from calling the RTC_IRQP_SET
+ioctl with a negative value of frequency. Also, if this call is make
+with a zero value of frequency, there would be a division by zero in the
+kernel code.
 
-Some detailed explanation here would help.
+[jstultz: Also initialize irq_freq to 1 to catch other divbyzero issues]
 
-Thanks
-Vivek
+CC: Alessandro Zummo <a.zummo@towertech.it>
+CC: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ drivers/rtc/class.c     |    1 +
+ drivers/rtc/interface.c |    3 +++
+ 2 files changed, 4 insertions(+), 0 deletions(-)
 
-> Nack.
-> 
+diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
+index 9583cbc..c404b61 100644
+--- a/drivers/rtc/class.c
++++ b/drivers/rtc/class.c
+@@ -143,6 +143,7 @@ struct rtc_device *rtc_device_register(const char *name, struct device *dev,
+ 	rtc->id = id;
+ 	rtc->ops = ops;
+ 	rtc->owner = owner;
++	rtc->irq_freq = 1;
+ 	rtc->max_user_freq = 64;
+ 	rtc->dev.parent = dev;
+ 	rtc->dev.class = rtc_class;
+diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
+index 925006d..a0c0196 100644
+--- a/drivers/rtc/interface.c
++++ b/drivers/rtc/interface.c
+@@ -464,6 +464,9 @@ int rtc_irq_set_freq(struct rtc_device *rtc, struct rtc_task *task, int freq)
+ 	int err = 0;
+ 	unsigned long flags;
+ 
++	if (freq <= 0)
++		return -EINVAL;
++
+ 	spin_lock_irqsave(&rtc->irq_task_lock, flags);
+ 	if (rtc->irq_task != NULL && task == NULL)
+ 		err = -EBUSY;
+-- 
+1.7.3.2.146.gca209
+
