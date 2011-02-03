@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932146Ab1BCNi2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 08:38:28 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57696 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756363Ab1BCNi0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 08:38:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=LnB1rbM3LBCdHFWuWSqwVtBPU4aSDSSjW20qWajFTjrjgaqbiEXGwtOnwqDP36rJkk
-         r//RC4GCcXyZZUXbbiqF2RUWlsoygkwHhy/HCrIWh8TxSiRWafXzc73A8A+7aKQpu8KW
-         wVxXEAEPEan+7zDS7IlTLyLWXLimhIjxTFWh8=
-Date: Thu, 3 Feb 2011 14:38:20 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Mike Snitzer <snitzer@redhat.com>, "tytso@mit.edu" <tytso@mit.edu>,
-        "djwong@us.ibm.com" <djwong@us.ibm.com>,
-        "shli@kernel.org" <shli@kernel.org>, "neilb@suse.de" <neilb@suse.de>,
-        "adilger.kernel@dilger.ca" <adilger.kernel@dilger.ca>,
-        "jack@suse.cz" <jack@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kmannth@us.ibm.com" <kmannth@us.ibm.com>,
-        "cmm@us.ibm.com" <cmm@us.ibm.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "rwheeler@redhat.com" <rwheeler@redhat.com>, "hch@lst.de" <hch@lst.de>,
-        "josef@redhat.com" <josef@redhat.com>,
-        "jmoyer@redhat.com" <jmoyer@redhat.com>,
-        "vgoyal@redhat.com" <vgoyal@redhat.com>
-Subject: Re: [PATCH v3 1/2] block: skip elevator data initialization for
- flush requests
-Message-ID: <20110203133820.GF2570@htj.dyndns.org>
-References: <20110201185225.GT14211@htj.dyndns.org>
- <1296600373-6906-1-git-send-email-snitzer@redhat.com>
- <20110202225549.GA28109@redhat.com>
- <4D4AAC9A.4050407@fusionio.com>
+	id S932151Ab1BCNkS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 08:40:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20153 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756363Ab1BCNkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 08:40:16 -0500
+Date: Thu, 3 Feb 2011 11:40:03 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Tipp Moseley <tipp@google.com>
+Cc: perfmon2-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: perf report/stat and symbolic event names
+Message-ID: <20110203134003.GC10063@ghostprotocols.net>
+References: <AANLkTikrV3fQ-qsOANG5X7zes1wxbO9mX1eev3xB_OzF@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4D4AAC9A.4050407@fusionio.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTikrV3fQ-qsOANG5X7zes1wxbO9mX1eev3xB_OzF@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Jens.
-
-On Thu, Feb 03, 2011 at 02:24:42PM +0100, Jens Axboe wrote:
-> On 2011-02-02 23:55, Mike Snitzer wrote:
-> > REQ_SORTED is not set for flush requests because they are never put on
-> > the IO scheduler.
+Em Wed, Feb 02, 2011 at 05:18:21PM -0800, Tipp Moseley escreveu:
+> Hey Arnaldo, Stephane suggested I mail you for this feature request to the
+> perf tool.
 > 
-> That looks very wrong. REQ_SORTED gets set _when_ the request is sorted
-> into the IO scheduler. This is gross misuse, a bad hack.
+> When I collect a "raw" event using perf record, perf report's output is
+> pretty useless.  E.g.:
+> # Events: 833  raw 0x3d500a0
+> So when I collect multiple events, I have to refer to the command line used
+> to collect the profile and line up the event flags to figure out what I was
+> collecting.  With multiple collection runs, this can become quite confusing.
+> 
+> The perf.data file doesn't seem to have the symbolic name of the event
+> present.
+> Do you think it would be reasonable to add a field to the profile to include
+> the symbolic description of the event as it was given on the command line
+> (e.g., "RS_UOPS_DISPATCHED:u:i:e:c=3")?
 
-The rationale behind suggesting was that it indicates to the allocator
-that the request may be sorted as how the request will be used is
-communicated using @rw_flags to the allocator.  The patch is buggy
-that the flag actually ends up on the request.  Any better idea how to
-communicate it?
+Its definetely a good idea to record in the perf.data header section the
+command line that was passed to perf record.
 
-Thanks.
+A new tool, 'perf ls' could then look for files with the perf.data magic
+number and show the contents of this section.
 
--- 
-tejun
+Extra enhancements would include globbing, so that one could do:
+
+$ perf ls *UOPS*
+$ perf ls *httpd*
+
+Etc.
+
+Recording the perf record on the header was suggested by Ingo a long
+time ago, I just didn't got to implement it :-\
+
+If you can try to implement it, please see how build ids are encoded in
+the perf.data header.
+
+Otherwise I'll try to do it at some point.
+
+- Arnaldo
