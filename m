@@ -1,86 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754030Ab1BCWCq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 17:02:46 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:63134 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753611Ab1BCWCn convert rfc822-to-8bit (ORCPT
+	id S1754045Ab1BCWDx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 17:03:53 -0500
+Received: from Mycroft.westnet.com ([216.187.52.7]:55701 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684Ab1BCWDw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 17:02:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=I9KjeCWqk3tfaVtC+/iFvyaPFE1VGUIJ/msdpy6+oy5yFNHr9QsXSr7AJlBmBc0ssM
-         bmsR3Ct7ArXPEOqcUx5g5S8spwaYpzIPFp3ld7oYLLlEDzpeKjI5ZsHfT/MrrAJV6Ked
-         M2fnsU59yRn18uTZDIsqEQFp964cfFeqmypVI=
-From: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-To: xfs@oss.sgi.com, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] XFS update for 2.6.38-rc3
-Date: Thu, 3 Feb 2011 23:02:31 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.37; KDE/4.6.0; x86_64; ; )
-Cc: Dave Chinner <david@fromorbit.com>, Mark Lord <kernel@teksavvy.com>,
-        Alex Elder <aelder@sgi.com>, stable@kernel.org
-References: <201101311642.p0VGgXTS018851@stout.americas.sgi.com> <4D482E21.5040803@teksavvy.com> <20110203000757.GT11040@dastard>
-In-Reply-To: <20110203000757.GT11040@dastard>
+	Thu, 3 Feb 2011 17:03:52 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201102032302.31780.a.miskiewicz@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19787.9875.652.181110@quad.stoffel.home>
+Date: Thu, 3 Feb 2011 17:05:06 -0500
+From: "John Stoffel" <john@stoffel.org>
+To: "John Stoffel" <john@stoffel.org>
+Cc: linux-kernel@vger.kernel.org, mmarek@suse.cz, linux-kbuild@vger.kernel.org
+Subject: Re: 2.6.38-rc3 - make deb-pkg bombs out
+In-Reply-To: <19784.18282.668305.184521@quad.stoffel.home>
+References: <19784.18282.668305.184521@quad.stoffel.home>
+X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 03 of February 2011, Dave Chinner wrote:
-> On Tue, Feb 01, 2011 at 11:00:33AM -0500, Mark Lord wrote:
-> > On 11-01-31 11:42 AM, Alex Elder wrote:
-> > > Linus, please accept the following updates for XFS, for 2.6.38-rc3
-> > > (if it's not too late) or 2.6.38-rc4.
-> > > 
-> > > They are all fixes for bugs that have some pretty undesirable
-> > > consequences. 
+>>>>> "John" == John Stoffel <john@stoffel.org> writes:
 
-[...]
+I've updated this email to include the maintainer and the linux-kbuild
+mailing list.
 
-> > Are these bugs all new in 2.6.38, or should some of these fixes
-> > also go out to -stable for earlier revisions?
-> > >       xfs: fix dquot shaker deadlock
-> 
-> That's a regression, so maybe.
+John> I've been trying to do a 'make deb-pkg' on 2.6.38-rc? and not
+John> having any luck.  I was going to report this error for -rc2, but
+John> saw -rc3 this morning so I grabbed it and tried it out.
 
-Definitely, xfs_fsr can hit this even few times a day (happened already).
+John> I can successfully build the kernel on x86_64 (Ubuntu 10.10
+John> system, dual core Athlon, 4gb RAM, current directory mounted via
+John> NFS), but when I do:
 
-Stable team, please include this one for 2.6.37.1:
+John>   fakeroot make O=/var/tmp/build deb-pkg
 
-commit 0fbca4d1c3932c27c4794bf5c2b5fc961cf5a54f
-Author: Dave Chinner <dchinner@redhat.com>
-Date:   Fri Jan 28 11:20:46 2011 +1100
+Turns out the problem is with the "O=/var/tmp/build" since it works to
+build the deb-pkg target in the current directory just fine, using the
+same .config and same arguements.  
 
-    xfs: fix dquot shaker deadlock
+I guess I'll start to bisect this and see when it last worked.
+Looking at the scripts/package/builddeb script, it just needs to be
+updated to use the O=/some/path in the find command.  I think.  But I
+don't know the build system at all.
 
-    Commit 368e136 ("xfs: remove duplicate code from dquot reclaim") fails
-    to unlock the dquot freelist when the number of loop restarts is
-    exceeded in xfs_qm_dqreclaim_one(). This causes hangs in memory
-    reclaim.
-
-    Rework the loop control logic into an unwind stack that all the
-    different cases jump into. This means there is only one set of code
-    that processes the loop exit criteria, and simplifies the unlocking
-    of all the items from different points in the loop. It also fixes a
-    double increment of the restart counter from the qi_dqlist_lock
-    case.
-
-    Reported-by: Malcolm Scott <lkml@malc.org.uk>
-    Signed-off-by: Dave Chinner <dchinner@redhat.com>
-    Reviewed-by: Alex Elder <aelder@sgi.com>
+Thanks,
+John
 
 
-> Cheers,
-> 
-> Dave.
+John> it dies with the following error:
 
+John>       INSTALL include/rdma (1 file)
+John>       INSTALL include/scsi/fc (4 files)
+John>       INSTALL include/scsi (3 files)
+John>       INSTALL include/sound (8 files)
+John>       INSTALL include/video (3 files)
+John>       INSTALL include/xen (2 files)
+John>       INSTALL include (0 file)
+John>       INSTALL include/asm (56 files)
+John>     find: `arch/x86/include': No such file or directory
+John>     make[2]: *** [deb-pkg] Error 1
+John>     make[1]: *** [deb-pkg] Error 2
+John>     make: *** [sub-make] Error 2
+
+John> Anyone got a hint on what the solution is?
+
+John> John
+
+       
+John> -- 
+John> --
+John> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+John> the body of a message to majordomo@vger.kernel.org
+John> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+John> Please read the FAQ at  http://www.tux.org/lkml/
 
 -- 
-Arkadiusz Miśkiewicz        PLD/Linux Team
-arekm / maven.pl            http://ftp.pld-linux.org/
