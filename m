@@ -1,87 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756390Ab1BCPQj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 10:16:39 -0500
-Received: from router-fw.net-space.pl ([89.174.63.77]:33559 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756325Ab1BCPQi (ORCPT
+	id S1756316Ab1BCPT6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 10:19:58 -0500
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:32962 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752435Ab1BCPT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 10:16:38 -0500
-Date: Thu, 3 Feb 2011 16:14:50 +0100
-From: Daniel Kiper <dkiper@net-space.pl>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Pasi K?rkk?inen <pasik@iki.fi>, Daniel Kiper <dkiper@net-space.pl>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "haicheng.li@linux.intel.com" <haicheng.li@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Vasiliy G Tolstov <v.tolstov@selfip.ru>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "andi.kleen@intel.com" <andi.kleen@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>
-Subject: Re: [Xen-devel] Re: [PATCH 2/3] drivers/xen/balloon.c: Various balloon features and fixes
-Message-ID: <20110203151450.GA1364@router-fw-old.local.net-space.pl>
-References: <20101220134724.GC6749@router-fw-old.local.net-space.pl> <20101227150847.GA3728@dumpdata.com> <947c7677e042b3fd1ca22d775ca9aeb9@imap.selfip.ru> <20101227163918.GB7189@dumpdata.com> <92e9dd494cc640c04fdac03fa6d10e8d@imap.selfip.ru> <20101229164910.GD2743@router-fw-old.local.net-space.pl> <20101231112043.GZ2754@reaktio.net> <1294141394.3831.183.camel@zakaz.uk.xensource.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1294141394.3831.183.camel@zakaz.uk.xensource.com>
-User-Agent: Mutt/1.3.28i
+	Thu, 3 Feb 2011 10:19:57 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: _L3Z_gUVM1nKqFW1ggICb3FxPFAP9A0V2iRfDOow9tUL_ES
+ 6_3zryTp2.7Zd6AexaqUZzikL8a72yT2Ec0wohGbJRQtZSEsnE6s0MTVxYm7
+ uFj5dGN.e0T1eel1wS8jDMz8BmzpHHtOCMGnOifCZsL9PGl13cKewKMwUJRc
+ da0qoq7KrPpQJUBLemS_5UHR4nxIPl3ukMrI0tL.Mk9Qq52dsGGvJ8sA0CQr
+ sR.KgF2IG2rrQcAUCq7ydIkBofTHEVyOW3LYr
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 3 Feb 2011 09:19:54 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Theodore Tso <tytso@MIT.EDU>
+Subject: Re: linux-next: build failure after merge of the slab tree
+In-Reply-To: <1296502339.30654.13.camel@jaguar>
+Message-ID: <alpine.DEB.2.00.1102030919380.6519@router.home>
+References: <20110131144246.dfa2abe3.sfr@canb.auug.org.au> <1296502339.30654.13.camel@jaguar>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 04, 2011 at 11:43:14AM +0000, Ian Campbell wrote:
-> On Fri, 2010-12-31 at 11:20 +0000, Pasi K??rkk??inen wrote:
-> > On Wed, Dec 29, 2010 at 05:49:10PM +0100, Daniel Kiper wrote:
-> > > Hi,
-> > >
-> > > On Tue, Dec 28, 2010 at 12:52:03AM +0300, Vasiliy G Tolstov wrote:
-> > > > On Mon, 27 Dec 2010 11:39:18 -0500, Konrad Rzeszutek Wilk
-> > > > <konrad.wilk@oracle.com> wrote:
-> > > > > On Mon, Dec 27, 2010 at 07:27:56PM +0300, Vasiliy G Tolstov wrote:
-> > > > >> On Mon, 27 Dec 2010 10:08:47 -0500, Konrad Rzeszutek Wilk
-> > > > >> <konrad.wilk@oracle.com> wrote:
-> > > > >> > On Mon, Dec 20, 2010 at 02:47:24PM +0100, Daniel Kiper wrote:
-> > > > >> >> Features and fixes:
-> > > > >> >>   - HVM mode is supported now,
-> > > > >> >>   - migration from mod_timer() to schedule_delayed_work(),
-> > > > >> >>   - removal of driver_pages (I do not have seen any
-> > > > >> >>     references to it),
-> > > > >> >>   - protect before CPU exhaust by event/x process during
-> > > > >> >>     errors by adding some delays in scheduling next event,
-> > > > >> >>   - some other minor fixes.
-> > > > >>
-> > > > >> I have apply this patch to bare 2.6.36.2 kernel from kernel.org. If
-> > > > >> memory=maxmemory pv guest run's on migrating fine.
-> > > > >> If on already running domU i have xm mem-max xxx 1024 (before that it
-> > > > >> has 768) and do xm mem-set 1024 guest now have 1024 memory, but after
-> > > > >> that it can't migrate to another host.
-> > >
-> > > Do you still need memory hotplug patch for jeremy stable-2.6.32.x ???
+On Mon, 31 Jan 2011, Pekka Enberg wrote:
+
+> On Mon, 2011-01-31 at 14:42 +1100, Stephen Rothwell wrote:
+> > Hi all,
 > >
-> > I think it would be good to have it for xen/stable-2.6.32.x aswell!
+> > After merging the slab tree, today's linux-next build (powerpc
+> > ppc64_defconfig) failed like this:
+> >
+> > fs/ext4/mballoc.c: In function 'ext4_exit_mballoc':
+> > fs/ext4/mballoc.c:2750: error: implicit declaration of function 'kmem_cache_name'
+> > fs/ext4/mballoc.c:2750: warning: cast to pointer from integer of different size
+> >
+> > Caused by commit 63310467a3d1ed6a0460ec1f4268126cd1ceec2e ("mm: Remove
+> > support for kmem_cache_name()").  Clearly the last user has not gone, yet.
+> >
+> > I have used the version of the slab tree from next-20110121 for today.
 >
-> In general we are hoping to move development of new features to more
-> recent upstream versions and become increasingly conservative with what
-> gets taken into the 2.6.32.x branch.
->
-> If we think a particular feature is worth having for 2.6.32.x then I
-> think it would be worth getting them upstream and stabilised before
-> considering it for backport to 2.6.32.x.
->
-> > (that's the tree that's used the most atm).
->
-> But what is the demand for this particular functionality among the users
-> of that tree who cannot or will not switch to a more recent upstream?
-> Bearing in mind that this is primarily a domU feature and that domU
-> support is well established upstream.
+> Christoph, Ted? Should I revert the patch from slab.git?
 
-I agree with Ian. However, I think that if it will be expected
-by community I could prepare backport of final upstream version
-and publish it as "unofficial" version.
+Maybe the ext4 patch is not in -next yet?
 
-Daniel
