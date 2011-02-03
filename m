@@ -1,58 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756717Ab1BCSLV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 13:11:21 -0500
-Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:35851 "HELO
-	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756650Ab1BCSLU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 13:11:20 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=d6GRL5rln0Lflluwlixs8GcI9GR+je1GwwkbQ5ovGHzbBN+SBUXJ1zeePQk8JgO6egzHxMb4pxM3S0BtoCHg2/Nw19TV6sfnbvY0NBFXBcWAX8DlvOqQFkkD1x31uaax;
-Date: Thu, 3 Feb 2011 10:11:11 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "Nico Schottelius" <nico-kernel-20110117@schottelius.org>
-Subject: Re: [Bug #28102] New display errors in 2.6.38-rc2-00175-g6fb1b30
-Message-ID: <20110203101111.35d71bf0@jbarnes-desktop>
-In-Reply-To: <ibChAs1xEQI.A.0gC.aHeSNB@chimera>
-References: <QUnbpYCwS-F.A.vaC.VHeSNB@chimera>
-	<ibChAs1xEQI.A.0gC.aHeSNB@chimera>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	id S1756724Ab1BCSMt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 13:12:49 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:57732 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756650Ab1BCSMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 13:12:48 -0500
+Subject: Re: [PATCH R3 7/7] xen/balloon: Memory hotplug support for Xen
+ balloon driver
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Daniel Kiper <dkiper@net-space.pl>
+Cc: ian.campbell@citrix.com, akpm@linux-foundation.org, andi.kleen@intel.com,
+        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
+        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
+        v.tolstov@selfip.ru, pasik@iki.fi, wdauchy@gmail.com,
+        rientjes@google.com, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <20110203163033.GJ1364@router-fw-old.local.net-space.pl>
+References: <20110203163033.GJ1364@router-fw-old.local.net-space.pl>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Thu, 03 Feb 2011 10:12:24 -0800
+Message-ID: <1296756744.8299.1440.camel@nimitz>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  3 Feb 2011 00:31:29 +0100 (CET)
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+On Thu, 2011-02-03 at 17:30 +0100, Daniel Kiper wrote:
+> +static struct resource *allocate_memory_resource(unsigned long nr_pages)
+> +{
+> +	resource_size_t r_min, r_size;
+> +	struct resource *r;
+> +
+> +	/*
+> +	 * Look for first unused memory region starting at page
+> +	 * boundary. Skip last memory section created at boot time
+> +	 * because it may contains unused memory pages with PG_reserved
+> +	 * bit not set (online_pages() require PG_reserved bit set).
+> +	 */
 
-> This message has been generated automatically as a part of a summary report
-> of recent regressions.
-> 
-> The following bug entry is on the current list of known regressions
-> from 2.6.37.  Please verify if it still should be listed and let the tracking team
-> know (either way).
-> 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28102
-> Subject		: New display errors in 2.6.38-rc2-00175-g6fb1b30
-> Submitter	: Nico Schottelius <nico-kernel-20110117@schottelius.org>
-> Date		: 2011-01-28 20:29 (6 days old)
-> Message-ID	: <20110128202905.GB3395@schottelius.org>
-> References	: http://marc.info/?l=linux-kernel&m=129624657425949&w=2
+Could you elaborate on this comment a bit?  I think it's covering both
+the "PAGE_SIZE" argument to allocate_resource() and something else, but
+I'm not quite sure.
 
-Does this also occur with the drm-intel-next branch?  Do you have a
-picture of the corruption?
+> +	r = kzalloc(sizeof(struct resource), GFP_KERNEL);
+> +
+> +	if (!r)
+> +		return NULL;
+> +
+> +	r->name = "System RAM";
+> +	r->flags = IORESOURCE_MEM | IORESOURCE_BUSY;
+> +	r_min = PFN_PHYS(section_nr_to_pfn(pfn_to_section_nr(balloon_stats.boot_max_pfn) + 1));
 
-Thanks,
--- 
-Jesse Barnes, Intel Open Source Technology Center
+Did you do this for alignment reasons?  It might be a better idea to
+just make a nice sparsemem function to do alignment.  
+
+> +	r_size = nr_pages << PAGE_SHIFT;
+> +
+> +	if (allocate_resource(&iomem_resource, r, r_size, r_min,
+> +					ULONG_MAX, PAGE_SIZE, NULL, NULL) < 0) {
+> +		kfree(r);
+> +		return NULL;
+> +	}
+> +
+> +	return r;
+> +}
+
+This function should probably be made generic.  I bet some more
+hypervisors come around and want to use this.  They generally won't care
+where the memory goes, and the kernel can allocate a spot for them.
+
+...
+> +static void hotplug_allocated_memory(struct resource *r)
+>  {
+> -	unsigned long target = balloon_stats.target_pages;
+> +	int nid, rc;
+> +	resource_size_t r_size;
+> +	struct memory_block *mem;
+> +	unsigned long pfn;
+> +
+> +	r_size = r->end + 1 - r->start;
+> +	nid = memory_add_physaddr_to_nid(r->start);
+> +
+> +	rc = add_registered_memory(nid, r->start, r_size);
+> +
+> +	if (rc) {
+> +		pr_err("%s: add_registered_memory: Memory hotplug failed: %i\n",
+> +			__func__, rc);
+> +		balloon_stats.target_pages = balloon_stats.current_pages;
+> +		return;
+> +	}
+> +
+> +	if (xen_pv_domain())
+> +		for (pfn = PFN_DOWN(r->start); pfn < PFN_UP(r->end); ++pfn)
+> +			if (!PageHighMem(pfn_to_page(pfn))) {
+> +				rc = HYPERVISOR_update_va_mapping(
+> +					(unsigned long)__va(pfn << PAGE_SHIFT),
+> +					mfn_pte(pfn_to_mfn(pfn), PAGE_KERNEL), 0);
+> +				BUG_ON(rc);
+> +			}
+> 
+> -	target = min(target,
+> -		     balloon_stats.current_pages +
+> -		     balloon_stats.balloon_low +
+> -		     balloon_stats.balloon_high);
+> +	rc = online_pages(PFN_DOWN(r->start), r_size >> PAGE_SHIFT);
+
+The memory hotplug code is a bit weird at first glance.  It has two
+distinct stages: first, add_memory() is called from
+architecture-specific code.  Later, online_pages() is called, but that
+part is driven by userspace.
+
+For all the other hotplug users online_pages() is done later, and
+triggered by userspace.  The idea is that you could have memory sitting
+in "added, but offline" state which would be trivial to remove if
+someone else needed it, but also trivial to add without the need to
+allocate additional memory.
+
+In other words, I think you can take everything from and including
+online_pages() down in the function and take it out.  Use a udev hotplug
+rule to online it immediately if that's what you want.  
+
+> -	return target;
+> +	if (rc) {
+> +		pr_err("%s: online_pages: Failed: %i\n", __func__, rc);
+> +		balloon_stats.target_pages = balloon_stats.current_pages;
+> +		return;
+> +	}
+> +
+> +	for (pfn = PFN_DOWN(r->start); pfn < PFN_UP(r->end); pfn += PAGES_PER_SECTION) {
+> +		mem = find_memory_block(__pfn_to_section(pfn));
+> +		BUG_ON(!mem);
+> +		BUG_ON(!present_section_nr(mem->phys_index));
+> +		mutex_lock(&mem->state_mutex);
+> +		mem->state = MEM_ONLINE;
+> +		mutex_unlock(&mem->state_mutex);
+> +	}
+> +
+> +	balloon_stats.current_pages += r_size >> PAGE_SHIFT;
+>  }
+> 
+> +static enum bp_state request_additional_memory(long credit)
+> +{
+> +	int rc;
+> +	static struct resource *r;
+> +	static unsigned long pages_left;
+> +
+> +	if ((credit <= 0 || balloon_stats.balloon_low ||
+> +				balloon_stats.balloon_high) && !r)
+> +		return BP_DONE;
+> +
+> +	if (!r) {
+> +		r = allocate_memory_resource(credit);
+> +
+> +		if (!r)
+> +			return BP_ERROR;
+> +
+> +		pages_left = credit;
+> +	}
+
+'r' is effectively a global variable here.  Could you give it a more
+proper name?  Maybe "last add location" or something.  It might even
+make sense to move it up in to the global scope to make it _much_ more
+clear that it's not just locally used.
+
+> +	rc = allocate_additional_memory(r, pages_left);
+> +
+> +	if (rc < 0) {
+> +		if (balloon_stats.mh_policy == MH_POLICY_TRY_UNTIL_SUCCESS)
+> +			return BP_ERROR;
+> +
+> +		r = adjust_memory_resource(r, pages_left);
+> +
+> +		if (!r)
+> +			return BP_ERROR;
+> +	} else {
+> +		pages_left -= rc;
+> +
+> +		if (pages_left)
+> +			return BP_HUNGRY;
+> +	}
+> +
+> +	hotplug_allocated_memory(r);
+> +
+> +	r = NULL;
+> +
+> +	return BP_DONE;
+> +}
+
+Could you explain a bit about why you chose to do this stuff with memory
+resources?  Is that the only visibility that you have in to what memory
+the guest actually has?
+
+What troubles did you run in to when you did
+
+	add_memory(0, balloon_stats.boot_max_pfn, credit);
+
+?
+
+It's just that all the other memory hotplug users are _told_ by the
+hardware where to put things.  Is that not the case here?
+
+-- Dave
+
