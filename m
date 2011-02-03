@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902Ab1BCVza (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 16:55:30 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:41005 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753735Ab1BCVz1 convert rfc822-to-8bit (ORCPT
+	id S1753922Ab1BCV4d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 16:56:33 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38663 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753735Ab1BCV4a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 16:55:27 -0500
-X-IronPort-AV: E=Sophos;i="4.60,422,1291622400"; 
-   d="scan'208";a="514035627"
-Subject: Re: [PATCH] Fix size argument to memset call in nfsacl_encode
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Chuck Lever <chuck.lever@oracle.com>
-Cc: Jesper Juhl <jj@chaosbits.net>, Milton Miller <miltonm@bga.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Neil Brown <neilb@suse.de>, bfields@fieldses.org
-In-Reply-To: <67867FEF-6C10-4A35-8952-4EB56EAB79B9@oracle.com>
-References: <alpine.LNX.2.00.1102032012540.15101@swampdragon.chaosbits.net>
-	 <1296761330.3015.22.camel@heimdal.trondhjem.org>
-	 <alpine.LNX.2.00.1102032035280.15101@swampdragon.chaosbits.net>
-	 <705C97E5-E273-45AA-9714-2BF409DE1322@oracle.com>
-	 <1296763614.3015.26.camel@heimdal.trondhjem.org>
-	 <67867FEF-6C10-4A35-8952-4EB56EAB79B9@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
+	Thu, 3 Feb 2011 16:56:30 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=MmDCcouvxn2Oi/jo/GHo4dqbi9kWzt19+nRxa5KVAv0Fc+fbfCm0rLUf6ogL+26YOo
+         6K9wXIUAy43XKH6ILZRZdY5ka1vn+fCLX9zkD7tqy5WVJywImzxh12H3oDGdHtGPaOcV
+         ic0hbb1Adm9pTRSX8JdVdsVjBdtFLc20tdzUo=
+MIME-Version: 1.0
+In-Reply-To: <201102032009.17100.rjw@sisk.pl>
+References: <e9vOd5LzdBK.A.dyD.h6eSNB@chimera>
+	<AANLkTikELiGS+fM5WguZS=Fo-sSXmej1UnKWqCFmnE0k@mail.gmail.com>
+	<s5haaid3xos.wl%tiwai@suse.de>
+	<201102032009.17100.rjw@sisk.pl>
+Date: Thu, 3 Feb 2011 22:56:29 +0100
+Message-ID: <AANLkTi=suS1VDL=6EtT0D2=0c1DWwxdwZBBv=-BySNX-@mail.gmail.com>
+Subject: Re: 2.6.38-rc3-git1: Reported regressions 2.6.36 -> 2.6.37
+From: Carlos Mafra <crmafra2@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Takashi Iwai <tiwai@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Keith Packard <keithp@keithp.com>, Dave Airlie <airlied@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Organization: NetApp Inc
-Date: Thu, 03 Feb 2011 16:55:10 -0500
-Message-ID: <1296770110.12342.6.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-X-OriginalArrivalTime: 03 Feb 2011 21:55:13.0409 (UTC) FILETIME=[08E51F10:01CBC3ED]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-03 at 15:29 -0500, Chuck Lever wrote: 
-> Sorry, I wasn't clear.  IMO, data that is destined for the network is an important case where we have to be careful about the rule of using either assignments or memset(), not both, when initializing a data structure.
-> 
-> If the compiler doesn't pack the fields in struct posix_acl, there is unused space between them.  Memory for acl2 comes from the stack, which contains arbitrary data when this function is invoked.  The areas between the structure fields are not affected by the variable assignments used here.  If the data in acl2 is then simply memcpy'd to the XDR buffer, that old stack data can possibly appear on the wire.
-> 
-> I agree that the current memset() is incorrect.  My conditional ACK was more about what happens in xdr_encode_array2() rather than how the posix_acl acl2 is initialized.  I think in that regard we are also safe, if the array encoding operates by data type rather than by simply doing a blanket memcpy.  See xdr_nfsace_encode().  It's always possible I misunderstood how ACEs are XDR encoded.
+On Thu, Feb 3, 2011 at 8:09 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Thursday, February 03, 2011, Takashi Iwai wrote:
+>> At Thu, 3 Feb 2011 07:42:05 -0800,
+>> Linus Torvalds wrote:
+>> >
+>> > On Thu, Feb 3, 2011 at 3:23 AM, Carlos R. Mafra <crmafra2@gmail.com> wrote:
+>> > > On Thu  3.Feb'11 at  1:03:41 +0100, Rafael J. Wysocki wrote:
 
-We shouldn't ever be memcopying entire structures directly to or from
-the XDR buffer, and as far as I know, the current code will always copy
-them element by element.
+>> > Just to confirm, can you also check -rc3? I'm pretty sure nothing has
+>> > changed, but there were a few drm patches after -rc2, so it's alsways
+>> > good to double-check.
+>>
+>> The problem I reported in the bugzilla above is still present in
+>> 2.6.38-rc3.  I'm pretty sure that's the same issue as Carlos' case.
+>
+> I added https://bugzilla.kernel.org/show_bug.cgi?id=24982 to the list of
+> post-2.6.36 regressions for further tracking.
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+I also tested on 2.6.38-rc3+ now and the issue is not solved,
+just like Takashi expected.
