@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932491Ab1BCTGJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 14:06:09 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:42471 "EHLO ogre.sisk.pl"
+	id S932499Ab1BCTGv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 14:06:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64461 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932437Ab1BCTGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 14:06:07 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Subject: Re: [Bug #27842] [regression?] hang with 2.6.37 on a BTRFS test machine
-Date: Thu, 3 Feb 2011 20:05:53 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc3+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, linux-btrfs@vger.kernel.org,
-        "Helmut Hullen" <Hullen@t-online.de>
-References: <e9vOd5LzdBK.A.dyD.h6eSNB@chimera> <-tcJxClTQPH.A.Z6D.r6eSNB@chimera> <201102031220.46250.Martin@lichtvoll.de>
-In-Reply-To: <201102031220.46250.Martin@lichtvoll.de>
+	id S932437Ab1BCTGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 14:06:50 -0500
+Date: Thu, 3 Feb 2011 20:06:12 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Jind??ich Makovi??ka <makovick@gmail.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: khugepaged: gets stuck when writing to USB flash, 2.6.38-rc2
+Message-ID: <20110203190612.GL5843@random.random>
+References: <AANLkTi=uOpN0PwWdGh6iri-vJwuMS+WMPxmaZjv0-TrV@mail.gmail.com>
+ <20110201154947.GX16981@random.random>
+ <20110203132407.GF11958@csn.ul.ie>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102032005.53772.rjw@sisk.pl>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110203132407.GF11958@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 03, 2011, Martin Steigerwald wrote:
-> Added linux-btrfs and Helmut Hullen, who seemed to experience hangs on a 
-> T23 with BTRFS as well, to Cc.
+On Thu, Feb 03, 2011 at 01:24:08PM +0000, Mel Gorman wrote:
+> This is very likely. Compaction calls into migration which will wait on
+> dirty pages after a time. With a large number of dirty pages backed by a
+> slow drive such as a USB stick, it could be getting stalled there for a
+> long period of time. 
 > 
-> Am Thursday 03 February 2011 schrieb Rafael J. Wysocki:
-> > This message has been generated automatically as a part of a report
-> > of regressions introduced between 2.6.36 and 2.6.37.
-> > 
-> > The following bug entry is on the current list of known regressions
-> > introduced between 2.6.36 and 2.6.37.  Please verify if it still should
-> > be listed and let the tracking team know (either way).
-> > 
-> > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27842
-> > Subject		: [regression?] hang with 2.6.37 on a BTRFS test machine
-> > Submitter	: Martin Steigerwald <Martin@lichtvoll.de>
-> > Date		: 2011-01-23 12:06 (11 days old)
-> > Message-ID	: <201101231306.23069.Martin@lichtvoll.de>
-> > References	: http://marc.info/?l=linux-kernel&m=129578445613283&w=2
-> 
-> Well I now tested with 2.6.36 for more than a week and I did not see any 
-> of such hangs upto now. The machine seems table with 2.6.36. So I think 
-> its really an regression of 2.6.37.
-> 
-> I am stuck with what to try next. Since trying to track it down to a 
-> specific commit appears too involved for me and its appears also quite 
-> laborious to get any value debug information out of the kernel - cause it 
-> can take days for the bug to appear -, I am inclined to either test with 
-> 2.6.37.1 once its available or just give it a go with 2.6.38-rc3 or rc4. 
-> Maybe 2.6.38-rc3/4 would be the best bet, I have seen a report on the 
-> btrfs mailing list of 2.6.38 fixing a BTRFS hang bug that appeared with 
-> 2.6.37. I am just not sure whether its related or not.
-> 
-> Re: [PATCH v2]Btrfs: pwrite blocked when writing from the mmaped buffer of 
-> the same page
-> http://marc.info/?l=linux-btrfs&m=129623925116051&w=2
-> 
-> There is another thread about 2.6.37 related BTRFS hang:
-> 
-> flush-btrfs-1 hangs when building openwrt
-> http://marc.info/?l=linux-btrfs&m=129594547616298&w=2
-> 
-> I will add this as comment to the bug report as well.
+> Whether migration sleeps or not can be controlled by the sync parameter
+> passed into try_to_compact_memory which could be always forced to false
+> if GFP_NO_KSWAPD?
 
-Thanks for the update.
+I would expect that to hide any regression we could have because of
+more dirty cache in the system, yes.
 
-Rafael
+However Jindřich reported not being able to reproduce anything anymore
+in -rc3, so I'm unsure if we should make that change anymore. I asked
+to try again cause it should too easy that got fixed magically (but I
+didn't check closely if there are usb/stroage changes in rc2->rc3 that
+may explain this, so it's not impossible but sounds very unlikely that
+it got fixed). More likely this isn't reproducible reliably, or maybe
+it also happens without compaction and without THP ("cp /dev/zero
+/mnt/usbdrive" isn't going to make the system behave nice regardless
+of compaction being synchronous, asynchronous, or disabled) and maybe
+he tried the copy with more or less free memory.
+
+I'm doing some other performance check for another workload in the
+pre-async compaction status, and I'll let you know when I get results.
