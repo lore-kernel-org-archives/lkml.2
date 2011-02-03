@@ -1,61 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778Ab1BCUQj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 15:16:39 -0500
-Received: from mga02.intel.com ([134.134.136.20]:33985 "EHLO mga02.intel.com"
+	id S1751286Ab1BCUUN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 15:20:13 -0500
+Received: from mga01.intel.com ([192.55.52.88]:39235 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751051Ab1BCUQi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 15:16:38 -0500
+	id S1750770Ab1BCUUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 15:20:12 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,421,1291622400"; 
-   d="scan'208";a="599235252"
-Message-ID: <4D4B0D18.9010309@linux.intel.com>
-Date: Thu, 03 Feb 2011 12:16:24 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-Organization: Intel Open Source Technology Center
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Andres Salomon <dilinger@queued.net>
-CC: Grant Likely <grant.likely@secretlab.ca>, Daniel Drake <dsd@laptop.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, sodaville@linutronix.de
-Subject: Re: [sodaville] [PATCH v2 01/15] x86/e820: remove conditional early
- mapping in parse_e820_ext
-References: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de>	<1292600033-12271-2-git-send-email-bigeasy@linutronix.de>	<20101230083745.GC11721@angua.secretlab.ca>	<20110104130839.GA21359@www.tglx.de>	<20110114081446.GC21832@angua.secretlab.ca>	<20110114105709.GA7562@www.tglx.de>	<20110114134345.712e2e29@queued.net>	<AANLkTimyrGkqtjo99+aV+N4KcrC2_3PprpRD2tRo_NtC@mail.gmail.com>	<4D4808D2.3080701@linutronix.de>	<20110201103617.2c3aa118@debxo>	<AANLkTi=kXaD0qhpHx30tFKN92pmAESSrXE1mz_55yuQO@mail.gmail.com>	<20110203104051.12cdfbe5@queued.net>	<4D4B058F.9030208@linux.intel.com> <20110203120942.1a8fc98c@queued.net>
-In-Reply-To: <20110203120942.1a8fc98c@queued.net>
-Content-Type: text/plain; charset=ISO-8859-1
+   d="scan'208";a="654183276"
+Subject: Re: [patch] x86, mm: avoid stale tlb entries by clearing prev
+ mm_cpumask after switching mm
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>
+In-Reply-To: <AANLkTimjYAYPLf=QG22hFHm7yhABCQj7q=kOpB6HcB5e@mail.gmail.com>
+References: <1296677247.4418.103.camel@sbsiddha-MOBL3.sc.intel.com>
+	 <AANLkTi=P+aoY4GY32xa8D8gHbDP73QpPmzvKbB4VM7g2@mail.gmail.com>
+	 <AANLkTinvQatNF0ZJqmvuKYNq7oKXqfR5Ke1FuaSLFNEF@mail.gmail.com>
+	 <1296757637.4418.1482.camel@sbsiddha-MOBL3.sc.intel.com>
+	 <AANLkTimuSV273ksidN_vQ4o1rLr6D--9Q3dNnBiB13-K@mail.gmail.com>
+	 <1296761671.4418.1558.camel@sbsiddha-MOBL3.sc.intel.com>
+	 <AANLkTimjYAYPLf=QG22hFHm7yhABCQj7q=kOpB6HcB5e@mail.gmail.com>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Thu, 03 Feb 2011 12:20:04 -0800
+Message-Id: <1296764404.4418.1634.camel@sbsiddha-MOBL3.sc.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2011 12:09 PM, Andres Salomon wrote:
+On Thu, 2011-02-03 at 11:48 -0800, Linus Torvalds wrote:
+> On Thu, Feb 3, 2011 at 11:34 AM, Suresh Siddha
+> <suresh.b.siddha@intel.com> wrote:
+> >
+> > True. 'stale' is the wrong word. Do you want me to send a corrected one
+> > by replacing it with 'bogus'?
 > 
-> Daniel has a patch set that includes the following:
+> Please.
 > 
-> 0010-OLPC-add-XO-1-rtc-driver.patch
+> > my understanding is that unless we end up using that TLB entry, we will
+> > not have the issues like machine checks due to cacheability issues etc.
+> > If it is not global, upcoming cr3 change will flush it and meanwhile I
+> > don't think there is a scenario where we refer to these user-addresses.
 > 
-> +++ b/arch/x86/platform/olpc/olpc.c
-> @@ -311,6 +311,8 @@ static int __init add_xo1_platform_devices(void)
->  {
->         struct platform_device *pdev;
+> Quite possible. The situation I envisioned was the same speculative
+> memory access that causes the TLB fill to also cause a cache fill -
+> for a noncacheable region (because the bogus TLB entry sets the random
+> address to cacheable).
 > 
-> +       olpc_xo1_rtc_init();
-> +
->         pdev = platform_device_register_simple("xo1-rfkill", -1, NULL,
->   0);
+> And then what happens when somebody else accesses the same memory
+> noncacheably (through a valid TLB entry), and finds it in the cache?
 > 
+> I dunno. Not really important. The important part is the "possible
+> random bogus TLB entry", the fact that the CPU can act strangely after
+> that is pretty much a given.
 > 
-> This registers a specific rtc device for XO-1 machines (using the
-> CS5536 RTC).  XO-1.5 uses ACPI and a Via-based board, so the RTC device
-> should be handled there automatically.  The corner case is for machines
-> where the OLPC DT is enabled, but OLPC_XO1_RTC is not enabled.  We
-> still need to figure out what to do in that case, but I think it's more
-> appropriate to focus on getting the PM and XO1_RTC stuff upstream
-> first.  As of right now, it's the *only* case.  We'll change that, by
-> getting OLPC_XO1_RTC upstream.
 
-OK, so how about "you're -----d anyway, so please don't block other
-development because you haven't gotten your own driver upstream?"
+Ok. Updated patch appended.
 
-	-hpa
+thanks,
+suresh
+---
+
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: x86, mm: avoid bogus tlb entries by clearing prev mm_cpumask after switching mm
+
+Clearing the cpu in prev's mm_cpumask early will avoid the flush tlb IPI's while
+the cr3 is still pointing to the prev mm. And this window can lead
+to the possibility of bogus TLB fills resulting in strange failures.
+One such problematic scenario is mentioned below.
+
+T1. CPU-1 is context switching from mm1 to mm2 context and got a NMI etc
+between the point of clearing the cpu from the mm_cpumask(mm1) and before
+reloading the cr3 with the new mm2.
+
+T2. CPU-2 is tearing down a specific vma for mm1 and will proceed with flushing
+the TLB for mm1. It doesn't send the flush TLB to CPU-1 as it doesn't see that
+cpu listed in the mm_cpumask(mm1).
+
+T3. After the TLB flush is complete, CPU-2 goes ahead and frees the
+page-table pages associated with the removed vma mapping.
+
+T4. CPU-2 now allocates those freed page-table pages for something else.
+
+T5. As the CR3 and TLB caches for mm1 is still active on CPU-1, CPU-1 can
+potentially speculate and walk through the page-table caches and can
+insert new TLB entries. As the page-table pages are already freed and being
+used on CPU-2, this page walk can potentially insert a bogus global TLB entry 
+depending on the (random) contents of the page that is being used on CPU-2.
+
+T6. This bogus TLB entry being global will be active across future CR3
+changes and can result in weird memory corruption etc.
+
+To avoid this issue, for the prev mm that is handing over the cpu to another mm,
+clear the cpu from the mm_cpumask(prev) after the cr3 is changed.
+
+Marking it for -stable, though we haven't seen any reported failure that
+can be attributed to this.
+
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: stable@kernel.org	[v2.6.32+]
+---
+ arch/x86/include/asm/mmu_context.h |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/include/asm/mmu_context.h b/arch/x86/include/asm/mmu_context.h
+index 4a2d4e0..8b5393e 100644
+--- a/arch/x86/include/asm/mmu_context.h
++++ b/arch/x86/include/asm/mmu_context.h
+@@ -36,8 +36,6 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
+ 	unsigned cpu = smp_processor_id();
+ 
+ 	if (likely(prev != next)) {
+-		/* stop flush ipis for the previous mm */
+-		cpumask_clear_cpu(cpu, mm_cpumask(prev));
+ #ifdef CONFIG_SMP
+ 		percpu_write(cpu_tlbstate.state, TLBSTATE_OK);
+ 		percpu_write(cpu_tlbstate.active_mm, next);
+@@ -47,6 +45,9 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
+ 		/* Re-load page tables */
+ 		load_cr3(next->pgd);
+ 
++		/* stop flush ipis for the previous mm */
++		cpumask_clear_cpu(cpu, mm_cpumask(prev));
++
+ 		/*
+ 		 * load the LDT, if the LDT is different:
+ 		 */
+
+
+
