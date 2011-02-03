@@ -1,60 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756002Ab1BCJhJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 04:37:09 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:52054 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755438Ab1BCJhG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 04:37:06 -0500
-Subject: Re: [PATCH 5/5] perf, x86: Add support for AMD family 15h core
- counters
-From: Peter Zijlstra <peterz@infradead.org>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110203090001.GG5874@erda.amd.com>
-References: <1296664860-10886-1-git-send-email-robert.richter@amd.com>
-	 <1296664860-10886-6-git-send-email-robert.richter@amd.com>
-	 <1296666198.26581.343.camel@laptop> <20110202172419.GB5874@erda.amd.com>
-	 <1296667777.26581.349.camel@laptop>
-	 <AANLkTikdLUkv3y6-g=OegtJD5bXS0vPPjLMR1jmQjCZz@mail.gmail.com>
-	 <20110203090001.GG5874@erda.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Feb 2011 10:38:03 +0100
-Message-ID: <1296725883.26581.359.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756030Ab1BCJhw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 04:37:52 -0500
+Received: from sand.ocn.ne.jp ([122.28.30.136]:55152 "EHLO smtp.sand.ocn.ne.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755856Ab1BCJhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 04:37:50 -0500
+X-Greylist: delayed 1593 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Feb 2011 04:37:50 EST
+From: Jon Povey <jon.povey@racelogic.co.uk>
+To: davinci-linux-open-source@linux.davincidsp.com
+Cc: gilles.chanteperdrix@nexvision.fr, Jon Povey <jon.povey@racelogic.co.uk>,
+        Chris Ball <cjb@laptop.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Chaithrika U S <chaithrika@ti.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [RFC] mmc: davinci: fix corruption after surprise card eject
+Date: Thu,  3 Feb 2011 18:10:33 +0900
+Message-Id: <1296724233-3903-1-git-send-email-jon.povey@racelogic.co.uk>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-03 at 10:00 +0100, Robert Richter wrote:
-> 
-> 
-> ok, nb events may be implemented independent from core events in a
-> separate struct pmu.
-> 
-> I still would prefer a lookup table for counter addresses. Adding a
-> shift parameter to struct x86_pmu to do a
-> 
->       addr = base + (index << shift)
-> 
-> seems to me a quite special solution that may not be reused in other
-> implementations
+Ejecting a card during a write results in a bad controller state which
+corrupts all writes to subsequently inserted cards.
 
-What other implementations? I hope people will not re-arrange the MSR
-layout on every new model, that'd be quite annoying.
+Work around this by resetting the controller in the set_ios() POWER_OFF
+handler.
 
->  while a lookup table is more generic. I also don't
-> see a performance or memory impact there.
+Tested on DM355.
 
-Well it is an extra pointer chase and data cache hit just to get
-something you can trivially compute.
+Signed-off-by: Jon Povey <jon.povey@racelogic.co.uk>
+---
 
-> Anyway, a shift parameter would work too. What do you think? 
+This patch is against 2.6.36, it does not include the latest SDIO patch
+at least.
 
-I think the alternatives thing is probably nicest, except for having to
-write the bits in asm.
+To reproduce this in the unpatched sources, write heavily to the card
+and eject it during a write. Note that for the first few seconds of
+"writing a file" nothing is actually written to the card, it is cached
+by Linux.
+
+In the broken state that results, if a card is reinserted, the effect
+is as if an internal write FIFO has not been cleared and contains 2
+extra bytes. Tests suggest this is not the documented 32-byte FIFO but
+something beyond that.
+All blocks appear on the card starting with the last two bytes of the
+previous block write, then the remaining sector data; the last two
+bytes overflow into the next written sector, etc.
+
+Toggling MMCCTL.CMDRST,DATRST clears this condition. These are toggled
+several times during the error handlers called when the card is ejected
+during write, but it seems the bad state is entered at some point later.
+
+set_ios(MMC_POWER_OFF) seems to consistently be called at the end of
+the cleanup process before a newly-inserted card is accessed, putting
+an extra controller reset in here gets rid of the problem - but I'm not
+sure this is the right way to fix this, it has a workaround feel.
+
+Comments sought.. thanks.
+
+---
+ drivers/mmc/host/davinci_mmc.c |   12 ++++++++++--
+ 1 files changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mmc/host/davinci_mmc.c b/drivers/mmc/host/davinci_mmc.c
+index 33d9f1b..e5ee1c1 100644
+--- a/drivers/mmc/host/davinci_mmc.c
++++ b/drivers/mmc/host/davinci_mmc.c
+@@ -795,6 +795,9 @@ static void calculate_clk_divider(struct mmc_host *mmc, struct mmc_ios *ios)
+ 	}
+ }
+ 
++static void
++davinci_abort_data(struct mmc_davinci_host *host, struct mmc_data *data);
++
+ static void mmc_davinci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+ {
+ 	struct mmc_davinci_host *host = mmc_priv(mmc);
+@@ -856,9 +859,14 @@ static void mmc_davinci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+ 		}
+ 		if (lose)
+ 			dev_warn(mmc_dev(host->mmc), "powerup timeout\n");
+-	}
+ 
+-	/* FIXME on power OFF, reset things ... */
++	} else if (ios->power_mode == MMC_POWER_OFF) {
++
++		/* Controller maybe in bad state, e.g. card pulled while writing */
++		davinci_abort_data(host, NULL);
++
++		/* FIXME on power OFF, reset more things ...? */
++	}
+ }
+ 
+ static void
+-- 
+1.6.3.3
 
