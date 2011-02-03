@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756546Ab1BCRLf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 12:11:35 -0500
-Received: from service87.mimecast.com ([94.185.240.25]:54053 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755942Ab1BCRLd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 12:11:33 -0500
-Subject: Re: [PATCH v4 08/19] ARM: LPAE: Introduce the 3-level page table
- format definitions
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1295891761-18366-9-git-send-email-catalin.marinas@arm.com>
-References: <1295891761-18366-1-git-send-email-catalin.marinas@arm.com>
-	 <1295891761-18366-9-git-send-email-catalin.marinas@arm.com>
-Organization: ARM Limited
-Date: Thu, 03 Feb 2011 17:11:28 +0000
-Message-ID: <1296753088.28466.18.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1
-X-OriginalArrivalTime: 03 Feb 2011 17:11:30.0397 (UTC) FILETIME=[6663A0D0:01CBC3C5]
-X-MC-Unique: 111020317113102701
+	id S1756580Ab1BCRMS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 12:12:18 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59342 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756065Ab1BCRMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 12:12:17 -0500
+Message-ID: <4D4AE1DF.9030106@zytor.com>
+Date: Thu, 03 Feb 2011 09:11:59 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>, Kees Cook <kees.cook@canonical.com>,
+        matthieu castet <castet.matthieu@free.fr>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [BUG] broken ebba638ae723d8a8fc2f7abce5ec18b688b791d7
+References: <4D41E86D.8060205@free.fr> <201102031230.13759.rusty@rustcorp.com.au> <3ba4a711-ac8b-46aa-b585-51c8b9881c8c@email.android.com> <201102032032.08848.rusty@rustcorp.com.au>
+In-Reply-To: <201102032032.08848.rusty@rustcorp.com.au>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-01-24 at 17:55 +0000, Catalin Marinas wrote:
-> --- /dev/null
-> +++ b/arch/arm/include/asm/pgtable-3level-hwdef.h
-> @@ -0,0 +1,81 @@
-[...]
-> +#define PMD_SECT_UNCACHED      (_AT(pteval_t, 0) << 2) /* strongly ordered */
-> +#define PMD_SECT_BUFFERED      (_AT(pteval_t, 1) << 2) /* normal non-cacheable */
-> +#define PMD_SECT_WT            (_AT(pteval_t, 2) << 2) /* normal inner write-through */
-> +#define PMD_SECT_WB            (_AT(pteval_t, 3) << 2) /* normal inner write-back */
-> +#define PMD_SECT_WBWA          (_AT(pteval_t, 7) << 2) /* normal inner write-alloc */
+On 02/03/2011 02:02 AM, Rusty Russell wrote:
+> On Thu, 3 Feb 2011 01:05:44 pm H. Peter Anvin wrote:
+>> Can we completely kill the "don't reload segments" flag, then?
+> 
+> We can as far as *I* am concerned, but of course it's a separate issue...
 
-The above definitions should use pmdval_t rather than pteval_t (fixup
-pushed to the arm-lpae branch).
+I'm trying to figure out if there is any actual user of it.  I thought
+it was Xen which needed it, but Jeremy says it doesn't; I don't know
+what else would possible need it.  If it is is something that isn't used
+then it would be better to get rid of it.
+
+	-hpa
 
 -- 
-Catalin
-
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
