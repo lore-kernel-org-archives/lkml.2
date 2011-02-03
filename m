@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753769Ab1BCHq7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 02:46:59 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:43878 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753448Ab1BCHq6 (ORCPT
+	id S1753956Ab1BCHxd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 02:53:33 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:62748 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753501Ab1BCHxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 02:46:58 -0500
-Date: Thu, 3 Feb 2011 08:47:58 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@elte.hu>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Xen Devel <Xen-devel@lists.xensource.com>,
-        Keir Fraser <keir.fraser@eu.citrix.com>
-Subject: Re: [PATCH 0/2] x86/microcode: support for microcode update in Xen
- dom0
-Message-ID: <20110203074758.GA23561@aftab>
-References: <4D461FB9.5050807@goop.org>
- <20110131070241.GA22071@liondog.tnic>
- <4D46FC9F.6090309@goop.org>
- <20110131234131.GA16095@liondog.tnic>
- <4D475099.1080004@goop.org>
- <4D475DB5.1020300@zytor.com>
- <4D488EB1.9020803@goop.org>
- <4D49B5F6.5010606@zytor.com>
- <4D49B903.2080602@goop.org>
- <20110203005517.GA30220@khazad-dum.debian.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110203005517.GA30220@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 3 Feb 2011 02:53:31 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Y/lygsMrBkXIL8V8WXIIVFJsjSZWruewtJ8Se3hvqyLHyx/EfR6NnTYSqnyIm1x6mL
+         JCLv6TGcjjrBkD4sFoPLzNRWFg+4S39eUb/2HjOZALA3rh1EwPyc3ZSDpVyWguEzPfRe
+         ouNJihJUdDeFCMGwjq6QHTBCd7zQZs226QYB8=
+Subject: Re: epoll broken [was: mmotm 2011-01-25-15-47 uploaded]
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, ML netdev <netdev@vger.kernel.org>,
+        davidel@xmailserver.org
+In-Reply-To: <4D4A5BBF.20806@gmail.com>
+References: <201101260021.p0Q0LxsS016458@imap1.linux-foundation.org>
+	 <4D4A5BBF.20806@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Feb 2011 08:53:21 +0100
+Message-ID: <1296719601.3438.0.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 02, 2011 at 10:55:17PM -0200, Henrique de Moraes Holschuh wrote:
-> It would not be much of a problem to add AMD support to it as well (or write
-> a separate tool), just point me to a friendly AMD engineer that will supply
-> the docs (or point me to them if they're already public), vouch for the fact
-> that we're allowed to unpack/merge/strip/repack AMD microcode packs, and
-> test the tool, because I have no AMD boxes at home or at work to test it.
-
-We already have a single container file with all the ucode patches in
-it: http://www.amd64.org/support/microcode.html and the microcode driver
-in the kernel can look at it and take out the patches it needs based on
-the CPU it is running on. Is that what you had in mind?
-
-> > My main concern is that I want Xen to Just Work - ideally by not
-> > requiring users/admins to do anything.
+Le jeudi 03 février 2011 à 08:39 +0100, Jiri Slaby a écrit :
+> On 01/26/2011 12:48 AM, akpm@linux-foundation.org wrote:
+> > The mm-of-the-moment snapshot 2011-01-25-15-47 has been uploaded to
 > 
-> I have no experience with Xen.  What do I get from cpuid(0) and cpuid(1) in
-> dom0 when the bare metal uses Intel CPUs?  And AMD CPUs?   I'd like to teach
-> the tool to not do anything idiotic under Xen...
+> Hi, the network daemons are broken here. cupsd and httpd children
+> segfault too often without servicing requests. It's a regression against
+> mmotm 2011-01-06-15-41.
+> 
+> It's epoll after it dies:
+> 17836 epoll_create(8192)                = 3
+> ...
+> 17836 accept(7, {sa_family=AF_FILE, NULL}, [2]) = 11
+> 17836 getsockname(11, {sa_family=AF_FILE,
+> path="/var/run/cups/cups.sock"}, [26]) = 0
+> 17836 setsockopt(11, SOL_TCP, TCP_NODELAY, [1], 4) = -1 EOPNOTSUPP
+> (Operation not supported)
+> 17836 fcntl(11, F_GETFD)                = 0
+> 17836 fcntl(11, F_SETFD, FD_CLOEXEC)    = 0
+> 17836 epoll_ctl(3, EPOLL_CTL_ADD, 11, {EPOLLIN, {u32=379708832,
+> u64=140428630418848}}) = 0
+> 17836 epoll_wait(3, {{EPOLLIN, {u32=379708832, u64=140428630418848}}},
+> 8192, 1000) = 1
+> 17836 recvfrom(11, "P", 1, MSG_PEEK, NULL, NULL) = 1
+> 17836 poll([{fd=11, events=POLLIN}], 1, 10000) = 1 ([{fd=11,
+> revents=POLLIN}])
+> 17836 recvfrom(11, "POST / HTTP/1.1\r\nContent-Length:"..., 2048, 0,
+> NULL, NULL) = 771
+> 17836 sendto(11, "HTTP/1.1 100 Continue\r\n\r\n", 25, 0, NULL, 0) = 25
+> 17836 epoll_wait(3, {{EPOLLIN, {u32=379708832, u64=140428630418848}},
+> {0, {u32=0, u64=0}} .............. {0, {u32=0, u64=0}}, ?}
+> 0x7fb816996660, 8192, 0) = 379151968
+> 17836 --- SIGSEGV (Segmentation fault) @ 0 (0) ---
+> 17836 +++ killed by SIGSEGV +++
+> 
+> The parameter, the same as the retval, seems to be bogus.
+> 
+> Is it known (fixed in newer kernels)?
+> 
+> thanks,
 
-Actually, if the microcode image can be provided to the hypervisor early
-using multiboot, it should be easy for it to figure out on what hardware
-it is running and apply the correct microcode without the need for dom0
-to know anything about microcode, IMHO.
+Yes, its known, and a fix is there : https://lkml.org/lkml/2011/1/26/121
 
--- 
-Regards/Gruss,
-Boris.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
