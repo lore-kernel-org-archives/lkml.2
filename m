@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809Ab1BCVIL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 16:08:11 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:43316 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764Ab1BCVIK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 16:08:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <1296760576.3336.324.camel@work-vm>
-References: <1296699283-6784-1-git-send-email-john.stultz@linaro.org>
- <AANLkTimO5FXDoA_egZ=7oR5FTV-Fx5qpjfPRZ7eT1q50@mail.gmail.com> <1296760576.3336.324.camel@work-vm>
-From: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
-Date: Thu, 3 Feb 2011 18:31:37 -0200
-Message-ID: <AANLkTikgTNVkxeb+4HQonce-Y=z7EpxXn_SuwVj=EdE2@mail.gmail.com>
-Subject: Re: [PATCH 0/4] RTC regression fixups
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752870Ab1BCVIX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 16:08:23 -0500
+Received: from lo.gmane.org ([80.91.229.12]:37481 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752739Ab1BCVIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 16:08:22 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+Mail-Followup-To: linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org
+From: Nikolaus Rath <Nikolaus@rath.org>
+Subject: Reversing a memory mapping?
+Date: Thu, 03 Feb 2011 15:50:21 -0500
+Message-ID: <87k4hgn8qa.fsf@inspiron.ap.columbia.edu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: ebox.rath.org
+Mail-Copies-To: never
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+Cancel-Lock: sha1:LabRsJiDhcxHBqSEUkeDjmUGJTs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
+Hello,
 
-Currently, the RTC driver _must_ declare the read_alarm() callback,
-even if it does nothing. But the code in drivers/rtc/interface.c does
+I am trying to outsmart the proprietary nvidia driver to get my own
+driver to access to a memory region set up by the nvidia driver.
 
-	if (rtc->ops == NULL)
-		err = -ENODEV;
-	else if (!rtc->ops->read_alarm)
-		err = -EINVAL;
-	else {
-		memset(alarm, 0, sizeof(struct rtc_wkalrm));
-		alarm->enabled = rtc->aie_timer.enabled;
-		alarm->time = rtc_ktime_to_tm(rtc->aie_timer.node.expires);
-	}
+Strace tells me that the nividia userspace library is calling
 
-The read_alarm() callback is not being performed.
+mmap2(NULL, 1048576, PROT_READ|PROT_WRITE, MAP_SHARED, 5, 0x35375)
 
-Two questions:
+to get a userspace pointer to the kernel memory that I'm interested in.
 
-1 - Should the callback be removed or should it be kept and called in
-the else part?
+Is there a way that my own kernel module can "reverse" this mmap call?
+I.e. given the userspace pointer, how do I get access to the physical
+location of the memory that has been mapped?
 
-2 - In case we are keeping it, should it be enforced like it is now,
-or should it be kept optional? I'd rather have it optional, that means
-less useless code in the drivers.
+I know that the region is pinned and used as a DMA buffer for
+communication with the GPU. I want my own device to do DMA transfers to
+and from the same location.
 
-Regards,
-Marcelo.
+
+
+Thanks,
+
+   -Nikolaus
+
+-- 
+ »Time flies like an arrow, fruit flies like a Banana.«
+
+  PGP fingerprint: 5B93 61F8 4EA2 E279 ABF6  02CF A9AD B7F8 AE4E 425C
+
