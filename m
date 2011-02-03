@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753585Ab1BCVgy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 16:36:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9665 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752935Ab1BCVgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 16:36:52 -0500
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753519Ab1BCVhg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 16:37:36 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:47425 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753410Ab1BCVhe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 16:37:34 -0500
+Subject: Re: [PATCH 0/4] RTC regression fixups
+From: John Stultz <john.stultz@linaro.org>
+To: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+Cc: linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <AANLkTikgTNVkxeb+4HQonce-Y=z7EpxXn_SuwVj=EdE2@mail.gmail.com>
+References: <1296699283-6784-1-git-send-email-john.stultz@linaro.org>
+	 <AANLkTimO5FXDoA_egZ=7oR5FTV-Fx5qpjfPRZ7eT1q50@mail.gmail.com>
+	 <1296760576.3336.324.camel@work-vm>
+	 <AANLkTikgTNVkxeb+4HQonce-Y=z7EpxXn_SuwVj=EdE2@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Feb 2011 13:37:27 -0800
+Message-ID: <1296769047.3336.332.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-X-Fcc: ~/Mail/linus
-Cc: Tejun Heo <tj@kernel.org>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
-	PTRACE_ATTACH
-In-Reply-To: Oleg Nesterov's message of  Thursday, 3 February 2011 21:41:54 +0100 <20110203204154.GB26371@redhat.com>
-References: <1296227324-25295-1-git-send-email-tj@kernel.org>
-	<1296227324-25295-11-git-send-email-tj@kernel.org>
-	<20110203204122.GA26371@redhat.com>
-	<20110203204154.GB26371@redhat.com>
-Emacs: there's a reason it comes with a built-in psychotherapist.
-Message-Id: <20110203213640.1F516180995@magilla.sf.frob.com>
-Date: Thu,  3 Feb 2011 13:36:39 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IMHO this sort of band-aid does not really help the overall situation.
-It takes something that is intricate and fiddly and just fiddles it a
-bit more.  Userland will still have to handle older kernels where this
-behavior is not there.  If userland does anything that relies on this
-new behavior, then it will have to try somehow to figure out which
-kernel versions have which behavior and adapt, etc.
+On Thu, 2011-02-03 at 18:31 -0200, Marcelo Roberto Jimenez wrote:
+> Hi John,
+> 
+> Currently, the RTC driver _must_ declare the read_alarm() callback,
+> even if it does nothing. But the code in drivers/rtc/interface.c does
+> 
+> 	if (rtc->ops == NULL)
+> 		err = -ENODEV;
+> 	else if (!rtc->ops->read_alarm)
+> 		err = -EINVAL;
+> 	else {
+> 		memset(alarm, 0, sizeof(struct rtc_wkalrm));
+> 		alarm->enabled = rtc->aie_timer.enabled;
+> 		alarm->time = rtc_ktime_to_tm(rtc->aie_timer.node.expires);
+> 	}
+> 
+> The read_alarm() callback is not being performed.
 
-When the old behaviors are unhelpful like this, I think it is really
-better to add new mechanisms instead.  We can make new mechanisms more
-clear and straightforward for userland to work with from the beginning.
-Then the compatibility picture for userland is simply to try a new call
-or new ptrace request or new option bit or whatever it is.  When the
-kernel supports the new thing, things are easy.  When it doesn't, then
-they cope with life as they have been coping before on old kernels.
+So this was recently added by d5553a556165535337ece8592f066407c62eec2e
+to handle the cases where the driver didn't support alarm irqs, and the
+error wasn't being properly propagated upwards.
 
-I have some ideas about new things to add for this problem area.  But
-we have to think those through carefully and discuss all the details
-thoroughly with Jan and other folks working on userland debuggers
-before we write the kernel side.
+> Two questions:
+> 
+> 1 - Should the callback be removed or should it be kept and called in
+> the else part?
+
+So, we probably should change the check to set_alarm or some other flag
+to check if the hardware supports irqs, then remove the driver
+read_alarm() function.
 
 
-Thanks,
-Roland
+> 2 - In case we are keeping it, should it be enforced like it is now,
+> or should it be kept optional? I'd rather have it optional, that means
+> less useless code in the drivers.
+
+Yes. We want to minimize the unnecessary code. I'll take a shot at it
+shortly here.
+
+Also, to avoid duplicate work, please see my dev/rtc-cleanups branch
+here:
+http://git.linaro.org/gitweb?p=people/jstultz/linux.git;a=shortlog;h=refs/heads/dev/rtc-cleanups
+
+I've got some patches that remove the dead irq_set_state, irq_set_freq
+and update_irq_enable functions from the rtc drivers. It would be great
+if you were able to give those patches a whirl to make sure I didn't
+flub anything.
+
+thanks
+-john
+
+
+
