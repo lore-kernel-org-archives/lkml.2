@@ -1,109 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109Ab1BCWLR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 17:11:17 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44081 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751540Ab1BCWLP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 17:11:15 -0500
+	id S1754145Ab1BCWLl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 17:11:41 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:53826 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751540Ab1BCWLj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 17:11:39 -0500
+Message-ID: <4D4B27F5.8020701@zytor.com>
+Date: Thu, 03 Feb 2011 14:11:01 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=suS1VDL=6EtT0D2=0c1DWwxdwZBBv=-BySNX-@mail.gmail.com>
-References: <e9vOd5LzdBK.A.dyD.h6eSNB@chimera> <AANLkTikELiGS+fM5WguZS=Fo-sSXmej1UnKWqCFmnE0k@mail.gmail.com>
- <s5haaid3xos.wl%tiwai@suse.de> <201102032009.17100.rjw@sisk.pl> <AANLkTi=suS1VDL=6EtT0D2=0c1DWwxdwZBBv=-BySNX-@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 3 Feb 2011 14:10:51 -0800
-Message-ID: <AANLkTi=7EOih=fY5FCvhQbewSc=3a49cYVaKJRWM+-3d@mail.gmail.com>
-Subject: Re: 2.6.38-rc3-git1: Reported regressions 2.6.36 -> 2.6.37
-To: Carlos Mafra <crmafra2@gmail.com>, Keith Packard <keithp@keithp.com>,
-        Dave Airlie <airlied@redhat.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Takashi Iwai <tiwai@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>
-Content-Type: multipart/mixed; boundary=001485eba1e80dd0f1049b680b26
+To: Ingo Molnar <mingo@elte.hu>
+CC: castet.matthieu@free.fr, Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-security-module@vger.kernel.org, Matthias Hopf <mhopf@suse.de>,
+        rjw@sisk.pl, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] NX protection for kernel data : fix 32 bits S3 suspend
+References: <4D473FD5.1090903@free.fr> <20110201080223.GB20372@elte.hu> <1296566732.4d4809cc1f963@imp.free.fr> <20110202062632.GA12256@elte.hu>
+In-Reply-To: <20110202062632.GA12256@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001485eba1e80dd0f1049b680b26
-Content-Type: text/plain; charset=ISO-8859-1
-
-On Thu, Feb 3, 2011 at 1:56 PM, Carlos Mafra <crmafra2@gmail.com> wrote:
+On 02/01/2011 10:26 PM, Ingo Molnar wrote:
+> 
+> * castet.matthieu@free.fr <castet.matthieu@free.fr> wrote:
+> 
+>> Quoting Ingo Molnar <mingo@elte.hu>:
 >>
->> I added https://bugzilla.kernel.org/show_bug.cgi?id=24982 to the list of
->> post-2.6.36 regressions for further tracking.
->
-> I also tested on 2.6.38-rc3+ now and the issue is not solved,
-> just like Takashi expected.
+>>>
+>>> * matthieu castet <castet.matthieu@free.fr> wrote:
+>>>
+>>>>  static inline int is_kernel_text(unsigned long addr)
+>>>>  {
+>>>> +#if defined(CONFIG_X86_32) && defined(CONFIG_ACPI_SLEEP)
+>>>> +	/*
+>>>> +	 * We need to make the wakeup trampoline in first 1MB !NX
+>>>> +	 */
+>>>> +	if (addr >= PAGE_OFFSET && addr <= (PAGE_OFFSET + (1<<20)))
+>>>> +		return 1;
+>>>> +#endif
+>>>
+>>> That's pretty ugly. Why not use set_memory_x()/set_memory_nx(), and only for
+>>> the
+>>> trampoline itself? Does the whole 1MB need to be marked X?
+>>
+>> The previous code was doing that.
+> 
+> So why not call set_memory_x() in your patch? Mind trying that?
+> 
 
-Hmm. That commit (bf9dc102e284) still reverts cleanly.
+OK, there seems to be considerable duplication between
+static_protections() and local invocation.  Consider PCI BIOS, which is
+another X-needed region.
 
-Keith, Dave, should we just revert it? It's definitely a regression,
-and we do _not_ allow "fixes" to one thing that just causes a
-regression to another.
+In static_protections() we have:
 
-Quite frankly, I think it's totally wrong to just blindly set DPMS
-status to ON like that. It's as wrong as it was to leave it off, and
-the regressions reported are basically mirror images of the exact same
-bug that that commit tried to fix.
+>         /*
+>          * The BIOS area between 640k and 1Mb needs to be executable for
+>          * PCI BIOS based config access (CONFIG_PCI_GOBIOS) support.
+>          */
+> #ifdef CONFIG_PCI_BIOS
+>         if (pcibios_enabled && within(pfn, BIOS_BEGIN >> PAGE_SHIFT, BIOS_END >> PAGE_SHIFT))
+>                 pgprot_val(forbidden) |= _PAGE_NX;
+> #endif
 
-IOW, the commit message says:
+... however, in arch/x86/pci/pcbios.c:
 
-    When setting a new crtc configuration, force the DPMS state of all
-    connectors to ON. Otherwise, they'll be left at OFF and a future mode set
-    that disables the specified connector will not turn the connector off.
+> static inline void set_bios_x(void)
+> {
+>         pcibios_enabled = 1;
+>         set_memory_x(PAGE_OFFSET + BIOS_BEGIN, (BIOS_END - BIOS_BEGIN) >> PAGE_SHIFT);
+>         if (__supported_pte_mask & _PAGE_NX)
+>                 printk(KERN_INFO "PCI : PCI BIOS aera is rw and x. Use pci=nobios if you want it NX.\n");
+> }
 
-but setting it to ON doesn't actually _fix_ anything, because you just
-get the exact same issue in reverse, ie you just get
+This is blatant and insanely ugly code duplication!  In particular,
+static_protections() is "action at a distance" which has no business
+existing at all.
 
-   .. and a future mode set  that ENables the specified connector will
-    not turn the connector ON.
+What I want to know is if static_protections() can somehow override
+set_bios_x() in this context (in which case it's a serious design
+error), or if it is plain redundant -- in the latter case we should
+simply use the same technique elsewhere.
 
-instead. Which is exactly what Carlos and Takashi are reporting.
-
-Maybe the right thing to do is to set it to 'unknown', something like this.
-
-TOTALLY UNTESTED!
-
-                          Linus
-
---001485eba1e80dd0f1049b680b26
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gjq7zjz50
-
-IGRyaXZlcnMvZ3B1L2RybS9kcm1fY3J0Y19oZWxwZXIuYyB8ICAgIDYgKysrLS0tCiBpbmNsdWRl
-L2RybS9kcm1fbW9kZS5oICAgICAgICAgICAgfCAgICAxICsKIDIgZmlsZXMgY2hhbmdlZCwgNCBp
-bnNlcnRpb25zKCspLCAzIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvZ3B1L2Ry
-bS9kcm1fY3J0Y19oZWxwZXIuYyBiL2RyaXZlcnMvZ3B1L2RybS9kcm1fY3J0Y19oZWxwZXIuYwpp
-bmRleCA5NTJiM2Q0Li43ZjU4NWVkIDEwMDY0NAotLS0gYS9kcml2ZXJzL2dwdS9kcm0vZHJtX2Ny
-dGNfaGVscGVyLmMKKysrIGIvZHJpdmVycy9ncHUvZHJtL2RybV9jcnRjX2hlbHBlci5jCkBAIC02
-ODEsMTEgKzY4MSwxMSBAQCBpbnQgZHJtX2NydGNfaGVscGVyX3NldF9jb25maWcoc3RydWN0IGRy
-bV9tb2RlX3NldCAqc2V0KQogCQkJZ290byBmYWlsOwogCQl9CiAJfQotCURSTV9ERUJVR19LTVMo
-IlNldHRpbmcgY29ubmVjdG9yIERQTVMgc3RhdGUgdG8gb25cbiIpOworCURSTV9ERUJVR19LTVMo
-IlNldHRpbmcgY29ubmVjdG9yIERQTVMgc3RhdGUgdG8gJ3Vua25vd24nXG4iKTsKIAlmb3IgKGkg
-PSAwOyBpIDwgc2V0LT5udW1fY29ubmVjdG9yczsgaSsrKSB7Ci0JCURSTV9ERUJVR19LTVMoIlx0
-W0NPTk5FQ1RPUjolZDolc10gc2V0IERQTVMgb25cbiIsIHNldC0+Y29ubmVjdG9yc1tpXS0+YmFz
-ZS5pZCwKKwkJRFJNX0RFQlVHX0tNUygiXHRbQ09OTkVDVE9SOiVkOiVzXSBzZXQgRFBNUyAndW5r
-bm93bidcbiIsIHNldC0+Y29ubmVjdG9yc1tpXS0+YmFzZS5pZCwKIAkJCSAgICAgIGRybV9nZXRf
-Y29ubmVjdG9yX25hbWUoc2V0LT5jb25uZWN0b3JzW2ldKSk7Ci0JCXNldC0+Y29ubmVjdG9yc1tp
-XS0+ZHBtcyA9IERSTV9NT0RFX0RQTVNfT047CisJCXNldC0+Y29ubmVjdG9yc1tpXS0+ZHBtcyA9
-IERSTV9NT0RFX0RQTVNfVU5LTk9XTjsKIAl9CiAKIAlrZnJlZShzYXZlX2Nvbm5lY3RvcnMpOwpk
-aWZmIC0tZ2l0IGEvaW5jbHVkZS9kcm0vZHJtX21vZGUuaCBiL2luY2x1ZGUvZHJtL2RybV9tb2Rl
-LmgKaW5kZXggMGZjNzM5Ny4uNGI1MTQ0YyAxMDA2NDQKLS0tIGEvaW5jbHVkZS9kcm0vZHJtX21v
-ZGUuaAorKysgYi9pbmNsdWRlL2RybS9kcm1fbW9kZS5oCkBAIC01OSw2ICs1OSw3IEBACiAKIC8q
-IERQTVMgZmxhZ3MgKi8KIC8qIGJpdCBjb21wYXRpYmxlIHdpdGggdGhlIHhvcmcgZGVmaW5pdGlv
-bnMuICovCisjZGVmaW5lIERSTV9NT0RFX0RQTVNfVU5LTk9XTgkoLTEpCiAjZGVmaW5lIERSTV9N
-T0RFX0RQTVNfT04JMAogI2RlZmluZSBEUk1fTU9ERV9EUE1TX1NUQU5EQlkJMQogI2RlZmluZSBE
-Uk1fTU9ERV9EUE1TX1NVU1BFTkQJMgo=
---001485eba1e80dd0f1049b680b26--
+	-hpa
