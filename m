@@ -1,204 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463Ab1BCCzu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 21:55:50 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:33937 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755133Ab1BCCzs (ORCPT
+	id S1755307Ab1BCDE2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 22:04:28 -0500
+Received: from www.wytron.com.tw ([211.75.82.101]:57520 "EHLO
+	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab1BCDE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 21:55:48 -0500
-From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Alexander Shishkin <virtuoso@slind.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] ARM: etm: Configure data tracing
-Date: Wed,  2 Feb 2011 18:54:23 -0800
-Message-Id: <1296701663-12168-5-git-send-email-arve@android.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1296701663-12168-1-git-send-email-arve@android.com>
-References: <1296701663-12168-1-git-send-email-arve@android.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 2 Feb 2011 22:04:27 -0500
+From: Thomas Chou <thomas@wytron.com.tw>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
+        linux-input@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Thomas Chou <thomas@wytron.com.tw>,
+        Walter Goossens <waltergoossens@home.nl>
+Subject: [PATCH v3] altera_ps2: Add devicetree support
+Date: Thu,  3 Feb 2011 11:05:04 +0800
+Message-Id: <1296702304-30471-1-git-send-email-thomas@wytron.com.tw>
+X-Mailer: git-send-email 1.7.3.5
+In-Reply-To: <AANLkTikxSrwOfU=m_h+6G5hQMk6drOpqOPSfbBdzg53g@mail.gmail.com>
+References: <AANLkTikxSrwOfU=m_h+6G5hQMk6drOpqOPSfbBdzg53g@mail.gmail.com>
+X-SA-Exim-Connect-IP: 192.168.1.250
+X-SA-Exim-Mail-From: thomas@wytron.com.tw
+X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The old code enabled data tracing, but did not configure the
-range. We now configure it to trace all data addresses by default,
-and add a trace_data_range attribute to change the range or disable
-data tracing.
-
-Signed-off-by: Arve Hjønnevåg <arve@android.com>
+Signed-off-by: Walter Goossens <waltergoossens@home.nl>
+Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
 ---
- arch/arm/include/asm/hardware/coresight.h |   10 +++-
- arch/arm/kernel/etm.c                     |   76 +++++++++++++++++++++++++++-
- 2 files changed, 82 insertions(+), 4 deletions(-)
+v2 use const and add compat version.
+v3 change compatible vendor to ALTR.
+   add dts binding doc.
 
-diff --git a/arch/arm/include/asm/hardware/coresight.h b/arch/arm/include/asm/hardware/coresight.h
-index 7ecd793..b95a6f0 100644
---- a/arch/arm/include/asm/hardware/coresight.h
-+++ b/arch/arm/include/asm/hardware/coresight.h
-@@ -17,9 +17,11 @@
- #define TRACER_ACCESSED_BIT	0
- #define TRACER_RUNNING_BIT	1
- #define TRACER_CYCLE_ACC_BIT	2
-+#define TRACER_TRACE_DATA_BIT	3
- #define TRACER_ACCESSED		BIT(TRACER_ACCESSED_BIT)
- #define TRACER_RUNNING		BIT(TRACER_RUNNING_BIT)
- #define TRACER_CYCLE_ACC	BIT(TRACER_CYCLE_ACC_BIT)
-+#define TRACER_TRACE_DATA	BIT(TRACER_TRACE_DATA_BIT)
- 
- #define TRACER_TIMEOUT 10000
- 
-@@ -113,8 +115,14 @@
- #define ETMR_TRACEENCTRL	0x24
- #define ETMTE_INCLEXCL		BIT(24)
- #define ETMR_TRACEENEVT		0x20
+ .../devicetree/bindings/serio/altera_ps2.txt       |    4 ++++
+ drivers/input/serio/altera_ps2.c                   |   11 +++++++++--
+ 2 files changed, 13 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/serio/altera_ps2.txt
+
+diff --git a/Documentation/devicetree/bindings/serio/altera_ps2.txt b/Documentation/devicetree/bindings/serio/altera_ps2.txt
+new file mode 100644
+index 0000000..4d9eecc
+--- /dev/null
++++ b/Documentation/devicetree/bindings/serio/altera_ps2.txt
+@@ -0,0 +1,4 @@
++Altera UP PS/2 controller
 +
-+#define ETMR_VIEWDATAEVT	0x30
-+#define ETMR_VIEWDATACTRL1	0x34
-+#define ETMR_VIEWDATACTRL2	0x38
-+#define ETMR_VIEWDATACTRL3	0x3c
-+#define ETMVDC3_EXCLONLY	(1 << 16)
-+
- #define ETMCTRL_OPTS		(ETMCTRL_DO_CPRT | \
--				ETMCTRL_DATA_DO_ADDR | \
- 				ETMCTRL_BRANCH_OUTPUT | \
- 				ETMCTRL_DO_CONTEXTID)
++Required properties:
++- compatible : should be "ALTR,ps2-1.0".
+diff --git a/drivers/input/serio/altera_ps2.c b/drivers/input/serio/altera_ps2.c
+index 7998560..d94b4a3 100644
+--- a/drivers/input/serio/altera_ps2.c
++++ b/drivers/input/serio/altera_ps2.c
+@@ -19,6 +19,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/slab.h>
++#include <linux/of.h>
  
-diff --git a/arch/arm/kernel/etm.c b/arch/arm/kernel/etm.c
-index 6ff1004..ccd6d12 100644
---- a/arch/arm/kernel/etm.c
-+++ b/arch/arm/kernel/etm.c
-@@ -42,6 +42,8 @@ struct tracectx {
- 	int		etm_portsz;
- 	unsigned long	range_start;
- 	unsigned long	range_end;
-+	unsigned long	data_range_start;
-+	unsigned long	data_range_end;
- 	struct device	*dev;
- 	struct clk	*emu_clk;
- 	struct mutex	mutex;
-@@ -83,8 +85,15 @@ static int etm_setup_address_range(struct tracectx *t, int n,
- 	etm_writel(t, flags, ETMR_COMP_ACC_TYPE(n * 2 + 1));
- 	etm_writel(t, end, ETMR_COMP_VAL(n * 2 + 1));
+ #define DRV_NAME "altera_ps2"
  
--	flags = exclude ? ETMTE_INCLEXCL : 0;
--	etm_writel(t, flags | (1 << n), ETMR_TRACEENCTRL);
-+	if (data) {
-+		flags = exclude ? ETMVDC3_EXCLONLY : 0;
-+		if (exclude)
-+			n += 8;
-+		etm_writel(t, flags | BIT(n), ETMR_VIEWDATACTRL3);
-+	} else {
-+		flags = exclude ? ETMTE_INCLEXCL : 0;
-+		etm_writel(t, flags | (1 << n), ETMR_TRACEENCTRL);
-+	}
- 
+@@ -173,6 +174,12 @@ static int __devexit altera_ps2_remove(struct platform_device *pdev)
  	return 0;
  }
-@@ -107,6 +116,9 @@ static int trace_start(struct tracectx *t)
- 	if (t->flags & TRACER_CYCLE_ACC)
- 		v |= ETMCTRL_CYCLEACCURATE;
  
-+	if (t->flags & TRACER_TRACE_DATA)
-+		v |= ETMCTRL_DATA_DO_ADDR;
-+
- 	etm_unlock(t);
- 
- 	etm_writel(t, v, ETMR_CTRL);
-@@ -129,6 +141,17 @@ static int trace_start(struct tracectx *t)
- 	etm_writel(t, 0, ETMR_TRACESSCTRL);
- 	etm_writel(t, 0x6f, ETMR_TRACEENEVT);
- 
-+	etm_writel(t, 0, ETMR_VIEWDATACTRL1);
-+	etm_writel(t, 0, ETMR_VIEWDATACTRL2);
-+
-+	if (t->data_range_start || t->data_range_end)
-+		etm_setup_address_range(t, 2, t->data_range_start,
-+					t->data_range_end, 0, 1);
-+	else
-+		etm_writel(t, ETMVDC3_EXCLONLY, ETMR_VIEWDATACTRL3);
-+
-+	etm_writel(t, 0x6f, ETMR_VIEWDATAEVT);
-+
- 	v &= ~ETMCTRL_PROGRAM;
- 	v |= ETMCTRL_PORTSEL;
- 
-@@ -570,6 +593,48 @@ static ssize_t trace_range_store(struct kobject *kobj,
- static struct kobj_attribute trace_range_attr =
- 	__ATTR(trace_range, 0644, trace_range_show, trace_range_store);
- 
-+static ssize_t trace_data_range_show(struct kobject *kobj,
-+				  struct kobj_attribute *attr,
-+				  char *buf)
-+{
-+	unsigned long range_start;
-+	u64 range_end;
-+	mutex_lock(&tracer.mutex);
-+	range_start = tracer.data_range_start;
-+	range_end = tracer.data_range_end;
-+	if (!range_end && (tracer.flags & TRACER_TRACE_DATA))
-+		range_end = 0x100000000ULL;
-+	mutex_unlock(&tracer.mutex);
-+	return sprintf(buf, "%08lx %08llx\n", range_start, range_end);
++static const struct of_device_id altera_ps2_match[] = {
++	{ .compatible = "ALTR,ps2-1.0", },
++	{},
 +}
++MODULE_DEVICE_TABLE(of, altera_ps2_match);
 +
-+static ssize_t trace_data_range_store(struct kobject *kobj,
-+				   struct kobj_attribute *attr,
-+				   const char *buf, size_t n)
-+{
-+	unsigned long range_start;
-+	u64 range_end;
-+
-+	if (sscanf(buf, "%lx %llx", &range_start, &range_end) != 2)
-+		return -EINVAL;
-+
-+	mutex_lock(&tracer.mutex);
-+	tracer.data_range_start = range_start;
-+	tracer.data_range_end = (unsigned long)range_end;
-+	if (range_end)
-+		tracer.flags |= TRACER_TRACE_DATA;
-+	else
-+		tracer.flags &= ~TRACER_TRACE_DATA;
-+	mutex_unlock(&tracer.mutex);
-+
-+	return n;
-+}
-+
-+
-+static struct kobj_attribute trace_data_range_attr =
-+	__ATTR(trace_data_range, 0644,
-+		trace_data_range_show, trace_data_range_store);
-+
- static int __init etm_probe(struct amba_device *dev, struct amba_id *id)
+ /*
+  * Our device driver structure
+  */
+@@ -182,6 +189,7 @@ static struct platform_driver altera_ps2_driver = {
+ 	.driver	= {
+ 		.name	= DRV_NAME,
+ 		.owner	= THIS_MODULE,
++		.of_match_table = altera_ps2_match,
+ 	},
+ };
+ 
+@@ -189,13 +197,12 @@ static int __init altera_ps2_init(void)
  {
- 	struct tracectx *t = &tracer;
-@@ -595,7 +660,7 @@ static int __init etm_probe(struct amba_device *dev, struct amba_id *id)
+ 	return platform_driver_register(&altera_ps2_driver);
+ }
++module_init(altera_ps2_init);
  
- 	mutex_init(&t->mutex);
- 	t->dev = &dev->dev;
--	t->flags = TRACER_CYCLE_ACC;
-+	t->flags = TRACER_CYCLE_ACC | TRACER_TRACE_DATA;
- 	t->etm_portsz = 1;
+ static void __exit altera_ps2_exit(void)
+ {
+ 	platform_driver_unregister(&altera_ps2_driver);
+ }
+-
+-module_init(altera_ps2_init);
+ module_exit(altera_ps2_exit);
  
- 	etm_unlock(t);
-@@ -625,6 +690,11 @@ static int __init etm_probe(struct amba_device *dev, struct amba_id *id)
- 	if (ret)
- 		dev_dbg(&dev->dev, "Failed to create trace_range in sysfs\n");
- 
-+	ret = sysfs_create_file(&dev->dev.kobj, &trace_data_range_attr.attr);
-+	if (ret)
-+		dev_dbg(&dev->dev,
-+			"Failed to create trace_data_range in sysfs\n");
-+
- 	dev_dbg(t->dev, "ETM AMBA driver initialized.\n");
- 
- out:
+ MODULE_DESCRIPTION("Altera University Program PS2 controller driver");
 -- 
-1.7.3.1
+1.7.3.5
 
