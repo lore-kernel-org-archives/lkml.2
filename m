@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab1BCHxd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 02:53:33 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62748 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753501Ab1BCHxb (ORCPT
+	id S1754210Ab1BCH4Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 02:56:25 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49677 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753752Ab1BCH4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 02:53:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Y/lygsMrBkXIL8V8WXIIVFJsjSZWruewtJ8Se3hvqyLHyx/EfR6NnTYSqnyIm1x6mL
-         JCLv6TGcjjrBkD4sFoPLzNRWFg+4S39eUb/2HjOZALA3rh1EwPyc3ZSDpVyWguEzPfRe
-         ouNJihJUdDeFCMGwjq6QHTBCd7zQZs226QYB8=
-Subject: Re: epoll broken [was: mmotm 2011-01-25-15-47 uploaded]
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mm-commits@vger.kernel.org, ML netdev <netdev@vger.kernel.org>,
-        davidel@xmailserver.org
-In-Reply-To: <4D4A5BBF.20806@gmail.com>
-References: <201101260021.p0Q0LxsS016458@imap1.linux-foundation.org>
-	 <4D4A5BBF.20806@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Feb 2011 08:53:21 +0100
-Message-ID: <1296719601.3438.0.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 3 Feb 2011 02:56:24 -0500
+Date: Thu, 3 Feb 2011 08:56:23 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [patch 6/8] arm: ns9xxx: Remove private irq flow handler
+Message-ID: <20110203075623.GB30452@pengutronix.de>
+References: <20110202212258.546660886@linutronix.de>
+ <20110202212552.299898447@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110202212552.299898447@linutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 03 février 2011 à 08:39 +0100, Jiri Slaby a écrit :
-> On 01/26/2011 12:48 AM, akpm@linux-foundation.org wrote:
-> > The mm-of-the-moment snapshot 2011-01-25-15-47 has been uploaded to
-> 
-> Hi, the network daemons are broken here. cupsd and httpd children
-> segfault too often without servicing requests. It's a regression against
-> mmotm 2011-01-06-15-41.
-> 
-> It's epoll after it dies:
-> 17836 epoll_create(8192)                = 3
-> ...
-> 17836 accept(7, {sa_family=AF_FILE, NULL}, [2]) = 11
-> 17836 getsockname(11, {sa_family=AF_FILE,
-> path="/var/run/cups/cups.sock"}, [26]) = 0
-> 17836 setsockopt(11, SOL_TCP, TCP_NODELAY, [1], 4) = -1 EOPNOTSUPP
-> (Operation not supported)
-> 17836 fcntl(11, F_GETFD)                = 0
-> 17836 fcntl(11, F_SETFD, FD_CLOEXEC)    = 0
-> 17836 epoll_ctl(3, EPOLL_CTL_ADD, 11, {EPOLLIN, {u32=379708832,
-> u64=140428630418848}}) = 0
-> 17836 epoll_wait(3, {{EPOLLIN, {u32=379708832, u64=140428630418848}}},
-> 8192, 1000) = 1
-> 17836 recvfrom(11, "P", 1, MSG_PEEK, NULL, NULL) = 1
-> 17836 poll([{fd=11, events=POLLIN}], 1, 10000) = 1 ([{fd=11,
-> revents=POLLIN}])
-> 17836 recvfrom(11, "POST / HTTP/1.1\r\nContent-Length:"..., 2048, 0,
-> NULL, NULL) = 771
-> 17836 sendto(11, "HTTP/1.1 100 Continue\r\n\r\n", 25, 0, NULL, 0) = 25
-> 17836 epoll_wait(3, {{EPOLLIN, {u32=379708832, u64=140428630418848}},
-> {0, {u32=0, u64=0}} .............. {0, {u32=0, u64=0}}, ?}
-> 0x7fb816996660, 8192, 0) = 379151968
-> 17836 --- SIGSEGV (Segmentation fault) @ 0 (0) ---
-> 17836 +++ killed by SIGSEGV +++
-> 
-> The parameter, the same as the retval, seems to be bogus.
-> 
-> Is it known (fixed in newer kernels)?
-> 
-> thanks,
+Hi Thomas,
 
-Yes, its known, and a fix is there : https://lkml.org/lkml/2011/1/26/121
+On Wed, Feb 02, 2011 at 09:41:27PM -0000, Thomas Gleixner wrote:
+> handle_prio_irq is almost identical with handle_fasteoi_irq. The
+> subtle differences are
+> 
+> 1) The handler checks for IRQ_DISABLED after the device handler has
+>    been called. In case it's set it masks the interrupt.
+> 
+> 2) When the handler sees IRQ_DISABLED on entry it masks the interupt
+>    in the same way as handle_fastoei_irq, but does not set the
+>    IRQ_PENDING flag.
+> 
+> 3) Instead of gracefully handling a recursive interrupt it crashes the
+>    kernel.
+> 
+> #1 is just relevant when a device handler calls disable_irq_nosync()
+>    and it does not matter whether we mask the interrupt right away or
+>    not. We handle lazy masking for disable_irq anyway, so there is no
+>    real reason to have this extra mask in place.
+> 
+> #2 will prevent the resend of a pending interrupt, which can result in
+>    lost interrupts for edge type interrupts. For level type interrupts
+>    the resend is a noop in the generic code. According to the
+>    datasheet all interrupts are level type, so marking them as such
+>    will result in the exact same behaviour as the private
+>    handle_prio_irq implementation.
+> 
+> #3 is just stupid. Crashing the kernel instead of handling a problem
+>    gracefully is just wrong. With the current semantics- all handlers
+>    run with interrupts disabled - this is even more wrong.
+> 
+> Rename ack to eoi, remove the unused mask_ack, switch to
+> handle_fasteoi_irq and remove the private function.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
+> Cc: linux-arm-kernel@lists.infradead.org
+I have no access to a ns9xxx machine, but this looks sane.
 
+Acked-by: Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
 
+Thanks
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-K�nig            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
