@@ -1,81 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755840Ab1BCM35 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 07:29:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20078 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752423Ab1BCM34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 07:29:56 -0500
-Date: Thu, 3 Feb 2011 14:29:48 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org
-Subject: [PATCHv2] Fix EDD3.0 data verification.
-Message-ID: <20110203122948.GX14984@redhat.com>
+	id S932069Ab1BCMph (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 07:45:37 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43470 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755753Ab1BCMpd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 07:45:33 -0500
+Date: Thu, 3 Feb 2011 12:45:21 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Arve Hj??nnev??g <arve@android.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Alexander Shishkin <virtuoso@slind.org>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: Re: [PATCH 1/5] ARM: etm: Don't require clock control
+Message-ID: <20110203124521.GK9810@sirena.org.uk>
+References: <1296701663-12168-1-git-send-email-arve@android.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1296701663-12168-1-git-send-email-arve@android.com>
+X-Cookie: 1 bulls, 3 cows.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check for nonzero path in edd_has_edd30() has no sense. First, it looks
-at the wrong memory. Device path starts at offset 30 of the info->params
-structure which is at offset 8 from the beginning of info structure, but
-code looks at info + 4 instead. This was correct when code was introduced,
-but around v2.6.4 three more fields were added to edd_info structure
-(commit 66b61a5c in history.git). Second, even if it will check correct
-memory it will always succeed since at offset 30 (params->key) there will
-be non-zero values otherwise previous check would fail.
+On Wed, Feb 02, 2011 at 06:54:19PM -0800, Arve Hj??nnev??g wrote:
+> If clk_get fail, assume the etb does not need a separate clock.
+> 
+> Signed-off-by: Arve Hj??nnev??g <arve@android.com>
 
-The patch replaces this bogus check with one that verifies checksum.
-
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
----
-v1->v2
-  use device path info length to calculate csum.
-
-diff --git a/drivers/firmware/edd.c b/drivers/firmware/edd.c
-index 96c25d9..f1b7f65 100644
---- a/drivers/firmware/edd.c
-+++ b/drivers/firmware/edd.c
-@@ -531,8 +531,8 @@ static int
- edd_has_edd30(struct edd_device *edev)
- {
- 	struct edd_info *info;
--	int i, nonzero_path = 0;
--	char c;
-+	int i;
-+	u8 csum = 0;
- 
- 	if (!edev)
- 		return 0;
-@@ -544,16 +544,16 @@ edd_has_edd30(struct edd_device *edev)
- 		return 0;
- 	}
- 
--	for (i = 30; i <= 73; i++) {
--		c = *(((uint8_t *) info) + i + 4);
--		if (c) {
--			nonzero_path++;
--			break;
--		}
--	}
--	if (!nonzero_path) {
-+
-+	/* We support only T13 spec */
-+	if (info->params.device_path_info_length != 44)
-+		return 0;
-+
-+	for (i = 30; i < info->params.device_path_info_length + 30; i++)
-+		csum += *(((u8 *)&info->params) + i);
-+
-+	if (csum)
- 		return 0;
--	}
- 
- 	return 1;
- }
---
-			Gleb.
+Would it not be cleaner for the affected platforms to ensure that
+clk_get() does the right thing here, for example by returning a dummy
+clock?  Otherwise we'll just silently carry on if we can't get a clock
+we were supposed to which doesn't seem ideal.
