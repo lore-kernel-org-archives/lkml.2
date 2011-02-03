@@ -1,82 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294Ab1BCHDj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 02:03:39 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:34859 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752979Ab1BCHDg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 02:03:36 -0500
-Date: Wed, 2 Feb 2011 23:03:26 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Peter Ujfalusi <peter.ujfalusi@nokia.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Timur Tabi <timur@freescale.com>,
-        linux-input@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: Re: [PATCH 12/19] twl4030: mfd_cell is now implicitly available to
- drivers
-Message-ID: <20110202230326.167fe873@queued.net>
-In-Reply-To: <20110203065339.GA5592@core.coreip.homeip.net>
-References: <20110202195417.228e2656@queued.net>
-	<20110202201522.72d37f1e@queued.net>
-	<20110203060521.GA25739@core.coreip.homeip.net>
-	<20110202223959.244b4a01@queued.net>
-	<20110203065339.GA5592@core.coreip.homeip.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753390Ab1BCHE2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 02:04:28 -0500
+Received: from mailgw10.se.ericsson.net ([193.180.251.61]:44192 "EHLO
+	mailgw10.se.ericsson.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752392Ab1BCHE0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 02:04:26 -0500
+X-AuditID: c1b4fb3d-b7b89ae0000036a3-e8-4d4a5378a621
+Subject: Re: linux-next: Tree for February 1 (ip_vs)
+From: Hans Schillstrom <hans.schillstrom@ericsson.com>
+To: Simon Horman <horms@verge.net.au>
+CC: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        netdev <netdev@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110202223159.GB2248@verge.net.au>
+References: <20110201153403.b3a251a3.sfr@canb.auug.org.au>
+	 <20110201091620.64536300.randy.dunlap@oracle.com>
+	 <20110202223159.GB2248@verge.net.au>
+Content-Type: text/plain
+Date: Thu, 3 Feb 2011 08:04:24 +0100
+Message-ID: <1296716664.6662.7.camel@seasc0214>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Feb 2011 22:53:39 -0800
-Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-
-> On Wed, Feb 02, 2011 at 10:39:59PM -0800, Andres Salomon wrote:
-> > On Wed, 2 Feb 2011 22:05:21 -0800
-> > Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+On Wed, 2011-02-02 at 23:31 +0100, Simon Horman wrote:
+> On Tue, Feb 01, 2011 at 09:16:20AM -0800, Randy Dunlap wrote:
+> > On Tue, 1 Feb 2011 15:34:03 +1100 Stephen Rothwell wrote:
 > > 
-> > > On Wed, Feb 02, 2011 at 08:15:22PM -0800, Andres Salomon wrote:
-> > > >  static int __devinit twl4030_vibra_probe(struct platform_device
-> > > > *pdev) {
-> > > > -	struct twl4030_codec_vibra_data *pdata =
-> > > > pdev->dev.platform_data;
-> > > > +	struct twl4030_codec_vibra_data *pdata =
-> > > > platform_get_drvdata(pdev);
+> > > Hi all,
 > > > 
-> > > No, device's drvdata belongs to _this_ driver, and it is supposed
-> > > to manage it and use as it sees fit.
-> > 
-> > Right, so it's used to pass data to the probe function; once the
-> > probe function has obtained the pdata pointer, it's free to do with
-> > it what it will.
+> > > Changes since 20110131:
 > > 
 > > 
-> > > 
-> > > Note platform_set_drvdata(pdev, info) later in this function along
-> > > with platform_set_drvdata(pdev, NULL) in twl4030_vibra_remove(),
-> > > which means that with your change you will be able to bind the
-> > > device only once.
-> > > 
+> > When CONFIG_IP_VS_PROTO_TCP is not set:
 > > 
-> > Hm, good point; if the driver is reloaded, the pdev that was
-> > created by mfd-core will have lost the pointer to pdata.
-> > 
-> > I wonder if I should be using mfd's driver_data instead. I used
-> > platform_data because a bunch of drivers had already made use of it
-> > to pass cell information..
+> > net/netfilter/ipvs/ip_vs_proto_sctp.c:1104: error: 'struct netns_ipvs' has no member named 'tcp_app_lock'
+> > net/netfilter/ipvs/ip_vs_proto_sctp.c:1104: error: 'struct netns_ipvs' has no member named 'tcp_app_lock'
 > 
-> Then they are doing it incorrectly. One possible way is to have parent
-> device carry relevant data in its drvdata and have children get it
-> from there.
+> Thanks, the following patch should resolve this problem.
+> Hans, could you verify this change?
 > 
+Ooops, 
 
-I believe some drivers are even using the parent device already.  See
-drivers/leds/leds-mc13783.c, for example, whose parent device drvdata
-is used to pass around a struct mc13783 to its children.  Sounds
-like a possibility, will need to look into it further.
+> The change is available at
+> git://git.kernel.org/pub/scm/linux/kernel/git/horms/lvs-test-2.6.git master
+> 
+> 
+> From: Simon Horman <horms@verge.net.au>
+> 
+> IPVS: Use correct lock in SCTP module
+> 
+> Use sctp_app_lock instead of tcp_app_lock in the SCTP protocol module.
+> 
+> This appears to be a typo introduced by the netns changes.
+> 
+> Cc: Hans Schillstrom <hans@schillstrom.com>
+> Signed-off-by: Simon Horman <horms@verge.net.au>
 
+Signed-off-by: Hans Schillstrom <hans.schillstrom@ericsson.com>
+
+> ---
+>  net/netfilter/ipvs/ip_vs_proto_sctp.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/net/netfilter/ipvs/ip_vs_proto_sctp.c b/net/netfilter/ipvs/ip_vs_proto_sctp.c
+> index fb2d04a..b027ccc 100644
+> --- a/net/netfilter/ipvs/ip_vs_proto_sctp.c
+> +++ b/net/netfilter/ipvs/ip_vs_proto_sctp.c
+> @@ -1101,7 +1101,7 @@ static void __ip_vs_sctp_init(struct net *net, struct ip_vs_proto_data *pd)
+>  	struct netns_ipvs *ipvs = net_ipvs(net);
+>  
+>  	ip_vs_init_hash_table(ipvs->sctp_apps, SCTP_APP_TAB_SIZE);
+> -	spin_lock_init(&ipvs->tcp_app_lock);
+> +	spin_lock_init(&ipvs->sctp_app_lock);
+>  	pd->timeout_table = ip_vs_create_timeout_table((int *)sctp_timeouts,
+>  							sizeof(sctp_timeouts));
+>  }
+
+Thanks
+Hans
 
