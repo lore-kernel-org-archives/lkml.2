@@ -1,292 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755766Ab1BCOjg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 09:39:36 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:46761 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751540Ab1BCOi7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 09:38:59 -0500
-X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=vcSF-WElStQA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=J1Y8HTJGAAAA:8 a=7d_E57ReAAAA:8 a=meVymXHHAAAA:8 a=EHK_w3V9RrLpCXxS0swA:9 a=zpAyxmqerD5z5r1qGksA:7 a=vWLjyvuHK1U0RWCUmtRgYaUBsH0A:4 a=jEp0ucaQiEUA:10 a=4N9Db7Z2_RYA:10 a=D6-X0JM3zdQA:10 a=jeBq3FmKZ4MA:10 a=FaJUWjo_lj2k3SXV:21 a=oyz_OUViCkInc539:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Message-Id: <20110203143856.823688931@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Thu, 03 Feb 2011 09:35:19 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [PATCH 1/3 v2] tracing: Replace trace_event struct array with pointer array
-References: <20110203143518.707423251@goodmis.org>
-Content-Disposition: inline; filename=0001-tracing-Replace-trace_event-struct-array-with-pointe.patch
+	id S1755825Ab1BCOs0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 09:48:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9848 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755282Ab1BCOsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 09:48:24 -0500
+Date: Thu, 3 Feb 2011 09:48:00 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>, tytso@mit.edu, djwong@us.ibm.com,
+        shli@kernel.org, neilb@suse.de, adilger.kernel@dilger.ca, jack@suse.cz,
+        linux-kernel@vger.kernel.org, kmannth@us.ibm.com, cmm@us.ibm.com,
+        linux-ext4@vger.kernel.org, rwheeler@redhat.com, hch@lst.de,
+        josef@redhat.com, jmoyer@redhat.com, vgoyal@redhat.com
+Subject: [PATCH v4 1/2] block: skip elevator data initialization for flush
+ requests
+Message-ID: <20110203144800.GA21160@redhat.com>
+References: <20110201185225.GT14211@htj.dyndns.org>
+ <1296600373-6906-1-git-send-email-snitzer@redhat.com>
+ <20110202225549.GA28109@redhat.com>
+ <20110203092823.GB2570@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110203092823.GB2570@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+Set REQ_SORTED, in the @rw_flags passed to the request allocator, for
+all requests that may be put on IO scheduler.  REQ_SORTED is not set for
+flush requests because they are never put on the IO scheduler.
 
-Currently the trace_event structures are placed in the _ftrace_events
-section, and at link time, the linker makes one large array of all
-the trace_event structures. On boot up, this array is read (much like
-the initcall sections) and the events are processed.
+Skip elevator data initialization during request allocation if
+REQ_SORTED is not set in @rw_flags passed to get_request().
 
-The problem is that there is no guarantee that gcc will place complex
-structures nicely together in an array format. Two structures in the
-same file may be placed awkwardly, because gcc has no clue that they
-are suppose to be in an array.
-
-A hack was used previous to force the alignment to 4, to pack the
-structures together. But this caused alignment issues with other
-architectures (sparc).
-
-Instead of packing the structures into an array, the structures' addresses
-are now put into the _ftrace_event section. As pointers are always the
-natural alignment, gcc should always pack them tightly together
-(otherwise initcall, extable, etc would also fail).
-
-By having the pointers to the structures in the section, we can still
-iterate the trace_events without causing unnecessary alignment problems
-with other architectures, or depending on the current behaviour of
-gcc that will likely change in the future just to tick us kernel developers
-off a little more.
-
-The _ftrace_event section is also moved into the .init.data section
-as it is now only needed at boot up.
-
-Suggested-by: David Miller <davem@davemloft.net>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Acked-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- include/asm-generic/vmlinux.lds.h |    7 +++----
- include/linux/module.h            |    2 +-
- include/linux/syscalls.h          |   10 ++++++----
- include/trace/ftrace.h            |   24 +++++++++++++-----------
- kernel/trace/trace_events.c       |   12 ++++++------
- kernel/trace/trace_export.c       |    6 +++---
- 6 files changed, 32 insertions(+), 29 deletions(-)
+ block/blk-core.c |   33 ++++++++++++++++++++++++++++-----
+ 1 file changed, 28 insertions(+), 5 deletions(-)
 
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index 6ebb810..f53708b 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -124,7 +124,8 @@
- #endif
- 
- #ifdef CONFIG_EVENT_TRACING
--#define FTRACE_EVENTS()	VMLINUX_SYMBOL(__start_ftrace_events) = .;	\
-+#define FTRACE_EVENTS()	. = ALIGN(8);					\
-+			VMLINUX_SYMBOL(__start_ftrace_events) = .;	\
- 			*(_ftrace_events)				\
- 			VMLINUX_SYMBOL(__stop_ftrace_events) = .;
- #else
-@@ -179,9 +180,6 @@
- 	TRACE_PRINTKS()							\
- 									\
- 	STRUCT_ALIGN();							\
--	FTRACE_EVENTS()							\
--									\
--	STRUCT_ALIGN();							\
- 	TRACE_SYSCALLS()
+v4: fixed bug where REQ_SORTED wasn't cleared on entry to get_request
+    - and Jens, yes I agree this is still a hack
+
+Index: linux-2.6/block/blk-core.c
+===================================================================
+--- linux-2.6.orig/block/blk-core.c
++++ linux-2.6/block/blk-core.c
+@@ -754,6 +754,9 @@ static void freed_request(struct request
  
  /*
-@@ -482,6 +480,7 @@
- 	KERNEL_CTORS()							\
- 	*(.init.rodata)							\
- 	MCOUNT_REC()							\
-+	FTRACE_EVENTS()							\
- 	DEV_DISCARD(init.rodata)					\
- 	CPU_DISCARD(init.rodata)					\
- 	MEM_DISCARD(init.rodata)					\
-diff --git a/include/linux/module.h b/include/linux/module.h
-index e7c6385..7695a30 100644
---- a/include/linux/module.h
-+++ b/include/linux/module.h
-@@ -389,7 +389,7 @@ struct module
- 	unsigned int num_trace_bprintk_fmt;
- #endif
- #ifdef CONFIG_EVENT_TRACING
--	struct ftrace_event_call *trace_events;
-+	struct ftrace_event_call **trace_events;
- 	unsigned int num_trace_events;
- #endif
- #ifdef CONFIG_FTRACE_MCOUNT_RECORD
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 18cd068..45508fe 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -128,28 +128,30 @@ extern struct trace_event_functions exit_syscall_print_funcs;
- 	static struct syscall_metadata					\
- 	__attribute__((__aligned__(4))) __syscall_meta_##sname;		\
- 	static struct ftrace_event_call __used				\
--	  __attribute__((__aligned__(4)))				\
--	  __attribute__((section("_ftrace_events")))			\
- 	  event_enter_##sname = {					\
- 		.name                   = "sys_enter"#sname,		\
- 		.class			= &event_class_syscall_enter,	\
- 		.event.funcs            = &enter_syscall_print_funcs,	\
- 		.data			= (void *)&__syscall_meta_##sname,\
- 	};								\
-+	static struct ftrace_event_call __used				\
-+	  __attribute__((section("_ftrace_events")))			\
-+	 *__event_enter_##sname = &event_enter_##sname;			\
- 	__TRACE_EVENT_FLAGS(enter_##sname, TRACE_EVENT_FL_CAP_ANY)
- 
- #define SYSCALL_TRACE_EXIT_EVENT(sname)					\
- 	static struct syscall_metadata					\
- 	__attribute__((__aligned__(4))) __syscall_meta_##sname;		\
- 	static struct ftrace_event_call __used				\
--	  __attribute__((__aligned__(4)))				\
--	  __attribute__((section("_ftrace_events")))			\
- 	  event_exit_##sname = {					\
- 		.name                   = "sys_exit"#sname,		\
- 		.class			= &event_class_syscall_exit,	\
- 		.event.funcs		= &exit_syscall_print_funcs,	\
- 		.data			= (void *)&__syscall_meta_##sname,\
- 	};								\
-+	static struct ftrace_event_call __used				\
-+	  __attribute__((section("_ftrace_events")))			\
-+	*__event_exit_##sname = &event_exit_##sname;			\
- 	__TRACE_EVENT_FLAGS(exit_##sname, TRACE_EVENT_FL_CAP_ANY)
- 
- #define SYSCALL_METADATA(sname, nb)				\
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index e16610c..3e68366 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -446,14 +446,16 @@ static inline notrace int ftrace_get_offsets_##call(			\
-  *	.reg			= ftrace_event_reg,
-  * };
-  *
-- * static struct ftrace_event_call __used
-- * __attribute__((__aligned__(4)))
-- * __attribute__((section("_ftrace_events"))) event_<call> = {
-+ * static struct ftrace_event_call event_<call> = {
-  *	.name			= "<call>",
-  *	.class			= event_class_<template>,
-  *	.event			= &ftrace_event_type_<call>,
-  *	.print_fmt		= print_fmt_<call>,
-  * };
-+ * // its only safe to use pointers when doing linker tricks to
-+ * // create an array.
-+ * static struct ftrace_event_call __used
-+ * __attribute__((section("_ftrace_events"))) *__event_<call> = &event_<call>;
-  *
+  * Get a free request, queue_lock must be held.
++ * @rw_flags: may be overloaded to convey additional request features;
++ * any overloaded feature flags must be cleared immediately.
++ *
+  * Returns NULL on failure, with queue_lock held.
+  * Returns !NULL on success, with queue_lock *not held*.
   */
+@@ -764,7 +767,11 @@ static struct request *get_request(struc
+ 	struct request_list *rl = &q->rq;
+ 	struct io_context *ioc = NULL;
+ 	const bool is_sync = rw_is_sync(rw_flags) != 0;
+-	int may_queue, priv;
++	const bool init_elv_data = !!(rw_flags & REQ_SORTED);
++	int may_queue, priv = 0;
++
++	if (init_elv_data)
++		rw_flags &= ~REQ_SORTED;
  
-@@ -579,28 +581,28 @@ static struct ftrace_event_class __used event_class_##call = {		\
- #undef DEFINE_EVENT
- #define DEFINE_EVENT(template, call, proto, args)			\
- 									\
--static struct ftrace_event_call __used					\
--__attribute__((__aligned__(4)))						\
--__attribute__((section("_ftrace_events"))) event_##call = {		\
-+static struct ftrace_event_call __used event_##call = {			\
- 	.name			= #call,				\
- 	.class			= &event_class_##template,		\
- 	.event.funcs		= &ftrace_event_type_funcs_##template,	\
- 	.print_fmt		= print_fmt_##template,			\
--};
-+};									\
-+static struct ftrace_event_call __used					\
-+__attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
+ 	may_queue = elv_may_queue(q, rw_flags);
+ 	if (may_queue == ELV_MQUEUE_NO)
+@@ -808,9 +815,14 @@ static struct request *get_request(struc
+ 	rl->count[is_sync]++;
+ 	rl->starved[is_sync] = 0;
  
- #undef DEFINE_EVENT_PRINT
- #define DEFINE_EVENT_PRINT(template, call, proto, args, print)		\
- 									\
- static const char print_fmt_##call[] = print;				\
- 									\
--static struct ftrace_event_call __used					\
--__attribute__((__aligned__(4)))						\
--__attribute__((section("_ftrace_events"))) event_##call = {		\
-+static struct ftrace_event_call __used event_##call = {			\
- 	.name			= #call,				\
- 	.class			= &event_class_##template,		\
- 	.event.funcs		= &ftrace_event_type_funcs_##call,	\
- 	.print_fmt		= print_fmt_##call,			\
--}
-+};									\
-+static struct ftrace_event_call __used					\
-+__attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
+-	priv = !test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags);
+-	if (priv)
+-		rl->elvpriv++;
++	/*
++	 * Only initialize elevator data if IO scheduler may be used.
++	 */
++	if (init_elv_data) {
++		priv = !test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags);
++		if (priv)
++			rl->elvpriv++;
++	}
  
- #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
+ 	if (blk_queue_io_stat(q))
+ 		rw_flags |= REQ_IO_STAT;
+@@ -1197,6 +1209,7 @@ static int __make_request(struct request
+ 	const unsigned short prio = bio_prio(bio);
+ 	const bool sync = !!(bio->bi_rw & REQ_SYNC);
+ 	const bool unplug = !!(bio->bi_rw & REQ_UNPLUG);
++	const bool flush = !!(bio->bi_rw & (REQ_FLUSH | REQ_FUA));
+ 	const unsigned long ff = bio->bi_rw & REQ_FAILFAST_MASK;
+ 	int where = ELEVATOR_INSERT_SORT;
+ 	int rw_flags;
+@@ -1210,7 +1223,7 @@ static int __make_request(struct request
  
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 35fde09..5f499e0 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1284,7 +1284,7 @@ trace_create_file_ops(struct module *mod)
- static void trace_module_add_events(struct module *mod)
- {
- 	struct ftrace_module_file_ops *file_ops = NULL;
--	struct ftrace_event_call *call, *start, *end;
-+	struct ftrace_event_call **call, **start, **end;
+ 	spin_lock_irq(q->queue_lock);
  
- 	start = mod->trace_events;
- 	end = mod->trace_events + mod->num_trace_events;
-@@ -1297,7 +1297,7 @@ static void trace_module_add_events(struct module *mod)
- 		return;
- 
- 	for_each_event(call, start, end) {
--		__trace_add_event_call(call, mod,
-+		__trace_add_event_call(*call, mod,
- 				       &file_ops->id, &file_ops->enable,
- 				       &file_ops->filter, &file_ops->format);
+-	if (bio->bi_rw & (REQ_FLUSH | REQ_FUA)) {
++	if (flush) {
+ 		where = ELEVATOR_INSERT_FLUSH;
+ 		goto get_rq;
  	}
-@@ -1367,8 +1367,8 @@ static struct notifier_block trace_module_nb = {
- 	.priority = 0,
- };
+@@ -1293,6 +1306,16 @@ get_rq:
+ 		rw_flags |= REQ_SYNC;
  
--extern struct ftrace_event_call __start_ftrace_events[];
--extern struct ftrace_event_call __stop_ftrace_events[];
-+extern struct ftrace_event_call *__start_ftrace_events[];
-+extern struct ftrace_event_call *__stop_ftrace_events[];
- 
- static char bootup_event_buf[COMMAND_LINE_SIZE] __initdata;
- 
-@@ -1384,7 +1384,7 @@ __setup("trace_event=", setup_trace_event);
- 
- static __init int event_trace_init(void)
- {
--	struct ftrace_event_call *call;
-+	struct ftrace_event_call **call;
- 	struct dentry *d_tracer;
- 	struct dentry *entry;
- 	struct dentry *d_events;
-@@ -1430,7 +1430,7 @@ static __init int event_trace_init(void)
- 		pr_warning("tracing: Failed to allocate common fields");
- 
- 	for_each_event(call, __start_ftrace_events, __stop_ftrace_events) {
--		__trace_add_event_call(call, NULL, &ftrace_event_id_fops,
-+		__trace_add_event_call(*call, NULL, &ftrace_event_id_fops,
- 				       &ftrace_enable_fops,
- 				       &ftrace_event_filter_fops,
- 				       &ftrace_event_format_fops);
-diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
-index 4b74d71..bbeec31 100644
---- a/kernel/trace/trace_export.c
-+++ b/kernel/trace/trace_export.c
-@@ -161,13 +161,13 @@ struct ftrace_event_class event_class_ftrace_##call = {			\
- 	.fields			= LIST_HEAD_INIT(event_class_ftrace_##call.fields),\
- };									\
- 									\
--struct ftrace_event_call __used						\
--__attribute__((__aligned__(4)))						\
--__attribute__((section("_ftrace_events"))) event_##call = {		\
-+struct ftrace_event_call __used event_##call = {			\
- 	.name			= #call,				\
- 	.event.type		= etype,				\
- 	.class			= &event_class_ftrace_##call,		\
- 	.print_fmt		= print,				\
- };									\
-+struct ftrace_event_call __used						\
-+__attribute__((section("_ftrace_events"))) *__event_##call = &event_##call;
- 
- #include "trace_entries.h"
--- 
-1.7.2.3
-
-
+ 	/*
++	 * Set REQ_SORTED for all requests that may be put on IO scheduler.
++	 * The request allocator's IO scheduler initialization will be skipped
++	 * if REQ_SORTED is not set -- elv_set_request() is avoided so that
++	 * that the allocated request's elevator_private pointers are not
++	 * initialized and that space can be used by flush request data.
++	 */
++	if (!flush)
++		rw_flags |= REQ_SORTED;
++
++	/*
+ 	 * Grab a free request. This is might sleep but can not fail.
+ 	 * Returns with the queue unlocked.
+ 	 */
