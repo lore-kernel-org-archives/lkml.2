@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932507Ab1BCTJc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 14:09:32 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:42496 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932430Ab1BCTJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 14:09:30 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Takashi Iwai <tiwai@suse.de>
-Subject: Re: 2.6.38-rc3-git1: Reported regressions 2.6.36 -> 2.6.37
-Date: Thu, 3 Feb 2011 20:09:16 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc3+; KDE/4.4.4; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Carlos R. Mafra" <crmafra2@gmail.com>,
-        Keith Packard <keithp@keithp.com>, Dave Airlie <airlied@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>
-References: <e9vOd5LzdBK.A.dyD.h6eSNB@chimera> <AANLkTikELiGS+fM5WguZS=Fo-sSXmej1UnKWqCFmnE0k@mail.gmail.com> <s5haaid3xos.wl%tiwai@suse.de>
-In-Reply-To: <s5haaid3xos.wl%tiwai@suse.de>
+	id S932519Ab1BCTOj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 14:14:39 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54395 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932221Ab1BCTOi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 14:14:38 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102032009.17100.rjw@sisk.pl>
+In-Reply-To: <1296757637.4418.1482.camel@sbsiddha-MOBL3.sc.intel.com>
+References: <1296677247.4418.103.camel@sbsiddha-MOBL3.sc.intel.com>
+ <AANLkTi=P+aoY4GY32xa8D8gHbDP73QpPmzvKbB4VM7g2@mail.gmail.com>
+ <AANLkTinvQatNF0ZJqmvuKYNq7oKXqfR5Ke1FuaSLFNEF@mail.gmail.com> <1296757637.4418.1482.camel@sbsiddha-MOBL3.sc.intel.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 3 Feb 2011 11:13:49 -0800
+Message-ID: <AANLkTimuSV273ksidN_vQ4o1rLr6D--9Q3dNnBiB13-K@mail.gmail.com>
+Subject: Re: [patch] x86, mm: avoid stale tlb entries by clearing prev
+ mm_cpumask after switching mm
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, February 03, 2011, Takashi Iwai wrote:
-> At Thu, 3 Feb 2011 07:42:05 -0800,
-> Linus Torvalds wrote:
-> > 
-> > On Thu, Feb 3, 2011 at 3:23 AM, Carlos R. Mafra <crmafra2@gmail.com> wrote:
-> > > On Thu  3.Feb'11 at  1:03:41 +0100, Rafael J. Wysocki wrote:
-> > >>
-> > >> If you know of any other unresolved post-2.6.36 regressions, please let us know
-> > >> either and we'll add them to the list.  Also, please let us know if any
-> > >> of the entries below are invalid.
-> > >
-> > > I'm sorry if I'm overlooking something, but as far as I can see the regression
-> > > reported here:
-> > >
-> > > https://lkml.org/lkml/2011/1/24/457
-> > >
-> > > is not in the list (update on that report: reverting that commit on top of
-> > > 2.6.37 fixes the issue).
-> > 
-> > Ok, added Keith and Dave to the cc, since they are the signers of that commit.
-> > 
-> > > After some time, I also ended up finding an earlier report in the kernel bugzilla
-> > > which I think is the same regression (it was bisected to the same commit):
-> > >
-> > > https://bugzilla.kernel.org/show_bug.cgi?id=24982
-> > >
-> > > but I do not see it in the list either, even though it's marked as a
-> > > regression in the bugzilla.
-> > >
-> > > The issue was also present in 2.6.38-rc2 last time I tested.
-> > 
-> > Just to confirm, can you also check -rc3? I'm pretty sure nothing has
-> > changed, but there were a few drm patches after -rc2, so it's alsways
-> > good to double-check.
-> 
-> The problem I reported in the bugzilla above is still present in
-> 2.6.38-rc3.  I'm pretty sure that's the same issue as Carlos' case.
+On Thu, Feb 3, 2011 at 10:27 AM, Suresh Siddha
+<suresh.b.siddha@intel.com> wrote:
+>> Actually, for normal entries I could well imagine the code that wants
+>> to do a flush before freeing the page caring.
+>>
+>> So I think the _patch_ may be correct, but the changelog is definitely
+>> not correct, and needs serious surgery to explain what the bug that
+>> this fixes actually is.
+>
+> Linus, I updated the changelog to explain the failing case in more
+> detail. Please review. Thanks.
 
-I added https://bugzilla.kernel.org/show_bug.cgi?id=24982 to the list of
-post-2.6.36 regressions for further tracking.
+So this explains the bug, and the explanation looks good. Except for
+one (large) detail: it has nothing to do with "stale" entries.
 
-Thanks,
-Rafael
+The problematic entries are simply _bogus_, not stale. They were never
+valid to begin with. So the subject and the initial part is very
+misleading.
+
+The global bit seems to be largely irrelevant too, except for the fact
+that a global bogus entry obviously stays around and causes way more
+trouble. But I could imagine that there could be trouble with entries
+that have conflicting PSE or cacheability issues (causing machine
+checks or something) even if they are ephemeral and not global.
+
+                                  Linus
