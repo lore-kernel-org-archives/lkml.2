@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550Ab1BCED4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 23:03:56 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47382 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754971Ab1BCEDz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 23:03:55 -0500
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=P+aoY4GY32xa8D8gHbDP73QpPmzvKbB4VM7g2@mail.gmail.com>
-References: <1296677247.4418.103.camel@sbsiddha-MOBL3.sc.intel.com> <AANLkTi=P+aoY4GY32xa8D8gHbDP73QpPmzvKbB4VM7g2@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 2 Feb 2011 20:03:30 -0800
-Message-ID: <AANLkTinvQatNF0ZJqmvuKYNq7oKXqfR5Ke1FuaSLFNEF@mail.gmail.com>
-Subject: Re: [patch] x86, mm: avoid stale tlb entries by clearing prev
- mm_cpumask after switching mm
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755571Ab1BCEEV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 23:04:21 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:48081 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754971Ab1BCEEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 23:04:20 -0500
+Date: Wed, 2 Feb 2011 20:04:17 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Phil Blundell <pb@handhelds.org>
+Subject: [PATCH 05/19] asic3: mfd_cell is now implicitly available to
+ drivers
+Message-ID: <20110202200417.019f42ca@queued.net>
+In-Reply-To: <20110202195417.228e2656@queued.net>
+References: <20110202195417.228e2656@queued.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 2, 2011 at 5:55 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Wed, Feb 2, 2011 at 12:07 PM, Suresh Siddha
-> <suresh.b.siddha@intel.com> wrote:
->> For the prev mm that is handing over the cpu to another mm, clear the cpu
->> from the mm_cpumask(prev) after the cr3 is changed.
->>
->> Otherwise, clearing the mm_cpumask early will avoid the flush tlb IPI's while
->> the cr3 and TLB's are still pointing to the prev mm. And this window can lead
->> to the stale (global) TLB entries.
->
-> Why?
->
-> This looks pointless. Explain why this matters. Global entries are
-> never per-mm, so any global entries can never care about the
-> mm_cpumask.
->
-> And for any normal entries it doesn't matter if the IPI gets lost,
-> since the TLB will be flushed (immediately afterwards) by the cr3
-> write.
 
-Actually, for normal entries I could well imagine the code that wants
-to do a flush before freeing the page caring.
+No need to explicitly set the cell's platform_data/data_size.
 
-So I think the _patch_ may be correct, but the changelog is definitely
-not correct, and needs serious surgery to explain what the bug that
-this fixes actually is.
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ drivers/mfd/asic3.c |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
-                         Linus
+diff --git a/drivers/mfd/asic3.c b/drivers/mfd/asic3.c
+index 6a1f940..71d2901 100644
+--- a/drivers/mfd/asic3.c
++++ b/drivers/mfd/asic3.c
+@@ -810,9 +810,6 @@ static int __init asic3_mfd_probe(struct platform_device *pdev,
+ 	ds1wm_resources[0].start >>= asic->bus_shift;
+ 	ds1wm_resources[0].end   >>= asic->bus_shift;
+ 
+-	asic3_cell_ds1wm.platform_data = &asic3_cell_ds1wm;
+-	asic3_cell_ds1wm.data_size = sizeof(asic3_cell_ds1wm);
+-
+ 	/* MMC */
+ 	asic->tmio_cnf = ioremap((ASIC3_SD_CONFIG_BASE >> asic->bus_shift) +
+ 				 mem_sdio->start, 0x400 >> asic->bus_shift);
+@@ -824,9 +821,6 @@ static int __init asic3_mfd_probe(struct platform_device *pdev,
+ 	asic3_mmc_resources[0].start >>= asic->bus_shift;
+ 	asic3_mmc_resources[0].end   >>= asic->bus_shift;
+ 
+-	asic3_cell_mmc.platform_data = &asic3_cell_mmc;
+-	asic3_cell_mmc.data_size = sizeof(asic3_cell_mmc);
+-
+ 	ret = mfd_add_devices(&pdev->dev, pdev->id,
+ 			&asic3_cell_ds1wm, 1, mem, asic->irq_base);
+ 	if (ret < 0)
+-- 
+1.7.2.3
+
