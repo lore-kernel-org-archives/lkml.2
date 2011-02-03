@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752870Ab1BCVIX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 16:08:23 -0500
-Received: from lo.gmane.org ([80.91.229.12]:37481 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752739Ab1BCVIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 16:08:22 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-Mail-Followup-To: linux-kernel@vger.kernel.org
-To: linux-kernel@vger.kernel.org
-From: Nikolaus Rath <Nikolaus@rath.org>
-Subject: Reversing a memory mapping?
-Date: Thu, 03 Feb 2011 15:50:21 -0500
-Message-ID: <87k4hgn8qa.fsf@inspiron.ap.columbia.edu>
+	id S1752823Ab1BCVJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 16:09:29 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51368
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752426Ab1BCVJ2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 16:09:28 -0500
+Date: Thu, 03 Feb 2011 13:10:04 -0800 (PST)
+Message-Id: <20110203.131004.226772735.davem@davemloft.net>
+To: jengelh@medozas.de
+Cc: netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Kernel crash with repeated NF invocation
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LNX.2.01.1102031605330.21536@obet.zrqbmnf.qr>
+References: <alpine.LNX.2.01.1102031605330.21536@obet.zrqbmnf.qr>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: ebox.rath.org
-Mail-Copies-To: never
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-Cancel-Lock: sha1:LabRsJiDhcxHBqSEUkeDjmUGJTs=
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Jan Engelhardt <jengelh@medozas.de>
+Date: Thu, 3 Feb 2011 16:19:56 +0100 (CET)
 
-I am trying to outsmart the proprietary nvidia driver to get my own
-driver to access to a memory region set up by the nvidia driver.
+> I remember there being a kernel config option 
+> (CONFIG_DEBUG_STACKOVERFLOW) that would emit messages 
+> similar to
+> "process foobar (12345) used greatest stack depth: 2042" --
+> would that also work for softirqs?
 
-Strace tells me that the nividia userspace library is calling
+The kernel stack tracer is your best bet right now, it's easy to
+enable, it's something like just writing "1" to the /sys filesystem
+file that controls it.
 
-mmap2(NULL, 1048576, PROT_READ|PROT_WRITE, MAP_SHARED, 5, 0x35375)
+Enable CONFIG_STACK_TRACER in your config.
 
-to get a userspace pointer to the kernel memory that I'm interested in.
+config STACK_TRACER
+	bool "Trace max stack"
+	depends on HAVE_FUNCTION_TRACER
+	select FUNCTION_TRACER
+	select STACKTRACE
+	select KALLSYMS
+	help
+	  This special tracer records the maximum stack footprint of the
+	  kernel and displays it in /sys/kernel/debug/tracing/stack_trace.
 
-Is there a way that my own kernel module can "reverse" this mmap call?
-I.e. given the userspace pointer, how do I get access to the physical
-location of the memory that has been mapped?
+	  This tracer works by hooking into every function call that the
+	  kernel executes, and keeping a maximum stack depth value and
+	  stack-trace saved.  If this is configured with DYNAMIC_FTRACE
+	  then it will not have any overhead while the stack tracer
+	  is disabled.
 
-I know that the region is pinned and used as a DMA buffer for
-communication with the GPU. I want my own device to do DMA transfers to
-and from the same location.
+	  To enable the stack tracer on bootup, pass in 'stacktrace'
+	  on the kernel command line.
 
+	  The stack tracer can also be enabled or disabled via the
+	  sysctl kernel.stack_tracer_enabled
 
-
-Thanks,
-
-   -Nikolaus
-
--- 
- »Time flies like an arrow, fruit flies like a Banana.«
-
-  PGP fingerprint: 5B93 61F8 4EA2 E279 ABF6  02CF A9AD B7F8 AE4E 425C
+	  Say N if unsure.
 
