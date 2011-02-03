@@ -1,39 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749Ab1BCVEZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 16:04:25 -0500
-Received: from mga11.intel.com ([192.55.52.93]:48224 "EHLO mga11.intel.com"
+	id S1752693Ab1BCVGa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 16:06:30 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:36205 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752247Ab1BCVEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 16:04:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,422,1291622400"; 
-   d="scan'208";a="654195215"
-Message-ID: <4D4B1857.4050504@linux.intel.com>
-Date: Thu, 03 Feb 2011 13:04:23 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-Organization: Intel Open Source Technology Center
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+	id S1752247Ab1BCVG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 16:06:29 -0500
+Date: Thu, 3 Feb 2011 22:06:16 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>
+Subject: Re: [patch] x86, mm: avoid stale tlb entries by clearing prev
+ mm_cpumask after switching mm
+Message-ID: <20110203210616.GA17471@elte.hu>
+References: <1296677247.4418.103.camel@sbsiddha-MOBL3.sc.intel.com>
+ <AANLkTi=P+aoY4GY32xa8D8gHbDP73QpPmzvKbB4VM7g2@mail.gmail.com>
+ <AANLkTinvQatNF0ZJqmvuKYNq7oKXqfR5Ke1FuaSLFNEF@mail.gmail.com>
+ <1296757637.4418.1482.camel@sbsiddha-MOBL3.sc.intel.com>
+ <AANLkTimuSV273ksidN_vQ4o1rLr6D--9Q3dNnBiB13-K@mail.gmail.com>
+ <1296761671.4418.1558.camel@sbsiddha-MOBL3.sc.intel.com>
+ <AANLkTimjYAYPLf=QG22hFHm7yhABCQj7q=kOpB6HcB5e@mail.gmail.com>
+ <1296764404.4418.1634.camel@sbsiddha-MOBL3.sc.intel.com>
 MIME-Version: 1.0
-To: Andres Salomon <dilinger@queued.net>
-CC: Grant Likely <grant.likely@secretlab.ca>, Daniel Drake <dsd@laptop.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, sodaville@linutronix.de
-Subject: Re: [sodaville] [PATCH v2 01/15] x86/e820: remove conditional early
- mapping in parse_e820_ext
-References: <1292600033-12271-1-git-send-email-bigeasy@linutronix.de>	<1292600033-12271-2-git-send-email-bigeasy@linutronix.de>	<20101230083745.GC11721@angua.secretlab.ca>	<20110104130839.GA21359@www.tglx.de>	<20110114081446.GC21832@angua.secretlab.ca>	<20110114105709.GA7562@www.tglx.de>	<20110114134345.712e2e29@queued.net>	<AANLkTimyrGkqtjo99+aV+N4KcrC2_3PprpRD2tRo_NtC@mail.gmail.com>	<4D4808D2.3080701@linutronix.de>	<20110201103617.2c3aa118@debxo>	<AANLkTi=kXaD0qhpHx30tFKN92pmAESSrXE1mz_55yuQO@mail.gmail.com>	<20110203104051.12cdfbe5@queued.net>	<4D4B058F.9030208@linux.intel.com>	<20110203120942.1a8fc98c@queued.net>	<4D4B0D18.9010309@linux.intel.com> <20110203123946.701f74a2@queued.net>
-In-Reply-To: <20110203123946.701f74a2@queued.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1296764404.4418.1634.camel@sbsiddha-MOBL3.sc.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2011 12:39 PM, Andres Salomon wrote:
-> Sorry if I hadn't made that clear, but that's what I was saying.  Go
-> ahead with the x86 DT stuff, we'll deal with OLPC breakage later.
 
-Ah, ok, cool.
+* Suresh Siddha <suresh.b.siddha@intel.com> wrote:
 
-	-hpa
+> On Thu, 2011-02-03 at 11:48 -0800, Linus Torvalds wrote:
+> > On Thu, Feb 3, 2011 at 11:34 AM, Suresh Siddha
+> > <suresh.b.siddha@intel.com> wrote:
+> > >
+> > > True. 'stale' is the wrong word. Do you want me to send a corrected one
+> > > by replacing it with 'bogus'?
+> > 
+> > Please.
+> > 
+> > > my understanding is that unless we end up using that TLB entry, we will
+> > > not have the issues like machine checks due to cacheability issues etc.
+> > > If it is not global, upcoming cr3 change will flush it and meanwhile I
+> > > don't think there is a scenario where we refer to these user-addresses.
+> > 
+> > Quite possible. The situation I envisioned was the same speculative
+> > memory access that causes the TLB fill to also cause a cache fill -
+> > for a noncacheable region (because the bogus TLB entry sets the random
+> > address to cacheable).
+> > 
+> > And then what happens when somebody else accesses the same memory
+> > noncacheably (through a valid TLB entry), and finds it in the cache?
+> > 
+> > I dunno. Not really important. The important part is the "possible
+> > random bogus TLB entry", the fact that the CPU can act strangely after
+> > that is pretty much a given.
+> > 
+> 
+> Ok. Updated patch appended.
 
+Linus, the patch fine to me too.
+
+Acked-by: Ingo Molnar <mingo@elte.hu>
+
+Do you want to apply it or should I?
+
+Thanks,
+
+	Ingo
