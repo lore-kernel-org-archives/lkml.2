@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756738Ab1BCUBI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 15:01:08 -0500
-Received: from claw.goop.org ([74.207.240.146]:60804 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754986Ab1BCUBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 15:01:07 -0500
-Message-ID: <4D4B097C.5050405@goop.org>
-Date: Thu, 03 Feb 2011 12:01:00 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1756740Ab1BCUCF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 15:02:05 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:53671 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756342Ab1BCUCE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 15:02:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=GKQDVjugfKCGID84Y8j1zIhAKqpQviXGlaxA5uWUVlTZBquOubZkTlqSXfxPrIBnW6
+         fhlCqgC7Vg6ggk8p+F2w==
+Date: Thu, 3 Feb 2011 12:01:55 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>, Adam Belay <abelay@mit.edu>,
+        Bjorn Helgaas <bjorn.helgaas@hp.com>
+cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/4] pnp: only assign IORESOURCE_DMA if CONFIG_ISA_DMA_API
+ is enabled
+In-Reply-To: <alpine.DEB.2.00.1101261912200.7809@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1102031201430.27201@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1101261912200.7809@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "Pan, Jacob jun" <jacob.jun.pan@intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Andres Salomon <dilinger@queued.net>
-Subject: Re: RFC: can we kill the KEEP_SEGMENTS bzImage flag?
-References: <4D4AE3AE.7000009@zytor.com>
-In-Reply-To: <4D4AE3AE.7000009@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2011 09:19 AM, H. Peter Anvin wrote:
->>   Bit 6 (write): KEEP_SEGMENTS
->>         Protocol: 2.07+
->>         - If 0, reload the segment registers in the 32bit entry point.
->>         - If 1, do not reload the segment registers in the 32bit entry point.
->>                 Assume that %cs %ds %ss %es are all set to flat segments with
->>                 a base of 0 (or the equivalent for their environment).
-> Does anything actually rely on this bit or can we kill it?  I think it
-> was added as a crutch for paravirtualization, but I'm being told it is
-> not used...
+On Wed, 26 Jan 2011, David Rientjes wrote:
 
-We originally added it with the idea that we might change the Xen boot
-sequence to just enter via the normal entrypoint before wandering off to
-the Xen paravirt path - mostly as a way of making use of the bzImage's
-own decompresser rather than having to have that externally.
+> IORESOURCE_DMA cannot be assigned without utilizing the interface
+> provided by CONFIG_ISA_DMA_API, specifically request_dma() and
+> free_dma().  Thus, there's a strict dependency on the config option and
+> limits IORESOURCE_DMA only to architectures that support ISA-style DMA.
+> 
+> ia64 is not one of those architectures, so pnp_check_dma() no longer
+> needs to be special-cased for that architecture.
+> 
+> pnp_assign_resources() will now return -EINVAL if IORESOURCE_DMA is
+> attempted on such a kernel.
+> 
+> Signed-off-by: David Rientjes <rientjes@google.com>
 
-But we never ended up doing that, so the paravirt boot path is unused by
-Xen, and I don't see that changing.
-
-I think VMI may have used it, but that's moot now.
-
-So I think lguest is the only potential user, and I'm not sure if it
-actually does.
-
-    J
+Are there any objections to merging this?
