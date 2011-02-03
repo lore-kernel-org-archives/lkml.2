@@ -1,36 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932086Ab1BCMKa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 07:10:30 -0500
-Received: from stinky.trash.net ([213.144.137.162]:55144 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756333Ab1BCMK2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 07:10:28 -0500
-Message-ID: <4D4A9B30.8010805@trash.net>
-Date: Thu, 03 Feb 2011 13:10:24 +0100
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1755172Ab1BCMYE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 07:24:04 -0500
+Received: from smtp.nokia.com ([147.243.1.48]:63688 "EHLO mgw-sa02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751611Ab1BCMYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 07:24:03 -0500
+Message-ID: <4D4A9E52.7010000@nokia.com>
+Date: Thu, 03 Feb 2011 14:23:46 +0200
+From: Peter Ujfalusi <peter.ujfalusi@nokia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110103 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Simon Horman <horms@verge.net.au>
-CC: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lvs-devel@vger.kernel.org,
-        Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: [GIT PULL] IPVS SCTP lock fix
-References: <1296733925-23131-1-git-send-email-horms@verge.net.au>
-In-Reply-To: <1296733925-23131-1-git-send-email-horms@verge.net.au>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+To: ext Andres Salomon <dilinger@queued.net>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Timur Tabi <timur@freescale.com>,
+        linux-input@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 12/19] twl4030: mfd_cell is now implicitly available to
+ drivers
+References: <20110202195417.228e2656@queued.net>	<20110202201522.72d37f1e@queued.net>	<20110203060521.GA25739@core.coreip.homeip.net>	<20110202223959.244b4a01@queued.net>	<20110203065339.GA5592@core.coreip.homeip.net> <20110202230326.167fe873@queued.net>
+In-Reply-To: <20110202230326.167fe873@queued.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 03.02.2011 12:52, schrieb Simon Horman:
-> Hi Patrick,
-> 
-> please consider pulling
-> git://git.kernel.org/pub/scm/linux/kernel/git/horms/lvs-test-2.6.git for-patrick
-> which contains a single patch to the IPVS SCTP module so that
-> it uses the correct lock.
+On 02/03/11 09:03, ext Andres Salomon wrote:
+> I believe some drivers are even using the parent device already.  See
+> drivers/leds/leds-mc13783.c, for example, whose parent device drvdata
+> is used to pass around a struct mc13783 to its children.  Sounds
+> like a possibility, will need to look into it further.
 
-Pulled, thanks Simon.
+I briefly looked at the drivers/leds/leds-mc13783.c, and the related
+drivers/mfd/mc13xxx.c drivers.
+This also uses the same way to pass the needed platform data to it's
+child devices, as the twl4030 (audio/codec/vibra) MFD does.
+Also the leds-mc13783.c does not actually uses any config values from
+the parent dev. The mc13783_led->master is needed to be locally stored,
+since the led driver calls functions from the MFD core, which needs that
+as parameter.
+
+I don't really see any need to change the drivers in this regard,
+however it would be nicer, if we replace for example the:
+	struct twl4030_codec_data *pdata = pdev->dev.platform_data;
+with
+	struct twl4030_codec_data *pdata = dev_get_platdata(&pdev->dev);
+
+The information passed to the vibra, and ASoC codec driver is for them
+only, so there is no need for the vibra driver to know anything about
+things, which concerns only the ASoC codec driver.
+
+-- 
+Péter
