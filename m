@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756262Ab1BCL3W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 06:29:22 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:22251 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756194Ab1BCL3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 06:29:21 -0500
-From: Andrey Vagin <avagin@openvz.org>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, Andrey Vagin <avagin@openvz.org>
-Subject: [PATCH] fs: Correctly check d_alloc_name() return code in devpts_pty_new
-Date: Thu,  3 Feb 2011 14:29:11 +0300
-Message-Id: <1296732551-10235-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.2.1
+	id S1756279Ab1BCLaO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 06:30:14 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:39630 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756240Ab1BCLaM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 06:30:12 -0500
+Date: Thu, 3 Feb 2011 12:31:17 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Greg KH <gregkh@suse.de>, "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        Greg Kroah-Hartman <greg@kroah.com>, x86 <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] AMD microcode fixes
+Message-ID: <20110203113117.GA24755@aftab>
+References: <20110131133024.GC32230@aftab>
+ <20110203103548.GA14601@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110203103548.GA14601@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-d_alloc_name return NULL in case error, but we expect errno in
-devpts_pty_new.
+On Thu, Feb 03, 2011 at 05:35:48AM -0500, Ingo Molnar wrote:
+> 
+> * Borislav Petkov <bp@amd64.org> wrote:
+> 
+> > There's one out-of-tree change to <drivers/base/sys.c> which Greg hasn't
+> > explicitly acked yet but judging by his silence he has nothing against
+> > it :).
+> 
+> Hm, the drivers/base/sys.c portion is not particularly small:
+> 
+> >  arch/x86/kernel/microcode_amd.c  |  142 ++++++++++++++++++--------------------
+> >  arch/x86/kernel/microcode_core.c |    6 +-
+> >  drivers/base/sys.c               |   65 ++++++++++++-----
+> >  3 files changed, 118 insertions(+), 95 deletions(-)
+> 
+> So i'd really like to have an Acked-by from Greg.
+> 
+> Greg, what's your take on this? The patches are here:
 
-http://bugzilla.openvz.org/show_bug.cgi?id=1758
+Yeah, I've sent him the chunk as two patches already and they're
+going to go over his tree. I'll redo the pull request without the
+<drivers/base/sys.c> portion maybe today.
 
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- fs/devpts/inode.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Thanks.
 
-diff --git a/fs/devpts/inode.c b/fs/devpts/inode.c
-index 1bb547c..8392c8c 100644
---- a/fs/devpts/inode.c
-+++ b/fs/devpts/inode.c
-@@ -501,7 +501,7 @@ int devpts_pty_new(struct inode *ptmx_inode, struct tty_struct *tty)
- 	mutex_lock(&root->d_inode->i_mutex);
- 
- 	dentry = d_alloc_name(root, s);
--	if (!IS_ERR(dentry)) {
-+	if (dentry) {
- 		d_add(dentry, inode);
- 		fsnotify_create(root->d_inode, dentry);
- 	}
 -- 
-1.7.2.1
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
