@@ -1,47 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877Ab1BCV6R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 16:58:17 -0500
-Received: from mvp.visionpro.com ([63.91.95.19]:50741 "EHLO
-	extern.visionpro.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751857Ab1BCV6Q (ORCPT
+	id S1753951Ab1BCV7H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 16:59:07 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53217 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753735Ab1BCV7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 16:58:16 -0500
-User-Agent: Microsoft-Entourage/12.28.0.101117
-Date: Thu, 03 Feb 2011 13:58:08 -0800
-Subject: Re: Memset very slow
-From: "Brian D. McGrew" <brian@visionpro.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: <linux-kernel@vger.kernel.org>
-Message-ID: <C97064F0.479C8%brian@visionpro.com>
-Thread-Topic: Memset very slow
-Thread-Index: AcvD7XD13KVxtl3JakOj6K6KweEb3g==
-In-Reply-To: <20110203213158.62baa54c@lxorguk.ukuu.org.uk>
-Mime-version: 1.0
-Content-type: text/plain;
-	charset="US-ASCII"
-Content-transfer-encoding: 7bit
-X-OriginalArrivalTime: 03 Feb 2011 21:58:08.0463 (UTC) FILETIME=[713C3DF0:01CBC3ED]
+	Thu, 3 Feb 2011 16:59:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=UIMGVHqH9fdzYmKgAiijKIBWTu0X/stOHfhICfvqNBgUJm2GxpnZOfl1FuExj9d5Vt
+         SP6DhjIKMrmwbDAtvK1xaf3WgZLBs/VwRVrDEqv8H4RA7GdkAwDXpAIjNPezNozLAEJZ
+         faSTBPV9KGrcxYYMmUd+R+2bHYjHnrgEoCqz4=
+Date: Thu, 3 Feb 2011 22:58:56 +0100
+From: Ulf Magnusson <ulfalizer.lkml@gmail.com>
+To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Cc: zippel@linux-m68k.org, mmarek@suse.cz, rdunlap@xenotime.net,
+        akpm@linux-foundation.org, andrea.gelmini@gelma.net
+Subject: Re: [PATCH] [ANNOUNCE] kconfig: Kconfiglib: a flexible Python
+ Kconfig parser
+Message-ID: <20110203215855.GA29292@ulf>
+Mail-Followup-To: Ulf Magnusson <ulfalizer.lkml@gmail.com>,
+	linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+	linux-doc@vger.kernel.org, zippel@linux-m68k.org, mmarek@suse.cz,
+	rdunlap@xenotime.net, akpm@linux-foundation.org,
+	andrea.gelmini@gelma.net
+References: <20110201232750.GA30800@ulf>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110201232750.GA30800@ulf>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/3/11 1:31 PM, "Alan Cox" <alan@lxorguk.ukuu.org.uk> wrote:
-
->> So, my question is, can someone explain to me what is going on here?  I am
->> not convinced this is a kernel problem just because a new kernel fixed it;
->> but, if there were changes related to this in the kernel, then what is the
->> oldest version I should be looking at to fix my issues?
+On Wed, Feb 02, 2011 at 12:27:52AM +0100, Ulf Magnusson wrote:
+> Hi,
 > 
-> The newer kernel does several things that may be relevant - the obvious
-> one is that it rewrites and corrects MTRR data if it doesn't like what
-> the BIOS handed out. That would fit with dramatic slowdowns in memory
-> performance being fixed.
+> This is the initial release of Kconfiglib: a Python library for
+> scripting, debugging, and extracting information from Kconfig-based
+> configuration systems.  It can be used to programmatically generate a
+> .config when the '*conf' tools are too inflexible, to quickly find out
+> interesting information about a Kconfig configuration such as dependency
+> relations between symbols and where undefined symbols are referenced,
+> and in applications that need to parse and extract information from
+> Kconfig files.
+> 
+> For a much longer introduction including multiple examples, see
+> arch/kconfig/kconfiglib.py.
+> 
+> Have fun!
+> 
+> Signed-off-by: Ulf Magnusson <ulfalizer.lkml@gmail.com>
+> ---
+> Convenience links:
+> 
+> Documentation, generated from kconfiglib.py with pydoc -w:
+> http://dl.dropbox.com/u/10406197/kconfiglib.html
+> 
+> Examples as separate files:
+> http://dl.dropbox.com/u/10406197/kconfiglib-examples.tar.gz
+> 
+> 
+> The patch should be preferably be applied to a recent kernel, i.e. Linus's
+> (2.6.38-rc3 at the time of writing).  Due to recent Kconfig changes, the
+> kconfigtest.py test suite - which compares output character-for-character -
+> will indicate failure on older (a few months old) kernels versions even though
+> the outputs are functionally equivalent.
+> 
+> [...]
 
-The Dell precsion-linux mailing list almost immediately pointed me here:
-https://bugzilla.redhat.com/show_bug.cgi?id=581933
+Seems linux-kbuild and linux-doc won't accept the patch (too large?), so
+here's a link to the message on linux-kernel:
+https://lkml.org/lkml/2011/2/1/439
 
-Which seems like it is my problem and the fix seems to work for me.
-
--brian
-
+/Ulf Magnusson
