@@ -1,243 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755542Ab1BCAEF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 19:04:05 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:38382 "EHLO ogre.sisk.pl"
+	id S1755618Ab1BCAFu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 19:05:50 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:38415 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755290Ab1BCAEB convert rfc822-to-8bit (ORCPT
+	id S1755290Ab1BCAFr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 19:04:01 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: 2.6.38-rc3-git1: Reported regressions 2.6.36 -> 2.6.37
-Cc: Maciej Rutecki <maciej.rutecki@gmail.com>,
+	Wed, 2 Feb 2011 19:05:47 -0500
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>
+        "Randy Dunlap" <randy.dunlap@oracle.com>
+References: <e9vOd5LzdBK.A.dyD.h6eSNB@chimera>
+In-Reply-To: <e9vOd5LzdBK.A.dyD.h6eSNB@chimera>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <e9vOd5LzdBK.A.dyD.h6eSNB@chimera>
-Date: Thu,  3 Feb 2011 01:03:41 +0100 (CET)
+Message-ID: <-tcJxClTQPH.A.V_F.e-eSNB@chimera>
+Subject: [Bug #22912] spi_lm70llp module crash on unload (2.6.37-rc1)
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu,  3 Feb 2011 01:05:22 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message contains a list of some post-2.6.36 regressions introduced before
-2.6.37, for which there are no fixes in the mainline known to the tracking team.
-If any of them have been fixed already, please let us know.
+This message has been generated automatically as a part of a report
+of regressions introduced between 2.6.36 and 2.6.37.
 
-If you know of any other unresolved post-2.6.36 regressions, please let us know
-either and we'll add them to the list.  Also, please let us know if any
-of the entries below are invalid.
-
-Each entry from the list will be sent additionally in an automatic reply to
-this message with CCs to the people involved in reporting and handling the
-issue.
-
-
-Listed regressions statistics:
-
-  Date          Total  Pending  Unresolved
-  ----------------------------------------
-  2011-02-03      118       36          31
-  2010-12-30       85       32          26
-  2010-12-19       73       28          24
-  2010-12-03       55       25          19
-  2010-11-19       39       29          25
-
-
-Unresolved regressions
-----------------------
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27892
-Subject		: SNB: GPU hang with Slip xscreensaver
-Submitter	: Takashi Iwai <tiwai@suse.de>
-Date		: 2011-01-31 12:06 (3 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27842
-Subject		: [regression?] hang with 2.6.37 on a BTRFS test machine
-Submitter	: Martin Steigerwald <Martin@lichtvoll.de>
-Date		: 2011-01-23 12:06 (11 days old)
-Message-ID	: <201101231306.23069.Martin@lichtvoll.de>
-References	: http://marc.info/?l=linux-kernel&m=129578445613283&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27642
-Subject		: 2.6.37 says WARNING: at arch/x86/kernel/apic/apic.c:1287 setup_local_APIC+0x18f/0x263()
-Submitter	: Rob Landley <rlandley@parallels.com>
-Date		: 2011-01-18 13:11 (16 days old)
-Message-ID	: <4D359188.3040408@parallels.com>
-References	: http://marc.info/?l=linux-kernel&m=129535632319892&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27532
-Subject		: ath9k prevents CPU from entering lower C-states
-Submitter	: Thomas Bächler <thomas@archlinux.org>
-Date		: 2011-01-24 22:43 (10 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27402
-Subject		: Atheros adapter no longer loads firmware
-Submitter	: Michal Vaner <vorner@ucw.cz>
-Date		: 2011-01-23 15:29 (11 days old)
-First-Bad-Commit: http://git.kernel.org/linus/be93112accb42c5586a459683d71975cc70673ca
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27152
-Subject		: VGA output broken at cold boot
-Submitter	: Takashi Iwai <tiwai@suse.de>
-Date		: 2011-01-20 13:26 (14 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27132
-Subject		: flush-btrfs gets into an infinite loop
-Submitter	: Artem Anisimov <aanisimov@inbox.ru>
-Date		: 2011-01-20 11:51 (14 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26942
-Subject		: radeon: screen distortion on resume
-Submitter	: Brett Witherspoon <spoonb@exherbo.org>
-Date		: 2011-01-17 13:23 (17 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26932
-Subject		: [SNB mobile] Oops in DRM intel driver, esp. during S3/S4 stress test
-Submitter	: Matthias Hopf <mat@mshopf.de>
-Date		: 2011-01-17 11:45 (17 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26842
-Subject		: [2.6.37 regression] threads with CPU affinity cannot be killed
-Submitter	: tim blechmann <tim@klingt.org>
-Date		: 2011-01-16 13:39 (18 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26802
-Subject		: b43: Suspend failed
-Submitter	: Patrick Matthäi <patrick@linux-dev.org>
-Date		: 2011-01-15 18:56 (19 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26582
-Subject		: NULL pointer dereference on pipe creation
-Submitter	: Ferenc Wágner <wferi@niif.hu>
-Date		: 2011-01-12 13:30 (22 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26552
-Subject		: Screen flickering with 2.6.37 [ATI X1600]
-Submitter	: Andrea Iob <andrea_iob@yahoo.it>
-Date		: 2011-01-11 22:53 (23 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26212
-Subject		: kernel NULL pointer dereference in pxa3xx_nand_probe
-Submitter	: Sven Neumann <s.neumann@raumfeld.com>
-Date		: 2011-01-05 11:43 (29 days old)
-Message-ID	: <1294227801.3996.62.camel@sven>
-References	: http://marc.info/?l=linux-kernel&m=129422903703756&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26112
-Subject		: [LogFS] [2.6.37-rc8+] Kernel BUG at logfs/readwrite.c:297!
-Submitter	: Prasad Joshi <prasadjoshi124@gmail.com>
-Date		: 2011-01-02 21:22 (32 days old)
-Message-ID	: <AANLkTinpoM8FuG8UkF88xs_V37dz_wgE8t-s0JPzaS-w@mail.gmail.com>
-References	: http://marc.info/?l=linux-kernel&m=129400335910652&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26102
-Subject		: [2.6.37-rc8] BUG kmalloc-256: Poison overwritten.
-Submitter	: Pawel Sikora <pluto@agmk.net>
-Date		: 2010-12-30 15:08 (35 days old)
-Message-ID	: <201012301608.40859.pluto@agmk.net>
-References	: http://marc.info/?l=linux-kernel&m=129372388925679&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=25922
-Subject		: IdeaPad Y530 brightness keys not functioning
-Submitter	: Tomasz <tm.temp@gmx.com>
-Date		: 2010-12-30 12:48 (35 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=25832
-Subject		: kernel crashes upon resume if usb devices are removed when suspended
-Submitter	: rocko <rockorequin@hotmail.com>
-Date		: 2010-12-29 11:47 (36 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=25732
-Subject		: i915 turns picture green when display switched off-on
-Submitter	: Tõnu Raitviir <jussuf@linux.ee>
-Date		: 2010-12-27 22:14 (38 days old)
-First-Bad-Commit: http://git.kernel.org/linus/3c17fe4b8f40a112a85758a9ab2aebf772bdd647
-Handled-By	: Chris Wilson <chris@chris-wilson.co.uk>
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=25432
-Subject		: Alpha fails to build with gcc 4.4
-Submitter	: Ben Hutchings <ben@decadent.org.uk>
-Date		: 2010-12-22 01:55 (43 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=25402
-Subject		: kernel (2.6.37-8-generic_amd64) panic on boot (with message "map_single: bounce buffer is not DMA'ble) - possible regression !!!
-Submitter	: carlos <carlos.palma@ono.com>
-Date		: 2010-12-21 19:58 (44 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=25072
-Subject		: backlight level is not maintened during LID close/open
-Submitter	: Lukas Hejtmanek <xhejtman@fi.muni.cz>
-Date		: 2010-12-17 11:56 (48 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=24882
-Subject		: PM/Hibernate: Memory corruption patch introduces regression (2.6.36.2)
-Submitter	:  <akwatts@ymail.com>
-Date		: 2010-12-14 04:00 (51 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=24822
-Subject		: Embedded DisplayPort is detected wrongly on HP ProBook 5320m
-Submitter	: Takashi Iwai <tiwai@suse.de>
-Date		: 2010-12-13 11:09 (52 days old)
-Handled-By	: Chris Wilson <chris@chris-wilson.co.uk>
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=24762
-Subject		: BUG at perf_ctx_adjust_freq (kernel/perf_event.c:1582)
-Submitter	: Chris Wilson <chris@chris-wilson.co.uk>
-Date		: 2010-12-10 12:00 (55 days old)
-Message-ID	: <c6d829$pqibha@fmsmga001.fm.intel.com>
-References	: http://marc.info/?l=linux-kernel&m=129198247531612&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=24582
-Subject		: Kernel Oops at tty_buffer_request_room when using pppd program (2.6.37-rc4)
-Submitter	: baoyb <baoyb@avit.org.cn>
-Date		: 2010-12-08 13:55 (57 days old)
-Message-ID	: <EF6DDE218DB34702B1FA84D6CD7EA771@baoyb>
-References	: http://marc.info/?l=linux-kernel&m=129181763525738&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22942
-Subject		: [2.6.37-rc1, OOM] virtblk: OOM in do_virtblk_request()
-Submitter	: Dave Chinner <david@fromorbit.com>
-Date		: 2010-11-05 1:30 (90 days old)
-Message-ID	: <20101105013003.GE13830@dastard>
-References	: http://marc.info/?l=linux-kernel&m=128892062917641&w=2
+The following bug entry is on the current list of known regressions
+introduced between 2.6.36 and 2.6.37.  Please verify if it still should
+be listed and let the tracking team know (either way).
 
 
 Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22912
@@ -247,85 +41,4 @@ Date		: 2010-11-05 0:16 (90 days old)
 Message-ID	: <20101104171620.00d8c95d.randy.dunlap@oracle.com>
 References	: http://marc.info/?l=linux-kernel&m=128891627913647&w=2
 
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22882
-Subject		: (2.6.37-rc1) amd64-agp module crashed on second load
-Submitter	: Randy Dunlap <randy.dunlap@oracle.com>
-Date		: 2010-11-05 0:13 (90 days old)
-Message-ID	: <20101104171333.fea1f498.randy.dunlap@oracle.com>
-References	: http://marc.info/?l=linux-kernel&m=128891605213447&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22642
-Subject		: 2.6.37-rc1: Disk takes 10 seconds to resume - MacBook2,1
-Submitter	: Tobias <devnull@plzk.org>
-Date		: 2010-11-10 19:33 (85 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22542
-Subject		: [2.6.37-rc1] drm:i195 errors
-Submitter	: Paul Rolland <rol@witbe.net>
-Date		: 2010-11-02 14:58 (93 days old)
-Message-ID	: <20101102155813.09cb2c6e@tux.DEF.witbe.net>
-References	: http://marc.info/?l=linux-kernel&m=128870991628970&w=2
-
-
-Regressions with patches
-------------------------
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=27202
-Subject		: Remote control of saa7134-based tv card "ASUSTeK P7131 Hybrid" stopped working in 2.6.37
-Submitter	:  <acaizzo@gmail.com>
-Date		: 2011-01-20 17:23 (14 days old)
-First-Bad-Commit: http://git.kernel.org/linus/4651918a4afdd49bdea21d2f919b189ef17a6399
-Patch		: https://bugzilla.kernel.org/attachment.cgi?id=44532
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26242
-Subject		: BUG: unable to handle kernel NULL pointer dereference at   (null)
-Submitter	: Steffen Michalke <StMichalke@web.de>
-Date		: 2011-01-06 20:59 (28 days old)
-Patch		: http://www.spinics.net/lists/linux-btrfs/msg08051.html
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=25822
-Subject		: [BUG] kernel BUG at mm/truncate.c:479! on 2.6.37-rc8
-Submitter	: Gurudas Pai <gurudas.pai@oracle.com>
-Date		: 2010-12-29 6:58 (36 days old)
-Message-ID	: <4D1AD935.1020504@oracle.com>
-References	: http://marc.info/?l=linux-kernel&m=129360511222037&w=2
-Patch		: https://lkml.org/lkml/2010/12/29/131
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=25442
-Subject		: ixp4xx defines FREQ macro; conflicts with gspca/ov519 driver
-Submitter	: Ben Hutchings <ben@decadent.org.uk>
-Date		: 2010-12-22 02:02 (43 days old)
-Handled-By	: Ben Hutchings <ben@decadent.org.uk>
-Patch		: https://bugzilla.kernel.org/attachment.cgi?id=41252
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=23472
-Subject		: 2.6.37-rc2 vs. 2.6.36 laptop backlight changes?
-Submitter	: Patrick Schaaf <netdev@bof.de>
-Date		: 2010-11-17 13:41 (78 days old)
-Message-ID	: <1290001262.5727.2.camel@lat1>
-References	: http://marc.info/?l=linux-kernel&m=129000127920912&w=2
-Handled-By	: Indan Zupancic <indan@nul.nu>
-Patch		: https://bugzilla.kernel.org/attachment.cgi?id=43482
-
-
-For details, please visit the bug entries and follow the links given in
-references.
-
-As you can see, there is a Bugzilla entry for each of the listed regressions.
-There also is a Bugzilla entry used for tracking the regressions introduced
-between 2.6.36 and 2.6.37, unresolved as well as resolved, at:
-
-http://bugzilla.kernel.org/show_bug.cgi?id=21782
-
-Please let the tracking team know if there are any Bugzilla entries that
-should be added to the list in there.
-
-Thanks!
 
