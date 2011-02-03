@@ -1,80 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab1BCVgo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 16:36:44 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54707 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752935Ab1BCVgn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 16:36:43 -0500
-Date: Thu, 3 Feb 2011 13:36:24 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, linux-mm@kvack.org,
-        Tejun Heo <tj@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Rohit Seth <rohit.seth@intel.com>
-Subject: Re: [PATCH] Huge TLB: Potential NULL deref in
- arch/x86/mm/hugetlbpage.c:huge_pmd_share()
-Message-Id: <20110203133624.cd353dd6.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LNX.2.00.1102032214350.1369@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1102032142580.15101@swampdragon.chaosbits.net>
-	<20110203130150.7031c61f.akpm@linux-foundation.org>
-	<alpine.LNX.2.00.1102032214350.1369@swampdragon.chaosbits.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753585Ab1BCVgy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 16:36:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9665 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752935Ab1BCVgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 16:36:52 -0500
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+X-Fcc: ~/Mail/linus
+Cc: Tejun Heo <tj@kernel.org>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+	PTRACE_ATTACH
+In-Reply-To: Oleg Nesterov's message of  Thursday, 3 February 2011 21:41:54 +0100 <20110203204154.GB26371@redhat.com>
+References: <1296227324-25295-1-git-send-email-tj@kernel.org>
+	<1296227324-25295-11-git-send-email-tj@kernel.org>
+	<20110203204122.GA26371@redhat.com>
+	<20110203204154.GB26371@redhat.com>
+Emacs: there's a reason it comes with a built-in psychotherapist.
+Message-Id: <20110203213640.1F516180995@magilla.sf.frob.com>
+Date: Thu,  3 Feb 2011 13:36:39 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Feb 2011 22:17:53 +0100 (CET)
-Jesper Juhl <jj@chaosbits.net> wrote:
+IMHO this sort of band-aid does not really help the overall situation.
+It takes something that is intricate and fiddly and just fiddles it a
+bit more.  Userland will still have to handle older kernels where this
+behavior is not there.  If userland does anything that relies on this
+new behavior, then it will have to try somehow to figure out which
+kernel versions have which behavior and adapt, etc.
 
-> Document that NULL deref will never happen post find_vma() in 
-> huge_pmd_share().
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  hugetlbpage.c |    5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
-> index 069ce7c..7dd2d5f 100644
-> --- a/arch/x86/mm/hugetlbpage.c
-> +++ b/arch/x86/mm/hugetlbpage.c
-> @@ -61,6 +61,11 @@ static int vma_shareable(struct vm_area_struct *vma, unsigned long addr)
->  static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
->  {
->  	struct vm_area_struct *vma = find_vma(mm, addr);
-> +	/*
-> +	 * There is no potential NULL deref here. mmap_sem is held and
-> +	 * caller knows that the virtual address at `addr' is within a
-> +	 * vma, so find_vma() will never return NULL here.
-> +	 */
->  	struct address_space *mapping = vma->vm_file->f_mapping;
->  	pgoff_t idx = ((addr - vma->vm_start) >> PAGE_SHIFT) +
->  			vma->vm_pgoff;
+When the old behaviors are unhelpful like this, I think it is really
+better to add new mechanisms instead.  We can make new mechanisms more
+clear and straightforward for userland to work with from the beginning.
+Then the compatibility picture for userland is simply to try a new call
+or new ptrace request or new option bit or whatever it is.  When the
+kernel supports the new thing, things are easy.  When it doesn't, then
+they cope with life as they have been coping before on old kernels.
 
-Not really.
+I have some ideas about new things to add for this problem area.  But
+we have to think those through carefully and discuss all the details
+thoroughly with Jan and other folks working on userland debuggers
+before we write the kernel side.
 
-That mmap_sem is held and that `addr' refers to a known-to-be-present
-VMA are part of huge_pmd_share()'s interface.  They are preconditions
-which must be satisfied before the function can be used.
 
-So they should be documented as such, in the function's documentation. 
-In fact they're the *most important* thing to document about the
-function because they are subtle and unobvious from the implementation
-and from the function signature and name.
-
->From an understandability/maintainability POV the code is crap.  It's yet
-another example of kernel developers' liking for pointing machine guns
-at each other's feet.
-
-Really, some poor schmuck needs to go in and reverse-engineer all the
-secret interface requirements and document them.  But we shouldn't let
-a chance go by - a nice kerneldoc description for huge_pmd_share()
-would be appreciated.  One which documents both the explicit and the
-implicit calling conventions.
-
+Thanks,
+Roland
