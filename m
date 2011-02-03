@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172Ab1BCMYE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 07:24:04 -0500
-Received: from smtp.nokia.com ([147.243.1.48]:63688 "EHLO mgw-sa02.nokia.com"
+	id S1755840Ab1BCM35 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 07:29:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20078 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751611Ab1BCMYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 07:24:03 -0500
-Message-ID: <4D4A9E52.7010000@nokia.com>
-Date: Thu, 03 Feb 2011 14:23:46 +0200
-From: Peter Ujfalusi <peter.ujfalusi@nokia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20110103 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1752423Ab1BCM34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 07:29:56 -0500
+Date: Thu, 3 Feb 2011 14:29:48 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org
+Subject: [PATCHv2] Fix EDD3.0 data verification.
+Message-ID: <20110203122948.GX14984@redhat.com>
 MIME-Version: 1.0
-To: ext Andres Salomon <dilinger@queued.net>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Timur Tabi <timur@freescale.com>,
-        linux-input@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: Re: [PATCH 12/19] twl4030: mfd_cell is now implicitly available to
- drivers
-References: <20110202195417.228e2656@queued.net>	<20110202201522.72d37f1e@queued.net>	<20110203060521.GA25739@core.coreip.homeip.net>	<20110202223959.244b4a01@queued.net>	<20110203065339.GA5592@core.coreip.homeip.net> <20110202230326.167fe873@queued.net>
-In-Reply-To: <20110202230326.167fe873@queued.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/11 09:03, ext Andres Salomon wrote:
-> I believe some drivers are even using the parent device already.  See
-> drivers/leds/leds-mc13783.c, for example, whose parent device drvdata
-> is used to pass around a struct mc13783 to its children.  Sounds
-> like a possibility, will need to look into it further.
+Check for nonzero path in edd_has_edd30() has no sense. First, it looks
+at the wrong memory. Device path starts at offset 30 of the info->params
+structure which is at offset 8 from the beginning of info structure, but
+code looks at info + 4 instead. This was correct when code was introduced,
+but around v2.6.4 three more fields were added to edd_info structure
+(commit 66b61a5c in history.git). Second, even if it will check correct
+memory it will always succeed since at offset 30 (params->key) there will
+be non-zero values otherwise previous check would fail.
 
-I briefly looked at the drivers/leds/leds-mc13783.c, and the related
-drivers/mfd/mc13xxx.c drivers.
-This also uses the same way to pass the needed platform data to it's
-child devices, as the twl4030 (audio/codec/vibra) MFD does.
-Also the leds-mc13783.c does not actually uses any config values from
-the parent dev. The mc13783_led->master is needed to be locally stored,
-since the led driver calls functions from the MFD core, which needs that
-as parameter.
+The patch replaces this bogus check with one that verifies checksum.
 
-I don't really see any need to change the drivers in this regard,
-however it would be nicer, if we replace for example the:
-	struct twl4030_codec_data *pdata = pdev->dev.platform_data;
-with
-	struct twl4030_codec_data *pdata = dev_get_platdata(&pdev->dev);
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+---
+v1->v2
+  use device path info length to calculate csum.
 
-The information passed to the vibra, and ASoC codec driver is for them
-only, so there is no need for the vibra driver to know anything about
-things, which concerns only the ASoC codec driver.
-
--- 
-Péter
+diff --git a/drivers/firmware/edd.c b/drivers/firmware/edd.c
+index 96c25d9..f1b7f65 100644
+--- a/drivers/firmware/edd.c
++++ b/drivers/firmware/edd.c
+@@ -531,8 +531,8 @@ static int
+ edd_has_edd30(struct edd_device *edev)
+ {
+ 	struct edd_info *info;
+-	int i, nonzero_path = 0;
+-	char c;
++	int i;
++	u8 csum = 0;
+ 
+ 	if (!edev)
+ 		return 0;
+@@ -544,16 +544,16 @@ edd_has_edd30(struct edd_device *edev)
+ 		return 0;
+ 	}
+ 
+-	for (i = 30; i <= 73; i++) {
+-		c = *(((uint8_t *) info) + i + 4);
+-		if (c) {
+-			nonzero_path++;
+-			break;
+-		}
+-	}
+-	if (!nonzero_path) {
++
++	/* We support only T13 spec */
++	if (info->params.device_path_info_length != 44)
++		return 0;
++
++	for (i = 30; i < info->params.device_path_info_length + 30; i++)
++		csum += *(((u8 *)&info->params) + i);
++
++	if (csum)
+ 		return 0;
+-	}
+ 
+ 	return 1;
+ }
+--
+			Gleb.
