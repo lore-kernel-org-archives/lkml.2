@@ -1,90 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581Ab1BCPx3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 10:53:29 -0500
-Received: from brother.balabit.com ([195.70.62.219]:58303 "EHLO
-	lists.balabit.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751794Ab1BCPx2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 10:53:28 -0500
-Subject: Re: CAP_SYSLOG, 2.6.38 and user space
-From: Gergely Nagy <algernon@balabit.hu>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        James Morris <jmorris@namei.org>
-In-Reply-To: <20110203153252.GA24153@mail.hallyn.com>
-References: <1296733177.14846.26.camel@moria>
-	 <20110203153252.GA24153@mail.hallyn.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Feb 2011 16:53:21 +0100
-Message-ID: <1296748401.14846.39.camel@moria>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754412Ab1BCPye (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 10:54:34 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:41553 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751559Ab1BCPyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 10:54:32 -0500
+Date: Thu, 3 Feb 2011 16:54:19 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [GIT PULL] scheduler fixes
+Message-ID: <20110203155419.GA13399@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-03 at 15:32 +0000, Serge E. Hallyn wrote:
-> > Back in november, a patch was merged into the kernel (in  commit
-> > ce6ada35bdf710d16582cc4869c26722547e6f11), that splits CAP_SYSLOG out of
-> > CAP_SYS_ADMIN.
-> > 
-> > Sadly, this has an unwelcomed consequence, that any userspace syslogd
-> > that formerly used CAP_SYS_ADMIN will stop working, unless upgraded, or
-> > otherwise adapted to the change.
-> > 
-> > However, updating userspace isn't that easy, either, if one wants to
-> > support multiple kernels with the same userspace binary: pre-2.6.38, one
-> > needs CAP_SYS_ADMIN, but later kernels will need CAP_SYS_ADMIN. It would
-> > be trivial to keep both, but that kind of defeats the purpose of
-> > CAP_SYSLOG,
-> 
-> The idea would be to only use both when you detect a possibly older
-> kernel. 
+Linus,
 
-I was considering that, but... how do I reliably detect an older kernel?
+Please pull the latest sched-fixes-for-linus git tree from:
 
-So far, I didn't find a reliable way with which I can detect a kernel
-version at run-time (apart from parsing utsname) - but it's entirely
-possible, that I missed something obvious.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git sched-fixes-for-linus
 
-Furthermore, this still needs an userspace upgrade aswell, so only helps
-one half of the problem.
+ Thanks,
 
-> However, you're right of course, I really should have provided some way
-> for userspace to click 'ok, got the message, now continue anyway because
-> I'm running older userspace for now,'  i.e. a sysctl perhaps.
-> 
-> Sorry about the trouble.  Here is a patch to just warn for now, with
-> the changelog showing what i intend to push next.
-> 
-> sorry again,
-> -serge
-> 
-> From 2d7408541dd3a6e19a4265b028233789be6a40f4 Mon Sep 17 00:00:00 2001
-> From: Serge Hallyn <serge@peq.(none)>
-> Date: Thu, 3 Feb 2011 09:26:15 -0600
-> Subject: [PATCH 1/1] cap_syslog: don't refuse cap_sys_admin for now
-> 
-> At 2.6.39 or 2.6.40, let's add a sysctl which defaults to 0.  When
-> 0, refuse if cap_sys_admin, if 1, then allow.  This will allow
-> users to acknowledge (permanently, if they must, using /etc/sysctl.conf)
-> that they've seen the syslog message about cap_sys_admin being
-> deprecated for syslog.
+	Ingo
 
-Could we have it the other way around, at least for a while? Otherwise,
-if someone happens to upgrade the kernel, and forgets to upgrade the
-syslogd, he'll still experience breakage. With defaulting to 1,
-compatiblity is kept, and systems that were upgraded properly can set it
-to 0 and live happily ever after. The WARNs should prompt people to
-upgrade at the first opportunity, so hopefully, it won't go unnoticed
-and ignored by userspace.
+------------------>
+Javi Merino (1):
+      sched, docs: Update schedstats documentation to version 15
 
-I'm not sure one would even see the kernel warn with the syslogd not
-being able to read the kernel messages (dmesg, of course, would reveal
-it, but that's one extra step).
-
--- 
-|8]
+Peter Zijlstra (1):
+      sched: Fix update_curr_rt()
 
 
+ Documentation/scheduler/sched-stats.txt |   33 ++++++++++++++----------------
+ kernel/sched_rt.c                       |    2 +-
+ 2 files changed, 16 insertions(+), 19 deletions(-)
+
+diff --git a/Documentation/scheduler/sched-stats.txt b/Documentation/scheduler/sched-stats.txt
+index 01e6940..1cd5d51 100644
+--- a/Documentation/scheduler/sched-stats.txt
++++ b/Documentation/scheduler/sched-stats.txt
+@@ -1,3 +1,7 @@
++Version 15 of schedstats dropped counters for some sched_yield:
++yld_exp_empty, yld_act_empty and yld_both_empty. Otherwise, it is
++identical to version 14.
++
+ Version 14 of schedstats includes support for sched_domains, which hit the
+ mainline kernel in 2.6.20 although it is identical to the stats from version
+ 12 which was in the kernel from 2.6.13-2.6.19 (version 13 never saw a kernel
+@@ -28,32 +32,25 @@ to write their own scripts, the fields are described here.
+ 
+ CPU statistics
+ --------------
+-cpu<N> 1 2 3 4 5 6 7 8 9 10 11 12
+-
+-NOTE: In the sched_yield() statistics, the active queue is considered empty
+-    if it has only one process in it, since obviously the process calling
+-    sched_yield() is that process.
++cpu<N> 1 2 3 4 5 6 7 8 9
+ 
+-First four fields are sched_yield() statistics:
+-     1) # of times both the active and the expired queue were empty
+-     2) # of times just the active queue was empty
+-     3) # of times just the expired queue was empty
+-     4) # of times sched_yield() was called
++First field is a sched_yield() statistic:
++     1) # of times sched_yield() was called
+ 
+ Next three are schedule() statistics:
+-     5) # of times we switched to the expired queue and reused it
+-     6) # of times schedule() was called
+-     7) # of times schedule() left the processor idle
++     2) # of times we switched to the expired queue and reused it
++     3) # of times schedule() was called
++     4) # of times schedule() left the processor idle
+ 
+ Next two are try_to_wake_up() statistics:
+-     8) # of times try_to_wake_up() was called
+-     9) # of times try_to_wake_up() was called to wake up the local cpu
++     5) # of times try_to_wake_up() was called
++     6) # of times try_to_wake_up() was called to wake up the local cpu
+ 
+ Next three are statistics describing scheduling latency:
+-    10) sum of all time spent running by tasks on this processor (in jiffies)
+-    11) sum of all time spent waiting to run by tasks on this processor (in
++     7) sum of all time spent running by tasks on this processor (in jiffies)
++     8) sum of all time spent waiting to run by tasks on this processor (in
+         jiffies)
+-    12) # of timeslices run on this cpu
++     9) # of timeslices run on this cpu
+ 
+ 
+ Domain statistics
+diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+index c914ec7..ad62677 100644
+--- a/kernel/sched_rt.c
++++ b/kernel/sched_rt.c
+@@ -625,7 +625,7 @@ static void update_curr_rt(struct rq *rq)
+ 	struct rt_rq *rt_rq = rt_rq_of_se(rt_se);
+ 	u64 delta_exec;
+ 
+-	if (!task_has_rt_policy(curr))
++	if (curr->sched_class != &rt_sched_class)
+ 		return;
+ 
+ 	delta_exec = rq->clock_task - curr->se.exec_start;
