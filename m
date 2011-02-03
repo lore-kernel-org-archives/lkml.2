@@ -1,54 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446Ab1BCJED (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 04:04:03 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54480 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755149Ab1BCJD6 (ORCPT
+	id S1755453Ab1BCJMk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 04:12:40 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38986 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755250Ab1BCJMg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 04:03:58 -0500
+	Thu, 3 Feb 2011 04:12:36 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=XAcOtueh5azdUyoteULz0YKDlQyU1Cq6gzVGHDcUHdAhCQ2EMaZPvQbgJ05NPFEDfn
-         Fc+YrjCBhtKGkCcijrJ4SAvcB4oVFObdazIbDPA9tLaj1PrOO/Cf5t6WjgSKSnbbfVUK
-         nEIF9fNqBdOdB56WyJEhmqtEAVZIi97twSs6w=
-Message-ID: <4D4A6F79.4070502@gmail.com>
-Date: Thu, 03 Feb 2011 10:03:53 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=a/DPYetw2numwNvRI7t609udNqTDqfmyk77oz0EIYyEsiLTMQtRnZJOyJ0JW2s4Md+
+         2fQPSTCJvXpTPQTBcAwXbXYAXaIzb9aoIn57SwQneaGUqHpf4tFhLno3+xG4r2jLvHWi
+         88964IhE3V5kZICqbKD8OQBkCfZmRDg1O+C1s=
+Date: Thu, 3 Feb 2011 17:12:27 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Regression: WARNINGS and lockdep spews in 2.6.38-rc3+
+ (bisected).
+Message-ID: <20110203091227.GA1603@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <20110203031943.GA8910@elliptictech.com>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mm-commits@vger.kernel.org, ML netdev <netdev@vger.kernel.org>,
-        davidel@xmailserver.org
-Subject: Re: epoll broken [was: mmotm 2011-01-25-15-47 uploaded]
-References: <201101260021.p0Q0LxsS016458@imap1.linux-foundation.org>	 <4D4A5BBF.20806@gmail.com> <1296719601.3438.0.camel@edumazet-laptop>
-In-Reply-To: <1296719601.3438.0.camel@edumazet-laptop>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110203031943.GA8910@elliptictech.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/03/2011 08:53 AM, Eric Dumazet wrote:
->> {0, {u32=0, u64=0}} .............. {0, {u32=0, u64=0}}, ?}
->> 0x7fb816996660, 8192, 0) = 379151968
->> 17836 --- SIGSEGV (Segmentation fault) @ 0 (0) ---
->> 17836 +++ killed by SIGSEGV +++
->>
->> The parameter, the same as the retval, seems to be bogus.
->>
->> Is it known (fixed in newer kernels)?
->>
->> thanks,
-> 
-> Yes, its known, and a fix is there : https://lkml.org/lkml/2011/1/26/121
+Hi Nick,
 
-Thanks, it works indeed.
+Thanks for reporting this.
+Could you please try below patch?
 
+Thanks,
+Yong
+
+---
+From: Yong Zhang <yong.zhang0@gmail.com>
+Subject: [PATCH] timer: use _local_bh_enable() in del_timer_sync()
+
+Nick Bowler reported:
+  =================================
+  [ INFO: inconsistent lock state ]
+  2.6.38-rc3-bisect-00062-g8c007a1 #92
+  ---------------------------------
+  inconsistent {HARDIRQ-ON-W} -> {IN-HARDIRQ-W} usage.
+  swapper/0 [HC1[1]:SC0[0]:HE0:SE1] takes:
+  (&(&dev->event_lock)->rlock){?.+...}, at: [<ffffffff8125def6>] input_event+0x41/0x83
+  {HARDIRQ-ON-W} state was registered at:
+  [<ffffffff810656d4>] mark_held_locks+0x52/0x70
+  [<ffffffff8106593a>] trace_hardirqs_on_caller+0xf7/0x135
+  [<ffffffff81065985>] trace_hardirqs_on+0xd/0xf
+  [<ffffffff81044ac2>] __do_softirq+0x62/0x160
+  [<ffffffff8100395c>] call_softirq+0x1c/0x28
+  [<ffffffff81044cf2>] _local_bh_enable_ip+0xb3/0xe3
+  [<ffffffff81044d3a>] local_bh_enable+0xd/0xf
+  [<ffffffff8104a418>] del_timer_sync+0x4f/0x8e
+  [<ffffffffa00947fe>] rfkill_schedule_global_op+0x41/0x84 [rfkill]
+  [<ffffffffa0094858>] rfkill_schedule_evsw_rfkillall+0x17/0x19 [rfkill]
+  [<ffffffffa009495f>] rfkill_event+0x58/0x5a [rfkill]
+  [<ffffffff8125c980>] input_pass_event+0x97/0xea
+  [<ffffffff8125de13>] input_handle_event+0x460/0x46f
+  [<ffffffff8125df1b>] input_event+0x66/0x83
+  [<ffffffffa009becb>] tpacpi_send_radiosw_update+0x7f/0xc4 [thinkpad_acpi]
+  [<ffffffffa009c417>] hotkey_notify+0x507/0x581 [thinkpad_acpi]
+  [<ffffffffa009b029>] dispatch_acpi_notify+0x29/0x2b [thinkpad_acpi]
+  [<ffffffff8119a18a>] acpi_ev_notify_dispatch+0x62/0x7c
+  [<ffffffff8118b323>] acpi_os_execute_deferred+0x24/0x31
+  [<ffffffff810511bf>] process_one_work+0x204/0x33b
+  [<ffffffff81053384>] worker_thread+0x136/0x255
+  [<ffffffff810566da>] kthread+0x7d/0x85
+  [<ffffffff81003864>] kernel_thread_helper+0x4/0x10
+  irq event stamp: 559266
+  hardirqs last  enabled at (559263): [<ffffffff811b40a5>] acpi_idle_enter_bm+0x236/0x275
+  hardirqs last disabled at (559264): [<ffffffff812ffd6a>] save_args+0x6a/0x70
+  softirqs last  enabled at (559266): [<ffffffff81044bce>] _local_bh_enable+0xe/0x10
+  softirqs last disabled at (559265): [<ffffffff81044c0d>] irq_enter+0x3d/0x6f
+
+  other info that might help us debug this:
+  1 lock held by swapper/0:
+  #0:  (&serio->lock){-.-...}, at: [<ffffffff81259018>] serio_interrupt+0x24/0x7e
+
+  stack backtrace:
+  Pid: 0, comm: swapper Tainted: G        W   2.6.38-rc3-bisect-00062-g8c007a1 #92
+  Call Trace:
+  <IRQ>  [<ffffffff81065442>] ? valid_state+0x17e/0x191
+  [<ffffffff8100e159>] ? save_stack_trace+0x28/0x45
+  [<ffffffff81065d18>] ? check_usage_forwards+0x0/0x87
+  [<ffffffff81065568>] ? mark_lock+0x113/0x22d
+  [<ffffffff8106687f>] ? __lock_acquire+0x2ac/0xd01
+  [<ffffffff81065482>] ? mark_lock+0x2d/0x22d
+  [<ffffffff81065482>] ? mark_lock+0x2d/0x22d
+  [<ffffffff81065482>] ? mark_lock+0x2d/0x22d
+  [<ffffffff81067338>] ? lock_acquire+0x64/0x81
+  [<ffffffff8125def6>] ? input_event+0x41/0x83
+  [<ffffffff812ff378>] ? _raw_spin_lock_irqsave+0x53/0x65
+  [<ffffffff8125def6>] ? input_event+0x41/0x83
+  [<ffffffff8125def6>] ? input_event+0x41/0x83
+  [<ffffffff81261fb6>] ? atkbd_interrupt+0x9a/0x574
+  [<ffffffff81259034>] ? serio_interrupt+0x40/0x7e
+  [<ffffffff8125a31c>] ? i8042_interrupt+0x28e/0x2a8
+  [<ffffffff8107e834>] ? handle_IRQ_event+0x20/0xae
+  [<ffffffff810805e6>] ? handle_edge_irq+0xde/0x12a
+  [<ffffffff810055c9>] ? handle_irq+0x1f/0x2a
+  [<ffffffff81004c37>] ? do_IRQ+0x48/0xaf
+  [<ffffffff812ffe13>] ? ret_from_intr+0x0/0x1a
+  <EOI>  [<ffffffff8100a1aa>] ? native_sched_clock+0x2d/0x5f
+  [<ffffffff811b40ac>] ? acpi_idle_enter_bm+0x23d/0x275
+  [<ffffffff811b40a5>] ? acpi_idle_enter_bm+0x236/0x275
+  [<ffffffff8126c2ae>] ? cpuidle_idle_call+0x9f/0xd5
+  [<ffffffff81001e75>] ? cpu_idle+0x61/0xaa
+  [<ffffffff812ecdc9>] ? rest_init+0xcd/0xd4
+  [<ffffffff812eccfc>] ? rest_init+0x0/0xd4
+  [<ffffffff81682d3d>] ? start_kernel+0x3a6/0x3b1
+  [<ffffffff816822b1>] ? x86_64_start_reservations+0xb8/0xbc
+  [<ffffffff816823bb>] ? x86_64_start_kernel+0x106/0x115
+
+The cause is that local_bh_enable() could call do_softirq()
+in certain time, thus break irq status and make lock bite
+us.
+
+Reported-and-bisected-by: Nick Bowler <nbowler@elliptictech.com>
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/timer.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 43ca993..253aefe 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -969,10 +969,15 @@ EXPORT_SYMBOL(try_to_del_timer_sync);
+ int del_timer_sync(struct timer_list *timer)
+ {
+ #ifdef CONFIG_LOCKDEP
++	unsigned long flags;
++
+ 	local_bh_disable();
+ 	lock_map_acquire(&timer->lockdep_map);
+ 	lock_map_release(&timer->lockdep_map);
+-	local_bh_enable();
++	/* raw_local_irq_[save|restore] is to protect _local_bh_enable() */
++	raw_local_irq_save(flags);
++	_local_bh_enable();
++	raw_local_irq_restore(flags);
+ #endif
+ 	/*
+ 	 * don't use it in hardirq context, because it
 -- 
-js
+1.7.1
+
