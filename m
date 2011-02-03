@@ -1,81 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932347Ab1BCQqD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 11:46:03 -0500
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:60204 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752404Ab1BCQqB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 11:46:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=KSZB0RAZ5Rn1PvM+3X8EpIY04/DUpIy7h7nyMYS5OFOS4lk278WuqPizjTlHpif/CC
-         /ziJCslUF73TdMr9DGCxTi7Q7EnmeLt9tDqLD2A9sEyNmQ5wZ5hA1iTiRsr22lPg+aTZ
-         HlkGBBScCCI6Km8dWkrQ76iUCuFQceKguYx4w=
-Date: Thu, 3 Feb 2011 08:45:49 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
+	id S1756523Ab1BCQu5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 11:50:57 -0500
+Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:41535
+	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753287Ab1BCQu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 11:50:56 -0500
+Date: Thu, 3 Feb 2011 16:51:32 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Gergely Nagy <algernon@balabit.hu>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Faisal Latif <faisal.latif@intel.com>,
-        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Alessandro Rubini <rubini@cvml.unipv.it>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Yong Zhang <yong.zhang0@gmail.com>
-Subject: Re: [PATCH 4/4] workqueue: Remove now superfluous
- cancel_delayed_work() calls
-Message-ID: <20110203164549.GA12802@core.coreip.homeip.net>
-References: <20110203140940.072679794@chello.nl>
- <20110203141548.346089735@chello.nl>
- <20110203161906.GG2570@htj.dyndns.org>
+        James Morris <jmorris@namei.org>
+Subject: Re: CAP_SYSLOG, 2.6.38 and user space
+Message-ID: <20110203165132.GA28172@mail.hallyn.com>
+References: <1296733177.14846.26.camel@moria>
+ <20110203153252.GA24153@mail.hallyn.com>
+ <1296748401.14846.39.camel@moria>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110203161906.GG2570@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1296748401.14846.39.camel@moria>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 03, 2011 at 05:19:06PM +0100, Tejun Heo wrote:
-> Hello, Peter.
+Quoting Gergely Nagy (algernon@balabit.hu):
+> On Thu, 2011-02-03 at 15:32 +0000, Serge E. Hallyn wrote:
+> > > Back in november, a patch was merged into the kernel (in  commit
+> > > ce6ada35bdf710d16582cc4869c26722547e6f11), that splits CAP_SYSLOG out of
+> > > CAP_SYS_ADMIN.
+> > > 
+> > > Sadly, this has an unwelcomed consequence, that any userspace syslogd
+> > > that formerly used CAP_SYS_ADMIN will stop working, unless upgraded, or
+> > > otherwise adapted to the change.
+> > > 
+> > > However, updating userspace isn't that easy, either, if one wants to
+> > > support multiple kernels with the same userspace binary: pre-2.6.38, one
+> > > needs CAP_SYS_ADMIN, but later kernels will need CAP_SYS_ADMIN. It would
+> > > be trivial to keep both, but that kind of defeats the purpose of
+> > > CAP_SYSLOG,
+> > 
+> > The idea would be to only use both when you detect a possibly older
+> > kernel. 
 > 
-> On Thu, Feb 03, 2011 at 03:09:44PM +0100, Peter Zijlstra wrote:
-> > Since queue_delayed_work() can now deal with existing timers, we don't
-> > need to explicitly call cancel_delayed_work() anymore.
-> 
-> This is nice but there's small complication with the way
-> queue_delayed_work() behaves.  If a delayed work item is already
-> pending, another queue_delayed_work() doesn't modify the delay whether
-> the new delay is longer or shorter than the current one.  The previous
-> patch doesn't really change the behavior as the whole thing is gated
-> with WORK_STRUCT_PENDING_BIT.
-> 
-> So, cancel_delayed_work() followed by queue_delayed_work() schedules
-> the work to be executed at the specified time regardless of the
-> current pending state while queue_delayed_work() takes effect iff
-> currently the work item is not pending.
-> 
-> The current behavior is weird and it often is easier to use explicit
-> timer + work item if the timer needs to be modified, but it has been
-> that way from the beginning so I don't think changing it would be a
-> good idea.  We can introduce a new interface (mod_delayed_work()
-> maybe) for this tho.
-> 
+> I was considering that, but... how do I reliably detect an older kernel?
+> So far, I didn't find a reliable way with which I can detect a kernel
+> version at run-time (apart from parsing utsname)
 
-I agree. If we were to change queue_delayed_work() we'd have to verify
-that all users that do not presently use cancel_delayed_work() in
-reschedule would be OK with the new behavior.
+...  Why not parse utsname?
 
-Thanks.
+>  - but it's entirely
+> possible, that I missed something obvious.
+> 
+> Furthermore, this still needs an userspace upgrade aswell, so only helps
+> one half of the problem.
 
--- 
-Dmitry
+True, that only addresses the less forgivable problem I introduced, namely
+what does updated userspace even do to do the right thing.
+
+> > However, you're right of course, I really should have provided some way
+> > for userspace to click 'ok, got the message, now continue anyway because
+> > I'm running older userspace for now,'  i.e. a sysctl perhaps.
+> > 
+> > Sorry about the trouble.  Here is a patch to just warn for now, with
+> > the changelog showing what i intend to push next.
+> > 
+> > sorry again,
+> > -serge
+> > 
+> > From 2d7408541dd3a6e19a4265b028233789be6a40f4 Mon Sep 17 00:00:00 2001
+> > From: Serge Hallyn <serge@peq.(none)>
+> > Date: Thu, 3 Feb 2011 09:26:15 -0600
+> > Subject: [PATCH 1/1] cap_syslog: don't refuse cap_sys_admin for now
+> > 
+> > At 2.6.39 or 2.6.40, let's add a sysctl which defaults to 0.  When
+> > 0, refuse if cap_sys_admin, if 1, then allow.  This will allow
+> > users to acknowledge (permanently, if they must, using /etc/sysctl.conf)
+> > that they've seen the syslog message about cap_sys_admin being
+> > deprecated for syslog.
+> 
+> Could we have it the other way around, at least for a while? Otherwise,
+
+Sure.
+
+So long as there is a definite path toward eventually having syslog
+with CAP_SYS_ADMIN be denied.
+
+> if someone happens to upgrade the kernel, and forgets to upgrade the
+> syslogd, he'll still experience breakage. With defaulting to 1,
+> compatiblity is kept, and systems that were upgraded properly can set it
+> to 0 and live happily ever after. The WARNs should prompt people to
+> upgrade at the first opportunity, so hopefully, it won't go unnoticed
+> and ignored by userspace.
+> 
+> I'm not sure one would even see the kernel warn with the syslogd not
+> being able to read the kernel messages (dmesg, of course, would reveal
+> it, but that's one extra step).
+
+-serge
