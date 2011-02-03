@@ -1,120 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752075Ab1BCU3m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 15:29:42 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:54979 "EHLO
+	id S1752112Ab1BCUi6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 15:38:58 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:62458 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760Ab1BCU3l convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751640Ab1BCUi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 15:29:41 -0500
-Subject: Re: [PATCH] Fix size argument to memset call in nfsacl_encode
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=us-ascii
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <1296763614.3015.26.camel@heimdal.trondhjem.org>
-Date: Thu, 3 Feb 2011 15:29:03 -0500
-Cc: Jesper Juhl <jj@chaosbits.net>, Milton Miller <miltonm@bga.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Neil Brown <neilb@suse.de>, bfields@fieldses.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <67867FEF-6C10-4A35-8952-4EB56EAB79B9@oracle.com>
-References: <alpine.LNX.2.00.1102032012540.15101@swampdragon.chaosbits.net> <1296761330.3015.22.camel@heimdal.trondhjem.org> <alpine.LNX.2.00.1102032035280.15101@swampdragon.chaosbits.net> <705C97E5-E273-45AA-9714-2BF409DE1322@oracle.com> <1296763614.3015.26.camel@heimdal.trondhjem.org>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-X-Mailer: Apple Mail (2.1082)
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+	Thu, 3 Feb 2011 15:38:57 -0500
+Message-ID: <4D4B1214.20603@kernel.org>
+Date: Thu, 03 Feb 2011 12:37:40 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH - resend] memblock: Don't adjust size in memblock_find_base()
+References: <AANLkTikknHfA4TQw+SMH-EyJBHoNHXk8Rheq4=K4jNWA@mail.gmail.com>	<alpine.DEB.2.00.1012291637270.6040@chino.kir.corp.google.com>	<4D1BD928.50701@zytor.com>	<alpine.DEB.2.00.1012291702180.7374@chino.kir.corp.google.com>	<4D1BE615.4000700@zytor.com>	<20101230090648.GB7306@elte.hu>	<20101230102815.GA29822@elte.hu>	<20101230103002.GA30020@elte.hu>	<AANLkTimeqrLzDuqBoSvmkSJWMc7u3PeRf37vjzBca2Lh@mail.gmail.com>	<AANLkTimpyRXS9dNFATh4GqtA46uynutAvK7Qb5S7WPFO@mail.gmail.com>	<20110105134434.GA22816@elte.hu>	<4D43615B.9060203@kernel.org> <20110203122505.8369330f.akpm@linux-foundation.org>
+In-Reply-To: <20110203122505.8369330f.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4D4B1029.0301:SCFMA4539814,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090201.4D4B1249.027A,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Feb 3, 2011, at 3:06 PM, Trond Myklebust wrote:
-
-> On Thu, 2011-02-03 at 15:00 -0500, Chuck Lever wrote: 
->> On Feb 3, 2011, at 2:41 PM, Jesper Juhl wrote:
->> 
->>> On Thu, 3 Feb 2011, Trond Myklebust wrote:
->>> 
->>>> On Thu, 2011-02-03 at 20:15 +0100, Jesper Juhl wrote: 
->>>>> We want to give memset() the sizeof(struct posix_acl), not
->>>>> sizeof(struct posix_acl *).
->>>>> 
->>>>> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
->>>>> ---
->>>>> nfsacl.c |    2 +-
->>>>> 1 file changed, 1 insertion(+), 1 deletion(-)
->>>>> 
->>>>> diff --git a/fs/nfs_common/nfsacl.c b/fs/nfs_common/nfsacl.c
->>>>> index 84c27d6..bc6d81b 100644
->>>>> --- a/fs/nfs_common/nfsacl.c
->>>>> +++ b/fs/nfs_common/nfsacl.c
->>>>> @@ -117,7 +117,7 @@ int nfsacl_encode(struct xdr_buf *buf, unsigned int base, struct inode *inode,
->>>>> 		 * invoked in contexts where a memory allocation failure is
->>>>> 		 * fatal.  Fortunately this fake ACL is small enough to
->>>>> 		 * construct on the stack. */
->>>>> -		memset(acl2, 0, sizeof(acl2));
->>>>> +		memset(acl2, 0, sizeof(*acl2));
->>>>> 		posix_acl_init(acl2, 4);
->>>>> 
->>>>> 		/* Insert entries in canonical order: other orders seem
->>>> 
->>>> Ccing Milton Miller who also sent in the same patch.
->>>> 
->>>> Neither patch is correct afaics. posix_acl_init() will clobber the above
->>>> memset, and so the correct fix is just to get rid of it...
->>>> 
->>> 
->>> posix_acl_init() sets a_refcount and a_count, but what about a_entries ... 
->>> no problem, nfsacl_encode() itself takes care of that post the 
->>> posix_acl_init() call.. it's all good.
->>> 
->>> So ...
->>> 
->>> 
->>> Remove pointless memset() in nfsacl_encode().
->>> 
->>> Thanks to Trond Myklebust <Trond.Myklebust@netapp.com> for pointing out 
->>> that it is not needed since posix_acl_init() will set everything 
->>> regardless..
->>> 
->>> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
->>> ---
->>> nfsacl.c |    1 -
->>> 1 file changed, 1 deletion(-)
->>> 
->>> diff --git a/fs/nfs_common/nfsacl.c b/fs/nfs_common/nfsacl.c
->>> index 84c27d6..ec0f277 100644
->>> --- a/fs/nfs_common/nfsacl.c
->>> +++ b/fs/nfs_common/nfsacl.c
->>> @@ -117,7 +117,6 @@ int nfsacl_encode(struct xdr_buf *buf, unsigned int base, struct inode *inode,
->>> 		 * invoked in contexts where a memory allocation failure is
->>> 		 * fatal.  Fortunately this fake ACL is small enough to
->>> 		 * construct on the stack. */
->>> -		memset(acl2, 0, sizeof(acl2));
->>> 		posix_acl_init(acl2, 4);
->>> 
->>> 		/* Insert entries in canonical order: other orders seem
->> 
->> If there is a guarantee that random data that potentially resides between the fields in that structure will never appear on the wire, then ACK.
->> 
+On 02/03/2011 12:25 PM, Andrew Morton wrote:
+> On Fri, 28 Jan 2011 16:37:47 -0800
+> Yinghai Lu <yinghai@kernel.org> wrote:
 > 
-> Yes, that is guaranteed. The posix_acl structure is initialised by
-> posix_acl_init above, and the array itself is initialised by us in the
-> lines following that...
+>>
+>> While applying patch to use memblock to find aperture for 64bit x86.
+>> Ingo found system with 1g + force_iommu
+>>
+>>> No AGP bridge found
+>>> Node 0: aperture @ 38000000 size 32 MB
+>>> Aperture pointing to e820 RAM. Ignoring.
+>>> Your BIOS doesn't leave a aperture memory hole
+>>> Please enable the IOMMU option in the BIOS setup
+>>> This costs you 64 MB of RAM
+>>> Cannot allocate aperture memory hole (0,65536K)
+> 
+> I'm trying to work out if we should backport this fix into earlier
+> kernels and as is often the case, I wasn't given enough information.
+> 
+> What are the end-user visible effects of this?  The kernel cannot use
+> the AGP bridge?  64MB of RAM wasted?  Something else?
 
-Sorry, I wasn't clear.  IMO, data that is destined for the network is an important case where we have to be careful about the rule of using either assignments or memset(), not both, when initializing a data structure.
+that is needed for further cleanup memblock with x86.
 
-If the compiler doesn't pack the fields in struct posix_acl, there is unused space between them.  Memory for acl2 comes from the stack, which contains arbitrary data when this function is invoked.  The areas between the structure fields are not affected by the variable assignments used here.  If the data in acl2 is then simply memcpy'd to the XDR buffer, that old stack data can possibly appear on the wire.
+http://git.kernel.org/?p=linux/kernel/git/tip/linux-2.6-tip.git;a=shortlog;h=refs/heads/x86/bootmem
 
-I agree that the current memset() is incorrect.  My conditional ACK was more about what happens in xdr_encode_array2() rather than how the posix_acl acl2 is initialized.  I think in that regard we are also safe, if the array encoding operates by data type rather than by simply doing a blanket memcpy.  See xdr_nfsace_encode().  It's always possible I misunderstood how ACEs are XDR encoded.
+but it triggers another old bug in core memblock on one Ingo test machine. (with 1g ram but have iommu forced set for debug)
+end-user is not supposed to have this conf.
 
-It's a nit at this point, so ACK.
+Thanks
 
--- 
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
-
+Yinghai
 
 
