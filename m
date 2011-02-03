@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876Ab1BCENU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 23:13:20 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:59514 "EHLO smtps.tip.net.au"
+	id S1755897Ab1BCENg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 23:13:36 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:40971 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755786Ab1BCENT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 23:13:19 -0500
-Date: Thu, 3 Feb 2011 15:13:09 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the final tree (net tree
- related)
-Message-Id: <20110203151309.d4a6c344.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1755537Ab1BCENe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 23:13:34 -0500
+Date: Wed, 2 Feb 2011 20:13:31 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 11/19] tc6393xb: mfd_cell is now implicitly available to
+ drivers
+Message-ID: <20110202201331.31fd0694@queued.net>
+In-Reply-To: <20110202195417.228e2656@queued.net>
+References: <20110202195417.228e2656@queued.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__3_Feb_2011_15_13_09_+1100_LSb.QGO8e1oJhIU3"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__3_Feb_2011_15_13_09_+1100_LSb.QGO8e1oJhIU3
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+No need to explicitly set the cell's platform_data/data_size.
 
-After merging the final tree, today's linux-next build (sparc32 defconfig)
-failed like this:
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ drivers/mfd/tc6393xb.c |   18 ------------------
+ 1 files changed, 0 insertions(+), 18 deletions(-)
 
-net/ipv4/fib_trie.c:98: error: redefinition of 'struct node'
+diff --git a/drivers/mfd/tc6393xb.c b/drivers/mfd/tc6393xb.c
+index 9a23863..4080a79 100644
+--- a/drivers/mfd/tc6393xb.c
++++ b/drivers/mfd/tc6393xb.c
+@@ -694,26 +694,8 @@ static int __devinit tc6393xb_probe(struct platform_device *dev)
+ 	}
+ 
+ 	tc6393xb_cells[TC6393XB_CELL_NAND].driver_data = tcpd->nand_data;
+-	tc6393xb_cells[TC6393XB_CELL_NAND].platform_data =
+-		&tc6393xb_cells[TC6393XB_CELL_NAND];
+-	tc6393xb_cells[TC6393XB_CELL_NAND].data_size =
+-		sizeof(tc6393xb_cells[TC6393XB_CELL_NAND]);
+-
+-	tc6393xb_cells[TC6393XB_CELL_MMC].platform_data =
+-		&tc6393xb_cells[TC6393XB_CELL_MMC];
+-	tc6393xb_cells[TC6393XB_CELL_MMC].data_size =
+-		sizeof(tc6393xb_cells[TC6393XB_CELL_MMC]);
+-
+-	tc6393xb_cells[TC6393XB_CELL_OHCI].platform_data =
+-		&tc6393xb_cells[TC6393XB_CELL_OHCI];
+-	tc6393xb_cells[TC6393XB_CELL_OHCI].data_size =
+-		sizeof(tc6393xb_cells[TC6393XB_CELL_OHCI]);
+ 
+ 	tc6393xb_cells[TC6393XB_CELL_FB].driver_data = tcpd->fb_data;
+-	tc6393xb_cells[TC6393XB_CELL_FB].platform_data =
+-		&tc6393xb_cells[TC6393XB_CELL_FB];
+-	tc6393xb_cells[TC6393XB_CELL_FB].data_size =
+-		sizeof(tc6393xb_cells[TC6393XB_CELL_FB]);
+ 
+ 	ret = mfd_add_devices(&dev->dev, dev->id,
+ 			tc6393xb_cells, ARRAY_SIZE(tc6393xb_cells),
+-- 
+1.7.2.3
 
-Probably exposed by commit 3630b7c050d9c3564f143d595339fc06b888d6f3
-("ipv4: Remove fib_hash").
-
-Naming a struct "node" (in the face of include/linux/node.h) is a bit
-hopeful.  :-)
-
-I have left this broken for now ...
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__3_Feb_2011_15_13_09_+1100_LSb.QGO8e1oJhIU3
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNSitVAAoJEDMEi1NhKgbspPIIAJUnzDVi0BAz2ZecWLyAMELr
-ixkjICdr5ajh0Z4u5KDolq3M2BBowzku+2j49UPxgrkz0D7nMuCCtkAotlk4q3XO
-TJlq4diuSrCCBiqegbUYHnHiHl9pTc9IXRUMWs4D3o1zeiZShL1X8SZIBlBtH3eV
-fDfxYDaNvV0xQEAD1OfHN+WnOhAkO/U3gX2FhFm1hs1vJ4jn+qOJCNEjg/T3JrJ9
-/ZnN2H1ODeGy11qFeRmNUM2kLJi30C3hA6C8y8ACevsNtYPkFpu66Qz+DJ6jbI02
-hmQa/nYcJSAEwDaJJ6xRv2xGP8nkodcFKxjrtMrbsVAGCg10drSRvwgVq/P2Sk4=
-=ASDV
------END PGP SIGNATURE-----
-
---Signature=_Thu__3_Feb_2011_15_13_09_+1100_LSb.QGO8e1oJhIU3--
