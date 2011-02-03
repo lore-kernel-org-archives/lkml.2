@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784Ab1BCXtO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 18:49:14 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:12177 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754453Ab1BCXsj (ORCPT
+	id S1754553Ab1BCXuk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 18:50:40 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44485 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752693Ab1BCXuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 18:48:39 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6245"; a="72915108"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Daniel Walker <dwalker@codeaurora.org>
-Subject: [PATCHv2 2/3] hvc_dcc: Simplify put_chars()/get_chars() loops
-Date: Thu,  3 Feb 2011 15:48:35 -0800
-Message-Id: <1296776916-21018-3-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.4.2.g597a6
-In-Reply-To: <1296776916-21018-1-git-send-email-sboyd@codeaurora.org>
-References: <20110203221742.GA4159@kroah.com>
- <1296776916-21018-1-git-send-email-sboyd@codeaurora.org>
+	Thu, 3 Feb 2011 18:50:39 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 4 Feb 2011 08:44:33 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, nishimura@mxp.nes.nec.co.jp,
+        balbir@linux.vnet.ibm.com, minchan.kim@gmail.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] memcg: simplify the way memory limits are checked
+Message-Id: <20110204084433.c479a0af.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110203125611.GC2286@cmpxchg.org>
+References: <1296482635-13421-1-git-send-email-hannes@cmpxchg.org>
+	<1296482635-13421-3-git-send-email-hannes@cmpxchg.org>
+	<20110131144131.6733aa3a.akpm@linux-foundation.org>
+	<20110201000455.GB19534@cmpxchg.org>
+	<20110131162448.e791f0ae.akpm@linux-foundation.org>
+	<20110203125357.GA2286@cmpxchg.org>
+	<20110203125611.GC2286@cmpxchg.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Casting and anding with 0xff is unnecessary in
-hvc_dcc_put_chars() since buf is already a char[].
-__dcc_get_char() can't return an int less than 0 since it only
-returns a char. Simplify the if statement in hvc_dcc_get_chars()
-to take this into account.
+On Thu, 3 Feb 2011 13:56:11 +0100
+Johannes Weiner <hannes@cmpxchg.org> wrote:
 
-Cc: Daniel Walker <dwalker@codeaurora.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/tty/hvc/hvc_dcc.c |   12 ++++--------
- 1 files changed, 4 insertions(+), 8 deletions(-)
+> Since transparent huge pages, checking whether memory cgroups are
+> below their limits is no longer enough, but the actual amount of
+> chargeable space is important.
+> 
+> To not have more than one limit-checking interface, replace
+> memory_cgroup_check_under_limit() and memory_cgroup_check_margin()
+> with a single memory_cgroup_margin() that returns the chargeable space
+> and leaves the comparison to the callsite.
+> 
+> Soft limits are now checked the other way round, by using the already
+> existing function that returns the amount by which soft limits are
+> exceeded: res_counter_soft_limit_excess().
+> 
+> Also remove all the corresponding functions on the res_counter side
+> that are now no longer used.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-diff --git a/drivers/tty/hvc/hvc_dcc.c b/drivers/tty/hvc/hvc_dcc.c
-index 155ec10..ad23cc8 100644
---- a/drivers/tty/hvc/hvc_dcc.c
-+++ b/drivers/tty/hvc/hvc_dcc.c
-@@ -89,7 +89,7 @@ static int hvc_dcc_put_chars(uint32_t vt, const char *buf, int count)
- 		while (__dcc_getstatus() & DCC_STATUS_TX)
- 			cpu_relax();
- 
--		__dcc_putchar((char)(buf[i] & 0xFF));
-+		__dcc_putchar(buf[i]);
- 	}
- 
- 	return count;
-@@ -99,15 +99,11 @@ static int hvc_dcc_get_chars(uint32_t vt, char *buf, int count)
- {
- 	int i;
- 
--	for (i = 0; i < count; ++i) {
--		int c = -1;
--
-+	for (i = 0; i < count; ++i)
- 		if (__dcc_getstatus() & DCC_STATUS_RX)
--			c = __dcc_getchar();
--		if (c < 0)
-+			buf[i] = __dcc_getchar();
-+		else
- 			break;
--		buf[i] = c;
--	}
- 
- 	return i;
- }
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
