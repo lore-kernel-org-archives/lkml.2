@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754973Ab1BCCO7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 21:14:59 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:34072 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754489Ab1BCCO4 (ORCPT
+	id S1755016Ab1BCCPP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 21:15:15 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:50553 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754579Ab1BCCPL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 21:14:56 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 1/4] RTC: Prevents a division by zero in kernel code.
-Date: Wed,  2 Feb 2011 18:14:40 -0800
-Message-Id: <1296699283-6784-2-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1296699283-6784-1-git-send-email-john.stultz@linaro.org>
-References: <1296699283-6784-1-git-send-email-john.stultz@linaro.org>
+	Wed, 2 Feb 2011 21:15:11 -0500
+Date: Thu, 3 Feb 2011 03:15:10 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>
+Subject: Re: [patch] x86, mm: avoid stale tlb entries by clearing prev mm_cpumask after switching mm
+Message-ID: <20110203021510.GM15569@one.firstfloor.org>
+References: <1296677247.4418.103.camel@sbsiddha-MOBL3.sc.intel.com> <m2d3n9ap1y.fsf@firstfloor.org> <1296698151.4418.464.camel@sbsiddha-MOBL3.sc.intel.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1296698151.4418.464.camel@sbsiddha-MOBL3.sc.intel.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+> I thought "asm volatile" is going to take care of that.
 
-This patch prevents a user space program from calling the RTC_IRQP_SET
-ioctl with a negative value of frequency. Also, if this call is make
-with a zero value of frequency, there would be a division by zero in the
-kernel code.
+asm volatile just prevents deletion:
 
-[jstultz: Also initialize irq_freq to 1 to catch other divbyzero issues]
+>>
+The `volatile' keyword indicates that the instruction has important
+side-effects.  GCC will not delete a volatile `asm' if it is reachable.
+(The instruction can still be deleted if GCC can prove that
+control-flow will never reach the location of the instruction.)  Note
+that even a volatile `asm' instruction can be moved relative to other
+code, including across jump instructions.
+<<
 
-CC: Alessandro Zummo <a.zummo@towertech.it>
-CC: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- drivers/rtc/class.c     |    1 +
- drivers/rtc/interface.c |    3 +++
- 2 files changed, 4 insertions(+), 0 deletions(-)
+> If not, then we have issues even today. no?
 
-diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
-index 9583cbc..c404b61 100644
---- a/drivers/rtc/class.c
-+++ b/drivers/rtc/class.c
-@@ -143,6 +143,7 @@ struct rtc_device *rtc_device_register(const char *name, struct device *dev,
- 	rtc->id = id;
- 	rtc->ops = ops;
- 	rtc->owner = owner;
-+	rtc->irq_freq = 1;
- 	rtc->max_user_freq = 64;
- 	rtc->dev.parent = dev;
- 	rtc->dev.class = rtc_class;
-diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
-index 925006d..a0c0196 100644
---- a/drivers/rtc/interface.c
-+++ b/drivers/rtc/interface.c
-@@ -464,6 +464,9 @@ int rtc_irq_set_freq(struct rtc_device *rtc, struct rtc_task *task, int freq)
- 	int err = 0;
- 	unsigned long flags;
- 
-+	if (freq <= 0)
-+		return -EINVAL;
-+
- 	spin_lock_irqsave(&rtc->irq_task_lock, flags);
- 	if (rtc->irq_task != NULL && task == NULL)
- 		err = -EBUSY;
+Well yes. It depends on the compiler if it actually moves something.
+So most likely nothing was reordered yet, but it's safer to prevent
+it.
+
+I normally go by the rule that if correctness requires a specific
+order without explicit side effects I add memory barriers.
+
+-Andi
+
 -- 
-1.7.3.2.146.gca209
-
+ak@linux.intel.com -- Speaking for myself only.
