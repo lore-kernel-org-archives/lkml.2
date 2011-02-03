@@ -1,73 +1,37 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab1BBK41 (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Wed, 2 Feb 2011 05:56:27 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:49834 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753113Ab1BBK40 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 05:56:26 -0500
-From: y@vger.kernel.org
-To: dbrownell@users.sourceforge.net, grant.likely@secretlab.ca
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, arnd@arndb.de,
-        Bernhard Walle <walle@corscience.de>
-Subject: [PATCH] spi: spidev: Add 32 bit compat ioctl()
-Date: Wed,  2 Feb 2011 11:56:16 +0100
-Message-Id: <1296644176-23891-1-git-send-email-y>
-X-Mailer: git-send-email 1.7.1
-X-Provags-ID: V02:K0:HvBhlqDbzNoSSj3ObsIoQQqvu5yum/FKJA8ez0Z14yK
- pxfDv15kVmYpasm3fgmiT0dSC2ItmxPIR19Lg5SK6YR0wDcxee
- CNXfwMiNxnMDWn7Ia4HMeG76HPzYCgnyStrgHXABt/2z5EH9E6
- jxaeZFgmeRLZO4sECmLh9QKqYasQDkQ6489wBKrm+872zpsx2T
- uHohXjeAsxHpkK5m7Ip4g==
+	id S1756449Ab1BCO2A (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Thu, 3 Feb 2011 09:28:00 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:40517 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755086Ab1BCO1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 09:27:11 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: memcg: save 20% of per-page memcg memory overhead
+Date: Thu,  3 Feb 2011 15:26:01 +0100
+Message-Id: <1296743166-9412-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bernhard Walle <walle@corscience.de>
+This patch series removes the direct page pointer from struct
+page_cgroup, which saves 20% of per-page memcg memory overhead (Fedora
+and Ubuntu enable memcg per default, openSUSE apparently too).
 
-Add the compat_ioctl for operations on /dev/spi* so that 32 bit
-userspace applications can access SPI. As far as I can see all data
-structure are already prepared for that, so no additional conversion has
-to be done.
+The node id or section number is encoded in the remaining free bits of
+pc->flags which allows calculating the corresponding page without the
+extra pointer.
 
-My use case is MIPS with N32 userspace ABI and toolchain, and that was
-also the platform where I tested it successfully (Cavium Octeon).
+I ran, what I think is, a worst-case microbenchmark that just cats a
+large sparse file to /dev/null, because it means that walking the LRU
+list on behalf of per-cgroup reclaim and looking up pages from
+page_cgroups is happening constantly and at a high rate.  But it made
+no measurable difference.  A profile reported a 0.11% share of the new
+lookup_cgroup_page() function in this benchmark.
 
-Signed-off-by: Bernhard Walle <walle@corscience.de>
----
- drivers/spi/spidev.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
-index 4e6245e..95c3f10 100644
---- a/drivers/spi/spidev.c
-+++ b/drivers/spi/spidev.c
-@@ -471,6 +471,14 @@ spidev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 	return retval;
- }
- 
-+#ifdef CONFIG_COMPAT
-+static long
-+spidev_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
-+{
-+	return spidev_ioctl(filp, cmd, (unsigned long)compat_ptr(arg));
-+}
-+#endif /* CONFIG_COMPAT */
-+
- static int spidev_open(struct inode *inode, struct file *filp)
- {
- 	struct spidev_data	*spidev;
-@@ -543,6 +551,9 @@ static const struct file_operations spidev_fops = {
- 	.write =	spidev_write,
- 	.read =		spidev_read,
- 	.unlocked_ioctl = spidev_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl = spidev_compat_ioctl,
-+#endif
- 	.open =		spidev_open,
- 	.release =	spidev_release,
- 	.llseek =	no_llseek,
--- 
-1.7.1
-
+	Hannes
