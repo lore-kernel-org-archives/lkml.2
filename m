@@ -1,44 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756033Ab1BCA7Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 19:59:25 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:40617 "EHLO mail.zytor.com"
+	id S1755425Ab1BCBCw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 20:02:52 -0500
+Received: from mga03.intel.com ([143.182.124.21]:19972 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755994Ab1BCA7Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 19:59:24 -0500
-Message-ID: <4D49FDA2.9020900@zytor.com>
-Date: Wed, 02 Feb 2011 16:58:10 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>, Borislav Petkov <bp@alien8.de>,
-        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Xen Devel <Xen-devel@lists.xensource.com>,
-        Keir Fraser <keir.fraser@eu.citrix.com>
-Subject: Re: [PATCH 0/2] x86/microcode: support for microcode update in Xen
- dom0
-References: <20110130113356.GA27967@liondog.tnic> <4D461FB9.5050807@goop.org> <20110131070241.GA22071@liondog.tnic> <4D46FC9F.6090309@goop.org> <20110131234131.GA16095@liondog.tnic> <4D475099.1080004@goop.org> <4D475DB5.1020300@zytor.com> <4D488EB1.9020803@goop.org> <4D49B5F6.5010606@zytor.com> <4D49B903.2080602@goop.org> <20110203005517.GA30220@khazad-dum.debian.net>
-In-Reply-To: <20110203005517.GA30220@khazad-dum.debian.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754474Ab1BCBCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 20:02:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,416,1291622400"; 
+   d="scan'208";a="383469760"
+Subject: [patch] x86, mtrr: avoid MTRR reprogramming on BP during boot on
+ UP platforms
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, jabber@gmx.org, trenn@novell.com,
+        Rafael Wysocki <rjw@novell.com>,
+        Venkatesh Pallipadi <venki@google.com>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Wed, 02 Feb 2011 17:02:55 -0800
+Message-Id: <1296694975.4418.402.camel@sbsiddha-MOBL3.sc.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/02/2011 04:55 PM, Henrique de Moraes Holschuh wrote:
-> 
-> But I'd really, really appreciate if someone from Intel [that actually cares
-> for operating system support of microcode updates] could vouch that we're
-> allowed to do that (convert their text packs to binary packs, merge
-> microcodes from older packs with the new to have a single pack with all
-> microcodes in their most up-to-date revision, and distribute the resulting
-> binary packs) before I make the tool public.
-> 
+Markus Kohn ran into a hard hang regression on an acer aspire 1310, when acpi is
+enabled. git bisect showed the following commit as the bad one that introduced
+the boot regression.
 
-I'm trying to figure this stuff out already.
+	commit d0af9eed5aa91b6b7b5049cae69e5ea956fd85c3
+	Author: Suresh Siddha <suresh.b.siddha@intel.com>
+	Date:   Wed Aug 19 18:05:36 2009 -0700
 
-The actual conversion isn't a problem, obviously.
+	    x86, pat/mtrr: Rendezvous all the cpus for MTRR/PAT init
 
-	-hpa
+Because of the UP configuration of that platform, native_smp_prepare_cpus()
+bailed out (in smp_sanity_check()) before doing the set_mtrr_aps_delayed_init()
+
+Further down the boot path, native_smp_cpus_done() will call the delayed
+MTRR initialization for the AP's (mtrr_aps_init()) with mtrr_aps_delayed_init
+not set. This resulted in the boot processor reprogramming its MTRR's to
+the values seen during the start of the OS boot. While this is not needed
+ideally, this shouldn't have caused any side-effects. This is because the
+reprogramming of MTRR's (set_mtrr_state() that gets called via set_mtrr()) will
+check if the live register contents are different from what is being
+asked to write and will do the actual write only if they are different.
+
+BP's mtrr state is read during the start of the OS boot and typically nothing
+would have changed when we ask to reprogram it on BP again because of the above
+scenario on an UP platform. So on a normal UP platform no reprogramming of BP
+MTRR MSR's happens and all is well.
+
+However, on this platform, bios seems to be modifying the fixed mtrr range
+registers between the start of OS boot and when we double check the live
+registers for reprogramming BP MTRR registers. And as the live registers are
+modified, we end up reprogramming the MTRR's to the state seen during
+the start of the OS boot.
+
+During ACPI initialization, something in the bios (probably smi handler?) don't
+like this fact and results in a hard lockup.
+
+We didn't see this boot hang issue on this platform before the commit
+d0af9eed5aa91b6b7b5049cae69e5ea956fd85c3, because only the AP's (if any)
+will program its MTRR's to the value that BP had at the start of the OS boot.
+
+Fix this issue by checking mtrr_aps_delayed_init before continuing
+further in the mtrr_aps_init(). Now, only AP's (if any) will program
+its MTRR's to the BP values during boot.
+
+Addresses https://bugzilla.novell.com/show_bug.cgi?id=623393
+
+   [By the way, this behavior of the bios modifying MTRR's after the start
+    of the OS boot is not common and the kernel is not prepared to
+    handle this situation well. Irrespective of this issue, during
+    suspend/resume, linux kernel will try to reprogram the BP's MTRR values
+    to the values seen during the start of the OS boot. So suspend/resume might
+    be already broken on this platform for all linux kernel versions.]
+
+Reported-and-bisected-by: Markus Kohn <jabber@gmx.org>
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Thomas Renninger <trenn@novell.com>
+Cc: Rafael Wysocki <rjw@novell.com>
+Cc: Venkatesh Pallipadi <venki@google.com>
+Cc: stable@kernel.org	[v2.6.32+]
+---
+ arch/x86/kernel/cpu/mtrr/main.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mtrr/main.c b/arch/x86/kernel/cpu/mtrr/main.c
+index 01c0f3e..4fe5ebc 100644
+--- a/arch/x86/kernel/cpu/mtrr/main.c
++++ b/arch/x86/kernel/cpu/mtrr/main.c
+@@ -793,13 +793,21 @@ void set_mtrr_aps_delayed_init(void)
+ }
+ 
+ /*
+- * MTRR initialization for all AP's
++ * Delayed MTRR initialization for all AP's
+  */
+ void mtrr_aps_init(void)
+ {
+ 	if (!use_intel())
+ 		return;
+ 
++	/*
++ 	 * Check if someone has requested the delay of AP MTRR initialization,
++ 	 * by doing set_mtrr_aps_delayed_init(), prior to this point. If not,
++ 	 * then we are done.
++ 	 */
++	if (!mtrr_aps_delayed_init)
++		return;
++
+ 	set_mtrr(~0U, 0, 0, 0);
+ 	mtrr_aps_delayed_init = false;
+ }
+
+
