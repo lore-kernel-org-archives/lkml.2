@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599Ab1BCVju (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 16:39:50 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:39118 "EHLO mx3.mail.elte.hu"
+	id S1753645Ab1BCVka (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 16:40:30 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:57507 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753301Ab1BCVjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 16:39:49 -0500
-Date: Thu, 3 Feb 2011 22:39:36 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>
-Subject: Re: [patch] x86, mm: avoid stale tlb entries by clearing prev
- mm_cpumask after switching mm
-Message-ID: <20110203213936.GA19673@elte.hu>
-References: <1296677247.4418.103.camel@sbsiddha-MOBL3.sc.intel.com>
- <AANLkTi=P+aoY4GY32xa8D8gHbDP73QpPmzvKbB4VM7g2@mail.gmail.com>
- <AANLkTinvQatNF0ZJqmvuKYNq7oKXqfR5Ke1FuaSLFNEF@mail.gmail.com>
- <1296757637.4418.1482.camel@sbsiddha-MOBL3.sc.intel.com>
- <AANLkTimuSV273ksidN_vQ4o1rLr6D--9Q3dNnBiB13-K@mail.gmail.com>
- <1296761671.4418.1558.camel@sbsiddha-MOBL3.sc.intel.com>
- <AANLkTimjYAYPLf=QG22hFHm7yhABCQj7q=kOpB6HcB5e@mail.gmail.com>
- <1296764404.4418.1634.camel@sbsiddha-MOBL3.sc.intel.com>
- <20110203210616.GA17471@elte.hu>
- <AANLkTinSQ36nfVbRK3GnFmtUtPMLaBF58mO_1McA6HD8@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinSQ36nfVbRK3GnFmtUtPMLaBF58mO_1McA6HD8@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753476Ab1BCVk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 16:40:29 -0500
+Subject: Re: [RFC][PATCH 3/6] break out smaps_pte_entry() from
+ smaps_pte_range()
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Michael J Wolf <mjwolf@us.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+In-Reply-To: <alpine.DEB.2.00.1102031315080.1307@chino.kir.corp.google.com>
+References: <20110201003357.D6F0BE0D@kernel>
+	 <20110201003401.95CFBFA6@kernel>
+	 <alpine.DEB.2.00.1102031315080.1307@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Thu, 03 Feb 2011 13:40:23 -0800
+Message-ID: <1296769223.8299.1658.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> On Thu, Feb 3, 2011 at 1:06 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > Do you want to apply it or should I?
+On Thu, 2011-02-03 at 13:22 -0800, David Rientjes wrote:
+> On Mon, 31 Jan 2011, Dave Hansen wrote:
+> > We will use smaps_pte_entry() in a moment to handle both small
+> > and transparent large pages.  But, we must break it out of
+> > smaps_pte_range() first.
 > 
-> I already did (but I now amended it to have your ack and pushed it out).
+> The extraction from smaps_pte_range() looks good.  What's the performance 
+> impact on very frequent consumers of /proc/pid/smaps, though, as the 
+> result of the calls throughout the iteration if smaps_pte_entry() doesn't 
+> get inlined (supposedly because you'll be reusing the extracted function 
+> again elsewhere)?
 
-Cool, thanks!
+We could try and coerce it in to always inlining it, I guess.  I just
+can't imagine this changes the cost _that_ much.  Unless I have some
+specific concers, I tend to leave this up to the compiler, and none of
+the users look particularly fastpathy or performance sensitive to me.
 
-	Ingo
+...
+> > -	}
+> > +	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+> > +	for (; addr != end; pte++, addr += PAGE_SIZE)
+> > +		smaps_pte_entry(*pte, addr, walk);
+> >  	pte_unmap_unlock(pte - 1, ptl);
+> >  	cond_resched();
+> >  	return 0;
+> > diff -puN mm/huge_memory.c~break-out-smaps_pte_entry mm/huge_memory.c
+> > _
+> 
+> Is there a missing change to mm/huge_memory.c?
+
+Nope, it was just more of those empty diffs like in the last patch.
+It's cruft from patch-scripts and some code that I use to ensure I don't
+miss file edits when making patches.  I'll pull them out.
+
+-- Dave
+
