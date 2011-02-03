@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932226Ab1BCOLU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 09:11:20 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:56915 "EHLO zene.cmpxchg.org"
+	id S932234Ab1BCOLh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 09:11:37 -0500
+Received: from hera.kernel.org ([140.211.167.34]:51350 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932169Ab1BCOLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 09:11:18 -0500
-Date: Thu, 3 Feb 2011 15:11:10 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch] memcg: remove impossible conditional when committing
-Message-ID: <20110203141110.GF2286@cmpxchg.org>
+	id S932169Ab1BCOLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 09:11:35 -0500
+Date: Thu, 3 Feb 2011 14:11:10 GMT
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <new-submission>
+References: <new-submission>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched: Fix update_curr_rt()
+Message-ID: <tip-06c3bc655697b19521901f9254eb0bbb2c67e7e8@git.kernel.org>
+Git-Commit-ID: 06c3bc655697b19521901f9254eb0bbb2c67e7e8
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 03 Feb 2011 14:11:11 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No callsite ever passes a NULL pointer for a struct mem_cgroup * to
-the committing function.  There is no need to check for it.
+Commit-ID:  06c3bc655697b19521901f9254eb0bbb2c67e7e8
+Gitweb:     http://git.kernel.org/tip/06c3bc655697b19521901f9254eb0bbb2c67e7e8
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Wed, 2 Feb 2011 13:19:48 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 3 Feb 2011 12:21:33 +0100
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+sched: Fix update_curr_rt()
+
+cpu_stopper_thread()
+  migration_cpu_stop()
+    __migrate_task()
+      deactivate_task()
+        dequeue_task()
+          dequeue_task_rq()
+            update_curr_rt()
+
+Will call update_curr_rt() on rq->curr, which at that time is
+rq->stop. The problem is that rq->stop.prio matches an RT prio and
+thus falsely assumes its a rt_sched_class task.
+
+Reported-Debuged-Tested-Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <new-submission>
+Cc: stable@kernel.org # .37
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- mm/memcontrol.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+ kernel/sched_rt.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 031ff07..a145c9e 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2092,10 +2092,6 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *mem,
- {
- 	int nr_pages = page_size >> PAGE_SHIFT;
+diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+index c914ec7..ad62677 100644
+--- a/kernel/sched_rt.c
++++ b/kernel/sched_rt.c
+@@ -625,7 +625,7 @@ static void update_curr_rt(struct rq *rq)
+ 	struct rt_rq *rt_rq = rt_rq_of_se(rt_se);
+ 	u64 delta_exec;
  
--	/* try_charge() can return NULL to *memcg, taking care of it. */
--	if (!mem)
--		return;
--
- 	lock_page_cgroup(pc);
- 	if (unlikely(PageCgroupUsed(pc))) {
- 		unlock_page_cgroup(pc);
--- 
-1.7.4
-
+-	if (!task_has_rt_policy(curr))
++	if (curr->sched_class != &rt_sched_class)
+ 		return;
+ 
+ 	delta_exec = rq->clock_task - curr->se.exec_start;
