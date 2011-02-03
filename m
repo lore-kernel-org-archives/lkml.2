@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755571Ab1BCEEV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 23:04:21 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:48081 "EHLO lunge.queued.net"
+	id S1755611Ab1BCEFc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 23:05:32 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:48085 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754971Ab1BCEEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 23:04:20 -0500
-Date: Wed, 2 Feb 2011 20:04:17 -0800
+	id S1755065Ab1BCEFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 23:05:31 -0500
+Date: Wed, 2 Feb 2011 20:05:28 -0800
 From: Andres Salomon <dilinger@queued.net>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Phil Blundell <pb@handhelds.org>
-Subject: [PATCH 05/19] asic3: mfd_cell is now implicitly available to
+        Philipp Zabel <philipp.zabel@gmail.com>
+Subject: [PATCH 06/19] htc-pasic3: mfd_cell is now implicitly available to
  drivers
-Message-ID: <20110202200417.019f42ca@queued.net>
+Message-ID: <20110202200528.169e978f@queued.net>
 In-Reply-To: <20110202195417.228e2656@queued.net>
 References: <20110202195417.228e2656@queued.net>
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
@@ -30,33 +30,31 @@ No need to explicitly set the cell's platform_data/data_size.
 
 Signed-off-by: Andres Salomon <dilinger@queued.net>
 ---
- drivers/mfd/asic3.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+ drivers/mfd/htc-pasic3.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mfd/asic3.c b/drivers/mfd/asic3.c
-index 6a1f940..71d2901 100644
---- a/drivers/mfd/asic3.c
-+++ b/drivers/mfd/asic3.c
-@@ -810,9 +810,6 @@ static int __init asic3_mfd_probe(struct platform_device *pdev,
- 	ds1wm_resources[0].start >>= asic->bus_shift;
- 	ds1wm_resources[0].end   >>= asic->bus_shift;
+diff --git a/drivers/mfd/htc-pasic3.c b/drivers/mfd/htc-pasic3.c
+index 7bc7522..079d396 100644
+--- a/drivers/mfd/htc-pasic3.c
++++ b/drivers/mfd/htc-pasic3.c
+@@ -165,8 +165,6 @@ static int __init pasic3_probe(struct platform_device *pdev)
+ 		ds1wm_pdata.clock_rate = pdata->clock_rate;
+ 		/* the first 5 PASIC3 registers control the DS1WM */
+ 		ds1wm_resources[0].end = (5 << asic->bus_shift) - 1;
+-		ds1wm_cell.platform_data = &ds1wm_cell;
+-		ds1wm_cell.data_size = sizeof(ds1wm_cell);
+ 		ret = mfd_add_devices(&pdev->dev, pdev->id,
+ 				&ds1wm_cell, 1, r, irq);
+ 		if (ret < 0)
+@@ -175,8 +173,6 @@ static int __init pasic3_probe(struct platform_device *pdev)
  
--	asic3_cell_ds1wm.platform_data = &asic3_cell_ds1wm;
--	asic3_cell_ds1wm.data_size = sizeof(asic3_cell_ds1wm);
--
- 	/* MMC */
- 	asic->tmio_cnf = ioremap((ASIC3_SD_CONFIG_BASE >> asic->bus_shift) +
- 				 mem_sdio->start, 0x400 >> asic->bus_shift);
-@@ -824,9 +821,6 @@ static int __init asic3_mfd_probe(struct platform_device *pdev,
- 	asic3_mmc_resources[0].start >>= asic->bus_shift;
- 	asic3_mmc_resources[0].end   >>= asic->bus_shift;
- 
--	asic3_cell_mmc.platform_data = &asic3_cell_mmc;
--	asic3_cell_mmc.data_size = sizeof(asic3_cell_mmc);
--
- 	ret = mfd_add_devices(&pdev->dev, pdev->id,
- 			&asic3_cell_ds1wm, 1, mem, asic->irq_base);
- 	if (ret < 0)
+ 	if (pdata && pdata->led_pdata) {
+ 		led_cell.driver_data = pdata->led_pdata;
+-		led_cell.platform_data = &led_cell;
+-		led_cell.data_size = sizeof(ds1wm_cell);
+ 		ret = mfd_add_devices(&pdev->dev, pdev->id, &led_cell, 1, r, 0);
+ 		if (ret < 0)
+ 			dev_warn(dev, "failed to register LED device\n");
 -- 
 1.7.2.3
 
