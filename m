@@ -1,83 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752693Ab1BCVGa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 16:06:30 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:36205 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752247Ab1BCVG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 16:06:29 -0500
-Date: Thu, 3 Feb 2011 22:06:16 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>
-Subject: Re: [patch] x86, mm: avoid stale tlb entries by clearing prev
- mm_cpumask after switching mm
-Message-ID: <20110203210616.GA17471@elte.hu>
-References: <1296677247.4418.103.camel@sbsiddha-MOBL3.sc.intel.com>
- <AANLkTi=P+aoY4GY32xa8D8gHbDP73QpPmzvKbB4VM7g2@mail.gmail.com>
- <AANLkTinvQatNF0ZJqmvuKYNq7oKXqfR5Ke1FuaSLFNEF@mail.gmail.com>
- <1296757637.4418.1482.camel@sbsiddha-MOBL3.sc.intel.com>
- <AANLkTimuSV273ksidN_vQ4o1rLr6D--9Q3dNnBiB13-K@mail.gmail.com>
- <1296761671.4418.1558.camel@sbsiddha-MOBL3.sc.intel.com>
- <AANLkTimjYAYPLf=QG22hFHm7yhABCQj7q=kOpB6HcB5e@mail.gmail.com>
- <1296764404.4418.1634.camel@sbsiddha-MOBL3.sc.intel.com>
+	id S1752755Ab1BCVHw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 16:07:52 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:57554 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752247Ab1BCVHv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 16:07:51 -0500
+Date: Thu, 3 Feb 2011 14:07:46 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: David Gibson <david@gibson.dropbear.id.au>, linux-kernel@vger.kernel.org,
+        sodaville@linutronix.de, devicetree-discuss@lists.ozlabs.org,
+        x86@kernel.org
+Subject: Re: [PATCH TIP v2 03/14] x86/dtb: Add a device tree for CE4100
+Message-ID: <20110203210746.GI6180@angua.secretlab.ca>
+References: <1295843342-1122-1-git-send-email-bigeasy@linutronix.de>
+ <1295843342-1122-4-git-send-email-bigeasy@linutronix.de>
+ <20110127050027.GB23443@yookeroo>
+ <20110202185841.GA28674@www.tglx.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1296764404.4418.1634.camel@sbsiddha-MOBL3.sc.intel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110202185841.GA28674@www.tglx.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Feb 03, 2011 at 12:28:41AM +0530, Sebastian Andrzej Siewior wrote:
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+> ---
+> - intel,ce4100-immr become intel,ce4100-cp. cp stands for core
+>   peripherals. The Atom data sheet talks here about ACPI devices. Since
+>   we don't have ACPI this does not apply here.
+> - The interrupt map is gone. There are now plenty of device nodes.
+> - The "unit address string" got fixed, it uses not DD,V format.
 
-* Suresh Siddha <suresh.b.siddha@intel.com> wrote:
+You can go ahead and keep the revision history above the s-o-b and ---
+lines.  It turns out that having the revision history in the commit
+text is actually useful when trying to figure out what version of a
+patch actually got applied.
 
-> On Thu, 2011-02-03 at 11:48 -0800, Linus Torvalds wrote:
-> > On Thu, Feb 3, 2011 at 11:34 AM, Suresh Siddha
-> > <suresh.b.siddha@intel.com> wrote:
-> > >
-> > > True. 'stale' is the wrong word. Do you want me to send a corrected one
-> > > by replacing it with 'bogus'?
-> > 
-> > Please.
-> > 
-> > > my understanding is that unless we end up using that TLB entry, we will
-> > > not have the issues like machine checks due to cacheability issues etc.
-> > > If it is not global, upcoming cr3 change will flush it and meanwhile I
-> > > don't think there is a scenario where we refer to these user-addresses.
-> > 
-> > Quite possible. The situation I envisioned was the same speculative
-> > memory access that causes the TLB fill to also cause a cache fill -
-> > for a noncacheable region (because the bogus TLB entry sets the random
-> > address to cacheable).
-> > 
-> > And then what happens when somebody else accesses the same memory
-> > noncacheably (through a valid TLB entry), and finds it in the cache?
-> > 
-> > I dunno. Not really important. The important part is the "possible
-> > random bogus TLB entry", the fact that the CPU can act strangely after
-> > that is pretty much a given.
-> > 
+>  arch/x86/platform/ce4100/falconfalls.dts |  424 ++++++++++++++++++++++++++++++
+>  1 files changed, 424 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/x86/platform/ce4100/falconfalls.dts
 > 
-> Ok. Updated patch appended.
+> diff --git a/arch/x86/platform/ce4100/falconfalls.dts b/arch/x86/platform/ce4100/falconfalls.dts
+> new file mode 100644
+> index 0000000..e888657
+> --- /dev/null
+> +++ b/arch/x86/platform/ce4100/falconfalls.dts
+> @@ -0,0 +1,424 @@
+> +/*
+> + * CE4100 on Falcon Falls
+> + *
+> + * (c) Copyright 2010 Intel Corporation
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License as published by the
+> + * Free Software Foundation; version 2 of the License.
+> + */
+> +/dts-v1/;
+> +/ {
+> +	model = "intel,falconfalls";
+> +	compatible = "intel,falconfalls";
+> +	#address-cells = <1>;
+> +	#size-cells = <1>;
+> +
+> +	cpus {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +
+> +		cpu@0 {
+> +			device_type = "cpu";
+> +			compatible = "intel,ce4100";
+> +			reg = <0>;
+> +			lapic = <&lapic0>;
+> +		};
+> +	};
+> +
+> +	soc@0 {
+> +		#address-cells = <1>;
+> +		#size-cells = <1>;
+> +		compatible = "intel,ce4100-cp";
 
-Linus, the patch fine to me too.
+You'll need to add blurbs to Documentation/devicetree/bindings
+(Documentation/powerpc/dts-bindings in Linus' tree; renamed in
+linux-next) for each of these new compatible bindings to document the
+part that they describe and any special properties that go with each
+compatible value (if any).  You can send it as a followup patch.
 
-Acked-by: Ingo Molnar <mingo@elte.hu>
+> +				gpio@b,1 {
+> +					compatible = "pci8086,2e67.2",
+> +						   "pci8086,2e67",
+> +						   "pciclassff0000",
+> +						   "pciclassff00";
+> +
+> +					reg = <0x15900 0x0 0x0 0x0 0x0>;
+> +					interrupts = <15 1>;
+> +				};
 
-Do you want to apply it or should I?
+You'll probably want to make use of the gpio-controller binding for
+the gpio nodes so that other nodes can reference it.  Not a
+showstopper for this patch though.
 
-Thanks,
+Otherwise looks good to me.
+g.
 
-	Ingo
