@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070Ab1BCAKY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 19:10:24 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:54258 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751278Ab1BCAKW (ORCPT
+	id S1756038Ab1BCAKI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 19:10:08 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:38533 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755892Ab1BCAHV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 19:10:22 -0500
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Dmitry Torokhov <dtor@vmware.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: Early crash (was: Re: module: show version information for built-in modules in sysfs)
-References: <AANLkTin4gOnEMruLDM=TkNYsNf5S370WqbcDVJzT7_Z4@mail.gmail.com>
-	<20110201210944.GA12348@dtor-ws.eng.vmware.com>
-	<AANLkTimv=KqtuR36dMNa+=OMi0mgd8JK4qsb_SpmKmhs@mail.gmail.com>
-	<20110201222637.GA17521@dtor-ws.eng.vmware.com>
-	<AANLkTikWVt8NEyHN+=yD4EWSXUQt0gt5nLJtKQDw397M@mail.gmail.com>
-	<20110202194227.GA13794@dtor-ws.eng.vmware.com>
-	<m2ipx2dp7v.fsf@igel.home>
-	<20110202235948.GA8676@dtor-ws.eng.vmware.com>
-X-Yow: Yow!  I'm out of work...I could go into shock absorbers...or SCUBA
- GEAR!!
-Date: Thu, 03 Feb 2011 01:10:04 +0100
-In-Reply-To: <20110202235948.GA8676@dtor-ws.eng.vmware.com> (Dmitry Torokhov's
-	message of "Wed, 2 Feb 2011 15:59:49 -0800")
-Message-ID: <m2bp2udllv.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2.93 (gnu/linux)
+	Wed, 2 Feb 2011 19:07:21 -0500
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        "Andrea Iob" <andrea_iob@yahoo.it>
+References: <e9vOd5LzdBK.A.dyD.h6eSNB@chimera>
+In-Reply-To: <e9vOd5LzdBK.A.dyD.h6eSNB@chimera>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <-tcJxClTQPH.A.qdE.n7eSNB@chimera>
+Subject: [Bug #26552] Screen flickering with 2.6.37 [ATI X1600]
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu,  3 Feb 2011 01:05:27 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Torokhov <dtor@vmware.com> writes:
+This message has been generated automatically as a part of a report
+of regressions introduced between 2.6.36 and 2.6.37.
 
-> Even pointers? I'd expect pointers to be aligned on 4-bytes boundaries?
+The following bug entry is on the current list of known regressions
+introduced between 2.6.36 and 2.6.37.  Please verify if it still should
+be listed and let the tracking team know (either way).
 
-Pointers are not special in any way.  Why should they?  On the machine
-level pointers are just numbers.
 
-Andreas.
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=26552
+Subject		: Screen flickering with 2.6.37 [ATI X1600]
+Submitter	: Andrea Iob <andrea_iob@yahoo.it>
+Date		: 2011-01-11 22:53 (23 days old)
 
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+
