@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756312Ab1BCLm2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 06:42:28 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:36866 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756249Ab1BCLm1 (ORCPT
+	id S1756325Ab1BCLo4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 06:44:56 -0500
+Received: from daytona.panasas.com ([67.152.220.89]:10683 "EHLO
+	daytona.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756289Ab1BCLoz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 06:42:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=KGZXlQ0bh4rva7r7b/rYoJ+y7x3FCv34H/WIMP+6rsyW4hI5Df631U2hpAuRBO8aFl
-         pJbIZWhkkiUeYY3JI6fV+U7Zm6cK+WlkEOAojVOKhGx6Hp0mIfvWuMubY5YkdtHETFql
-         hurvpVkSB2TYx29vkPazF9SdSy20bFHE2wqYQ=
-Date: Thu, 3 Feb 2011 19:42:19 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Regression: WARNINGS and lockdep spews in 2.6.38-rc3+
- (bisected).
-Message-ID: <20110203114218.GA1809@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <20110203031943.GA8910@elliptictech.com>
- <20110203091227.GA1603@zhy>
- <1296725440.26581.354.camel@laptop>
- <20110203101739.GA1551@zhy>
- <1296729184.26581.361.camel@laptop>
+	Thu, 3 Feb 2011 06:44:55 -0500
+Message-ID: <4D4A9533.4090304@panasas.com>
+Date: Thu, 03 Feb 2011 13:44:51 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1296729184.26581.361.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Nick Piggin <npiggin@kernel.dk>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Roman Zippel <zippel@linux-m68k.org>,
+        "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
+        Bob Copeland <me@bobcopeland.com>, reiserfs-devel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>,
+        Evgeniy Dushistov <dushistov@mail.ru>, Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH] exofs: simple fsync race fix
+References: <20101125074909.GA4160@amd> <4CEE2C2E.4010003@panasas.com> <20101125100603.GA3164@amd> <4CEE3F9F.9070108@panasas.com> <4CEE3FD8.6080202@panasas.com> <20101125115033.GA3643@amd>
+In-Reply-To: <20101125115033.GA3643@amd>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 03 Feb 2011 11:44:54.0858 (UTC) FILETIME=[C689AAA0:01CBC397]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 03, 2011 at 11:33:04AM +0100, Peter Zijlstra wrote:
+On 11/25/2010 01:50 PM, Nick Piggin wrote:
+> This is fine, we'll get it merged before 2.6.37, just give a couple of
+> days for review, I haven't had much confirmation from other vfs people
+> about these problems.
 > 
-> How about we revert your patch and go back to not allowing
-> del_timer_sync() from any interrupt context, 
-
-The fact is there is someone want to use del_timer_sync()
-in softirq context.
-My patch is inspired by this http://lkml.org/lkml/2010/8/16/291
-though in the end that issue is resolved by not using
-del_timer_sync() in softirq.
-
-> we can fix __dst_free by
-> removing the need for cancel_delayed_work().
+> Thanks,
+> Nick
 > 
-> Are there any other del_timer_sync() callers from softirq?
 
-I'm not sure about this.
+Hi Dear Nick.
 
-IMHO, we don't need to make more restriction if we don't
-have to.
+So I was cleaning the table and I fell on this patch. What ever happened
+to it? should I push it through my tree?
 
-Thanks,
-Yong
+Thanks
+Boaz
+
+> On Thu, Nov 25, 2010 at 12:52:08PM +0200, Boaz Harrosh wrote:
+>> From: Nick Piggin <npiggin@kernel.dk>
+>>
+>> It is incorrect to test inode dirty bits without participating in the inode
+>> writeback protocol. Inode writeback sets I_SYNC and clears I_DIRTY_?, then
+>> writes out the particular bits, then clears I_SYNC when it is done. BTW. it
+>> may not completely write all pages out, so I_DIRTY_PAGES would get set
+>> again.
+>>
+
