@@ -1,75 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131Ab1BCNYf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 08:24:35 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:40281 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932093Ab1BCNYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 08:24:34 -0500
-Date: Thu, 3 Feb 2011 13:24:08 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Jind??ich Makovi??ka <makovick@gmail.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: khugepaged: gets stuck when writing to USB flash, 2.6.38-rc2
-Message-ID: <20110203132407.GF11958@csn.ul.ie>
-References: <AANLkTi=uOpN0PwWdGh6iri-vJwuMS+WMPxmaZjv0-TrV@mail.gmail.com> <20110201154947.GX16981@random.random>
+	id S932136Ab1BCN2N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 08:28:13 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:57349 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932095Ab1BCN2M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 08:28:12 -0500
+Date: Thu, 3 Feb 2011 13:28:00 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Russ Gorby <russ.gorby@intel.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "open list:SPI SUBSYSTEM" <spi-devel-general@lists.sourceforge.net>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] spi: intel_mid_ssp_spi: new SPI driver for intel
+	Medfield platform
+Message-ID: <20110203132800.GA17825@sirena.org.uk>
+References: <1296680512-2758-2-git-send-email-russ.gorby@intel.com> <20110202224054.7916e7af@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110201154947.GX16981@random.random>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20110202224054.7916e7af@lxorguk.ukuu.org.uk>
+X-Cookie: You love peace.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 01, 2011 at 04:49:47PM +0100, Andrea Arcangeli wrote:
-> On Mon, Jan 31, 2011 at 08:28:00PM +0100, Jind??ich Makovi??ka wrote:
-> > Hi,
-> > 
-> > I am encountering problems when continuously writing larger amounts of
-> > data to a USB flash drive. My configuration is
-> > 
-> > x86-64 kernel
-> > USB stick with 10MB/s write, 30MB/s read speed,
-> > HDD with ~60-80MB/s read/write
-> > 8 GiB RAM
-> > 
-> > When copying 4GB or more in one go from HDD to Flash, during the
-> > copying, fork() and probably other syscalls involving VM start
-> > blocking (I first observed the problem in Chrome, which refused to
-> > display content in new tabs). When one lets the copying finish, the
-> > system returns to a usable state.
-> > 
-> > During the limbo, khugepaged is in D state (uninterruptible sleep).
-> 
-> That means no hugepage could be allocated. Maybe memory compaction is
-> doing an overwork because all pagecache is dirty and can't be
-> migrated. This should solve it if it's memory compaction:
-> 
+On Wed, Feb 02, 2011 at 10:40:54PM +0000, Alan Cox wrote:
 
-This is very likely. Compaction calls into migration which will wait on
-dirty pages after a time. With a large number of dirty pages backed by a
-slow drive such as a USB stick, it could be getting stalled there for a
-long period of time. 
+> And this is the unified one that handles all the devices, but I gather
+> may need some fixing/test work on Medfield.
 
-Whether migration sleeps or not can be controlled by the sync parameter
-passed into try_to_compact_memory which could be always forced to false
-if GFP_NO_KSWAPD?
-
-> echo never >/sys/kernel/mm/transparent_hugepage/defrag
-> 
-> kswapd state would be interesting too. Can you sysrq+t?
-> 
-> Probably we should decrease the aggressiveness of memory compaction in
-> direct reclaim. I've another report that memory compaction for order <
-> 3 allocations is increasing latency, it's not like your problem but it
-> may be related. The congestion_wait in compaction.c also makes me
-> uncomfortable, it should bail out and fail I think. Maybe we should
-> add a bitflag to differentiate the callers that can gracefully handle
-> failure (like THP or most skb jumbo frame allocations) and those like
-> the kernel stack that will return -ENOMEM if allocation fails.
-> 
-
--- 
-Mel Gorman
+I've got the same question here as I had with Russ' patch: it looks like
+there's some overlap with the SSP ports used for audio (it's just a
+generic programmable serial port so even if it's not normally used for
+audio that's a possiblity), how is that handled?
