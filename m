@@ -1,88 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756540Ab1BCRZn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 12:25:43 -0500
-Received: from ud10.udmedia.de ([194.117.254.50]:49109 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754412Ab1BCRZl (ORCPT
+	id S1756629Ab1BCRaZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 12:30:25 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:59383 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756196Ab1BCRaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 12:25:41 -0500
-Date: Thu, 3 Feb 2011 18:25:39 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        Doug Thompson <dougthompson@xmission.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [EDAC-AMD64] Display correct RAM sizes in ganged mode on F10 CPUs
-Message-ID: <20110203172539.GA1581@gentoo.trippels.de>
-References: <20110129211531.GA1874@gentoo.trippels.de>
- <20110201185114.GD8418@aftab>
- <20110201192752.GA1589@gentoo.trippels.de>
- <20110203151721.GD24755@aftab>
- <20110203155951.GA1594@gentoo.trippels.de>
- <20110203163600.GA26261@aftab>
- <20110203164203.GB1594@gentoo.trippels.de>
- <20110203170932.GB26261@aftab>
+	Thu, 3 Feb 2011 12:30:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110203170932.GB26261@aftab>
+In-Reply-To: <1296699283-6784-1-git-send-email-john.stultz@linaro.org>
+References: <1296699283-6784-1-git-send-email-john.stultz@linaro.org>
+From: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+Date: Thu, 3 Feb 2011 15:30:02 -0200
+Message-ID: <AANLkTimO5FXDoA_egZ=7oR5FTV-Fx5qpjfPRZ7eT1q50@mail.gmail.com>
+Subject: Re: [PATCH 0/4] RTC regression fixups
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011.02.03 at 18:09 +0100, Borislav Petkov wrote:
-> On Thu, Feb 03, 2011 at 11:42:03AM -0500, Markus Trippelsdorf wrote:
-> > > Of course it doesn't, doh!, we need the DRAM chip selects from the
-> > > second DCT too. Can you please run this little script as root so that I
-> > > can verify that BIOS is actually programming sensible values in those in
-> > > ganged mode? (Yeah, leave your DCT setting to ganged in BIOS).
-> > > 
-> > > --
-> > > #!/bin/bash
-> > > 
-> > > i=0x140
-> > > 
-> > > while (( $i <= 0x15c )); do
-> > >         reg=$(printf "0x%x" $i)
-> > >         setpci -s 18.2 $reg.l
-> > >         i=$(($i+4))
-> > > done
-> > 
-> > 00000000
-> > 00000000
-> > 00000000
-> > 00000000
-> > 00000000
-> > 00000000
-> > 00000000
-> > 00000000
-> 
-> Ok, can you please try the following one,
+Hi John,
 
-Looks good, many thanks Boris.
+On Thu, Feb 3, 2011 at 00:14, John Stultz <john.stultz@linaro.org> wrote:
+> ...
+> Marcelo: Mind giving this full patch set a go? It seems to resolve
+> the issues in my testing with the rtc-test driver.
 
-EDAC amd64: F10h detected (node 0).
-EDAC MC: DCT0 chip selects:
-EDAC amd64: MC: 0:  1024MB 1:  1024MB
-EDAC amd64: MC: 2:  1024MB 3:  1024MB
-EDAC amd64: MC: 4:     0MB 5:     0MB
-EDAC amd64: MC: 6:     0MB 7:     0MB
-EDAC MC: DCT1 chip selects:
-EDAC amd64: MC: 0:  1024MB 1:  1024MB
-EDAC amd64: MC: 2:  1024MB 3:  1024MB
-EDAC amd64: MC: 4:     0MB 5:     0MB
-EDAC amd64: MC: 6:     0MB 7:     0MB
+I have tested the full set in ARM sa1100. Both the sa1100 RTC driver
+and the rtc-test driver are working fine.
 
-BTW another thing, while I have your attention:
+The only difference in user space behaviour is, as I have mentioned on
+a previous message, that the rtc-test driver receives PIE events no
+matter what, while the previous behaviour was to receive them by
+echoing through the sys interface. But we must think whether this is
+something worth keeping or not.
 
-cat /sys/devices/system/edac/mc/mc0/csrow0/edac_mode
-prints "S4ECD4ED" aka Chipkill on my system.
-But I'm using a revision C Phenom that only supports a x4 symbol size,
-while the Kingston ECC DIMMs have a width of x8. So according to
-table 77 (page 174) of the "BIOS and Kernel Developer’s Guide" the
-system is actually running in SECDED mode and does not provide Chipkill.
+You have actually saved me some work fixing the alarm/update broken
+behaviour on sa1100. Thank you very much. Most of the code in this rtc
+driver is going to /dev/null, I'll send a patch later.
 
--- 
-Markus
+Regards,
+Marcelo.
+
+Tested-by: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
