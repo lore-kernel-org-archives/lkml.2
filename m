@@ -1,83 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932420Ab1BCSoU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 13:44:20 -0500
-Received: from mx3.schottelius.org ([77.109.138.221]:42563 "EHLO
-	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932389Ab1BCSoT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 13:44:19 -0500
-Date: Thu, 3 Feb 2011 19:44:12 +0100
-From: Nico Schottelius <nico-kernel-20110117@schottelius.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Nico Schottelius <nico-kernel-20110117@schottelius.org>
-Subject: Re: [Bug #28102] New display errors in 2.6.38-rc2-00175-g6fb1b30
-Message-ID: <20110203184412.GA3956@schottelius.org>
-Mail-Followup-To: Nico Schottelius <nico-kernel-20110117@schottelius.org>,
-	Jesse Barnes <jbarnes@virtuousgeek.org>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Kernel Testers List <kernel-testers@vger.kernel.org>,
-	Maciej Rutecki <maciej.rutecki@gmail.com>,
-	Florian Mickler <florian@mickler.org>
-References: <QUnbpYCwS-F.A.vaC.VHeSNB@chimera>
- <ibChAs1xEQI.A.0gC.aHeSNB@chimera>
- <20110203101111.35d71bf0@jbarnes-desktop>
+	id S932434Ab1BCSt3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 13:49:29 -0500
+Received: from kroah.org ([198.145.64.141]:50524 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932331Ab1BCSt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 13:49:28 -0500
+Date: Thu, 3 Feb 2011 10:48:52 -0800
+From: Greg KH <greg@kroah.com>
+To: Arthur Taylor <art@ified.ca>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Pavel Machek <pavel@ucw.cz>
+Subject: Re: [PATCH] [resend] vt: Add virtual console keyboard mode OFF
+Message-ID: <20110203184852.GC20911@kroah.com>
+References: <AANLkTikZe1EuvNQHceNUdKFpmmeAbQG8H+34AG9fw43u@mail.gmail.com>
+ <20110131174622.GA25097@suse.de>
+ <1296612452.28176.52.camel@art-x200>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110203101111.35d71bf0@jbarnes-desktop>
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: kr (Linux 2.6.37-rc4-00292-g3c8cdf9 x86_64)
+In-Reply-To: <1296612452.28176.52.camel@art-x200>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jesse Barnes [Thu, Feb 03, 2011 at 10:11:11AM -0800]:
-> On Thu,  3 Feb 2011 00:31:29 +0100 (CET)
-> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+On Tue, Feb 01, 2011 at 06:07:32PM -0800, Arthur Taylor wrote:
+> On Mon, 2011-01-31 at 09:46 -0800, Greg KH wrote:
+> > Care to document this somewhere (i.e. Documentation/ABI?)
+> Sure. Can it wait for a future patch though as currently all VT IOCTLs
+> aren't documented in the source tree. I'm willing to write said
+> documentation.
+
+Ok, that is fine, but care to do it as part of the requirements to get
+this patch in?  Yeah, it's not fair, but it ensures that the
+documentation gets written :)
+
+> > Your patch is line-wrapped and can not be applied :(
+> Fixed in this mail (hopefully).
+
+Yes, looks good.
+
+> > Are you sure you can change the size of this structure and no one is
+> > going to have problems?
+> >From what I can tell, no. kbd_struct and it's members are defined in the
+> non-exported kbd_kern.h, and it is never packed into weird places. Is
+> that sufficient? What else should be checked?
+
+No, you are correct.
+
 > 
-> > This message has been generated automatically as a part of a summary report
-> > of recent regressions.
-> > 
-> > The following bug entry is on the current list of known regressions
-> > from 2.6.37.  Please verify if it still should be listed and let the tracking team
-> > know (either way).
-> > 
-> > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28102
-> > Subject		: New display errors in 2.6.38-rc2-00175-g6fb1b30
-> > Submitter	: Nico Schottelius <nico-kernel-20110117@schottelius.org>
-> > Date		: 2011-01-28 20:29 (6 days old)
-> > Message-ID	: <20110128202905.GB3395@schottelius.org>
-> > References	: http://marc.info/?l=linux-kernel&m=129624657425949&w=2
+> > Also, what userspace code is going to use this new feature?  Has it been
+> > tested to work properly?
+> Xorg is the intended user. In short, reasons for the feature are:
+>       * Removes having to flush unnecessary duplicate data.
+>       * Fixes an Xorg corner case.
+>       * Less code run in both kernel and userspace per key event (I know
+>         kinda meh, but hey, it's a plus.)
 > 
-> Does this also occur with the drm-intel-next branch? 
+> Since the switch to evdev and automatic input device detection, Xorg
+> sets the console to RAW to disable kernel special key handling and
+> flushes the console input buffer per key event.
+> 
+> If Xorg is configured with static input device definitions, it can't
+> flush the input in case the older kbd driver is in use, leading to the
+> buffer filling. If the console input buffer fills, bad things happen
+> (which I'm currently looking into as well.)
+> 
+> I modified my xserver to use this feature. I tested Xorg with the
+> input-evdev and input-kbd drivers for keyboard events. Since input-kbd
+> sets the keyboard back to RAW when needed, everything is fine. If
+> input-kbd isn't in use, the keyboard stays in OFF and he input buffer is
+> always kept empty, things always work. Shift key states are maintained,
+> and SysRq's unRaw function is still works as expected.
 
-Didn't try this one, went back to 2.6.37-rc4-00292-g3c8cdf9 now.
+Are the xorg patches upstream and accepted or are they waiting for this
+change?  Will they work properly with the BSDs as well?
 
-I thought about following the bisect way, should I go a different
-one better?
+> To: Greg Kroah-Hartman <gregkh@suse.de>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Pavel Machek <pavel@ucw.cz>
+> Signed-off-by: Arthur Taylor <art@ified.ca>
 
-> Do you have a picture of the corruption?
+Thanks for the information, but we also need the original changelog
+comment here for me to be able to apply it.
 
-Not yet, can do one next time. Though I found one that looks
-very similar to my corruption:
+Care to resend with all of the text correct?
 
-http://i759.photobucket.com/albums/xx239/ericfx1984/DSCF2469.jpg
+thanks,
 
-Though in my case no character was visible anymore.
-
-Cheers,
-
-Nico
-
-
--- 
-PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+greg k-h
