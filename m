@@ -1,178 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869Ab1BCXJH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 18:09:07 -0500
-Received: from dalsmrelay2.nai.com ([205.227.136.216]:38776 "EHLO
-	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200Ab1BCXJF (ORCPT
+	id S1754036Ab1BCXLB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 18:11:01 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54304 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916Ab1BCXK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 18:09:05 -0500
-Message-ID: <4D4B354E.9050705@snapgear.com>
-Date: Fri, 4 Feb 2011 09:07:58 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Thu, 3 Feb 2011 18:10:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=vVhAyz4RoOzLQLWYqPEzPxcEfzoU6zCFU+C+7ljH1b0GdEgO+LxV1xtcAMuvquD098
+         ZF6KkEurBqib/YMH/if09IwkQeldrlsWctQ4d9ydu1JIKDY0DwLFjMOYa5SKicaSidRq
+         grEEYaZDH7OmHv6FarDveqDtrqPocLEE9wfZg=
+Date: Fri, 4 Feb 2011 00:10:54 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Stefan Fritsch <sf@sfritsch.de>
+Cc: Eric Paris <eparis@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Eric Paris <eparis@parisplace.org>, linux-kernel@vger.kernel.org,
+        agl@google.com, tzanussi@gmail.com, Jason Baron <jbaron@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        2nddept-manager@sdl.hitachi.co.jp,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Using ftrace/perf as a basis for generic seccomp
+Message-ID: <20110203231051.GA1840@nowhere>
+References: <1294867725.3237.230.camel@localhost.localdomain>
+ <1296665124.3145.17.camel@localhost.localdomain>
+ <20110203190643.GC1769@nowhere>
+ <201102032306.34251.sf@sfritsch.de>
 MIME-Version: 1.0
-To: <mingo@redhat.com>, <hpa@zytor.com>, <linux-kernel@vger.kernel.org>,
-        <sammy@sammy.net>, <peterz@infradead.org>, <torbenh@gmx.de>,
-        <geert@linux-m68k.org>, <gerg@uclinux.org>, <zippel@linux-m68k.org>,
-        <tglx@linutronix.de>
-CC: <linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:timers/core] m68k: Switch do_timer() to xtime_update()
-References: <20110127150006.23248.71790.stgit@localhost> <tip-e53f276beb655c711a5d1f25f800b61aa976e34f@git.kernel.org>
-In-Reply-To: <tip-e53f276beb655c711a5d1f25f800b61aa976e34f@git.kernel.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201102032306.34251.sf@sfritsch.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/11 00:09, tip-bot for Torben Hohn wrote:
-> Commit-ID:  e53f276beb655c711a5d1f25f800b61aa976e34f
-> Gitweb:     http://git.kernel.org/tip/e53f276beb655c711a5d1f25f800b61aa976e34f
-> Author:     Torben Hohn<torbenh@gmx.de>
-> AuthorDate: Thu, 27 Jan 2011 16:00:06 +0100
-> Committer:  Thomas Gleixner<tglx@linutronix.de>
-> CommitDate: Mon, 31 Jan 2011 14:55:46 +0100
->
-> m68k: Switch do_timer() to xtime_update()
->
-> xtime_update() properly takes the xtime_lock
->
-> Signed-off-by: Torben Hohn<torbenh@gmx.de>
-> Cc: Sam Creasey<sammy@sammy.net>
-> Cc: Peter Zijlstra<peterz@infradead.org>
-> Cc: johnstul@us.ibm.com
-> Cc: Roman Zippel<zippel@linux-m68k.org>
-> Cc: hch@infradead.org
-> Cc: yong.zhang0@gmail.com
-> Cc: Geert Uytterhoeven<geert@linux-m68k.org>
-> Cc: Greg Ungerer<gerg@uclinux.org>
+On Thu, Feb 03, 2011 at 11:06:33PM +0100, Stefan Fritsch wrote:
+> Hi,
+> 
+> On Thursday 03 February 2011, Frederic Weisbecker wrote:
+> > I think you won't work with trace events, so you need to make the
+> > filtering code more tracing-agnostic.
+> > 
+> > But I think it's quite workable and shouldn't be too hard to split
+> > that into a filtering backend. Many parts are already pretty
+> > standalone.
+> > 
+> > Also I suspect the tracepoints are not what you need. Or may be
+> > they are. But as Masami said, the syscall tracepoint is called
+> > late. It's workable though. The other problem is that preemption
+> > is disabled when tracepoints are called, which is probably not
+> > what you want. One day I think we'll need to unify the tracepoints
+> > and notifier code but until then, better keep tracepoints for
+> > tracing.
+> > 
+> > Now once you have the filtering code more generic, you still
+> > need an arch backend to map register contents and layout into
+> > syscall arguments name and type. On top of which you can finally
+> > use the filtering code. For that you can use, again, some code we
+> > use for tracing, which are syscalls metadata: informations
+> > generated on build time that have syscalls fields and type.
+> > And that also needs to be split up, but it's more trivial
+> > than the filtering part.
+> 
+> AFAICS the infrastructure for tracing and metadata of compat syscalls 
+> is also still missing. That would need to be added, too. Jason Baron 
+> and Ian Munsie have worked on this in mid 2010, but I don't know about 
+> the current status.
 
-I have no problem with the m68knommu part:
+Oh we have these features for a while now. Jason and others have
+made a great work on it.
+For example you can accept only read() calls when fd = 7 with perf:
 
-Ack-by: Greg Ungerer <gerg@uclinux.org>
+./perf record -a -e syscalls:sys_enter_read --filter "fd==7"
+./perf script
 
+	    perf-2956  [000]  6427.757791: sys_enter_read: fd: 0x00000007, buf: 0x7fdd2c095000, count: 0x00000400
+            perf-2956  [000]  6427.757858: sys_enter_read: fd: 0x00000007, buf: 0x7fdd2c095000, count: 0x00000400
+            perf-2956  [000]  6427.757877: sys_enter_read: fd: 0x00000007, buf: 0x7fdd2c095000, count: 0x00000400
+            perf-2956  [000]  6427.757949: sys_enter_read: fd: 0x00000007, buf: 0x7fdd2c095000, count: 0x00000400
+            perf-2956  [000]  6427.757968: sys_enter_read: fd: 0x00000007, buf: 0x7fdd2c095000, count: 0x00000400
 
+Or you can do it with ftrace.
 
-> LKML-Reference:<20110127150006.23248.71790.stgit@localhost>
-> Signed-off-by: Thomas Gleixner<tglx@linutronix.de>
-> ---
->   arch/m68k/bvme6000/config.c  |    4 ++--
->   arch/m68k/kernel/time.c      |    4 ++--
->   arch/m68k/mvme147/config.c   |    4 ++--
->   arch/m68k/mvme16x/config.c   |    4 ++--
->   arch/m68k/sun3/sun3ints.c    |    2 +-
->   arch/m68knommu/kernel/time.c |    8 ++------
->   6 files changed, 11 insertions(+), 15 deletions(-)
->
-> diff --git a/arch/m68k/bvme6000/config.c b/arch/m68k/bvme6000/config.c
-> index 9fe6fef..1edd950 100644
-> --- a/arch/m68k/bvme6000/config.c
-> +++ b/arch/m68k/bvme6000/config.c
-> @@ -45,8 +45,8 @@ extern int bvme6000_set_clock_mmss (unsigned long);
->   extern void bvme6000_reset (void);
->   void bvme6000_set_vectors (void);
->
-> -/* Save tick handler routine pointer, will point to do_timer() in
-> - * kernel/sched.c, called via bvme6000_process_int() */
-> +/* Save tick handler routine pointer, will point to xtime_update() in
-> + * kernel/timer/timekeeping.c, called via bvme6000_process_int() */
->
->   static irq_handler_t tick_handler;
->
-> diff --git a/arch/m68k/kernel/time.c b/arch/m68k/kernel/time.c
-> index 06438da..18b34ee 100644
-> --- a/arch/m68k/kernel/time.c
-> +++ b/arch/m68k/kernel/time.c
-> @@ -37,11 +37,11 @@ static inline int set_rtc_mmss(unsigned long nowtime)
->
->   /*
->    * timer_interrupt() needs to keep up the real-time clock,
-> - * as well as call the "do_timer()" routine every clocktick
-> + * as well as call the "xtime_update()" routine every clocktick
->    */
->   static irqreturn_t timer_interrupt(int irq, void *dummy)
->   {
-> -	do_timer(1);
-> +	xtime_update(1);
->   	update_process_times(user_mode(get_irq_regs()));
->   	profile_tick(CPU_PROFILING);
->
-> diff --git a/arch/m68k/mvme147/config.c b/arch/m68k/mvme147/config.c
-> index 100baaa..6cb9c3a 100644
-> --- a/arch/m68k/mvme147/config.c
-> +++ b/arch/m68k/mvme147/config.c
-> @@ -46,8 +46,8 @@ extern void mvme147_reset (void);
->
->   static int bcd2int (unsigned char b);
->
-> -/* Save tick handler routine pointer, will point to do_timer() in
-> - * kernel/sched.c, called via mvme147_process_int() */
-> +/* Save tick handler routine pointer, will point to xtime_update() in
-> + * kernel/time/timekeeping.c, called via mvme147_process_int() */
->
->   irq_handler_t tick_handler;
->
-> diff --git a/arch/m68k/mvme16x/config.c b/arch/m68k/mvme16x/config.c
-> index 11edf61..0b28e26 100644
-> --- a/arch/m68k/mvme16x/config.c
-> +++ b/arch/m68k/mvme16x/config.c
-> @@ -51,8 +51,8 @@ extern void mvme16x_reset (void);
->
->   int bcd2int (unsigned char b);
->
-> -/* Save tick handler routine pointer, will point to do_timer() in
-> - * kernel/sched.c, called via mvme16x_process_int() */
-> +/* Save tick handler routine pointer, will point to xtime_update() in
-> + * kernel/time/timekeeping.c, called via mvme16x_process_int() */
->
->   static irq_handler_t tick_handler;
->
-> diff --git a/arch/m68k/sun3/sun3ints.c b/arch/m68k/sun3/sun3ints.c
-> index 2d9e21b..6464ad3 100644
-> --- a/arch/m68k/sun3/sun3ints.c
-> +++ b/arch/m68k/sun3/sun3ints.c
-> @@ -66,7 +66,7 @@ static irqreturn_t sun3_int5(int irq, void *dev_id)
->   #ifdef CONFIG_SUN3
->   	intersil_clear();
->   #endif
-> -        do_timer(1);
-> +	xtime_update(1);
->   	update_process_times(user_mode(get_irq_regs()));
->           if (!(kstat_cpu(0).irqs[irq] % 20))
->                   sun3_leds(led_pattern[(kstat_cpu(0).irqs[irq] % 160) / 20]);
-> diff --git a/arch/m68knommu/kernel/time.c b/arch/m68knommu/kernel/time.c
-> index d6ac2a4..6623909 100644
-> --- a/arch/m68knommu/kernel/time.c
-> +++ b/arch/m68knommu/kernel/time.c
-> @@ -36,7 +36,7 @@ static inline int set_rtc_mmss(unsigned long nowtime)
->   #ifndef CONFIG_GENERIC_CLOCKEVENTS
->   /*
->    * timer_interrupt() needs to keep up the real-time clock,
-> - * as well as call the "do_timer()" routine every clocktick
-> + * as well as call the "xtime_update()" routine every clocktick
->    */
->   irqreturn_t arch_timer_interrupt(int irq, void *dummy)
->   {
-> @@ -44,11 +44,7 @@ irqreturn_t arch_timer_interrupt(int irq, void *dummy)
->   	if (current->pid)
->   		profile_tick(CPU_PROFILING);
->
-> -	write_seqlock(&xtime_lock);
-> -
-> -	do_timer(1);
-> -
-> -	write_sequnlock(&xtime_lock);
-> +	xtime_update(1);
->
->   	update_process_times(user_mode(get_irq_regs()));
->
->
+Now what Jason and Ian have worked on lately was rather about compat syscalls support and power pc
+support amongst other things.
+ 
+> Considering that all this is still quite a bit of work and that the 
+> initial suggestion by Adam Langley happened nearly two years ago, 
+> maybe a two step approach would be better:
+> 
+> Integrate a seccomp mode 2 now, which only supports a bitmask of 
+> bitmaps and no filtering.
+> 
+> Then, when the infrastructure for the filtering is finished, add a 
+> seccomp mode 3 with support for filtering.
 
+Infrastructure for filtering will never be finished. IMO there will
+always be many ways to make it better, simply because using such
+conditional expressions offer tons of possibilities and is extendable
+by nature.
 
--- 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+Actually having seccomp as a user of filter expressions is a opportunity
+to improve it and bring new ideas.
+
+> This would give something in the very near future that is way more 
+> usable than seccomp mode 1. I think only the following adjustments 
+> would need to be made to Adam Langley's patch:
+> 
+> - only allow syscalls in the mode (non-compat/compat) that the prctl 
+> call was made in
+> - deny exec of setuid/setgid binaries
+> - deny exec of binaries with filesystem capabilities
+> 
+> What do you think of this proposal? I have a patch lying around 
+> somewhere that already does the first two of these.
+
+IMHO this is an unnecessary intermediate state. It will actually make
+things worse by bringing a new non-flexible ABI that we'll need to
+maintain forever.
+
+I'm no expert in security but I think it's not flexible.
+
+> > of raw arguments value. Syscalls metadata don't know much
+> > about type semantics and won't help you to dereference
+> > syscall argument pointers. Only raw syscall parameter values.
+> > Similarly, the filtering code can't evaluate pointer dereferencing
+> > expression evaluation, only direct values comprehension.
+> 
+> Pointer dereferencing at syscall entry must be avoided for seccomp 
+> anyway, or there would be race conditions. Of course if the filtering 
+> points could be put after the final copy_form_user, it would be ok.
+
+Makes sense yeah.
