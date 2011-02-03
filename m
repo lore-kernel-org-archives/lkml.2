@@ -1,127 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab1BCWJw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 17:09:52 -0500
-Received: from usindmx01.hds.com ([207.126.252.12]:38334 "EHLO
-	usindmx01.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752407Ab1BCWJu convert rfc822-to-8bit (ORCPT
+	id S1754109Ab1BCWLR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 17:11:17 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44081 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751540Ab1BCWLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 17:09:50 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Vivek Goyal <vgoyal@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jarod Wilson <jwilson@redhat.com>
-Date: Thu, 3 Feb 2011 17:08:01 -0500
-Subject: RE: Query about kdump_msg hook into crash_kexec()
-Thread-Topic: Query about kdump_msg hook into crash_kexec()
-Thread-Index: AcvD5ziw50QwNj1iRDqHnMCcXQ6iMwABDFAg
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C147F43B7@USINDEVS01.corp.hds.com>
-References: <20110131225939.GH11974@redhat.com>
-	<20110203094715.939C.A69D9226@jp.fujitsu.com>
-	<20110203020528.GA21603@redhat.com>
-	<5C4C569E8A4B9B42A84A977CF070A35B2C147F4346@USINDEVS01.corp.hds.com>
- <m14o8klt3w.fsf@fess.ebiederm.org>
-In-Reply-To: <m14o8klt3w.fsf@fess.ebiederm.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 3 Feb 2011 17:11:15 -0500
 MIME-Version: 1.0
+In-Reply-To: <AANLkTi=suS1VDL=6EtT0D2=0c1DWwxdwZBBv=-BySNX-@mail.gmail.com>
+References: <e9vOd5LzdBK.A.dyD.h6eSNB@chimera> <AANLkTikELiGS+fM5WguZS=Fo-sSXmej1UnKWqCFmnE0k@mail.gmail.com>
+ <s5haaid3xos.wl%tiwai@suse.de> <201102032009.17100.rjw@sisk.pl> <AANLkTi=suS1VDL=6EtT0D2=0c1DWwxdwZBBv=-BySNX-@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 3 Feb 2011 14:10:51 -0800
+Message-ID: <AANLkTi=7EOih=fY5FCvhQbewSc=3a49cYVaKJRWM+-3d@mail.gmail.com>
+Subject: Re: 2.6.38-rc3-git1: Reported regressions 2.6.36 -> 2.6.37
+To: Carlos Mafra <crmafra2@gmail.com>, Keith Packard <keithp@keithp.com>,
+        Dave Airlie <airlied@redhat.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Takashi Iwai <tiwai@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+Content-Type: multipart/mixed; boundary=001485eba1e80dd0f1049b680b26
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+--001485eba1e80dd0f1049b680b26
+Content-Type: text/plain; charset=ISO-8859-1
 
-Thank you for your prompt reply.
+On Thu, Feb 3, 2011 at 1:56 PM, Carlos Mafra <crmafra2@gmail.com> wrote:
+>>
+>> I added https://bugzilla.kernel.org/show_bug.cgi?id=24982 to the list of
+>> post-2.6.36 regressions for further tracking.
+>
+> I also tested on 2.6.38-rc3+ now and the issue is not solved,
+> just like Takashi expected.
 
-I would like to consider "Needs in enterprise area" and "Implementation of kmsg_dump()" separately.
+Hmm. That commit (bf9dc102e284) still reverts cleanly.
 
-(1) Needs in enterprise area
-  In case of kdump failure, we would like to store kernel buffer to NVRAM/flush memory
-  for detecting root cause of kernel crash.
+Keith, Dave, should we just revert it? It's definitely a regression,
+and we do _not_ allow "fixes" to one thing that just causes a
+regression to another.
 
-(2) Implementation of kmsg_dump 
-  You suggest to review/test cording of kmsg_dump() more.
+Quite frankly, I think it's totally wrong to just blindly set DPMS
+status to ON like that. It's as wrong as it was to leave it off, and
+the regressions reported are basically mirror images of the exact same
+bug that that commit tried to fix.
 
-What do you think about (1)?
-Is it acceptable for you?
+IOW, the commit message says:
 
-Seiji
+    When setting a new crtc configuration, force the DPMS state of all
+    connectors to ON. Otherwise, they'll be left at OFF and a future mode set
+    that disables the specified connector will not turn the connector off.
 
->-----Original Message-----
->From: Eric W. Biederman [mailto:ebiederm@xmission.com]
->Sent: Thursday, February 03, 2011 4:13 PM
->To: Seiji Aguchi
->Cc: Vivek Goyal; KOSAKI Motohiro; linux kernel mailing list; Jarod Wilson
->Subject: Re: Query about kdump_msg hook into crash_kexec()
->
->Seiji Aguchi <seiji.aguchi@hds.com> writes:
->
->> Hi,
->>
->>>PS: FWIW, Hitach folks have usage idea for their enterprise purpose, but
->>>    unfortunately I don't know its detail. I hope anyone tell us it.
->>
->> I explain the usage of kmsg_dump(KMSG_DUMP_KEXEC) in enterprise area.
->>
->> [Background]
->> In our support service experience, we always need to detect root cause
->> of OS panic.
->> So, customers in enterprise area never forgive us if kdump fails and
->> we can't detect the root cause of panic due to lack of materials for
->> investigation.
->>
->>>- Why do you need a notification from inside crash_kexec(). IOW, what
->>>  is the usage of KMSG_DUMP_KEXEC.
->>
->>
->> The usage of kdump(KMSG_DUMP_KEXEC) in enterprise area is getting
->> useful information for investigating kernel crash in case kdump
->> kernel doesn't boot.
->>
->> Kdump kernel may not start booting because there is a sha256 checksum
->> verified over the kdump kernel before it starts booting.
->> This means kdump kernel may fail even if there is no bug in kdump and
->> we can't get any information for detecting root cause of kernel crash
->
->Sure it is theoretically possible that the sha256 checksum gets
->corrupted (I have never seen it happen or heard reports of it
->happening).  It is a feature that if someone has corrupted your code the
->code doesn't try and run anyway and corrupt anything else.
->
->That you are arguing against have such a feature in the code you use to
->write to persistent storage is scary.
->
->> As I mentioned in [Background], We must avoid lack of materials for
->> investigation.
->> So, kdump(KMSG_DUMP_KEXEC) is very important feature in enterprise
->> area.
->
->That sounds wonderful, but it doesn't jive with the
->code. kmsg_dump(KMSG_DUMP_KEXEC) when I read through it was simply not
->written to be robust when most of the kernel is suspect.  Making it in
->appropriate for use on the crash_kexec path.  I do not believe kmsg_dump
->has seen any testing in kernel failure scenarios.
->
->There is this huge assumption that kmsg_dump is more reliable than
->crash_kexec, from my review of the code kmsg_dump is simply not safe in
->the context of a broken kernel.  The kmsg_dump code last I looked code
->won't work if called with interrupts disabled.
->
->Furthermore kmsg_dump(KMSG_DUMP_KEXEC) is only useful for debugging
->crash_kexec.  Which has it backwards as it is kmsg_dump that needs the
->debugging.
->
->You just argued that it is better to corrupt the target of your
->kmsg_dump in the event of a kernel failure instead of to fail silently.
->
->I don't want that unreliable code that wants to corrupt my jffs
->partition anywhere near my machines.
->
->Eric
+but setting it to ON doesn't actually _fix_ anything, because you just
+get the exact same issue in reverse, ie you just get
+
+   .. and a future mode set  that ENables the specified connector will
+    not turn the connector ON.
+
+instead. Which is exactly what Carlos and Takashi are reporting.
+
+Maybe the right thing to do is to set it to 'unknown', something like this.
+
+TOTALLY UNTESTED!
+
+                          Linus
+
+--001485eba1e80dd0f1049b680b26
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gjq7zjz50
+
+IGRyaXZlcnMvZ3B1L2RybS9kcm1fY3J0Y19oZWxwZXIuYyB8ICAgIDYgKysrLS0tCiBpbmNsdWRl
+L2RybS9kcm1fbW9kZS5oICAgICAgICAgICAgfCAgICAxICsKIDIgZmlsZXMgY2hhbmdlZCwgNCBp
+bnNlcnRpb25zKCspLCAzIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvZ3B1L2Ry
+bS9kcm1fY3J0Y19oZWxwZXIuYyBiL2RyaXZlcnMvZ3B1L2RybS9kcm1fY3J0Y19oZWxwZXIuYwpp
+bmRleCA5NTJiM2Q0Li43ZjU4NWVkIDEwMDY0NAotLS0gYS9kcml2ZXJzL2dwdS9kcm0vZHJtX2Ny
+dGNfaGVscGVyLmMKKysrIGIvZHJpdmVycy9ncHUvZHJtL2RybV9jcnRjX2hlbHBlci5jCkBAIC02
+ODEsMTEgKzY4MSwxMSBAQCBpbnQgZHJtX2NydGNfaGVscGVyX3NldF9jb25maWcoc3RydWN0IGRy
+bV9tb2RlX3NldCAqc2V0KQogCQkJZ290byBmYWlsOwogCQl9CiAJfQotCURSTV9ERUJVR19LTVMo
+IlNldHRpbmcgY29ubmVjdG9yIERQTVMgc3RhdGUgdG8gb25cbiIpOworCURSTV9ERUJVR19LTVMo
+IlNldHRpbmcgY29ubmVjdG9yIERQTVMgc3RhdGUgdG8gJ3Vua25vd24nXG4iKTsKIAlmb3IgKGkg
+PSAwOyBpIDwgc2V0LT5udW1fY29ubmVjdG9yczsgaSsrKSB7Ci0JCURSTV9ERUJVR19LTVMoIlx0
+W0NPTk5FQ1RPUjolZDolc10gc2V0IERQTVMgb25cbiIsIHNldC0+Y29ubmVjdG9yc1tpXS0+YmFz
+ZS5pZCwKKwkJRFJNX0RFQlVHX0tNUygiXHRbQ09OTkVDVE9SOiVkOiVzXSBzZXQgRFBNUyAndW5r
+bm93bidcbiIsIHNldC0+Y29ubmVjdG9yc1tpXS0+YmFzZS5pZCwKIAkJCSAgICAgIGRybV9nZXRf
+Y29ubmVjdG9yX25hbWUoc2V0LT5jb25uZWN0b3JzW2ldKSk7Ci0JCXNldC0+Y29ubmVjdG9yc1tp
+XS0+ZHBtcyA9IERSTV9NT0RFX0RQTVNfT047CisJCXNldC0+Y29ubmVjdG9yc1tpXS0+ZHBtcyA9
+IERSTV9NT0RFX0RQTVNfVU5LTk9XTjsKIAl9CiAKIAlrZnJlZShzYXZlX2Nvbm5lY3RvcnMpOwpk
+aWZmIC0tZ2l0IGEvaW5jbHVkZS9kcm0vZHJtX21vZGUuaCBiL2luY2x1ZGUvZHJtL2RybV9tb2Rl
+LmgKaW5kZXggMGZjNzM5Ny4uNGI1MTQ0YyAxMDA2NDQKLS0tIGEvaW5jbHVkZS9kcm0vZHJtX21v
+ZGUuaAorKysgYi9pbmNsdWRlL2RybS9kcm1fbW9kZS5oCkBAIC01OSw2ICs1OSw3IEBACiAKIC8q
+IERQTVMgZmxhZ3MgKi8KIC8qIGJpdCBjb21wYXRpYmxlIHdpdGggdGhlIHhvcmcgZGVmaW5pdGlv
+bnMuICovCisjZGVmaW5lIERSTV9NT0RFX0RQTVNfVU5LTk9XTgkoLTEpCiAjZGVmaW5lIERSTV9N
+T0RFX0RQTVNfT04JMAogI2RlZmluZSBEUk1fTU9ERV9EUE1TX1NUQU5EQlkJMQogI2RlZmluZSBE
+Uk1fTU9ERV9EUE1TX1NVU1BFTkQJMgo=
+--001485eba1e80dd0f1049b680b26--
