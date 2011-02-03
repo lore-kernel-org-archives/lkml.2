@@ -1,252 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab1BCC0S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 21:26:18 -0500
-Received: from www.wytron.com.tw ([211.75.82.101]:51823 "EHLO
-	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755053Ab1BCC0Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 21:26:16 -0500
-From: Thomas Chou <thomas@wytron.com.tw>
-To: Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Ben Dooks <ben-linux@fluff.org>
-Cc: linux-kernel@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
-        devicetree-discuss@lists.ozlabs.org, linux-i2c@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>, Thomas Chou <thomas@wytron.com.tw>,
-        Albert Herranz <albert_herranz@yahoo.es>
-Subject: [PATCH] i2c-gpio: add devicetree support
-Date: Thu,  3 Feb 2011 10:26:20 +0800
-Message-Id: <1296699980-30234-1-git-send-email-thomas@wytron.com.tw>
-X-Mailer: git-send-email 1.7.3.5
-In-Reply-To: <AANLkTimoaJKy-WTTHmRXFMmM6=e7uvzhjwRcDtNqGAPj@mail.gmail.com>
-References: <AANLkTimoaJKy-WTTHmRXFMmM6=e7uvzhjwRcDtNqGAPj@mail.gmail.com>
-X-SA-Exim-Connect-IP: 192.168.1.250
-X-SA-Exim-Mail-From: thomas@wytron.com.tw
-X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
+	id S1755205Ab1BCC3z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 21:29:55 -0500
+Received: from quamquam.org ([88.198.196.3]:50982 "EHLO quamquam.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754438Ab1BCC3y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 21:29:54 -0500
+Message-ID: <4D4A1310.8040607@poelzi.org>
+Date: Thu, 03 Feb 2011 03:29:36 +0100
+From: Daniel Poelzleithner <poelzi@poelzi.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110124 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: lwn@lwn.net
+X-Enigmail-Version: 1.1.2
+OpenPGP: id=0A7B003D;
+	url=http://files.poelzi.org/poelzi.asc
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig0AC1FAEF81C982FC75FBD10D"
+X-SA-Exim-Connect-IP: 91.64.160.209
+X-SA-Exim-Rcpt-To: linux-kernel@vger.kernel.org, lwn@lwn.net
+X-SA-Exim-Mail-From: poelzi@poelzi.org
+Subject: [ANN] ulatencyd 0.4.0
+X-SA-Exim-Version: 4.2.1 (built Sat, 07 Nov 2009 20:03:47 +0000)
+X-SA-Exim-Scanned: Yes (on quamquam.org)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds devicetree support to i2c-gpio driver. It converts
-dts bindings and allocates a struct i2c_gpio_platform_data, which
-will be freed on driver removal.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig0AC1FAEF81C982FC75FBD10D
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Albert Herranz <albert_herranz@yahoo.es>
-Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
----
-for v2.6.39
-v2 move of nodes probing to a hook, which will be optimized out
-     when devicetree is not used.
-   use linux/gpio.h.
-   move binding doc to i2c/i2c-gpio.txt.
-v3 use speed-hz instead of udelay in dts binding.
-   condition the devicetree probe.
+Hi,
 
- Documentation/devicetree/bindings/i2c/i2c-gpio.txt |   40 ++++++++++
- drivers/i2c/busses/i2c-gpio.c                      |   83 +++++++++++++++++++-
- 2 files changed, 119 insertions(+), 4 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/i2c/i2c-gpio.txt
+I'm happy to announce ulatencyd 0.4.0.
+This is a new major release towards prefect user experience on moderns
+Linux Desktops.
 
-diff --git a/Documentation/devicetree/bindings/i2c/i2c-gpio.txt b/Documentation/devicetree/bindings/i2c/i2c-gpio.txt
-new file mode 100644
-index 0000000..38ef4f2
---- /dev/null
-+++ b/Documentation/devicetree/bindings/i2c/i2c-gpio.txt
-@@ -0,0 +1,40 @@
-+GPIO-based I2C
-+
-+Required properties:
-+- compatible : should be "i2c-gpio".
-+- gpios : should specify GPIOs used for SDA and SCL lines, in that order.
-+Optional properties:
-+- sda-is-open-drain : present if SDA gpio is open-drain.
-+- scl-is-open-drain : present if SCL gpio is open-drain.
-+- scl-is-output-only : present if the output driver for SCL cannot be
-+	turned off. this will prevent clock stretching from working.
-+- speed-hz : SCL frequency.
-+- timeout : clock stretching timeout in milliseconds.
-+
-+Example:
-+
-+gpio0: starlet-gpio@0d8000c0 {
-+	compatible = "nintendo,starlet-gpio";
-+	reg = <0d8000c0 4>;
-+	gpio-controller;
-+	#gpio-cells = <2>;
-+};
-+
-+i2c-video {
-+	#address-cells = <1>;
-+	#size-cells = <0>;
-+	compatible = "i2c-gpio";
-+
-+	gpios = <&gpio0 10 0	/* SDA line */
-+		 &gpio0 11 0	/* SCL line */
-+		>;
-+	sda-is-open-drain;
-+	scl-is-open-drain;
-+	scl-is-output-only;
-+	speed-hz = <250000>;
-+
-+	audio-video-encoder {
-+		compatible = "nintendo,wii-ave-rvl";
-+		reg = <70>;
-+	};
-+};
-diff --git a/drivers/i2c/busses/i2c-gpio.c b/drivers/i2c/busses/i2c-gpio.c
-index d9aa9a6..4b31bbe 100644
---- a/drivers/i2c/busses/i2c-gpio.c
-+++ b/drivers/i2c/busses/i2c-gpio.c
-@@ -14,8 +14,8 @@
- #include <linux/module.h>
- #include <linux/slab.h>
- #include <linux/platform_device.h>
--
--#include <asm/gpio.h>
-+#include <linux/gpio.h>
-+#include <linux/of_i2c.h>
- 
- /* Toggle SDA by changing the direction of the pin */
- static void i2c_gpio_setsda_dir(void *data, int state)
-@@ -78,15 +78,74 @@ static int i2c_gpio_getscl(void *data)
- 	return gpio_get_value(pdata->scl_pin);
- }
- 
-+#ifdef CONFIG_OF
-+#include <linux/of_gpio.h>
-+
-+/* Check if devicetree nodes exist and build platform data */
-+static struct i2c_gpio_platform_data *i2c_gpio_of_probe(
-+	struct platform_device *pdev)
-+{
-+	struct i2c_gpio_platform_data *pdata = NULL;
-+	struct device_node *np = pdev->dev.of_node;
-+	const __be32 *prop;
-+	int sda_pin, scl_pin;
-+
-+	if (!np || of_gpio_count(np) < 2)
-+		goto err;
-+
-+	sda_pin = of_get_gpio_flags(np, 0, NULL);
-+	scl_pin = of_get_gpio_flags(np, 1, NULL);
-+	if (sda_pin < 0 || scl_pin < 0) {
-+		pr_err("%s: invalid GPIO pins, sda=%d/scl=%d\n",
-+		       np->full_name, sda_pin, scl_pin);
-+		goto err;
-+	}
-+
-+	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata)
-+		goto err;
-+
-+	pdata->sda_pin = sda_pin;
-+	pdata->scl_pin = scl_pin;
-+	prop = of_get_property(np, "sda-is-open-drain", NULL);
-+	if (prop)
-+		pdata->sda_is_open_drain = 1;
-+	prop = of_get_property(np, "scl-is-open-drain", NULL);
-+	if (prop)
-+		pdata->scl_is_open_drain = 1;
-+	prop = of_get_property(np, "scl-is-output-only", NULL);
-+	if (prop)
-+		pdata->scl_is_output_only = 1;
-+	prop = of_get_property(np, "speed-hz", NULL);
-+	if (prop)
-+		pdata->udelay = DIV_ROUND_UP(1000000, be32_to_cpup(prop) * 2);
-+	prop = of_get_property(np, "timeout", NULL);
-+	if (prop) {
-+		pdata->timeout =
-+			msecs_to_jiffies(be32_to_cpup(prop));
-+	}
-+err:
-+	return pdata;
-+}
-+#else
-+static struct i2c_gpio_platform_data *i2c_gpio_of_probe(
-+	struct platform_device *pdev)
-+{
-+	return NULL;
-+}
-+#endif
-+
- static int __devinit i2c_gpio_probe(struct platform_device *pdev)
- {
--	struct i2c_gpio_platform_data *pdata;
-+	struct i2c_gpio_platform_data *pdata, *pdata_of = NULL;
- 	struct i2c_algo_bit_data *bit_data;
- 	struct i2c_adapter *adap;
- 	int ret;
- 
- 	pdata = pdev->dev.platform_data;
- 	if (!pdata)
-+		pdata = pdata_of = i2c_gpio_of_probe(pdev);
-+	if (!pdata)
- 		return -ENXIO;
- 
- 	ret = -ENOMEM;
-@@ -143,6 +202,8 @@ static int __devinit i2c_gpio_probe(struct platform_device *pdev)
- 	adap->algo_data = bit_data;
- 	adap->class = I2C_CLASS_HWMON | I2C_CLASS_SPD;
- 	adap->dev.parent = &pdev->dev;
-+	if (pdata_of)
-+		adap->dev.of_node = pdev->dev.of_node;
- 
- 	/*
- 	 * If "dev->id" is negative we consider it as zero.
-@@ -161,6 +222,9 @@ static int __devinit i2c_gpio_probe(struct platform_device *pdev)
- 		 pdata->scl_is_output_only
- 		 ? ", no clock stretching" : "");
- 
-+	/* Now register all the child nodes */
-+	of_i2c_register_devices(adap);
-+
- 	return 0;
- 
- err_add_bus:
-@@ -172,6 +236,7 @@ err_request_sda:
- err_alloc_bit_data:
- 	kfree(adap);
- err_alloc_adap:
-+	kfree(pdata_of);
- 	return ret;
- }
- 
-@@ -179,23 +244,33 @@ static int __devexit i2c_gpio_remove(struct platform_device *pdev)
- {
- 	struct i2c_gpio_platform_data *pdata;
- 	struct i2c_adapter *adap;
-+	struct i2c_algo_bit_data *bit_data;
- 
- 	adap = platform_get_drvdata(pdev);
--	pdata = pdev->dev.platform_data;
-+	bit_data = adap->algo_data;
-+	pdata = bit_data->data;
- 
- 	i2c_del_adapter(adap);
- 	gpio_free(pdata->scl_pin);
- 	gpio_free(pdata->sda_pin);
- 	kfree(adap->algo_data);
-+	if (adap->dev.of_node)
-+		kfree(pdata);
- 	kfree(adap);
- 
- 	return 0;
- }
- 
-+static const struct of_device_id i2c_gpio_match[] = {
-+	{ .compatible = "i2c-gpio", },
-+	{},
-+};
-+
- static struct platform_driver i2c_gpio_driver = {
- 	.driver		= {
- 		.name	= "i2c-gpio",
- 		.owner	= THIS_MODULE,
-+		.of_match_table = i2c_gpio_match,
- 	},
- 	.probe		= i2c_gpio_probe,
- 	.remove		= __devexit_p(i2c_gpio_remove),
--- 
-1.7.3.5
+What is it ?
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
 
+ulatencyd is a scriptable daemon which constantly optimises the Linux
+kernel for best user experience.
+The default configuration tries to increase the responsiveness for a
+typical desktop system and protects the system from malicious
+processes/groups.
+With a different configuration all other types of systems can be
+adjusted as well.
+
+Website: https://github.com/poelzi/ulatencyd/
+
+=95 Latest Release:
+  https://github.com/downloads/poelzi/ulatencyd/ulatencyd-0.4.0.tar.gz
+=95 Package Repos:
+  https://github.com/poelzi/ulatencyd/wiki
+
+Major changes since 0.3.0
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+
+  =95 DBUS interface to query and control ulatencyd
+  =95 Much improved desktop config.
+    It now uses the task group as primary grouping value
+    Per group swappiness values
+  =95 IO optimisation when available
+  =95 Workarounds for GNOME & KDE which do not properly set task groups
+  =95 More robust startup on missing system features
+  =95 Tons of updates, improvements and bugfixes
+
+kind regards
+ Daniel Poelzleithner
+
+
+--------------enig0AC1FAEF81C982FC75FBD10D
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iQIcBAEBAgAGBQJNShMWAAoJEFYpgV2Roepc+2kP/2q/XDpVGN92DMLx7ie5eOsp
+3Ctzr/kCCTFAvFPWds/WCGUAx0U9rMlT/vk6+Atje2vNSkULyP8hJCQSggCkqGoh
+vDumd7lugAQ/jj/i95igpMYt4kS4cHZHWIoMbq4HvBAH8e6xYNYQjy6FA10jnNh8
+BCH9AN11QueOjn2RKHN/wB3EnT4W7IMOWcLa8tWpQZTnGw1DDIlU04iE4C2RayQb
+6ogLqGM8mmXX2Ig1TSccLOJWTdSQpcYLG8MjBj4TAVEBC5YEkBWKakpF34i2iNot
+OQ8Qzx24FVqFA1+1b0uE+nExn1OrlbBu9Fb9aDFFHQUu1wzRHlnnMJ4oJkDT9vnX
+PdvsCvNejFpJA/EfOoIRSD7J3B9YHj/9f14i9V7d1KaaCw2jYJ6aMJG0Mv1Byjs/
+78C157qE64NxmONw0742LrhPd103a68MURsdOafM8mwjhoKsElpnnhKLVScyt0RA
+EHB8AMv/4sIXuPnizeFBuS89JJyOYSvnbXOUfjvLSimmgj004urghOZrDB45u66l
+cuac6yDaBpVpp45lvlmkk4u+93Tj2JHV2Ww2QhAOeNvfnnVxShDy9fbBByy8qC18
+UBv2nwQLkU2ngH79gbC61lYBRUPMg6jsgJP5bCcHdtVToUpQ4eftqLDe118Nklkz
+Dw5m+YBXlAcrizzkuEUt
+=VMGl
+-----END PGP SIGNATURE-----
+
+--------------enig0AC1FAEF81C982FC75FBD10D--
