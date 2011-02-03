@@ -1,92 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932434Ab1BCSt3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 13:49:29 -0500
-Received: from kroah.org ([198.145.64.141]:50524 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932331Ab1BCSt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 13:49:28 -0500
-Date: Thu, 3 Feb 2011 10:48:52 -0800
-From: Greg KH <greg@kroah.com>
-To: Arthur Taylor <art@ified.ca>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCH] [resend] vt: Add virtual console keyboard mode OFF
-Message-ID: <20110203184852.GC20911@kroah.com>
-References: <AANLkTikZe1EuvNQHceNUdKFpmmeAbQG8H+34AG9fw43u@mail.gmail.com>
- <20110131174622.GA25097@suse.de>
- <1296612452.28176.52.camel@art-x200>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296612452.28176.52.camel@art-x200>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932448Ab1BCSxY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 13:53:24 -0500
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:50175 "HELO
+	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932423Ab1BCSxX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 13:53:23 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=MLvfXdITrvWZdDqWjzDVyK6ZDVeXoQEaps1j8mEatgkm5On54eMKJVY2iG0UaybR5TY7RBA/DN+jBJVNP653UQsSTr4mpJk6OjW6J/awyf2xxE5bDJ3htdpyc/SgFgaz;
+Date: Thu, 3 Feb 2011 10:53:19 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Nico Schottelius <nico-kernel-20110117@schottelius.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+Subject: Re: [Bug #28102] New display errors in 2.6.38-rc2-00175-g6fb1b30
+Message-ID: <20110203105319.2711b1db@jbarnes-desktop>
+In-Reply-To: <20110203184412.GA3956@schottelius.org>
+References: <QUnbpYCwS-F.A.vaC.VHeSNB@chimera>
+	<ibChAs1xEQI.A.0gC.aHeSNB@chimera>
+	<20110203101111.35d71bf0@jbarnes-desktop>
+	<20110203184412.GA3956@schottelius.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 01, 2011 at 06:07:32PM -0800, Arthur Taylor wrote:
-> On Mon, 2011-01-31 at 09:46 -0800, Greg KH wrote:
-> > Care to document this somewhere (i.e. Documentation/ABI?)
-> Sure. Can it wait for a future patch though as currently all VT IOCTLs
-> aren't documented in the source tree. I'm willing to write said
-> documentation.
+On Thu, 3 Feb 2011 19:44:12 +0100
+Nico Schottelius <nico-kernel-20110117@schottelius.org> wrote:
 
-Ok, that is fine, but care to do it as part of the requirements to get
-this patch in?  Yeah, it's not fair, but it ensures that the
-documentation gets written :)
-
-> > Your patch is line-wrapped and can not be applied :(
-> Fixed in this mail (hopefully).
-
-Yes, looks good.
-
-> > Are you sure you can change the size of this structure and no one is
-> > going to have problems?
-> >From what I can tell, no. kbd_struct and it's members are defined in the
-> non-exported kbd_kern.h, and it is never packed into weird places. Is
-> that sufficient? What else should be checked?
-
-No, you are correct.
-
+> Jesse Barnes [Thu, Feb 03, 2011 at 10:11:11AM -0800]:
+> > On Thu,  3 Feb 2011 00:31:29 +0100 (CET)
+> > "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> > 
+> > > This message has been generated automatically as a part of a summary report
+> > > of recent regressions.
+> > > 
+> > > The following bug entry is on the current list of known regressions
+> > > from 2.6.37.  Please verify if it still should be listed and let the tracking team
+> > > know (either way).
+> > > 
+> > > 
+> > > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=28102
+> > > Subject		: New display errors in 2.6.38-rc2-00175-g6fb1b30
+> > > Submitter	: Nico Schottelius <nico-kernel-20110117@schottelius.org>
+> > > Date		: 2011-01-28 20:29 (6 days old)
+> > > Message-ID	: <20110128202905.GB3395@schottelius.org>
+> > > References	: http://marc.info/?l=linux-kernel&m=129624657425949&w=2
+> > 
+> > Does this also occur with the drm-intel-next branch? 
 > 
-> > Also, what userspace code is going to use this new feature?  Has it been
-> > tested to work properly?
-> Xorg is the intended user. In short, reasons for the feature are:
->       * Removes having to flush unnecessary duplicate data.
->       * Fixes an Xorg corner case.
->       * Less code run in both kernel and userspace per key event (I know
->         kinda meh, but hey, it's a plus.)
+> Didn't try this one, went back to 2.6.37-rc4-00292-g3c8cdf9 now.
 > 
-> Since the switch to evdev and automatic input device detection, Xorg
-> sets the console to RAW to disable kernel special key handling and
-> flushes the console input buffer per key event.
+> I thought about following the bisect way, should I go a different
+> one better?
+
+Bisect would also be fine.
+
+> > Do you have a picture of the corruption?
 > 
-> If Xorg is configured with static input device definitions, it can't
-> flush the input in case the older kbd driver is in use, leading to the
-> buffer filling. If the console input buffer fills, bad things happen
-> (which I'm currently looking into as well.)
+> Not yet, can do one next time. Though I found one that looks
+> very similar to my corruption:
 > 
-> I modified my xserver to use this feature. I tested Xorg with the
-> input-evdev and input-kbd drivers for keyboard events. Since input-kbd
-> sets the keyboard back to RAW when needed, everything is fine. If
-> input-kbd isn't in use, the keyboard stays in OFF and he input buffer is
-> always kept empty, things always work. Shift key states are maintained,
-> and SysRq's unRaw function is still works as expected.
+> http://i759.photobucket.com/albums/xx239/ericfx1984/DSCF2469.jpg
 
-Are the xorg patches upstream and accepted or are they waiting for this
-change?  Will they work properly with the BSDs as well?
+Interesting, ok.
 
-> To: Greg Kroah-Hartman <gregkh@suse.de>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Pavel Machek <pavel@ucw.cz>
-> Signed-off-by: Arthur Taylor <art@ified.ca>
-
-Thanks for the information, but we also need the original changelog
-comment here for me to be able to apply it.
-
-Care to resend with all of the text correct?
-
-thanks,
-
-greg k-h
+-- 
+Jesse Barnes, Intel Open Source Technology Center
