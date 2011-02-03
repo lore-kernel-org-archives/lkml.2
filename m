@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756279Ab1BCLaO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 06:30:14 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:39630 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756240Ab1BCLaM (ORCPT
+	id S1756304Ab1BCLjm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 06:39:42 -0500
+Received: from brother.balabit.com ([195.70.62.219]:60848 "EHLO
+	lists.balabit.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756245Ab1BCLjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 06:30:12 -0500
-Date: Thu, 3 Feb 2011 12:31:17 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Greg KH <gregkh@suse.de>, "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        Greg Kroah-Hartman <greg@kroah.com>, x86 <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] AMD microcode fixes
-Message-ID: <20110203113117.GA24755@aftab>
-References: <20110131133024.GC32230@aftab>
- <20110203103548.GA14601@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110203103548.GA14601@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 3 Feb 2011 06:39:41 -0500
+Subject: CAP_SYSLOG, 2.6.38 and user space
+From: Gergely Nagy <algernon@balabit.hu>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, James Morris <jmorris@namei.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Feb 2011 12:39:37 +0100
+Message-ID: <1296733177.14846.26.camel@moria>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 03, 2011 at 05:35:48AM -0500, Ingo Molnar wrote:
-> 
-> * Borislav Petkov <bp@amd64.org> wrote:
-> 
-> > There's one out-of-tree change to <drivers/base/sys.c> which Greg hasn't
-> > explicitly acked yet but judging by his silence he has nothing against
-> > it :).
-> 
-> Hm, the drivers/base/sys.c portion is not particularly small:
-> 
-> >  arch/x86/kernel/microcode_amd.c  |  142 ++++++++++++++++++--------------------
-> >  arch/x86/kernel/microcode_core.c |    6 +-
-> >  drivers/base/sys.c               |   65 ++++++++++++-----
-> >  3 files changed, 118 insertions(+), 95 deletions(-)
-> 
-> So i'd really like to have an Acked-by from Greg.
-> 
-> Greg, what's your take on this? The patches are here:
+Hi!
 
-Yeah, I've sent him the chunk as two patches already and they're
-going to go over his tree. I'll redo the pull request without the
-<drivers/base/sys.c> portion maybe today.
+Back in november, a patch was merged into the kernel (in  commit
+ce6ada35bdf710d16582cc4869c26722547e6f11), that splits CAP_SYSLOG out of
+CAP_SYS_ADMIN.
 
-Thanks.
+Sadly, this has an unwelcomed consequence, that any userspace syslogd
+that formerly used CAP_SYS_ADMIN will stop working, unless upgraded, or
+otherwise adapted to the change.
+
+However, updating userspace isn't that easy, either, if one wants to
+support multiple kernels with the same userspace binary: pre-2.6.38, one
+needs CAP_SYS_ADMIN, but later kernels will need CAP_SYS_ADMIN. It would
+be trivial to keep both, but that kind of defeats the purpose of
+CAP_SYSLOG, in my opinion. It can be made configurable, and one can let
+the admin set which one to use, but that's ugly, and doesn't fix the
+underlying issue, just delegates it to the admins. And automatically
+deciding runtime proved to be trickier than I would've liked.
+
+My question would be, and this is why I'm CCing the author & committer:
+how are userspace syslogds supposed to handle this situation?
+
+Preferably in a way that does not need manual intervention whenever one
+changes kernel.
 
 -- 
-Regards/Gruss,
-Boris.
+|8]
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+
