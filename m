@@ -1,62 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932115Ab1BCNNo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 08:13:44 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:33868 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756392Ab1BCNNn (ORCPT
+	id S1756404Ab1BCNVx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 08:21:53 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43656 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756320Ab1BCNVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 08:13:43 -0500
+	Thu, 3 Feb 2011 08:21:52 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=NvMQApEhc4optJfYLIyokjoQ8MwLO9bjIMCPAPhEbCTYIOHu37Kv1OHlqnaFmZe0hT
-         IHxtsk21sZhVpYK/S8xjKjF6cmeLIO0EsOwUMudXhCu9oV+PsMntssSk2EJMgpnvBKwF
-         qlda1eZGQUUpmWZ49uuLN8KHPM7v3v6Tr5wVI=
-Date: Thu, 3 Feb 2011 15:13:34 +0200
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Tejun Heo <tj@kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] x86: fix section mismatch in reference from native_play_dead
-Message-ID: <20110203131333.GA4161@swordfish.minsk.epam.com>
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=bXxDwuuIJDIsb1E3XgitSbUPHUGSdSYOXRmbclnU5Euv+tvn+rUd7kIDF8z0KCnvV9
+         Lj6w2BBXFG2+/UfC+bn+/PwGZlA6Pjv62suoSruc1FUKtFqD8XZyky+68NedcEI0sL1V
+         fQm1tlxaLABaX/fdtojdMPPt0QkDFoF/Q3AtA=
+From: Marek Belisko <marek.belisko@open-nandra.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        dilinger@queued.net, cjb@laptop.org, jon.nettleton@gmail.com,
+        Marek Belisko <marek.belisko@open-nandra.com>
+Subject: [PATCH] staging: oplc_dcon: Fix compilation warning.
+Date: Thu,  3 Feb 2011 14:22:08 +0100
+Message-Id: <1296739328-11960-1-git-send-email-marek.belisko@open-nandra.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix 
+Fix compilation warning:
+drivers/staging/olpc_dcon/olpc_dcon.c: In function ‘dcon_probe’:
+drivers/staging/olpc_dcon/olpc_dcon.c:704:21: warning: ignoring
+return value of ‘device_create_file’, declared with attribute warn_unused_result
 
-WARNING: arch/x86/kernel/built-in.o(.text+0x19cde): Section mismatch in reference from 
-the function native_play_dead() to the function .cpuinit.text:mwait_usable()
-The function native_play_dead() references the function __cpuinit mwait_usable().
+and add cleaning of created files when creation of one failed.
 
-
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-
+Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
 ---
+ drivers/staging/olpc_dcon/olpc_dcon.c |   15 ++++++++++++---
+ 1 files changed, 12 insertions(+), 3 deletions(-)
 
- arch/x86/kernel/smpboot.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 0cbe8c0..0b8c6c9 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1467,7 +1467,7 @@ static inline void hlt_play_dead(void)
- 	}
- }
+diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c b/drivers/staging/olpc_dcon/olpc_dcon.c
+index 56a283d..7221bb8 100644
+--- a/drivers/staging/olpc_dcon/olpc_dcon.c
++++ b/drivers/staging/olpc_dcon/olpc_dcon.c
+@@ -674,7 +674,7 @@ static int dcon_detect(struct i2c_client *client, struct i2c_board_info *info)
  
--void native_play_dead(void)
-+void __cpuinit native_play_dead(void)
+ static int dcon_probe(struct i2c_client *client, const struct i2c_device_id *id)
  {
- 	play_dead_common();
- 	tboot_shutdown(TB_SHUTDOWN_WFS);
+-	int rc, i;
++	int rc, i, j;
+ 
+ 	if (num_registered_fb >= 1)
+ 		fbinfo = registered_fb[0];
+@@ -700,8 +700,14 @@ static int dcon_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 		goto edev;
+ 	}
+ 
+-	for(i = 0; i < ARRAY_SIZE(dcon_device_files); i++)
+-		device_create_file(&dcon_device->dev, &dcon_device_files[i]);
++	for(i = 0; i < ARRAY_SIZE(dcon_device_files); i++) {
++		rc = device_create_file(&dcon_device->dev,
++					&dcon_device_files[i]);
++		if (rc) {
++			dev_err(&dcon_device->dev, "Cannot create sysfs file\n");
++			goto ecreate;
++		}
++	}
+ 
+ 	/* Add the backlight device for the DCON */
+ 
+@@ -728,6 +734,9 @@ static int dcon_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 
+ 	return 0;
+ 
++ ecreate:
++	for (j = 0; j < i; j++)
++		device_remove_file(&dcon_device->dev, &dcon_device_files[j]);
+  edev:
+ 	platform_device_unregister(dcon_device);
+ 	dcon_device = NULL;
+-- 
+1.7.1
 
