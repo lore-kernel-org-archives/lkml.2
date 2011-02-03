@@ -1,470 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756637Ab1BCReh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 12:34:37 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:58369 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756610Ab1BCReg (ORCPT
+	id S932164Ab1BCRfv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 12:35:51 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:46633 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756162Ab1BCRfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 12:34:36 -0500
-Date: Thu, 3 Feb 2011 10:34:30 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Thomas Chou <thomas@wytron.com.tw>
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
-        devicetree-discuss@lists.ozlabs.org,
-        spi-devel-general@lists.sourceforge.net
-Subject: Re: [PATCH v6] spi: New driver for Altera SPI
-Message-ID: <20110203173430.GC6180@angua.secretlab.ca>
-References: <1295851114-12488-1-git-send-email-thomas@wytron.com.tw>
- <1296727326-2581-1-git-send-email-thomas@wytron.com.tw>
+	Thu, 3 Feb 2011 12:35:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=HPtM8uwdRX8LfBF3MDVrMySI3Abj0WmXXhjDhc3+5kjGf3twBL+MdFK7lBJ1okXAdF
+         iitQW0W6jSl8n98Yy0c8not9MHsuDmRBzzmPm9cdv59bhkALpONY5GR9VF4Bfk/STHnZ
+         lDp83mouCrbcAQGAIsPonFTglHFeHlxhqAASw=
+Date: Thu, 3 Feb 2011 18:35:45 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, mingo@elte.hu, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com
+Subject: Re: [RFC 0/4] tracing,x86_64 - function/graph trace without
+ mcount/-pg/framepointer
+Message-ID: <20110203173543.GA1769@nowhere>
+References: <1296747761-9082-1-git-send-email-jolsa@redhat.com>
+ <1296750805.10797.87.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1296727326-2581-1-git-send-email-thomas@wytron.com.tw>
+In-Reply-To: <1296750805.10797.87.camel@gandalf.stny.rr.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 03, 2011 at 06:02:06PM +0800, Thomas Chou wrote:
-> This patch adds a new SPI driver to support the Altera SOPC Builder
-> SPI component. It uses the bitbanging library.
+On Thu, Feb 03, 2011 at 11:33:25AM -0500, Steven Rostedt wrote:
+> On Thu, 2011-02-03 at 16:42 +0100, Jiri Olsa wrote:
+> > hi,
+> > 
+> > I recently saw the direct jump probing made for kprobes
+> > and tried to use it inside the trace framework.
+> > 
+> > The global idea is patching the function entry with direct
+> > jump to the trace code, instead of using pregenerated gcc
+> > profile code.
 > 
-> Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
-> ---
-> v2 add devicetree support
-> v3 remove platform header, as Grant suggested.
->    no irq resource means polling.
-> v4 minor cleanup, as Grant suggested.
-> v5 add compat version.
-> v6 change compatible vendor to uppercase, ALTR.
->    add dts binding doc.
-
-Hi Thomas, comments below, but looking pretty close.
-
+> Interesting, but ideally, it would be nice if gcc provided a better
+> "mcount" mechanism. One that calls mcount (or whatever new name it would
+> have) before it does anything with the stack.
 > 
->  .../devicetree/bindings/spi/spi_altera.txt         |    4 +
->  drivers/spi/Kconfig                                |    6 +
->  drivers/spi/Makefile                               |    1 +
->  drivers/spi/spi_altera.c                           |  360 ++++++++++++++++++++
->  4 files changed, 371 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/spi/spi_altera.txt
->  create mode 100644 drivers/spi/spi_altera.c
+> > 
+> > I started this just to see if it would be even possible
+> > to hook with new probing to the current trace code. It
+> > appears it's not that bad. I was able to run function
+> > and function_graph trace on x86_64.
+> > 
+> > For details on direct jumps probe, please check:
+> > http://www.linuxinsight.com/ols2007-djprobe-kernel-probing-with-the-smallest-overhead.html
+> > 
+> > 
+> > I realize using this way to hook the functions has some
+> > drawbacks, from what I can see it's roughly:
+> > - no all functions could be patched
 > 
-> diff --git a/Documentation/devicetree/bindings/spi/spi_altera.txt b/Documentation/devicetree/bindings/spi/spi_altera.txt
-> new file mode 100644
-> index 0000000..dda3759
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/spi/spi_altera.txt
-> @@ -0,0 +1,4 @@
-> +Altera SPI
-> +
-> +Required properties:
-> +- compatible : should be "ALTR,spi-1.0".
-> diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-> index bb233a9..e791579 100644
-> --- a/drivers/spi/Kconfig
-> +++ b/drivers/spi/Kconfig
-> @@ -53,6 +53,12 @@ if SPI_MASTER
->  
->  comment "SPI Master Controller Drivers"
->  
-> +config SPI_ALTERA
-> +	tristate "Altera SPI Controller"
-> +	select SPI_BITBANG
+> What's the reason for not all functions?
 
-Will this compile on all architectures?  Will it break allyesconfig
-on anything other than nios?
+Because of those that kprobes calls, so to avoid recursion.
+kprobes has some recursion detection mechanism, IIRC, but
+until we reach that checkpoint, I think there are some functions
+in the path.
 
-> +	help
-> +	  This is the driver for the Altera SPI Controller.
-> +
->  config SPI_ATH79
->  	tristate "Atheros AR71XX/AR724X/AR913X SPI controller driver"
->  	depends on ATH79 && GENERIC_GPIO
-> diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
-> index 86d1b5f..4d2e35a 100644
-> --- a/drivers/spi/Makefile
-> +++ b/drivers/spi/Makefile
-> @@ -9,6 +9,7 @@ ccflags-$(CONFIG_SPI_DEBUG) := -DDEBUG
->  obj-$(CONFIG_SPI_MASTER)		+= spi.o
->  
->  # SPI master controller drivers (bus)
-> +obj-$(CONFIG_SPI_ALTERA)		+= spi_altera.o
->  obj-$(CONFIG_SPI_ATMEL)			+= atmel_spi.o
->  obj-$(CONFIG_SPI_ATH79)			+= ath79_spi.o
->  obj-$(CONFIG_SPI_BFIN)			+= spi_bfin5xx.o
-> diff --git a/drivers/spi/spi_altera.c b/drivers/spi/spi_altera.c
-> new file mode 100644
-> index 0000000..1056ded
-> --- /dev/null
-> +++ b/drivers/spi/spi_altera.c
-> @@ -0,0 +1,360 @@
-> +/*
-> + * Altera SPI driver
-> + *
-> + * Copyright (C) 2008 Thomas Chou <thomas@wytron.com.tw>
-> + *
-> + * Based on spi_s3c24xx.c, which is:
-> + * Copyright (c) 2006 Ben Dooks
-> + * Copyright (c) 2006 Simtec Electronics
-> + *	Ben Dooks <ben@simtec.co.uk>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/init.h>
-> +#include <linux/spinlock.h>
-> +#include <linux/workqueue.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/delay.h>
-> +#include <linux/errno.h>
-> +#include <linux/err.h>
-> +#include <linux/clk.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/spi/spi.h>
-> +#include <linux/spi/spi_bitbang.h>
-> +#include <linux/io.h>
-> +#include <linux/of.h>
-> +
-> +#define DRV_NAME "spi_altera"
-> +
-> +#define ALTERA_SPI_RXDATA	0
-> +#define ALTERA_SPI_TXDATA	4
-> +#define ALTERA_SPI_STATUS	8
-> +#define ALTERA_SPI_CONTROL	12
-> +#define ALTERA_SPI_SLAVE_SEL	20
-> +
-> +#define ALTERA_SPI_STATUS_ROE_MSK	0x8
-> +#define ALTERA_SPI_STATUS_TOE_MSK	0x10
-> +#define ALTERA_SPI_STATUS_TMT_MSK	0x20
-> +#define ALTERA_SPI_STATUS_TRDY_MSK	0x40
-> +#define ALTERA_SPI_STATUS_RRDY_MSK	0x80
-> +#define ALTERA_SPI_STATUS_E_MSK		0x100
-> +
-> +#define ALTERA_SPI_CONTROL_IROE_MSK	0x8
-> +#define ALTERA_SPI_CONTROL_ITOE_MSK	0x10
-> +#define ALTERA_SPI_CONTROL_ITRDY_MSK	0x40
-> +#define ALTERA_SPI_CONTROL_IRRDY_MSK	0x80
-> +#define ALTERA_SPI_CONTROL_IE_MSK	0x100
-> +#define ALTERA_SPI_CONTROL_SSO_MSK	0x400
-> +
-> +struct altera_spi {
-> +	/* bitbang has to be first */
-> +	struct spi_bitbang bitbang;
-> +	struct completion done;
-> +
-> +	void __iomem *base;
-> +	int irq;
-> +	int len;
-> +	int count;
-> +	int bytes_per_word;
-> +	unsigned long imr;
-> +
-> +	/* data buffers */
-> +	const unsigned char *tx;
-> +	unsigned char *rx;
-> +};
-> +
-> +static inline struct altera_spi *altera_spi_to_hw(struct spi_device *sdev)
-> +{
-> +	return spi_master_get_devdata(sdev->master);
-> +}
-> +
-> +static void altera_spi_chipsel(struct spi_device *spi, int value)
-> +{
-> +	struct altera_spi *hw = altera_spi_to_hw(spi);
-> +
-> +	if (spi->mode & SPI_CS_HIGH) {
-> +		switch (value) {
-> +		case BITBANG_CS_INACTIVE:
-> +			writel(1 << spi->chip_select,
-> +			       hw->base + ALTERA_SPI_SLAVE_SEL);
-> +			hw->imr |= ALTERA_SPI_CONTROL_SSO_MSK;
-> +			writel(hw->imr, hw->base + ALTERA_SPI_CONTROL);
-> +			break;
-> +
-> +		case BITBANG_CS_ACTIVE:
-> +			hw->imr &= ~ALTERA_SPI_CONTROL_SSO_MSK;
-> +			writel(hw->imr, hw->base + ALTERA_SPI_CONTROL);
-> +			writel(0, hw->base + ALTERA_SPI_SLAVE_SEL);
-> +			break;
-> +		}
-> +	} else {
-> +		switch (value) {
-> +		case BITBANG_CS_INACTIVE:
-> +			hw->imr &= ~ALTERA_SPI_CONTROL_SSO_MSK;
-> +			writel(hw->imr, hw->base + ALTERA_SPI_CONTROL);
-> +			break;
-> +
-> +		case BITBANG_CS_ACTIVE:
-> +			writel(1 << spi->chip_select,
-> +			       hw->base + ALTERA_SPI_SLAVE_SEL);
-> +			hw->imr |= ALTERA_SPI_CONTROL_SSO_MSK;
-> +			writel(hw->imr, hw->base + ALTERA_SPI_CONTROL);
-> +			break;
-> +		}
-> +	}
-> +}
-> +
-> +static int altera_spi_setupxfer(struct spi_device *spi, struct spi_transfer *t)
-> +{
-> +	return 0;
-> +}
-> +
-> +static int altera_spi_setup(struct spi_device *spi)
-> +{
-> +	return 0;
-> +}
-> +
-> +static inline unsigned int hw_txbyte(struct altera_spi *hw, int count)
-> +{
-> +	if (hw->tx) {
-> +		switch (hw->bytes_per_word) {
-> +		case 1:
-> +			return hw->tx[count];
-> +		case 2:
-> +			return (hw->tx[count * 2]
-> +				| (hw->tx[count * 2 + 1] << 8));
-> +		}
-> +	}
-> +	return 0;
-> +}
-> +
-> +static int altera_spi_txrx(struct spi_device *spi, struct spi_transfer *t)
-> +{
-> +	struct altera_spi *hw = altera_spi_to_hw(spi);
-> +
-> +	hw->tx = t->tx_buf;
-> +	hw->rx = t->rx_buf;
-> +	hw->count = 0;
-> +	hw->bytes_per_word = (t->bits_per_word ? : spi->bits_per_word) / 8;
-> +	hw->len = t->len / hw->bytes_per_word;
-> +
-> +	if (hw->irq >= 0) {
-> +		/* enable receive interrupt */
-> +		hw->imr |= ALTERA_SPI_CONTROL_IRRDY_MSK;
-> +		writel(hw->imr, hw->base + ALTERA_SPI_CONTROL);
-> +
-> +		/* send the first byte */
-> +		writel(hw_txbyte(hw, 0), hw->base + ALTERA_SPI_TXDATA);
-> +
-> +		wait_for_completion(&hw->done);
-> +		/* disable receive interrupt */
-> +		hw->imr &= ~ALTERA_SPI_CONTROL_IRRDY_MSK;
-> +		writel(hw->imr, hw->base + ALTERA_SPI_CONTROL);
-> +	} else {
-> +		/* send the first byte */
-> +		writel(hw_txbyte(hw, 0), hw->base + ALTERA_SPI_TXDATA);
-> +
-> +		while (1) {
-> +			unsigned int rxd;
-> +
-> +			while (!(readl(hw->base + ALTERA_SPI_STATUS) &
-> +				 ALTERA_SPI_STATUS_RRDY_MSK))
-> +				cpu_relax();
-> +
-> +			rxd = readl(hw->base + ALTERA_SPI_RXDATA);
-> +			if (hw->rx) {
-> +				switch (hw->bytes_per_word) {
-> +				case 1:
-> +					hw->rx[hw->count] = rxd;
-> +					break;
-> +				case 2:
-> +					hw->rx[hw->count * 2] = rxd;
-> +					hw->rx[hw->count * 2 + 1] = rxd >> 8;
-> +					break;
-> +				}
-> +			}
-> +
-> +			hw->count++;
-> +
-> +			if (hw->count < hw->len)
-> +				writel(hw_txbyte(hw, hw->count),
-> +				       hw->base + ALTERA_SPI_TXDATA);
-> +			else
-> +				break;
-> +		}
-> +
-> +	}
-> +
-> +	return hw->count * hw->bytes_per_word;
-> +}
-> +
-> +static irqreturn_t altera_spi_irq(int irq, void *dev)
-> +{
-> +	struct altera_spi *hw = dev;
-> +	unsigned int rxd;
-> +
-> +	rxd = readl(hw->base + ALTERA_SPI_RXDATA);
-> +	if (hw->rx) {
-> +		switch (hw->bytes_per_word) {
-> +		case 1:
-> +			hw->rx[hw->count] = rxd;
-> +			break;
-> +		case 2:
-> +			hw->rx[hw->count * 2] = rxd;
-> +			hw->rx[hw->count * 2 + 1] = rxd >> 8;
-> +			break;
-> +		}
-> +	}
-> +
-> +	hw->count++;
-> +
-> +	if (hw->count < hw->len)
-> +		writel(hw_txbyte(hw, hw->count), hw->base + ALTERA_SPI_TXDATA);
-> +	else
-> +		complete(&hw->done);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int __devinit altera_spi_probe(struct platform_device *pdev)
-> +{
-> +	struct altera_spi_platform_data *platp = pdev->dev.platform_data;
-> +	struct altera_spi *hw;
-> +	struct spi_master *master;
-> +	struct resource *res;
-> +	int err = 0;
-> +
-> +	master = spi_alloc_master(&pdev->dev, sizeof(struct altera_spi));
-> +	if (master == NULL) {
-> +		dev_err(&pdev->dev, "No memory for spi_master\n");
-> +		err = -ENOMEM;
-> +		goto err_no_mem;
-> +	}
-> +
-> +	/* setup the master state. */
-> +	master->bus_num = pdev->id;
-> +	master->num_chipselect = 16;
-> +	master->mode_bits = SPI_CS_HIGH;
-> +	master->setup = altera_spi_setup;
-> +
-> +	hw = spi_master_get_devdata(master);
-> +	platform_set_drvdata(pdev, hw);
-> +
-> +	/* setup the state for the bitbang driver */
-> +	hw->bitbang.master = spi_master_get(master);
-> +	if (hw->bitbang.master == NULL) {
-> +		dev_err(&pdev->dev, "Cannot get device\n");
-> +		err = -ENODEV;
-> +		goto err_no_dev;
-> +	}
-> +	hw->bitbang.setup_transfer = altera_spi_setupxfer;
-> +	hw->bitbang.chipselect = altera_spi_chipsel;
-> +	hw->bitbang.txrx_bufs = altera_spi_txrx;
-> +
-> +	/* find and map our resources */
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	if (res == NULL) {
-> +		dev_err(&pdev->dev, "Cannot get IORESOURCE_MEM\n");
-> +		err = -ENOENT;
-> +		goto err_no_iores;
-> +	}
-> +	hw->base = ioremap(res->start, (res->end - res->start) + 1);
-> +	if (hw->base == 0) {
-> +		dev_err(&pdev->dev, "Cannot map IO\n");
-> +		err = -ENXIO;
-> +		goto err_no_iomap;
-> +	}
-> +	/* program defaults into the registers */
-> +	hw->imr = 0;		/* disable spi interrupts */
-> +	writel(hw->imr, hw->base + ALTERA_SPI_CONTROL);
-> +	writel(0, hw->base + ALTERA_SPI_STATUS);	/* clear status reg */
-> +	if (readl(hw->base + ALTERA_SPI_STATUS) & ALTERA_SPI_STATUS_RRDY_MSK)
-> +		readl(hw->base + ALTERA_SPI_RXDATA);	/* flush rxdata */
-> +	/* irq is optional */
-> +	hw->irq = platform_get_irq(pdev, 0);
-> +	if (hw->irq >= 0) {
-> +		init_completion(&hw->done);
-> +		err = request_irq(hw->irq, altera_spi_irq, 0, pdev->name, hw);
-> +		if (err) {
-> +			dev_err(&pdev->dev, "Cannot claim IRQ\n");
-> +			goto err_no_irq;
-> +		}
-> +	}
-> +	/* find platform data */
-> +	if (!platp)
-> +		hw->bitbang.master->dev.of_node = pdev->dev.of_node;
-> +
-> +	/* register our spi controller */
-> +	err = spi_bitbang_start(&hw->bitbang);
-> +	if (err) {
-> +		dev_err(&pdev->dev, "Failed to register SPI master\n");
-> +		goto err_register;
-> +	}
-> +	dev_info(&pdev->dev, "base %p, irq %d\n", hw->base, hw->irq);
-> +
-> +	return 0;
-> +
-> +err_register:
-> +	if (hw->irq >= 0)
-> +		free_irq(hw->irq, hw);
-> +err_no_irq:
-> +	iounmap(hw->base);
-> +err_no_iomap:
-> +err_no_iores:
-> +err_no_dev:
-> +	spi_master_put(master);
-> +err_no_mem:
-> +	return err;
-> +}
-> +
-> +static int __devexit altera_spi_remove(struct platform_device *dev)
-> +{
-> +	struct altera_spi *hw = platform_get_drvdata(dev);
-> +	struct spi_master *master = hw->bitbang.master;
-> +
-> +	spi_bitbang_stop(&hw->bitbang);
-> +
-> +	if (hw->irq >= 0)
-> +		free_irq(hw->irq, hw);
-> +	iounmap(hw->base);
-> +
-> +	platform_set_drvdata(dev, NULL);
-> +	spi_master_put(master);
-> +	return 0;
-> +}
-> +
-> +static const struct of_device_id altera_spi_match[] = {
-> +	{ .compatible = "ALTR,spi-1.0", },
-> +	{},
-> +}
-> +MODULE_DEVICE_TABLE(of, altera_spi_match);
-> +
-> +static struct platform_driver altera_spidrv = {
-> +	.remove = __devexit_p(altera_spi_remove),
-> +	.driver = {
-> +		.name = DRV_NAME,
-> +		.owner = THIS_MODULE,
-> +		.pm = NULL,
-> +		.of_match_table = altera_spi_match,
-> +	},
-> +};
-> +
-> +static int __init altera_spi_init(void)
-> +{
-> +	return platform_driver_probe(&altera_spidrv, altera_spi_probe);
+Well, ftrace has the same problem. That's just due to the nature of
+function tracing.
 
-platform_driver_register() please, and put the altera_spi_probe()
-routine into the driver structure.
+There may be some places too fragile to use kprobes there too.
 
-> +}
-> +module_init(altera_spi_init);
-> +
-> +static void __exit altera_spi_exit(void)
-> +{
-> +	platform_driver_unregister(&altera_spidrv);
-> +}
-> +module_exit(altera_spi_exit);
-> +
-> +MODULE_DESCRIPTION("Altera SPI driver");
-> +MODULE_AUTHOR("Thomas Chou <thomas@wytron.com.tw>");
-> +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("platform:" DRV_NAME);
-> -- 
-> 1.7.3.5
+Ah, the whole trap path for example :-(
+
+> > - need to find a way to say which function is safe to patch
+> > - memory consumption for detour buffers and symbol records
+> > 
+> > but seems there're some advantages as well:
+> > - trace code could be in a module
 > 
+> What makes this allow module code?
+> 
+> ftrace could do that now, but it would require a separate handler. I
+> would need to disable preemption before calling the module code function
+> handler.
+
+Kprobes takes care of handlers from modules already.
+I'm not sure we want that, it makes the tracing code more sensitive.
+
+Look, for example I think kprobes doesn't trace kernel faults path
+because module space is allocated through vmalloc (hmm, is it still
+the case?).
+
+> > - no profiling code is needed
+> > - framepointer can be disabled (framepointer is needed for
+> >   generating profile code)
+> 
+> Again ideally, gcc should fix this.
+
+As another drawback of using kprobes, there is also the overhead.
+I can't imagine a trap triggering for every functions. But then
+yeah we have the jmp optimisation. But then it needs that detour
+buffer that we can avoid with mcount.
+
+So like Steve I think mcount is still a better backend for function
+tracing. More optimized by nature, even though it indeed needs
+some fixes.
