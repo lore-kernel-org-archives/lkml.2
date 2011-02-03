@@ -1,227 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929Ab1BCApF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Feb 2011 19:45:05 -0500
-Received: from mga09.intel.com ([134.134.136.24]:25109 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755767Ab1BCAov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Feb 2011 19:44:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,416,1291622400"; 
-   d="scan'208";a="703426760"
-From: jacob.jun.pan@linux.intel.com
-To: LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Matt Helsley <matthltc@us.ibm.com>,
-        container cgroup <containers@lists.linux-foundation.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <menage@google.com>
-Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: [PATCH v2] cgroup/freezer: add per freezer duty ratio control
-Date: Wed,  2 Feb 2011 16:42:20 -0800
-Message-Id: <1296693740-11537-2-git-send-email-jacob.jun.pan@linux.intel.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1296693740-11537-1-git-send-email-jacob.jun.pan@linux.intel.com>
-References: <1296693740-11537-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	id S1755942Ab1BCArB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Feb 2011 19:47:01 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:63392 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755476Ab1BCArA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Feb 2011 19:47:00 -0500
+X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=3_NjXNktB9YA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=J1Y8HTJGAAAA:8 a=7d_E57ReAAAA:8 a=meVymXHHAAAA:8 a=lniB3LK8JEahsPkeWcQA:9 a=99_wcZ0us6ug7ZrnlxQA:7 a=v6RVXBu9IYgYf47sGra_QR__AigA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=4N9Db7Z2_RYA:10 a=D6-X0JM3zdQA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 1/2] tracing: Replace trace_event struct array with
+ pointer array
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, akpm@linux-foundation.org,
+        fweisbec@gmail.com, mathieu.desnoyers@efficios.com
+In-Reply-To: <20110202.145023.183036454.davem@davemloft.net>
+References: <20110202180613.978219945@goodmis.org>
+	 <20110202180938.106599012@goodmis.org>
+	 <20110202.145023.183036454.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 02 Feb 2011 19:46:58 -0500
+Message-ID: <1296694018.10797.78.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Hi David,
 
-Freezer subsystem is used to manage batch jobs which can start
-stop at the same time. However, sometime it is desirable to let
-the kernel manage the freezer state automatically with a given
-duty ratio.
-For example, if we want to reduce the time that backgroup apps
-are allowed to run we can put them into a freezer subsystem and
-set the kernel to turn them THAWED/FROZEN at given duty ratio.
+Did you want to test this patch too. I'm still running it through my
+tests, but here's a heads up on it.
 
-This patch introduces two file nodes under cgroup
-freezer.duty_ratio_pct and freezer.period_sec
+-- Steve
 
-Usage example: set period to be 5 seconds and frozen duty ratio 90%
-[root@localhost aoa]# echo 90 > freezer.duty_ratio_pct
-[root@localhost aoa]# echo 5 > freezer.period_sec
+commit bc75563dd5b5d8b23f973b3a8ea10fba6f9e93e8
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Wed Feb 2 17:06:09 2011 -0500
 
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
----
- kernel/cgroup_freezer.c |  109 ++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 107 insertions(+), 2 deletions(-)
+    tracing: Replace syscall_meta_data struct array with pointer array
+    
+    Currently the syscall_meta structures for the syscall tracepoints are
+    placed in the __syscall_metadata section, and at link time, the linker
+    makes one large array of all these syscall metadata structures. On boot
+    up, this array is read (much like the initcall sections) and the syscall
+    data is processed.
+    
+    The problem is that there is no guarantee that gcc will place complex
+    structures nicely together in an array format. Two structures in the
+    same file may be placed awkwardly, because gcc has no clue that they
+    are suppose to be in an array.
+    
+    A hack was used previous to force the alignment to 4, to pack the
+    structures together. But this caused alignment issues with other
+    architectures (sparc).
+    
+    Instead of packing the structures into an array, the structures' addresses
+    are now put into the __syscall_metadata section. As pointers are always the
+    natural alignment, gcc should always pack them tightly together
+    (otherwise initcall, extable, etc would also fail).
+    
+    By having the pointers to the structures in the section, we can still
+    iterate the trace_events without causing unnecessary alignment problems
+    with other architectures, or depending on the current behaviour of
+    gcc that will likely change in the future just to tick us kernel developers
+    off a little more.
+    
+    The __syscall_metadata section is also moved into the .init.data section
+    as it is now only needed at boot up.
+    
+    Suggested-by: David Miller <davem@davemloft.net>
+    Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-index e7bebb7..928f2ab 100644
---- a/kernel/cgroup_freezer.c
-+++ b/kernel/cgroup_freezer.c
-@@ -21,6 +21,7 @@
- #include <linux/uaccess.h>
- #include <linux/freezer.h>
- #include <linux/seq_file.h>
-+#include <linux/kthread.h>
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index 57b1b68..fe77e33 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -141,7 +141,8 @@
+ #endif
  
- enum freezer_state {
- 	CGROUP_THAWED = 0,
-@@ -28,12 +29,23 @@ enum freezer_state {
- 	CGROUP_FROZEN,
- };
- 
-+struct freezer_duty {
-+	u32 ratio; /* percentage of time frozen */
-+	u32 period_pct_ms; /* one percent of the period in miliseconds */
-+};
-+
- struct freezer {
- 	struct cgroup_subsys_state css;
- 	enum freezer_state state;
-+	struct freezer_duty duty;
-+	struct task_struct *fkh;
- 	spinlock_t lock; /* protects _writes_ to state */
- };
- 
-+static struct task_struct *freezer_task;
-+static int try_to_freeze_cgroup(struct cgroup *cgroup, struct freezer *freezer);
-+static void unfreeze_cgroup(struct cgroup *cgroup, struct freezer *freezer);
-+
- static inline struct freezer *cgroup_freezer(
- 		struct cgroup *cgroup)
- {
-@@ -63,6 +75,35 @@ int cgroup_freezing_or_frozen(struct task_struct *task)
- 	return result;
- }
- 
-+static DECLARE_WAIT_QUEUE_HEAD(freezer_wait);
-+
-+static int freezer_kh(void *data)
-+{
-+	struct cgroup *cgroup = (struct cgroup *)data;
-+	struct freezer *freezer = cgroup_freezer(cgroup);
-+
-+	do {
-+		if (freezer->duty.ratio < 100 && freezer->duty.ratio >= 0 &&
-+			freezer->duty.period_pct_ms) {
-+			if (try_to_freeze_cgroup(cgroup, freezer))
-+				pr_info("cannot freeze\n");
-+			msleep(freezer->duty.period_pct_ms *
-+				freezer->duty.ratio);
-+			unfreeze_cgroup(cgroup, freezer);
-+			msleep(freezer->duty.period_pct_ms *
-+				(100 - freezer->duty.ratio));
-+		} else if (freezer->duty.ratio == 100) {
-+			if (try_to_freeze_cgroup(cgroup, freezer))
-+				pr_info("cannot freeze\n");
-+			sleep_on(&freezer_wait);
-+		} else {
-+			sleep_on(&freezer_wait);
-+			pr_debug("freezer thread wake up\n");
-+		}
-+	} while (!kthread_should_stop());
-+	return 0;
-+}
-+
- /*
-  * cgroups_write_string() limits the size of freezer state strings to
-  * CGROUP_LOCAL_BUFFER_SIZE
-@@ -150,7 +191,11 @@ static struct cgroup_subsys_state *freezer_create(struct cgroup_subsys *ss,
- static void freezer_destroy(struct cgroup_subsys *ss,
- 			    struct cgroup *cgroup)
- {
--	kfree(cgroup_freezer(cgroup));
-+	struct freezer *freezer;
-+
-+	freezer = cgroup_freezer(cgroup);
-+	kthread_stop(freezer->fkh);
-+	kfree(freezer);
- }
+ #ifdef CONFIG_FTRACE_SYSCALLS
+-#define TRACE_SYSCALLS() VMLINUX_SYMBOL(__start_syscalls_metadata) = .;	\
++#define TRACE_SYSCALLS() . = ALIGN(8);					\
++			 VMLINUX_SYMBOL(__start_syscalls_metadata) = .;	\
+ 			 *(__syscalls_metadata)				\
+ 			 VMLINUX_SYMBOL(__stop_syscalls_metadata) = .;
+ #else
+@@ -175,10 +176,7 @@
+ 	VMLINUX_SYMBOL(__stop___verbose) = .;				\
+ 	LIKELY_PROFILE()		       				\
+ 	BRANCH_PROFILE()						\
+-	TRACE_PRINTKS()							\
+-									\
+-	STRUCT_ALIGN();							\
+-	TRACE_SYSCALLS()
++	TRACE_PRINTKS()
  
  /*
-@@ -282,6 +327,16 @@ static int freezer_read(struct cgroup *cgroup, struct cftype *cft,
- 	return 0;
- }
+  * Data section helpers
+@@ -483,6 +481,7 @@
+ 	*(.init.rodata)							\
+ 	MCOUNT_REC()							\
+ 	FTRACE_EVENTS()							\
++	TRACE_SYSCALLS()						\
+ 	DEV_DISCARD(init.rodata)					\
+ 	CPU_DISCARD(init.rodata)					\
+ 	MEM_DISCARD(init.rodata)					\
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 45508fe..98664db 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -125,8 +125,7 @@ extern struct trace_event_functions enter_syscall_print_funcs;
+ extern struct trace_event_functions exit_syscall_print_funcs;
  
-+static u64 freezer_read_duty_ratio(struct cgroup *cgroup, struct cftype *cft)
-+{
-+	return cgroup_freezer(cgroup)->duty.ratio;
-+}
-+
-+static u64 freezer_read_period(struct cgroup *cgroup, struct cftype *cft)
-+{
-+	return cgroup_freezer(cgroup)->duty.period_pct_ms / 10;
-+}
-+
- static int try_to_freeze_cgroup(struct cgroup *cgroup, struct freezer *freezer)
- {
- 	struct cgroup_iter it;
-@@ -368,19 +423,69 @@ static int freezer_write(struct cgroup *cgroup,
- 	return retval;
- }
+ #define SYSCALL_TRACE_ENTER_EVENT(sname)				\
+-	static struct syscall_metadata					\
+-	__attribute__((__aligned__(4))) __syscall_meta_##sname;		\
++	static struct syscall_metadata __syscall_meta_##sname;		\
+ 	static struct ftrace_event_call __used				\
+ 	  event_enter_##sname = {					\
+ 		.name                   = "sys_enter"#sname,		\
+@@ -140,8 +139,7 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 	__TRACE_EVENT_FLAGS(enter_##sname, TRACE_EVENT_FL_CAP_ANY)
  
-+static int freezer_write_duty_ratio(struct cgroup *cgroup, struct cftype *cft,
-+		u64 val)
-+{
-+	if (!cgroup_lock_live_group(cgroup))
-+		return -ENODEV;
-+	cgroup_freezer(cgroup)->duty.ratio = val;
-+	cgroup_unlock();
-+	wake_up(&freezer_wait);
-+
-+	return 0;
-+}
-+
-+static int freezer_write_period(struct cgroup *cgroup, struct cftype *cft,
-+		u64 val)
-+{
-+	if (!cgroup_lock_live_group(cgroup))
-+		return -ENODEV;
-+	cgroup_freezer(cgroup)->duty.period_pct_ms = val * 10;
-+	cgroup_unlock();
-+	wake_up(&freezer_wait);
-+
-+	return 0;
-+}
-+
- static struct cftype files[] = {
- 	{
- 		.name = "state",
- 		.read_seq_string = freezer_read,
- 		.write_string = freezer_write,
- 	},
-+	{
-+		.name = "duty_ratio_pct",
-+		.read_u64 = freezer_read_duty_ratio,
-+		.write_u64 = freezer_write_duty_ratio,
-+	},
-+	{
-+		.name = "period_sec",
-+		.read_u64 = freezer_read_period,
-+		.write_u64 = freezer_write_period,
-+	},
-+
+ #define SYSCALL_TRACE_EXIT_EVENT(sname)					\
+-	static struct syscall_metadata					\
+-	__attribute__((__aligned__(4))) __syscall_meta_##sname;		\
++	static struct syscall_metadata __syscall_meta_##sname;		\
+ 	static struct ftrace_event_call __used				\
+ 	  event_exit_##sname = {					\
+ 		.name                   = "sys_exit"#sname,		\
+@@ -158,8 +156,6 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 	SYSCALL_TRACE_ENTER_EVENT(sname);			\
+ 	SYSCALL_TRACE_EXIT_EVENT(sname);			\
+ 	static struct syscall_metadata __used			\
+-	  __attribute__((__aligned__(4)))			\
+-	  __attribute__((section("__syscalls_metadata")))	\
+ 	  __syscall_meta_##sname = {				\
+ 		.name 		= "sys"#sname,			\
+ 		.nb_args 	= nb,				\
+@@ -168,14 +164,15 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 		.enter_event	= &event_enter_##sname,		\
+ 		.exit_event	= &event_exit_##sname,		\
+ 		.enter_fields	= LIST_HEAD_INIT(__syscall_meta_##sname.enter_fields), \
+-	};
++	};							\
++	static struct syscall_metadata __used			\
++	  __attribute__((section("__syscalls_metadata")))	\
++	 *__p_syscall_meta_##sname = &__syscall_meta_##sname;
+ 
+ #define SYSCALL_DEFINE0(sname)					\
+ 	SYSCALL_TRACE_ENTER_EVENT(_##sname);			\
+ 	SYSCALL_TRACE_EXIT_EVENT(_##sname);			\
+ 	static struct syscall_metadata __used			\
+-	  __attribute__((__aligned__(4)))			\
+-	  __attribute__((section("__syscalls_metadata")))	\
+ 	  __syscall_meta__##sname = {				\
+ 		.name 		= "sys_"#sname,			\
+ 		.nb_args 	= 0,				\
+@@ -183,6 +180,9 @@ extern struct trace_event_functions exit_syscall_print_funcs;
+ 		.exit_event	= &event_exit__##sname,		\
+ 		.enter_fields	= LIST_HEAD_INIT(__syscall_meta__##sname.enter_fields), \
+ 	};							\
++	static struct syscall_metadata __used			\
++	  __attribute__((section("__syscalls_metadata")))	\
++	 *__p_syscall_meta_##sname = &__syscall_meta__##sname;	\
+ 	asmlinkage long sys_##sname(void)
+ #else
+ #define SYSCALL_DEFINE0(name)	   asmlinkage long sys_##name(void)
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index b706529..5c9fe08 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -55,20 +55,21 @@ struct ftrace_event_class event_class_syscall_exit = {
+ 	.raw_init	= init_syscall_trace,
  };
  
-+#define FREEZER_KH_PREFIX  "freezer_"
- static int freezer_populate(struct cgroup_subsys *ss, struct cgroup *cgroup)
- {
-+	int ret = 0;
-+	char thread_name[32];
-+	struct freezer *freezer;
-+
- 	if (!cgroup->parent)
- 		return 0;
--	return cgroup_add_files(cgroup, ss, files, ARRAY_SIZE(files));
-+
-+	freezer = cgroup_freezer(cgroup);
-+	ret = cgroup_add_files(cgroup, ss, files, ARRAY_SIZE(files));
-+
-+	snprintf(thread_name, 32, "%s%s", FREEZER_KH_PREFIX,
-+		cgroup->dentry->d_name.name);
-+	freezer->fkh = kthread_run(freezer_kh, (void *)cgroup, thread_name);
-+	if (IS_ERR(freezer_task))
-+		pr_debug("%s failed to create %s\n", __func__, thread_name);
-+
-+	return ret;
- }
+-extern unsigned long __start_syscalls_metadata[];
+-extern unsigned long __stop_syscalls_metadata[];
++extern struct syscall_metadata *__start_syscalls_metadata[];
++extern struct syscall_metadata *__stop_syscalls_metadata[];
  
- struct cgroup_subsys freezer_subsys = {
--- 
-1.7.0.4
+ static struct syscall_metadata **syscalls_metadata;
+ 
+-static struct syscall_metadata *find_syscall_meta(unsigned long syscall)
++static __init struct syscall_metadata *
++find_syscall_meta(unsigned long syscall)
+ {
+-	struct syscall_metadata *start;
+-	struct syscall_metadata *stop;
++	struct syscall_metadata **start;
++	struct syscall_metadata **stop;
+ 	char str[KSYM_SYMBOL_LEN];
+ 
+ 
+-	start = (struct syscall_metadata *)__start_syscalls_metadata;
+-	stop = (struct syscall_metadata *)__stop_syscalls_metadata;
++	start = __start_syscalls_metadata;
++	stop = __stop_syscalls_metadata;
+ 	kallsyms_lookup(syscall, NULL, NULL, NULL, str);
+ 
+ 	for ( ; start < stop; start++) {
+@@ -78,8 +79,8 @@ static struct syscall_metadata *find_syscall_meta(unsigned long syscall)
+ 		 * with "SyS" instead of "sys", leading to an unwanted
+ 		 * mismatch.
+ 		 */
+-		if (start->name && !strcmp(start->name + 3, str + 3))
+-			return start;
++		if ((*start)->name && !strcmp((*start)->name + 3, str + 3))
++			return *start;
+ 	}
+ 	return NULL;
+ }
+
 
