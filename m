@@ -1,53 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756740Ab1BCUCF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 15:02:05 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:53671 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756342Ab1BCUCE (ORCPT
+	id S1756749Ab1BCUHP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 15:07:15 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:11243 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756342Ab1BCUHN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 15:02:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=GKQDVjugfKCGID84Y8j1zIhAKqpQviXGlaxA5uWUVlTZBquOubZkTlqSXfxPrIBnW6
-         fhlCqgC7Vg6ggk8p+F2w==
-Date: Thu, 3 Feb 2011 12:01:55 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>, Adam Belay <abelay@mit.edu>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>
-cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/4] pnp: only assign IORESOURCE_DMA if CONFIG_ISA_DMA_API
- is enabled
-In-Reply-To: <alpine.DEB.2.00.1101261912200.7809@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1102031201430.27201@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1101261912200.7809@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Thu, 3 Feb 2011 15:07:13 -0500
+X-IronPort-AV: E=Sophos;i="4.60,421,1291622400"; 
+   d="scan'208";a="513980237"
+Subject: Re: [PATCH] Fix size argument to memset call in nfsacl_encode
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Chuck Lever <chuck.lever@oracle.com>
+Cc: Jesper Juhl <jj@chaosbits.net>, Milton Miller <miltonm@bga.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Neil Brown <neilb@suse.de>, bfields@fieldses.org
+In-Reply-To: <705C97E5-E273-45AA-9714-2BF409DE1322@oracle.com>
+References: <alpine.LNX.2.00.1102032012540.15101@swampdragon.chaosbits.net>
+	 <1296761330.3015.22.camel@heimdal.trondhjem.org>
+	 <alpine.LNX.2.00.1102032035280.15101@swampdragon.chaosbits.net>
+	 <705C97E5-E273-45AA-9714-2BF409DE1322@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp Inc
+Date: Thu, 03 Feb 2011 15:06:54 -0500
+Message-ID: <1296763614.3015.26.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+X-OriginalArrivalTime: 03 Feb 2011 20:06:57.0393 (UTC) FILETIME=[E8F7BE10:01CBC3DD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Jan 2011, David Rientjes wrote:
+On Thu, 2011-02-03 at 15:00 -0500, Chuck Lever wrote: 
+> On Feb 3, 2011, at 2:41 PM, Jesper Juhl wrote:
+> 
+> > On Thu, 3 Feb 2011, Trond Myklebust wrote:
+> > 
+> >> On Thu, 2011-02-03 at 20:15 +0100, Jesper Juhl wrote: 
+> >>> We want to give memset() the sizeof(struct posix_acl), not
+> >>> sizeof(struct posix_acl *).
+> >>> 
+> >>> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> >>> ---
+> >>> nfsacl.c |    2 +-
+> >>> 1 file changed, 1 insertion(+), 1 deletion(-)
+> >>> 
+> >>> diff --git a/fs/nfs_common/nfsacl.c b/fs/nfs_common/nfsacl.c
+> >>> index 84c27d6..bc6d81b 100644
+> >>> --- a/fs/nfs_common/nfsacl.c
+> >>> +++ b/fs/nfs_common/nfsacl.c
+> >>> @@ -117,7 +117,7 @@ int nfsacl_encode(struct xdr_buf *buf, unsigned int base, struct inode *inode,
+> >>> 		 * invoked in contexts where a memory allocation failure is
+> >>> 		 * fatal.  Fortunately this fake ACL is small enough to
+> >>> 		 * construct on the stack. */
+> >>> -		memset(acl2, 0, sizeof(acl2));
+> >>> +		memset(acl2, 0, sizeof(*acl2));
+> >>> 		posix_acl_init(acl2, 4);
+> >>> 
+> >>> 		/* Insert entries in canonical order: other orders seem
+> >> 
+> >> Ccing Milton Miller who also sent in the same patch.
+> >> 
+> >> Neither patch is correct afaics. posix_acl_init() will clobber the above
+> >> memset, and so the correct fix is just to get rid of it...
+> >> 
+> > 
+> > posix_acl_init() sets a_refcount and a_count, but what about a_entries ... 
+> > no problem, nfsacl_encode() itself takes care of that post the 
+> > posix_acl_init() call.. it's all good.
+> > 
+> > So ...
+> > 
+> > 
+> > Remove pointless memset() in nfsacl_encode().
+> > 
+> > Thanks to Trond Myklebust <Trond.Myklebust@netapp.com> for pointing out 
+> > that it is not needed since posix_acl_init() will set everything 
+> > regardless..
+> > 
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > ---
+> > nfsacl.c |    1 -
+> > 1 file changed, 1 deletion(-)
+> > 
+> > diff --git a/fs/nfs_common/nfsacl.c b/fs/nfs_common/nfsacl.c
+> > index 84c27d6..ec0f277 100644
+> > --- a/fs/nfs_common/nfsacl.c
+> > +++ b/fs/nfs_common/nfsacl.c
+> > @@ -117,7 +117,6 @@ int nfsacl_encode(struct xdr_buf *buf, unsigned int base, struct inode *inode,
+> > 		 * invoked in contexts where a memory allocation failure is
+> > 		 * fatal.  Fortunately this fake ACL is small enough to
+> > 		 * construct on the stack. */
+> > -		memset(acl2, 0, sizeof(acl2));
+> > 		posix_acl_init(acl2, 4);
+> > 
+> > 		/* Insert entries in canonical order: other orders seem
+> 
+> If there is a guarantee that random data that potentially resides between the fields in that structure will never appear on the wire, then ACK.
+> 
 
-> IORESOURCE_DMA cannot be assigned without utilizing the interface
-> provided by CONFIG_ISA_DMA_API, specifically request_dma() and
-> free_dma().  Thus, there's a strict dependency on the config option and
-> limits IORESOURCE_DMA only to architectures that support ISA-style DMA.
-> 
-> ia64 is not one of those architectures, so pnp_check_dma() no longer
-> needs to be special-cased for that architecture.
-> 
-> pnp_assign_resources() will now return -EINVAL if IORESOURCE_DMA is
-> attempted on such a kernel.
-> 
-> Signed-off-by: David Rientjes <rientjes@google.com>
+Yes, that is guaranteed. The posix_acl structure is initialised by
+posix_acl_init above, and the array itself is initialised by us in the
+lines following that...
 
-Are there any objections to merging this?
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
