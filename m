@@ -1,148 +1,365 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932080Ab1BCLyJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 06:54:09 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35942 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932065Ab1BCLyG (ORCPT
+	id S1756358Ab1BCL6N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 06:58:13 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:65414 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756274Ab1BCL6K convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 06:54:06 -0500
+	Thu, 3 Feb 2011 06:58:10 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=QSiHRWBtkC6HKAma9xmzPiR2HdCRJosnHhnFflKoq1BAMFmFBRWT63XEGpjQHzrlqC
-         PCaFw3LuvjZ7nyTK/VbFXX4Do5oqLlF7iJoB1X7oLJ7uYVhJklJCKyQ+fpASodoV6PTh
-         ommLpkPVCkJvi3W2x3ch7mhjsPocLe17TYg2o=
-Date: Thu, 3 Feb 2011 19:53:49 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 2/2] timer: use local_bh_enable_force_wake() in
- del_timer_sync()
-Message-ID: <20110203115349.GB2121@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <20110203031943.GA8910@elliptictech.com>
- <20110203091227.GA1603@zhy>
- <1296725440.26581.354.camel@laptop>
- <20110203101739.GA1551@zhy>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110203101739.GA1551@zhy>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
+         :mime-version:content-type:content-transfer-encoding;
+        b=fkjR5i3yLLDuXCb9JbFHZlu9s8MqowvQ8Eo6n4EdaUtLWpOcSyMwdH3Rk4RY/jSiVg
+         aX0KKGhOayFyyyQYsiVtLjnZWKnvL2aftCDNvCFdiBqhM1uSXEC3aQkgMP0oLa3ajn6s
+         Q50l+7jGPm2iLjgXiaDKzjqtFyJUashaaku28=
+Date: Thu, 3 Feb 2011 12:58:04 +0100
+From: Alejandro Riveira =?UTF-8?B?RmVybsOhbmRleg==?= 
+	<ariveira@gmail.com>
+To: Daniel Palmer <me@0x0f.com>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: PATA_ARTOP doesn't detect connected disk on Landisk
+Message-ID: <20110203125804.463de1b2@varda>
+In-Reply-To: <4D49FA15.40600@0x0f.com>
+References: <4D49FA15.40600@0x0f.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yong Zhang <yong.zhang0@gmail.com>
-Subject: [PATCH 2/2] timer: use local_bh_enable_force_wake() in del_timer_sync()
+El Thu, 03 Feb 2011 00:43:01 +0000
+Daniel Palmer <me@0x0f.com> escribió:
 
-Nick Bowler reported:
-  =================================
-  [ INFO: inconsistent lock state ]
-  2.6.38-rc3-bisect-00062-g8c007a1 #92
-  ---------------------------------
-  inconsistent {HARDIRQ-ON-W} -> {IN-HARDIRQ-W} usage.
-  swapper/0 [HC1[1]:SC0[0]:HE0:SE1] takes:
-  (&(&dev->event_lock)->rlock){?.+...}, at: [<ffffffff8125def6>] input_event+0x41/0x83
-  {HARDIRQ-ON-W} state was registered at:
-  [<ffffffff810656d4>] mark_held_locks+0x52/0x70
-  [<ffffffff8106593a>] trace_hardirqs_on_caller+0xf7/0x135
-  [<ffffffff81065985>] trace_hardirqs_on+0xd/0xf
-  [<ffffffff81044ac2>] __do_softirq+0x62/0x160
-  [<ffffffff8100395c>] call_softirq+0x1c/0x28
-  [<ffffffff81044cf2>] _local_bh_enable_ip+0xb3/0xe3
-  [<ffffffff81044d3a>] local_bh_enable+0xd/0xf
-  [<ffffffff8104a418>] del_timer_sync+0x4f/0x8e
-  [<ffffffffa00947fe>] rfkill_schedule_global_op+0x41/0x84 [rfkill]
-  [<ffffffffa0094858>] rfkill_schedule_evsw_rfkillall+0x17/0x19 [rfkill]
-  [<ffffffffa009495f>] rfkill_event+0x58/0x5a [rfkill]
-  [<ffffffff8125c980>] input_pass_event+0x97/0xea
-  [<ffffffff8125de13>] input_handle_event+0x460/0x46f
-  [<ffffffff8125df1b>] input_event+0x66/0x83
-  [<ffffffffa009becb>] tpacpi_send_radiosw_update+0x7f/0xc4 [thinkpad_acpi]
-  [<ffffffffa009c417>] hotkey_notify+0x507/0x581 [thinkpad_acpi]
-  [<ffffffffa009b029>] dispatch_acpi_notify+0x29/0x2b [thinkpad_acpi]
-  [<ffffffff8119a18a>] acpi_ev_notify_dispatch+0x62/0x7c
-  [<ffffffff8118b323>] acpi_os_execute_deferred+0x24/0x31
-  [<ffffffff810511bf>] process_one_work+0x204/0x33b
-  [<ffffffff81053384>] worker_thread+0x136/0x255
-  [<ffffffff810566da>] kthread+0x7d/0x85
-  [<ffffffff81003864>] kernel_thread_helper+0x4/0x10
-  irq event stamp: 559266
-  hardirqs last  enabled at (559263): [<ffffffff811b40a5>] acpi_idle_enter_bm+0x236/0x275
-  hardirqs last disabled at (559264): [<ffffffff812ffd6a>] save_args+0x6a/0x70
-  softirqs last  enabled at (559266): [<ffffffff81044bce>] _local_bh_enable+0xe/0x10
-  softirqs last disabled at (559265): [<ffffffff81044c0d>] irq_enter+0x3d/0x6f
+> Hi,
 
-  other info that might help us debug this:
-  1 lock held by swapper/0:
-  #0:  (&serio->lock){-.-...}, at: [<ffffffff81259018>] serio_interrupt+0x24/0x7e
+ Hi CCing linux-ide
 
-  stack backtrace:
-  Pid: 0, comm: swapper Tainted: G        W   2.6.38-rc3-bisect-00062-g8c007a1 #92
-  Call Trace:
-  <IRQ>  [<ffffffff81065442>] ? valid_state+0x17e/0x191
-  [<ffffffff8100e159>] ? save_stack_trace+0x28/0x45
-  [<ffffffff81065d18>] ? check_usage_forwards+0x0/0x87
-  [<ffffffff81065568>] ? mark_lock+0x113/0x22d
-  [<ffffffff8106687f>] ? __lock_acquire+0x2ac/0xd01
-  [<ffffffff81065482>] ? mark_lock+0x2d/0x22d
-  [<ffffffff81065482>] ? mark_lock+0x2d/0x22d
-  [<ffffffff81065482>] ? mark_lock+0x2d/0x22d
-  [<ffffffff81067338>] ? lock_acquire+0x64/0x81
-  [<ffffffff8125def6>] ? input_event+0x41/0x83
-  [<ffffffff812ff378>] ? _raw_spin_lock_irqsave+0x53/0x65
-  [<ffffffff8125def6>] ? input_event+0x41/0x83
-  [<ffffffff8125def6>] ? input_event+0x41/0x83
-  [<ffffffff81261fb6>] ? atkbd_interrupt+0x9a/0x574
-  [<ffffffff81259034>] ? serio_interrupt+0x40/0x7e
-  [<ffffffff8125a31c>] ? i8042_interrupt+0x28e/0x2a8
-  [<ffffffff8107e834>] ? handle_IRQ_event+0x20/0xae
-  [<ffffffff810805e6>] ? handle_edge_irq+0xde/0x12a
-  [<ffffffff810055c9>] ? handle_irq+0x1f/0x2a
-  [<ffffffff81004c37>] ? do_IRQ+0x48/0xaf
-  [<ffffffff812ffe13>] ? ret_from_intr+0x0/0x1a
-  <EOI>  [<ffffffff8100a1aa>] ? native_sched_clock+0x2d/0x5f
-  [<ffffffff811b40ac>] ? acpi_idle_enter_bm+0x23d/0x275
-  [<ffffffff811b40a5>] ? acpi_idle_enter_bm+0x236/0x275
-  [<ffffffff8126c2ae>] ? cpuidle_idle_call+0x9f/0xd5
-  [<ffffffff81001e75>] ? cpu_idle+0x61/0xaa
-  [<ffffffff812ecdc9>] ? rest_init+0xcd/0xd4
-  [<ffffffff812eccfc>] ? rest_init+0x0/0xd4
-  [<ffffffff81682d3d>] ? start_kernel+0x3a6/0x3b1
-  [<ffffffff816822b1>] ? x86_64_start_reservations+0xb8/0xbc
-  [<ffffffff816823bb>] ? x86_64_start_kernel+0x106/0x115
-
-The cause is that local_bh_enable() could call do_softirq()
-in certain time, thus break irq status and make lock bite
-us.
-
-Reported-and-bisected-by: Nick Bowler <nbowler@elliptictech.com>
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-
----
- kernel/timer.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 43ca993..1654dc1 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -972,7 +972,7 @@ int del_timer_sync(struct timer_list *timer)
- 	local_bh_disable();
- 	lock_map_acquire(&timer->lockdep_map);
- 	lock_map_release(&timer->lockdep_map);
--	local_bh_enable();
-+	local_bh_enable_force_wake();
- #endif
- 	/*
- 	 * don't use it in hardirq context, because it
--- 
-1.7.1
-
+> 
+> Please CC me as I only subscribe to the digest.. LKML-proper would kill 
+> my mail server.
+> 
+> I'm running 2.6.35 on an I-O Data Landisk machine. So far I can't get a 
+> newer kernel to output anything to the serial console, the artop driver 
+> hasn't changed from what I can tell . The model is a HDL-???U so it has 
+> an PATA interface on the board for it's internal drive.  You can see 
+> photos of the same board here: 
+> http://su-u.jp/juju/%CA%AC%B2%F2%A4%B7%A4%C6%A4%DF%A4%E8%A4%A6/LANDISK.html
+> 
+> The original drive has died so I've replaced it with a CF adapter and 
+> 4GB card.
+> Unfortunately the original drive was dead when I got the machine, so I 
+> haven't tested it with a standard drive.
+> 
+> I'm not sure if this problem is Landisk-specific or even specific to my 
+> Landisk.
+> 
+> When the machine boots SH IPL+g loads, detects the ARTOP (Its called 
+> A-Card here, they seem to be the same thing) controller and probes the 
+> disk and sh-lilo loads:
+> 
+> A-Card ATP865 ATA controller found.
+> PCIC initialization done.
+> MASTER:48bit LBA mode non support
+> Disk drive detected: SanDisk SDCFH-004G HDX 5.04      ALZ012210190202
+> LBA: 00778E30
+> DiskSize: 4011614208Byte
+> PIO MODE1
+> Set Transfer Mode result: 50
+> A-Card ATP865 ATA controller found.
+>  > b
+> Set Transfer Mode result: 50
+> Initialize Device Parameters result: 50
+> IDLE result: 50
+> LILO boot:
+> 
+>    1 : CF
+>    2 : USB
+> 
+> 
+> So I hit 1, which is my config for kernel from the CF and root is a 
+> partition on the CF card, the kernel loads and starts booting. I don't 
+> think there's any initramfs support in sh-lilo so everything that is 
+> needed to get root mounted is compiled into the kernel. And this happens..
+> 
+> push-switch: version 0.1.1 loaded
+> TCP cubic registered
+> NET: Registered protocol family 17
+> rs5c313 rs5c313: setting system clock to 2011-02-03 02:58:27 UTC 
+> (1296701907)
+> Waiting 20sec before mounting root device...
+> ata1: link is slow to respond, please be patient (ready=0)
+> ata1: SRST failed (errno=-16)
+> ata1: link is slow to respond, please be patient (ready=0)
+> ata1: SRST failed (errno=-16)
+> ata1: link is slow to respond, please be patient (ready=0)
+> ata1: SRST failed (errno=-16)
+> ata1: SRST failed (errno=-16)
+> ata1: reset failed, giving up
+> VFS: Cannot open root device "sda3" or unknown-block(0,0)
+> Please append a correct "root=" boot option; here are the available 
+> partitions:
+> Kernel panic - not syncing: VFS: Unable to mount root fs on 
+> unknown-block(0,0)
+> Stack: (0x8fc1df10 to 0x8fc1e000)
+> df00:                                     8c26eaaa 8c26eb40 8c130fc0 
+> 8fc1df30
+> df20: 8c31bd28 00008001 8c26eb40 8c33628c 8fc1df3c 00000000 8c30d814 
+> 6e6b6e75
+> 
+> Something is happening that is stopping the CF card from getting probed.
+> I've discovered though if I compile the Artop driver as a module, boot 
+> with root on a USB drive, unload the module, pull the card out, push it 
+> back in and reload the driver the CF card is detected any the partitions 
+> are probed and I can mount the fs just fine.
+> 
+> I've also discovered that if I pull the card just as the kernel starts 
+> booting and ram it back in really quickly the kernel will load up, 
+> detect the CF card and mount root. Timing has to be perfect though. If I 
+> do it too late the kernel panics straight away.
+> 
+> I'm guessing it's some sort of reset problem? I haven't ruled out that 
+> it could be some weirdness with my CF adapter. I don't have another to 
+> test at the moment. I have tried OpenBSD/Landisk on the same machine 
+> with the same CF card and it boots no problems. Shame it's unusably slow.
+> 
+> I'm going to mess around with the driver when I get some free time. 
+> Hopefully I can work out what is happening.
+> I have appended my serial output from when the machine boots correctly.
+> 
+> 
+> Cheers,
+> 
+> Daniel
+> 
+> 
+> 
+> 
+> 
+> SH IPL+g version 0.9, Copyright (C) 2000 Free Software Foundation, Inc.
+> 
+> This software comes with ABSOLUTELY NO WARRANTY; for details type `w'.
+> This is free software, and you are welcome to redistribute it under
+> certain conditions; type `l' for details.
+> 
+> 2002/09/09 Making.  2003/10/16 I-O DATA NSD NWG Update.
+> 266:133:33 on base clock 22.22MHz and SDRAM 4 burst. ATA boot.
+> 
+> A-Card ATP865 ATA controller found.
+> PCIC initialization done.
+> MASTER:48bit LBA mode non support
+> Disk drive detected: SanDisk SDCFH-004G HDX 5.04      ALZ012210190202
+> LBA: 00778E30
+> DiskSize: 4011614208Byte
+> PIO MODE1
+> Set Transfer Mode result: 50
+> A-Card ATP865 ATA controller found.
+>  > b
+> Set Transfer Mode result: 50
+> Initialize Device Parameters result: 50
+> IDLE result: 50
+> LILO boot:
+> 
+>    1 : CF
+>    2 : USB
+> 
+> Select boot image -> 1
+> Loading CF...................................done.
+> Setting GDB trap vector to 80000100
+> Linux version 2.6.35.10 (daniel@kyoro) (gcc version 4.4.5 (Debian 
+> 4.4.5-10) ) #19 Tue Feb 1 10:49:40 GMT 2011
+> Boot params:
+> ... MOUNT_ROOT_RDONLY - 00000001
+> ... RAMDISK_FLAGS     - 00000000
+> ... ORIG_ROOT_DEV     - 00000301
+> ... LOADER_TYPE       - 00000001
+> ... INITRD_START      - 00000000
+> ... INITRD_SIZE       - 00000000
+> Memory limited to 64MB
+> Booting machvec: LANDISK
+> Node 0: start_pfn = 0xc000, low = 0x10000
+> Zone PFN ranges:
+>    Normal   0x0000c000 -> 0x00010000
+> Movable zone start PFN for each node
+> early_node_map[1] active PFN ranges
+>      0: 0x0000c000 -> 0x00010000
+> I-O DATA DEVICE, INC. "LANDISK Series" support.
+> Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 16256
+> Kernel command line: ro BOOT_FILE=/boot/zImage mem=64M 
+> console=ttySC1,9600 root=/dev/sda3 rootdelay=20
+> PID hash table entries: 256 (order: -2, 1024 bytes)
+> Dentry cache hash table entries: 8192 (order: 3, 32768 bytes)
+> Inode-cache hash table entries: 4096 (order: 2, 16384 bytes)
+> PVR=04050005 CVR=20480000 PRR=00000113
+> I-cache : n_ways=2 n_sets=256 way_incr=8192
+> I-cache : entry_mask=0x00001fe0 alias_mask=0x00001000 n_aliases=2
+> D-cache : n_ways=2 n_sets=512 way_incr=16384
+> D-cache : entry_mask=0x00003fe0 alias_mask=0x00003000 n_aliases=4
+> Memory: 61596k/65536k available (2503k kernel code, 669k data, 108k init)
+> virtual kernel memory layout:
+>      fixmap  : 0xdfff7000 - 0xdffff000   (  32 kB)
+>      vmalloc : 0xc0000000 - 0xdfff5000   ( 511 MB)
+>      lowmem  : 0x8c000000 - 0x90000000   (  64 MB) (cached)
+>              : 0xa0000000 - 0xc0000000   ( 512 MB) (uncached)
+>        .init : 0x8c31b000 - 0x8c336000   ( 108 kB)
+>        .data : 0x8c272db0 - 0x8c31a5a0   ( 669 kB)
+>        .text : 0x8c001000 - 0x8c272db0   (2503 kB)
+> Hierarchical RCU implementation.
+>          RCU-based detection of stalled CPUs is disabled.
+>          Verbose stalled-CPUs detection is disabled.
+> NR_IRQS:256 nr_irqs:256
+> intc: Registered controller 'sh7750' with 20 IRQs
+> intc: Registered controller 'sh7750_dma8' with 9 IRQs
+> intc: Registered controller 'sh7750_tmu34' with 2 IRQs
+> intc: Registered controller 'sh7750_pci' with 8 IRQs
+> intc: Registered controller 'landisk' with 8 IRQs
+> Console: colour dummy device 80x25
+>   sh_tmu.0: used for clock events
+>   sh_tmu.0: used for periodic clock events
+>   sh_tmu.1: used as clock source
+> Calibrating delay loop (skipped)... 266.66 BogoMIPS PRESET (lpj=533333)
+> pid_max: default: 32768 minimum: 301
+> Mount-cache hash table entries: 512
+> CPU: SH7751R
+> devtmpfs: initialized
+> NET: Registered protocol family 16
+> PCI: Starting intialization.
+> bio: create slab <bio-0> at 0
+> vgaarb: loaded
+> SCSI subsystem initialized
+> usbcore: registered new interface driver usbfs
+> usbcore: registered new interface driver hub
+> usbcore: registered new device driver usb
+> DMA: Registering sh_dmac handler (8 channels).
+> DMA: Registering DMA API.
+> pci 0000:00:01.0: BAR 6: assigned [mem 0xfd000000-0xfd00ffff pref]
+> pci 0000:00:02.0: BAR 0: assigned [mem 0xfd010000-0xfd010fff]
+> pci 0000:00:02.0: BAR 0: set to [mem 0xfd010000-0xfd010fff] (PCI address 
+> [0xfd010000-0xfd010fff]
+> pci 0000:00:02.1: BAR 0: assigned [mem 0xfd011000-0xfd011fff]
+> pci 0000:00:02.1: BAR 0: set to [mem 0xfd011000-0xfd011fff] (PCI address 
+> [0xfd011000-0xfd011fff]
+> pci 0000:00:00.0: BAR 0: assigned [io  0x1000-0x10ff]
+> pci 0000:00:00.0: BAR 0: set to [io  0x1000-0x10ff] (PCI address 
+> [0x1000-0x10ff]
+> pci 0000:00:00.0: BAR 1: assigned [mem 0xfd012000-0xfd0120ff]
+> pci 0000:00:00.0: BAR 1: set to [mem 0xfd012000-0xfd0120ff] (PCI address 
+> [0xfd012000-0xfd0120ff]
+> pci 0000:00:02.2: BAR 0: assigned [mem 0xfd012100-0xfd0121ff]
+> pci 0000:00:02.2: BAR 0: set to [mem 0xfd012100-0xfd0121ff] (PCI address 
+> [0xfd012100-0xfd0121ff]
+> pci 0000:00:01.0: BAR 4: assigned [io  0x1400-0x140f]
+> pci 0000:00:01.0: BAR 4: set to [io  0x1400-0x140f] (PCI address 
+> [0x1400-0x140f]
+> pci 0000:00:01.0: BAR 0: assigned [io  0x1410-0x1417]
+> pci 0000:00:01.0: BAR 0: set to [io  0x1410-0x1417] (PCI address 
+> [0x1410-0x1417]
+> pci 0000:00:01.0: BAR 2: assigned [io  0x1418-0x141f]
+> pci 0000:00:01.0: BAR 2: set to [io  0x1418-0x141f] (PCI address 
+> [0x1418-0x141f]
+> pci 0000:00:01.0: BAR 1: assigned [io  0x1420-0x1423]
+> pci 0000:00:01.0: BAR 1: set to [io  0x1420-0x1423] (PCI address 
+> [0x1420-0x1423]
+> pci 0000:00:01.0: BAR 3: assigned [io  0x1424-0x1427]
+> pci 0000:00:01.0: BAR 3: set to [io  0x1424-0x1427] (PCI address 
+> [0x1424-0x1427]
+> Switching to clocksource sh_tmu.1
+> NET: Registered protocol family 2
+> IP route cache hash table entries: 1024 (order: 0, 4096 bytes)
+> TCP established hash table entries: 2048 (order: 2, 16384 bytes)
+> TCP bind hash table entries: 2048 (order: 1, 8192 bytes)
+> TCP: Hash tables configured (established 2048 bind 2048)
+> TCP reno registered
+> UDP hash table entries: 256 (order: 0, 4096 bytes)
+> UDP-Lite hash table entries: 256 (order: 0, 4096 bytes)
+> NET: Registered protocol family 1
+> gio: driver initialized
+> msgmni has been set to 120
+> io scheduler noop registered
+> io scheduler deadline registered
+> io scheduler cfq registered (default)
+> SuperH SCI(F) driver initialized
+> sh-sci.0: ttySC0 at MMIO 0xffe00000 (irq = 23) is a sci
+> sh-sci.1: ttySC1 at MMIO 0xffe80000 (irq = 40) is a scif
+> console [ttySC1] enabled
+> loop: module loaded
+> scsi0 : pata_artop
+> scsi1 : pata_artop
+> ata1: PATA max UDMA/133 cmd 0x1410 ctl 0x1420 bmdma 0x1400 irq 6
+> ata2: PATA max UDMA/133 cmd 0x1418 ctl 0x1424 bmdma 0x1408 irq 6
+> scsi2 : pata_platform
+> ata3: PATA max PIO0 ioport cmd 0xc0000040 ctl 0xc000002c irq 10
+> 8139cp: 8139cp: 10/100 PCI Ethernet driver v1.3 (Mar 22, 2004)
+> PCI: Enabling device 0000:00:00.0 (0000 -> 0003)
+> 8139cp 0000:00:00.0: eth0: RTL-8139C+ at 0xfd012000, 00:a0:b0:4c:cf:c6, 
+> IRQ 5
+> PCI: Setting latency timer of device 0000:00:00.0 to 64
+> usbmon: debugfs is not available
+> ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+> PCI: Enabling device 0000:00:02.2 (0000 -> 0002)
+> ehci_hcd 0000:00:02.2: EHCI Host Controller
+> ehci_hcd 0000:00:02.2: new USB bus registered, assigned bus number 1
+> ehci_hcd 0000:00:02.2: Enabling legacy PCI PM
+> ehci_hcd 0000:00:02.2: irq 5, io mem 0xfd012100
+> ehci_hcd 0000:00:02.2: USB 2.0 started, EHCI 1.00
+> hub 1-0:1.0: USB hub found
+> hub 1-0:1.0: 5 ports detected
+> ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
+> PCI: Enabling device 0000:00:02.0 (0000 -> 0002)
+> PCI: Setting latency timer of device 0000:00:02.0 to 64
+> ohci_hcd 0000:00:02.0: OHCI Host Controller
+> ohci_hcd 0000:00:02.0: new USB bus registered, assigned bus number 2
+> ohci_hcd 0000:00:02.0: irq 7, io mem 0xfd010000
+> ata1.00: CFA: SanDisk SDCFH-004G, HDX 5.04, max UDMA/66
+> ata1.00: 7835184 sectors, multi 0: LBA
+> hub 2-0:1.0: USB hub found
+> hub 2-0:1.0: 3 ports detected
+> ata1.00: configured for UDMA/66
+> scsi 0:0:0:0: Direct-Access     ATA      SanDisk SDCFH-00 HDX  PQ: 0 
+> ANSI: 5
+> sd 0:0:0:0: [sda] 7835184 512-byte logical blocks: (4.01 GB/3.73 GiB)
+> PCI: Enabling device 0000:00:02.1 (0000 -> 0002)
+> PCI: Setting latency timer of device 0000:00:02.1 to 64
+> ohci_hcd 0000:00:02.1: OHCI Host Controller
+> ohci_hcd 0000:00:02.1: new USB bus registered, assigned bus number 3
+> ohci_hcd 0000:00:02.1: irq 8, io mem 0xfd011000
+> sd 0:0:0:0: [sda] Write Protect is off
+> sd 0:0:0:0: [sda] Write cache: disabled, read cache: enabled, doesn't 
+> support DPO or FUA
+>   sda: sda1 sda2 sda3
+> sd 0:0:0:0: [sda] Attached SCSI removable disk
+> hub 3-0:1.0: USB hub found
+> hub 3-0:1.0: 2 ports detected
+> Initializing USB Mass Storage driver...
+> usbcore: registered new interface driver usb-storage
+> USB Mass Storage support registered.
+> mice: PS/2 mouse device common for all mice
+> rs5c313 rs5c313: rtc core: registered rs5c313 as rtc0
+> sh_tmu sh_tmu.0: kept as earlytimer
+> sh_tmu sh_tmu.1: kept as earlytimer
+> push-switch: version 0.1.1 loaded
+> TCP cubic registered
+> NET: Registered protocol family 17
+> rs5c313 rs5c313: setting system clock to 2011-02-03 03:02:37 UTC 
+> (1296702157)
+> Waiting 20sec before mounting root device...
+> EXT3-fs: barriers not enabled
+> kjournald starting.  Commit interval 5 seconds
+> EXT3-fs (sda3): mounted filesystem with writeback data mode
+> VFS: Mounted root (ext3 filesystem) readonly on device 8:3.
+> devtmpfs: mounted
+> Freeing unused kernel memory: 108k freed
+> INIT: version 2.88 booting
+> Using makefile-style concurrent boot in runlevel S.
+> Starting the hotplug events dispatcher: udevdudev[851]: starting version 
+> 164
+> .
+> Synthesizing the initial hotplug events...done.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
