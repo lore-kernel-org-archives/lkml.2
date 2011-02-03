@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753741Ab1BCVp1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 16:45:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38171 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753607Ab1BCVp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 16:45:26 -0500
-Date: Thu, 3 Feb 2011 22:45:24 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: David Miller <davem@davemloft.net>
-Cc: peter.chubb@nicta.com.au, linux-kernel@vger.kernel.org
-Subject: Re: tcp_ecn is an integer not a boolean
-In-Reply-To: <20110203.133558.189694852.davem@davemloft.net>
-Message-ID: <alpine.LNX.2.00.1102032244300.2160@pobox.suse.cz>
-References: <w4vd12m4it.wl%peter@chubb.wattle.id.au> <alpine.LNX.2.00.1102031126470.2160@pobox.suse.cz> <20110203.133558.189694852.davem@davemloft.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753637Ab1BCVqe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 16:46:34 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:49681 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222Ab1BCVqc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 16:46:32 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=LPESlGD5Xi6XlqAHYqe1Tzn2fAVNAv7loHHCVE8YOizZk/onw6LB0CK1fOW+TOCMU8
+         /6GVBWq9NIoMOgXkUX+A==
+Date: Thu, 3 Feb 2011 13:46:26 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Michael J Wolf <mjwolf@us.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [RFC][PATCH 2/6] pagewalk: only split huge pages when
+ necessary
+In-Reply-To: <1296768812.8299.1644.camel@nimitz>
+Message-ID: <alpine.DEB.2.00.1102031343530.1307@chino.kir.corp.google.com>
+References: <20110201003357.D6F0BE0D@kernel> <20110201003359.8DDFF665@kernel> <alpine.DEB.2.00.1102031257490.948@chino.kir.corp.google.com> <1296768812.8299.1644.camel@nimitz>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Feb 2011, David Miller wrote:
+On Thu, 3 Feb 2011, Dave Hansen wrote:
 
-> >> There was some confusion at LCA as to why the sysctl tcp_ecn took one
-> >> of three values when it was documented as a Boolean.  This patch fixes
-> >> the documentation.
-> >> 
-> >> Signed-off-by: Peter Chubb <peter.chubb@nicta.com.au>
-> >> 
-> >> diff --git a/Documentation/networking/ip-sysctl.txt b/Documentation/networking/ip-sysctl.txt
-> >> index d99940d..ac3b4a7 100644
-> >> --- a/Documentation/networking/ip-sysctl.txt
-> >> +++ b/Documentation/networking/ip-sysctl.txt
-> >> @@ -187,7 +187,7 @@ tcp_cookie_size - INTEGER
-> >>  tcp_dsack - BOOLEAN
-> >>  	Allows TCP to send "duplicate" SACKs.
-> >>  
-> >> -tcp_ecn - BOOLEAN
-> >> +tcp_ecn - INTEGER
+> > > diff -puN mm/pagewalk.c~pagewalk-dont-always-split-thp mm/pagewalk.c
+> > > --- linux-2.6.git/mm/pagewalk.c~pagewalk-dont-always-split-thp	2011-01-27 10:57:02.309914973 -0800
+> > > +++ linux-2.6.git-dave/mm/pagewalk.c	2011-01-27 10:57:02.317914965 -0800
+> > > @@ -33,19 +33,35 @@ static int walk_pmd_range(pud_t *pud, un
+> > >  
+> > >  	pmd = pmd_offset(pud, addr);
+> > >  	do {
+> > > +	again:
 > > 
-> > Applied, thanks.
+> > checkpatch will warn about the indent.
+> > 
+> > >  		next = pmd_addr_end(addr, end);
+> > > -		split_huge_page_pmd(walk->mm, pmd);
+> > > -		if (pmd_none_or_clear_bad(pmd)) {
+> > > +		if (pmd_none(*pmd)) {
+> > 
+> > Not sure why this has been changed from pmd_none_or_clear_bad(), that's 
+> > been done even prior to THP.
 > 
-> There is no need, did you see my reply?  I put it into the net-2.6
-> GIT tree already.
+> The bad check will trigger on huge pmds.  We can not use it here.  We
+> can, however, use pmd_none().  The bad check was moved below to where we
+> actually dereference the pmd.
+> 
 
-Ah, no, I haven't, because Peter apparently originaly sent it to ancient 
-trivial@rustcorp.com.au and only then bounced it to proper address, but 
-your followup went to the old one as well.
+Ah, right, thanks.
 
-OK, I will drop it, thanks for letting me know.
+> > >  			if (walk->pte_hole)
+> > >  				err = walk->pte_hole(addr, next, walk);
+> > >  			if (err)
+> > >  				break;
+> > >  			continue;
+> > >  		}
+> > > +		/*
+> > > +		 * This implies that each ->pmd_entry() handler
+> > > +		 * needs to know about pmd_trans_huge() pmds
+> > > +		 */
+> > 
+> > Probably needs to be documented somewhere for users of pagewalk?
+> 
+> Probably, but we don't currently have any central documentation for it.
+> Guess we could make some, or just ensure that all the users got updated.
+> Any ideas where to put it other than the mm_walk struct?
+> 
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+I think noting it where struct mm_walk is declared would be best (just a 
+"/* must handle pmd_trans_huge() */" would be sufficient) although 
+eventually it might be cleaner to add a ->pmd_huge_entry().
