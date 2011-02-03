@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932164Ab1BCNtA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 08:49:00 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:36808 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756414Ab1BCNs7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 08:48:59 -0500
-Date: Thu, 3 Feb 2011 14:50:06 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Greg Kroah-Hartman <greg@kroah.com>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>, x86 <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT revised PULL] AMD microcode fixes
-Message-ID: <20110203135006.GC24755@aftab>
+	id S932177Ab1BCOKL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 09:10:11 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:36649 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932113Ab1BCOKK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 09:10:10 -0500
+Date: Thu, 3 Feb 2011 15:10:00 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch] memcg: remove unused page flag bitfield defines
+Message-ID: <20110203141000.GE2286@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-user-agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+These definitions have been unused since '4b3bde4 memcg: remove the
+overhead associated with the root cgroup'.
 
-here's a revised pull request without the <drivers/base/sys.c> portion.
-Still a .39 material and thus in no hurry.
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/memcontrol.c |    7 -------
+ 1 files changed, 0 insertions(+), 7 deletions(-)
 
-Please pull,
-thanks.
+(sorry, resend with lists in CC)
 
-The following changes since commit ebf53826e105f488f4f628703a108e98940d1dc5:
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index e1ab9c3..031ff07 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -327,13 +327,6 @@ enum charge_type {
+ 	NR_CHARGE_TYPE,
+ };
+ 
+-/* only for here (for easy reading.) */
+-#define PCGF_CACHE	(1UL << PCG_CACHE)
+-#define PCGF_USED	(1UL << PCG_USED)
+-#define PCGF_LOCK	(1UL << PCG_LOCK)
+-/* Not used, but added here for completeness */
+-#define PCGF_ACCT	(1UL << PCG_ACCT)
+-
+ /* for encoding cft->private value on file */
+ #define _MEM			(0)
+ #define _MEMSWAP		(1)
+-- 
+1.7.4
 
-  Linux 2.6.38-rc3 (2011-02-01 13:05:49 +1000)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git ucode-fixes
-
-Borislav Petkov (6):
-      x86, microcode: Correct sysdev_add error path
-      x86, microcode, AMD: Release firmware on error
-      x86, microcode, AMD: Simplify install_equiv_cpu_table
-      x86, microcode, AMD: Simplify get_next_ucode
-      x86, microcode, AMD: Remove unneeded memset call
-      x86, microcode, AMD: Cleanup dmesg output
-
- arch/x86/kernel/microcode_amd.c  |  142 ++++++++++++++++++--------------------
- arch/x86/kernel/microcode_core.c |    6 +-
- 2 files changed, 72 insertions(+), 76 deletions(-)
