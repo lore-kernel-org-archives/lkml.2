@@ -1,80 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932367Ab1BCSZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 13:25:56 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:54318 "EHLO mail.skyhub.de"
+	id S932386Ab1BCS1M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 13:27:12 -0500
+Received: from mga11.intel.com ([192.55.52.93]:39516 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932214Ab1BCSZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 13:25:54 -0500
-Date: Thu, 3 Feb 2011 19:25:50 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, Ingo Molnar <mingo@elte.hu>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Xen Devel <Xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH 0/2] x86/microcode: support for microcode update in Xen
- dom0
-Message-ID: <20110203182550.GB21488@a1.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Jeremy Fitzhardinge <jeremy@goop.org>, Ingo Molnar <mingo@elte.hu>,
-	the arch/x86 maintainers <x86@kernel.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Xen Devel <Xen-devel@lists.xensource.com>,
-	Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-References: <4D461FB9.5050807@goop.org>
- <20110131070241.GA22071@liondog.tnic>
- <4D46FC9F.6090309@goop.org>
- <20110131234131.GA16095@liondog.tnic>
- <4D475099.1080004@goop.org>
- <4D475DB5.1020300@zytor.com>
- <4D488EB1.9020803@goop.org>
- <4D49B5F6.5010606@zytor.com>
- <20110202205704.GA14752@liondog.tnic>
- <4D49D0E6.30102@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4D49D0E6.30102@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932322Ab1BCS1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 13:27:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,421,1291622400"; 
+   d="scan'208";a="654147406"
+Subject: Re: [patch] x86, mm: avoid stale tlb entries by clearing prev
+ mm_cpumask after switching mm
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>
+In-Reply-To: <AANLkTinvQatNF0ZJqmvuKYNq7oKXqfR5Ke1FuaSLFNEF@mail.gmail.com>
+References: <1296677247.4418.103.camel@sbsiddha-MOBL3.sc.intel.com>
+	 <AANLkTi=P+aoY4GY32xa8D8gHbDP73QpPmzvKbB4VM7g2@mail.gmail.com>
+	 <AANLkTinvQatNF0ZJqmvuKYNq7oKXqfR5Ke1FuaSLFNEF@mail.gmail.com>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Thu, 03 Feb 2011 10:27:17 -0800
+Message-Id: <1296757637.4418.1482.camel@sbsiddha-MOBL3.sc.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 02, 2011 at 01:47:18PM -0800, H. Peter Anvin wrote:
-> On 02/02/2011 12:57 PM, Borislav Petkov wrote:
-> > On Wed, Feb 02, 2011 at 11:52:22AM -0800, H. Peter Anvin wrote:
-> >> 3. Arguably on native hardware we should still load the microcode into
-> >> RAM in the boot loader, and install it on the very early CPU bringup
-> >> path.  That means locking down some (currently) 400K of RAM to handle
-> >> different combinations of CPUs, or the additional complexity of
-> >> jettisoning microcode which cannot be used while still be able to deal
-> >> with hotplug.  I think there is a strong case for this model, which
-> >> would mean moving the microcode into /boot anyway.
-> > 
-> > /me like it, sounds very nifty. So how do we want to do that, we add
-> > a field to the real-mode kernel header that tells us where to find
-> > the microcode image and we take it and apply the ucode somewhere in
-> > do_boot_cpu() path?
-> > 
+On Wed, 2011-02-02 at 20:03 -0800, Linus Torvalds wrote:
+> On Wed, Feb 2, 2011 at 5:55 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> > This looks pointless. Explain why this matters. Global entries are
+> > never per-mm, so any global entries can never care about the
+> > mm_cpumask.
+> >
+> > And for any normal entries it doesn't matter if the IPI gets lost,
+> > since the TLB will be flushed (immediately afterwards) by the cr3
+> > write.
 > 
-> We already have a mechanism for passing arbitrary blobs -- the linked
-> list -- so we don't have to add a new field at all.
+> Actually, for normal entries I could well imagine the code that wants
+> to do a flush before freeing the page caring.
+> 
+> So I think the _patch_ may be correct, but the changelog is definitely
+> not correct, and needs serious surgery to explain what the bug that
+> this fixes actually is.
 
-So, after staring at grub legacy sources a bit, we could load the
-microcode image using the grub module's mechanism:
+Linus, I updated the changelog to explain the failing case in more
+detail. Please review. Thanks.
 
-kernel /...
-module /boot/microcode.gz type=SETUP_MICROCODE # this is looked at by parse_setup_data()
+---
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: x86, mm: avoid stale tlb entries by clearing prev mm_cpumask after switching mm
 
-and let grub write the pointer into setup_data passed through the kernel
-header.
+Clearing the cpu in prev's mm_cpumask early will avoid the flush tlb IPI's while
+the cr3 is still pointing to the prev mm. And this window can lead
+to the stale (global) TLB entries in the scenarios like the one mentioned
+below.
 
-This would mean that we need to add support to a bunch of boot loaders
-used currently, no? Or is there an even better way?
+T1. CPU-1 is context switching from mm1 to mm2 context and got a NMI etc
+between the point of clearing the cpu from the mm_cpumask(mm1) and before
+reloading the cr3 with the new mm2.
 
--- 
-Regards/Gruss,
-Boris.
+T2. CPU-2 is tearing down a specific vma for mm1 and will proceed with flushing
+the TLB for mm1. It doesn't send the flush TLB to CPU-1 as it doesn't see that
+cpu listed in the mm_cpumask(mm1)
+
+T3. After the TLB flush is complete, CPU-2 goes ahead and frees the
+page-table pages associated with the removed vma mapping.
+
+T4. CPU-2 now allocates those freed page-table pages for something else.
+
+T5. As the CR3 and TLB caches for mm1 is still active on CPU-1, CPU-1 can
+potentially speculate and walk through the page-table caches and can
+insert new TLB entries. As the page-table pages are already freed and being
+used on CPU-2, this page walk can potentially insert a stale global TLB entry 
+depending on the contents of the page that is being used on CPU-2
+
+T6. This stale TLB entry being global will be active across future CR3
+changes and can result in weird memory corruption etc.
+
+To avoid this issue, for the prev mm that is handing over the cpu to another mm,
+clear the cpu from the mm_cpumask(prev) after the cr3 is changed.
+
+Marking it for -stable, though we haven't seen any reported failure that
+can be attributed to this.
+
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: stable@kernel.org	[v2.6.32+]
+---
+ arch/x86/include/asm/mmu_context.h |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/include/asm/mmu_context.h b/arch/x86/include/asm/mmu_context.h
+index 4a2d4e0..8b5393e 100644
+--- a/arch/x86/include/asm/mmu_context.h
++++ b/arch/x86/include/asm/mmu_context.h
+@@ -36,8 +36,6 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
+ 	unsigned cpu = smp_processor_id();
+ 
+ 	if (likely(prev != next)) {
+-		/* stop flush ipis for the previous mm */
+-		cpumask_clear_cpu(cpu, mm_cpumask(prev));
+ #ifdef CONFIG_SMP
+ 		percpu_write(cpu_tlbstate.state, TLBSTATE_OK);
+ 		percpu_write(cpu_tlbstate.active_mm, next);
+@@ -47,6 +45,9 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
+ 		/* Re-load page tables */
+ 		load_cr3(next->pgd);
+ 
++		/* stop flush ipis for the previous mm */
++		cpumask_clear_cpu(cpu, mm_cpumask(prev));
++
+ 		/*
+ 		 * load the LDT, if the LDT is different:
+ 		 */
+
+
