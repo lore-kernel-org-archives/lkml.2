@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508Ab1BCVe5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 16:34:57 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:37035 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753130Ab1BCVe4 (ORCPT
+	id S1753543Ab1BCVfZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 16:35:25 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33514
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753130Ab1BCVfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 16:34:56 -0500
-Subject: Re: [RFC][PATCH 5/6] teach smaps_pte_range() about THP pmds
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Michael J Wolf <mjwolf@us.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-In-Reply-To: <alpine.DEB.2.00.1102031319070.1307@chino.kir.corp.google.com>
-References: <20110201003357.D6F0BE0D@kernel>
-	 <20110201003403.736A24DF@kernel>
-	 <alpine.DEB.2.00.1102031319070.1307@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Thu, 03 Feb 2011 13:34:50 -0800
-Message-ID: <1296768890.8299.1648.camel@nimitz>
+	Thu, 3 Feb 2011 16:35:23 -0500
+Date: Thu, 03 Feb 2011 13:35:58 -0800 (PST)
+Message-Id: <20110203.133558.189694852.davem@davemloft.net>
+To: jkosina@suse.cz
+Cc: peter.chubb@nicta.com.au, linux-kernel@vger.kernel.org
+Subject: Re: tcp_ecn is an integer not a boolean
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LNX.2.00.1102031126470.2160@pobox.suse.cz>
+References: <w4vd12m4it.wl%peter@chubb.wattle.id.au>
+	<alpine.LNX.2.00.1102031126470.2160@pobox.suse.cz>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-03 at 13:22 -0800, David Rientjes wrote:
-> > @@ -385,6 +386,17 @@ static int smaps_pte_range(pmd_t *pmd, u
-> >  	pte_t *pte;
-> >  	spinlock_t *ptl;
-> >  
-> > +	if (pmd_trans_huge(*pmd)) {
-> > +		if (pmd_trans_splitting(*pmd)) {
-> > +			spin_unlock(&walk->mm->page_table_lock);
-> > +			wait_split_huge_page(vma->anon_vma, pmd);
-> > +			spin_lock(&walk->mm->page_table_lock);
-> > +			goto normal_ptes;
-> > +		}
-> > +		smaps_pte_entry(*(pte_t *)pmd, addr, HPAGE_SIZE, walk);
-> > +		return 0;
-> > +	}
-> > +normal_ptes:
+From: Jiri Kosina <jkosina@suse.cz>
+Date: Thu, 3 Feb 2011 11:26:57 +0100 (CET)
+
+> On Thu, 3 Feb 2011, Peter Chubb wrote:
 > 
-> Small nitpick: the label isn't necessary, just use an else-clause on your 
-> nested conditional.
-
-Works for me.
-
-> >  	split_huge_page_pmd(walk->mm, pmd);
-> >  
-> >  	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
-> > diff -puN mm/vmscan.c~teach-smaps_pte_range-about-thp-pmds mm/vmscan.c
-> > diff -puN include/trace/events/vmscan.h~teach-smaps_pte_range-about-thp-pmds include/trace/events/vmscan.h
-> > diff -puN mm/pagewalk.c~teach-smaps_pte_range-about-thp-pmds mm/pagewalk.c
-> > diff -puN mm/huge_memory.c~teach-smaps_pte_range-about-thp-pmds mm/huge_memory.c
-> > diff -puN mm/memory.c~teach-smaps_pte_range-about-thp-pmds mm/memory.c
-> > diff -puN include/linux/huge_mm.h~teach-smaps_pte_range-about-thp-pmds include/linux/huge_mm.h
-> > diff -puN mm/internal.h~teach-smaps_pte_range-about-thp-pmds mm/internal.h
-> > _
+>> 
+>> There was some confusion at LCA as to why the sysctl tcp_ecn took one
+>> of three values when it was documented as a Boolean.  This patch fixes
+>> the documentation.
+>> 
+>> Signed-off-by: Peter Chubb <peter.chubb@nicta.com.au>
+>> 
+>> diff --git a/Documentation/networking/ip-sysctl.txt b/Documentation/networking/ip-sysctl.txt
+>> index d99940d..ac3b4a7 100644
+>> --- a/Documentation/networking/ip-sysctl.txt
+>> +++ b/Documentation/networking/ip-sysctl.txt
+>> @@ -187,7 +187,7 @@ tcp_cookie_size - INTEGER
+>>  tcp_dsack - BOOLEAN
+>>  	Allows TCP to send "duplicate" SACKs.
+>>  
+>> -tcp_ecn - BOOLEAN
+>> +tcp_ecn - INTEGER
 > 
-> What are all these?
+> Applied, thanks.
 
-Junk.  I'll pull them out.
-
--- Dave
-
+There is no need, did you see my reply?  I put it into the net-2.6
+GIT tree already.
