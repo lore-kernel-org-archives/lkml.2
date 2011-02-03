@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932106Ab1BCM5t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 07:57:49 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:41488 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756350Ab1BCM5r convert rfc822-to-8bit (ORCPT
+	id S932118Ab1BCM57 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 07:57:59 -0500
+Received: from casper.infradead.org ([85.118.1.10]:49917 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756368Ab1BCM5s convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 07:57:47 -0500
-Subject: Re: [PATCH -v8a 3/7] sched: use a buddy to implement
- yield_task_fair
+	Thu, 3 Feb 2011 07:57:48 -0500
+Subject: Re: [PATCH -v8a 4/7] sched: Add yield_to(task, preempt)
+ functionality
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Rik van Riel <riel@redhat.com>
 Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -16,85 +16,111 @@ Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>,
         "Nakajima, Jun" <jun.nakajima@intel.com>
-In-Reply-To: <20110201095103.3a79e92a@annuminas.surriel.com>
+In-Reply-To: <20110201095051.4ddb7738@annuminas.surriel.com>
 References: <20110201094433.72829892@annuminas.surriel.com>
-	 <20110201095103.3a79e92a@annuminas.surriel.com>
+	 <20110201095051.4ddb7738@annuminas.surriel.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Thu, 03 Feb 2011 13:58:34 +0100
-Message-ID: <1296737914.26581.365.camel@laptop>
+Date: Thu, 03 Feb 2011 13:58:38 +0100
+Message-ID: <1296737918.26581.366.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-01 at 09:51 -0500, Rik van Riel wrote:
-> -static void yield_task_fair(struct rq *rq)
-> -{
-> -       struct task_struct *curr = rq->curr;
-> -       struct cfs_rq *cfs_rq = task_cfs_rq(curr);
-> -       struct sched_entity *rightmost, *se = &curr->se;
-> -
-> -       /*
-> -        * Are we the only task in the tree?
-> -        */
-> -       if (unlikely(rq->nr_running == 1))
-> -               return;
-> -
-> -       clear_buddies(cfs_rq, se);
-> -
-> -       if (likely(!sysctl_sched_compat_yield) && curr->policy != SCHED_BATCH) {
-> -               update_rq_clock(rq);
-> -               /*
-> -                * Update run-time statistics of the 'current'.
-> -                */
-> -               update_curr(cfs_rq);
-> -
-> -               return;
-> -       }
-> -       /*
-> -        * Find the rightmost entry in the rbtree:
-> -        */
-> -       rightmost = __pick_last_entity(cfs_rq);
-> -       /*
-> -        * Already in the rightmost position?
-> -        */
-> -       if (unlikely(!rightmost || entity_before(rightmost, se)))
-> -               return;
-> -
-> -       /*
-> -        * Minimally necessary key value to be last in the tree:
-> -        * Upon rescheduling, sched_class::put_prev_task() will place
-> -        * 'current' within the tree based on its new key value.
-> -        */
-> -       se->vruntime = rightmost->vruntime + 1;
-> -} 
+On Tue, 2011-02-01 at 09:50 -0500, Rik van Riel wrote:
+> +bool __sched yield_to(struct task_struct *p, bool preempt)
+> +{
+> +       struct task_struct *curr = current;
+> +       struct rq *rq, *p_rq;
+> +       unsigned long flags;
+> +       bool yielded = 0;
+> +
+> +       local_irq_save(flags);
+> +       rq = this_rq();
+> +
+> +again:
+> +       p_rq = task_rq(p);
+> +       double_rq_lock(rq, p_rq);
+> +       while (task_rq(p) != p_rq) {
+> +               double_rq_unlock(rq, p_rq);
+> +               goto again;
+> +       }
+> +
+> +       if (!curr->sched_class->yield_to_task)
+> +               goto out;
+> +
+> +       if (curr->sched_class != p->sched_class)
+> +               goto out;
+> +
+> +       if (task_running(p_rq, p) || p->state)
+> +               goto out;
+> +
+> +       yielded = curr->sched_class->yield_to_task(rq, p, preempt);
+> +
+> +       if (yielded) {
+> +               schedstat_inc(rq, yld_count);
+> +               current->sched_class->yield_task(rq);
+> +       }
+> +
+> +out:
+> +       double_rq_unlock(rq, p_rq);
+> +       local_irq_restore(flags);
+> +
+> +       if (yielded)
+> +               schedule();
+> +
+> +       return yielded;
+> +}
+> +EXPORT_SYMBOL_GPL(yield_to); 
 
 
-This also wants the below bit in order to build without warnings for
-SCHED_DEBUG=n:
-
+This also wants the below bit to successfully build on SMP=n,
 
 ---
-Index: linux-2.6/kernel/sched_fair.c
+Index: linux-2.6/kernel/sched.c
 ===================================================================
---- linux-2.6.orig/kernel/sched_fair.c
-+++ linux-2.6/kernel/sched_fair.c
-@@ -431,6 +431,7 @@ static struct sched_entity *__pick_next_
- 	return rb_entry(next, struct sched_entity, run_node);
+--- linux-2.6.orig/kernel/sched.c
++++ linux-2.6/kernel/sched.c
+@@ -1686,6 +1686,39 @@ static void double_rq_unlock(struct rq *
+ 		__release(rq2->lock);
  }
  
-+#ifdef CONFIG_SCHED_DEBUG
- static struct sched_entity *__pick_last_entity(struct cfs_rq *cfs_rq)
- {
- 	struct rb_node *last = rb_last(&cfs_rq->tasks_timeline);
-@@ -445,7 +446,6 @@ static struct sched_entity *__pick_last_
-  * Scheduling class statistics methods:
-  */
++#else /* CONFIG_SMP */
++
++/*
++ * double_rq_lock - safely lock two runqueues
++ *
++ * Note this does not disable interrupts like task_rq_lock,
++ * you need to do so manually before calling.
++ */
++static void double_rq_lock(struct rq *rq1, struct rq *rq2)
++	__acquires(rq1->lock)
++	__acquires(rq2->lock)
++{
++	BUG_ON(!irqs_disabled());
++	BUG_ON(rq1 != rq2);
++	raw_spin_lock(&rq1->lock);
++	__acquire(rq2->lock);	/* Fake it out ;) */
++}
++
++/*
++ * double_rq_unlock - safely unlock two runqueues
++ *
++ * Note this does not restore interrupts like task_rq_unlock,
++ * you need to do so manually after calling.
++ */
++static void double_rq_unlock(struct rq *rq1, struct rq *rq2)
++	__releases(rq1->lock)
++	__releases(rq2->lock)
++{
++	BUG_ON(rq1 != rq2);
++	raw_spin_unlock(&rq1->lock);
++	__release(rq2->lock);
++}
++
+ #endif
  
--#ifdef CONFIG_SCHED_DEBUG
- int sched_proc_update_handler(struct ctl_table *table, int write,
- 		void __user *buffer, size_t *lenp,
- 		loff_t *ppos)
+ static void calc_load_account_idle(struct rq *this_rq);
 
