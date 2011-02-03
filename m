@@ -1,105 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756735Ab1BCUAc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 15:00:32 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:41171 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754986Ab1BCUAb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 15:00:31 -0500
-Subject: Re: [PATCH] Fix size argument to memset call in nfsacl_encode
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=us-ascii
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <alpine.LNX.2.00.1102032035280.15101@swampdragon.chaosbits.net>
-Date: Thu, 3 Feb 2011 15:00:11 -0500
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Milton Miller <miltonm@bga.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Neil Brown <neilb@suse.de>,
-        bfields@fieldses.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <705C97E5-E273-45AA-9714-2BF409DE1322@oracle.com>
-References: <alpine.LNX.2.00.1102032012540.15101@swampdragon.chaosbits.net> <1296761330.3015.22.camel@heimdal.trondhjem.org> <alpine.LNX.2.00.1102032035280.15101@swampdragon.chaosbits.net>
-To: Jesper Juhl <jj@chaosbits.net>
-X-Mailer: Apple Mail (2.1082)
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4D4B0951.010F:SCFMA4539814,ss=1,fgs=0
+	id S1756738Ab1BCUBI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 15:01:08 -0500
+Received: from claw.goop.org ([74.207.240.146]:60804 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754986Ab1BCUBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 15:01:07 -0500
+Message-ID: <4D4B097C.5050405@goop.org>
+Date: Thu, 03 Feb 2011 12:01:00 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "Pan, Jacob jun" <jacob.jun.pan@intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Andres Salomon <dilinger@queued.net>
+Subject: Re: RFC: can we kill the KEEP_SEGMENTS bzImage flag?
+References: <4D4AE3AE.7000009@zytor.com>
+In-Reply-To: <4D4AE3AE.7000009@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/03/2011 09:19 AM, H. Peter Anvin wrote:
+>>   Bit 6 (write): KEEP_SEGMENTS
+>>         Protocol: 2.07+
+>>         - If 0, reload the segment registers in the 32bit entry point.
+>>         - If 1, do not reload the segment registers in the 32bit entry point.
+>>                 Assume that %cs %ds %ss %es are all set to flat segments with
+>>                 a base of 0 (or the equivalent for their environment).
+> Does anything actually rely on this bit or can we kill it?  I think it
+> was added as a crutch for paravirtualization, but I'm being told it is
+> not used...
 
-On Feb 3, 2011, at 2:41 PM, Jesper Juhl wrote:
+We originally added it with the idea that we might change the Xen boot
+sequence to just enter via the normal entrypoint before wandering off to
+the Xen paravirt path - mostly as a way of making use of the bzImage's
+own decompresser rather than having to have that externally.
 
-> On Thu, 3 Feb 2011, Trond Myklebust wrote:
-> 
->> On Thu, 2011-02-03 at 20:15 +0100, Jesper Juhl wrote: 
->>> We want to give memset() the sizeof(struct posix_acl), not
->>> sizeof(struct posix_acl *).
->>> 
->>> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
->>> ---
->>> nfsacl.c |    2 +-
->>> 1 file changed, 1 insertion(+), 1 deletion(-)
->>> 
->>> diff --git a/fs/nfs_common/nfsacl.c b/fs/nfs_common/nfsacl.c
->>> index 84c27d6..bc6d81b 100644
->>> --- a/fs/nfs_common/nfsacl.c
->>> +++ b/fs/nfs_common/nfsacl.c
->>> @@ -117,7 +117,7 @@ int nfsacl_encode(struct xdr_buf *buf, unsigned int base, struct inode *inode,
->>> 		 * invoked in contexts where a memory allocation failure is
->>> 		 * fatal.  Fortunately this fake ACL is small enough to
->>> 		 * construct on the stack. */
->>> -		memset(acl2, 0, sizeof(acl2));
->>> +		memset(acl2, 0, sizeof(*acl2));
->>> 		posix_acl_init(acl2, 4);
->>> 
->>> 		/* Insert entries in canonical order: other orders seem
->> 
->> Ccing Milton Miller who also sent in the same patch.
->> 
->> Neither patch is correct afaics. posix_acl_init() will clobber the above
->> memset, and so the correct fix is just to get rid of it...
->> 
-> 
-> posix_acl_init() sets a_refcount and a_count, but what about a_entries ... 
-> no problem, nfsacl_encode() itself takes care of that post the 
-> posix_acl_init() call.. it's all good.
-> 
-> So ...
-> 
-> 
-> Remove pointless memset() in nfsacl_encode().
-> 
-> Thanks to Trond Myklebust <Trond.Myklebust@netapp.com> for pointing out 
-> that it is not needed since posix_acl_init() will set everything 
-> regardless..
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
-> nfsacl.c |    1 -
-> 1 file changed, 1 deletion(-)
-> 
-> diff --git a/fs/nfs_common/nfsacl.c b/fs/nfs_common/nfsacl.c
-> index 84c27d6..ec0f277 100644
-> --- a/fs/nfs_common/nfsacl.c
-> +++ b/fs/nfs_common/nfsacl.c
-> @@ -117,7 +117,6 @@ int nfsacl_encode(struct xdr_buf *buf, unsigned int base, struct inode *inode,
-> 		 * invoked in contexts where a memory allocation failure is
-> 		 * fatal.  Fortunately this fake ACL is small enough to
-> 		 * construct on the stack. */
-> -		memset(acl2, 0, sizeof(acl2));
-> 		posix_acl_init(acl2, 4);
-> 
-> 		/* Insert entries in canonical order: other orders seem
+But we never ended up doing that, so the paravirt boot path is unused by
+Xen, and I don't see that changing.
 
-If there is a guarantee that random data that potentially resides between the fields in that structure will never appear on the wire, then ACK.
+I think VMI may have used it, but that's moot now.
 
--- 
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
+So I think lguest is the only potential user, and I'm not sure if it
+actually does.
 
-
-
-
+    J
