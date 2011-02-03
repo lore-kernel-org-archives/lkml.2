@@ -1,103 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950Ab1BCVMR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 16:12:17 -0500
-Received: from usindmx04.hds.com ([207.126.252.15]:35916 "EHLO
-	usindmx04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752740Ab1BCVMP (ORCPT
+	id S1753040Ab1BCVNS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 16:13:18 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:44890 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752789Ab1BCVNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 16:12:15 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "Luck, Tony" <tony.luck@intel.com>,
-        =?utf-8?B?QW3DqXJpY28gV2FuZw==?= <xiyou.wangcong@gmail.com>
-CC: "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>, "tj@kernel.org" <tj@kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        "shiyer@redhat.com" <shiyer@redhat.com>,
-        "pjones@redhat.com" <pjones@redhat.com>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Date: Thu, 3 Feb 2011 16:10:34 -0500
-Subject: RE: [RFC][PATCH] kmsg_dumper for NVRAM
-Thread-Topic: [RFC][PATCH] kmsg_dumper for NVRAM
-Thread-Index: AcvB8poCc1wclGjEQ1yvoaWvYS7xdQAVLD1AAGfJSHA=
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C147F4393@USINDEVS01.corp.hds.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C1472ACC8@USINDEVS01.corp.hds.com>
- <20110201092942.GD21239@cr0.nay.redhat.com>
- <987664A83D2D224EAE907B061CE93D530194487CA2@orsmsx505.amr.corp.intel.com>
-In-Reply-To: <987664A83D2D224EAE907B061CE93D530194487CA2@orsmsx505.amr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Thu, 3 Feb 2011 16:13:17 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jarod Wilson <jwilson@redhat.com>
+References: <20110131225939.GH11974@redhat.com>
+	<20110203094715.939C.A69D9226@jp.fujitsu.com>
+	<20110203020528.GA21603@redhat.com>
+	<5C4C569E8A4B9B42A84A977CF070A35B2C147F4346@USINDEVS01.corp.hds.com>
+Date: Thu, 03 Feb 2011 13:13:07 -0800
+In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C147F4346@USINDEVS01.corp.hds.com>
+	(Seiji Aguchi's message of "Thu, 3 Feb 2011 13:38:13 -0500")
+Message-ID: <m14o8klt3w.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18dJro+5TBDHwgOYrmptnVomlnUwaK4FTU=
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Seiji Aguchi <seiji.aguchi@hds.com>
+X-Spam-Relay-Country: 
+Subject: Re: Query about kdump_msg hook into crash_kexec()
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p13LCQ8u025682
 
-Hi Tony,
+Seiji Aguchi <seiji.aguchi@hds.com> writes:
 
->I wonder whether you could use my pstore file system interface
->for this ... you'd need to write a backend that used EFI variable
->space to save the pieces of a console log, in much the same way
->that I used ERST to stash the pieces.
+> Hi,
 >
->This might be a bit messy - but I think that it would be
->worth doing in order to provide a single user interface
->to the kmsg_dump on different architectures, regardless
->of the underlying storage method used.
+>>PS: FWIW, Hitach folks have usage idea for their enterprise purpose, but 
+>>    unfortunately I don't know its detail. I hope anyone tell us it.
+>
+> I explain the usage of kmsg_dump(KMSG_DUMP_KEXEC) in enterprise area.
+>
+> [Background]
+> In our support service experience, we always need to detect root cause 
+> of OS panic.
+> So, customers in enterprise area never forgive us if kdump fails and 
+> we can't detect the root cause of panic due to lack of materials for 
+> investigation.
+>
+>>- Why do you need a notification from inside crash_kexec(). IOW, what
+>>  is the usage of KMSG_DUMP_KEXEC.
+>
+>
+> The usage of kdump(KMSG_DUMP_KEXEC) in enterprise area is getting 
+> useful information for investigating kernel crash in case kdump
+> kernel doesn't boot.
+>
+> Kdump kernel may not start booting because there is a sha256 checksum
+> verified over the kdump kernel before it starts booting.
+> This means kdump kernel may fail even if there is no bug in kdump and
+> we can't get any information for detecting root cause of kernel crash
 
-I will check whether I could use your pstore file system interface.
-Could you please send your latest patch to me?
+Sure it is theoretically possible that the sha256 checksum gets
+corrupted (I have never seen it happen or heard reports of it
+happening).  It is a feature that if someone has corrupted your code the
+code doesn't try and run anyway and corrupt anything else.
 
-Seiji
+That you are arguing against have such a feature in the code you use to
+write to persistent storage is scary.
 
->-----Original Message-----
->From: Luck, Tony [mailto:tony.luck@intel.com]
->Sent: Tuesday, February 01, 2011 2:47 PM
->To: AmÃ©rico Wang; Seiji Aguchi
->Cc: rdunlap@xenotime.net; Yu, Fenghua; tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com; x86@kernel.org;
->tj@kernel.org; akpm@linux-foundation.org; a.p.zijlstra@chello.nl; arnd@arndb.de; linux-doc@vger.kernel.org;
->linux-kernel@vger.kernel.org; linux-ia64@vger.kernel.org; dle-develop@lists.sourceforge.net; shiyer@redhat.com;
->pjones@redhat.com; Satoru Moriya
->Subject: RE: [RFC][PATCH] kmsg_dumper for NVRAM
->
->> This looks like what Tony wanted, pstore.
->
->Yes - this looks like another means to the same end (making console log
->Available after a crash).
->
->I wonder whether you could use my pstore file system interface
->for this ... you'd need to write a backend that used EFI variable
->space to save the pieces of a console log, in much the same way
->that I used ERST to stash the pieces.
->
->This might be a bit messy - but I think that it would be
->worth doing in order to provide a single user interface
->to the kmsg_dump on different architectures, regardless
->of the underlying storage method used.  I.e. the OS
->vendors would just have to write startup scripts to glean
->information from /dev/pstore and clear it by removing the
->files there. Rather than having one set of scripts that
->looks at EFI variables for machines that use that, a different
->set for machines that have the sparc64 method of saving in
->some special area of ram, and yet another set for a machine
->that has some other motherboard magical non volatile storage
->that hasn't been designed yet.
->
->-Tony
+> As I mentioned in [Background], We must avoid lack of materials for 
+> investigation.
+> So, kdump(KMSG_DUMP_KEXEC) is very important feature in enterprise
+> area.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+That sounds wonderful, but it doesn't jive with the
+code. kmsg_dump(KMSG_DUMP_KEXEC) when I read through it was simply not
+written to be robust when most of the kernel is suspect.  Making it in
+appropriate for use on the crash_kexec path.  I do not believe kmsg_dump
+has seen any testing in kernel failure scenarios.
+
+There is this huge assumption that kmsg_dump is more reliable than
+crash_kexec, from my review of the code kmsg_dump is simply not safe in
+the context of a broken kernel.  The kmsg_dump code last I looked code
+won't work if called with interrupts disabled.
+
+Furthermore kmsg_dump(KMSG_DUMP_KEXEC) is only useful for debugging
+crash_kexec.  Which has it backwards as it is kmsg_dump that needs the
+debugging.
+
+You just argued that it is better to corrupt the target of your
+kmsg_dump in the event of a kernel failure instead of to fail silently.
+
+I don't want that unreliable code that wants to corrupt my jffs
+partition anywhere near my machines.
+
+Eric
