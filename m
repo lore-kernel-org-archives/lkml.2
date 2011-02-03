@@ -1,60 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756325Ab1BCLo4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 06:44:56 -0500
-Received: from daytona.panasas.com ([67.152.220.89]:10683 "EHLO
-	daytona.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756289Ab1BCLoz (ORCPT
+	id S1756337Ab1BCLvG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 06:51:06 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42552 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756250Ab1BCLvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 06:44:55 -0500
-Message-ID: <4D4A9533.4090304@panasas.com>
-Date: Thu, 03 Feb 2011 13:44:51 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Thu, 3 Feb 2011 06:51:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=x6hOrQVblITKA10DrhtiqkpmO4ZNvwLnMcxlHuUaAlCtBK906aGHEhNZvn6nXnn+nF
+         wjPHwjUowsL5wZnLDYG2+1gqIR+nW0t7Yqm3leyVNfpYKAtqF1dIibJhAN4S9HT4M69s
+         5p6/Upqjdffrchl0WF8Q0er390QcpMg1DrxWc=
+Date: Thu, 3 Feb 2011 19:50:56 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH 1/2] softirq: introduce loacal_bh_enable_force_wake()
+Message-ID: <20110203115056.GA2121@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <20110203031943.GA8910@elliptictech.com>
+ <20110203091227.GA1603@zhy>
+ <1296725440.26581.354.camel@laptop>
+ <20110203101739.GA1551@zhy>
 MIME-Version: 1.0
-To: Nick Piggin <npiggin@kernel.dk>
-CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, Roman Zippel <zippel@linux-m68k.org>,
-        "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
-        Bob Copeland <me@bobcopeland.com>, reiserfs-devel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Evgeniy Dushistov <dushistov@mail.ru>, Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH] exofs: simple fsync race fix
-References: <20101125074909.GA4160@amd> <4CEE2C2E.4010003@panasas.com> <20101125100603.GA3164@amd> <4CEE3F9F.9070108@panasas.com> <4CEE3FD8.6080202@panasas.com> <20101125115033.GA3643@amd>
-In-Reply-To: <20101125115033.GA3643@amd>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Feb 2011 11:44:54.0858 (UTC) FILETIME=[C689AAA0:01CBC397]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110203101739.GA1551@zhy>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/25/2010 01:50 PM, Nick Piggin wrote:
-> This is fine, we'll get it merged before 2.6.37, just give a couple of
-> days for review, I haven't had much confirmation from other vfs people
-> about these problems.
-> 
-> Thanks,
-> Nick
-> 
+On Thu, Feb 03, 2011 at 06:17:39PM +0800, Yong Zhang wrote:
+> Maybe we can introduce another type of local_bh_enable() in which
+> waking up ksoftirqd is forced if needed.
 
-Hi Dear Nick.
+---
+From: Yong Zhang <yong.zhang0@gmail.com>
+Subject: [PATCH 1/2] softirq: introduce loacal_bh_enable_force_wake()
 
-So I was cleaning the table and I fell on this patch. What ever happened
-to it? should I push it through my tree?
+If there is pending softirq, don't handle it in the caller's
+context, invoke ksoftirqd directly instead.
 
-Thanks
-Boaz
+del_timer_sync() will be the first caller.
 
-> On Thu, Nov 25, 2010 at 12:52:08PM +0200, Boaz Harrosh wrote:
->> From: Nick Piggin <npiggin@kernel.dk>
->>
->> It is incorrect to test inode dirty bits without participating in the inode
->> writeback protocol. Inode writeback sets I_SYNC and clears I_DIRTY_?, then
->> writes out the particular bits, then clears I_SYNC when it is done. BTW. it
->> may not completely write all pages out, so I_DIRTY_PAGES would get set
->> again.
->>
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ include/linux/bottom_half.h |    1 +
+ kernel/softirq.c            |   19 ++++++++++++++-----
+ 2 files changed, 15 insertions(+), 5 deletions(-)
+
+diff --git a/include/linux/bottom_half.h b/include/linux/bottom_half.h
+index 27b1bcf..665d697 100644
+--- a/include/linux/bottom_half.h
++++ b/include/linux/bottom_half.h
+@@ -5,5 +5,6 @@ extern void local_bh_disable(void);
+ extern void _local_bh_enable(void);
+ extern void local_bh_enable(void);
+ extern void local_bh_enable_ip(unsigned long ip);
++extern void local_bh_enable_force_wake(void);
+ 
+ #endif /* _LINUX_BH_H */
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 68eb5ef..5f224d4 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -154,7 +154,7 @@ void _local_bh_enable(void)
+ 
+ EXPORT_SYMBOL(_local_bh_enable);
+ 
+-static inline void _local_bh_enable_ip(unsigned long ip)
++static inline void _local_bh_enable_ip(unsigned long ip, bool force_wake)
+ {
+ 	WARN_ON_ONCE(in_irq() || irqs_disabled());
+ #ifdef CONFIG_TRACE_IRQFLAGS
+@@ -171,8 +171,12 @@ static inline void _local_bh_enable_ip(unsigned long ip)
+  	 */
+ 	sub_preempt_count(SOFTIRQ_DISABLE_OFFSET - 1);
+ 
+-	if (unlikely(!in_interrupt() && local_softirq_pending()))
+-		do_softirq();
++	if (unlikely(!in_interrupt() && local_softirq_pending())) {
++		if (!force_wake)
++			do_softirq();
++		else
++			wakeup_softirqd();
++	}
+ 
+ 	dec_preempt_count();
+ #ifdef CONFIG_TRACE_IRQFLAGS
+@@ -183,16 +187,21 @@ static inline void _local_bh_enable_ip(unsigned long ip)
+ 
+ void local_bh_enable(void)
+ {
+-	_local_bh_enable_ip((unsigned long)__builtin_return_address(0));
++	_local_bh_enable_ip((unsigned long)__builtin_return_address(0), false);
+ }
+ EXPORT_SYMBOL(local_bh_enable);
+ 
+ void local_bh_enable_ip(unsigned long ip)
+ {
+-	_local_bh_enable_ip(ip);
++	_local_bh_enable_ip(ip, false);
+ }
+ EXPORT_SYMBOL(local_bh_enable_ip);
+ 
++void local_bh_enable_force_wake(void)
++{
++	_local_bh_enable_ip((unsigned long)__builtin_return_address(0), true);
++}
++EXPORT_SYMBOL(local_bh_enable_force_wake);
+ /*
+  * We restart softirq processing MAX_SOFTIRQ_RESTART times,
+  * and we fall back to softirqd after that.
+-- 
+1.7.1
 
