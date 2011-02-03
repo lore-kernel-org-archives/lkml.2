@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751098Ab1BCFO5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 00:14:57 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:36889 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750713Ab1BCFOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 00:14:55 -0500
-Date: Thu, 3 Feb 2011 16:14:48 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (net
- tree related)
-Message-Id: <20110203161448.ce197f0b.sfr@canb.auug.org.au>
-In-Reply-To: <20110202.204606.226770967.davem@davemloft.net>
-References: <20110203151309.d4a6c344.sfr@canb.auug.org.au>
-	<20110202.204606.226770967.davem@davemloft.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__3_Feb_2011_16_14_48_+1100_4MD5415/1E8fWo/+"
+	id S1751361Ab1BCFU4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 00:20:56 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45226 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899Ab1BCFU4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 00:20:56 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: Query about kdump_msg hook into crash_kexec()
+Cc: kosaki.motohiro@jp.fujitsu.com, Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jarod Wilson <jwilson@redhat.com>
+In-Reply-To: <20110203121302.93B9.A69D9226@jp.fujitsu.com>
+References: <20110203020528.GA21603@redhat.com> <20110203121302.93B9.A69D9226@jp.fujitsu.com>
+Message-Id: <20110203141850.93C2.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu,  3 Feb 2011 14:20:53 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__3_Feb_2011_16_14_48_+1100_4MD5415/1E8fWo/+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> AFAIK, kexec is used sneak rebooting way when the system face unexpected
+> scenario on some devices. (Some embedded is running very long time, then 
+> it can't avoid memory bit corruption. all of reset is a last resort. 
+> and a vendor gather logs at periodically checkback).
+> 
+> The main purpose of to introduce KMSG_DUMP_KEXEC is to be separate it
+> from KMSG_DUMP_PANIC. At kmsg_dump() initial patch, KMSG_DUMP_PANIC 
+> is always called both kdump is configured or not. But it's no good idea
+> the same log is to be appeared when both kexec was successed and failured.
+> Moreover someone don't want any log at kexec phase. They only want logs
+> when real panic (ie kexec failure) route. Then, I've separated it to two.
+> Two separated argument can solve above both requreiment.
 
-Hi Dave,
+A bit additional explanation, An original patch have kmsg_dump(KMSG_DUMP_PANIC)
+callsite at following point. I didn't think it makes either embedded or 
+kdump folks happiness. Thus I moved it after crash_kexec().
 
-On Wed, 02 Feb 2011 20:46:06 -0800 (PST) David Miller <davem@davemloft.net>=
- wrote:
->
-> This problem has existed forever, you just have only been testing
-> the build with fib_hash enabled instead of fib_trie.
 
-All I have been doing (in this case) is a sparc32 defconfig ...
+---------------------------------------------------------------------
+@@ -74,6 +75,7 @@ NORET_TYPE void panic(const char * fmt, ...)
+        dump_stack();
+ #endif
 
-> I'll fix it up, thanks for the report.
++       kmsg_dump(KMSG_DUMP_PANIC);
+        /*
+         * If we have crashed and we have a crash kernel loaded let it handle
+         * everything else.
+         * Do we want to call this before we try to display a message?
+         */
+        crash_kexec(NULL);
+---------------------------------------------------------------------
 
-no worries
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Thu__3_Feb_2011_16_14_48_+1100_4MD5415/1E8fWo/+
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNSjnIAAoJEDMEi1NhKgbshwUH/A8QXOusQP7JPZOhbNI7VeZj
-tsf9UK9aXdr2/aw+nihp3ve2PYp4Rzi13gCufCZVS0pwigRerjVCWmFaSb96gLwK
-mJhBrj7MQX8Y676b0iWX0nfiiTiQv2d7Lb1KnqoR8E0fxMXCYAhUDSl6YNeWZmI/
-vHDbTzlrVgMXwXeKY4U3c1EcA+7UUzxjarM5eZeS9JzOcMDj6LfLwSGcxA9WKDpr
-lWpVVVXZlIbE8kmx+bURcdY0SxB0Gk0N+LU8ODAKRhdcs3XH86xl673wwrv2yb0j
-7C6+KGQ6mJSsfuS2QkLVOMU8UZOXAXERarhmqRs2MI2fXKLblxkbJfqxzZpzbwI=
-=Ujbm
------END PGP SIGNATURE-----
-
---Signature=_Thu__3_Feb_2011_16_14_48_+1100_4MD5415/1E8fWo/+--
