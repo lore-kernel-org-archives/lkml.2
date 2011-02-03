@@ -1,166 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756671Ab1BCR5Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 12:57:24 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38465 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257Ab1BCR5X (ORCPT
+	id S1756687Ab1BCR5g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 12:57:36 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:38148 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756675Ab1BCR5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 12:57:23 -0500
-Date: Thu, 3 Feb 2011 17:56:57 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 09/19] ARM: LPAE: Page table maintenance for the
-	3-level format
-Message-ID: <20110203175657.GD14627@n2100.arm.linux.org.uk>
-References: <1295891761-18366-1-git-send-email-catalin.marinas@arm.com> <1295891761-18366-10-git-send-email-catalin.marinas@arm.com>
+	Thu, 3 Feb 2011 12:57:35 -0500
+Date: Thu, 3 Feb 2011 18:58:45 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        Doug Thompson <dougthompson@xmission.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [EDAC-AMD64] Display correct RAM sizes in ganged mode on F10
+ CPUs
+Message-ID: <20110203175845.GC26261@aftab>
+References: <20110129211531.GA1874@gentoo.trippels.de>
+ <20110201185114.GD8418@aftab>
+ <20110201192752.GA1589@gentoo.trippels.de>
+ <20110203151721.GD24755@aftab>
+ <20110203155951.GA1594@gentoo.trippels.de>
+ <20110203163600.GA26261@aftab>
+ <20110203164203.GB1594@gentoo.trippels.de>
+ <20110203170932.GB26261@aftab>
+ <20110203172539.GA1581@gentoo.trippels.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1295891761-18366-10-git-send-email-catalin.marinas@arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110203172539.GA1581@gentoo.trippels.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24, 2011 at 05:55:51PM +0000, Catalin Marinas wrote:
-> The patch also introduces the L_PGD_SWAPPER flag to mark pgd entries
-> pointing to pmd tables pre-allocated in the swapper_pg_dir and avoid
-> trying to free them at run-time. This flag is 0 with the classic page
-> table format.
+On Thu, Feb 03, 2011 at 12:25:39PM -0500, Markus Trippelsdorf wrote:
+> Looks good, many thanks Boris.
+> 
+> EDAC amd64: F10h detected (node 0).
+> EDAC MC: DCT0 chip selects:
+> EDAC amd64: MC: 0:  1024MB 1:  1024MB
+> EDAC amd64: MC: 2:  1024MB 3:  1024MB
+> EDAC amd64: MC: 4:     0MB 5:     0MB
+> EDAC amd64: MC: 6:     0MB 7:     0MB
+> EDAC MC: DCT1 chip selects:
+> EDAC amd64: MC: 0:  1024MB 1:  1024MB
+> EDAC amd64: MC: 2:  1024MB 3:  1024MB
+> EDAC amd64: MC: 4:     0MB 5:     0MB
+> EDAC amd64: MC: 6:     0MB 7:     0MB
 
-This shouldn't be necessary.
+Ok thanks, will add your Tested-by: too.
 
-> diff --git a/arch/arm/mm/pgd.c b/arch/arm/mm/pgd.c
-> index 709244c..003587d 100644
-> --- a/arch/arm/mm/pgd.c
-> +++ b/arch/arm/mm/pgd.c
-> @@ -10,6 +10,7 @@
->  #include <linux/mm.h>
->  #include <linux/gfp.h>
->  #include <linux/highmem.h>
-> +#include <linux/slab.h>
->  
->  #include <asm/pgalloc.h>
->  #include <asm/page.h>
-> @@ -17,6 +18,14 @@
->  
->  #include "mm.h"
->  
-> +#ifdef CONFIG_ARM_LPAE
-> +#define __pgd_alloc()	kmalloc(PTRS_PER_PGD * sizeof(pgd_t), GFP_KERNEL)
-> +#define __pgd_free(pgd)	kfree(pgd)
-> +#else
-> +#define __pgd_alloc()	(pgd_t *)__get_free_pages(GFP_KERNEL, 2)
-> +#define __pgd_free(pgd)	free_pages((unsigned long)pgd, 2)
-> +#endif
-> +
->  /*
->   * need to get a 16k page for level 1
->   */
-> @@ -26,7 +35,7 @@ pgd_t *pgd_alloc(struct mm_struct *mm)
->  	pmd_t *new_pmd, *init_pmd;
->  	pte_t *new_pte, *init_pte;
->  
-> -	new_pgd = (pgd_t *)__get_free_pages(GFP_KERNEL, 2);
-> +	new_pgd = __pgd_alloc();
->  	if (!new_pgd)
->  		goto no_pgd;
->  
-> @@ -41,12 +50,21 @@ pgd_t *pgd_alloc(struct mm_struct *mm)
->  
->  	clean_dcache_area(new_pgd, PTRS_PER_PGD * sizeof(pgd_t));
->  
-> +#ifdef CONFIG_ARM_LPAE
-> +	/*
-> +	 * Allocate PMD table for modules and pkmap mappings.
-> +	 */
-> +	new_pmd = pmd_alloc(mm, new_pgd + pgd_index(MODULES_VADDR), 0);
-> +	if (!new_pmd)
-> +		goto no_pmd;
+> BTW another thing, while I have your attention:
+> 
+> cat /sys/devices/system/edac/mc/mc0/csrow0/edac_mode
+> prints "S4ECD4ED" aka Chipkill on my system.
+> But I'm using a revision C Phenom that only supports a x4 symbol size,
+> while the Kingston ECC DIMMs have a width of x8. So according to
+> table 77 (page 174) of the "BIOS and Kernel Developer’s Guide" the
+> system is actually running in SECDED mode and does not provide Chipkill.
 
-This should be a copy of the same page tables found in swapper_pg_dir -
-that's what the memcpy() above is doing.
+Yeah, that table needs to be implemented for proper csrow->edac_mode
+assignment. I'll try to get it done soon.
 
-> +#endif
-> +
->  	if (!vectors_high()) {
->  		/*
->  		 * On ARM, first page must always be allocated since it
->  		 * contains the machine vectors.
->  		 */
-> -		new_pmd = pmd_alloc(mm, new_pgd, 0);
-> +		new_pmd = pmd_alloc(mm, new_pgd + pgd_index(0), 0);
+Thanks.
 
-However, the first pmd table, and the first pte table only need to be
-present for the reason stated in the comment, and these need to be
-allocated.
+-- 
+Regards/Gruss,
+Boris.
 
->  		if (!new_pmd)
->  			goto no_pmd;
->  
-> @@ -66,7 +84,7 @@ pgd_t *pgd_alloc(struct mm_struct *mm)
->  no_pte:
->  	pmd_free(mm, new_pmd);
->  no_pmd:
-> -	free_pages((unsigned long)new_pgd, 2);
-> +	__pgd_free(new_pgd);
->  no_pgd:
->  	return NULL;
->  }
-> @@ -80,20 +98,36 @@ void pgd_free(struct mm_struct *mm, pgd_t *pgd_base)
->  	if (!pgd_base)
->  		return;
->  
-> -	pgd = pgd_base + pgd_index(0);
-> -	if (pgd_none_or_clear_bad(pgd))
-> -		goto no_pgd;
-> +	if (!vectors_high()) {
-
-No, that's wrong.  As FIRST_USER_ADDRESS is nonzero, the first pmd and
-pte table will remain allocated in spite of free_pgtables(), so this
-results in a memory leak.
-
-> +		pgd = pgd_base + pgd_index(0);
-> +		if (pgd_none_or_clear_bad(pgd))
-> +			goto no_pgd;
->  
-> -	pmd = pmd_offset(pgd, 0);
-> -	if (pmd_none_or_clear_bad(pmd))
-> -		goto no_pmd;
-> +		pmd = pmd_offset(pgd, 0);
-> +		if (pmd_none_or_clear_bad(pmd))
-> +			goto no_pmd;
->  
-> -	pte = pmd_pgtable(*pmd);
-> -	pmd_clear(pmd);
-> -	pte_free(mm, pte);
-> +		pte = pmd_pgtable(*pmd);
-> +		pmd_clear(pmd);
-> +		pte_free(mm, pte);
->  no_pmd:
-> -	pgd_clear(pgd);
-> -	pmd_free(mm, pmd);
-> +		pgd_clear(pgd);
-> +		pmd_free(mm, pmd);
-> +	}
->  no_pgd:
-> -	free_pages((unsigned long) pgd_base, 2);
-> +#ifdef CONFIG_ARM_LPAE
-> +	/*
-> +	 * Free modules/pkmap or identity pmd tables.
-> +	 */
-> +	for (pgd = pgd_base; pgd < pgd_base + PTRS_PER_PGD; pgd++) {
-> +		if (pgd_none_or_clear_bad(pgd))
-> +			continue;
-> +		if (pgd_val(*pgd) & L_PGD_SWAPPER)
-> +			continue;
-> +		pmd = pmd_offset(pgd, 0);
-> +		pgd_clear(pgd);
-> +		pmd_free(mm, pmd);
-> +	}
-> +#endif
-
-And as kernel mappings in the pgd above TASK_SIZE are supposed to be
-identical across all page tables, this shouldn't be necessary.
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
