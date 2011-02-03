@@ -1,45 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932340Ab1BCSVw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 13:21:52 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:49321 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932161Ab1BCSVw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 13:21:52 -0500
+	id S932367Ab1BCSZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 13:25:56 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:54318 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932214Ab1BCSZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 13:25:54 -0500
+Date: Thu, 3 Feb 2011 19:25:50 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, Ingo Molnar <mingo@elte.hu>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Xen Devel <Xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 0/2] x86/microcode: support for microcode update in Xen
+ dom0
+Message-ID: <20110203182550.GB21488@a1.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Jeremy Fitzhardinge <jeremy@goop.org>, Ingo Molnar <mingo@elte.hu>,
+	the arch/x86 maintainers <x86@kernel.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Xen Devel <Xen-devel@lists.xensource.com>,
+	Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+References: <4D461FB9.5050807@goop.org>
+ <20110131070241.GA22071@liondog.tnic>
+ <4D46FC9F.6090309@goop.org>
+ <20110131234131.GA16095@liondog.tnic>
+ <4D475099.1080004@goop.org>
+ <4D475DB5.1020300@zytor.com>
+ <4D488EB1.9020803@goop.org>
+ <4D49B5F6.5010606@zytor.com>
+ <20110202205704.GA14752@liondog.tnic>
+ <4D49D0E6.30102@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <20110203163442.GB3712@dumpdata.com>
-References: <AANLkTi=r2s6QmBz1bsrsn5GHanQs+sQ73sPDKuBVe6tw@mail.gmail.com>
-	<20110203163442.GB3712@dumpdata.com>
-Date: Thu, 3 Feb 2011 10:21:50 -0800
-Message-ID: <AANLkTi=uje9t_uEMP1y7cfrGYWPPw8G0HidT7HvYNVkQ@mail.gmail.com>
-Subject: Re: Xen DomU kernel BUG on 2.6.37
-From: Anirban Sinha <ani@anirban.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4D49D0E6.30102@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 3, 2011 at 8:34 AM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
-> On Wed, Feb 02, 2011 at 05:19:45PM -0800, Anirban Sinha wrote:
->> Hi :
->>
->> I have compiled a custom DomU kernel and tried booting with it on a
->
-> This custom thing is not healthy. We need a baseline (say a vanilla
-> kernel from ftp.kernel.org).
+On Wed, Feb 02, 2011 at 01:47:18PM -0800, H. Peter Anvin wrote:
+> On 02/02/2011 12:57 PM, Borislav Petkov wrote:
+> > On Wed, Feb 02, 2011 at 11:52:22AM -0800, H. Peter Anvin wrote:
+> >> 3. Arguably on native hardware we should still load the microcode into
+> >> RAM in the boot loader, and install it on the very early CPU bringup
+> >> path.  That means locking down some (currently) 400K of RAM to handle
+> >> different combinations of CPUs, or the additional complexity of
+> >> jettisoning microcode which cannot be used while still be able to deal
+> >> with hotplug.  I think there is a strong case for this model, which
+> >> would mean moving the microcode into /boot anyway.
+> > 
+> > /me like it, sounds very nifty. So how do we want to do that, we add
+> > a field to the real-mode kernel header that tells us where to find
+> > the microcode image and we take it and apply the ucode somewhere in
+> > do_boot_cpu() path?
+> > 
+> 
+> We already have a mechanism for passing arbitrary blobs -- the linked
+> list -- so we don't have to add a new field at all.
 
-By custm, I meant that the domU kernel did not ship with any distro
-like fedora or Ubuntu etc. Otherwise, it is a stock 2.6.37 kernel.org
-kernel that I downloaded, configured and built. There are no private
-patches in this kernel.
+So, after staring at grub legacy sources a bit, we could load the
+microcode image using the grub module's mechanism:
 
->
-> However, I am curious to see how this works for you when you
-> use the patch that Ian suggested to you for 2.6.32?
->
+kernel /...
+module /boot/microcode.gz type=SETUP_MICROCODE # this is looked at by parse_setup_data()
 
-I'll try it and let you know.
+and let grub write the pointer into setup_data passed through the kernel
+header.
+
+This would mean that we need to add support to a bunch of boot loaders
+used currently, no? Or is there an even better way?
+
+-- 
+Regards/Gruss,
+Boris.
