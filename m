@@ -1,42 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932069Ab1BCMph (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 07:45:37 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:43470 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755753Ab1BCMpd (ORCPT
+	id S932077Ab1BCMwp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 07:52:45 -0500
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:50096 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751017Ab1BCMwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 07:45:33 -0500
-Date: Thu, 3 Feb 2011 12:45:21 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Arve Hj??nnev??g <arve@android.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Alexander Shishkin <virtuoso@slind.org>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: [PATCH 1/5] ARM: etm: Don't require clock control
-Message-ID: <20110203124521.GK9810@sirena.org.uk>
-References: <1296701663-12168-1-git-send-email-arve@android.com>
+	Thu, 3 Feb 2011 07:52:43 -0500
+Message-ID: <4D4AA502.4000001@stericsson.com>
+Date: Thu, 3 Feb 2011 13:52:18 +0100
+From: Linus Walleij <linus.walleij@stericsson.com>
+Organization: ST-Ericsson SA
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296701663-12168-1-git-send-email-arve@android.com>
-X-Cookie: 1 bulls, 3 cows.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+To: Andres Salomon <dilinger@queued.net>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 04/19] ab3100: mfd_cell is now implicitly available to
+ drivers
+References: <20110202195417.228e2656@queued.net> <20110202200302.0e05c3d0@queued.net>
+In-Reply-To: <20110202200302.0e05c3d0@queued.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 02, 2011 at 06:54:19PM -0800, Arve Hj??nnev??g wrote:
-> If clk_get fail, assume the etb does not need a separate clock.
-> 
-> Signed-off-by: Arve Hj??nnev??g <arve@android.com>
+On 02/03/2011 05:03 AM, Andres Salomon wrote:
+> No need to explicitly set the cell's platform_data/data_size.
+>
+> In this case, move the ab3100_platform_data pointer from platform_data
+> to driver_data.  The only client who makes use of it is also changed.
+>
+> Signed-off-by: Andres Salomon<dilinger@queued.net>
+>    
 
-Would it not be cleaner for the affected platforms to ensure that
-clk_get() does the right thing here, for example by returning a dummy
-clock?  Otherwise we'll just silently carry on if we can't get a clock
-we were supposed to which doesn't seem ideal.
+Looks good, thanks Andres,
+Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+
+Yours,
+Linus Walleij
