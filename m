@@ -1,79 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173Ab1BDJe1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 04:34:27 -0500
-Received: from hera.kernel.org ([140.211.167.34]:49866 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753968Ab1BDJeZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 04:34:25 -0500
-Date: Fri, 4 Feb 2011 09:34:00 GMT
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, nbowler@elliptictech.com, hpa@zytor.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, yong.zhang0@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, nbowler@elliptictech.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, yong.zhang0@gmail.com
-In-Reply-To: <20110203141548.039540914@chello.nl>
-References: <20110203141548.039540914@chello.nl>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] lockdep, timer: Fix del_timer_sync() annotation
-Message-ID: <tip-f266a5110d453b7987194460ac7edd31f1a5426c@git.kernel.org>
-Git-Commit-ID: f266a5110d453b7987194460ac7edd31f1a5426c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1754281Ab1BDJel (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 04:34:41 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:38185 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754185Ab1BDJej (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 04:34:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=lXJKita9I6ePTtaYCrk7k1jw3SSC8tFkWWqwvsf01t2qNHNSn0/i5bd6a7MxzdOhCQ
+         hNSqy63kQe8/lksN9dIOOkHx1ZW1FUuFqaZE4RynjsHCBlGE5Pm/1UK/H8b/Y9CxjOly
+         65yvZ3gztu+tGqBdBNp3XUOrhDux6m7SwrVF8=
+Date: Fri, 4 Feb 2011 17:33:32 +0800
+From: Richard Zhao <linuxzsc@gmail.com>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Saravana Kannan <skannan@codeaurora.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-sh@vger.kernel.org, Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
+        Dima Zavin <dmitriyz@google.com>, Ben Dooks <ben-linux@fluff.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Locking in the clk API, part 2: clk_prepare/clk_unprepare
+Message-ID: <20110204093332.GA2347@richard-laptop>
+References: <20110201141837.GA1147@pengutronix.de>
+ <20110201143932.GK31216@n2100.arm.linux.org.uk>
+ <20110201151846.GD1147@pengutronix.de>
+ <20110201152458.GP31216@n2100.arm.linux.org.uk>
+ <20110201155344.GF1147@pengutronix.de>
+ <20110201170637.GR31216@n2100.arm.linux.org.uk>
+ <20110201193201.GH1147@pengutronix.de>
+ <20110201195604.GS31216@n2100.arm.linux.org.uk>
+ <4D486B59.6010106@codeaurora.org>
+ <20110201204330.GJ1147@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 04 Feb 2011 09:34:02 +0000 (UTC)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110201204330.GJ1147@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f266a5110d453b7987194460ac7edd31f1a5426c
-Gitweb:     http://git.kernel.org/tip/f266a5110d453b7987194460ac7edd31f1a5426c
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Thu, 3 Feb 2011 15:09:41 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 4 Feb 2011 10:31:22 +0100
+On Tue, Feb 01, 2011 at 09:43:31PM +0100, Uwe Kleine-König wrote:
+> Hello,
+> 
+> On Tue, Feb 01, 2011 at 12:21:45PM -0800, Saravana Kannan wrote:
+> > If the driver is calling clk_prepare() right next to clk_enable()
+> > knowing it's been already prepared and will hence be "atomic" (this
+> > is actually not true), then by your description, it's pointless to
+> > call clk_prepare().
+> Well not completely, as it increases the reference count.  The advantage
+> would be that clk_enable counts addionally as prepare, so it would be
+> impossible to unprepare an enabled clock.  And the other way round an
+> unprepared clock would never be enabled.
+>  
+> > If you want the driver to call clk_prepare() in atomic context
+> > because it will be atomic in most cases -- well, that's wrong. It's
+> > either atomic or is NOT atomic. There is no in between. If a call is
+> > NOT atomic, it can't be called in atomic context. Long story short,
+> > if you expect clk_prepare() to be atomic under any circumstance, it
+> > beats the point of introducing clk_prepare().
+> Well, with my suggestion it's atomic when certain precondions are given.
+> IMHO that's better than "atomic in most cases" because the caller can
+> assert that everything goes smooth.
+> These preconditions are asserted when the driver writer is careful
+> enough to stick to the API.
+IMHO, clk_prepare is always called in non-atomic context, so it doesn't matter
+whether it's really atomic or not. We don't have to make it as atomic as
+possible.
 
-lockdep, timer: Fix del_timer_sync() annotation
-
-Calling local_bh_enable() will want to actually start processing
-softirqs, which isn't a good idea since this can get called with IRQs
-disabled.
-
-Cure this by using _local_bh_enable() which doesn't start processing
-softirqs, and use raw_local_irq_save() to avoid any softirqs from
-happening without letting lockdep think IRQs are in fact disabled.
-
-Reported-by: Nick Bowler <nbowler@elliptictech.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Reviewed-by: Yong Zhang <yong.zhang0@gmail.com>
-LKML-Reference: <20110203141548.039540914@chello.nl>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/timer.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 43ca993..d53ce66 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -969,10 +969,14 @@ EXPORT_SYMBOL(try_to_del_timer_sync);
- int del_timer_sync(struct timer_list *timer)
- {
- #ifdef CONFIG_LOCKDEP
-+	unsigned long flags;
-+
-+	raw_local_irq_save(flags);
- 	local_bh_disable();
- 	lock_map_acquire(&timer->lockdep_map);
- 	lock_map_release(&timer->lockdep_map);
--	local_bh_enable();
-+	_local_bh_enable();
-+	raw_local_irq_restore(flags);
- #endif
- 	/*
- 	 * don't use it in hardirq context, because it
+Thanks
+Richard
+> 
+> Either my idea is bad or I'm unable to sell it appropriately.  Be it as
+> it is, I will stop to make a case for it.
+> 
+> Best regards and thanks for your try,
+> Uwe
+> 
+> -- 
+> Pengutronix e.K.                           | Uwe Kleine-König            |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
