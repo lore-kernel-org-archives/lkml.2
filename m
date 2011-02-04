@@ -1,123 +1,345 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752173Ab1BDWBT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 17:01:19 -0500
-Received: from mail51.messagelabs.com ([216.82.241.99]:36828 "EHLO
-	mail51.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751911Ab1BDWBS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 17:01:18 -0500
-X-VirusChecked: Checked
-X-Env-Sender: Timothy.Sell@unisys.com
-X-Msg-Ref: server-15.tower-51.messagelabs.com!1296856875!62931100!4
-X-StarScan-Version: 6.2.9; banners=-,-,-
-X-Originating-IP: [192.61.61.104]
-From: "Sell, Timothy C" <Timothy.Sell@unisys.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>
-Date: Fri, 4 Feb 2011 16:00:08 -0600
-Subject: [PATCH] x86: prevent faults / mysterious problems booting x86
- withOUT VGA
-Thread-Topic: [PATCH] x86: prevent faults / mysterious problems booting x86
- withOUT VGA
-Thread-Index: AcvEtuK84AvGted6Tfe1uEtIr6wdsQ==
-Message-ID: <63D5DCACD1E9E34C89C8203C64F521C3D75ADEAD6B@USEA-EXCH7.na.uis.unisys.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-hashedpuzzle: BHWT CS+g QuhN Rzi2 ayLo a9GI dKHl fzk/ jWlG kyJX lZ6S
- mwgw qG6l rFBA r36M
- tXLw;4;aABwAGEAQAB6AHkAdABvAHIALgBjAG8AbQA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBtAGkAbgBnAG8AQAByAGUAZABoAGEAdAAuAGMAbwBtADsAdABnAGwAeABAAGwAaQBuAHUAdAByAG8AbgBpAHgALgBkAGUA;Sosha1_v1;7;{71076D48-0EB5-43F8-979F-E80707F794AA};dABpAG0AbwB0AGgAeQAuAHMAZQBsAGwAQAB1AG4AaQBzAHkAcwAuAGMAbwBtAA==;Fri,
- 04 Feb 2011 22:00:08
- GMT;WwBQAEEAVABDAEgAXQAgAHgAOAA2ADoAIABwAHIAZQB2AGUAbgB0ACAAZgBhAHUAbAB0AHMAIAAvACAAbQB5AHMAdABlAHIAaQBvAHUAcwAgAHAAcgBvAGIAbABlAG0AcwAgAGIAbwBvAHQAaQBuAGcAIAB4ADgANgAgAHcAaQB0AGgATwBVAFQAIABWAEcAQQA=
-x-cr-puzzleid: {71076D48-0EB5-43F8-979F-E80707F794AA}
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752181Ab1BDWCa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 17:02:30 -0500
+Received: from hera.kernel.org ([140.211.167.34]:57278 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751971Ab1BDWC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 17:02:29 -0500
+Date: Fri, 4 Feb 2011 22:01:24 GMT
+From: tip-bot for Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        mathieu.desnoyers@efficios.com, rusty@rustcorp.com.au,
+        peterz@infradead.org, davem@davemloft.net, fweisbec@gmail.com,
+        rostedt@goodmis.org, akpm@linux-foundation.org, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        mathieu.desnoyers@efficios.com, rusty@rustcorp.com.au,
+        peterz@infradead.org, davem@davemloft.net, fweisbec@gmail.com,
+        akpm@linux-foundation.org, rostedt@goodmis.org, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <20110126222622.GA10794@Krystal>
+References: <20110126222622.GA10794@Krystal>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] tracepoints: Fix section alignment using pointer array
+Message-ID: <tip-654986462939cd7ec18f276c6379a334dac106a7@git.kernel.org>
+Git-Commit-ID: 654986462939cd7ec18f276c6379a334dac106a7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 04 Feb 2011 22:01:25 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tim Sell <Timothy.Sell@unisys.com>
+Commit-ID:  654986462939cd7ec18f276c6379a334dac106a7
+Gitweb:     http://git.kernel.org/tip/654986462939cd7ec18f276c6379a334dac106a7
+Author:     Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+AuthorDate: Wed, 26 Jan 2011 17:26:22 -0500
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Thu, 3 Feb 2011 09:28:46 -0500
 
-(Patch applies to 2.6.32.12 kernel version.)
-This patch guarantees correct behavior if you boot on x86 arch without VGA hardware.  It prevents faults from occurring at various places in the kernel, possibly dealing with accesses to /dev/tty0, due to assumptions that conswitchp is non-NULL.  Unisys encountered this problem while booting SLES11 Linux (2.6.32.12-0.7) in a virtualized x86 environment that does NOT provide VGA, and this patch was verified to fix the problem.
+tracepoints: Fix section alignment using pointer array
 
-The patch guarantees that conswitchp will be initialized to a non-NULL value if you build with CONFIG_VGA_CONSOLE or CONFIG_DUMMY_CONSOLE, with the VGA console having precedence over the dummy console. 
+Make the tracepoints more robust, making them solid enough to handle compiler
+changes by not relying on anything based on compiler-specific behavior with
+respect to structure alignment. Implement an approach proposed by David Miller:
+use an array of const pointers to refer to the individual structures, and export
+this pointer array through the linker script rather than the structures per se.
+It will consume 32 extra bytes per tracepoint (24 for structure padding and 8
+for the pointers), but are less likely to break due to compiler changes.
 
-Elsewhere in the kernel (namely in visual_init() of vt.c, where we depend on con_driver_map[0] being non-NULL, and con_driver_map[0..MAX_CONSOLES-1] are initialized to conswitchp in con_init() of vt.c), Linux assumes conswitchp to be non-NULL.  Prior to the attached patch, if you have both CONFIG_VGA_CONSOLE and CONFIG_DUMMY_CONSOLE defined, then conswitchp is still going to be left at NULL if you don't have VGA hardware.  I think it's wrong to behave that way if you also have CONFIG_DUMMY_CONSOLE defined. 
+History:
 
-Here is an example fault that will occur when running without the patch.
-  BUG: unable to handle kernel NULL pointer dereference at (null)
-  IP: [<ffffffff812719f0>] visual_init+0x40/0x100
-  PGD 2d752067 PUD 2d316067 PMD 0
-  Oops: 0000 [#1] SMP
-  last sysfs file: /sys/devices/virtual/net/lo/type
-  CPU 0
-  Modules linked in: ...
-  Supported: Yes
-  Pid: 4084, comm: console-kit-dae Tainted: G        W N  2.6.32.12-0.7-spar1 #2
-  RIP: 0010:[<ffffffff812719f0>]  [<ffffffff812719f0>] visual_init+0x40/0x100
-  RSP: 0018:ffff88002d0d9c98  EFLAGS: 00010246
-  RAX: 0000000000000000 RBX: ffff88002b3dc200 RCX: 0000000000000000
-  RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff88002b3dc200
-  RBP: 0000000000000000 R08: 0000000000000000 R09: ffff88002b3dc200
-  R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000001
-  R13: ffff88002b3dc200 R14: 0000000000000000 R15: ffff88002aaa6a04
-  FS:  00007fa76134d700(0000) GS:ffff880001e00000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-  CR2: 0000000000000000 CR3: 000000002d1e0000 CR4: 00000000000006f0
-  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-  Process console-kit-dae (pid: 4084, threadinfo ffff88002d0d8000, task ffff88002d73a500)
-  Stack:
-   0000000000000000 0000000000000000 0000000000000000 ffffffff81272f55
-  <0> ffff88002b3dc200 ffffffff81066bc6 ffff88002db29000 0000000000000000
-  <0> 0000000000000000 ffff88002d48a900 0000000000000001 ffffffff81273030
-  Call Trace:
-   [<ffffffff81272f55>] vc_allocate+0x105/0x190
-   [<ffffffff81273030>] con_open+0x50/0xf0
-   [<ffffffff812625ae>] tty_open+0x21e/0x510
-   [<ffffffff810fc1b5>] chrdev_open+0x125/0x1d0
-   [<ffffffff810f6b5e>] __dentry_open+0xfe/0x2f0
-   [<ffffffff81106b1c>] do_filp_open+0x74c/0xae0
-   [<ffffffff810f6977>] do_sys_open+0x97/0x140
-   [<ffffffff81002e7b>] system_call_fastpath+0x16/0x1b
-   [<00007fa75fd95e1d>] 0x7fa75fd95e1d
-  Code: ...
-  RIP  [<ffffffff812719f0>] visual_init+0x40/0x100
-   RSP <ffff88002d0d9c98>
-  CR2: 0000000000000000
-  ---[ end trace ab277073f9e6d739 ]---
+commit 7e066fb8 tracepoints: add DECLARE_TRACE() and DEFINE_TRACE()
+added the aligned(32) type and variable attribute to the tracepoint structures
+to deal with gcc happily aligning statically defined structures on 32-byte
+multiples.
 
-At the time of the fault in visual_init() of vt.c, rax is con_driver_map[num], and the stack trace above shows that to be 0, which is bad.  We fault at visual_init+64:
-  726                     vc->vc_sw = con_driver_map[num];
-  0xffffffff812719e8 <visual_init+56>:    mov    %rax,0x38(%rbx)
-  
-  727     #endif
-  728             __module_get(vc->vc_sw->owner);
-  0xffffffff812719ec <visual_init+60>:    mov    0x38(%rbx),%rdx
-  0xffffffff812719f0 <visual_init+64>:    mov    (%rdx),%rcx
+One attempt was to use a 8-byte alignment for tracepoint structures by applying
+both the variable and type attribute to tracepoint structures definitions and
+declarations. It worked fine with gcc 4.5.1, but broke with gcc 4.4.4 and 4.4.5.
 
-Signed-off-by: Tim Sell <Timothy.Sell@unisys.com>
+The reason is that the "aligned" attribute only specify the _minimum_ alignment
+for a structure, leaving both the compiler and the linker free to align on
+larger multiples. Because tracepoint.c expects the structures to be placed as an
+array within each section, up-alignment cause NULL-pointer exceptions due to the
+extra unexpected padding.
 
+(this patch applies on top of -tip)
+
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Acked-by: David S. Miller <davem@davemloft.net>
+LKML-Reference: <20110126222622.GA10794@Krystal>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Peter Zijlstra <peterz@infradead.org>
+CC: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
+ include/asm-generic/vmlinux.lds.h |    8 +++++---
+ include/linux/module.h            |    2 +-
+ include/linux/tracepoint.h        |   35 ++++++++++++++++++++---------------
+ kernel/module.c                   |   16 ++++++++--------
+ kernel/tracepoint.c               |   31 ++++++++++++++++---------------
+ 5 files changed, 50 insertions(+), 42 deletions(-)
 
---- arch/x86/kernel/ORIG-setup.c	2011-01-12 17:05:08.000000000 -0500
-+++ arch/x86/kernel/setup.c	2011-01-17 09:44:14.000000000 -0500
-@@ -1035,8 +1035,10 @@ void __init setup_arch(char **cmdline_p)
- #if defined(CONFIG_VGA_CONSOLE)
- 	if (!efi_enabled || (efi_mem_type(0xa0000) != EFI_CONVENTIONAL_MEMORY))
- 		conswitchp = &vga_con;
--#elif defined(CONFIG_DUMMY_CONSOLE)
--	conswitchp = &dummy_con;
-+#endif
-+#if defined(CONFIG_DUMMY_CONSOLE)
-+	if (!conswitchp)
-+		conswitchp = &dummy_con;
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index f53708b..57b1b68 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -166,10 +166,8 @@
+ 	CPU_KEEP(exit.data)						\
+ 	MEM_KEEP(init.data)						\
+ 	MEM_KEEP(exit.data)						\
+-	. = ALIGN(32);							\
+-	VMLINUX_SYMBOL(__start___tracepoints) = .;			\
++	STRUCT_ALIGN();							\
+ 	*(__tracepoints)						\
+-	VMLINUX_SYMBOL(__stop___tracepoints) = .;			\
+ 	/* implement dynamic printk debug */				\
+ 	. = ALIGN(8);							\
+ 	VMLINUX_SYMBOL(__start___verbose) = .;                          \
+@@ -218,6 +216,10 @@
+ 		VMLINUX_SYMBOL(__start_rodata) = .;			\
+ 		*(.rodata) *(.rodata.*)					\
+ 		*(__vermagic)		/* Kernel version magic */	\
++		. = ALIGN(8);						\
++		VMLINUX_SYMBOL(__start___tracepoints_ptrs) = .;		\
++		*(__tracepoints_ptrs)	/* Tracepoints: pointer array */\
++		VMLINUX_SYMBOL(__stop___tracepoints_ptrs) = .;		\
+ 		*(__markers_strings)	/* Markers: strings */		\
+ 		*(__tracepoints_strings)/* Tracepoints: strings */	\
+ 	}								\
+diff --git a/include/linux/module.h b/include/linux/module.h
+index 7695a30..9bdf27c 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -377,7 +377,7 @@ struct module
+ 	   keeping pointers to this stuff */
+ 	char *args;
+ #ifdef CONFIG_TRACEPOINTS
+-	struct tracepoint *tracepoints;
++	struct tracepoint * const *tracepoints_ptrs;
+ 	unsigned int num_tracepoints;
  #endif
+ #ifdef HAVE_JUMP_LABEL
+diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+index c681461..97c84a5 100644
+--- a/include/linux/tracepoint.h
++++ b/include/linux/tracepoint.h
+@@ -33,12 +33,7 @@ struct tracepoint {
+ 	void (*regfunc)(void);
+ 	void (*unregfunc)(void);
+ 	struct tracepoint_func __rcu *funcs;
+-} __attribute__((aligned(32)));		/*
+-					 * Aligned on 32 bytes because it is
+-					 * globally visible and gcc happily
+-					 * align these on the structure size.
+-					 * Keep in sync with vmlinux.lds.h.
+-					 */
++};
+ 
+ /*
+  * Connect a probe to a tracepoint.
+@@ -61,15 +56,15 @@ extern void tracepoint_probe_update_all(void);
+ 
+ struct tracepoint_iter {
+ 	struct module *module;
+-	struct tracepoint *tracepoint;
++	struct tracepoint * const *tracepoint;
+ };
+ 
+ extern void tracepoint_iter_start(struct tracepoint_iter *iter);
+ extern void tracepoint_iter_next(struct tracepoint_iter *iter);
+ extern void tracepoint_iter_stop(struct tracepoint_iter *iter);
+ extern void tracepoint_iter_reset(struct tracepoint_iter *iter);
+-extern int tracepoint_get_iter_range(struct tracepoint **tracepoint,
+-	struct tracepoint *begin, struct tracepoint *end);
++extern int tracepoint_get_iter_range(struct tracepoint * const **tracepoint,
++	struct tracepoint * const *begin, struct tracepoint * const *end);
+ 
+ /*
+  * tracepoint_synchronize_unregister must be called between the last tracepoint
+@@ -84,11 +79,13 @@ static inline void tracepoint_synchronize_unregister(void)
+ #define PARAMS(args...) args
+ 
+ #ifdef CONFIG_TRACEPOINTS
+-extern void tracepoint_update_probe_range(struct tracepoint *begin,
+-	struct tracepoint *end);
++extern
++void tracepoint_update_probe_range(struct tracepoint * const *begin,
++	struct tracepoint * const *end);
+ #else
+-static inline void tracepoint_update_probe_range(struct tracepoint *begin,
+-	struct tracepoint *end)
++static inline
++void tracepoint_update_probe_range(struct tracepoint * const *begin,
++	struct tracepoint * const *end)
+ { }
+ #endif /* CONFIG_TRACEPOINTS */
+ 
+@@ -174,12 +171,20 @@ do_trace:								\
+ 	{								\
+ 	}
+ 
++/*
++ * We have no guarantee that gcc and the linker won't up-align the tracepoint
++ * structures, so we create an array of pointers that will be used for iteration
++ * on the tracepoints.
++ */
+ #define DEFINE_TRACE_FN(name, reg, unreg)				\
+ 	static const char __tpstrtab_##name[]				\
+ 	__attribute__((section("__tracepoints_strings"))) = #name;	\
+ 	struct tracepoint __tracepoint_##name				\
+-	__attribute__((section("__tracepoints"), aligned(32))) =	\
+-		{ __tpstrtab_##name, 0, reg, unreg, NULL }
++	__attribute__((section("__tracepoints"))) =			\
++		{ __tpstrtab_##name, 0, reg, unreg, NULL };		\
++	static struct tracepoint * const __tracepoint_ptr_##name __used	\
++	__attribute__((section("__tracepoints_ptrs"))) =		\
++		&__tracepoint_##name;
+ 
+ #define DEFINE_TRACE(name)						\
+ 	DEFINE_TRACE_FN(name, NULL, NULL);
+diff --git a/kernel/module.c b/kernel/module.c
+index 34e00b7..efa290e 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2460,9 +2460,9 @@ static void find_module_sections(struct module *mod, struct load_info *info)
  #endif
- 	x86_init.oem.banner();
+ 
+ #ifdef CONFIG_TRACEPOINTS
+-	mod->tracepoints = section_objs(info, "__tracepoints",
+-					sizeof(*mod->tracepoints),
+-					&mod->num_tracepoints);
++	mod->tracepoints_ptrs = section_objs(info, "__tracepoints_ptrs",
++					     sizeof(*mod->tracepoints_ptrs),
++					     &mod->num_tracepoints);
+ #endif
+ #ifdef HAVE_JUMP_LABEL
+ 	mod->jump_entries = section_objs(info, "__jump_table",
+@@ -3393,7 +3393,7 @@ void module_layout(struct module *mod,
+ 		   struct modversion_info *ver,
+ 		   struct kernel_param *kp,
+ 		   struct kernel_symbol *ks,
+-		   struct tracepoint *tp)
++		   struct tracepoint * const *tp)
+ {
+ }
+ EXPORT_SYMBOL(module_layout);
+@@ -3407,8 +3407,8 @@ void module_update_tracepoints(void)
+ 	mutex_lock(&module_mutex);
+ 	list_for_each_entry(mod, &modules, list)
+ 		if (!mod->taints)
+-			tracepoint_update_probe_range(mod->tracepoints,
+-				mod->tracepoints + mod->num_tracepoints);
++			tracepoint_update_probe_range(mod->tracepoints_ptrs,
++				mod->tracepoints_ptrs + mod->num_tracepoints);
+ 	mutex_unlock(&module_mutex);
+ }
+ 
+@@ -3432,8 +3432,8 @@ int module_get_iter_tracepoints(struct tracepoint_iter *iter)
+ 			else if (iter_mod > iter->module)
+ 				iter->tracepoint = NULL;
+ 			found = tracepoint_get_iter_range(&iter->tracepoint,
+-				iter_mod->tracepoints,
+-				iter_mod->tracepoints
++				iter_mod->tracepoints_ptrs,
++				iter_mod->tracepoints_ptrs
+ 					+ iter_mod->num_tracepoints);
+ 			if (found) {
+ 				iter->module = iter_mod;
+diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+index e95ee7f..68187af 100644
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -27,8 +27,8 @@
+ #include <linux/sched.h>
+ #include <linux/jump_label.h>
+ 
+-extern struct tracepoint __start___tracepoints[];
+-extern struct tracepoint __stop___tracepoints[];
++extern struct tracepoint * const __start___tracepoints_ptrs[];
++extern struct tracepoint * const __stop___tracepoints_ptrs[];
+ 
+ /* Set to 1 to enable tracepoint debug output */
+ static const int tracepoint_debug;
+@@ -298,10 +298,10 @@ static void disable_tracepoint(struct tracepoint *elem)
+  *
+  * Updates the probe callback corresponding to a range of tracepoints.
+  */
+-void
+-tracepoint_update_probe_range(struct tracepoint *begin, struct tracepoint *end)
++void tracepoint_update_probe_range(struct tracepoint * const *begin,
++				   struct tracepoint * const *end)
+ {
+-	struct tracepoint *iter;
++	struct tracepoint * const *iter;
+ 	struct tracepoint_entry *mark_entry;
+ 
+ 	if (!begin)
+@@ -309,12 +309,12 @@ tracepoint_update_probe_range(struct tracepoint *begin, struct tracepoint *end)
+ 
+ 	mutex_lock(&tracepoints_mutex);
+ 	for (iter = begin; iter < end; iter++) {
+-		mark_entry = get_tracepoint(iter->name);
++		mark_entry = get_tracepoint((*iter)->name);
+ 		if (mark_entry) {
+-			set_tracepoint(&mark_entry, iter,
++			set_tracepoint(&mark_entry, *iter,
+ 					!!mark_entry->refcount);
+ 		} else {
+-			disable_tracepoint(iter);
++			disable_tracepoint(*iter);
+ 		}
+ 	}
+ 	mutex_unlock(&tracepoints_mutex);
+@@ -326,8 +326,8 @@ tracepoint_update_probe_range(struct tracepoint *begin, struct tracepoint *end)
+ static void tracepoint_update_probes(void)
+ {
+ 	/* Core kernel tracepoints */
+-	tracepoint_update_probe_range(__start___tracepoints,
+-		__stop___tracepoints);
++	tracepoint_update_probe_range(__start___tracepoints_ptrs,
++		__stop___tracepoints_ptrs);
+ 	/* tracepoints in modules. */
+ 	module_update_tracepoints();
+ }
+@@ -514,8 +514,8 @@ EXPORT_SYMBOL_GPL(tracepoint_probe_update_all);
+  * Will return the first tracepoint in the range if the input tracepoint is
+  * NULL.
+  */
+-int tracepoint_get_iter_range(struct tracepoint **tracepoint,
+-	struct tracepoint *begin, struct tracepoint *end)
++int tracepoint_get_iter_range(struct tracepoint * const **tracepoint,
++	struct tracepoint * const *begin, struct tracepoint * const *end)
+ {
+ 	if (!*tracepoint && begin != end) {
+ 		*tracepoint = begin;
+@@ -534,7 +534,8 @@ static void tracepoint_get_iter(struct tracepoint_iter *iter)
+ 	/* Core kernel tracepoints */
+ 	if (!iter->module) {
+ 		found = tracepoint_get_iter_range(&iter->tracepoint,
+-				__start___tracepoints, __stop___tracepoints);
++				__start___tracepoints_ptrs,
++				__stop___tracepoints_ptrs);
+ 		if (found)
+ 			goto end;
+ 	}
+@@ -585,8 +586,8 @@ int tracepoint_module_notify(struct notifier_block *self,
+ 	switch (val) {
+ 	case MODULE_STATE_COMING:
+ 	case MODULE_STATE_GOING:
+-		tracepoint_update_probe_range(mod->tracepoints,
+-			mod->tracepoints + mod->num_tracepoints);
++		tracepoint_update_probe_range(mod->tracepoints_ptrs,
++			mod->tracepoints_ptrs + mod->num_tracepoints);
+ 		break;
+ 	}
+ 	return 0;
