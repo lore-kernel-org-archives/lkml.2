@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755260Ab1BDBLh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 20:11:37 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33313
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753469Ab1BDBLg (ORCPT
+	id S1755310Ab1BDBMP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 20:12:15 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37643 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753519Ab1BDBMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 20:11:36 -0500
-Date: Thu, 03 Feb 2011 17:12:11 -0800 (PST)
-Message-Id: <20110203.171211.246535388.davem@davemloft.net>
-To: rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, akpm@linux-foundation.org,
-        fweisbec@gmail.com, mathieu.desnoyers@efficios.com
-Subject: Re: [PATCH 0/3 v2] [GIT PULL][v2.6.38] tracing: alignment fixes
- (take 3)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110203143518.707423251@goodmis.org>
-References: <20110203143518.707423251@goodmis.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Feb 2011 20:12:12 -0500
+MIME-Version: 1.0
+In-Reply-To: <yund3n88v7x.fsf@aiko.keithp.com>
+References: <e9vOd5LzdBK.A.dyD.h6eSNB@chimera> <AANLkTikELiGS+fM5WguZS=Fo-sSXmej1UnKWqCFmnE0k@mail.gmail.com>
+ <s5haaid3xos.wl%tiwai@suse.de> <201102032009.17100.rjw@sisk.pl>
+ <AANLkTi=suS1VDL=6EtT0D2=0c1DWwxdwZBBv=-BySNX-@mail.gmail.com>
+ <AANLkTi=7EOih=fY5FCvhQbewSc=3a49cYVaKJRWM+-3d@mail.gmail.com>
+ <AANLkTin7kBur95H=UBcYEcjYsUkrdG8znX-7PFZ4rrHf@mail.gmail.com>
+ <AANLkTimQPPDyBwkN0HWM2+bPcbzVd8YHZvn2iR8MVzfL@mail.gmail.com> <yund3n88v7x.fsf@aiko.keithp.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 3 Feb 2011 17:11:14 -0800
+Message-ID: <AANLkTin-9a5Z3qq4t8UakRvgB1G3_CT2RLKMVaHXvnLr@mail.gmail.com>
+Subject: Re: 2.6.38-rc3-git1: Reported regressions 2.6.36 -> 2.6.37
+To: Keith Packard <keithp@keithp.com>
+Cc: Dave Airlie <airlied@gmail.com>, Carlos Mafra <crmafra2@gmail.com>,
+        Dave Airlie <airlied@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Takashi Iwai <tiwai@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
-Date: Thu, 03 Feb 2011 09:35:18 -0500
+On Thu, Feb 3, 2011 at 5:05 PM, Keith Packard <keithp@keithp.com> wrote:
+>
+> The goal is to make it so that when you *do* set a mode, DPMS gets set
+> to ON (as the monitor will actually be "on" at that point). Here's a
+> patch which does the DPMS_ON precisely when setting a mode.
 
-> Ingo,
-> 
-> The first two patches are the same as before, except that I modified
-> the change logs to include David's Acks and to make the updates
-> recommended by Mathieu and Thomas Gleixner.
-> 
-> This also includes a third patch to fix the syscall_metadata.
-> I ran all three through the same tests on both x86_64 and x86_32
-> with both gcc version 4.5.1 and 4.4.5.
-> 
-> Please pull the latest tip/perf/urgent-2 tree, which can be found at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-> tip/perf/urgent-2
+Ok, patch looks sane, but it does leave me with the "what about the
+'fb_changed' case?" question. Is that case basically guaranteed to not
+change any existing dpms state?
 
-I did a basic sanity check of this on sparc64 and it looks good.
+> (note, this patch compiles, but is otherwise only lightly tested).
+
+Carlos? Takashi? Ignore my crazy patch, try this one instead. Does it
+fix things for you?
+
+                      Linus
