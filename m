@@ -1,92 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233Ab1BDTkJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 14:40:09 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:33955 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787Ab1BDTkG (ORCPT
+	id S1752338Ab1BDTkj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 14:40:39 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:58741 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112Ab1BDTkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 14:40:06 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Fri, 04 Feb 2011 14:40:04 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: Greg KH <greg@kroah.com>, Russell King <rmk@arm.linux.org.uk>,
-        David Brown <davidb@codeaurora.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: linux-next: manual merge of the msm tree with the arm tree
-In-reply-to: <1296839855.4078.12.camel@m0nster>
-Message-id: <alpine.LFD.2.00.1102041421310.12104@xanadu.home>
-References: <20110131131401.5d6c7646.sfr@canb.auug.org.au>
- <8ya4o8m70jp.fsf@huya.qualcomm.com> <20110202194359.GC27065@kroah.com>
- <20110202200030.GA26104@flint.arm.linux.org.uk>
- <20110202203252.GD28479@kroah.com>
- <20110202204453.GB26104@flint.arm.linux.org.uk>
- <alpine.LFD.2.00.1102021557530.8212@xanadu.home>
- <1296839855.4078.12.camel@m0nster>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Fri, 4 Feb 2011 14:40:36 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Octavian Purdila <opurdila@ixiacom.com>
+References: <cover.1296793770.git.lucian.grijincu@gmail.com>
+	<cover.1296793770.git.lucian.grijincu@gmail.com>
+	<fd576ffbfb960548a5a9969ee9161ec22f2fd167.1296793770.git.lucian.grijincu@gmail.com>
+Date: Fri, 04 Feb 2011 11:40:29 -0800
+In-Reply-To: <fd576ffbfb960548a5a9969ee9161ec22f2fd167.1296793770.git.lucian.grijincu@gmail.com>
+	(Lucian Adrian Grijincu's message of "Fri, 4 Feb 2011 06:37:04 +0200")
+Message-ID: <m1oc6rio5u.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/JNa1/YExx0QtfzajdZLSQaX+yEIrj5Eg=
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 1/5] sysctl: faster reimplementation of sysctl_check_table
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Feb 2011, Daniel Walker wrote:
+Lucian Adrian Grijincu <lucian.grijincu@gmail.com> writes:
 
-> On Wed, 2011-02-02 at 16:47 -0500, Nicolas Pitre wrote:
-> > The actual problem here is that some people, notably the msm folks,
-> > are 
-> > bypassing the maintainer hierarchy and going straight to Linus for
-> > their 
-> > pull requests instead of asking RMK to pull.  We once debated this at 
-> 
-> I don't think it's fair to single out MSM here. Going straight to Linus
-> was discussed at one point, as I recall, and Russell didn't oppose it at
-> the time. There are a number of ARM sub-architecture maintainers that do
-> this..
+> Determining the parent of a node at depth d
+> - previous implementation: O(d)
+> - current  implementation: O(1)
+>
+> Printing the path to a node at depth d
+> - previous implementation: O(d^2)
+> - current  implementation: O(d)
+>
+> This comes to a cost: we use an array ('parents') holding as many
+> pointers as there can be sysctl levels (currently CTL_MAXNAME=10).
+>
+> The 'parents' array of pointers holds the same values as the
+> ctl_table->parents field because the function that updates ->parents
+> (sysctl_set_parent) is called with either NULL (for root nodes) or
+> with sysctl_set_parent(table, table->child).
 
-The point still stands for msm as well as for the others.  And this is 
-now causing fuss amongst second guessers as this thread is showing.  
-But this aside, this is still putting more load on Linus while this load 
-could be more distributed.
+Overall this looks reasonable.
 
-> None of that is related to the rejects created here, those would
-> happen no matter who we submitted pull requests to.
+Can you include a check for going down too deeply, and overflowing your
+array. Otherwise I expect overflowing the array will be a nasty failure
+mode that will be hard to discover.
 
-Indeed.  And trivial is the fix, which is what I've said too.
-
-> I think the issue is more that MSM is actively being cleanup , and
-> Russell is touching code that we're working on also. So we need a way to
-> work together .. In this case the collision is so simple that either
-> Linus or Russell would just fix it up while pulling, and both would
-> likely be fine with that. 
-
-Exact.
-
-Maybe this would be nicer to Russell and others performing wide ranging 
-changes to the ARM code if the msm tree was more visible downstream, and 
-potentially help to avoid making a mountain out of a mole hill.
-
-> In the past I've tried to fix up these issues,
-> but now I think maybe it's doesn't matter.
-
-I'm sure Stephen knows about git's rerere facility, or he might have 
-developed one of his own by now, hence his proposal to carry simple 
-conflict resolution for as long as required.  So yes, I don't think this 
-is something that must be "fixed" if carrying the fix in the downstream 
-tree causes more trouble than the trivial merge involved.
-
-> In terms of Russell rebasing, I don't really like that. I've based MSM
-> trees on Russell's stable branch and it's worked in the past. If
-> Russell's rebasing then we can't really do that, so one tool to fix
-> these problems is gone.
-
-Russell has so named his "stable" branch for a reason.  I'll let you 
-guess what it is.  :-)
+Eric
 
 
-Nicolas
+
+> Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+> ---
+>  kernel/sysctl_check.c |  121 ++++++++++++++++++++++++-------------------------
+>  1 files changed, 60 insertions(+), 61 deletions(-)
+>
+> diff --git a/kernel/sysctl_check.c b/kernel/sysctl_check.c
+> index 10b90d8..9b4fecd 100644
+> --- a/kernel/sysctl_check.c
+> +++ b/kernel/sysctl_check.c
+> @@ -6,58 +6,34 @@
+>  #include <net/ip_vs.h>
+>  
+>  
+> -static int sysctl_depth(struct ctl_table *table)
+> -{
+> -	struct ctl_table *tmp;
+> -	int depth;
+> -
+> -	depth = 0;
+> -	for (tmp = table; tmp->parent; tmp = tmp->parent)
+> -		depth++;
+> -
+> -	return depth;
+> -}
+> -
+> -static struct ctl_table *sysctl_parent(struct ctl_table *table, int n)
+> +static void sysctl_print_path(struct ctl_table *table,
+> +			      struct ctl_table **parents, int depth)
+>  {
+> +	struct ctl_table *p;
+>  	int i;
+> -
+> -	for (i = 0; table && i < n; i++)
+> -		table = table->parent;
+> -
+> -	return table;
+> -}
+> -
+> -
+> -static void sysctl_print_path(struct ctl_table *table)
+> -{
+> -	struct ctl_table *tmp;
+> -	int depth, i;
+> -	depth = sysctl_depth(table);
+>  	if (table->procname) {
+> -		for (i = depth; i >= 0; i--) {
+> -			tmp = sysctl_parent(table, i);
+> -			printk("/%s", tmp->procname?tmp->procname:"");
+> +		for (i = 0; i < depth; i++) {
+> +			p = parents[i];
+> +			printk("/%s", p->procname ? p->procname : "");
+>  		}
+> +		printk("/%s", table->procname);
+>  	}
+>  	printk(" ");
+>  }
+>  
+>  static struct ctl_table *sysctl_check_lookup(struct nsproxy *namespaces,
+> -						struct ctl_table *table)
+> +	     struct ctl_table *table, struct ctl_table **parents, int depth)
+>  {
+>  	struct ctl_table_header *head;
+>  	struct ctl_table *ref, *test;
+> -	int depth, cur_depth;
+> -
+> -	depth = sysctl_depth(table);
+> +	int cur_depth;
+>  
+>  	for (head = __sysctl_head_next(namespaces, NULL); head;
+>  	     head = __sysctl_head_next(namespaces, head)) {
+>  		cur_depth = depth;
+>  		ref = head->ctl_table;
+>  repeat:
+> -		test = sysctl_parent(table, cur_depth);
+> +		test = parents[depth - cur_depth];
+>  		for (; ref->procname; ref++) {
+>  			int match = 0;
+>  			if (cur_depth && !ref->child)
+> @@ -83,11 +59,12 @@ out:
+>  	return ref;
+>  }
+>  
+> -static void set_fail(const char **fail, struct ctl_table *table, const char *str)
+> +static void set_fail(const char **fail, struct ctl_table *table,
+> +	     const char *str, struct ctl_table **parents, int depth)
+>  {
+>  	if (*fail) {
+>  		printk(KERN_ERR "sysctl table check failed: ");
+> -		sysctl_print_path(table);
+> +		sysctl_print_path(table, parents, depth);
+>  		printk(" %s\n", *fail);
+>  		dump_stack();
+>  	}
+> @@ -95,16 +72,24 @@ static void set_fail(const char **fail, struct ctl_table *table, const char *str
+>  }
+>  
+>  static void sysctl_check_leaf(struct nsproxy *namespaces,
+> -				struct ctl_table *table, const char **fail)
+> +			      struct ctl_table *table, const char **fail,
+> +			      struct ctl_table **parents, int depth)
+>  {
+>  	struct ctl_table *ref;
+>  
+> -	ref = sysctl_check_lookup(namespaces, table);
+> -	if (ref && (ref != table))
+> -		set_fail(fail, table, "Sysctl already exists");
+> +	ref = sysctl_check_lookup(namespaces, table, parents, depth);
+> +	if (ref && (ref != table)) {
+> +		printk(KERN_ALERT "sysctl_check_leaf ref[%s], table[%s]\n", ref->procname, table->procname);
+> +		set_fail(fail, table, "Sysctl already exists", parents, depth);
+> +	}
+>  }
+>  
+> -int sysctl_check_table(struct nsproxy *namespaces, struct ctl_table *table)
+> +
+> +
+> +#define SET_FAIL(str) set_fail(&fail, table, str, parents, depth)
+> +
+> +static int __sysctl_check_table(struct nsproxy *namespaces,
+> +	struct ctl_table *table, struct ctl_table **parents, int depth)
+>  {
+>  	int error = 0;
+>  	for (; table->procname; table++) {
+> @@ -112,23 +97,23 @@ int sysctl_check_table(struct nsproxy *namespaces, struct ctl_table *table)
+>  
+>  		if (table->parent) {
+>  			if (table->procname && !table->parent->procname)
+> -				set_fail(&fail, table, "Parent without procname");
+> +				SET_FAIL("Parent without procname");
+>  		}
+>  		if (!table->procname)
+> -			set_fail(&fail, table, "No procname");
+> +			SET_FAIL("No procname");
+>  		if (table->child) {
+>  			if (table->data)
+> -				set_fail(&fail, table, "Directory with data?");
+> +				SET_FAIL("Directory with data?");
+>  			if (table->maxlen)
+> -				set_fail(&fail, table, "Directory with maxlen?");
+> +				SET_FAIL("Directory with maxlen?");
+>  			if ((table->mode & (S_IRUGO|S_IXUGO)) != table->mode)
+> -				set_fail(&fail, table, "Writable sysctl directory");
+> +				SET_FAIL("Writable sysctl directory");
+>  			if (table->proc_handler)
+> -				set_fail(&fail, table, "Directory with proc_handler");
+> +				SET_FAIL("Directory with proc_handler");
+>  			if (table->extra1)
+> -				set_fail(&fail, table, "Directory with extra1");
+> +				SET_FAIL("Directory with extra1");
+>  			if (table->extra2)
+> -				set_fail(&fail, table, "Directory with extra2");
+> +				SET_FAIL("Directory with extra2");
+>  		} else {
+>  			if ((table->proc_handler == proc_dostring) ||
+>  			    (table->proc_handler == proc_dointvec) ||
+> @@ -139,28 +124,42 @@ int sysctl_check_table(struct nsproxy *namespaces, struct ctl_table *table)
+>  			    (table->proc_handler == proc_doulongvec_minmax) ||
+>  			    (table->proc_handler == proc_doulongvec_ms_jiffies_minmax)) {
+>  				if (!table->data)
+> -					set_fail(&fail, table, "No data");
+> +					SET_FAIL("No data");
+>  				if (!table->maxlen)
+> -					set_fail(&fail, table, "No maxlen");
+> +					SET_FAIL("No maxlen");
+>  			}
+>  #ifdef CONFIG_PROC_SYSCTL
+>  			if (table->procname && !table->proc_handler)
+> -				set_fail(&fail, table, "No proc_handler");
+> -#endif
+> -#if 0
+> -			if (!table->procname && table->proc_handler)
+> -				set_fail(&fail, table, "proc_handler without procname");
+> +				SET_FAIL("No proc_handler");
+>  #endif
+> -			sysctl_check_leaf(namespaces, table, &fail);
+> +			parents[depth] = table;
+> +			sysctl_check_leaf(namespaces, table, &fail,
+> +					  parents, depth);
+>  		}
+>  		if (table->mode > 0777)
+> -			set_fail(&fail, table, "bogus .mode");
+> +			SET_FAIL("bogus .mode");
+>  		if (fail) {
+> -			set_fail(&fail, table, NULL);
+> +			SET_FAIL(NULL);
+>  			error = -EINVAL;
+>  		}
+> -		if (table->child)
+> -			error |= sysctl_check_table(namespaces, table->child);
+> +		if (table->child) {
+> +			parents[depth] = table;
+> +			error |= __sysctl_check_table(namespaces, table->child,
+> +						      parents, depth + 1);
+> +		}
+>  	}
+>  	return error;
+>  }
+> +
+> +
+> +int sysctl_check_table(struct nsproxy *namespaces, struct ctl_table *table)
+> +{
+> +	struct ctl_table *parents[CTL_MAXNAME];
+> +	/* Keep track of parents as we go down into the tree.
+> +	 *
+> +	 * parents[i-1] will be the parent for parents[i].
+> +	 * The node at depth 'd' will have the parent at parents[d-1].
+> +	 * The root node (depth=0) has no parent in this array.
+> +	 */
+> +	return __sysctl_check_table(namespaces, table, parents, 0);
+> +}
