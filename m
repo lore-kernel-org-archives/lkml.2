@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464Ab1BDPUK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 10:20:10 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:55977 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880Ab1BDPUI convert rfc822-to-8bit (ORCPT
+	id S1752539Ab1BDPV0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 10:21:26 -0500
+Received: from mail.kolatelecom.ru ([94.100.192.6]:35697 "EHLO
+	mail.teletoria.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751880Ab1BDPVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 10:20:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Xg0HTkwT6Pu5b2FyZOT16iRObk5012F3LtVNwJxZyYAEBs60RUFy7zxnuZW/xnjNte
-         3OtEMCaeVNI5xnOyzVjR13hWsUSOTlxDpRTFrpvSTHbA/kcSTkHFAgpRHCUrBLphj9H2
-         NPdrkIj3775/mSKw2A1m8wrnaAqZJiWQRupYI=
+	Fri, 4 Feb 2011 10:21:24 -0500
+Message-ID: <80c7e5f498ec19155872ad457020aac5.squirrel@mail.teletoria.ru>
+Date: Fri, 4 Feb 2011 16:10:10 +0100
+Subject: Business Proposal
+From: "Mr. Song Lile" <songlile222@aol.nl>
+Reply-To: songlile222@aol.nl
+User-Agent: SquirrelMail/1.4.20-RC2
 MIME-Version: 1.0
-In-Reply-To: <20110204150703.GA9254@hiauly1.hia.nrc.ca>
-References: <20110203022420.A73F54E7B@hiauly1.hia.nrc.ca>
-	<alpine.SOC.1.00.1102041150390.8218@math.ut.ee>
-	<20110204150703.GA9254@hiauly1.hia.nrc.ca>
-Date: Fri, 4 Feb 2011 10:20:05 -0500
-X-Google-Sender-Auth: _0EM-E_4cM9_TakO5gmjuw_B0js
-Message-ID: <AANLkTim9oXFf7ksuj9o-g2J4aL4xi-JPH3PsayMayxMt@mail.gmail.com>
-Subject: Re: 2.6.38-rc3 regression on parisc: segfaults
-From: "Carlos O'Donell" <carlos@systemhalted.org>
-To: John David Anglin <dave.anglin@nrc-cnrc.gc.ca>
-Cc: Meelis Roos <mroos@linux.ee>, linux-parisc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Invalid-HELO: Host impersonating [mail.teletoria.ru]
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 4, 2011 at 10:07 AM, John David Anglin
-<dave@hiauly1.hia.nrc.ca> wrote:
-> On Fri, 04 Feb 2011, Meelis Roos wrote:
->
->> 2363  clone( <unfinished ...>
->> 2349  <... futex resumed> )             = 1
->> 2363  <... clone resumed> child_stack=0, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0x460df4a8) = 2372
->> 2349  --- SIGSEGV (Segmentation fault) @ 0 (0) ---
->> 2372  rt_sigaction(SIGPIPE, {SIG_DFL, [], SA_RESTART},  <unfinished ...>
->> 2349  write(1, "\33[56;1H\33[34h\33[?25h", 18 <unfinished ...>
->>
->> Something futex-related. Full log temprarilty available at
->> http://www.cs.ut.ee/~mroos/aptitude-strace.txt
->
-> This is possibly the infamous COW bug.
 
-The COW bug that is triggered by a COW from an LWS-CAS? The solution
-to which is to use locks around the LWS-CAS even on UP? I'd forgotten
-about this issue actually, I should push that patch out to James.
 
-Cheers,
-Carlos.
+
+Mijn naam is de heer Song Li le werk ik met de Hang Seng Bank.There is de
+som van $ 19,500,000.00 in mijn bank "Hang Seng Bank", Hong kong.I niet te
+werven voor uw hulp bij het uitvoeren van dit plan transaction.I tot en
+met 30 geven % van de totale middelen als compensatie voor uw hulp.
+Met vriendelijke groet,
+De heer Song Lile
+Prive e-mail: songlile222@aol.nl
+Telefoon: +852-9534-8675
+
+English:-
+Business Proposal
+===============
+My name is Mr. Song Li le I work with the Hang Seng Bank.There is the sum
+of $19,500,000.00 in my bank"Hang Seng Bank",Hong kong.I do solicit for
+your assistance in effecting this transaction.I intend to give 30% of the
+total funds as compensation for your assistance.
+Sincerely,
+Mr. Song Lile
+Private e-mail: songlile222@aol.nl
+Phone: +852-9534-8675
+
