@@ -1,87 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016Ab1BDRtN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 12:49:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59665 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751278Ab1BDRtM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 12:49:12 -0500
-Date: Fri, 4 Feb 2011 12:48:39 -0500
-From: John Villalovos <jvillalo@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "John L. Villalovos" <john.l.villalovos@intel.com>, prarit@redhat.com
-Subject: [PATCH 1/1] x86, apic: Make "broken BIOS!!" messages unique
-Message-ID: <20110204174831.GA10370@intel-s3eb1-02.lab.bos.redhat.com>
-Reply-To: John Villalovos <jvillalo@redhat.com>
+	id S1752181Ab1BDR55 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 12:57:57 -0500
+Received: from Mycroft.westnet.com ([216.187.52.7]:62501 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751839Ab1BDR54 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 12:57:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+Message-ID: <19788.15984.732695.435587@quad.stoffel.home>
+Date: Fri, 4 Feb 2011 12:59:12 -0500
+From: "John Stoffel" <john@stoffel.org>
+To: Nicolas de =?iso-8859-1?Q?Peslo=FCan?= 
+	<nicolas.2p.debian@gmail.com>
+Cc: John Stoffel <john@stoffel.org>, linux-kernel@vger.kernel.org,
+        mmarek@suse.cz, linux-kbuild@vger.kernel.org
+Subject: Re: 2.6.38-rc3 - make deb-pkg bombs out
+In-Reply-To: <4D4BB286.6090500@gmail.com>
+References: <19784.18282.668305.184521@quad.stoffel.home>
+	<19787.9875.652.181110@quad.stoffel.home>
+	<4D4BB286.6090500@gmail.com>
+X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86, apic: Make "broken BIOS!!" messages unique
+>>>>> "Nicolas" == Nicolas de Pesloüan <nicolas.2p.debian@gmail.com> writes:
 
-There are five identical "broken BIOS!!" messages.  This patch makes each
-message unique so that it is easier to determine which message was actually
-printed.
+Nicolas> Le 03/02/2011 23:05, John Stoffel a écrit :
+>>>>>>> "John" == John Stoffel<john@stoffel.org>  writes:
+>> 
+>> I've updated this email to include the maintainer and the linux-kbuild
+>> mailing list.
+>> 
+John> I've been trying to do a 'make deb-pkg' on 2.6.38-rc? and not
+John> having any luck.  I was going to report this error for -rc2, but
+John> saw -rc3 this morning so I grabbed it and tried it out.
+>> 
+John> I can successfully build the kernel on x86_64 (Ubuntu 10.10
+John> system, dual core Athlon, 4gb RAM, current directory mounted via
+John> NFS), but when I do:
+>> 
+John> fakeroot make O=/var/tmp/build deb-pkg
+>> 
+>> Turns out the problem is with the "O=/var/tmp/build" since it works to
+>> build the deb-pkg target in the current directory just fine, using the
+>> same .config and same arguements.
+>> 
+>> I guess I'll start to bisect this and see when it last worked.
+>> Looking at the scripts/package/builddeb script, it just needs to be
+>> updated to use the O=/some/path in the find command.  I think.  But I
+>> don't know the build system at all.
 
-The 'inconceivable' messages are because it should not be possible to reach
-those code paths.
+Nicolas> I submitted a patch that fix this problem on January 24th.
 
-Signed-off-by: John L. Villalovos <john.l.villalovos@intel.com>
+Nicolas> http://www.spinics.net/lists/linux-kbuild/msg04131.html
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 697dc34..b0c40c3 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -841,7 +841,7 @@ static int MPBIOS_polarity(int idx)
- 		}
- 		case 2: /* reserved */
- 		{
--			printk(KERN_WARNING "broken BIOS!!\n");
-+			printk(KERN_WARNING "broken BIOS: polarity!!\n");
- 			polarity = 1;
- 			break;
- 		}
-@@ -852,7 +852,7 @@ static int MPBIOS_polarity(int idx)
- 		}
- 		default: /* invalid */
- 		{
--			printk(KERN_WARNING "broken BIOS!!\n");
-+			printk(KERN_WARNING "broken BIOS: inconceivable polarity!!\n");
- 			polarity = 1;
- 			break;
- 		}
-@@ -899,7 +899,7 @@ static int MPBIOS_trigger(int idx)
- 				}
- 				default:
- 				{
--					printk(KERN_WARNING "broken BIOS!!\n");
-+					printk(KERN_WARNING "broken BIOS: unknown bus type!!\n");
- 					trigger = 1;
- 					break;
- 				}
-@@ -913,7 +913,7 @@ static int MPBIOS_trigger(int idx)
- 		}
- 		case 2: /* reserved */
- 		{
--			printk(KERN_WARNING "broken BIOS!!\n");
-+			printk(KERN_WARNING "broken BIOS: trigger!!\n");
- 			trigger = 1;
- 			break;
- 		}
-@@ -924,7 +924,7 @@ static int MPBIOS_trigger(int idx)
- 		}
- 		default: /* invalid */
- 		{
--			printk(KERN_WARNING "broken BIOS!!\n");
-+			printk(KERN_WARNING "broken BIOS: inconceivable trigger!!\n");
- 			trigger = 0;
- 			break;
- 		}
+Nicolas> Despite a Tested-by: and an Acked-by:, this patch apparently
+Nicolas> didn't reach main line until now.
+
+Thanks for the quick reply.  I'm doing a test build now, but I suspect
+it will work just fine.  
+
+John
