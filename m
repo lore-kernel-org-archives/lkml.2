@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227Ab1BDApX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 19:45:23 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:49464 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749Ab1BDApU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 19:45:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=whFbJnIFiTMQU1Q82PSShQiqAwQsJAUGdt8fbI09sZ3pk2qQFLa9RBhGSgQv+K/shh
-         L5KdQTnmfp7LdsO+cDG1w/gB2bKaCgIwqLJZg+Jl/mQaRFYrjn5A3caR7c/qfsc7KoeL
-         MJO4o02KdfIBxmMGP2hF68pijON21jJgh1qmM=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimQPPDyBwkN0HWM2+bPcbzVd8YHZvn2iR8MVzfL@mail.gmail.com>
-References: <e9vOd5LzdBK.A.dyD.h6eSNB@chimera>
-	<AANLkTikELiGS+fM5WguZS=Fo-sSXmej1UnKWqCFmnE0k@mail.gmail.com>
-	<s5haaid3xos.wl%tiwai@suse.de>
-	<201102032009.17100.rjw@sisk.pl>
-	<AANLkTi=suS1VDL=6EtT0D2=0c1DWwxdwZBBv=-BySNX-@mail.gmail.com>
-	<AANLkTi=7EOih=fY5FCvhQbewSc=3a49cYVaKJRWM+-3d@mail.gmail.com>
-	<AANLkTin7kBur95H=UBcYEcjYsUkrdG8znX-7PFZ4rrHf@mail.gmail.com>
-	<AANLkTimQPPDyBwkN0HWM2+bPcbzVd8YHZvn2iR8MVzfL@mail.gmail.com>
-Date: Fri, 4 Feb 2011 10:45:19 +1000
-Message-ID: <AANLkTi=RQZ4fN9rZQRhiza5Nd9LkBO=tO1AWjSstRjV1@mail.gmail.com>
-Subject: Re: 2.6.38-rc3-git1: Reported regressions 2.6.36 -> 2.6.37
-From: Dave Airlie <airlied@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Carlos Mafra <crmafra2@gmail.com>, Keith Packard <keithp@keithp.com>,
-        Dave Airlie <airlied@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Takashi Iwai <tiwai@suse.de>,
+	id S1755183Ab1BDAtQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 19:49:16 -0500
+Received: from mail.lang.hm ([64.81.33.126]:57585 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751749Ab1BDAtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 19:49:15 -0500
+Date: Thu, 3 Feb 2011 16:49:08 -0800 (PST)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: "Serge E. Hallyn" <serge@hallyn.com>
+cc: Gergely Nagy <algernon@balabit.hu>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        James Morris <jmorris@namei.org>
+Subject: Re: CAP_SYSLOG, 2.6.38 and user space
+In-Reply-To: <20110203165132.GA28172@mail.hallyn.com>
+Message-ID: <alpine.DEB.2.00.1102031647150.30983@asgard.lang.hm>
+References: <1296733177.14846.26.camel@moria> <20110203153252.GA24153@mail.hallyn.com> <1296748401.14846.39.camel@moria> <20110203165132.GA28172@mail.hallyn.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 4, 2011 at 10:30 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, Feb 3, 2011 at 4:06 PM, Dave Airlie <airlied@gmail.com> wrote:
+On Thu, 3 Feb 2011, Serge E. Hallyn wrote:
+
+> Quoting Gergely Nagy (algernon@balabit.hu):
+>> On Thu, 2011-02-03 at 15:32 +0000, Serge E. Hallyn wrote:
+>>>> Back in november, a patch was merged into the kernel (in  commit
+>>>> ce6ada35bdf710d16582cc4869c26722547e6f11), that splits CAP_SYSLOG out of
+>>>> CAP_SYS_ADMIN.
+>>>>
+>>>> Sadly, this has an unwelcomed consequence, that any userspace syslogd
+>>>> that formerly used CAP_SYS_ADMIN will stop working, unless upgraded, or
+>>>> otherwise adapted to the change.
+>>>>
+>>>> However, updating userspace isn't that easy, either, if one wants to
+>>>> support multiple kernels with the same userspace binary: pre-2.6.38, one
+>>>> needs CAP_SYS_ADMIN, but later kernels will need CAP_SYS_ADMIN. It would
+>>>> be trivial to keep both, but that kind of defeats the purpose of
+>>>> CAP_SYSLOG,
+>>>
+>>> The idea would be to only use both when you detect a possibly older
+>>> kernel.
 >>
->> If we are setting a mode on a connector it automatically will end up
->> in a DPMS on state,
->> so this seemed correct from what I can see.
+>> I was considering that, but... how do I reliably detect an older kernel?
+>> So far, I didn't find a reliable way with which I can detect a kernel
+>> version at run-time (apart from parsing utsname)
 >
-> The more I look at that function, the more I disagree with you and
-> with that patch.
+> ...  Why not parse utsname?
+
+because the name may be different on different systems, a generic software 
+package is not going to be able to interpret them all.
+
+>>> However, you're right of course, I really should have provided some way
+>>> for userspace to click 'ok, got the message, now continue anyway because
+>>> I'm running older userspace for now,'  i.e. a sysctl perhaps.
+>>>
+>>> Sorry about the trouble.  Here is a patch to just warn for now, with
+>>> the changelog showing what i intend to push next.
+>>>
+>>> sorry again,
+>>> -serge
+>>>
+>>> From 2d7408541dd3a6e19a4265b028233789be6a40f4 Mon Sep 17 00:00:00 2001
+>>> From: Serge Hallyn <serge@peq.(none)>
+>>> Date: Thu, 3 Feb 2011 09:26:15 -0600
+>>> Subject: [PATCH 1/1] cap_syslog: don't refuse cap_sys_admin for now
+>>>
+>>> At 2.6.39 or 2.6.40, let's add a sysctl which defaults to 0.  When
+>>> 0, refuse if cap_sys_admin, if 1, then allow.  This will allow
+>>> users to acknowledge (permanently, if they must, using /etc/sysctl.conf)
+>>> that they've seen the syslog message about cap_sys_admin being
+>>> deprecated for syslog.
+>>
+>> Could we have it the other way around, at least for a while? Otherwise,
 >
-> The code is just crazy.
+> Sure.
+>
+> So long as there is a definite path toward eventually having syslog
+> with CAP_SYS_ADMIN be denied.
 
-Good point, I'm just trying to get -rc3 onto a machine where I can
-reproduce this now, unfortunately that looks like the machine with the
-1.8" disk, so this could take a little while.
+I can see what you would want to allow for a syslog daemon to have 
+CAP_SYSLOG without needing to have CAP_SYS_ADMIN, but why do you see it as 
+important to deny the ability if someone has CAP_SYS_ADMIN?
 
-hopefully Keith will decloak and tell us more.
+David Lang
 
-Dave.
