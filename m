@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab1BDSNe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 13:13:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36715 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752025Ab1BDSNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 13:13:32 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] CRED: Fix kernel panic upon security_file_alloc() failure.
-To: torvalds@osdl.org, akpm@linux-foundation.org
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        David Howells <dhowells@redhat.com>
-Date: Fri, 04 Feb 2011 18:13:24 +0000
-Message-ID: <20110204181324.15313.11611.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1751336Ab1BDSYi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 13:24:38 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3155 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab1BDSYh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 13:24:37 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp04.nvidia.com on Fri, 04 Feb 2011 10:24:34 -0800
+Subject: Re: [PATCH v3] power: bq20z75: add support for charge properties
+From: rklein <rklein@nvidia.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: "olofj@chromium.org" <olofj@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110204071250.GA3360@oksana.dev.rtsoft.ru>
+References: <1295982606-4604-1-git-send-email-rklein@nvidia.com>
+	 <20110131131952.GA22005@oksana.dev.rtsoft.ru>
+	 <1296775123.8295.5.camel@rklein-linux2>
+	 <20110204071250.GA3360@oksana.dev.rtsoft.ru>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 04 Feb 2011 10:24:10 -0800
+Message-ID: <1296843850.16497.0.camel@rklein-linux2>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+On Thu, 2011-02-03 at 23:12 -0800, Anton Vorontsov wrote:
+> On Thu, Feb 03, 2011 at 03:18:43PM -0800, rklein wrote:
+> > On Mon, 2011-01-31 at 05:19 -0800, Anton Vorontsov wrote:
+> > > On Tue, Jan 25, 2011 at 11:10:06AM -0800, rklein@nvidia.com wrote:
+> > > > From: Rhyland Klein <rklein@nvidia.com>
+> > > > 
+> > > > Adding support for charge properties for gas gauge.
+> > > > Also ensuring that battery mode is correct now for energy as well as
+> > > > charge properties by setting it on the fly.
+> > > > 
+> > > > I also added 2 functions to power_supply.h to help identify the units for
+> > > > specific properties more easily by power supplies.
+> > > > 
+> > > > Signed-off-by: Rhyland Klein <rklein@nvidia.com>
+> > > > ---
+> > > 
+> > > Applied with some cosmetic changes.
+> > > 
+> > > [...]
+> > > > +static inline bool power_supply_is_amp_property(
+> > > > +	enum power_supply_property psp){
+> > > 
+> > > Fixed style issues here.
+> > > 
+> > > [...]
+> > > > +static inline bool power_supply_is_watt_property(
+> > > > +	enum power_supply_property psp){
+> > > 
+> > > And here.
+> > > 
+> > > Thanks!
+> > > 
+> > 
+> > Anton, I looked at linux-next.git and battery-2.6.git but i don't see
+> > this latest version anywhere, is there a different git this was pushed
+> > to?
+> 
+> Hmm. I see it here:
+> 
+> http://git.infradead.org/battery-2.6.git/commitdiff/51d07566045787b99219d809639c8724506fc78a
+> 
+> Thanks,
+> 
 
-In get_empty_filp() since 2.6.29, file_free(f) is called with f->f_cred == NULL
-when security_file_alloc() returned an error.  As a result, kernel will panic()
-due to put_cred(NULL) call within RCU callback.
-
-Fix this bug by assigning f->f_cred before calling security_file_alloc().
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- fs/file_table.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/fs/file_table.c b/fs/file_table.c
-index c3e89ad..eb36b6b 100644
---- a/fs/file_table.c
-+++ b/fs/file_table.c
-@@ -125,13 +125,13 @@ struct file *get_empty_filp(void)
- 		goto fail;
- 
- 	percpu_counter_inc(&nr_files);
-+	f->f_cred = get_cred(cred);
- 	if (security_file_alloc(f))
- 		goto fail_sec;
- 
- 	INIT_LIST_HEAD(&f->f_u.fu_list);
- 	atomic_long_set(&f->f_count, 1);
- 	rwlock_init(&f->f_owner.lock);
--	f->f_cred = get_cred(cred);
- 	spin_lock_init(&f->f_lock);
- 	eventpoll_init_file(f);
- 	/* f->f_version: 0 */
+Hmm, i see it now, thanks!
 
