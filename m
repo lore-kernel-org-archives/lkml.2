@@ -1,83 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab1BDAbV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 19:31:21 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50465 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753490Ab1BDAbT (ORCPT
+	id S1755220Ab1BDAh3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 19:37:29 -0500
+Received: from mail4.comsite.net ([205.238.176.238]:47882 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755148Ab1BDAh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 19:31:19 -0500
-MIME-Version: 1.0
-In-Reply-To: <AANLkTin7kBur95H=UBcYEcjYsUkrdG8znX-7PFZ4rrHf@mail.gmail.com>
-References: <e9vOd5LzdBK.A.dyD.h6eSNB@chimera> <AANLkTikELiGS+fM5WguZS=Fo-sSXmej1UnKWqCFmnE0k@mail.gmail.com>
- <s5haaid3xos.wl%tiwai@suse.de> <201102032009.17100.rjw@sisk.pl>
- <AANLkTi=suS1VDL=6EtT0D2=0c1DWwxdwZBBv=-BySNX-@mail.gmail.com>
- <AANLkTi=7EOih=fY5FCvhQbewSc=3a49cYVaKJRWM+-3d@mail.gmail.com> <AANLkTin7kBur95H=UBcYEcjYsUkrdG8znX-7PFZ4rrHf@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 3 Feb 2011 16:30:56 -0800
-Message-ID: <AANLkTimQPPDyBwkN0HWM2+bPcbzVd8YHZvn2iR8MVzfL@mail.gmail.com>
-Subject: Re: 2.6.38-rc3-git1: Reported regressions 2.6.36 -> 2.6.37
-To: Dave Airlie <airlied@gmail.com>
-Cc: Carlos Mafra <crmafra2@gmail.com>, Keith Packard <keithp@keithp.com>,
-        Dave Airlie <airlied@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Takashi Iwai <tiwai@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 3 Feb 2011 19:37:27 -0500
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=65.70.204.62;
+To: Jesper Juhl <jj@chaosbits.net>
+From: Milton Miller <miltonm@bga.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Neil Brown <neilb@suse.de>,
+        bfields@fieldses.org
+Subject: Re: [PATCH] Fix size argument to memset call in nfsacl_encode
+In-Reply-To: <1296761330.3015.22.camel@heimdal.trondhjem.org>
+Message-ID: <ack-nfsacl-rm-memset@mdm.bga.com>
+References: <alpine.LNX.2.00.1102032012540.15101@swampdragon.chaosbits.net>
+	<1296761330.3015.22.camel@heimdal.trondhjem.org>
+	 <alpine.LNX.2.00.1102032035280.15101@swampdragon.chaosbits.net>
+Date: Thu, 03 Feb 2011 18:37:19 -0600
+X-Originating-IP: 65.70.204.62
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 3, 2011 at 4:06 PM, Dave Airlie <airlied@gmail.com> wrote:
->
-> If we are setting a mode on a connector it automatically will end up
-> in a DPMS on state,
-> so this seemed correct from what I can see.
+On Thu, 3 Feb 2011 about 20:41:05 +0100 (CET), Jesper Juhl wrote:
+> On Thu, 3 Feb 2011, Trond Myklebust wrote:
+> > On Thu, 2011-02-03 at 20:15 +0100, Jesper Juhl wrote: 
+> > > We want to give memset() the sizeof(struct posix_acl), not
+> > > sizeof(struct posix_acl *).
+> > > 
+> > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > > ---
+> > >  nfsacl.c |    2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > 
+> > > diff --git a/fs/nfs_common/nfsacl.c b/fs/nfs_common/nfsacl.c
+> > > index 84c27d6..bc6d81b 100644
+> > > --- a/fs/nfs_common/nfsacl.c
+> > > +++ b/fs/nfs_common/nfsacl.c
+> > > @@ -117,7 +117,7 @@ int nfsacl_encode(struct xdr_buf *buf, unsigned int base, struct inode *inode,
+> > >  		 * invoked in contexts where a memory allocation failure is
+> > >  		 * fatal.  Fortunately this fake ACL is small enough to
+> > >  		 * construct on the stack. */
+> > > -		memset(acl2, 0, sizeof(acl2));
+> > > +		memset(acl2, 0, sizeof(*acl2));
+> > >  		posix_acl_init(acl2, 4);
+> > >  
+> > >  		/* Insert entries in canonical order: other orders seem
+> > 
+> > Ccing Milton Miller who also sent in the same patch.
+> > 
+> > Neither patch is correct afaics. posix_acl_init() will clobber the above
+> > memset, and so the correct fix is just to get rid of it...
+> > 
+> 
+> posix_acl_init() sets a_refcount and a_count, but what about a_entries ... 
+> no problem, nfsacl_encode() itself takes care of that post the 
+> posix_acl_init() call.. it's all good.
+> 
+> So ...
+> 
+> 
+> Remove pointless memset() in nfsacl_encode().
+> 
 
-The more I look at that function, the more I disagree with you and
-with that patch.
+It would be nice to point out that the memset was just added and of
+a incorrect size.
 
-The code is just crazy.
+> Thanks to Trond Myklebust <Trond.Myklebust@netapp.com> for pointing out 
+> that it is not needed since posix_acl_init() will set everything 
+> regardless..
+> 
 
-First off, it isn't even necessarily setting a mode to begin with,
-because as far as I can tell. If the mode doesn't change, neither
-mode_changed nor fb_changed will be true, afaik. There seems to be a
-fair amount of code there explicitly to avoid changing modes if not
-necessary.
+But I ack the patch since I even pointed out this alternative in my
+changelog.  I guess that could be Reported-by.
 
-But even _if_ we are setting a mode, if I read the code correctly, the
-mode may be set to NULL - which seems to mean "turn it off". In which
-case it looks to me that drm_helper_disable_unused_functions() will
-actually do a
+http://lkml.indiana.edu/hypermail/linux/kernel/1102.0/00665.html
 
-   (*crtc_funcs->dpms)(crtc, DRM_MODE_DPMS_OFF);
-
-call on the crtc in question. So then blindly just saying "it's mode
-DRM_MODE_DPMS_ON" afterwards looks rather bogus to me.
-
-_Maybe_ it would work if it was done before that whole
-"disable_unused" logic. Or maybe it should just be done in
-drm_crtc_helper_set_mode(), which is what actually sets the mode (but
-there's the 'fb_changed' case too)
-
-> A future mode set shouldn't ever not turn the connector on, since
-> modesetting is an implicit
-> DPMS,
->
-> It sounds like something more subtle than that, though I'm happy to
-> revert this for now, and let Keith
-> think about it a bit more.
-
-So I haven't heard anything from Keith. Keith? Just revert it? Or do
-you have a patch for people to try?
-
-                               Linus
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  nfsacl.c |    1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/fs/nfs_common/nfsacl.c b/fs/nfs_common/nfsacl.c
+> index 84c27d6..ec0f277 100644
+> --- a/fs/nfs_common/nfsacl.c
+> +++ b/fs/nfs_common/nfsacl.c
+> @@ -117,7 +117,6 @@ int nfsacl_encode(struct xdr_buf *buf, unsigned int base, struct inode *inode,
+>  		 * invoked in contexts where a memory allocation failure is
+>  		 * fatal.  Fortunately this fake ACL is small enough to
+>  		 * construct on the stack. */
+> -		memset(acl2, 0, sizeof(acl2));
+>  		posix_acl_init(acl2, 4);
+>  
+>  		/* Insert entries in canonical order: other orders seem
+> 
+> 
