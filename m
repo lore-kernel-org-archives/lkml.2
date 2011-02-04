@@ -1,59 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751498Ab1BDLEC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 06:04:02 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44306 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035Ab1BDLEB (ORCPT
+	id S1751603Ab1BDLEJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 06:04:09 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:32999 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035Ab1BDLEF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 06:04:01 -0500
+	Fri, 4 Feb 2011 06:04:05 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=YBo2ZMDkUCjKxUaoQRAJO6MQRbHKd4g8jW4SLT7Ys8fVnPOKZi2gg9RRr0i1ZZzvNG
-         zeOIpvEvxzAwboadOau13Fn7ByhCnNnbfCNhDvt6G0QRIcguhmC74MvYLfGZdWoo7UXI
-         jEI4/Qg3p0I/VA9qEZO7pFaU92dJEHa+1OPiM=
-Date: Fri, 4 Feb 2011 12:03:32 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Ben Skeggs <skeggsb@gmail.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH UPDATED 08/32] drm/nouveau: use system_wq instead of
- dev_priv->wq
-Message-ID: <20110204110332.GC12133@htj.dyndns.org>
-References: <1294062595-30097-1-git-send-email-tj@kernel.org>
- <1294062595-30097-9-git-send-email-tj@kernel.org>
- <1294189627.2276.0.camel@nisroch>
- <1294190172.2276.2.camel@nisroch>
- <20110106172922.GA29580@mtj.dyndns.org>
- <20110126164918.GQ12520@htj.dyndns.org>
- <20110201104135.GI14211@htj.dyndns.org>
- <1296784411.7970.1.camel@nisroch>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=O8PPHc2xmziuEX4jwSt4ZCXKmORnO/55vt4NEq33ZoYxLIkHppwk8m2NI7qtPIfhVc
+         RS3xaRJdsiFYWyg/i2DNel8xC2NWFxTHH70RklIrr6wNEp6145Zt1vD6REty7MN7FDsm
+         YRjT/4OzIInXfji8LvMeIV9Of7WHNe1XaqZec=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296784411.7970.1.camel@nisroch>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110204104832.GE14627@n2100.arm.linux.org.uk>
+References: <201102011711.31258.jeremy.kerr@canonical.com>
+	<20110201105449.GY1147@pengutronix.de>
+	<20110201131512.GH31216@n2100.arm.linux.org.uk>
+	<20110201141837.GA1147@pengutronix.de>
+	<20110201143932.GK31216@n2100.arm.linux.org.uk>
+	<20110201151846.GD1147@pengutronix.de>
+	<20110201152458.GP31216@n2100.arm.linux.org.uk>
+	<4D48741F.8060006@codeaurora.org>
+	<20110201212409.GU31216@n2100.arm.linux.org.uk>
+	<20110204095424.GB2347@richard-laptop>
+	<20110204104832.GE14627@n2100.arm.linux.org.uk>
+Date: Fri, 4 Feb 2011 20:04:03 +0900
+Message-ID: <AANLkTi=sfBTHLXejWxAWGa=Tcw+LoQfw6sUtcn6L+JeM@mail.gmail.com>
+Subject: Re: Locking in the clk API, part 2: clk_prepare/clk_unprepare
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Richard Zhao <linuxzsc@gmail.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        linux-kernel@vger.kernel.org, Dima Zavin <dmitriyz@google.com>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Ben Dooks <ben-linux@fluff.org>,
+        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Feb 4, 2011 at 7:48 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
 
-On Fri, Feb 04, 2011 at 11:53:25AM +1000, Ben Skeggs wrote:
-> Thanks for this again.  I've just made some changes to the nv50 display
-> bottom half handling that these will conflict with, they'll hit the
-> nouveau tree next week.
+> int clk_enable(struct clk *clk)
+> {
+>        unsigned long flags;
+>        int ret = 0;
+>
+>        if (clk) {
+>                if (WARN_ON(!clk->prepare_count))
+>                        return -EINVAL;
+>
+>                spin_lock_irqsave(&clk->lock, flags);
+>                if (clk->enable_count++ == 0)
+>                        ret = clk->ops->enable(clk);
+>                spin_unlock_irqrestore(&clk->lock, flags);
+>        }
+>        return ret;
+> }
+>
+> is entirely sufficient to catch the case of a single-use clock not being
+> prepared before clk_enable() is called.
+>
+> We're after detecting drivers missing calls to clk_prepare(), we're not
+> after detecting concurrent calls to clk_prepare()/clk_unprepare().
 
-Eh, so it doesn't apply again?  :-)
-
-> I'll push the still-relevant bits of your nouveau patch through the
-> nouveau tree for the 2.6.39-rc1 merge window.  That ok?
-
-Yeah, sure, but if you tell me against which tree I should generate
-patch, I can also just redo the patch.
-
-Thanks.
-
--- 
-tejun
+I hope you mean 'making sure the clock is prepared before it's enabled
+' rather than
+'catching a driver that doesn't do clk_prepare before clk_enable'.
+Because, the above implementation still doesn't catch a driver that
+doesn't call clk_prepare
+but simply uses a clock that happens to have been already prepare'd by
+some other
+driver or the platform.
