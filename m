@@ -1,80 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755517Ab1BDBsO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 20:48:14 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:50134 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753951Ab1BDBsM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 20:48:12 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/IBlULCwK7EAmH4p/pmIrI
-Date: Thu, 3 Feb 2011 17:47:39 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Benoit Cousson <b-cousson@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>, Suman Anna <s-anna@ti.com>,
-        Kevin Hilman <khilman@ti.com>, Arnd Bergmann <arnd@arndb.de>,
-        Paul Walmsley <paul@pwsan.com>,
-        Hari Kanigeri <hari.kanigeri@gmail.com>,
-        Simon Que <simonque@gmail.com>
-Subject: Re: [PATCH v4 1/4] drivers: hwspinlock: add framework
-Message-ID: <20110204014738.GP3322@atomide.com>
-References: <1296470024-26854-1-git-send-email-ohad@wizery.com>
- <1296470024-26854-2-git-send-email-ohad@wizery.com>
- <20110131153831.dca62146.akpm@linux-foundation.org>
- <AANLkTik-fgCF_W0-DBE6UVTpjqF6Jf=u7bQYkcweEegQ@mail.gmail.com>
- <20110131223859.27169db0.akpm@linux-foundation.org>
- <AANLkTinJLAT0B61Eu1Chn9k9rmbHXa1ZNcedo_m8TZp3@mail.gmail.com>
- <20110131234028.8744b5fd.akpm@linux-foundation.org>
- <AANLkTi=zOO_vDQ4+LWQs38xjo+VaRG0jfgo6ifvh=L-M@mail.gmail.com>
- <20110202121147.GA24993@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110202121147.GA24993@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755489Ab1BDBvf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 20:51:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48535 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753877Ab1BDBve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 20:51:34 -0500
+Subject: Re: Using ftrace/perf as a basis for generic seccomp
+From: Eric Paris <eparis@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Stefan Fritsch <sf@sfritsch.de>, Ingo Molnar <mingo@elte.hu>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org, agl@google.com, tzanussi@gmail.com,
+        Jason Baron <jbaron@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        2nddept-manager@sdl.hitachi.co.jp,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Thu, 03 Feb 2011 20:50:26 -0500
+In-Reply-To: <20110203231051.GA1840@nowhere>
+References: <1294867725.3237.230.camel@localhost.localdomain>
+	 <1296665124.3145.17.camel@localhost.localdomain>
+	 <20110203190643.GC1769@nowhere> <201102032306.34251.sf@sfritsch.de>
+	 <20110203231051.GA1840@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1296784230.3145.44.camel@localhost.localdomain>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Russell King - ARM Linux <linux@arm.linux.org.uk> [110202 04:10]:
-> On Tue, Feb 01, 2011 at 10:12:38AM +0200, Ohad Ben-Cohen wrote:
-> > On Tue, Feb 1, 2011 at 9:40 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> > > On Tue, 1 Feb 2011 09:36:22 +0200 Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> > >
-> > >> On Tue, Feb 1, 2011 at 8:38 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> > >> >> I'll do a quick respin of the patches with that and the
-> > >> >> hwspinlock_internal.h comment above.
-> > >> >
-> > >> > OK..
-> > >> >
-> > >> > The patch series looks OK to me.
-> > >>
-> > >> Can I add your Acked-by on the non-omap parts when I respin the series ?
-> > >
-> > > spose so.  I don't normally do acked-by's.  I think it's my way of
-> > > avoiding getting blamed when it all blows up.
-> > 
-> > I don't want to be breaking old habits then :)
-> > 
-> > >> > Maybe Tony or Russell or Greg can grab them
-> > >> > if they like the look of it all?
-> > 
-> > Let's just wait a bit for Tony's or Russell's or Greg's answer.
+On Fri, 2011-02-04 at 00:10 +0100, Frederic Weisbecker wrote:
+> On Thu, Feb 03, 2011 at 11:06:33PM +0100, Stefan Fritsch wrote:
+> > On Thursday 03 February 2011, Frederic Weisbecker wrote:
+
+> Actually having seccomp as a user of filter expressions is a opportunity
+> to improve it and bring new ideas.
 > 
-> As it touches OMAP code, it makes sense to merge it through Tony's tree
-> as that should reduce the number of possible conflicts.
+> > This would give something in the very near future that is way more 
+> > usable than seccomp mode 1. I think only the following adjustments 
+> > would need to be made to Adam Langley's patch:
+> > 
+> > - only allow syscalls in the mode (non-compat/compat) that the prctl 
+> > call was made in
+> > - deny exec of setuid/setgid binaries
+> > - deny exec of binaries with filesystem capabilities
+> > 
+> > What do you think of this proposal? I have a patch lying around 
+> > somewhere that already does the first two of these.
+> 
+> IMHO this is an unnecessary intermediate state. It will actually make
+> things worse by bringing a new non-flexible ABI that we'll need to
+> maintain forever.
+> 
+> I'm no expert in security but I think it's not flexible.
 
-OK I'll take them then.
+I'm not quite sure how I feel.  The only person who ask/semi-required
+this flexibility is Ingo.  I agree it's a really great idea and maybe
+one that people will someday use.  I'm going to try to work on it over
+the next week or two.  I'm not certain if my use case really wants/needs
+it or will even use the filter flexibility.  Now, there's no question
+that what we have today is so inflexible it's basically useless.  It's
+also obvious that we have at least 3 people who would use something like
+the google solution.  (sounds like at least 3 of us have written a
+google like solution by now)
 
-Regards,
+So I'm going to take a stab at understanding everything you told me
+today.  THANK YOU SO MUCH for the overview.  It was AMAZING and exactly
+what I was hoping to hear.  But if I don't think I can come up with
+something in a reasonable time frame I'm probably going to be back
+pushing what we all wanted to start with    :)
 
-Tony
+-Eric
+
