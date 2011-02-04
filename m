@@ -1,51 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab1BDWye (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 17:54:34 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42404
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752631Ab1BDWyd (ORCPT
+	id S1752755Ab1BDXLR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 18:11:17 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:42032 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752582Ab1BDXLQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 17:54:33 -0500
-Date: Fri, 04 Feb 2011 14:55:08 -0800 (PST)
-Message-Id: <20110204.145508.59670453.davem@davemloft.net>
-To: benh@kernel.crashing.org
-Cc: jackdachef@gmail.com, linux-kernel@vger.kernel.org,
-        ruediger.herbst@googlemail.com, geert@linux-m68k.org
-Subject: Re: Sun GEM PPC32 Bug?
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1296852667.2349.804.camel@pasglop>
-References: <AANLkTimBFBKJf0-TNRLr2hHNEehR2cnKPvx06=yyHGVj@mail.gmail.com>
-	<1296852667.2349.804.camel@pasglop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Fri, 4 Feb 2011 18:11:16 -0500
+Date: Fri, 4 Feb 2011 15:10:18 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Marek Belisko <marek.belisko@open-nandra.com>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        cjb@laptop.org, jon.nettleton@gmail.com
+Subject: Re: [PATCH] staging: oplc_dcon: Fix compilation warning.
+Message-ID: <20110204151018.667abf02@debxo>
+In-Reply-To: <1296739328-11960-1-git-send-email-marek.belisko@open-nandra.com>
+References: <1296739328-11960-1-git-send-email-marek.belisko@open-nandra.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date: Sat, 05 Feb 2011 07:51:07 +1100
 
-> The FIFO overflow could be a driver bug or a HW issue, there are some
-> known issues with the small FIFOs in that chip, but it's also possible
-> that we don't configure them quite right. Anybody wants to dig in and
-> see what's going on there ? May want to look at the Darwin sungem driver
-> for reference on how it configures them... However, it should generally
-> recover when that happens. If not, then we have a bug there.
+Thanks, looks good to me.  It should probably go in for 2.6.38.
 
-I think we're simply not resetting enough when the RX FIFO overflow
-happens.
+Acked-by: Andres Salomon <dilinger@queued.net>
 
-Just for fun I checked the OpenBSD GEM driver to see what they do.
-When an overflow occurs, they bump the statistic, record the current
-read and write fifo pointer registers, and schedule a watchdog timer
-for 400ms into the future.
 
-If the watchdog timer sees that the RX FIFO overflow bit is still set
-in the RX status register, and the RX FIFO read and write pointers
-have not changed, it resets the entire chip.
+On Thu,  3 Feb 2011
+14:22:08 +0100 Marek Belisko <marek.belisko@open-nandra.com> wrote:
 
-We unconditionally reset the RX MAC when an overflow occurs, that may
-simply not be enough to unwedge this thing.
+> Fix compilation warning:
+> drivers/staging/olpc_dcon/olpc_dcon.c: In function ‘dcon_probe’:
+> drivers/staging/olpc_dcon/olpc_dcon.c:704:21: warning: ignoring
+> return value of ‘device_create_file’, declared with attribute
+> warn_unused_result
+> 
+> and add cleaning of created files when creation of one failed.
+> 
+> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+> ---
+>  drivers/staging/olpc_dcon/olpc_dcon.c |   15 ++++++++++++---
+>  1 files changed, 12 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c
+> b/drivers/staging/olpc_dcon/olpc_dcon.c index 56a283d..7221bb8 100644
+> --- a/drivers/staging/olpc_dcon/olpc_dcon.c
+> +++ b/drivers/staging/olpc_dcon/olpc_dcon.c
+> @@ -674,7 +674,7 @@ static int dcon_detect(struct i2c_client *client,
+> struct i2c_board_info *info) 
+>  static int dcon_probe(struct i2c_client *client, const struct
+> i2c_device_id *id) {
+> -	int rc, i;
+> +	int rc, i, j;
+>  
+>  	if (num_registered_fb >= 1)
+>  		fbinfo = registered_fb[0];
+> @@ -700,8 +700,14 @@ static int dcon_probe(struct i2c_client *client,
+> const struct i2c_device_id *id) goto edev;
+>  	}
+>  
+> -	for(i = 0; i < ARRAY_SIZE(dcon_device_files); i++)
+> -		device_create_file(&dcon_device->dev,
+> &dcon_device_files[i]);
+> +	for(i = 0; i < ARRAY_SIZE(dcon_device_files); i++) {
+> +		rc = device_create_file(&dcon_device->dev,
+> +					&dcon_device_files[i]);
+> +		if (rc) {
+> +			dev_err(&dcon_device->dev, "Cannot create
+> sysfs file\n");
+> +			goto ecreate;
+> +		}
+> +	}
+>  
+>  	/* Add the backlight device for the DCON */
+>  
+> @@ -728,6 +734,9 @@ static int dcon_probe(struct i2c_client *client,
+> const struct i2c_device_id *id) 
+>  	return 0;
+>  
+> + ecreate:
+> +	for (j = 0; j < i; j++)
+> +		device_remove_file(&dcon_device->dev,
+> &dcon_device_files[j]); edev:
+>  	platform_device_unregister(dcon_device);
+>  	dcon_device = NULL;
+
