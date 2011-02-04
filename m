@@ -1,165 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824Ab1BDICw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 03:02:52 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48588 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752688Ab1BDICt convert rfc822-to-8bit (ORCPT
+	id S1752657Ab1BDIDX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 03:03:23 -0500
+Received: from webbox4.loswebos.de ([213.187.93.205]:36868 "EHLO
+	webbox4.loswebos.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752123Ab1BDIDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 03:02:49 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=n3XHi7D4DmWmp9YA0lXJvlRl5yzqkVTXBXvMf2wc8ipbHwT5M/boQJ7Vyji8O1QcHd
-         vM/seZ4hrAdifamZi3jSZ9agTR/UGn+/p2S5RJiYUAyTmR1hX/plombc+nAWNYk0k3BA
-         aFS3ON0OliuThV+5TLdf8YdYD1Os5UQtAHV2I=
+	Fri, 4 Feb 2011 03:03:22 -0500
+Date: Fri, 4 Feb 2011 09:03:14 +0100
+From: Marc Koschewski <marc@osknowledge.org>
+To: david@lang.hm
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, Gergely Nagy <algernon@balabit.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        James Morris <jmorris@namei.org>
+Subject: Re: CAP_SYSLOG, 2.6.38 and user space
+Message-ID: <20110204080302.GA24941@marc.osknowledge.org>
+References: <1296733177.14846.26.camel@moria>
+ <20110203153252.GA24153@mail.hallyn.com>
+ <1296748401.14846.39.camel@moria>
+ <20110203165132.GA28172@mail.hallyn.com>
+ <alpine.DEB.2.00.1102031647150.30983@asgard.lang.hm>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikG9vBDUcM=7pn+J4F-8DgUXX3M8fa2zjObXodS@mail.gmail.com>
-References: <AANLkTikG9vBDUcM=7pn+J4F-8DgUXX3M8fa2zjObXodS@mail.gmail.com>
-Date: Fri, 4 Feb 2011 09:02:48 +0100
-X-Google-Sender-Auth: hPBUWdnWiZKjcCA2YsQon_FG6Rw
-Message-ID: <AANLkTikx6SADQoh1F7yM43MyrULa7QxS215=ch5JWJad@mail.gmail.com>
-Subject: Re: Sun GEM PPC32 Bug?
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "R. Herbst" <ruediger.herbst@googlemail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1102031647150.30983@asgard.lang.hm>
+X-PGP-Fingerprint: D514 7DC1 B5F5 8989 083E  38C9 5ECF E5BD 3430 ABF5
+X-PGP-Key: http://www.kosik.org/pubkey.asc
+X-Blog: http://www.kosik.org/blog/
+X-Operating-System: Linux marc 2.6.37-ck1-dezzy
+User-Agent: Mutt/1.5.21hg (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/2/3 R. Herbst <ruediger.herbst@googlemail.com>:
-> Ich habe vielleicht/hoffentlich einen Bug gefunden, der sich
-> mindestens von Kernel 2.6.27 bis 2.6.37 befindet.
+Hey,
 
-Probably I have found a bug, that's present in at least kernels 2.6.27
-to 2.6.37.
 
-> Ich versuche ihn mal so gut als möglich zu beschreiben.
-> Meine verwendete Hardware:
-> Apple PowerMac Dual G4 mit Sonnetupgrade auf 2x1.83GHz (7447A), Gentoo
-> Linux (3 Wochen alt)
+* david@lang.hm <david@lang.hm> [2011-02-03 16:49:08 -0800]:
 
-3 weeks old.
+> On Thu, 3 Feb 2011, Serge E. Hallyn wrote:
+> 
+> >Quoting Gergely Nagy (algernon@balabit.hu):
+> >>On Thu, 2011-02-03 at 15:32 +0000, Serge E. Hallyn wrote:
+> >>>>Back in november, a patch was merged into the kernel (in  commit
+> >>>>ce6ada35bdf710d16582cc4869c26722547e6f11), that splits CAP_SYSLOG out of
+> >>>>CAP_SYS_ADMIN.
+> >>>>
+> >>>>Sadly, this has an unwelcomed consequence, that any userspace syslogd
+> >>>>that formerly used CAP_SYS_ADMIN will stop working, unless upgraded, or
+> >>>>otherwise adapted to the change.
+> >>>>
+> >>>>However, updating userspace isn't that easy, either, if one wants to
+> >>>>support multiple kernels with the same userspace binary: pre-2.6.38, one
+> >>>>needs CAP_SYS_ADMIN, but later kernels will need CAP_SYS_ADMIN. It would
+> >>>>be trivial to keep both, but that kind of defeats the purpose of
+> >>>>CAP_SYSLOG,
+> >>>
+> >>>The idea would be to only use both when you detect a possibly older
+> >>>kernel.
+> >>
+> >>I was considering that, but... how do I reliably detect an older kernel?
+> >>So far, I didn't find a reliable way with which I can detect a kernel
+> >>version at run-time (apart from parsing utsname)
+> >
+> >...  Why not parse utsname?
+> 
+> because the name may be different on different systems, a generic software
+> package is not going to be able to interpret them all.
+> 
+> >>>However, you're right of course, I really should have provided some way
+> >>>for userspace to click 'ok, got the message, now continue anyway because
+> >>>I'm running older userspace for now,'  i.e. a sysctl perhaps.
+> >>>
+> >>>Sorry about the trouble.  Here is a patch to just warn for now, with
+> >>>the changelog showing what i intend to push next.
+> >>>
+> >>>sorry again,
+> >>>-serge
+> >>>
+> >>>From 2d7408541dd3a6e19a4265b028233789be6a40f4 Mon Sep 17 00:00:00 2001
+> >>>From: Serge Hallyn <serge@peq.(none)>
+> >>>Date: Thu, 3 Feb 2011 09:26:15 -0600
+> >>>Subject: [PATCH 1/1] cap_syslog: don't refuse cap_sys_admin for now
+> >>>
+> >>>At 2.6.39 or 2.6.40, let's add a sysctl which defaults to 0.  When
+> >>>0, refuse if cap_sys_admin, if 1, then allow.  This will allow
+> >>>users to acknowledge (permanently, if they must, using /etc/sysctl.conf)
+> >>>that they've seen the syslog message about cap_sys_admin being
+> >>>deprecated for syslog.
+> >>
+> >>Could we have it the other way around, at least for a while? Otherwise,
+> >
+> >Sure.
+> >
+> >So long as there is a definite path toward eventually having syslog
+> >with CAP_SYS_ADMIN be denied.
+> 
+> I can see what you would want to allow for a syslog daemon to have
+> CAP_SYSLOG without needing to have CAP_SYS_ADMIN, but why do you see it as
+> important to deny the ability if someone has CAP_SYS_ADMIN?
 
-> ---
-> cat /proc/cpuinfo
-> processor    : 0
-> cpu        : 7447A, altivec supported
-> clock        : 1833.333326MHz
-> revision    : 1.1 (pvr 8003 0101)
-> bogomips    : 83.31
->
-> processor    : 1
-> cpu        : 7447A, altivec supported
-> clock        : 1833.333326MHz
-> revision    : 1.1 (pvr 8003 0101)
-> bogomips    : 83.31
->
-> total bogomips    : 166.63
-> timebase    : 41658586
-> platform    : PowerMac
-> model        : PowerMac3,6
-> machine        : PowerMac3,6
-> motherboard    : PowerMac3,6 MacRISC2 MacRISC Power Macintosh
-> detected as    : 129 (PowerMac G4 Windtunnel)
-> pmac flags    : 00000010
-> L2 cache    : 256K unified
-> pmac-generation    : NewWorld
-> Memory        : 2048 MB
-> ---
-> Solange der Datenverkehr relativ gering ist, gibt es keinerlei
-> Probleme (unter 40MBit), wie beispielsweise eine SFTP von meinem IBM
-> x345 auf meinen G4.
+ack++
 
-As long as network traffic is low (below 40 MBit), there's no problem.
-For example using SFTP from my IBM x345 to my G4.
+Moreover, this change really is 'hell' on _many_ machines. We had discussed a
+thousands time to not break existing applications. So a) either make it optional in
+the kernel so that userspace still works with CAP_SYS_ADMIN _and_ CAP_SYSLOG
+while dropping a note that it should be fixed in userspace _and_ mark it as
+deprecated as of mid 2012 or b) revert it.
 
-> Möchte ich mehr Durchsatz haben und nutze beispielsweise FTP (ca.
-> 200MBit/s durchsatz), oder RSYNC (ca. 120MBit/s), dann bekomme ich in
-> /var/log/messages folgende Meldungen angezeigt.
+> 
+> David Lang
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
 
-If I use more bandwidth, e.g. using FTP (200 MBit/s bandwidth), or RSYNC,
-then I get the following messages in /var/log/messages:
-
-> ---
-> grep gem /var/log/messages
->
-> Feb  3 19:51:35 G4 kernel: gem 0002:20:0f.0: eth0: Link is up at 1000
-> Mbps, full-duplex
-> Feb  3 19:51:35 G4 kernel: gem 0002:20:0f.0: eth0: Pause is disabled
-> Feb  3 19:54:49 G4 kernel: gem 0002:20:0f.0: eth0: RX MAC fifo
-> overflow smac[00810400]
-> Feb  3 19:54:51 G4 kernel: gem 0002:20:0f.0: eth0: RX MAC fifo
-> overflow smac[00810400]
-> Feb  3 19:54:51 G4 kernel: gem 0002:20:0f.0: eth0: RX MAC fifo
-> overflow smac[00810400]
-> Feb  3 19:54:58 G4 kernel: gem 0002:20:0f.0: eth0: RX MAC fifo
-> overflow smac[00810400]
-> Feb  3 19:55:04 G4 kernel: gem 0002:20:0f.0: eth0: RX MAC fifo
-> overflow smac[02010400]
-> Feb  3 19:55:11 G4 kernel: gem 0002:20:0f.0: eth0: RX MAC fifo
-> overflow smac[00810400]
-> Feb  3 19:55:12 G4 kernel: gem 0002:20:0f.0: eth0: RX MAC fifo
-> overflow smac[00010400]
-> Feb  3 19:55:16 G4 kernel: gem 0002:20:0f.0: eth0: RX MAC fifo
-> overflow smac[00810400]
-> Feb  3 19:55:25 G4 kernel: gem 0002:20:0f.0: eth0: RX MAC fifo
-> overflow smac[02010400]
-> Feb  3 19:55:26 G4 kernel: gem 0002:20:0f.0: eth0: RX MAC fifo
-> overflow smac[02010400]
-> Feb  3 19:55:30 G4 kernel: gem 0002:20:0f.0: eth0: RX MAC fifo
-> overflow smac[00810400]
-> Feb  3 19:55:32 G4 kernel: gem 0002:20:0f.0: eth0: RX MAC fifo
-> overflow smac[02010400]
-> ---
->
-> Diese Meldungen können mehrfach pro Sekunde dann aufschalgen. Nach
-> geringer Zeit (manchmal ein paar Sekunden, in besten Fall 1, 2
-> Minuten) freezed dann das komplette System.
-
-These messages can appear mutiple times per second. After a while (worst case
-a few seconds, sometimes up to 1 or 2 minutes), the complete system freezes.
-
-> Unter MacOS X 10.5 läuft mein Computer ohne jeglichen Probleme.
-> Hardware ist völlig in Ordnung.
-
-Under MacOS my computer runs fine. The hardware has no problems.
-
-> Ich hatte vorher Debian versucht drauf zu installieren. Das System da
-> ging sehr gut, solange man keinen Kernel mit SMP benutzt hat. Dann
-> hakte die Tastatur und die Maus so dermaßen, dass ein arbeiten nicht
-> mehr möglich war. Nur nebenbei erwähnt. Das ist der Grund warum ich
-> Gentoo verwendet habe.
-
-I also tried Debian. It worked well, as long as I used an SMP kernel.
-Else the keyboard and mouse worked so bad they became unusuable.
-That's why I went with Gentoo.
-
-> Auf meinem Cisco 2960G Switch sehe ich leider auch keine Fehler.
-
-I see no error messages on my Cisco switch.
-
-> Ich hoffe, Sie können mir da weiter helfen.
-
-I hope that you can help me.
-
-> Rüdiger Herbst
->
-> PS.: Sollten noch Fragen offen sein, beantworte ich diese gerne wenn möglich!
-
-I you have any questions, feel free to ask!
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Marc Koschewski
