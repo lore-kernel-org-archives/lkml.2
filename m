@@ -1,116 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab1BDNNW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 08:13:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35937 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752104Ab1BDNNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 08:13:21 -0500
-Date: Fri, 4 Feb 2011 14:04:55 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
-	PTRACE_ATTACH
-Message-ID: <20110204130455.GA3671@redhat.com>
-References: <1296227324-25295-1-git-send-email-tj@kernel.org> <1296227324-25295-11-git-send-email-tj@kernel.org> <20110203204122.GA26371@redhat.com> <20110203204154.GB26371@redhat.com> <20110203213640.1F516180995@magilla.sf.frob.com> <20110203214450.GA29496@redhat.com> <20110204105343.GA12133@htj.dyndns.org>
+	id S1752782Ab1BDNTS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 08:19:18 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:28038 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135Ab1BDNTR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 08:19:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=FRtO0CRrfT3NIgFtqu1ZHsmqfX16e+dy7IVHc5HrO59Rn70rZuuzoMtkL9LwE49U7C
+         POzd0X3hr5rGJ0gVxvpg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110204105343.GA12133@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1296825160.26581.652.camel@laptop>
+References: <4d4bf9ac.cf03d90a.2908.2186@mx.google.com>
+	<1296825160.26581.652.camel@laptop>
+Date: Fri, 4 Feb 2011 14:19:13 +0100
+Message-ID: <AANLkTintvA8QUYzJUXWc792uYD-tACCxUzvY_XCQtD=u@mail.gmail.com>
+Subject: Re: [PATCH 0/2] perf_events: add support for Intel fixed counter 2
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
+        eranian@gmail.com, robert.richter@amd.com, acme@redhat.com,
+        gorcunov@gmail.com, ming.m.lin@intel.com
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04, Tejun Heo wrote:
+On Fri, Feb 4, 2011 at 2:12 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, 2011-02-04 at 14:00 +0200, Stephane Eranian wrote:
 >
-> Hello, Oleg, Roland.
+>> This series of patches solves this problem by introducing a custom
+>> encoding for UNHALTED_REFERENCE_CYCLES (0xff3c) and improving
+>> the constraint infrastructure to handle events which can ONLY be
+>> measured on fixed counters.
 >
-> On Thu, Feb 03, 2011 at 10:44:50PM +0100, Oleg Nesterov wrote:
-> > On 02/03, Roland McGrath wrote:
-> > >
-> > > IMHO this sort of band-aid does not really help the overall situation.
-> > > It takes something that is intricate and fiddly and just fiddles it a
-> > > bit more.  Userland will still have to handle older kernels where this
-> > > behavior is not there.  If userland does anything that relies on this
-> > > new behavior, then it will have to try somehow to figure out which
-> > > kernel versions have which behavior and adapt, etc.
-> >
-> > Absolutely agreed.
-> >
-> > As I said, I am not sure this patch makes sense. I only sent it
-> > because I have to react to the bug report.
-> >
-> > > When the old behaviors are unhelpful like this, I think it is really
-> > > better to add new mechanisms instead.
-> >
-> > Agreed!
-> >
-> > Can't resist, let me repeat... imho ptrace is unfixable ;)
+> Right, so the only problem I can see with this is that Intel will at
+> some point in the future put an actual event there.
 >
-> Hmm... I can't reproduce the problem here,
+I doubt that but I will check with them.
 
-Very strange. Do you mean the test-case doesn't die? (on vanilla kernel).
-
-> but isn't the problematic
-> part here the mixing of ptrace and group stop and sliently
-> transforming group stop into ptrace
-
-Not exactly,
-
-> and ptracer consuming the usual
-> exit code instead of the ptrace specific one?
-
-Well, unless the task dies nobody except ptrace can use ->exit_code.
-
-The problem is:
-
-	- the task T stops, it sets ->exit_code exactly because
-	  the tracer can attach after that
-
-	- the tracer attaches, does wait(), consumes exit_code
-	  and exits
-
-	- another tracer attaches, but exit_code == 0
-
-There is no STOPPED/TRACED transformation at all.
-
-> Also, I don't agree with the notion that doing something entirely new
-> would magically solve all the problems.  Improvements are achieved
-> through evolution.  For ptrace, the situation definitely is aggravated
-> by the use of wait
-
-... and reparenting, and signals.
-
-> and weird interaction with group stop,
-
-Yes. And to me the main problem is not the current behaviour. The
-problem is that we never tried to define the correct behavior.
-OK, real_parent can miss the notification. We can fix this, but
-for what? The tracer can resume the thread "silently", this doesn't
-look very good anyway.
-
-But even this doesn't matter. We can not change ptrace API so that,
-say, it does not reparent the tracee. Once we do this, we already
-have the new API.
-
-So, personally I think we need the new API. And we already have
-utrace which allows to implement "anything" on top of it, including
-the old ptrace for compatibility.
-
-> Actually, I think such approach is significantly harmful to
-> improvements of the existing code base.  Instead of encouraging
-> investigating the actual problems and making sensible tradeoffs, such
-> approach discourages making reasonable tradeoffs with the false
-> expectation that something in the future will magically solve the
-> problems.  In a lot of cases, there are no unicorns.  Proceeding
-> forward while managing damage at reasonable level is usually the right
-> way to go.
-
-Well, perhaps I am wrong, this is only my opinion.
-
-Oleg.
-
+The alternative I thought about would be to use a bit in the upper 32
+bit section
+of attr.config and use the constraint->cmask to catch it. That would
+be a special
+cmask. That would probably work because ALL events have to go through
+get_constraints().
