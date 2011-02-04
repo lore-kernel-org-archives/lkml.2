@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662Ab1BDGbb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 01:31:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30323 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752339Ab1BDGba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 01:31:30 -0500
-Message-ID: <4D4B9CE3.7080505@redhat.com>
-Date: Fri, 04 Feb 2011 14:29:55 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1752761Ab1BDGkP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 01:40:15 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33463 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752549Ab1BDGkO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 01:40:14 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Americo Wang <xiyou.wangcong@gmail.com>
+Subject: Re: Query about kdump_msg hook into crash_kexec()
+Cc: kosaki.motohiro@jp.fujitsu.com, Vivek Goyal <vgoyal@redhat.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jarod Wilson <jwilson@redhat.com>
+In-Reply-To: <20110204032836.GB13902@cr0.redhat.com>
+References: <20110204025041.GB30087@redhat.com> <20110204032836.GB13902@cr0.redhat.com>
+Message-Id: <20110204153948.17D9.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: linux-kernel@vger.kernel.org, Stephen Hemminger <shemminger@vyatta.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jamie Lokier <jamie@shareable.org>, Thomas Weber <swirl@gmx.li>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Andy Fleming <afleming@freescale.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [RFC Patch] virtio: export model and type in /sys
-References: <1296442381-21652-1-git-send-email-amwang@redhat.com> <20110201173738.GA18526@infradead.org>
-In-Reply-To: <20110201173738.GA18526@infradead.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri,  4 Feb 2011 15:40:07 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年02月02日 01:37, Christoph Hellwig 写道:
-> On Mon, Jan 31, 2011 at 10:53:00AM +0800, Amerigo Wang wrote:
->> Our kdump script needs /sys/block/X/device/{vendor, model, type},
->> but virtio devices don't have {model, type}, this patch adds them.
->> Actually, I don't know how to fill the model field, other block devices
->> seem read it from SCSI. Any comments?
->
-> It does not make any sense to fill this at all in virtio.  The
-> attributes are simply exporting the SCSI INQUIRY data, and do not make
-> any sense at all outside a SCSI context.  In fact the type field even
-> contains numbers from the scsi protocol spec that just don't make sense.
->
+> >Secondly now the question of whether kdump_msg() call should be before
+> >crash_kexec() or not because modules might want to do lots of unreliable
+> >things, I am now split on that. Especially because of the fact that if
+> >somebody wants it probably can use kprobe to hook into crash_kexec()
+> >or panic() or something like that to execute its code before everything
+> >else.
+> 
+> If kprobe is the reason, then probably we can remove lots of other
+> kernel API's like kmsg dumper.
 
-Hmm, so other non-SCSI devices don't have these neither?
-Do you have any suggestions to find another way to identify a disk?
+Really?
 
-Thanks.
+On enterprise, distro kernel has CONFIG_KPROBE=y. It has both pros and cons, 
+pros) kprobe can provide alternative hooking way therefore kmsg dump is not 
+must.  cons) even if we remove kmsg dump, we can't get full kernel control. 
+kprobe can inject unrealiable code. It's two sides of the same coin. But, 
+many embedded don't have kprobe feature, therefore kprobe can't be 
+alternative of kmsg dumper.
+
+
+
