@@ -1,106 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962Ab1BDQaW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 11:30:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11231 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751085Ab1BDQaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 11:30:21 -0500
-Subject: Re: Using ftrace/perf as a basis for generic seccomp
-From: Eric Paris <eparis@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Stefan Fritsch <sf@sfritsch.de>,
-        Ingo Molnar <mingo@elte.hu>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org, agl@google.com, tzanussi@gmail.com,
-        Jason Baron <jbaron@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        2nddept-manager@sdl.hitachi.co.jp,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, James Morris <jmorris@namei.org>
-Date: Fri, 04 Feb 2011 11:29:19 -0500
-In-Reply-To: <1296829915.26581.658.camel@laptop>
-References: <1294867725.3237.230.camel@localhost.localdomain>
-	 <1296665124.3145.17.camel@localhost.localdomain>
-	 <20110203190643.GC1769@nowhere> <201102032306.34251.sf@sfritsch.de>
-	 <20110203231051.GA1840@nowhere>
-	 <1296784230.3145.44.camel@localhost.localdomain>
-	 <1296829915.26581.658.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1296836962.3145.75.camel@localhost.localdomain>
-Mime-Version: 1.0
+	id S1752114Ab1BDQcE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 11:32:04 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:50856 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085Ab1BDQcC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 11:32:02 -0500
+MIME-Version: 1.0
+Message-ID: <7bdfb0e2-fcfd-478f-b9fa-acb90c2ef550@default>
+Date: Fri, 4 Feb 2011 08:29:25 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Ian Campbell <Ian.Campbell@eu.citrix.com>, v.tolstov@selfip.ru
+Cc: Daniel Kiper <dkiper@net-space.pl>, akpm@linux-foundation.org,
+        andi.kleen@intel.com, haicheng.li@linux.intel.com,
+        fengguang.wu@intel.com, jeremy@goop.org,
+        Konrad Wilk <konrad.wilk@oracle.com>, pasik@iki.fi,
+        dave@linux.vnet.ibm.com, wdauchy@gmail.com, rientjes@google.com,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: RE: [Xen-devel] [PATCH R3 0/7] xen/balloon: Memory hotplug support
+ for Xen balloon driver
+References: <20110203162345.GC1364@router-fw-old.local.net-space.pl>
+ <1296768009.2346.7.camel@mobile
+ 1296810682.13091.571.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1296810682.13091.571.camel@zakaz.uk.xensource.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6550.5003]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4D4C29BC.0187:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-04 at 15:31 +0100, Peter Zijlstra wrote:
-> On Thu, 2011-02-03 at 20:50 -0500, Eric Paris wrote:
-> > I'm going to try to work on it over
-> > the next week or two.  
+> From: Ian Campbell [mailto:Ian.Campbell@eu.citrix.com]
+> Sent: Friday, February 04, 2011 2:11 AM
 > 
-> What is your use-case? Going by: http://lwn.net/Articles/332990/ syscall
-> based stuff (seccomp) is broken by design.
+> On Thu, 2011-02-03 at 21:20 +0000, Vasiliy G Tolstov wrote:
+> > I have some may be offtopic question: Is that possible to export
+> balloon
+> > function balloon_set_new_target to GPL modules (EXPORT_SYMBOL_GPL) ?
+> > This helps to kernel modules (not in kernel tree) to contol balloonin
+> > (for example autoballoon or something else) without needing to write
+> so
+> > sysfs. (Writing files from kernel module is bad, this says Linux
+> Kernel
+> > Faq).
+> 
+> Is there a reason to do it from kernel space in the first place? auto
+> ballooning can be done by a userspace daemon, can't it?
 
-My personal goal is very different than an LSM.  My goal is to reduce
-attack surface.  I'm not trying to implement an LSM.  LSM hooks are
-(intentionally) placed in the kernel after object resolution is
-complete.  In an LSM we don't check 'open' type operation until after
-the pathname has been converted to an inode.  We don't check some
-'sendto' operations until after the data has been placed into an skb and
-is about to be queued to a socket.  There is a LOT of code between
-syscall_entry() and any given LSM hook.
+The whole point of self-ballooning is to teach an OS kernel to
+be more aggressive about "surrendering" memory that it isn't
+using efficiently.  I've called this "memory asceticism".  See
+slide 12 in
 
-An obvious vulnerability that I'm sure all the people involved here know
-would be the original perf syscall bounds checking vulnerability.  If
-I'm dealing with an application that I know will never use perf I'd like
-a way to be able to completely disable the perf syscall and greatly
-reduce the kernel attack surface.  It would be almost impossible for an
-LSM to hook between the syscall_enter() and the location of that
-vulnerability in the perf syscall.  In my particular case I'm thinking
-about qemu, which never needs to call perf.  I want a way to disable all
-of the code after syscall_enter() for huge swaths of the kernel.
+http://oss.oracle.com/projects/tmem/dist/documentation/presentations/MemMgmtVirtEnv-LPC2010-Final.pdf 
 
-What we have today, called "seccomp", is a one way toggle,
-prctl(PR_SET_SECCOMP, 1), which reduces the available syscalls to
-read,write,exit, and sigreturn.  Any other syscall results in a process
-being immediately killed.  It's a great idea to reduce the attack
-surface of the kernel but it is too inflexible to be useful.  I wonder
-if anyone is using it.
+as well as the issues/solutions slides later in that presentation.
 
-Qemu on my box in just a couple of seconds of strace was found to use
-futex, ioctl, read, rt_sigaction, select, timer_gettime, timer_settime,
-and write.  I'm sure that other well defined processes have other such
-sort lists of required syscalls.  I think a more flexible seccomp which
-lets one remove syscalls from the allowed set (but never add them back)
-can GREATLY reduce the kernel attack surface from malicious processes.
+And for anyone on this dist list seeing these slides and
+concepts for the first time, you can "read" the presentation
+with the speaker notes here:
 
-This is not a sandbox.  This is not an LSM replacement.  This is a per
-syscall cutoff.  It can be used to help build a stronger sandbox.  I'll
-likely see if this can't be used by the SELinux sandbox which already
-uses the LSM hooks to control information flow and mediate access.  But
-SELinux does not control the sheer amount of the kernel code that can be
-executed.  I believe we can build a stronger sandbox using a flexible
-seccomp as one of the tools.  All we have to do is find one
-vulnerability in the code between the syscall entry and a LSM hook which
-would deny to operation to see the value in a per syscall control
-mechanism.
-
-As to doing it in seccomp code where it's all of a syscall or none vs
-making use of the filter infrastructure to allow even more fine grained
-control over the syscall is a question.  I'm leaning more towards just
-doing it in seccomp.  We can't ever build a full and complete strong
-sandbox using the filter code.  James' assertions about copy_from_user()
-are obviously correct.  A chat with PeterZ privately on IRC indicated
-that he also was not interested in seeing this creep into the tracing
-code.  Do we have a user that can articulate a need for greater
-flexibility in their use of such a hardening tool?
-
-I think given all these things I'm going to go back to looking at the
-flexible seccomp for now.  And maybe we should work towards using the
-tracing filter code in the future if someone can articulate a real use
-case.....
-
--Eric
-
+http://oss.oracle.com/projects/tmem/dist/documentation/presentations/MemMgmtVirtEnv-LPC2010-SpkNotes.pdf
