@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752794Ab1BDP3V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 10:29:21 -0500
-Received: from casper.infradead.org ([85.118.1.10]:44263 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752149Ab1BDP3T (ORCPT
+	id S1752665Ab1BDPbM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 10:31:12 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:49856 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750863Ab1BDPbK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 10:29:19 -0500
-Message-ID: <4D4C1B48.4040107@infradead.org>
-Date: Fri, 04 Feb 2011 13:29:12 -0200
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
+	Fri, 4 Feb 2011 10:31:10 -0500
+X-Authenticated: #113524
+X-Provags-ID: V01U2FsdGVkX1/96DYUy9P9vFlIbVYpIdgyIp1eSwKednZq++43xT
+	qXGFY9I3m3pgO6
+Message-ID: <4D4C1BBB.409@gmx.com>
+Date: Fri, 04 Feb 2011 16:31:07 +0100
+From: Andreas Heinlein <aheinlein@gmx.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Vasiliy Kulikov <segoon@openwall.com>
-CC: linux-kernel@vger.kernel.org, security@kernel.org,
-        Luca Risolia <luca.risolia@studio.unibo.it>, linux-usb@vger.kernel.org,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH 07/20] video: sn9c102: world-wirtable sysfs files
-References: <cover.1296818921.git.segoon@openwall.com> <b560d7c146330b382b90d739a76d580ed4051d4e.1296818921.git.segoon@openwall.com>
-In-Reply-To: <b560d7c146330b382b90d739a76d580ed4051d4e.1296818921.git.segoon@openwall.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org
+Subject: Problem (possible bug) with the loopback block device
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 04-02-2011 10:23, Vasiliy Kulikov escreveu:
-> Don't allow everybody to change video settings.
-> 
-> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-> ---
->  Compile tested only.
-> 
->  drivers/media/video/sn9c102/sn9c102_core.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/media/video/sn9c102/sn9c102_core.c b/drivers/media/video/sn9c102/sn9c102_core.c
-> index 84984f6..ce56a1c 100644
-> --- a/drivers/media/video/sn9c102/sn9c102_core.c
-> +++ b/drivers/media/video/sn9c102/sn9c102_core.c
-> @@ -1430,9 +1430,9 @@ static DEVICE_ATTR(i2c_reg, S_IRUGO | S_IWUSR,
->  		   sn9c102_show_i2c_reg, sn9c102_store_i2c_reg);
->  static DEVICE_ATTR(i2c_val, S_IRUGO | S_IWUSR,
->  		   sn9c102_show_i2c_val, sn9c102_store_i2c_val);
-> -static DEVICE_ATTR(green, S_IWUGO, NULL, sn9c102_store_green);
-> -static DEVICE_ATTR(blue, S_IWUGO, NULL, sn9c102_store_blue);
-> -static DEVICE_ATTR(red, S_IWUGO, NULL, sn9c102_store_red);
-> +static DEVICE_ATTR(green, S_IWUSR, NULL, sn9c102_store_green);
-> +static DEVICE_ATTR(blue, S_IWUSR, NULL, sn9c102_store_blue);
-> +static DEVICE_ATTR(red, S_IWUSR, NULL, sn9c102_store_red);
->  static DEVICE_ATTR(frame_header, S_IRUGO, sn9c102_show_frame_header, NULL);
+Hello,
 
-Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+I have observed the following behaviour and hope you can help me find
+the source of it:
+1. Create a (sparse) file of < 100MB on a removable drive, e.g. USB
+drive (dd if=/dev/zero of=/media/Testdrive/testfile bs=1 count=1
+seek=100000000)
+2. Set up a loopback device with it (losetup -f /media/Testdrive/testfile)
+3. Create a filesystem (mkfs.ext3 /dev/loopX) and mount it (mount
+/dev/loopX /mnt)
+5. Write some files there
+6. Unplug the drive without unmounting anything
+7. Attempt to write some more data to the loopback-mounted filesystem
+
+Expected result: Write attempt gives an error
+Actual result: Write succeeds, even 'sync' returns without error.
+Written files can be read, as well as data written in step 5. Works as
+long as data fits into the page cache (therefore the small file size).
+
+Seen first on Ubuntu 10.04 with Linux 2.6.32, tested and verified also
+with Fedora 14 (Linux 2.6.35), GRML 2010.04 (Linux 2.6.35). Ubuntu 11.04
+alpha with Linux 2.6.37 immediately gave a kernel panic in step #7,
+which is not much better. Same with Ubuntu 10.04 with Linux 2.6.37. Only
+acceptable behaviour I saw was with OpenSuSE 11.3 (Linux 2.6.34) which
+returned I/O error immediately and remounted the loopback'ed filesystem
+read-only.
+
+Thanks in advance,
+Andreas
