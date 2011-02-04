@@ -1,99 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281Ab1BDJel (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 04:34:41 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:38185 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754185Ab1BDJej (ORCPT
+	id S1754373Ab1BDJfN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 04:35:13 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40446 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753968Ab1BDJfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 04:34:39 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=lXJKita9I6ePTtaYCrk7k1jw3SSC8tFkWWqwvsf01t2qNHNSn0/i5bd6a7MxzdOhCQ
-         hNSqy63kQe8/lksN9dIOOkHx1ZW1FUuFqaZE4RynjsHCBlGE5Pm/1UK/H8b/Y9CxjOly
-         65yvZ3gztu+tGqBdBNp3XUOrhDux6m7SwrVF8=
-Date: Fri, 4 Feb 2011 17:33:32 +0800
-From: Richard Zhao <linuxzsc@gmail.com>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	Fri, 4 Feb 2011 04:35:08 -0500
+Date: Fri, 4 Feb 2011 10:34:58 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
 	<u.kleine-koenig@pengutronix.de>
-Cc: Saravana Kannan <skannan@codeaurora.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-sh@vger.kernel.org, Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
-        Dima Zavin <dmitriyz@google.com>, Ben Dooks <ben-linux@fluff.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Locking in the clk API, part 2: clk_prepare/clk_unprepare
-Message-ID: <20110204093332.GA2347@richard-laptop>
-References: <20110201141837.GA1147@pengutronix.de>
- <20110201143932.GK31216@n2100.arm.linux.org.uk>
- <20110201151846.GD1147@pengutronix.de>
- <20110201152458.GP31216@n2100.arm.linux.org.uk>
- <20110201155344.GF1147@pengutronix.de>
- <20110201170637.GR31216@n2100.arm.linux.org.uk>
- <20110201193201.GH1147@pengutronix.de>
- <20110201195604.GS31216@n2100.arm.linux.org.uk>
- <4D486B59.6010106@codeaurora.org>
- <20110201204330.GJ1147@pengutronix.de>
+To: Andres Salomon <dilinger@queued.net>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: Re: [PATCH 15/19] mc13xxx: mfd_cell is now implicitly available to
+ drivers
+Message-ID: <20110204093458.GH30452@pengutronix.de>
+References: <20110202195417.228e2656@queued.net>
+ <20110202202015.0fe392a9@queued.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110201204330.GJ1147@pengutronix.de>
+In-Reply-To: <20110202202015.0fe392a9@queued.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 01, 2011 at 09:43:31PM +0100, Uwe Kleine-König wrote:
-> Hello,
-> 
-> On Tue, Feb 01, 2011 at 12:21:45PM -0800, Saravana Kannan wrote:
-> > If the driver is calling clk_prepare() right next to clk_enable()
-> > knowing it's been already prepared and will hence be "atomic" (this
-> > is actually not true), then by your description, it's pointless to
-> > call clk_prepare().
-> Well not completely, as it increases the reference count.  The advantage
-> would be that clk_enable counts addionally as prepare, so it would be
-> impossible to unprepare an enabled clock.  And the other way round an
-> unprepared clock would never be enabled.
->  
-> > If you want the driver to call clk_prepare() in atomic context
-> > because it will be atomic in most cases -- well, that's wrong. It's
-> > either atomic or is NOT atomic. There is no in between. If a call is
-> > NOT atomic, it can't be called in atomic context. Long story short,
-> > if you expect clk_prepare() to be atomic under any circumstance, it
-> > beats the point of introducing clk_prepare().
-> Well, with my suggestion it's atomic when certain precondions are given.
-> IMHO that's better than "atomic in most cases" because the caller can
-> assert that everything goes smooth.
-> These preconditions are asserted when the driver writer is careful
-> enough to stick to the API.
-IMHO, clk_prepare is always called in non-atomic context, so it doesn't matter
-whether it's really atomic or not. We don't have to make it as atomic as
-possible.
+Hello Andres,
 
-Thanks
-Richard
+On Wed, Feb 02, 2011 at 08:20:15PM -0800, Andres Salomon wrote:
 > 
-> Either my idea is bad or I'm unable to sell it appropriately.  Be it as
-> it is, I will stop to make a case for it.
+> No need to explicitly set the cell's platform_data/data_size.
 > 
-> Best regards and thanks for your try,
-> Uwe
+> In this case, move the various platform_data pointers
+> to driver_data.  All of the clients which make use of it
+> are also changed.
 > 
-> -- 
-> Pengutronix e.K.                           | Uwe Kleine-König            |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> Mfd-core makes a copy of platform_data, but driver_data keeps a pointer
+> to the original data.  Because each cell's platform_data previously
+> pointed to a local (stack) variable, the various ARM mach types that set
+> the pdata are updated to keep the memory around.
+I didn't get this even after reading it 5 times.  You wrote in the
+subject that drivers now have access to mfd_cell.  I don't see where
+e.g. drivers/leds/leds-mc13783.c uses that?!  Does this depend on some
+mfd-changes I don't see and this is just a first step?
+
+After reading the changes I think I understood:
+
+ - You made things that were passed as platform_data before available
+   via driver_data.
+ - Because platform_data is copied and driver_data is not at register
+   time, the data being platform_data cannot be __initdata or stack
+   local anymore, so this needs fixing.
+
+In sum this results in .data becoming bigger (which is bad).
+
+And I think this patch has a conceptual problem, too.  In my opionion
+platform_data is the point to hand over platform specific data to a
+driver.  driver_data is something that is private to the driver and has
+to be considered opaque for the platform.  The driver was sort of OK
+before ...
+
+> diff --git a/arch/arm/mach-imx/mach-mx27_3ds.c b/arch/arm/mach-imx/mach-mx27_3ds.c
+> index 1643315..edcecaa 100644
+> --- a/arch/arm/mach-imx/mach-mx27_3ds.c
+> +++ b/arch/arm/mach-imx/mach-mx27_3ds.c
+> @@ -226,10 +226,14 @@ static struct mc13783_regulator_init_data mx27_3ds_regulators[] = {
+>  	},
+>  };
+>  
+> -/* MC13783 */
+> -static struct mc13783_platform_data mc13783_pdata __initdata = {
+> +static struct mc13783_regulator_platform_data mx27_regs = {
+The prefix mx27 is misleading. If you want to take the machine name
+into account use mx27_3ds, otherwise just use mc13783_regulator_pdata or
+similar. (And note that "regs" isn't that good IMHO, too, as it might
+stand for registers, too. And even mx27_3ds_regulators would be too
+general. This applies to the changes below, too.)
+
+>  	.regulators = mx27_3ds_regulators,
+>  	.num_regulators = ARRAY_SIZE(mx27_3ds_regulators),
+> +};
+> +
+> +/* MC13783 */
+a very minor nitpick is you moved the comment for mx27_3ds, but not for
+e.g. mx31_3ds.
+
+> +static struct mc13783_platform_data mc13783_pdata __initdata = {
+> +	.regulators = &mx27_regs,
+>  	.flags  = MC13783_USE_REGULATOR,
+>  };
+>  
+> diff --git a/arch/arm/mach-imx/mach-pcm038.c b/arch/arm/mach-imx/mach-pcm038.c
+> index 5056148..b5ae8cc 100644
+> --- a/arch/arm/mach-imx/mach-pcm038.c
+> +++ b/arch/arm/mach-imx/mach-pcm038.c
+> @@ -262,9 +262,13 @@ static struct mc13783_regulator_init_data pcm038_regulators[] = {
+>  	},
+>  };
+>  
+> -static struct mc13783_platform_data pcm038_pmic = {
+> +static struct mc13783_regulator_platform_data pcm038_regs = {
+>  	.regulators = pcm038_regulators,
+>  	.num_regulators = ARRAY_SIZE(pcm038_regulators),
+> +};
+> +
+> +static struct mc13783_platform_data pcm038_pmic = {
+> +	.regulators = &pcm038_regs,
+>  	.flags = MC13783_USE_ADC | MC13783_USE_REGULATOR |
+>  		 MC13783_USE_TOUCHSCREEN,
+>  };
+> diff --git a/arch/arm/mach-mx3/mach-mx31_3ds.c b/arch/arm/mach-mx3/mach-mx31_3ds.c
+> index 0d65db8..3e613ee 100644
+> --- a/arch/arm/mach-mx3/mach-mx31_3ds.c
+> +++ b/arch/arm/mach-mx3/mach-mx31_3ds.c
+> @@ -156,9 +156,13 @@ static struct mc13783_regulator_init_data mx31_3ds_regulators[] = {
+>  };
+>  
+>  /* MC13783 */
+> -static struct mc13783_platform_data mc13783_pdata __initdata = {
+> +static struct mc13783_regulator_platform_data mc13783_regs = {
+>  	.regulators = mx31_3ds_regulators,
+>  	.num_regulators = ARRAY_SIZE(mx31_3ds_regulators),
+> +};
+> +
+> +static struct mc13783_platform_data mc13783_pdata __initdata = {
+> +	.regulators = &mc13783_regs,
+>  	.flags  = MC13783_USE_REGULATOR | MC13783_USE_TOUCHSCREEN,
+>  };
+>  
+> diff --git a/arch/arm/mach-mx3/mach-mx31moboard.c b/arch/arm/mach-mx3/mach-mx31moboard.c
+> index 1aa8d65..424fbd9 100644
+> --- a/arch/arm/mach-mx3/mach-mx31moboard.c
+> +++ b/arch/arm/mach-mx3/mach-mx31moboard.c
+> @@ -267,9 +267,13 @@ static struct mc13783_leds_platform_data moboard_leds = {
+>  	.tc2_period = MC13783_LED_PERIOD_10MS,
+>  };
+>  
+> -static struct mc13783_platform_data moboard_pmic = {
+> +static struct mc13783_regulator_platform_data moboard_regs = {
+>  	.regulators = moboard_regulators,
+>  	.num_regulators = ARRAY_SIZE(moboard_regulators),
+> +};
+> +
+> +static struct mc13783_platform_data moboard_pmic = {
+> +	.regulators = &moboard_regs,
+>  	.leds = &moboard_leds,
+>  	.flags = MC13783_USE_REGULATOR | MC13783_USE_RTC |
+>  		MC13783_USE_ADC | MC13783_USE_LED,
+> diff --git a/drivers/leds/leds-mc13783.c b/drivers/leds/leds-mc13783.c
+> index f05bb08..687fb13 100644
+> --- a/drivers/leds/leds-mc13783.c
+> +++ b/drivers/leds/leds-mc13783.c
+> @@ -30,6 +30,7 @@ struct mc13783_led {
+>  	struct mc13783		*master;
+>  	enum led_brightness	new_brightness;
+>  	int			id;
+> +	int			num_leds;
+>  };
+>  
+>  #define MC13783_REG_LED_CONTROL_0	51
+> @@ -181,9 +182,9 @@ static int __devinit mc13783_led_setup(struct mc13783_led *led, int max_current)
+>  	return ret;
+>  }
+>  
+> -static int __devinit mc13783_leds_prepare(struct platform_device *pdev)
+> +static int __devinit mc13783_leds_prepare(struct platform_device *pdev,
+> +		struct mc13783_leds_platform_data *pdata)
+>  {
+> -	struct mc13783_leds_platform_data *pdata = dev_get_platdata(&pdev->dev);
+>  	struct mc13783 *dev = dev_get_drvdata(pdev->dev.parent);
+>  	int ret = 0;
+>  	int reg = 0;
+> @@ -264,7 +265,7 @@ out:
+>  
+>  static int __devinit mc13783_led_probe(struct platform_device *pdev)
+>  {
+> -	struct mc13783_leds_platform_data *pdata = dev_get_platdata(&pdev->dev);
+> +	struct mc13783_leds_platform_data *pdata = platform_get_drvdata(pdev);
+>  	struct mc13783_led_platform_data *led_cur;
+>  	struct mc13783_led *led, *led_dat;
+>  	int ret, i;
+> @@ -286,12 +287,15 @@ static int __devinit mc13783_led_probe(struct platform_device *pdev)
+>  		return -ENOMEM;
+>  	}
+>  
+> -	ret = mc13783_leds_prepare(pdev);
+> +	ret = mc13783_leds_prepare(pdev, pdata);
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "unable to init led driver\n");
+>  		goto err_free;
+>  	}
+>  
+> +	/* no need to save the num of LEDs for any other elements of 'led' */
+> +	led[0].num_leds = pdata->num_leds;
+> +
+So for n leds you introduced n-1 useless ints.
+
+So all in all, I don't like that change, maybe just because I don't
+understand your motivation.
+
+Best regards
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
