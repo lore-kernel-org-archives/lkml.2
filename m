@@ -1,100 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755220Ab1BDAh3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 19:37:29 -0500
-Received: from mail4.comsite.net ([205.238.176.238]:47882 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755148Ab1BDAh1 (ORCPT
+	id S1755227Ab1BDApX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 19:45:23 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:49464 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751749Ab1BDApU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 19:37:27 -0500
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=65.70.204.62;
-To: Jesper Juhl <jj@chaosbits.net>
-From: Milton Miller <miltonm@bga.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Neil Brown <neilb@suse.de>,
-        bfields@fieldses.org
-Subject: Re: [PATCH] Fix size argument to memset call in nfsacl_encode
-In-Reply-To: <1296761330.3015.22.camel@heimdal.trondhjem.org>
-Message-ID: <ack-nfsacl-rm-memset@mdm.bga.com>
-References: <alpine.LNX.2.00.1102032012540.15101@swampdragon.chaosbits.net>
-	<1296761330.3015.22.camel@heimdal.trondhjem.org>
-	 <alpine.LNX.2.00.1102032035280.15101@swampdragon.chaosbits.net>
-Date: Thu, 03 Feb 2011 18:37:19 -0600
-X-Originating-IP: 65.70.204.62
+	Thu, 3 Feb 2011 19:45:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=whFbJnIFiTMQU1Q82PSShQiqAwQsJAUGdt8fbI09sZ3pk2qQFLa9RBhGSgQv+K/shh
+         L5KdQTnmfp7LdsO+cDG1w/gB2bKaCgIwqLJZg+Jl/mQaRFYrjn5A3caR7c/qfsc7KoeL
+         MJO4o02KdfIBxmMGP2hF68pijON21jJgh1qmM=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTimQPPDyBwkN0HWM2+bPcbzVd8YHZvn2iR8MVzfL@mail.gmail.com>
+References: <e9vOd5LzdBK.A.dyD.h6eSNB@chimera>
+	<AANLkTikELiGS+fM5WguZS=Fo-sSXmej1UnKWqCFmnE0k@mail.gmail.com>
+	<s5haaid3xos.wl%tiwai@suse.de>
+	<201102032009.17100.rjw@sisk.pl>
+	<AANLkTi=suS1VDL=6EtT0D2=0c1DWwxdwZBBv=-BySNX-@mail.gmail.com>
+	<AANLkTi=7EOih=fY5FCvhQbewSc=3a49cYVaKJRWM+-3d@mail.gmail.com>
+	<AANLkTin7kBur95H=UBcYEcjYsUkrdG8znX-7PFZ4rrHf@mail.gmail.com>
+	<AANLkTimQPPDyBwkN0HWM2+bPcbzVd8YHZvn2iR8MVzfL@mail.gmail.com>
+Date: Fri, 4 Feb 2011 10:45:19 +1000
+Message-ID: <AANLkTi=RQZ4fN9rZQRhiza5Nd9LkBO=tO1AWjSstRjV1@mail.gmail.com>
+Subject: Re: 2.6.38-rc3-git1: Reported regressions 2.6.36 -> 2.6.37
+From: Dave Airlie <airlied@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Carlos Mafra <crmafra2@gmail.com>, Keith Packard <keithp@keithp.com>,
+        Dave Airlie <airlied@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Takashi Iwai <tiwai@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Feb 2011 about 20:41:05 +0100 (CET), Jesper Juhl wrote:
-> On Thu, 3 Feb 2011, Trond Myklebust wrote:
-> > On Thu, 2011-02-03 at 20:15 +0100, Jesper Juhl wrote: 
-> > > We want to give memset() the sizeof(struct posix_acl), not
-> > > sizeof(struct posix_acl *).
-> > > 
-> > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > > ---
-> > >  nfsacl.c |    2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > 
-> > > diff --git a/fs/nfs_common/nfsacl.c b/fs/nfs_common/nfsacl.c
-> > > index 84c27d6..bc6d81b 100644
-> > > --- a/fs/nfs_common/nfsacl.c
-> > > +++ b/fs/nfs_common/nfsacl.c
-> > > @@ -117,7 +117,7 @@ int nfsacl_encode(struct xdr_buf *buf, unsigned int base, struct inode *inode,
-> > >  		 * invoked in contexts where a memory allocation failure is
-> > >  		 * fatal.  Fortunately this fake ACL is small enough to
-> > >  		 * construct on the stack. */
-> > > -		memset(acl2, 0, sizeof(acl2));
-> > > +		memset(acl2, 0, sizeof(*acl2));
-> > >  		posix_acl_init(acl2, 4);
-> > >  
-> > >  		/* Insert entries in canonical order: other orders seem
-> > 
-> > Ccing Milton Miller who also sent in the same patch.
-> > 
-> > Neither patch is correct afaics. posix_acl_init() will clobber the above
-> > memset, and so the correct fix is just to get rid of it...
-> > 
-> 
-> posix_acl_init() sets a_refcount and a_count, but what about a_entries ... 
-> no problem, nfsacl_encode() itself takes care of that post the 
-> posix_acl_init() call.. it's all good.
-> 
-> So ...
-> 
-> 
-> Remove pointless memset() in nfsacl_encode().
-> 
+On Fri, Feb 4, 2011 at 10:30 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Thu, Feb 3, 2011 at 4:06 PM, Dave Airlie <airlied@gmail.com> wrote:
+>>
+>> If we are setting a mode on a connector it automatically will end up
+>> in a DPMS on state,
+>> so this seemed correct from what I can see.
+>
+> The more I look at that function, the more I disagree with you and
+> with that patch.
+>
+> The code is just crazy.
 
-It would be nice to point out that the memset was just added and of
-a incorrect size.
+Good point, I'm just trying to get -rc3 onto a machine where I can
+reproduce this now, unfortunately that looks like the machine with the
+1.8" disk, so this could take a little while.
 
-> Thanks to Trond Myklebust <Trond.Myklebust@netapp.com> for pointing out 
-> that it is not needed since posix_acl_init() will set everything 
-> regardless..
-> 
+hopefully Keith will decloak and tell us more.
 
-But I ack the patch since I even pointed out this alternative in my
-changelog.  I guess that could be Reported-by.
-
-http://lkml.indiana.edu/hypermail/linux/kernel/1102.0/00665.html
-
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  nfsacl.c |    1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/fs/nfs_common/nfsacl.c b/fs/nfs_common/nfsacl.c
-> index 84c27d6..ec0f277 100644
-> --- a/fs/nfs_common/nfsacl.c
-> +++ b/fs/nfs_common/nfsacl.c
-> @@ -117,7 +117,6 @@ int nfsacl_encode(struct xdr_buf *buf, unsigned int base, struct inode *inode,
->  		 * invoked in contexts where a memory allocation failure is
->  		 * fatal.  Fortunately this fake ACL is small enough to
->  		 * construct on the stack. */
-> -		memset(acl2, 0, sizeof(acl2));
->  		posix_acl_init(acl2, 4);
->  
->  		/* Insert entries in canonical order: other orders seem
-> 
-> 
+Dave.
