@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959Ab1BDPAu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 10:00:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33992 "EHLO mx1.redhat.com"
+	id S1751996Ab1BDPFL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 10:05:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54086 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751511Ab1BDPAt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 10:00:49 -0500
-Date: Fri, 4 Feb 2011 10:00:47 -0500
+	id S1751098Ab1BDPFJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 10:05:09 -0500
+Date: Fri, 4 Feb 2011 10:04:57 -0500
 From: Vivek Goyal <vgoyal@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jarod Wilson <jwilson@redhat.com>
-Subject: Re: Query about kdump_msg hook into crash_kexec()
-Message-ID: <20110204150047.GC32190@redhat.com>
-References: <20110203020528.GA21603@redhat.com>
- <20110203121302.93B9.A69D9226@jp.fujitsu.com>
- <20110203141850.93C2.A69D9226@jp.fujitsu.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Mike Snitzer <snitzer@redhat.com>,
+        "tytso@mit.edu" <tytso@mit.edu>,
+        "djwong@us.ibm.com" <djwong@us.ibm.com>,
+        "shli@kernel.org" <shli@kernel.org>, "neilb@suse.de" <neilb@suse.de>,
+        "adilger.kernel@dilger.ca" <adilger.kernel@dilger.ca>,
+        "jack@suse.cz" <jack@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kmannth@us.ibm.com" <kmannth@us.ibm.com>,
+        "cmm@us.ibm.com" <cmm@us.ibm.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "rwheeler@redhat.com" <rwheeler@redhat.com>, "hch@lst.de" <hch@lst.de>,
+        "josef@redhat.com" <josef@redhat.com>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>
+Subject: Re: [PATCH v3 1/2] block: skip elevator data initialization for
+ flush requests
+Message-ID: <20110204150456.GD32190@redhat.com>
+References: <20110201185225.GT14211@htj.dyndns.org>
+ <1296600373-6906-1-git-send-email-snitzer@redhat.com>
+ <20110202225549.GA28109@redhat.com>
+ <4D4AAC9A.4050407@fusionio.com>
+ <20110203133820.GF2570@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110203141850.93C2.A69D9226@jp.fujitsu.com>
+In-Reply-To: <20110203133820.GF2570@htj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 03, 2011 at 02:20:53PM +0900, KOSAKI Motohiro wrote:
-> > AFAIK, kexec is used sneak rebooting way when the system face unexpected
-> > scenario on some devices. (Some embedded is running very long time, then 
-> > it can't avoid memory bit corruption. all of reset is a last resort. 
-> > and a vendor gather logs at periodically checkback).
+On Thu, Feb 03, 2011 at 02:38:20PM +0100, Tejun Heo wrote:
+> Hey, Jens.
+> 
+> On Thu, Feb 03, 2011 at 02:24:42PM +0100, Jens Axboe wrote:
+> > On 2011-02-02 23:55, Mike Snitzer wrote:
+> > > REQ_SORTED is not set for flush requests because they are never put on
+> > > the IO scheduler.
 > > 
-> > The main purpose of to introduce KMSG_DUMP_KEXEC is to be separate it
-> > from KMSG_DUMP_PANIC. At kmsg_dump() initial patch, KMSG_DUMP_PANIC 
-> > is always called both kdump is configured or not. But it's no good idea
-> > the same log is to be appeared when both kexec was successed and failured.
-> > Moreover someone don't want any log at kexec phase. They only want logs
-> > when real panic (ie kexec failure) route. Then, I've separated it to two.
-> > Two separated argument can solve above both requreiment.
+> > That looks very wrong. REQ_SORTED gets set _when_ the request is sorted
+> > into the IO scheduler. This is gross misuse, a bad hack.
 > 
-> A bit additional explanation, An original patch have kmsg_dump(KMSG_DUMP_PANIC)
-> callsite at following point. I didn't think it makes either embedded or 
-> kdump folks happiness. Thus I moved it after crash_kexec().
-> 
-> 
-> ---------------------------------------------------------------------
-> @@ -74,6 +75,7 @@ NORET_TYPE void panic(const char * fmt, ...)
->         dump_stack();
->  #endif
-> 
-> +       kmsg_dump(KMSG_DUMP_PANIC);
->         /*
->          * If we have crashed and we have a crash kernel loaded let it handle
->          * everything else.
->          * Do we want to call this before we try to display a message?
->          */
->         crash_kexec(NULL);
-> ---------------------------------------------------------------------
+> The rationale behind suggesting was that it indicates to the allocator
+> that the request may be sorted as how the request will be used is
+> communicated using @rw_flags to the allocator.  The patch is buggy
+> that the flag actually ends up on the request.  Any better idea how to
+> communicate it?
 
-And I think to compensate for that somebody introduced additional
-kmsg_dump(KEXEC) call inside crash_kexec() and put it under CONFIG
-option so that one can change the behavior based on config options.
+Though you did not like the V1 of patch, personally I also liked just parsing
+FLUSH or FUA flag in get_request().
 
-I think this makes the logic somewhat twisted and an unnecessary call
-inside crash_kexec(). So until and unless there is a strong reason we
-can get rid of KEXEC event and move kmsg_dump call before crash_kexec()
-for now and see how does it go, IMHO.
+Or how about intoducing a helper function blk_rq_should_init_elevator() 
+or something like that and this function will parse FLUSH, FUA flags.
 
+Thanks
 Vivek
