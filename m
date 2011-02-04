@@ -1,197 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539Ab1BDM7J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 07:59:09 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:51719 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752075Ab1BDM7D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 07:59:03 -0500
-X-AuditID: b753bd60-a594fba0000001d0-fa-4d4bf8140663
-X-AuditID: b753bd60-a594fba0000001d0-fa-4d4bf8140663
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH -perf/perf/core  4/4] perf/probe: Add bitfield member support
-To: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 04 Feb 2011 21:52:11 +0900
-Message-ID: <20110204125211.9507.60265.stgit@ltc236.sdl.hitachi.co.jp>
-In-Reply-To: <20110204125145.9507.5169.stgit@ltc236.sdl.hitachi.co.jp>
-References: <20110204125145.9507.5169.stgit@ltc236.sdl.hitachi.co.jp>
-User-Agent: StGIT/0.14.3
+	id S1752656Ab1BDM7b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 07:59:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51585 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751895Ab1BDM73 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 07:59:29 -0500
+Date: Fri, 4 Feb 2011 13:59:16 +0100
+From: Anton Arapov <anton@redhat.com>
+To: Ian Campbell <ian.campbell@citrix.com>, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Hugh Dickins <hugh@veritas.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] microcode: do not WARN_ON(cpu != 0) during resume
+Message-ID: <20110204125916.GD11633@bandura.usersys.redhat.com>
+References: <1261058024-32278-1-git-send-email-ian.campbell@citrix.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1261058024-32278-1-git-send-email-ian.campbell@citrix.com>
+X-PGP-Key: http://people.redhat.com/aarapov/gpg
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add bitfield member accessing support to probe arguments.
+Andrew,
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Suggested-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org
----
+  may we have this patch in -mm? It has an ack from Jeremy as well.
 
- tools/perf/util/probe-finder.c |   95 +++++++++++++++++++++++++++++-----------
- 1 files changed, 68 insertions(+), 27 deletions(-)
+thanks,
+Anton.
 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 69215bf..613e5fb 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -33,6 +33,7 @@
- #include <ctype.h>
- #include <dwarf-regs.h>
- 
-+#include <linux/bitops.h>
- #include "event.h"
- #include "debug.h"
- #include "util.h"
-@@ -333,13 +334,23 @@ static Dwarf_Die *die_get_real_type(Dwarf_Die *vr_die, Dwarf_Die *die_mem)
- 	return vr_die;
- }
- 
--static bool die_is_signed_type(Dwarf_Die *tp_die)
-+static int die_get_attr_udata(Dwarf_Die *tp_die, unsigned int attr_name,
-+			      Dwarf_Word *result)
- {
- 	Dwarf_Attribute attr;
-+
-+	if (dwarf_attr(tp_die, attr_name, &attr) == NULL ||
-+	    dwarf_formudata(&attr, result) != 0)
-+		return -ENOENT;
-+
-+	return 0;
-+}
-+
-+static bool die_is_signed_type(Dwarf_Die *tp_die)
-+{
- 	Dwarf_Word ret;
- 
--	if (dwarf_attr(tp_die, DW_AT_encoding, &attr) == NULL ||
--	    dwarf_formudata(&attr, &ret) != 0)
-+	if (die_get_attr_udata(tp_die, DW_AT_encoding, &ret))
- 		return false;
- 
- 	return (ret == DW_ATE_signed_char || ret == DW_ATE_signed ||
-@@ -348,11 +359,29 @@ static bool die_is_signed_type(Dwarf_Die *tp_die)
- 
- static int die_get_byte_size(Dwarf_Die *tp_die)
- {
--	Dwarf_Attribute attr;
- 	Dwarf_Word ret;
- 
--	if (dwarf_attr(tp_die, DW_AT_byte_size, &attr) == NULL ||
--	    dwarf_formudata(&attr, &ret) != 0)
-+	if (die_get_attr_udata(tp_die, DW_AT_byte_size, &ret))
-+		return 0;
-+
-+	return (int)ret;
-+}
-+
-+static int die_get_bit_size(Dwarf_Die *tp_die)
-+{
-+	Dwarf_Word ret;
-+
-+	if (die_get_attr_udata(tp_die, DW_AT_bit_size, &ret))
-+		return 0;
-+
-+	return (int)ret;
-+}
-+
-+static int die_get_bit_offset(Dwarf_Die *tp_die)
-+{
-+	Dwarf_Word ret;
-+
-+	if (die_get_attr_udata(tp_die, DW_AT_bit_offset, &ret))
- 		return 0;
- 
- 	return (int)ret;
-@@ -827,6 +856,8 @@ static_var:
- 	return 0;
- }
- 
-+#define BYTES_TO_BITS(nb)	((nb) * BITS_PER_LONG / sizeof(long))
-+
- static int convert_variable_type(Dwarf_Die *vr_die,
- 				 struct probe_trace_arg *tvar,
- 				 const char *cast)
-@@ -843,6 +874,14 @@ static int convert_variable_type(Dwarf_Die *vr_die,
- 		return (tvar->type == NULL) ? -ENOMEM : 0;
- 	}
- 
-+	if (die_get_bit_size(vr_die) != 0) {
-+		/* This is a bitfield */
-+		ret = snprintf(buf, 16, "b%d@%d/%lu", die_get_bit_size(vr_die),
-+				die_get_bit_offset(vr_die),
-+				BYTES_TO_BITS(die_get_byte_size(vr_die)));
-+		goto formatted;
-+	}
-+
- 	if (die_get_real_type(vr_die, &type) == NULL) {
- 		pr_warning("Failed to get a type information of %s.\n",
- 			   dwarf_diename(vr_die));
-@@ -887,29 +926,31 @@ static int convert_variable_type(Dwarf_Die *vr_die,
- 		return (tvar->type == NULL) ? -ENOMEM : 0;
- 	}
- 
--	ret = die_get_byte_size(&type) * 8;
--	if (ret) {
--		/* Check the bitwidth */
--		if (ret > MAX_BASIC_TYPE_BITS) {
--			pr_info("%s exceeds max-bitwidth."
--				" Cut down to %d bits.\n",
--				dwarf_diename(&type), MAX_BASIC_TYPE_BITS);
--			ret = MAX_BASIC_TYPE_BITS;
--		}
-+	ret = BYTES_TO_BITS(die_get_byte_size(&type));
-+	if (!ret)
-+		/* No size ... try to use default type */
-+		return 0;
- 
--		ret = snprintf(buf, 16, "%c%d",
--			       die_is_signed_type(&type) ? 's' : 'u', ret);
--		if (ret < 0 || ret >= 16) {
--			if (ret >= 16)
--				ret = -E2BIG;
--			pr_warning("Failed to convert variable type: %s\n",
--				   strerror(-ret));
--			return ret;
--		}
--		tvar->type = strdup(buf);
--		if (tvar->type == NULL)
--			return -ENOMEM;
-+	/* Check the bitwidth */
-+	if (ret > MAX_BASIC_TYPE_BITS) {
-+		pr_info("%s exceeds max-bitwidth. Cut down to %d bits.\n",
-+			dwarf_diename(&type), MAX_BASIC_TYPE_BITS);
-+		ret = MAX_BASIC_TYPE_BITS;
-+	}
-+	ret = snprintf(buf, 16, "%c%d",
-+		       die_is_signed_type(&type) ? 's' : 'u', ret);
-+
-+formatted:
-+	if (ret < 0 || ret >= 16) {
-+		if (ret >= 16)
-+			ret = -E2BIG;
-+		pr_warning("Failed to convert variable type: %s\n",
-+			   strerror(-ret));
-+		return ret;
- 	}
-+	tvar->type = strdup(buf);
-+	if (tvar->type == NULL)
-+		return -ENOMEM;
- 	return 0;
- }
- 
+On Thu, Dec 17, 2009 at 01:53:44PM +0000, Ian Campbell wrote:
+> 871b72dd "x86: microcode: use smp_call_function_single instead of
+> set_cpus_allowed, cleanup of synchronization logic" included:
+> 
+>  static int mc_sysdev_resume(struct sys_device *dev)
+>  {
+> [...]
+> +       /*
+> +        * All non-bootup cpus are still disabled,
+> +        * so only CPU 0 will apply ucode here.
+> +        *
+> +        * Moreover, there can be no concurrent
+> +        * updates from any other places at this point.
+> +        */
+> +       WARN_ON(cpu != 0);
+> 
+> However suspend/resume under Xen doesn't need to hot unplug all the CPUs, so we
+> don't; the hypervisor can manage the context save/restore for all CPUs.
+> 
+> It would be unnecessary to load microcode.ko in a Xen domU but if it does occur
+> (e.g. because a distro installs the tools by default) we would like to avoid
+> the warning on resume.
+> 
+> Since the real constraint here is that we are running on the CPU for which we
+> would like to load microcode (which in all practical circumstances is CPU0)
+> just check for that and return if we are resuming a different CPU.
+> 
+> There is no danger of concurrent updates, even if we ignore the fact that all
+> but one CPUs are unplugged on native, because sysdev_resume() is single
+> threaded.
+> 
+> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+> Cc: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+> Cc: Hugh Dickins <hugh@veritas.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+Acked-by: Anton Arapov <aarapov@redhat.com>
 
+> ---
+>  arch/x86/kernel/microcode_core.c |   11 +----------
+>  1 files changed, 1 insertions(+), 10 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
+> index 378e9a8..1153062 100644
+> --- a/arch/x86/kernel/microcode_core.c
+> +++ b/arch/x86/kernel/microcode_core.c
+> @@ -438,18 +438,9 @@ static int mc_sysdev_resume(struct sys_device *dev)
+>  	int cpu = dev->id;
+>  	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
+>  
+> -	if (!cpu_online(cpu))
+> +	if (cpu != smp_processor_id())
+>  		return 0;
+>  
+> -	/*
+> -	 * All non-bootup cpus are still disabled,
+> -	 * so only CPU 0 will apply ucode here.
+> -	 *
+> -	 * Moreover, there can be no concurrent
+> -	 * updates from any other places at this point.
+> -	 */
+> -	WARN_ON(cpu != 0);
+> -
+>  	if (uci->valid && uci->mc)
+>  		microcode_ops->apply_microcode(cpu);
+>  
+> -- 
+> 1.5.6.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+
+-- 
+Anton
