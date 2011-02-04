@@ -1,105 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755580Ab1BDD2t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 22:28:49 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:39499 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755427Ab1BDD2r (ORCPT
+	id S1755650Ab1BDD2w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 22:28:52 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:61129 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755529Ab1BDD2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 22:28:47 -0500
+	Thu, 3 Feb 2011 22:28:49 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=InSsH28wpXFKomVJH0pBtv09xB2ohEZeXUOQ0WEjVwHiGyCRZLhV4yMMR439Od/QTw
-         9rAKict+B4oQzOtwXGyy22HC5zFZ+Rxjglughqp+CFWUgSQeAHcSaZccMoaRWIebIttC
-         /WWWk3yjNl5z9DMVcc6oQjeQSoRVbiuC2gCuk=
-Date: Fri, 4 Feb 2011 11:28:36 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jarod Wilson <jwilson@redhat.com>
-Subject: Re: Query about kdump_msg hook into crash_kexec()
-Message-ID: <20110204032836.GB13902@cr0.redhat.com>
-References: <20110131225939.GH11974@redhat.com>
- <20110203094715.939C.A69D9226@jp.fujitsu.com>
- <20110203020528.GA21603@redhat.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C147F4346@USINDEVS01.corp.hds.com>
- <m14o8klt3w.fsf@fess.ebiederm.org>
- <5C4C569E8A4B9B42A84A977CF070A35B2C147F43B7@USINDEVS01.corp.hds.com>
- <20110204022427.GA13902@cr0.redhat.com>
- <20110204025041.GB30087@redhat.com>
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=PfmBM4q7cf79XH4CLLQTeBb6tdeAJJQuC6cZtbSgDgygMKvSq9FUD2usfxlhmq8o4l
+         l9wEDlil876mU4yogjlmiTi3sM0rCTCt/xiPBTM/Zs+5Ad0UX2HeP8CJ4TPbbknhzrpX
+         /3j6SSxKLEkYv3Bo0Ycn/uxLQn8Xm3LHNdT1s=
+Date: Fri, 4 Feb 2011 11:28:34 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Faisal Latif <faisal.latif@intel.com>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Alessandro Rubini <rubini@cvml.unipv.it>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>
+Subject: Re: [PATCH 1/4] lockdep, timer: Fix del_timer_sync() annotation
+Message-ID: <20110204032834.GA2791@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <20110203140940.072679794@chello.nl>
+ <20110203141548.039540914@chello.nl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110204025041.GB30087@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110203141548.039540914@chello.nl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 03, 2011 at 09:50:42PM -0500, Vivek Goyal wrote:
->On Fri, Feb 04, 2011 at 10:24:27AM +0800, Américo Wang wrote:
->> On Thu, Feb 03, 2011 at 05:08:01PM -0500, Seiji Aguchi wrote:
->> >Hi Eric,
->> >
->> >Thank you for your prompt reply.
->> >
->> >I would like to consider "Needs in enterprise area" and "Implementation of kmsg_dump()" separately.
->> >
->> >(1) Needs in enterprise area
->> >  In case of kdump failure, we would like to store kernel buffer to NVRAM/flush memory
->> >  for detecting root cause of kernel crash.
->> >
->> >(2) Implementation of kmsg_dump 
->> >  You suggest to review/test cording of kmsg_dump() more.
->> >
->> >What do you think about (1)?
->> >Is it acceptable for you?
->> >
->> 
->> For "in case of kdump fails", we can move
->> KMSG_DUMP_OOPS/KMSG_DUMP_PANIC before calling crash_kexec(),
->> so you can capture the log before kdump happens.
->
->True. If the idea is to capture the logs before kdump starts saving
->core, then kdump_msg() call, can be put before crash_kexec() call and
->there is no need to hook into crash_kexec().
->
+On Thu, Feb 03, 2011 at 03:09:41PM +0100, Peter Zijlstra wrote:
+> Calling local_bh_enable() will want to actually start processing
+> softirqs, which isn't a good idea since this can get called with IRQs
+> disabled.
+> 
+> Cure this by using _local_bh_enable() which doesn't start processing
+> softirqs, and use raw_local_irq_save() to avoid any softirqs from
+> happending without letting lockdep think IRQs are in fact disabled.
+> 
+> Reported-by: Nick Bowler <nbowler@elliptictech.com>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> LKML-Reference: <new-submission>
+> ---
+>  kernel/timer.c |    6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> Index: linux-2.6/kernel/timer.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/timer.c
+> +++ linux-2.6/kernel/timer.c
+> @@ -969,10 +969,14 @@ EXPORT_SYMBOL(try_to_del_timer_sync);
+>  int del_timer_sync(struct timer_list *timer)
+>  {
+>  #ifdef CONFIG_LOCKDEP
+> +	unsigned long flags;
+> +
+> +	raw_local_irq_save(flags);
+>  	local_bh_disable();
+>  	lock_map_acquire(&timer->lockdep_map);
+>  	lock_map_release(&timer->lockdep_map);
+> -	local_bh_enable();
+> +	_local_bh_enable();
+> +	raw_local_irq_restore(flags);
 
-Totally agreed.
+This is more cheap than what I have done ;)
+I think it will cure the issue reported by Nick.
+Thanks you anyway.
 
->Secondly now the question of whether kdump_msg() call should be before
->crash_kexec() or not because modules might want to do lots of unreliable
->things, I am now split on that. Especially because of the fact that if
->somebody wants it probably can use kprobe to hook into crash_kexec()
->or panic() or something like that to execute its code before everything
->else.
-
-If kprobe is the reason, then probably we can remove lots of other
-kernel API's like kmsg dumper.
-
-
->
->The other reason I am little split on this because in the past I have seen
->kdump fail many a times either because of chipset issues or because of driver
->issues etc. So though I don't like it and I want drivers to be fixed
->to take care of booting in kdump environment, things not necessarily
->worked as well as we expected them to and it is not hard to meet a kdump
->failure.
->
->Hence though I do not prefer it but I will not stand in the way of kdump_msg()
->being called before crash_kexec() gets the control.
->
-
-The point is that we don't have to choose one of them (kmsg dumper or
-kdump), we can choose to have them both. Like Seiji said, they always
-want the kernel messages to be saved. Duplicates are much better than
-nothing.
-
+Reviewed-by: Yong Zhang <yong.zhang0@gmail.com>
