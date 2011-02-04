@@ -1,123 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657Ab1BDIDX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 03:03:23 -0500
-Received: from webbox4.loswebos.de ([213.187.93.205]:36868 "EHLO
-	webbox4.loswebos.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123Ab1BDIDW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 03:03:22 -0500
-Date: Fri, 4 Feb 2011 09:03:14 +0100
-From: Marc Koschewski <marc@osknowledge.org>
-To: david@lang.hm
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Gergely Nagy <algernon@balabit.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        James Morris <jmorris@namei.org>
-Subject: Re: CAP_SYSLOG, 2.6.38 and user space
-Message-ID: <20110204080302.GA24941@marc.osknowledge.org>
-References: <1296733177.14846.26.camel@moria>
- <20110203153252.GA24153@mail.hallyn.com>
- <1296748401.14846.39.camel@moria>
- <20110203165132.GA28172@mail.hallyn.com>
- <alpine.DEB.2.00.1102031647150.30983@asgard.lang.hm>
+	id S1752896Ab1BDIDu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 03:03:50 -0500
+Received: from mail.sysgo.com ([195.145.229.155]:60386 "EHLO mail.sysgo.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752123Ab1BDIDt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 03:03:49 -0500
+Date: Fri, 4 Feb 2011 09:03:43 +0100
+From: Pavel Machek <pma@sysgo.com>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: kernel list <linux-kernel@vger.kernel.org>, cko@sysgo.com,
+        linux@dominikbrodowski.net, eric.miao@marvell.com,
+        Andrew Morton <akpm@osdl.org>
+Subject: Re: pcmcia vs. MECR on pxa25x/sa1111
+Message-ID: <20110204080343.GA31740@pma.sysgo.com>
+References: <20110201120303.GA30464@pma.sysgo.com>
+ <20110201125921.GA7984@flint.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1102031647150.30983@asgard.lang.hm>
-X-PGP-Fingerprint: D514 7DC1 B5F5 8989 083E  38C9 5ECF E5BD 3430 ABF5
-X-PGP-Key: http://www.kosik.org/pubkey.asc
-X-Blog: http://www.kosik.org/blog/
-X-Operating-System: Linux marc 2.6.37-ck1-dezzy
-User-Agent: Mutt/1.5.21hg (2010-09-15)
+In-Reply-To: <20110201125921.GA7984@flint.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+
+After 2.6.34 changes, __pxa2xx_drv_pcmcia_probe() was replaced by
+sa1111_pcmcia_add(). That unfortunately means that configure_sockets()
+is not called, leading to MECR not being set properly, leading to
+strange crashes.
+
+Tested on pxa255+sa1111, I do not have lubbock board nearby. Perhaps
+cleaner solution exists?
+
+Signed-off-by: Pavel Machek <pma@sysgo.com>
+
+---
+
+Here's updated version. I'd prefer not to do too extensive changes as
+I do not have lubbock nearby.
 
 
-* david@lang.hm <david@lang.hm> [2011-02-03 16:49:08 -0800]:
+--- a/drivers/pcmcia/pxa2xx_base.c
++++ b/drivers/pcmcia/pxa2xx_base.c
+@@ -204,7 +204,7 @@ pxa2xx_pcmcia_frequency_change(struct soc_pcmcia_socket *skt,
+ }
+ #endif
+ 
+-static void pxa2xx_configure_sockets(struct device *dev)
++void pxa2xx_configure_sockets(struct device *dev)
+ {
+ 	struct pcmcia_low_level *ops = dev->platform_data;
+ 
+--- a/drivers/pcmcia/pxa2xx_base.h
++++ b/drivers/pcmcia/pxa2xx_base.h
+@@ -1,3 +1,4 @@
+ int pxa2xx_drv_pcmcia_add_one(struct soc_pcmcia_socket *skt);
+ void pxa2xx_drv_pcmcia_ops(struct pcmcia_low_level *ops);
++void pxa2xx_configure_sockets(struct device *dev);
+ 
+--- a/drivers/pcmcia/pxa2xx_lubbock.c
++++ b/drivers/pcmcia/pxa2xx_lubbock.c
+@@ -226,6 +226,7 @@ int pcmcia_lubbock_init(struct sa1111_dev *sadev)
+ 		lubbock_set_misc_wr((1 << 15) | (1 << 14), 0);
+ 
+ 		pxa2xx_drv_pcmcia_ops(&lubbock_pcmcia_ops);
++		pxa2xx_configure_sockets(&sadev->dev);
+ 		ret = sa1111_pcmcia_add(sadev, &lubbock_pcmcia_ops,
+ 				pxa2xx_drv_pcmcia_add_one);
+ 	}
 
-> On Thu, 3 Feb 2011, Serge E. Hallyn wrote:
-> 
-> >Quoting Gergely Nagy (algernon@balabit.hu):
-> >>On Thu, 2011-02-03 at 15:32 +0000, Serge E. Hallyn wrote:
-> >>>>Back in november, a patch was merged into the kernel (in  commit
-> >>>>ce6ada35bdf710d16582cc4869c26722547e6f11), that splits CAP_SYSLOG out of
-> >>>>CAP_SYS_ADMIN.
-> >>>>
-> >>>>Sadly, this has an unwelcomed consequence, that any userspace syslogd
-> >>>>that formerly used CAP_SYS_ADMIN will stop working, unless upgraded, or
-> >>>>otherwise adapted to the change.
-> >>>>
-> >>>>However, updating userspace isn't that easy, either, if one wants to
-> >>>>support multiple kernels with the same userspace binary: pre-2.6.38, one
-> >>>>needs CAP_SYS_ADMIN, but later kernels will need CAP_SYS_ADMIN. It would
-> >>>>be trivial to keep both, but that kind of defeats the purpose of
-> >>>>CAP_SYSLOG,
-> >>>
-> >>>The idea would be to only use both when you detect a possibly older
-> >>>kernel.
-> >>
-> >>I was considering that, but... how do I reliably detect an older kernel?
-> >>So far, I didn't find a reliable way with which I can detect a kernel
-> >>version at run-time (apart from parsing utsname)
-> >
-> >...  Why not parse utsname?
-> 
-> because the name may be different on different systems, a generic software
-> package is not going to be able to interpret them all.
-> 
-> >>>However, you're right of course, I really should have provided some way
-> >>>for userspace to click 'ok, got the message, now continue anyway because
-> >>>I'm running older userspace for now,'  i.e. a sysctl perhaps.
-> >>>
-> >>>Sorry about the trouble.  Here is a patch to just warn for now, with
-> >>>the changelog showing what i intend to push next.
-> >>>
-> >>>sorry again,
-> >>>-serge
-> >>>
-> >>>From 2d7408541dd3a6e19a4265b028233789be6a40f4 Mon Sep 17 00:00:00 2001
-> >>>From: Serge Hallyn <serge@peq.(none)>
-> >>>Date: Thu, 3 Feb 2011 09:26:15 -0600
-> >>>Subject: [PATCH 1/1] cap_syslog: don't refuse cap_sys_admin for now
-> >>>
-> >>>At 2.6.39 or 2.6.40, let's add a sysctl which defaults to 0.  When
-> >>>0, refuse if cap_sys_admin, if 1, then allow.  This will allow
-> >>>users to acknowledge (permanently, if they must, using /etc/sysctl.conf)
-> >>>that they've seen the syslog message about cap_sys_admin being
-> >>>deprecated for syslog.
-> >>
-> >>Could we have it the other way around, at least for a while? Otherwise,
-> >
-> >Sure.
-> >
-> >So long as there is a definite path toward eventually having syslog
-> >with CAP_SYS_ADMIN be denied.
-> 
-> I can see what you would want to allow for a syslog daemon to have
-> CAP_SYSLOG without needing to have CAP_SYS_ADMIN, but why do you see it as
-> important to deny the ability if someone has CAP_SYS_ADMIN?
-
-ack++
-
-Moreover, this change really is 'hell' on _many_ machines. We had discussed a
-thousands time to not break existing applications. So a) either make it optional in
-the kernel so that userspace still works with CAP_SYS_ADMIN _and_ CAP_SYSLOG
-while dropping a note that it should be fixed in userspace _and_ mark it as
-deprecated as of mid 2012 or b) revert it.
-
-> 
-> David Lang
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
-
--- 
-Marc Koschewski
