@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571Ab1BDSL2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 13:11:28 -0500
-Received: from fieldses.org ([174.143.236.118]:39365 "EHLO fieldses.org"
+	id S1752511Ab1BDSNe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 13:13:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36715 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752207Ab1BDSL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 13:11:27 -0500
-Date: Fri, 4 Feb 2011 13:11:16 -0500
-To: Andrey Vagin <avagin@openvz.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] fs: Correctly check d_find_alias() return code in
- devpts_pty_kill
-Message-ID: <20110204181116.GA12304@fieldses.org>
-References: <1296833307-22549-1-git-send-email-avagin@openvz.org>
+	id S1752025Ab1BDSNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 13:13:32 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] CRED: Fix kernel panic upon security_file_alloc() failure.
+To: torvalds@osdl.org, akpm@linux-foundation.org
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        David Howells <dhowells@redhat.com>
+Date: Fri, 04 Feb 2011 18:13:24 +0000
+Message-ID: <20110204181324.15313.11611.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296833307-22549-1-git-send-email-avagin@openvz.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 04, 2011 at 06:28:26PM +0300, Andrey Vagin wrote:
-> d_find_alias() return NULL in case error, but we expected errno in
-> devpts_pty_kill.
+From: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
 
-Possibly dumb question: can d_find_alias() actually fail here?
+In get_empty_filp() since 2.6.29, file_free(f) is called with f->f_cred == NULL
+when security_file_alloc() returned an error.  As a result, kernel will panic()
+due to put_cred(NULL) call within RCU callback.
 
---b.
+Fix this bug by assigning f->f_cred before calling security_file_alloc().
 
-> 
-> Signed-off-by: Andrey Vagin <avagin@openvz.org>
-> ---
->  fs/devpts/inode.c |   10 ++++------
->  1 files changed, 4 insertions(+), 6 deletions(-)
-> 
-> diff --git a/fs/devpts/inode.c b/fs/devpts/inode.c
-> index 8392c8c..530b1f1 100644
-> --- a/fs/devpts/inode.c
-> +++ b/fs/devpts/inode.c
-> @@ -544,14 +544,12 @@ void devpts_pty_kill(struct tty_struct *tty)
->  	mutex_lock(&root->d_inode->i_mutex);
->  
->  	dentry = d_find_alias(inode);
-> -	if (IS_ERR(dentry))
-> +	if (!dentry)
->  		goto out;
->  
-> -	if (dentry) {
-> -		inode->i_nlink--;
-> -		d_delete(dentry);
-> -		dput(dentry);	/* d_alloc_name() in devpts_pty_new() */
-> -	}
-> +	inode->i_nlink--;
-> +	d_delete(dentry);
-> +	dput(dentry);	/* d_alloc_name() in devpts_pty_new() */
->  
->  	dput(dentry);		/* d_find_alias above */
->  out:
-> -- 
-> 1.7.2.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ fs/file_table.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/fs/file_table.c b/fs/file_table.c
+index c3e89ad..eb36b6b 100644
+--- a/fs/file_table.c
++++ b/fs/file_table.c
+@@ -125,13 +125,13 @@ struct file *get_empty_filp(void)
+ 		goto fail;
+ 
+ 	percpu_counter_inc(&nr_files);
++	f->f_cred = get_cred(cred);
+ 	if (security_file_alloc(f))
+ 		goto fail_sec;
+ 
+ 	INIT_LIST_HEAD(&f->f_u.fu_list);
+ 	atomic_long_set(&f->f_count, 1);
+ 	rwlock_init(&f->f_owner.lock);
+-	f->f_cred = get_cred(cred);
+ 	spin_lock_init(&f->f_lock);
+ 	eventpoll_init_file(f);
+ 	/* f->f_version: 0 */
+
