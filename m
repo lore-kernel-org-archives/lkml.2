@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677Ab1BDUNP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 15:13:15 -0500
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:20470 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752173Ab1BDUNO (ORCPT
+	id S1752717Ab1BDUO6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 15:14:58 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34466 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752173Ab1BDUO4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 15:13:14 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: M181pY8VM1lDSggS.OXLtVGFzdztrmnUwGoihyJKL0aR2ko
- xIndfsb8wPLvfZ7VZ61nlzE4Xj2Xn1Wiqbu96O_wMyWLOv29BvIKfgllSNTw
- Hygi53vXyDFYuIaJKGpxv1zgSv49kAJSaEQ5fYacP6f_VMdc0CuJtHuvvoZl
- NURNdZlFqgoXflm57UANyBFd2fKmfSxzNo_YgtmCkpL0aEpbf7iAeRqv9sVM
- e53l0LLp7N2SdX3AtuR07qa7gYWFu9cPB4LvcS5H.Ax8sxjo-
-X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 4 Feb 2011 14:13:12 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
-cc: Kernel-newbies <kernelnewbies@nl.linux.org>,
-        linux-kernel-mail <linux-kernel@vger.kernel.org>
-Subject: Re: Thread Affinity structure
-In-Reply-To: <AANLkTimZTbWt19hg8XWxL+Q5TBFY0P8wF-TfFDLYjBCw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1102041412170.6690@router.home>
-References: <AANLkTinbnrAMMKVZSBQChtZjUyw6Yk1otp8xmqJNvWm3@mail.gmail.com> <alpine.DEB.2.00.1102041326330.4611@router.home> <AANLkTimZTbWt19hg8XWxL+Q5TBFY0P8wF-TfFDLYjBCw@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 4 Feb 2011 15:14:56 -0500
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463811839-1526287847-1296850393=:6690"
+X-Originating-IP: [172.22.72.244]
+In-Reply-To: <20110204194954.GA25180@kroah.com>
+References: <1295559715-14264-1-git-send-email-rmorell@nvidia.com>
+	<1296097609-32302-4-git-send-email-rmorell@nvidia.com>
+	<20110204194954.GA25180@kroah.com>
+Date: Fri, 4 Feb 2011 12:14:54 -0800
+Message-ID: <AANLkTinRtch4Pvr3GLz5wZU2xkG3FMJxxzSNAdParA7j@mail.gmail.com>
+Subject: Re: [PATCH 3/3] USB: ehci: tegra: Align DMA transfers to 32 bytes
+From: Olof Johansson <olof@lixom.net>
+To: Greg KH <greg@kroah.com>
+Cc: Robert Morell <rmorell@nvidia.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Benoit Goby <benoit@android.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
+        Oliver Neukum <oliver@neukum.org>, Erik Gilling <konkers@android.com>,
+        Colin Cross <ccross@android.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
----1463811839-1526287847-1296850393=:6690
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
-
-On Fri, 4 Feb 2011, Sri Ram Vemulpali wrote:
-
-> Hi Christoph,
+On Fri, Feb 4, 2011 at 11:49 AM, Greg KH <greg@kroah.com> wrote:
+> On Wed, Jan 26, 2011 at 07:06:49PM -0800, Robert Morell wrote:
+>> The Tegra2 USB controller doesn't properly deal with misaligned DMA
+>> buffers, causing corruption.  This is especially prevalent with USB
+>> network adapters, where skbuff alignment is often in the middle of a
+>> 4-byte dword.
+>>
+>> To avoid this, allocate a temporary buffer for the DMA if the provided
+>> buffer isn't sufficiently aligned.
+>>
+>> Signed-off-by: Robert Morell <rmorell@nvidia.com>
+>> ---
+>>  drivers/usb/host/ehci-tegra.c |   90 +++++++++++++++++++++++++++++++++++++++++
 >
->   Thanks for response. Can you please explain in little bit elaborate
-> what do you mean
+> This file doesn't seem to be in any tree that I can find, including my
+> own, so I can't apply this patch.
 >
->  "The value returned =A0from a call to gettid(2) can be passed in the arg=
-ument
->  pid. =A0Specifying pid as 0 will set the attribute for the calling threa=
-d,
->  and passing the value returned from a call to getpid(2) will set the
->  attribute for the main thread of the thread group."
->
-> To whom I should pass the id. I did not understood.
+> What am I supposed to do with it?
 
-The passage was from the man page that you get by typing
-
-man sched_setaffinity
+It hasn't been posted for upstream yet, so nothing for you to do. The
+driver will be posted for review soon, hopefully in time for .39.
 
 
-You pass the id as a parameter to sched_setaffinity.
-
----1463811839-1526287847-1296850393=:6690--
+-Olof
