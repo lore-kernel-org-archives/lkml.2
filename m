@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753138Ab1BDV7p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 16:59:45 -0500
-Received: from gate.crashing.org ([63.228.1.57]:59099 "EHLO gate.crashing.org"
+	id S1753383Ab1BDWAY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 17:00:24 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:58891 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751842Ab1BDV7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 16:59:43 -0500
-Subject: Re: Sun GEM PPC32 Bug?
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Matt <jackdachef@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "R. Herbst" <ruediger.herbst@googlemail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-In-Reply-To: <AANLkTimBFBKJf0-TNRLr2hHNEehR2cnKPvx06=yyHGVj@mail.gmail.com>
-References: <AANLkTimBFBKJf0-TNRLr2hHNEehR2cnKPvx06=yyHGVj@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 05 Feb 2011 07:51:07 +1100
-Message-ID: <1296852667.2349.804.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1753362Ab1BDWAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 17:00:22 -0500
+Date: Fri, 4 Feb 2011 23:00:07 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: John Villalovos <jvillalo@redhat.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "John L. Villalovos" <john.l.villalovos@intel.com>, prarit@redhat.com
+Subject: Re: [PATCH 1/1] x86, apic: Make "broken BIOS!!" messages unique
+Message-ID: <20110204220007.GA6052@elte.hu>
+References: <20110204174831.GA10370@intel-s3eb1-02.lab.bos.redhat.com>
+ <4D4C4C4D.40106@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D4C4C4D.40106@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-04 at 16:55 +0000, Matt wrote:
-> Hi guys,
-> 
-> I myself don't have any PPC32 box but I just googled some of the
-> keywords Ruediger posted "gem eth0: RX MAC fifooverflow smac"
-> 
-> and there were even similar or related messages going back to 2004
-> (and kernel 2.6.9).
-> 
-> Slab corruption seems to be involved (in some ?) cases (e.g.
-> http://www.mail-archive.com/netdev@vger.kernel.org/msg08345.html)
-> 
-> so it sounds serious to me (from an users point of view).
-> 
-> A kind of temporary fix seems to rmmod and modprobe the kernel-module,
-> according to:http://ubuntuforums.org/showthread.php?t=1428330
-> 
-> 
-> For the German speaking folks there's a thread over at
-> forums.gentoo.org (http://forums.gentoo.org/viewtopic-t-862767.html)
-> 
-> and 2 additional English threads which might provide additional info
-> on this (and another sound) issue:
-> 
-> http://forums.gentoo.org/viewtopic-t-862229.html "kernel: eth0: RX MAC
-> fifo overflow smac"
-> 
-> http://forums.gentoo.org/viewtopic-t-862579.html "Soundissue extreme quietly"
-> 
-> I'm not subscribed to the list so please CC
 
-So the slab corruption doesn't seem to have ever been reported since
-2.6.16, do we know if that's still a problem ?
+* H. Peter Anvin <hpa@zytor.com> wrote:
 
-The FIFO overflow could be a driver bug or a HW issue, there are some
-known issues with the small FIFOs in that chip, but it's also possible
-that we don't configure them quite right. Anybody wants to dig in and
-see what's going on there ? May want to look at the Darwin sungem driver
-for reference on how it configures them... However, it should generally
-recover when that happens. If not, then we have a bug there.
+> On 02/04/2011 09:48 AM, John Villalovos wrote:
+> > x86, apic: Make "broken BIOS!!" messages unique
+> > 
+> > There are five identical "broken BIOS!!" messages.  This patch makes each
+> > message unique so that it is easier to determine which message was actually
+> > printed.
+> > 
+> > The 'inconceivable' messages are because it should not be possible to reach
+> > those code paths.
+> 
+> How about labelling these "MPBIOS" or so, too?
 
-Cheers,
-Ben.
+Yeah.
 
+Also, the messages do not need to shout i suspect - the '!!' can be removed as well.
 
+Thanks,
+
+	Ingo
