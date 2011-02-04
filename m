@@ -1,113 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751555Ab1BDRaG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 12:30:06 -0500
-Received: from mga02.intel.com ([134.134.136.20]:1864 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751083Ab1BDRaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 12:30:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,427,1291622400"; 
-   d="scan'208";a="704109852"
-Date: Fri, 4 Feb 2011 09:27:55 -0800
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH, v3 2/2] cgroups: introduce timer slack subsystem
-Message-ID: <20110204092755.0bbfaa7a@putvin>
-In-Reply-To: <20110204133439.GA7181@shutemov.name>
-References: <1296679656-31163-1-git-send-email-kirill@shutemov.name>
-	<1296679656-31163-3-git-send-email-kirill@shutemov.name>
-	<20110202145605.6c9006fa@putvin>
-	<20110203092229.GB1083@shutemov.name>
-	<20110203095117.76a568fc@putvin>
-	<AANLkTikvkUT8+U=bX6X2n7kMbnAt6evxTy1BqiX+TWpH@mail.gmail.com>
-	<20110203115743.1ef9a4c2@putvin>
-	<20110204133439.GA7181@shutemov.name>
-Organization: OTC
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751643Ab1BDRcX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 12:32:23 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:59517 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751083Ab1BDRcW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 12:32:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=CwZ+06FuRhw5LiBwsHHBOHXl5FnaZnADoI1e+pQNWjnyNCWzqKXYFOUwaMaV1WQfQI
+         PimfUgMYRP90jXlTNKQnWUmRTZH91XXBJ4pYA0Ruv3DWCMoCwz6Ujox3Fz39MTW2rBcT
+         LpAq+q/oXGvbkqp77UjKzlJDLd50lfQF8Zs5w=
+Message-ID: <4D4C3821.5090403@gmail.com>
+Date: Fri, 04 Feb 2011 20:32:17 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Don Zickus <dzickus@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>, George Spelvin <linux@horizon.com>,
+        Meelis Roos <mroos@linux.ee>, Lin Ming <ming.m.lin@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: Re: [PATCH] perf, x86: P4 PMU -- Fix unflagged overflows test
+References: <AANLkTin5gCnhVos3Lu_0GZSxFQmvsNEYTO=Jq7UdmYb1@mail.gmail.com> <20110204165944.GB21209@redhat.com>
+In-Reply-To: <20110204165944.GB21209@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Feb 2011 15:34:39 +0200
-"Kirill A. Shutemov" <kirill@shutemov.name> wrote:
-
-> On Thu, Feb 03, 2011 at 11:57:43AM -0800, Jacob Pan wrote:
-> > On Thu, 3 Feb 2011 10:12:51 -0800
-> > Paul Menage <menage@google.com> wrote:
-> > 
-> > > On Thu, Feb 3, 2011 at 9:51 AM, Jacob Pan
-> > > <jacob.jun.pan@linux.intel.com> wrote:
-> > > >
-> > > > I think this logic defeats the purpose of having timer_slack
-> > > > subsystem in the first place. IMHO, the original intention was
-> > > > to have grouping effect of tasks in the cgroup.
-> > > 
-> > > You can get the semantics you want by just setting min_slack_ns =
-> > > max_slack_ns.
-> > > 
-> > true. it will just make set fail when min = max. it is awkward and
-> > counter intuitive when you want to change the group timer_slack. you
-> > will have to move both min and max to clamp the value, where set
-> > function can not be used.
+On 02/04/2011 07:59 PM, Don Zickus wrote:
+> On Fri, Feb 04, 2011 at 03:17:28PM +0300, Cyrill Gorcunov wrote:
+>> Please apply it, sorry for non-inlined patch (have a web access only at moment).
+>>
+>> Note that I've tested the patch on non-HT machine so if someone have HT'ed one
+>> -- it would be great to test the patch there.
 > 
-> Interface is very similar to /sys/devices/system/cpu/cpuX/cpufreq.
-> I think it's sane. If you want some extention, you can do it with
-> userspace helper.
+> Hmm. For some reason, when I enable the kgdb testsuite, the box fails to
+> boot with hardlockup issues.  It seems like the code is swallowing the
+> NMIs? I basically applied this patch on top of 2.6.38-rc3 and ran it on my
+> Xeon box (p4 w/HT).
 > 
-I don't disagree the current interface is usable. Just less intuitive.
-The situation is different for cpufreq, where you
-don't the situation of adding new entries to be adjusted in the
-existing max-min range.
+> Cheers,
+> Don
 
-> > In addition, when a parent changes min = max, I don't see the
-> > current code enforce new settings on the children. Am i missing
-> > something?
-> 
-> I've missed it. I'll fix.
-> 
-> > In my use case, i want to put some apps into a managed group where
-> > relaxed slack value is used, but when time comes to move the app
-> > out of that cgroup, we would like to resore the original timer
-> > slack. I see having a current value per cgroup can be useful if we
-> > let timer code pick whether to use task slack value or the cgroup
-> > slack value. Or we have to cache the old value per task
-> 
-> What's mean "original timer slack" if you are free to move a task
-> between a lot of cgroups and process itself free to change it anytime?
-> 
+  Interesting, seems old kgdb issue got back. The former unknown nmi problem
+is due to commit 047a3772feaae8e43d81d790f3d3f80dae8ae676 which assumed that
+counter stays zero when unflagged overflow happened, but it seems this is not
+what happens on hw level. I noted that at moment of nmi the counter reached
+some positive value so the new patch simply checks for negative bit being set.
 
-I need to manage tasks by a management software instead of letting the
-task change timer_slack by itself. The goal is to make management
-transparent and no modifications to the existing apps. Therefore, it is
-desirable to automatically enforce timer_slack when the apps are in the
-cgroup while automatically restore it when it is no longer under cgroup
-management.
-So the "original timer slack" can be the default 50us or whatever value
-chosen by the task itself. But the app itself should not care or even be
-aware of which cgroup it is in.
+  I must admit I forgot to test with kgdb testsuite at bootup time and I'll
+be able to test this at monday in best case. I'll try to figure out what might
+happen by code reading for a while (the only idea comes is that nmi from kgdb
+get slipped with one issued by a perf).
 
-So here are two optoins i can think of
-1. add a new variable called cg_timer_slack_ns to struct task_struct{}
-cg_timer_slack_ns will be set by cgroup timer_slack subsystem, then we
-can retain the original per task value in timer_slack_ns.
-timer code will pick max(cg_timer_slack_ns, timer_slack_ns) if
-cg_timer_slack_ns is set.
-
-2. leave task_struct unchanged, add a current_timer_slack to the
-cgroup. timer_slack cgroup does not modify per task timer_slack_ns.
-similar to option #1, let timer code pick the timer_slack to use based
-on whether the task is in timer_slack cgroup.
-
-Any thoughts?
-
-Thanks,
-Jacob
+-- 
+    Cyrill
