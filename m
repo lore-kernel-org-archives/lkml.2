@@ -1,67 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388Ab1BDEOP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 23:14:15 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:41963 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751988Ab1BDEOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 23:14:14 -0500
-Date: Fri, 4 Feb 2011 15:14:08 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: linux-next: manual merge of the tty tree with the i.MX tree
-Message-Id: <20110204151408.9988102e.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753490Ab1BDEQH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 23:16:07 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:56498 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657Ab1BDEQF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 23:16:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=BxKUZIdDXJ5AKZt0YZCLWtbEsyRnqC2dm8yK1N4sCEntd6hblzagYpBVb3SSrsm1Hv
+         v9gSe60iw5ph5pyHE7TOIorvIkvPtElcLfyTnqxHAXM+HBOYnEm8m7s3z/sDIw/2ikcy
+         wX+gHuKSBwNpBpjGzY7EMsWhVUdMEEKwY3B4M=
+MIME-Version: 1.0
+In-Reply-To: <1296743166-9412-2-git-send-email-hannes@cmpxchg.org>
+References: <1296743166-9412-1-git-send-email-hannes@cmpxchg.org>
+	<1296743166-9412-2-git-send-email-hannes@cmpxchg.org>
+Date: Fri, 4 Feb 2011 09:46:05 +0530
+X-Google-Sender-Auth: A19ISu6b16cUgivj6dkIJXdTkRc
+Message-ID: <AANLkTim584=bgyoRux18C=yNniAdof28=xLxS+vnaApT@mail.gmail.com>
+Subject: Re: [patch 1/5] memcg: no uncharged pages reach page_cgroup_zoneinfo
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Thu, Feb 3, 2011 at 7:56 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> All callsites check PCG_USED before passing pc->mem_cgroup, so the
+> latter is never NULL.
+>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Today's linux-next merge of the tty tree got a conflict in
-drivers/tty/serial/Kconfig between commit
-47d37d6f94ccf32d302492f969209930b2411f9e ("serial: Add auart driver for
-i.MX23/28") from the i.M tree and commit
-4564e1ef219fa69ed827fe2613569543a6b26fbc ("serial: pch_uart: support new
-device ML7213") from the tty tree.
-
-Just overlapping additions.  I fixed it up (see below) and can carry the
-fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/tty/serial/Kconfig
-index ef164f5,aaedbad..0000000
---- a/drivers/tty/serial/Kconfig
-+++ b/drivers/tty/serial/Kconfig
-@@@ -1574,18 -1596,8 +1573,23 @@@ config SERIAL_PCH_UAR
-  	  which is an IOH(Input/Output Hub) for x86 embedded processor.
-  	  Enabling PCH_DMA, this PCH UART works as DMA mode.
-  
-+ 	  This driver also can be used for OKI SEMICONDUCTOR ML7213 IOH(Input/
-+ 	  Output Hub) which is for IVI(In-Vehicle Infotainment) use.
-+ 	  ML7213 is companion chip for Intel Atom E6xx series.
-+ 	  ML7213 is completely compatible for Intel EG20T PCH.
-++
- +config SERIAL_MXS_AUART
- +	depends on ARCH_MXS
- +	tristate "MXS AUART support"
- +	select SERIAL_CORE
- +	help
- +	  This driver supports the MXS Application UART (AUART) port.
- +
- +config SERIAL_MXS_AUART_CONSOLE
- +	bool "MXS AUART console support"
- +	depends on SERIAL_MXS_AUART=y
- +	select SERIAL_CORE_CONSOLE
- +	help
- +	  Enable a MXS AUART port to be the system console.
- +
-  endmenu
+Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
