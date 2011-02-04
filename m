@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765Ab1BDUXb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 15:23:31 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:50529 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112Ab1BDUXa (ORCPT
+	id S1752768Ab1BDU1E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 15:27:04 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:15021 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112Ab1BDU1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 15:23:30 -0500
-From: "Dr. Martin Rogge" <marogge@onlinehome.de>
-To: Gene Heskett <gene.heskett@gmail.com>, linux-kernel@vger.kernel.org
-Subject: scheduling policy    was: Re: 2.6.37 considered stable?
-Date: Fri, 4 Feb 2011 21:23:28 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-ck1; KDE/4.5.5; x86_64; ; )
+	Fri, 4 Feb 2011 15:27:02 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 04 Feb 2011 12:14:56 -0800
+Date: Fri, 4 Feb 2011 12:26:40 -0800
+From: rmorell@nvidia.com
+To: Greg KH <gregkh@suse.de>
+Cc: Olof Johansson <olof@lixom.net>, Greg KH <greg@kroah.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Benoit Goby <benoit@android.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
+        Oliver Neukum <oliver@neukum.org>, Erik Gilling <konkers@android.com>,
+        Colin Cross <ccross@android.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 3/3] USB: ehci: tegra: Align DMA transfers to 32 bytes
+Message-ID: <20110204202640.GC1744@morell.nvidia.com>
+References: <1295559715-14264-1-git-send-email-rmorell@nvidia.com>
+ <1296097609-32302-4-git-send-email-rmorell@nvidia.com>
+ <20110204194954.GA25180@kroah.com>
+ <AANLkTinRtch4Pvr3GLz5wZU2xkG3FMJxxzSNAdParA7j@mail.gmail.com>
+ <20110204201616.GA12482@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102042123.28734.marogge@onlinehome.de>
-X-Provags-ID: V02:K0:bNWyu5AQfJFa3w13AmU5TNTYOQro9GjKZlcMX6mC2/3
- R2LseMdEyM6KUIdmU5zaXqqq8OMjbBtCDvOY4jX1QlGxqPhJnN
- UbH9Dh+p8fPfVpPq26YptbEP5ZSu6gybbq5MW0L/QwI86VURcR
- Mu19Ail/fEzGlYvzMydz1C9GZkMeQTPoSAaSEwaImbhEK1QvYg
- lF2ii1YIwmq7OO4DK+XxA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110204201616.GA12482@suse.de>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gene Heskett wrote:
-> Chuckle.  I've been running 2.6.37 here, with all of that new group
-> scheduling stuff enabled, the desktop feels great and my only fuss is that
-> kaffiene, when watching digital tv on my pcHD-3000 card, is NOT getting
-> enough time so both the audio and the video have little 20 millisecond
-> holes chopped in them at sub-second intervals.  Not the most pleasant
-> thing
-> to watch.  I would appreciate any suggestions on how to get such an
-> application a higher priority.
+On Fri, Feb 04, 2011 at 12:16:16PM -0800, Greg KH wrote:
+> On Fri, Feb 04, 2011 at 12:14:54PM -0800, Olof Johansson wrote:
+> > On Fri, Feb 4, 2011 at 11:49 AM, Greg KH <greg@kroah.com> wrote:
+> > > This file doesn't seem to be in any tree that I can find, including my
+> > > own, so I can't apply this patch.
+> > >
+> > > What am I supposed to do with it?
+> > 
+> > It hasn't been posted for upstream yet, so nothing for you to do. The
+> > driver will be posted for review soon, hopefully in time for .39.
 > 
+> Then why would someone send me a patch for it already?
 
-Gene, have you tried schedtool to set the scheduling policy of the process to 
-SCHED_FIFO or even SCHED_ISO? 
+Sorry, this is my fault.  My immediate need is to get this merged into
+our release linux-tegra-2.6.36 branch, but wanted to get broad review
+for the change since it affects USB core code.  I figured that it will
+be easier to push the full driver into the USB tree with this part out
+of the way already, anyway.
 
-Before anyone asks, yes, relying on schedtool puts a little reponsibility on 
-user space, but it is my firm believe that (a) you can't auto-everything and 
-(b) the onus should be on the distro not the user.
-
-Martin
+Thanks,
+Robert
