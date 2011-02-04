@@ -1,224 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753189Ab1BDIXZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 03:23:25 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40234 "EHLO arroyo.ext.ti.com"
+	id S1753500Ab1BDIXv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 03:23:51 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:50645 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752123Ab1BDIXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 03:23:21 -0500
+	id S1752740Ab1BDIXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 03:23:23 -0500
 From: pavan_savoy@ti.com
 To: linux-kernel@vger.kernel.org, gregkh@suse.de
 Cc: Pavan Savoy <pavan_savoy@ti.com>
-Subject: [PATCH 3/7] drivers:misc: ti-st: fix error codes
-Date: Fri,  4 Feb 2011 02:23:11 -0600
-Message-Id: <1296807795-5408-4-git-send-email-pavan_savoy@ti.com>
+Subject: [PATCH 5/7] drivers:misc: ti-st: firmware download optimization
+Date: Fri,  4 Feb 2011 02:23:13 -0600
+Message-Id: <1296807795-5408-6-git-send-email-pavan_savoy@ti.com>
 X-Mailer: git-send-email 1.5.6.3
-In-Reply-To: <1296807795-5408-3-git-send-email-pavan_savoy@ti.com>
+In-Reply-To: <1296807795-5408-5-git-send-email-pavan_savoy@ti.com>
 References: <1296807795-5408-1-git-send-email-pavan_savoy@ti.com>
  <1296807795-5408-2-git-send-email-pavan_savoy@ti.com>
  <1296807795-5408-3-git-send-email-pavan_savoy@ti.com>
+ <1296807795-5408-4-git-send-email-pavan_savoy@ti.com>
+ <1296807795-5408-5-git-send-email-pavan_savoy@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pavan Savoy <pavan_savoy@ti.com>
 
-set-right the error codes that the shared transport driver
-returns.
-Instead of magic numbers like -1, return relevant codes such as
-ETIMEDOUT or EIO, EAGAIN when wait times out or uart write bytes don't
-match expected value or when registration fails and needs to be
-attempted again.
+To fasten the process of firmware download, the chip allows
+disabling of the command complete event generation from host.
+In these cases, only few very essential commands would have
+the command complete events and hence the wait associated with
+them.
+
+So now the driver would wait for a command complete event, only
+when it comes across a wait event during firmware parsing.
+This would also mean we need to skip not just the change baud
+rate command but also the wait for it.
 
 Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
 ---
- drivers/misc/ti-st/st_core.c |   31 ++++++++++++++-----------------
- drivers/misc/ti-st/st_kim.c  |   18 +++++++++---------
- drivers/misc/ti-st/st_ll.c   |    2 +-
- 3 files changed, 24 insertions(+), 27 deletions(-)
+ drivers/misc/ti-st/st_core.c |   18 +++++++++
+ drivers/misc/ti-st/st_kim.c  |   80 ++++++++++++++++++++++++++++++++++++++----
+ include/linux/ti_wilink_st.h |    6 +++
+ 3 files changed, 97 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/misc/ti-st/st_core.c b/drivers/misc/ti-st/st_core.c
-index 84d73c5..79d2dc3 100644
+index f7bb96f..dd2c879 100644
 --- a/drivers/misc/ti-st/st_core.c
 +++ b/drivers/misc/ti-st/st_core.c
-@@ -65,7 +65,7 @@ int st_int_write(struct st_data_s *st_gdata,
- 	struct tty_struct *tty;
- 	if (unlikely(st_gdata == NULL || st_gdata->tty == NULL)) {
- 		pr_err("tty unavailable to perform write");
--		return -1;
-+		return -EINVAL;
- 	}
- 	tty = st_gdata->tty;
- #ifdef VERBOSE
-@@ -124,9 +124,15 @@ void st_reg_complete(struct st_data_s *st_gdata, char err)
- 	pr_info(" %s ", __func__);
- 	for (i = 0; i < ST_MAX_CHANNELS; i++) {
- 		if (likely(st_gdata != NULL && st_gdata->list[i] != NULL &&
--			   st_gdata->list[i]->reg_complete_cb != NULL))
-+			   st_gdata->list[i]->reg_complete_cb != NULL)) {
- 			st_gdata->list[i]->reg_complete_cb
- 				(st_gdata->list[i]->priv_data, err);
-+			pr_info("protocol %d's cb sent %d\n", i, err);
-+			if (err) { /* cleanup registered protocol */
-+				st_gdata->protos_registered--;
-+				st_gdata->list[i] = NULL;
-+			}
-+		}
- 	}
+@@ -52,6 +52,24 @@ static void remove_channel_from_table(struct st_data_s *st_gdata,
+ 	st_gdata->list[proto->chnl_id] = NULL;
  }
  
-@@ -457,15 +463,7 @@ long st_register(struct st_proto_s *new_proto)
- 	if (st_gdata == NULL || new_proto == NULL || new_proto->recv == NULL
- 	    || new_proto->reg_complete_cb == NULL) {
- 		pr_err("gdata/new_proto/recv or reg_complete_cb not ready");
--		if (st_gdata == NULL)
--			pr_err("error 1\n");
--		if (new_proto == NULL)
--			pr_err("error 2\n");
--		if (new_proto->recv == NULL)
--			pr_err("error 3\n");
--		if (new_proto->reg_complete_cb == NULL)
--			pr_err("erro 4\n");
--		return -1;
-+		return -EINVAL;
- 	}
- 
- 	if (new_proto->chnl_id >= ST_MAX_CHANNELS) {
-@@ -512,10 +510,9 @@ long st_register(struct st_proto_s *new_proto)
- 			if ((st_gdata->protos_registered != ST_EMPTY) &&
- 			    (test_bit(ST_REG_PENDING, &st_gdata->st_state))) {
- 				pr_err(" KIM failure complete callback ");
--				st_reg_complete(st_gdata, -1);
-+				st_reg_complete(st_gdata, err);
- 			}
--
--			return -1;
-+			return -EINVAL;
- 		}
- 
- 		/* the chnl_id might require other gpios to be toggled
-@@ -634,14 +631,14 @@ long st_write(struct sk_buff *skb)
- 	if (unlikely(skb == NULL || st_gdata == NULL
- 		|| st_gdata->tty == NULL)) {
- 		pr_err("data/tty unavailable to perform write");
--		return -1;
-+		return -EINVAL;
- 	}
- #ifdef DEBUG			/* open-up skb to read the 1st byte */
- 	chnl_id = skb->data[0];
- 	if (unlikely(st_gdata->list[chnl_id] == NULL)) {
- 		pr_err(" chnl_id %d not registered, and writing? ",
- 			   chnl_id);
--		return -1;
-+		return -EINVAL;
- 	}
- #endif
- 	pr_debug("%d to be written", skb->len);
-@@ -829,7 +826,7 @@ int st_core_init(struct st_data_s **core_data)
- 		err = tty_unregister_ldisc(N_TI_WL);
- 		if (err)
- 			pr_err("unable to un-register ldisc");
--		return -1;
-+		return err;
- 	}
- 	*core_data = st_gdata;
- 	return 0;
++/*
++ * called from KIM during firmware download.
++ *
++ * This is a wrapper function to tty->ops->write_room.
++ * It returns number of free space available in
++ * uart tx buffer.
++ */
++int st_get_uart_wr_room(struct st_data_s *st_gdata)
++{
++	struct tty_struct *tty;
++	if (unlikely(st_gdata == NULL || st_gdata->tty == NULL)) {
++		pr_err("tty unavailable to perform write");
++		return -1;
++	}
++	tty = st_gdata->tty;
++	return tty->ops->write_room(tty);
++}
++
+ /* can be called in from
+  * -- KIM (during fw download)
+  * -- ST Core (during st_write)
 diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
-index a7fda81..ccc46a7 100644
+index ccc46a7..2c096cc 100644
 --- a/drivers/misc/ti-st/st_kim.c
 +++ b/drivers/misc/ti-st/st_kim.c
-@@ -201,13 +201,13 @@ static long read_local_version(struct kim_data_s *kim_gdata, char *bts_scr_name)
- 	INIT_COMPLETION(kim_gdata->kim_rcvd);
- 	if (4 != st_int_write(kim_gdata->core_data, read_ver_cmd, 4)) {
- 		pr_err("kim: couldn't write 4 bytes");
--		return -1;
-+		return -EIO;
- 	}
- 
- 	if (!wait_for_completion_timeout
- 	    (&kim_gdata->kim_rcvd, msecs_to_jiffies(CMD_RESP_TIME))) {
- 		pr_err(" waiting for ver info- timed out ");
--		return -1;
-+		return -ETIMEDOUT;
- 	}
- 
- 	version =
-@@ -257,7 +257,7 @@ static long download_firmware(struct kim_data_s *kim_gdata)
- 		     (kim_gdata->fw_entry->size == 0))) {
- 		pr_err(" request_firmware failed(errno %ld) for %s", err,
- 			   bts_scr_name);
--		return -1;
-+		return -EINVAL;
- 	}
- 	ptr = (void *)kim_gdata->fw_entry->data;
- 	len = kim_gdata->fw_entry->size;
-@@ -292,7 +292,7 @@ static long download_firmware(struct kim_data_s *kim_gdata)
- 					   ((struct bts_action *)ptr)->size);
- 			if (unlikely(err < 0)) {
- 				release_firmware(kim_gdata->fw_entry);
--				return -1;
-+				return err;
- 			}
- 			if (!wait_for_completion_timeout
- 			    (&kim_gdata->kim_rcvd,
-@@ -301,7 +301,7 @@ static long download_firmware(struct kim_data_s *kim_gdata)
- 				    (" response timeout during fw download ");
- 				/* timed out */
- 				release_firmware(kim_gdata->fw_entry);
--				return -1;
-+				return -ETIMEDOUT;
- 			}
- 			break;
- 		case ACTION_DELAY:	/* sleep */
-@@ -436,7 +436,7 @@ long st_kim_start(void *kim_data)
- 			pr_info("ldisc_install = 0");
- 			sysfs_notify(&kim_gdata->kim_pdev->dev.kobj,
- 					NULL, "install");
--			err = -1;
-+			err = -ETIMEDOUT;
- 			continue;
- 		} else {
- 			/* ldisc installed now */
-@@ -482,7 +482,7 @@ long st_kim_stop(void *kim_data)
- 			msecs_to_jiffies(LDISC_TIME));
- 	if (!err) {		/* timeout */
- 		pr_err(" timed out waiting for ldisc to be un-installed");
--		return -1;
-+		return -ETIMEDOUT;
- 	}
- 
- 	/* By default configure BT nShutdown to LOW state */
-@@ -642,7 +642,7 @@ static int kim_probe(struct platform_device *pdev)
- 	status = st_core_init(&kim_gdata->core_data);
- 	if (status != 0) {
- 		pr_err(" ST core init failed");
--		return -1;
-+		return -EIO;
- 	}
- 	/* refer to itself */
- 	kim_gdata->core_data->kim_data = kim_gdata;
-@@ -704,7 +704,7 @@ static int kim_probe(struct platform_device *pdev)
- 	if (IS_ERR(kim_debugfs_dir)) {
- 		pr_err(" debugfs entries creation failed ");
- 		kim_debugfs_dir = NULL;
--		return -1;
-+		return -EIO;
- 	}
- 
- 	debugfs_create_file("version", S_IRUGO, kim_debugfs_dir,
-diff --git a/drivers/misc/ti-st/st_ll.c b/drivers/misc/ti-st/st_ll.c
-index 2bda8de..f72de6b 100644
---- a/drivers/misc/ti-st/st_ll.c
-+++ b/drivers/misc/ti-st/st_ll.c
-@@ -130,7 +130,7 @@ unsigned long st_ll_sleep_state(struct st_data_s *st_data,
- 		break;
- 	default:
- 		pr_err(" unknown input/state ");
--		return -1;
-+		return -EINVAL;
- 	}
+@@ -232,6 +232,26 @@ static long read_local_version(struct kim_data_s *kim_gdata, char *bts_scr_name)
  	return 0;
  }
+ 
++void skip_change_remote_baud(unsigned char **ptr, long *len)
++{
++	unsigned char *nxt_action, *cur_action;
++	cur_action = *ptr;
++
++	nxt_action = cur_action + sizeof(struct bts_action) +
++		((struct bts_action *) cur_action)->size;
++
++	if (((struct bts_action *) nxt_action)->type != ACTION_WAIT_EVENT) {
++		pr_err("invalid action after change remote baud command");
++	} else {
++		*ptr = *ptr + sizeof(struct bts_action) +
++			((struct bts_action *)nxt_action)->size;
++		*len = *len - (sizeof(struct bts_action) +
++				((struct bts_action *)nxt_action)->size);
++		/* warn user on not commenting these in firmware */
++		pr_warn("skipping the wait event of change remote baud");
++	}
++}
++
+ /**
+  * download_firmware -
+  *	internal function which parses through the .bts firmware
+@@ -244,6 +264,9 @@ static long download_firmware(struct kim_data_s *kim_gdata)
+ 	unsigned char *ptr = NULL;
+ 	unsigned char *action_ptr = NULL;
+ 	unsigned char bts_scr_name[30] = { 0 };	/* 30 char long bts scr name? */
++	int wr_room_space;
++	int cmd_size;
++	unsigned long timeout;
+ 
+ 	err = read_local_version(kim_gdata, bts_scr_name);
+ 	if (err != 0) {
+@@ -280,13 +303,43 @@ static long download_firmware(struct kim_data_s *kim_gdata)
+ 			     0xFF36)) {
+ 				/* ignore remote change
+ 				 * baud rate HCI VS command */
+-				pr_err
+-				    (" change remote baud"
++				pr_warn("change remote baud"
+ 				    " rate command in firmware");
++				skip_change_remote_baud(&ptr, &len);
+ 				break;
+ 			}
++			/*
++			 * Make sure we have enough free space in uart
++			 * tx buffer to write current firmware command
++			 */
++			cmd_size = ((struct bts_action *)ptr)->size;
++			timeout = jiffies + msecs_to_jiffies(CMD_WR_TIME);
++			do {
++				wr_room_space =
++					st_get_uart_wr_room(kim_gdata->core_data);
++				if (wr_room_space < 0) {
++					pr_err("Unable to get free "
++							"space info from uart tx buffer");
++					release_firmware(kim_gdata->fw_entry);
++					return wr_room_space;
++				}
++				mdelay(1); /* wait 1ms before checking room */
++			} while ((wr_room_space < cmd_size) &&
++					time_before(jiffies, timeout));
++
++			/* Timeout happened ? */
++			if (time_after_eq(jiffies, timeout)) {
++				pr_err("Timeout while waiting for free "
++						"free space in uart tx buffer");
++				release_firmware(kim_gdata->fw_entry);
++				return -ETIMEDOUT;
++			}
+ 
+-			INIT_COMPLETION(kim_gdata->kim_rcvd);
++			/*
++			 * Free space found in uart buffer, call st_int_write
++			 * to send current firmware command to the uart tx
++			 * buffer.
++			 */
+ 			err = st_int_write(kim_gdata->core_data,
+ 			((struct bts_action_send *)action_ptr)->data,
+ 					   ((struct bts_action *)ptr)->size);
+@@ -294,15 +347,28 @@ static long download_firmware(struct kim_data_s *kim_gdata)
+ 				release_firmware(kim_gdata->fw_entry);
+ 				return err;
+ 			}
++			/*
++			 * Check number of bytes written to the uart tx buffer
++			 * and requested command write size
++			 */
++			if (err != cmd_size) {
++				pr_err("Number of bytes written to uart "
++						"tx buffer are not matching with "
++						"requested cmd write size");
++				release_firmware(kim_gdata->fw_entry);
++				return -EIO;
++			}
++			break;
++		case ACTION_WAIT_EVENT:  /* wait */
+ 			if (!wait_for_completion_timeout
+-			    (&kim_gdata->kim_rcvd,
+-			     msecs_to_jiffies(CMD_RESP_TIME))) {
+-				pr_err
+-				    (" response timeout during fw download ");
++					(&kim_gdata->kim_rcvd,
++					 msecs_to_jiffies(CMD_RESP_TIME))) {
++				pr_err("response timeout during fw download ");
+ 				/* timed out */
+ 				release_firmware(kim_gdata->fw_entry);
+ 				return -ETIMEDOUT;
+ 			}
++			INIT_COMPLETION(kim_gdata->kim_rcvd);
+ 			break;
+ 		case ACTION_DELAY:	/* sleep */
+ 			pr_info("sleep command in scr");
+diff --git a/include/linux/ti_wilink_st.h b/include/linux/ti_wilink_st.h
+index 010cda7..7885a77 100644
+--- a/include/linux/ti_wilink_st.h
++++ b/include/linux/ti_wilink_st.h
+@@ -166,6 +166,11 @@ struct st_data_s {
+ 	void *kim_data;
+ };
+ 
++/*
++ * wrapper around tty->ops->write_room to check
++ * availability during firmware download
++ */
++int st_get_uart_wr_room(struct st_data_s *st_gdata);
+ /**
+  * st_int_write -
+  * point this to tty->driver->write or tty->ops->write
+@@ -208,6 +213,7 @@ void gps_chrdrv_stub_init(void);
+  */
+ #define LDISC_TIME	1000
+ #define CMD_RESP_TIME	800
++#define CMD_WR_TIME	5000
+ #define MAKEWORD(a, b)  ((unsigned short)(((unsigned char)(a)) \
+ 	| ((unsigned short)((unsigned char)(b))) << 8))
+ 
 -- 
 1.6.3.3
 
