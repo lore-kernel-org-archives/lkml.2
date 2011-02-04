@@ -1,127 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962Ab1BDUaL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 15:30:11 -0500
-Received: from miraculix-out.informatik.uni-kiel.de ([134.245.248.209]:57464
-	"EHLO miraculix.informatik.uni-kiel.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751212Ab1BDUaJ (ORCPT
+	id S1752181Ab1BDUbo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 15:31:44 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:64133 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751380Ab1BDUbn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 15:30:09 -0500
-From: Timo von Holtz <tvh@informatik.uni-kiel.de>
-To: gregkh@suse.de
-Cc: w.d.hubbs@gmail.com, tvh@informatik.uni-kiel.de,
-        samuel.thibault@ens-lyon.org, tdent48227@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: speakup: enlosed macros with complex values in parenthesis
-Date: Fri,  4 Feb 2011 21:29:46 +0100
-Message-Id: <1296851386-17342-1-git-send-email-tvh@informatik.uni-kiel.de>
-X-Mailer: git-send-email 1.7.4
-X-Null-Tag: 4d8395c5899596173175a1fe9037aaa7
-X-Authenticated-Sender: user tvh from 86.103.152.235
+	Fri, 4 Feb 2011 15:31:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=ePDpIG46J7+7zG5ogvf8NcuQ6NwJ5givb/1OiN7qTvVBt5PKgL+Vj7xGLJNUfZR4Oy
+         O1o8gI4yCLshAYh+rG3b2VO05vl66YAlsxo7+RPS9RrewvahCAKjUtNZIrLHkW4PGB2Y
+         uFgkmOgwEubLObiqm+p0gMU61AprSafQ2Jy8Y=
+From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Octavian Purdila <opurdila@ixiacom.com>
+Cc: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Subject: [PATCH 1/6] sysctl: faster reimplementation of sysctl_check_table
+Date: Fri,  4 Feb 2011 22:31:25 +0200
+Message-Id: <1296851485-6730-1-git-send-email-lucian.grijincu@gmail.com>
+X-Mailer: git-send-email 1.7.4.rc1.7.g2cf08.dirty
+In-Reply-To: <m1oc6rio5u.fsf@fess.ebiederm.org>
+References: <m1oc6rio5u.fsf@fess.ebiederm.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enclosed all macros with complex values in parenthesis
+Determining the parent of a node at depth d
+- previous implementation: O(d)
+- current  implementation: O(1)
 
-Signed-off-by: Timo von Holtz <tvh@informatik.uni-kiel.de>
+Printing the path to a node at depth d
+- previous implementation: O(d^2)
+- current  implementation: O(d)
+
+This comes to a cost: we use an array ('parents') holding as many
+pointers as there can be sysctl levels (currently CTL_MAXNAME=10).
+
+The 'parents' array of pointers holds the same values as the
+ctl_table->parents field because the function that updates ->parents
+(sysctl_set_parent) is called with either NULL (for root nodes) or
+with sysctl_set_parent(table, table->child).
+
+Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
 ---
- drivers/staging/speakup/spk_priv_keyinfo.h |   44 ++++++++++++++--------------
- drivers/staging/speakup/spk_types.h        |   18 ++++++------
- 2 files changed, 31 insertions(+), 31 deletions(-)
+ kernel/sysctl_check.c |  130 +++++++++++++++++++++++++-----------------------
+ 1 files changed, 68 insertions(+), 62 deletions(-)
 
-diff --git a/drivers/staging/speakup/spk_priv_keyinfo.h b/drivers/staging/speakup/spk_priv_keyinfo.h
-index 3fd4b82..95c473a 100644
---- a/drivers/staging/speakup/spk_priv_keyinfo.h
-+++ b/drivers/staging/speakup/spk_priv_keyinfo.h
-@@ -84,27 +84,27 @@
+diff --git a/kernel/sysctl_check.c b/kernel/sysctl_check.c
+index 10b90d8..d23b085 100644
+--- a/kernel/sysctl_check.c
++++ b/kernel/sysctl_check.c
+@@ -6,58 +6,34 @@
+ #include <net/ip_vs.h>
  
- /* keys for setting variables, must be ordered same as the enum for var_ids */
- /* with dec being even and inc being 1 greater */
--#define SPELL_DELAY_DEC VAR_START+0
--#define SPELL_DELAY_INC SPELL_DELAY_DEC+1
--#define PUNC_LEVEL_DEC SPELL_DELAY_DEC+2
--#define PUNC_LEVEL_INC PUNC_LEVEL_DEC+1
--#define READING_PUNC_DEC PUNC_LEVEL_DEC+2
--#define READING_PUNC_INC READING_PUNC_DEC+1
--#define ATTRIB_BLEEP_DEC READING_PUNC_DEC+2
--#define ATTRIB_BLEEP_INC ATTRIB_BLEEP_DEC+1
--#define BLEEPS_DEC ATTRIB_BLEEP_DEC+2
--#define BLEEPS_INC BLEEPS_DEC+1
--#define RATE_DEC BLEEPS_DEC+2
--#define RATE_INC RATE_DEC+1
--#define PITCH_DEC RATE_DEC+2
--#define PITCH_INC PITCH_DEC+1
--#define VOL_DEC PITCH_DEC+2
--#define VOL_INC VOL_DEC+1
--#define TONE_DEC VOL_DEC+2
--#define TONE_INC TONE_DEC+1
--#define PUNCT_DEC TONE_DEC+2
--#define PUNCT_INC PUNCT_DEC+1
--#define VOICE_DEC PUNCT_DEC+2
--#define VOICE_INC VOICE_DEC+1
-+#define SPELL_DELAY_DEC (VAR_START+0)
-+#define SPELL_DELAY_INC (SPELL_DELAY_DEC+1)
-+#define PUNC_LEVEL_DEC (SPELL_DELAY_DEC+2)
-+#define PUNC_LEVEL_INC (PUNC_LEVEL_DEC+1)
-+#define READING_PUNC_DEC (PUNC_LEVEL_DEC+2)
-+#define READING_PUNC_INC (READING_PUNC_DEC+1)
-+#define ATTRIB_BLEEP_DEC (READING_PUNC_DEC+2)
-+#define ATTRIB_BLEEP_INC (ATTRIB_BLEEP_DEC+1)
-+#define BLEEPS_DEC (ATTRIB_BLEEP_DEC+2)
-+#define BLEEPS_INC (BLEEPS_DEC+1)
-+#define RATE_DEC (BLEEPS_DEC+2)
-+#define RATE_INC (RATE_DEC+1)
-+#define PITCH_DEC (RATE_DEC+2)
-+#define PITCH_INC (PITCH_DEC+1)
-+#define VOL_DEC (PITCH_DEC+2)
-+#define VOL_INC (VOL_DEC+1)
-+#define TONE_DEC (VOL_DEC+2)
-+#define TONE_INC (TONE_DEC+1)
-+#define PUNCT_DEC (TONE_DEC+2)
-+#define PUNCT_INC (PUNCT_DEC+1)
-+#define VOICE_DEC (PUNCT_DEC+2)
-+#define VOICE_INC (VOICE_DEC+1)
  
+-static int sysctl_depth(struct ctl_table *table)
+-{
+-	struct ctl_table *tmp;
+-	int depth;
+-
+-	depth = 0;
+-	for (tmp = table; tmp->parent; tmp = tmp->parent)
+-		depth++;
+-
+-	return depth;
+-}
+-
+-static struct ctl_table *sysctl_parent(struct ctl_table *table, int n)
++static void sysctl_print_path(struct ctl_table *table,
++			      struct ctl_table **parents, int depth)
+ {
++	struct ctl_table *p;
+ 	int i;
+-
+-	for (i = 0; table && i < n; i++)
+-		table = table->parent;
+-
+-	return table;
+-}
+-
+-
+-static void sysctl_print_path(struct ctl_table *table)
+-{
+-	struct ctl_table *tmp;
+-	int depth, i;
+-	depth = sysctl_depth(table);
+ 	if (table->procname) {
+-		for (i = depth; i >= 0; i--) {
+-			tmp = sysctl_parent(table, i);
+-			printk("/%s", tmp->procname?tmp->procname:"");
++		for (i = 0; i < depth; i++) {
++			p = parents[i];
++			printk("/%s", p->procname ? p->procname : "");
+ 		}
++		printk("/%s", table->procname);
+ 	}
+ 	printk(" ");
+ }
+ 
+ static struct ctl_table *sysctl_check_lookup(struct nsproxy *namespaces,
+-						struct ctl_table *table)
++	     struct ctl_table *table, struct ctl_table **parents, int depth)
+ {
+ 	struct ctl_table_header *head;
+ 	struct ctl_table *ref, *test;
+-	int depth, cur_depth;
+-
+-	depth = sysctl_depth(table);
++	int cur_depth;
+ 
+ 	for (head = __sysctl_head_next(namespaces, NULL); head;
+ 	     head = __sysctl_head_next(namespaces, head)) {
+ 		cur_depth = depth;
+ 		ref = head->ctl_table;
+ repeat:
+-		test = sysctl_parent(table, cur_depth);
++		test = parents[depth - cur_depth];
+ 		for (; ref->procname; ref++) {
+ 			int match = 0;
+ 			if (cur_depth && !ref->child)
+@@ -83,11 +59,12 @@ out:
+ 	return ref;
+ }
+ 
+-static void set_fail(const char **fail, struct ctl_table *table, const char *str)
++static void set_fail(const char **fail, struct ctl_table *table,
++	     const char *str, struct ctl_table **parents, int depth)
+ {
+ 	if (*fail) {
+ 		printk(KERN_ERR "sysctl table check failed: ");
+-		sysctl_print_path(table);
++		sysctl_print_path(table, parents, depth);
+ 		printk(" %s\n", *fail);
+ 		dump_stack();
+ 	}
+@@ -95,40 +72,55 @@ static void set_fail(const char **fail, struct ctl_table *table, const char *str
+ }
+ 
+ static void sysctl_check_leaf(struct nsproxy *namespaces,
+-				struct ctl_table *table, const char **fail)
++			      struct ctl_table *table, const char **fail,
++			      struct ctl_table **parents, int depth)
+ {
+ 	struct ctl_table *ref;
+ 
+-	ref = sysctl_check_lookup(namespaces, table);
+-	if (ref && (ref != table))
+-		set_fail(fail, table, "Sysctl already exists");
++	ref = sysctl_check_lookup(namespaces, table, parents, depth);
++	if (ref && (ref != table)) {
++		printk(KERN_ALERT "sysctl_check_leaf ref[%s], table[%s]\n", ref->procname, table->procname);
++		set_fail(fail, table, "Sysctl already exists", parents, depth);
++	}
+ }
+ 
+-int sysctl_check_table(struct nsproxy *namespaces, struct ctl_table *table)
++
++
++#define SET_FAIL(str) set_fail(&fail, table, str, parents, depth)
++
++static int __sysctl_check_table(struct nsproxy *namespaces,
++	struct ctl_table *table, struct ctl_table **parents, int depth)
+ {
++	const char *fail = NULL;
+ 	int error = 0;
++
++	if (depth >= CTL_MAXNAME) {
++		SET_FAIL("Sysctl tree too deep");
++		return -EINVAL;
++	}
++
+ 	for (; table->procname; table++) {
+-		const char *fail = NULL;
++		fail = NULL;
+ 
+ 		if (table->parent) {
+ 			if (table->procname && !table->parent->procname)
+-				set_fail(&fail, table, "Parent without procname");
++				SET_FAIL("Parent without procname");
+ 		}
+ 		if (!table->procname)
+-			set_fail(&fail, table, "No procname");
++			SET_FAIL("No procname");
+ 		if (table->child) {
+ 			if (table->data)
+-				set_fail(&fail, table, "Directory with data?");
++				SET_FAIL("Directory with data?");
+ 			if (table->maxlen)
+-				set_fail(&fail, table, "Directory with maxlen?");
++				SET_FAIL("Directory with maxlen?");
+ 			if ((table->mode & (S_IRUGO|S_IXUGO)) != table->mode)
+-				set_fail(&fail, table, "Writable sysctl directory");
++				SET_FAIL("Writable sysctl directory");
+ 			if (table->proc_handler)
+-				set_fail(&fail, table, "Directory with proc_handler");
++				SET_FAIL("Directory with proc_handler");
+ 			if (table->extra1)
+-				set_fail(&fail, table, "Directory with extra1");
++				SET_FAIL("Directory with extra1");
+ 			if (table->extra2)
+-				set_fail(&fail, table, "Directory with extra2");
++				SET_FAIL("Directory with extra2");
+ 		} else {
+ 			if ((table->proc_handler == proc_dostring) ||
+ 			    (table->proc_handler == proc_dointvec) ||
+@@ -139,28 +131,42 @@ int sysctl_check_table(struct nsproxy *namespaces, struct ctl_table *table)
+ 			    (table->proc_handler == proc_doulongvec_minmax) ||
+ 			    (table->proc_handler == proc_doulongvec_ms_jiffies_minmax)) {
+ 				if (!table->data)
+-					set_fail(&fail, table, "No data");
++					SET_FAIL("No data");
+ 				if (!table->maxlen)
+-					set_fail(&fail, table, "No maxlen");
++					SET_FAIL("No maxlen");
+ 			}
+ #ifdef CONFIG_PROC_SYSCTL
+ 			if (table->procname && !table->proc_handler)
+-				set_fail(&fail, table, "No proc_handler");
+-#endif
+-#if 0
+-			if (!table->procname && table->proc_handler)
+-				set_fail(&fail, table, "proc_handler without procname");
++				SET_FAIL("No proc_handler");
  #endif
-diff --git a/drivers/staging/speakup/spk_types.h b/drivers/staging/speakup/spk_types.h
-index d36c90e..3ac552c 100644
---- a/drivers/staging/speakup/spk_types.h
-+++ b/drivers/staging/speakup/spk_types.h
-@@ -79,14 +79,14 @@ struct st_spk_t {
- };
- 
- /* now some defines to make these easier to use. */
--#define spk_shut_up speakup_console[vc->vc_num]->shut_up
-+#define spk_shut_up (speakup_console[vc->vc_num]->shut_up)
- #define spk_killed (speakup_console[vc->vc_num]->shut_up & 0x40)
--#define spk_x speakup_console[vc->vc_num]->reading_x
--#define spk_cx speakup_console[vc->vc_num]->cursor_x
--#define spk_y speakup_console[vc->vc_num]->reading_y
--#define spk_cy speakup_console[vc->vc_num]->cursor_y
-+#define spk_x (speakup_console[vc->vc_num]->reading_x)
-+#define spk_cx (speakup_console[vc->vc_num]->cursor_x)
-+#define spk_y (speakup_console[vc->vc_num]->reading_y)
-+#define spk_cy (speakup_console[vc->vc_num]->cursor_y)
- #define spk_pos (speakup_console[vc->vc_num]->reading_pos)
--#define spk_cp speakup_console[vc->vc_num]->cursor_pos
-+#define spk_cp (speakup_console[vc->vc_num]->cursor_pos)
- #define goto_pos (speakup_console[vc->vc_num]->go_pos)
- #define goto_x (speakup_console[vc->vc_num]->go_x)
- #define win_top (speakup_console[vc->vc_num]->w_top)
-@@ -95,9 +95,9 @@ struct st_spk_t {
- #define win_right (speakup_console[vc->vc_num]->w_right)
- #define win_start (speakup_console[vc->vc_num]->w_start)
- #define win_enabled (speakup_console[vc->vc_num]->w_enabled)
--#define spk_attr speakup_console[vc->vc_num]->reading_attr
--#define spk_old_attr speakup_console[vc->vc_num]->old_attr
--#define spk_parked speakup_console[vc->vc_num]->parked
-+#define spk_attr (speakup_console[vc->vc_num]->reading_attr)
-+#define spk_old_attr (speakup_console[vc->vc_num]->old_attr)
-+#define spk_parked (speakup_console[vc->vc_num]->parked)
- 
- struct st_var_header {
- 	char *name;
+-			sysctl_check_leaf(namespaces, table, &fail);
++			parents[depth] = table;
++			sysctl_check_leaf(namespaces, table, &fail,
++					  parents, depth);
+ 		}
+ 		if (table->mode > 0777)
+-			set_fail(&fail, table, "bogus .mode");
++			SET_FAIL("bogus .mode");
+ 		if (fail) {
+-			set_fail(&fail, table, NULL);
++			SET_FAIL(NULL);
+ 			error = -EINVAL;
+ 		}
+-		if (table->child)
+-			error |= sysctl_check_table(namespaces, table->child);
++		if (table->child) {
++			parents[depth] = table;
++			error |= __sysctl_check_table(namespaces, table->child,
++						      parents, depth + 1);
++		}
+ 	}
+ 	return error;
+ }
++
++
++int sysctl_check_table(struct nsproxy *namespaces, struct ctl_table *table)
++{
++	struct ctl_table *parents[CTL_MAXNAME];
++	/* Keep track of parents as we go down into the tree.
++	 *
++	 * parents[i-1] will be the parent for parents[i].
++	 * The node at depth 'd' will have the parent at parents[d-1].
++	 * The root node (depth=0) has no parent in this array.
++	 */
++	return __sysctl_check_table(namespaces, table, parents, 0);
++}
 -- 
-1.7.4
+1.7.4.rc1.7.g2cf08.dirty
 
