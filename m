@@ -1,38 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193Ab1BDQ4F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 11:56:05 -0500
-Received: from mx.kzn.ru ([194.85.243.38]:59738 "EHLO mx.kzn.ru"
+	id S1753207Ab1BDQ7H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 11:59:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43384 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751971Ab1BDQ4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 11:56:03 -0500
-X-Greylist: delayed 589 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Feb 2011 11:56:03 EST
-Authentication-Results: iout.kzn.ru; dkim=neutral (message not signed) header.i=none
-Message-ID: <58887.178.101.16.29.1296837972.squirrel@webmail.kzn.ru>
-Date: Fri, 4 Feb 2011 19:46:12 +0300 (MSK)
-Subject: Greetings
-From: "Saskia Opel" <infor@wangan.org>
-Reply-To: saskiaopel02@gmail.com
-User-Agent: SquirrelMail/1.4.10a
+	id S1752794Ab1BDQ7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 11:59:04 -0500
+Date: Fri, 4 Feb 2011 11:58:39 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
+        "tytso@mit.edu" <tytso@mit.edu>,
+        "djwong@us.ibm.com" <djwong@us.ibm.com>,
+        "shli@kernel.org" <shli@kernel.org>, "neilb@suse.de" <neilb@suse.de>,
+        "adilger.kernel@dilger.ca" <adilger.kernel@dilger.ca>,
+        "jack@suse.cz" <jack@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kmannth@us.ibm.com" <kmannth@us.ibm.com>,
+        "cmm@us.ibm.com" <cmm@us.ibm.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "rwheeler@redhat.com" <rwheeler@redhat.com>, "hch@lst.de" <hch@lst.de>,
+        "josef@redhat.com" <josef@redhat.com>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>
+Subject: [PATCH v5 1/2] block: skip elevator data initialization for flush
+ requests
+Message-ID: <20110204165839.GA2630@redhat.com>
+References: <20110201185225.GT14211@htj.dyndns.org>
+ <1296600373-6906-1-git-send-email-snitzer@redhat.com>
+ <20110202225549.GA28109@redhat.com>
+ <4D4AAC9A.4050407@fusionio.com>
+ <20110203133820.GF2570@htj.dyndns.org>
+ <20110204150456.GD32190@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110204150456.GD32190@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am Saskia Opel
-I have a secured transaction proposal and I need your assistance to
-execute this.
-Please contact me using the email address below if interested so I can
-furnish you with more details
-on this transaction.
+Skip elevator initialization for flush requests by passing priv=0 to
+blk_alloc_request() in get_request().  As such elv_set_request() is
+never called for flush requests.
 
-saskiaopel1@live.co.uk
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+---
+ block/blk-core.c |   29 +++++++++++++++++++++++++----
+ 1 file changed, 25 insertions(+), 4 deletions(-)
 
-Sincerely,
-Saskia Opel
+v5: introduces blk_rq_should_init_elevator() to abstract the elevator
+    initialization decision to promote future reuse and clarity.
 
+Index: linux-2.6/block/blk-core.c
+===================================================================
+--- linux-2.6.orig/block/blk-core.c
++++ linux-2.6/block/blk-core.c
+@@ -753,6 +753,25 @@ static void freed_request(struct request
+ }
+ 
+ /*
++ * Determine if elevator data should be initialized when allocating the
++ * request associated with @bio.
++ */
++static bool blk_rq_should_init_elevator(struct bio *bio)
++{
++	if (!bio)
++		return true;
++
++	/*
++	 * Flush requests do not use the elevator so skip initialization.
++	 * This allows a request to share the flush and elevator data.
++	 */
++	if (bio->bi_rw & (REQ_FLUSH | REQ_FUA))
++		return false;
++
++	return true;
++}
++
++/*
+  * Get a free request, queue_lock must be held.
+  * Returns NULL on failure, with queue_lock held.
+  * Returns !NULL on success, with queue_lock *not held*.
+@@ -764,7 +783,7 @@ static struct request *get_request(struc
+ 	struct request_list *rl = &q->rq;
+ 	struct io_context *ioc = NULL;
+ 	const bool is_sync = rw_is_sync(rw_flags) != 0;
+-	int may_queue, priv;
++	int may_queue, priv = 0;
+ 
+ 	may_queue = elv_may_queue(q, rw_flags);
+ 	if (may_queue == ELV_MQUEUE_NO)
+@@ -808,9 +827,11 @@ static struct request *get_request(struc
+ 	rl->count[is_sync]++;
+ 	rl->starved[is_sync] = 0;
+ 
+-	priv = !test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags);
+-	if (priv)
+-		rl->elvpriv++;
++	if (blk_rq_should_init_elevator(bio)) {
++		priv = !test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags);
++		if (priv)
++			rl->elvpriv++;
++	}
+ 
+ 	if (blk_queue_io_stat(q))
+ 		rw_flags |= REQ_IO_STAT;
