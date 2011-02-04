@@ -1,134 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005Ab1BDVZz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 16:25:55 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:57201 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752267Ab1BDVZo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 16:25:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=NqIiA3Y786Rns5VXYDx12NQ37f8r7lRx2O9KfIUUPxXLiLFOG0sd3qVJpA6LUtAQyQ
-         uBfTIFBtgtoVeP10q6oQ==
-From: Venkatesh Pallipadi <venki@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>, Venkatesh Pallipadi <venki@google.com>
-Subject: [PATCH] sched: Resolve sd_idle and first_idle_cpu Catch-22 - v1
-Date: Fri,  4 Feb 2011 13:25:31 -0800
-Message-Id: <1296854731-25039-1-git-send-email-venki@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1296852688-1665-1-git-send-email-venki@google.com>
-References: <1296852688-1665-1-git-send-email-venki@google.com>
-X-System-Of-Record: true
+	id S1753012Ab1BDV1l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 16:27:41 -0500
+Received: from claw.goop.org ([74.207.240.146]:52354 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752267Ab1BDV1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 16:27:40 -0500
+Message-ID: <4D4C6F45.6010204@goop.org>
+Date: Fri, 04 Feb 2011 13:27:33 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Jan Beulich <JBeulich@novell.com>, Larry Woodman <lwoodman@redhat.com>
+Subject: Re: [PATCH] x86: hold mm->page_table_lock while doing vmalloc_sync
+References: <4CB76E8B.2090309@goop.org> <4CC0AB73.8060609@goop.org> <20110203024838.GI5843@random.random> <4D4B1392.5090603@goop.org> <20110204012109.GP5843@random.random>
+In-Reply-To: <20110204012109.GP5843@random.random>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Consider a system with { [ (A B) (C D) ] [ (E F) (G H) ] },
-() denoting SMT siblings, [] cores on same socket and {} system wide
-Further, A, C and D are idle, B is busy and one of EFGH has excess load.
+On 02/03/2011 05:21 PM, Andrea Arcangeli wrote:
+> On Thu, Feb 03, 2011 at 12:44:02PM -0800, Jeremy Fitzhardinge wrote:
+>> On 02/02/2011 06:48 PM, Andrea Arcangeli wrote:
+>>> Hello,
+>>>
+>>> Larry (CC'ed) found a problem with the patch in subject. When
+>>> USE_SPLIT_PTLOCKS is not defined (NR_CPUS == 2) it will deadlock in
+>>> ptep_clear_flush_notify in rmap.c because it's sending IPIs with the
+>>> page_table_lock already held, and the other CPUs now spins on the
+>>> page_table_lock with irq disabled, so the IPI never runs. With
+>>> CONFIG_TRANSPARENT_HUGEPAGE=y this deadlocks happens even with
+>>> USE_SPLIT_PTLOCKS defined so it become visible but it needs to be
+>>> fixed regardless (for NR_CPUS == 2).
+>> What's "it" here?  Do you mean vmalloc_sync_all?  vmalloc_sync_one?
+>> What's the callchain?
+> Larry just answered to that. If something is unclear let me know. I
+> never reproduced it, but it also can happen without THP enabled, you
+> just need to set NR_CPUS to 2 during "make menuconfig".
+>
+>>> spin_lock_irqsave(pgd_lock) so I guess it's either common code, or
+>>> it's superfluous and not another Xen special requirement.
+>> There's no special Xen requirement here.
+> That was my thought too considering the other archs...
+>
+>> mmdrop() can be called from interrupt context, but I don't know if it
+>> will ever drop the last reference from interrupt, so maybe you can get
+>> away with it.
+> Yes the issue is __mmdrop, so it'd be nice to figure if __mmdrop can
+> also run from irq (or only mmdrop fast path which would be safe even
+> without _irqsave).
+>
+> Is this a Xen only thing? Or is mmdrop called from regular
+> linux. Considering other archs also _irqsave I assume it's common code
+> calling mmdrop (otherwise it means they cut-and-pasted a Xen
+> dependency). This comment doesn't really tell me much.
 
-With sd_idle logic, a check in rebalance_domains() converts tick
-based load balance requests from CPU A to busy load balance for core
-and above domains (lower rate of balance and higher load_idx).
+No, I don't think there's any xen-specific code which calls mmdrop (at
+all, let alone in interrupt context).  Erm, but I'm not sure where it
+does.  I had a thinko that "schedule" would be one of those places, but
+calling that from interrupt context would cause much bigger problems :/
+> static void pgd_dtor(pgd_t *pgd)
+> {
+> 	unsigned long flags; /* can be called from interrupt context 	*/
+>
+> 	if (SHARED_KERNEL_PMD)
+> 	   return;
+>
+> 	   VM_BUG_ON(in_interrupt());
+> 	   spin_lock(&pgd_lock);
+>
+> This comment tells the very __mmdrop can be called from irq context,
+> not just mmdrop. But I didn't find where yet... Can you tell me?
 
-With first_idle_cpu logic, when CPU C or D tries to balance across domains
-the logic finds CPU A as first idle CPU in the group and nominates CPU A to
-idle balance across sockets.
+No.  I don't think I wrote that comment.  It possibly just some ancient
+lore that could have been correct at one point, or perhaps it never true.
 
-But, sd_idle above would not allow CPU A to do cross socket idle balance
-as CPU A switches its higher level balancing to busy balance.
+>>> @@ -247,7 +248,7 @@ void vmalloc_sync_all(void)
+>>>  			if (!ret)
+>>>  				break;
+>>>  		}
+>>> -		spin_unlock_irqrestore(&pgd_lock, flags);
+>>> +		spin_unlock(&pgd_lock, flags);
+>> Urp.  Did this compile?
+> Yes it builds
 
-So, this can result is no cross socket balancing for extended periods.
+(spin_unlock() shouldn't take a "flags" arg.)
 
-The fix here adds additional check to detect sd_idle logic in
-first_idle_cpu code path. We will now nominate (in order or preference):
-* First fully idle CPU
-* First semi-idle CPU
-* First CPU
 
-Note that this solution works fine for 2 SMT siblings case and won't be
-perfect in picking proper semi-idle in case of more than 2 SMT threads.
+> I'm not reposting a version that builds for 32bit x86 too until we
+> figure out the mmdrop thing...
 
-The problem was found by looking at the code and schedstat output. I don't
-yet have any data to show impact of this on any workload.
+Stick it in next and look for explosion reports?
 
-Changes from v0:
-* Removed by test code that I left out in earlier version by mistake.
-
-Signed-off-by: Venkatesh Pallipadi <venki@google.com>
----
- kernel/sched_fair.c |   38 ++++++++++++++++++++++++++++++++++++--
- 1 files changed, 36 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 62723a4..e9dbfa8 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -2603,6 +2603,34 @@ fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
- 	return 0;
- }
- 
-+/*
-+ * Find if there is any busy CPUs in SD_SHARE_CPUPOWER domain of
-+ * requested CPU.
-+ * Bypass the check in case of SD_POWERSAVINGS_BALANCE on
-+ * parent domain. In that case requested CPU can still be nominated as
-+ * balancer for higher domains.
-+ */
-+static int is_cpupower_sharing_domain_idle(int cpu)
-+{
-+	struct sched_domain *sd;
-+	int i;
-+
-+	for_each_domain(cpu, sd) {
-+		if (!(sd->flags & SD_SHARE_CPUPOWER))
-+			break;
-+
-+		if (test_sd_parent(sd, SD_POWERSAVINGS_BALANCE))
-+			return 1;
-+
-+		for_each_cpu(i, sched_domain_span(sd)) {
-+			if (!idle_cpu(i))
-+				return 0;
-+		}
-+	}
-+
-+	return 1;
-+}
-+
- /**
-  * update_sg_lb_stats - Update sched_group's statistics for load balancing.
-  * @sd: The sched_domain whose statistics are to be updated.
-@@ -2625,6 +2653,7 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
- 	unsigned long load, max_cpu_load, min_cpu_load, max_nr_running;
- 	int i;
- 	unsigned int balance_cpu = -1, first_idle_cpu = 0;
-+	unsigned int first_semiidle_cpu = 0;
- 	unsigned long avg_load_per_task = 0;
- 
- 	if (local_group)
-@@ -2644,8 +2673,13 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
- 		/* Bias balancing toward cpus of our domain */
- 		if (local_group) {
- 			if (idle_cpu(i) && !first_idle_cpu) {
--				first_idle_cpu = 1;
--				balance_cpu = i;
-+				if (is_cpupower_sharing_domain_idle(i)) {
-+					first_idle_cpu = 1;
-+					balance_cpu = i;
-+				} else if (!first_semiidle_cpu) {
-+					first_semiidle_cpu = 1;
-+					balance_cpu = i;
-+				}
- 			}
- 
- 			load = target_load(i, load_idx);
--- 
-1.7.3.1
+    J
 
