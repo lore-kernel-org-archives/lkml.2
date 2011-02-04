@@ -1,77 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795Ab1BDXOm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 18:14:42 -0500
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:50129 "EHLO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752582Ab1BDXOl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 18:14:41 -0500
+	id S1752832Ab1BDXQZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 18:16:25 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33258 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752582Ab1BDXQY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 18:16:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=dIQ2FRF9LhhURprCDEZ/Fq2907uQp76n0PQiJrmmOvke/3NbgGbtJyFaPnoSI1fhQa
+         MB/VtZaHC5H6tGY9IZHZbEj/ojwwmm2RIXl81rhUgTArLdRLcGsLT48Uk69Yro1nfJi7
+         /hPRpTpulgmNpNtqOUrQwm+RFoYUDMjdVEBBg=
+Date: Sat, 5 Feb 2011 00:16:15 +0100
+From: Ulf Magnusson <ulfalizer.lkml@gmail.com>
+To: linux-kbuild@vger.kernel.org
+Cc: zippel@linux-m68k.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] kconfig: undefined symbols can crash dependency loop
+ detection
+Message-ID: <20110204231611.GA9344@ulf>
+Mail-Followup-To: Ulf Magnusson <ulfalizer.lkml@gmail.com>,
+	linux-kbuild@vger.kernel.org, zippel@linux-m68k.org,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <20110204211032.GA14525@kroah.com>
-References: <1296591184-31554-1-git-send-email-omar.ramirez@ti.com>
-	<20110204211032.GA14525@kroah.com>
-Date: Fri, 4 Feb 2011 17:14:39 -0600
-Message-ID: <AANLkTi=dWy4hFPVLAvx=6LDdO9dMoXBQzDS-X8LY2mBi@mail.gmail.com>
-Subject: Re: [GIT PULL] staging: tidspbridge for 2.6.39
-From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
-To: Greg KH <greg@kroah.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel <devel@driverdev.osuosl.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        lk <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The Kconfig
 
-On Fri, Feb 4, 2011 at 3:10 PM, Greg KH <greg@kroah.com> wrote:
-> On Tue, Feb 01, 2011 at 02:13:04PM -0600, Omar Ramirez Luna wrote:
->> The following changes since commit c56eb8fb6dccb83d9fe62fd4dc00c834de9bc470:
->>
->>   Linux 2.6.38-rc1 (2011-01-18 15:14:02 -0800)
->>
->> are available in the git repository at:
->>   git://dev.omapzoom.org/pub/scm/tidspbridge/kernel-dspbridge.git tidspbridge-for-2.6.39
->>
-...
->>  86 files changed, 3028 insertions(+), 5297 deletions(-)
->
-> Something's wrong here, I got:
->
->  86 files changed, 3009 insertions(+), 5272 deletions(-)
->
-> I do have:
-> [diff]
->        renamelimit=0
->
-> in my .gitconfig file which might cause a difference if you are renaming
-> stuff.
->
-> Or did you add other patches to this tree that you didn't tell me about?
+config FOO
+	bool "FOO" if BAR
+	select BAR
 
-This is caused by the 2 patches included in staging-linus that were
-not present in your staging-next (since it was on rc1), now that
-staging-next moved to rc3, those patches were not picked from my
-branch in the diffstat.
+has a dependency loop involving an undefined symbol BAR. This causes a
+segfault in sym_check_print_recursive() as it assumes all symbols have a
+non-null 'prop', which is not the case for undefined symbols. This is a
+proposed fix.
 
-I get the same number of changes by excluding these two (already
-present in mainline):
-- staging tidspbridge: replace mbox callback with notifier_call
-- staging: tidspbridge: configure full L1 MMU range
+Signed-off-by: Ulf Magnusson <ulfalizer.lkml@gmail.com>
+---
+ scripts/kconfig/symbol.c |   32 ++++++++++++++++++++++++++++----
+ 1 files changed, 28 insertions(+), 4 deletions(-)
 
-In my branch:
+diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
+index a796c95..81a217f 100644
+--- a/scripts/kconfig/symbol.c
++++ b/scripts/kconfig/symbol.c
+@@ -5,6 +5,7 @@
+ 
+ #include <ctype.h>
+ #include <stdlib.h>
++#include <stdio.h>
+ #include <string.h>
+ #include <regex.h>
+ #include <sys/utsname.h>
+@@ -972,6 +973,10 @@ static void sym_check_print_recursive(struct symbol *last_sym)
+ 	struct menu *menu = NULL;
+ 	struct property *prop;
+ 	struct dep_stack cv_stack;
++	const char *filename;
++	int lineno;
++	char undef_msg_buf[100];
++	int snprintf_size;
+ 
+ 	if (sym_is_choice_value(last_sym)) {
+ 		dep_stack_insert(&cv_stack, last_sym);
+@@ -1001,18 +1006,37 @@ static void sym_check_print_recursive(struct symbol *last_sym)
+ 					break;
+ 			}
+ 		}
++
++		if (prop) {
++			filename = prop->file->name;
++			lineno = prop->lineno;
++		} else {
++			/* The dependency loop involves an undefined symbol.
++			 * Checking sym->name is probably unnecessary here, but
++			 * just to be on the safe side. */
++			snprintf_size = snprintf(undef_msg_buf,
++						 sizeof(undef_msg_buf),
++						 "<no file, %s is undefined>",
++						 sym->name ? sym->name :
++							     "<choice>");
++			if (snprintf_size > sizeof(undef_msg_buf))
++				undef_msg_buf[sizeof(undef_msg_buf) - 1] = '\0';
++			filename = undef_msg_buf;
++			lineno = 0;
++		}
++
+ 		if (stack->sym == last_sym)
+ 			fprintf(stderr, "%s:%d:error: recursive dependency detected!\n",
+-				prop->file->name, prop->lineno);
++				filename, lineno);
+ 		if (stack->expr) {
+ 			fprintf(stderr, "%s:%d:\tsymbol %s %s value contains %s\n",
+-				prop->file->name, prop->lineno,
++				filename, lineno,
+ 				sym->name ? sym->name : "<choice>",
+ 				prop_get_type_name(prop->type),
+ 				next_sym->name ? next_sym->name : "<choice>");
+ 		} else if (stack->prop) {
+ 			fprintf(stderr, "%s:%d:\tsymbol %s depends on %s\n",
+-				prop->file->name, prop->lineno,
++				filename, lineno,
+ 				sym->name ? sym->name : "<choice>",
+ 				next_sym->name ? next_sym->name : "<choice>");
+ 		} else if (sym_is_choice(sym)) {
+@@ -1027,7 +1051,7 @@ static void sym_check_print_recursive(struct symbol *last_sym)
+ 				next_sym->name ? next_sym->name : "<choice>");
+ 		} else {
+ 			fprintf(stderr, "%s:%d:\tsymbol %s is selected by %s\n",
+-				prop->file->name, prop->lineno,
++				filename, lineno,
+ 				sym->name ? sym->name : "<choice>",
+ 				next_sym->name ? next_sym->name : "<choice>");
+ 		}
+-- 
+1.7.0.4
 
-$ git diff --stat f06cba0018ddcd5d8f10fe576a7b853bc6ae2cf8 HEAD
-...
-86 files changed, 3009 insertions(+), 5272 deletions(-)
-
-> I'll drop this pull for now until this gets sorted out.
-
-Let me know if you can pull this or you want me to rebase to rc3.
-
-Regards,
-
-Omar
