@@ -1,89 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757Ab1BDFsM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 00:48:12 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38454 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751121Ab1BDFsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 00:48:10 -0500
-Message-ID: <4D4B930E.1060704@zytor.com>
-Date: Thu, 03 Feb 2011 21:47:58 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1752382Ab1BDGEB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 01:04:01 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:59666 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751195Ab1BDGEA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 01:04:00 -0500
+X-AuditID: b753bd60-a2ec6ba0000066fd-a9-4d4b96cd33cd
+X-AuditID: b753bd60-a2ec6ba0000066fd-a9-4d4b96cd33cd
+Message-ID: <4D4B96CA.2010100@hitachi.com>
+Date: Fri, 04 Feb 2011 15:03:54 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Kees Cook <kees.cook@canonical.com>
-CC: matthieu castet <castet.matthieu@free.fr>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [BUG] broken ebba638ae723d8a8fc2f7abce5ec18b688b791d7
-References: <4D41E86D.8060205@free.fr> <20110127230013.GO4981@outflux.net> <4D4228CE.5090601@zytor.com> <20110131213847.GF4557@outflux.net> <4D474194.2000709@free.fr> <20110131235231.GJ4557@outflux.net> <4D475D6B.4030508@zytor.com> <20110202204031.GB5503@outflux.net>
-In-Reply-To: <20110202204031.GB5503@outflux.net>
-Content-Type: multipart/mixed;
- boundary="------------040302010006000606000503"
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: mingo@elte.hu, rostedt@goodmis.org, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [RFC 0/4] tracing,x86_64 - function/graph trace without mcount/-pg/framepointer
+References: <1296747761-9082-1-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1296747761-9082-1-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------040302010006000606000503
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Hi,
 
-On 02/02/2011 12:40 PM, Kees Cook wrote:
-> On Mon, Jan 31, 2011 at 05:10:03PM -0800, H. Peter Anvin wrote:
->> On 01/31/2011 03:52 PM, Kees Cook wrote:
->>>
->>> This worked, thanks! If this tests cleanly for you in qemu, we should get
->>> this committed.
->>>
->>
->> This is wrong for at least one reason; possibly two:
->>
->> a) it ignores the control to not reload the segment registers (not
->> sure if anything still uses them, but...)
->>
->> b) I'm not sure that init_thread_union is safe for the non-BSP CPU here.
+(2011/02/04 0:42), Jiri Olsa wrote:
+> hi,
 > 
-> What's the best way to move forward? Or, how can we find answers to these
-> questions?
+> I recently saw the direct jump probing made for kprobes
+> and tried to use it inside the trace framework.
 > 
-> -Kees
+> The global idea is patching the function entry with direct
+> jump to the trace code, instead of using pregenerated gcc
+> profile code.
 > 
+> I started this just to see if it would be even possible
+> to hook with new probing to the current trace code. It
+> appears it's not that bad. I was able to run function
+> and function_graph trace on x86_64.
+> 
+> For details on direct jumps probe, please check:
+> http://www.linuxinsight.com/ols2007-djprobe-kernel-probing-with-the-smallest-overhead.html
+
+Thank you for referring it ;-)
+
+> I realize using this way to hook the functions has some
+> drawbacks, from what I can see it's roughly:
+> - no all functions could be patched
+
+Yeah, that is why the "djprobe" becomes "optprobe". If kprobe
+finds there is no space to patch, it just fallback to a
+breakpoint. Since this check is done internally, kprobes
+user takes this benefit transparently ( don't need to
+change user's code).
+
+> - need to find a way to say which function is safe to patch
+> - memory consumption for detour buffers and symbol records
+
+And also, you can't patch more than two instructions without
+int3 bypass method (or special stack checker), because a processor
+can run and may have been interrupted on the 2nd instruction
+when stop_machine is issued.
+That's the 2nd reason why the djprobe is a part of kprobes.
+this "int3 bypass" method disallow you to probe NMI handlers,
+since int3 inside NMI will clear additional NMI masking by
+issuing IRET.
+
+> but seems there're some advantages as well:
+> - trace code could be in a module
+> - no profiling code is needed
+> - framepointer can be disabled (framepointer is needed for
+>   generating profile code)
+
+nowadays profiling code with dynamic ftrace will not make
+visible overhead, and if you need to do that without
+profiling binary, you can already use kprobe-tracer for it.
+(Using kprobe-tracer via perf-probe allows you to probe not
+ only actual function but also inlined function entry ;-))
 
 
-Can someone test out the attached patch and verify that it works?
+Thank you,
 
-	-hpa
+> 
+> As for the attached implementation it's hack mostly (expect bugs),
+> especially the ftrace/kprobe integration could be probably done better.
+> It's only for x86_64.
+> 
+> It can be used like this:
+> 
+> - new menu config item is added (function tracer engine),
+>   to choose mcount or ktrace
+> - new file "ktrace" is added to the tracing dir
+> - to add symbols to trace run:
+> 	echo mutex_unlock > ./ktrace
+> 	echo mutex_lock >> ./ktrace
+> - to display trace symbols:
+> 	cat ktrace
+> - to enable the trace, the usual is needed:
+> 	echo function > ./current_tracer
+> 	echo function_graph > ./current_tracer
+> - to remove symbols from trace:
+> 	echo nop > ./current_tracer 
+> 	echo > ./ktrace 
+> - if the function is added while the tracer is running,
+>   the symbol is enabled automatically.
+> - only all symbols could be removed and only if there's
+>   no tracer running.
+> 
+> I'm not sure how to choose from kallsyms interface what function
+> is safe to patch, so I omit patching of all symbols so far.
+
+
+> 
+> 
+> attached patches:
+>  1/4 - kprobe - ktrace instruction slot cache interface
+>      using kprobe detour buffer allocation, adding interface
+>      to use it from trace framework
+> 
+>  2/4 - tracing - adding size parameter to do_ftrace_mod_code
+>      adding size parameter to be able to restore the saved
+>      instructions, which could be longer than relative call
+> 
+>  3/4 - ktrace - function trace support
+>      adding ktrace support with function tracer
+> 
+>  4/4 - ktrace - function trace support
+>      adding function graph support
+> 
+> 
+> please let me know what you think, thanks
+> jirka
+> ---
+>  Makefile                   |    2 +-
+>  arch/x86/Kconfig           |    4 +-
+>  arch/x86/kernel/Makefile   |    1 +
+>  arch/x86/kernel/entry_64.S |   50 +++++++
+>  arch/x86/kernel/ftrace.c   |  157 +++++++++++----------
+>  arch/x86/kernel/ktrace.c   |  256 ++++++++++++++++++++++++++++++++++
+>  include/linux/ftrace.h     |   36 +++++-
+>  include/linux/kprobes.h    |    8 +
+>  kernel/kprobes.c           |   33 +++++
+>  kernel/trace/Kconfig       |   28 ++++-
+>  kernel/trace/Makefile      |    1 +
+>  kernel/trace/ftrace.c      |   21 +++
+>  kernel/trace/ktrace.c      |  330 ++++++++++++++++++++++++++++++++++++++++++++
+>  kernel/trace/trace.c       |    1 +
+>  14 files changed, 846 insertions(+), 82 deletions(-)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
-
---------------040302010006000606000503
-Content-Type: text/plain;
- name="diff"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="diff"
-
-ZGlmZiAtLWdpdCBhL2FyY2gveDg2L2tlcm5lbC9oZWFkXzMyLlMgYi9hcmNoL3g4Ni9rZXJu
-ZWwvaGVhZF8zMi5TCmluZGV4IGZjMjkzZGMuLjJhZWU1OTQgMTAwNjQ0Ci0tLSBhL2FyY2gv
-eDg2L2tlcm5lbC9oZWFkXzMyLlMKKysrIGIvYXJjaC94ODYva2VybmVsL2hlYWRfMzIuUwpA
-QCAtMjYsNiArMjYsMTEgQEAKICNkZWZpbmUgcGEoWCkgKChYKSAtIF9fUEFHRV9PRkZTRVQp
-CiAKIC8qCisgKiBJbml0aWFsIHN0YWNrIHBvaW50ZXIgZm9yIHRoZSBib290IHByb2Nlc3Nv
-cgorICovCitpbml0aWFsX3N0YWNrX3BvaW50ZXIgPSBpbml0X3RocmVhZF91bmlvbitUSFJF
-QURfU0laRQorCisvKgogICogUmVmZXJlbmNlcyB0byBtZW1iZXJzIG9mIHRoZSBuZXdfY3B1
-X2RhdGEgc3RydWN0dXJlLgogICovCiAKQEAgLTk5LDggKzEwNCwxMCBAQCBFTlRSWShzdGFy
-dHVwXzMyKQogCW1vdmwgJWVheCwlZXMKIAltb3ZsICVlYXgsJWZzCiAJbW92bCAlZWF4LCVn
-cworCW1vdmwgJWVheCwlc3MKIDI6Ci0KKwltb3ZsICRwYShpbml0aWFsX3N0YWNrX3BvaW50
-ZXIpLCAlZXNwCisJCiAvKgogICogQ2xlYXIgQlNTIGZpcnN0IHNvIHRoYXQgdGhlcmUgYXJl
-IG5vIHN1cnByaXNlcy4uLgogICovCkBAIC0yODIsNiArMjg5LDkgQEAgRU5UUlkoc3RhcnR1
-cF8zMl9zbXApCiAJbW92bCAlZWF4LCVlcwogCW1vdmwgJWVheCwlZnMKIAltb3ZsICVlYXgs
-JWdzCisJbW92bCBwYShzdGFja19zdGFydCksJWVjeAorCW1vdmwgJWVheCwlc3MKKwlsZWFs
-IC1fX1BBR0VfT0ZGU0VUKCVlY3gpLCVlc3AKICNlbmRpZiAvKiBDT05GSUdfU01QICovCiBk
-ZWZhdWx0X2VudHJ5OgogCkBAIC02NzEsNyArNjgxLDcgQEAgRU5UUlkoaW5pdGlhbF9wYWdl
-X3RhYmxlKQogCiAuZGF0YQogRU5UUlkoc3RhY2tfc3RhcnQpCi0JLmxvbmcgaW5pdF90aHJl
-YWRfdW5pb24rVEhSRUFEX1NJWkUKKwkubG9uZyBpbml0aWFsX3N0YWNrX3BvaW50ZXIKIAku
-bG9uZyBfX0JPT1RfRFMKIAogcmVhZHk6CS5ieXRlIDAK
---------------040302010006000606000503--
+Masami HIRAMATSU
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
