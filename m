@@ -1,66 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962Ab1BDMeP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 07:34:15 -0500
-Received: from smtp.nokia.com ([147.243.128.24]:26410 "EHLO mgw-da01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751637Ab1BDMeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 07:34:13 -0500
-Message-ID: <4D4BF23A.1050800@maxwell.research.nokia.com>
-Date: Fri, 04 Feb 2011 14:34:02 +0200
-From: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101123 SeaMonkey/2.0.11
+	id S1751920Ab1BDMqh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 07:46:37 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:32956 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751120Ab1BDMqg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 07:46:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=psOIMv017tu0uWgsIQ24czJJMqJgiKsMp/cmi3lZEnczQSp4sNIWnXc63EKnpRdGZ5
+         ekM0c8lD+sq4bBpAjtmkEs/OkUU8qfg0E52/PveasZKZZuClY5O8PzTs1EKV9SnjXF1x
+         2mEukvfXN3TiAVzX90FcKarRHeKI5RzSvkUqc=
+Date: Fri, 4 Feb 2011 20:45:34 +0800
+From: Richard Zhao <linuxzsc@gmail.com>
+To: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Saravana Kannan <skannan@codeaurora.org>, linux-sh@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
+        Dima Zavin <dmitriyz@google.com>, Ben Dooks <ben-linux@fluff.org>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Locking in the clk API, part 2: clk_prepare/clk_unprepare
+Message-ID: <20110204124534.GA2597@richard-laptop>
+References: <201102011711.31258.jeremy.kerr@canonical.com>
 MIME-Version: 1.0
-To: Hans Verkuil <hverkuil@xs4all.nl>
-CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
-        clemens@ladisch.de
-Subject: Re: [PATCH v8 05/12] media: Entity use count
-References: <1296131437-29954-1-git-send-email-laurent.pinchart@ideasonboard.com> <1296131437-29954-6-git-send-email-laurent.pinchart@ideasonboard.com> <201102041122.03886.hverkuil@xs4all.nl>
-In-Reply-To: <201102041122.03886.hverkuil@xs4all.nl>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201102011711.31258.jeremy.kerr@canonical.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-And many thanks for the comments!
-
-Hans Verkuil wrote:
-...
->> diff --git a/include/media/media-entity.h b/include/media/media-entity.h
->> index b82f824..114541a 100644
->> --- a/include/media/media-entity.h
->> +++ b/include/media/media-entity.h
->> @@ -81,6 +81,8 @@ struct media_entity {
->>  	struct media_pad *pads;		/* Pads array (num_pads elements) */
->>  	struct media_link *links;	/* Links array (max_links elements)*/
->>  
->> +	int use_count;			/* Use count for the entity. */
+On Tue, Feb 01, 2011 at 05:11:29PM +0800, Jeremy Kerr wrote:
+> Hi all,
 > 
-> Isn't unsigned better?
+> > I suggested that clk_prepare() be callable only from non-atomic contexts,
+> > and do whatever's required to ensure that the clock is available.  That
+> > may end up enabling the clock as a result.
+> 
+> I think that clk_prepare/clk_unprepare looks like the most promising solution, 
+> so will try to get some preliminary patches done. Here's what I'm planning:
+> 
+> -----
+> 
+> The changes to the API are essentially:
+> 
+> 1) Document clk_enable/clk_disable as callable from atomic contexts, and
+>    so clock implementations must not sleep within this function.
+> 
+> 2) For clock implementations that may sleep to turn on a clock, we add a
+>    new pair of functions to the clock API: clk_prepare and clk_unprepare.
+> 
+>    These will provide hooks for the clock implmentation to do any sleepable
+>    work (eg, wait for PLLs to settle) in preparation for a later clk_enable.
+> 
+>    For the most common clock implemntation cases (where clocks can be enabled 
+>    atomically), these functions will be a no-op, and all of the enable/disable
+>    work can be done in clk_enable/clk_disable.
+> 
+>    For implementations where clocks require blocking on enable/disable, most
+>    of the work will be done in clk_prepare/clk_unprepare. The clk_enable
+>    and clk_disable functions may be no-ops.
+> 
+> For drivers, this means that clk_prepare must be called (and have returned) 
+> before calling clk_enable.
+> 
+> == Enable/Prepare counts ==
+> 
+> I intend to do the enable and prepare "counting" in the core clock API, 
+> meaning that that the clk_ops callbacks will only invoked on the first 
+> prepare/enable and the last unprepare/disable.
+> 
+> == Concurrency ==
+> 
+> Splitting the prepare and enable stages introduces the concurrency 
+> requirements:
+> 
+> 1) clk_enable must not return before the clock is outputting a valid clock 
+>    signal.
+> 
+> 2) clk_prepare must not return before the clock is fully prepared (ie, it is 
+>    safe to call clk_enable).
+> 
+> It is not possible for clk_enable to wait for the clock to be prepared, 
+> because that would require synchronisation with clk_prepare, which may then 
+> require blocking. Therefore:
+> 
+> 3) The clock consumer *must* respect the proper ordering of clk_prepare and 
+>    clk_enable. For example, drivers that call clk_enable during an interrupt 
+>    must ensure that the interrupt handler will not be invoked until 
+>    clk_prepare has returned.
+> 
+> == Other considerations ==
+> 
+> The time that a clock spends "prepared" is a superset of the the time that a 
+> clock spends "enabled". Therefore, clocks that are switched on during 
+> clk_prepare (ie, non-atomic clocks) will be running for a larger amount of 
+> time. In some cases, this can be mitigated by moving some of the final 
+> (atomic) switching functionality to the clk_enable function.
+> 
+> == Implementation ==
+> 
+> Basically:
+> 
+> struct clk {
+> 	const struct clk_ops *ops
+> 	int                  enable_count;
+> 	spinlock_t           enable_lock;
+> 	int                  prepare_count;
+> 	struct mutex         prepare_lock;
+> };
+> 
+> int clk_enable(struct clk *clk)
+> {
+> 	int ret = 0;
+> 
+> 	spin_lock(&clk->enable_lock);
+> 	if (!clk->enable_count)
+> 		ret = clk->ops->enable(clk);
+> 
+> 	if (!ret)
+> 		clk->enable_count++;
+> 	spin_unlock(&clk->enable_lock);
+> 
+> 	return ret;
+> }
+Why do we not call parent's clk_enable in this function? For flexible? How many
+different cases is causing us to move the effert to platform clock driver?
+> 
+> int clk_prepare(struct clk *clk)
+> {
+> 	int ret = 0;
+> 
+> 	mutex_lock(&clk->prepare_lock);
+> 	if (!clk->prepare_count)
+> 		ret = clk->ops->prepare(clk);
+> 
+> 	if (!ret)
+> 		clk->prepare_count++;
+> 	mutex_unlock(&clk->prepare_lock);
+> 
+> 	return ret;
+> }
+Same as above.
+And for most clocks, prepare/unprepare may be NULL. So in such case, is it
+better to call parent's prepare and increase its own prepare_count here?
 
-Could be. The result, though, will be slightly more difficult checking
-for bad use count --- which always is a driver bug.
-
-me->use_count += change;
-WARN_ON(me->use_count < 0);
-
-we must do something like this:
-
-if (change < 0)
-	WARN_ON(me->use_count < (unsigned)-change);
-me->use_count += change;
-
-I'd perhaps also go with unsigned int; the choice for signed was made
-mainly since the above check and with signed int the check was more trivial.
-
-Regards,
-
--- 
-Sakari Ailus
-sakari.ailus@maxwell.research.nokia.com
+Thanks
+Richard
+> 
+> -----
+> 
+> Comments welcome, code coming soon.
+> 
+> Cheers,
+> 
+> 
+> Jeremy
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
