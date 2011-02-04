@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753077Ab1BDEMV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 23:12:21 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:38082 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751929Ab1BDEMU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 23:12:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=PLX0xYjATYpF6Ix9at1LlgwzhKj0uLxXYqxewbgpLmojt5ye4SafDmviKuaqy0ju2P
-         gCS0sWJLPLbOavYAYAzcjQjFBVLYJ1SablApKOx6+4YRrwcjsJtsgXYOdXbx9En9wjY/
-         9G/mzZihFsSE9l+6eoqsCWV+BnJcbGAocEWJc=
-MIME-Version: 1.0
-In-Reply-To: <20110203125611.GC2286@cmpxchg.org>
-References: <1296482635-13421-1-git-send-email-hannes@cmpxchg.org>
-	<1296482635-13421-3-git-send-email-hannes@cmpxchg.org>
-	<20110131144131.6733aa3a.akpm@linux-foundation.org>
-	<20110201000455.GB19534@cmpxchg.org>
-	<20110131162448.e791f0ae.akpm@linux-foundation.org>
-	<20110203125357.GA2286@cmpxchg.org>
-	<20110203125611.GC2286@cmpxchg.org>
-Date: Fri, 4 Feb 2011 09:42:19 +0530
-X-Google-Sender-Auth: 56z-wdzBmAUKi16nxmqX7M0twUE
-Message-ID: <AANLkTinNoCO7x4yTU_dxe-gB918i-2S6iz2Wrr5zzN2h@mail.gmail.com>
-Subject: Re: [patch 2/2] memcg: simplify the way memory limits are checked
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, kamezawa.hiroyu@jp.fujitsu.com,
-        nishimura@mxp.nes.nec.co.jp, minchan.kim@gmail.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753388Ab1BDEOP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 23:14:15 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:41963 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751988Ab1BDEOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 23:14:14 -0500
+Date: Fri, 4 Feb 2011 15:14:08 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: linux-next: manual merge of the tty tree with the i.MX tree
+Message-Id: <20110204151408.9988102e.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 3, 2011 at 6:26 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> Since transparent huge pages, checking whether memory cgroups are
-> below their limits is no longer enough, but the actual amount of
-> chargeable space is important.
->
-> To not have more than one limit-checking interface, replace
-> memory_cgroup_check_under_limit() and memory_cgroup_check_margin()
-> with a single memory_cgroup_margin() that returns the chargeable space
-> and leaves the comparison to the callsite.
->
-> Soft limits are now checked the other way round, by using the already
-> existing function that returns the amount by which soft limits are
-> exceeded: res_counter_soft_limit_excess().
->
-> Also remove all the corresponding functions on the res_counter side
-> that are now no longer used.
->
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Hi Greg,
 
-Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+Today's linux-next merge of the tty tree got a conflict in
+drivers/tty/serial/Kconfig between commit
+47d37d6f94ccf32d302492f969209930b2411f9e ("serial: Add auart driver for
+i.MX23/28") from the i.M tree and commit
+4564e1ef219fa69ed827fe2613569543a6b26fbc ("serial: pch_uart: support new
+device ML7213") from the tty tree.
+
+Just overlapping additions.  I fixed it up (see below) and can carry the
+fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/tty/serial/Kconfig
+index ef164f5,aaedbad..0000000
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@@ -1574,18 -1596,8 +1573,23 @@@ config SERIAL_PCH_UAR
+  	  which is an IOH(Input/Output Hub) for x86 embedded processor.
+  	  Enabling PCH_DMA, this PCH UART works as DMA mode.
+  
++ 	  This driver also can be used for OKI SEMICONDUCTOR ML7213 IOH(Input/
++ 	  Output Hub) which is for IVI(In-Vehicle Infotainment) use.
++ 	  ML7213 is companion chip for Intel Atom E6xx series.
++ 	  ML7213 is completely compatible for Intel EG20T PCH.
+++
+ +config SERIAL_MXS_AUART
+ +	depends on ARCH_MXS
+ +	tristate "MXS AUART support"
+ +	select SERIAL_CORE
+ +	help
+ +	  This driver supports the MXS Application UART (AUART) port.
+ +
+ +config SERIAL_MXS_AUART_CONSOLE
+ +	bool "MXS AUART console support"
+ +	depends on SERIAL_MXS_AUART=y
+ +	select SERIAL_CORE_CONSOLE
+ +	help
+ +	  Enable a MXS AUART port to be the system console.
+ +
+  endmenu
