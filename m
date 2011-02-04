@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582Ab1BDP2u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 10:28:50 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:27187 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751835Ab1BDP2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 10:28:45 -0500
-From: Andrey Vagin <avagin@openvz.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Andrey Vagin <avagin@openvz.org>
-Subject: [PATCH 1/2] fs: Correctly check d_find_alias() return code in devpts_pty_kill
-Date: Fri,  4 Feb 2011 18:28:26 +0300
-Message-Id: <1296833307-22549-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.2.1
+	id S1752794Ab1BDP3V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 10:29:21 -0500
+Received: from casper.infradead.org ([85.118.1.10]:44263 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752149Ab1BDP3T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 10:29:19 -0500
+Message-ID: <4D4C1B48.4040107@infradead.org>
+Date: Fri, 04 Feb 2011 13:29:12 -0200
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Red Hat/3.1.7-3.el6_0 Lightning/1.0b2 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Vasiliy Kulikov <segoon@openwall.com>
+CC: linux-kernel@vger.kernel.org, security@kernel.org,
+        Luca Risolia <luca.risolia@studio.unibo.it>, linux-usb@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH 07/20] video: sn9c102: world-wirtable sysfs files
+References: <cover.1296818921.git.segoon@openwall.com> <b560d7c146330b382b90d739a76d580ed4051d4e.1296818921.git.segoon@openwall.com>
+In-Reply-To: <b560d7c146330b382b90d739a76d580ed4051d4e.1296818921.git.segoon@openwall.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-d_find_alias() return NULL in case error, but we expected errno in
-devpts_pty_kill.
+Em 04-02-2011 10:23, Vasiliy Kulikov escreveu:
+> Don't allow everybody to change video settings.
+> 
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> ---
+>  Compile tested only.
+> 
+>  drivers/media/video/sn9c102/sn9c102_core.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/media/video/sn9c102/sn9c102_core.c b/drivers/media/video/sn9c102/sn9c102_core.c
+> index 84984f6..ce56a1c 100644
+> --- a/drivers/media/video/sn9c102/sn9c102_core.c
+> +++ b/drivers/media/video/sn9c102/sn9c102_core.c
+> @@ -1430,9 +1430,9 @@ static DEVICE_ATTR(i2c_reg, S_IRUGO | S_IWUSR,
+>  		   sn9c102_show_i2c_reg, sn9c102_store_i2c_reg);
+>  static DEVICE_ATTR(i2c_val, S_IRUGO | S_IWUSR,
+>  		   sn9c102_show_i2c_val, sn9c102_store_i2c_val);
+> -static DEVICE_ATTR(green, S_IWUGO, NULL, sn9c102_store_green);
+> -static DEVICE_ATTR(blue, S_IWUGO, NULL, sn9c102_store_blue);
+> -static DEVICE_ATTR(red, S_IWUGO, NULL, sn9c102_store_red);
+> +static DEVICE_ATTR(green, S_IWUSR, NULL, sn9c102_store_green);
+> +static DEVICE_ATTR(blue, S_IWUSR, NULL, sn9c102_store_blue);
+> +static DEVICE_ATTR(red, S_IWUSR, NULL, sn9c102_store_red);
+>  static DEVICE_ATTR(frame_header, S_IRUGO, sn9c102_show_frame_header, NULL);
 
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- fs/devpts/inode.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/fs/devpts/inode.c b/fs/devpts/inode.c
-index 8392c8c..530b1f1 100644
---- a/fs/devpts/inode.c
-+++ b/fs/devpts/inode.c
-@@ -544,14 +544,12 @@ void devpts_pty_kill(struct tty_struct *tty)
- 	mutex_lock(&root->d_inode->i_mutex);
- 
- 	dentry = d_find_alias(inode);
--	if (IS_ERR(dentry))
-+	if (!dentry)
- 		goto out;
- 
--	if (dentry) {
--		inode->i_nlink--;
--		d_delete(dentry);
--		dput(dentry);	/* d_alloc_name() in devpts_pty_new() */
--	}
-+	inode->i_nlink--;
-+	d_delete(dentry);
-+	dput(dentry);	/* d_alloc_name() in devpts_pty_new() */
- 
- 	dput(dentry);		/* d_find_alias above */
- out:
--- 
-1.7.2.1
-
+Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
