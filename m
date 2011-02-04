@@ -1,72 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210Ab1BDVeh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 16:34:37 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56648 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753146Ab1BDVef (ORCPT
+	id S1753171Ab1BDVhv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 16:37:51 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38819 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752890Ab1BDVhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 16:34:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=jjAU/bJUBsRa+I9/J1I7LXTVztJ/sUlgI9/tfw5jmBxaD6T8Tc5FiAkuIvVQS1xayq
-         zimKKEDsNuUPCpWH8tMwsLseMKqu+WdPVuRXhf3t/Krry5t3yhoTBMcl2HOEErQtbFDB
-         LqHEI04gHhxQJcjU/JFdGn/OlYEegGMHL6xlI=
-MIME-Version: 1.0
-In-Reply-To: <m1vd0zh5eh.fsf@fess.ebiederm.org>
-References: <m1oc6rio5u.fsf@fess.ebiederm.org> <1296851485-6730-1-git-send-email-lucian.grijincu@gmail.com>
- <m1vd0zh5eh.fsf@fess.ebiederm.org>
-From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Date: Fri, 4 Feb 2011 23:34:14 +0200
-Message-ID: <AANLkTinALtUX=uBGtCiVjyEMQJZ0O_Fc39nu3d1zSKkB@mail.gmail.com>
-Subject: Re: [PATCH 1/6] sysctl: faster reimplementation of sysctl_check_table
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Octavian Purdila <opurdila@ixiacom.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 4 Feb 2011 16:37:50 -0500
+Date: Fri, 4 Feb 2011 13:36:57 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ben Blum <bblum@andrew.cmu.edu>
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        ebiederm@xmission.com, lizf@cn.fujitsu.com, matthltc@us.ibm.com,
+        menage@google.com, oleg@redhat.com,
+        David Rientjes <rientjes@google.com>, Miao Xie <miaox@cn.fujitsu.com>
+Subject: Re: [PATCH v7 1/3] cgroups: read-write lock CLONE_THREAD forking
+ per threadgroup
+Message-Id: <20110204133657.78aeebe3.akpm@linux-foundation.org>
+In-Reply-To: <20110204212515.GA5916@ghc17.ghc.andrew.cmu.edu>
+References: <20101224082226.GA13872@ghc17.ghc.andrew.cmu.edu>
+	<20101226120919.GA28529@ghc17.ghc.andrew.cmu.edu>
+	<20101226120951.GB28529@ghc17.ghc.andrew.cmu.edu>
+	<20110124130529.903d9832.akpm@linux-foundation.org>
+	<20110204212515.GA5916@ghc17.ghc.andrew.cmu.edu>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p14LYm92030853
 
-On Fri, Feb 4, 2011 at 11:11 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
->> +static int __sysctl_check_table(struct nsproxy *namespaces,
->> + Â  Â  struct ctl_table *table, struct ctl_table **parents, int depth)
->> Â {
->> + Â  Â  const char *fail = NULL;
->> Â  Â  Â  int error = 0;
->> +
->> + Â  Â  if (depth >= CTL_MAXNAME) {
->
-> This should be depth > CTL_MAXNAME. Â Because there are only CTL_MAXNAME
-> entries in the array.
+On Fri, 4 Feb 2011 16:25:15 -0500
+Ben Blum <bblum@andrew.cmu.edu> wrote:
 
+> On Mon, Jan 24, 2011 at 01:05:29PM -0800, Andrew Morton wrote:
+> > On Sun, 26 Dec 2010 07:09:51 -0500
+> > Ben Blum <bblum@andrew.cmu.edu> wrote:
+> > 
+> > > Adds functionality to read/write lock CLONE_THREAD fork()ing per-threadgroup
+> > > 
+> > > From: Ben Blum <bblum@andrew.cmu.edu>
+> > > 
+> > > This patch adds an rwsem that lives in a threadgroup's signal_struct that's
+> > > taken for reading in the fork path, under CONFIG_CGROUPS. If another part of
+> > > the kernel later wants to use such a locking mechanism, the CONFIG_CGROUPS
+> > > ifdefs should be changed to a higher-up flag that CGROUPS and the other system
+> > > would both depend on.
+> > > 
+> > > This is a pre-patch for cgroup-procs-write.patch.
+> > > 
+> > > ...
+> > >
+> > > +/* See the declaration of threadgroup_fork_lock in signal_struct. */
+> > > +#ifdef CONFIG_CGROUPS
+> > > +static inline void threadgroup_fork_read_lock(struct task_struct *tsk)
+> > > +{
+> > > +	down_read(&tsk->signal->threadgroup_fork_lock);
+> > > +}
+> > > +static inline void threadgroup_fork_read_unlock(struct task_struct *tsk)
+> > > +{
+> > > +	up_read(&tsk->signal->threadgroup_fork_lock);
+> > > +}
+> > > +static inline void threadgroup_fork_write_lock(struct task_struct *tsk)
+> > > +{
+> > > +	down_write(&tsk->signal->threadgroup_fork_lock);
+> > > +}
+> > > +static inline void threadgroup_fork_write_unlock(struct task_struct *tsk)
+> > > +{
+> > > +	up_write(&tsk->signal->threadgroup_fork_lock);
+> > > +}
+> > > +#else
+> > 
+> > Risky. sched.h doesn't include rwsem.h.
+> > 
+> > We could make it do so, but almost every compilation unit in the kernel
+> > includes sched.h.  It would be nicer to make the kernel build
+> > finer-grained, rather than blunter-grained.  Don't be afraid to add new
+> > header files if that is one way of doing this!
+> 
+> Hmm, good point. But there's also:
+> 
+> +#ifdef CONFIG_CGROUPS
+> +       struct rw_semaphore threadgroup_fork_lock;
+> +#endif
+> 
+> in the signal_struct, also in sched.h, which needs to be there. Or I
+> could change it to a struct pointer with a forward incomplete
+> declaration above, and kmalloc/kfree it? I don't like adding more
+> alloc/free calls but don't know if it's more or less important than
+> header granularity.
 
-A bit lower in the array we access 'parents[depth]'.
-So the correct check should be (depth >= CTL_MAXNAME) => error.
-
-
->> - Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  sysctl_check_leaf(namespaces, table, &fail);
->> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  parents[depth] = table;
->> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  sysctl_check_leaf(namespaces, table, &fail,
->> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  parents, depth);
->> Â  Â  Â  Â  Â  Â  Â  }
-
->> + Â  Â  Â  Â  Â  Â  if (table->child) {
->> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  parents[depth] = table;
->> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  error |= __sysctl_check_table(namespaces, table->child,
->> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  parents, depth + 1);
->> + Â  Â  Â  Â  Â  Â  }
-
-
-
--- 
-Â .
-..: Lucian
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+What about adding a new header file which includes rwsem.h and sched.h
+and then defines the new interfaces?
