@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752432Ab1BDMZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 07:25:29 -0500
+	id S1752430Ab1BDMZx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 07:25:53 -0500
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:32973 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752033Ab1BDMYA (ORCPT
+	with ESMTP id S1751799Ab1BDMXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 07:24:00 -0500
+	Fri, 4 Feb 2011 07:23:54 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=lx6UE8Myoc6q/bSiHer64S1lYDEDwQB6pNuj+5X1gI6HoXdtVTr7+a7L4Jk26WYLOW
-         kKjAzhLj2sPJcqx4ii+BMz6sksafDlZAALEyB1wdCPbWGpK59URCuNQ1L62wK0HpV3BQ
-         xL5ZasqpByAmQKhd8p7dYhDhqVCRP/KkkmGRA=
+        b=Rb95GnloeLKH/oM1yGjbHmrI5gHVZmXxjU09DJ9I+iym0Pxy5RVPw9Bd34nK5U4GqL
+         sl2rtDE6DfuMCi779vGBiIlRYh5A2qRCkX9gUwuZvc0bzB4EO9TORLEgIWQXFOywj9Tv
+         af1bOEw46DYeTyTHYUMCYFdbjGuZbwnwLb9iw=
 From: Vasiliy Kulikov <segoon@openwall.com>
 To: linux-kernel@vger.kernel.org
-Cc: security@kernel.org, Carlos Corbacho <carlos@strangeworlds.co.uk>,
-        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org
-Subject: [PATCH 14/20] platform: x86: acer-wmi: world-writable sysfs threeg file
-Date: Fri,  4 Feb 2011 15:23:56 +0300
-Message-Id: <1456c564561bda820c358cf3c968b5c23a4c374f.1296818921.git.segoon@openwall.com>
+Cc: security@kernel.org, Wolfgang Grandegger <wg@grandegger.com>,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org
+Subject: [PATCH 12/20] net: can: at91_can: world-writable sysfs files
+Date: Fri,  4 Feb 2011 15:23:50 +0300
+Message-Id: <a6800dc8b0daed78256f98f52844cbbb48f4a76d.1296818921.git.segoon@openwall.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <cover.1296818921.git.segoon@openwall.com>
 References: <cover.1296818921.git.segoon@openwall.com>
@@ -28,28 +28,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't allow everybody to write to hardware registers.
+Don't allow everybody to write to mb0_id file.
 
 Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 ---
- Compile tested only.
+ Cannot compile the driver, so it is not tested at all.
 
- drivers/platform/x86/acer-wmi.c |    2 +-
+ drivers/net/can/at91_can.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
-index f21eb53..1dfd966 100644
---- a/drivers/platform/x86/acer-wmi.c
-+++ b/drivers/platform/x86/acer-wmi.c
-@@ -1279,7 +1279,7 @@ static ssize_t set_bool_threeg(struct device *dev,
- 			return -EINVAL;
- 	return count;
+diff --git a/drivers/net/can/at91_can.c b/drivers/net/can/at91_can.c
+index 2532b96..57d2ffb 100644
+--- a/drivers/net/can/at91_can.c
++++ b/drivers/net/can/at91_can.c
+@@ -1109,7 +1109,7 @@ static ssize_t at91_sysfs_set_mb0_id(struct device *dev,
+ 	return ret;
  }
--static DEVICE_ATTR(threeg, S_IWUGO | S_IRUGO | S_IWUSR, show_bool_threeg,
-+static DEVICE_ATTR(threeg, S_IRUGO | S_IWUSR, show_bool_threeg,
- 	set_bool_threeg);
  
- static ssize_t show_interface(struct device *dev, struct device_attribute *attr,
+-static DEVICE_ATTR(mb0_id, S_IWUGO | S_IRUGO,
++static DEVICE_ATTR(mb0_id, S_IWUSR | S_IRUGO,
+ 	at91_sysfs_show_mb0_id, at91_sysfs_set_mb0_id);
+ 
+ static struct attribute *at91_sysfs_attrs[] = {
 -- 
 1.7.0.4
 
