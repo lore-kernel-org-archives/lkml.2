@@ -1,141 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751857Ab1BDLT3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 06:19:29 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45559 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751559Ab1BDLT2 (ORCPT
+	id S1751754Ab1BDLd3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 06:33:29 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:15259 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975Ab1BDLd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 06:19:28 -0500
-Date: Fri, 4 Feb 2011 11:18:41 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jassi Brar <jassisinghbrar@gmail.com>
-Cc: Richard Zhao <linuxzsc@gmail.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        linux-kernel@vger.kernel.org, Dima Zavin <dmitriyz@google.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Locking in the clk API, part 2: clk_prepare/clk_unprepare
-Message-ID: <20110204111841.GG14627@n2100.arm.linux.org.uk>
-References: <20110201131512.GH31216@n2100.arm.linux.org.uk> <20110201141837.GA1147@pengutronix.de> <20110201143932.GK31216@n2100.arm.linux.org.uk> <20110201151846.GD1147@pengutronix.de> <20110201152458.GP31216@n2100.arm.linux.org.uk> <4D48741F.8060006@codeaurora.org> <20110201212409.GU31216@n2100.arm.linux.org.uk> <20110204095424.GB2347@richard-laptop> <20110204104832.GE14627@n2100.arm.linux.org.uk> <AANLkTi=sfBTHLXejWxAWGa=Tcw+LoQfw6sUtcn6L+JeM@mail.gmail.com>
+	Fri, 4 Feb 2011 06:33:28 -0500
+X-IronPort-AV: E=Sophos;i="4.60,425,1291593600"; 
+   d="scan'208";a="4150055"
+Date: Fri, 4 Feb 2011 11:35:15 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        Jan Beulich <JBeulich@novell.com>
+Subject: Re: [PATCH] x86/mm/init: respect memblock reserved regions when
+ destroying mappings
+In-Reply-To: <4D4ADFAD.7060507@zytor.com>
+Message-ID: <alpine.DEB.2.00.1102041130060.7277@kaball-desktop>
+References: <alpine.DEB.2.00.1101311514580.7277@kaball-desktop> <4D4A3782.3050702@zytor.com> <alpine.DEB.2.00.1102031114030.7277@kaball-desktop> <4D4ADFAD.7060507@zytor.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=sfBTHLXejWxAWGa=Tcw+LoQfw6sUtcn6L+JeM@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 04, 2011 at 08:04:03PM +0900, Jassi Brar wrote:
-> On Fri, Feb 4, 2011 at 7:48 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
+On Thu, 3 Feb 2011, H. Peter Anvin wrote:
+> On 02/03/2011 03:25 AM, Stefano Stabellini wrote:
+> >>
+> >> How on Earth would you end up with a reserved region *inside the BRK*?
+> > 
+> > I think in practice you cannot, but you can have reserved regions at
+> > _end, that is the main problem I am trying to solve.
+> > If we have a reserved region at _end and _end is not PMD aligned, then
+> > we have a problem.
+> > 
+> > I thought that checking for reserved regions before destroying the
+> > mapping would be a decent solution (because it wouldn't affect the
+> > normal case); so I ended up checking between _brk_end and _end too.
+> > 
+> > Other alternative solutions I thought about but that I discarded because
+> > they also affect the normal case are:
+> > 
+> > - never destroy mappings that could go over _end;
+> > - always PMD align _end.
+> > 
+> > If none of the above are acceptable, I welcome other suggestions :-)
+> > 
 > 
-> > int clk_enable(struct clk *clk)
-> > {
-> >        unsigned long flags;
-> >        int ret = 0;
-> >
-> >        if (clk) {
-> >                if (WARN_ON(!clk->prepare_count))
-> >                        return -EINVAL;
-> >
-> >                spin_lock_irqsave(&clk->lock, flags);
-> >                if (clk->enable_count++ == 0)
-> >                        ret = clk->ops->enable(clk);
-> >                spin_unlock_irqrestore(&clk->lock, flags);
-> >        }
-> >        return ret;
-> > }
-> >
-> > is entirely sufficient to catch the case of a single-use clock not being
-> > prepared before clk_enable() is called.
-> >
-> > We're after detecting drivers missing calls to clk_prepare(), we're not
-> > after detecting concurrent calls to clk_prepare()/clk_unprepare().
+> Sounds like the code does the right thing, but the description needs to
+> be improved.
 > 
-> I hope you mean 'making sure the clock is prepared before it's enabled
-> ' rather than
-> 'catching a driver that doesn't do clk_prepare before clk_enable'.
-> Because, the above implementation still doesn't catch a driver that
-> doesn't call clk_prepare
-> but simply uses a clock that happens to have been already prepare'd by
-> some other
-> driver or the platform.
 
-No, I mean what I said.
+I tried to improve both the commit message and the comments within the
+code, this is the result:
 
-The only way to do what you're asking is to attach a list of identifiers
-which have prepared a clock to the struct clk, where each identifier is
-unique to each driver instance.
 
-So what that becomes is:
+commit d0136be7b48953f27202dbde285a7379d06cfe98
+Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Date:   Tue Jan 25 12:05:11 2011 +0000
 
-struct prepared_instance {
-	struct list_head node;
-	void *driver_id;
-};
+    x86/mm/init: respect memblock reserved regions when destroying mappings
+    
+    In init_memory_mapping we destroy the mappings between _brk_end and
+    _end, but if _end is not PMD aligned we also destroy mappings for
+    potentially reserved regions between _end and the following PMD.
+    
+    In order to avoid this problem, before clearing any PMDs we check if the
+    corresponding memory area has been reserved and we only destroy the
+    mapping if hasn't.
+    
+    We found this issue because under Xen we have a valid mapping at _end,
+    and if _end is not PMD aligned the current code destroys the initial
+    part of it.
+    
+    In practice this fix does not have any impact on native.
+    
+    Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-int clk_prepare(struct clk *clk, void *driver_id)
-{
-	struct prepared_instance *inst;
-	int ret = 0;
-
-	if (clk) {
-		inst = kmalloc(sizeof(*inst), GFP_KERNEL);
-		if (!inst)
-			return -ENOMEM;
-
-		inst->driver_id = driver_id;
-
-		mutex_lock(&clk->mutex);
-		if (clk->prepare_count++ == 0)
-			ret = clk->ops->prepare(clk);
-
-		if (ret == 0) {
-			spin_lock_irqsave(&clk->lock, flags);
-			list_add(&inst->node, &clk->prepare_list);
-			spin_unlock_irqrestore(&clk->lock, flags);
-		} else
-			clk->prepare_count--;
-		mutex_unlock(&clk->mutex);
-	}
-	return ret;
-}
-
-int clk_enable(struct clk *clk, void *driver_id)
-{
-	unsigned long flags;
-	int ret = 0;
-
-	if (clk) {
-		struct prepare_instance *inst;
-
-		spin_lock_irqsave(&clk->lock, flags);
-		list_for_each_entry(inst, &clk->prepare_list, node)
-			if (inst == driver_id)
-				ret = -EINVAL;
-
-		if (ret == 0 && clk->enable_count++ == 0) {
-			ret = clk->ops->enable(clk);
-			if (ret)
-				clk->enable_count--;
-		}
-		spin_unlock_irqrestore(&clk->lock, flags);
-	}
-	return ret;
-}
-
-I think that's going completely over the top, and adds needless complexity
-to drivers, which now have to pass an instance specific cookie into every
-clk API call.
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 947f42a..65c34f4 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -283,6 +283,8 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 	if (!after_bootmem && !start) {
+ 		pud_t *pud;
+ 		pmd_t *pmd;
++		unsigned long addr;
++		u64 size, memblock_addr;
+ 
+ 		mmu_cr4_features = read_cr4();
+ 
+@@ -291,11 +293,22 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 		 * located on different 2M pages. cleanup_highmap(), however,
+ 		 * can only consider _end when it runs, so destroy any
+ 		 * mappings beyond _brk_end here.
++		 *
++		 * If _end is not PMD aligned, we also destroy the mapping of
++		 * the memory area between _end the next PMD, so before clearing
++		 * the PMD we make sure that the corresponding memory region has
++		 * not been reserved.
+ 		 */
+ 		pud = pud_offset(pgd_offset_k(_brk_end), _brk_end);
+ 		pmd = pmd_offset(pud, _brk_end - 1);
+-		while (++pmd <= pmd_offset(pud, (unsigned long)_end - 1))
+-			pmd_clear(pmd);
++		addr = (_brk_end + PMD_SIZE - 1) & PMD_MASK;
++		while (++pmd <= pmd_offset(pud, (unsigned long)_end - 1)) {
++			memblock_addr = memblock_x86_find_in_range_size(__pa(addr),
++					&size, PMD_SIZE);
++			if (memblock_addr == (u64) __pa(addr) && size >= PMD_SIZE)
++				pmd_clear(pmd);
++			addr += PMD_SIZE;
++		}
+ 	}
+ #endif
+ 	__flush_tlb_all();
