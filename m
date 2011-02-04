@@ -1,79 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab1BDJt0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 04:49:26 -0500
-Received: from david.siemens.de ([192.35.17.14]:28768 "EHLO david.siemens.de"
+	id S1754632Ab1BDJvV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 04:51:21 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:48735 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754719Ab1BDJtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 04:49:24 -0500
-Message-ID: <4D4BCB97.6000900@siemens.com>
-Date: Fri, 04 Feb 2011 10:49:11 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1753240Ab1BDJvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 04:51:19 -0500
+Date: Fri, 4 Feb 2011 10:51:06 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 5/5] memcg: remove direct page_cgroup-to-page pointer
+Message-ID: <20110204095106.GC2289@cmpxchg.org>
+References: <1296743166-9412-1-git-send-email-hannes@cmpxchg.org>
+ <1296743166-9412-6-git-send-email-hannes@cmpxchg.org>
+ <20110204091949.e5465acc.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-CC: kvm <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Zachary Amsden <zamsden@redhat.com>
-Subject: [PATCH] KVM: x86: Convert tsc_write_lock to raw_spinlock
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110204091949.e5465acc.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Code under this lock requires non-preemptibility. Ensure this also over
--rt by converting it to raw spinlock.
+On Fri, Feb 04, 2011 at 09:19:49AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Thu,  3 Feb 2011 15:26:06 +0100
+> Johannes Weiner <hannes@cmpxchg.org> wrote:
+> 
+> > In struct page_cgroup, we have a full word for flags but only a few
+> > are reserved.  Use the remaining upper bits to encode, depending on
+> > configuration, the node or the section, to enable page_cgroup-to-page
+> > lookups without a direct pointer.
+> > 
+> > This saves a full word for every page in a system with memory cgroups
+> > enabled.
+> > 
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> 
+> In general,
+> 
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+Thanks!
+
+> A few questions below.
+
+[snip]
+
+> > @@ -117,6 +122,34 @@ static inline void move_unlock_page_cgroup(struct page_cgroup *pc,
+> >  	local_irq_restore(*flags);
+> >  }
+> >  
+> > +#ifdef CONFIG_SPARSEMEM
+> > +#define PCG_ARRAYID_SHIFT	SECTIONS_SHIFT
+> > +#else
+> > +#define PCG_ARRAYID_SHIFT	NODES_SHIFT
+> > +#endif
+> > +
+> > +#if (PCG_ARRAYID_SHIFT > BITS_PER_LONG - NR_PCG_FLAGS)
+> > +#error Not enough space left in pc->flags to store page_cgroup array IDs
+> > +#endif
+> > +
+> > +/* pc->flags: ARRAY-ID | FLAGS */
+> > +
+> > +#define PCG_ARRAYID_MASK	((1UL << PCG_ARRAYID_SHIFT) - 1)
+> > +
+> > +#define PCG_ARRAYID_OFFSET	(sizeof(unsigned long) * 8 - PCG_ARRAYID_SHIFT)
+> > +
+> > +static inline void set_page_cgroup_array_id(struct page_cgroup *pc,
+> > +					    unsigned long id)
+> > +{
+> > +	pc->flags &= ~(PCG_ARRAYID_MASK << PCG_ARRAYID_OFFSET);
+> > +	pc->flags |= (id & PCG_ARRAYID_MASK) << PCG_ARRAYID_OFFSET;
+> > +}
+> > +
+> > +static inline unsigned long page_cgroup_array_id(struct page_cgroup *pc)
+> > +{
+> > +	return (pc->flags >> PCG_ARRAYID_OFFSET) & PCG_ARRAYID_MASK;
+> > +}
+> > +
+> 
+> If a function for looking up a page from a page_cgroup in inline,
+> I think these function should be static in page_cgroup.c
+
+I stole all of this from mm.h which does the same for page flags.  Of
+course, in their case, most of them are used in more than one file,
+but some of them are not and it still has merit to keep related things
+together.
+
+Should I just move the functions?  I would like to keep them together
+with the _MASK and _OFFSET definitions, so should I move them too?
+Suggestion welcome ;)
+
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index 998da06..4e10f46 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -1054,7 +1054,8 @@ unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+> >  		if (unlikely(!PageCgroupUsed(pc)))
+> >  			continue;
+> >  
+> > -		page = pc->page;
+> > +		page = lookup_cgroup_page(pc);
+> > +		VM_BUG_ON(pc != lookup_page_cgroup(page));
+> 
+> If you're afraid of corruption in ->flags bit, checking this in page_cgroup.c
+> is better.
+
+I thought I'd keep them visible so we could remove them in a cycle or
+two and I am sure they would get lost in mm/page_cgroup.c.  Who looks
+at this file regularly? :)
+
+But OTOH, they are under CONFIG_DEBUG_VM and corruption does not get
+less likely as more code changes around pc->flags.
+
+So I agree, they should be moved to lookup_page_cgroup() and be kept
+indefinitely.
+
+Thanks for your review.
+
+	Hannes
+
 ---
- arch/x86/include/asm/kvm_host.h |    2 +-
- arch/x86/kvm/x86.c              |    6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
+Subject: memcg: remove direct page_cgroup-to-page pointer fix
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index ffd7f8d..25e7734 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -448,7 +448,7 @@ struct kvm_arch {
+Move pc -> page linkage checks to the lookup function itself.  I no
+longer plan on removing them again, so there is no point in keeping
+them visible at the callsites.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 4e10f46..8438988 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1055,7 +1055,6 @@ unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+ 			continue;
  
- 	unsigned long irq_sources_bitmap;
- 	s64 kvmclock_offset;
--	spinlock_t tsc_write_lock;
-+	raw_spinlock_t tsc_write_lock;
- 	u64 last_tsc_nsec;
- 	u64 last_tsc_offset;
- 	u64 last_tsc_write;
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index a7f65aa..d813919 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1017,7 +1017,7 @@ void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
- 	unsigned long flags;
- 	s64 sdiff;
+ 		page = lookup_cgroup_page(pc);
+-		VM_BUG_ON(pc != lookup_page_cgroup(page));
  
--	spin_lock_irqsave(&kvm->arch.tsc_write_lock, flags);
-+	raw_spin_lock_irqsave(&kvm->arch.tsc_write_lock, flags);
- 	offset = data - native_read_tsc();
- 	ns = get_kernel_ns();
- 	elapsed = ns - kvm->arch.last_tsc_nsec;
-@@ -1050,7 +1050,7 @@ void kvm_write_tsc(struct kvm_vcpu *vcpu, u64 data)
- 	kvm->arch.last_tsc_write = data;
- 	kvm->arch.last_tsc_offset = offset;
- 	kvm_x86_ops->write_tsc_offset(vcpu, offset);
--	spin_unlock_irqrestore(&kvm->arch.tsc_write_lock, flags);
-+	raw_spin_unlock_irqrestore(&kvm->arch.tsc_write_lock, flags);
+ 		if (unlikely(!PageLRU(page)))
+ 			continue;
+@@ -3298,7 +3297,6 @@ static int mem_cgroup_force_empty_list(struct mem_cgroup *mem,
+ 		spin_unlock_irqrestore(&zone->lru_lock, flags);
  
- 	/* Reset of TSC must disable overshoot protection below */
- 	vcpu->arch.hv_clock.tsc_timestamp = 0;
-@@ -6009,7 +6009,7 @@ int kvm_arch_init_vm(struct kvm *kvm)
- 	/* Reserve bit 0 of irq_sources_bitmap for userspace irq source */
- 	set_bit(KVM_USERSPACE_IRQ_SOURCE_ID, &kvm->arch.irq_sources_bitmap);
+ 		page = lookup_cgroup_page(pc);
+-		VM_BUG_ON(pc != lookup_page_cgroup(page));
  
--	spin_lock_init(&kvm->arch.tsc_write_lock);
-+	raw_spin_lock_init(&kvm->arch.tsc_write_lock);
+ 		ret = mem_cgroup_move_parent(page, pc, mem, GFP_KERNEL);
+ 		if (ret == -ENOMEM)
+diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
+index e5f38e8..6c3f7a6 100644
+--- a/mm/page_cgroup.c
++++ b/mm/page_cgroup.c
+@@ -45,11 +45,14 @@ struct page_cgroup *lookup_page_cgroup(struct page *page)
+ struct page *lookup_cgroup_page(struct page_cgroup *pc)
+ {
+ 	unsigned long pfn;
++	struct page *page;
+ 	pg_data_t *pgdat;
  
- 	return 0;
+ 	pgdat = NODE_DATA(page_cgroup_array_id(pc));
+ 	pfn = pc - pgdat->node_page_cgroup + pgdat->node_start_pfn;
+-	return pfn_to_page(pfn);
++	page = pfn_to_page(pfn);
++	VM_BUG_ON(pc != lookup_page_cgroup(page));
++	return page;
  }
--- 
-1.7.1
+ 
+ static int __init alloc_node_page_cgroup(int nid)
+@@ -117,11 +120,14 @@ struct page_cgroup *lookup_page_cgroup(struct page *page)
+ struct page *lookup_cgroup_page(struct page_cgroup *pc)
+ {
+ 	struct mem_section *section;
++	struct page *page;
+ 	unsigned long nr;
+ 
+ 	nr = page_cgroup_array_id(pc);
+ 	section = __nr_to_section(nr);
+-	return pfn_to_page(pc - section->page_cgroup);
++	page = pfn_to_page(pc - section->page_cgroup);
++	VM_BUG_ON(pc != lookup_page_cgroup(page));
++	return page;
+ }
+ 
+ /* __alloc_bootmem...() is protected by !slab_available() */
