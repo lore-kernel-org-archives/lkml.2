@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539Ab1BDPV0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 10:21:26 -0500
-Received: from mail.kolatelecom.ru ([94.100.192.6]:35697 "EHLO
-	mail.teletoria.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880Ab1BDPVY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 10:21:24 -0500
-Message-ID: <80c7e5f498ec19155872ad457020aac5.squirrel@mail.teletoria.ru>
-Date: Fri, 4 Feb 2011 16:10:10 +0100
-Subject: Business Proposal
-From: "Mr. Song Lile" <songlile222@aol.nl>
-Reply-To: songlile222@aol.nl
-User-Agent: SquirrelMail/1.4.20-RC2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Invalid-HELO: Host impersonating [mail.teletoria.ru]
-To: unlisted-recipients:; (no To-header on input)
+	id S1752267Ab1BDP2p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 10:28:45 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:37751 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751098Ab1BDP2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 10:28:44 -0500
+From: Andrey Vagin <avagin@openvz.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Andrey Vagin <avagin@openvz.org>
+Subject: [PATCH 2/2] fs: devpts_pty_new() return -ENOMEM if dentry allocation failed
+Date: Fri,  4 Feb 2011 18:28:27 +0300
+Message-Id: <1296833307-22549-2-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.2.1
+In-Reply-To: <1296833307-22549-1-git-send-email-avagin@openvz.org>
+References: <1296833307-22549-1-git-send-email-avagin@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In this case nobody can open a slave point, so will be better return error
+from devpts_pty_new()
 
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+---
+ fs/devpts/inode.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-
-Mijn naam is de heer Song Li le werk ik met de Hang Seng Bank.There is de
-som van $ 19,500,000.00 in mijn bank "Hang Seng Bank", Hong kong.I niet te
-werven voor uw hulp bij het uitvoeren van dit plan transaction.I tot en
-met 30 geven % van de totale middelen als compensatie voor uw hulp.
-Met vriendelijke groet,
-De heer Song Lile
-Prive e-mail: songlile222@aol.nl
-Telefoon: +852-9534-8675
-
-English:-
-Business Proposal
-===============
-My name is Mr. Song Li le I work with the Hang Seng Bank.There is the sum
-of $19,500,000.00 in my bank"Hang Seng Bank",Hong kong.I do solicit for
-your assistance in effecting this transaction.I intend to give 30% of the
-total funds as compensation for your assistance.
-Sincerely,
-Mr. Song Lile
-Private e-mail: songlile222@aol.nl
-Phone: +852-9534-8675
+diff --git a/fs/devpts/inode.c b/fs/devpts/inode.c
+index 530b1f1..31474f3 100644
+--- a/fs/devpts/inode.c
++++ b/fs/devpts/inode.c
+@@ -479,6 +479,7 @@ int devpts_pty_new(struct inode *ptmx_inode, struct tty_struct *tty)
+ 	struct dentry *root = sb->s_root;
+ 	struct pts_fs_info *fsi = DEVPTS_SB(sb);
+ 	struct pts_mount_opts *opts = &fsi->mount_opts;
++	int ret = 0;
+ 	char s[12];
+ 
+ 	/* We're supposed to be given the slave end of a pty */
+@@ -504,11 +505,14 @@ int devpts_pty_new(struct inode *ptmx_inode, struct tty_struct *tty)
+ 	if (dentry) {
+ 		d_add(dentry, inode);
+ 		fsnotify_create(root->d_inode, dentry);
++	} else {
++		iput(inode);
++		ret = -ENOMEM;
+ 	}
+ 
+ 	mutex_unlock(&root->d_inode->i_mutex);
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ struct tty_struct *devpts_get_tty(struct inode *pts_inode, int number)
+-- 
+1.7.2.1
 
