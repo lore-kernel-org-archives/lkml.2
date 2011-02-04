@@ -1,122 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751559Ab1BDLvU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 06:51:20 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38789 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046Ab1BDLvS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 06:51:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=HL/iPnKE4M4dbmqhULgjOWLV7zzX56yhc0ug5hGvafZjz3zFkebkAiRLRPeLji0qwZ
-         7p8TBks7su4nbASiH5s5g3IJ36eCrMMdnr5+ERBePEEpGrvU2FWQF5kplOPAXKkTxZQp
-         ejIajVpjmvcMsZpalw1kySH3V1/w81moTqxeQ=
+	id S1751479Ab1BDMFt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 07:05:49 -0500
+Received: from nbd.name ([46.4.11.11]:36534 "EHLO nbd.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751098Ab1BDMFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 07:05:48 -0500
+Message-ID: <4D4BEB99.4060202@openwrt.org>
+Date: Fri, 04 Feb 2011 13:05:45 +0100
+From: Felix Fietkau <nbd@openwrt.org>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <20110204111841.GG14627@n2100.arm.linux.org.uk>
-References: <20110201131512.GH31216@n2100.arm.linux.org.uk>
-	<20110201141837.GA1147@pengutronix.de>
-	<20110201143932.GK31216@n2100.arm.linux.org.uk>
-	<20110201151846.GD1147@pengutronix.de>
-	<20110201152458.GP31216@n2100.arm.linux.org.uk>
-	<4D48741F.8060006@codeaurora.org>
-	<20110201212409.GU31216@n2100.arm.linux.org.uk>
-	<20110204095424.GB2347@richard-laptop>
-	<20110204104832.GE14627@n2100.arm.linux.org.uk>
-	<AANLkTi=sfBTHLXejWxAWGa=Tcw+LoQfw6sUtcn6L+JeM@mail.gmail.com>
-	<20110204111841.GG14627@n2100.arm.linux.org.uk>
-Date: Fri, 4 Feb 2011 20:51:15 +0900
-Message-ID: <AANLkTinB7jin5jDyNdTJYN2DZdTA3iJFvGJtsmtCUNsE@mail.gmail.com>
-Subject: Re: Locking in the clk API, part 2: clk_prepare/clk_unprepare
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Richard Zhao <linuxzsc@gmail.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        linux-kernel@vger.kernel.org, Dima Zavin <dmitriyz@google.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Ben Dooks <ben-linux@fluff.org>,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Miklos Szeredi <miklos@szeredi.hu>, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: Wireless regression (was 2.6.38-rc3: FUSE (sshfs) hangs under
+ load)
+References: <20110201175452.GB518@core.coreip.homeip.net> <E1PkbGG-0005Rf-QL@pomaz-ex.szeredi.hu> <20110202165236.GA3178@core.coreip.homeip.net> <20110203065541.GB5592@core.coreip.homeip.net> <E1Pkx7s-00073l-5B@pomaz-ex.szeredi.hu> <20110203194115.GA14159@core.coreip.homeip.net> <20110204064952.GA12914@core.coreip.homeip.net> <4D4BE5D7.8090202@openwrt.org>
+In-Reply-To: <4D4BE5D7.8090202@openwrt.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 4, 2011 at 8:18 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Fri, Feb 04, 2011 at 08:04:03PM +0900, Jassi Brar wrote:
->> On Fri, Feb 4, 2011 at 7:48 PM, Russell King - ARM Linux
->> <linux@arm.linux.org.uk> wrote:
->>
->> > int clk_enable(struct clk *clk)
->> > {
->> >        unsigned long flags;
->> >        int ret = 0;
->> >
->> >        if (clk) {
->> >                if (WARN_ON(!clk->prepare_count))
->> >                        return -EINVAL;
->> >
->> >                spin_lock_irqsave(&clk->lock, flags);
->> >                if (clk->enable_count++ == 0)
->> >                        ret = clk->ops->enable(clk);
->> >                spin_unlock_irqrestore(&clk->lock, flags);
->> >        }
->> >        return ret;
->> > }
->> >
->> > is entirely sufficient to catch the case of a single-use clock not being
->> > prepared before clk_enable() is called.
->> >
->> > We're after detecting drivers missing calls to clk_prepare(), we're not
->> > after detecting concurrent calls to clk_prepare()/clk_unprepare().
->>
->> I hope you mean 'making sure the clock is prepared before it's enabled
->> ' rather than
->> 'catching a driver that doesn't do clk_prepare before clk_enable'.
->> Because, the above implementation still doesn't catch a driver that
->> doesn't call clk_prepare
->> but simply uses a clock that happens to have been already prepare'd by
->> some other
->> driver or the platform.
->
-> No, I mean what I said.
-Then, how does that function catch a driver that, say, doesn't do clk_prepare
-but share the clk with another already active driver?
-Because you said - "We're after detecting drivers missing calls to
-clk_prepare()"
+On 2011-02-04 12:41 PM, Felix Fietkau wrote:
+> On 2011-02-04 7:49 AM, Dmitry Torokhov wrote:
+>> On Thu, Feb 03, 2011 at 11:41:15AM -0800, Dmitry Torokhov wrote:
+>>> On Thu, Feb 03, 2011 at 12:13:24PM +0100, Miklos Szeredi wrote:
+>>> > On Wed, 2 Feb 2011, Dmitry Torokhov wrote:
+>>> > > On Wed, Feb 02, 2011 at 08:52:36AM -0800, Dmitry Torokhov wrote:
+>>> > > > On Wed, Feb 02, 2011 at 12:52:36PM +0100, Miklos Szeredi wrote:
+>>> > > > > On Tue, 1 Feb 2011, Dmitry Torokhov wrote:
+>>> > > > > > Hi,
+>>> > > > > > 
+>>> > > > > > After installing 2.6.38-rc3 (plus a few input patches) sshfs started to
+>>> > > > > > misbehave on me under load. It starts off fine but when I try to compile
+>>> > > > > > a few modules against kernel sources residing on the other box the
+>>> > > > > > processes go into 'D' state and just sit there doing nothing.
+>>> > > > > 
+>>> > > > > Can you please post a stack trace from SysRq-T?
+>>> > > > > 
+>>> > > > 
+>> ...
+>>> > > 
+>>> > > OK, so here are the stack traces you requested. First one is snapshot of
+>>> > > when compile got stuck, the 2nd one is when I interrupted make which
+>>> > > caused gcc to go to 'D' state.
+>>> > 
+>>> > There doesn't appear anything abnormal there.
+>>> > 
+>>> > It's going into D state after it has received an interrupt and sent it
+>>> > along to the userspace filesystem.  Then it will go into
+>>> > uninterruptible sleep until the answer is received.
+>>> > 
+>>> > So the hang is because the answer to an open request is not being
+>>> > received.  I can't tell where it got stuck, apparently not anywhere on
+>>> > the local machine.
+>>> > 
+>>> > Can you please get a log from sshfs with "-odebug,sshfs_debug" and
+>>> > redirect stderr to a file?  That might tell a bit more about the
+>>> > situation.  Or it might not...
+>>> 
+>>> Hmm, it might be just the network itself, last night mutt in ssh session
+>>> froze on me as well. I guess I'll just have to finish my bisect
+>>> exercise.
+>>> 
+>> 
+>> I finished bisecting and it turned out that the problematic commit
+>> happened to be in wireless (I have iwl3945):
+>> 
+>> commit 4cd06a344db752f513437138953af191cbe9a691
+>> Author: Felix Fietkau <nbd@openwrt.org>
+>> Date:   Sat Dec 18 19:30:49 2010 +0100
+>> 
+>>     mac80211: skip unnecessary pskb_expand_head calls
+>> 
+>>     If the skb is not cloned and we don't need any extra headroom, there
+>>     is no point in reallocating the skb head.
+>> 
+>>     Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+>>     Signed-off-by: John W. Linville <linville@tuxdriver.com>
+>> 
+>> With this commit reverted from 2.6.38-rc3 I can not reproduce sshfs
+>> getting stuck here.
+> I really don't see how this commit could be causing these issues, and
+> I'm not aware of any similar issues affecting other drivers.
+Could you please try this patch to see if it fixes the issue as well?
 
-The point is, there is difference between detecting drivers that miss
-the clk_prepare
-and ensuring clk_prepare has been called before any call to
-clk_enable. And making
-that clear helps get rid of lots of confusion/misunderstanding. Uwe
-seems to have
-had similar confusions.
-
-
-> The only way to do what you're asking is to attach a list of identifiers
-> which have prepared a clock to the struct clk, where each identifier is
-> unique to each driver instance.
-I am not asking what you think.
-In my second last post, I am rather asking the other way around - that
-let us not worry
-about drivers missing the clk_prepare and not try to catch those by the new API.
-
-
-> I think that's going completely over the top, and adds needless complexity
-> to drivers, which now have to pass an instance specific cookie into every
-> clk API call.
-Exactly.
-All we need is to ensure clk_prepare has been called atleast once before
-any call to clk_enable.
+diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
+index ffc6749..3168eae 100644
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -1547,7 +1547,7 @@ static int ieee80211_skb_resize(struct ieee80211_local *local,
+ 		skb_orphan(skb);
+ 	}
+ 
+-	if (skb_header_cloned(skb))
++	if (skb_cloned(skb))
+ 		I802_DEBUG_INC(local->tx_expand_skb_head_cloned);
+ 	else if (head_need || tail_need)
+ 		I802_DEBUG_INC(local->tx_expand_skb_head);
