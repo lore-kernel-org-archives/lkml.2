@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661Ab1BDUgK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 15:36:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52310 "EHLO mx2.suse.de"
+	id S1752597Ab1BDUgw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 15:36:52 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:45527 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751979Ab1BDUgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 15:36:08 -0500
-Date: Fri, 4 Feb 2011 12:35:40 -0800
-From: Greg KH <gregkh@suse.de>
-To: rmorell@nvidia.com
-Cc: Olof Johansson <olof@lixom.net>, Greg KH <greg@kroah.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Benoit Goby <benoit@android.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Ming Lei <tom.leiming@gmail.com>, Jacob Pan <jacob.jun.pan@intel.com>,
-        Oliver Neukum <oliver@neukum.org>, Erik Gilling <konkers@android.com>,
-        Colin Cross <ccross@android.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 3/3] USB: ehci: tegra: Align DMA transfers to 32 bytes
-Message-ID: <20110204203540.GA13203@suse.de>
-References: <1295559715-14264-1-git-send-email-rmorell@nvidia.com>
- <1296097609-32302-4-git-send-email-rmorell@nvidia.com>
- <20110204194954.GA25180@kroah.com>
- <AANLkTinRtch4Pvr3GLz5wZU2xkG3FMJxxzSNAdParA7j@mail.gmail.com>
- <20110204201616.GA12482@suse.de>
- <20110204202640.GC1744@morell.nvidia.com>
+	id S1751787Ab1BDUgu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 15:36:50 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Ozan =?utf-8?q?=C3=87a=C4=9Flayan?= <ozan@pardus.org.tr>
+Subject: Re: Common boot/shutdown issues with the latest 2.6.37 (Mostly Asus laptops)
+Date: Fri, 4 Feb 2011 21:36:19 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc3+; KDE/4.4.4; x86_64; ; )
+Cc: Richard =?utf-8?q?Sch=C3=BCtz?= <r.schtz@t-online.de>,
+        Lionel Debroux <lionel_debroux@yahoo.fr>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+References: <556624.21214.qm@web28409.mail.ukl.yahoo.com> <201102032351.31307.rjw@sisk.pl> <201102040844.05490.ozan@pardus.org.tr>
+In-Reply-To: <201102040844.05490.ozan@pardus.org.tr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110204202640.GC1744@morell.nvidia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201102042136.20165.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 04, 2011 at 12:26:40PM -0800, rmorell@nvidia.com wrote:
-> On Fri, Feb 04, 2011 at 12:16:16PM -0800, Greg KH wrote:
-> > On Fri, Feb 04, 2011 at 12:14:54PM -0800, Olof Johansson wrote:
-> > > On Fri, Feb 4, 2011 at 11:49 AM, Greg KH <greg@kroah.com> wrote:
-> > > > This file doesn't seem to be in any tree that I can find, including my
-> > > > own, so I can't apply this patch.
-> > > >
-> > > > What am I supposed to do with it?
-> > > 
-> > > It hasn't been posted for upstream yet, so nothing for you to do. The
-> > > driver will be posted for review soon, hopefully in time for .39.
-> > 
-> > Then why would someone send me a patch for it already?
+On Friday, February 04, 2011, Ozan Çağlayan wrote:
+> Cuma 04 Şubat 2011 günü (saat 00:51:31) Rafael J. Wysocki şunları yazmıştı:
 > 
-> Sorry, this is my fault.  My immediate need is to get this merged into
-> our release linux-tegra-2.6.36 branch, but wanted to get broad review
-> for the change since it affects USB core code.  I figured that it will
-> be easier to push the full driver into the USB tree with this part out
-> of the way already, anyway.
+> > Hmm.  Are those boxes uniprocessor running SMP kernels?
+> 
+> The kernel is SMP.
+> 
+> ASUS X61S is 
+>  CPU0: Intel(R) Core(TM)2 Duo CPU     P8700  @ 2.53GHz stepping 0a
+> 
+> F50SV has 2 CPU's too according to dmesg:
+> [    0.000000] Processor #0 (Bootup-CPU)
+> [    0.000000] Processor #1
+> [    0.000000] I/O APIC #2 Version 20 at 0xFEC00000.
+> [    0.000000] IOAPIC[0]: apic_id 2, version 20, address 0xfec00000, GSI 0-23
+> [    0.000000] Processors: 2
+> [    0.000000] SMP: Allowing 2 CPUs, 0 hotplug CPUs
+> 
+> ASUS N51JQ (occasional shutdown hang) has:
+> CPU0: Intel(R) Core(TM) i7 CPU       Q 740  @ 1.73GHz stepping 05
+> [    0.132435] Booting Node   0, Processors  #1 #2 #3 #4 #5 #6 #7 Ok.
+> [    0.768809] Brought up 8 CPUs
 
-Ok, that makes more sense, but next time, please say something,
-as I wasted a lot of time trying to figure out why this patch wasn't
-applying correctly :(
+OK, so it's not the case I was thinking of.  Ohwell.
 
+At this point I guess it's best to open a bug entry in the kernel Bugzilla,
+against ACPI (although ACPI may be a red herring), and put some system
+information (ie. dmesg outputs from working kernels, if any, outputs of
+acpidump) -- or links to where it can be found.
+
+Thanks,
+Rafael
