@@ -1,161 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382Ab1BDBO2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 20:14:28 -0500
-Received: from home.keithp.com ([63.227.221.253]:59248 "EHLO keithp.com"
+	id S1755180Ab1BDBV0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 20:21:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18884 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753585Ab1BDBOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 20:14:25 -0500
-X-Greylist: delayed 504 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Feb 2011 20:14:25 EST
-From: Keith Packard <keithp@keithp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Airlie <airlied@gmail.com>
-Cc: Carlos Mafra <crmafra2@gmail.com>, Dave Airlie <airlied@redhat.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Takashi Iwai <tiwai@suse.de>,
+	id S1753599Ab1BDBVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 20:21:25 -0500
+Date: Fri, 4 Feb 2011 02:21:09 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>
-Subject: Re: 2.6.38-rc3-git1: Reported regressions 2.6.36 -> 2.6.37
-In-Reply-To: <AANLkTimQPPDyBwkN0HWM2+bPcbzVd8YHZvn2iR8MVzfL@mail.gmail.com>
-References: <e9vOd5LzdBK.A.dyD.h6eSNB@chimera> <AANLkTikELiGS+fM5WguZS=Fo-sSXmej1UnKWqCFmnE0k@mail.gmail.com> <s5haaid3xos.wl%tiwai@suse.de> <201102032009.17100.rjw@sisk.pl> <AANLkTi=suS1VDL=6EtT0D2=0c1DWwxdwZBBv=-BySNX-@mail.gmail.com> <AANLkTi=7EOih=fY5FCvhQbewSc=3a49cYVaKJRWM+-3d@mail.gmail.com> <AANLkTin7kBur95H=UBcYEcjYsUkrdG8znX-7PFZ4rrHf@mail.gmail.com> <AANLkTimQPPDyBwkN0HWM2+bPcbzVd8YHZvn2iR8MVzfL@mail.gmail.com>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i486-pc-linux-gnu)
-Date: Thu, 03 Feb 2011 17:05:54 -0800
-Message-ID: <yund3n88v7x.fsf@aiko.keithp.com>
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Jan Beulich <JBeulich@novell.com>, Larry Woodman <lwoodman@redhat.com>
+Subject: Re: [PATCH] x86: hold mm->page_table_lock while doing vmalloc_sync
+Message-ID: <20110204012109.GP5843@random.random>
+References: <4CB76E8B.2090309@goop.org>
+ <4CC0AB73.8060609@goop.org>
+ <20110203024838.GI5843@random.random>
+ <4D4B1392.5090603@goop.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D4B1392.5090603@goop.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, 3 Feb 2011 16:30:56 -0800, Linus Torvalds <torvalds@linux-foundatio=
-n.org> wrote:
-> On Thu, Feb 3, 2011 at 4:06 PM, Dave Airlie <airlied@gmail.com> wrote:
+On Thu, Feb 03, 2011 at 12:44:02PM -0800, Jeremy Fitzhardinge wrote:
+> On 02/02/2011 06:48 PM, Andrea Arcangeli wrote:
+> > Hello,
 > >
-> > If we are setting a mode on a connector it automatically will end up
-> > in a DPMS on state,
-> > so this seemed correct from what I can see.
->=20
-> The more I look at that function, the more I disagree with you and
-> with that patch.
->=20
-> The code is just crazy.
->=20
-> First off, it isn't even necessarily setting a mode to begin with,
-> because as far as I can tell. If the mode doesn't change, neither
-> mode_changed nor fb_changed will be true, afaik. There seems to be a
-> fair amount of code there explicitly to avoid changing modes if not
-> necessary.
->=20
-> But even _if_ we are setting a mode, if I read the code correctly, the
-> mode may be set to NULL - which seems to mean "turn it off". In which
-> case it looks to me that drm_helper_disable_unused_functions() will
-> actually do a
->=20
->    (*crtc_funcs->dpms)(crtc, DRM_MODE_DPMS_OFF);
->=20
-> call on the crtc in question. So then blindly just saying "it's mode
-> DRM_MODE_DPMS_ON" afterwards looks rather bogus to me.
->=20
-> _Maybe_ it would work if it was done before that whole
-> "disable_unused" logic. Or maybe it should just be done in
-> drm_crtc_helper_set_mode(), which is what actually sets the mode (but
-> there's the 'fb_changed' case too)
->=20
-> > A future mode set shouldn't ever not turn the connector on, since
-> > modesetting is an implicit
-> > DPMS,
-> >
-> > It sounds like something more subtle than that, though I'm happy to
-> > revert this for now, and let Keith
-> > think about it a bit more.
->=20
-> So I haven't heard anything from Keith. Keith? Just revert it? Or do
-> you have a patch for people to try?
+> > Larry (CC'ed) found a problem with the patch in subject. When
+> > USE_SPLIT_PTLOCKS is not defined (NR_CPUS == 2) it will deadlock in
+> > ptep_clear_flush_notify in rmap.c because it's sending IPIs with the
+> > page_table_lock already held, and the other CPUs now spins on the
+> > page_table_lock with irq disabled, so the IPI never runs. With
+> > CONFIG_TRANSPARENT_HUGEPAGE=y this deadlocks happens even with
+> > USE_SPLIT_PTLOCKS defined so it become visible but it needs to be
+> > fixed regardless (for NR_CPUS == 2).
+> 
+> What's "it" here?  Do you mean vmalloc_sync_all?  vmalloc_sync_one?
+> What's the callchain?
 
-The goal is to make it so that when you *do* set a mode, DPMS gets set
-to ON (as the monitor will actually be "on" at that point). Here's a
-patch which does the DPMS_ON precisely when setting a mode.
+Larry just answered to that. If something is unclear let me know. I
+never reproduced it, but it also can happen without THP enabled, you
+just need to set NR_CPUS to 2 during "make menuconfig".
 
-Dave thinks we should instead force dpms to match crtc->enabled, I'd
-rather have dpms get set when we know the hardware has been changed.
+> > spin_lock_irqsave(pgd_lock) so I guess it's either common code, or
+> > it's superfluous and not another Xen special requirement.
+> 
+> There's no special Xen requirement here.
 
-(note, this patch compiles, but is otherwise only lightly tested).
+That was my thought too considering the other archs...
 
-From=2038507bb3a67441425e11085d17d727f3b230f927 Mon Sep 17 00:00:00 2001
-From: Keith Packard <keithp@keithp.com>
-Date: Thu, 3 Feb 2011 16:57:28 -0800
-Subject: [PATCH] drm: Only set DPMS ON when actually configuring a mode
+> mmdrop() can be called from interrupt context, but I don't know if it
+> will ever drop the last reference from interrupt, so maybe you can get
+> away with it.
 
-In drm_crtc_helper_set_config, instead of always forcing all outputs
-to DRM_MODE_DPMS_ON, only set them if the CRTC is actually getting a
-mode set, as any mode set will turn all outputs on.
+Yes the issue is __mmdrop, so it'd be nice to figure if __mmdrop can
+also run from irq (or only mmdrop fast path which would be safe even
+without _irqsave).
 
-Signed-off-by: Keith Packard <keithp@keithp.com>
-=2D--
- drivers/gpu/drm/drm_crtc_helper.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+Is this a Xen only thing? Or is mmdrop called from regular
+linux. Considering other archs also _irqsave I assume it's common code
+calling mmdrop (otherwise it means they cut-and-pasted a Xen
+dependency). This comment doesn't really tell me much.
 
-diff --git a/drivers/gpu/drm/drm_crtc_helper.c b/drivers/gpu/drm/drm_crtc_h=
-elper.c
-index 952b3d4..17459ee 100644
-=2D-- a/drivers/gpu/drm/drm_crtc_helper.c
-+++ b/drivers/gpu/drm/drm_crtc_helper.c
-@@ -665,6 +665,12 @@ int drm_crtc_helper_set_config(struct drm_mode_set *se=
-t)
- 				ret =3D -EINVAL;
- 				goto fail;
- 			}
-+			DRM_DEBUG_KMS("Setting connector DPMS state to on\n");
-+			for (i =3D 0; i < set->num_connectors; i++) {
-+				DRM_DEBUG_KMS("\t[CONNECTOR:%d:%s] set DPMS on\n", set->connectors[i]-=
->base.id,
-+					      drm_get_connector_name(set->connectors[i]));
-+				set->connectors[i]->dpms =3D DRM_MODE_DPMS_ON;
-+			}
- 		}
- 		drm_helper_disable_unused_functions(dev);
- 	} else if (fb_changed) {
-@@ -681,12 +687,6 @@ int drm_crtc_helper_set_config(struct drm_mode_set *se=
-t)
- 			goto fail;
- 		}
- 	}
-=2D	DRM_DEBUG_KMS("Setting connector DPMS state to on\n");
-=2D	for (i =3D 0; i < set->num_connectors; i++) {
-=2D		DRM_DEBUG_KMS("\t[CONNECTOR:%d:%s] set DPMS on\n", set->connectors[i]-=
->base.id,
-=2D			      drm_get_connector_name(set->connectors[i]));
-=2D		set->connectors[i]->dpms =3D DRM_MODE_DPMS_ON;
-=2D	}
-=20
- 	kfree(save_connectors);
- 	kfree(save_encoders);
-=2D-=20
-1.7.2.3
+static void pgd_dtor(pgd_t *pgd)
+{
+	unsigned long flags; /* can be called from interrupt context 	*/
 
-=2D-=20
-keith.packard@intel.com
+	if (SHARED_KERNEL_PMD)
+	   return;
 
---=-=-=
-Content-Type: application/pgp-signature
+	   VM_BUG_ON(in_interrupt());
+	   spin_lock(&pgd_lock);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+This comment tells the very __mmdrop can be called from irq context,
+not just mmdrop. But I didn't find where yet... Can you tell me?
 
-iD8DBQFNS1DyQp8BWwlsTdMRAvOJAKDPOT2MtyMRveY5kOoJJ4EKjm9qMQCbBiwj
-dsr57celRU5NJXl467pe5dU=
-=nXhj
------END PGP SIGNATURE-----
---=-=-=--
+> > @@ -247,7 +248,7 @@ void vmalloc_sync_all(void)
+> >  			if (!ret)
+> >  				break;
+> >  		}
+> > -		spin_unlock_irqrestore(&pgd_lock, flags);
+> > +		spin_unlock(&pgd_lock, flags);
+> 
+> Urp.  Did this compile?
+
+Yes it builds and it also runs fine still (I left it running since I
+posted the email and no problems yet, but this may not be reproducible
+and we really need to know who calls __mmdrop from irq context to
+tell). The above is under CONFIG_X86_32 and I did a 64bit build ;).
+
+I'm not reposting a version that builds for 32bit x86 too until we
+figure out the mmdrop thing...
+
+Thanks,
+Andrea
