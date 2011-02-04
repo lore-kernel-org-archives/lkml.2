@@ -1,84 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192Ab1BDTfF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 14:35:05 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:59967 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752125Ab1BDTfD (ORCPT
+	id S1752164Ab1BDTih (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 14:38:37 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44743 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538Ab1BDTig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 14:35:03 -0500
-Date: Fri, 4 Feb 2011 20:34:54 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Simon Horman <horms@verge.net.au>
-cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ian Molton <ian@mnementh.co.uk>, Chris Ball <cjb@laptop.org>
-Subject: Re: [PATCH] tmio_mmc: Improve readability of the output of
- pr_debug_status()
-In-Reply-To: <1296808387-21935-1-git-send-email-horms@verge.net.au>
-Message-ID: <Pine.LNX.4.64.1102042028120.14717@axis700.grange>
-References: <1296808387-21935-1-git-send-email-horms@verge.net.au>
+	Fri, 4 Feb 2011 14:38:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=FA9xXszb8yg9Va6ONJZL6mquEgWhlFmRFw1+yTpRGnTmWhTYhWAT8qXeg/yowt3qCq
+         1tXA4yiOuYZrs3JeysVBtwDphSRlozAf6i2CNFPvm4LMOREVYSrdgV57ETQ1ECcqzAoe
+         CFjO3pHd7hy8sknezeB6YAu+DtpTl+E/x6bK8=
+Message-ID: <4D4C55B7.4010005@gmail.com>
+Date: Fri, 04 Feb 2011 20:38:31 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:misrM/rNOc7okR5aHMNIbs24AsIkRBQ+ouc39uv8of/
- heASwZ/YReSdn/9/zRPl+isKvi06YtVweDtCiG9Kieb6IIcbcd
- CBoQ1d+ifw/AyxFEpIqdzFqSLiV25vt9aAvIKlV4MZKJsYnSPL
- XlERSS48jcfmG1JBJTBwR28O0tZZ5pNLeA80ekggIPGPCPRVTB
- 8sOe6k4QREX90B2/s+32ImMFxsgBixi4l7+aFzmodA=
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: "Rafael J. Wysocki" <rjw@suse.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] Resume hangs [was: mmotm 2010-12-02-16-34 uploaded]
+References: <Pine.LNX.4.44L0.1102041426380.1877-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1102041426380.1877-100000@iolanthe.rowland.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Feb 2011, Simon Horman wrote:
-
-> Signed-off-by: Simon Horman <horms@verge.net.au>
-> ---
->  drivers/mmc/host/tmio_mmc.h |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
+On 02/04/2011 08:33 PM, Alan Stern wrote:
+> On Fri, 4 Feb 2011, Jiri Slaby wrote:
 > 
-> diff --git a/drivers/mmc/host/tmio_mmc.h b/drivers/mmc/host/tmio_mmc.h
-> index 6f724de..811427d 100644
-> --- a/drivers/mmc/host/tmio_mmc.h
-> +++ b/drivers/mmc/host/tmio_mmc.h
-> @@ -237,12 +237,16 @@ static inline void tmio_mmc_kunmap_atomic(void *virt,
->  
->  #define STATUS_TO_TEXT(a) \
->  	do { \
-> -		if (status & TMIO_STAT_##a) \
-> +		if (status & TMIO_STAT_##a) { \
-> +			if (i++) \
-> +				printk("|"); \
->  			printk(#a); \
-> +		} \
-
-Personally, I find it a bad idea to use variables in macros without 
-explicitly passing them in the parameter list. Yes, this macro is already 
-using "status" in that way, still, I don't think, that adding more such 
-variables is good. Why not make it STATUS_TO_TEXT(a, status, i) and also 
-add spaces for better yet readability like printk(" | ")?
-
-Thanks
-Guennadi
-
->  	} while (0)
->  
->  void pr_debug_status(u32 status)
->  {
-> +	int i = 0;
->  	printk(KERN_DEBUG "status: %08x = ", status);
->  	STATUS_TO_TEXT(CARD_REMOVE);
->  	STATUS_TO_TEXT(CARD_INSERT);
-> -- 
-> 1.7.2.3
+>>>> It seems to suffice... No hangs still. Should I enable pm_async back
+>>>> again to confirm the issue is still present?
+>>>
+>>> Yes, please, it would be good to know for sure.
+>>
+>> Ok, confirmed right now :).
+>>
+>> I disabled pm_async for USB again. What do you suggest next?
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> What happens if you leave pm_async enabled but unplug all the USB 
+> devices before suspending?
 
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+Then I cannot suspend at all (ENOINPUTDEVICE)... And this would be
+painful as the bug occurs once a week or so.
+
+> If there are any USB devices you can't 
+> unplug, you can get an equivalent result by unconfiguring the root 
+> hubs:
+> 
+> 	for a in /sys/bus/usb/devices/usb* ; do
+> 		echo 0 >$a/bConfigurationValue
+> 	done
+
+Well, I can put this into suspend/resume scripts. What's the opposite
+operation? 1 > $a/bConfigurationValue?
+
+thanks,
+-- 
+js
