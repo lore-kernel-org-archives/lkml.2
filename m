@@ -1,95 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882Ab1BDVZo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 16:25:44 -0500
-Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.61]:41706 "EHLO
-	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751979Ab1BDVZn (ORCPT
+	id S1753005Ab1BDVZz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 16:25:55 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:57201 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752267Ab1BDVZo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 16:25:43 -0500
-Date: Fri, 4 Feb 2011 16:25:15 -0500
-From: Ben Blum <bblum@andrew.cmu.edu>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ben Blum <bblum@andrew.cmu.edu>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, ebiederm@xmission.com,
-        lizf@cn.fujitsu.com, matthltc@us.ibm.com, menage@google.com,
-        oleg@redhat.com, David Rientjes <rientjes@google.com>,
-        Miao Xie <miaox@cn.fujitsu.com>
-Subject: Re: [PATCH v7 1/3] cgroups: read-write lock CLONE_THREAD forking
- per threadgroup
-Message-ID: <20110204212515.GA5916@ghc17.ghc.andrew.cmu.edu>
-References: <20101224082226.GA13872@ghc17.ghc.andrew.cmu.edu>
- <20101226120919.GA28529@ghc17.ghc.andrew.cmu.edu>
- <20101226120951.GB28529@ghc17.ghc.andrew.cmu.edu>
- <20110124130529.903d9832.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110124130529.903d9832.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.2.4.211219
-X-SMTP-Spam-Clean: 8% (
- BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_2000_2999 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CD 0, __CT 0, __CT_TEXT_PLAIN 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __USER_AGENT 0)
-X-SMTP-Spam-Score: 8%
+	Fri, 4 Feb 2011 16:25:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=NqIiA3Y786Rns5VXYDx12NQ37f8r7lRx2O9KfIUUPxXLiLFOG0sd3qVJpA6LUtAQyQ
+         uBfTIFBtgtoVeP10q6oQ==
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>, Venkatesh Pallipadi <venki@google.com>
+Subject: [PATCH] sched: Resolve sd_idle and first_idle_cpu Catch-22 - v1
+Date: Fri,  4 Feb 2011 13:25:31 -0800
+Message-Id: <1296854731-25039-1-git-send-email-venki@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1296852688-1665-1-git-send-email-venki@google.com>
+References: <1296852688-1665-1-git-send-email-venki@google.com>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 24, 2011 at 01:05:29PM -0800, Andrew Morton wrote:
-> On Sun, 26 Dec 2010 07:09:51 -0500
-> Ben Blum <bblum@andrew.cmu.edu> wrote:
-> 
-> > Adds functionality to read/write lock CLONE_THREAD fork()ing per-threadgroup
-> > 
-> > From: Ben Blum <bblum@andrew.cmu.edu>
-> > 
-> > This patch adds an rwsem that lives in a threadgroup's signal_struct that's
-> > taken for reading in the fork path, under CONFIG_CGROUPS. If another part of
-> > the kernel later wants to use such a locking mechanism, the CONFIG_CGROUPS
-> > ifdefs should be changed to a higher-up flag that CGROUPS and the other system
-> > would both depend on.
-> > 
-> > This is a pre-patch for cgroup-procs-write.patch.
-> > 
-> > ...
-> >
-> > +/* See the declaration of threadgroup_fork_lock in signal_struct. */
-> > +#ifdef CONFIG_CGROUPS
-> > +static inline void threadgroup_fork_read_lock(struct task_struct *tsk)
-> > +{
-> > +	down_read(&tsk->signal->threadgroup_fork_lock);
-> > +}
-> > +static inline void threadgroup_fork_read_unlock(struct task_struct *tsk)
-> > +{
-> > +	up_read(&tsk->signal->threadgroup_fork_lock);
-> > +}
-> > +static inline void threadgroup_fork_write_lock(struct task_struct *tsk)
-> > +{
-> > +	down_write(&tsk->signal->threadgroup_fork_lock);
-> > +}
-> > +static inline void threadgroup_fork_write_unlock(struct task_struct *tsk)
-> > +{
-> > +	up_write(&tsk->signal->threadgroup_fork_lock);
-> > +}
-> > +#else
-> 
-> Risky. sched.h doesn't include rwsem.h.
-> 
-> We could make it do so, but almost every compilation unit in the kernel
-> includes sched.h.  It would be nicer to make the kernel build
-> finer-grained, rather than blunter-grained.  Don't be afraid to add new
-> header files if that is one way of doing this!
+Consider a system with { [ (A B) (C D) ] [ (E F) (G H) ] },
+() denoting SMT siblings, [] cores on same socket and {} system wide
+Further, A, C and D are idle, B is busy and one of EFGH has excess load.
 
-Hmm, good point. But there's also:
+With sd_idle logic, a check in rebalance_domains() converts tick
+based load balance requests from CPU A to busy load balance for core
+and above domains (lower rate of balance and higher load_idx).
 
-+#ifdef CONFIG_CGROUPS
-+       struct rw_semaphore threadgroup_fork_lock;
-+#endif
+With first_idle_cpu logic, when CPU C or D tries to balance across domains
+the logic finds CPU A as first idle CPU in the group and nominates CPU A to
+idle balance across sockets.
 
-in the signal_struct, also in sched.h, which needs to be there. Or I
-could change it to a struct pointer with a forward incomplete
-declaration above, and kmalloc/kfree it? I don't like adding more
-alloc/free calls but don't know if it's more or less important than
-header granularity.
+But, sd_idle above would not allow CPU A to do cross socket idle balance
+as CPU A switches its higher level balancing to busy balance.
 
--- Ben
+So, this can result is no cross socket balancing for extended periods.
+
+The fix here adds additional check to detect sd_idle logic in
+first_idle_cpu code path. We will now nominate (in order or preference):
+* First fully idle CPU
+* First semi-idle CPU
+* First CPU
+
+Note that this solution works fine for 2 SMT siblings case and won't be
+perfect in picking proper semi-idle in case of more than 2 SMT threads.
+
+The problem was found by looking at the code and schedstat output. I don't
+yet have any data to show impact of this on any workload.
+
+Changes from v0:
+* Removed by test code that I left out in earlier version by mistake.
+
+Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+---
+ kernel/sched_fair.c |   38 ++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 36 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 62723a4..e9dbfa8 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -2603,6 +2603,34 @@ fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
+ 	return 0;
+ }
+ 
++/*
++ * Find if there is any busy CPUs in SD_SHARE_CPUPOWER domain of
++ * requested CPU.
++ * Bypass the check in case of SD_POWERSAVINGS_BALANCE on
++ * parent domain. In that case requested CPU can still be nominated as
++ * balancer for higher domains.
++ */
++static int is_cpupower_sharing_domain_idle(int cpu)
++{
++	struct sched_domain *sd;
++	int i;
++
++	for_each_domain(cpu, sd) {
++		if (!(sd->flags & SD_SHARE_CPUPOWER))
++			break;
++
++		if (test_sd_parent(sd, SD_POWERSAVINGS_BALANCE))
++			return 1;
++
++		for_each_cpu(i, sched_domain_span(sd)) {
++			if (!idle_cpu(i))
++				return 0;
++		}
++	}
++
++	return 1;
++}
++
+ /**
+  * update_sg_lb_stats - Update sched_group's statistics for load balancing.
+  * @sd: The sched_domain whose statistics are to be updated.
+@@ -2625,6 +2653,7 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
+ 	unsigned long load, max_cpu_load, min_cpu_load, max_nr_running;
+ 	int i;
+ 	unsigned int balance_cpu = -1, first_idle_cpu = 0;
++	unsigned int first_semiidle_cpu = 0;
+ 	unsigned long avg_load_per_task = 0;
+ 
+ 	if (local_group)
+@@ -2644,8 +2673,13 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
+ 		/* Bias balancing toward cpus of our domain */
+ 		if (local_group) {
+ 			if (idle_cpu(i) && !first_idle_cpu) {
+-				first_idle_cpu = 1;
+-				balance_cpu = i;
++				if (is_cpupower_sharing_domain_idle(i)) {
++					first_idle_cpu = 1;
++					balance_cpu = i;
++				} else if (!first_semiidle_cpu) {
++					first_semiidle_cpu = 1;
++					balance_cpu = i;
++				}
+ 			}
+ 
+ 			load = target_load(i, load_idx);
+-- 
+1.7.3.1
+
