@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876Ab1BDKGq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 05:06:46 -0500
-Received: from www.tglx.de ([62.245.132.106]:56312 "EHLO www.tglx.de"
+	id S1755282Ab1BDKMC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 05:12:02 -0500
+Received: from smtp1.it.da.ut.ee ([193.40.5.66]:35439 "EHLO smtp1.it.da.ut.ee"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752996Ab1BDKGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 05:06:44 -0500
-Message-ID: <4D4BCF99.2000108@linutronix.de>
-Date: Fri, 04 Feb 2011 11:06:17 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+	id S1754043Ab1BDKL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 05:11:57 -0500
+Date: Fri, 4 Feb 2011 12:11:55 +0200 (EET)
+From: Meelis Roos <mroos@linux.ee>
+To: John David Anglin <dave@hiauly1.hia.nrc.ca>
+cc: linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 2.6.38-rc3 regression on parisc: segfaults
+In-Reply-To: <20110203022420.A73F54E7B@hiauly1.hia.nrc.ca>
+Message-ID: <alpine.SOC.1.00.1102041150390.8218@math.ut.ee>
+References: <20110203022420.A73F54E7B@hiauly1.hia.nrc.ca>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: David Gibson <david@gibson.dropbear.id.au>, linux-kernel@vger.kernel.org,
-        sodaville@linutronix.de, devicetree-discuss@lists.ozlabs.org,
-        x86@kernel.org
-Subject: Re: [PATCH TIP v2 03/14] x86/dtb: Add a device tree for CE4100
-References: <1295843342-1122-1-git-send-email-bigeasy@linutronix.de> <1295843342-1122-4-git-send-email-bigeasy@linutronix.de> <20110127050027.GB23443@yookeroo> <20110202185841.GA28674@www.tglx.de> <20110203210746.GI6180@angua.secretlab.ca>
-In-Reply-To: <20110203210746.GI6180@angua.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely wrote:
-> You can go ahead and keep the revision history above the s-o-b and ---
-> lines.  It turns out that having the revision history in the commit
-> text is actually useful when trying to figure out what version of a
-> patch actually got applied.
-Okay.
+> If aptitude fails consistently, it should be possible to debug or
+> isolate to a particular kernel change.  Usually, SMP segvs don't
+> provide much information as to the cause of the problem.  strace
+> output and a gdb backtrace would be useful.
 
->> diff --git a/arch/x86/platform/ce4100/falconfalls.dts b/arch/x86/platform/ce4100/falconfalls.dts
->> new file mode 100644
->> index 0000000..e888657
->> --- /dev/null
->> +++ b/arch/x86/platform/ce4100/falconfalls.dts
->> @@ -0,0 +1,424 @@
+strace works but does not tell much to me:
 
->> +	soc@0 {
->> +		#address-cells = <1>;
->> +		#size-cells = <1>;
->> +		compatible = "intel,ce4100-cp";
-> 
-> You'll need to add blurbs to Documentation/devicetree/bindings
-> (Documentation/powerpc/dts-bindings in Linus' tree; renamed in
-> linux-next) for each of these new compatible bindings to document the
-> part that they describe and any special properties that go with each
-> compatible value (if any).  You can send it as a followup patch.
+2349  _newselect(1, [0], NULL, NULL, {0, 0}) = 0 (Timeout)
+2349  rt_sigaction(SIGTSTP, {0x40664bea, [RT_1 RT_4 RT_5 RT_7 RT_11 RT_12 RT_15 RT_16 RT_18 RT_26], SA_RESTART}, NULL, 8) = 0
+2349  futex(0x458e0858, FUTEX_WAKE_OP_PRIVATE, 1, 1, 0x458e0850, {FUTEX_OP_SET, 0, FUTEX_OP_CMP_GT, 1}) = -1 ENOSYS (Function not implemented)
+2349  futex(0x458e0858, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+2363  <... futex resumed> )             = 0
+2363  futex(0x458e0850, FUTEX_WAIT_PRIVATE, 2, NULL <unfinished ...>
+2349  <... futex resumed> )             = 1
+2349  futex(0x458e0850, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+2363  <... futex resumed> )             = 0
+2363  futex(0x458e0850, FUTEX_WAKE_PRIVATE, 1) = 0
+2363  futex(0x458e0820, FUTEX_WAIT_PRIVATE, 2, NULL <unfinished ...>
+2349  <... futex resumed> )             = 1
+2349  futex(0x458e0820, FUTEX_WAKE_PRIVATE, 1 <unfinished ...>
+2363  <... futex resumed> )             = 0
+2363  futex(0x458e0820, FUTEX_WAKE_PRIVATE, 1) = 0
+2363  rename("/var/lib/apt/lists/partial/ftp.ee.debian.org_debian_dists_unstable_main_source_Sources.diff_2011-02-02-0207.41.decomp", "/var/lib/apt/lists/ftp.ee.debian.org_debian_dists_unstable_main_source_Sources.ed") = 0
+2363  stat64("/usr/lib/apt/methods/rred", {st_mode=0, st_size=0, ...}) = 0
+2363  pipe([26, 28])                    = 0
+2363  pipe([30, 31])                    = 0
+2363  fcntl64(26, F_SETFD, FD_CLOEXEC)  = 0
+2363  fcntl64(28, F_SETFD, FD_CLOEXEC)  = 0
+2363  fcntl64(30, F_SETFD, FD_CLOEXEC)  = 0
+2363  fcntl64(31, F_SETFD, FD_CLOEXEC)  = 0
+2363  clone( <unfinished ...>
+2349  <... futex resumed> )             = 1
+2363  <... clone resumed> child_stack=0, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0x460df4a8) = 2372
+2349  --- SIGSEGV (Segmentation fault) @ 0 (0) ---
+2372  rt_sigaction(SIGPIPE, {SIG_DFL, [], SA_RESTART},  <unfinished ...>
+2349  write(1, "\33[56;1H\33[34h\33[?25h", 18 <unfinished ...>
 
-Good point, will do.
+Something futex-related. Full log temprarilty available at 
+http://www.cs.ut.ee/~mroos/aptitude-strace.txt
 
->> +				gpio@b,1 {
->> +					compatible = "pci8086,2e67.2",
->> +						   "pci8086,2e67",
->> +						   "pciclassff0000",
->> +						   "pciclassff00";
->> +
->> +					reg = <0x15900 0x0 0x0 0x0 0x0>;
->> +					interrupts = <15 1>;
->> +				};
-> 
-> You'll probably want to make use of the gpio-controller binding for
-> the gpio nodes so that other nodes can reference it.  Not a
-> showstopper for this patch though.
+gdb does not seem to work well:
 
-Right. I'll make it follow-up once I get to the gpio functionality.
+root@hernes:~# gdb aptitude
+GNU gdb (GDB) 7.2-debian
+Copyright (C) 2010 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later 
+<http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "hppa-linux-gnu".
+For bug reporting instructions, please see:<http://www.gnu.org/software/gdb/bugs/>...
+Reading symbols from /usr/bin/aptitude...(no debugging symbols found)...done.
+(gdb) run
+Starting program: /usr/bin/aptitude
+[Thread debugging using libthread_db enabled]
+warning: Can't attach LWP 1075813436: No such process
+/tmp/buildd/gdb-7.2/gdb/linux-thread-db.c:392: internal-error: thread_get_info_callback: Assertion `inout->thread_info != NULL' failed.
+A problem internal to GDB has been detected,
+further debugging may prove unreliable.
 
-> Otherwise looks good to me.
-thanks.
-
-> g.
-
-Sebastian
+-- 
+Meelis Roos (mroos@linux.ee)
