@@ -1,77 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751336Ab1BDSYi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 13:24:38 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:3155 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167Ab1BDSYh (ORCPT
+	id S1751431Ab1BDSd5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 13:33:57 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33622 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab1BDSd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 13:24:37 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp04.nvidia.com on Fri, 04 Feb 2011 10:24:34 -0800
-Subject: Re: [PATCH v3] power: bq20z75: add support for charge properties
-From: rklein <rklein@nvidia.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: "olofj@chromium.org" <olofj@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110204071250.GA3360@oksana.dev.rtsoft.ru>
-References: <1295982606-4604-1-git-send-email-rklein@nvidia.com>
-	 <20110131131952.GA22005@oksana.dev.rtsoft.ru>
-	 <1296775123.8295.5.camel@rklein-linux2>
-	 <20110204071250.GA3360@oksana.dev.rtsoft.ru>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 04 Feb 2011 10:24:10 -0800
-Message-ID: <1296843850.16497.0.camel@rklein-linux2>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 4 Feb 2011 13:33:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=NEBB5ZgSygmYOGDHXH4EsonP12ewnvpKxTGgl8lOq1seNXwsKQd20FCmORG745vPQc
+         dAY8aOb7QCcCBDwvA7nytGasAQctQB3pGZu7NGWbQcmaPjQTTbx3QV92T/R/1AXTEZ43
+         aw99Ie6hndafEzhuEyJRosMllj/oUdUViO9aE=
+Message-ID: <4D4C468F.4080105@gmail.com>
+Date: Fri, 04 Feb 2011 19:33:51 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@suse.com>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: Resume hangs [was: mmotm 2010-12-02-16-34 uploaded]
+References: <201012030107.oB317ZSW019223@imap1.linux-foundation.org> <201101202202.01089.rjw@suse.com> <4D472B9E.5090000@gmail.com> <201101312300.34008.rjw@suse.com>
+In-Reply-To: <201101312300.34008.rjw@suse.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-02-03 at 23:12 -0800, Anton Vorontsov wrote:
-> On Thu, Feb 03, 2011 at 03:18:43PM -0800, rklein wrote:
-> > On Mon, 2011-01-31 at 05:19 -0800, Anton Vorontsov wrote:
-> > > On Tue, Jan 25, 2011 at 11:10:06AM -0800, rklein@nvidia.com wrote:
-> > > > From: Rhyland Klein <rklein@nvidia.com>
-> > > > 
-> > > > Adding support for charge properties for gas gauge.
-> > > > Also ensuring that battery mode is correct now for energy as well as
-> > > > charge properties by setting it on the fly.
-> > > > 
-> > > > I also added 2 functions to power_supply.h to help identify the units for
-> > > > specific properties more easily by power supplies.
-> > > > 
-> > > > Signed-off-by: Rhyland Klein <rklein@nvidia.com>
-> > > > ---
-> > > 
-> > > Applied with some cosmetic changes.
-> > > 
-> > > [...]
-> > > > +static inline bool power_supply_is_amp_property(
-> > > > +	enum power_supply_property psp){
-> > > 
-> > > Fixed style issues here.
-> > > 
-> > > [...]
-> > > > +static inline bool power_supply_is_watt_property(
-> > > > +	enum power_supply_property psp){
-> > > 
-> > > And here.
-> > > 
-> > > Thanks!
-> > > 
-> > 
-> > Anton, I looked at linux-next.git and battery-2.6.git but i don't see
-> > this latest version anywhere, is there a different git this was pushed
-> > to?
+On 01/31/2011 11:00 PM, Rafael J. Wysocki wrote:
+> On Monday, January 31, 2011, Jiri Slaby wrote:
+>> On 01/20/2011 10:02 PM, Rafael J. Wysocki wrote:
+>>> On Thursday, January 20, 2011, Jiri Slaby wrote:
+>>>> On 01/06/2011 03:18 PM, Jiri Slaby wrote:
+>>>>> On 12/14/2010 11:22 PM, Rafael J. Wysocki wrote:
+>>>>>> On Tuesday, December 14, 2010, Jiri Slaby wrote:
+>>>>>>> On 12/13/2010 10:10 PM, Rafael J. Wysocki wrote:
+>>>>>>>> On Monday, December 13, 2010, Jiri Slaby wrote:
+>>>>>>>>> On 12/05/2010 02:08 PM, Rafael J. Wysocki wrote:
+>>>>>>>>>> On Sunday, December 05, 2010, Jiri Slaby wrote:
+>>>>>>>>>>> On 12/03/2010 01:34 AM, akpm@linux-foundation.org wrote:
+>>>>>>>>>>>> The mm-of-the-moment snapshot 2010-12-02-16-34 has been uploaded to
+>>>>>>>>>>>
+>>>>>>>>>>> Hi, this kernel regresses with respect to resume. It doesn't wake up,
+>>>>>>>>>>> the screen is black with blinking cursor at position [1, 1].
+>>>>>>>>>>> 2010-11-23-16-12 seemed to be OK. In this one it is 100% reproducible so
+>>>>>>>>>>> far.
+>>>>>>>>>>>
+>>>>>>>>>>> I'm using pm-suspend, any ideas what to test before I start to find the
+>>>>>>>>>>> reason on my own?
+>>>>>>>>>>
+>>>>>>>>>> Please try the pm_test tests for core, processors and devices, eg.:
+>>>>>>>>>
+>>>>>>>>> Hmm, I haven't seen the issues since then. So it had to be some kind of
+>>>>>>>>> coincidence -- I see the issue occasionally for some time already. Now
+>>>>>>>>> it triggered twice in a row after I updated the kernel.
+>>>>>>>>
+>>>>>>>> Hmm.  What hardware is that?
+>>>>>>>
+>>>>>>> What exactly do you want to know about it? It's some specific intel
+>>>>>>> desktop machine, 3 years old, 2 intel cores, 6G of mem, 2 sata disks in
+>>>>>>> raid, dvb-t usb receiver (af9015), usb keyboard and mouse.
+>>>>>>
+>>>>>> I'm seeing pretty much the same symptoms on quite different hardware, except
+>>>>>> for one thing: USB keyboard and mouse.
+>>>>>>
+>>>>>> Have you checked if writing 0 to /sys/power/pm_async helps?
+>>>>>
+>>>>> It's very hard to reproduce (it happens once a week or two), so I can't
+>>>>> say yet. As it happened yesterday again, going to test it from now on.
+>>>>
+>>>> Ok, I haven't seen the issue with 0 in /sys/power/pm_async for two weeks
+>>>> now (I added it to boot.local). I would say it's related to that...
+>>>
+>>> In that case the next step would be to build the kernel with
+>>> CONFIG_PM_ADVANCED_DEBUG set and try to switch the async flag for individual
+>>> devices (it is located is /sys/devices/.../power/ for each device).
+>>>
+>>> For example, I wonder if it is sufficient to unset it for all USB devices.
+>>
+>> It seems to suffice... No hangs still. Should I enable pm_async back
+>> again to confirm the issue is still present?
 > 
-> Hmm. I see it here:
-> 
-> http://git.infradead.org/battery-2.6.git/commitdiff/51d07566045787b99219d809639c8724506fc78a
-> 
-> Thanks,
-> 
+> Yes, please, it would be good to know for sure.
 
-Hmm, i see it now, thanks!
+Ok, confirmed right now :).
 
+I disabled pm_async for USB again. What do you suggest next?
+
+thanks,
+-- 
+js
