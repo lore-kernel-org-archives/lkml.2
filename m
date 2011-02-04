@@ -1,269 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181Ab1BDUbo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 15:31:44 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:64133 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380Ab1BDUbn (ORCPT
+	id S1752382Ab1BDUep (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 15:34:45 -0500
+Received: from bay0-omc1-s20.bay0.hotmail.com ([65.54.190.31]:17091 "EHLO
+	bay0-omc1-s20.bay0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751886Ab1BDUeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 15:31:43 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ePDpIG46J7+7zG5ogvf8NcuQ6NwJ5givb/1OiN7qTvVBt5PKgL+Vj7xGLJNUfZR4Oy
-         O1o8gI4yCLshAYh+rG3b2VO05vl66YAlsxo7+RPS9RrewvahCAKjUtNZIrLHkW4PGB2Y
-         uFgkmOgwEubLObiqm+p0gMU61AprSafQ2Jy8Y=
-From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Octavian Purdila <opurdila@ixiacom.com>
-Cc: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Subject: [PATCH 1/6] sysctl: faster reimplementation of sysctl_check_table
-Date: Fri,  4 Feb 2011 22:31:25 +0200
-Message-Id: <1296851485-6730-1-git-send-email-lucian.grijincu@gmail.com>
-X-Mailer: git-send-email 1.7.4.rc1.7.g2cf08.dirty
-In-Reply-To: <m1oc6rio5u.fsf@fess.ebiederm.org>
-References: <m1oc6rio5u.fsf@fess.ebiederm.org>
+	Fri, 4 Feb 2011 15:34:44 -0500
+X-Greylist: delayed 369 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Feb 2011 15:34:44 EST
+Message-ID: <4D4C6168.8010405@studio.unibo.it>
+Date: Fri, 4 Feb 2011 21:28:24 +0100
+From: Luca Risolia <luca.risolia@studio.unibo.it>
+Reply-To: <luca.risolia@studio.unibo.it>
+User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
+MIME-Version: 1.0
+To: Vasiliy Kulikov <segoon@openwall.com>
+CC: <linux-kernel@vger.kernel.org>, <security@kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>
+Subject: Re: [PATCH 07/20] video: sn9c102: world-wirtable sysfs files
+References: <cover.1296818921.git.segoon@openwall.com> <b560d7c146330b382b90d739a76d580ed4051d4e.1296818921.git.segoon@openwall.com>
+In-Reply-To: <b560d7c146330b382b90d739a76d580ed4051d4e.1296818921.git.segoon@openwall.com>
+Content-Type: text/plain; charset="ISO-8859-15"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-MS-Exchange-Transport-Rules-Loop: 0
+X-OriginalArrivalTime: 04 Feb 2011 20:28:34.0649 (UTC) FILETIME=[189B0C90:01CBC4AA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Determining the parent of a node at depth d
-- previous implementation: O(d)
-- current  implementation: O(1)
+Thanks.
 
-Printing the path to a node at depth d
-- previous implementation: O(d^2)
-- current  implementation: O(d)
+Acked-by: Luca Risolia <luca.risolia@studio.unibo.it>
 
-This comes to a cost: we use an array ('parents') holding as many
-pointers as there can be sysctl levels (currently CTL_MAXNAME=10).
-
-The 'parents' array of pointers holds the same values as the
-ctl_table->parents field because the function that updates ->parents
-(sysctl_set_parent) is called with either NULL (for root nodes) or
-with sysctl_set_parent(table, table->child).
-
-Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
----
- kernel/sysctl_check.c |  130 +++++++++++++++++++++++++-----------------------
- 1 files changed, 68 insertions(+), 62 deletions(-)
-
-diff --git a/kernel/sysctl_check.c b/kernel/sysctl_check.c
-index 10b90d8..d23b085 100644
---- a/kernel/sysctl_check.c
-+++ b/kernel/sysctl_check.c
-@@ -6,58 +6,34 @@
- #include <net/ip_vs.h>
- 
- 
--static int sysctl_depth(struct ctl_table *table)
--{
--	struct ctl_table *tmp;
--	int depth;
--
--	depth = 0;
--	for (tmp = table; tmp->parent; tmp = tmp->parent)
--		depth++;
--
--	return depth;
--}
--
--static struct ctl_table *sysctl_parent(struct ctl_table *table, int n)
-+static void sysctl_print_path(struct ctl_table *table,
-+			      struct ctl_table **parents, int depth)
- {
-+	struct ctl_table *p;
- 	int i;
--
--	for (i = 0; table && i < n; i++)
--		table = table->parent;
--
--	return table;
--}
--
--
--static void sysctl_print_path(struct ctl_table *table)
--{
--	struct ctl_table *tmp;
--	int depth, i;
--	depth = sysctl_depth(table);
- 	if (table->procname) {
--		for (i = depth; i >= 0; i--) {
--			tmp = sysctl_parent(table, i);
--			printk("/%s", tmp->procname?tmp->procname:"");
-+		for (i = 0; i < depth; i++) {
-+			p = parents[i];
-+			printk("/%s", p->procname ? p->procname : "");
- 		}
-+		printk("/%s", table->procname);
- 	}
- 	printk(" ");
- }
- 
- static struct ctl_table *sysctl_check_lookup(struct nsproxy *namespaces,
--						struct ctl_table *table)
-+	     struct ctl_table *table, struct ctl_table **parents, int depth)
- {
- 	struct ctl_table_header *head;
- 	struct ctl_table *ref, *test;
--	int depth, cur_depth;
--
--	depth = sysctl_depth(table);
-+	int cur_depth;
- 
- 	for (head = __sysctl_head_next(namespaces, NULL); head;
- 	     head = __sysctl_head_next(namespaces, head)) {
- 		cur_depth = depth;
- 		ref = head->ctl_table;
- repeat:
--		test = sysctl_parent(table, cur_depth);
-+		test = parents[depth - cur_depth];
- 		for (; ref->procname; ref++) {
- 			int match = 0;
- 			if (cur_depth && !ref->child)
-@@ -83,11 +59,12 @@ out:
- 	return ref;
- }
- 
--static void set_fail(const char **fail, struct ctl_table *table, const char *str)
-+static void set_fail(const char **fail, struct ctl_table *table,
-+	     const char *str, struct ctl_table **parents, int depth)
- {
- 	if (*fail) {
- 		printk(KERN_ERR "sysctl table check failed: ");
--		sysctl_print_path(table);
-+		sysctl_print_path(table, parents, depth);
- 		printk(" %s\n", *fail);
- 		dump_stack();
- 	}
-@@ -95,40 +72,55 @@ static void set_fail(const char **fail, struct ctl_table *table, const char *str
- }
- 
- static void sysctl_check_leaf(struct nsproxy *namespaces,
--				struct ctl_table *table, const char **fail)
-+			      struct ctl_table *table, const char **fail,
-+			      struct ctl_table **parents, int depth)
- {
- 	struct ctl_table *ref;
- 
--	ref = sysctl_check_lookup(namespaces, table);
--	if (ref && (ref != table))
--		set_fail(fail, table, "Sysctl already exists");
-+	ref = sysctl_check_lookup(namespaces, table, parents, depth);
-+	if (ref && (ref != table)) {
-+		printk(KERN_ALERT "sysctl_check_leaf ref[%s], table[%s]\n", ref->procname, table->procname);
-+		set_fail(fail, table, "Sysctl already exists", parents, depth);
-+	}
- }
- 
--int sysctl_check_table(struct nsproxy *namespaces, struct ctl_table *table)
-+
-+
-+#define SET_FAIL(str) set_fail(&fail, table, str, parents, depth)
-+
-+static int __sysctl_check_table(struct nsproxy *namespaces,
-+	struct ctl_table *table, struct ctl_table **parents, int depth)
- {
-+	const char *fail = NULL;
- 	int error = 0;
-+
-+	if (depth >= CTL_MAXNAME) {
-+		SET_FAIL("Sysctl tree too deep");
-+		return -EINVAL;
-+	}
-+
- 	for (; table->procname; table++) {
--		const char *fail = NULL;
-+		fail = NULL;
- 
- 		if (table->parent) {
- 			if (table->procname && !table->parent->procname)
--				set_fail(&fail, table, "Parent without procname");
-+				SET_FAIL("Parent without procname");
- 		}
- 		if (!table->procname)
--			set_fail(&fail, table, "No procname");
-+			SET_FAIL("No procname");
- 		if (table->child) {
- 			if (table->data)
--				set_fail(&fail, table, "Directory with data?");
-+				SET_FAIL("Directory with data?");
- 			if (table->maxlen)
--				set_fail(&fail, table, "Directory with maxlen?");
-+				SET_FAIL("Directory with maxlen?");
- 			if ((table->mode & (S_IRUGO|S_IXUGO)) != table->mode)
--				set_fail(&fail, table, "Writable sysctl directory");
-+				SET_FAIL("Writable sysctl directory");
- 			if (table->proc_handler)
--				set_fail(&fail, table, "Directory with proc_handler");
-+				SET_FAIL("Directory with proc_handler");
- 			if (table->extra1)
--				set_fail(&fail, table, "Directory with extra1");
-+				SET_FAIL("Directory with extra1");
- 			if (table->extra2)
--				set_fail(&fail, table, "Directory with extra2");
-+				SET_FAIL("Directory with extra2");
- 		} else {
- 			if ((table->proc_handler == proc_dostring) ||
- 			    (table->proc_handler == proc_dointvec) ||
-@@ -139,28 +131,42 @@ int sysctl_check_table(struct nsproxy *namespaces, struct ctl_table *table)
- 			    (table->proc_handler == proc_doulongvec_minmax) ||
- 			    (table->proc_handler == proc_doulongvec_ms_jiffies_minmax)) {
- 				if (!table->data)
--					set_fail(&fail, table, "No data");
-+					SET_FAIL("No data");
- 				if (!table->maxlen)
--					set_fail(&fail, table, "No maxlen");
-+					SET_FAIL("No maxlen");
- 			}
- #ifdef CONFIG_PROC_SYSCTL
- 			if (table->procname && !table->proc_handler)
--				set_fail(&fail, table, "No proc_handler");
--#endif
--#if 0
--			if (!table->procname && table->proc_handler)
--				set_fail(&fail, table, "proc_handler without procname");
-+				SET_FAIL("No proc_handler");
- #endif
--			sysctl_check_leaf(namespaces, table, &fail);
-+			parents[depth] = table;
-+			sysctl_check_leaf(namespaces, table, &fail,
-+					  parents, depth);
- 		}
- 		if (table->mode > 0777)
--			set_fail(&fail, table, "bogus .mode");
-+			SET_FAIL("bogus .mode");
- 		if (fail) {
--			set_fail(&fail, table, NULL);
-+			SET_FAIL(NULL);
- 			error = -EINVAL;
- 		}
--		if (table->child)
--			error |= sysctl_check_table(namespaces, table->child);
-+		if (table->child) {
-+			parents[depth] = table;
-+			error |= __sysctl_check_table(namespaces, table->child,
-+						      parents, depth + 1);
-+		}
- 	}
- 	return error;
- }
-+
-+
-+int sysctl_check_table(struct nsproxy *namespaces, struct ctl_table *table)
-+{
-+	struct ctl_table *parents[CTL_MAXNAME];
-+	/* Keep track of parents as we go down into the tree.
-+	 *
-+	 * parents[i-1] will be the parent for parents[i].
-+	 * The node at depth 'd' will have the parent at parents[d-1].
-+	 * The root node (depth=0) has no parent in this array.
-+	 */
-+	return __sysctl_check_table(namespaces, table, parents, 0);
-+}
--- 
-1.7.4.rc1.7.g2cf08.dirty
-
+Vasiliy Kulikov ha scritto:
+> Don't allow everybody to change video settings.
+> 
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> ---
+>  Compile tested only.
+> 
+>  drivers/media/video/sn9c102/sn9c102_core.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/media/video/sn9c102/sn9c102_core.c b/drivers/media/video/sn9c102/sn9c102_core.c
+> index 84984f6..ce56a1c 100644
+> --- a/drivers/media/video/sn9c102/sn9c102_core.c
+> +++ b/drivers/media/video/sn9c102/sn9c102_core.c
+> @@ -1430,9 +1430,9 @@ static DEVICE_ATTR(i2c_reg, S_IRUGO | S_IWUSR,
+>  		   sn9c102_show_i2c_reg, sn9c102_store_i2c_reg);
+>  static DEVICE_ATTR(i2c_val, S_IRUGO | S_IWUSR,
+>  		   sn9c102_show_i2c_val, sn9c102_store_i2c_val);
+> -static DEVICE_ATTR(green, S_IWUGO, NULL, sn9c102_store_green);
+> -static DEVICE_ATTR(blue, S_IWUGO, NULL, sn9c102_store_blue);
+> -static DEVICE_ATTR(red, S_IWUGO, NULL, sn9c102_store_red);
+> +static DEVICE_ATTR(green, S_IWUSR, NULL, sn9c102_store_green);
+> +static DEVICE_ATTR(blue, S_IWUSR, NULL, sn9c102_store_blue);
+> +static DEVICE_ATTR(red, S_IWUSR, NULL, sn9c102_store_red);
+>  static DEVICE_ATTR(frame_header, S_IRUGO, sn9c102_show_frame_header, NULL);
+>  
+>  
