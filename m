@@ -1,174 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755465Ab1BDKVA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 05:21:00 -0500
-Received: from smtp-vbr16.xs4all.nl ([194.109.24.36]:3027 "EHLO
-	smtp-vbr16.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754551Ab1BDKU6 (ORCPT
+	id S1755502Ab1BDKVo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 05:21:44 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60262 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754551Ab1BDKVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 05:20:58 -0500
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: [PATCH v8 03/12] media: Entities, pads and links
-Date: Fri, 4 Feb 2011 11:20:37 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc2-tschai; KDE/4.4.5; x86_64; ; )
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, sakari.ailus@maxwell.research.nokia.com,
-        broonie@opensource.wolfsonmicro.com, clemens@ladisch.de
-References: <1296131437-29954-1-git-send-email-laurent.pinchart@ideasonboard.com> <1296131437-29954-4-git-send-email-laurent.pinchart@ideasonboard.com>
-In-Reply-To: <1296131437-29954-4-git-send-email-laurent.pinchart@ideasonboard.com>
+	Fri, 4 Feb 2011 05:21:41 -0500
+Date: Fri, 4 Feb 2011 11:21:20 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Richard Zhao <linuxzsc@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        linux-kernel@vger.kernel.org, Dima Zavin <dmitriyz@google.com>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Locking in the clk API, part 2: clk_prepare/clk_unprepare
+Message-ID: <20110204102120.GJ30452@pengutronix.de>
+References: <201102011711.31258.jeremy.kerr@canonical.com>
+ <20110201105449.GY1147@pengutronix.de>
+ <20110201131512.GH31216@n2100.arm.linux.org.uk>
+ <20110201141837.GA1147@pengutronix.de>
+ <20110201143932.GK31216@n2100.arm.linux.org.uk>
+ <20110201151846.GD1147@pengutronix.de>
+ <20110201152458.GP31216@n2100.arm.linux.org.uk>
+ <4D48741F.8060006@codeaurora.org>
+ <20110201212409.GU31216@n2100.arm.linux.org.uk>
+ <20110204095424.GB2347@richard-laptop>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102041120.37541.hverkuil@xs4all.nl>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110204095424.GB2347@richard-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 27, 2011 13:30:28 Laurent Pinchart wrote:
+Hello Richard,
 
-<snip>
+On Fri, Feb 04, 2011 at 05:54:24PM +0800, Richard Zhao wrote:
+> On Tue, Feb 01, 2011 at 09:24:09PM +0000, Russell King - ARM Linux wrote:
+> > On Tue, Feb 01, 2011 at 12:59:11PM -0800, Stephen Boyd wrote:
+> > > On 02/01/2011 07:24 AM, Russell King - ARM Linux wrote:
+> > > > I'd also be tempted at this stage to build-in a no-op dummy clock,
+> > > > that being the NULL clk:
+> > > >
+> > > > int clk_prepare(struct clk *clk)
+> > > > {
+> > > > 	int ret = 0;
+> > > >
+> > > > 	if (clk) {
+> > > > 		mutex_lock(&clk->mutex);
+> > > > 		if (clk->prepared == 0)
+> > > > 			ret = clk->ops->prepare(clk);
+> > > > 		if (ret == 0)
+> > > > 			clk->prepared++;
+> > > > 		mutex_unlock(&clk->mutex);
+> > > > 	}
+> > > >
+> > > > 	return ret;
+> > > > }
+> > > 
+> > > I'm afraid this will hide enable/disable imbalances on some targets and
+> > > then expose them on others. Maybe its not a big problem though since
+> > > this also elegantly handles the root(s) of the tree.
+> > 
+> > You can't catch enable/disable imbalances in the prepare code, and you
+> > can't really catch them in the unprepare code either.
+> > 
+> > Consider two drivers sharing the same struct clk.  When the second driver
+> > prepares the clock, the enable count could well be non-zero, caused by
+> > the first driver.  Ditto for when the second driver is removed, and it
+> > calls unprepare - the enable count may well be non-zero.
+> > 
+> > The only thing you can check is that when the prepare count is zero,
+> > the enable count is also zero.  You can also check in clk_enable() and
+> > clk_disable() that the prepare count is non-zero.
+> but how can we check prepare count without mutex lock? Even if prepare count
+> is atomic_t, it can not guarantee the clock is actually prepared or unprepared.
+> So it's important for driver writer to maintain the call sequence.
+I happily point out that the prepare_count needs to be protected by a
+spinlock and you need a flag that signals a prepare or unprepare is
+currently running.
 
-> diff --git a/include/media/media-entity.h b/include/media/media-entity.h
-> new file mode 100644
-> index 0000000..7cf9135
-> --- /dev/null
-> +++ b/include/media/media-entity.h
-> @@ -0,0 +1,122 @@
-> +/*
-> + * Media entity
-> + *
-> + * Copyright (C) 2010 Nokia Corporation
-> + *
-> + * Contacts: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> + *	     Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-> + */
-> +
-> +#ifndef _MEDIA_ENTITY_H
-> +#define _MEDIA_ENTITY_H
-> +
-> +#include <linux/list.h>
-> +
-> +#define MEDIA_ENT_TYPE_SHIFT		16
-> +#define MEDIA_ENT_TYPE_MASK		0x00ff0000
-> +#define MEDIA_ENT_SUBTYPE_MASK		0x0000ffff
-> +
-> +#define MEDIA_ENT_T_DEVNODE		(1 << MEDIA_ENTITY_TYPE_SHIFT)
-> +#define MEDIA_ENT_T_DEVNODE_V4L		(MEDIA_ENTITY_T_DEVNODE + 1)
-> +#define MEDIA_ENT_T_DEVNODE_FB		(MEDIA_ENTITY_T_DEVNODE + 2)
-> +#define MEDIA_ENT_T_DEVNODE_ALSA	(MEDIA_ENTITY_T_DEVNODE + 3)
-> +#define MEDIA_ENT_T_DEVNODE_DVB		(MEDIA_ENTITY_T_DEVNODE + 4)
-> +
-> +#define MEDIA_ENT_T_V4L2_SUBDEV		(2 << MEDIA_ENTITY_TYPE_SHIFT)
-> +#define MEDIA_ENT_T_V4L2_SUBDEV_SENSOR	(MEDIA_ENTITY_T_V4L2_SUBDEV + 1)
-> +#define MEDIA_ENT_T_V4L2_SUBDEV_FLASH	(MEDIA_ENTITY_T_V4L2_SUBDEV + 2)
-> +#define MEDIA_ENT_T_V4L2_SUBDEV_LENS	(MEDIA_ENTITY_T_V4L2_SUBDEV + 3)
-
-MEDIA_ENTITY_? That should be MEDIA_ENT_. It looks like this was never compiled...
-
-BTW, I like the new names :-)
-
-
-> +
-> +#define MEDIA_ENT_FL_DEFAULT		(1 << 0)
-> +
-> +#define MEDIA_LNK_FL_ENABLED		(1 << 0)
-> +#define MEDIA_LNK_FL_IMMUTABLE		(1 << 1)
-> +
-> +#define MEDIA_PAD_FL_INPUT		(1 << 0)
-> +#define MEDIA_PAD_FL_OUTPUT		(1 << 1)
-> +
-> +struct media_link {
-> +	struct media_pad *source;	/* Source pad */
-> +	struct media_pad *sink;		/* Sink pad  */
-> +	struct media_link *reverse;	/* Link in the reverse direction */
-> +	unsigned long flags;		/* Link flags (MEDIA_LNK_FL_*) */
-> +};
-> +
-> +struct media_pad {
-> +	struct media_entity *entity;	/* Entity this pad belongs to */
-> +	u16 index;			/* Pad index in the entity pads array */
-> +	unsigned long flags;		/* Pad flags (MEDIA_PAD_FL_*) */
-> +};
-> +
-> +struct media_entity {
-> +	struct list_head list;
-> +	struct media_device *parent;	/* Media device this entity belongs to*/
-> +	u32 id;				/* Entity ID, unique in the parent media
-> +					 * device context */
-> +	const char *name;		/* Entity name */
-> +	u32 type;			/* Entity type (MEDIA_ENT_T_*) */
-> +	u32 revision;			/* Entity revision, driver specific */
-> +	unsigned long flags;		/* Entity flags (MEDIA_ENT_FL_*) */
-> +	u32 group_id;			/* Entity group ID */
-> +
-> +	u16 num_pads;			/* Number of input and output pads */
-> +	u16 num_links;			/* Number of existing links, both
-> +					 * enabled and disabled */
-> +	u16 num_backlinks;		/* Number of backlinks */
-> +	u16 max_links;			/* Maximum number of links */
-> +
-> +	struct media_pad *pads;		/* Pads array (num_pads elements) */
-> +	struct media_link *links;	/* Links array (max_links elements)*/
-> +
-> +	union {
-> +		/* Node specifications */
-> +		struct {
-> +			u32 major;
-> +			u32 minor;
-> +		} v4l;
-> +		struct {
-> +			u32 major;
-> +			u32 minor;
-> +		} fb;
-> +		struct {
-> +			u32 card;
-> +			u32 device;
-> +			u32 subdevice;
-> +		} alsa;
-> +		int dvb;
-> +
-> +		/* Sub-device specifications */
-> +		/* Nothing needed yet */
-> +	};
-> +};
-> +
-> +static inline u32 media_entity_type(struct media_entity *entity)
-> +{
-> +	return entity->type & MEDIA_ENT_TYPE_MASK;
-> +}
-> +
-> +static inline u32 media_entity_subtype(struct media_entity *entity)
-> +{
-> +	return entity->type & MEDIA_ENT_SUBTYPE_MASK;
-> +}
-> +
-> +int media_entity_init(struct media_entity *entity, u16 num_pads,
-> +		struct media_pad *pads, u16 extra_links);
-> +void media_entity_cleanup(struct media_entity *entity);
-> +int media_entity_create_link(struct media_entity *source, u16 source_pad,
-> +		struct media_entity *sink, u16 sink_pad, u32 flags);
-> +
-> +#endif
-> 
-
-Regards,
-
-	Hans
+SCNR
+Uwe
 
 -- 
-Hans Verkuil - video4linux developer - sponsored by Cisco
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
