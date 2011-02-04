@@ -1,42 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490Ab1BDEQH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Feb 2011 23:16:07 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:56498 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657Ab1BDEQF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Feb 2011 23:16:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=BxKUZIdDXJ5AKZt0YZCLWtbEsyRnqC2dm8yK1N4sCEntd6hblzagYpBVb3SSrsm1Hv
-         v9gSe60iw5ph5pyHE7TOIorvIkvPtElcLfyTnqxHAXM+HBOYnEm8m7s3z/sDIw/2ikcy
-         wX+gHuKSBwNpBpjGzY7EMsWhVUdMEEKwY3B4M=
+	id S1753649Ab1BDETm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Feb 2011 23:19:42 -0500
+Received: from kroah.org ([198.145.64.141]:41150 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752244Ab1BDETl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Feb 2011 23:19:41 -0500
+Date: Thu, 3 Feb 2011 20:20:47 -0800
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: Re: linux-next: manual merge of the tty tree with the i.MX tree
+Message-ID: <20110204042047.GA3331@kroah.com>
+References: <20110204151408.9988102e.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <1296743166-9412-2-git-send-email-hannes@cmpxchg.org>
-References: <1296743166-9412-1-git-send-email-hannes@cmpxchg.org>
-	<1296743166-9412-2-git-send-email-hannes@cmpxchg.org>
-Date: Fri, 4 Feb 2011 09:46:05 +0530
-X-Google-Sender-Auth: A19ISu6b16cUgivj6dkIJXdTkRc
-Message-ID: <AANLkTim584=bgyoRux18C=yNniAdof28=xLxS+vnaApT@mail.gmail.com>
-Subject: Re: [patch 1/5] memcg: no uncharged pages reach page_cgroup_zoneinfo
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110204151408.9988102e.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 3, 2011 at 7:56 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> All callsites check PCG_USED before passing pc->mem_cgroup, so the
-> latter is never NULL.
->
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+On Fri, Feb 04, 2011 at 03:14:08PM +1100, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> Today's linux-next merge of the tty tree got a conflict in
+> drivers/tty/serial/Kconfig between commit
+> 47d37d6f94ccf32d302492f969209930b2411f9e ("serial: Add auart driver for
+> i.MX23/28") from the i.M tree and commit
+> 4564e1ef219fa69ed827fe2613569543a6b26fbc ("serial: pch_uart: support new
+> device ML7213") from the tty tree.
+> 
+> Just overlapping additions.  I fixed it up (see below) and can carry the
+> fix as necessary.
 
-Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+Looks good to me, thanks for handling this.
+
+greg k-h
