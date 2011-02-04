@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748Ab1BDUUv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 15:20:51 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35972 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751849Ab1BDUUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 15:20:50 -0500
-Message-ID: <4D4C5F88.30506@zytor.com>
-Date: Fri, 04 Feb 2011 12:20:24 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+	id S1752765Ab1BDUXb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 15:23:31 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:50529 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112Ab1BDUXa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 15:23:30 -0500
+From: "Dr. Martin Rogge" <marogge@onlinehome.de>
+To: Gene Heskett <gene.heskett@gmail.com>, linux-kernel@vger.kernel.org
+Subject: scheduling policy    was: Re: 2.6.37 considered stable?
+Date: Fri, 4 Feb 2011 21:23:28 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-ck1; KDE/4.5.5; x86_64; ; )
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Kamal Mostafa <kamal@canonical.com>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Len Brown <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] x86: fix panic when handling "mem={invalid}" param
-References: <1296783486-23033-1-git-send-email-kamal@canonical.com>	<AANLkTimDrWESfmSwRSyhenZTwXovKKa4mSC=Y0=j9yPM@mail.gmail.com>	<4D4C5CE1.2090006@zytor.com> <AANLkTi=FwrG43Br3RVNDJ1Z4UJNgfYt6ih=Gv=0HEtG-@mail.gmail.com>
-In-Reply-To: <AANLkTi=FwrG43Br3RVNDJ1Z4UJNgfYt6ih=Gv=0HEtG-@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201102042123.28734.marogge@onlinehome.de>
+X-Provags-ID: V02:K0:bNWyu5AQfJFa3w13AmU5TNTYOQro9GjKZlcMX6mC2/3
+ R2LseMdEyM6KUIdmU5zaXqqq8OMjbBtCDvOY4jX1QlGxqPhJnN
+ UbH9Dh+p8fPfVpPq26YptbEP5ZSu6gybbq5MW0L/QwI86VURcR
+ Mu19Ail/fEzGlYvzMydz1C9GZkMeQTPoSAaSEwaImbhEK1QvYg
+ lF2ii1YIwmq7OO4DK+XxA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/2011 12:19 PM, Yinghai Lu wrote:
->>
->> All he looks at is when the value returned is zero.  It wouldn't be zero
->> for any actual value, including mem=32M.
->>
+Gene Heskett wrote:
+> Chuckle.  I've been running 2.6.37 here, with all of that new group
+> scheduling stuff enabled, the desktop feels great and my only fuss is that
+> kaffiene, when watching digital tv on my pcHD-3000 card, is NOT getting
+> enough time so both the audio and the video have little 20 millisecond
+> holes chopped in them at sub-second intervals.  Not the most pleasant
+> thing
+> to watch.  I would appreciate any suggestions on how to get such an
+> application a higher priority.
 > 
-> when user pass wrong parameter like less 128M, kernel will not boot either.
-> Do we need to sanity check for that?
-> 
 
-We could check for the value being smaller than the relocated value of
-_end.  That is probably the smallest *fixed* value we can assign.
+Gene, have you tried schedtool to set the scheduling policy of the process to 
+SCHED_FIFO or even SCHED_ISO? 
 
-	-hpa
+Before anyone asks, yes, relying on schedtool puts a little reponsibility on 
+user space, but it is my firm believe that (a) you can't auto-everything and 
+(b) the onus should be on the distro not the user.
 
+Martin
