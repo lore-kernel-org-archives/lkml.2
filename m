@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752035Ab1BDWVA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 17:21:00 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:43612 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222Ab1BDWU7 convert rfc822-to-8bit (ORCPT
+	id S1752355Ab1BDWWS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 17:22:18 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54761 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751698Ab1BDWWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 17:20:59 -0500
-MIME-Version: 1.0
-Message-ID: <c9d3fdd6-fec4-47e6-ab21-c8439d32de3a@default>
-Date: Fri, 4 Feb 2011 14:17:02 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Greg KH <greg@kroah.com>
-Cc: gregkh@suse.de, Chris Mason <chris.mason@oracle.com>,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        matthew@wil.cx, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        ngupta@vflare.org, jeremy@goop.org,
-        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
-        riel@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>, mel@csn.ul.ie,
-        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        sfr@canb.auug.org.au, wfg@mail.ustc.edu.cn, tytso@mit.edu,
-        viro@ZenIV.linux.org.uk, hughd@google.com, hannes@cmpxchg.org
-Subject: RE: [PATCH V1 3/3] drivers/staging: kztmem: misc build/config
-References: <20110118172151.GA20507@ca-server1.us.oracle.com
- 20110204212843.GA18924@kroah.com>
-In-Reply-To: <20110204212843.GA18924@kroah.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6550.5003]
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4D4C7B62.01C9:SCFMA4539814,ss=1,fgs=0
+	Fri, 4 Feb 2011 17:22:17 -0500
+Date: Fri, 4 Feb 2011 14:21:47 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
+        Marcus Meissner <meissner@suse.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Eugene Teo <eugeneteo@kernel.org>,
+        Bjorn Helgaas <bjorn.helgaas@hp.com>, Len Brown <len.brown@intel.com>,
+        Changli Gao <xiaosuo@gmail.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>
+Subject: Re: [PATCH v2] use %pK for /proc/kallsyms and /proc/modules
+Message-Id: <20110204142147.006bf978.akpm@linux-foundation.org>
+In-Reply-To: <20110204220944.GN5503@outflux.net>
+References: <20110127004129.GH4981@outflux.net>
+	<20110204140351.f9066af0.akpm@linux-foundation.org>
+	<20110204220944.GN5503@outflux.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If you require a kbuild dependancy, then put it in your Kconfig file
-> please, don't break the build.
+On Fri, 4 Feb 2011 14:09:44 -0800
+Kees Cook <kees.cook@canonical.com> wrote:
+
+> Hi Andrew,
 > 
-> I'll not apply these patches for now until that's fixed up.
+> On Fri, Feb 04, 2011 at 02:03:51PM -0800, Andrew Morton wrote:
+> > kernel/kallsyms.c: In function 's_show':
+> > kernel/kallsyms.c:481: warning: format '%p' expects type 'void *', but argument 3 has type 'long unsigned int'
+> > kernel/kallsyms.c:484: warning: format '%p' expects type 'void *', but argument 3 has type 'long unsigned int'
+> > kernel/module.c: In function 'module_sect_show':
+> > kernel/module.c:1171: warning: format '%p' expects type 'void *', but argument 3 has type 'long unsigned int'
+> > kernel/module.c:1171: warning: format '%p' expects type 'void *', but argument 3 has type 'long unsigned int'
+> > 
+> > I'm struggling to see how this could have been compile-time or runtime
+> > tested?
+> 
+> I run-time tested it plenty. The thread contains the various discussions
+> about compile-time warnings, so I suspect in the last version, I didn't go
+> examine the warnings (since the origin of the other warnings went away).
+> 
 
-Oops, sorry, missed that line in my Kconfig.  Will re-post.
+It's passing `unsigned long kallsym_iter.value' into vsprintf as a
+pointer.  Won't vsprintf end up dereferenceing that unsigned long?
 
-Thanks,
-Dan
+> I can send a patch to fix it up to cast everything to (void*) if you want?
+
+No typecasts, please.  Get the types *correct* and they won't be needed.
