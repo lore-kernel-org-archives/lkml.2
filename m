@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782Ab1BDNTS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 08:19:18 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:28038 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752135Ab1BDNTR (ORCPT
+	id S1752815Ab1BDNTv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 08:19:51 -0500
+Received: from smtp-vbr4.xs4all.nl ([194.109.24.24]:3650 "EHLO
+	smtp-vbr4.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135Ab1BDNTu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 08:19:17 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=FRtO0CRrfT3NIgFtqu1ZHsmqfX16e+dy7IVHc5HrO59Rn70rZuuzoMtkL9LwE49U7C
-         POzd0X3hr5rGJ0gVxvpg==
+	Fri, 4 Feb 2011 08:19:50 -0500
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
+Subject: Re: [PATCH v8 05/12] media: Entity use count
+Date: Fri, 4 Feb 2011 14:19:19 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc2-tschai; KDE/4.4.5; x86_64; ; )
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
+        clemens@ladisch.de
+References: <1296131437-29954-1-git-send-email-laurent.pinchart@ideasonboard.com> <201102041122.03886.hverkuil@xs4all.nl> <4D4BF23A.1050800@maxwell.research.nokia.com>
+In-Reply-To: <4D4BF23A.1050800@maxwell.research.nokia.com>
 MIME-Version: 1.0
-In-Reply-To: <1296825160.26581.652.camel@laptop>
-References: <4d4bf9ac.cf03d90a.2908.2186@mx.google.com>
-	<1296825160.26581.652.camel@laptop>
-Date: Fri, 4 Feb 2011 14:19:13 +0100
-Message-ID: <AANLkTintvA8QUYzJUXWc792uYD-tACCxUzvY_XCQtD=u@mail.gmail.com>
-Subject: Re: [PATCH 0/2] perf_events: add support for Intel fixed counter 2
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
-        eranian@gmail.com, robert.richter@amd.com, acme@redhat.com,
-        gorcunov@gmail.com, ming.m.lin@intel.com
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102041419.19916.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 4, 2011 at 2:12 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, 2011-02-04 at 14:00 +0200, Stephane Eranian wrote:
->
->> This series of patches solves this problem by introducing a custom
->> encoding for UNHALTED_REFERENCE_CYCLES (0xff3c) and improving
->> the constraint infrastructure to handle events which can ONLY be
->> measured on fixed counters.
->
-> Right, so the only problem I can see with this is that Intel will at
-> some point in the future put an actual event there.
->
-I doubt that but I will check with them.
+On Friday, February 04, 2011 13:34:02 Sakari Ailus wrote:
+> Hi,
+> 
+> And many thanks for the comments!
+> 
+> Hans Verkuil wrote:
+> ...
+> >> diff --git a/include/media/media-entity.h b/include/media/media-entity.h
+> >> index b82f824..114541a 100644
+> >> --- a/include/media/media-entity.h
+> >> +++ b/include/media/media-entity.h
+> >> @@ -81,6 +81,8 @@ struct media_entity {
+> >>  	struct media_pad *pads;		/* Pads array (num_pads elements) */
+> >>  	struct media_link *links;	/* Links array (max_links elements)*/
+> >>  
+> >> +	int use_count;			/* Use count for the entity. */
+> > 
+> > Isn't unsigned better?
+> 
+> Could be. The result, though, will be slightly more difficult checking
+> for bad use count --- which always is a driver bug.
+> 
+> me->use_count += change;
+> WARN_ON(me->use_count < 0);
+> 
+> we must do something like this:
+> 
+> if (change < 0)
+> 	WARN_ON(me->use_count < (unsigned)-change);
+> me->use_count += change;
+> 
+> I'd perhaps also go with unsigned int; the choice for signed was made
+> mainly since the above check and with signed int the check was more trivial.
 
-The alternative I thought about would be to use a bit in the upper 32
-bit section
-of attr.config and use the constraint->cmask to catch it. That would
-be a special
-cmask. That would probably work because ALL events have to go through
-get_constraints().
+I saw this WARN_ON as well. I think there is a good reason for that WARN_ON,
+but I think a comment in the header explaining why it is an int will be
+useful. If I trip over it, then others will as well :-)
+
+Regards,
+
+	Hans
+
+> 
+> Regards,
+> 
+> 
+
+-- 
+Hans Verkuil - video4linux developer - sponsored by Cisco
