@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088Ab1BDM1I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 07:27:08 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:32973 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751535Ab1BDMXh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 07:23:37 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=qyrXZ+ypebmvhTirGxYLAqDdNCmuNi3OBD1ltQ9QvCCni/bEt/Roco0nG6MTKTaXP1
-         HIvV9oAYyh963xN/EWMeeIFmXh3omoVfbdiad3/tWRxgBW+QjVA9tid4OYl38/9ghLJE
-         x6qemMf5Ybut9l6/nCOnYn1vFsouGLNz0UxJ0=
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: linux-kernel@vger.kernel.org
-Cc: security@kernel.org, Luca Risolia <luca.risolia@studio.unibo.it>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-usb@vger.kernel.org, linux-media@vger.kernel.org
-Subject: [PATCH 07/20] video: sn9c102: world-wirtable sysfs files
-Date: Fri,  4 Feb 2011 15:23:33 +0300
-Message-Id: <b560d7c146330b382b90d739a76d580ed4051d4e.1296818921.git.segoon@openwall.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <cover.1296818921.git.segoon@openwall.com>
-References: <cover.1296818921.git.segoon@openwall.com>
+	id S1751962Ab1BDMeP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 07:34:15 -0500
+Received: from smtp.nokia.com ([147.243.128.24]:26410 "EHLO mgw-da01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751637Ab1BDMeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 07:34:13 -0500
+Message-ID: <4D4BF23A.1050800@maxwell.research.nokia.com>
+Date: Fri, 04 Feb 2011 14:34:02 +0200
+From: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101123 SeaMonkey/2.0.11
+MIME-Version: 1.0
+To: Hans Verkuil <hverkuil@xs4all.nl>
+CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
+        clemens@ladisch.de
+Subject: Re: [PATCH v8 05/12] media: Entity use count
+References: <1296131437-29954-1-git-send-email-laurent.pinchart@ideasonboard.com> <1296131437-29954-6-git-send-email-laurent.pinchart@ideasonboard.com> <201102041122.03886.hverkuil@xs4all.nl>
+In-Reply-To: <201102041122.03886.hverkuil@xs4all.nl>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't allow everybody to change video settings.
+Hi,
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
----
- Compile tested only.
+And many thanks for the comments!
 
- drivers/media/video/sn9c102/sn9c102_core.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+Hans Verkuil wrote:
+...
+>> diff --git a/include/media/media-entity.h b/include/media/media-entity.h
+>> index b82f824..114541a 100644
+>> --- a/include/media/media-entity.h
+>> +++ b/include/media/media-entity.h
+>> @@ -81,6 +81,8 @@ struct media_entity {
+>>  	struct media_pad *pads;		/* Pads array (num_pads elements) */
+>>  	struct media_link *links;	/* Links array (max_links elements)*/
+>>  
+>> +	int use_count;			/* Use count for the entity. */
+> 
+> Isn't unsigned better?
 
-diff --git a/drivers/media/video/sn9c102/sn9c102_core.c b/drivers/media/video/sn9c102/sn9c102_core.c
-index 84984f6..ce56a1c 100644
---- a/drivers/media/video/sn9c102/sn9c102_core.c
-+++ b/drivers/media/video/sn9c102/sn9c102_core.c
-@@ -1430,9 +1430,9 @@ static DEVICE_ATTR(i2c_reg, S_IRUGO | S_IWUSR,
- 		   sn9c102_show_i2c_reg, sn9c102_store_i2c_reg);
- static DEVICE_ATTR(i2c_val, S_IRUGO | S_IWUSR,
- 		   sn9c102_show_i2c_val, sn9c102_store_i2c_val);
--static DEVICE_ATTR(green, S_IWUGO, NULL, sn9c102_store_green);
--static DEVICE_ATTR(blue, S_IWUGO, NULL, sn9c102_store_blue);
--static DEVICE_ATTR(red, S_IWUGO, NULL, sn9c102_store_red);
-+static DEVICE_ATTR(green, S_IWUSR, NULL, sn9c102_store_green);
-+static DEVICE_ATTR(blue, S_IWUSR, NULL, sn9c102_store_blue);
-+static DEVICE_ATTR(red, S_IWUSR, NULL, sn9c102_store_red);
- static DEVICE_ATTR(frame_header, S_IRUGO, sn9c102_show_frame_header, NULL);
- 
- 
+Could be. The result, though, will be slightly more difficult checking
+for bad use count --- which always is a driver bug.
+
+me->use_count += change;
+WARN_ON(me->use_count < 0);
+
+we must do something like this:
+
+if (change < 0)
+	WARN_ON(me->use_count < (unsigned)-change);
+me->use_count += change;
+
+I'd perhaps also go with unsigned int; the choice for signed was made
+mainly since the above check and with signed int the check was more trivial.
+
+Regards,
+
 -- 
-1.7.0.4
-
+Sakari Ailus
+sakari.ailus@maxwell.research.nokia.com
