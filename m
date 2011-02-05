@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509Ab1BEUgT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 15:36:19 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46190 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104Ab1BEUgS (ORCPT
+	id S1753548Ab1BEUjL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 15:39:11 -0500
+Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:39259 "EHLO
+	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104Ab1BEUjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 15:36:18 -0500
-Date: Sat, 5 Feb 2011 20:36:00 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Per Forlin <per.forlin@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Cc: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        dev@lists.linaro.org
-Subject: Re: [PATCH 0/5] mmc: add double buffering for mmc block requests
-Message-ID: <20110205203600.GA31760@n2100.arm.linux.org.uk>
-References: <1294856043-13447-1-git-send-email-per.forlin@linaro.org> <20110205170255.GG29411@n2100.arm.linux.org.uk>
+	Sat, 5 Feb 2011 15:39:09 -0500
+Message-ID: <4D4DB56B.9020806@hardwarefreak.com>
+Date: Sat, 05 Feb 2011 14:39:07 -0600
+From: Stan Hoeppner <stan@hardwarefreak.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110205170255.GG29411@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+CC: Jean Gobin <jf@gobinjf.be>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-net@vger.kernel.org,
+        Alan Piszcz <ap@solarrain.com>
+Subject: Re: Supermicro X8DTH-6: Only ~250MiB/s from RAID<->RAID over 10GbE?
+References: <alpine.DEB.2.00.1102051427360.8518@p34.internal.lan> <1296934967.2599.2.camel@jeff-ubuntu> <alpine.DEB.2.00.1102051510080.8518@p34.internal.lan>
+In-Reply-To: <alpine.DEB.2.00.1102051510080.8518@p34.internal.lan>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 05, 2011 at 05:02:55PM +0000, Russell King - ARM Linux wrote:
-> On Wed, Jan 12, 2011 at 07:13:58PM +0100, Per Forlin wrote:
-> > Add support to prepare one MMC request while another is active on
-> > the host. This is done by making the issue_rw_rq() asynchronous.
-> > The increase in throughput is proportional to the time it takes to
-> > prepare a request and how fast the memory is. The faster the MMC/SD is
-> > the more significant the prepare request time becomes. Measurements on U5500
-> > and U8500 on eMMC shows significant performance gain for DMA on MMC for large
-> > reads. In the PIO case there is some gain in performance for large reads too.
-> > There seems to be no or small performance gain for write, don't have a good
-> > explanation for this yet.
-> 
-> It might be worth seeing what effect the following patch has.  This
-> moves the dsb out of the cache operations into a separate function,
-> so we only do one dsb per DMA mapping/unmapping operation.  That's
-> particularly significant for the scattergather code.
-> 
-> I don't remember the reason why this was dropped as a candidate for
-> merging - could that be because the dsb needs to be before the outer
-> cache maintainence?  Adding Catalin for comment on that.
+Justin Piszcz put forth on 2/5/2011 2:18 PM:
 
-FWIW, trying this with MMC on OMAP4, I see no measurable difference in
-performance nor CPU usage.
+> Everything > 1 Gbyte/sec but when you use the network, 250MiB/s, it does not
+> make sense.
+
+Did you try launching 4 simultaneous cp operations over nfs to get to 1.2 GB/s?
+ I've witnessed single stream copy performance with Samba being less than
+maximum due to Samba limitations.  Running multiple copy ops in parallel then
+usually saturates the pipe.
+
+I'm thinking you may have a single threaded process involved that's eating all
+of one core, at which point there is no scalability left for that operation.
+
+-- 
+Stan
