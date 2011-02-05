@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753548Ab1BEUjL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 15:39:11 -0500
-Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:39259 "EHLO
-	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104Ab1BEUjJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 15:39:09 -0500
-Message-ID: <4D4DB56B.9020806@hardwarefreak.com>
-Date: Sat, 05 Feb 2011 14:39:07 -0600
-From: Stan Hoeppner <stan@hardwarefreak.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	id S1753610Ab1BEUjs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 15:39:48 -0500
+Received: from hera.kernel.org ([140.211.167.34]:34536 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753293Ab1BEUjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Feb 2011 15:39:47 -0500
+Date: Sat, 5 Feb 2011 20:39:38 +0000
+From: Denis Kirjanov <dkirjanov@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, acme@ghostprotocols.net
+Subject: [PATCH] perftools: builtin-top: Use pid_t for target_{pid|tid}
+Message-ID: <20110205203938.GA15328@hera.kernel.org>
 MIME-Version: 1.0
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-CC: Jean Gobin <jf@gobinjf.be>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-net@vger.kernel.org,
-        Alan Piszcz <ap@solarrain.com>
-Subject: Re: Supermicro X8DTH-6: Only ~250MiB/s from RAID<->RAID over 10GbE?
-References: <alpine.DEB.2.00.1102051427360.8518@p34.internal.lan> <1296934967.2599.2.camel@jeff-ubuntu> <alpine.DEB.2.00.1102051510080.8518@p34.internal.lan>
-In-Reply-To: <alpine.DEB.2.00.1102051510080.8518@p34.internal.lan>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 05 Feb 2011 20:39:39 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Justin Piszcz put forth on 2/5/2011 2:18 PM:
+Use pid_t data type for target_{pid|tid} vars.
 
-> Everything > 1 Gbyte/sec but when you use the network, 250MiB/s, it does not
-> make sense.
+Signed-off-by: Denis Kirjanov <dkirjanov@kernel.org>
+---
+ tools/perf/builtin-top.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Did you try launching 4 simultaneous cp operations over nfs to get to 1.2 GB/s?
- I've witnessed single stream copy performance with Samba being less than
-maximum due to Samba limitations.  Running multiple copy ops in parallel then
-usually saturates the pipe.
-
-I'm thinking you may have a single threaded process involved that's eating all
-of one core, at which point there is no scalability left for that operation.
-
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index b6998e0..e4ea084 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -67,8 +67,8 @@ static int			default_interval		=      0;
+ static int			count_filter			=      5;
+ static int			print_entries;
+ 
+-static int			target_pid			=     -1;
+-static int			target_tid			=     -1;
++static pid_t			target_pid			=     -1;
++static pid_t			target_tid			=     -1;
+ static struct thread_map	*threads;
+ static bool			inherit				=  false;
+ static struct cpu_map		*cpus;
 -- 
-Stan
+1.7.3.4
+
