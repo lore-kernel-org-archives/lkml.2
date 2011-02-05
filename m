@@ -1,40 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab1BESiL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 13:38:11 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58469 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753063Ab1BESiJ (ORCPT
+	id S1753511Ab1BESwF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 13:52:05 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45376 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752870Ab1BESwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 13:38:09 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=vZS5ecLZLh+QfDxItzohkQRf+E27S6JX0+vVvxf/AElh43OOhiW6arhiQn2OaYRadJ
-         0CZhzde0aHHSEh/eaLA1IP1SRej3MFWN3BIwCJnZpefYguuyWQZ3Zi/zL06Nhxi0NMzE
-         tuHiZcAGdlZPS9wzCYkbw2EG5LS34JcfmcUJU=
+	Sat, 5 Feb 2011 13:52:03 -0500
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinjR07JrFCCNe2Q49Ya5R=frXD8C9604LU0jzUB@mail.gmail.com>
-References: <AANLkTikiKagzJMh_xuOSzfA4c-qxOHhVeU2jhmbaDHji@mail.gmail.com>
- <AANLkTimYMWsj7VPCMEqkb3KEW3+dF30cEqhk=9h4EN-C@mail.gmail.com> <AANLkTinjR07JrFCCNe2Q49Ya5R=frXD8C9604LU0jzUB@mail.gmail.com>
-From: Michael Witten <mfwitten@gmail.com>
-Date: Sat, 5 Feb 2011 12:37:39 -0600
-Message-ID: <AANLkTimPbPveVAAEB9yWBUnDch7W95KENiOpF1d87-L6@mail.gmail.com>
-Subject: Re: GIT - cloning torvalds/linux-2.6.git repository trouble.
-To: Valentin QUEQUET <valentin.quequet@gmail.com>
-Cc: Ashwin Bihari <abihari@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <AANLkTi=nAhadVy6y6f4uOy0-pvTQrdwYgQ0y_4ukui2z@mail.gmail.com>
+References: <201101201226.41021.rjw@sisk.pl> <201101250025.10817.rjw@sisk.pl>
+ <201101250032.07423.rjw@sisk.pl> <AANLkTi=nAhadVy6y6f4uOy0-pvTQrdwYgQ0y_4ukui2z@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 5 Feb 2011 10:51:10 -0800
+Message-ID: <AANLkTin1gHSS1Hu_ia4RFimNeYXWGtY9XBqfRH28D1ZL@mail.gmail.com>
+Subject: Re: [PATCH 8/8] ACPI / PM: Use existing ACPI iomaps for NVS
+ save/restore (v2)
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 5, 2011 at 12:32, Valentin QUEQUET
-<valentin.quequet@gmail.com> wrote:
-> You would be gentle to show me the steps which will make me get a
-> usable local git repository.
+On Sat, Feb 5, 2011 at 7:31 AM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+>
+> The suspend monster is back! The suspend-to-ram is fine, but upon
+> resume, screen is blank. Haven't bisected in case someone has also
+> done so.
+>
+> It's very recent. ... between commit
+> 831d52bc153971b70e64eccfbed2b232394f22f8 and
+> 44f2c5c841da1b1e0864d768197ab1497b5c2cc1.
 
-I think you'll get a really swift and helpful response if you contact
-the git mailing list instead:
+Hmm. It's almost certainly one of the DRI patches, but which one? I
+think bisection is the only way to figure it out. It shouldn't be too
+bad, since there's only 120 commits in that range.
 
-    git@vger.kernel.org
+In fact, you can almost certainly just bisect from 89840966c579 to
+bb5b583b5279, which is just 31 commits and should get you bisected in
+just five tries or so.
+
+                       Linus
