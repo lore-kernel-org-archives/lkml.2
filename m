@@ -1,234 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753067Ab1BECYq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 21:24:46 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:55007 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752536Ab1BECYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 21:24:45 -0500
-Date: Fri, 4 Feb 2011 18:19:22 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        castet.matthieu@free.fr, tglx@linutronix.de, hpa@linux.intel.com
-Subject: Re: [tip:x86/urgent] x86-32: Make sure the stack is set up before we
- use it
-Message-ID: <20110205021922.GP5503@outflux.net>
-References: <4D41E86D.8060205@free.fr>
- <tip-43d79a250bdb10e30b08a79e906befc691c3f5ce@git.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <tip-43d79a250bdb10e30b08a79e906befc691c3f5ce@git.kernel.org>
-Organization: Canonical
-X-HELO: www.outflux.net
+	id S1753174Ab1BEC2c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 21:28:32 -0500
+Received: from science.horizon.com ([71.41.210.146]:56441 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752832Ab1BEC2c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 21:28:32 -0500
+Date: 4 Feb 2011 21:28:30 -0500
+Message-ID: <20110205022830.19500.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: dzickus@redhat.com, gorcunov@gmail.com, mingo@elte.hu
+Subject: Re: [PATCH] perf, x86: P4 PMU -- Fix unflagged overflows test
+Cc: a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org, linux@horizon.com,
+        ming.m.lin@intel.com, mroos@linux.ee
+In-Reply-To: <AANLkTin5gCnhVos3Lu_0GZSxFQmvsNEYTO=Jq7UdmYb1@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+The earlier patch didn't fix things after all.  I'm rebooting with this one now.
 
-This works for me doing CPU hotplugging on ia32, but on x86_64 it hangs.
-(Both boot, though.)
+(2.6.38-rc3 wih x86_pmu_start patch.)
+Feb  2 01:00:03: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Feb  2 01:00:03: Do you have a strange power saving mode enabled?
+Feb  2 01:00:03: Dazed and confused, but trying to continue
+Feb  2 01:01:04: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Feb  2 01:01:04: Do you have a strange power saving mode enabled?
+Feb  2 01:01:04: Dazed and confused, but trying to continue
+Feb  2 04:22:20: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Feb  2 04:22:20: Do you have a strange power saving mode enabled?
+Feb  2 04:22:20: Dazed and confused, but trying to continue
+Feb  2 06:28:17: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Feb  2 06:28:17: Do you have a strange power saving mode enabled?
+Feb  2 06:28:17: Dazed and confused, but trying to continue
+Feb  2 08:39:01: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Feb  2 08:39:01: Do you have a strange power saving mode enabled?
+Feb  2 08:39:01: Dazed and confused, but trying to continue
+Feb  2 16:00:04: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Feb  2 16:00:04: Do you have a strange power saving mode enabled?
+Feb  2 16:00:04: Dazed and confused, but trying to continue
+Feb  2 20:04:41: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Feb  2 20:04:41: Do you have a strange power saving mode enabled?
+Feb  2 20:04:41: Dazed and confused, but trying to continue
+Feb  2 22:21:27: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Feb  2 22:21:27: Do you have a strange power saving mode enabled?
+Feb  2 22:21:27: Dazed and confused, but trying to continue
+Feb  3 00:09:11: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Feb  3 00:09:11: Do you have a strange power saving mode enabled?
+Feb  3 00:09:11: Dazed and confused, but trying to continue
+Feb  3 00:24:02: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Feb  3 00:24:02: Do you have a strange power saving mode enabled?
+Feb  3 00:24:02: Dazed and confused, but trying to continue
+Feb  3 01:00:12: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Feb  3 01:00:12: Do you have a strange power saving mode enabled?
+Feb  3 01:00:12: Dazed and confused, but trying to continue
+Feb  3 01:27:50: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Feb  3 01:27:50: Do you have a strange power saving mode enabled?
+Feb  3 01:27:50: Dazed and confused, but trying to continue
+Feb  3 06:27:55: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Feb  3 06:27:55: Do you have a strange power saving mode enabled?
+Feb  3 06:27:55: Dazed and confused, but trying to continue
+Feb  3 09:21:06: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Feb  3 09:21:06: Do you have a strange power saving mode enabled?
+Feb  3 09:21:06: Dazed and confused, but trying to continue
+Feb  3 11:35:23: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Feb  3 11:35:23: Do you have a strange power saving mode enabled?
+Feb  3 11:35:23: Dazed and confused, but trying to continue
+Feb  3 17:52:05: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Feb  3 17:52:05: Do you have a strange power saving mode enabled?
+Feb  3 17:52:05: Dazed and confused, but trying to continue
+Feb  3 18:01:44: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Feb  3 18:01:44: Do you have a strange power saving mode enabled?
+Feb  3 18:01:44: Dazed and confused, but trying to continue
+Feb  3 18:11:23: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Feb  3 18:11:23: Do you have a strange power saving mode enabled?
+Feb  3 18:11:23: Dazed and confused, but trying to continue
+Feb  3 20:02:43: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Feb  3 20:02:43: Do you have a strange power saving mode enabled?
+Feb  3 20:02:43: Dazed and confused, but trying to continue
+Feb  3 22:38:43: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Feb  3 22:38:43: Do you have a strange power saving mode enabled?
+Feb  3 22:38:43: Dazed and confused, but trying to continue
+Feb  4 01:00:41: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Feb  4 01:00:41: Do you have a strange power saving mode enabled?
+Feb  4 01:00:41: Dazed and confused, but trying to continue
+Feb  4 05:00:02: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Feb  4 05:00:02: Do you have a strange power saving mode enabled?
+Feb  4 05:00:02: Dazed and confused, but trying to continue
+Feb  4 06:28:42: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Feb  4 06:28:42: Do you have a strange power saving mode enabled?
+Feb  4 06:28:42: Dazed and confused, but trying to continue
+Feb  4 13:35:29: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Feb  4 13:35:29: Do you have a strange power saving mode enabled?
+Feb  4 13:35:29: Dazed and confused, but trying to continue
+Feb  4 20:00:32: Uhhuh. NMI received for unknown reason 3d on CPU 0.
+Feb  4 20:00:32: Do you have a strange power saving mode enabled?
+Feb  4 20:00:32: Dazed and confused, but trying to continue
+Feb  4 21:12:52: Uhhuh. NMI received for unknown reason 2d on CPU 0.
+Feb  4 21:12:52: Do you have a strange power saving mode enabled?
+Feb  4 21:12:52: Dazed and confused, but trying to continue
 
-Thanks,
-
--Kees
-
-On Sat, Feb 05, 2011 at 12:45:54AM +0000, tip-bot for H. Peter Anvin wrote:
-> Commit-ID:  43d79a250bdb10e30b08a79e906befc691c3f5ce
-> Gitweb:     http://git.kernel.org/tip/43d79a250bdb10e30b08a79e906befc691c3f5ce
-> Author:     H. Peter Anvin <hpa@linux.intel.com>
-> AuthorDate: Fri, 4 Feb 2011 16:14:11 -0800
-> Committer:  H. Peter Anvin <hpa@linux.intel.com>
-> CommitDate: Fri, 4 Feb 2011 16:38:35 -0800
-> 
-> x86-32: Make sure the stack is set up before we use it
-> 
-> Since checkin ebba638ae723d8a8fc2f7abce5ec18b688b791d7 we call
-> verify_cpu even in 32-bit mode.  Unfortunately, calling a function
-> means using the stack, and the stack pointer was not initialized in
-> the 32-bit setup code!  This code initializes the stack pointer, and
-> simplifies the interface slightly since it is easier to rely on just a
-> pointer value rather than a descriptor; we need to have different
-> values for the segment register anyway.
-> 
-> This retains start_stack as a virtual address, even though a physical
-> address would be more convenient for 32 bits; the 64-bit code wants
-> the other way around...
-> 
-> Reported-by: Matthieu Castet <castet.matthieu@free.fr>
-> LKML-Reference: <4D41E86D.8060205@free.fr>
-> Cc: Kees Cook <kees.cook@canonical.com>
-> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-> ---
->  arch/x86/include/asm/smp.h   |    5 +----
->  arch/x86/kernel/acpi/sleep.c |    2 +-
->  arch/x86/kernel/head_32.S    |   30 +++++++++++++-----------------
->  arch/x86/kernel/head_64.S    |    1 -
->  arch/x86/kernel/smpboot.c    |    4 ++--
->  5 files changed, 17 insertions(+), 25 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
-> index 4c2f63c..1f46951 100644
-> --- a/arch/x86/include/asm/smp.h
-> +++ b/arch/x86/include/asm/smp.h
-> @@ -40,10 +40,7 @@ DECLARE_EARLY_PER_CPU(u16, x86_cpu_to_apicid);
->  DECLARE_EARLY_PER_CPU(u16, x86_bios_cpu_apicid);
->  
->  /* Static state in head.S used to set up a CPU */
-> -extern struct {
-> -	void *sp;
-> -	unsigned short ss;
-> -} stack_start;
-> +extern unsigned long stack_start; /* Initial stack pointer address */
->  
->  struct smp_ops {
->  	void (*smp_prepare_boot_cpu)(void);
-> diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
-> index 69fd72a..4d9ebba 100644
-> --- a/arch/x86/kernel/acpi/sleep.c
-> +++ b/arch/x86/kernel/acpi/sleep.c
-> @@ -100,7 +100,7 @@ int acpi_save_state_mem(void)
->  #else /* CONFIG_64BIT */
->  	header->trampoline_segment = setup_trampoline() >> 4;
->  #ifdef CONFIG_SMP
-> -	stack_start.sp = temp_stack + sizeof(temp_stack);
-> +	stack_start = (unsigned long)temp_stack + sizeof(temp_stack);
->  	early_gdt_descr.address =
->  			(unsigned long)get_cpu_gdt_table(smp_processor_id());
->  	initial_gs = per_cpu_offset(smp_processor_id());
-> diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-> index fc293dc..767d6c4 100644
-> --- a/arch/x86/kernel/head_32.S
-> +++ b/arch/x86/kernel/head_32.S
-> @@ -85,6 +85,8 @@ RESERVE_BRK(pagetables, INIT_MAP_SIZE)
->   */
->  __HEAD
->  ENTRY(startup_32)
-> +	movl pa(stack_start),%ecx
-> +	
->  	/* test KEEP_SEGMENTS flag to see if the bootloader is asking
->  		us to not reload segments */
->  	testb $(1<<6), BP_loadflags(%esi)
-> @@ -99,7 +101,9 @@ ENTRY(startup_32)
->  	movl %eax,%es
->  	movl %eax,%fs
->  	movl %eax,%gs
-> +	movl %eax,%ss
->  2:
-> +	leal -__PAGE_OFFSET(%ecx),%esp
->  
->  /*
->   * Clear BSS first so that there are no surprises...
-> @@ -145,8 +149,6 @@ ENTRY(startup_32)
->   * _brk_end is set up to point to the first "safe" location.
->   * Mappings are created both at virtual address 0 (identity mapping)
->   * and PAGE_OFFSET for up to _end.
-> - *
-> - * Note that the stack is not yet set up!
->   */
->  #ifdef CONFIG_X86_PAE
->  
-> @@ -282,6 +284,9 @@ ENTRY(startup_32_smp)
->  	movl %eax,%es
->  	movl %eax,%fs
->  	movl %eax,%gs
-> +	movl pa(stack_start),%ecx
-> +	movl %eax,%ss
-> +	leal -__PAGE_OFFSET(%ecx),%esp
->  #endif /* CONFIG_SMP */
->  default_entry:
->  
-> @@ -347,8 +352,8 @@ default_entry:
->  	movl %eax,%cr0		/* ..and set paging (PG) bit */
->  	ljmp $__BOOT_CS,$1f	/* Clear prefetch and normalize %eip */
->  1:
-> -	/* Set up the stack pointer */
-> -	lss stack_start,%esp
-> +	/* Shift the stack pointer to a virtual address */
-> +	addl $__PAGE_OFFSET, %esp
->  
->  /*
->   * Initialize eflags.  Some BIOS's leave bits like NT set.  This would
-> @@ -360,9 +365,7 @@ default_entry:
->  
->  #ifdef CONFIG_SMP
->  	cmpb $0, ready
-> -	jz  1f				/* Initial CPU cleans BSS */
-> -	jmp checkCPUtype
-> -1:
-> +	jnz checkCPUtype
->  #endif /* CONFIG_SMP */
->  
->  /*
-> @@ -470,14 +473,7 @@ is386:	movl $2,%ecx		# set MP
->  
->  	cld			# gcc2 wants the direction flag cleared at all times
->  	pushl $0		# fake return address for unwinder
-> -#ifdef CONFIG_SMP
-> -	movb ready, %cl
->  	movb $1, ready
-> -	cmpb $0,%cl		# the first CPU calls start_kernel
-> -	je   1f
-> -	movl (stack_start), %esp
-> -1:
-> -#endif /* CONFIG_SMP */
->  	jmp *(initial_code)
->  
->  /*
-> @@ -670,15 +666,15 @@ ENTRY(initial_page_table)
->  #endif
->  
->  .data
-> +.balign 4
->  ENTRY(stack_start)
->  	.long init_thread_union+THREAD_SIZE
-> -	.long __BOOT_DS
-> -
-> -ready:	.byte 0
->  
->  early_recursion_flag:
->  	.long 0
->  
-> +ready:	.byte 0
-> +
->  int_msg:
->  	.asciz "Unknown interrupt or fault at: %p %p %p\n"
->  
-> diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-> index 239046b..1ee8493 100644
-> --- a/arch/x86/kernel/head_64.S
-> +++ b/arch/x86/kernel/head_64.S
-> @@ -264,7 +264,6 @@ ENTRY(secondary_startup_64)
->  
->  	ENTRY(stack_start)
->  	.quad  init_thread_union+THREAD_SIZE-8
-> -	.word  0
->  	__FINITDATA
->  
->  bad_address:
-> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> index 0cbe8c0..03273b6 100644
-> --- a/arch/x86/kernel/smpboot.c
-> +++ b/arch/x86/kernel/smpboot.c
-> @@ -638,7 +638,7 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
->  	 * target processor state.
->  	 */
->  	startup_ipi_hook(phys_apicid, (unsigned long) start_secondary,
-> -			 (unsigned long)stack_start.sp);
-> +			 stack_start);
->  
->  	/*
->  	 * Run STARTUP IPI loop.
-> @@ -785,7 +785,7 @@ do_rest:
->  #endif
->  	early_gdt_descr.address = (unsigned long)get_cpu_gdt_table(cpu);
->  	initial_code = (unsigned long)start_secondary;
-> -	stack_start.sp = (void *) c_idle.idle->thread.sp;
-> +	stack_start  = c_idle.idle->thread.sp;
->  
->  	/* start_ip had better be page-aligned! */
->  	start_ip = setup_trampoline();
--- 
-Kees Cook
-Ubuntu Security Team
