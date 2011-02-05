@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267Ab1BEO3n (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 09:29:43 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52225 "EHLO
+	id S1752702Ab1BEOa0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 09:30:26 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57576 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752693Ab1BEOVi (ORCPT
+	with ESMTP id S1752583Ab1BEOVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 09:21:38 -0500
+	Sat, 5 Feb 2011 09:21:31 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=YBb87s81DjCZ1GobtsGn6ohCWnn2uqR3HZP+LWelFJPuXJLWW4E/CGeaaA9vmqNiF6
-         E7BT64+olP/g5o5ibU355MM4kOH2kH3S3g8MdRp8Jq90znlN/8Ld6dI7ewYiFh+qxg9v
-         ZphKmtTBG5yxUG9HN2tCi4ABLLkH1MpFBGMLQ=
+        b=DVCzrsEq7xEY9DllhFQ+c0N7caNX7iU1H4PQDsZjWiIVqsMaFgWKoAt35S5riPu34j
+         lZ60SSL5YUeATTtPvtMVBZAP/1UaQ38bRZecePW0nQoBQ+dMvSnET7WPaVp2E3TEMCzg
+         zAC1L7eYOq2BrwKpahj+ihwvIMl1nv4K3u7eA=
 From: Alexey Dobriyan <adobriyan@gmail.com>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, adobriyan@gmail.com
-Subject: [PATCH 13/52] kstrtox: convert drivers/block/
-Date: Sat,  5 Feb 2011 16:20:16 +0200
-Message-Id: <1296915654-7458-13-git-send-email-adobriyan@gmail.com>
+Subject: [PATCH 10/52] kstrtox: convert drivers/acpi/
+Date: Sat,  5 Feb 2011 16:20:13 +0200
+Message-Id: <1296915654-7458-10-git-send-email-adobriyan@gmail.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1296915654-7458-1-git-send-email-adobriyan@gmail.com>
 References: <1296915654-7458-1-git-send-email-adobriyan@gmail.com>
@@ -29,59 +29,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- drivers/block/osdblk.c |   10 ++--------
- drivers/block/rbd.c    |    8 +-------
- 2 files changed, 3 insertions(+), 15 deletions(-)
+ drivers/acpi/acpi_pad.c    |   27 ++++++++++++++++++---------
+ drivers/acpi/power_meter.c |   16 +++++++---------
+ 2 files changed, 25 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/block/osdblk.c b/drivers/block/osdblk.c
-index 87311eb..9a645ed 100644
---- a/drivers/block/osdblk.c
-+++ b/drivers/block/osdblk.c
-@@ -596,18 +596,12 @@ static ssize_t class_osdblk_remove(struct class *c,
+diff --git a/drivers/acpi/acpi_pad.c b/drivers/acpi/acpi_pad.c
+index 6afceb3..20d1c2d 100644
+--- a/drivers/acpi/acpi_pad.c
++++ b/drivers/acpi/acpi_pad.c
+@@ -284,9 +284,12 @@ static uint32_t acpi_pad_idle_cpus_num(void)
+ static ssize_t acpi_pad_rrtime_store(struct device *dev,
+ 	struct device_attribute *attr, const char *buf, size_t count)
  {
- 	struct osdblk_device *osdev = NULL;
- 	int target_id, rc;
--	unsigned long ul;
- 	struct list_head *tmp;
- 
--	rc = strict_strtoul(buf, 10, &ul);
--	if (rc)
-+	rc = kstrtoint(buf, 10, &target_id);
-+	if (rc < 0)
- 		return rc;
- 
--	/* convert to int; abort if we lost anything in the conversion */
--	target_id = (int) ul;
--	if (target_id != ul)
+-	unsigned long num;
+-	if (strict_strtoul(buf, 0, &num))
 -		return -EINVAL;
--
- 	/* remove object from list immediately */
- 	mutex_lock_nested(&ctl_mutex, SINGLE_DEPTH_NESTING);
- 
-diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-index e1e38b1..ffe969f 100644
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -1866,18 +1866,12 @@ static ssize_t rbd_remove(struct bus_type *bus,
++	unsigned int num;
++	int rv;
++
++	rv = kstrtouint(buf, 0, &num);
++	if (rv < 0)
++		return rv;
+ 	if (num < 1 || num >= 100)
+ 		return -EINVAL;
+ 	mutex_lock(&isolated_cpus_lock);
+@@ -307,9 +310,12 @@ static DEVICE_ATTR(rrtime, S_IRUGO|S_IWUSR,
+ static ssize_t acpi_pad_idlepct_store(struct device *dev,
+ 	struct device_attribute *attr, const char *buf, size_t count)
  {
- 	struct rbd_device *rbd_dev = NULL;
- 	int target_id, rc;
--	unsigned long ul;
- 	int ret = count;
- 
--	rc = strict_strtoul(buf, 10, &ul);
-+	rc = kstrtoint(buf, 10, &target_id);
- 	if (rc)
- 		return rc;
- 
--	/* convert to int; abort if we lost anything in the conversion */
--	target_id = (int) ul;
--	if (target_id != ul)
+-	unsigned long num;
+-	if (strict_strtoul(buf, 0, &num))
 -		return -EINVAL;
--
- 	mutex_lock_nested(&ctl_mutex, SINGLE_DEPTH_NESTING);
++	unsigned int num;
++	int rv;
++
++	rv = kstrtouint(buf, 0, &num);
++	if (rv < 0)
++		return rv;
+ 	if (num < 1 || num >= 100)
+ 		return -EINVAL;
+ 	mutex_lock(&isolated_cpus_lock);
+@@ -330,9 +336,12 @@ static DEVICE_ATTR(idlepct, S_IRUGO|S_IWUSR,
+ static ssize_t acpi_pad_idlecpus_store(struct device *dev,
+ 	struct device_attribute *attr, const char *buf, size_t count)
+ {
+-	unsigned long num;
+-	if (strict_strtoul(buf, 0, &num))
+-		return -EINVAL;
++	unsigned int num;
++	int rv;
++
++	rv = kstrtouint(buf, 0, &num);
++	if (rv < 0)
++		return rv;
+ 	mutex_lock(&isolated_cpus_lock);
+ 	acpi_pad_idle_cpus(num);
+ 	mutex_unlock(&isolated_cpus_lock);
+diff --git a/drivers/acpi/power_meter.c b/drivers/acpi/power_meter.c
+index 66f6729..a468c33 100644
+--- a/drivers/acpi/power_meter.c
++++ b/drivers/acpi/power_meter.c
+@@ -166,12 +166,12 @@ static ssize_t set_avg_interval(struct device *dev,
+ 	union acpi_object arg0 = { ACPI_TYPE_INTEGER };
+ 	struct acpi_object_list args = { 1, &arg0 };
+ 	int res;
+-	unsigned long temp;
++	u64 temp;
+ 	unsigned long long data;
+ 	acpi_status status;
  
- 	rbd_dev = __rbd_get_dev(target_id);
+-	res = strict_strtoul(buf, 10, &temp);
+-	if (res)
++	res = kstrtou64(buf, 10, &temp);
++	if (res < 0)
+ 		return res;
+ 
+ 	if (temp > resource->caps.max_avg_interval ||
+@@ -241,8 +241,8 @@ static ssize_t set_cap(struct device *dev, struct device_attribute *devattr,
+ 	unsigned long long data;
+ 	acpi_status status;
+ 
+-	res = strict_strtoul(buf, 10, &temp);
+-	if (res)
++	res = kstrtoul(buf, 10, &temp);
++	if (res < 0)
+ 		return res;
+ 
+ 	temp /= 1000;
+@@ -311,13 +311,11 @@ static ssize_t set_trip(struct device *dev, struct device_attribute *devattr,
+ 	int res;
+ 	unsigned long temp;
+ 
+-	res = strict_strtoul(buf, 10, &temp);
+-	if (res)
++	res = kstrtoul(buf, 10, &temp);
++	if (res < 0)
+ 		return res;
+ 
+ 	temp /= 1000;
+-	if (temp < 0)
+-		return -EINVAL;
+ 
+ 	mutex_lock(&resource->lock);
+ 	resource->trip[attr->index - 7] = temp;
 -- 
 1.7.3.4
 
