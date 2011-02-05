@@ -1,35 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab1BESUU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 13:20:20 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:36628 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752562Ab1BESUT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 13:20:19 -0500
-Date: Sat, 5 Feb 2011 18:20:15 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: dell-wmi: Received unknown WMI event (0x11)
-Message-ID: <20110205182015.GA29242@srcf.ucam.org>
-References: <20110205171807.GA3738@legolas.emea.dhcp.ti.com> <20110205173259.GA28134@srcf.ucam.org> <20110205174124.GB2619@legolas.emea.dhcp.ti.com> <20110205174417.GA28395@srcf.ucam.org> <20110205180859.GA2830@legolas.emea.dhcp.ti.com> <20110205181141.GA28947@srcf.ucam.org> <20110205181836.GC2830@legolas.emea.dhcp.ti.com>
+	id S1753451Ab1BESUc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 13:20:32 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:46751 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752761Ab1BESUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Feb 2011 13:20:30 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+Subject: Re: [PATCH 8/8] ACPI / PM: Use existing ACPI iomaps for NVS save/restore (v2)
+Date: Sat, 5 Feb 2011 19:20:19 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc3+; KDE/4.4.4; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+References: <201101201226.41021.rjw@sisk.pl> <201101250032.07423.rjw@sisk.pl> <AANLkTi=nAhadVy6y6f4uOy0-pvTQrdwYgQ0y_4ukui2z@mail.gmail.com>
+In-Reply-To: <AANLkTi=nAhadVy6y6f4uOy0-pvTQrdwYgQ0y_4ukui2z@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110205181836.GC2830@legolas.emea.dhcp.ti.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102051920.20195.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> ok, should we add more people to Cc then ?
+On Saturday, February 05, 2011, Jeff Chua wrote:
+> The suspend monster is back! The suspend-to-ram is fine, but upon
+> resume, screen is blank. Haven't bisected in case someone has also
+> done so.
+> 
+> It's very recent. ... between commit
+> 831d52bc153971b70e64eccfbed2b232394f22f8 and
+> 44f2c5c841da1b1e0864d768197ab1497b5c2cc1.
 
-Can you check by blacklisting dell-wmi and verifying that you still 
-can't burn?
+No idea.  I bet on DRI.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Thanks,
+Rafael
