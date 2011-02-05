@@ -1,259 +1,1341 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729Ab1BEObF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 09:31:05 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57576 "EHLO
+	id S1752100Ab1BEOVO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 09:21:14 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52225 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752370Ab1BEOVW (ORCPT
+	with ESMTP id S1751919Ab1BEOVM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 09:21:22 -0500
+	Sat, 5 Feb 2011 09:21:12 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=sbocGrMXP/tNQq0Ow7gItZsxg9HNPZjHmd6GtmSvhmb2R/GgyS8JiQRsqTOl+ux518
-         7sTLIoBYgUVic8x4hvGPGwVzJzBqgPveFhIjS9rT4cTcfxWphycTbs38/q1kSaoIiiYl
-         scrSgSlX0uUEyh47FbAfGQFFJeMtnp3NYx/cU=
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=xOPzQ0X+tM+ckN/vbxg0xvzlnFkjBGUIesq44wZwCNCki4zAulWzx8Cl1EbxyfTVpy
+         MAaH+sQUzx5tm1IWXhliXNWjJ8CJ3xpGb5ornJZ3flepDkGnoUxUfUQtEohCMBFJxC45
+         y1xtziJE9pFtuxzLMWuAkcdH/+Yf9Dq4ctEho=
 From: Alexey Dobriyan <adobriyan@gmail.com>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, adobriyan@gmail.com
-Subject: [PATCH 06/52] kstrtox: convert security/
-Date: Sat,  5 Feb 2011 16:20:09 +0200
-Message-Id: <1296915654-7458-6-git-send-email-adobriyan@gmail.com>
+Subject: [PATCH 01/52] kstrtox: converting strings to integers done (hopefully) right
+Date: Sat,  5 Feb 2011 16:20:04 +0200
+Message-Id: <1296915654-7458-1-git-send-email-adobriyan@gmail.com>
 X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1296915654-7458-1-git-send-email-adobriyan@gmail.com>
-References: <1296915654-7458-1-git-send-email-adobriyan@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+1. simple_strto*() do not contain overflow checks and crufty,
+   libc way to indicate failure.
+2. strict_strto*() also do not have overflow checks but the name and
+   comments pretend they do.
+3. Both families have only "long long" and "long" variants,
+   but users want strtou8()
+4. Both "simple" and "strict" prefixes are wrong:
+   Simple doesn't exactly say what's so simple, strict should not exist
+   because conversion should be strict by default.
+
+The solution is to use "k" prefix and add convertors for more types.
+Enter
+	kstrtoull()
+	kstrtoll()
+	kstrtoul()
+	kstrtol()
+	kstrtouint()
+	kstrtoint()
+	kstrtou64()
+	kstrtos64()
+	kstrtou32()
+	kstrtos32()
+	kstrtou16()
+	kstrtos16()
+	kstrtou8()
+	kstrtos8()
+
+Include runtime testsuite (somewhat incomplete) as well.
+
+strict_strto*() become deprecated, stubbed to kstrto*() and
+eventually will be removed altogether.
+
+Use kstrto*() in code today!
+
+Note: sizeof and __alignof__ trick is done to save function call
+      where types aren't distinguishable.
 
 Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- security/apparmor/lsm.c             |    2 +-
- security/integrity/ima/ima_audit.c  |    2 +-
- security/integrity/ima/ima_policy.c |   15 ++++-----------
- security/keys/encrypted.c           |    8 +++++---
- security/keys/trusted.c             |   23 +++++++++++------------
- security/selinux/hooks.c            |    4 ++--
- security/selinux/selinuxfs.c        |    2 +-
- security/tomoyo/common.c            |    8 +++++---
- 8 files changed, 30 insertions(+), 34 deletions(-)
+ drivers/video/via/viafbdev.h |    3 -
+ include/linux/kernel.h       |   62 ++++-
+ lib/Kconfig.debug            |    3 +
+ lib/Makefile                 |    2 +
+ lib/kstrtox.c                |  227 +++++++++++++
+ lib/test-kstrtox.c           |  739 ++++++++++++++++++++++++++++++++++++++++++
+ lib/vsprintf.c               |  141 --------
+ scripts/checkpatch.pl        |    4 +-
+ 8 files changed, 1031 insertions(+), 150 deletions(-)
+ create mode 100644 lib/kstrtox.c
+ create mode 100644 lib/test-kstrtox.c
 
-diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
-index b7106f1..990ff86 100644
---- a/security/apparmor/lsm.c
-+++ b/security/apparmor/lsm.c
-@@ -754,7 +754,7 @@ module_param_named(enabled, apparmor_enabled, aabool, S_IRUSR);
- static int __init apparmor_enabled_setup(char *str)
- {
- 	unsigned long enabled;
--	int error = strict_strtoul(str, 0, &enabled);
-+	int error = kstrtoul(str, 0, &enabled);
- 	if (!error)
- 		apparmor_enabled = enabled ? 1 : 0;
- 	return 1;
-diff --git a/security/integrity/ima/ima_audit.c b/security/integrity/ima/ima_audit.c
-index c5c5a72..b4a203c 100644
---- a/security/integrity/ima/ima_audit.c
-+++ b/security/integrity/ima/ima_audit.c
-@@ -24,7 +24,7 @@ static int __init ima_audit_setup(char *str)
- {
- 	unsigned long audit;
+diff --git a/drivers/video/via/viafbdev.h b/drivers/video/via/viafbdev.h
+index d66f963..137996d 100644
+--- a/drivers/video/via/viafbdev.h
++++ b/drivers/video/via/viafbdev.h
+@@ -94,9 +94,6 @@ extern int viafb_LCD_ON;
+ extern int viafb_DVI_ON;
+ extern int viafb_hotplug;
  
--	if (!strict_strtoul(str, 0, &audit))
-+	if (!kstrtoul(str, 0, &audit))
- 		ima_audit = audit ? 1 : 0;
- 	return 1;
- }
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index d661afb..3d5c491 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -278,7 +278,6 @@ static int ima_parse_rule(char *rule, struct ima_measure_rule_entry *entry)
- 	while ((p = strsep(&rule, " \t")) != NULL) {
- 		substring_t args[MAX_OPT_ARGS];
- 		int token;
--		unsigned long lnum;
- 
- 		if (result < 0)
- 			break;
-@@ -349,8 +348,7 @@ static int ima_parse_rule(char *rule, struct ima_measure_rule_entry *entry)
- 				break;
- 			}
- 
--			result = strict_strtoul(args[0].from, 16,
--						&entry->fsmagic);
-+			result = kstrtoul(args[0].from, 16, &entry->fsmagic);
- 			if (!result)
- 				entry->flags |= IMA_FSMAGIC;
- 			break;
-@@ -362,14 +360,9 @@ static int ima_parse_rule(char *rule, struct ima_measure_rule_entry *entry)
- 				break;
- 			}
- 
--			result = strict_strtoul(args[0].from, 10, &lnum);
--			if (!result) {
--				entry->uid = (uid_t) lnum;
--				if (entry->uid != lnum)
--					result = -EINVAL;
--				else
--					entry->flags |= IMA_UID;
--			}
-+			result = kstrtou32(args[0].from, 10, &entry->uid);
-+			if (!result)
-+				entry->flags |= IMA_UID;
- 			break;
- 		case Opt_obj_user:
- 			ima_log_string(ab, "obj_user", args[0].from);
-diff --git a/security/keys/encrypted.c b/security/keys/encrypted.c
-index 9e7e4ce..859e1e8 100644
---- a/security/keys/encrypted.c
-+++ b/security/keys/encrypted.c
-@@ -521,11 +521,13 @@ static struct encrypted_key_payload *encrypted_key_alloc(struct key *key,
- 	unsigned short datablob_len;
- 	unsigned short decrypted_datalen;
- 	unsigned int encrypted_datalen;
--	long dlen;
-+	unsigned int dlen;
- 	int ret;
- 
--	ret = strict_strtol(datalen, 10, &dlen);
--	if (ret < 0 || dlen < MIN_DATA_SIZE || dlen > MAX_DATA_SIZE)
-+	ret = kstrtouint(datalen, 10, &dlen);
-+	if (ret < 0)
-+		return ERR_PTR(ret);
-+	if (dlen < MIN_DATA_SIZE || dlen > MAX_DATA_SIZE)
- 		return ERR_PTR(-EINVAL);
- 
- 	decrypted_datalen = dlen;
-diff --git a/security/keys/trusted.c b/security/keys/trusted.c
-index 83fc92e..ac59eb9 100644
---- a/security/keys/trusted.c
-+++ b/security/keys/trusted.c
-@@ -766,8 +766,6 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
- 	char *p = c;
- 	int token;
- 	int res;
--	unsigned long handle;
--	unsigned long lock;
- 
- 	while ((p = strsep(&c, " \t"))) {
- 		if (*p == '\0' || *p == ' ' || *p == '\t')
-@@ -782,11 +780,10 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
- 			hex2bin(opt->pcrinfo, args[0].from, opt->pcrinfo_len);
- 			break;
- 		case Opt_keyhandle:
--			res = strict_strtoul(args[0].from, 16, &handle);
--			if (res < 0)
--				return -EINVAL;
- 			opt->keytype = SEAL_keytype;
--			opt->keyhandle = handle;
-+			res = kstrtou32(args[0].from, 16, &opt->keyhandle);
-+			if (res < 0)
-+				return res;
- 			break;
- 		case Opt_keyauth:
- 			if (strlen(args[0].from) != 2 * SHA1_DIGEST_SIZE)
-@@ -805,10 +802,9 @@ static int getoptions(char *c, struct trusted_key_payload *pay,
- 				return -EINVAL;
- 			break;
- 		case Opt_pcrlock:
--			res = strict_strtoul(args[0].from, 10, &lock);
-+			res = kstrtoint(args[0].from, 10, &opt->pcrlock);
- 			if (res < 0)
--				return -EINVAL;
--			opt->pcrlock = lock;
-+				return res;
- 			break;
- 		default:
- 			return -EINVAL;
-@@ -827,7 +823,6 @@ static int datablob_parse(char *datablob, struct trusted_key_payload *p,
- 			  struct trusted_key_options *o)
- {
- 	substring_t args[MAX_OPT_ARGS];
--	long keylen;
- 	int ret = -EINVAL;
- 	int key_cmd;
- 	char *c;
-@@ -838,13 +833,17 @@ static int datablob_parse(char *datablob, struct trusted_key_payload *p,
- 		return -EINVAL;
- 	key_cmd = match_token(c, key_tokens, args);
- 	switch (key_cmd) {
-+		unsigned int keylen;
+-extern int strict_strtoul(const char *cp, unsigned int base,
+-	unsigned long *res);
+-
+ u8 viafb_gpio_i2c_read_lvds(struct lvds_setting_information
+ 	*plvds_setting_info, struct lvds_chip_information
+ 	*plvds_chip_info, u8 index);
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 2fe6e84..f689494 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -187,14 +187,68 @@ NORET_TYPE void do_exit(long error_code)
+ 	ATTRIB_NORET;
+ NORET_TYPE void complete_and_exit(struct completion *, long)
+ 	ATTRIB_NORET;
 +
- 	case Opt_new:
- 		/* first argument is key size */
- 		c = strsep(&datablob, " \t");
- 		if (!c)
- 			return -EINVAL;
--		ret = strict_strtol(c, 10, &keylen);
--		if (ret < 0 || keylen < MIN_KEY_SIZE || keylen > MAX_KEY_SIZE)
-+		ret = kstrtouint(c, 10, &keylen);
-+		if (ret < 0)
-+			return ret;
-+		if (keylen < MIN_KEY_SIZE || keylen > MAX_KEY_SIZE)
- 			return -EINVAL;
- 		p->key_len = keylen;
- 		ret = getoptions(datablob, p, o);
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index e276eb4..521b2b9 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -101,7 +101,7 @@ int selinux_enforcing;
- static int __init enforcing_setup(char *str)
- {
- 	unsigned long enforcing;
--	if (!strict_strtoul(str, 0, &enforcing))
-+	if (!kstrtoul(str, 0, &enforcing))
- 		selinux_enforcing = enforcing ? 1 : 0;
- 	return 1;
- }
-@@ -114,7 +114,7 @@ int selinux_enabled = CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE;
- static int __init selinux_enabled_setup(char *str)
- {
- 	unsigned long enabled;
--	if (!strict_strtoul(str, 0, &enabled))
-+	if (!kstrtoul(str, 0, &enabled))
- 		selinux_enabled = enabled ? 1 : 0;
- 	return 1;
- }
-diff --git a/security/selinux/selinuxfs.c b/security/selinux/selinuxfs.c
-index ea39cb7..31c63f5 100644
---- a/security/selinux/selinuxfs.c
-+++ b/security/selinux/selinuxfs.c
-@@ -50,7 +50,7 @@ unsigned int selinux_checkreqprot = CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE;
- static int __init checkreqprot_setup(char *str)
- {
- 	unsigned long checkreqprot;
--	if (!strict_strtoul(str, 0, &checkreqprot))
-+	if (!kstrtoul(str, 0, &checkreqprot))
- 		selinux_checkreqprot = checkreqprot ? 1 : 0;
- 	return 1;
- }
-diff --git a/security/tomoyo/common.c b/security/tomoyo/common.c
-index 7556315..1096c81 100644
---- a/security/tomoyo/common.c
-+++ b/security/tomoyo/common.c
-@@ -1091,14 +1091,16 @@ static int tomoyo_write_domain_profile(struct tomoyo_io_buffer *head)
- 	char *data = head->write_buf;
- 	char *cp = strchr(data, ' ');
- 	struct tomoyo_domain_info *domain;
--	unsigned long profile;
-+	unsigned int profile;
-+	int rv;
++/* Internal, do not use. */
++int __must_check _kstrtoul(const char *s, unsigned int base, unsigned long *res);
++int __must_check _kstrtol(const char *s, unsigned int base, long *res);
++
++int __must_check kstrtoull(const char *s, unsigned int base, unsigned long long *res);
++int __must_check kstrtoll(const char *s, unsigned int base, long long *res);
++static inline int __must_check kstrtoul(const char *s, unsigned int base, unsigned long *res)
++{
++	if (sizeof(unsigned long) == sizeof(unsigned long long) &&
++	    __alignof__(unsigned long) == __alignof__(unsigned long long))
++		return kstrtoull(s, base, (unsigned long long *)res);
++	else
++		return _kstrtoul(s, base, res);
++}
++
++static inline int __must_check kstrtol(const char *s, unsigned int base, long *res)
++{
++	if (sizeof(long) == sizeof(long long) &&
++	    __alignof__(long) == __alignof__(long long))
++		return kstrtoll(s, base, (long long *)res);
++	else
++		return _kstrtol(s, base, res);
++}
++
++int __must_check kstrtouint(const char *s, unsigned int base, unsigned int *res);
++int __must_check kstrtoint(const char *s, unsigned int base, int *res);
++
++static inline int __must_check kstrtou64(const char *s, unsigned int base, u64 *res)
++{
++	return kstrtoull(s, base, res);
++}
++
++static inline int __must_check kstrtos64(const char *s, unsigned int base, s64 *res)
++{
++	return kstrtoll(s, base, res);
++}
++
++static inline int __must_check kstrtou32(const char *s, unsigned int base, u32 *res)
++{
++	return kstrtouint(s, base, res);
++}
++
++static inline int __must_check kstrtos32(const char *s, unsigned int base, s32 *res)
++{
++	return kstrtoint(s, base, res);
++}
++
++int __must_check kstrtou16(const char *s, unsigned int base, u16 *res);
++int __must_check kstrtos16(const char *s, unsigned int base, s16 *res);
++int __must_check kstrtou8(const char *s, unsigned int base, u8 *res);
++int __must_check kstrtos8(const char *s, unsigned int base, s8 *res);
++
+ extern unsigned long simple_strtoul(const char *,char **,unsigned int);
+ extern long simple_strtol(const char *,char **,unsigned int);
+ extern unsigned long long simple_strtoull(const char *,char **,unsigned int);
+ extern long long simple_strtoll(const char *,char **,unsigned int);
+-extern int __must_check strict_strtoul(const char *, unsigned int, unsigned long *);
+-extern int __must_check strict_strtol(const char *, unsigned int, long *);
+-extern int __must_check strict_strtoull(const char *, unsigned int, unsigned long long *);
+-extern int __must_check strict_strtoll(const char *, unsigned int, long long *);
++#define strict_strtoul	kstrtoul
++#define strict_strtol	kstrtol
++#define strict_strtoull	kstrtoull
++#define strict_strtoll	kstrtoll
++
+ extern int sprintf(char * buf, const char * fmt, ...)
+ 	__attribute__ ((format (printf, 2, 3)));
+ extern int vsprintf(char *buf, const char *, va_list)
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 3967c23..6e35aeb 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -1236,3 +1236,6 @@ source "samples/Kconfig"
+ source "lib/Kconfig.kgdb"
  
- 	if (!cp)
- 		return -EINVAL;
- 	*cp = '\0';
- 	domain = tomoyo_find_domain(cp + 1);
--	if (strict_strtoul(data, 10, &profile))
--		return -EINVAL;
-+	rv = kstrtouint(data, 10, &profile);
+ source "lib/Kconfig.kmemcheck"
++
++config TEST_KSTRTOX
++	tristate "Test kstrto*() family of functions at runtime"
+diff --git a/lib/Makefile b/lib/Makefile
+index cbb774f..dfbf7d8 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -22,6 +22,8 @@ lib-y	+= kobject.o kref.o klist.o
+ obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
+ 	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
+ 	 string_helpers.o gcd.o lcm.o list_sort.o uuid.o flex_array.o
++obj-y += kstrtox.o
++obj-$(CONFIG_TEST_KSTRTOX) += test-kstrtox.o
+ 
+ ifeq ($(CONFIG_DEBUG_KOBJECT),y)
+ CFLAGS_kobject.o += -DDEBUG
+diff --git a/lib/kstrtox.c b/lib/kstrtox.c
+new file mode 100644
+index 0000000..d8af7f6
+--- /dev/null
++++ b/lib/kstrtox.c
+@@ -0,0 +1,227 @@
++/*
++ * Convert integer string representation to an integer.
++ * If an integer doesn't fit into specified type, -E is returned.
++ *
++ * Integer starts with optional sign.
++ * kstrtou*() functions do not accept sign "-".
++ *
++ * Radix 0 means autodetection: leading "0x" implies radix 16,
++ * leading "0" implies radix 8, otherwise radix is 10.
++ * Autodetection hints work after optional sign, but not before.
++ *
++ * If -E is returned, result is not touched.
++ */
++#include <linux/ctype.h>
++#include <linux/errno.h>
++#include <linux/kernel.h>
++#include <linux/math64.h>
++#include <linux/module.h>
++#include <linux/types.h>
++
++static inline char _tolower(const char c)
++{
++	return c | 0x20;
++}
++
++static int _kstrtoull(const char *s, unsigned int base, unsigned long long *res)
++{
++	unsigned long long acc;
++	int ok;
++
++	if (base == 0) {
++		if (s[0] == '0') {
++			if (_tolower(s[1]) == 'x' && isxdigit(s[2]))
++				base = 16;
++			else
++				base = 8;
++		} else
++			base = 10;
++	}
++	if (base == 16 && s[0] == '0' && _tolower(s[1]) == 'x')
++		s += 2;
++
++	acc = 0;
++	ok = 0;
++	while (*s) {
++		unsigned int val;
++
++		if ('0' <= *s && *s <= '9')
++			val = *s - '0';
++		else if ('a' <= _tolower(*s) && _tolower(*s) <= 'f')
++			val = _tolower(*s) - 'a' + 10;
++		else if (*s == '\n') {
++			if (*(s + 1) == '\0')
++				break;
++			else
++				return -EINVAL;
++		} else
++			return -EINVAL;
++
++		if (val >= base)
++			return -EINVAL;
++		if (acc > div_u64(ULLONG_MAX - val, base))
++			return -EINVAL;
++		acc = acc * base + val;
++		ok = 1;
++
++		s++;
++	}
++	if (!ok)
++		return -EINVAL;
++	*res = acc;
++	return 0;
++}
++
++int kstrtoull(const char *s, unsigned int base, unsigned long long *res)
++{
++	if (s[0] == '+')
++		s++;
++	return _kstrtoull(s, base, res);
++}
++EXPORT_SYMBOL(kstrtoull);
++
++int kstrtoll(const char *s, unsigned int base, long long *res)
++{
++	unsigned long long tmp;
++	int rv;
++
++	if (s[0] == '-') {
++		rv = _kstrtoull(s + 1, base, &tmp);
++		if (rv < 0)
++			return rv;
++		if ((long long)(-tmp) >= 0)
++			return -EINVAL;
++		*res = -tmp;
++	} else {
++		rv = kstrtoull(s, base, &tmp);
++		if (rv < 0)
++			return rv;
++		if ((long long)tmp < 0)
++			return -EINVAL;
++		*res = tmp;
++	}
++	return 0;
++}
++EXPORT_SYMBOL(kstrtoll);
++
++/* Internal, do not use. */
++int _kstrtoul(const char *s, unsigned int base, unsigned long *res)
++{
++	unsigned long long tmp;
++	int rv;
++
++	rv = kstrtoull(s, base, &tmp);
 +	if (rv < 0)
 +		return rv;
- 	if (domain && profile < TOMOYO_MAX_PROFILES
- 	    && (tomoyo_profile_ptr[profile] || !tomoyo_policy_loaded))
- 		domain->profile = (u8) profile;
++	if (tmp != (unsigned long long)(unsigned long)tmp)
++		return -EINVAL;
++	*res = tmp;
++	return 0;
++}
++EXPORT_SYMBOL(_kstrtoul);
++
++/* Internal, do not use. */
++int _kstrtol(const char *s, unsigned int base, long *res)
++{
++	long long tmp;
++	int rv;
++
++	rv = kstrtoll(s, base, &tmp);
++	if (rv < 0)
++		return rv;
++	if (tmp != (long long)(long)tmp)
++		return -EINVAL;
++	*res = tmp;
++	return 0;
++}
++EXPORT_SYMBOL(_kstrtol);
++
++int kstrtouint(const char *s, unsigned int base, unsigned int *res)
++{
++	unsigned long long tmp;
++	int rv;
++
++	rv = kstrtoull(s, base, &tmp);
++	if (rv < 0)
++		return rv;
++	if (tmp != (unsigned long long)(unsigned int)tmp)
++		return -EINVAL;
++	*res = tmp;
++	return 0;
++}
++EXPORT_SYMBOL(kstrtouint);
++
++int kstrtoint(const char *s, unsigned int base, int *res)
++{
++	long long tmp;
++	int rv;
++
++	rv = kstrtoll(s, base, &tmp);
++	if (rv < 0)
++		return rv;
++	if (tmp != (long long)(int)tmp)
++		return -EINVAL;
++	*res = tmp;
++	return 0;
++}
++EXPORT_SYMBOL(kstrtoint);
++
++int kstrtou16(const char *s, unsigned int base, u16 *res)
++{
++	unsigned long long tmp;
++	int rv;
++
++	rv = kstrtoull(s, base, &tmp);
++	if (rv < 0)
++		return rv;
++	if (tmp != (unsigned long long)(u16)tmp)
++		return -EINVAL;
++	*res = tmp;
++	return 0;
++}
++EXPORT_SYMBOL(kstrtou16);
++
++int kstrtos16(const char *s, unsigned int base, s16 *res)
++{
++	long long tmp;
++	int rv;
++
++	rv = kstrtoll(s, base, &tmp);
++	if (rv < 0)
++		return rv;
++	if (tmp != (long long)(s16)tmp)
++		return -EINVAL;
++	*res = tmp;
++	return 0;
++}
++EXPORT_SYMBOL(kstrtos16);
++
++int kstrtou8(const char *s, unsigned int base, u8 *res)
++{
++	unsigned long long tmp;
++	int rv;
++
++	rv = kstrtoull(s, base, &tmp);
++	if (rv < 0)
++		return rv;
++	if (tmp != (unsigned long long)(u8)tmp)
++		return -EINVAL;
++	*res = tmp;
++	return 0;
++}
++EXPORT_SYMBOL(kstrtou8);
++
++int kstrtos8(const char *s, unsigned int base, s8 *res)
++{
++	long long tmp;
++	int rv;
++
++	rv = kstrtoll(s, base, &tmp);
++	if (rv < 0)
++		return rv;
++	if (tmp != (long long)(s8)tmp)
++		return -EINVAL;
++	*res = tmp;
++	return 0;
++}
++EXPORT_SYMBOL(kstrtos8);
+diff --git a/lib/test-kstrtox.c b/lib/test-kstrtox.c
+new file mode 100644
+index 0000000..325c2f9
+--- /dev/null
++++ b/lib/test-kstrtox.c
+@@ -0,0 +1,739 @@
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++
++#define for_each_test(i, test)	\
++	for (i = 0; i < sizeof(test) / sizeof(test[0]); i++)
++
++struct test_fail {
++	const char *str;
++	unsigned int base;
++};
++
++#define DEFINE_TEST_FAIL(test)	\
++	const struct test_fail test[] __initdata
++
++#define DECLARE_TEST_OK(type, test_type)	\
++	test_type {				\
++		const char *str;		\
++		unsigned int base;		\
++		type expected_res;		\
++	}
++
++#define DEFINE_TEST_OK(type, test)	\
++	const type test[] __initdata
++
++#define TEST_FAIL(fn, type, fmt, test)					\
++{									\
++	unsigned int i;							\
++									\
++	for_each_test(i, test) {					\
++		const struct test_fail *t = &test[i];			\
++		type tmp;						\
++		int rv;							\
++									\
++		tmp = 0;						\
++		rv = fn(t->str, t->base, &tmp);				\
++		if (rv >= 0) {						\
++			WARN(1, "str '%s', base %u, expected -E, got %d/" fmt "\n",	\
++				t->str, t->base, rv, tmp);		\
++			continue;					\
++		}							\
++	}								\
++}
++
++#define TEST_OK(fn, type, fmt, test)					\
++{									\
++	unsigned int i;							\
++									\
++	for_each_test(i, test) {					\
++		const typeof(test[0]) *t = &test[i];			\
++		type res;						\
++		int rv;							\
++									\
++		rv = fn(t->str, t->base, &res);				\
++		if (rv != 0) {						\
++			WARN(1, "str '%s', base %u, expected 0/" fmt ", got %d\n",	\
++				t->str, t->base, t->expected_res, rv);	\
++			continue;					\
++		}							\
++		if (res != t->expected_res) {				\
++			WARN(1, "str '%s', base %u, expected " fmt ", got " fmt "\n",	\
++				t->str, t->base, t->expected_res, res);	\
++			continue;					\
++		}							\
++	}								\
++}
++
++static void __init test_kstrtoull_ok(void)
++{
++	DECLARE_TEST_OK(unsigned long long, struct test_ull);
++	static DEFINE_TEST_OK(struct test_ull, test_ull_ok) = {
++		{"0",	10,	0ULL},
++		{"1",	10,	1ULL},
++		{"127",	10,	127ULL},
++		{"128",	10,	128ULL},
++		{"129",	10,	129ULL},
++		{"255",	10,	255ULL},
++		{"256",	10,	256ULL},
++		{"257",	10,	257ULL},
++		{"32767",	10,	32767ULL},
++		{"32768",	10,	32768ULL},
++		{"32769",	10,	32769ULL},
++		{"65535",	10,	65535ULL},
++		{"65536",	10,	65536ULL},
++		{"65537",	10,	65537ULL},
++		{"2147483647",	10,	2147483647ULL},
++		{"2147483648",	10,	2147483648ULL},
++		{"2147483649",	10,	2147483649ULL},
++		{"4294967295",	10,	4294967295ULL},
++		{"4294967296",	10,	4294967296ULL},
++		{"4294967297",	10,	4294967297ULL},
++		{"9223372036854775807",	10,	9223372036854775807ULL},
++		{"9223372036854775808",	10,	9223372036854775808ULL},
++		{"9223372036854775809",	10,	9223372036854775809ULL},
++		{"18446744073709551614",	10,	18446744073709551614ULL},
++		{"18446744073709551615",	10,	18446744073709551615ULL},
++
++		{"00",		8,	00ULL},
++		{"01",		8,	01ULL},
++		{"0177",	8,	0177ULL},
++		{"0200",	8,	0200ULL},
++		{"0201",	8,	0201ULL},
++		{"0377",	8,	0377ULL},
++		{"0400",	8,	0400ULL},
++		{"0401",	8,	0401ULL},
++		{"077777",	8,	077777ULL},
++		{"0100000",	8,	0100000ULL},
++		{"0100001",	8,	0100001ULL},
++		{"0177777",	8,	0177777ULL},
++		{"0200000",	8,	0200000ULL},
++		{"0200001",	8,	0200001ULL},
++		{"017777777777",	8,	017777777777ULL},
++		{"020000000000",	8,	020000000000ULL},
++		{"020000000001",	8,	020000000001ULL},
++		{"037777777777",	8,	037777777777ULL},
++		{"040000000000",	8,	040000000000ULL},
++		{"040000000001",	8,	040000000001ULL},
++		{"0777777777777777777777",	8,	0777777777777777777777ULL},
++		{"01000000000000000000000",	8,	01000000000000000000000ULL},
++		{"01000000000000000000001",	8,	01000000000000000000001ULL},
++		{"01777777777777777777776",	8,	01777777777777777777776ULL},
++		{"01777777777777777777777",	8,	01777777777777777777777ULL},
++
++		{"0x0",		16,	0x0ULL},
++		{"0x1",		16,	0x1ULL},
++		{"0x7f",	16,	0x7fULL},
++		{"0x80",	16,	0x80ULL},
++		{"0x81",	16,	0x81ULL},
++		{"0xff",	16,	0xffULL},
++		{"0x100",	16,	0x100ULL},
++		{"0x101",	16,	0x101ULL},
++		{"0x7fff",	16,	0x7fffULL},
++		{"0x8000",	16,	0x8000ULL},
++		{"0x8001",	16,	0x8001ULL},
++		{"0xffff",	16,	0xffffULL},
++		{"0x10000",	16,	0x10000ULL},
++		{"0x10001",	16,	0x10001ULL},
++		{"0x7fffffff",	16,	0x7fffffffULL},
++		{"0x80000000",	16,	0x80000000ULL},
++		{"0x80000001",	16,	0x80000001ULL},
++		{"0xffffffff",	16,	0xffffffffULL},
++		{"0x100000000",	16,	0x100000000ULL},
++		{"0x100000001",	16,	0x100000001ULL},
++		{"0x7fffffffffffffff",	16,	0x7fffffffffffffffULL},
++		{"0x8000000000000000",	16,	0x8000000000000000ULL},
++		{"0x8000000000000001",	16,	0x8000000000000001ULL},
++		{"0xfffffffffffffffe",	16,	0xfffffffffffffffeULL},
++		{"0xffffffffffffffff",	16,	0xffffffffffffffffULL},
++
++		{"0\n",	0,	0ULL},
++	};
++	TEST_OK(kstrtoull, unsigned long long, "%llu", test_ull_ok);
++}
++
++static void __init test_kstrtoull_fail(void)
++{
++	static DEFINE_TEST_FAIL(test_ull_fail) = {
++		{"",	0},
++		{"",	8},
++		{"",	10},
++		{"",	16},
++		{"\n",	0},
++		{"\n",	8},
++		{"\n",	10},
++		{"\n",	16},
++		{"\n0",	0},
++		{"\n0",	8},
++		{"\n0",	10},
++		{"\n0",	16},
++		{"+",	0},
++		{"+",	8},
++		{"+",	10},
++		{"+",	16},
++		{"-",	0},
++		{"-",	8},
++		{"-",	10},
++		{"-",	16},
++		{"0x",	0},
++		{"0x",	16},
++		{"0X",	0},
++		{"0X",	16},
++		{"0 ",	0},
++		{"1+",	0},
++		{"1-",	0},
++		{" 2",	0},
++		/* base autodetection */
++		{"0x0z",	0},
++		{"0z",		0},
++		{"a",		0},
++		/* digit >= base */
++		{"2",	2},
++		{"8",	8},
++		{"a",	10},
++		{"A",	10},
++		{"g",	16},
++		{"G",	16},
++		/* overflow */
++		{"10000000000000000000000000000000000000000000000000000000000000000",	2},
++		{"2000000000000000000000",	8},
++		{"18446744073709551616",	10},
++		{"10000000000000000",	16},
++		/* negative */
++		{"-0", 0},
++		{"-0", 8},
++		{"-0", 10},
++		{"-0", 16},
++		{"-1", 0},
++		{"-1", 8},
++		{"-1", 10},
++		{"-1", 16},
++		/* sign is first character if any */
++		{"-+1", 0},
++		{"-+1", 8},
++		{"-+1", 10},
++		{"-+1", 16},
++		/* nothing after \n */
++		{"0\n0", 0},
++		{"0\n0", 8},
++		{"0\n0", 10},
++		{"0\n0", 16},
++		{"0\n+", 0},
++		{"0\n+", 8},
++		{"0\n+", 10},
++		{"0\n+", 16},
++		{"0\n-", 0},
++		{"0\n-", 8},
++		{"0\n-", 10},
++		{"0\n-", 16},
++		{"0\n ", 0},
++		{"0\n ", 8},
++		{"0\n ", 10},
++		{"0\n ", 16},
++	};
++	TEST_FAIL(kstrtoull, unsigned long long, "%llu", test_ull_fail);
++}
++
++static void __init test_kstrtoll_ok(void)
++{
++	DECLARE_TEST_OK(long long, struct test_ll);
++	static DEFINE_TEST_OK(struct test_ll, test_ll_ok) = {
++		{"0",	10,	0LL},
++		{"1",	10,	1LL},
++		{"127",	10,	127LL},
++		{"128",	10,	128LL},
++		{"129",	10,	129LL},
++		{"255",	10,	255LL},
++		{"256",	10,	256LL},
++		{"257",	10,	257LL},
++		{"32767",	10,	32767LL},
++		{"32768",	10,	32768LL},
++		{"32769",	10,	32769LL},
++		{"65535",	10,	65535LL},
++		{"65536",	10,	65536LL},
++		{"65537",	10,	65537LL},
++		{"2147483647",	10,	2147483647LL},
++		{"2147483648",	10,	2147483648LL},
++		{"2147483649",	10,	2147483649LL},
++		{"4294967295",	10,	4294967295LL},
++		{"4294967296",	10,	4294967296LL},
++		{"4294967297",	10,	4294967297LL},
++		{"9223372036854775807",	10,	9223372036854775807LL},
++
++		{"-1",	10,	-1LL},
++		{"-2",	10,	-2LL},
++		{"-9223372036854775808",	10,	LLONG_MIN},
++	};
++	TEST_OK(kstrtoll, long long, "%lld", test_ll_ok);
++}
++
++static void __init test_kstrtoll_fail(void)
++{
++	static DEFINE_TEST_FAIL(test_ll_fail) = {
++		{"9223372036854775808",	10},
++		{"9223372036854775809",	10},
++		{"18446744073709551614",	10},
++		{"18446744073709551615",	10},
++		{"-9223372036854775809",	10},
++		{"-18446744073709551614",	10},
++		{"-18446744073709551615",	10},
++		/* negative zero isn't an integer in Linux */
++		{"-0",	0},
++		{"-0",	8},
++		{"-0",	10},
++		{"-0",	16},
++		/* sign is first character if any */
++		{"-+1", 0},
++		{"-+1", 8},
++		{"-+1", 10},
++		{"-+1", 16},
++	};
++	TEST_FAIL(kstrtoll, long long, "%lld", test_ll_fail);
++}
++
++static void __init test_kstrtou64_ok(void)
++{
++	DECLARE_TEST_OK(u64, struct test_u64);
++	static DEFINE_TEST_OK(struct test_u64, test_u64_ok) = {
++		{"0",	10,	0},
++		{"1",	10,	1},
++		{"126",	10,	126},
++		{"127",	10,	127},
++		{"128",	10,	128},
++		{"129",	10,	129},
++		{"254",	10,	254},
++		{"255",	10,	255},
++		{"256",	10,	256},
++		{"257",	10,	257},
++		{"32766",	10,	32766},
++		{"32767",	10,	32767},
++		{"32768",	10,	32768},
++		{"32769",	10,	32769},
++		{"65534",	10,	65534},
++		{"65535",	10,	65535},
++		{"65536",	10,	65536},
++		{"65537",	10,	65537},
++		{"2147483646",	10,	2147483646},
++		{"2147483647",	10,	2147483647},
++		{"2147483648",	10,	2147483648},
++		{"2147483649",	10,	2147483649},
++		{"4294967294",	10,	4294967294},
++		{"4294967295",	10,	4294967295},
++		{"4294967296",	10,	4294967296},
++		{"4294967297",	10,	4294967297},
++		{"9223372036854775806",	10,	9223372036854775806ULL},
++		{"9223372036854775807",	10,	9223372036854775807ULL},
++		{"9223372036854775808",	10,	9223372036854775808ULL},
++		{"9223372036854775809",	10,	9223372036854775809ULL},
++		{"18446744073709551614",	10,	18446744073709551614ULL},
++		{"18446744073709551615",	10,	18446744073709551615ULL},
++	};
++	TEST_OK(kstrtou64, u64, "%llu", test_u64_ok);
++}
++
++static void __init test_kstrtou64_fail(void)
++{
++	static DEFINE_TEST_FAIL(test_u64_fail) = {
++		{"-2",	10},
++		{"-1",	10},
++		{"18446744073709551616",	10},
++		{"18446744073709551617",	10},
++	};
++	TEST_FAIL(kstrtou64, u64, "%llu", test_u64_fail);
++}
++
++static void __init test_kstrtos64_ok(void)
++{
++	DECLARE_TEST_OK(s64, struct test_s64);
++	static DEFINE_TEST_OK(struct test_s64, test_s64_ok) = {
++		{"-128",	10,	-128},
++		{"-127",	10,	-127},
++		{"-1",	10,	-1},
++		{"0",	10,	0},
++		{"1",	10,	1},
++		{"126",	10,	126},
++		{"127",	10,	127},
++		{"128",	10,	128},
++		{"129",	10,	129},
++		{"254",	10,	254},
++		{"255",	10,	255},
++		{"256",	10,	256},
++		{"257",	10,	257},
++		{"32766",	10,	32766},
++		{"32767",	10,	32767},
++		{"32768",	10,	32768},
++		{"32769",	10,	32769},
++		{"65534",	10,	65534},
++		{"65535",	10,	65535},
++		{"65536",	10,	65536},
++		{"65537",	10,	65537},
++		{"2147483646",	10,	2147483646},
++		{"2147483647",	10,	2147483647},
++		{"2147483648",	10,	2147483648},
++		{"2147483649",	10,	2147483649},
++		{"4294967294",	10,	4294967294},
++		{"4294967295",	10,	4294967295},
++		{"4294967296",	10,	4294967296},
++		{"4294967297",	10,	4294967297},
++		{"9223372036854775806",	10,	9223372036854775806LL},
++		{"9223372036854775807",	10,	9223372036854775807LL},
++	};
++	TEST_OK(kstrtos64, s64, "%lld", test_s64_ok);
++}
++
++static void __init test_kstrtos64_fail(void)
++{
++	static DEFINE_TEST_FAIL(test_s64_fail) = {
++		{"9223372036854775808",	10},
++		{"9223372036854775809",	10},
++		{"18446744073709551614",	10},
++		{"18446744073709551615",	10},
++		{"18446744073709551616",	10},
++		{"18446744073709551617",	10},
++	};
++	TEST_FAIL(kstrtos64, s64, "%lld", test_s64_fail);
++}
++
++static void __init test_kstrtou32_ok(void)
++{
++	DECLARE_TEST_OK(u32, struct test_u32);
++	static DEFINE_TEST_OK(struct test_u32, test_u32_ok) = {
++		{"0",	10,	0},
++		{"1",	10,	1},
++		{"126",	10,	126},
++		{"127",	10,	127},
++		{"128",	10,	128},
++		{"129",	10,	129},
++		{"254",	10,	254},
++		{"255",	10,	255},
++		{"256",	10,	256},
++		{"257",	10,	257},
++		{"32766",	10,	32766},
++		{"32767",	10,	32767},
++		{"32768",	10,	32768},
++		{"32769",	10,	32769},
++		{"65534",	10,	65534},
++		{"65535",	10,	65535},
++		{"65536",	10,	65536},
++		{"65537",	10,	65537},
++		{"2147483646",	10,	2147483646},
++		{"2147483647",	10,	2147483647},
++		{"2147483648",	10,	2147483648},
++		{"2147483649",	10,	2147483649},
++		{"4294967294",	10,	4294967294},
++		{"4294967295",	10,	4294967295},
++	};
++	TEST_OK(kstrtou32, u32, "%u", test_u32_ok);
++}
++
++static void __init test_kstrtou32_fail(void)
++{
++	static DEFINE_TEST_FAIL(test_u32_fail) = {
++		{"-2",	10},
++		{"-1",	10},
++		{"4294967296",	10},
++		{"4294967297",	10},
++		{"9223372036854775806",	10},
++		{"9223372036854775807",	10},
++		{"9223372036854775808",	10},
++		{"9223372036854775809",	10},
++		{"18446744073709551614",	10},
++		{"18446744073709551615",	10},
++		{"18446744073709551616",	10},
++		{"18446744073709551617",	10},
++	};
++	TEST_FAIL(kstrtou32, u32, "%u", test_u32_fail);
++}
++
++static void __init test_kstrtos32_ok(void)
++{
++	DECLARE_TEST_OK(s32, struct test_s32);
++	static DEFINE_TEST_OK(struct test_s32, test_s32_ok) = {
++		{"-128",	10,	-128},
++		{"-127",	10,	-127},
++		{"-1",	10,	-1},
++		{"0",	10,	0},
++		{"1",	10,	1},
++		{"126",	10,	126},
++		{"127",	10,	127},
++		{"128",	10,	128},
++		{"129",	10,	129},
++		{"254",	10,	254},
++		{"255",	10,	255},
++		{"256",	10,	256},
++		{"257",	10,	257},
++		{"32766",	10,	32766},
++		{"32767",	10,	32767},
++		{"32768",	10,	32768},
++		{"32769",	10,	32769},
++		{"65534",	10,	65534},
++		{"65535",	10,	65535},
++		{"65536",	10,	65536},
++		{"65537",	10,	65537},
++		{"2147483646",	10,	2147483646},
++		{"2147483647",	10,	2147483647},
++	};
++	TEST_OK(kstrtos32, s32, "%d", test_s32_ok);
++}
++
++static void __init test_kstrtos32_fail(void)
++{
++	static DEFINE_TEST_FAIL(test_s32_fail) = {
++		{"2147483648",	10},
++		{"2147483649",	10},
++		{"4294967294",	10},
++		{"4294967295",	10},
++		{"4294967296",	10},
++		{"4294967297",	10},
++		{"9223372036854775806",	10},
++		{"9223372036854775807",	10},
++		{"9223372036854775808",	10},
++		{"9223372036854775809",	10},
++		{"18446744073709551614",	10},
++		{"18446744073709551615",	10},
++		{"18446744073709551616",	10},
++		{"18446744073709551617",	10},
++	};
++	TEST_FAIL(kstrtos32, s32, "%d", test_s32_fail);
++}
++
++static void __init test_kstrtou16_ok(void)
++{
++	DECLARE_TEST_OK(u16, struct test_u16);
++	static DEFINE_TEST_OK(struct test_u16, test_u16_ok) = {
++		{"0",	10,	0},
++		{"1",	10,	1},
++		{"126",	10,	126},
++		{"127",	10,	127},
++		{"128",	10,	128},
++		{"129",	10,	129},
++		{"254",	10,	254},
++		{"255",	10,	255},
++		{"256",	10,	256},
++		{"257",	10,	257},
++		{"32766",	10,	32766},
++		{"32767",	10,	32767},
++		{"32768",	10,	32768},
++		{"32769",	10,	32769},
++		{"65534",	10,	65534},
++		{"65535",	10,	65535},
++	};
++	TEST_OK(kstrtou16, u16, "%hu", test_u16_ok);
++}
++
++static void __init test_kstrtou16_fail(void)
++{
++	static DEFINE_TEST_FAIL(test_u16_fail) = {
++		{"-2",	10},
++		{"-1",	10},
++		{"65536",	10},
++		{"65537",	10},
++		{"2147483646",	10},
++		{"2147483647",	10},
++		{"2147483648",	10},
++		{"2147483649",	10},
++		{"4294967294",	10},
++		{"4294967295",	10},
++		{"4294967296",	10},
++		{"4294967297",	10},
++		{"9223372036854775806",	10},
++		{"9223372036854775807",	10},
++		{"9223372036854775808",	10},
++		{"9223372036854775809",	10},
++		{"18446744073709551614",	10},
++		{"18446744073709551615",	10},
++		{"18446744073709551616",	10},
++		{"18446744073709551617",	10},
++	};
++	TEST_FAIL(kstrtou16, u16, "%hu", test_u16_fail);
++}
++
++static void __init test_kstrtos16_ok(void)
++{
++	DECLARE_TEST_OK(s16, struct test_s16);
++	static DEFINE_TEST_OK(struct test_s16, test_s16_ok) = {
++		{"-130",	10,	-130},
++		{"-129",	10,	-129},
++		{"-128",	10,	-128},
++		{"-127",	10,	-127},
++		{"-1",	10,	-1},
++		{"0",	10,	0},
++		{"1",	10,	1},
++		{"126",	10,	126},
++		{"127",	10,	127},
++		{"128",	10,	128},
++		{"129",	10,	129},
++		{"254",	10,	254},
++		{"255",	10,	255},
++		{"256",	10,	256},
++		{"257",	10,	257},
++		{"32766",	10,	32766},
++		{"32767",	10,	32767},
++	};
++	TEST_OK(kstrtos16, s16, "%hd", test_s16_ok);
++}
++
++static void __init test_kstrtos16_fail(void)
++{
++	static DEFINE_TEST_FAIL(test_s16_fail) = {
++		{"32768",	10},
++		{"32769",	10},
++		{"65534",	10},
++		{"65535",	10},
++		{"65536",	10},
++		{"65537",	10},
++		{"2147483646",	10},
++		{"2147483647",	10},
++		{"2147483648",	10},
++		{"2147483649",	10},
++		{"4294967294",	10},
++		{"4294967295",	10},
++		{"4294967296",	10},
++		{"4294967297",	10},
++		{"9223372036854775806",	10},
++		{"9223372036854775807",	10},
++		{"9223372036854775808",	10},
++		{"9223372036854775809",	10},
++		{"18446744073709551614",	10},
++		{"18446744073709551615",	10},
++		{"18446744073709551616",	10},
++		{"18446744073709551617",	10},
++	};
++	TEST_FAIL(kstrtos16, s16, "%hd", test_s16_fail);
++}
++
++static void __init test_kstrtou8_ok(void)
++{
++	DECLARE_TEST_OK(u8, struct test_u8);
++	static DEFINE_TEST_OK(struct test_u8, test_u8_ok) = {
++		{"0",	10,	0},
++		{"1",	10,	1},
++		{"126",	10,	126},
++		{"127",	10,	127},
++		{"128",	10,	128},
++		{"129",	10,	129},
++		{"254",	10,	254},
++		{"255",	10,	255},
++	};
++	TEST_OK(kstrtou8, u8, "%hhu", test_u8_ok);
++}
++
++static void __init test_kstrtou8_fail(void)
++{
++	static DEFINE_TEST_FAIL(test_u8_fail) = {
++		{"-2",	10},
++		{"-1",	10},
++		{"256",	10},
++		{"257",	10},
++		{"32766",	10},
++		{"32767",	10},
++		{"32768",	10},
++		{"32769",	10},
++		{"65534",	10},
++		{"65535",	10},
++		{"65536",	10},
++		{"65537",	10},
++		{"2147483646",	10},
++		{"2147483647",	10},
++		{"2147483648",	10},
++		{"2147483649",	10},
++		{"4294967294",	10},
++		{"4294967295",	10},
++		{"4294967296",	10},
++		{"4294967297",	10},
++		{"9223372036854775806",	10},
++		{"9223372036854775807",	10},
++		{"9223372036854775808",	10},
++		{"9223372036854775809",	10},
++		{"18446744073709551614",	10},
++		{"18446744073709551615",	10},
++		{"18446744073709551616",	10},
++		{"18446744073709551617",	10},
++	};
++	TEST_FAIL(kstrtou8, u8, "%hhu", test_u8_fail);
++}
++
++static void __init test_kstrtos8_ok(void)
++{
++	DECLARE_TEST_OK(s8, struct test_s8);
++	static DEFINE_TEST_OK(struct test_s8, test_s8_ok) = {
++		{"-128",	10,	-128},
++		{"-127",	10,	-127},
++		{"-1",	10,	-1},
++		{"0",	10,	0},
++		{"1",	10,	1},
++		{"126",	10,	126},
++		{"127",	10,	127},
++	};
++	TEST_OK(kstrtos8, s8, "%hhd", test_s8_ok);
++}
++
++static void __init test_kstrtos8_fail(void)
++{
++	static DEFINE_TEST_FAIL(test_s8_fail) = {
++		{"-130",	10},
++		{"-129",	10},
++		{"128",	10},
++		{"129",	10},
++		{"254",	10},
++		{"255",	10},
++		{"256",	10},
++		{"257",	10},
++		{"32766",	10},
++		{"32767",	10},
++		{"32768",	10},
++		{"32769",	10},
++		{"65534",	10},
++		{"65535",	10},
++		{"65536",	10},
++		{"65537",	10},
++		{"2147483646",	10},
++		{"2147483647",	10},
++		{"2147483648",	10},
++		{"2147483649",	10},
++		{"4294967294",	10},
++		{"4294967295",	10},
++		{"4294967296",	10},
++		{"4294967297",	10},
++		{"9223372036854775806",	10},
++		{"9223372036854775807",	10},
++		{"9223372036854775808",	10},
++		{"9223372036854775809",	10},
++		{"18446744073709551614",	10},
++		{"18446744073709551615",	10},
++		{"18446744073709551616",	10},
++		{"18446744073709551617",	10},
++	};
++	TEST_FAIL(kstrtos8, s8, "%hhd", test_s8_fail);
++}
++
++static int __init test_kstrtox_init(void)
++{
++	test_kstrtoull_ok();
++	test_kstrtoull_fail();
++	test_kstrtoll_ok();
++	test_kstrtoll_fail();
++
++	test_kstrtou64_ok();
++	test_kstrtou64_fail();
++	test_kstrtos64_ok();
++	test_kstrtos64_fail();
++
++	test_kstrtou32_ok();
++	test_kstrtou32_fail();
++	test_kstrtos32_ok();
++	test_kstrtos32_fail();
++
++	test_kstrtou16_ok();
++	test_kstrtou16_fail();
++	test_kstrtos16_ok();
++	test_kstrtos16_fail();
++
++	test_kstrtou8_ok();
++	test_kstrtou8_fail();
++	test_kstrtos8_ok();
++	test_kstrtos8_fail();
++	return -EINVAL;
++}
++module_init(test_kstrtox_init);
++MODULE_LICENSE("Dual BSD/GPL");
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index d3023df..f3fd99a 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -120,147 +120,6 @@ long long simple_strtoll(const char *cp, char **endp, unsigned int base)
+ }
+ EXPORT_SYMBOL(simple_strtoll);
+ 
+-/**
+- * strict_strtoul - convert a string to an unsigned long strictly
+- * @cp: The string to be converted
+- * @base: The number base to use
+- * @res: The converted result value
+- *
+- * strict_strtoul converts a string to an unsigned long only if the
+- * string is really an unsigned long string, any string containing
+- * any invalid char at the tail will be rejected and -EINVAL is returned,
+- * only a newline char at the tail is acceptible because people generally
+- * change a module parameter in the following way:
+- *
+- * 	echo 1024 > /sys/module/e1000/parameters/copybreak
+- *
+- * echo will append a newline to the tail.
+- *
+- * It returns 0 if conversion is successful and *res is set to the converted
+- * value, otherwise it returns -EINVAL and *res is set to 0.
+- *
+- * simple_strtoul just ignores the successive invalid characters and
+- * return the converted value of prefix part of the string.
+- */
+-int strict_strtoul(const char *cp, unsigned int base, unsigned long *res)
+-{
+-	char *tail;
+-	unsigned long val;
+-
+-	*res = 0;
+-	if (!*cp)
+-		return -EINVAL;
+-
+-	val = simple_strtoul(cp, &tail, base);
+-	if (tail == cp)
+-		return -EINVAL;
+-
+-	if ((tail[0] == '\0') || (tail[0] == '\n' && tail[1] == '\0')) {
+-		*res = val;
+-		return 0;
+-	}
+-
+-	return -EINVAL;
+-}
+-EXPORT_SYMBOL(strict_strtoul);
+-
+-/**
+- * strict_strtol - convert a string to a long strictly
+- * @cp: The string to be converted
+- * @base: The number base to use
+- * @res: The converted result value
+- *
+- * strict_strtol is similiar to strict_strtoul, but it allows the first
+- * character of a string is '-'.
+- *
+- * It returns 0 if conversion is successful and *res is set to the converted
+- * value, otherwise it returns -EINVAL and *res is set to 0.
+- */
+-int strict_strtol(const char *cp, unsigned int base, long *res)
+-{
+-	int ret;
+-	if (*cp == '-') {
+-		ret = strict_strtoul(cp + 1, base, (unsigned long *)res);
+-		if (!ret)
+-			*res = -(*res);
+-	} else {
+-		ret = strict_strtoul(cp, base, (unsigned long *)res);
+-	}
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL(strict_strtol);
+-
+-/**
+- * strict_strtoull - convert a string to an unsigned long long strictly
+- * @cp: The string to be converted
+- * @base: The number base to use
+- * @res: The converted result value
+- *
+- * strict_strtoull converts a string to an unsigned long long only if the
+- * string is really an unsigned long long string, any string containing
+- * any invalid char at the tail will be rejected and -EINVAL is returned,
+- * only a newline char at the tail is acceptible because people generally
+- * change a module parameter in the following way:
+- *
+- * 	echo 1024 > /sys/module/e1000/parameters/copybreak
+- *
+- * echo will append a newline to the tail of the string.
+- *
+- * It returns 0 if conversion is successful and *res is set to the converted
+- * value, otherwise it returns -EINVAL and *res is set to 0.
+- *
+- * simple_strtoull just ignores the successive invalid characters and
+- * return the converted value of prefix part of the string.
+- */
+-int strict_strtoull(const char *cp, unsigned int base, unsigned long long *res)
+-{
+-	char *tail;
+-	unsigned long long val;
+-
+-	*res = 0;
+-	if (!*cp)
+-		return -EINVAL;
+-
+-	val = simple_strtoull(cp, &tail, base);
+-	if (tail == cp)
+-		return -EINVAL;
+-	if ((tail[0] == '\0') || (tail[0] == '\n' && tail[1] == '\0')) {
+-		*res = val;
+-		return 0;
+-	}
+-
+-	return -EINVAL;
+-}
+-EXPORT_SYMBOL(strict_strtoull);
+-
+-/**
+- * strict_strtoll - convert a string to a long long strictly
+- * @cp: The string to be converted
+- * @base: The number base to use
+- * @res: The converted result value
+- *
+- * strict_strtoll is similiar to strict_strtoull, but it allows the first
+- * character of a string is '-'.
+- *
+- * It returns 0 if conversion is successful and *res is set to the converted
+- * value, otherwise it returns -EINVAL and *res is set to 0.
+- */
+-int strict_strtoll(const char *cp, unsigned int base, long long *res)
+-{
+-	int ret;
+-	if (*cp == '-') {
+-		ret = strict_strtoull(cp + 1, base, (unsigned long long *)res);
+-		if (!ret)
+-			*res = -(*res);
+-	} else {
+-		ret = strict_strtoull(cp, base, (unsigned long long *)res);
+-	}
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL(strict_strtoll);
+-
+ static noinline_for_stack
+ int skip_atoi(const char **s)
+ {
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 4c0383d..58434b3 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2809,9 +2809,9 @@ sub process {
+ 			WARN("consider using a completion\n" . $herecurr);
+ 
+ 		}
+-# recommend strict_strto* over simple_strto*
++# recommend kstrto* over simple_strto*
+ 		if ($line =~ /\bsimple_(strto.*?)\s*\(/) {
+-			WARN("consider using strict_$1 in preference to simple_$1\n" . $herecurr);
++			WARN("consider using kstrto* in preference to simple_$1\n" . $herecurr);
+ 		}
+ # check for __initcall(), use device_initcall() explicitly please
+ 		if ($line =~ /^.\s*__initcall\s*\(/) {
 -- 
 1.7.3.4
 
