@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab1BESEB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 13:04:01 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:36948 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752021Ab1BESEA (ORCPT
+	id S1753051Ab1BESGW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 13:06:22 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27471 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752765Ab1BESGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 13:04:00 -0500
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: v9fs-developer@lists.sourceforge.net
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH -V2 0/17] Buffered write and writeable mmap support for 9P
-In-Reply-To: <1296928005-9529-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1296928005-9529-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Notmuch/0.5-64-gc3ae51d (http://notmuchmail.org) Emacs/23.1.1 (i486-pc-linux-gnu)
-Date: Sat, 05 Feb 2011 23:33:51 +0530
-Message-ID: <87ei7mxss8.fsf@linux.vnet.ibm.com>
+	Sat, 5 Feb 2011 13:06:20 -0500
+Message-ID: <4D4D911A.5080001@oracle.com>
+Date: Sat, 05 Feb 2011 10:04:10 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [patch fixup] memcg: remove direct page_cgroup-to-page pointer
+ fix
+References: <201102042349.p14NnQEm025834@imap1.linux-foundation.org> <20110204183810.76baf8f0.randy.dunlap@oracle.com> <20110205090451.GA2315@cmpxchg.org>
+In-Reply-To: <20110205090451.GA2315@cmpxchg.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4D4D9177.002E:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat,  5 Feb 2011 23:16:28 +0530, "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
-> The patch series implement buffered write and writeable mmap for 9P
+On 02/05/11 01:04, Johannes Weiner wrote:
+> On Fri, Feb 04, 2011 at 06:38:10PM -0800, Randy Dunlap wrote:
+>> On Fri, 04 Feb 2011 15:15:17 -0800 akpm@linux-foundation.org wrote:
+>>
+>>> The mm-of-the-moment snapshot 2011-02-04-15-15 has been uploaded to
+>>>
+>>>    http://userweb.kernel.org/~akpm/mmotm/
+>>>
+>>> and will soon be available at
+>>>
+>>>    git://zen-kernel.org/kernel/mmotm.git
+>>>
+>>> It contains the following patches against 2.6.38-rc3:
+>>
+>>
+>> Lots of these warnings in some kernel configs:
+>>
+>> mmotm-2011-0204-1515/include/linux/page_cgroup.h:144: warning: left shift count >= width of type
+>> mmotm-2011-0204-1515/include/linux/page_cgroup.h:145: warning: left shift count >= width of type
+>> mmotm-2011-0204-1515/include/linux/page_cgroup.h:150: warning: right shift count >= width of type
 > 
-> Changes from V1:
-> a) Add fsync and syncfs support
+> Thanks for the report, Randy, and sorry for the breakage.  Here is the
+> fixup:
 > 
+> ---
+> Since the non-flags field for pc array ids in pc->flags is offset from
+> the end of the word, we end up with a shift count of BITS_PER_LONG in
+> case the field width is zero.
+> 
+> This results in a compiler warning as we shift in both directions a
+> long int by BITS_PER_LONG.
+> 
+> There is no real harm -- the mask is zero -- but fix up the compiler
+> warning by also making the shift count zero for a non-existant field.
+> 
+> Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> ---
 
-I haven't yet addressed the previous review feedback from
-Miklos. http://article.gmane.org/gmane.linux.kernel/1093869
-Running 9p server and client on the same host even though possible
-is not a strong use case at this point. I will get to that later.
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-The patch series also don't address cache consistency issue that
-can arise due to direct modification in the server. I am not
-sure we need to complicate the client code for that considering
-the cache model that we follow is loose. 
+Thanks.
 
-In short the set of patches help the virtualization pass-through use case
-(http://wiki.qemu.org/Documentation/9psetup)
-
--aneesh
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
