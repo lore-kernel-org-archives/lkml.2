@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab1BEUcc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 15:32:32 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57248 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752619Ab1BEUcb convert rfc822-to-8bit (ORCPT
+	id S1753509Ab1BEUgT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 15:36:19 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46190 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104Ab1BEUgS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 15:32:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=eYs4xkBxO6BvbonQ2WwrjRGfyk4diQ/NEc8bHm+yyfiM+Ad5hbBTe29UEMqpm4f/zy
-         E6C13ZnjtGDUmorawyEi6v0Jtz4+zHzpHo0zoZtrmUg1qwTlpoHuH+9rbMXr7twjbril
-         VM4/yuyMdG49ehNGCwK1qtQU0/3pLKa2PIBiQ=
+	Sat, 5 Feb 2011 15:36:18 -0500
+Date: Sat, 5 Feb 2011 20:36:00 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Per Forlin <per.forlin@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Cc: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        dev@lists.linaro.org
+Subject: Re: [PATCH 0/5] mmc: add double buffering for mmc block requests
+Message-ID: <20110205203600.GA31760@n2100.arm.linux.org.uk>
+References: <1294856043-13447-1-git-send-email-per.forlin@linaro.org> <20110205170255.GG29411@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20110204.145508.59670453.davem@davemloft.net>
-References: <AANLkTimBFBKJf0-TNRLr2hHNEehR2cnKPvx06=yyHGVj@mail.gmail.com>
-	<1296852667.2349.804.camel@pasglop>
-	<20110204.145508.59670453.davem@davemloft.net>
-Date: Sat, 5 Feb 2011 20:32:28 +0000
-Message-ID: <AANLkTi=s7Yro4TqtmgW4HPnJx3HiWvX9iJ9NUOYXcR+j@mail.gmail.com>
-Subject: Re: Sun GEM PPC32 Bug?
-From: Matt <jackdachef@gmail.com>
-To: ruediger.herbst@googlemail.com
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        geert@linux-m68k.org, benh@kernel.crashing.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110205170255.GG29411@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->Is there a special Kernel parameter (sysctl.conf), that makes it
->possible to use the Network. So how it is now I canŽt work with it. What
->can I do at the moment?
+On Sat, Feb 05, 2011 at 05:02:55PM +0000, Russell King - ARM Linux wrote:
+> On Wed, Jan 12, 2011 at 07:13:58PM +0100, Per Forlin wrote:
+> > Add support to prepare one MMC request while another is active on
+> > the host. This is done by making the issue_rw_rq() asynchronous.
+> > The increase in throughput is proportional to the time it takes to
+> > prepare a request and how fast the memory is. The faster the MMC/SD is
+> > the more significant the prepare request time becomes. Measurements on U5500
+> > and U8500 on eMMC shows significant performance gain for DMA on MMC for large
+> > reads. In the PIO case there is some gain in performance for large reads too.
+> > There seems to be no or small performance gain for write, don't have a good
+> > explanation for this yet.
+> 
+> It might be worth seeing what effect the following patch has.  This
+> moves the dsb out of the cache operations into a separate function,
+> so we only do one dsb per DMA mapping/unmapping operation.  That's
+> particularly significant for the scattergather code.
+> 
+> I don't remember the reason why this was dropped as a candidate for
+> merging - could that be because the dsb needs to be before the outer
+> cache maintainence?  Adding Catalin for comment on that.
 
-please add others in the CC
-
-(take a look in the CC field of this mail and you'll know how to do it:
-put the person you're answering in the "to" ("an") field :) )
-
-thanks !
-
-there was a kind of temporary solution provided in :
-http://ubuntuforums.org/showpost.php?p=9002232&postcount=3
-
->linuxopjemac, thank you for referring to Ben. He replied and might look into it.
-
->Meanwhile, I put the module reloading and interface restarting into a cron job that executes every hour: sudo crontab -e
-
-# m h  dom mon dow   command
-0  *  *   *   *     /usr/sbin/fix-sungem
-
->and the script /usr/sbin/fix-sungem contains
-
-/sbin/ifdown eth0 && /sbin/rmmod sungem && /sbin/modprobe sungem &&
-/sbin/ifup eth0
-
-Hope that helps somewhat
-
-Regards
-
-Matt
+FWIW, trying this with MMC on OMAP4, I see no measurable difference in
+performance nor CPU usage.
