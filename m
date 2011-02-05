@@ -1,74 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877Ab1BETpd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 14:45:33 -0500
-Received: from www.tglx.de ([62.245.132.106]:60131 "EHLO www.tglx.de"
+	id S1753907Ab1BETpg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 14:45:36 -0500
+Received: from www.tglx.de ([62.245.132.106]:60140 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753698Ab1BETpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 14:45:30 -0500
-Message-Id: <20110205193904.102709613@linutronix.de>
+	id S1753698Ab1BETpe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Feb 2011 14:45:34 -0500
+Message-Id: <20110205193904.200958624@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Sat, 05 Feb 2011 19:45:26 -0000
+Date: Sat, 05 Feb 2011 19:45:28 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Tony Luck <tony.luck@intel.com>
-Subject: [patch 7/8] ia64: Convert lsapic to new irq_chip functions
+Subject: [patch 8/8] ia64: Convert iosapic to new irq_chip functions
 References: <20110205193740.964969119@linutronix.de>
-Content-Disposition: inline; filename=ia64-convert-lsapic.patch
+Content-Disposition: inline; filename=ia64-convert-iosapic.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/ia64/kernel/irq_lsapic.c |   22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+ arch/ia64/kernel/iosapic.c |   70 ++++++++++++++++++++++++---------------------
+ 1 file changed, 38 insertions(+), 32 deletions(-)
 
-Index: linux-next/arch/ia64/kernel/irq_lsapic.c
+Index: linux-next/arch/ia64/kernel/iosapic.c
 ===================================================================
---- linux-next.orig/arch/ia64/kernel/irq_lsapic.c
-+++ linux-next/arch/ia64/kernel/irq_lsapic.c
-@@ -15,30 +15,30 @@
- #include <linux/irq.h>
+--- linux-next.orig/arch/ia64/kernel/iosapic.c
++++ linux-next/arch/ia64/kernel/iosapic.c
+@@ -257,7 +257,7 @@ set_rte (unsigned int gsi, unsigned int 
+ }
+ 
+ static void
+-nop (unsigned int irq)
++nop (struct irq_data *data)
+ {
+ 	/* do nothing... */
+ }
+@@ -287,8 +287,9 @@ kexec_disable_iosapic(void)
+ #endif
+ 
+ static void
+-mask_irq (unsigned int irq)
++mask_irq (struct irq_data *data)
+ {
++	unsigned int irq = data->irq;
+ 	u32 low32;
+ 	int rte_index;
+ 	struct iosapic_rte_info *rte;
+@@ -305,8 +306,9 @@ mask_irq (unsigned int irq)
+ }
+ 
+ static void
+-unmask_irq (unsigned int irq)
++unmask_irq (struct irq_data *data)
+ {
++	unsigned int irq = data->irq;
+ 	u32 low32;
+ 	int rte_index;
+ 	struct iosapic_rte_info *rte;
+@@ -323,9 +325,11 @@ unmask_irq (unsigned int irq)
+ 
+ 
+ static int
+-iosapic_set_affinity(unsigned int irq, const struct cpumask *mask)
++iosapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
++		     bool force)
+ {
+ #ifdef CONFIG_SMP
++	unsigned int irq = data->irq;
+ 	u32 high32, low32;
+ 	int cpu, dest, rte_index;
+ 	int redir = (irq & IA64_IRQ_REDIRECTED) ? 1 : 0;
+@@ -379,15 +383,16 @@ iosapic_set_affinity(unsigned int irq, c
+  */
  
  static unsigned int
--lsapic_noop_startup (unsigned int irq)
-+lsapic_noop_startup (struct irq_data *data)
+-iosapic_startup_level_irq (unsigned int irq)
++iosapic_startup_level_irq (struct irq_data *data)
  {
+-	unmask_irq(irq);
++	unmask_irq(data);
  	return 0;
  }
  
  static void
--lsapic_noop (unsigned int irq)
-+lsapic_noop (struct irq_data *data)
+-iosapic_unmask_level_irq (unsigned int irq)
++iosapic_unmask_level_irq (struct irq_data *data)
  {
- 	/* nothing to do... */
++	unsigned int irq = data->irq;
+ 	ia64_vector vec = irq_to_vector(irq);
+ 	struct iosapic_rte_info *rte;
+ 	int do_unmask_irq = 0;
+@@ -395,16 +400,16 @@ iosapic_unmask_level_irq (unsigned int i
+ 	irq_complete_move(irq);
+ 	if (unlikely(irq_desc[irq].status & IRQ_MOVE_PENDING)) {
+ 		do_unmask_irq = 1;
+-		mask_irq(irq);
++		mask_irq(data);
+ 	} else
+-		unmask_irq(irq);
++		unmask_irq(data);
+ 
+ 	list_for_each_entry(rte, &iosapic_intr_info[irq].rtes, rte_list)
+ 		iosapic_eoi(rte->iosapic->addr, vec);
+ 
+ 	if (unlikely(do_unmask_irq)) {
+ 		move_masked_irq(irq);
+-		unmask_irq(irq);
++		unmask_irq(data);
+ 	}
  }
  
--static int lsapic_retrigger(unsigned int irq)
-+static int lsapic_retrigger(struct irq_data *data)
- {
--	ia64_resend_irq(irq);
-+	ia64_resend_irq(data->irq);
+@@ -414,15 +419,15 @@ iosapic_unmask_level_irq (unsigned int i
+ #define iosapic_ack_level_irq		nop
  
- 	return 1;
- }
- 
- struct irq_chip irq_type_ia64_lsapic = {
--	.name =		"LSAPIC",
--	.startup =	lsapic_noop_startup,
--	.shutdown =	lsapic_noop,
--	.enable =	lsapic_noop,
--	.disable =	lsapic_noop,
--	.ack =		lsapic_noop,
--	.retrigger =	lsapic_retrigger,
-+	.name =			"LSAPIC",
-+	.irq_startup =		lsapic_noop_startup,
-+	.irq_shutdown =		lsapic_noop,
-+	.irq_enable =		lsapic_noop,
-+	.irq_disable =		lsapic_noop,
-+	.irq_ack =		lsapic_noop,
-+	.irq_retrigger =	lsapic_retrigger,
+ static struct irq_chip irq_type_iosapic_level = {
+-	.name =		"IO-SAPIC-level",
+-	.startup =	iosapic_startup_level_irq,
+-	.shutdown =	iosapic_shutdown_level_irq,
+-	.enable =	iosapic_enable_level_irq,
+-	.disable =	iosapic_disable_level_irq,
+-	.ack =		iosapic_ack_level_irq,
+-	.mask =		mask_irq,
+-	.unmask =	iosapic_unmask_level_irq,
+-	.set_affinity =	iosapic_set_affinity
++	.name =			"IO-SAPIC-level",
++	.irq_startup =		iosapic_startup_level_irq,
++	.irq_shutdown =		iosapic_shutdown_level_irq,
++	.irq_enable =		iosapic_enable_level_irq,
++	.irq_disable =		iosapic_disable_level_irq,
++	.irq_ack =		iosapic_ack_level_irq,
++	.irq_mask =		mask_irq,
++	.irq_unmask =		iosapic_unmask_level_irq,
++	.irq_set_affinity =	iosapic_set_affinity
  };
+ 
+ /*
+@@ -430,9 +435,9 @@ static struct irq_chip irq_type_iosapic_
+  */
+ 
+ static unsigned int
+-iosapic_startup_edge_irq (unsigned int irq)
++iosapic_startup_edge_irq (struct irq_data *data)
+ {
+-	unmask_irq(irq);
++	unmask_irq(data);
+ 	/*
+ 	 * IOSAPIC simply drops interrupts pended while the
+ 	 * corresponding pin was masked, so we can't know if an
+@@ -442,8 +447,9 @@ iosapic_startup_edge_irq (unsigned int i
+ }
+ 
+ static void
+-iosapic_ack_edge_irq (unsigned int irq)
++iosapic_ack_edge_irq (struct irq_data *data)
+ {
++	unsigned int irq = data->irq;
+ 	struct irq_desc *idesc = irq_desc + irq;
+ 
+ 	irq_complete_move(irq);
+@@ -455,22 +461,22 @@ iosapic_ack_edge_irq (unsigned int irq)
+ 	 */
+ 	if ((idesc->status & (IRQ_PENDING|IRQ_DISABLED)) ==
+ 	    (IRQ_PENDING|IRQ_DISABLED))
+-		mask_irq(irq);
++		mask_irq(data);
+ }
+ 
+ #define iosapic_enable_edge_irq		unmask_irq
+ #define iosapic_disable_edge_irq	nop
+ 
+ static struct irq_chip irq_type_iosapic_edge = {
+-	.name =		"IO-SAPIC-edge",
+-	.startup =	iosapic_startup_edge_irq,
+-	.shutdown =	iosapic_disable_edge_irq,
+-	.enable =	iosapic_enable_edge_irq,
+-	.disable =	iosapic_disable_edge_irq,
+-	.ack =		iosapic_ack_edge_irq,
+-	.mask =		mask_irq,
+-	.unmask =	unmask_irq,
+-	.set_affinity =	iosapic_set_affinity
++	.name =			"IO-SAPIC-edge",
++	.irq_startup =		iosapic_startup_edge_irq,
++	.irq_shutdown =		iosapic_disable_edge_irq,
++	.irq_enable =		iosapic_enable_edge_irq,
++	.irq_disable =		iosapic_disable_edge_irq,
++	.irq_ack =		iosapic_ack_edge_irq,
++	.irq_mask =		mask_irq,
++	.irq_unmask =		unmask_irq,
++	.irq_set_affinity =	iosapic_set_affinity
+ };
+ 
+ static unsigned int
 
 
