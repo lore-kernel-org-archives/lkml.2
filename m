@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752819Ab1BEOVn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 09:21:43 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57576 "EHLO
+	id S1752914Ab1BEOVs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 09:21:48 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52225 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab1BEOVk (ORCPT
+	with ESMTP id S1752770Ab1BEOVm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 09:21:40 -0500
+	Sat, 5 Feb 2011 09:21:42 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=rNXB85DpYbHwIUd4F77lsFX/xRF5qBXnHaf8HLRLWoOJVRyHhwNMtQNOwZBpX0+1l4
-         IUVQVCcxgc7737eNM6tTLK3N+0FMCaXbGodO9OoOFYAimPhYEd3TNoa7B5bncmK4EuEI
-         bpNeGyS18XNx0PWAvQT5teNLedNJ6ipLtfiSQ=
+        b=vFLRUB2Z5KFUIK2Yn9m0EzHvxB4J+SEqBoLJb5bkYaP54cnr5k/fMlvmehrAiTt2sV
+         9fmDBrahAl5BshxkMwC7dXJSvMAEQZrFR2T2CuS7IxRv8SnG1Cr04xzb+77JHV64pe/2
+         xOzUw8lxE9QnUk6y0dRb/aMNbOYYKaDAoNRbA=
 From: Alexey Dobriyan <adobriyan@gmail.com>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, adobriyan@gmail.com
-Subject: [PATCH 14/52] kstrtox: convert drivers/bluetooth/
-Date: Sat,  5 Feb 2011 16:20:17 +0200
-Message-Id: <1296915654-7458-14-git-send-email-adobriyan@gmail.com>
+Subject: [PATCH 15/52] kstrtox: convert drivers/clocksource/
+Date: Sat,  5 Feb 2011 16:20:18 +0200
+Message-Id: <1296915654-7458-15-git-send-email-adobriyan@gmail.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1296915654-7458-1-git-send-email-adobriyan@gmail.com>
 References: <1296915654-7458-1-git-send-email-adobriyan@gmail.com>
@@ -29,141 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- drivers/bluetooth/btmrvl_debugfs.c |   50 +++++++++++++++++------------------
- 1 files changed, 24 insertions(+), 26 deletions(-)
+ drivers/clocksource/acpi_pm.c |   14 ++++++--------
+ 1 files changed, 6 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/bluetooth/btmrvl_debugfs.c b/drivers/bluetooth/btmrvl_debugfs.c
-index fd6305b..ffc4324 100644
---- a/drivers/bluetooth/btmrvl_debugfs.c
-+++ b/drivers/bluetooth/btmrvl_debugfs.c
-@@ -56,16 +56,16 @@ static ssize_t btmrvl_hscfgcmd_write(struct file *file,
+diff --git a/drivers/clocksource/acpi_pm.c b/drivers/clocksource/acpi_pm.c
+index effe797..79643d5 100644
+--- a/drivers/clocksource/acpi_pm.c
++++ b/drivers/clocksource/acpi_pm.c
+@@ -233,15 +233,13 @@ fs_initcall(init_acpi_pm_clocksource);
+  */
+ static int __init parse_pmtmr(char *arg)
  {
- 	struct btmrvl_private *priv = file->private_data;
- 	char buf[16];
--	long result, ret;
-+	int ret;
+-	unsigned long base;
++	u32 base;
++	int rv;
  
- 	memset(buf, 0, sizeof(buf));
- 
- 	if (copy_from_user(&buf, ubuf, min_t(size_t, sizeof(buf) - 1, count)))
- 		return -EFAULT;
- 
--	ret = strict_strtol(buf, 10, &result);
--
--	priv->btmrvl_dev.hscfgcmd = result;
-+	ret = kstrtou8(buf, 10, &priv->btmrvl_dev.hscfgcmd);
-+	if (ret < 0)
-+		return ret;
- 
- 	if (priv->btmrvl_dev.hscfgcmd) {
- 		btmrvl_prepare_command(priv);
-@@ -100,17 +100,16 @@ static ssize_t btmrvl_psmode_write(struct file *file, const char __user *ubuf,
- {
- 	struct btmrvl_private *priv = file->private_data;
- 	char buf[16];
--	long result, ret;
-+	int ret;
- 
- 	memset(buf, 0, sizeof(buf));
- 
- 	if (copy_from_user(&buf, ubuf, min_t(size_t, sizeof(buf) - 1, count)))
- 		return -EFAULT;
- 
--	ret = strict_strtol(buf, 10, &result);
--
--	priv->btmrvl_dev.psmode = result;
--
-+	ret = kstrtou8(buf, 10, &priv->btmrvl_dev.psmode);
-+	if (ret < 0)
-+		return ret;
- 	return count;
- }
- 
-@@ -139,16 +138,16 @@ static ssize_t btmrvl_pscmd_write(struct file *file, const char __user *ubuf,
- {
- 	struct btmrvl_private *priv = file->private_data;
- 	char buf[16];
--	long result, ret;
-+	int ret;
- 
- 	memset(buf, 0, sizeof(buf));
- 
- 	if (copy_from_user(&buf, ubuf, min_t(size_t, sizeof(buf) - 1, count)))
- 		return -EFAULT;
- 
--	ret = strict_strtol(buf, 10, &result);
--
--	priv->btmrvl_dev.pscmd = result;
-+	ret = kstrtou8(buf, 10, &priv->btmrvl_dev.pscmd);
-+	if (ret < 0)
-+		return ret;
- 
- 	if (priv->btmrvl_dev.pscmd) {
- 		btmrvl_prepare_command(priv);
-@@ -183,17 +182,16 @@ static ssize_t btmrvl_gpiogap_write(struct file *file, const char __user *ubuf,
- {
- 	struct btmrvl_private *priv = file->private_data;
- 	char buf[16];
--	long result, ret;
-+	int ret;
- 
- 	memset(buf, 0, sizeof(buf));
- 
- 	if (copy_from_user(&buf, ubuf, min_t(size_t, sizeof(buf) - 1, count)))
- 		return -EFAULT;
- 
--	ret = strict_strtol(buf, 16, &result);
--
--	priv->btmrvl_dev.gpio_gap = result;
--
-+	ret = kstrtou16(buf, 16, &priv->btmrvl_dev.gpio_gap);
-+	if (ret < 0)
-+		return ret;
- 	return count;
- }
- 
-@@ -222,16 +220,17 @@ static ssize_t btmrvl_hscmd_write(struct file *file, const char __user *ubuf,
- {
- 	struct btmrvl_private *priv = file->private_data;
- 	char buf[16];
--	long result, ret;
-+	int ret;
- 
- 	memset(buf, 0, sizeof(buf));
- 
- 	if (copy_from_user(&buf, ubuf, min_t(size_t, sizeof(buf) - 1, count)))
- 		return -EFAULT;
- 
--	ret = strict_strtol(buf, 10, &result);
-+	ret = kstrtou8(buf, 10, &priv->btmrvl_dev.hscmd);
-+	if (ret < 0)
-+		return ret;
- 
--	priv->btmrvl_dev.hscmd = result;
- 	if (priv->btmrvl_dev.hscmd) {
- 		btmrvl_prepare_command(priv);
- 		wake_up_interruptible(&priv->main_thread.wait_q);
-@@ -264,17 +263,16 @@ static ssize_t btmrvl_hsmode_write(struct file *file, const char __user *ubuf,
- {
- 	struct btmrvl_private *priv = file->private_data;
- 	char buf[16];
--	long result, ret;
-+	int ret;
- 
- 	memset(buf, 0, sizeof(buf));
- 
- 	if (copy_from_user(&buf, ubuf, min_t(size_t, sizeof(buf) - 1, count)))
- 		return -EFAULT;
- 
--	ret = strict_strtol(buf, 10, &result);
--
--	priv->btmrvl_dev.hsmode = result;
--
-+	ret = kstrtou8(buf, 10, &priv->btmrvl_dev.hsmode);
-+	if (ret < 0)
-+		return ret;
- 	return count;
- }
+-	if (strict_strtoul(arg, 16, &base))
+-		return -EINVAL;
+-#ifdef CONFIG_X86_64
+-	if (base > UINT_MAX)
+-		return -ERANGE;
+-#endif
+-	printk(KERN_INFO "PMTMR IOPort override: 0x%04x -> 0x%04lx\n",
++	rv = kstrtou32(arg, 16, &base);
++	if (rv < 0)
++		return rv;
++	printk(KERN_INFO "PMTMR IOPort override: 0x%04x -> 0x%04x\n",
+ 	       pmtmr_ioport, base);
+ 	pmtmr_ioport = base;
  
 -- 
 1.7.3.4
