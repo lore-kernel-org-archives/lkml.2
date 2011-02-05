@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764Ab1BEBBD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 20:01:03 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:36452 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752259Ab1BEBBA (ORCPT
+	id S1752595Ab1BEBJH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 20:09:07 -0500
+Received: from mail.elliptictech.com ([209.217.122.41]:56962 "EHLO
+	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085Ab1BEBJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 20:01:00 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=Sen28d/CdgsK55+w5FkIH/1iex7W2J4ffQ/S0nIwhe9rUmbw9cVtkRaEQ1SJm5JAcA
-         /8eBohU81pmHcSR4vCJWIdAdFK8e0twY3TaH2G5AnsUwrB4WttDEB3zg3i84Jdg1QgVt
-         S5rdqfUKnO/pODyEpqe3k/UXGtgyLzqs5+8S0=
-Date: Sat, 5 Feb 2011 02:00:54 +0100
-From: Ulf Magnusson <ulfalizer.lkml@gmail.com>
-To: Filip Honckiewicz <f.honckiewicz@gmail.com>
-Cc: Rob Landley <rob@landley.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-kbuild@vger.kernel.org, zippel@linux-m68k.org, mmarek@suse.cz,
-        akpm@linux-foundation.org, andrea.gelmini@gelma.net,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH] [ANNOUNCE] kconfig: Kconfiglib: a flexible Python
- Kconfig parser
-Message-ID: <20110205010053.GC13060@ulf>
-Mail-Followup-To: Ulf Magnusson <ulfalizer.lkml@gmail.com>,
-	Filip Honckiewicz <f.honckiewicz@gmail.com>,
-	Rob Landley <rob@landley.net>, Randy Dunlap <rdunlap@xenotime.net>,
-	linux-kbuild@vger.kernel.org, zippel@linux-m68k.org, mmarek@suse.cz,
-	akpm@linux-foundation.org, andrea.gelmini@gelma.net,
-	linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-References: <20110201232750.GA30800@ulf>
- <20110204143529.f49e92e5.rdunlap@xenotime.net>
- <4D4C8EFA.40207@landley.net>
- <AANLkTi=O4C-JRbosVKag-QQiGODbrAznn3=EnoOET6BR@mail.gmail.com>
+	Fri, 4 Feb 2011 20:09:06 -0500
+Date: Fri, 4 Feb 2011 20:07:55 -0500
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Faisal Latif <faisal.latif@intel.com>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Alessandro Rubini <rubini@cvml.unipv.it>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Yong Zhang <yong.zhang0@gmail.com>
+Subject: Re: [PATCH 1/4] lockdep, timer: Fix del_timer_sync() annotation
+Message-ID: <20110205010755.GA4000@elliptictech.com>
+References: <20110203140940.072679794@chello.nl>
+ <20110203141548.039540914@chello.nl>
+ <alpine.LFD.2.00.1102031634270.31804@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=O4C-JRbosVKag-QQiGODbrAznn3=EnoOET6BR@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.00.1102031634270.31804@localhost6.localdomain6>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 05, 2011 at 01:28:50AM +0100, Filip Honckiewicz wrote:
-> Hello Ulf!
+On 2011-02-03 16:35 +0100, Thomas Gleixner wrote:
+> On Thu, 3 Feb 2011, Peter Zijlstra wrote:
+> > Calling local_bh_enable() will want to actually start processing
+> > softirqs, which isn't a good idea since this can get called with IRQs
+> > disabled.
+> > 
+> > Cure this by using _local_bh_enable() which doesn't start processing
+> > softirqs, and use raw_local_irq_save() to avoid any softirqs from
+> > happending without letting lockdep think IRQs are in fact disabled.
+> > 
+> > Reported-by: Nick Bowler <nbowler@elliptictech.com>
 > 
-> I'm working on pretty same thing also in python... Now I'm sad,
-> because you made it and I don't, and also my code looks like dung in
-> comparison to yours. How long did you make this?
+> Nick, can you please test ?
 
-You didn't see the early versions ;)
+Yes, this patch seems to solve the issue.
 
-I was a bit afraid that someone would come out with something similar
-before it was done. Now you've given me a bad conscience :(
-
-I've been working on it on and off in my spare time for six months or so.
-Originally it was a project for automatically generating a minimal kernel for a
-given system by automatically turning off options one by one and testing the
-resulting kernel in an emulator (yeah, the minimal kernel you get out of that
-process is broken in many ways, but you get some idea of what's needed and
-what's not at least). That then grew into a general-purpose library.
-
-> 
-> BTW. "SLOW_WORK" symbol used in drivers/gpu/drm/Kconfig in "menucofnig
-> DRM" as one of selects isn't an unnecessary symbol? I can't find any
-> SLOW_WORK entry.
-
-iscriptconfig says
-
-A Config instance 'c' for the architecture (i386) has been created.
->>> c["SLOW_WORK"].is_defined()
-False
-
-so yes, it it's undefined on i386 at least. Grepping through the kernel shows
-it only appears in drivers/gpu/drm/Kconfig, so it's in fact undefined on all
-arches.
-
-/Ulf
+Thanks,
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
