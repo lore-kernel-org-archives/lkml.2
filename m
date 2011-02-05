@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab1BETEa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 14:04:30 -0500
-Received: from mailout1.go2.pl ([193.17.41.11]:59640 "EHLO mailout1.go2.pl"
+	id S1753549Ab1BETZG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 14:25:06 -0500
+Received: from mail001.aei.ca ([206.123.6.130]:50815 "EHLO mail001.aei.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752948Ab1BETE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 14:04:29 -0500
-X-Greylist: delayed 4678 seconds by postgrey-1.27 at vger.kernel.org; Sat, 05 Feb 2011 14:04:28 EST
-Message-ID: <4D4D9F37.4010201@o2.pl>
-Date: Sat, 05 Feb 2011 20:04:23 +0100
-From: Maciej Szmigiero <mhej@o2.pl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101204 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1753273Ab1BETZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Feb 2011 14:25:04 -0500
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Sat, 05 Feb 2011 14:25:03 EST
+From: Ed Tomlinson <edt@aei.ca>
+To: linux-kernel@vger.kernel.org
+Subject: [BUG] usb problems in .38-rc3+
+Date: Sat, 5 Feb 2011 14:17:57 -0500
+User-Agent: KMail/1.13.6 (Linux/2.6.38-rc3-crc+; KDE/4.6.0; x86_64; ; )
+Cc: linux-bluetooth@vger.kernel.org, linux-usb@vger.kernel.org
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@suse.de>, Johan Hovold <jhovold@gmail.com>,
-        Joe Perches <joe@perches.com>, Alan Cox <alan@linux.intel.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [USB]Add Samsung SGH-I500/Android modem ID switch to visor driver
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-O2-Trust: 2, 69
-X-O2-SPF: neutral
+Message-Id: <201102051417.58953.edt@aei.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[USB]Add Samsung SGH-I500/Android modem ID switch to visor driver
+Hi,
 
-Samsung decided to reuse USB ID of its old CDMA phone SGH-I500 for the
-modem part of some of their Android phones. At least Galaxy Spica
-is affected.
+My bluetooth usb dongle has stopped working in .38-rc3+
 
-This modem needs ACM driver and does not work with visor driver which
-binds the conflicting ID for SGH-I500.
-Because SGH-I500 is pretty an old hardware its best to add switch to visor
-driver in cause somebody still wants to use that phone with Linux.
+Bus 002 Device 008: ID 0a12:0001 Cambridge Silicon Radio, Ltd Bluetooth Dongle (HCI mode)
 
-Note that this is needed only when using the Android phone as modem,
-not in USB storage or ADB mode.
+and in dmesg
 
-Signed-off-by: Maciej Szmigiero <mhej@o2.pl>
+[108495.369056] usb 5-1: new full speed USB device using ohci_hcd and address 3
+[108495.573077] usb 5-1: New USB device found, idVendor=0a12, idProduct=0001
+[108495.580099] usb 5-1: New USB device strings: Mfr=0, Product=0, SerialNumber=0
+[108652.971977] usb 5-1: USB disconnect, address 3
+[108652.972718] btusb_bulk_complete: hci0 urb ffff8800684e99c0 failed to resubmit (19)
+[108652.973725] btusb_bulk_complete: hci0 urb ffff8800684e9c00 failed to resubmit (19)
+[108652.974707] btusb_intr_complete: hci0 urb ffff8800684e9840 failed to resubmit (19)
+[108653.001690] btusb_send_frame: hci0 urb ffff8800bb42a240 submission failed
+[108657.007541] usb 2-4.7: new full speed USB device using ehci_hcd and address 8
+[108657.147736] usb 2-4.7: New USB device found, idVendor=0a12, idProduct=0001
+[108657.154954] usb 2-4.7: New USB device strings: Mfr=0, Product=0, SerialNumber=0
 
-diff --git a/drivers/usb/serial/visor.c b/drivers/usb/serial/visor.c
-index 15a5d89..5e56ab3 100644
---- a/drivers/usb/serial/visor.c
-+++ b/drivers/usb/serial/visor.c
-@@ -52,6 +52,7 @@ static int palm_os_4_probe(struct usb_serial *serial,
- 
- /* Parameters that may be passed into the module. */
- static int debug;
-+static int enable_i500;
- static __u16 vendor;
- static __u16 product;
- 
-@@ -479,6 +480,10 @@ static int visor_probe(struct usb_serial *serial,
- 
- 	dbg("%s", __func__);
- 
-+	if ((!enable_i500) && (id->idVendor == SAMSUNG_VENDOR_ID) &&
-+		(id->idProduct == SAMSUNG_SPH_I500_ID))
-+		return -ENODEV;
-+
- 	if (serial->dev->actconfig->desc.bConfigurationValue != 1) {
- 		dev_err(&serial->dev->dev, "active config #%d != 1 ??\n",
- 			serial->dev->actconfig->desc.bConfigurationValue);
-@@ -718,6 +723,11 @@ MODULE_LICENSE("GPL");
- module_param(debug, bool, S_IRUGO | S_IWUSR);
- MODULE_PARM_DESC(debug, "Debug enabled or not");
- 
-+module_param(enable_i500, bool, S_IRUGO);
-+MODULE_PARM_DESC(enable_i500, "Enable support for Samsung SPH-I500. "
-+				"Causes USBID conflict with modem in Samsung "
-+				"Android phones");
-+
- module_param(vendor, ushort, 0);
- MODULE_PARM_DESC(vendor, "User specified vendor ID");
- module_param(product, ushort, 0);
+Its been working for years here.
 
+Any ideas on what to try or additional info to gather?
+
+TIA
+Ed Tomlinson
 
