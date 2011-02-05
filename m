@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510Ab1BESYz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 13:24:55 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:46777 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753063Ab1BESYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 13:24:54 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Subject: Re: [PATCH 8/8] ACPI / PM: Use existing ACPI iomaps for NVS save/restore (v2)
-Date: Sat, 5 Feb 2011 19:24:42 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc3+; KDE/4.4.4; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-References: <201101201226.41021.rjw@sisk.pl> <201101250032.07423.rjw@sisk.pl> <AANLkTi=nAhadVy6y6f4uOy0-pvTQrdwYgQ0y_4ukui2z@mail.gmail.com>
-In-Reply-To: <AANLkTi=nAhadVy6y6f4uOy0-pvTQrdwYgQ0y_4ukui2z@mail.gmail.com>
+	id S1753444Ab1BEScE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 13:32:04 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62794 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753063Ab1BEScC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Feb 2011 13:32:02 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=LfkrISoSRPZ4AEaLeQcrsPHwCx1PfSZj9vJTqjU9mVQb1ym/yURpGY2XimzlQg/Naz
+         UYcOwyxy2qvtP4l6KI7mSap9GIgb5GSA/jTJ0Rv4S+99uCwb5IKjwralaYkcJ2X/K/LF
+         5zR8Vphc+f27x7DEiHuFuBBYiy/FBbaiYkkI0=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102051924.43158.rjw@sisk.pl>
+In-Reply-To: <AANLkTimYMWsj7VPCMEqkb3KEW3+dF30cEqhk=9h4EN-C@mail.gmail.com>
+References: <AANLkTikiKagzJMh_xuOSzfA4c-qxOHhVeU2jhmbaDHji@mail.gmail.com>
+	<AANLkTimYMWsj7VPCMEqkb3KEW3+dF30cEqhk=9h4EN-C@mail.gmail.com>
+Date: Sat, 5 Feb 2011 18:32:01 +0000
+Message-ID: <AANLkTinjR07JrFCCNe2Q49Ya5R=frXD8C9604LU0jzUB@mail.gmail.com>
+Subject: Re: GIT - cloning torvalds/linux-2.6.git repository trouble.
+From: Valentin QUEQUET <valentin.quequet@gmail.com>
+To: Ashwin Bihari <abihari@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, February 05, 2011, Jeff Chua wrote:
-> The suspend monster is back! The suspend-to-ram is fine, but upon
-> resume, screen is blank. Haven't bisected in case someone has also
-> done so.
-> 
-> It's very recent. ... between commit
-> 831d52bc153971b70e64eccfbed2b232394f22f8 and
-> 44f2c5c841da1b1e0864d768197ab1497b5c2cc1.
+2011/2/5, Ashwin Bihari <abihari@gmail.com>:
+> One traditionally uses "git clone
+> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+> linux-2.6" to create a local copy of the Linux 2.6 tree. You, surely,
+> weren't downloading those PACK files individually were you?
+>
+> Regards
+> -- Ashwin
 
-BTW, please don't reply to messages containing patches with reports of problems
-that aren't caused by those patches.  It's confusing at best and at worst it
-may result in the patches being rejected.
+I was forced to download these files manually over http://, and thus
+individually , because of my troublesome WiFi connexion.
 
-Thanks,
-Rafael
+Please, help me to get good value from the files (~450 MiB) I've downloaded.
+
+You would be gentle to show me the steps which will make me get a
+usable local git repository.
+
+Thanks in advance.
+
+Sincerely,
+
+Valentin
