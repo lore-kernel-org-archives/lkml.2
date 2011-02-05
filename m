@@ -1,103 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174Ab1BEC2c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 21:28:32 -0500
-Received: from science.horizon.com ([71.41.210.146]:56441 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752832Ab1BEC2c (ORCPT
+	id S1753220Ab1BECcD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 21:32:03 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33791 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752890Ab1BECcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 21:28:32 -0500
-Date: 4 Feb 2011 21:28:30 -0500
-Message-ID: <20110205022830.19500.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: dzickus@redhat.com, gorcunov@gmail.com, mingo@elte.hu
-Subject: Re: [PATCH] perf, x86: P4 PMU -- Fix unflagged overflows test
-Cc: a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org, linux@horizon.com,
-        ming.m.lin@intel.com, mroos@linux.ee
-In-Reply-To: <AANLkTin5gCnhVos3Lu_0GZSxFQmvsNEYTO=Jq7UdmYb1@mail.gmail.com>
+	Fri, 4 Feb 2011 21:32:01 -0500
+Date: Fri, 4 Feb 2011 18:31:26 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: linux-kernel@vger.kernel.org, Mandeep Singh Baines <msb@chromium.org>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: mmotm 2011-02-04-15-15 uploaded (printk
+ DEFAULT_MESSAGE_LOGLEVEL)
+Message-Id: <20110204183126.ac5c2d66.randy.dunlap@oracle.com>
+In-Reply-To: <201102042349.p14NnQEm025834@imap1.linux-foundation.org>
+References: <201102042349.p14NnQEm025834@imap1.linux-foundation.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4D4CB697.00E5:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The earlier patch didn't fix things after all.  I'm rebooting with this one now.
+On Fri, 04 Feb 2011 15:15:17 -0800 akpm@linux-foundation.org wrote:
 
-(2.6.38-rc3 wih x86_pmu_start patch.)
-Feb  2 01:00:03: Uhhuh. NMI received for unknown reason 2d on CPU 0.
-Feb  2 01:00:03: Do you have a strange power saving mode enabled?
-Feb  2 01:00:03: Dazed and confused, but trying to continue
-Feb  2 01:01:04: Uhhuh. NMI received for unknown reason 3d on CPU 0.
-Feb  2 01:01:04: Do you have a strange power saving mode enabled?
-Feb  2 01:01:04: Dazed and confused, but trying to continue
-Feb  2 04:22:20: Uhhuh. NMI received for unknown reason 2d on CPU 0.
-Feb  2 04:22:20: Do you have a strange power saving mode enabled?
-Feb  2 04:22:20: Dazed and confused, but trying to continue
-Feb  2 06:28:17: Uhhuh. NMI received for unknown reason 2d on CPU 0.
-Feb  2 06:28:17: Do you have a strange power saving mode enabled?
-Feb  2 06:28:17: Dazed and confused, but trying to continue
-Feb  2 08:39:01: Uhhuh. NMI received for unknown reason 3d on CPU 0.
-Feb  2 08:39:01: Do you have a strange power saving mode enabled?
-Feb  2 08:39:01: Dazed and confused, but trying to continue
-Feb  2 16:00:04: Uhhuh. NMI received for unknown reason 3d on CPU 0.
-Feb  2 16:00:04: Do you have a strange power saving mode enabled?
-Feb  2 16:00:04: Dazed and confused, but trying to continue
-Feb  2 20:04:41: Uhhuh. NMI received for unknown reason 2d on CPU 0.
-Feb  2 20:04:41: Do you have a strange power saving mode enabled?
-Feb  2 20:04:41: Dazed and confused, but trying to continue
-Feb  2 22:21:27: Uhhuh. NMI received for unknown reason 3d on CPU 0.
-Feb  2 22:21:27: Do you have a strange power saving mode enabled?
-Feb  2 22:21:27: Dazed and confused, but trying to continue
-Feb  3 00:09:11: Uhhuh. NMI received for unknown reason 2d on CPU 0.
-Feb  3 00:09:11: Do you have a strange power saving mode enabled?
-Feb  3 00:09:11: Dazed and confused, but trying to continue
-Feb  3 00:24:02: Uhhuh. NMI received for unknown reason 3d on CPU 0.
-Feb  3 00:24:02: Do you have a strange power saving mode enabled?
-Feb  3 00:24:02: Dazed and confused, but trying to continue
-Feb  3 01:00:12: Uhhuh. NMI received for unknown reason 2d on CPU 0.
-Feb  3 01:00:12: Do you have a strange power saving mode enabled?
-Feb  3 01:00:12: Dazed and confused, but trying to continue
-Feb  3 01:27:50: Uhhuh. NMI received for unknown reason 3d on CPU 0.
-Feb  3 01:27:50: Do you have a strange power saving mode enabled?
-Feb  3 01:27:50: Dazed and confused, but trying to continue
-Feb  3 06:27:55: Uhhuh. NMI received for unknown reason 3d on CPU 0.
-Feb  3 06:27:55: Do you have a strange power saving mode enabled?
-Feb  3 06:27:55: Dazed and confused, but trying to continue
-Feb  3 09:21:06: Uhhuh. NMI received for unknown reason 3d on CPU 0.
-Feb  3 09:21:06: Do you have a strange power saving mode enabled?
-Feb  3 09:21:06: Dazed and confused, but trying to continue
-Feb  3 11:35:23: Uhhuh. NMI received for unknown reason 2d on CPU 0.
-Feb  3 11:35:23: Do you have a strange power saving mode enabled?
-Feb  3 11:35:23: Dazed and confused, but trying to continue
-Feb  3 17:52:05: Uhhuh. NMI received for unknown reason 3d on CPU 0.
-Feb  3 17:52:05: Do you have a strange power saving mode enabled?
-Feb  3 17:52:05: Dazed and confused, but trying to continue
-Feb  3 18:01:44: Uhhuh. NMI received for unknown reason 3d on CPU 0.
-Feb  3 18:01:44: Do you have a strange power saving mode enabled?
-Feb  3 18:01:44: Dazed and confused, but trying to continue
-Feb  3 18:11:23: Uhhuh. NMI received for unknown reason 3d on CPU 0.
-Feb  3 18:11:23: Do you have a strange power saving mode enabled?
-Feb  3 18:11:23: Dazed and confused, but trying to continue
-Feb  3 20:02:43: Uhhuh. NMI received for unknown reason 3d on CPU 0.
-Feb  3 20:02:43: Do you have a strange power saving mode enabled?
-Feb  3 20:02:43: Dazed and confused, but trying to continue
-Feb  3 22:38:43: Uhhuh. NMI received for unknown reason 3d on CPU 0.
-Feb  3 22:38:43: Do you have a strange power saving mode enabled?
-Feb  3 22:38:43: Dazed and confused, but trying to continue
-Feb  4 01:00:41: Uhhuh. NMI received for unknown reason 3d on CPU 0.
-Feb  4 01:00:41: Do you have a strange power saving mode enabled?
-Feb  4 01:00:41: Dazed and confused, but trying to continue
-Feb  4 05:00:02: Uhhuh. NMI received for unknown reason 3d on CPU 0.
-Feb  4 05:00:02: Do you have a strange power saving mode enabled?
-Feb  4 05:00:02: Dazed and confused, but trying to continue
-Feb  4 06:28:42: Uhhuh. NMI received for unknown reason 2d on CPU 0.
-Feb  4 06:28:42: Do you have a strange power saving mode enabled?
-Feb  4 06:28:42: Dazed and confused, but trying to continue
-Feb  4 13:35:29: Uhhuh. NMI received for unknown reason 2d on CPU 0.
-Feb  4 13:35:29: Do you have a strange power saving mode enabled?
-Feb  4 13:35:29: Dazed and confused, but trying to continue
-Feb  4 20:00:32: Uhhuh. NMI received for unknown reason 3d on CPU 0.
-Feb  4 20:00:32: Do you have a strange power saving mode enabled?
-Feb  4 20:00:32: Dazed and confused, but trying to continue
-Feb  4 21:12:52: Uhhuh. NMI received for unknown reason 2d on CPU 0.
-Feb  4 21:12:52: Do you have a strange power saving mode enabled?
-Feb  4 21:12:52: Dazed and confused, but trying to continue
+> The mm-of-the-moment snapshot 2011-02-04-15-15 has been uploaded to
+> 
+>    http://userweb.kernel.org/~akpm/mmotm/
+> 
+> and will soon be available at
+> 
+>    git://zen-kernel.org/kernel/mmotm.git
+> 
+> It contains the following patches against 2.6.38-rc3:
 
+When CONFIG_PRINTK is not enabled:
+
+mmotm-2011-0204-1515/kernel/printk.c:66: error: 'CONFIG_DEFAULT_MESSAGE_LOGLEVEL' undeclared here (not in a function)
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
