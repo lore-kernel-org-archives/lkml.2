@@ -1,295 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811Ab1BERe6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 12:34:58 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:48281 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752645Ab1BERe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 12:34:57 -0500
-Date: Sat, 5 Feb 2011 18:34:49 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        borislav.petkov@amd.com
-Subject: Re: [PATCH 16/52] kstrtox: convert drivers/edac/
-Message-ID: <20110205173449.GA31845@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Alexey Dobriyan <adobriyan@gmail.com>, akpm@linux-foundation.org,
-	linux-kernel@vger.kernel.org, borislav.petkov@amd.com
-References: <1296915654-7458-1-git-send-email-adobriyan@gmail.com>
- <1296915654-7458-16-git-send-email-adobriyan@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1296915654-7458-16-git-send-email-adobriyan@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752831Ab1BERhD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 12:37:03 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:60544 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752538Ab1BERhB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Feb 2011 12:37:01 -0500
+Date: Sat, 5 Feb 2011 09:36:32 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: akpm@linux-foundation.org, rmthomas@sciolus.org,
+        driverdevel <devel@driverdev.osuosl.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, gregkh <greg@kroah.com>
+Subject: [PATCH -mmotm] staging/easycap: fix build when SND is not enabled
+Message-Id: <20110205093632.b76be846.randy.dunlap@oracle.com>
+In-Reply-To: <201102042349.p14NnQEm025834@imap1.linux-foundation.org>
+References: <201102042349.p14NnQEm025834@imap1.linux-foundation.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4D4D8AB2.0172:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 05, 2011 at 04:20:19PM +0200, Alexey Dobriyan wrote:
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Some kind of a boilerplate commit message is still better than none at all.
+Fix easycap build when CONFIG_SOUND is enabled but CONFIG_SND is
+not enabled.
 
-> 
-> Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
-> ---
->  drivers/edac/amd64_edac_inj.c |  135 +++++++++++++++++------------------------
->  drivers/edac/edac_mc_sysfs.c  |   20 +++---
->  drivers/edac/i7core_edac.c    |   41 +++++++------
->  drivers/edac/mce_amd_inj.c    |   28 ++++-----
->  4 files changed, 101 insertions(+), 123 deletions(-)
-> 
-> diff --git a/drivers/edac/amd64_edac_inj.c b/drivers/edac/amd64_edac_inj.c
-> index 688478d..180a498 100644
-> --- a/drivers/edac/amd64_edac_inj.c
-> +++ b/drivers/edac/amd64_edac_inj.c
-> @@ -16,21 +16,18 @@ static ssize_t amd64_inject_section_store(struct mem_ctl_info *mci,
->  					  const char *data, size_t count)
->  {
->  	struct amd64_pvt *pvt = mci->pvt_info;
-> -	unsigned long value;
-> -	int ret = 0;
-> -
-> -	ret = strict_strtoul(data, 10, &value);
-> -	if (ret != -EINVAL) {
-> -
-> -		if (value > 3) {
-> -			amd64_warn("%s: invalid section 0x%lx\n", __func__, value);
-> -			return -EINVAL;
-> -		}
-> -
-> -		pvt->injection.section = (u32) value;
-> -		return count;
-> +	u32 value;
-> +	int ret;
-> +
-> +	ret = kstrtou32(data, 10, &value);
-> +	if (ret < 0)
-> +		return ret;
+These functions are only built when CONFIG_SND is enabled, so the
+driver should depend on SND.
+This means that having SND enabled is required for the (obsolete)
+EASYCAP_OSS config option.
 
-newline here
+drivers/built-in.o: In function `easycap_usb_disconnect':
+easycap_main.c:(.text+0x2aba20): undefined reference to `snd_card_free'
+drivers/built-in.o: In function `easycap_alsa_probe':
+(.text+0x2b784b): undefined reference to `snd_card_create'
+drivers/built-in.o: In function `easycap_alsa_probe':
+(.text+0x2b78fb): undefined reference to `snd_pcm_new'
+drivers/built-in.o: In function `easycap_alsa_probe':
+(.text+0x2b7916): undefined reference to `snd_pcm_set_ops'
+drivers/built-in.o: In function `easycap_alsa_probe':
+(.text+0x2b795b): undefined reference to `snd_card_register'
+drivers/built-in.o: In function `easycap_alsa_probe':
+(.text+0x2b79d8): undefined reference to `snd_card_free'
+drivers/built-in.o: In function `easycap_alsa_probe':
+(.text+0x2b7a78): undefined reference to `snd_card_free'
+drivers/built-in.o: In function `easycap_alsa_complete':
+(.text+0x2b7e68): undefined reference to `snd_pcm_period_elapsed'
+drivers/built-in.o:(.data+0x2cae8): undefined reference to `snd_pcm_lib_ioctl'
 
-> +	if (value > 3) {
-> +		amd64_warn("%s: invalid section 0x%x\n", __func__, value);
-> +		return -EINVAL;
->  	}
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: R.M. Thomas <rmthomas@sciolus.org>
+---
+ drivers/staging/easycap/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-and here.
-
-> -	return ret;
-> +	pvt->injection.section = value;
-> +	return count;
->  }
->  
->  static ssize_t amd64_inject_word_show(struct mem_ctl_info *mci, char *buf)
-> @@ -49,21 +46,18 @@ static ssize_t amd64_inject_word_store(struct mem_ctl_info *mci,
->  					const char *data, size_t count)
->  {
->  	struct amd64_pvt *pvt = mci->pvt_info;
-> -	unsigned long value;
-> -	int ret = 0;
-> -
-> -	ret = strict_strtoul(data, 10, &value);
-> -	if (ret != -EINVAL) {
-> -
-> -		if (value > 8) {
-> -			amd64_warn("%s: invalid word 0x%lx\n", __func__, value);
-> -			return -EINVAL;
-> -		}
-> -
-> -		pvt->injection.word = (u32) value;
-> -		return count;
-> +	u32 value;
-> +	int ret;
-> +
-> +	ret = kstrtou32(data, 10, &value);
-> +	if (ret < 0)
-> +		return ret;
-
-newline
-
-> +	if (value > 8) {
-> +		amd64_warn("%s: invalid word 0x%x\n", __func__, value);
-> +		return -EINVAL;
->  	}
-
-newline.
-
-> -	return ret;
-> +	pvt->injection.word = value;
-> +	return count;
->  }
->  
->  static ssize_t amd64_inject_ecc_vector_show(struct mem_ctl_info *mci, char *buf)
-> @@ -81,22 +75,19 @@ static ssize_t amd64_inject_ecc_vector_store(struct mem_ctl_info *mci,
->  					     const char *data, size_t count)
->  {
->  	struct amd64_pvt *pvt = mci->pvt_info;
-> -	unsigned long value;
-> -	int ret = 0;
-> -
-> -	ret = strict_strtoul(data, 16, &value);
-> -	if (ret != -EINVAL) {
-> -
-> -		if (value & 0xFFFF0000) {
-> -			amd64_warn("%s: invalid EccVector: 0x%lx\n",
-> +	u32 value;
-> +	int ret;
-> +
-> +	ret = kstrtou32(data, 16, &value);
-> +	if (ret < 0)
-> +		return ret;
-
-newline.
-
-> +	if (value & 0xFFFF0000) {
-> +		amd64_warn("%s: invalid EccVector: 0x%x\n",
->  				   __func__, value);
-> -			return -EINVAL;
-> -		}
-> -
-> -		pvt->injection.bit_map = (u32) value;
-> -		return count;
-> +		return -EINVAL;
->  	}
-> -	return ret;
-
-newline
-
-> +	pvt->injection.bit_map = value;
-> +	return count;
->  }
->  
->  /*
-> @@ -107,29 +98,22 @@ static ssize_t amd64_inject_read_store(struct mem_ctl_info *mci,
->  					const char *data, size_t count)
->  {
->  	struct amd64_pvt *pvt = mci->pvt_info;
-> -	unsigned long value;
->  	u32 section, word_bits;
-> -	int ret = 0;
-> -
-> -	ret = strict_strtoul(data, 10, &value);
-> -	if (ret != -EINVAL) {
-
-Dropping those would mean that the injection read (and write) below
-would happen on any value written. Let's keep them and enforce a write
-of '1' to be only valid injection trigger like the rest of the /sysfs
-interfaces:
-
-	ret = kstrtou8(data, 10, &value);
-	if (ret < 0)
-		return ret;
-
-	if (value != 1)
-		return -EINVAL;
-
->  
-> -		/* Form value to choose 16-byte section of cacheline */
-> -		section = F10_NB_ARRAY_DRAM_ECC |
-> -				SET_NB_ARRAY_ADDRESS(pvt->injection.section);
-> -		pci_write_config_dword(pvt->F3, F10_NB_ARRAY_ADDR, section);
-> +	/* Form value to choose 16-byte section of cacheline */
-> +	section = F10_NB_ARRAY_DRAM_ECC |
-> +		SET_NB_ARRAY_ADDRESS(pvt->injection.section);
-> +	pci_write_config_dword(pvt->F3, F10_NB_ARRAY_ADDR, section);
->  
-> -		word_bits = SET_NB_DRAM_INJECTION_READ(pvt->injection.word,
-> -						pvt->injection.bit_map);
-> +	word_bits = SET_NB_DRAM_INJECTION_READ(pvt->injection.word,
-> +			pvt->injection.bit_map);
->  
-> -		/* Issue 'word' and 'bit' along with the READ request */
-> -		pci_write_config_dword(pvt->F3, F10_NB_ARRAY_DATA, word_bits);
-> +	/* Issue 'word' and 'bit' along with the READ request */
-> +	pci_write_config_dword(pvt->F3, F10_NB_ARRAY_DATA, word_bits);
->  
-> -		debugf0("section=0x%x word_bits=0x%x\n", section, word_bits);
-> +	debugf0("section=0x%x word_bits=0x%x\n", section, word_bits);
->  
-> -		return count;
-> -	}
-> -	return ret;
-> +	return count;
->  }
->  
->  /*
-> @@ -140,29 +124,22 @@ static ssize_t amd64_inject_write_store(struct mem_ctl_info *mci,
->  					const char *data, size_t count)
->  {
->  	struct amd64_pvt *pvt = mci->pvt_info;
-> -	unsigned long value;
->  	u32 section, word_bits;
-> -	int ret = 0;
-> -
-> -	ret = strict_strtoul(data, 10, &value);
-> -	if (ret != -EINVAL) {
-
-Same as above.
-
->  
-> -		/* Form value to choose 16-byte section of cacheline */
-> -		section = F10_NB_ARRAY_DRAM_ECC |
-> -				SET_NB_ARRAY_ADDRESS(pvt->injection.section);
-> -		pci_write_config_dword(pvt->F3, F10_NB_ARRAY_ADDR, section);
-> +	/* Form value to choose 16-byte section of cacheline */
-> +	section = F10_NB_ARRAY_DRAM_ECC |
-> +		SET_NB_ARRAY_ADDRESS(pvt->injection.section);
-> +	pci_write_config_dword(pvt->F3, F10_NB_ARRAY_ADDR, section);
->  
-> -		word_bits = SET_NB_DRAM_INJECTION_WRITE(pvt->injection.word,
-> -						pvt->injection.bit_map);
-> +	word_bits = SET_NB_DRAM_INJECTION_WRITE(pvt->injection.word,
-> +			pvt->injection.bit_map);
->  
-> -		/* Issue 'word' and 'bit' along with the READ request */
-> -		pci_write_config_dword(pvt->F3, F10_NB_ARRAY_DATA, word_bits);
-> +	/* Issue 'word' and 'bit' along with the READ request */
-> +	pci_write_config_dword(pvt->F3, F10_NB_ARRAY_DATA, word_bits);
->  
-> -		debugf0("section=0x%x word_bits=0x%x\n", section, word_bits);
-> +	debugf0("section=0x%x word_bits=0x%x\n", section, word_bits);
->  
-> -		return count;
-> -	}
-> -	return ret;
-> +	return count;
->  }
->  
->  /*
-> @@ -197,17 +174,15 @@ struct mcidev_sysfs_attribute amd64_inj_attrs[] = {
->  	{
->  		.attr = {
->  			.name = "inject_write",
-> -			.mode = (S_IRUGO | S_IWUSR)
-> +			.mode = S_IWUSR,
-
-This change is not mentioned anywhere, why do we need it?
-
->  		},
-> -		.show = NULL,
->  		.store = amd64_inject_write_store,
->  	},
->  	{
->  		.attr = {
->  			.name = "inject_read",
-> -			.mode = (S_IRUGO | S_IWUSR)
-> +			.mode = S_IWUSR,
-
-ditto.
-
->  		},
-> -		.show = NULL,
->  		.store = amd64_inject_read_store,
->  	},
->  };
-
-Ok, provided the general change to kstrtoX is agreed upon, you can add
-my Acked-by to the AMD EDAC changes pending the issues above.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
+--- mmotm-2011-0204-1515.orig/drivers/staging/easycap/Kconfig
++++ mmotm-2011-0204-1515/drivers/staging/easycap/Kconfig
+@@ -1,6 +1,6 @@
+ config EASYCAP
+ 	tristate "EasyCAP USB ID 05e1:0408 support"
+-	depends on USB && VIDEO_DEV && SOUND
++	depends on USB && VIDEO_DEV && SND
+ 
+ 	---help---
+ 	  This is an integrated audio/video driver for EasyCAP cards with
