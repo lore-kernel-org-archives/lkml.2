@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab1BERhD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 12:37:03 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:60544 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752538Ab1BERhB (ORCPT
+	id S1752824Ab1BERla (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 12:41:30 -0500
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:48551 "EHLO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752538Ab1BERl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 12:37:01 -0500
-Date: Sat, 5 Feb 2011 09:36:32 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: akpm@linux-foundation.org, rmthomas@sciolus.org,
-        driverdevel <devel@driverdev.osuosl.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, gregkh <greg@kroah.com>
-Subject: [PATCH -mmotm] staging/easycap: fix build when SND is not enabled
-Message-Id: <20110205093632.b76be846.randy.dunlap@oracle.com>
-In-Reply-To: <201102042349.p14NnQEm025834@imap1.linux-foundation.org>
-References: <201102042349.p14NnQEm025834@imap1.linux-foundation.org>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4D4D8AB2.0172:SCFMA4539814,ss=1,fgs=0
+	Sat, 5 Feb 2011 12:41:29 -0500
+Date: Sat, 5 Feb 2011 19:41:25 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: dell-wmi: Received unknown WMI event (0x11)
+Message-ID: <20110205174124.GB2619@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <20110205171807.GA3738@legolas.emea.dhcp.ti.com>
+ <20110205173259.GA28134@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110205173259.GA28134@srcf.ucam.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+Hi,
 
-Fix easycap build when CONFIG_SOUND is enabled but CONFIG_SND is
-not enabled.
+On Sat, Feb 05, 2011 at 05:32:59PM +0000, Matthew Garrett wrote:
+> On Sat, Feb 05, 2011 at 07:18:07PM +0200, Felipe Balbi wrote:
+> 
+> > [  393.020537] dell-wmi: Received unknown WMI event (0x11)
+> > [  832.336855] dell-wmi: Received unknown WMI event (0x11)
+> > [  832.409353] dell-wmi: Received unknown WMI event (0x11)
+> > [  833.621140] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+> > [  834.367611] dell-wmi: Received unknown WMI event (0x11)
+> > [ 1001.665940] dell-wmi: Received unknown WMI event (0x11)
+> > [ 1002.846845] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+> > [ 1003.591459] dell-wmi: Received unknown WMI event (0x11)
+> > [ 1063.690326] dell-wmi: Received unknown WMI event (0x11)
+> > [ 1064.942777] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+> > [ 1644.787491] dell-wmi: Received unknown WMI event (0x11)
+> > [ 1644.849026] dell-wmi: Received unknown WMI event (0x11)
+> > [ 1645.971790] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+> > [ 1646.719084] dell-wmi: Received unknown WMI event (0x11)
+> > [ 2317.273481] dell-wmi: Received unknown WMI event (0x11)
+> > [ 2318.540645] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+> > [ 2319.285487] dell-wmi: Received unknown WMI event (0x11)
+> > [ 2379.364740] dell-wmi: Received unknown WMI event (0x11)
+> > [ 2877.001258] dell-wmi: Received unknown WMI event (0x11)
+> > [ 2878.211188] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+> > [ 2878.957282] dell-wmi: Received unknown WMI event (0x11)
+> > [ 2903.422959] dell-wmi: Received unknown WMI event (0x11)
+> > [ 2904.609272] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+> > [ 2905.352451] dell-wmi: Received unknown WMI event (0x11)
+> > [ 2965.454915] dell-wmi: Received unknown WMI event (0x11)
+> > [ 2966.701330] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+> > [ 3981.339257] dell-wmi: Received unknown WMI event (0x11)
+> > [ 3982.510612] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+> > [ 3983.254770] dell-wmi: Received unknown WMI event (0x11)
+> > [ 4045.466929] dell-wmi: Received unknown WMI event (0x11)
+> > [ 4046.631137] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+> > [ 4047.391614] dell-wmi: Received unknown WMI event (0x11)
+> > [ 4107.480071] dell-wmi: Received unknown WMI event (0x11)
+> > [ 4108.631339] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+> > [ 4731.506881] dell-wmi: Received unknown WMI event (0x11)
+> > [ 4732.646424] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+> > [ 4733.391238] dell-wmi: Received unknown WMI event (0x11)
+> > [ 6025.385179] cdrom: This disc doesn't have any tracks I recognize!
+> 
+> Nothing's changed in dell-wmi in that timeframe, so I suspect it's some 
+> other issue that's triggering here and the hardware is responding by 
+> sending events? Alternatively, these messages are pretty spread out. Do 
+> they directly correspond to you trying to burn something?
 
-These functions are only built when CONFIG_SND is enabled, so the
-driver should depend on SND.
-This means that having SND enabled is required for the (obsolete)
-EASYCAP_OSS config option.
+it's actually right after inserting a disc on the drive. I'll try
+switching to AHCI on BIOS and see if it works fine.
 
-drivers/built-in.o: In function `easycap_usb_disconnect':
-easycap_main.c:(.text+0x2aba20): undefined reference to `snd_card_free'
-drivers/built-in.o: In function `easycap_alsa_probe':
-(.text+0x2b784b): undefined reference to `snd_card_create'
-drivers/built-in.o: In function `easycap_alsa_probe':
-(.text+0x2b78fb): undefined reference to `snd_pcm_new'
-drivers/built-in.o: In function `easycap_alsa_probe':
-(.text+0x2b7916): undefined reference to `snd_pcm_set_ops'
-drivers/built-in.o: In function `easycap_alsa_probe':
-(.text+0x2b795b): undefined reference to `snd_card_register'
-drivers/built-in.o: In function `easycap_alsa_probe':
-(.text+0x2b79d8): undefined reference to `snd_card_free'
-drivers/built-in.o: In function `easycap_alsa_probe':
-(.text+0x2b7a78): undefined reference to `snd_card_free'
-drivers/built-in.o: In function `easycap_alsa_complete':
-(.text+0x2b7e68): undefined reference to `snd_pcm_period_elapsed'
-drivers/built-in.o:(.data+0x2cae8): undefined reference to `snd_pcm_lib_ioctl'
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: R.M. Thomas <rmthomas@sciolus.org>
----
- drivers/staging/easycap/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- mmotm-2011-0204-1515.orig/drivers/staging/easycap/Kconfig
-+++ mmotm-2011-0204-1515/drivers/staging/easycap/Kconfig
-@@ -1,6 +1,6 @@
- config EASYCAP
- 	tristate "EasyCAP USB ID 05e1:0408 support"
--	depends on USB && VIDEO_DEV && SOUND
-+	depends on USB && VIDEO_DEV && SND
- 
- 	---help---
- 	  This is an integrated audio/video driver for EasyCAP cards with
+-- 
+balbi
