@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753344Ab1BEUNG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 15:13:06 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:46276 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752661Ab1BEUNE (ORCPT
+	id S1753522Ab1BEUOO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 15:14:14 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:54636 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752870Ab1BEUOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 15:13:04 -0500
-Message-ID: <4D4DAF75.5090607@vflare.org>
-Date: Sat, 05 Feb 2011 15:13:41 -0500
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	Sat, 5 Feb 2011 15:14:12 -0500
+Date: Sat, 5 Feb 2011 15:14:12 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Andrew Lutomirski <luto@mit.edu>
+cc: linux-kernel@vger.kernel.org, <linux-usb@vger.kernel.org>,
+        pm list <linux-pm@lists.linux-foundation.org>
+Subject: Re: Logitech autosuspend + runtime_pm loses input
+In-Reply-To: <AANLkTikSwviozL+ezdvqengQpag4cpbLxR+vgs_JKXbZ@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1102051511180.4210-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
-CC: Dan Magenheimer <dan.magenheimer@oracle.com>
-Subject: Re: zcache and kztmem combine to become the new zcache
-References: <4D4D95C6.20505@vflare.org>
-In-Reply-To: <4D4D95C6.20505@vflare.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Sorry, forgot to CC Dan)
+On Sat, 5 Feb 2011, Andrew Lutomirski wrote:
 
-On 02/05/2011 01:24 PM, Nitin Gupta wrote:
-> To zcache and kztmem users/reviewers --
->
-> We, Nitin and Dan, have decided to combine zcache and kztmem and
-> call the resulting work as zcache.
->
-> Since kztmem has evolved further than zcache, we have agreed to
-> use the kztmem code as the foundation for future work, so Dan will
-> resubmit the kztmem patchset soon with the name changed to zcache.
->
-> Since both the "old zcache" and "new zcache" depend on the proposed
-> cleancache patch, Nitin and Dan will jointly work with the Linux
-> maintainers to support merging of cleancache, and also work together
-> on possibilities for merging frontswap and zram, since they serve
-> a similar function.
->
-> If you have any questions or concerns, please ensure you reply
-> to both of us.
->
-> Nitin Gupta and Dan Magenheimer
->
+> I have a Logitech MX Revolution (a cordless mouse receiver) plugged
+> into a Logitech G15 (a keyboard w/ a hub) plugged into an Intel Cougar
+> Point EHCI controller.  (Results are the same on an xHCI controller,
+> though.)
+> 
+> With autosuspend *or* runtime PM off, everything works.  (Well, the
+> G15 is buggy and occasionally crashes and doesn't recover until
+> powercycled, but that even happens on Windows.)  With runtime PM
+> enabled on the whole tree, I have problems with autosuspend.
+> 
+> If I enable autosuspend on just the mouse by doing:
+> 
+> echo 2 >./1-1/1-1.2/1-1.2.3/power/autosuspend
+> (where that device is Bus 001 Device 005: ID 046d:c51a Logitech, Inc.
+> MX Revolution/G7 Cordless Mouse), then after about two seconds of not
+> moving the mouse, the mouse ignores the first second or so of motion
+> when I start moving it again.
+> 
+> If I enable autosuspend on just part of the keyboard by doing:
+> 
+> echo 2 >./1-1/1-1.2/1-1.2.1/power/autosuspend
+> (that's Bus 001 Device 004: ID 046d:c221 Logitech, Inc. G11/G15
+> Keyboard / Keyboard)
+> 
+> then after a couple seconds of not typing, my next keystroke is lost or delayed.
+> 
+> It seems to be enough to turn off runtime PM (via power/control) OR
+> turn off autosuspend on the keyboard device to make the keyboard work
+> and on the mouse device to make the mouse work.
+> 
+> Is this a case of "don't do that, you fool," or is there a legitimate
+> bug to be fixed in the runtime pm code?
+> 
+> My motherboard is Intel DH67GD (ordered just before they canceled
+> production) with latest BIOS.
+
+I don't think there is any bug in the code.  The problem lies in the 
+devices; they appear to be designed so as to lose some input events 
+when waking up from suspend.  This is very common among keyboard and 
+mouse devices -- probably because autoresume was not used under Windows 
+and hence didn't get tested.
+
+Hence my advice is, as you guessed, "Don't do that".
+
+Alan Stern
 
