@@ -1,45 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751730Ab1BEIlF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 03:41:05 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51022 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199Ab1BEIlC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 03:41:02 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=nFvRYEFWzQaa+/wLgeagL7nL+a0iOxULSybw8hjp2XU0PbBmcAZYM1J4scQr3o/aXQ
-         kptmgp8/yZPkei/cJNH2KnxcR4IozdpsRuwohXNDMpc0maDM9OXpw7kYefMrmIFUWiL3
-         to/6VhzcfmXIAfnHOClWqlJ+K5P+15QxYxMA8=
-Message-ID: <4D4D0D1A.8020502@gmail.com>
-Date: Sat, 05 Feb 2011 11:40:58 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1752045Ab1BEJE7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 04:04:59 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:56589 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751715Ab1BEJEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Feb 2011 04:04:55 -0500
+Date: Sat, 5 Feb 2011 10:04:51 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
+Subject: [patch fixup] memcg: remove direct page_cgroup-to-page pointer fix
+Message-ID: <20110205090451.GA2315@cmpxchg.org>
+References: <201102042349.p14NnQEm025834@imap1.linux-foundation.org>
+ <20110204183810.76baf8f0.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-To: George Spelvin <linux@horizon.com>
-CC: dzickus@redhat.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, ming.m.lin@intel.com, mroos@linux.ee
-Subject: Re: [PATCH] perf, x86: P4 PMU -- Fix unflagged overflows test
-References: <20110205022830.19500.qmail@science.horizon.com>
-In-Reply-To: <20110205022830.19500.qmail@science.horizon.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110204183810.76baf8f0.randy.dunlap@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2011 05:28 AM, George Spelvin wrote:
-> The earlier patch didn't fix things after all.  I'm rebooting with this one now.
+On Fri, Feb 04, 2011 at 06:38:10PM -0800, Randy Dunlap wrote:
+> On Fri, 04 Feb 2011 15:15:17 -0800 akpm@linux-foundation.org wrote:
 > 
-> (2.6.38-rc3 wih x86_pmu_start patch.)
-> Feb  2 01:00:03: Uhhuh. NMI received for unknown reason 2d on CPU 0.
-> Feb  2 01:00:03: Do you have a strange power saving mode enabled?
-...
+> > The mm-of-the-moment snapshot 2011-02-04-15-15 has been uploaded to
+> > 
+> >    http://userweb.kernel.org/~akpm/mmotm/
+> > 
+> > and will soon be available at
+> > 
+> >    git://zen-kernel.org/kernel/mmotm.git
+> > 
+> > It contains the following patches against 2.6.38-rc3:
+> 
+> 
+> Lots of these warnings in some kernel configs:
+> 
+> mmotm-2011-0204-1515/include/linux/page_cgroup.h:144: warning: left shift count >= width of type
+> mmotm-2011-0204-1515/include/linux/page_cgroup.h:145: warning: left shift count >= width of type
+> mmotm-2011-0204-1515/include/linux/page_cgroup.h:150: warning: right shift count >= width of type
 
-Hi George, this log is when unflagged overflow patch applied or previous one?
+Thanks for the report, Randy, and sorry for the breakage.  Here is the
+fixup:
 
--- 
-    Cyrill
+---
+Since the non-flags field for pc array ids in pc->flags is offset from
+the end of the word, we end up with a shift count of BITS_PER_LONG in
+case the field width is zero.
+
+This results in a compiler warning as we shift in both directions a
+long int by BITS_PER_LONG.
+
+There is no real harm -- the mask is zero -- but fix up the compiler
+warning by also making the shift count zero for a non-existant field.
+
+Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+
+diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+index 05d8618..f5de21d 100644
+--- a/include/linux/page_cgroup.h
++++ b/include/linux/page_cgroup.h
+@@ -123,31 +123,36 @@ static inline void move_unlock_page_cgroup(struct page_cgroup *pc,
+ }
+ 
+ #ifdef CONFIG_SPARSEMEM
+-#define PCG_ARRAYID_SHIFT	SECTIONS_SHIFT
++#define PCG_ARRAYID_WIDTH	SECTIONS_SHIFT
+ #else
+-#define PCG_ARRAYID_SHIFT	NODES_SHIFT
++#define PCG_ARRAYID_WIDTH	NODES_SHIFT
+ #endif
+ 
+-#if (PCG_ARRAYID_SHIFT > BITS_PER_LONG - NR_PCG_FLAGS)
++#if (PCG_ARRAYID_WIDTH > BITS_PER_LONG - NR_PCG_FLAGS)
+ #error Not enough space left in pc->flags to store page_cgroup array IDs
+ #endif
+ 
+ /* pc->flags: ARRAY-ID | FLAGS */
+ 
+-#define PCG_ARRAYID_MASK	((1UL << PCG_ARRAYID_SHIFT) - 1)
++#define PCG_ARRAYID_MASK	((1UL << PCG_ARRAYID_WIDTH) - 1)
+ 
+-#define PCG_ARRAYID_OFFSET	(sizeof(unsigned long) * 8 - PCG_ARRAYID_SHIFT)
++#define PCG_ARRAYID_OFFSET	(BITS_PER_LONG - PCG_ARRAYID_WIDTH)
++/*
++ * Zero the shift count for non-existant fields, to prevent compiler
++ * warnings and ensure references are optimized away.
++ */
++#define PCG_ARRAYID_SHIFT	(PCG_ARRAYID_OFFSET * (PCG_ARRAYID_WIDTH != 0))
+ 
+ static inline void set_page_cgroup_array_id(struct page_cgroup *pc,
+ 					    unsigned long id)
+ {
+-	pc->flags &= ~(PCG_ARRAYID_MASK << PCG_ARRAYID_OFFSET);
+-	pc->flags |= (id & PCG_ARRAYID_MASK) << PCG_ARRAYID_OFFSET;
++	pc->flags &= ~(PCG_ARRAYID_MASK << PCG_ARRAYID_SHIFT);
++	pc->flags |= (id & PCG_ARRAYID_MASK) << PCG_ARRAYID_SHIFT;
+ }
+ 
+ static inline unsigned long page_cgroup_array_id(struct page_cgroup *pc)
+ {
+-	return (pc->flags >> PCG_ARRAYID_OFFSET) & PCG_ARRAYID_MASK;
++	return (pc->flags >> PCG_ARRAYID_SHIFT) & PCG_ARRAYID_MASK;
+ }
+ 
+ #else /* CONFIG_CGROUP_MEM_RES_CTLR */
