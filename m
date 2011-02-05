@@ -1,89 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753018Ab1BEAiW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 19:38:22 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39209 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752726Ab1BEAiU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 19:38:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=A2DFqCS1OvLRPGrLLdFIDG9zAiDma/GfPmhsjMmaKvGFxEvwyN10JL4xzg/6DQAhi3
-         FJyvvRpFXvVXn+QYGUpKc5WBDYk3XmhjeyBO1HW7o3UMS4lRhswLWyeTRozquZk9U2ql
-         uk/fQMaFzKoW/Ins2srWRqjT9CCEFDp9q0Hxw=
-Date: Sat, 5 Feb 2011 01:38:14 +0100
-From: Ulf Magnusson <ulfalizer.lkml@gmail.com>
-To: Rob Landley <rob@landley.net>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kbuild@vger.kernel.org,
-        zippel@linux-m68k.org, mmarek@suse.cz, akpm@linux-foundation.org,
-        andrea.gelmini@gelma.net, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH] [ANNOUNCE] kconfig: Kconfiglib: a flexible Python
- Kconfig parser
-Message-ID: <20110205003813.GB13060@ulf>
-Mail-Followup-To: Ulf Magnusson <ulfalizer.lkml@gmail.com>,
-	Rob Landley <rob@landley.net>, Randy Dunlap <rdunlap@xenotime.net>,
-	linux-kbuild@vger.kernel.org, zippel@linux-m68k.org, mmarek@suse.cz,
-	akpm@linux-foundation.org, andrea.gelmini@gelma.net,
-	linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-References: <20110201232750.GA30800@ulf>
- <20110204143529.f49e92e5.rdunlap@xenotime.net>
- <4D4C8EFA.40207@landley.net>
+	id S1752641Ab1BEAqP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 19:46:15 -0500
+Received: from hera.kernel.org ([140.211.167.34]:40494 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751085Ab1BEAqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 19:46:13 -0500
+Date: Sat, 5 Feb 2011 00:45:54 GMT
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        castet.matthieu@free.fr, kees.cook@canonical.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        castet.matthieu@free.fr, kees.cook@canonical.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <4D41E86D.8060205@free.fr>
+References: <4D41E86D.8060205@free.fr>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86-32: Make sure the stack is set up before we use it
+Message-ID: <tip-43d79a250bdb10e30b08a79e906befc691c3f5ce@git.kernel.org>
+Git-Commit-ID: 43d79a250bdb10e30b08a79e906befc691c3f5ce
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <4D4C8EFA.40207@landley.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 05 Feb 2011 00:45:55 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 04, 2011 at 05:42:50PM -0600, Rob Landley wrote:
-> On 02/04/2011 04:35 PM, Randy Dunlap wrote:
-> >> The patch should be preferably be applied to a recent kernel, i.e. Linus's
-> >> (2.6.38-rc3 at the time of writing).  Due to recent Kconfig changes, the
-> >> kconfigtest.py test suite - which compares output character-for-character -
-> >> will indicate failure on older (a few months old) kernels versions even though
-> >> the outputs are functionally equivalent.
-> >>
-> >>  Documentation/kbuild/kconfig-language.txt |    5 +
-> >>  Documentation/kbuild/kconfig.txt          |    8 +
-> >>  README                                    |   13 +
-> >>  scripts/kconfig/Makefile                  |   26 +-
-> >>  scripts/kconfig/kconfiglib.py             | 3918 +++++++++++++++++++++++++++++
-> >>  scripts/kconfig/kconfigtest.py            |  396 +++
-> >>  6 files changed, 4365 insertions(+), 1 deletions(-)
-> >>  create mode 100644 scripts/kconfig/kconfiglib.py
-> >>  create mode 100644 scripts/kconfig/kconfigtest.py
-> 
-> Wait, I thought this was an extra standalone library.  Are you saying
-> you want to make it so Linux will no longer compile on a build machine
-> that doesn't have Python installed?
+Commit-ID:  43d79a250bdb10e30b08a79e906befc691c3f5ce
+Gitweb:     http://git.kernel.org/tip/43d79a250bdb10e30b08a79e906befc691c3f5ce
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Fri, 4 Feb 2011 16:14:11 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 4 Feb 2011 16:38:35 -0800
 
-No - it's completely standalone, and should have no effect on things
-that do not use Kconfiglib. The only changes besides adding the script
-itself is to add two (well, three - there's one that's only used by
-kconfigtest.py) targets to scripts/kconfig/Makefile that make it easier
-to use the library by ensuring the environment is set up correctly.
+x86-32: Make sure the stack is set up before we use it
 
-> 
-> If this is merely an extra developer tool ala bloat-o-meter and
-> checkpatch.pl then it's merely uninteresting to me.  (I myself wrote a
-> quick and dirty http://kernel.org/doc/make/menuconfig2html.py to
-> generate http://kernel.org/doc/menuconfig/x86.html and friends years
-> ago, and I still run it to update that once in a while.  There's not
-> much to it.)
-> 
-> But adding new prerequities to a build machine would be really annoying
-> for my use cases.
-> 
-> Rob
+Since checkin ebba638ae723d8a8fc2f7abce5ec18b688b791d7 we call
+verify_cpu even in 32-bit mode.  Unfortunately, calling a function
+means using the stack, and the stack pointer was not initialized in
+the 32-bit setup code!  This code initializes the stack pointer, and
+simplifies the interface slightly since it is easier to rely on just a
+pointer value rather than a descriptor; we need to have different
+values for the segment register anyway.
 
-You would only need to have Python installed if you are going to use
-Kconfiglib directly (hard to get around with a Python library).
+This retains start_stack as a virtual address, even though a physical
+address would be more convenient for 32 bits; the 64-bit code wants
+the other way around...
 
-/Ulf
+Reported-by: Matthieu Castet <castet.matthieu@free.fr>
+LKML-Reference: <4D41E86D.8060205@free.fr>
+Cc: Kees Cook <kees.cook@canonical.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/smp.h   |    5 +----
+ arch/x86/kernel/acpi/sleep.c |    2 +-
+ arch/x86/kernel/head_32.S    |   30 +++++++++++++-----------------
+ arch/x86/kernel/head_64.S    |    1 -
+ arch/x86/kernel/smpboot.c    |    4 ++--
+ 5 files changed, 17 insertions(+), 25 deletions(-)
+
+diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
+index 4c2f63c..1f46951 100644
+--- a/arch/x86/include/asm/smp.h
++++ b/arch/x86/include/asm/smp.h
+@@ -40,10 +40,7 @@ DECLARE_EARLY_PER_CPU(u16, x86_cpu_to_apicid);
+ DECLARE_EARLY_PER_CPU(u16, x86_bios_cpu_apicid);
+ 
+ /* Static state in head.S used to set up a CPU */
+-extern struct {
+-	void *sp;
+-	unsigned short ss;
+-} stack_start;
++extern unsigned long stack_start; /* Initial stack pointer address */
+ 
+ struct smp_ops {
+ 	void (*smp_prepare_boot_cpu)(void);
+diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
+index 69fd72a..4d9ebba 100644
+--- a/arch/x86/kernel/acpi/sleep.c
++++ b/arch/x86/kernel/acpi/sleep.c
+@@ -100,7 +100,7 @@ int acpi_save_state_mem(void)
+ #else /* CONFIG_64BIT */
+ 	header->trampoline_segment = setup_trampoline() >> 4;
+ #ifdef CONFIG_SMP
+-	stack_start.sp = temp_stack + sizeof(temp_stack);
++	stack_start = (unsigned long)temp_stack + sizeof(temp_stack);
+ 	early_gdt_descr.address =
+ 			(unsigned long)get_cpu_gdt_table(smp_processor_id());
+ 	initial_gs = per_cpu_offset(smp_processor_id());
+diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+index fc293dc..767d6c4 100644
+--- a/arch/x86/kernel/head_32.S
++++ b/arch/x86/kernel/head_32.S
+@@ -85,6 +85,8 @@ RESERVE_BRK(pagetables, INIT_MAP_SIZE)
+  */
+ __HEAD
+ ENTRY(startup_32)
++	movl pa(stack_start),%ecx
++	
+ 	/* test KEEP_SEGMENTS flag to see if the bootloader is asking
+ 		us to not reload segments */
+ 	testb $(1<<6), BP_loadflags(%esi)
+@@ -99,7 +101,9 @@ ENTRY(startup_32)
+ 	movl %eax,%es
+ 	movl %eax,%fs
+ 	movl %eax,%gs
++	movl %eax,%ss
+ 2:
++	leal -__PAGE_OFFSET(%ecx),%esp
+ 
+ /*
+  * Clear BSS first so that there are no surprises...
+@@ -145,8 +149,6 @@ ENTRY(startup_32)
+  * _brk_end is set up to point to the first "safe" location.
+  * Mappings are created both at virtual address 0 (identity mapping)
+  * and PAGE_OFFSET for up to _end.
+- *
+- * Note that the stack is not yet set up!
+  */
+ #ifdef CONFIG_X86_PAE
+ 
+@@ -282,6 +284,9 @@ ENTRY(startup_32_smp)
+ 	movl %eax,%es
+ 	movl %eax,%fs
+ 	movl %eax,%gs
++	movl pa(stack_start),%ecx
++	movl %eax,%ss
++	leal -__PAGE_OFFSET(%ecx),%esp
+ #endif /* CONFIG_SMP */
+ default_entry:
+ 
+@@ -347,8 +352,8 @@ default_entry:
+ 	movl %eax,%cr0		/* ..and set paging (PG) bit */
+ 	ljmp $__BOOT_CS,$1f	/* Clear prefetch and normalize %eip */
+ 1:
+-	/* Set up the stack pointer */
+-	lss stack_start,%esp
++	/* Shift the stack pointer to a virtual address */
++	addl $__PAGE_OFFSET, %esp
+ 
+ /*
+  * Initialize eflags.  Some BIOS's leave bits like NT set.  This would
+@@ -360,9 +365,7 @@ default_entry:
+ 
+ #ifdef CONFIG_SMP
+ 	cmpb $0, ready
+-	jz  1f				/* Initial CPU cleans BSS */
+-	jmp checkCPUtype
+-1:
++	jnz checkCPUtype
+ #endif /* CONFIG_SMP */
+ 
+ /*
+@@ -470,14 +473,7 @@ is386:	movl $2,%ecx		# set MP
+ 
+ 	cld			# gcc2 wants the direction flag cleared at all times
+ 	pushl $0		# fake return address for unwinder
+-#ifdef CONFIG_SMP
+-	movb ready, %cl
+ 	movb $1, ready
+-	cmpb $0,%cl		# the first CPU calls start_kernel
+-	je   1f
+-	movl (stack_start), %esp
+-1:
+-#endif /* CONFIG_SMP */
+ 	jmp *(initial_code)
+ 
+ /*
+@@ -670,15 +666,15 @@ ENTRY(initial_page_table)
+ #endif
+ 
+ .data
++.balign 4
+ ENTRY(stack_start)
+ 	.long init_thread_union+THREAD_SIZE
+-	.long __BOOT_DS
+-
+-ready:	.byte 0
+ 
+ early_recursion_flag:
+ 	.long 0
+ 
++ready:	.byte 0
++
+ int_msg:
+ 	.asciz "Unknown interrupt or fault at: %p %p %p\n"
+ 
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index 239046b..1ee8493 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -264,7 +264,6 @@ ENTRY(secondary_startup_64)
+ 
+ 	ENTRY(stack_start)
+ 	.quad  init_thread_union+THREAD_SIZE-8
+-	.word  0
+ 	__FINITDATA
+ 
+ bad_address:
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 0cbe8c0..03273b6 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -638,7 +638,7 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
+ 	 * target processor state.
+ 	 */
+ 	startup_ipi_hook(phys_apicid, (unsigned long) start_secondary,
+-			 (unsigned long)stack_start.sp);
++			 stack_start);
+ 
+ 	/*
+ 	 * Run STARTUP IPI loop.
+@@ -785,7 +785,7 @@ do_rest:
+ #endif
+ 	early_gdt_descr.address = (unsigned long)get_cpu_gdt_table(cpu);
+ 	initial_code = (unsigned long)start_secondary;
+-	stack_start.sp = (void *) c_idle.idle->thread.sp;
++	stack_start  = c_idle.idle->thread.sp;
+ 
+ 	/* start_ip had better be page-aligned! */
+ 	start_ip = setup_trampoline();
