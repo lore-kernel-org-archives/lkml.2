@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578Ab1BEOV2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 09:21:28 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57576 "EHLO
+	id S1752612Ab1BEOVd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 09:21:33 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52225 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752536Ab1BEOV0 (ORCPT
+	with ESMTP id S1752536Ab1BEOV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 09:21:26 -0500
+	Sat, 5 Feb 2011 09:21:29 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=wGJzWKECQPmXRM8QjPXFHjEQvqfA2swHTp838AeIe935zMi4WxzHQCSYEd3Dg4Ity3
-         dVBxhnFhUVs3Bkfat2we6HqpramCLGh0FJgLcy7YVzStzM5eVKvEUlfKiPwH1MqLqpup
-         2QtVU1ILPWN3UvEOMRCLReO9jwhxiP2g255PM=
+        b=fe3Pq4YGKO7DrlveVAUQffreHU8NWT1B5cxM6uAIn6brAmRzVuc1tyONySA9egl4EZ
+         7h4gbO0XekrI6Y8ARno5sfJL77z+kIk4zS0v7AbgIzVYriz5wy9eIjP8Lexlpz0bEq7u
+         z7v1ELZkx7FVceHqUZVBpbMh5E6WUrLHPyLpQ=
 From: Alexey Dobriyan <adobriyan@gmail.com>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, adobriyan@gmail.com
-Subject: [PATCH 08/52] kstrtox: convert fs/nfs/
-Date: Sat,  5 Feb 2011 16:20:11 +0200
-Message-Id: <1296915654-7458-8-git-send-email-adobriyan@gmail.com>
+Subject: [PATCH 09/52] kstrtox: convert fs/proc/
+Date: Sat,  5 Feb 2011 16:20:12 +0200
+Message-Id: <1296915654-7458-9-git-send-email-adobriyan@gmail.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1296915654-7458-1-git-send-email-adobriyan@gmail.com>
 References: <1296915654-7458-1-git-send-email-adobriyan@gmail.com>
@@ -29,295 +29,164 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- fs/nfs/callback.c |    8 +++--
- fs/nfs/idmap.c    |   12 +++------
- fs/nfs/internal.h |    8 +++---
- fs/nfs/super.c    |   73 ++++++++++++++++++++++++-----------------------------
- 4 files changed, 46 insertions(+), 55 deletions(-)
+ fs/proc/base.c           |   21 ++++++++++-----------
+ fs/proc/task_mmu.c       |    8 +++++---
+ include/linux/sched.h    |    2 +-
+ kernel/sched_autogroup.c |   12 ++++++------
+ 4 files changed, 22 insertions(+), 21 deletions(-)
 
-diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
-index e3d2942..0c8b5d8 100644
---- a/fs/nfs/callback.c
-+++ b/fs/nfs/callback.c
-@@ -44,13 +44,15 @@ unsigned short nfs_callback_tcpport6;
- 
- static int param_set_portnr(const char *val, const struct kernel_param *kp)
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 9d096e8..43c3941 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -1005,7 +1005,7 @@ static ssize_t oom_adjust_write(struct file *file, const char __user *buf,
  {
--	unsigned long num;
-+	unsigned int num;
- 	int ret;
+ 	struct task_struct *task;
+ 	char buffer[PROC_NUMBUF];
+-	long oom_adjust;
++	int oom_adjust;
+ 	unsigned long flags;
+ 	int err;
  
- 	if (!val)
+@@ -1017,8 +1017,8 @@ static ssize_t oom_adjust_write(struct file *file, const char __user *buf,
+ 		goto out;
+ 	}
+ 
+-	err = strict_strtol(strstrip(buffer), 0, &oom_adjust);
+-	if (err)
++	err = kstrtoint(strstrip(buffer), 0, &oom_adjust);
++	if (err < 0)
+ 		goto out;
+ 	if ((oom_adjust < OOM_ADJUST_MIN || oom_adjust > OOM_ADJUST_MAX) &&
+ 	     oom_adjust != OOM_DISABLE) {
+@@ -1114,7 +1114,7 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
+ 	struct task_struct *task;
+ 	char buffer[PROC_NUMBUF];
+ 	unsigned long flags;
+-	long oom_score_adj;
++	int oom_score_adj;
+ 	int err;
+ 
+ 	memset(buffer, 0, sizeof(buffer));
+@@ -1125,8 +1125,8 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
+ 		goto out;
+ 	}
+ 
+-	err = strict_strtol(strstrip(buffer), 0, &oom_score_adj);
+-	if (err)
++	err = kstrtoint(strstrip(buffer), 0, &oom_score_adj);
++	if (err < 0)
+ 		goto out;
+ 	if (oom_score_adj < OOM_SCORE_ADJ_MIN ||
+ 			oom_score_adj > OOM_SCORE_ADJ_MAX) {
+@@ -1414,7 +1414,7 @@ sched_autogroup_write(struct file *file, const char __user *buf,
+ 	struct inode *inode = file->f_path.dentry->d_inode;
+ 	struct task_struct *p;
+ 	char buffer[PROC_NUMBUF];
+-	long nice;
++	int nice;
+ 	int err;
+ 
+ 	memset(buffer, 0, sizeof(buffer));
+@@ -1423,16 +1423,15 @@ sched_autogroup_write(struct file *file, const char __user *buf,
+ 	if (copy_from_user(buffer, buf, count))
+ 		return -EFAULT;
+ 
+-	err = strict_strtol(strstrip(buffer), 0, &nice);
++	err = kstrtoint(strstrip(buffer), 0, &nice);
+ 	if (err)
+-		return -EINVAL;
++		return err;
+ 
+ 	p = get_proc_task(inode);
+ 	if (!p)
+ 		return -ESRCH;
+ 
+-	err = nice;
+-	err = proc_sched_autogroup_set_nice(p, &err);
++	err = proc_sched_autogroup_set_nice(p, nice);
+ 	if (err)
+ 		count = err;
+ 
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 60b9148..b47c827 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -497,15 +497,17 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
+ 	char buffer[PROC_NUMBUF];
+ 	struct mm_struct *mm;
+ 	struct vm_area_struct *vma;
+-	long type;
++	int type;
++	int rv;
+ 
+ 	memset(buffer, 0, sizeof(buffer));
+ 	if (count > sizeof(buffer) - 1)
+ 		count = sizeof(buffer) - 1;
+ 	if (copy_from_user(buffer, buf, count))
+ 		return -EFAULT;
+-	if (strict_strtol(strstrip(buffer), 10, &type))
+-		return -EINVAL;
++	rv = kstrtoint(strstrip(buffer), 10, &type);
++	if (rv < 0)
++		return rv;
+ 	if (type < CLEAR_REFS_ALL || type > CLEAR_REFS_MAPPED)
  		return -EINVAL;
--	ret = strict_strtoul(val, 0, &num);
--	if (ret == -EINVAL || num > NFS_CALLBACK_MAXPORTNR)
-+	ret = kstrtouint(val, 0, &num);
-+	if (ret < 0)
-+		return ret;
-+	if (num > NFS_CALLBACK_MAXPORTNR)
- 		return -EINVAL;
- 	*((unsigned int *)kp->arg) = num;
- 	return 0;
-diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
-index 1869688..714def8 100644
---- a/fs/nfs/idmap.c
-+++ b/fs/nfs/idmap.c
-@@ -205,17 +205,13 @@ static int nfs_idmap_lookup_id(const char *name, size_t namelen,
- 				const char *type, __u32 *id)
+ 	task = get_proc_task(file->f_path.dentry->d_inode);
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index d747f94..762eb38 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1956,7 +1956,7 @@ extern void sched_autogroup_fork(struct signal_struct *sig);
+ extern void sched_autogroup_exit(struct signal_struct *sig);
+ #ifdef CONFIG_PROC_FS
+ extern void proc_sched_autogroup_show_task(struct task_struct *p, struct seq_file *m);
+-extern int proc_sched_autogroup_set_nice(struct task_struct *p, int *nice);
++extern int proc_sched_autogroup_set_nice(struct task_struct *p, int nice);
+ #endif
+ #else
+ static inline void sched_autogroup_create_attach(struct task_struct *p) { }
+diff --git a/kernel/sched_autogroup.c b/kernel/sched_autogroup.c
+index 9fb6562..4b14c36 100644
+--- a/kernel/sched_autogroup.c
++++ b/kernel/sched_autogroup.c
+@@ -209,20 +209,20 @@ __setup("noautogroup", setup_autogroup);
+ 
+ #ifdef CONFIG_PROC_FS
+ 
+-int proc_sched_autogroup_set_nice(struct task_struct *p, int *nice)
++int proc_sched_autogroup_set_nice(struct task_struct *p, int nice)
  {
- 	char id_str[NFS_UINT_MAXLEN];
--	long id_long;
- 	ssize_t data_size;
--	int ret = 0;
-+	int ret;
+ 	static unsigned long next = INITIAL_JIFFIES;
+ 	struct autogroup *ag;
+ 	int err;
  
- 	data_size = nfs_idmap_request_key(name, namelen, type, id_str, NFS_UINT_MAXLEN);
--	if (data_size <= 0) {
--		ret = -EINVAL;
--	} else {
--		ret = strict_strtol(id_str, 10, &id_long);
--		*id = (__u32)id_long;
--	}
-+	ret = -EINVAL;
-+	if (data_size > 0)
-+		ret = kstrtou32(id_str, 10, id);
- 	return ret;
- }
+-	if (*nice < -20 || *nice > 19)
++	if (nice < -20 || nice > 19)
+ 		return -EINVAL;
  
-diff --git a/fs/nfs/internal.h b/fs/nfs/internal.h
-index cf9fdbd..6415783 100644
---- a/fs/nfs/internal.h
-+++ b/fs/nfs/internal.h
-@@ -73,11 +73,11 @@ struct nfs_clone_mount {
-  */
- struct nfs_parsed_mount_data {
- 	int			flags;
--	int			rsize, wsize;
--	int			timeo, retrans;
--	int			acregmin, acregmax,
-+	unsigned int		rsize, wsize;
-+	unsigned int		timeo, retrans;
-+	unsigned int		acregmin, acregmax,
- 				acdirmin, acdirmax;
--	int			namlen;
-+	unsigned int		namlen;
- 	unsigned int		options;
- 	unsigned int		bsize;
- 	unsigned int		auth_flavor_len;
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index b68c860..1902bd4 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -1015,7 +1015,8 @@ static int nfs_parse_mount_options(char *raw,
+-	err = security_task_setnice(current, *nice);
++	err = security_task_setnice(current, nice);
+ 	if (err)
+ 		return err;
  
- 	while ((p = strsep(&raw, ",")) != NULL) {
- 		substring_t args[MAX_OPT_ARGS];
--		unsigned long option;
-+		unsigned int val_uint;
-+		u16 val_u16;
- 		int token;
+-	if (*nice < 0 && !can_nice(current, *nice))
++	if (nice < 0 && !can_nice(current, nice))
+ 		return -EPERM;
  
- 		if (!*p)
-@@ -1130,154 +1131,146 @@ static int nfs_parse_mount_options(char *raw,
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtou16(string, 10, &val_u16);
- 			kfree(string);
--			if (rc != 0 || option > USHRT_MAX)
-+			if (rc != 0)
- 				goto out_invalid_value;
--			mnt->nfs_server.port = option;
-+			mnt->nfs_server.port = val_u16;
- 			break;
- 		case Opt_rsize:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &mnt->rsize);
- 			kfree(string);
- 			if (rc != 0)
- 				goto out_invalid_value;
--			mnt->rsize = option;
- 			break;
- 		case Opt_wsize:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &mnt->wsize);
- 			kfree(string);
- 			if (rc != 0)
- 				goto out_invalid_value;
--			mnt->wsize = option;
- 			break;
- 		case Opt_bsize:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &mnt->bsize);
- 			kfree(string);
- 			if (rc != 0)
- 				goto out_invalid_value;
--			mnt->bsize = option;
- 			break;
- 		case Opt_timeo:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &val_uint);
- 			kfree(string);
--			if (rc != 0 || option == 0)
-+			if (rc != 0 || val_uint == 0)
- 				goto out_invalid_value;
--			mnt->timeo = option;
-+			mnt->timeo = val_uint;
- 			break;
- 		case Opt_retrans:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &val_uint);
- 			kfree(string);
--			if (rc != 0 || option == 0)
-+			if (rc != 0 || val_uint == 0)
- 				goto out_invalid_value;
--			mnt->retrans = option;
-+			mnt->retrans = val_uint;
- 			break;
- 		case Opt_acregmin:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &mnt->acregmin);
- 			kfree(string);
- 			if (rc != 0)
- 				goto out_invalid_value;
--			mnt->acregmin = option;
- 			break;
- 		case Opt_acregmax:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &mnt->acregmax);
- 			kfree(string);
- 			if (rc != 0)
- 				goto out_invalid_value;
--			mnt->acregmax = option;
- 			break;
- 		case Opt_acdirmin:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &mnt->acdirmin);
- 			kfree(string);
- 			if (rc != 0)
- 				goto out_invalid_value;
--			mnt->acdirmin = option;
- 			break;
- 		case Opt_acdirmax:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &mnt->acdirmax);
- 			kfree(string);
- 			if (rc != 0)
- 				goto out_invalid_value;
--			mnt->acdirmax = option;
- 			break;
- 		case Opt_actimeo:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &val_uint);
- 			kfree(string);
- 			if (rc != 0)
- 				goto out_invalid_value;
- 			mnt->acregmin = mnt->acregmax =
--			mnt->acdirmin = mnt->acdirmax = option;
-+			mnt->acdirmin = mnt->acdirmax = val_uint;
- 			break;
- 		case Opt_namelen:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &mnt->namlen);
- 			kfree(string);
- 			if (rc != 0)
- 				goto out_invalid_value;
--			mnt->namlen = option;
- 			break;
- 		case Opt_mountport:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtou16(string, 10, &val_u16);
- 			kfree(string);
--			if (rc != 0 || option > USHRT_MAX)
-+			if (rc != 0)
- 				goto out_invalid_value;
--			mnt->mount_server.port = option;
-+			mnt->mount_server.port = val_u16;
- 			break;
- 		case Opt_mountvers:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &val_uint);
- 			kfree(string);
- 			if (rc != 0 ||
--			    option < NFS_MNT_VERSION ||
--			    option > NFS_MNT3_VERSION)
-+			    val_uint < NFS_MNT_VERSION ||
-+			    val_uint > NFS_MNT3_VERSION)
- 				goto out_invalid_value;
--			mnt->mount_server.version = option;
-+			mnt->mount_server.version = val_uint;
- 			break;
- 		case Opt_nfsvers:
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &val_uint);
- 			kfree(string);
- 			if (rc != 0)
- 				goto out_invalid_value;
--			switch (option) {
-+			switch (val_uint) {
- 			case NFS2_VERSION:
- 				mnt->flags &= ~NFS_MOUNT_VER3;
- 				mnt->version = 2;
-@@ -1298,13 +1291,13 @@ static int nfs_parse_mount_options(char *raw,
- 			string = match_strdup(args);
- 			if (string == NULL)
- 				goto out_nomem;
--			rc = strict_strtoul(string, 10, &option);
-+			rc = kstrtouint(string, 10, &val_uint);
- 			kfree(string);
- 			if (rc != 0)
- 				goto out_invalid_value;
--			if (option > NFS4_MAX_MINOR_VERSION)
-+			if (val_uint > NFS4_MAX_MINOR_VERSION)
- 				goto out_invalid_value;
--			mnt->minorversion = option;
-+			mnt->minorversion = val_uint;
- 			break;
+ 	/* this is a heavy operation taking global locks.. */
+@@ -233,9 +233,9 @@ int proc_sched_autogroup_set_nice(struct task_struct *p, int *nice)
+ 	ag = autogroup_task_get(p);
  
- 		/*
+ 	down_write(&ag->lock);
+-	err = sched_group_set_shares(ag->tg, prio_to_weight[*nice + 20]);
++	err = sched_group_set_shares(ag->tg, prio_to_weight[nice + 20]);
+ 	if (!err)
+-		ag->nice = *nice;
++		ag->nice = nice;
+ 	up_write(&ag->lock);
+ 
+ 	autogroup_kref_put(ag);
 -- 
 1.7.3.4
 
