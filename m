@@ -1,27 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689Ab1BERPO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 12:15:14 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:46995 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016Ab1BERPM (ORCPT
+	id S1752761Ab1BERSO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 12:18:14 -0500
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:57037 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752578Ab1BERSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 12:15:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=J8xLclcKlHgFkwqm1fNpAn7fSkKhK/2Zc/golw7UX47gWOvC67Vr8R5vxZeQ2mZVpd
-         uGMhLewhdlYgFiTtjuJqOWiK0tw4st63aaMAjzy4z4Mb91aSPSLfdjxJZQuSiW8/HB2F
-         NY7haQG4DT1j5ghff3k85TNXVNFHbe7aMjJlU=
-Date: Sun, 6 Feb 2011 02:15:04 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: linux kernel mailing list <linux-kernel@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [BUG] usb_set_device_state
-Message-ID: <20110205171504.GA1044@barrios-desktop>
+	Sat, 5 Feb 2011 12:18:12 -0500
+Date: Sat, 5 Feb 2011 19:18:07 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: dell-wmi: Received unknown WMI event (0x11)
+Message-ID: <20110205171807.GA3738@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -30,66 +22,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I got following message during booting mmotm-02-04.
+Hi,
 
-sky2 0000:04:00.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-sky2 0000:04:00.0: setting latency timer to 64
-sky2 0000:04:00.0: Yukon-2 EC Ultra chip revision 2
-sky2 0000:04:00.0: irq 44 for MSI/MSI-X
-sky2 0000:04:00.0: eth0: addr 00:1a:4d:65:01:51
-BUG: sleeping function called from invalid context at kernel/mutex.c:278
-in_atomic(): 0, irqs_disabled(): 1, pid: 21, name: khubd
-3 locks held by khubd/21:
- #0:  (&__lockdep_no_validate__){+.+.+.}, at: [<c047e2dd>] hub_thread+0xcd/0xf10
- #1:  (&__lockdep_no_validate__){+.+.+.}, at: [<c0419a82>] device_attach+0x22/0x90
- #2:  (device_state_lock){......}, at: [<c047c4c4>] usb_set_device_state+0x24/0xf0
-irq event stamp: 6264
-hardirqs last  enabled at (6263): [<c05d7adf>] __mutex_unlock_slowpath+0xaf/0x140
-hardirqs last disabled at (6264): [<c05d9196>] _raw_spin_lock_irqsave+0x26/0x70
-softirqs last  enabled at (6252): [<c015d137>] del_timer_sync+0x57/0xa0
-softirqs last disabled at (6250): [<c015d0f4>] del_timer_sync+0x14/0xa0
-Pid: 21, comm: khubd Not tainted 2.6.38-rc3-mm1+ #1
-Call Trace:
- [<c015d0f4>] ? del_timer_sync+0x14/0xa0
- [<c013cc29>] ? __might_sleep+0xe9/0x120
- [<c05d80f6>] ? mutex_lock_nested+0x26/0x50
- [<c038272f>] ? do_raw_spin_lock+0x3f/0x140
- [<c0289b98>] ? sysfs_get_dirent+0x28/0x70
- [<c028b3f1>] ? sysfs_merge_group+0x21/0xc0
- [<c041dd75>] ? wakeup_sysfs_add+0x15/0x20
- [<c041fdf5>] ? device_set_wakeup_capable+0x45/0x80
- [<c047c578>] ? usb_set_device_state+0xd8/0xf0
- [<c0484556>] ? usb_set_configuration+0x366/0x680
- [<c028a381>] ? sysfs_do_create_link+0xb1/0x1e0
- [<c048c93b>] ? generic_probe+0x3b/0x90
- [<c028a4e7>] ? sysfs_create_link+0x17/0x20
- [<c0485849>] ? usb_probe_device+0x29/0x50
- [<c0419822>] ? driver_probe_device+0x82/0x190
- [<c05d98a2>] ? _raw_spin_unlock+0x22/0x30
- [<c0419a09>] ? __device_attach+0x49/0x60
- [<c0418af3>] ? bus_for_each_drv+0x53/0x80
- [<c0419ada>] ? device_attach+0x7a/0x90
- [<c04199c0>] ? __device_attach+0x0/0x60
- [<c0418915>] ? bus_probe_device+0x25/0x40
- [<c04174c5>] ? device_add+0x5a5/0x670
- [<c047c100>] ? usb_hub_init+0xa0/0xb0
- [<c042182c>] ? pm_runtime_forbid+0x4c/0x60
- [<c047dee0>] ? usb_new_device+0xe0/0x120
- [<c018336b>] ? trace_hardirqs_on+0xb/0x10
- [<c047e904>] ? hub_thread+0x6f4/0xf10
- [<c016d7a0>] ? autoremove_wake_function+0x0/0x50
- [<c047e210>] ? hub_thread+0x0/0xf10
- [<c016d384>] ? kthread+0x84/0x90
- [<c016d300>] ? kthread+0x0/0x90
- [<c0103606>] ? kernel_thread_helper+0x6/0x10
--
+I believe this is a regression as it was working on 2.6.37 but with
+2.6.38-rc3 I can't burn DVDs with my latitute e6410. When I put a blank
+double layer DVD on the drive I get:
 
-It seems usb_set_device_state disable irq by spin_lock_irqsave.
-But it calls device_set_wakeup_capable which ends up calling sysfs_merge_group.
-It calls mutex_lock. :(
+[  393.020537] dell-wmi: Received unknown WMI event (0x11)
+[  832.336855] dell-wmi: Received unknown WMI event (0x11)
+[  832.409353] dell-wmi: Received unknown WMI event (0x11)
+[  833.621140] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+[  834.367611] dell-wmi: Received unknown WMI event (0x11)
+[ 1001.665940] dell-wmi: Received unknown WMI event (0x11)
+[ 1002.846845] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+[ 1003.591459] dell-wmi: Received unknown WMI event (0x11)
+[ 1063.690326] dell-wmi: Received unknown WMI event (0x11)
+[ 1064.942777] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+[ 1644.787491] dell-wmi: Received unknown WMI event (0x11)
+[ 1644.849026] dell-wmi: Received unknown WMI event (0x11)
+[ 1645.971790] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+[ 1646.719084] dell-wmi: Received unknown WMI event (0x11)
+[ 2317.273481] dell-wmi: Received unknown WMI event (0x11)
+[ 2318.540645] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+[ 2319.285487] dell-wmi: Received unknown WMI event (0x11)
+[ 2379.364740] dell-wmi: Received unknown WMI event (0x11)
+[ 2877.001258] dell-wmi: Received unknown WMI event (0x11)
+[ 2878.211188] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+[ 2878.957282] dell-wmi: Received unknown WMI event (0x11)
+[ 2903.422959] dell-wmi: Received unknown WMI event (0x11)
+[ 2904.609272] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+[ 2905.352451] dell-wmi: Received unknown WMI event (0x11)
+[ 2965.454915] dell-wmi: Received unknown WMI event (0x11)
+[ 2966.701330] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+[ 3981.339257] dell-wmi: Received unknown WMI event (0x11)
+[ 3982.510612] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+[ 3983.254770] dell-wmi: Received unknown WMI event (0x11)
+[ 4045.466929] dell-wmi: Received unknown WMI event (0x11)
+[ 4046.631137] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+[ 4047.391614] dell-wmi: Received unknown WMI event (0x11)
+[ 4107.480071] dell-wmi: Received unknown WMI event (0x11)
+[ 4108.631339] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+[ 4731.506881] dell-wmi: Received unknown WMI event (0x11)
+[ 4732.646424] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
+[ 4733.391238] dell-wmi: Received unknown WMI event (0x11)
+[ 6025.385179] cdrom: This disc doesn't have any tracks I recognize!
 
-Is it already known BUG?
+and when I try to burn anything (well, a dry-run burn) I get:
+
+$ growisofs -dvd-compat -use-the-force-luke=dao -use-the-force-luke=break:1913760 -speed=2 -Z /dev/dvd=my-backup-files.iso -dry-run
+:-( /dev/dvd: CD_ROM_MEDIA_CHANGED ioctl failed: Inappropriate ioctl for device
+
+Has anyone seen that before ? I'll try to reboot on 2.6.37 and try again
+just to be sure and will report back on the differences.
 
 -- 
-Kind regards,
-Minchan Kim
+balbi
