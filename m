@@ -1,39 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab1BERXZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 12:23:25 -0500
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:37901 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752578Ab1BERXZ (ORCPT
+	id S1752787Ab1BERdG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 12:33:06 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:57926 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752645Ab1BERdF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 12:23:25 -0500
-Date: Sat, 5 Feb 2011 19:23:19 +0200
-From: Felipe Balbi <balbi@ti.com>
+	Sat, 5 Feb 2011 12:33:05 -0500
+Date: Sat, 5 Feb 2011 17:32:59 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
 To: Felipe Balbi <balbi@ti.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Subject: Re: dell-wmi: Received unknown WMI event (0x11)
-Message-ID: <20110205172319.GA2619@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
+Message-ID: <20110205173259.GA28134@srcf.ucam.org>
 References: <20110205171807.GA3738@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <20110205171807.GA3738@legolas.emea.dhcp.ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
 On Sat, Feb 05, 2011 at 07:18:07PM +0200, Felipe Balbi wrote:
-> Hi,
-> 
-> I believe this is a regression as it was working on 2.6.37 but with
-> 2.6.38-rc3 I can't burn DVDs with my latitute e6410. When I put a blank
-> double layer DVD on the drive I get:
-> 
+
 > [  393.020537] dell-wmi: Received unknown WMI event (0x11)
 > [  832.336855] dell-wmi: Received unknown WMI event (0x11)
 > [  832.409353] dell-wmi: Received unknown WMI event (0x11)
@@ -72,25 +66,11 @@ On Sat, Feb 05, 2011 at 07:18:07PM +0200, Felipe Balbi wrote:
 > [ 4732.646424] [drm:ironlake_crtc_disable] *ERROR* failed to disable transcoder
 > [ 4733.391238] dell-wmi: Received unknown WMI event (0x11)
 > [ 6025.385179] cdrom: This disc doesn't have any tracks I recognize!
-> 
-> and when I try to burn anything (well, a dry-run burn) I get:
-> 
-> $ growisofs -dvd-compat -use-the-force-luke=dao -use-the-force-luke=break:1913760 -speed=2 -Z /dev/dvd=my-backup-files.iso -dry-run
-> :-( /dev/dvd: CD_ROM_MEDIA_CHANGED ioctl failed: Inappropriate ioctl for device
-> 
-> Has anyone seen that before ? I'll try to reboot on 2.6.37 and try again
-> just to be sure and will report back on the differences.
 
-yes, it works like a charm on 2.6.37:
-
-$ dmesg
-[   91.522079] cdrom: This disc doesn't have any tracks I recognize!
-$ growisofs -dvd-compat -use-the-force-luke=dao -use-the-force-luke=break:1913760 -speed=2 -Z /dev/dvd=my-backup-files.iso -dry-run
-Executing 'builtin_dd if=cpx-mja.iso of=/dev/dvd obs=32k seek=0'
-
-What more information can I grab which would help debugging ? I guess I
-could bisect and try to find the offending commit, but that'll take a
-few days.
+Nothing's changed in dell-wmi in that timeframe, so I suspect it's some 
+other issue that's triggering here and the hardware is responding by 
+sending events? Alternatively, these messages are pretty spread out. Do 
+they directly correspond to you trying to burn something?
 
 -- 
-balbi
+Matthew Garrett | mjg59@srcf.ucam.org
