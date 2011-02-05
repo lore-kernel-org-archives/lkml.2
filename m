@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144Ab1BEOdo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 09:33:44 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:32840 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751965Ab1BEOdn convert rfc822-to-8bit (ORCPT
+	id S1752136Ab1BEOjx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 09:39:53 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:65068 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab1BEOjw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 09:33:43 -0500
+	Sat, 5 Feb 2011 09:39:52 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=M7J082zy80c03SluPOq/HvUEFMFzeGR29tUuAnICPibbclecm6truUPo5A3fqKtZ2e
-         Xl5BMnsHP/63Kv73eUVIZkEsQlr9Ncpn4X0/DBF+rcY66sHzKK78ff3pYMjQJ/5dB2jm
-         1zTtEx73XD/CxOn0a1YclmCkL+hQsnBbQKwGI=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=FO/JEabnPNX1w3+hSSgPdGy7OezsnGEx1e69dOpBDM8tuxHpJ0+OQbBZDu8jMM4nEX
+         b5U7LwbvPudvCDuVdUHHhgFB5X1a4Sw5gTmiXkRAS+ibTvMJryI98XOytiQkS15ENh/X
+         RYD45nyp9lO6qdLlN1vR6MMxNNh8pB1UDj914=
 MIME-Version: 1.0
-In-Reply-To: <1296915654-7458-1-git-send-email-adobriyan@gmail.com>
-References: <1296915654-7458-1-git-send-email-adobriyan@gmail.com>
-Date: Sat, 5 Feb 2011 15:33:41 +0100
-X-Google-Sender-Auth: JSZ_I1T8nznlzt3B7178PCrqXtQ
-Message-ID: <AANLkTimA3NLZsDwOp14A7KbGuUkHR3MFeLR7rQPVhLHG@mail.gmail.com>
-Subject: Re: [PATCH 01/52] kstrtox: converting strings to integers done
- (hopefully) right
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTim7A4q1dF9QAPux-RpatAfOVL3n6ag0MRi-vTGs@mail.gmail.com>
+References: <AANLkTim7A4q1dF9QAPux-RpatAfOVL3n6ag0MRi-vTGs@mail.gmail.com>
+Date: Sat, 5 Feb 2011 15:39:51 +0100
+Message-ID: <AANLkTikojfefJUxZ2vRfL2S4h5d+5Do0b1mPh4DPi9Ax@mail.gmail.com>
+Subject: Re: Regarding SIGSEGV
+From: Corrado Zoccolo <czoccolo@gmail.com>
+To: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
+Cc: Kernel-newbies <kernelnewbies@nl.linux.org>,
+        linux-kernel-mail <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 5, 2011 at 15:20, Alexey Dobriyan <adobriyan@gmail.com> wrote:
-> --- /dev/null
-> +++ b/lib/kstrtox.c
-> @@ -0,0 +1,227 @@
-> +/*
-> + * Convert integer string representation to an integer.
-> + * If an integer doesn't fit into specified type, -E is returned.
+On Wed, Feb 2, 2011 at 8:08 AM, Sri Ram Vemulpali
+<sri.ram.gmu06@gmail.com> wrote:
+> Hi all,
+>
+>       I know that when a thread in an application do invalid memory
+> reference, OS generates SIGSEGV(segmentation fault) signal and
+> terminates application. What if we handle this signal by defining a
+> signal handler to perform to terminate only the thread did invalid
+> memory reference.
+The thread that performed an invalid memory reference might already
+have corrupted vital data structures, so the application may not work
+and/or produce incorrect results. In such cases is always better to
+stop the whole process, to limit damage.
+> So, that the application will not be terminated.
+> Also, is there any way, we can find when SIGSEGV is generated to get
+> the invalid memory reference and thread id, who caused this fault.
+man sigaction.
+If you use the
+ void     (*sa_sigaction)(int, siginfo_t *, void *);
+version of handler interceptor, you will get the siginfo_t with all
+known information about who generated the signal.
 
-Which -E? Currently it returns -EINVAL everywhere.
+Corrado
 
-> +int _kstrtoul(const char *s, unsigned int base, unsigned long *res)
-> +{
-> +       unsigned long long tmp;
-> +       int rv;
-> +
-> +       rv = kstrtoull(s, base, &tmp);
-> +       if (rv < 0)
-> +               return rv;
-> +       if (tmp != (unsigned long long)(unsigned long)tmp)
-> +               return -EINVAL;
+> I know debuggers are written in such fashion. Can anyone point me to
+> right direction. Thanks in advance.
+>
+> --
+> Regards,
+> Sri.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
--ERANGE for out-of-range?
 
-Gr{oetje,eeting}s,
 
-                        Geert
+-- 
+__________________________________________________________________________
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+dott. Corrado Zoccolo                          mailto:czoccolo@gmail.com
+PhD - Department of Computer Science - University of Pisa, Italy
+--------------------------------------------------------------------------
+The self-confidence of a warrior is not the self-confidence of the average
+man. The average man seeks certainty in the eyes of the onlooker and calls
+that self-confidence. The warrior seeks impeccability in his own eyes and
+calls that humbleness.
+                               Tales of Power - C. Castaneda
