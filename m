@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552Ab1BESwZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 13:52:25 -0500
-Received: from complete.lackof.org ([198.49.126.79]:46341 "EHLO
-	complete.lackof.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753514Ab1BESwP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 13:52:15 -0500
-Date: Sat, 5 Feb 2011 11:45:26 -0700
-From: dann frazier <dann.frazier@canonical.com>
-To: ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
-Subject: Re: [Ocfs2-devel] [PATCH] [ocfs2] Use a kobject instead of a kset
-Message-ID: <20110205184523.GB5091@dannf.org>
-References: <1296837627-7416-1-git-send-email-dann.frazier@canonical.com>
- <20110204175751.GA21472@noexit>
+	id S1753478Ab1BETEa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 14:04:30 -0500
+Received: from mailout1.go2.pl ([193.17.41.11]:59640 "EHLO mailout1.go2.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752948Ab1BETE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Feb 2011 14:04:29 -0500
+X-Greylist: delayed 4678 seconds by postgrey-1.27 at vger.kernel.org; Sat, 05 Feb 2011 14:04:28 EST
+Message-ID: <4D4D9F37.4010201@o2.pl>
+Date: Sat, 05 Feb 2011 20:04:23 +0100
+From: Maciej Szmigiero <mhej@o2.pl>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101204 Lightning/1.0b3pre Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110204175751.GA21472@noexit>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Greg Kroah-Hartman <gregkh@suse.de>, Johan Hovold <jhovold@gmail.com>,
+        Joe Perches <joe@perches.com>, Alan Cox <alan@linux.intel.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [USB]Add Samsung SGH-I500/Android modem ID switch to visor driver
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-O2-Trust: 2, 69
+X-O2-SPF: neutral
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 04, 2011 at 09:58:01AM -0800, Joel Becker wrote:
-> On Fri, Feb 04, 2011 at 09:40:27AM -0700, dann.frazier@canonical.com wrote:
-> > From: dann frazier <dann.frazier@canonical.com>
-> > 
-> > We currently allocate a kset and add attributes to its internal kobject.
-> > However, Documentation/kobject.txt says only the kset code should manipulate
-> > this internal object, and we can get the same results by just creating our
-> > own kobject and avoiding a kset altogether.
-> 
-> 	Hmm, is this actually valid?  I thought you had to be a kset to
-> have children.  Did this change at some point?
+[USB]Add Samsung SGH-I500/Android modem ID switch to visor driver
 
-hey Joel,
- Well, I'm by no means an expert on kobjects - hopefully someone who
-is will chime in. I came across this while debugging a sysfs teardown
-issue and looking through this code to see if it might be related. I
-read through kobject.txt & saw that note about a kset's kobj being for
-internal-use only, and then saw that samples/kobject/kobject-example.c
-seems to achieve the same goal (a sysfs dir w/ attributes) w/o using a
-kset.
+Samsung decided to reuse USB ID of its old CDMA phone SGH-I500 for the
+modem part of some of their Android phones. At least Galaxy Spica
+is affected.
 
-The sysfs entries look the same to me before & after this patch:
+This modem needs ACM driver and does not work with visor driver which
+binds the conflicting ID for SGH-I500.
+Because SGH-I500 is pretty an old hardware its best to add switch to visor
+driver in cause somebody still wants to use that phone with Linux.
 
-$ ls -l /sys/fs/ocfs2
-total 0
--r--r--r-- 1 root root 4096 Feb  5 11:40 active_cluster_plugin
--rw-r--r-- 1 root root 4096 Feb  5 11:40 cluster_stack
--r--r--r-- 1 root root 4096 Feb  5 11:40 loaded_cluster_plugins
--r--r--r-- 1 root root 4096 Feb  5 11:40 max_locking_protocol
+Note that this is needed only when using the Android phone as modem,
+not in USB storage or ADB mode.
 
-That said, I haven't been able to demonstate that the current code is
-causing any actual problems - this was just a cleanup attempt.
+Signed-off-by: Maciej Szmigiero <mhej@o2.pl>
+
+diff --git a/drivers/usb/serial/visor.c b/drivers/usb/serial/visor.c
+index 15a5d89..5e56ab3 100644
+--- a/drivers/usb/serial/visor.c
++++ b/drivers/usb/serial/visor.c
+@@ -52,6 +52,7 @@ static int palm_os_4_probe(struct usb_serial *serial,
+ 
+ /* Parameters that may be passed into the module. */
+ static int debug;
++static int enable_i500;
+ static __u16 vendor;
+ static __u16 product;
+ 
+@@ -479,6 +480,10 @@ static int visor_probe(struct usb_serial *serial,
+ 
+ 	dbg("%s", __func__);
+ 
++	if ((!enable_i500) && (id->idVendor == SAMSUNG_VENDOR_ID) &&
++		(id->idProduct == SAMSUNG_SPH_I500_ID))
++		return -ENODEV;
++
+ 	if (serial->dev->actconfig->desc.bConfigurationValue != 1) {
+ 		dev_err(&serial->dev->dev, "active config #%d != 1 ??\n",
+ 			serial->dev->actconfig->desc.bConfigurationValue);
+@@ -718,6 +723,11 @@ MODULE_LICENSE("GPL");
+ module_param(debug, bool, S_IRUGO | S_IWUSR);
+ MODULE_PARM_DESC(debug, "Debug enabled or not");
+ 
++module_param(enable_i500, bool, S_IRUGO);
++MODULE_PARM_DESC(enable_i500, "Enable support for Samsung SPH-I500. "
++				"Causes USBID conflict with modem in Samsung "
++				"Android phones");
++
+ module_param(vendor, ushort, 0);
+ MODULE_PARM_DESC(vendor, "User specified vendor ID");
+ module_param(product, ushort, 0);
+
+
