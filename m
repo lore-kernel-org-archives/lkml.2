@@ -1,120 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870Ab1BETqW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 14:46:22 -0500
-Received: from www.tglx.de ([62.245.132.106]:60079 "EHLO www.tglx.de"
+	id S1752661Ab1BETuU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 14:50:20 -0500
+Received: from ns.gobinjf.be ([213.246.39.118]:45054 "EHLO ik118.ikexpress.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753711Ab1BETpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 14:45:00 -0500
-Message-Id: <20110205193903.518224610@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Sat, 05 Feb 2011 19:44:50 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Tony Luck <tony.luck@intel.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: [patch 1/8] ia64: Remove stale irq_chip.end
-References: <20110205193740.964969119@linutronix.de>
-Content-Disposition: inline; filename=ia64-remove-stale-irq_chip-end.patch
+	id S1751932Ab1BETuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Feb 2011 14:50:19 -0500
+X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Sat, 05 Feb 2011 14:50:19 EST
+Subject: Re: Supermicro X8DTH-6: Only ~250MiB/s from RAID<->RAID over 10GbE?
+From: Jean Gobin <jf@gobinjf.be>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-net@vger.kernel.org, Alan Piszcz <ap@solarrain.com>
+In-Reply-To: <alpine.DEB.2.00.1102051427360.8518@p34.internal.lan>
+References: <alpine.DEB.2.00.1102051427360.8518@p34.internal.lan>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 05 Feb 2011 14:42:47 -0500
+Message-ID: <1296934967.2599.2.camel@jeff-ubuntu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-irq_chip.end got obsolete with the removal of __do_IRQ().
+Hi Justin,
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Tony Luck <tony.luck@intel.com>
-LKML-Reference: <20110203004210.143127544@linutronix.de>
----
- arch/ia64/hp/sim/hpsim_irq.c  |    1 -
- arch/ia64/kernel/iosapic.c    |    2 --
- arch/ia64/kernel/irq_lsapic.c |    1 -
- arch/ia64/sn/kernel/irq.c     |   23 -----------------------
- 4 files changed, 27 deletions(-)
+When you run the copy over the network, could you issue a "vmstat 1" on
+both machines?
 
-Index: linux-next/arch/ia64/hp/sim/hpsim_irq.c
-===================================================================
---- linux-next.orig/arch/ia64/hp/sim/hpsim_irq.c
-+++ linux-next/arch/ia64/hp/sim/hpsim_irq.c
-@@ -34,7 +34,6 @@ static struct irq_chip irq_type_hp_sim =
- 	.enable =	hpsim_irq_noop,
- 	.disable =	hpsim_irq_noop,
- 	.ack =		hpsim_irq_noop,
--	.end =		hpsim_irq_noop,
- 	.set_affinity =	hpsim_set_affinity_noop,
- };
- 
-Index: linux-next/arch/ia64/kernel/iosapic.c
-===================================================================
---- linux-next.orig/arch/ia64/kernel/iosapic.c
-+++ linux-next/arch/ia64/kernel/iosapic.c
-@@ -460,7 +460,6 @@ iosapic_ack_edge_irq (unsigned int irq)
- 
- #define iosapic_enable_edge_irq		unmask_irq
- #define iosapic_disable_edge_irq	nop
--#define iosapic_end_edge_irq		nop
- 
- static struct irq_chip irq_type_iosapic_edge = {
- 	.name =		"IO-SAPIC-edge",
-@@ -469,7 +468,6 @@ static struct irq_chip irq_type_iosapic_
- 	.enable =	iosapic_enable_edge_irq,
- 	.disable =	iosapic_disable_edge_irq,
- 	.ack =		iosapic_ack_edge_irq,
--	.end =		iosapic_end_edge_irq,
- 	.mask =		mask_irq,
- 	.unmask =	unmask_irq,
- 	.set_affinity =	iosapic_set_affinity
-Index: linux-next/arch/ia64/kernel/irq_lsapic.c
-===================================================================
---- linux-next.orig/arch/ia64/kernel/irq_lsapic.c
-+++ linux-next/arch/ia64/kernel/irq_lsapic.c
-@@ -40,6 +40,5 @@ struct irq_chip irq_type_ia64_lsapic = {
- 	.enable =	lsapic_noop,
- 	.disable =	lsapic_noop,
- 	.ack =		lsapic_noop,
--	.end =		lsapic_noop,
- 	.retrigger =	lsapic_retrigger,
- };
-Index: linux-next/arch/ia64/sn/kernel/irq.c
-===================================================================
---- linux-next.orig/arch/ia64/sn/kernel/irq.c
-+++ linux-next/arch/ia64/sn/kernel/irq.c
-@@ -114,28 +114,6 @@ static void sn_ack_irq(unsigned int irq)
- 	move_native_irq(irq);
- }
- 
--static void sn_end_irq(unsigned int irq)
--{
--	int ivec;
--	u64 event_occurred;
--
--	ivec = irq & 0xff;
--	if (ivec == SGI_UART_VECTOR) {
--		event_occurred = HUB_L((u64*)LOCAL_MMR_ADDR (SH_EVENT_OCCURRED));
--		/* If the UART bit is set here, we may have received an
--		 * interrupt from the UART that the driver missed.  To
--		 * make sure, we IPI ourselves to force us to look again.
--		 */
--		if (event_occurred & SH_EVENT_OCCURRED_UART_INT_MASK) {
--			platform_send_ipi(smp_processor_id(), SGI_UART_VECTOR,
--					  IA64_IPI_DM_INT, 0);
--		}
--	}
--	__clear_bit(ivec, (volatile void *)pda->sn_in_service_ivecs);
--	if (sn_force_interrupt_flag)
--		force_interrupt(irq);
--}
--
- static void sn_irq_info_free(struct rcu_head *head);
- 
- struct sn_irq_info *sn_retarget_vector(struct sn_irq_info *sn_irq_info,
-@@ -275,7 +253,6 @@ struct irq_chip irq_type_sn = {
- 	.enable		= sn_enable_irq,
- 	.disable	= sn_disable_irq,
- 	.ack		= sn_ack_irq,
--	.end		= sn_end_irq,
- 	.mask		= sn_mask_irq,
- 	.unmask		= sn_unmask_irq,
- 	.set_affinity	= sn_set_affinity_irq
+Thanks,
+J.
 
+
+
+
+On Sat, 2011-02-05 at 14:35 -0500, Justin Piszcz wrote:
+> Hi,
+> 
+> I have two identical X8DTH-6's, each with 5520s XEONS..
+> 
+> === RAID
+> Two 3ware RAID-0's (testing only) with 24 drives (2TB WD).
+> Read: 1.2Gbyte/sec
+> Write: 1.2Gbyte/sec
+> 
+> === NETWORK
+> When I run iperf between the two 10GbE interfaces, I get 1.1-1.2Gbyte/sec.
+> MTU=9000 on both hosts.
+> 
+> == COPY OVER NETWORK
+> When I copy using cp/NFS, tar/nc, etc.. I only see an average of about 
+> 250MiB/s, I also have two desktop boards (8GB ram/ea) from which I get 
+> 500-550MiB/s from (the raid is slower on the desktop boards, it gets what 
+> the RAID can read it), how come these server boards cannot push > 1Gbyte/sec
+> sustained?
+> 
+> I know on this board:
+> CPU1 => SLOT 1,2,3
+> CPU2 => SLOT 4,5,6,7
+> 
+> The RAID card is plugged into 2 (CPU1)
+> The 10GbE card is plugged into 6 (CPU2)
+> 
+> Should both cards be plugged into the same set of slots controlled by the 
+> same CPU?
+> 
+> Has anyone experienced anything like this before, e.g., > 1Gbyte/sec read 
+> & write for network and 3ware RAID but when using them in combination, it 
+> is slow.
+> 
+> OS = CentOS 5.5 x86_64
+> Filesystem = XFS
+> NIC = 10GbE AT2 Server Adapter
+> 
+> No single component is < 1Gbyte/sec but when data is transferred from 
+> hostA to hostB, then it degrades to 250MiB/s.
+> 
+> Justin.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-net" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Jean Gobin, CCENT, CCNA, CCNA Security
+
+-----------------------------------------------------------------------
+http://newsfromjean.blogspot.com/
 
