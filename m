@@ -1,46 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346Ab1BEEiI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Feb 2011 23:38:08 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47018 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753116Ab1BEEiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Feb 2011 23:38:06 -0500
-Message-ID: <4D4CD411.6070800@zytor.com>
-Date: Fri, 04 Feb 2011 20:37:37 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1753356Ab1BEE7q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Feb 2011 23:59:46 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40959 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753186Ab1BEE7p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Feb 2011 23:59:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:content-transfer-encoding:user-agent;
+        b=YWv9bczR9GLYT9MpJ95E0z//P7Yfv21JWsGJ8V3LMnvqxcdVzSw6ZsNJIES7o8FYg2
+         1dGLyvi7v6GczgDxGYSk+thgP+uHZJsl4xkeME6FYh1zlHFdXJ+zoUnaQ3KSp+s04/zQ
+         K3jRK2Lb1klKeRPxDY8dvT+FTUKid3JtrLZyg=
+Date: Sat, 5 Feb 2011 12:59:41 +0800
+From: Harry Wei <harryxiyou@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: gregkh@suse.de
+Subject: [PATCH]Translated linux-2.6/Documentation/SubmittingChecklist into
+ Chinese
+Message-ID: <20110205045940.GB2531@gmail.com>
 MIME-Version: 1.0
-To: Kees Cook <kees.cook@canonical.com>
-CC: mingo@redhat.com, linux-kernel@vger.kernel.org, castet.matthieu@free.fr,
-        tglx@linutronix.de, hpa@linux.intel.com
-Subject: Re: [tip:x86/urgent] x86-32: Make sure the stack is set up before
- we use it
-References: <4D41E86D.8060205@free.fr> <tip-43d79a250bdb10e30b08a79e906befc691c3f5ce@git.kernel.org> <20110205021922.GP5503@outflux.net>
-In-Reply-To: <20110205021922.GP5503@outflux.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=gb2312
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/2011 06:19 PM, Kees Cook wrote:
-> Hi Peter,
-> 
-> This works for me doing CPU hotplugging on ia32, but on x86_64 it hangs.
-> (Both boot, though.)
-> 
-> Thanks,
-> 
-> -Kees
+Hi us,
+     I have translated linux-2.6/Documentation/SubmittingChecklist into Chinese. This patch can add translated file(SubmittingChecklist) under linux-2.6/Documentation/zh_CN/.
+     Thanks.
 
-I can't reproduce the failure here, and it's hard to see how this patch
-would make a significant change on 64 bits.  Could you try reverting
-*only* the head_64.S hunk and try it on your platform again?
+     Best Regards.
+     Harry Wei.
 
-	-hpa
+Signed-off-by: Harry Wei(harryxiyou@gmail.com)
+---
+ Documentation/zh_CN/SubmitChecklist |  109 +++++++++++++++++++++++++++++++++++
+ 1 files changed, 109 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/zh_CN/SubmitChecklist
 
+diff --git a/Documentation/zh_CN/SubmitChecklist b/Documentation/zh_CN/SubmitChecklist
+new file mode 100644
+index 0000000..1328483
+--- /dev/null
++++ b/Documentation/zh_CN/SubmitChecklist
+@@ -0,0 +1,109 @@
++Chinese translated version of Documentation/SubmitChecklist
++
++If you have any comment or update to the content, please contact the
++original document maintainer directly.  However, if you have a problem
++communicating in English you can also ask the Chinese maintainer for
++help.  Contact the Chinese maintainer if this translation is outdated
++or if there is a problem with the translation.
++
++Chinese maintainer: Harry Wei <harryxiyou@gmail.com>
++---------------------------------------------------------------------
++Documentation/SubmitChecklist 的中文翻译
++
++如果想评论或更新本文的内容，请直接联系原文档的维护者。如果你使用英文
++交流有困难的话，也可以向中文版维护者求助。如果本翻译更新不及时或者翻
++译存在问题，请联系中文版维护者。
++
++中文版维护者： 贾威威 Harry Wei <harryxiyou@gmail.com>
++中文版翻译者： 贾威威 Harry Wei <harryxiyou@gmail.com>
++中文版校译者： 贾威威 Harry Wei <harryxiyou@gmail.com>
++
++
++以下为正文
++---------------------------------------------------------------------
++Linux内核提交清单
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++
++这里有一些内核开发者应该做的基本事情，如果他们想看到自己的内核补丁提交
++被接受的更快。
++
++这些都是超出Documentation/SubmittingPatches文档里所提供的以及其他
++关于提交Linux内核补丁的说明。
++
++1：如果你使用了一个功能那么就#include定义/声明那个功能的那个文件。
++   不要依靠其他间接引入定义/声明那个功能的头文件。
++
++2：构建简洁适用或者更改CONFIG选项 =y，=m，或者=n。
++   不要有编译警告/错误， 不要有链接警告/错误。
++
++2b：通过 allnoconfig, allmodconfig
++
++2c：当使用 0=builddir 成功地构建
++
++3：通过使用本地交叉编译工具或者其他一些构建产所，在多CPU框架上构建。
++
++4：ppc64 是一个很好的检查交叉编译的框架，因为它往往把‘unsigned long’
++   当64位值来使用。
++
++5：按照Documentation/CodingStyle文件里的详细描述，检查你补丁的整体风格。
++   使用补丁风格检查琐碎的违规(scripts/checkpatch.pl)，审核员优先提交。
++   你应该调整遗留在你补丁中的所有违规。
++
++6：任何更新或者改动CONFIG选项都不能打乱配置菜单。
++
++7：所有的Kconfig选项更新都要有说明文字。
++
++8：已经认真地总结了相关的Kconfig组合。这是很难通过测试做好的--脑力在这里下降。
++
++9：检查具有简洁性。
++
++10：使用'make checkstack'和'make namespacecheck'检查，然后修改所找到的问题。
++    注意：堆栈检查不会明确地出现问题，但是任何的一个函数在堆栈上使用多于512字节
++    都要准备修改。
++
++11：包含kernel-doc到全局内核APIs文件。（不要求静态的函数，但是包含也无所谓。）
++    使用'make htmldocs'或者'make mandocs'来检查kernel-doc，然后修改任何
++    发现的问题。
++
++12：已经通过CONFIG_PREEMPT, CONFIG_DEBUG_PREEMPT,
++    CONFIG_DEBUG_SLAB, CONFIG_DEBUG_PAGEALLOC, CONFIG_DEBUG_MUTEXES,
++    CONFIG_DEBUG_SPINLOCK, CONFIG_DEBUG_SPINLOCK_SLEEP测试，并且同时都
++    使能。
++
++13：已经都构建并且使用或者不使用 CONFIG_SMP 和 CONFIG_PREEMPT测试执行时间。
++
++14：如果补丁影响IO/Disk，等等：已经通过使用或者不使用 CONFIG_LBDAF 测试。
++
++15：所有的codepaths已经行使所有lockdep启用功能。
++
++16：所有的/proc记录更新都要作成文件放在Documentation/目录下。
++
++17：所有的内核启动参数更新都被记录到Documentation/kernel-parameters.txt文件中。
++
++18：所有的模块参数更新都用MODULE_PARM_DESC()记录。
++
++19：所有的用户空间接口更新都被记录到Documentation/ABI/。查看Documentation/ABI/README
++    可以获得更多的信息。改变用户空间接口的补丁应该被邮件抄送给linux-api@vger.kernel.org。
++
++20：检查它是不是都通过`make headers_check'。
++
++21：已经通过至少引入slab和page-allocation失败检查。查看Documentation/fault-injection/。
++
++22：新加入的源码已经通过`gcc -W'（使用"make EXTRA_CFLAGS=-W"）编译。这样将产生很多烦恼，
++    但是对于寻找漏洞很有益处，例如:"warning: comparison between signed and unsigned"。
++
++23：当它被合并到-mm补丁集后再测试，用来确定它是否还和补丁队列中的其他补丁一起工作以及在VM，VFS
++    和其他子系统中各个变化。
++
++24：所有的内存屏障{e.g., barrier(), rmb(), wmb()}需要在源代码中的一个注释来解释他们都是干什么的
++    以及原因。
++
++25：如果有任何输入输出控制的补丁被添加，也要更新Documentation/ioctl/ioctl-number.txt。
++
++26：如果你的更改代码依靠或者使用任何的内核APIs或者与下面的kconfig符号有关系的功能，你就要
++    使用相关的kconfig符号关闭， and/or =m（如果选项提供）[在同一时间不是所用的都启用，仅仅各个或者自由
++    组合他们]：
++
++    CONFIG_SMP, CONFIG_SYSFS, CONFIG_PROC_FS, CONFIG_INPUT, CONFIG_PCI,
++    CONFIG_BLOCK, CONFIG_PM, CONFIG_HOTPLUG, CONFIG_MAGIC_SYSRQ,
++    CONFIG_NET, CONFIG_INET=n (后一个使用 CONFIG_NET=y)
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.0.4
+
+
+
 
