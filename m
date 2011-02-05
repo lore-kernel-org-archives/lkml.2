@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975Ab1BEJWs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 04:22:48 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37969 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999Ab1BEJWr (ORCPT
+	id S1751753Ab1BEJsZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 04:48:25 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51178 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750787Ab1BEJsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 04:22:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=prMPA9SpYzSAjzA8RR21vf2jlt6fkSn3TeNajT/CqbzpPqC3Sor+IxDoUNKkevrjrY
-         uPTX+4cwPmj4NQHtcpc6S8IgtQTaYDvbPlzuw0Av+T16yDNDbgtMUjRicdPBIlSMppxj
-         YpD5pvmP+IDrUCqn36K7isQXEfEkgW8CNrIGQ=
-Message-ID: <4D4D16E3.5040205@gmail.com>
-Date: Sat, 05 Feb 2011 12:22:43 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	Sat, 5 Feb 2011 04:48:23 -0500
+Date: Sat, 5 Feb 2011 09:47:30 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Colin Cross <ccross@android.com>, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Linus Walleij <linus.walleij@stericsson.com>, konkers@android.com,
+        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, olof@lixom.net,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 04/28] ARM: mm: cache-l2x0: Add support for
+	re-enabling l2x0
+Message-ID: <20110205094730.GA23965@n2100.arm.linux.org.uk>
+References: <1295834493-5019-5-git-send-email-ccross@android.com> <1295968464.10109.264.camel@e102109-lin.cambridge.arm.com> <20110125154133.GB17280@n2100.arm.linux.org.uk> <1295979242.10109.308.camel@e102109-lin.cambridge.arm.com> <2f97ec8a084e590220e1548fc927b60e@mail.gmail.com> <-8932138696981683633@unknownmsgid> <AANLkTi=cTXmQFm_s5OL2pGyyaFv5UR_f9MV=S5Ajx0tu@mail.gmail.com> <20110204234331.GF8732@n2100.arm.linux.org.uk> <AANLkTi=fHnivHXHnYrQvdP6JWbEA3t1X3DuBxj5gN3H0@mail.gmail.com> <1bebe4b5c8590059b70a146d5486fa6a@mail.gmail.com>
 MIME-Version: 1.0
-To: George Spelvin <linux@horizon.com>
-CC: a.p.zijlstra@chello.nl, dzickus@redhat.com, linux-kernel@vger.kernel.org,
-        ming.m.lin@intel.com, mingo@elte.hu, mroos@linux.ee
-Subject: Re: [PATCH] perf, x86: P4 PMU -- Fix unflagged overflows test
-References: <20110205091536.11125.qmail@science.horizon.com>
-In-Reply-To: <20110205091536.11125.qmail@science.horizon.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1bebe4b5c8590059b70a146d5486fa6a@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2011 12:15 PM, George Spelvin wrote:
->> Hi George, this log is when unflagged overflow patch applied or previous one?
+On Sat, Feb 05, 2011 at 01:21:24PM +0530, Santosh Shilimkar wrote:
+> GIC save/restore on OMAP follows different strategy. There is a
+> Predefined layout to save content and restore is done atomically
+> by boot ROM code.
+> L2 cache also same case. Only AUXCTRL needs to be programmed on
+> wakeup from low power mode and that too with secure call. Rest
+> of the registers are managed by boot ROM code.
 > 
-> The earlier one.  As I said, the patch to x86_pmu_start.  The later one (no
-> complaints in 6 hours of uptime so far) was to p4_pmu_clear_cccr_ovf.
+> TWD is already managed through framework. Othe CPU low power
+> sequence is very small and OMAP has restrictions on the last
+> core to go down and first to wakeup.
 > 
-> Thank you very much!
+> So at least I don't see any use of common notifiers for GIC
+> and L2 will help OMAP lower power code.
 
-Thanks for testing George! There is still a problem with kgdb bootup tests,
-but at moment I didn't resolve this thing. Will ping as only get any news ;)
-
--- 
-    Cyrill
+What this means is that we're going to end up littering things like GIC
+and other stuff with lots of individual SoC specific code to save state
+into individual SoC specific structures.  This is not sane, and we're
+not going to corrupt generic code with SoC specific code.
