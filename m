@@ -1,46 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753735Ab1BEUrI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 15:47:08 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:50659 "EHLO smtp3-g21.free.fr"
+	id S1753722Ab1BEUwQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 15:52:16 -0500
+Received: from mailout1.go2.pl ([193.17.41.11]:45297 "EHLO mailout1.go2.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753431Ab1BEUrG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 15:47:06 -0500
-Date: Sat, 5 Feb 2011 21:45:50 +0100
-From: Emmanuel Florac <eflorac@intellique.com>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-net@vger.kernel.org, Alan Piszcz <ap@solarrain.com>
-Subject: Re: Supermicro X8DTH-6: Only ~250MiB/s from RAID<->RAID over 10GbE?
-Message-ID: <20110205214550.3cb0f0d1@galadriel2.home>
-In-Reply-To: <alpine.DEB.2.00.1102051427360.8518@p34.internal.lan>
-References: <alpine.DEB.2.00.1102051427360.8518@p34.internal.lan>
-Organization: Intellique
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753363Ab1BEUwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Feb 2011 15:52:15 -0500
+Message-ID: <4D4DB870.2080904@o2.pl>
+Date: Sat, 05 Feb 2011 21:52:00 +0100
+From: Maciej Szmigiero <mhej@o2.pl>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101204 Lightning/1.0b3pre Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, Oliver Neukum <oneukum@suse.de>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Paul Mortier <mortier@btinternet.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [USB]Add quirk for Samsung Android phone modem
+References: <Pine.LNX.4.44L0.1102051514150.4210-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1102051514150.4210-100000@netrider.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-O2-Trust: 2, 64
+X-O2-SPF: neutral
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le Sat, 5 Feb 2011 14:35:52 -0500 (EST) vous écriviez:
+W dniu 05.02.2011 21:15, Alan Stern pisze:
+> On Sat, 5 Feb 2011, Maciej Szmigiero wrote:
+> 
+>> [USB]Add quirk for Samsung Android phone modem
+>>
+>> My Galaxy Spica needs this quirk when in modem mode, otherwise
+>> it causes endless USB bus resets and is unusable in this mode.
+>>
+>> Unfortunately Samsung decided to reuse ID of its old CDMA phone SGH-I500
+>> for the modem part.
+>> That's why in addition to this patch the visior driver must be prevented
+>> from binding to SPH-I500 ID, so ACM driver can do that.
+>>
+>> Signed-off-by: Maciej Szmigiero <mhej@o2.pl>
+>>
+>> diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
+>> index 44c5954..363355b 100644
+>> --- a/drivers/usb/core/quirks.c
+>> +++ b/drivers/usb/core/quirks.c
+>> @@ -88,6 +88,10 @@ static const struct usb_device_id usb_quirk_list[] = {
+>>      /* INTEL VALUE SSD */
+>>      { USB_DEVICE(0x8086, 0xf1a5), .driver_info = USB_QUIRK_RESET_RESUME },
+>>  
+>> +    /* Samsung Android phone modem - ID conflict with SPH-I500 */
+>> +    { USB_DEVICE(0x04e8, 0x6601), .driver_info =
+>> +            USB_QUIRK_CONFIG_INTF_STRINGS },
+>> +
+>>      { }  /* terminating entry must be last */
+>>  };
+> 
+> Please follow the directions at the start of the source file: Keep the 
+> list ordered by vendor ID, then product ID.
+> 
+> Alan Stern
 
-> No single component is < 1Gbyte/sec but when data is transferred from 
-> hostA to hostB, then it degrades to 250MiB/s.
+Sorry for that, should have read the whole file before adding new quirk.
+Here is a sorted version:
 
-Running 2 Supermicro H8-DIi+ with 2378 Opteron, Intel 10 GigE CX4, 3Ware
-RAID-6 24 drives : 550 MB/s reading sustained over NFS with 2.6.32.*
-(plain vanilla kernel).
+[USB]Add quirk for Samsung Android phone modem
 
-I know that Xeon used to suck IO wise, but this is surprising. Isn't
-something preventing DMA ?
+My Galaxy Spica needs this quirk when in modem mode, otherwise
+it causes endless USB bus resets and is unusable in this mode.
 
--- 
-------------------------------------------------------------------------
-Emmanuel Florac     |   Direction technique
-                    |   Intellique
-                    |	<eflorac@intellique.com>
-                    |   +33 1 78 94 84 02
-------------------------------------------------------------------------
+Unfortunately Samsung decided to reuse ID of its old CDMA phone SGH-I500
+for the modem part.
+That's why in addition to this patch the visor driver must be prevented
+from binding to SPH-I500 ID, so ACM driver can do that.
+
+Signed-off-by: Maciej Szmigiero <mhej@o2.pl>
+
+diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
+index 44c5954..63b1f21 100644
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -48,6 +48,10 @@ static const struct usb_device_id usb_quirk_list[] = {
+ 	{ USB_DEVICE(0x04b4, 0x0526), .driver_info =
+ 			USB_QUIRK_CONFIG_INTF_STRINGS },
+ 
++	/* Samsung Android phone modem - ID conflict with SPH-I500 */
++	{ USB_DEVICE(0x04e8, 0x6601), .driver_info =
++			USB_QUIRK_CONFIG_INTF_STRINGS },
++
+ 	/* Roland SC-8820 */
+ 	{ USB_DEVICE(0x0582, 0x0007), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
+ 
+
+
