@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab1BERt6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 12:49:58 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:39872 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753215Ab1BERrG (ORCPT
+	id S1753134Ab1BERrB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 12:47:01 -0500
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:53980 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752925Ab1BERq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 12:47:06 -0500
+	Sat, 5 Feb 2011 12:46:57 -0500
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: v9fs-developer@lists.sourceforge.net
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [RFC PATCH -V2 06/17] fs/9p: Add fid to inode in cached mode
-Date: Sat,  5 Feb 2011 23:16:34 +0530
-Message-Id: <1296928005-9529-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [RFC PATCH -V2 01/17] fs/9p: set the cached file_operations struct during inode init
+Date: Sat,  5 Feb 2011 23:16:29 +0530
+Message-Id: <1296928005-9529-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1296928005-9529-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1296928005-9529-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -21,172 +21,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fid attached to inode will be opened O_RDWR mode and is used
-for dirty page writeback only.
-
-FIXME!!: Should we make the fid owned by uid = 0
+With the old code we were not setting the file->f_op
+with cached file operations during creat.
 
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/9p/vfs_file.c       |   31 +++++++++++++++++++++++++++++++
- fs/9p/vfs_inode.c      |   34 +++++++++++++++++++++++++++++++++-
- fs/9p/vfs_inode_dotl.c |   30 ++++++++++++++++++++++++++++--
- 3 files changed, 92 insertions(+), 3 deletions(-)
+ fs/9p/v9fs_vfs.h  |    2 ++
+ fs/9p/vfs_file.c  |   18 ++++--------------
+ fs/9p/vfs_inode.c |   10 ++++++++--
+ 3 files changed, 14 insertions(+), 16 deletions(-)
 
+diff --git a/fs/9p/v9fs_vfs.h b/fs/9p/v9fs_vfs.h
+index b789f8e..e4d5540 100644
+--- a/fs/9p/v9fs_vfs.h
++++ b/fs/9p/v9fs_vfs.h
+@@ -45,6 +45,8 @@ extern const struct file_operations v9fs_dir_operations;
+ extern const struct file_operations v9fs_dir_operations_dotl;
+ extern const struct dentry_operations v9fs_dentry_operations;
+ extern const struct dentry_operations v9fs_cached_dentry_operations;
++extern const struct file_operations v9fs_cached_file_operations;
++extern const struct file_operations v9fs_cached_file_operations_dotl;
+ 
+ #ifdef CONFIG_9P_FSCACHE
+ struct inode *v9fs_alloc_inode(struct super_block *sb);
 diff --git a/fs/9p/vfs_file.c b/fs/9p/vfs_file.c
-index ecdd512..0f62b26 100644
+index 240c306..6a67100 100644
 --- a/fs/9p/vfs_file.c
 +++ b/fs/9p/vfs_file.c
-@@ -86,11 +86,42 @@ int v9fs_file_open(struct inode *inode, struct file *file)
+@@ -44,9 +44,6 @@
+ #include "fid.h"
+ #include "cache.h"
+ 
+-static const struct file_operations v9fs_cached_file_operations;
+-static const struct file_operations v9fs_cached_file_operations_dotl;
+-
+ /**
+  * v9fs_file_open - open a file (or directory)
+  * @inode: inode to be opened
+@@ -89,19 +86,12 @@ int v9fs_file_open(struct inode *inode, struct file *file)
  	}
  
  	file->private_data = fid;
-+	/*
-+	 * In cached mode we need to attach a fid to inode. The fid
-+	 * attached to inode will only be used to write back the
-+	 * dirty pages. We always request for the open fid in read-write
-+	 * mode so that a partial page write which result in page
-+	 * read can work.
-+	 */
-+	if (v9ses->cache && !inode->i_private) {
-+		/*
-+		 * clone a fid and add it to inode->i_private
-+		 * we do it during open time instead of
-+		 * page dirty time via write_begin/page_mkwrite
-+		 * because we want write after unlink usecase
-+		 * to work.
-+		 */
-+		fid = v9fs_fid_clone(file->f_path.dentry);
-+		if (IS_ERR(fid)) {
-+			err = PTR_ERR(fid);
-+			goto out_error;
-+		}
-+		err = p9_client_open(fid, O_RDWR);
-+		if (err < 0) {
-+			p9_client_clunk(fid);
-+			goto out_error;
-+		}
-+		inode->i_private = (void *) fid;
-+	}
- #ifdef CONFIG_9P_FSCACHE
- 	if (v9ses->cache)
++#ifdef CONFIG_9P_FSCACHE
+ 	if ((fid->qid.version) && (v9ses->cache)) {
+ 		P9_DPRINTK(P9_DEBUG_VFS, "cached");
+-		/* enable cached file options */
+-		if(file->f_op == &v9fs_file_operations)
+-			file->f_op = &v9fs_cached_file_operations;
+-		else if (file->f_op == &v9fs_file_operations_dotl)
+-			file->f_op = &v9fs_cached_file_operations_dotl;
+-
+-#ifdef CONFIG_9P_FSCACHE
  		v9fs_cache_inode_set_cookie(inode, file);
- #endif
+-#endif
+ 	}
+-
++#endif
  	return 0;
-+out_error:
-+	p9_client_clunk(file->private_data);
-+	file->private_data = 0;
-+	return err;
  }
  
- /**
+@@ -505,7 +495,7 @@ int v9fs_file_fsync_dotl(struct file *filp, int datasync)
+ 	return retval;
+ }
+ 
+-static const struct file_operations v9fs_cached_file_operations = {
++const struct file_operations v9fs_cached_file_operations = {
+ 	.llseek = generic_file_llseek,
+ 	.read = do_sync_read,
+ 	.aio_read = generic_file_aio_read,
+@@ -517,7 +507,7 @@ static const struct file_operations v9fs_cached_file_operations = {
+ 	.fsync = v9fs_file_fsync,
+ };
+ 
+-static const struct file_operations v9fs_cached_file_operations_dotl = {
++const struct file_operations v9fs_cached_file_operations_dotl = {
+ 	.llseek = generic_file_llseek,
+ 	.read = do_sync_read,
+ 	.aio_read = generic_file_aio_read,
 diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
-index ce56571..ecd2c6f 100644
+index b76a40b..45e7ea4 100644
 --- a/fs/9p/vfs_inode.c
 +++ b/fs/9p/vfs_inode.c
-@@ -416,6 +416,11 @@ void v9fs_evict_inode(struct inode *inode)
- #ifdef CONFIG_9P_FSCACHE
- 	v9fs_cache_inode_put_cookie(inode);
- #endif
-+	/* clunk the fid stashed in inode->i_private */
-+	if (inode->i_private) {
-+		p9_client_clunk((struct p9_fid *)inode->i_private);
-+		inode->i_private = 0;
-+	}
- }
+@@ -292,10 +292,16 @@ struct inode *v9fs_get_inode(struct super_block *sb, int mode)
+ 	case S_IFREG:
+ 		if (v9fs_proto_dotl(v9ses)) {
+ 			inode->i_op = &v9fs_file_inode_operations_dotl;
+-			inode->i_fop = &v9fs_file_operations_dotl;
++			if (v9ses->cache)
++				inode->i_fop = &v9fs_cached_file_operations_dotl;
++			else
++				inode->i_fop = &v9fs_file_operations_dotl;
+ 		} else {
+ 			inode->i_op = &v9fs_file_inode_operations;
+-			inode->i_fop = &v9fs_file_operations;
++			if (v9ses->cache)
++				inode->i_fop = &v9fs_cached_file_operations;
++			else
++				inode->i_fop = &v9fs_file_operations;
+ 		}
  
- struct inode *
-@@ -577,7 +582,7 @@ v9fs_vfs_create(struct inode *dir, struct dentry *dentry, int mode,
- 	u32 perm;
- 	int flags;
- 	struct v9fs_session_info *v9ses;
--	struct p9_fid *fid;
-+	struct p9_fid *fid, *inode_fid;
- 	struct file *filp;
- 
- 	err = 0;
-@@ -600,6 +605,33 @@ v9fs_vfs_create(struct inode *dir, struct dentry *dentry, int mode,
- 
- 	/* if we are opening a file, assign the open fid to the file */
- 	if (nd && nd->flags & LOOKUP_OPEN) {
-+		/*
-+		 * In cached mode we need to attach a fid to inode. The fid
-+		 * attached to inode will only be used to write back the
-+		 * dirty pages. We always request for the open fid in read-write
-+		 * mode so that a partial page write which result in page
-+		 * read can work.
-+		 */
-+		if (v9ses->cache && !dentry->d_inode->i_private) {
-+			/*
-+			 * clone a fid and add it to inode->i_private
-+			 * we do it during open time instead of
-+			 * page dirty time via write_begin/page_mkwrite
-+			 * because we want write after unlink usecase
-+			 * to work.
-+			 */
-+			inode_fid = v9fs_fid_clone(dentry);
-+			if (IS_ERR(inode_fid)) {
-+				err = PTR_ERR(inode_fid);
-+				goto error;
-+			}
-+			err = p9_client_open(inode_fid, O_RDWR);
-+			if (err < 0) {
-+				p9_client_clunk(inode_fid);
-+				goto error;
-+			}
-+			dentry->d_inode->i_private = (void *) inode_fid;
-+		}
- 		filp = lookup_instantiate_filp(nd, dentry, generic_file_open);
- 		if (IS_ERR(filp)) {
- 			err = PTR_ERR(filp);
-diff --git a/fs/9p/vfs_inode_dotl.c b/fs/9p/vfs_inode_dotl.c
-index 265f583..d5aa986 100644
---- a/fs/9p/vfs_inode_dotl.c
-+++ b/fs/9p/vfs_inode_dotl.c
-@@ -142,7 +142,7 @@ v9fs_vfs_create_dotl(struct inode *dir, struct dentry *dentry, int omode,
- 	mode_t mode;
- 	struct v9fs_session_info *v9ses;
- 	struct p9_fid *fid = NULL;
--	struct p9_fid *dfid, *ofid;
-+	struct p9_fid *dfid, *ofid, *inode_fid;
- 	struct file *filp;
- 	struct p9_qid qid;
- 	struct inode *inode;
-@@ -218,7 +218,33 @@ v9fs_vfs_create_dotl(struct inode *dir, struct dentry *dentry, int omode,
- 
- 	/* Now set the ACL based on the default value */
- 	v9fs_set_create_acl(dentry, dacl, pacl);
--
-+	/*
-+	 * In cached mode we need to attach a fid to inode. The fid
-+	 * attached to inode will only be used to write back the
-+	 * dirty pages. We always request for the open fid in read-write
-+	 * mode so that a partial page write which result in page
-+	 * read can work.
-+	 */
-+	if (v9ses->cache && !inode->i_private) {
-+		/*
-+		 * clone a fid and add it to inode->i_private
-+		 * we do it during open time instead of
-+		 * page dirty time via write_begin/page_mkwrite
-+		 * because we want write after unlink usecase
-+		 * to work.
-+		 */
-+		inode_fid = v9fs_fid_clone(dentry);
-+		if (IS_ERR(inode_fid)) {
-+			err = PTR_ERR(inode_fid);
-+			goto error;
-+		}
-+		err = p9_client_open(inode_fid, O_RDWR);
-+		if (err < 0) {
-+			p9_client_clunk(inode_fid);
-+			goto error;
-+		}
-+		inode->i_private = (void *) inode_fid;
-+	}
- 	/* Since we are opening a file, assign the open fid to the file */
- 	filp = lookup_instantiate_filp(nd, dentry, generic_file_open);
- 	if (IS_ERR(filp)) {
+ 		break;
 -- 
 1.7.1
 
