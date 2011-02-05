@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751658Ab1BEM1L (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 07:27:11 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:65213 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380Ab1BEM1K (ORCPT
+	id S1751943Ab1BENHt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 08:07:49 -0500
+Received: from www.wytron.com.tw ([211.75.82.101]:46689 "EHLO
+	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751753Ab1BENHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 07:27:10 -0500
-From: "Dr. Martin Rogge" <marogge@onlinehome.de>
-To: Mike Galbraith <efault@gmx.de>
-Subject: Re: scheduling policy    was: Re: 2.6.37 considered stable?
-Date: Sat, 5 Feb 2011 13:27:05 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-ck1; KDE/4.5.5; x86_64; ; )
-Cc: Gene Heskett <gene.heskett@gmail.com>, linux-kernel@vger.kernel.org
-References: <201102042123.28734.marogge@onlinehome.de> <1296887529.27896.14.camel@marge.simson.net>
-In-Reply-To: <1296887529.27896.14.camel@marge.simson.net>
+	Sat, 5 Feb 2011 08:07:48 -0500
+Message-ID: <4D4D4BD6.3040909@wytron.com.tw>
+Date: Sat, 05 Feb 2011 21:08:38 +0800
+From: Thomas Chou <thomas@wytron.com.tw>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: David Brownell <dbrownell@users.sourceforge.net>,
+        linux-kernel@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
+        devicetree-discuss@lists.ozlabs.org,
+        spi-devel-general@lists.sourceforge.net
+Subject: Re: [PATCH v6] spi: New driver for Altera SPI
+References: <1295851114-12488-1-git-send-email-thomas@wytron.com.tw> <1296727326-2581-1-git-send-email-thomas@wytron.com.tw> <20110203173430.GC6180@angua.secretlab.ca>
+In-Reply-To: <20110203173430.GC6180@angua.secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201102051327.05398.marogge@onlinehome.de>
-X-Provags-ID: V02:K0:lZ+ARAfmpdS0wNVVtEhVNU+g0i/H0uN5Mx/yECKXu+M
- Ve/6tIdN3U2+MI48ZrwiP9HRVBTf6pSbyEeuXMNVZTapF6ANRA
- ji6xnNMzYFiXaApyjZ4VlOrAxC6Jjc9gBIizZbYVxlmHt7Bnr7
- D9oNRNZlxDot7hPnK0qNtnRTB72YNM6HmTs+GUFCoXZS+mpgZ2
- HBjNK+nC4inPf1227zSRQ==
+X-SA-Exim-Connect-IP: 192.168.1.250
+X-SA-Exim-Mail-From: thomas@wytron.com.tw
+X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Galbraith wrote:
+On 02/04/2011 01:34 AM, Grant Likely wrote:
+> Hi Thomas, comments below, but looking pretty close.
 
->> Gene, have you tried schedtool to set the scheduling policy of the
->> process to SCHED_FIFO or even SCHED_ISO?
-> 
-> /*
->  * Scheduling policies
->  */
-> #define SCHED_NORMAL            0
-> #define SCHED_FIFO              1
-> #define SCHED_RR                2
-> #define SCHED_BATCH             3
-> /* SCHED_ISO: reserved but not implemented yet */
-> #define SCHED_IDLE
+Thanks a lot.
 
-When I mentioned SCHED_ISO I was making the mental note "provided you are 
-running a scheduler that supports SCHED_ISO" as I do. 
+>> +config SPI_ALTERA
+>> +	tristate "Altera SPI Controller"
+>> +	select SPI_BITBANG
+>
+> Will this compile on all architectures?  Will it break allyesconfig
+> on anything other than nios?
 
-> You only want to run apps RT if they really really need it though.  In
-> many cases, running an app RT will reduce performance, and may well
-> increase latencies.  (deterministic != quick like a bunny;)
+Yes, it compile on other architectures. I will add 'default n' though.
 
-I agree with that statement, and on all machines I own the video applications 
-run under SCHED_NORMAL nice 0. However, on machines where the audio/video 
-performance is borderline, it may help to tweak the scheduling policy (save 
-buying new hardware).
+There are soft-core arm, mips and coldfire running on altera fpga. 
+Others might use fpga as peripheral extender, too. So we shouldn't limit 
+it to nios2.
 
-Regarding "quick like a bunny": depending on the KPI (forgive the corporate 
-lingo ;-) you are looking at, it means different things. For me as a desktop 
-user, it is determined by the "snappiness" and "smoothness" of the user 
-interface and all other applications with direct user interaction. Throughput 
-KPIs are less relevant, although still important for foreground applications.
+>> +static int __init altera_spi_init(void)
+>> +{
+>> +	return platform_driver_probe(&altera_spidrv, altera_spi_probe);
+>
+> platform_driver_register() please, and put the altera_spi_probe()
+> routine into the driver structure.
 
-A solution that gives me that, to the extent that compiling large projects in 
-the background is unnoticable to the user experience, is superior to others. 
-Unfortunately, in my experience, auto-this and auto-that is not always the 
-answer.
+I will change it to register as you suggested.
 
-Anyway, all I wanted to do is to encourage Gene to try something out and see 
-if it helps.
-
-Martin
-
+- Thomas
