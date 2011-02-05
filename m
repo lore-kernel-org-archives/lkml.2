@@ -1,95 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734Ab1BEUSy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 15:18:54 -0500
-Received: from lucidpixels.com ([75.144.35.66]:43209 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753188Ab1BEUSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 15:18:53 -0500
-Date: Sat, 5 Feb 2011 15:18:52 -0500 (EST)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Jean Gobin <jf@gobinjf.be>
-cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-net@vger.kernel.org, Alan Piszcz <ap@solarrain.com>
-Subject: Re: Supermicro X8DTH-6: Only ~250MiB/s from RAID<->RAID over
- 10GbE?
-In-Reply-To: <1296934967.2599.2.camel@jeff-ubuntu>
-Message-ID: <alpine.DEB.2.00.1102051510080.8518@p34.internal.lan>
-References: <alpine.DEB.2.00.1102051427360.8518@p34.internal.lan> <1296934967.2599.2.camel@jeff-ubuntu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753420Ab1BEUcc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 15:32:32 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57248 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752619Ab1BEUcb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Feb 2011 15:32:31 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=eYs4xkBxO6BvbonQ2WwrjRGfyk4diQ/NEc8bHm+yyfiM+Ad5hbBTe29UEMqpm4f/zy
+         E6C13ZnjtGDUmorawyEi6v0Jtz4+zHzpHo0zoZtrmUg1qwTlpoHuH+9rbMXr7twjbril
+         VM4/yuyMdG49ehNGCwK1qtQU0/3pLKa2PIBiQ=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+In-Reply-To: <20110204.145508.59670453.davem@davemloft.net>
+References: <AANLkTimBFBKJf0-TNRLr2hHNEehR2cnKPvx06=yyHGVj@mail.gmail.com>
+	<1296852667.2349.804.camel@pasglop>
+	<20110204.145508.59670453.davem@davemloft.net>
+Date: Sat, 5 Feb 2011 20:32:28 +0000
+Message-ID: <AANLkTi=s7Yro4TqtmgW4HPnJx3HiWvX9iJ9NUOYXcR+j@mail.gmail.com>
+Subject: Re: Sun GEM PPC32 Bug?
+From: Matt <jackdachef@gmail.com>
+To: ruediger.herbst@googlemail.com
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        geert@linux-m68k.org, benh@kernel.crashing.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>Is there a special Kernel parameter (sysctl.conf), that makes it
+>possible to use the Network. So how it is now I canŽt work with it. What
+>can I do at the moment?
 
+please add others in the CC
 
-On Sat, 5 Feb 2011, Jean Gobin wrote:
+(take a look in the CC field of this mail and you'll know how to do it:
+put the person you're answering in the "to" ("an") field :) )
 
-> Hi Justin,
->
-> When you run the copy over the network, could you issue a "vmstat 1" on
-> both machines?
->
-> Thanks,
-> J.
+thanks !
 
-iperf & nload:
+there was a kind of temporary solution provided in :
+http://ubuntuforums.org/showpost.php?p=9002232&postcount=3
 
-# ./iperf -c 10.0.1.2
-------------------------------------------------------------
-Client connecting to 10.0.1.2, TCP port 5001
-TCP window size: 27.7 KByte (default)
-------------------------------------------------------------
-[  3] local 10.0.1.1 port 34935 connected with 10.0.1.2 port 5001
-[ ID] Interval       Transfer     Bandwidth
-[  3]  0.0-10.0 sec  11.5 GBytes  9.90 Gbits/sec
+>linuxopjemac, thank you for referring to Ben. He replied and might look into it.
 
-Device eth0 [10.0.1.2] (1/5):
-================================================================================
-Incoming:
-                                               #######
-                                               #######
-                                               #######
-                                               #######
-                                               #######
-                                               #######  Curr: 1188.69 MByte/s
-                                               #######  Avg: 510.87 MByte/s
-                                               #######  Min: 0.00 MByte/s
-                                               #######  Max: 1188.82 MByte/s
-                                               #######  Ttl: 26.76 GByte
-Outgoing:
+>Meanwhile, I put the module reloading and interface restarting into a cron job that executes every hour: sudo crontab -e
 
+# m h  dom mon dow   command
+0  *  *   *   *     /usr/sbin/fix-sungem
 
-                                                 #####
-                                                 #####
-                                                 #####
-                                                 #####  Curr: 1.01 MByte/s
-                                                ######  Avg: 0.43 MByte/s
-                                                ######  Min: 0.00 MByte/s
-                                                ######  Max: 1.01 MByte/s
-                                                ######  Ttl: 23.20 MByte
+>and the script /usr/sbin/fix-sungem contains
 
-Read from RAID-0: (1.4Gbyte/sec)
+/sbin/ifdown eth0 && /sbin/rmmod sungem && /sbin/modprobe sungem &&
+/sbin/ifup eth0
 
-# dd if=bigfile3 of=/dev/null bs=1M
-  1  0
-  1  0      0 1049192    440 2795456    0    0 1400832     0 11274 2868  0  5 94  1  0
-  1  0      0 1049072    440 2789112    0    0 1359872     0 10947 2728  0  5 94  2  0
-  1  0      0 1049196    440 2795736    0    0 1228800     0 9931 2749  0  4 94  2  0
-  1  0      0 1049196    440 2795736    0    0 1392640     0 11144 2773  0  5 94  1  0
-  0  1      0 1049320    440 2795748    0    0 1220608     0 9971 2760  0  4 94  2  0
-  0  1      0 1049320    440 2795748    0    0 1392640     0 11163 2785  0  5 94
+Hope that helps somewhat
 
-Write to RAID-0: (1.4Gbyte/sec)
-  2  0      0 1995352   4604 1798940    0    0     8 1443783 12074 4957  0  9 86  5  0
-  1  1      0 1995268   4604 1798828    0    0     0 1494872 12410 5127  0  9 86  5  0
-  1  1      0 1995492   4604 1799132    0    0     0 1463364 12239 5031  0  9 86  5  0
-  1  2      0 1995432   4604 1798656    0    0     0 1431832 11993 4697  0  9 86
+Regards
 
-Everything > 1 Gbyte/sec but when you use the network, 250MiB/s, it does not
-make sense.
-
-Justin.
-
+Matt
