@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab1BERu6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 12:50:58 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:55543 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752972Ab1BERq7 (ORCPT
+	id S1752825Ab1BESCT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 13:02:19 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:33222 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752021Ab1BESCS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 12:46:59 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: v9fs-developer@lists.sourceforge.net
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [RFC PATCH -V2 03/17] fs/9p: increment inode->i_count in cached mode.
-Date: Sat,  5 Feb 2011 23:16:31 +0530
-Message-Id: <1296928005-9529-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1296928005-9529-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1296928005-9529-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	Sat, 5 Feb 2011 13:02:18 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:from:date:x-google-sender-auth:message-id
+         :subject:to:content-type;
+        b=dN9JoevsGwfdoM4jXkBTSK8y/dTbWbzidYQNZppDhzEgmOHZKiWBV5D8Pa5OQl79gg
+         kJh9S6s7TgspCfNnbprquu5JB4kNhravL8/clWv/45frCqm4jwnk4603nlh8HjEd/O8i
+         Cn2Oum9EkE5tm/w/RLgmwTjARCdKHpHr2KA74=
+MIME-Version: 1.0
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Sat, 5 Feb 2011 13:01:57 -0500
+X-Google-Sender-Auth: bcf0ZBdw0ugCU34D05BoShuL9L4
+Message-ID: <AANLkTikSwviozL+ezdvqengQpag4cpbLxR+vgs_JKXbZ@mail.gmail.com>
+Subject: Logitech autosuspend + runtime_pm loses input
+To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        pm list <linux-pm@lists.linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to ihold even in cached mode
+I have a Logitech MX Revolution (a cordless mouse receiver) plugged
+into a Logitech G15 (a keyboard w/ a hub) plugged into an Intel Cougar
+Point EHCI controller.  (Results are the same on an xHCI controller,
+though.)
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- fs/9p/vfs_inode_dotl.c |    7 +------
- 1 files changed, 1 insertions(+), 6 deletions(-)
+With autosuspend *or* runtime PM off, everything works.  (Well, the
+G15 is buggy and occasionally crashes and doesn't recover until
+powercycled, but that even happens on Windows.)  With runtime PM
+enabled on the whole tree, I have problems with autosuspend.
 
-diff --git a/fs/9p/vfs_inode_dotl.c b/fs/9p/vfs_inode_dotl.c
-index fbe9572..265f583 100644
---- a/fs/9p/vfs_inode_dotl.c
-+++ b/fs/9p/vfs_inode_dotl.c
-@@ -636,13 +636,8 @@ v9fs_vfs_link_dotl(struct dentry *old_dentry, struct inode *dir,
- 		v9fs_stat2inode_dotl(st, old_dentry->d_inode);
- 
- 		kfree(st);
--	} else {
--		/* Caching disabled. No need to get upto date stat info.
--		 * This dentry will be released immediately. So, just hold the
--		 * inode
--		 */
--		ihold(old_dentry->d_inode);
- 	}
-+	ihold(old_dentry->d_inode);
- 	d_instantiate(dentry, old_dentry->d_inode);
- 
- 	return err;
--- 
-1.7.1
+If I enable autosuspend on just the mouse by doing:
 
+echo 2 >./1-1/1-1.2/1-1.2.3/power/autosuspend
+(where that device is Bus 001 Device 005: ID 046d:c51a Logitech, Inc.
+MX Revolution/G7 Cordless Mouse), then after about two seconds of not
+moving the mouse, the mouse ignores the first second or so of motion
+when I start moving it again.
+
+If I enable autosuspend on just part of the keyboard by doing:
+
+echo 2 >./1-1/1-1.2/1-1.2.1/power/autosuspend
+(that's Bus 001 Device 004: ID 046d:c221 Logitech, Inc. G11/G15
+Keyboard / Keyboard)
+
+then after a couple seconds of not typing, my next keystroke is lost or delayed.
+
+It seems to be enough to turn off runtime PM (via power/control) OR
+turn off autosuspend on the keyboard device to make the keyboard work
+and on the mouse device to make the mouse work.
+
+Is this a case of "don't do that, you fool," or is there a legitimate
+bug to be fixed in the runtime pm code?
+
+My motherboard is Intel DH67GD (ordered just before they canceled
+production) with latest BIOS.
