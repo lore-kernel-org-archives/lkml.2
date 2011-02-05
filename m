@@ -1,38 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752408Ab1BEOlA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 09:41:00 -0500
-Received: from antispamout.netnet.net ([206.40.99.9]:51808 "EHLO
-	antispamout.netnet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030Ab1BEOk7 (ORCPT
+	id S1752408Ab1BEO71 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 09:59:27 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45557 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab1BEO7Z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 09:40:59 -0500
-X-Greylist: delayed 1076 seconds by postgrey-1.27 at vger.kernel.org; Sat, 05 Feb 2011 09:40:59 EST
-Message-ID: <20110205082224.bcuhy7j5vocks804@webmail.lakefield.net>
-Date: Sat, 05 Feb 2011 08:22:24 -0600
-From: Chun Hsieh <info@banksinopac.com>
-Reply-To: chun.hsiehtw@live.com
-To: undisclosed-recipients:;
-Subject: 
+	Sat, 5 Feb 2011 09:59:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=LmcJA271fR5zzR1Mb9EkI244a0Vd030lyAKvgoFn/LX9HBeI/ofhj6Su/9dJd+Xy4k
+         SFB/mv1eFurtRZTlwQ5C2pWGArinp85qB/4b+s489A7FZNtnSQBtqSB7Et5ZJqVQqSDQ
+         JN33pGG5MWLnzTNnTCnkC2Z0ZQrCIRfbmBzjA=
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
+In-Reply-To: <20110205142648.GA9814@p183.telecom.by>
+References: <cover.1296793770.git.lucian.grijincu@gmail.com>
+ <AANLkTi=3kKhWRzM7S_f18YJ=jx1P7bN9zVo9yGC7zwN_@mail.gmail.com>
+ <AANLkTik=a3NmibvYM6NxvqCiSiaE0oUFNtRaqn4+g_+D@mail.gmail.com> <20110205142648.GA9814@p183.telecom.by>
+From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Date: Sat, 5 Feb 2011 16:59:04 +0200
+Message-ID: <AANLkTi=Wg3_Uqrb=scquU9UojEJ_R_UyYhSYK6igt5sa@mail.gmail.com>
+Subject: Re: [PATCH 0/5] net: sysctl: share ipv4/ipv6 sysctl tables
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Octavian Purdila <opurdila@ixiacom.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Feb 5, 2011 at 4:26 PM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
+>> I'm not sure what I have to do to pass the name of a device (e.g.
+>> "eth0") instead of "default" but at least "default" and "all" work and
+>> have valid dentries.
+>
+> You do ->parent->procname.
+>
+> But, but you removed parent.
 
 
-BUSINESS PROPOSAL
+To be more exact I do:
+  const char *dev_name = filp->f_path.dentry->d_parent->d_name.name;
 
-Dear Friend,
-I am Chun Hsieh The Executive vice President and Chief Auditor of Bank Sino
-Pac Taiwan ,I have a business proposal for you of my partner fund in my
-bank,get back to me via my personal e-mail chun.hsiehtw@live.com if
-interested for more details.
 
+If the sysctl table is shared between all network devices, the last
+registered node will set the ->parent.
+
+So accessing /proc/sys/net/ipv4/conf/$DEVNAME/$CTL will access $CTL
+for the last network device registered not for $DEVNAME.
+
+-- 
+ .
+..: Lucian
