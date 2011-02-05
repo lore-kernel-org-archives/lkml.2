@@ -1,197 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907Ab1BETpg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 14:45:36 -0500
-Received: from www.tglx.de ([62.245.132.106]:60140 "EHLO www.tglx.de"
+	id S1753862Ab1BETpb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 14:45:31 -0500
+Received: from www.tglx.de ([62.245.132.106]:60119 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753698Ab1BETpe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 14:45:34 -0500
-Message-Id: <20110205193904.200958624@linutronix.de>
+	id S1753611Ab1BETp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Feb 2011 14:45:28 -0500
+Message-Id: <20110205193904.007359351@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Sat, 05 Feb 2011 19:45:28 -0000
+Date: Sat, 05 Feb 2011 19:45:01 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Tony Luck <tony.luck@intel.com>
-Subject: [patch 8/8] ia64: Convert iosapic to new irq_chip functions
+Subject: [patch 6/8] ia64: Convert msi to new irq_chip functions
 References: <20110205193740.964969119@linutronix.de>
-Content-Disposition: inline; filename=ia64-convert-iosapic.patch
+Content-Disposition: inline; filename=ia64-convert-msi.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/ia64/kernel/iosapic.c |   70 ++++++++++++++++++++++++---------------------
- 1 file changed, 38 insertions(+), 32 deletions(-)
+ arch/ia64/kernel/msi_ia64.c |   41 ++++++++++++++++++++++-------------------
+ 1 file changed, 22 insertions(+), 19 deletions(-)
 
-Index: linux-next/arch/ia64/kernel/iosapic.c
+Index: linux-next/arch/ia64/kernel/msi_ia64.c
 ===================================================================
---- linux-next.orig/arch/ia64/kernel/iosapic.c
-+++ linux-next/arch/ia64/kernel/iosapic.c
-@@ -257,7 +257,7 @@ set_rte (unsigned int gsi, unsigned int 
- }
+--- linux-next.orig/arch/ia64/kernel/msi_ia64.c
++++ linux-next/arch/ia64/kernel/msi_ia64.c
+@@ -12,12 +12,13 @@
+ static struct irq_chip	ia64_msi_chip;
  
- static void
--nop (unsigned int irq)
-+nop (struct irq_data *data)
- {
- 	/* do nothing... */
- }
-@@ -287,8 +287,9 @@ kexec_disable_iosapic(void)
- #endif
- 
- static void
--mask_irq (unsigned int irq)
-+mask_irq (struct irq_data *data)
- {
-+	unsigned int irq = data->irq;
- 	u32 low32;
- 	int rte_index;
- 	struct iosapic_rte_info *rte;
-@@ -305,8 +306,9 @@ mask_irq (unsigned int irq)
- }
- 
- static void
--unmask_irq (unsigned int irq)
-+unmask_irq (struct irq_data *data)
- {
-+	unsigned int irq = data->irq;
- 	u32 low32;
- 	int rte_index;
- 	struct iosapic_rte_info *rte;
-@@ -323,9 +325,11 @@ unmask_irq (unsigned int irq)
- 
- 
- static int
--iosapic_set_affinity(unsigned int irq, const struct cpumask *mask)
-+iosapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
-+		     bool force)
- {
  #ifdef CONFIG_SMP
-+	unsigned int irq = data->irq;
- 	u32 high32, low32;
- 	int cpu, dest, rte_index;
- 	int redir = (irq & IA64_IRQ_REDIRECTED) ? 1 : 0;
-@@ -379,15 +383,16 @@ iosapic_set_affinity(unsigned int irq, c
-  */
- 
- static unsigned int
--iosapic_startup_level_irq (unsigned int irq)
-+iosapic_startup_level_irq (struct irq_data *data)
+-static int ia64_set_msi_irq_affinity(unsigned int irq,
+-				      const cpumask_t *cpu_mask)
++static int ia64_set_msi_irq_affinity(struct irq_data *idata,
++				     const cpumask_t *cpu_mask, bool force)
  {
--	unmask_irq(irq);
-+	unmask_irq(data);
+ 	struct msi_msg msg;
+ 	u32 addr, data;
+ 	int cpu = first_cpu(*cpu_mask);
++	unsigned int irq = idata->irq;
+ 
+ 	if (!cpu_online(cpu))
+ 		return -1;
+@@ -38,7 +39,7 @@ static int ia64_set_msi_irq_affinity(uns
+ 	msg.data = data;
+ 
+ 	write_msi_msg(irq, &msg);
+-	cpumask_copy(irq_desc[irq].affinity, cpumask_of(cpu));
++	cpumask_copy(idata->affinity, cpumask_of(cpu));
+ 
  	return 0;
  }
- 
- static void
--iosapic_unmask_level_irq (unsigned int irq)
-+iosapic_unmask_level_irq (struct irq_data *data)
- {
-+	unsigned int irq = data->irq;
- 	ia64_vector vec = irq_to_vector(irq);
- 	struct iosapic_rte_info *rte;
- 	int do_unmask_irq = 0;
-@@ -395,16 +400,16 @@ iosapic_unmask_level_irq (unsigned int i
- 	irq_complete_move(irq);
- 	if (unlikely(irq_desc[irq].status & IRQ_MOVE_PENDING)) {
- 		do_unmask_irq = 1;
--		mask_irq(irq);
-+		mask_irq(data);
- 	} else
--		unmask_irq(irq);
-+		unmask_irq(data);
- 
- 	list_for_each_entry(rte, &iosapic_intr_info[irq].rtes, rte_list)
- 		iosapic_eoi(rte->iosapic->addr, vec);
- 
- 	if (unlikely(do_unmask_irq)) {
- 		move_masked_irq(irq);
--		unmask_irq(irq);
-+		unmask_irq(data);
- 	}
+@@ -84,16 +85,16 @@ void ia64_teardown_msi_irq(unsigned int 
+ 	destroy_irq(irq);
  }
  
-@@ -414,15 +419,15 @@ iosapic_unmask_level_irq (unsigned int i
- #define iosapic_ack_level_irq		nop
+-static void ia64_ack_msi_irq(unsigned int irq)
++static void ia64_ack_msi_irq(struct irq_data *data)
+ {
+-	irq_complete_move(irq);
+-	move_native_irq(irq);
++	irq_complete_move(data->irq);
++	move_native_irq(data->irq);
+ 	ia64_eoi();
+ }
  
- static struct irq_chip irq_type_iosapic_level = {
--	.name =		"IO-SAPIC-level",
--	.startup =	iosapic_startup_level_irq,
--	.shutdown =	iosapic_shutdown_level_irq,
--	.enable =	iosapic_enable_level_irq,
--	.disable =	iosapic_disable_level_irq,
--	.ack =		iosapic_ack_level_irq,
--	.mask =		mask_irq,
--	.unmask =	iosapic_unmask_level_irq,
--	.set_affinity =	iosapic_set_affinity
-+	.name =			"IO-SAPIC-level",
-+	.irq_startup =		iosapic_startup_level_irq,
-+	.irq_shutdown =		iosapic_shutdown_level_irq,
-+	.irq_enable =		iosapic_enable_level_irq,
-+	.irq_disable =		iosapic_disable_level_irq,
-+	.irq_ack =		iosapic_ack_level_irq,
-+	.irq_mask =		mask_irq,
-+	.irq_unmask =		iosapic_unmask_level_irq,
-+	.irq_set_affinity =	iosapic_set_affinity
- };
+-static int ia64_msi_retrigger_irq(unsigned int irq)
++static int ia64_msi_retrigger_irq(struct irq_data *data)
+ {
+-	unsigned int vector = irq_to_vector(irq);
++	unsigned int vector = irq_to_vector(data->irq);
+ 	ia64_resend_irq(vector);
  
- /*
-@@ -430,9 +435,9 @@ static struct irq_chip irq_type_iosapic_
+ 	return 1;
+@@ -103,14 +104,14 @@ static int ia64_msi_retrigger_irq(unsign
+  * Generic ops used on most IA64 platforms.
   */
- 
- static unsigned int
--iosapic_startup_edge_irq (unsigned int irq)
-+iosapic_startup_edge_irq (struct irq_data *data)
- {
--	unmask_irq(irq);
-+	unmask_irq(data);
- 	/*
- 	 * IOSAPIC simply drops interrupts pended while the
- 	 * corresponding pin was masked, so we can't know if an
-@@ -442,8 +447,9 @@ iosapic_startup_edge_irq (unsigned int i
- }
- 
- static void
--iosapic_ack_edge_irq (unsigned int irq)
-+iosapic_ack_edge_irq (struct irq_data *data)
- {
-+	unsigned int irq = data->irq;
- 	struct irq_desc *idesc = irq_desc + irq;
- 
- 	irq_complete_move(irq);
-@@ -455,22 +461,22 @@ iosapic_ack_edge_irq (unsigned int irq)
- 	 */
- 	if ((idesc->status & (IRQ_PENDING|IRQ_DISABLED)) ==
- 	    (IRQ_PENDING|IRQ_DISABLED))
--		mask_irq(irq);
-+		mask_irq(data);
- }
- 
- #define iosapic_enable_edge_irq		unmask_irq
- #define iosapic_disable_edge_irq	nop
- 
- static struct irq_chip irq_type_iosapic_edge = {
--	.name =		"IO-SAPIC-edge",
--	.startup =	iosapic_startup_edge_irq,
--	.shutdown =	iosapic_disable_edge_irq,
--	.enable =	iosapic_enable_edge_irq,
--	.disable =	iosapic_disable_edge_irq,
--	.ack =		iosapic_ack_edge_irq,
--	.mask =		mask_irq,
--	.unmask =	unmask_irq,
--	.set_affinity =	iosapic_set_affinity
-+	.name =			"IO-SAPIC-edge",
-+	.irq_startup =		iosapic_startup_edge_irq,
-+	.irq_shutdown =		iosapic_disable_edge_irq,
-+	.irq_enable =		iosapic_enable_edge_irq,
-+	.irq_disable =		iosapic_disable_edge_irq,
-+	.irq_ack =		iosapic_ack_edge_irq,
-+	.irq_mask =		mask_irq,
-+	.irq_unmask =		unmask_irq,
-+	.irq_set_affinity =	iosapic_set_affinity
+ static struct irq_chip ia64_msi_chip = {
+-	.name		= "PCI-MSI",
+-	.irq_mask	= mask_msi_irq,
+-	.irq_unmask	= unmask_msi_irq,
+-	.ack		= ia64_ack_msi_irq,
++	.name			= "PCI-MSI",
++	.irq_mask		= mask_msi_irq,
++	.irq_unmask		= unmask_msi_irq,
++	.irq_ack		= ia64_ack_msi_irq,
+ #ifdef CONFIG_SMP
+-	.set_affinity	= ia64_set_msi_irq_affinity,
++	.irq_set_affinity	= ia64_set_msi_irq_affinity,
+ #endif
+-	.retrigger	= ia64_msi_retrigger_irq,
++	.irq_retrigger		= ia64_msi_retrigger_irq,
  };
  
- static unsigned int
+ 
+@@ -132,8 +133,10 @@ void arch_teardown_msi_irq(unsigned int 
+ 
+ #ifdef CONFIG_DMAR
+ #ifdef CONFIG_SMP
+-static int dmar_msi_set_affinity(unsigned int irq, const struct cpumask *mask)
++static int dmar_msi_set_affinity(struct irq_data *data,
++				 const struct cpumask *mask, bool force)
+ {
++	unsigned int irq = data->irq;
+ 	struct irq_cfg *cfg = irq_cfg + irq;
+ 	struct msi_msg msg;
+ 	int cpu = cpumask_first(mask);
+@@ -152,7 +155,7 @@ static int dmar_msi_set_affinity(unsigne
+ 	msg.address_lo |= MSI_ADDR_DEST_ID_CPU(cpu_physical_id(cpu));
+ 
+ 	dmar_msi_write(irq, &msg);
+-	cpumask_copy(irq_desc[irq].affinity, mask);
++	cpumask_copy(data->affinity, mask);
+ 
+ 	return 0;
+ }
+@@ -162,11 +165,11 @@ static struct irq_chip dmar_msi_type = {
+ 	.name = "DMAR_MSI",
+ 	.irq_unmask = dmar_msi_unmask,
+ 	.irq_mask = dmar_msi_mask,
+-	.ack = ia64_ack_msi_irq,
++	.irq_ack = ia64_ack_msi_irq,
+ #ifdef CONFIG_SMP
+-	.set_affinity = dmar_msi_set_affinity,
++	.irq_set_affinity = dmar_msi_set_affinity,
+ #endif
+-	.retrigger = ia64_msi_retrigger_irq,
++	.irq_retrigger = ia64_msi_retrigger_irq,
+ };
+ 
+ static int
 
 
