@@ -1,53 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752323Ab1BEOkM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 09:40:12 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56553 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752103Ab1BEOkK (ORCPT
+	id S1752408Ab1BEOlA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 09:41:00 -0500
+Received: from antispamout.netnet.net ([206.40.99.9]:51808 "EHLO
+	antispamout.netnet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752030Ab1BEOk7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 09:40:10 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=A7rIuOOeqE43Y9bUvWcgtmqFXcQFMs2ROsfhCIhssAlpgD8Dq7c42n9S3kErHC7fnl
-         jhIUZ+5Fb0ZqXCFzYpcmQe8AZLCoCozPzOPcEzt6ZszoPAfTDSd7qyFL/01E/aTbVIxc
-         gH/IpTbFM3IDMe++qlI5bMhbW6Hy46YfCIZdE=
-Date: Sat, 5 Feb 2011 16:40:04 +0200
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/52] kstrtox: converting strings to integers done
- (hopefully) right
-Message-ID: <20110205144004.GB9814@p183.telecom.by>
-References: <1296915654-7458-1-git-send-email-adobriyan@gmail.com>
- <AANLkTimA3NLZsDwOp14A7KbGuUkHR3MFeLR7rQPVhLHG@mail.gmail.com>
+	Sat, 5 Feb 2011 09:40:59 -0500
+X-Greylist: delayed 1076 seconds by postgrey-1.27 at vger.kernel.org; Sat, 05 Feb 2011 09:40:59 EST
+Message-ID: <20110205082224.bcuhy7j5vocks804@webmail.lakefield.net>
+Date: Sat, 05 Feb 2011 08:22:24 -0600
+From: Chun Hsieh <info@banksinopac.com>
+Reply-To: chun.hsiehtw@live.com
+To: undisclosed-recipients:;
+Subject: 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimA3NLZsDwOp14A7KbGuUkHR3MFeLR7rQPVhLHG@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 05, 2011 at 03:33:41PM +0100, Geert Uytterhoeven wrote:
-> On Sat, Feb 5, 2011 at 15:20, Alexey Dobriyan <adobriyan@gmail.com> wrote:
 
-> > + * Convert integer string representation to an integer.
-> > + * If an integer doesn't fit into specified type, -E is returned.
-> 
-> Which -E? Currently it returns -EINVAL everywhere.
 
-Comment meant function follows 0/-E idiom for return value.
+BUSINESS PROPOSAL
 
-> > +       if (tmp != (unsigned long long)(unsigned long)tmp)
-> > +               return -EINVAL;
-> 
-> -ERANGE for out-of-range?
+Dear Friend,
+I am Chun Hsieh The Executive vice President and Chief Auditor of Bank Sino
+Pac Taiwan ,I have a business proposal for you of my partner fund in my
+bank,get back to me via my personal e-mail chun.hsiehtw@live.com if
+interested for more details.
 
-Hmm, interesting.
-It should prevent -EINVAL hardcoding.
