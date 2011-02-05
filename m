@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428Ab1BEO0s (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 09:26:48 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57576 "EHLO
+	id S1753289Ab1BEO1l (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 09:27:41 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54987 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753271Ab1BEOWS (ORCPT
+	with ESMTP id S1753177Ab1BEOWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 09:22:18 -0500
+	Sat, 5 Feb 2011 09:22:12 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=IsTHZoJ47Oo7t1D/aHeflgdRX+JPxnu6ZIBdgWHDOOJ9dbs6dUJ636TSPiSWrlQAc5
-         iDC2FXKFEMnG+vJKG6G7lH5dPGOqM6v3d5/xSDVFhXfNuAgT5NKbfxb3knxCKuCCUvx1
-         WfXcLny5tp6k1U4QL5jpfqCDnGhgr3O/EpRU4=
+        b=XisWUyFwy5BSNZyK+0F5BW2hOpGCG3J9CO+Nz2V+oZl9VsTxK1s7QIPljL1GBqdnNR
+         Lh79q1CsC91MScz+XQyo1hsT/ZKsiSpaoQrvAWlTtUv88FxzH31fDO/lz20GLkZcp4Ob
+         UKkNEn0LcRCTKNWl5iIdhjuB8y6AMb4wa1zmE=
 From: Alexey Dobriyan <adobriyan@gmail.com>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, adobriyan@gmail.com
-Subject: [PATCH 31/52] kstrtox: convert drivers/net/
-Date: Sat,  5 Feb 2011 16:20:34 +0200
-Message-Id: <1296915654-7458-31-git-send-email-adobriyan@gmail.com>
+Subject: [PATCH 28/52] kstrtox: convert drivers/mfd/
+Date: Sat,  5 Feb 2011 16:20:31 +0200
+Message-Id: <1296915654-7458-28-git-send-email-adobriyan@gmail.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1296915654-7458-1-git-send-email-adobriyan@gmail.com>
 References: <1296915654-7458-1-git-send-email-adobriyan@gmail.com>
@@ -29,194 +29,275 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- drivers/net/can/at91_can.c             |    9 +++------
- drivers/net/can/janz-ican3.c           |    5 +++--
- drivers/net/can/slcan.c                |    5 +----
- drivers/net/can/softing/softing_main.c |    2 +-
- drivers/net/netxen/netxen_nic_main.c   |    4 ++--
- drivers/net/qlcnic/qlcnic_main.c       |    4 ++--
- drivers/net/stmmac/stmmac_main.c       |   29 ++++++++++++++++-------------
- 7 files changed, 28 insertions(+), 30 deletions(-)
+ drivers/mfd/ab3100-core.c    |   16 +++----------
+ drivers/mfd/ab3550-core.c    |   48 +++++++++++++++--------------------------
+ drivers/mfd/ab8500-debugfs.c |   31 ++++++++------------------
+ 3 files changed, 32 insertions(+), 63 deletions(-)
 
-diff --git a/drivers/net/can/at91_can.c b/drivers/net/can/at91_can.c
-index 57d2ffb..5c71310 100644
---- a/drivers/net/can/at91_can.c
-+++ b/drivers/net/can/at91_can.c
-@@ -1079,9 +1079,8 @@ static ssize_t at91_sysfs_set_mb0_id(struct device *dev,
- {
- 	struct net_device *ndev = to_net_dev(dev);
- 	struct at91_priv *priv = netdev_priv(ndev);
--	unsigned long can_id;
-+	u32 can_id;
- 	ssize_t ret;
--	int err;
+diff --git a/drivers/mfd/ab3100-core.c b/drivers/mfd/ab3100-core.c
+index 4193af5..5b1c8ac 100644
+--- a/drivers/mfd/ab3100-core.c
++++ b/drivers/mfd/ab3100-core.c
+@@ -497,7 +497,7 @@ static ssize_t ab3100_get_set_reg(struct file *file,
+ 	char buf[32];
+ 	ssize_t buf_size;
+ 	int regp;
+-	unsigned long user_reg;
++	u8 reg;
+ 	int err;
+ 	int i = 0;
  
- 	rtnl_lock();
+@@ -520,22 +520,19 @@ static ssize_t ab3100_get_set_reg(struct file *file,
+ 	/*
+ 	 * Advance pointer to end of string then terminate
+ 	 * the register string. This is needed to satisfy
+-	 * the strict_strtoul() function.
++	 * the kstrtou8() function.
+ 	 */
+ 	while ((i < buf_size) && (buf[i] != ' '))
+ 		i++;
+ 	buf[i] = '\0';
  
-@@ -1090,11 +1089,9 @@ static ssize_t at91_sysfs_set_mb0_id(struct device *dev,
- 		goto out;
- 	}
- 
--	err = strict_strtoul(buf, 0, &can_id);
--	if (err) {
--		ret = err;
-+	ret = kstrtou32(buf, 0, &can_id);
-+	if (ret < 0)
- 		goto out;
--	}
- 
- 	if (can_id & CAN_EFF_FLAG)
- 		can_id &= CAN_EFF_MASK | CAN_EFF_FLAG;
-diff --git a/drivers/net/can/janz-ican3.c b/drivers/net/can/janz-ican3.c
-index 366f5cc..eb70a1c 100644
---- a/drivers/net/can/janz-ican3.c
-+++ b/drivers/net/can/janz-ican3.c
-@@ -1608,8 +1608,9 @@ static ssize_t ican3_sysfs_set_term(struct device *dev,
- 	unsigned long enable;
- 	int ret;
- 
--	if (strict_strtoul(buf, 0, &enable))
+-	err = strict_strtoul(&buf[regp], 16, &user_reg);
++	err = kstrtou8(&buf[regp], 16, &reg);
+ 	if (err)
+ 		return err;
+-	if (user_reg > 0xff)
 -		return -EINVAL;
-+	ret = kstrtoul(buf, 0, &enable);
-+	if (ret < 0)
-+		return ret;
  
- 	ret = ican3_set_termination(mod, enable);
- 	if (ret)
-diff --git a/drivers/net/can/slcan.c b/drivers/net/can/slcan.c
-index b423965..624059d 100644
---- a/drivers/net/can/slcan.c
-+++ b/drivers/net/can/slcan.c
-@@ -163,7 +163,6 @@ static void slc_bump(struct slcan *sl)
- 	struct sk_buff *skb;
- 	struct can_frame cf;
- 	int i, dlc_pos, tmp;
--	unsigned long ultmp;
- 	char cmd = sl->rbuff[0];
+ 	/* Either we read or we write a register here */
+ 	if (!priv->mode) {
+ 		/* Reading */
+-		u8 reg = (u8) user_reg;
+ 		u8 regvalue;
  
- 	if ((cmd != 't') && (cmd != 'T') && (cmd != 'r') && (cmd != 'R'))
-@@ -181,11 +180,9 @@ static void slc_bump(struct slcan *sl)
+ 		ab3100_get_register_interruptible(ab3100, reg, &regvalue);
+@@ -545,8 +542,6 @@ static ssize_t ab3100_get_set_reg(struct file *file,
+ 			 reg, regvalue);
+ 	} else {
+ 		int valp;
+-		unsigned long user_value;
+-		u8 reg = (u8) user_reg;
+ 		u8 value;
+ 		u8 regvalue;
  
- 	sl->rbuff[dlc_pos] = 0; /* terminate can_id string */
+@@ -563,13 +558,10 @@ static ssize_t ab3100_get_set_reg(struct file *file,
+ 			i++;
+ 		buf[i] = '\0';
  
--	if (strict_strtoul(sl->rbuff+1, 16, &ultmp))
-+	if (kstrtou32(sl->rbuff+1, 16, &cf.can_id))
- 		return;
+-		err = strict_strtoul(&buf[valp], 16, &user_value);
++		err = kstrtou8(&buf[valp], 16, &value);
+ 		if (err)
+ 			return err;
+-		if (user_reg > 0xff)
+-			return -EINVAL;
  
--	cf.can_id = ultmp;
--
- 	if (!(cmd & 0x20)) /* NO tiny chars => extended frame format */
- 		cf.can_id |= CAN_EFF_FLAG;
+-		value = (u8) user_value;
+ 		ab3100_set_register_interruptible(ab3100, reg, value);
+ 		ab3100_get_register_interruptible(ab3100, reg, &regvalue);
  
-diff --git a/drivers/net/can/softing/softing_main.c b/drivers/net/can/softing/softing_main.c
-index 5157e15..ef6ff7a 100644
---- a/drivers/net/can/softing/softing_main.c
-+++ b/drivers/net/can/softing/softing_main.c
-@@ -594,7 +594,7 @@ static ssize_t store_output(struct device *dev, struct device_attribute *attr,
- 	unsigned long val;
- 	int ret;
- 
--	ret = strict_strtoul(buf, 0, &val);
-+	ret = kstrtoul(buf, 0, &val);
- 	if (ret < 0)
- 		return ret;
- 	val &= 0xFF;
-diff --git a/drivers/net/netxen/netxen_nic_main.c b/drivers/net/netxen/netxen_nic_main.c
-index 33fac32..585f701 100644
---- a/drivers/net/netxen/netxen_nic_main.c
-+++ b/drivers/net/netxen/netxen_nic_main.c
-@@ -2503,7 +2503,7 @@ netxen_store_bridged_mode(struct device *dev,
- 	if (adapter->is_up != NETXEN_ADAPTER_UP_MAGIC)
- 		goto err_out;
- 
--	if (strict_strtoul(buf, 2, &new))
-+	if (kstrtoul(buf, 2, &new))
- 		goto err_out;
- 
- 	if (!netxen_config_bridged_mode(adapter, !!new))
-@@ -2542,7 +2542,7 @@ netxen_store_diag_mode(struct device *dev,
- 	struct netxen_adapter *adapter = dev_get_drvdata(dev);
- 	unsigned long new;
- 
--	if (strict_strtoul(buf, 2, &new))
-+	if (kstrtoul(buf, 2, &new))
- 		return -EINVAL;
- 
- 	if (!!new != !!(adapter->flags & NETXEN_NIC_DIAG_ENABLED))
-diff --git a/drivers/net/qlcnic/qlcnic_main.c b/drivers/net/qlcnic/qlcnic_main.c
-index 37c04b4..f511c33 100644
---- a/drivers/net/qlcnic/qlcnic_main.c
-+++ b/drivers/net/qlcnic/qlcnic_main.c
-@@ -3192,7 +3192,7 @@ qlcnic_store_bridged_mode(struct device *dev,
- 	if (!test_bit(__QLCNIC_DEV_UP, &adapter->state))
- 		goto err_out;
- 
--	if (strict_strtoul(buf, 2, &new))
-+	if (kstrtoul(buf, 2, &new))
- 		goto err_out;
- 
- 	if (!adapter->nic_ops->config_bridged_mode(adapter, !!new))
-@@ -3228,7 +3228,7 @@ qlcnic_store_diag_mode(struct device *dev,
- 	struct qlcnic_adapter *adapter = dev_get_drvdata(dev);
- 	unsigned long new;
- 
--	if (strict_strtoul(buf, 2, &new))
-+	if (kstrtoul(buf, 2, &new))
- 		return -EINVAL;
- 
- 	if (!!new != !!(adapter->flags & QLCNIC_DIAG_ENABLED))
-diff --git a/drivers/net/stmmac/stmmac_main.c b/drivers/net/stmmac/stmmac_main.c
-index 34a0af3..cb449f7 100644
---- a/drivers/net/stmmac/stmmac_main.c
-+++ b/drivers/net/stmmac/stmmac_main.c
-@@ -1955,31 +1955,34 @@ static int __init stmmac_cmdline_opt(char *str)
- 	if (!str || !*str)
- 		return -EINVAL;
- 	while ((opt = strsep(&str, ",")) != NULL) {
-+		int rv;
-+
- 		if (!strncmp(opt, "debug:", 6))
--			strict_strtoul(opt + 6, 0, (unsigned long *)&debug);
-+			rv = kstrtoint(opt + 6, 0, &debug);
- 		else if (!strncmp(opt, "phyaddr:", 8))
--			strict_strtoul(opt + 8, 0, (unsigned long *)&phyaddr);
-+			rv = kstrtoint(opt + 8, 0, &phyaddr);
- 		else if (!strncmp(opt, "dma_txsize:", 11))
--			strict_strtoul(opt + 11, 0,
--				       (unsigned long *)&dma_txsize);
-+			rv = kstrtoint(opt + 11, 0, &dma_txsize);
- 		else if (!strncmp(opt, "dma_rxsize:", 11))
--			strict_strtoul(opt + 11, 0,
--				       (unsigned long *)&dma_rxsize);
-+			rv = kstrtoint(opt + 11, 0, &dma_rxsize);
- 		else if (!strncmp(opt, "buf_sz:", 7))
--			strict_strtoul(opt + 7, 0, (unsigned long *)&buf_sz);
-+			rv = kstrtoint(opt + 7, 0, &buf_sz);
- 		else if (!strncmp(opt, "tc:", 3))
--			strict_strtoul(opt + 3, 0, (unsigned long *)&tc);
-+			rv = kstrtoint(opt + 3, 0, &tc);
- 		else if (!strncmp(opt, "watchdog:", 9))
--			strict_strtoul(opt + 9, 0, (unsigned long *)&watchdog);
-+			rv = kstrtoint(opt + 9, 0, &watchdog);
- 		else if (!strncmp(opt, "flow_ctrl:", 10))
--			strict_strtoul(opt + 10, 0,
--				       (unsigned long *)&flow_ctrl);
-+			rv = kstrtoint(opt + 10, 0, &flow_ctrl);
- 		else if (!strncmp(opt, "pause:", 6))
--			strict_strtoul(opt + 6, 0, (unsigned long *)&pause);
-+			rv = kstrtoint(opt + 6, 0, &pause);
- #ifdef CONFIG_STMMAC_TIMER
- 		else if (!strncmp(opt, "tmrate:", 7))
--			strict_strtoul(opt + 7, 0, (unsigned long *)&tmrate);
-+			rv = kstrtoint(opt + 7, 0, &tmrate);
+diff --git a/drivers/mfd/ab3550-core.c b/drivers/mfd/ab3550-core.c
+index 5fbca34..55d74c5 100644
+--- a/drivers/mfd/ab3550-core.c
++++ b/drivers/mfd/ab3550-core.c
+@@ -73,8 +73,8 @@ struct ab3550 {
+ 	u8 startup_events[AB3550_NUM_EVENT_REG];
+ 	bool startup_events_read;
+ #ifdef CONFIG_DEBUG_FS
+-	unsigned int debug_bank;
+-	unsigned int debug_address;
++	u8 debug_bank;
++	u8 debug_address;
  #endif
-+		else
-+			rv = -EINVAL;
-+		if (rv < 0)
-+			return rv;
- 	}
+ };
+ 
+@@ -865,7 +865,7 @@ static int ab3550_bank_print(struct seq_file *s, void *p)
+ {
+ 	struct ab3550 *ab = s->private;
+ 
+-	seq_printf(s, "%d\n", ab->debug_bank);
++	seq_printf(s, "%hhu\n", ab->debug_bank);
  	return 0;
  }
+ 
+@@ -881,7 +881,7 @@ static ssize_t ab3550_bank_write(struct file *file,
+ 	struct ab3550 *ab = ((struct seq_file *)(file->private_data))->private;
+ 	char buf[32];
+ 	int buf_size;
+-	unsigned long user_bank;
++	u8 user_bank;
+ 	int err;
+ 
+ 	/* Get userspace string and assure termination */
+@@ -890,7 +890,7 @@ static ssize_t ab3550_bank_write(struct file *file,
+ 		return -EFAULT;
+ 	buf[buf_size] = 0;
+ 
+-	err = strict_strtoul(buf, 0, &user_bank);
++	err = kstrtou8(buf, 0, &user_bank);
+ 	if (err)
+ 		return -EINVAL;
+ 
+@@ -925,7 +925,6 @@ static ssize_t ab3550_address_write(struct file *file,
+ 	struct ab3550 *ab = ((struct seq_file *)(file->private_data))->private;
+ 	char buf[32];
+ 	int buf_size;
+-	unsigned long user_address;
+ 	int err;
+ 
+ 	/* Get userspace string and assure termination */
+@@ -934,15 +933,9 @@ static ssize_t ab3550_address_write(struct file *file,
+ 		return -EFAULT;
+ 	buf[buf_size] = 0;
+ 
+-	err = strict_strtoul(buf, 0, &user_address);
+-	if (err)
+-		return -EINVAL;
+-	if (user_address > 0xff) {
+-		dev_err(&ab->i2c_client[0]->dev,
+-			"debugfs error input > 0xff\n");
+-		return -EINVAL;
+-	}
+-	ab->debug_address = user_address;
++	err = kstrtou8(buf, 0, &ab->debug_address);
++	if (err < 0)
++		return err;
+ 	return buf_size;
+ }
+ 
+@@ -952,8 +945,8 @@ static int ab3550_val_print(struct seq_file *s, void *p)
+ 	int err;
+ 	u8 regvalue;
+ 
+-	err = get_register_interruptible(ab, (u8)ab->debug_bank,
+-		(u8)ab->debug_address, &regvalue);
++	err = get_register_interruptible(ab, ab->debug_bank,
++		ab->debug_address, &regvalue);
+ 	if (err)
+ 		return -EINVAL;
+ 	seq_printf(s, "0x%02X\n", regvalue);
+@@ -973,7 +966,7 @@ static ssize_t ab3550_val_write(struct file *file,
+ 	struct ab3550 *ab = ((struct seq_file *)(file->private_data))->private;
+ 	char buf[32];
+ 	int buf_size;
+-	unsigned long user_val;
++	u8 user_val;
+ 	int err;
+ 	u8 regvalue;
+ 
+@@ -983,22 +976,17 @@ static ssize_t ab3550_val_write(struct file *file,
+ 		return -EFAULT;
+ 	buf[buf_size] = 0;
+ 
+-	err = strict_strtoul(buf, 0, &user_val);
+-	if (err)
+-		return -EINVAL;
+-	if (user_val > 0xff) {
+-		dev_err(&ab->i2c_client[0]->dev,
+-			"debugfs error input > 0xff\n");
+-		return -EINVAL;
+-	}
++	err = kstrtou8(buf, 0, &user_val);
++	if (err < 0)
++		return err;
+ 	err = mask_and_set_register_interruptible(
+-		ab, (u8)ab->debug_bank,
+-		(u8)ab->debug_address, 0xFF, (u8)user_val);
++		ab, ab->debug_bank,
++		ab->debug_address, 0xFF, user_val);
+ 	if (err)
+ 		return -EINVAL;
+ 
+-	get_register_interruptible(ab, (u8)ab->debug_bank,
+-		(u8)ab->debug_address, &regvalue);
++	get_register_interruptible(ab, ab->debug_bank,
++		ab->debug_address, &regvalue);
+ 	if (err)
+ 		return -EINVAL;
+ 
+diff --git a/drivers/mfd/ab8500-debugfs.c b/drivers/mfd/ab8500-debugfs.c
+index 3c1541a..2a9e80d 100644
+--- a/drivers/mfd/ab8500-debugfs.c
++++ b/drivers/mfd/ab8500-debugfs.c
+@@ -14,8 +14,8 @@
+ #include <linux/mfd/abx500.h>
+ #include <linux/mfd/ab8500.h>
+ 
+-static u32 debug_bank;
+-static u32 debug_address;
++static u8 debug_bank;
++static u8 debug_address;
+ 
+ /**
+  * struct ab8500_reg_range
+@@ -430,9 +430,9 @@ static ssize_t ab8500_bank_write(struct file *file,
+ 		return -EFAULT;
+ 	buf[buf_size] = 0;
+ 
+-	err = strict_strtoul(buf, 0, &user_bank);
++	err = kstrtoul(buf, 0, &user_bank);
+ 	if (err)
+-		return -EINVAL;
++		return err;
+ 
+ 	if (user_bank >= AB8500_NUM_BANKS) {
+ 		dev_err(dev, "debugfs error input > number of banks\n");
+@@ -458,10 +458,8 @@ static ssize_t ab8500_address_write(struct file *file,
+ 	const char __user *user_buf,
+ 	size_t count, loff_t *ppos)
+ {
+-	struct device *dev = ((struct seq_file *)(file->private_data))->private;
+ 	char buf[32];
+ 	int buf_size;
+-	unsigned long user_address;
+ 	int err;
+ 
+ 	/* Get userspace string and assure termination */
+@@ -470,14 +468,9 @@ static ssize_t ab8500_address_write(struct file *file,
+ 		return -EFAULT;
+ 	buf[buf_size] = 0;
+ 
+-	err = strict_strtoul(buf, 0, &user_address);
++	err = kstrtou8(buf, 0, &debug_address);
+ 	if (err)
+-		return -EINVAL;
+-	if (user_address > 0xff) {
+-		dev_err(dev, "debugfs error input > 0xff\n");
+-		return -EINVAL;
+-	}
+-	debug_address = user_address;
++		return err;
+ 	return buf_size;
+ }
+ 
+@@ -511,7 +504,7 @@ static ssize_t ab8500_val_write(struct file *file,
+ 	struct device *dev = ((struct seq_file *)(file->private_data))->private;
+ 	char buf[32];
+ 	int buf_size;
+-	unsigned long user_val;
++	u8 user_val;
+ 	int err;
+ 
+ 	/* Get userspace string and assure termination */
+@@ -520,15 +513,11 @@ static ssize_t ab8500_val_write(struct file *file,
+ 		return -EFAULT;
+ 	buf[buf_size] = 0;
+ 
+-	err = strict_strtoul(buf, 0, &user_val);
++	err = kstrtou8(buf, 0, &user_val);
+ 	if (err)
+-		return -EINVAL;
+-	if (user_val > 0xff) {
+-		dev_err(dev, "debugfs error input > 0xff\n");
+-		return -EINVAL;
+-	}
++		return err;
+ 	err = abx500_set_register_interruptible(dev,
+-		(u8)debug_bank, debug_address, (u8)user_val);
++		(u8)debug_bank, debug_address, user_val);
+ 	if (err < 0) {
+ 		printk(KERN_ERR "abx500_set_reg failed %d, %d", err, __LINE__);
+ 		return -EINVAL;
 -- 
 1.7.3.4
 
