@@ -1,55 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab1BERrX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 12:47:23 -0500
-Received: from tur.go2.pl ([193.17.41.50]:50210 "EHLO tur.go2.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753298Ab1BERrU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 12:47:20 -0500
-Message-ID: <4D4D8CEC.4090500@o2.pl>
-Date: Sat, 05 Feb 2011 18:46:20 +0100
-From: Maciej Szmigiero <mhej@o2.pl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101204 Lightning/1.0b3pre Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oneukum@suse.de>, Hans de Goede <hdegoede@redhat.com>,
-        Paul Mortier <mortier@btinternet.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [USB]Add quirk for Samsung Android phone modem
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-O2-Trust: 2, 69
-X-O2-SPF: neutral
+	id S1753409Ab1BERrR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 12:47:17 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:39066 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753349Ab1BERrN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Feb 2011 12:47:13 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: v9fs-developer@lists.sourceforge.net
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [RFC PATCH -V2 10/17] net/9p: Implement syncfs 9P operation
+Date: Sat,  5 Feb 2011 23:16:38 +0530
+Message-Id: <1296928005-9529-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1296928005-9529-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1296928005-9529-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[USB]Add quirk for Samsung Android phone modem
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ include/net/9p/9p.h     |    2 ++
+ include/net/9p/client.h |    1 +
+ net/9p/client.c         |   21 +++++++++++++++++++++
+ 3 files changed, 24 insertions(+), 0 deletions(-)
 
-My Galaxy Spica needs this quirk when in modem mode, otherwise
-it causes endless USB bus resets and is unusable in this mode.
-
-Unfortunately Samsung decided to reuse ID of its old CDMA phone SGH-I500
-for the modem part.
-That's why in addition to this patch the visior driver must be prevented
-from binding to SPH-I500 ID, so ACM driver can do that.
-
-Signed-off-by: Maciej Szmigiero <mhej@o2.pl>
-
-diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
-index 44c5954..363355b 100644
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -88,6 +88,10 @@ static const struct usb_device_id usb_quirk_list[] = {
-     /* INTEL VALUE SSD */
-     { USB_DEVICE(0x8086, 0xf1a5), .driver_info = USB_QUIRK_RESET_RESUME },
+diff --git a/include/net/9p/9p.h b/include/net/9p/9p.h
+index 071fd7a..73dc432 100644
+--- a/include/net/9p/9p.h
++++ b/include/net/9p/9p.h
+@@ -139,6 +139,8 @@ do { \
+  */
  
-+    /* Samsung Android phone modem - ID conflict with SPH-I500 */
-+    { USB_DEVICE(0x04e8, 0x6601), .driver_info =
-+            USB_QUIRK_CONFIG_INTF_STRINGS },
+ enum p9_msg_t {
++	P9_TSYNCFS = 0,
++	P9_RSYNCFS,
+ 	P9_TLERROR = 6,
+ 	P9_RLERROR,
+ 	P9_TSTATFS = 8,
+diff --git a/include/net/9p/client.h b/include/net/9p/client.h
+index 83ba6a4..0a30977 100644
+--- a/include/net/9p/client.h
++++ b/include/net/9p/client.h
+@@ -230,6 +230,7 @@ int p9_client_create_dotl(struct p9_fid *ofid, char *name, u32 flags, u32 mode,
+ 		gid_t gid, struct p9_qid *qid);
+ int p9_client_clunk(struct p9_fid *fid);
+ int p9_client_fsync(struct p9_fid *fid, int datasync);
++int p9_client_sync_fs(struct p9_fid *fid);
+ int p9_client_remove(struct p9_fid *fid);
+ int p9_client_read(struct p9_fid *fid, char *data, char __user *udata,
+ 							u64 offset, u32 count);
+diff --git a/net/9p/client.c b/net/9p/client.c
+index a848bca..a05673b 100644
+--- a/net/9p/client.c
++++ b/net/9p/client.c
+@@ -1191,6 +1191,27 @@ error:
+ }
+ EXPORT_SYMBOL(p9_client_fsync);
+ 
++int p9_client_sync_fs(struct p9_fid *fid)
++{
++	int err = 0;
++	struct p9_req_t *req;
++	struct p9_client *clnt;
 +
-     { }  /* terminating entry must be last */
- };
- 
++	P9_DPRINTK(P9_DEBUG_9P, ">>> TSYNC_FS fid %d\n", fid->fid);
++
++	clnt = fid->clnt;
++	req = p9_client_rpc(clnt, P9_TSYNCFS, "d", fid->fid);
++	if (IS_ERR(req)) {
++		err = PTR_ERR(req);
++		goto error;
++	}
++	P9_DPRINTK(P9_DEBUG_9P, "<<< RSYNCFS fid %d\n", fid->fid);
++	p9_free_req(clnt, req);
++error:
++	return err;
++}
++EXPORT_SYMBOL(p9_client_sync_fs);
++
+ int p9_client_clunk(struct p9_fid *fid)
+ {
+ 	int err;
+-- 
+1.7.1
 
