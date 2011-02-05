@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751622Ab1BEXp7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 18:45:59 -0500
-Received: from gate.crashing.org ([63.228.1.57]:48318 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751253Ab1BEXp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 18:45:59 -0500
-Subject: Re: Sun GEM PPC32 Bug?
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: "R. Herbst" <ruediger.herbst@googlemail.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        Matt <jackdachef@gmail.com>, geert@linux-m68k.org
-In-Reply-To: <1296949161.2349.839.camel@pasglop>
-References: <AANLkTimBFBKJf0-TNRLr2hHNEehR2cnKPvx06=yyHGVj@mail.gmail.com>
-	 <1296852667.2349.804.camel@pasglop>
-	 <20110204.145508.59670453.davem@davemloft.net>
-	 <4D4D9882.107@googlemail.com>  <1296949161.2349.839.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 06 Feb 2011 10:45:49 +1100
-Message-ID: <1296949549.2349.845.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1751572Ab1BEXy5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 18:54:57 -0500
+Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:46926 "EHLO
+	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988Ab1BEXy4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Feb 2011 18:54:56 -0500
+Message-ID: <4D4DE34E.7010308@hardwarefreak.com>
+Date: Sat, 05 Feb 2011 17:54:54 -0600
+From: Stan Hoeppner <stan@hardwarefreak.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+CC: "Dr. David Alan Gilbert" <linux@treblig.org>,
+        Emmanuel Florac <eflorac@intellique.com>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-net@vger.kernel.org,
+        Alan Piszcz <ap@solarrain.com>
+Subject: Re: Supermicro X8DTH-6: Only ~250MiB/s from RAID<->RAID over 10GbE?
+References: <alpine.DEB.2.00.1102051427360.8518@p34.internal.lan> <20110205214550.3cb0f0d1@galadriel2.home> <alpine.DEB.2.00.1102051553591.8518@p34.internal.lan> <20110205220621.GB17347@gallifrey> <alpine.DEB.2.00.1102051729010.8518@p34.internal.lan> <alpine.DEB.2.00.1102051753100.8518@p34.internal.lan>
+In-Reply-To: <alpine.DEB.2.00.1102051753100.8518@p34.internal.lan>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Justin Piszcz put forth on 2/5/2011 4:56 PM:
 
-> If I find some time tonight, else tomorrow, I'll whip up a couple of
-> patches:
-> 
->  - One simpler re-arranging our Rx reset sequence and adding a test for
-> the overflow bit at the end, printing out the results, etc... 
-> 
->  - One that basically always reset the chip on overflow.
+> Not sure how to copy/paste from an IPMI window, but I made my own
+> kernel for 2.6.37 in CentOS 5.5 (a pain) and now it is doing ~482-500MiB/s
+> sustained with a single copy (netcat from A->B).  Poor performance with the
+> default 2.6.18 kernel.  Seems to also slow down over time, down to 434MiB/s now,
+> but it started very quick and it remains between 420-500MiB/s sustained.  Now
+> 435-445MiB/s..
 
-Actually, the second one is trivial, just modify gem_rxmac_interrupt()
-as follow:
+I forgot you mentioned CentOS.  Their kernel and apps are always very old.
+2.6.18 was release in Sept 2006 IIRC--4+ years ago.  It was the "pirate themed"
+release.
 
-	if (rxmac_stat & MAC_RXSTAT_OFLW) {
-		u32 smac = readl(gp->regs + MAC_SMACHINE);
+With 2.6.37 what do you get with 4 concurrent nfs copy ops?  If the aggregate
+nfs throughput doesn't increase, you need to tweak your nfs server (and possibly
+client).  With that hardware and a recent kernel you should be able to fill that
+10 GbE pipe, or come really close.
 
-		netdev_err(dev, "RX MAC fifo overflow smac[%08x]\n", smac);
-		gp->net_stats.rx_over_errors++;
-		gp->net_stats.rx_fifo_errors++;
-
--		ret = gem_rxmac_reset(gp);
-+		ret = 1;
-	}
-
-And tell us if that makes a difference.
-
-Cheers,
-Ben.
-
-
-
+-- 
+Stan
