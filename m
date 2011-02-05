@@ -1,96 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785Ab1BEWaf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 17:30:35 -0500
-Received: from lucidpixels.com ([75.144.35.66]:37831 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753436Ab1BEWae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 17:30:34 -0500
-Date: Sat, 5 Feb 2011 17:30:33 -0500 (EST)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: "Dr. David Alan Gilbert" <linux@treblig.org>
-cc: Emmanuel Florac <eflorac@intellique.com>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-net@vger.kernel.org,
-        Alan Piszcz <ap@solarrain.com>
-Subject: Re: Supermicro X8DTH-6: Only ~250MiB/s from RAID<->RAID over
- 10GbE?
-In-Reply-To: <20110205220621.GB17347@gallifrey>
-Message-ID: <alpine.DEB.2.00.1102051729010.8518@p34.internal.lan>
-References: <alpine.DEB.2.00.1102051427360.8518@p34.internal.lan> <20110205214550.3cb0f0d1@galadriel2.home> <alpine.DEB.2.00.1102051553591.8518@p34.internal.lan> <20110205220621.GB17347@gallifrey>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753852Ab1BEWjy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 17:39:54 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36142 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753664Ab1BEWjx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Feb 2011 17:39:53 -0500
+Date: Sun, 6 Feb 2011 01:39:45 +0300
+From: Stanislav Fomichev <kernel@fomichev.me>
+To: linux-kernel@vger.kernel.org
+Cc: dsd@laptop.org, sameo@linux.intel.com
+Subject: [PATCH] vx855: fix gpo resource releasing
+Message-ID: <4d4dd1b6.83a0df0a.406e.3ed9@mx.google.com>
+Mail-Followup-To: Stanislav Fomichev <kernel@fomichev.me>,
+	linux-kernel@vger.kernel.org, dsd@laptop.org, sameo@linux.intel.com
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="655872-891975429-1296945033=:8518"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+While 'if' statement checks for the vg->gpo_reserved, the wrong argument
+is passed to the release_region.
 
---655872-891975429-1296945033=:8518
-Content-Type: TEXT/PLAIN; charset=iso-8859-1; format=flowed
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Signed-off-by: Stanislav Fomichev <kernel@fomichev.me>
+---
+ drivers/gpio/vx855_gpio.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-
-
-On Sat, 5 Feb 2011, Dr. David Alan Gilbert wrote:
-
-> * Justin Piszcz (jpiszcz@lucidpixels.com) wrote:
->>
->>
->> On Sat, 5 Feb 2011, Emmanuel Florac wrote:
->>
->>> Le Sat, 5 Feb 2011 14:35:52 -0500 (EST) vous =E9criviez:
->>>
->>
->> To respond to everyone:
->>
->>> Did you try launching 4 simultaneous cp operations over nfs to get to
->>> 1.2 GB/s?
->>>  I've witnessed single stream copy performance with Samba being less th=
-an
->>> maximum due to Samba limitations.  Running multiple copy ops in paralle=
-l then
->>> usually saturates the pipe.
->>
->>
->> I tried 4 simultaenous cp's and there was little change, 250-320MiB/s.
->
-> So I think you've said network benchmarks are OK, disc benchmarks are OK,=
- but
-> a copy over the network is slow.
->
-> What happens if you run a disc benchmark at the same time as a network be=
-nchmark;
-> even though the two aren't related? Can you keep the disc busy writing ev=
-en when
-> the network is being pushed?
-
-Hi,
-
-Still OK when reading or writing & iperf test, so it does not appear to be
-I/O or backplane bound.  I also put both cards on the same CPU (lane-wise)
-and it made no difference.
-
-Device eth0 [10.0.1.4] (1/1):
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D
-Incoming:
-                                                   ###
-                                                   ###
-                                                   ###
-                                                   ###
-                                                   ###
-                                                   ###  Curr: 1188.85 MByte=
-/s
-                                                   ###  Avg: 680.11 MByte/s
-                                                   ###  Min: 0.00 MByte/s
-                                                   ###  Max: 1188.88 MByte/=
-s
-                                                   ###  Ttl: 18.32 GByte
-Outgoing:
-
-
---655872-891975429-1296945033=:8518--
+diff --git a/drivers/gpio/vx855_gpio.c b/drivers/gpio/vx855_gpio.c
+index 8a98ee5..81d7256 100644
+--- a/drivers/gpio/vx855_gpio.c
++++ b/drivers/gpio/vx855_gpio.c
+@@ -277,7 +277,7 @@ out_release:
+ 	if (vg->gpi_reserved)
+ 		release_region(res_gpi->start, resource_size(res_gpi));
+ 	if (vg->gpo_reserved)
+-		release_region(res_gpi->start, resource_size(res_gpo));
++		release_region(res_gpo->start, resource_size(res_gpo));
+ 	platform_set_drvdata(pdev, NULL);
+ 	kfree(vg);
+ 	return ret;
+-- 
+1.7.1
