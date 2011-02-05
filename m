@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab1BEXal (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 18:30:41 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62722 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753877Ab1BEXak (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 18:30:40 -0500
-Message-ID: <4D4DDD54.1010905@ru.mvista.com>
-Date: Sun, 06 Feb 2011 02:29:24 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Maciej Szmigiero <mhej@o2.pl>
-CC: Greg KH <gregkh@suse.de>, Johan Hovold <jhovold@gmail.com>,
-        Joe Perches <joe@perches.com>, Alan Cox <alan@linux.intel.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [USB]Add Samsung SGH-I500/Android modem ID switch to visor driver
-References: <4D4D9F37.4010201@o2.pl> <20110205192831.GA334@suse.de> <4D4DC400.2040302@o2.pl>
-In-Reply-To: <4D4DC400.2040302@o2.pl>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753925Ab1BEXjc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 18:39:32 -0500
+Received: from gate.crashing.org ([63.228.1.57]:59217 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753866Ab1BEXjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Feb 2011 18:39:31 -0500
+Subject: Re: Sun GEM PPC32 Bug?
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: "R. Herbst" <ruediger.herbst@googlemail.com>
+Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        Matt <jackdachef@gmail.com>, geert@linux-m68k.org
+In-Reply-To: <4D4D9882.107@googlemail.com>
+References: <AANLkTimBFBKJf0-TNRLr2hHNEehR2cnKPvx06=yyHGVj@mail.gmail.com>
+	 <1296852667.2349.804.camel@pasglop>
+	 <20110204.145508.59670453.davem@davemloft.net>
+	 <4D4D9882.107@googlemail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 06 Feb 2011 10:39:21 +1100
+Message-ID: <1296949161.2349.839.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Sat, 2011-02-05 at 19:35 +0100, R. Herbst wrote:
+> > I think we're simply not resetting enough when the RX FIFO overflow
+> > happens.
+> >
+> > Just for fun I checked the OpenBSD GEM driver to see what they do.
+> > When an overflow occurs, they bump the statistic, record the current
+> > read and write fifo pointer registers, and schedule a watchdog timer
+> > for 400ms into the future.
+> >
+> > If the watchdog timer sees that the RX FIFO overflow bit is still set
+> > in the RX status register, and the RX FIFO read and write pointers
+> > have not changed, it resets the entire chip.
+> >
+> > We unconditionally reset the RX MAC when an overflow occurs, that may
+> > simply not be enough to unwedge this thing. 
 
-On 06.02.2011 0:41, Maciej Szmigiero wrote:
+Right. It would be quite easy for us to do the same thing. Interestingly
+enough, I have never observed this behaviour on any of my machines (a
+wide range of 32-bit and 64-bit Apple machines).
 
-> New version of patch which autodetects devices with ACM class.
-> Tested on Galaxy Spica.
+Also, Apple's own driver does things differently. In case of overflow
+interrupt, it seems to only bump some statistics. However, it has a
+timeout if no packets have been received for a while (5 seconds) and the
+Rx fifo overflow bit is set. In that case, they restart the receiver
+(and the receiver only).
 
-> Signed-off-by: Maciej Szmigiero <mhej@o2.pl>
+Their sequence for restarting the receiver however is a tad different
+than ours (mostly slightly different ordering of things), it's hard to
+tell whether that's relevant or not, but some of the things do make
+sense, such as they stop the DMA before resetting the MAC and restart it
+after re-enabling the MAC.
 
-> diff --git a/drivers/usb/serial/visor.c b/drivers/usb/serial/visor.c
-> index 15a5d89..e1c4527 100644
-> --- a/drivers/usb/serial/visor.c
-> +++ b/drivers/usb/serial/visor.c
-[...]
-> @@ -479,6 +480,15 @@ static int visor_probe(struct usb_serial *serial,
->
->   	dbg("%s", __func__);
->
-> +	/* some Samsung Android phones in modem mode have the same ID */
-> +	/* as SPH-I500, but they are ACM devices, so dont bind to them */
+If I find some time tonight, else tomorrow, I'll whip up a couple of
+patches:
 
-    The preferred style for the multi-line comments is this:
+ - One simpler re-arranging our Rx reset sequence and adding a test for
+the overflow bit at the end, printing out the results, etc... 
 
-/*
-  * bla
-  * bla
-  */
+ - One that basically always reset the chip on overflow.
 
-> +	if ((id->idVendor == SAMSUNG_VENDOR_ID)&&
-> +		(id->idProduct == SAMSUNG_SPH_I500_ID)&&
-> +		(serial->dev->descriptor.bDeviceClass == USB_CLASS_COMM)&&
-> +		(serial->dev->descriptor.bDeviceSubClass ==
-> +			USB_CDC_SUBCLASS_ACM))
+>From there we can decide what works and maybe add a bit of a timeout
+to the second approach if needed etc... but how often does that overflow
+happens in practice ?
 
-    Parens around == not necessary...
+Cheers,
+Ben.
 
-WBR, Sergei
+
