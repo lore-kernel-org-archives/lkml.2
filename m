@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157Ab1BFBRt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 20:17:49 -0500
-Received: from 184-106-158-135.static.cloud-ips.com ([184.106.158.135]:51280
-	"EHLO mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751747Ab1BFBRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 20:17:48 -0500
-Date: Sun, 6 Feb 2011 01:18:31 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: david@lang.hm
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Gergely Nagy <algernon@balabit.hu>,
-        James Morris <jmorris@namei.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: CAP_SYSLOG, 2.6.38 and user space
-Message-ID: <20110206011831.GB15805@mail.hallyn.com>
-References: <1296733177.14846.26.camel@moria>
- <20110203153252.GA24153@mail.hallyn.com>
- <20110204160513.GB17396@mail.hallyn.com>
- <1296837186.24742.15.camel@moria>
- <20110204171502.GA24226@mail.hallyn.com>
- <alpine.DEB.2.00.1102042301420.8162@asgard.lang.hm>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1102042301420.8162@asgard.lang.hm>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752164Ab1BFBdu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 20:33:50 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:38245 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751948Ab1BFBdt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Feb 2011 20:33:49 -0500
+From: Nitin Gupta <ngupta@vflare.org>
+To: Greg KH <greg@kroah.com>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] zram: fix data corruption issue
+Date: Sat,  5 Feb 2011 20:34:20 -0500
+Message-Id: <1296956060-13594-1-git-send-email-ngupta@vflare.org>
+X-Mailer: git-send-email 1.7.3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting david@lang.hm (david@lang.hm):
-> On Fri, 4 Feb 2011, Serge E. Hallyn wrote:
-> 
-> >Quoting Gergely Nagy (algernon@balabit.hu):
-> >>On Fri, 2011-02-04 at 16:05 +0000, Serge E. Hallyn wrote:
-> >>>Quoting Serge E. Hallyn (serge@hallyn.com):
-> >>>>>From 2d7408541dd3a6e19a4265b028233789be6a40f4 Mon Sep 17 00:00:00 2001
-> >>>>From: Serge Hallyn <serge@peq.(none)>
-> >>>>
-> >>>>At 2.6.39 or 2.6.40, let's add a sysctl which defaults to 0.  When
-> >>>>0, refuse if cap_sys_admin, if 1, then allow.  This will allow
-> >>>>users to acknowledge (permanently, if they must, using /etc/sysctl.conf)
-> >>>>that they've seen the syslog message about cap_sys_admin being
-> >>>>deprecated for syslog.
-> >>>>
-> >>>>Signed-off-by: Serge Hallyn <serge@hallyn.com>
-> >-			goto warn; /* switch to return -EPERM after 2.6.39 */
-> >+		     !capable(CAP_SYSLOG)) {
-> >+			/* remove after 2.6.39 */
-> >+			if (capable(CAP_SYS_ADMIN))
-> >+				WARN_ONCE(1, "Attempt to access syslog with CAP_SYS_ADMIN "
-> >+				  "but no CAP_SYSLOG (deprecated).\n");
-> >+			else
-> >+				return -EPERM;
-> >+		}
-> >	}
-> 
-> why does this need to be removed after 2.6.39?
-> 
-> whenever you go to remove it you will break userspace, what's the
-> benifit of breaking userspace?
-> 
-> I can understand that it's better to have a syslog daemon with
-> CAP_SYSLOG instead of CAP_SYS_ADMIN, but does "it would be better to
-> have userspace changed" really translate into "it's so important to
-> have userspace changed that we need to break any userspace that
-> hasn't changed"?
-> 
-> I really don't think so.
+In zram_read() and zram_write() we were not incrementing the
+index number and thus were reading/writing values from/to
+incorrect sectors on zram disk, resulting in data corruption.
 
-I think I agree with you.  If someone wants to grant one of the other
-CAP_SYS_ADMIN powers without CAP_SYSLOG, then they can break that into
-yet another, i.e. CAP_IPCSET.  Makes sense.
+Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+---
+ drivers/staging/zram/zram_drv.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-thanks,
--serge
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 5415712..4bd8cbd 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -227,6 +227,7 @@ static int zram_read(struct zram *zram, struct bio *bio)
+ 
+ 		if (zram_test_flag(zram, index, ZRAM_ZERO)) {
+ 			handle_zero_page(page);
++			index++;
+ 			continue;
+ 		}
+ 
+@@ -235,12 +236,14 @@ static int zram_read(struct zram *zram, struct bio *bio)
+ 			pr_debug("Read before write: sector=%lu, size=%u",
+ 				(ulong)(bio->bi_sector), bio->bi_size);
+ 			/* Do nothing */
++			index++;
+ 			continue;
+ 		}
+ 
+ 		/* Page is stored uncompressed since it's incompressible */
+ 		if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
+ 			handle_uncompressed_page(zram, page, index);
++			index++;
+ 			continue;
+ 		}
+ 
+@@ -320,6 +323,7 @@ static int zram_write(struct zram *zram, struct bio *bio)
+ 			mutex_unlock(&zram->lock);
+ 			zram_stat_inc(&zram->stats.pages_zero);
+ 			zram_set_flag(zram, index, ZRAM_ZERO);
++			index++;
+ 			continue;
+ 		}
+ 
+-- 
+1.7.3.5
+
