@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775Ab1BFNWL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 08:22:11 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:48919 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752739Ab1BFNWK (ORCPT
+	id S1752666Ab1BFNbi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 08:31:38 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:60246 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364Ab1BFNbh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 08:22:10 -0500
+	Sun, 6 Feb 2011 08:31:37 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=e88jyzONsRF9NmAtMu8LN07w8SzEAYPjB5soBXUOaO3285uWo/tufUwQD7xhQu4qep
-         SHF7uk1e3tsuUqmdHLqhxCNnYgld6ouIo/ItbK7aKhi+Vy/VfXJ10/0HhQZgDpl02E3t
-         yyEqyhmvyarjgBBsaSGo/EixGle1+RL38SW94=
-MIME-Version: 1.0
-In-Reply-To: <20110131075803.GI9041@pengutronix.de>
-References: <1296217283-14531-1-git-send-email-s.hauer@pengutronix.de>
-	<20110129213821.0e51dc32@endymion.delvare>
-	<20110129215141.GA3493@pengutronix.de>
-	<AANLkTi=ppKZ96T3_1nYisHG9705OCHgZqkLnu2f47zq5@mail.gmail.com>
-	<20110131075803.GI9041@pengutronix.de>
-Date: Sun, 6 Feb 2011 14:22:09 +0100
-X-Google-Sender-Auth: 0FMwf1ApcT-O6e8My2_G9BrFKXo
-Message-ID: <AANLkTi=nDkuevMqY6v_K_Lkoi6wDowcL7AN_a=tb72t5@mail.gmail.com>
-Subject: Re: [RFC] add pwmlib support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: arden jay <arden.jay@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Hemanth V <hemanthv@ti.com>, Wolfram Sang <w.sang@pengutronix.de>,
-        Eric Miao <eric.miao@linaro.org>, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Shawn Guo <shawn.guo@freescale.com>, Ben Dooks <ben-linux@fluff.org>,
-        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
-        Jean Delvare <khali@linux-fr.org>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=hG3ZCEyhJsPyR+Yt0ml46/iIYFX7qawF6S124JiEYqQHlLTh04GD2+ygZm3ntWZV07
+         f5NUusSMS509eZgshB26Nqf77z9zEdY9n/9YOZHB/6NZk9IOLaJl2bEAdJU+JWPocHZt
+         Js4zsvw7yBX54Wb+9er65QGz5eYTPNdQbzR+E=
+From: Namhyung Kim <namhyung@gmail.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] memblock: Fix error path in memblock_add_region()
+Date: Sun,  6 Feb 2011 22:31:15 +0900
+Message-Id: <1296999075-8022-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.3.4.600.g982838b0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/1/31 Sascha Hauer <s.hauer@pengutronix.de>:
-> On Sun, Jan 30, 2011 at 11:49:32AM +0800, arden jay wrote:
->> Sorry, I'm confused about this.
->> If it is for backlight control, why it don't go through led_class?
->
-> PWMs are not limited to backlight. As Jean pointed out they can be used
-> for fans (or more generally motors) aswell. Have a look at
-> drivers/leds/leds-pwm.c, it is a user of this pwm API.
+@type->regions should be restored if memblock_double_array() fails.
 
-Low-frequency PWM is used for vibrators of the type found in
-silent mode cellphones, to mention another use case.
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+---
+ mm/memblock.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-Yours,
-Linus Walleij
+diff --git a/mm/memblock.c b/mm/memblock.c
+index bdba245d8afd..49284f9f99a6 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -379,6 +379,10 @@ static long __init_memblock memblock_add_region(struct memblock_type *type, phys
+ 	 */
+ 	if (type->cnt == type->max && memblock_double_array(type)) {
+ 		type->cnt--;
++		for (++i; i < type->cnt; i++) {
++			type->regions[i].base = type->regions[i+1].base;
++			type->regions[i].size = type->regions[i+1].size;
++		}
+ 		return -1;
+ 	}
+ 
+-- 
+1.7.3.4.600.g982838b0
+
