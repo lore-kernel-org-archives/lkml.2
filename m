@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753408Ab1BFRrM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 12:47:12 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:42338 "EHLO
+	id S1753415Ab1BFRvr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 12:51:47 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:43720 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753345Ab1BFRrL (ORCPT
+	with ESMTP id S1753344Ab1BFRvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 12:47:11 -0500
-Message-ID: <4D4EDE69.9060200@kernel.org>
-Date: Sun, 06 Feb 2011 09:46:17 -0800
+	Sun, 6 Feb 2011 12:51:46 -0500
+Message-ID: <4D4EDF39.9090307@kernel.org>
+Date: Sun, 06 Feb 2011 09:49:45 -0800
 From: Yinghai Lu <yinghai@kernel.org>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@gmail.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH] memblock: Fix error path in memblock_add_region()
-References: <1296999075-8022-1-git-send-email-namhyung@gmail.com>
-In-Reply-To: <1296999075-8022-1-git-send-email-namhyung@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "H. Peter Anvin" <hpa@zytor.com>, Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <JBeulich@novell.com>
+Subject: Re: [PATCH] x86/mm/init: respect memblock reserved regions when destroying
+ mappings
+References: <alpine.DEB.2.00.1101311514580.7277@kaball-desktop>	<4D4A3782.3050702@zytor.com>	<alpine.DEB.2.00.1102031114030.7277@kaball-desktop>	<4D4ADFAD.7060507@zytor.com>	<alpine.DEB.2.00.1102041130060.7277@kaball-desktop>	<4D4CA568.70907@goop.org> <AANLkTi=nEQka_19+nKQC-yJn2Czn9GCqsUWN6Byy7rCF@mail.gmail.com> <4D4E4E0D.2080806@zytor.com>
+In-Reply-To: <4D4E4E0D.2080806@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4D4EDE99.00DB,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090201.4D4EDF7B.0056,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2011 05:31 AM, Namhyung Kim wrote:
-> @type->regions should be restored if memblock_double_array() fails.
+On 02/05/2011 11:30 PM, H. Peter Anvin wrote:
+> On 02/05/2011 11:02 PM, Yinghai Lu wrote:
+>> why not just move calling cleanup_highmap down?
+>>
+>> something like attached patch.
 > 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> ---
->  mm/memblock.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
+> This patch looks very clean and looks on the surface of it like it is
+> removing some ugly ad hoc code, but (as always) it needs a description
+> about the problem it solves and why it is correct.
 > 
-> diff --git a/mm/memblock.c b/mm/memblock.c
-> index bdba245d8afd..49284f9f99a6 100644
-> --- a/mm/memblock.c
-> +++ b/mm/memblock.c
-> @@ -379,6 +379,10 @@ static long __init_memblock memblock_add_region(struct memblock_type *type, phys
->  	 */
->  	if (type->cnt == type->max && memblock_double_array(type)) {
->  		type->cnt--;
-> +		for (++i; i < type->cnt; i++) {
-> +			type->regions[i].base = type->regions[i+1].base;
-> +			type->regions[i].size = type->regions[i+1].size;
-> +		}
->  		return -1;
->  	}
->  
 
-we can skip the restoring.
+just cleanup on native platform.
+
+but wonder if could cause problem for xen memory hotplug support.
 
 Thanks
 
 Yinghai
-
-diff --git a/mm/memblock.c b/mm/memblock.c
-index bdba245..3231657 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -374,13 +374,9 @@ static long __init_memblock memblock_add_region(struct memblock_type *type, phys
- 	}
- 	type->cnt++;
- 
--	/* The array is full ? Try to resize it. If that fails, we undo
--	 * our allocation and return an error
--	 */
--	if (type->cnt == type->max && memblock_double_array(type)) {
--		type->cnt--;
-+	/* The array is full ? Try to resize it  */
-+	if (type->cnt == type->max && memblock_double_array(type))
- 		return -1;
--	}
- 
- 	return 0;
- }
