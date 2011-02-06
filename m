@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288Ab1BFKtT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 05:49:19 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:57520 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147Ab1BFKtQ (ORCPT
+	id S1752452Ab1BFKtb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 05:49:31 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:35628 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752396Ab1BFKt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 05:49:16 -0500
+	Sun, 6 Feb 2011 05:49:27 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=H8qVbVxhYEmK99ZeSJRvBtjanBcjbjnoOE8x0ii06BCM26mu9NGRQ28ZWoZqKbI52H
-         TbiLOs34TNUXVytrgxbFzKryITtPnQwRPwElMRQoKVWDoc+cpr/RMFBr9IlwvFHiasvh
-         cLMMjDBpkHTEZqPFKNZpwJbdB16YXDeW3k0ZA=
+        b=LmXBhgXvHYNXSIaVuajMdN80tQqn1Eb4LowOynGsJ8+HjHxOq/+pgDNEWUW6sLQpEu
+         4YQIymf2cTlodTeMw+7G3VwYRCJZzhb0Ds4JGRjeqqvIkguxJrL70y358mJnWa1h+UeL
+         D9VmVDl07eSn4Q32i80Zt4VjP4WoWC6bsJcQM=
 From: Minchan Kim <minchan.kim@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
@@ -21,12 +21,10 @@ Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Johannes Weiner <hannes@cmpxchg.org>,
         Minchan Kim <minchan.kim@gmail.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andi Kleen <andi@firstfloor.org>, Nick Piggin <npiggin@kernel.dk>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH v4 4/6] truncate: Change remove_from_page_cache
-Date: Sun,  6 Feb 2011 19:48:03 +0900
-Message-Id: <796768739e844f442a0b61a2d6199c84932f456b.1296987110.git.minchan.kim@gmail.com>
+        Christoph Hellwig <hch@infradead.org>
+Subject: [PATCH v4 6/6] Change __remove_from_page_cache
+Date: Sun,  6 Feb 2011 19:48:05 +0900
+Message-Id: <5bd48329d286d68ecef1f8856ccffdbc9b81f827.1296987110.git.minchan.kim@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <cover.1296987110.git.minchan.kim@gmail.com>
 References: <cover.1296987110.git.minchan.kim@gmail.com>
@@ -36,14 +34,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series changes remove_from_page_cache's page ref counting
-rule. Page cache ref count is decreased in delete_from_page_cache.
-So we don't need decreasing page reference by caller.
+Now we renamed remove_from_page_cache with delete_from_page_cache.
+As consistency of __remove_from_swap_cache and remove_from_swap_cache,
+We change internal page cache handling function name, too.
 
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Nick Piggin <npiggin@kernel.dk>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Christoph Hellwig <hch@infradead.org>
 Acked-by: Hugh Dickins <hughd@google.com>
 Acked-by: Mel Gorman <mel@csn.ul.ie>
 Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
@@ -51,28 +46,100 @@ Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
 Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 ---
- mm/truncate.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ include/linux/pagemap.h |    2 +-
+ mm/filemap.c            |    8 ++++----
+ mm/memory-failure.c     |    2 +-
+ mm/truncate.c           |    2 +-
+ mm/vmscan.c             |    2 +-
+ 5 files changed, 8 insertions(+), 8 deletions(-)
 
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index 631b1b6..e407601 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -455,7 +455,7 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
+ 				pgoff_t index, gfp_t gfp_mask);
+ int add_to_page_cache_lru(struct page *page, struct address_space *mapping,
+ 				pgoff_t index, gfp_t gfp_mask);
+-extern void __remove_from_page_cache(struct page *page);
++extern void __delete_from_page_cache(struct page *page);
+ extern void delete_from_page_cache(struct page *page);
+ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask);
+ 
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 5f3a389..351571f 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -109,11 +109,11 @@
+  */
+ 
+ /*
+- * Remove a page from the page cache and free it. Caller has to make
++ * Delete a page from the page cache and free it. Caller has to make
+  * sure the page is locked and that nobody else uses it - or that usage
+  * is safe.  The caller must hold the mapping's tree_lock.
+  */
+-void __remove_from_page_cache(struct page *page)
++void __delete_from_page_cache(struct page *page)
+ {
+ 	struct address_space *mapping = page->mapping;
+ 
+@@ -166,7 +166,7 @@ void delete_from_page_cache(struct page *page)
+ 
+ 	freepage = mapping->a_ops->freepage;
+ 	spin_lock_irq(&mapping->tree_lock);
+-	__remove_from_page_cache(page);
++	__delete_from_page_cache(page);
+ 	spin_unlock_irq(&mapping->tree_lock);
+ 	mem_cgroup_uncharge_cache_page(page);
+ 
+@@ -453,7 +453,7 @@ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
+ 		new->index = offset;
+ 
+ 		spin_lock_irq(&mapping->tree_lock);
+-		__remove_from_page_cache(old);
++		__delete_from_page_cache(old);
+ 		error = radix_tree_insert(&mapping->page_tree, offset, new);
+ 		BUG_ON(error);
+ 		mapping->nrpages++;
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 0207c2f..f15ceea 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1130,7 +1130,7 @@ int __memory_failure(unsigned long pfn, int trapno, int flags)
+ 
+ 	/*
+ 	 * Now take care of user space mappings.
+-	 * Abort on fail: __remove_from_page_cache() assumes unmapped page.
++	 * Abort on fail: __delete_from_page_cache() assumes unmapped page.
+ 	 */
+ 	if (hwpoison_user_mappings(p, pfn, trapno) != SWAP_SUCCESS) {
+ 		printk(KERN_ERR "MCE %#lx: cannot unmap page, give up\n", pfn);
 diff --git a/mm/truncate.c b/mm/truncate.c
-index 4d415b3..faf65a5 100644
+index faf65a5..94be6c0 100644
 --- a/mm/truncate.c
 +++ b/mm/truncate.c
-@@ -108,13 +108,12 @@ truncate_complete_page(struct address_space *mapping, struct page *page)
- 	cancel_dirty_page(page, PAGE_CACHE_SIZE);
+@@ -394,7 +394,7 @@ invalidate_complete_page2(struct address_space *mapping, struct page *page)
  
  	clear_page_mlock(page);
--	remove_from_page_cache(page);
-+	delete_from_page_cache(page);
- 	ClearPageMappedToDisk(page);
--	/* this must be after the remove_from_page_cache which
-+	/* this must be after the delete_from_page_cache which
- 	 * calls cleancache_put_page (and note page->mapping is now NULL)
- 	 */
- 	cleancache_flush_page(mapping, page);
--	page_cache_release(page);	/* pagecache ref */
- 	return 0;
- }
+ 	BUG_ON(page_has_private(page));
+-	__remove_from_page_cache(page);
++	__delete_from_page_cache(page);
+ 	spin_unlock_irq(&mapping->tree_lock);
+ 	mem_cgroup_uncharge_cache_page(page);
+ 
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 148c6e6..43bfc4e 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -514,7 +514,7 @@ static int __remove_mapping(struct address_space *mapping, struct page *page)
+ 
+ 		freepage = mapping->a_ops->freepage;
+ 
+-		__remove_from_page_cache(page);
++		__delete_from_page_cache(page);
+ 		spin_unlock_irq(&mapping->tree_lock);
+ 		mem_cgroup_uncharge_cache_page(page);
  
 -- 
 1.7.1
