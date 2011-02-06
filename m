@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab1BFUuT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 15:50:19 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:22297 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753951Ab1BFUuS (ORCPT
+	id S1754069Ab1BFU4f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 15:56:35 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:41387 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754002Ab1BFU4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 15:50:18 -0500
-Date: Sun, 6 Feb 2011 21:49:02 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: Holger Waechtler <holger@convergence.de>,
-        Felix Domke <tmbinc@elitedvb.net>, linux-media@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [PATCH] TTUSB DVB: ttusb_boot_dsp() needs to release_firmware() or
- it leaks memory.
-Message-ID: <alpine.LNX.2.00.1102062145160.13593@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 6 Feb 2011 15:56:33 -0500
+Date: Sun, 6 Feb 2011 20:56:19 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: akpm@linux-foundation.org, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rpurdie@rpsys.net
+Subject: Re: [PATCH 5/5] ACPI: Tie ACPI backlight devices to PCI devices if
+	possible
+Message-ID: <20110206205619.GA21472@srcf.ucam.org>
+References: <1295033065-13450-1-git-send-email-mjg@redhat.com> <1295033065-13450-5-git-send-email-mjg@redhat.com> <201102062135.08171.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201102062135.08171.rjw@sisk.pl>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In drivers/media/dvb/ttusb-budget/dvb-ttusb-budget.c:ttusb_boot_dsp() we 
-need to call release_firmware(fw) before returning or we'll leak - no 
-matter if we succeed or fail.
+On Sun, Feb 06, 2011 at 09:35:07PM +0100, Rafael J. Wysocki wrote:
+> > +		acpi_get_parent(device->dev->handle, &acpi_parent);
+> > +
+> > +		pdev = acpi_get_pci_dev(acpi_parent);
+> > +		if (pdev) {
+> > +			parent = &pdev->dev;
+> > +			pci_dev_put(pdev);
+> > +		}
+> 
+> I'm afraid you can't do that or suspend problems will happen.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- dvb-ttusb-budget.c |    1 +
- 1 file changed, 1 insertion(+)
-
- compile tested only.
-
-diff --git a/drivers/media/dvb/ttusb-budget/dvb-ttusb-budget.c b/drivers/media/dvb/ttusb-budget/dvb-ttusb-budget.c
-index 40625b2..cbe2f0d 100644
---- a/drivers/media/dvb/ttusb-budget/dvb-ttusb-budget.c
-+++ b/drivers/media/dvb/ttusb-budget/dvb-ttusb-budget.c
-@@ -334,6 +334,7 @@ static int ttusb_boot_dsp(struct ttusb *ttusb)
- 	err = ttusb_cmd(ttusb, b, 4, 0);
- 
-       done:
-+	release_firmware(fw);
- 	if (err) {
- 		dprintk("%s: usb_bulk_msg() failed, return value %i!\n",
- 			__func__, err);
+Ugh. Ok, how can we fix this?
 
 -- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Plain text mails only, please.
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-
+Matthew Garrett | mjg59@srcf.ucam.org
