@@ -1,163 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315Ab1BFQ4D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 11:56:03 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55478 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753262Ab1BFQ4B (ORCPT
+	id S1753324Ab1BFQ5V (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 11:57:21 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:33836 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753016Ab1BFQ5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 11:56:01 -0500
+	Sun, 6 Feb 2011 11:57:20 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=brqop1qotSyh4tYgQjDrN6kFMM/y6KQ0d2hn0/m69dDuPN6Mdkj2aE4jxBC/DSPmv2
-         auDMhVVDIqwh4PrnGM37PAQFZ3+BpjKkz8N1VTw9l4M0efNkeFcMchUcVXfIFNDUZS6Z
-         bEj9sfRWnlt7foXdRwZoIxUiJskFBHSmi4kxs=
-Message-ID: <4D4ED29B.8010903@gmail.com>
-Date: Sun, 06 Feb 2011 17:55:55 +0100
-From: Zdenek Kaspar <zkaspar82@gmail.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; cs; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=LWlFn/VoW2HFkSjHd5oTaG1LJgepflGIQUsRosLDTSWW/mMx/e51YwWF+AnVlGugFW
+         +5yooyHqckb5xh/TqPaKpRG1FJbB3+maavSUMXZfqChfbps11P87aOs/l9CHPj0Ypo6U
+         9q5aeVLoE3kmADEasTf5FUlLk1Vrx/NR96B6M=
 MIME-Version: 1.0
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-CC: Stan Hoeppner <stan@hardwarefreak.com>,
-        "Dr. David Alan Gilbert" <linux@treblig.org>,
-        Emmanuel Florac <eflorac@intellique.com>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-net@vger.kernel.org,
-        Alan Piszcz <ap@solarrain.com>
-Subject: Re: Supermicro X8DTH-6: Only ~250MiB/s from RAID<->RAID over 10GbE?
-References: <alpine.DEB.2.00.1102051427360.8518@p34.internal.lan> <20110205214550.3cb0f0d1@galadriel2.home> <alpine.DEB.2.00.1102051553591.8518@p34.internal.lan> <20110205220621.GB17347@gallifrey> <alpine.DEB.2.00.1102051729010.8518@p34.internal.lan> <alpine.DEB.2.00.1102051753100.8518@p34.internal.lan> <4D4DE34E.7010308@hardwarefreak.com> <alpine.DEB.2.00.1102051958370.28109@p34.internal.lan> <4D4E127D.3060105@hardwarefreak.com> <alpine.DEB.2.00.1102060515230.28109@p34.internal.lan> <alpine.DEB.2.00.1102060817590.28109@p34.internal.lan>
-In-Reply-To: <alpine.DEB.2.00.1102060817590.28109@p34.internal.lan>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110206165524.GG22170@cathedrallabs.org>
+References: <AANLkTi=vBv_a+X3MrgyDevss9H92vBJ51eON_qyMJW4=@mail.gmail.com>
+	<20110206165524.GG22170@cathedrallabs.org>
+Date: Sun, 6 Feb 2011 17:57:19 +0100
+Message-ID: <AANLkTimZq3-zuiA940dK7AmszBW-TEHP0JHz7FGHSmgu@mail.gmail.com>
+Subject: Re: [PATCH] uinput strnlen bugfix
+From: David Herrmann <dh.herrmann@googlemail.com>
+To: Aristeu Rozanski <aris@cathedrallabs.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=90e6ba53a8721d6287049ba002e4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 6.2.2011 14:46, Justin Piszcz napsal(a):
-> 
-> 
-> On Sun, 6 Feb 2011, Justin Piszcz wrote:
-> 
->>
->>
->> On Sat, 5 Feb 2011, Stan Hoeppner wrote:
->>
->>> Justin Piszcz put forth on 2/5/2011 7:08 PM:
->>>
-> 
-> 
-> Hi,
+--90e6ba53a8721d6287049ba002e4
+Content-Type: text/plain; charset=ISO-8859-1
 
-Hi, just few comments for maximal throughput..
+On Sun, Feb 6, 2011 at 5:55 PM, Aristeu Rozanski <aris@cathedrallabs.org> wrote:
+> and where's the patch? :^)
+>
+> --
+> Aristeu
+>
 
-> 1. Defaults below:
-> sysctl -w net.core.wmem_max=131071
-> sysctl -w net.core.rmem_max=131071
-> sysctl -w net.core.wmem_default=118784
-> sysctl -w net.core.rmem_default=118784
-> sysctl -w net.core.optmem_max=20480
-> sysctl -w net.ipv4.igmp_max_memberships=20
-> sysctl -w net.ipv4.tcp_mem="379104       505472  758208"
-> sysctl -w net.ipv4.tcp_wmem="4096        16384   4194304"
-> sysctl -w net.ipv4.tcp_rmem="4096        87380   4194304"
-> sysctl -w net.ipv4.udp_mem="379104       505472  758208"
-> sysctl -w net.ipv4.udp_rmem_min=4096
-> sysctl -w net.ipv4.udp_wmem_min=4096
-> sysctl -w net.core.netdev_max_backlog=1024
+ah, embarrasing.., sorry.
+I attached the patchfile.
 
-sysctl net.ipv4.tcp_timestamps=0
+David
 
-> 2. Optimized settings, for > 800MiB/:
-> 
-> # for 3ware raid, use 16384 readahead, > 16384 readahead, no improvement
-> blockdev --setra 16384 /dev/sda
+--90e6ba53a8721d6287049ba002e4
+Content-Type: text/x-patch; charset=US-ASCII; name="uinput_fix.diff"
+Content-Disposition: attachment; filename="uinput_fix.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gju75t3a0
 
-elevator=deadline
-
-> # not sure if this helps much
-> ethtool -K eth0 lro on
-
-Maybe try to _disable_ NIC offloads functions, sometimes its contra
-productive (with enough CPU power, but I doubt on 2 socket box) + check
-irqbalance..
-
-If you have connection just between machines try the biggest possible MTU.
-
-> # seems to get performance > 600-700MiB/s faster
-> sysctl -w net.core.wmem_max=4194304
-> sysctl -w net.core.rmem_max=4194304
-> sysctl -w net.core.wmem_default=4194304
-> sysctl -w net.core.rmem_default=4194304
-> sysctl -w net.core.optmem_max=20480
-> sysctl -w net.ipv4.igmp_max_memberships=20
-> sysctl -w net.ipv4.tcp_mem="4194304 4194304 4194304"
-> sysctl -w net.ipv4.tcp_wmem="4194304 4194304 4194304"
-> sysctl -w net.ipv4.tcp_rmem="4194304 4194304 4194304"
-> sysctl -w net.ipv4.udp_mem="4194304 4194304 4194304"
-> sysctl -w net.ipv4.udp_rmem_min=4096
-> sysctl -w net.ipv4.udp_wmem_min=4096
-> sysctl -w net.core.netdev_max_backlog=1048576
-> 
-> # the main option that makes all of the difference, the golden option
-> # is the rszie and wsize of 1megabyte below:
-> 10.0.1.4:/r1    /nfs/box2/r1  nfs  
-> tcp,bg,rw,hard,intr,nolock,nfsvers=3,rsize=1048576,wsize=1048576  0 0
-> 
-> CPU utilization:
->   PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
->  2069 root      20   0 18640 1304  688 R   91  0.0   0:15.50 cp
->   703 root      20   0     0    0    0 S   25  0.0   2:46.95 kswapd0
-> 
-> With a single copy I get roughly 700-800MiB/s:
-> 
-> Device eth0 [10.0.1.3] (1/1):
-> ================================================================================
-> 
-> Incoming:
-> ######################     ####################  ####
-> ######################     ####################  ####
-> ######################     ####################  ####
-> ######################     ####################  ####
-> ######################     ####################  ####
-> ######################     ####################  ####  Curr: 808.71 MByte/s
-> ######################     ####################  ####  Avg: 706.11 MByte/s
-> ######################     ####################  ####  Min: 0.00 MByte/s
-> ######################     ####################  ####  Max: 860.17 MByte/s
-> ######################     ####################  ####  Ttl: 344.70 GByte
-> 
-> With two copies I get up to 830-850MiB/s:
-> 
-> Device eth0 [10.0.1.3] (1/1):
-> ================================================================================
-> 
-> Incoming:
-> ############################################     ####
-> ############################################     ####
-> ############################################     ####
-> ############################################     ####
-> ############################################     ####
-> ############################################     ####  Curr: 846.61 MByte/s
-> ############################################     ####  Avg: 683.14 MByte/s
-> ############################################     ####  Min: 0.00 MByte/s
-> ############################################     ####  Max: 860.17 MByte/s
-> ############################################     ####  Ttl: 305.71 GByte
-> 
-> Using a 4MiB r/w size with NFS improves performance to sustain > 750MiB/s
-> a little better I think:
-> 10.0.1.4:/r1    /nfs/box2/r1  nfs  
-> tcp,bg,rw,hard,intr,nolock,nfsvers=3,rsize=4194304,wsize=4194304 0
-
-What about using UDP ?
-
-> Anyhow, roughly 750-850MiB/s it would be nice to get 1Gbyte/sec but I guess
-> the kerrnel (or my HW, CPU not fast enough) is not there yet.
-> 
-> Also found a good doc from RedHat:
-> http://www.redhat.com/promo/summit/2008/downloads/pdf/Thursday/Mark_Wagner.pdf
-> 
-> 
-> Justin.
-> 
-
-HTH, Z.
+LS0tIG9sZC9kcml2ZXJzL2lucHV0L21pc2MvdWlucHV0LmMJMjAxMS0wMi0wNiAxNzo0MDoyNC45
+NTE0NTQ2NTYgKzAxMDAKKysrIG5ldy9kcml2ZXJzL2lucHV0L21pc2MvdWlucHV0LmMJMjAxMS0w
+Mi0wNiAxNzo0MToxNi43NDc0NTQ2NTQgKzAxMDAKQEAgLTM3Miw4ICszNzIsOCBAQAogCiAJdWRl
+di0+ZmZfZWZmZWN0c19tYXggPSB1c2VyX2Rldi0+ZmZfZWZmZWN0c19tYXg7CiAKLQlzaXplID0g
+c3Rybmxlbih1c2VyX2Rldi0+bmFtZSwgVUlOUFVUX01BWF9OQU1FX1NJWkUpICsgMTsKLQlpZiAo
+IXNpemUpIHsKKwlzaXplID0gc3Rybmxlbih1c2VyX2Rldi0+bmFtZSwgVUlOUFVUX01BWF9OQU1F
+X1NJWkUpOworCWlmICghc2l6ZSsrKSB7CiAJCXJldHZhbCA9IC1FSU5WQUw7CiAJCWdvdG8gZXhp
+dDsKIAl9Cg==
+--90e6ba53a8721d6287049ba002e4--
