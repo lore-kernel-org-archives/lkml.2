@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754606Ab1BFXqR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 18:46:17 -0500
-Received: from 1wt.eu ([62.212.114.60]:60316 "EHLO 1wt.eu"
+	id S1754670Ab1BFXrp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 18:47:45 -0500
+Received: from 1wt.eu ([62.212.114.60]:60339 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754575Ab1BFXqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 18:46:13 -0500
-Message-Id: <20110206232253.081431015@pcw.home.local>
+	id S1754622Ab1BFXrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 18:47:43 -0500
+Message-Id: <20110206232252.913509649@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 07 Feb 2011 00:23:05 +0100
+Date: Mon, 07 Feb 2011 00:23:01 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: NeilBrown <neilb@suse.de>, "J. Bruce Fields" <bfields@redhat.com>,
+Cc: Dan Carpenter <error27@gmail.com>, Roland Dreier <rolandd@cisco.com>,
         Greg Kroah-Hartman <gregkh@suse.de>, Willy Tarreau <w@1wt.eu>
-Subject: [PATCH 13/23] nfsd: Fix possible BUG_ON firing in set_change_info
+Subject: [PATCH 09/23] IB/uverbs: Handle large number of entries in poll CQ
 In-Reply-To: <4beed4da27f06efb2c13d6ed48850634@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,64 +23,165 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Brown <neilb@suse.de>
+From: Dan Carpenter <error27@gmail.com>
 
-commit c1ac3ffcd0bc7e9617f62be8c7043d53ab84deac upstream.
+commit 7182afea8d1afd432a17c18162cc3fd441d0da93 upstream.
 
-If vfs_getattr in fill_post_wcc returns an error, we don't
-set fh_post_change.
-For NFSv4, this can result in set_change_info triggering a BUG_ON.
-i.e. fh_post_saved being zero isn't really a bug.
+In ib_uverbs_poll_cq() code there is a potential integer overflow if
+userspace passes in a large cmd.ne.  The calls to kmalloc() would
+allocate smaller buffers than intended, leading to memory corruption.
+There iss also an information leak if resp wasn't all used.
+Unprivileged userspace may call this function, although only if an
+RDMA device that uses this function is present.
 
-So:
- - instead of BUGging when fh_post_saved is zero, just clear ->atomic.
- - if vfs_getattr fails in fill_post_wcc, take a copy of i_ctime anyway.
-   This will be used i seg_change_info, but not overly trusted.
- - While we are there, remove the pointless 'if' statements in set_change_info.
-   There is no harm setting all the values.
+Fix this by copying CQ entries one at a time, which avoids the
+allocation entirely, and also by moving this copying into a function
+that makes sure to initialize all memory copied to userspace.
 
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Special thanks to Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+for his help and advice.
+
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+
+[ Monkey around with things a bit to avoid bad code generation by gcc
+  when designated initializers are used.  - Roland ]
+
+Signed-off-by: Roland Dreier <rolandd@cisco.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 
 ---
- fs/nfsd/nfs3xdr.c         |    6 ++++--
- include/linux/nfsd/xdr4.h |   21 ++++++++++-----------
- 2 files changed, 14 insertions(+), 13 deletions(-)
+ drivers/infiniband/core/uverbs_cmd.c |  101 +++++++++++++++++++----------------
+ 1 file changed, 57 insertions(+), 44 deletions(-)
 
-Index: longterm-2.6.27/fs/nfsd/nfs3xdr.c
+Index: longterm-2.6.27/drivers/infiniband/core/uverbs_cmd.c
 ===================================================================
---- longterm-2.6.27.orig/fs/nfsd/nfs3xdr.c	2011-01-23 10:52:29.000000000 +0100
-+++ longterm-2.6.27/fs/nfsd/nfs3xdr.c	2011-01-29 11:59:54.144063900 +0100
-@@ -272,9 +272,11 @@
- 
- 	err = vfs_getattr(fhp->fh_export->ex_path.mnt, fhp->fh_dentry,
- 			&fhp->fh_post_attr);
--	if (err)
-+	if (err) {
- 		fhp->fh_post_saved = 0;
--	else
-+		/* Grab the ctime anyway - set_change_info might use it */
-+		fhp->fh_post_attr.ctime = fhp->fh_dentry->d_inode->i_ctime;
-+	} else
- 		fhp->fh_post_saved = 1;
+--- longterm-2.6.27.orig/drivers/infiniband/core/uverbs_cmd.c	2011-01-29 11:19:14.689065716 +0100
++++ longterm-2.6.27/drivers/infiniband/core/uverbs_cmd.c	2011-01-29 11:27:14.060064011 +0100
+@@ -875,68 +875,81 @@
+ 	return ret ? ret : in_len;
  }
  
-Index: longterm-2.6.27/include/linux/nfsd/xdr4.h
-===================================================================
---- longterm-2.6.27.orig/include/linux/nfsd/xdr4.h	2011-01-23 10:52:35.000000000 +0100
-+++ longterm-2.6.27/include/linux/nfsd/xdr4.h	2011-01-29 11:58:59.816063878 +0100
-@@ -424,8 +424,8 @@
- static inline void
- set_change_info(struct nfsd4_change_info *cinfo, struct svc_fh *fhp)
++static int copy_wc_to_user(void __user *dest, struct ib_wc *wc)
++{
++	struct ib_uverbs_wc tmp;
++
++	tmp.wr_id		= wc->wr_id;
++	tmp.status		= wc->status;
++	tmp.opcode		= wc->opcode;
++	tmp.vendor_err		= wc->vendor_err;
++	tmp.byte_len		= wc->byte_len;
++	tmp.ex.imm_data		= (__u32 __force) wc->ex.imm_data;
++	tmp.qp_num		= wc->qp->qp_num;
++	tmp.src_qp		= wc->src_qp;
++	tmp.wc_flags		= wc->wc_flags;
++	tmp.pkey_index		= wc->pkey_index;
++	tmp.slid		= wc->slid;
++	tmp.sl			= wc->sl;
++	tmp.dlid_path_bits	= wc->dlid_path_bits;
++	tmp.port_num		= wc->port_num;
++	tmp.reserved		= 0;
++
++	if (copy_to_user(dest, &tmp, sizeof tmp))
++		return -EFAULT;
++
++	return 0;
++}
++
+ ssize_t ib_uverbs_poll_cq(struct ib_uverbs_file *file,
+ 			  const char __user *buf, int in_len,
+ 			  int out_len)
  {
--	BUG_ON(!fhp->fh_pre_saved || !fhp->fh_post_saved);
--	cinfo->atomic = 1;
-+	BUG_ON(!fhp->fh_pre_saved);
-+	cinfo->atomic = fhp->fh_post_saved;
- 	cinfo->before_ctime_sec = fhp->fh_pre_ctime.tv_sec;
- 	cinfo->before_ctime_nsec = fhp->fh_pre_ctime.tv_nsec;
- 	cinfo->after_ctime_sec = fhp->fh_post_attr.ctime.tv_sec;
+ 	struct ib_uverbs_poll_cq       cmd;
+-	struct ib_uverbs_poll_cq_resp *resp;
++	struct ib_uverbs_poll_cq_resp  resp;
++	u8 __user                     *header_ptr;
++	u8 __user                     *data_ptr;
+ 	struct ib_cq                  *cq;
+-	struct ib_wc                  *wc;
+-	int                            ret = 0;
+-	int                            i;
+-	int                            rsize;
++	struct ib_wc                   wc;
++	int                            ret;
+ 
+ 	if (copy_from_user(&cmd, buf, sizeof cmd))
+ 		return -EFAULT;
+ 
+-	wc = kmalloc(cmd.ne * sizeof *wc, GFP_KERNEL);
+-	if (!wc)
+-		return -ENOMEM;
+-
+-	rsize = sizeof *resp + cmd.ne * sizeof(struct ib_uverbs_wc);
+-	resp = kmalloc(rsize, GFP_KERNEL);
+-	if (!resp) {
+-		ret = -ENOMEM;
+-		goto out_wc;
+-	}
+-
+ 	cq = idr_read_cq(cmd.cq_handle, file->ucontext, 0);
+-	if (!cq) {
+-		ret = -EINVAL;
+-		goto out;
+-	}
++	if (!cq)
++		return -EINVAL;
+ 
+-	resp->count = ib_poll_cq(cq, cmd.ne, wc);
++	/* we copy a struct ib_uverbs_poll_cq_resp to user space */
++	header_ptr = (void __user *)(unsigned long) cmd.response;
++	data_ptr = header_ptr + sizeof resp;
+ 
+-	put_cq_read(cq);
++	memset(&resp, 0, sizeof resp);
++	while (resp.count < cmd.ne) {
++		ret = ib_poll_cq(cq, 1, &wc);
++		if (ret < 0)
++			goto out_put;
++		if (!ret)
++			break;
++
++		ret = copy_wc_to_user(data_ptr, &wc);
++		if (ret)
++			goto out_put;
+ 
+-	for (i = 0; i < resp->count; i++) {
+-		resp->wc[i].wr_id 	   = wc[i].wr_id;
+-		resp->wc[i].status 	   = wc[i].status;
+-		resp->wc[i].opcode 	   = wc[i].opcode;
+-		resp->wc[i].vendor_err 	   = wc[i].vendor_err;
+-		resp->wc[i].byte_len 	   = wc[i].byte_len;
+-		resp->wc[i].ex.imm_data    = (__u32 __force) wc[i].ex.imm_data;
+-		resp->wc[i].qp_num 	   = wc[i].qp->qp_num;
+-		resp->wc[i].src_qp 	   = wc[i].src_qp;
+-		resp->wc[i].wc_flags 	   = wc[i].wc_flags;
+-		resp->wc[i].pkey_index 	   = wc[i].pkey_index;
+-		resp->wc[i].slid 	   = wc[i].slid;
+-		resp->wc[i].sl 		   = wc[i].sl;
+-		resp->wc[i].dlid_path_bits = wc[i].dlid_path_bits;
+-		resp->wc[i].port_num 	   = wc[i].port_num;
++		data_ptr += sizeof(struct ib_uverbs_wc);
++		++resp.count;
+ 	}
+ 
+-	if (copy_to_user((void __user *) (unsigned long) cmd.response, resp, rsize))
++	if (copy_to_user(header_ptr, &resp, sizeof resp)) {
+ 		ret = -EFAULT;
++		goto out_put;
++	}
+ 
+-out:
+-	kfree(resp);
++	ret = in_len;
+ 
+-out_wc:
+-	kfree(wc);
+-	return ret ? ret : in_len;
++out_put:
++	put_cq_read(cq);
++	return ret;
+ }
+ 
+ ssize_t ib_uverbs_req_notify_cq(struct ib_uverbs_file *file,
 
 
