@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302Ab1BFQqG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 11:46:06 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:42669 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752841Ab1BFQqE convert rfc822-to-8bit (ORCPT
+	id S1753289Ab1BFQrr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 11:47:47 -0500
+Received: from smtp-out-014.synserver.de ([212.40.185.14]:1565 "HELO
+	smtp-out-006.synserver.de" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with SMTP id S1752974Ab1BFQrq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 11:46:04 -0500
-Date: Sun, 6 Feb 2011 17:44:45 +0100
-From: Emmanuel Florac <eflorac@intellique.com>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: Stan Hoeppner <stan@hardwarefreak.com>,
-        "Dr. David Alan Gilbert" <linux@treblig.org>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-net@vger.kernel.org, Alan Piszcz <ap@solarrain.com>
-Subject: Re: Supermicro X8DTH-6: Only ~250MiB/s from RAID<->RAID over 10GbE?
-Message-ID: <20110206174445.19419b0f@galadriel2.home>
-In-Reply-To: <alpine.DEB.2.00.1102060817590.28109@p34.internal.lan>
-References: <alpine.DEB.2.00.1102051427360.8518@p34.internal.lan>
-	<20110205214550.3cb0f0d1@galadriel2.home>
-	<alpine.DEB.2.00.1102051553591.8518@p34.internal.lan>
-	<20110205220621.GB17347@gallifrey>
-	<alpine.DEB.2.00.1102051729010.8518@p34.internal.lan>
-	<alpine.DEB.2.00.1102051753100.8518@p34.internal.lan>
-	<4D4DE34E.7010308@hardwarefreak.com>
-	<alpine.DEB.2.00.1102051958370.28109@p34.internal.lan>
-	<4D4E127D.3060105@hardwarefreak.com>
-	<alpine.DEB.2.00.1102060515230.28109@p34.internal.lan>
-	<alpine.DEB.2.00.1102060817590.28109@p34.internal.lan>
-Organization: Intellique
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 6 Feb 2011 11:47:46 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 24265
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Rodolfo Giometti <giometti@linux.it>,
+        Grazvydas Ignotas <notasas@gmail.com>, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 01/14] POWER: bq27x00: Add type property
+Date: Sun,  6 Feb 2011 01:47:58 +0100
+Message-Id: <1296953291-10373-2-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1296953291-10373-1-git-send-email-lars@metafoo.de>
+References: <1296953291-10373-1-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le Sun, 6 Feb 2011 08:46:08 -0500 (EST) vous écriviez:
+This patch adds the type property to the bq27x00 battery driver.
+All bq27x00 are lithium ion batteries.
 
-> # for 3ware raid, use 16384 readahead, > 16384 readahead, no
-> improvement blockdev --setra 16384 /dev/sda
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ drivers/power/bq27x00_battery.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-Also try this :
-
-echo 512 > /sys/block/sda/queue/nr_requests
-
+diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
+index eff0273..bb043f9 100644
+--- a/drivers/power/bq27x00_battery.c
++++ b/drivers/power/bq27x00_battery.c
+@@ -78,6 +78,7 @@ static enum power_supply_property bq27x00_battery_props[] = {
+ 	POWER_SUPPLY_PROP_TIME_TO_EMPTY_NOW,
+ 	POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG,
+ 	POWER_SUPPLY_PROP_TIME_TO_FULL_NOW,
++	POWER_SUPPLY_PROP_TECHNOLOGY,
+ };
+ 
+ /*
+@@ -277,6 +278,9 @@ static int bq27x00_battery_get_property(struct power_supply *psy,
+ 	case POWER_SUPPLY_PROP_TIME_TO_FULL_NOW:
+ 		ret = bq27x00_battery_time(di, BQ27x00_REG_TTF, val);
+ 		break;
++	case POWER_SUPPLY_PROP_TECHNOLOGY:
++		val->intval = POWER_SUPPLY_TECHNOLOGY_LION;
++		break;
+ 	default:
+ 		return -EINVAL;
+ 	}
 -- 
-------------------------------------------------------------------------
-Emmanuel Florac     |   Direction technique
-                    |   Intellique
-                    |	<eflorac@intellique.com>
-                    |   +33 1 78 94 84 02
-------------------------------------------------------------------------
+1.7.2.3
+
