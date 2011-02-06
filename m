@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038Ab1BFUfh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 15:35:37 -0500
-Received: from void.printf.net ([89.145.121.20]:56165 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754016Ab1BFUf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 15:35:27 -0500
-Date: Sun, 6 Feb 2011 20:35:20 +0000
-From: Chris Ball <cjb@laptop.org>
-To: Pierre Tardy <pierre.tardy@intel.com>
-Cc: linux-pm@lists.linux-foundation.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/3] sdhci runtime_pm implementation using mmc clock
-	gating fw
-Message-ID: <20110206203520.GB23366@void.printf.net>
-References: <cover.1297014479.git.pierre.tardy@intel.com>
+	id S1754055Ab1BFUfv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 15:35:51 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:22084 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999Ab1BFUft (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 15:35:49 -0500
+Date: Sun, 6 Feb 2011 21:34:33 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+cc: "Struk, Tadeusz" <tadeusz.struk@intel.com>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Hoban, Adrian" <adrian.hoban@intel.com>,
+        "Paoloni, Gabriele" <gabriele.paoloni@intel.com>,
+        "O Mahony, Aidan" <aidan.o.mahony@intel.com>
+Subject: Re: [PATCH] rfc4106, Intel, AES-NI: Don't leak memory in
+ rfc4106_set_hash_subkey().
+In-Reply-To: <20110206203408.GA12426@gondor.apana.org.au>
+Message-ID: <alpine.LNX.2.00.1102062134150.13593@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1101161527440.8049@swampdragon.chaosbits.net> <24483BA4C9F69C43A7379639D35543D7C5398DB6@irsmsx502.ger.corp.intel.com> <alpine.LNX.2.00.1102062039080.13593@swampdragon.chaosbits.net> <20110206203408.GA12426@gondor.apana.org.au>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1297014479.git.pierre.tardy@intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pierre,
+On Mon, 7 Feb 2011, Herbert Xu wrote:
 
-On Sun, Feb 06, 2011 at 07:02:47PM +0100, Pierre Tardy wrote:
-> Please find a simple sdhci runtime_pm implementation
-> that uses clock gating fw as a tip to know when 
-> our chip is idle.
+> On Sun, Feb 06, 2011 at 08:43:22PM +0100, Jesper Juhl wrote:
+> > 
+> > Herbert: If Tadeusz agrees, could you please replace the patch you merged 
+> > with the one above?
 > 
-> Previous version was RFC and untested,
-> This version has been tested on intel medfield platform.
+> Please send an incremental patch.
 > 
-> Pierre Tardy (2):
->   mmc: put the led blinking code after clock ungating
->   sdhci:v2:use ios->clock to know when sdhci is idle
-> 
-> Yunpeng Gao (1):
->   sdhci-pci : Enable runtime PM support
-
-Thanks very much, pushed to mmc-next with Linus W's ACK.
+Sure thing. What would you like it based on exactly?
 
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Plain text mails only, please.
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+
