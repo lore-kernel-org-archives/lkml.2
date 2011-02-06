@@ -1,647 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438Ab1BFL12 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 06:27:28 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:55325 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750900Ab1BFL11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 06:27:27 -0500
-Date: Sun, 6 Feb 2011 12:27:05 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] perf fixes
-Message-ID: <20110206112705.GA26961@elte.hu>
+	id S1752510Ab1BFLiK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 06:38:10 -0500
+Received: from mail-pz0-f66.google.com ([209.85.210.66]:40183 "EHLO
+	mail-pz0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751898Ab1BFLiH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 06:38:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:mail-followup-to
+         :references:mime-version:content-type:content-disposition
+         :content-transfer-encoding:in-reply-to:user-agent;
+        b=BB9Zqx7sXNW0i603ONbPh18dqqRZf4HUycgqzgOMnN4xSpZX6Tm0zJC8TwdonjQIwK
+         rnYXA6+sm5v4n/nGPNQ20PY94uO3vr+iZPwnbVmyHvC4CUwWgHIibWm6suHe5tNGbGYP
+         e7fwE49WQNdcSY/TJIP1IXeENvd7qywMDj7g8=
+Date: Sun, 6 Feb 2011 19:37:49 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org
+Subject: Re: Fwd: [PATCH]Translated
+ linux-2.6/Documentation/SubmittingChecklist into Chinese
+Message-ID: <20110206113747.GA2599@gmail.com>
+Reply-To: gregkh@suse.de
+Mail-Followup-To: linux-kernel@vger.kernel.org,
+	torvalds@linux-foundation.org
+References: <20110205045940.GB2531@gmail.com>
+ <AANLkTinFAT5e+JxeCC1H=6=Kgy6tSZwo8URDJx8WdmBC@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=gb2312
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinFAT5e+JxeCC1H=6=Kgy6tSZwo8URDJx8WdmBC@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Hi us,
+     The following patcher is given yesterday. I wonder if it is ok now.
+     After other patchers mailed to greg and gregkh, LKML, i would get a mail from gregkh, which said patchers were ok. But I don't get a mail from them about this patcher.
+     I think our maintainers should give every patcher a response that if it is ok or not on time. if it is not ok, maintainer should give some advice and come up with the mistakes in the patchers. Then we can correct them and keep on patching to kernel.
+     Maybe What i said is unreliable, however we can discuss and then get 
+a proper way to solve this problem.
 
-Please pull the latest perf-fixes-for-linus git tree from:
+Thanks.
+Best Regards.
+Harry Wei.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-fixes-for-linus
-
- Thanks,
-
-	Ingo
-
------------------->
-Arnaldo Carvalho de Melo (1):
-      perf stat: Fix aggreate counter reading accounting
-
-Mathieu Desnoyers (1):
-      tracepoints: Fix section alignment using pointer array
-
-Steven Rostedt (2):
-      tracing: Replace trace_event struct array with pointer array
-      tracing: Replace syscall_meta_data struct array with pointer array
-
-
- include/asm-generic/vmlinux.lds.h |   24 ++++++++++++------------
- include/linux/module.h            |    4 ++--
- include/linux/syscalls.h          |   28 +++++++++++++++-------------
- include/linux/tracepoint.h        |   35 ++++++++++++++++++++---------------
- include/trace/ftrace.h            |   24 +++++++++++++-----------
- kernel/module.c                   |   16 ++++++++--------
- kernel/trace/trace_events.c       |   12 ++++++------
- kernel/trace/trace_export.c       |    6 +++---
- kernel/trace/trace_syscalls.c     |   19 ++++++++++---------
- kernel/tracepoint.c               |   31 ++++++++++++++++---------------
- tools/perf/util/evsel.c           |    2 +-
- 11 files changed, 106 insertions(+), 95 deletions(-)
-
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index 6ebb810..fe77e33 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -124,7 +124,8 @@
- #endif
- 
- #ifdef CONFIG_EVENT_TRACING
--#define FTRACE_EVENTS()	VMLINUX_SYMBOL(__start_ftrace_events) = .;	\
-+#define FTRACE_EVENTS()	. = ALIGN(8);					\
-+			VMLINUX_SYMBOL(__start_ftrace_events) = .;	\
- 			*(_ftrace_events)				\
- 			VMLINUX_SYMBOL(__stop_ftrace_events) = .;
- #else
-@@ -140,7 +141,8 @@
- #endif
- 
- #ifdef CONFIG_FTRACE_SYSCALLS
--#define TRACE_SYSCALLS() VMLINUX_SYMBOL(__start_syscalls_metadata) = .;	\
-+#define TRACE_SYSCALLS() . = ALIGN(8);					\
-+			 VMLINUX_SYMBOL(__start_syscalls_metadata) = .;	\
- 			 *(__syscalls_metadata)				\
- 			 VMLINUX_SYMBOL(__stop_syscalls_metadata) = .;
- #else
-@@ -165,10 +167,8 @@
- 	CPU_KEEP(exit.data)						\
- 	MEM_KEEP(init.data)						\
- 	MEM_KEEP(exit.data)						\
--	. = ALIGN(32);							\
--	VMLINUX_SYMBOL(__start___tracepoints) = .;			\
-+	STRUCT_ALIGN();							\
- 	*(__tracepoints)						\
--	VMLINUX_SYMBOL(__stop___tracepoints) = .;			\
- 	/* implement dynamic printk debug */				\
- 	. = ALIGN(8);							\
- 	VMLINUX_SYMBOL(__start___verbose) = .;                          \
-@@ -176,13 +176,7 @@
- 	VMLINUX_SYMBOL(__stop___verbose) = .;				\
- 	LIKELY_PROFILE()		       				\
- 	BRANCH_PROFILE()						\
--	TRACE_PRINTKS()							\
--									\
--	STRUCT_ALIGN();							\
--	FTRACE_EVENTS()							\
--									\
--	STRUCT_ALIGN();							\
--	TRACE_SYSCALLS()
-+	TRACE_PRINTKS()
- 
- /*
-  * Data section helpers
-@@ -220,6 +214,10 @@
- 		VMLINUX_SYMBOL(__start_rodata) = .;			\
- 		*(.rodata) *(.rodata.*)					\
- 		*(__vermagic)		/* Kernel version magic */	\
-+		. = ALIGN(8);						\
-+		VMLINUX_SYMBOL(__start___tracepoints_ptrs) = .;		\
-+		*(__tracepoints_ptrs)	/* Tracepoints: pointer array */\
-+		VMLINUX_SYMBOL(__stop___tracepoints_ptrs) = .;		\
- 		*(__markers_strings)	/* Markers: strings */		\
- 		*(__tracepoints_strings)/* Tracepoints: strings */	\
- 	}								\
-@@ -482,6 +480,8 @@
- 	KERNEL_CTORS()							\
- 	*(.init.rodata)							\
- 	MCOUNT_REC()							\
-+	FTRACE_EVENTS()							\
-+	TRACE_SYSCALLS()						\
- 	DEV_DISCARD(init.rodata)					\
- 	CPU_DISCARD(init.rodata)					\
- 	MEM_DISCARD(init.rodata)					\
-diff --git a/include/linux/module.h b/include/linux/module.h
-index e7c6385..9bdf27c 100644
---- a/include/linux/module.h
-+++ b/include/linux/module.h
-@@ -377,7 +377,7 @@ struct module
- 	   keeping pointers to this stuff */
- 	char *args;
- #ifdef CONFIG_TRACEPOINTS
--	struct tracepoint *tracepoints;
-+	struct tracepoint * const *tracepoints_ptrs;
- 	unsigned int num_tracepoints;
- #endif
- #ifdef HAVE_JUMP_LABEL
-@@ -389,7 +389,7 @@ struct module
- 	unsigned int num_trace_bprintk_fmt;
- #endif
- #ifdef CONFIG_EVENT_TRACING
--	struct ftrace_event_call *trace_events;
-+	struct ftrace_event_call **trace_events;
- 	unsigned int num_trace_events;
- #endif
- #ifdef CONFIG_FTRACE_MCOUNT_RECORD
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 18cd068..98664db 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -125,39 +125,37 @@ extern struct trace_event_functions enter_syscall_print_funcs;
- extern struct trace_event_functions exit_syscall_print_funcs;
- 
- #define SYSCALL_TRACE_ENTER_EVENT(sname)				\
--	static struct syscall_metadata					\
--	__attribute__((__aligned__(4))) __syscall_meta_##sname;		\
-+	static struct syscall_metadata __syscall_meta_##sname;		\
- 	static struct ftrace_event_call __used				\
--	  __attribute__((__aligned__(4)))				\
--	  __attribute__((section("_ftrace_events")))			\
- 	  event_enter_##sname = {					\
- 		.name                   = "sys_enter"#sname,		\
- 		.class			= &event_class_syscall_enter,	\
- 		.event.funcs            = &enter_syscall_print_funcs,	\
- 		.data			= (void *)&__syscall_meta_##sname,\
- 	};								\
-+	static struct ftrace_event_call __used				\
-+	  __attribute__((section("_ftrace_events")))			\
-+	 *__event_enter_##sname = &event_enter_##sname;			\
- 	__TRACE_EVENT_FLAGS(enter_##sname, TRACE_EVENT_FL_CAP_ANY)
- 
- #define SYSCALL_TRACE_EXIT_EVENT(sname)					\
--	static struct syscall_metadata					\
--	__attribute__((__aligned__(4))) __syscall_meta_##sname;		\
-+	static struct syscall_metadata __syscall_meta_##sname;		\
- 	static struct ftrace_event_call __used				\
--	  __attribute__((__aligned__(4)))				\
--	  __attribute__((section("_ftrace_events")))			\
- 	  event_exit_##sname = {					\
- 		.name                   = "sys_exit"#sname,		\
- 		.class			= &event_class_syscall_exit,	\
- 		.event.funcs		= &exit_syscall_print_funcs,	\
- 		.data			= (void *)&__syscall_meta_##sname,\
- 	};								\
-+	static struct ftrace_event_call __used				\
-+	  __attribute__((section("_ftrace_events")))			\
-+	*__event_exit_##sname = &event_exit_##sname;			\
- 	__TRACE_EVENT_FLAGS(exit_##sname, TRACE_EVENT_FL_CAP_ANY)
- 
- #define SYSCALL_METADATA(sname, nb)				\
- 	SYSCALL_TRACE_ENTER_EVENT(sname);			\
- 	SYSCALL_TRACE_EXIT_EVENT(sname);			\
- 	static struct syscall_metadata __used			\
--	  __attribute__((__aligned__(4)))			\
--	  __attribute__((section("__syscalls_metadata")))	\
- 	  __syscall_meta_##sname = {				\
- 		.name 		= "sys"#sname,			\
- 		.nb_args 	= nb,				\
-@@ -166,14 +164,15 @@ extern struct trace_event_functions exit_syscall_print_funcs;
- 		.enter_event	= &event_enter_##sname,		\
- 		.exit_event	= &event_exit_##sname,		\
- 		.enter_fields	= LIST_HEAD_INIT(__syscall_meta_##sname.enter_fields), \
--	};
-+	};							\
-+	static struct syscall_metadata __used			\
-+	  __attribute__((section("__syscalls_metadata")))	\
-+	 *__p_syscall_meta_##sname = &__syscall_meta_##sname;
- 
- #define SYSCALL_DEFINE0(sname)					\
- 	SYSCALL_TRACE_ENTER_EVENT(_##sname);			\
- 	SYSCALL_TRACE_EXIT_EVENT(_##sname);			\
- 	static struct syscall_metadata __used			\
--	  __attribute__((__aligned__(4)))			\
--	  __attribute__((section("__syscalls_metadata")))	\
- 	  __syscall_meta__##sname = {				\
- 		.name 		= "sys_"#sname,			\
- 		.nb_args 	= 0,				\
-@@ -181,6 +180,9 @@ extern struct trace_event_functions exit_syscall_print_funcs;
- 		.exit_event	= &event_exit__##sname,		\
- 		.enter_fields	= LIST_HEAD_INIT(__syscall_meta__##sname.enter_fields), \
- 	};							\
-+	static struct syscall_metadata __used			\
-+	  __attribute__((section("__syscalls_metadata")))	\
-+	 *__p_syscall_meta_##sname = &__syscall_meta__##sname;	\
- 	asmlinkage long sys_##sname(void)
- #else
- #define SYSCALL_DEFINE0(name)	   asmlinkage long sys_##name(void)
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index c681461..97c84a5 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -33,12 +33,7 @@ struct tracepoint {
- 	void (*regfunc)(void);
- 	void (*unregfunc)(void);
- 	struct tracepoint_func __rcu *funcs;
--} __attribute__((aligned(32)));		/*
--					 * Aligned on 32 bytes because it is
--					 * globally visible and gcc happily
--					 * align these on the structure size.
--					 * Keep in sync with vmlinux.lds.h.
--					 */
-+};
- 
- /*
-  * Connect a probe to a tracepoint.
-@@ -61,15 +56,15 @@ extern void tracepoint_probe_update_all(void);
- 
- struct tracepoint_iter {
- 	struct module *module;
--	struct tracepoint *tracepoint;
-+	struct tracepoint * const *tracepoint;
- };
- 
- extern void tracepoint_iter_start(struct tracepoint_iter *iter);
- extern void tracepoint_iter_next(struct tracepoint_iter *iter);
- extern void tracepoint_iter_stop(struct tracepoint_iter *iter);
- extern void tracepoint_iter_reset(struct tracepoint_iter *iter);
--extern int tracepoint_get_iter_range(struct tracepoint **tracepoint,
--	struct tracepoint *begin, struct tracepoint *end);
-+extern int tracepoint_get_iter_range(struct tracepoint * const **tracepoint,
-+	struct tracepoint * const *begin, struct tracepoint * const *end);
- 
- /*
-  * tracepoint_synchronize_unregister must be called between the last tracepoint
-@@ -84,11 +79,13 @@ static inline void tracepoint_synchronize_unregister(void)
- #define PARAMS(args...) args
- 
- #ifdef CONFIG_TRACEPOINTS
--extern void tracepoint_update_probe_range(struct tracepoint *begin,
--	struct tracepoint *end);
-+extern
-+void tracepoint_update_probe_range(struct tracepoint * const *begin,
-+	struct tracepoint * const *end);
- #else
--static inline void tracepoint_update_probe_range(struct tracepoint *begin,
--	struct tracepoint *end)
-+static inline
-+void tracepoint_update_probe_range(struct tracepoint * const *begin,
-+	struct tracepoint * const *end)
- { }
- #endif /* CONFIG_TRACEPOINTS */
- 
-@@ -174,12 +171,20 @@ do_trace:								\
- 	{								\
- 	}
- 
-+/*
-+ * We have no guarantee that gcc and the linker won't up-align the tracepoint
-+ * structures, so we create an array of pointers that will be used for iteration
-+ * on the tracepoints.
-+ */
- #define DEFINE_TRACE_FN(name, reg, unreg)				\
- 	static const char __tpstrtab_##name[]				\
- 	__attribute__((section("__tracepoints_strings"))) = #name;	\
- 	struct tracepoint __tracepoint_##name				\
--	__attribute__((section("__tracepoints"), aligned(32))) =	\
--		{ __tpstrtab_##name, 0, reg, unreg, NULL }
-+	__attribute__((section("__tracepoints"))) =			\
-+		{ __tpstrtab_##name, 0, reg, unreg, NULL };		\
-+	static struct tracepoint * const __tracepoint_ptr_##name __used	\
-+	__attribute__((section("__tracepoints_ptrs"))) =		\
-+		&__tracepoint_##name;
- 
- #define DEFINE_TRACE(name)						\
- 	DEFINE_TRACE_FN(name, NULL, NULL);
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index e16610c..3e68366 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -446,14 +446,16 @@ static inline notrace int ftrace_get_offsets_##call(			\
-  *	.reg			= ftrace_event_reg,
-  * };
-  *
-- * static struct ftrace_event_call __used
-- * __attribute__((__aligned__(4)))
-- * __attribute__((section("_ftrace_events"))) event_<call> = {
-+ * static struct ftrace_event_call event_<call> = {
-  *	.name			= "<call>",
-  *	.class			= event_class_<template>,
-  *	.event			= &ftrace_event_type_<call>,
-  *	.print_fmt		= print_fmt_<call>,
-  * };
-+ * // its only safe to use pointers when doing linker tricks to
-+ * // create an array.
-+ * static struct ftrace_event_call __used
-+ * __attribute__((section("_ftrace_events"))) *__event_<call> = &event_<call>;
-  *
-  */
- 
-@@ -579,28 +581,28 @@ static struct ftrace_event_class __used event_class_##call = {		\
- #undef DEFINE_EVENT
- #define DEFINE_EVENT(template, call, proto, args)			\
- 									\
--static struct ftrace_event_call __used					\
--__attribute__((__aligned__(4)))						\
--__attribute__((section("_ftrace_events"))) event_##call = {		\
-+static struct ftrace_event_call __used event_##call = {			\
- 	.name			= #call,				\
- 	.class			= &event_class_##template,		\
- 	.event.funcs		= &ftrace_event_type_funcs_##template,	\
- 	.print_fmt		= print_fmt_##template,			\
--};
-+};									\
-+static struct ftrace_event_call __used					\
-+__attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
- 
- #undef DEFINE_EVENT_PRINT
- #define DEFINE_EVENT_PRINT(template, call, proto, args, print)		\
- 									\
- static const char print_fmt_##call[] = print;				\
- 									\
--static struct ftrace_event_call __used					\
--__attribute__((__aligned__(4)))						\
--__attribute__((section("_ftrace_events"))) event_##call = {		\
-+static struct ftrace_event_call __used event_##call = {			\
- 	.name			= #call,				\
- 	.class			= &event_class_##template,		\
- 	.event.funcs		= &ftrace_event_type_funcs_##call,	\
- 	.print_fmt		= print_fmt_##call,			\
--}
-+};									\
-+static struct ftrace_event_call __used					\
-+__attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
- 
- #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
- 
-diff --git a/kernel/module.c b/kernel/module.c
-index 34e00b7..efa290e 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2460,9 +2460,9 @@ static void find_module_sections(struct module *mod, struct load_info *info)
- #endif
- 
- #ifdef CONFIG_TRACEPOINTS
--	mod->tracepoints = section_objs(info, "__tracepoints",
--					sizeof(*mod->tracepoints),
--					&mod->num_tracepoints);
-+	mod->tracepoints_ptrs = section_objs(info, "__tracepoints_ptrs",
-+					     sizeof(*mod->tracepoints_ptrs),
-+					     &mod->num_tracepoints);
- #endif
- #ifdef HAVE_JUMP_LABEL
- 	mod->jump_entries = section_objs(info, "__jump_table",
-@@ -3393,7 +3393,7 @@ void module_layout(struct module *mod,
- 		   struct modversion_info *ver,
- 		   struct kernel_param *kp,
- 		   struct kernel_symbol *ks,
--		   struct tracepoint *tp)
-+		   struct tracepoint * const *tp)
- {
- }
- EXPORT_SYMBOL(module_layout);
-@@ -3407,8 +3407,8 @@ void module_update_tracepoints(void)
- 	mutex_lock(&module_mutex);
- 	list_for_each_entry(mod, &modules, list)
- 		if (!mod->taints)
--			tracepoint_update_probe_range(mod->tracepoints,
--				mod->tracepoints + mod->num_tracepoints);
-+			tracepoint_update_probe_range(mod->tracepoints_ptrs,
-+				mod->tracepoints_ptrs + mod->num_tracepoints);
- 	mutex_unlock(&module_mutex);
- }
- 
-@@ -3432,8 +3432,8 @@ int module_get_iter_tracepoints(struct tracepoint_iter *iter)
- 			else if (iter_mod > iter->module)
- 				iter->tracepoint = NULL;
- 			found = tracepoint_get_iter_range(&iter->tracepoint,
--				iter_mod->tracepoints,
--				iter_mod->tracepoints
-+				iter_mod->tracepoints_ptrs,
-+				iter_mod->tracepoints_ptrs
- 					+ iter_mod->num_tracepoints);
- 			if (found) {
- 				iter->module = iter_mod;
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 35fde09..5f499e0 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1284,7 +1284,7 @@ trace_create_file_ops(struct module *mod)
- static void trace_module_add_events(struct module *mod)
- {
- 	struct ftrace_module_file_ops *file_ops = NULL;
--	struct ftrace_event_call *call, *start, *end;
-+	struct ftrace_event_call **call, **start, **end;
- 
- 	start = mod->trace_events;
- 	end = mod->trace_events + mod->num_trace_events;
-@@ -1297,7 +1297,7 @@ static void trace_module_add_events(struct module *mod)
- 		return;
- 
- 	for_each_event(call, start, end) {
--		__trace_add_event_call(call, mod,
-+		__trace_add_event_call(*call, mod,
- 				       &file_ops->id, &file_ops->enable,
- 				       &file_ops->filter, &file_ops->format);
- 	}
-@@ -1367,8 +1367,8 @@ static struct notifier_block trace_module_nb = {
- 	.priority = 0,
- };
- 
--extern struct ftrace_event_call __start_ftrace_events[];
--extern struct ftrace_event_call __stop_ftrace_events[];
-+extern struct ftrace_event_call *__start_ftrace_events[];
-+extern struct ftrace_event_call *__stop_ftrace_events[];
- 
- static char bootup_event_buf[COMMAND_LINE_SIZE] __initdata;
- 
-@@ -1384,7 +1384,7 @@ __setup("trace_event=", setup_trace_event);
- 
- static __init int event_trace_init(void)
- {
--	struct ftrace_event_call *call;
-+	struct ftrace_event_call **call;
- 	struct dentry *d_tracer;
- 	struct dentry *entry;
- 	struct dentry *d_events;
-@@ -1430,7 +1430,7 @@ static __init int event_trace_init(void)
- 		pr_warning("tracing: Failed to allocate common fields");
- 
- 	for_each_event(call, __start_ftrace_events, __stop_ftrace_events) {
--		__trace_add_event_call(call, NULL, &ftrace_event_id_fops,
-+		__trace_add_event_call(*call, NULL, &ftrace_event_id_fops,
- 				       &ftrace_enable_fops,
- 				       &ftrace_event_filter_fops,
- 				       &ftrace_event_format_fops);
-diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
-index 4b74d71..bbeec31 100644
---- a/kernel/trace/trace_export.c
-+++ b/kernel/trace/trace_export.c
-@@ -161,13 +161,13 @@ struct ftrace_event_class event_class_ftrace_##call = {			\
- 	.fields			= LIST_HEAD_INIT(event_class_ftrace_##call.fields),\
- };									\
- 									\
--struct ftrace_event_call __used						\
--__attribute__((__aligned__(4)))						\
--__attribute__((section("_ftrace_events"))) event_##call = {		\
-+struct ftrace_event_call __used event_##call = {			\
- 	.name			= #call,				\
- 	.event.type		= etype,				\
- 	.class			= &event_class_ftrace_##call,		\
- 	.print_fmt		= print,				\
- };									\
-+struct ftrace_event_call __used						\
-+__attribute__((section("_ftrace_events"))) *__event_##call = &event_##call;
- 
- #include "trace_entries.h"
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index b706529..5c9fe08 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -55,20 +55,21 @@ struct ftrace_event_class event_class_syscall_exit = {
- 	.raw_init	= init_syscall_trace,
- };
- 
--extern unsigned long __start_syscalls_metadata[];
--extern unsigned long __stop_syscalls_metadata[];
-+extern struct syscall_metadata *__start_syscalls_metadata[];
-+extern struct syscall_metadata *__stop_syscalls_metadata[];
- 
- static struct syscall_metadata **syscalls_metadata;
- 
--static struct syscall_metadata *find_syscall_meta(unsigned long syscall)
-+static __init struct syscall_metadata *
-+find_syscall_meta(unsigned long syscall)
- {
--	struct syscall_metadata *start;
--	struct syscall_metadata *stop;
-+	struct syscall_metadata **start;
-+	struct syscall_metadata **stop;
- 	char str[KSYM_SYMBOL_LEN];
- 
- 
--	start = (struct syscall_metadata *)__start_syscalls_metadata;
--	stop = (struct syscall_metadata *)__stop_syscalls_metadata;
-+	start = __start_syscalls_metadata;
-+	stop = __stop_syscalls_metadata;
- 	kallsyms_lookup(syscall, NULL, NULL, NULL, str);
- 
- 	for ( ; start < stop; start++) {
-@@ -78,8 +79,8 @@ static struct syscall_metadata *find_syscall_meta(unsigned long syscall)
- 		 * with "SyS" instead of "sys", leading to an unwanted
- 		 * mismatch.
- 		 */
--		if (start->name && !strcmp(start->name + 3, str + 3))
--			return start;
-+		if ((*start)->name && !strcmp((*start)->name + 3, str + 3))
-+			return *start;
- 	}
- 	return NULL;
- }
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index e95ee7f..68187af 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -27,8 +27,8 @@
- #include <linux/sched.h>
- #include <linux/jump_label.h>
- 
--extern struct tracepoint __start___tracepoints[];
--extern struct tracepoint __stop___tracepoints[];
-+extern struct tracepoint * const __start___tracepoints_ptrs[];
-+extern struct tracepoint * const __stop___tracepoints_ptrs[];
- 
- /* Set to 1 to enable tracepoint debug output */
- static const int tracepoint_debug;
-@@ -298,10 +298,10 @@ static void disable_tracepoint(struct tracepoint *elem)
-  *
-  * Updates the probe callback corresponding to a range of tracepoints.
-  */
--void
--tracepoint_update_probe_range(struct tracepoint *begin, struct tracepoint *end)
-+void tracepoint_update_probe_range(struct tracepoint * const *begin,
-+				   struct tracepoint * const *end)
- {
--	struct tracepoint *iter;
-+	struct tracepoint * const *iter;
- 	struct tracepoint_entry *mark_entry;
- 
- 	if (!begin)
-@@ -309,12 +309,12 @@ tracepoint_update_probe_range(struct tracepoint *begin, struct tracepoint *end)
- 
- 	mutex_lock(&tracepoints_mutex);
- 	for (iter = begin; iter < end; iter++) {
--		mark_entry = get_tracepoint(iter->name);
-+		mark_entry = get_tracepoint((*iter)->name);
- 		if (mark_entry) {
--			set_tracepoint(&mark_entry, iter,
-+			set_tracepoint(&mark_entry, *iter,
- 					!!mark_entry->refcount);
- 		} else {
--			disable_tracepoint(iter);
-+			disable_tracepoint(*iter);
- 		}
- 	}
- 	mutex_unlock(&tracepoints_mutex);
-@@ -326,8 +326,8 @@ tracepoint_update_probe_range(struct tracepoint *begin, struct tracepoint *end)
- static void tracepoint_update_probes(void)
- {
- 	/* Core kernel tracepoints */
--	tracepoint_update_probe_range(__start___tracepoints,
--		__stop___tracepoints);
-+	tracepoint_update_probe_range(__start___tracepoints_ptrs,
-+		__stop___tracepoints_ptrs);
- 	/* tracepoints in modules. */
- 	module_update_tracepoints();
- }
-@@ -514,8 +514,8 @@ EXPORT_SYMBOL_GPL(tracepoint_probe_update_all);
-  * Will return the first tracepoint in the range if the input tracepoint is
-  * NULL.
-  */
--int tracepoint_get_iter_range(struct tracepoint **tracepoint,
--	struct tracepoint *begin, struct tracepoint *end)
-+int tracepoint_get_iter_range(struct tracepoint * const **tracepoint,
-+	struct tracepoint * const *begin, struct tracepoint * const *end)
- {
- 	if (!*tracepoint && begin != end) {
- 		*tracepoint = begin;
-@@ -534,7 +534,8 @@ static void tracepoint_get_iter(struct tracepoint_iter *iter)
- 	/* Core kernel tracepoints */
- 	if (!iter->module) {
- 		found = tracepoint_get_iter_range(&iter->tracepoint,
--				__start___tracepoints, __stop___tracepoints);
-+				__start___tracepoints_ptrs,
-+				__stop___tracepoints_ptrs);
- 		if (found)
- 			goto end;
- 	}
-@@ -585,8 +586,8 @@ int tracepoint_module_notify(struct notifier_block *self,
- 	switch (val) {
- 	case MODULE_STATE_COMING:
- 	case MODULE_STATE_GOING:
--		tracepoint_update_probe_range(mod->tracepoints,
--			mod->tracepoints + mod->num_tracepoints);
-+		tracepoint_update_probe_range(mod->tracepoints_ptrs,
-+			mod->tracepoints_ptrs + mod->num_tracepoints);
- 		break;
- 	}
- 	return 0;
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index f5cfed6..d8575d3 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -90,7 +90,7 @@ int __perf_evsel__read(struct perf_evsel *evsel,
- 	int cpu, thread;
- 	struct perf_counts_values *aggr = &evsel->counts->aggr, count;
- 
--	aggr->val = 0;
-+	aggr->val = aggr->ena = aggr->run = 0;
- 
- 	for (cpu = 0; cpu < ncpus; cpu++) {
- 		for (thread = 0; thread < nthreads; thread++) {
+On Sun, Feb 06, 2011 at 06:03:14PM +0800, harryxiyou wrote:
+> ---------- 已转发邮件 ----------
+> 发件人： Harry Wei <harryxiyou@gmail.com>
+> 日期： 2011年2月5日 下午12:59
+> 主题： [PATCH]Translated linux-2.6/Documentation/SubmittingChecklist into
+> Chinese
+> 收件人： linux-kernel@vger.kernel.org
+> 抄送： gregkh@suse.de
+> 
+> 
+> Hi us,
+>     I have translated linux-2.6/Documentation/SubmittingChecklist into
+> Chinese. This patch can add translated file(SubmittingChecklist) under
+> linux-2.6/Documentation/zh_CN/.
+>     Thanks.
+> 
+>     Best Regards.
+>     Harry Wei.
+> 
+> Signed-off-by: Harry Wei(harryxiyou@gmail.com)
+> ---
+>  Documentation/zh_CN/SubmitChecklist |  109
+> +++++++++++++++++++++++++++++++++++
+>  1 files changed, 109 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/zh_CN/SubmitChecklist
+> 
+> diff --git a/Documentation/zh_CN/SubmitChecklist
+> b/Documentation/zh_CN/SubmitChecklist
+> new file mode 100644
+> index 0000000..1328483
+> --- /dev/null
+> +++ b/Documentation/zh_CN/SubmitChecklist
+> @@ -0,0 +1,109 @@
+> +Chinese translated version of Documentation/SubmitChecklist
+> +
+> +If you have any comment or update to the content, please contact the
+> +original document maintainer directly.  However, if you have a problem
+> +communicating in English you can also ask the Chinese maintainer for
+> +help.  Contact the Chinese maintainer if this translation is outdated
+> +or if there is a problem with the translation.
+> +
+> +Chinese maintainer: Harry Wei <harryxiyou@gmail.com>
+> +---------------------------------------------------------------------
+> +Documentation/SubmitChecklist 的中文翻译
+> +
+> +如果想评论或更新本文的内容，请直接联系原文档的维护者。如果你使用英文
+> +交流有困难的话，也可以向中文版维护者求助。如果本翻译更新不及时或者翻
+> +译存在问题，请联系中文版维护者。
+> +
+> +中文版维护者： 贾威威 Harry Wei <harryxiyou@gmail.com>
+> +中文版翻译者： 贾威威 Harry Wei <harryxiyou@gmail.com>
+> +中文版校译者： 贾威威 Harry Wei <harryxiyou@gmail.com>
+> +
+> +
+> +以下为正文
+> +---------------------------------------------------------------------
+> +Linux内核提交清单
+> +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> +
+> +这里有一些内核开发者应该做的基本事情，如果他们想看到自己的内核补丁提交
+> +被接受的更快。
+> +
+> +这些都是超出Documentation/SubmittingPatches文档里所提供的以及其他
+> +关于提交Linux内核补丁的说明。
+> +
+> +1：如果你使用了一个功能那么就#include定义/声明那个功能的那个文件。
+> +   不要依靠其他间接引入定义/声明那个功能的头文件。
+> +
+> +2：构建简洁适用或者更改CONFIG选项 =y，=m，或者=n。
+> +   不要有编译警告/错误， 不要有链接警告/错误。
+> +
+> +2b：通过 allnoconfig, allmodconfig
+> +
+> +2c：当使用 0=builddir 成功地构建
+> +
+> +3：通过使用本地交叉编译工具或者其他一些构建产所，在多CPU框架上构建。
+> +
+> +4：ppc64 是一个很好的检查交叉编译的框架，因为它往往把‘unsigned long’
+> +   当64位值来使用。
+> +
+> +5：按照Documentation/CodingStyle文件里的详细描述，检查你补丁的整体风格。
+> +   使用补丁风格检查琐碎的违规(scripts/checkpatch.pl)，审核员优先提交。
+> +   你应该调整遗留在你补丁中的所有违规。
+> +
+> +6：任何更新或者改动CONFIG选项都不能打乱配置菜单。
+> +
+> +7：所有的Kconfig选项更新都要有说明文字。
+> +
+> +8：已经认真地总结了相关的Kconfig组合。这是很难通过测试做好的--脑力在这里下降。
+> +
+> +9：检查具有简洁性。
+> +
+> +10：使用'make checkstack'和'make namespacecheck'检查，然后修改所找到的问题。
+> +    注意：堆栈检查不会明确地出现问题，但是任何的一个函数在堆栈上使用多于512字节
+> +    都要准备修改。
+> +
+> +11：包含kernel-doc到全局内核APIs文件。（不要求静态的函数，但是包含也无所谓。）
+> +    使用'make htmldocs'或者'make mandocs'来检查kernel-doc，然后修改任何
+> +    发现的问题。
+> +
+> +12：已经通过CONFIG_PREEMPT, CONFIG_DEBUG_PREEMPT,
+> +    CONFIG_DEBUG_SLAB, CONFIG_DEBUG_PAGEALLOC, CONFIG_DEBUG_MUTEXES,
+> +    CONFIG_DEBUG_SPINLOCK, CONFIG_DEBUG_SPINLOCK_SLEEP测试，并且同时都
+> +    使能。
+> +
+> +13：已经都构建并且使用或者不使用 CONFIG_SMP 和 CONFIG_PREEMPT测试执行时间。
+> +
+> +14：如果补丁影响IO/Disk，等等：已经通过使用或者不使用 CONFIG_LBDAF 测试。
+> +
+> +15：所有的codepaths已经行使所有lockdep启用功能。
+> +
+> +16：所有的/proc记录更新都要作成文件放在Documentation/目录下。
+> +
+> +17：所有的内核启动参数更新都被记录到Documentation/kernel-parameters.txt文件中。
+> +
+> +18：所有的模块参数更新都用MODULE_PARM_DESC()记录。
+> +
+> +19：所有的用户空间接口更新都被记录到Documentation/ABI/。查看Documentation/ABI/README
+> +    可以获得更多的信息。改变用户空间接口的补丁应该被邮件抄送给linux-api@vger.kernel.org。
+> +
+> +20：检查它是不是都通过`make headers_check'。
+> +
+> +21：已经通过至少引入slab和page-allocation失败检查。查看Documentation/fault-injection/。
+> +
+> +22：新加入的源码已经通过`gcc -W'（使用"make EXTRA_CFLAGS=-W"）编译。这样将产生很多烦恼，
+> +    但是对于寻找漏洞很有益处，例如:"warning: comparison between signed and unsigned"。
+> +
+> +23：当它被合并到-mm补丁集后再测试，用来确定它是否还和补丁队列中的其他补丁一起工作以及在VM，VFS
+> +    和其他子系统中各个变化。
+> +
+> +24：所有的内存屏障{e.g., barrier(), rmb(), wmb()}需要在源代码中的一个注释来解释他们都是干什么的
+> +    以及原因。
+> +
+> +25：如果有任何输入输出控制的补丁被添加，也要更新Documentation/ioctl/ioctl-number.txt。
+> +
+> +26：如果你的更改代码依靠或者使用任何的内核APIs或者与下面的kconfig符号有关系的功能，你就要
+> +    使用相关的kconfig符号关闭， and/or =m（如果选项提供）[在同一时间不是所用的都启用，仅仅各个或者自由
+> +    组合他们]：
+> +
+> +    CONFIG_SMP, CONFIG_SYSFS, CONFIG_PROC_FS, CONFIG_INPUT, CONFIG_PCI,
+> +    CONFIG_BLOCK, CONFIG_PM, CONFIG_HOTPLUG, CONFIG_MAGIC_SYSRQ,
+> +    CONFIG_NET, CONFIG_INET=n (后一个使用 CONFIG_NET=y)
+> --
+> 1.7.0.4
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> -- 
+> Best Regards.
+> Harry Wei.
+> Do what u like!
