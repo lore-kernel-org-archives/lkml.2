@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752988Ab1BFPRQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 10:17:16 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:35841 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752868Ab1BFPRO (ORCPT
+	id S1753077Ab1BFPTk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 10:19:40 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53236 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752164Ab1BFPTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 10:17:14 -0500
+	Sun, 6 Feb 2011 10:19:39 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=j+RMlfItM4O43prjeMnVh528gH2Y1gOKarxsinOcXFC9OoPw7HgD6Tq+5F0Fktd64V
-         Vq9rIx0cUam78NUJ8pBeDulsdk6hrfUb6GqqXi5v2iuvu6Vm7coQLZiQgyxvl4gChOcq
-         JxoeaQ/qBv4ZQbuZNbBuFp4fpySoIUxqTFtto=
-Subject: Re: [PATCH 20/20] fs: ubifs: world-writable debugfs dump_* files
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: linux-kernel@vger.kernel.org, security@kernel.org,
-        Adrian Hunter <adrian.hunter@nokia.com>, linux-mtd@lists.infradead.org
-In-Reply-To: <cd575609cc07581a71ba925308d9d69c6e0c6d79.1296818921.git.segoon@openwall.com>
-References: <cover.1296818921.git.segoon@openwall.com>
-	 <cd575609cc07581a71ba925308d9d69c6e0c6d79.1296818921.git.segoon@openwall.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 06 Feb 2011 17:16:19 +0200
-Message-ID: <1297005379.4460.34.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 8bit
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=H7i97dp66r4btV4LFvYD7JNed7LlxuZTBFjY1e20T6pv+YDWRgvqG5DmoE1C8KRgQr
+         SEqhPzIMWp0IaIVqLVkiX/k6TAYE7Jhk+jvPUv5nzY+Dz74NlFKQv05wJ4YOc6lNPwdd
+         FK5gmv+a11GCb+VB/4ObgxDHq8jGj1RKQsPfI=
+Message-ID: <4D4EBAF4.9070403@gmail.com>
+Date: Sun, 06 Feb 2011 16:15:00 +0100
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+MIME-Version: 1.0
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+CC: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, rdunlap@xenotime.net
+Subject: [PATCH] Kconfig: XIP doesn't depend on block
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-04 at 15:24 +0300, Vasiliy Kulikov wrote:
-> Don't allow everybody to dump sensitive information about filesystems.
-> 
-> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+From: Marco Stornelli <marco.stornelli@gmail.com>
 
-Good catch, thanks. I'll push this patch to the ubifs-2.6.git tree,
-thanks!
+XIP doesn't depend on block symbol, then we can reorder the Kconfig.
+For ext2 doesn't change the Kconfig behavior but if other fs will use
+FS_XIP it won't need to include block support if not needed.
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+---
+
+--- Kconfig.orig	2011-01-19 00:14:02.000000000 +0100
++++ Kconfig	2011-02-06 16:04:51.000000000 +0100
+@@ -9,13 +9,6 @@ if BLOCK
+ source "fs/ext2/Kconfig"
+ source "fs/ext3/Kconfig"
+ source "fs/ext4/Kconfig"
+-
+-config FS_XIP
+-# execute in place
+-	bool
+-	depends on EXT2_FS_XIP
+-	default y
+-
+ source "fs/jbd/Kconfig"
+ source "fs/jbd2/Kconfig"
+ 
+@@ -38,6 +31,12 @@ source "fs/nilfs2/Kconfig"
+ 
+ endif # BLOCK
+ 
++config FS_XIP
++# execute in place
++	bool
++	depends on EXT2_FS_XIP
++	default y
++
+ # Posix ACL utility routines
+ #
+ # Note: Posix ACLs can be implemented without these helpers.  Never use
 
