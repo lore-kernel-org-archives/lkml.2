@@ -1,133 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697Ab1BFNqK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 08:46:10 -0500
-Received: from lucidpixels.com ([75.144.35.66]:57315 "EHLO lucidpixels.com"
+	id S1752676Ab1BFN4O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 08:56:14 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:47794 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752452Ab1BFNqJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 08:46:09 -0500
-Date: Sun, 6 Feb 2011 08:46:08 -0500 (EST)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Stan Hoeppner <stan@hardwarefreak.com>
-cc: "Dr. David Alan Gilbert" <linux@treblig.org>,
-        Emmanuel Florac <eflorac@intellique.com>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-net@vger.kernel.org,
-        Alan Piszcz <ap@solarrain.com>
-Subject: Re: Supermicro X8DTH-6: Only ~250MiB/s from RAID<->RAID over
- 10GbE?
-In-Reply-To: <alpine.DEB.2.00.1102060515230.28109@p34.internal.lan>
-Message-ID: <alpine.DEB.2.00.1102060817590.28109@p34.internal.lan>
-References: <alpine.DEB.2.00.1102051427360.8518@p34.internal.lan> <20110205214550.3cb0f0d1@galadriel2.home> <alpine.DEB.2.00.1102051553591.8518@p34.internal.lan> <20110205220621.GB17347@gallifrey> <alpine.DEB.2.00.1102051729010.8518@p34.internal.lan>
- <alpine.DEB.2.00.1102051753100.8518@p34.internal.lan> <4D4DE34E.7010308@hardwarefreak.com> <alpine.DEB.2.00.1102051958370.28109@p34.internal.lan> <4D4E127D.3060105@hardwarefreak.com> <alpine.DEB.2.00.1102060515230.28109@p34.internal.lan>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752452Ab1BFN4M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 08:56:12 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Marc Koschewski <marc@osknowledge.org>
+Subject: Re: Commit 500f7147cf5bafd139056d521536b10c2bc2e154 breaks _resume_
+Date: Sun, 6 Feb 2011 14:55:37 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc3+; KDE/4.4.4; x86_64; ; )
+Cc: Dave Airlie <airlied@gmail.com>, Takashi Iwai <tiwai@suse.de>,
+        Jeff Chua <jeff.chua.linux@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>, Len Brown <lenb@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <AANLkTi=h+H+N=f4m4pE+RZ4n5h7oxQuwzmK-qmmWAGtL@mail.gmail.com> <201102061404.24146.rjw@sisk.pl> <20110206134410.GF22960@marc.osknowledge.org>
+In-Reply-To: <20110206134410.GF22960@marc.osknowledge.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102061455.38186.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sunday, February 06, 2011, Marc Koschewski wrote:
+> * Rafael J. Wysocki <rjw@sisk.pl> [2011-02-06 14:04:23 +0100]:
+> 
+> > On Sunday, February 06, 2011, Marc Koschewski wrote:
+> > > I've the NX stuff disabled, so to say DEBUG_RODATA=n and it doesn't resume... so
+> > > what's next?
+> > 
+> > Did you actually try to revert the NX commits or go back to the version of the
+> > kernel where they aren't present?
+> > 
+> > Also, what's the last known working kernel?
+> 
+> 2.6.37 works perfectly. After the first chunk of code after the release of
+> 2.6.37 (so to say 2.6.37 + some stuff, but not 2.6.38-rc1) is broke.
+> 
+> I did not bisect it down to something. But it seems many people have trapped
+> into it and have pointed at some things that probably broke it - see the
+> SandyBridge thread.
 
+I saw it, but it's not conclusive.  You're the last person reporting a suspend
+problem which doesn't seem to be related to the NX patches and no one else
+seems to be able to reproduce it (obviously including me).
 
-On Sun, 6 Feb 2011, Justin Piszcz wrote:
+If you suspend what might broke it, why don't you just try to confirm your
+suspicions?
 
->
->
-> On Sat, 5 Feb 2011, Stan Hoeppner wrote:
->
->> Justin Piszcz put forth on 2/5/2011 7:08 PM:
->>
+> > > I use an i7 with 32bit code as I think 64bit is a) useless for me
+> > 
+> > You're most probably wrong, because memory management is mush simpler in the
+> > 64-bit mode.  Basically, if your machine supports 64-bitness, you should use
+> > it.
+> 
+> I didn't see any advantage in 64 bit from what I've read.
 
+Well, with all due respect to what you have read ...
 
-Hi,
+> And I ignore the ~1% overhead of PAE. The hardware is fat enough...
 
-1. Defaults below:
-sysctl -w net.core.wmem_max=131071
-sysctl -w net.core.rmem_max=131071
-sysctl -w net.core.wmem_default=118784
-sysctl -w net.core.rmem_default=118784
-sysctl -w net.core.optmem_max=20480
-sysctl -w net.ipv4.igmp_max_memberships=20
-sysctl -w net.ipv4.tcp_mem="379104       505472  758208"
-sysctl -w net.ipv4.tcp_wmem="4096        16384   4194304"
-sysctl -w net.ipv4.tcp_rmem="4096        87380   4194304"
-sysctl -w net.ipv4.udp_mem="379104       505472  758208"
-sysctl -w net.ipv4.udp_rmem_min=4096
-sysctl -w net.ipv4.udp_wmem_min=4096
-sysctl -w net.core.netdev_max_backlog=1024
+... what about the kernel memory being confined to the first 1/4 of virtual
+address space?  The fact that we have to use highmem on 32 bits is a good
+enough reason to switch to 64 bits IMnsHO.
 
-2. Optimized settings, for > 800MiB/:
-
-# for 3ware raid, use 16384 readahead, > 16384 readahead, no improvement
-blockdev --setra 16384 /dev/sda
-
-# not sure if this helps much
-ethtool -K eth0 lro on
-
-# seems to get performance > 600-700MiB/s faster
-sysctl -w net.core.wmem_max=4194304
-sysctl -w net.core.rmem_max=4194304
-sysctl -w net.core.wmem_default=4194304
-sysctl -w net.core.rmem_default=4194304
-sysctl -w net.core.optmem_max=20480
-sysctl -w net.ipv4.igmp_max_memberships=20
-sysctl -w net.ipv4.tcp_mem="4194304 4194304 4194304"
-sysctl -w net.ipv4.tcp_wmem="4194304 4194304 4194304"
-sysctl -w net.ipv4.tcp_rmem="4194304 4194304 4194304"
-sysctl -w net.ipv4.udp_mem="4194304 4194304 4194304"
-sysctl -w net.ipv4.udp_rmem_min=4096
-sysctl -w net.ipv4.udp_wmem_min=4096
-sysctl -w net.core.netdev_max_backlog=1048576
-
-# the main option that makes all of the difference, the golden option
-# is the rszie and wsize of 1megabyte below:
-10.0.1.4:/r1    /nfs/box2/r1  nfs   tcp,bg,rw,hard,intr,nolock,nfsvers=3,rsize=1048576,wsize=1048576  0 0
-
-CPU utilization:
-   PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
-  2069 root      20   0 18640 1304  688 R   91  0.0   0:15.50 cp
-   703 root      20   0     0    0    0 S   25  0.0   2:46.95 kswapd0
-
-With a single copy I get roughly 700-800MiB/s:
-
-Device eth0 [10.0.1.3] (1/1):
-================================================================================
-Incoming:
-######################     ####################  ####
-######################     ####################  ####
-######################     ####################  ####
-######################     ####################  ####
-######################     ####################  ####
-######################     ####################  ####  Curr: 808.71 MByte/s
-######################     ####################  ####  Avg: 706.11 MByte/s
-######################     ####################  ####  Min: 0.00 MByte/s
-######################     ####################  ####  Max: 860.17 MByte/s
-######################     ####################  ####  Ttl: 344.70 GByte
-
-With two copies I get up to 830-850MiB/s:
-
-Device eth0 [10.0.1.3] (1/1):
-================================================================================
-Incoming:
-############################################     ####
-############################################     ####
-############################################     ####
-############################################     ####
-############################################     ####
-############################################     ####  Curr: 846.61 MByte/s
-############################################     ####  Avg: 683.14 MByte/s
-############################################     ####  Min: 0.00 MByte/s
-############################################     ####  Max: 860.17 MByte/s
-############################################     ####  Ttl: 305.71 GByte
-
-Using a 4MiB r/w size with NFS improves performance to sustain > 750MiB/s
-a little better I think:
-10.0.1.4:/r1    /nfs/box2/r1  nfs   tcp,bg,rw,hard,intr,nolock,nfsvers=3,rsize=4194304,wsize=4194304 0
-
-Anyhow, roughly 750-850MiB/s it would be nice to get 1Gbyte/sec but I guess
-the kerrnel (or my HW, CPU not fast enough) is not there yet.
-
-Also found a good doc from RedHat:
-http://www.redhat.com/promo/summit/2008/downloads/pdf/Thursday/Mark_Wagner.pdf
-
-Justin.
-
+Thanks,
+Rafael
