@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab1BFNWN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 08:22:13 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:47712 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752491Ab1BFNVq convert rfc822-to-8bit (ORCPT
+	id S1752775Ab1BFNWL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 08:22:11 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:48919 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752739Ab1BFNWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 08:21:46 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Len Brown <lenb@kernel.org>
-Subject: [PATCH 1/2] ACPI / Wakeup: Enable button GPEs unconditionally during initialization
-Date: Sun, 6 Feb 2011 14:20:17 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc3+; KDE/4.4.4; x86_64; ; )
-Cc: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Ferenc =?utf-8?q?W=C3=A1gner?= <wferi@niif.hu>
-References: <201102061418.56202.rjw@sisk.pl>
-In-Reply-To: <201102061418.56202.rjw@sisk.pl>
+	Sun, 6 Feb 2011 08:22:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=e88jyzONsRF9NmAtMu8LN07w8SzEAYPjB5soBXUOaO3285uWo/tufUwQD7xhQu4qep
+         SHF7uk1e3tsuUqmdHLqhxCNnYgld6ouIo/ItbK7aKhi+Vy/VfXJ10/0HhQZgDpl02E3t
+         yyEqyhmvyarjgBBsaSGo/EixGle1+RL38SW94=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201102061420.17431.rjw@sisk.pl>
+In-Reply-To: <20110131075803.GI9041@pengutronix.de>
+References: <1296217283-14531-1-git-send-email-s.hauer@pengutronix.de>
+	<20110129213821.0e51dc32@endymion.delvare>
+	<20110129215141.GA3493@pengutronix.de>
+	<AANLkTi=ppKZ96T3_1nYisHG9705OCHgZqkLnu2f47zq5@mail.gmail.com>
+	<20110131075803.GI9041@pengutronix.de>
+Date: Sun, 6 Feb 2011 14:22:09 +0100
+X-Google-Sender-Auth: 0FMwf1ApcT-O6e8My2_G9BrFKXo
+Message-ID: <AANLkTi=nDkuevMqY6v_K_Lkoi6wDowcL7AN_a=tb72t5@mail.gmail.com>
+Subject: Re: [RFC] add pwmlib support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: arden jay <arden.jay@gmail.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Hemanth V <hemanthv@ti.com>, Wolfram Sang <w.sang@pengutronix.de>,
+        Eric Miao <eric.miao@linaro.org>, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Shawn Guo <shawn.guo@freescale.com>, Ben Dooks <ben-linux@fluff.org>,
+        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
+        Jean Delvare <khali@linux-fr.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+2011/1/31 Sascha Hauer <s.hauer@pengutronix.de>:
+> On Sun, Jan 30, 2011 at 11:49:32AM +0800, arden jay wrote:
+>> Sorry, I'm confused about this.
+>> If it is for backlight control, why it don't go through led_class?
+>
+> PWMs are not limited to backlight. As Jean pointed out they can be used
+> for fans (or more generally motors) aswell. Have a look at
+> drivers/leds/leds-pwm.c, it is a user of this pwm API.
 
-Commit 9630bdd (ACPI: Use GPE reference counting to support shared
-GPEs) introduced a suspend regression where boxes resume immediately
-after being suspended due to the lid or sleep button wakeup status
-not being cleared properly.  This happens if the GPEs corresponding
-to those devices are not enabled all the time, which apparently is
-expected by some BIOSes.
+Low-frequency PWM is used for vibrators of the type found in
+silent mode cellphones, to mention another use case.
 
-To fix this problem, enable button and lid GPEs unconditionally
-during initialization and keep them enabled all the time, regardless
-of whether or not the ACPI button driver is used.
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=27372
-Reported-and-tested-by: Ferenc Wágner <wferi@niif.hu>
-Cc: stable@kernel.org
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/acpi/button.c |   13 -------------
- drivers/acpi/wakeup.c |    6 +++++-
- 2 files changed, 5 insertions(+), 14 deletions(-)
-
-Index: linux-2.6/drivers/acpi/wakeup.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/wakeup.c
-+++ linux-2.6/drivers/acpi/wakeup.c
-@@ -86,8 +86,12 @@ int __init acpi_wakeup_device_init(void)
- 		struct acpi_device *dev = container_of(node,
- 						       struct acpi_device,
- 						       wakeup_list);
--		if (device_can_wakeup(&dev->dev))
-+		if (device_can_wakeup(&dev->dev)) {
-+			/* Button GPEs are supposed to be always enabled. */
-+			acpi_enable_gpe(dev->wakeup.gpe_device,
-+					dev->wakeup.gpe_number);
- 			device_set_wakeup_enable(&dev->dev, true);
-+		}
- 	}
- 	mutex_unlock(&acpi_device_lock);
- 	return 0;
-
+Yours,
+Linus Walleij
