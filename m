@@ -1,124 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948Ab1BFAUk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 19:20:40 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42993 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747Ab1BFAUi convert rfc822-to-8bit (ORCPT
+	id S1751959Ab1BFA1y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 19:27:54 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:36904
+	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751640Ab1BFA1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 19:20:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=aqBazGbsNf5WD1gg39EW01ah5xEYFYfuf8ju6H39HWOPbANL9nkobHRGrlRkX1ZQly
-         SKxSnrODlOWgHanfJODBZkm64OdXZsgnFgp7NUekDTiWqkd7LRpf4TK1N8+4t9UUSHQf
-         Rb78TXBpnTrJ9LEke8RhK4g8taEKfK4NX7/ms=
+	Sat, 5 Feb 2011 19:27:52 -0500
+X-SpamScore: -52
+X-BigFish: VPS-52(zzbb2dK1803M1432N98dN4015L9371Pzz1202hzz8275dh1033ILz2fh2a8h637h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4D4DEAE7.1070306@am.sony.com>
+Date: Sat, 5 Feb 2011 16:27:19 -0800
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-In-Reply-To: <1296949161.2349.839.camel@pasglop>
-References: <AANLkTimBFBKJf0-TNRLr2hHNEehR2cnKPvx06=yyHGVj@mail.gmail.com>
-	<1296852667.2349.804.camel@pasglop>
-	<20110204.145508.59670453.davem@davemloft.net>
-	<4D4D9882.107@googlemail.com>
-	<1296949161.2349.839.camel@pasglop>
-Date: Sun, 6 Feb 2011 00:20:36 +0000
-Message-ID: <AANLkTinEH+WAEUoWNYKxz6oRk7HAATG1p7CXMAx8Ss-V@mail.gmail.com>
-Subject: Re: Sun GEM PPC32 Bug?
-From: Matt <jackdachef@gmail.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        geert@linux-m68k.org, "R. Herbst" <ruediger.herbst@googlemail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Andrew Murray <amurray@mpcdata.com>
+CC: "linux-embedded@vger.kernel.org" <linux-embedded@vger.kernel.org>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        "trivial@kernel.org" <trivial@kernel.org>
+Subject: Re: [PATCH] printk-formats.txt documentation update
+References: <AANLkTikj+FU8OF_-KFr2hmTSWqTHMK5JnrnTVyn-XtxQ@mail.gmail.com>
+In-Reply-To: <AANLkTikj+FU8OF_-KFr2hmTSWqTHMK5JnrnTVyn-XtxQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 5, 2011 at 11:39 PM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
-> On Sat, 2011-02-05 at 19:35 +0100, R. Herbst wrote:
->> > I think we're simply not resetting enough when the RX FIFO overflow
->> > happens.
->> >
->> > Just for fun I checked the OpenBSD GEM driver to see what they do.
->> > When an overflow occurs, they bump the statistic, record the current
->> > read and write fifo pointer registers, and schedule a watchdog timer
->> > for 400ms into the future.
->> >
->> > If the watchdog timer sees that the RX FIFO overflow bit is still set
->> > in the RX status register, and the RX FIFO read and write pointers
->> > have not changed, it resets the entire chip.
->> >
->> > We unconditionally reset the RX MAC when an overflow occurs, that may
->> > simply not be enough to unwedge this thing.
->
-> Right. It would be quite easy for us to do the same thing. Interestingly
-> enough, I have never observed this behaviour on any of my machines (a
-> wide range of 32-bit and 64-bit Apple machines).
->
-> Also, Apple's own driver does things differently. In case of overflow
-> interrupt, it seems to only bump some statistics. However, it has a
-> timeout if no packets have been received for a while (5 seconds) and the
-> Rx fifo overflow bit is set. In that case, they restart the receiver
-> (and the receiver only).
->
-> Their sequence for restarting the receiver however is a tad different
-> than ours (mostly slightly different ordering of things), it's hard to
-> tell whether that's relevant or not, but some of the things do make
-> sense, such as they stop the DMA before resetting the MAC and restart it
-> after re-enabling the MAC.
->
-> If I find some time tonight, else tomorrow, I'll whip up a couple of
-> patches:
->
->  - One simpler re-arranging our Rx reset sequence and adding a test for
-> the overflow bit at the end, printing out the results, etc...
->
->  - One that basically always reset the chip on overflow.
->
-> From there we can decide what works and maybe add a bit of a timeout
-> to the second approach if needed etc... but how often does that overflow
-> happens in practice ?
->
-> Cheers,
-> Ben.
->
->
->
+On 02/05/2011 04:15 PM, Andrew Murray wrote:
+> From: Andrew Murray <amurray@mpc-data.co.uk>
+> 
+> This patch updates the incomplete documentation concerning the printk
+> extended format specifiers.
+> 
+> Signed-off-by: Andrew Murray <amurray@mpc-data.co.uk>
+> ---
+> diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
+> index 1b5a5dd..df14336 100644
+> --- a/Documentation/printk-formats.txt
+> +++ b/Documentation/printk-formats.txt
+> @@ -9,7 +9,42 @@ If variable is of Type,		use printk format specifier:
+>  		size_t			%zu or %zx
+>  		ssize_t			%zd or %zx
+> 
+> -Raw pointer value SHOULD be printed with %p.
+> +Raw pointer value SHOULD be printed with %p. The kernel supports
+> +the following extended format specifiers for pointer types:
+> +
+> +	General:
+> +
+> +	%pF	function pointer with offset, e.g. module_start
+> +	%pf	function pointer without offset, e.g. module_start+0x0/0x62 [hello]
+> +	%pS	text symbol with offset	
+> +	%ps	text symbol without offset
+> +	%pR	struct resource with decoded flags, e.g. [mem 0x0-0x1f 64 bit pref]
+> +	%pr	struct resource with raw flags, e.g. [mem 0x0-0x1f flags 0x201]
+> +
+> +	MAC/FDDI addresses:
+> +	
+> +	%pM	colon-seperated 6-byte MAC address in hex notation, e.g. 00:01:02:03:04:05
+> +	%pm	non-colon-seperated 6-byte MAC address is hex notation, e.g. 000102030405
+> +	%pMF	6-byte dash-separated FDDI hex notation
+> +
+> +	IPv4 addresses:
+> +
+> +	%pI4	IPv4 dot-seperated decimal without leading 0's, e.g. 1.2.3.4
+> +	%pi4	IPv4 dot-seperated decimal with leading 0's, 001.002.003.004
+> +	%p[Ii]4[hl] IPv4 dot-seperated decimal with/without leading 0's for
+> +		host (h), little (l) or network/big (default) endian order
+> +
+> +	IPv6 addresses:
+> +	%pI6	IPv6 colon-seperated network-order 16 bit hex with leading 0's,
+> +		e.g. 0001:0203:...:0708
+> +	%pi6	IPv6 non-colon-seperated network-order 16 bit hex with leading 0's,
+> +		e.g. 000102...0f
+> +	%pI6c	IPv6 address as described by
+> +		http://tools.ietf.org/html/draft-ietf-6man-text-addr-representation-00,
+> +		e.g. 1::708
+> +
+> +	%pU[bBlL] 16 byte UUID/GUID in big or little endian using lower or upper case
+> +
+> 
+>  u64 SHOULD be printed with %llu/%llx, (unsigned long long):
 
-Well,
+I like this, as it has information that is not documented elsewhere.
 
-according to this post:
-http://forums.gentoo.org/viewtopic-p-6565281.html#6565281
+Some feedback on the patch:
 
->Okay... Es muss ein Kernelproblem sein. Mit SFTP bekomme ich nur einen Datendurchsatz von ca. 40MBit hin. Da kommen dann die Probleme nicht vor.
->Mit FTP direkt habe ich einen Datendurchsatz von ca. 180MBit/s, dann rasseln wieder die Kernelmeldungen ohne Ende.
+Some of these lines are longer than 80 chars.  Can you please truncate
+things to fit in an 80-column terminal window?
 
-it doesn't appear when using sftp (only achieving 40 MBit/s
-throughput), whereas kernel messages continuously seem to appear when
-using FTP with a throughput of around 180 MBit/s
+Thanks,
+ -- Tim
 
+=============================
+Tim Bird
+Architecture Group Chair, CE Linux Forum
+Senior Staff Engineer, Sony Network Entertainment
+=============================
 
-this also seems to apply to recent kernels (2.6.37-ish) according to
-http://forums.gentoo.org/viewtopic-p-6564885.html#6564885
-
->Erstmal vielen dank für diesen Tipp. Leider hat auch das nichts an meinem Netzwerkproblem geämdert. Zieht das System immer noch bei Netzwerklast ins verderben. FREEZE.
->Werde jetzt mal einen uraltkernel probieren. Vielleicht hilft ja das. Früher ging das System ja mal sehr gut mit Linux.
-
-I don't know what Ruediger exactly means with "freeze"
-
-@Ruediger:
-
-did I miss anything ?
-
-does magic sysrq key still work for you ?
-
-
-
-This remembers me of a similar problem I had with the sky2-driver and
-the 88E8053 chipset, for several kernel-releases it seems to reset
-itself fine now :)
-
-Regards
-
-Matt
