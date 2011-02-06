@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752756Ab1BFOWc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 09:22:32 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:59929 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752633Ab1BFOWb (ORCPT
+	id S1752776Ab1BFOYR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 09:24:17 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:47855 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752704Ab1BFOYQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 09:22:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=FtdOcvmZaRGDFzxHGQkUwRYfmMPdh5GlZM5puxxivi38e+56abQW2tdv5GOTXJ0rMo
-         WuGM2R52H7LsjqEGBqXWKCRwYM9duC5AOsU+K3ADr3A+9Hc8I3fvEy4UkX0Ndu7876z5
-         GxrEHdaAnkO24ii5nafjBjnzsaVaeqR0al/6k=
-Message-ID: <4D4EAEA1.9030106@googlemail.com>
-Date: Sun, 06 Feb 2011 15:22:25 +0100
-From: "R. Herbst" <ruediger.herbst@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20101227 Icedove/3.0.11
+	Sun, 6 Feb 2011 09:24:16 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Len Brown <lenb@kernel.org>
+Subject: [Updated][PATCH 1/2] ACPI / Wakeup: Enable button GPEs unconditionally during initialization
+Date: Sun, 6 Feb 2011 15:24:08 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc3+; KDE/4.4.4; x86_64; ; )
+Cc: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Ferenc =?utf-8?q?W=C3=A1gner?= <wferi@niif.hu>
+References: <201102061418.56202.rjw@sisk.pl> <201102061420.17431.rjw@sisk.pl>
+In-Reply-To: <201102061420.17431.rjw@sisk.pl>
 MIME-Version: 1.0
-To: Matt <jackdachef@gmail.com>
-CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        geert@linux-m68k.org, benh@kernel.crashing.org
-Subject: Re: Sun GEM PPC32 Bug?
-References: <AANLkTimBFBKJf0-TNRLr2hHNEehR2cnKPvx06=yyHGVj@mail.gmail.com>	<1296852667.2349.804.camel@pasglop>	<20110204.145508.59670453.davem@davemloft.net> <AANLkTi=s7Yro4TqtmgW4HPnJx3HiWvX9iJ9NUOYXcR+j@mail.gmail.com>
-In-Reply-To: <AANLkTi=s7Yro4TqtmgW4HPnJx3HiWvX9iJ9NUOYXcR+j@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201102061524.08578.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 05.02.2011 21:32, schrieb Matt:
->> Is there a special Kernel parameter (sysctl.conf), that makes it
->> possible to use the Network. So how it is now I canŽt work with it. What
->> can I do at the moment?
->>      
->    
->> linuxopjemac, thank you for referring to Ben. He replied and might look into it.
->>      
->    
->> Meanwhile, I put the module reloading and interface restarting into a cron job that executes every hour: sudo crontab -e
->>      
-> # m h  dom mon dow   command
-> 0  *  *   *   *     /usr/sbin/fix-sungem
->
->    
->> and the script /usr/sbin/fix-sungem contains
->>      
-> /sbin/ifdown eth0&&  /sbin/rmmod sungem&&  /sbin/modprobe sungem&&
-> /sbin/ifup eth0
->
-> Hope that helps somewhat
->
-> Regards
->
-> Matt
->    
-Sorry. No positive effect in my case. Same bad Kernel-Messages for Sun-Gem.
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: ACPI / Wakeup: Enable button GPEs unconditionally during initialization
 
-Regards
-Rüdi
+Commit 9630bdd (ACPI: Use GPE reference counting to support shared
+GPEs) introduced a suspend regression where boxes resume immediately
+after being suspended due to the lid or sleep button wakeup status
+not being cleared properly.  This happens if the GPEs corresponding
+to those devices are not enabled all the time, which apparently is
+expected by some BIOSes.
+
+To fix this problem, enable button and lid GPEs unconditionally
+during initialization and keep them enabled all the time, regardless
+of whether or not the ACPI button driver is used.
+
+References: https://bugzilla.kernel.org/show_bug.cgi?id=27372
+Reported-and-tested-by: Ferenc Wágner <wferi@niif.hu>
+Cc: stable@kernel.org
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+
+Hi,
+
+This time with the correct diffstat.
+
+Thanks,
+Rafael
+
+---
+ drivers/acpi/wakeup.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+Index: linux-2.6/drivers/acpi/wakeup.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/wakeup.c
++++ linux-2.6/drivers/acpi/wakeup.c
+@@ -86,8 +86,12 @@ int __init acpi_wakeup_device_init(void)
+ 		struct acpi_device *dev = container_of(node,
+ 						       struct acpi_device,
+ 						       wakeup_list);
+-		if (device_can_wakeup(&dev->dev))
++		if (device_can_wakeup(&dev->dev)) {
++			/* Button GPEs are supposed to be always enabled. */
++			acpi_enable_gpe(dev->wakeup.gpe_device,
++					dev->wakeup.gpe_number);
+ 			device_set_wakeup_enable(&dev->dev, true);
++		}
+ 	}
+ 	mutex_unlock(&acpi_device_lock);
+ 	return 0;
