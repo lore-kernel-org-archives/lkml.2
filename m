@@ -1,170 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab1BFRwz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 12:52:55 -0500
-Received: from lucidpixels.com ([75.144.35.66]:56655 "EHLO lucidpixels.com"
+	id S1753452Ab1BFSDK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 13:03:10 -0500
+Received: from mga01.intel.com ([192.55.52.88]:15601 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753344Ab1BFRwy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 12:52:54 -0500
-References: <alpine.DEB.2.00.1102051427360.8518@p34.internal.lan> <20110205214550.3cb0f0d1@galadriel2.home> <alpine.DEB.2.00.1102051553591.8518@p34.internal.lan> <20110205220621.GB17347@gallifrey> <alpine.DEB.2.00.1102051729010.8518@p34.internal.lan> <alpine.DEB.2.00.1102051753100.8518@p34.internal.lan> <4D4DE34E.7010308@hardwarefreak.com> <alpine.DEB.2.00.1102051958370.28109@p34.internal.lan> <4D4E127D.3060105@hardwarefreak.com> <alpine.DEB.2.00.1102060515230.28109@p34.internal.lan> <alpine.DEB.2.00.1102060817590.28109@p34.internal.lan> <4D4ED29B.8010903@gmail.com>
-In-Reply-To: <4D4ED29B.8010903@gmail.com>
-Mime-Version: 1.0 (iPad Mail 8C148)
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <49DCE0D0-F33C-4041-8494-4758B9082968@lucidpixels.com>
-Cc: Stan Hoeppner <stan@hardwarefreak.com>,
-        "Dr. David Alan Gilbert" <linux@treblig.org>,
-        Emmanuel Florac <eflorac@intellique.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-net@vger.kernel.org" <linux-net@vger.kernel.org>,
-        Alan Piszcz <ap@solarrain.com>
-X-Mailer: iPad Mail (8C148)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-Subject: Re: Supermicro X8DTH-6: Only ~250MiB/s from RAID<->RAID over 10GbE?
-Date: Sun, 6 Feb 2011 12:52:57 -0500
-To: Zdenek Kaspar <zkaspar82@gmail.com>
+	id S1753344Ab1BFSDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 13:03:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,434,1291622400"; 
+   d="scan'208";a="884836420"
+From: Pierre Tardy <pierre.tardy@intel.com>
+To: linux-pm@lists.linux-foundation.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Pierre Tardy <pierre.tardy@intel.com>
+Subject: [PATCH v2 0/3] sdhci runtime_pm implementation using mmc clock gating fw
+Date: Sun,  6 Feb 2011 19:02:47 +0100
+Message-Id: <cover.1297014479.git.pierre.tardy@intel.com>
+X-Mailer: git-send-email 1.7.1
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Please find a simple sdhci runtime_pm implementation
+that uses clock gating fw as a tip to know when 
+our chip is idle.
 
+Previous version was RFC and untested,
+This version has been tested on intel medfield platform.
 
-On Feb 6, 2011, at 11:55 AM, Zdenek Kaspar <zkaspar82@gmail.com> wrote:
+Pierre Tardy (2):
+  mmc: put the led blinking code after clock ungating
+  sdhci:v2:use ios->clock to know when sdhci is idle
 
-> Dne 6.2.2011 14:46, Justin Piszcz napsal(a):
->> 
->> 
->> On Sun, 6 Feb 2011, Justin Piszcz wrote:
->> 
->>> 
->>> 
->>> On Sat, 5 Feb 2011, Stan Hoeppner wrote:
->>> 
->>>> Justin Piszcz put forth on 2/5/2011 7:08 PM:
->>>> 
->> 
->> 
->> Hi,
-> 
-> Hi, just few comments for maximal throughput..
-> 
->> 1. Defaults below:
->> sysctl -w net.core.wmem_max=131071
->> sysctl -w net.core.rmem_max=131071
->> sysctl -w net.core.wmem_default=118784
->> sysctl -w net.core.rmem_default=118784
->> sysctl -w net.core.optmem_max=20480
->> sysctl -w net.ipv4.igmp_max_memberships=20
->> sysctl -w net.ipv4.tcp_mem="379104       505472  758208"
->> sysctl -w net.ipv4.tcp_wmem="4096        16384   4194304"
->> sysctl -w net.ipv4.tcp_rmem="4096        87380   4194304"
->> sysctl -w net.ipv4.udp_mem="379104       505472  758208"
->> sysctl -w net.ipv4.udp_rmem_min=4096
->> sysctl -w net.ipv4.udp_wmem_min=4096
->> sysctl -w net.core.netdev_max_backlog=1024
-> 
-> sysctl net.ipv4.tcp_timestamps=0
-> 
->> 2. Optimized settings, for > 800MiB/:
->> 
->> # for 3ware raid, use 16384 readahead, > 16384 readahead, no improvement
->> blockdev --setra 16384 /dev/sda
-> 
-> elevator=deadline
-> 
->> # not sure if this helps much
->> ethtool -K eth0 lro on
-> 
-> Maybe try to _disable_ NIC offloads functions, sometimes its contra
-> productive (with enough CPU power, but I doubt on 2 socket box) + check
-> irqbalance..
-> 
-> If you have connection just between machines try the biggest possible MTU.
-> 
->> # seems to get performance > 600-700MiB/s faster
->> sysctl -w net.core.wmem_max=4194304
->> sysctl -w net.core.rmem_max=4194304
->> sysctl -w net.core.wmem_default=4194304
->> sysctl -w net.core.rmem_default=4194304
->> sysctl -w net.core.optmem_max=20480
->> sysctl -w net.ipv4.igmp_max_memberships=20
->> sysctl -w net.ipv4.tcp_mem="4194304 4194304 4194304"
->> sysctl -w net.ipv4.tcp_wmem="4194304 4194304 4194304"
->> sysctl -w net.ipv4.tcp_rmem="4194304 4194304 4194304"
->> sysctl -w net.ipv4.udp_mem="4194304 4194304 4194304"
->> sysctl -w net.ipv4.udp_rmem_min=4096
->> sysctl -w net.ipv4.udp_wmem_min=4096
->> sysctl -w net.core.netdev_max_backlog=1048576
->> 
->> # the main option that makes all of the difference, the golden option
->> # is the rszie and wsize of 1megabyte below:
->> 10.0.1.4:/r1    /nfs/box2/r1  nfs  
->> tcp,bg,rw,hard,intr,nolock,nfsvers=3,rsize=1048576,wsize=1048576  0 0
->> 
->> CPU utilization:
->>  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
->> 2069 root      20   0 18640 1304  688 R   91  0.0   0:15.50 cp
->>  703 root      20   0     0    0    0 S   25  0.0   2:46.95 kswapd0
->> 
->> With a single copy I get roughly 700-800MiB/s:
->> 
->> Device eth0 [10.0.1.3] (1/1):
->> ================================================================================
->> 
->> Incoming:
->> ######################     ####################  ####
->> ######################     ####################  ####
->> ######################     ####################  ####
->> ######################     ####################  ####
->> ######################     ####################  ####
->> ######################     ####################  ####  Curr: 808.71 MByte/s
->> ######################     ####################  ####  Avg: 706.11 MByte/s
->> ######################     ####################  ####  Min: 0.00 MByte/s
->> ######################     ####################  ####  Max: 860.17 MByte/s
->> ######################     ####################  ####  Ttl: 344.70 GByte
->> 
->> With two copies I get up to 830-850MiB/s:
->> 
->> Device eth0 [10.0.1.3] (1/1):
->> ================================================================================
->> 
->> Incoming:
->> ############################################     ####
->> ############################################     ####
->> ############################################     ####
->> ############################################     ####
->> ############################################     ####
->> ############################################     ####  Curr: 846.61 MByte/s
->> ############################################     ####  Avg: 683.14 MByte/s
->> ############################################     ####  Min: 0.00 MByte/s
->> ############################################     ####  Max: 860.17 MByte/s
->> ############################################     ####  Ttl: 305.71 GByte
->> 
->> Using a 4MiB r/w size with NFS improves performance to sustain > 750MiB/s
->> a little better I think:
->> 10.0.1.4:/r1    /nfs/box2/r1  nfs  
->> tcp,bg,rw,hard,intr,nolock,nfsvers=3,rsize=4194304,wsize=4194304 0
-> 
-> What about using UDP ?
-> 
->> Anyhow, roughly 750-850MiB/s it would be nice to get 1Gbyte/sec but I guess
->> the kerrnel (or my HW, CPU not fast enough) is not there yet.
->> 
->> Also found a good doc from RedHat:
->> http://www.redhat.com/promo/summit/2008/downloads/pdf/Thursday/Mark_Wagner.pdf
->> 
->> 
->> Justin.
->> 
-> 
-> HTH, Z.
+Yunpeng Gao (1):
+  sdhci-pci : Enable runtime PM support
 
-Thx for suggestions, I have tried some of those additional optimizations in the past but they did not seem to give increases in performance, but will revisit them if I have time, thanks.
+ drivers/mmc/core/core.c      |    3 +-
+ drivers/mmc/host/sdhci-pci.c |  124 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/mmc/host/sdhci.c     |   60 ++++++++++++++++++++
+ drivers/mmc/host/sdhci.h     |    5 ++
+ include/linux/mmc/sdhci.h    |    1 +
+ 5 files changed, 191 insertions(+), 2 deletions(-)
 
-UDP seemed to hit and stay at 650MiB/s.
+-- 
+1.7.2.3
 
-Justin.
+---------------------------------------------------------------------
+Intel Corporation SAS (French simplified joint stock company)
+Registered headquarters: "Les Montalets"- 2, rue de Paris, 
+92196 Meudon Cedex, France
+Registration Number:  302 456 199 R.C.S. NANTERRE
+Capital: 4,572,000 Euros
+
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
 
