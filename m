@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180Ab1BFQOx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 11:14:53 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43890 "EHLO
+	id S1753229Ab1BFQXM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 11:23:12 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:53321 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752601Ab1BFQOv (ORCPT
+	with ESMTP id S1752601Ab1BFQXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 11:14:51 -0500
+	Sun, 6 Feb 2011 11:23:11 -0500
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimcFvq-cSpain--STuVVg3dUJeTCDrykQ=24egg@mail.gmail.com>
+In-Reply-To: <AANLkTimsTJ4smnJUfkvYEkJixKQoZNfq6RHU4moLhT0o@mail.gmail.com>
 References: <AANLkTikj+FU8OF_-KFr2hmTSWqTHMK5JnrnTVyn-XtxQ@mail.gmail.com>
 	<AANLkTimcFvq-cSpain--STuVVg3dUJeTCDrykQ=24egg@mail.gmail.com>
-Date: Sun, 6 Feb 2011 16:14:50 +0000
-Message-ID: <AANLkTimsTJ4smnJUfkvYEkJixKQoZNfq6RHU4moLhT0o@mail.gmail.com>
+	<AANLkTimsTJ4smnJUfkvYEkJixKQoZNfq6RHU4moLhT0o@mail.gmail.com>
+Date: Sun, 6 Feb 2011 16:23:09 +0000
+Message-ID: <AANLkTi=bHe_h1F6Lh=rv6BXmVzkyPSW9u5EKXxpYGuL_@mail.gmail.com>
 Subject: Re: [PATCH] printk-formats.txt documentation update
 From: Andrew Murray <amurray@mpcdata.com>
 To: Geert Uytterhoeven <geert@linux-m68k.org>
@@ -24,10 +25,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 February 2011 10:16, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> In the mean time, we also got %pV and %pK. Can you please add them as well? Thx!
-
-Ok how about this revised patch?
+On 6 February 2011 16:14, Andrew Murray <amurray@mpcdata.com> wrote:
+> On 6 February 2011 10:16, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>> In the mean time, we also got %pV and %pK. Can you please add them as well? Thx!
+>
+> Ok how about this revised patch?
+>
+I've just noticed a zillion spelling mistakes - find below another
+revised patch.
 
 From: Andrew Murray <amurray@mpc-data.co.uk>
 
@@ -95,11 +100,11 @@ index 1b5a5dd..cad0dda 100644
 +
 +	For printing 6-byte MAC/FDDI addresses in hex notation. The 'M' and 'm'
 +	specifiers result in a printed address with ('M') or without ('m') byte
-+	seperators. The default byte seperator is the colon (':').
++	separators. The default byte separator is the colon (':').
 +
 +	Where FDDI addresses are concerned the 'F' specifier can be used after
-+	the 'M' specifier to use dash ('-') seperators instead of the default
-+	seperator.
++	the 'M' specifier to use dash ('-') separators instead of the default
++	separator.
 +
 +IPv4 addresses:
 +
@@ -107,7 +112,7 @@ index 1b5a5dd..cad0dda 100644
 +	%pi4	001.002.003.004
 +	%p[Ii][hnbl]
 +	
-+	For printing IPv4 dot-seperated decminal addresses. The 'I4' and 'i4'
++	For printing IPv4 dot-separated decimal addresses. The 'I4' and 'i4'
 +	specifiers result in a printed address with ('i4') or without ('I4')
 +	leading zeros.
 +
@@ -123,7 +128,7 @@ index 1b5a5dd..cad0dda 100644
 +
 +	For printing IPv6 network-order 16 bit hex addresses. The 'I6' and 'i6'
 +	specifiers result in a printed address with ('I6') or without ('i6')
-+	colon-seperaters. Leading zeros are always used.
++	colon-separators. Leading zeros are always used.
 +
 +	The additional 'c' specifier can be used with the 'I' specifier to
 +	print a compressed IPv6 address as described by
@@ -135,7 +140,7 @@ index 1b5a5dd..cad0dda 100644
 +	%pU[bBlL]
 +
 +	For printing 16 byte UUID/GUIDs addresses. The additional 'l', 'L',
-+	'b' and 'B' specifiers are used to specifiy a little endian order in
++	'b' and 'B' specifiers are used to specify a little endian order in
 +	lower ('l') or upper case ('L') hex characters - and big endian order
 +	in lower ('b') or upper case ('B') hex characters.
 +
