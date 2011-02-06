@@ -1,94 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab1BFUMv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 15:12:51 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:21741 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753928Ab1BFUMt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 15:12:49 -0500
-Date: Sun, 6 Feb 2011 21:11:33 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        David Woodhouse <dwmw2@infradead.org>, Ashok Raj <ashok.raj@intel.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: [PATCH][RFC] Intel IOMMU: get_domain_for_dev() leaks a bit of mem
- if dmar_find_matched_drhd_unit() fails.
-Message-ID: <alpine.LNX.2.00.1102062102390.13593@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753946Ab1BFUVK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 15:21:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26614 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753775Ab1BFUVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 15:21:09 -0500
+Message-ID: <4D4F0291.4070301@redhat.com>
+Date: Sun, 06 Feb 2011 15:20:33 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Miklos Szeredi <mszeredi@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH] mm: Add hook of freepage
+References: <1297004934-4605-1-git-send-email-minchan.kim@gmail.com>
+In-Reply-To: <1297004934-4605-1-git-send-email-minchan.kim@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I believe that there's a small memory leak in 
-drivers/pci/intel-iommu.c:get_domain_for_dev().
+On 02/06/2011 10:08 AM, Minchan Kim wrote:
+> Recently, "Call the filesystem back whenever a page is removed from
+> the page cache(6072d13c)" added new freepage hook in page cache
+> drop function.
+>
+> So, replace_page_cache_page should call freepage to support
+> page cleanup to fs.
+>
+> Cc: Miklos Szeredi<mszeredi@suse.cz>
+> Cc: Rik van Riel<riel@redhat.com>
+> Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Mel Gorman<mel@csn.ul.ie>
+> Signed-off-by: Minchan Kim<minchan.kim@gmail.com>
 
-If the call to alloc_domain() succeeds but the subsequent call to 
-dmar_find_matched_drhd_unit() fails, then the current code will return 
-NULL without calling domain_exit(domain) which will leak the memory that 
-alloc_domain() allocated.
-
-The easy fix for that is to simply move the call to alloc_domain() below 
-the call to dmar_find_matched_drhd_unit() since the latter does not depend 
-on the former.
-
-I also made the change of moving the assignment to local variable 'iommu' 
-below both calls since there is no point in doing that work if either of 
-those those calls fail.
-
-I also changed the 'return NULL' in the dmar_find_matched_drhd_unit() 
-failure case to a 'goto error' since I figured that if rechecking 
-'find_domain(pdev)' makes sense after a alloc_domain() failure then it 
-would also make sense after a dmar_find_matched_drhd_unit() failure.
-
-Patch is only compile tested and I'm not very familliar with this code at 
-all, so please review carefully before applying and please feel free to 
-provide feedback if this patch is somehow not making sense.
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- intel-iommu.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
-index 4789f8e..dfbdb08 100644
---- a/drivers/pci/intel-iommu.c
-+++ b/drivers/pci/intel-iommu.c
-@@ -1820,19 +1820,18 @@ static struct dmar_domain *get_domain_for_dev(struct pci_dev *pdev, int gaw)
- 		}
- 	}
- 
--	domain = alloc_domain();
--	if (!domain)
--		goto error;
--
- 	/* Allocate new domain for the device */
- 	drhd = dmar_find_matched_drhd_unit(pdev);
- 	if (!drhd) {
- 		printk(KERN_ERR "IOMMU: can't find DMAR for device %s\n",
- 			pci_name(pdev));
--		return NULL;
-+		goto error;
- 	}
--	iommu = drhd->iommu;
-+	domain = alloc_domain();
-+	if (!domain)
-+		goto error;
- 
-+	iommu = drhd->iommu;
- 	ret = iommu_attach_domain(domain, iommu);
- 	if (ret) {
- 		domain_exit(domain);
-
+Acked-by: Rik van Riel <riel@redhat.com>
 
 -- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Plain text mails only, please.
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-
+All rights reversed
