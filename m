@@ -1,164 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061Ab1BFBIG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 20:08:06 -0500
-Received: from lucidpixels.com ([75.144.35.66]:45744 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751725Ab1BFBIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 20:08:04 -0500
-Date: Sat, 5 Feb 2011 20:08:02 -0500 (EST)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Stan Hoeppner <stan@hardwarefreak.com>
-cc: "Dr. David Alan Gilbert" <linux@treblig.org>,
-        Emmanuel Florac <eflorac@intellique.com>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-net@vger.kernel.org,
-        Alan Piszcz <ap@solarrain.com>
-Subject: Re: Supermicro X8DTH-6: Only ~250MiB/s from RAID<->RAID over
- 10GbE?
-In-Reply-To: <4D4DE34E.7010308@hardwarefreak.com>
-Message-ID: <alpine.DEB.2.00.1102051958370.28109@p34.internal.lan>
-References: <alpine.DEB.2.00.1102051427360.8518@p34.internal.lan> <20110205214550.3cb0f0d1@galadriel2.home> <alpine.DEB.2.00.1102051553591.8518@p34.internal.lan> <20110205220621.GB17347@gallifrey> <alpine.DEB.2.00.1102051729010.8518@p34.internal.lan>
- <alpine.DEB.2.00.1102051753100.8518@p34.internal.lan> <4D4DE34E.7010308@hardwarefreak.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1752147Ab1BFBJz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 20:09:55 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:55557 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751747Ab1BFBJx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Feb 2011 20:09:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=ksplice.com; s=google;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=F5U9ErH//u7uMLyU57XPbHRrGzW86Z68lGkGgZ49vdi3Y+U+VO7Rr5lIwY0I+QG+1m
+         IxWRp98Rfsw4WmhbPYOsWIE5m8SOvAO4IyH62SiWgWOSw/OWZfnd8AM9YeDxgjIKb2Kj
+         dobnUuHCYF7aO3LNu1GMVSQyz7StxrpHWtRDs=
+From: Nelson Elhage <nelhage@ksplice.com>
+To: Davide Libenzi <davidel@xmailserver.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        security@kernel.org, Nelson Elhage <nelhage@ksplice.com>
+Subject: [PATCH] epoll: Prevent deadlock through unsafe ->f_op->poll() calls.
+Date: Sat,  5 Feb 2011 20:08:55 -0500
+Message-Id: <1296954535-29495-1-git-send-email-nelhage@ksplice.com>
+X-Mailer: git-send-email 1.7.2.43.g68ef4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In several places, an epoll fd can call another file's ->f_op->poll() method
+with ep->mtx held. This is in general unsafe, because that other file could
+itself be an epoll fd that contains the original epoll fd.
 
+The code defends against this possibility in its own ->poll() method using
+ep_call_nested, but there are several other unsafe calls to ->poll elsewhere
+that can be made to deadlock. For example, the following simple program causes
+the call in ep_insert recursively call the original fd's ->poll, leading to
+deadlock:
 
-On Sat, 5 Feb 2011, Stan Hoeppner wrote:
+------------------------------8<------------------------------
+ #include <unistd.h>
+ #include <sys/epoll.h>
 
-> Justin Piszcz put forth on 2/5/2011 4:56 PM:
->
->> Not sure how to copy/paste from an IPMI window, but I made my own
->> kernel for 2.6.37 in CentOS 5.5 (a pain) and now it is doing ~482-500MiB/s
->> sustained with a single copy (netcat from A->B).  Poor performance with the
->> default 2.6.18 kernel.  Seems to also slow down over time, down to 434MiB/s now,
->> but it started very quick and it remains between 420-500MiB/s sustained.  Now
->> 435-445MiB/s..
->
-> I forgot you mentioned CentOS.  Their kernel and apps are always very old.
-> 2.6.18 was release in Sept 2006 IIRC--4+ years ago.  It was the "pirate themed"
-> release.
->
-> With 2.6.37 what do you get with 4 concurrent nfs copy ops?  If the aggregate
-> nfs throughput doesn't increase, you need to tweak your nfs server (and possibly
-> client).  With that hardware and a recent kernel you should be able to fill that
-> 10 GbE pipe, or come really close.
+ int main(void) {
+     int e1, e2, p[2];
+     struct epoll_event evt = {
+         .events = EPOLLIN
+     };
 
-Hi,
+     e1 = epoll_create(1);
+     e2 = epoll_create(2);
+     pipe(p);
 
-I installed Debian Testing & my own kernel again (2.6.37):
+     epoll_ctl(e2, EPOLL_CTL_ADD, e1, &evt);
+     epoll_ctl(e1, EPOLL_CTL_ADD, p[0], &evt);
+     write(p[1], p, sizeof p);
+     epoll_ctl(e1, EPOLL_CTL_ADD, e2, &evt);
 
-One thread:
+     return 0;
+ }
+------------------------------8<------------------------------
 
-# get bigfile.1
-`bigfile.1' at 1168441344 (5%) 493.10M/s eta:38s [Receiving data] 
-`bigfile.1' at 2226847744 (10%) 557.16M/s eta:32s [Receiving data] 
-`bigfile.1' at 3274768384 (15%) 578.57M/s eta:29s [Receiving data] 
-`bigfile.1' at 4781113344 (22%) 585.02M/s eta:26s [Receiving data] 
-`bigfile.1' at 6294077440 (30%) 588.96M/s eta:24s [Receiving data] 
-`bigfile.1' at 9318563840 (44%) 592.87M/s eta:19s [Receiving data] 
-`bigfile.1' at 12805996544 (61%) 592.46M/s eta:13s [Receiving data] 
-20971520000 bytes transferred in 34 seconds (592.72M/s)
+This patch fixes the problem by wrapping all such calls in ep_call_nested, using
+the same nested_calls instance as the ->poll method. It's possible there are
+more elegant solutions, but this works and is minimally invasive.
 
-Two threads:
-[0] get bigfile.1
-         `bigfile.1' at 3225878528 (15%) 306.51M/s eta:55s [Receiving data]
-[1] get bigfile.2
-         `bigfile.2' at 3200516096 (15%) 306.49M/s eta:55s [Receiving data]
+Signed-off-by: Nelson Elhage <nelhage@ksplice.com>
+---
+ fs/eventpoll.c |   37 ++++++++++++++++++++++++++++++++++---
+ 1 files changed, 34 insertions(+), 3 deletions(-)
 
-Seems like some problem achieving > 600MiB/s now.
-
-procs -----------memory---------- ---swap-- -----io---- -system-- ----cpu----
-  r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa
-  0  0      0  34184    112 3875676    0    0 622592     0 49060 9798  0  5 95  0
-  0  0      0  32820    112 3876976    0    0 622592     0 49043 9745  0  5 95  0
-  0  0      0  34184    112 3876188    0    0 622592     0 48997 9714  0  5 95  0
-  1  0      0  32572    112 3877780    0    0 606208     0 48815 9537  0  5 95  0
-  0  0      0  32820    112 3878104    0    0 622592     0 48968 9741  0  5 95  0
-  0  0      0  31456    112 3878024    0    0 622592     0 49051 9773  0  5 95  0
-  0  0      0  31952    112 3877448    0    0 622592     4 49076 9804  0  5 95  0
-  3  0      0  30836    112 3871364    0    0 606208     0 48901 9650  0  5 95  0
-
-But much better than 250MiB/s.
-
-[0] Done (get bigfile.1)
-         20971520000 bytes transferred in 64 seconds (312.95M/s)
-[1] Done (get bigfile.2)
-         20971520000 bytes transferred in 64 seconds (312.78M/s)
-
-So approx 624MiB/s..
-
-With three threads:
-
-[0] get bigfile.1
-         `bigfile.1' at 6659241132 (31%) 222.41M/s eta:61s [Receiving data]
-[1] get bigfile.2
-         `bigfile.2' at 6620446720 (31%) 222.00M/s eta:62s [Receiving data]
-[2] get bigfile.3
-         `bigfile.3' at 6601441280 (31%) 222.17M/s eta:62s [Receiving data]
-
-vmstat:
-
-  0  0      0  33028    112 3877856    0    0 704512     0 53859 13108  0  6 94  0
-  1  0      0  32532    112 3877476    0    0 688128     0 54063 12484  0  6 94  0
-  1  0      0  33276    112 3877128    0    0 704512     0 54143 12548  0  6 94  0
-  1  0      0  33284    112 3868860    0    0 700672     0 54200 12398  0  6 94  0
-
-[0] Done (get bigfile.1)
-         20971520000 bytes transferred in 90 seconds (221.70M/s)
-[1] Done (get bigfile.2)
-         20971520000 bytes transferred in 90 seconds (221.50M/s)
-[2] Done (get bigfile.3)
-         20971520000 bytes transferred in 90 seconds (221.42M/s)
-
-A little better, 663MiB/s.
-
-Four threads:
-
-[0] get bigfile.1
-         `bigfile.1' at 2641887232 (12%) 162.77M/s eta:2m [Receiving data]
-[1] get bigfile.2
-         `bigfile.2' at 2601254912 (12%) 161.97M/s eta:2m [Receiving data]
-[2] get bigfile.3
-         `bigfile.3' at 2592931840 (12%) 162.05M/s eta:2m [Receiving data]
-[3] get bigfile.4
-         `bigfile.4' at 2546794496 (12%) 159.92M/s eta:2m [Receiving data]
-
-
-vmstat:
-
-  1  0      0  34492    112 3859748    0    0 678144     0 58816 11481  0  7 93  0
-  0  0      0  35360    112 3871060    0    0 681728     0 58889 11344  0  6 94  0
-  1  0      0  33872    112 3874252    0    0 688128     0 59052 11560  0  6 94  0
-  0  0      0  34492    112 3871400    0    0 688128     0 59079 11564  0  7 93  0
-  1  0      0  32136    112 3874888    0    0 688128     0 59089 11432  0  6 93  0
-  2  0      0  35360    112 3872436    0    0 655360     0 56672 10943  0  7 93  0
-
-
-[0] Done (get bigfile.1)
-         20971520000 bytes transferred in 120 seconds (166.72M/s)
-[1] Done (get bigfile.2)
-         20971520000 bytes transferred in 120 seconds (166.42M/s)
-[2] Done (get bigfile.3)
-         20971520000 bytes transferred in 120 seconds (166.40M/s)
-[3] Done (get bigfile.4)
-         20971520000 bytes transferred in 120 seconds (166.30M/s)
-
-664MiB/s, so it appears this is the best it can do without any major tweaking
-other than setting the blockdev readahead to 16384.
-
-Overall performance is good, but now I need to figure out how to tweak the
-network and/or disk paths so I can achieve > 1Gbyte/sec, as the RAID-0s can
-read and write > 1.2Gbyte/sec.
-
-Has anyone with 10GbE <-> 10GbE been able to transfer at or near line rate
-with a single connection, or > 700MiB/s with multiple connections?  Problem
-I worry about with creating multiple connections between two machines it will
-create contention within the RAID that is being read from..
-
-Justin.
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index 8cf07242..4ca27cf5 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -213,6 +213,12 @@ struct ep_send_events_data {
+ 	struct epoll_event __user *events;
+ };
+ 
++/* Used by the ep_poll_file() function as callback private data */
++struct ep_poll_file_data {
++	struct file *file;
++	struct poll_table_struct *pt;
++};
++
+ /*
+  * Configuration options available inside /proc/sys/fs/epoll/
+  */
+@@ -668,6 +674,31 @@ static unsigned int ep_eventpoll_poll(struct file *file, poll_table *wait)
+ 	return pollflags != -1 ? pollflags : 0;
+ }
+ 
++int ep_poll_file_proc(void *priv, void *cookie, int call_nests)
++{
++	struct ep_poll_file_data *data = priv;
++	return data->file->f_op->poll(data->file, data->pt);
++}
++
++static unsigned int ep_poll_file(struct eventpoll *ep, struct file *file,
++				 struct poll_table_struct *pt)
++{
++	int pollflags;
++	struct ep_poll_file_data data;
++	/*
++	 * This is merely a call to file->f_op->poll() under
++	 * ep_call_nested. This shares a nested_calls struct with
++	 * ep_eventpoll_poll in order to prevent other sites that call
++	 * ->f_op->poll from recursing back into this file and deadlocking.
++	 */
++	data.file = file;
++	data.pt   = pt;
++	pollflags = ep_call_nested(&poll_readywalk_ncalls, EP_MAX_NESTS,
++				   ep_poll_file_proc, &data, ep, current);
++
++	return pollflags != -1 ? pollflags : 0;
++}
++
+ /* File callbacks that implement the eventpoll file behaviour */
+ static const struct file_operations eventpoll_fops = {
+ 	.release	= ep_eventpoll_release,
+@@ -928,7 +959,7 @@ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
+ 	 * this operation completes, the poll callback can start hitting
+ 	 * the new item.
+ 	 */
+-	revents = tfile->f_op->poll(tfile, &epq.pt);
++	revents = ep_poll_file(ep, tfile, &epq.pt);
+ 
+ 	/*
+ 	 * We have to check if something went wrong during the poll wait queue
+@@ -1014,7 +1045,7 @@ static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_even
+ 	 * Get current event bits. We can safely use the file* here because
+ 	 * its usage count has been increased by the caller of this function.
+ 	 */
+-	revents = epi->ffd.file->f_op->poll(epi->ffd.file, NULL);
++	revents = ep_poll_file(ep, epi->ffd.file, NULL);
+ 
+ 	/*
+ 	 * If the item is "hot" and it is not registered inside the ready
+@@ -1061,7 +1092,7 @@ static int ep_send_events_proc(struct eventpoll *ep, struct list_head *head,
+ 
+ 		list_del_init(&epi->rdllink);
+ 
+-		revents = epi->ffd.file->f_op->poll(epi->ffd.file, NULL) &
++		revents = ep_poll_file(ep, epi->ffd.file, NULL) &
+ 			epi->event.events;
+ 
+ 		/*
+-- 
+1.7.2.43.g68ef4
 
