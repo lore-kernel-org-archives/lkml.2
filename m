@@ -1,111 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386Ab1BFKt0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 05:49:26 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38916 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300Ab1BFKtV (ORCPT
+	id S1752118Ab1BFKvY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 05:51:24 -0500
+Received: from jacques.telenet-ops.be ([195.130.132.50]:48122 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984Ab1BFKvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 05:49:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=s8YbYnD6K2+FItkvOAQvjkmCVoyQc8s/tUu1iSlgvYVZbxj9+Ln9JWnkrhvpDqGYRL
-         MPToRPQSXRm6p1/xWPLvi26yaRNJ0vlNbxugv4b19JXLpjonssNXOF4CsELKX8xfZACk
-         ehPQTnqkum2jUfsGxR/E8pILQ/vIU6s8zGajg=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: [PATCH v4 5/6] Good bye remove_from_page_cache
-Date: Sun,  6 Feb 2011 19:48:04 +0900
-Message-Id: <1957ab6fc0c902272ba05c0bde252938cae2b8ec.1296987110.git.minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <cover.1296987110.git.minchan.kim@gmail.com>
-References: <cover.1296987110.git.minchan.kim@gmail.com>
-In-Reply-To: <cover.1296987110.git.minchan.kim@gmail.com>
-References: <cover.1296987110.git.minchan.kim@gmail.com>
+	Sun, 6 Feb 2011 05:51:22 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
+        cz-bobek-lists-aranym@lists.bobek.cz
+Subject: [PATCH 0/4] m68k/atari: Add ARAnyM support
+Date: Sun,  6 Feb 2011 11:51:05 +0100
+Message-Id: <1296989469-7844-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now delete_from_page_cache replaces remove_from_page_cache.
-So we remove remove_from_page_cache so fs or something out of
-mainline will notice it when compile time and can fix it.
+This patch series add improved support for running under the ARAnyM emulator
+(Atari Running on Any Machine - http://aranym.org/).
+Without these patches, you can run a Linux/m68k kernel with Atari support
+under ARAnyM (it emulates the IDE interface), but you can't have network and
+console access.
 
-Cc: Christoph Hellwig <hch@infradead.org>
-Acked-by: Hugh Dickins <hughd@google.com>
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
----
- include/linux/pagemap.h |    1 -
- mm/filemap.c            |   26 ++++++++++----------------
- 2 files changed, 10 insertions(+), 17 deletions(-)
+This support has been in active use for several years. In fact some Debian
+build daemons run under ARAnyM, as it's the fastest m68k platform around.
 
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index a943985..631b1b6 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -455,7 +455,6 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
- 				pgoff_t index, gfp_t gfp_mask);
- int add_to_page_cache_lru(struct page *page, struct address_space *mapping,
- 				pgoff_t index, gfp_t gfp_mask);
--extern void remove_from_page_cache(struct page *page);
- extern void __remove_from_page_cache(struct page *page);
- extern void delete_from_page_cache(struct page *page);
- int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask);
-diff --git a/mm/filemap.c b/mm/filemap.c
-index f056d0c..5f3a389 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -148,7 +148,16 @@ void __remove_from_page_cache(struct page *page)
- 	}
- }
- 
--void remove_from_page_cache(struct page *page)
-+/**
-+ * delete_from_page_cache - delete page from page cache
-+ * @page: the page which the kernel is trying to remove from page cache
-+ *
-+ * This must be called only on pages that have
-+ * been verified to be in the page cache and locked.
-+ * It will never put the page into the free list,
-+ * the caller has a reference on the page.
-+ */
-+void delete_from_page_cache(struct page *page)
- {
- 	struct address_space *mapping = page->mapping;
- 	void (*freepage)(struct page *);
-@@ -163,21 +172,6 @@ void remove_from_page_cache(struct page *page)
- 
- 	if (freepage)
- 		freepage(page);
--}
--EXPORT_SYMBOL(remove_from_page_cache);
--
--/**
-- * delete_from_page_cache - delete page from page cache
-- * @page: the page which the kernel is trying to remove from page cache
-- *
-- * This must be called only on pages that have
-- * been verified to be in the page cache and locked.
-- * It will never put the page into the free list,
-- * the caller has a reference on the page.
-- */
--void delete_from_page_cache(struct page *page)
--{
--	remove_from_page_cache(page);
- 	page_cache_release(page);
- }
- EXPORT_SYMBOL(delete_from_page_cache);
--- 
-1.7.1
+  [1/4] m68k/atari: Initial ARAnyM support
+  [2/4] m68k/atari: ARAnyM - Add support for block access
+  [3/4] m68k/atari: ARAnyM - Add support for console access
+  [4/4] m68k/atari: ARAnyM - Add support for network access
 
+Questions:
+  - Who should be listed as author for patches 1 and 4?
+  - Can I please have Signed-off-by's from the ARAnyM people?
+
+ arch/m68k/Kconfig               |   31 +++++
+ arch/m68k/Makefile              |    1 +
+ arch/m68k/emu/Makefile          |    9 ++
+ arch/m68k/emu/natfeat.c         |   78 +++++++++++
+ arch/m68k/emu/nfblock.c         |  195 ++++++++++++++++++++++++++++
+ arch/m68k/emu/nfcon.c           |  162 +++++++++++++++++++++++
+ arch/m68k/emu/nfeth.c           |  272 +++++++++++++++++++++++++++++++++++++++
+ arch/m68k/include/asm/natfeat.h |   22 +++
+ arch/m68k/kernel/setup.c        |    5 +
+ 9 files changed, 775 insertions(+), 0 deletions(-)
+
+Thanks in advance!
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
