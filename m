@@ -1,41 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330Ab1BFRFA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 12:05:00 -0500
-Received: from lobo.ruivo.org ([173.14.175.98]:58580 "EHLO lobo.ruivo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753016Ab1BFRE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 12:04:59 -0500
-X-Greylist: delayed 555 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Feb 2011 12:04:59 EST
-Date: Sun, 6 Feb 2011 11:55:24 -0500
-From: Aristeu Rozanski <aris@cathedrallabs.org>
-To: David Herrmann <dh.herrmann@googlemail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] uinput strnlen bugfix
-Message-ID: <20110206165524.GG22170@cathedrallabs.org>
-References: <AANLkTi=vBv_a+X3MrgyDevss9H92vBJ51eON_qyMJW4=@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=vBv_a+X3MrgyDevss9H92vBJ51eON_qyMJW4=@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753385Ab1BFRNt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 12:13:49 -0500
+Received: from caiajhbdcaib.dreamhost.com ([208.97.132.81]:33920 "EHLO
+	homiemail-a10.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753353Ab1BFRNp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 12:13:45 -0500
+Subject: [PATCH v2 2/2] USB: tools: Add a Makefile
+From: Davidlohr Bueso <dave@gnu.org>
+To: Michal Nazarewicz <m.nazarewicz@samsung.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 06 Feb 2011 14:13:37 -0300
+Message-ID: <1297012417.2039.9.camel@offworld>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 06, 2011 at 05:49:23PM +0100, David Herrmann wrote:
-> The uinput device driver (drivers/input/misc/uinput.c) incorrectly
-> computes the size of new device names. This patch fixes this. The diff
-> is against 2.6.37 but the bug also exists in the most recent git
-> sources.
-> 
-> strnlen() never returns negative numbers so the result should be
-> incremented after checking for zero. Otherwise the test will always be
-> false. This bug allows empty input device names.
-> 
-> Please CC me, I'm not subscribed to the mailing list.
-and where's the patch? :^)
+From: Davidlohr Bueso <dave@gnu.org>
 
+Build USB tools easier.
+
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+---
+ tools/usb/Makefile |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
+ create mode 100644 tools/usb/Makefile
+
+diff --git a/tools/usb/Makefile b/tools/usb/Makefile
+new file mode 100644
+index 0000000..8b704af
+--- /dev/null
++++ b/tools/usb/Makefile
+@@ -0,0 +1,13 @@
++# Makefile for USB tools
++
++CC = $(CROSS_COMPILE)gcc
++PTHREAD_LIBS = -lpthread
++WARNINGS = -Wall -Wextra
++CFLAGS = $(WARNINGS) -g $(PTHREAD_LIBS)
++
++all: testusb ffs-test
++%: %.c
++	$(CC) $(CFLAGS) -o $@ $^
++
++clean:
++	$(RM) testusb ffs-test
 -- 
-Aristeu
+1.7.1
+
+
+
+
+
+
+
 
