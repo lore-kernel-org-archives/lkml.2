@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab1BFXIS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 18:08:18 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:46706 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754067Ab1BFXIR (ORCPT
+	id S1754125Ab1BFXMm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 18:12:42 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37421 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754067Ab1BFXMk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 18:08:17 -0500
-Message-ID: <4D4F2A3C.9070407@metafoo.de>
-Date: Mon, 07 Feb 2011 00:09:48 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+	Sun, 6 Feb 2011 18:12:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding
+         :content-disposition:message-id;
+        b=LzbsoMTDVEN3Ey2T8E+Mbz+YKEghNFUV1mNafXtWNOBNPHlg+7ZV05HG8lbDb71mey
+         G30ldoc9LFR4xpNW0kXocwZB7cutLrRpiN9ImeBP0kTVQXWIOcrvEQaYk+92bKIuG9xt
+         arXfYciw0ScmPDU3Ja3NBanolQkwJ8cZdul5U=
+From: Chris Clayton <chris2553@googlemail.com>
+Reply-To: chris2553@googlemail.com
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.38-rc2+ - regresiion copying DVD's
+Date: Sun, 6 Feb 2011 23:12:14 +0000
+User-Agent: KMail/1.9.10
+Cc: simon@fire.lp0.eu, tj@kernel.org, kay.sievers@vrfy.org
+References: <201101301550.59272.chris2553@googlemail.com> <201101311929.05290.chris2553@googlemail.com>
+In-Reply-To: <201101311929.05290.chris2553@googlemail.com>
 MIME-Version: 1.0
-To: Felipe Contreras <felipe.contreras@gmail.com>
-CC: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Grazvydas Ignotas <notasas@gmail.com>, linux-kernel@vger.kernel.org,
-        =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
-Subject: Re: [PATCH 00/14] POWER: BQ27x00: New Properties, fixes, bq27000
- support
-References: <1296953291-10373-1-git-send-email-lars@metafoo.de> <AANLkTi=4K8=QfqH1BB8WdTk8QuZf_WvhshwQdmFwQJ2L@mail.gmail.com>
-In-Reply-To: <AANLkTi=4K8=QfqH1BB8WdTk8QuZf_WvhshwQdmFwQJ2L@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201102062312.14919.chris2553@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2011 11:47 PM, Felipe Contreras wrote:
-> Hi,
-> 
-> On Sun, Feb 6, 2011 at 2:47 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
->> This patch series contains a few updates for the bq27x00 driver:
->> * Support for additional power supply properties
->> * Support for the bq27000 battery which is identical to the bq27200 but is
->>  connected through the HDQ bus.
->> * Adds a register cache to the driver and introduces polling the batteries state
->> * Minor improvements and cleanups
->>
->> The last patch in this series is not specific to the bq27x00 driver but is
->> required for uevents to be generated properly for this driver.
->> The patch makes properties which return -ENODATA to be ignored when generating
->> uevents. Previously in such a case uevent generation would have been aborted
->> with an error. But since the bq27x00 return -ENODATA for the TIME_TO_FULL
->> property when the battery is not charging and for the TIME_TO_EMPTY property
->> when the battery is not discharging and at least one of them is always true
->> uevent generation would always fail.
->>
->> This series has so far been tested with the bq27000 and the bq27200 battery, but
->> not with the bq27500 battery, so it would be nice if somebody with a board
->> containing such a battery could test the patches to make sure that there are no
->> regressions.
-> 
-> This might be a bit off-topic, but I have tried to get the battery on
-> the Nokia N900 working, and so far I'm only able to query the
-> remaining capacity, but not really to enabling charging. This is very
-> annoying, as I can only hack a certain amount of time, and then I have
-> to reflash, reboot, and wait for the batter to charge with the
-> official system (if there's enough power to flash).
-> 
-> Do you have any hints how to do that?
-> 
+Hi again,
 
-Hi
+On Monday 31 January 2011, Chris Clayton wrote:
+> On Sunday 30 January 2011, Chris Clayton wrote:
+> > Hi,
+> >
+> > Firstly, I'm not subscribed, so please cc me on any reply.
+> >
+> > I'm trying to copy the3 contents of a video DVD from one disc to another,
+> > but it fails. There are no messages in the kernel log file, but K3B
+> > reports the following:
+>
+> <snip>
+>
+> Simon's patch at http://marc.info/?l=linux-kernel&m=129649842110692&w=4
+> fixes this problem, so feel free to add
+>
+> Tested-by: Chris Clayton <chris2553@googlemail.com>
+>
+I note that Simon's patch hasn't made it through to Linus yet. Which tree is ot 
+going through, please?
 
-Sorry, I've never worked with the N900, so I have no idea. But Pali has tested this
-patch series on his N900, so he might have an idea.
+Chris
 
-- Lars
+> Thanks Simon
+
+
+
+-- 
+The more I see, the more I know. The more I know, the less I understand. 
+Changing Man - Paul Weller
