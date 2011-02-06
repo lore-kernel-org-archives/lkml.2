@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436Ab1BFKvb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 05:51:31 -0500
-Received: from gerard.telenet-ops.be ([195.130.132.48]:45231 "EHLO
+	id S1752523Ab1BFKvm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 05:51:42 -0500
+Received: from gerard.telenet-ops.be ([195.130.132.48]:45240 "EHLO
 	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984Ab1BFKv3 (ORCPT
+	with ESMTP id S1752303Ab1BFKva (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 05:51:29 -0500
+	Sun, 6 Feb 2011 05:51:30 -0500
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org,
         cz-bobek-lists-aranym@lists.bobek.cz
-Cc: Roman Zippel <zippel@linux-m68k.org>,
+Cc: Michael Schmitz <schmitz@opal.biophys.uni-duesseldorf.de>,
         Geert Uytterhoeven <geert@linux-m68k.org>,
-        Petr Stehlik <pstehlik@sophics.cz>
-Subject: [PATCH 2/4] m68k/atari: ARAnyM - Add support for block access
-Date: Sun,  6 Feb 2011 11:51:07 +0100
-Message-Id: <1296989469-7844-3-git-send-email-geert@linux-m68k.org>
+        Petr Stehlik <pstehlik@sophics.cz>, Milan Jurik <M.Jurik@sh.cvut.cz>,
+        netdev@vger.kernel.org
+Subject: [PATCH 4/4] m68k/atari: ARAnyM - Add support for network access
+Date: Sun,  6 Feb 2011 11:51:09 +0100
+Message-Id: <1296989469-7844-5-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1296989469-7844-1-git-send-email-geert@linux-m68k.org>
 References: <1296989469-7844-1-git-send-email-geert@linux-m68k.org>
@@ -23,265 +24,341 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roman Zippel <zippel@linux-m68k.org>
+From: Michael Schmitz <schmitz@opal.biophys.uni-duesseldorf.de>
 
-Signed-off-by: Roman Zippel <zippel@linux-m68k.org>
+Should be signed off by Milan and Petr, really.
+
 [geert] Cleanups and updates
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Cc: Petr Stehlik <pstehlik@sophics.cz>
+Cc: Milan Jurik <M.Jurik@sh.cvut.cz>
+Cc: netdev@vger.kernel.org
 
 ---
 Changelog:
-  - Wrap natfeat calls
-
-    Add wrappers with proper prototypes for the natfeat calls in nfblock.
-    This fixes the problem where sector_t was pushed on the stack as a 64-bit
-    value if CONFIG_LBDAF=y, while all parameters of the nf_call() varargs
-    function are 32-bit.
-
-  - Update for v2.6.31 block layer changes,
-  - nfblock needs <linux/slab.h>,
+  - Convert to net_device_ops,
+  - nfeth doesn't need obsolete <net/ieee80211.h>,
+  - Convert print_mac to %pM,
+  - Break too long lines,
   - Make needlessly global functions static,
-  - Make struct block_device_operations const,
+  - Make version[] const,
   - Use pr_*(),
-  - Propagate error code from register_blkdev().
+  - Use net_device_stats from struct net_device instead of our own,
+  - Propagate error code from request_irq(),
+  - Remove unused variable "handled".
 ---
- arch/m68k/Kconfig       |    8 ++
- arch/m68k/emu/Makefile  |    2 +
- arch/m68k/emu/nfblock.c |  195 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 205 insertions(+), 0 deletions(-)
- create mode 100644 arch/m68k/emu/nfblock.c
+ arch/m68k/Kconfig      |    8 ++
+ arch/m68k/emu/Makefile |    1 +
+ arch/m68k/emu/nfeth.c  |  272 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 281 insertions(+), 0 deletions(-)
+ create mode 100644 arch/m68k/emu/nfeth.c
 
 diff --git a/arch/m68k/Kconfig b/arch/m68k/Kconfig
-index f668a58..2c890b5 100644
+index 6719c56..80df6ee 100644
 --- a/arch/m68k/Kconfig
 +++ b/arch/m68k/Kconfig
-@@ -247,6 +247,14 @@ config NATFEAT
- 	  This option enables support for ARAnyM native features, such as
- 	  access to a disk image as /dev/hda.
+@@ -263,6 +263,14 @@ config NFCON
+ 	  which allows the console output to be redirected to the stderr
+ 	  output of ARAnyM.
  
-+config NFBLOCK
-+	tristate "NatFeat block device support"
-+	depends on BLOCK && NATFEAT
++config NFETH
++	tristate "NatFeat Ethernet support"
++	depends on NET_ETHERNET && NATFEAT
 +	help
-+	  Say Y to include support for the ARAnyM NatFeat block device
-+	  which allows direct access to the hard drives without using
-+	  the hardware emulation.
++	  Say Y to include support for the ARAnyM NatFeat network device
++	  which will emulate a regular ethernet device while presenting an
++	  ethertap device to the host system.
 +
  comment "Processor type"
  
  config M68020
 diff --git a/arch/m68k/emu/Makefile b/arch/m68k/emu/Makefile
-index 34cfa34..fc4f77a 100644
+index a83ef1e..7dc2010 100644
 --- a/arch/m68k/emu/Makefile
 +++ b/arch/m68k/emu/Makefile
-@@ -3,3 +3,5 @@
- #
+@@ -6,3 +6,4 @@ obj-y			+= natfeat.o
  
- obj-y			+= natfeat.o
-+
-+obj-$(CONFIG_NFBLOCK)	+= nfblock.o
-diff --git a/arch/m68k/emu/nfblock.c b/arch/m68k/emu/nfblock.c
+ obj-$(CONFIG_NFBLOCK)	+= nfblock.o
+ obj-$(CONFIG_NFCON)	+= nfcon.o
++obj-$(CONFIG_NFETH)	+= nfeth.o
+diff --git a/arch/m68k/emu/nfeth.c b/arch/m68k/emu/nfeth.c
 new file mode 100644
-index 0000000..48e50f8
+index 0000000..5b2a33d
 --- /dev/null
-+++ b/arch/m68k/emu/nfblock.c
-@@ -0,0 +1,195 @@
++++ b/arch/m68k/emu/nfeth.c
+@@ -0,0 +1,272 @@
 +/*
-+ * ARAnyM block device driver
++ * atari_nfeth.c - ARAnyM ethernet card driver for GNU/Linux
 + *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file COPYING in the main directory of this archive
-+ * for more details.
++ * Copyright (c) 2005 Milan Jurik, Petr Stehlik of ARAnyM dev team
++ *
++ * Based on ARAnyM driver for FreeMiNT written by Standa Opichal
++ *
++ * This software may be used and distributed according to the terms of
++ * the GNU General Public License (GPL), incorporated herein by reference.
 + */
 +
++#include <linux/netdevice.h>
++#include <linux/etherdevice.h>
 +#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/init.h>
-+
-+#include <linux/kernel.h>
-+#include <linux/errno.h>
-+#include <linux/types.h>
-+#include <linux/genhd.h>
-+#include <linux/blkdev.h>
-+#include <linux/hdreg.h>
-+#include <linux/slab.h>
-+
 +#include <asm/natfeat.h>
-+
-+static long nfhd_id;
++#include <asm/virtconvert.h>
 +
 +enum {
-+	/* emulation entry points */
-+	NFHD_READ_WRITE = 10,
-+	NFHD_GET_CAPACITY = 14,
-+
-+	/* skip ACSI devices */
-+	NFHD_DEV_OFFSET = 8,
++	GET_VERSION = 0,/* no parameters, return NFAPI_VERSION in d0 */
++	XIF_INTLEVEL,	/* no parameters, return Interrupt Level in d0 */
++	XIF_IRQ,	/* acknowledge interrupt from host */
++	XIF_START,	/* (ethX), called on 'ifup', start receiver thread */
++	XIF_STOP,	/* (ethX), called on 'ifdown', stop the thread */
++	XIF_READLENGTH,	/* (ethX), return size of network data block to read */
++	XIF_READBLOCK,	/* (ethX, buffer, size), read block of network data */
++	XIF_WRITEBLOCK,	/* (ethX, buffer, size), write block of network data */
++	XIF_GET_MAC,	/* (ethX, buffer, size), return MAC HW addr in buffer */
++	XIF_GET_IPHOST,	/* (ethX, buffer, size), return IP address of host */
++	XIF_GET_IPATARI,/* (ethX, buffer, size), return IP address of atari */
++	XIF_GET_NETMASK	/* (ethX, buffer, size), return IP netmask */
 +};
 +
-+static inline s32 nfhd_read_write(u32 major, u32 minor, u32 rwflag, u32 recno,
-+				  u32 count, u32 buf)
-+{
-+	return nf_call(nfhd_id + NFHD_READ_WRITE, major, minor, rwflag, recno,
-+		       count, buf);
-+}
++#define DRV_NAME	"nfeth"
++#define DRV_VERSION	"0.3"
++#define DRV_RELDATE	"10/12/2005"
 +
-+static inline s32 nfhd_get_capacity(u32 major, u32 minor, u32 *blocks,
-+				    u32 *blocksize)
-+{
-+	return nf_call(nfhd_id + NFHD_GET_CAPACITY, major, minor, blocks,
-+		       blocksize);
-+}
++#define MAX_UNIT	8
 +
-+static LIST_HEAD(nfhd_list);
++/* These identify the driver base version and may not be removed. */
++static const char version[] __devinitdata =
++	KERN_INFO DRV_NAME ".c:v" DRV_VERSION " " DRV_RELDATE
++	" S.Opichal, M.Jurik, P.Stehlik\n"
++	KERN_INFO " http://aranym.atari.org/\n";
 +
-+static int major_num;
-+module_param(major_num, int, 0);
++MODULE_AUTHOR("Milan Jurik");
++MODULE_DESCRIPTION("Atari NFeth driver");
++MODULE_LICENSE("GPL");
++/*
++MODULE_PARM(nfeth_debug, "i");
++MODULE_PARM_DESC(nfeth_debug, "nfeth_debug level (1-2)");
++*/
 +
-+struct nfhd_device {
-+	struct list_head list;
-+	int id;
-+	u32 blocks, bsize;
-+	int bshift;
-+	struct request_queue *queue;
-+	struct gendisk *disk;
++
++static long nfEtherID;
++static int nfEtherIRQ;
++
++struct nfeth_private {
++	int ethX;
 +};
 +
-+static int nfhd_make_request(struct request_queue *queue, struct bio *bio)
++static struct net_device *nfeth_dev[MAX_UNIT];
++
++static int nfeth_open(struct net_device *dev)
 +{
-+	struct nfhd_device *dev = queue->queuedata;
-+	struct bio_vec *bvec;
-+	int i, dir, len, shift;
-+	sector_t sec = bio->bi_sector;
++	struct nfeth_private *priv = netdev_priv(dev);
++	int res;
 +
-+	dir = bio_data_dir(bio);
-+	shift = dev->bshift;
-+	bio_for_each_segment(bvec, bio, i) {
-+		len = bvec->bv_len;
-+		len >>= 9;
-+		nfhd_read_write(dev->id, 0, dir, sec >> shift, len >> shift,
-+				bvec_to_phys(bvec));
-+		sec += len;
-+	}
-+	bio_endio(bio, 0);
-+	return 0;
-+}
++	res = nf_call(nfEtherID + XIF_START, priv->ethX);
 +
-+static int nfhd_getgeo(struct block_device *bdev, struct hd_geometry *geo)
-+{
-+	struct nfhd_device *dev = bdev->bd_disk->private_data;
++	pr_debug(DRV_NAME ": open %d\n", res);
 +
-+	geo->cylinders = dev->blocks >> (6 - dev->bshift);
-+	geo->heads = 4;
-+	geo->sectors = 16;
++	/* Ready for data */
++	netif_start_queue(dev);
 +
 +	return 0;
 +}
 +
-+static const struct block_device_operations nfhd_ops = {
-+	.owner	= THIS_MODULE,
-+	.getgeo	= nfhd_getgeo,
-+};
-+
-+static int __init nfhd_init_one(int id, u32 blocks, u32 bsize)
++static int nfeth_stop(struct net_device *dev)
 +{
-+	struct nfhd_device *dev;
-+	int dev_id = id - NFHD_DEV_OFFSET;
++	struct nfeth_private *priv = netdev_priv(dev);
 +
-+	pr_info("nfhd%u: found device with %u blocks (%u bytes)\n", dev_id,
-+		blocks, bsize);
++	/* No more data */
++	netif_stop_queue(dev);
 +
-+	if (bsize < 512 || (bsize & (bsize - 1))) {
-+		pr_warn("nfhd%u: invalid block size\n", dev_id);
-+		return -EINVAL;
++	nf_call(nfEtherID + XIF_STOP, priv->ethX);
++
++	return 0;
++}
++
++/*
++ * Read a packet out of the adapter and pass it to the upper layers
++ */
++static inline void recv_packet(struct net_device *dev)
++{
++	struct nfeth_private *priv = netdev_priv(dev);
++	unsigned short pktlen;
++	struct sk_buff *skb;
++
++	/* read packet length (excluding 32 bit crc) */
++	pktlen = nf_call(nfEtherID + XIF_READLENGTH, priv->ethX);
++
++	pr_debug(DRV_NAME ": recv_packet: %i\n", pktlen);
++
++	if (!pktlen) {
++		pr_debug(DRV_NAME ": recv_packet: pktlen == 0\n");
++		dev->stats.rx_errors++;
++		return;
 +	}
 +
-+	dev = kmalloc(sizeof(struct nfhd_device), GFP_KERNEL);
++	skb = dev_alloc_skb(pktlen + 2);
++	if (!skb) {
++		pr_debug(DRV_NAME
++			 ": recv_packet: out of mem (buf_alloc failed)\n");
++		dev->stats.rx_dropped++;
++		return;
++	}
++
++	skb->dev = dev;
++	skb_reserve(skb, 2);		/* 16 Byte align  */
++	skb_put(skb, pktlen);		/* make room */
++	nf_call(nfEtherID + XIF_READBLOCK, priv->ethX, virt_to_phys(skb->data),
++		pktlen);
++
++	skb->protocol = eth_type_trans(skb, dev);
++	netif_rx(skb);
++	dev->last_rx = jiffies;
++	dev->stats.rx_packets++;
++	dev->stats.rx_bytes += pktlen;
++
++	/* and enqueue packet */
++	return;
++}
++
++static irqreturn_t nfeth_interrupt(int irq, void *dev_id)
++{
++	int i, m, mask;
++
++	mask = nf_call(nfEtherID + XIF_IRQ, 0);
++	for (i = 0, m = 1; i < MAX_UNIT; m <<= 1, i++) {
++		if (mask & m && nfeth_dev[i]) {
++			recv_packet(nfeth_dev[i]);
++			nf_call(nfEtherID + XIF_IRQ, m);
++		}
++	}
++	return IRQ_HANDLED;
++}
++
++static int nfeth_xmit(struct sk_buff *skb, struct net_device *dev)
++{
++	int len;
++	char *data, shortpkt[ETH_ZLEN];
++	struct nfeth_private *priv = netdev_priv(dev);
++
++	data = skb->data;
++	len = skb->len;
++	if (len < ETH_ZLEN) {
++		memset(shortpkt, 0, ETH_ZLEN);
++		memcpy(shortpkt, data, len);
++		data = shortpkt;
++		len = ETH_ZLEN;
++	}
++
++	dev->trans_start = jiffies;
++
++	pr_debug(DRV_NAME ": send %d bytes\n", len);
++	nf_call(nfEtherID + XIF_WRITEBLOCK, priv->ethX, virt_to_phys(data),
++		len);
++
++	dev->stats.tx_packets++;
++	dev->stats.tx_bytes += len;
++
++	dev_kfree_skb(skb);
++	return 0;
++}
++
++static void nfeth_tx_timeout(struct net_device *dev)
++{
++	dev->stats.tx_errors++;
++	netif_wake_queue(dev);
++}
++
++static const struct net_device_ops nfeth_netdev_ops = {
++	.ndo_open		= nfeth_open,
++	.ndo_stop		= nfeth_stop,
++	.ndo_start_xmit		= nfeth_xmit,
++	.ndo_tx_timeout		= nfeth_tx_timeout,
++	.ndo_validate_addr	= eth_validate_addr,
++	.ndo_change_mtu		= eth_change_mtu,
++	.ndo_set_mac_address	= eth_mac_addr,
++};
++
++static struct net_device * __init nfeth_probe(int unit)
++{
++	struct net_device *dev;
++	struct nfeth_private *priv;
++	char mac[ETH_ALEN], host_ip[32], local_ip[32];
++	int err;
++
++	if (!nf_call(nfEtherID + XIF_GET_MAC, unit, mac, ETH_ALEN))
++		return NULL;
++
++	dev = alloc_etherdev(sizeof(struct nfeth_private));
 +	if (!dev)
-+		goto out;
++		return NULL;
 +
-+	dev->id = id;
-+	dev->blocks = blocks;
-+	dev->bsize = bsize;
-+	dev->bshift = ffs(bsize) - 10;
++	dev->irq = nfEtherIRQ;
++	dev->netdev_ops = &nfeth_netdev_ops;
 +
-+	dev->queue = blk_alloc_queue(GFP_KERNEL);
-+	if (dev->queue == NULL)
-+		goto free_dev;
++	dev->flags |= NETIF_F_NO_CSUM;
++	memcpy(dev->dev_addr, mac, ETH_ALEN);
 +
-+	dev->queue->queuedata = dev;
-+	blk_queue_make_request(dev->queue, nfhd_make_request);
-+	blk_queue_logical_block_size(dev->queue, bsize);
++	priv = netdev_priv(dev);
++	priv->ethX = unit;
 +
-+	dev->disk = alloc_disk(16);
-+	if (!dev->disk)
-+		goto free_queue;
++	err = register_netdev(dev);
++	if (err) {
++		free_netdev(dev);
++		return NULL;
++	}
 +
-+	dev->disk->major = major_num;
-+	dev->disk->first_minor = dev_id * 16;
-+	dev->disk->fops = &nfhd_ops;
-+	dev->disk->private_data = dev;
-+	sprintf(dev->disk->disk_name, "nfhd%u", dev_id);
-+	set_capacity(dev->disk, (sector_t)blocks * (bsize / 512));
-+	dev->disk->queue = dev->queue;
++	nf_call(nfEtherID + XIF_GET_IPHOST, unit,
++		host_ip, sizeof(host_ip));
++	nf_call(nfEtherID + XIF_GET_IPATARI, unit,
++		local_ip, sizeof(local_ip));
 +
-+	add_disk(dev->disk);
++	pr_info("%s: nfeth addr:%s (%s) HWaddr:%pM\n", dev->name, host_ip,
++		local_ip, mac);
 +
-+	list_add_tail(&dev->list, &nfhd_list);
-+
-+	return 0;
-+
-+free_queue:
-+	blk_cleanup_queue(dev->queue);
-+free_dev:
-+	kfree(dev);
-+out:
-+	return -ENOMEM;
++	return dev;
 +}
 +
-+static int __init nfhd_init(void)
++static int __init nfeth_init(void)
 +{
-+	u32 blocks, bsize;
-+	int i;
++	long ver;
++	int error, i;
 +
-+	nfhd_id = nf_get_id("XHDI");
-+	if (!nfhd_id)
++	nfEtherID = nf_get_id("ETHERNET");
++	if (!nfEtherID)
 +		return -ENODEV;
 +
-+	major_num = register_blkdev(major_num, "nfhd");
-+	if (major_num <= 0) {
-+		pr_warn("nfhd: unable to get major number\n");
-+		return major_num;
++	ver = nf_call(nfEtherID + GET_VERSION);
++	pr_info("nfeth API %lu\n", ver);
++
++	nfEtherIRQ = nf_call(nfEtherID + XIF_INTLEVEL);
++	error = request_irq(nfEtherIRQ, nfeth_interrupt, IRQF_SHARED,
++			    "eth emu", nfeth_interrupt);
++	if (error) {
++		pr_err("nfeth: request for irq %d failed", nfEtherIRQ);
++		return error;
 +	}
 +
-+	for (i = NFHD_DEV_OFFSET; i < 24; i++) {
-+		if (nfhd_get_capacity(i, 0, &blocks, &bsize))
-+			continue;
-+		nfhd_init_one(i, blocks, bsize);
-+	}
++	for (i = 0; i < MAX_UNIT; i++)
++		nfeth_dev[i] = nfeth_probe(i);
 +
 +	return 0;
 +}
 +
-+static void __exit nfhd_exit(void)
++static void __exit nfeth_cleanup(void)
 +{
-+	struct nfhd_device *dev, *next;
++	int i;
 +
-+	list_for_each_entry_safe(dev, next, &nfhd_list, list) {
-+		list_del(&dev->list);
-+		del_gendisk(dev->disk);
-+		put_disk(dev->disk);
-+		blk_cleanup_queue(dev->queue);
-+		kfree(dev);
++	for (i = 0; i < MAX_UNIT; i++) {
++		if (nfeth_dev[i]) {
++			unregister_netdev(nfeth_dev[0]);
++			free_netdev(nfeth_dev[0]);
++		}
 +	}
-+	unregister_blkdev(major_num, "nfhd");
++	free_irq(nfEtherIRQ, nfeth_interrupt);
 +}
 +
-+module_init(nfhd_init);
-+module_exit(nfhd_exit);
-+
-+MODULE_LICENSE("GPL");
++module_init(nfeth_init);
++module_exit(nfeth_cleanup);
 -- 
 1.7.0.4
 
