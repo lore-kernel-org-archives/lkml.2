@@ -1,67 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785Ab1BFTWF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 14:22:05 -0500
-Received: from www.tglx.de ([62.245.132.106]:45154 "EHLO www.tglx.de"
+	id S1753848Ab1BFTWI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 14:22:08 -0500
+Received: from www.tglx.de ([62.245.132.106]:45164 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753678Ab1BFTWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 14:22:03 -0500
-Message-Id: <20110206192106.011224503@linutronix.de>
+	id S1753680Ab1BFTWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 14:22:07 -0500
+Message-Id: <20110206192106.203431646@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Sun, 06 Feb 2011 19:21:48 -0000
+Date: Sun, 06 Feb 2011 19:21:52 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: David Howells <dhowells@redhat.com>
-Subject: [patch 1/7] frv: Remove stale irq_chip.end
+Subject: [patch 3/7] frv: Convert mb93091 irq_chip to new functions
 References: <20110206192032.393682621@linutronix.de>
-Content-Disposition: inline; filename=frv-remove-stale-irq_chip-end.patch
+Content-Disposition: inline; filename=frv-convert-mb93091-irq-chips.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-irq_chip.end got obsolete with the removal of __do_IRQ().
-
-irq-mb93093.c even lacks an implementation, but nobody noticed that
-it's broken since commit 88d6e1 in 2006.
-
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/frv/kernel/irq-mb93093.c |    1 -
- arch/frv/kernel/irq.c         |    6 ------
- 2 files changed, 7 deletions(-)
+ arch/frv/kernel/irq-mb93091.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-Index: linux-next/arch/frv/kernel/irq-mb93093.c
+Index: linux-next/arch/frv/kernel/irq-mb93091.c
 ===================================================================
---- linux-next.orig/arch/frv/kernel/irq-mb93093.c
-+++ linux-next/arch/frv/kernel/irq-mb93093.c
-@@ -73,7 +73,6 @@ static struct irq_chip frv_fpga_pic = {
- 	.mask		= frv_fpga_mask,
- 	.mask_ack	= frv_fpga_mask_ack,
- 	.unmask		= frv_fpga_unmask,
--	.end		= frv_fpga_end,
- };
- 
+--- linux-next.orig/arch/frv/kernel/irq-mb93091.c
++++ linux-next/arch/frv/kernel/irq-mb93091.c
+@@ -36,45 +36,45 @@
  /*
-Index: linux-next/arch/frv/kernel/irq.c
-===================================================================
---- linux-next.orig/arch/frv/kernel/irq.c
-+++ linux-next/arch/frv/kernel/irq.c
-@@ -118,18 +118,12 @@ static void frv_cpupic_unmask(unsigned i
- 	__clr_MASK(irqlevel);
+  * on-motherboard FPGA PIC operations
+  */
+-static void frv_fpga_mask(unsigned int irq)
++static void frv_fpga_mask(struct irq_data *d)
+ {
+ 	uint16_t imr = __get_IMR();
+ 
+-	imr |= 1 << (irq - IRQ_BASE_FPGA);
++	imr |= 1 << (d->irq - IRQ_BASE_FPGA);
+ 
+ 	__set_IMR(imr);
  }
  
--static void frv_cpupic_end(unsigned int irqlevel)
--{
--	__clr_MASK(irqlevel);
--}
--
- static struct irq_chip frv_cpu_pic = {
- 	.name		= "cpu",
- 	.ack		= frv_cpupic_ack,
- 	.mask		= frv_cpupic_mask,
- 	.mask_ack	= frv_cpupic_mask_ack,
- 	.unmask		= frv_cpupic_unmask,
--	.end		= frv_cpupic_end,
+-static void frv_fpga_ack(unsigned int irq)
++static void frv_fpga_ack(struct irq_data *d)
+ {
+ 	__clr_IFR(1 << (irq - IRQ_BASE_FPGA));
+ }
+ 
+-static void frv_fpga_mask_ack(unsigned int irq)
++static void frv_fpga_mask_ack(struct irq_data *d)
+ {
+ 	uint16_t imr = __get_IMR();
+ 
+-	imr |= 1 << (irq - IRQ_BASE_FPGA);
++	imr |= 1 << (d->irq - IRQ_BASE_FPGA);
+ 	__set_IMR(imr);
+ 
+-	__clr_IFR(1 << (irq - IRQ_BASE_FPGA));
++	__clr_IFR(1 << (d->irq - IRQ_BASE_FPGA));
+ }
+ 
+-static void frv_fpga_unmask(unsigned int irq)
++static void frv_fpga_unmask(struct irq_data *d)
+ {
+ 	uint16_t imr = __get_IMR();
+ 
+-	imr &= ~(1 << (irq - IRQ_BASE_FPGA));
++	imr &= ~(1 << (d->irq - IRQ_BASE_FPGA));
+ 
+ 	__set_IMR(imr);
+ }
+ 
+ static struct irq_chip frv_fpga_pic = {
+ 	.name		= "mb93091",
+-	.ack		= frv_fpga_ack,
+-	.mask		= frv_fpga_mask,
+-	.mask_ack	= frv_fpga_mask_ack,
+-	.unmask		= frv_fpga_unmask,
++	.irq_ack	= frv_fpga_ack,
++	.irq_mask	= frv_fpga_mask,
++	.irq_mask_ack	= frv_fpga_mask_ack,
++	.irq_unmask	= frv_fpga_unmask,
  };
  
  /*
