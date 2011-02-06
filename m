@@ -1,35 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752302Ab1BFCId (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 21:08:33 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:53485
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751530Ab1BFCIb (ORCPT
+	id S1752387Ab1BFCt6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 21:49:58 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:54681 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640Ab1BFCt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 21:08:31 -0500
-Date: Sat, 05 Feb 2011 18:09:07 -0800 (PST)
-Message-Id: <20110205.180907.189701283.davem@davemloft.net>
-To: jj@chaosbits.net
-Cc: venza@brownhat.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sis900: Fix mem leak in sis900_rx error path
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LNX.2.00.1102052139150.12305@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1102052139150.12305@swampdragon.chaosbits.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sat, 5 Feb 2011 21:49:57 -0500
+Date: Sat, 5 Feb 2011 18:49:51 -0800
+From: Matt Helsley <matthltc@us.ibm.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Matt Helsley <matthltc@us.ibm.com>, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        jacob.jun.pan@linux.intel.com,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH, v3 2/2] cgroups: introduce timer slack subsystem
+Message-ID: <20110206024951.GB16432@count0.beaverton.ibm.com>
+References: <1296679656-31163-1-git-send-email-kirill@shutemov.name>
+ <1296679656-31163-3-git-send-email-kirill@shutemov.name>
+ <20110203054616.GT16432@count0.beaverton.ibm.com>
+ <20110203094138.GD1083@shutemov.name>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110203094138.GD1083@shutemov.name>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jesper Juhl <jj@chaosbits.net>
-Date: Sat, 5 Feb 2011 21:41:53 +0100 (CET)
+On Thu, Feb 03, 2011 at 11:41:38AM +0200, Kirill A. Shutemov wrote:
+> On Wed, Feb 02, 2011 at 09:46:16PM -0800, Matt Helsley wrote:
+> > On Wed, Feb 02, 2011 at 10:47:36PM +0200, Kirill A. Shutsemov wrote:
+> > > From: Kirill A. Shutemov <kirill@shutemov.name>
 
-> Fix memory leak in error path of sis900_rx(). If we don't do this we'll 
-> leak the skb we dev_alloc_skb()'ed just a few lines above when the 
-> variable goes out of scope.
+<snip>
+
+> > > diff --git a/kernel/cgroup_timer_slack.c b/kernel/cgroup_timer_slack.c
+> > > new file mode 100644
+> > > index 0000000..a343a50
+> > > --- /dev/null
+> > > +++ b/kernel/cgroup_timer_slack.c
+
+<snip>
+
+> > > +static int tslack_write_set_slack_ns(struct cgroup *cgroup, struct cftype *cft,
+> > > +		u64 val)
+> > > +{
+> > > +	struct timer_slack_cgroup *tslack_cgroup;
+> > > +	struct cgroup_iter it;
+> > > +	struct task_struct *task;
+> > > +
+> > > +	tslack_cgroup = cgroup_to_tslack_cgroup(cgroup);
+> > > +	if (!val || val < tslack_cgroup->min_slack_ns ||
+> > 
+> > Why is a val of 0 disallowed? I know having slack is good, but for
+> > an administrator or tool that doesn't care about number of wakeups
+> > and cares more about wringing out performance a slack of
+> > 0 seems acceptable. Is this just here to be consistent with the
+> > values passed in via prctl?
 > 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> Yes, it's to consistent with the prctl(). I don't think that it's good
+> idea to allow to set timer_slack outside of range prctl() allows. It may
+> lead to interface abuse.
 
-Applied, thanks Jesper.
+Hmm, I was just thinking that 0 timer slack might be useful. But I
+suppose you could just as easily set it to 1 and nobody would notice.
+
+> > > +			val > tslack_cgroup->max_slack_ns )
+> > > +		return -EINVAL;
+> > 
+> > Shouldn't it be EPERM and not EINVAL?
+> > 
+> > The write(2) man page says: "Other errors may occur, depending on the
+> > object connected to fd." So I think EPERM is fine and more descriptive.
+> 
+> What do you think about -EINVAL for (val == 0) and -EPERM for rest?
+
+OK, that makes sense to me given both of our points above.
+
+Cheers,
+	-Matt Helsley
