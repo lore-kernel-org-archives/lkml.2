@@ -1,123 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565Ab1BFE1k (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 23:27:40 -0500
-Received: from mail001.aei.ca ([206.123.6.130]:57227 "EHLO mail001.aei.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752505Ab1BFE1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 23:27:38 -0500
-From: Ed Tomlinson <edt@aei.ca>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [BUG] usb problems in .38-rc3+
-Date: Sat, 5 Feb 2011 23:27:27 -0500
-User-Agent: KMail/1.13.6 (Linux/2.6.37-crc+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-usb@vger.kernel.org
-References: <Pine.LNX.4.44L0.1102051515330.4210-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1102051515330.4210-100000@netrider.rowland.org>
+	id S1752543Ab1BFEnU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 23:43:20 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:40098 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752377Ab1BFEnT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Feb 2011 23:43:19 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102052327.28342.edt@aei.ca>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Sat, 5 Feb 2011 21:42:57 -0700
+X-Google-Sender-Auth: 0a_2SFbCYp-nqukrG431HZfr31c
+Message-ID: <AANLkTikLvO0Y44nCxEfCsNxU-Na+PzcLXZUjOsMUM1_A@mail.gmail.com>
+Subject: Device Tree on ARM status report
+To: devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        linaro-dev <linaro-dev@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 05 February 2011 15:16:19 Alan Stern wrote:
-> On Sat, 5 Feb 2011, Ed Tomlinson wrote:
-> 
-> > Hi,
-> > 
-> > My bluetooth usb dongle has stopped working in .38-rc3+
-> > 
-> > Bus 002 Device 008: ID 0a12:0001 Cambridge Silicon Radio, Ltd Bluetooth Dongle (HCI mode)
-> > 
-> > and in dmesg
-> > 
-> > [108495.369056] usb 5-1: new full speed USB device using ohci_hcd and address 3
-> > [108495.573077] usb 5-1: New USB device found, idVendor=0a12, idProduct=0001
-> > [108495.580099] usb 5-1: New USB device strings: Mfr=0, Product=0, SerialNumber=0
-> > [108652.971977] usb 5-1: USB disconnect, address 3
-> > [108652.972718] btusb_bulk_complete: hci0 urb ffff8800684e99c0 failed to resubmit (19)
-> > [108652.973725] btusb_bulk_complete: hci0 urb ffff8800684e9c00 failed to resubmit (19)
-> > [108652.974707] btusb_intr_complete: hci0 urb ffff8800684e9840 failed to resubmit (19)
-> > [108653.001690] btusb_send_frame: hci0 urb ffff8800bb42a240 submission failed
-> > [108657.007541] usb 2-4.7: new full speed USB device using ehci_hcd and address 8
-> > [108657.147736] usb 2-4.7: New USB device found, idVendor=0a12, idProduct=0001
-> > [108657.154954] usb 2-4.7: New USB device strings: Mfr=0, Product=0, SerialNumber=0
-> > 
-> > Its been working for years here.
-> > 
-> > Any ideas on what to try or additional info to gather?
-> 
-> Does it still work with earlier kernels or on other computers?
+Hi all,
 
-Alan,
+With several more engineers working on ARM device tree support, I'm
+going to start collecting the status of all the work that is going on
+(and I know about) and posting it in a regular status report,
+hopefully weekly, for the next few months until the all of the major
+features are implemented and working on several arm platforms.  I'll
+try to use roughly the following format:
 
-yes its working fine with .37 so the hw is ok.  It looks to be a change in .38 that triggered the failure.
+1) latest news and status updates
+2) list of tasks with current state and who is responsible for them in
+the same format as Launchpad blueprint whiteboards[1]. (In fact, I'll
+probably move much, if not all, of this into Launchpad anyway, in
+which case these emails will be a summary of all the blueprints. not
+all of us work with Linaro, but it is a useful method for tracking
+progress).
+3) List of active engineers
 
-Ed
+[1] https://wiki.linaro.org/Process/Blueprints
 
-.37 dmesg follows:
+Please read through and reply with comments/corrections.  Feel free to
+add or remove tasks from the list I've given below.
 
-[   10.515289] usb 2-4.7: new full speed USB device using ehci_hcd and address 5
-[   10.648949] usb 2-4.7: New USB device found, idVendor=0a12, idProduct=0001
-[   10.648952] usb 2-4.7: New USB device strings: Mfr=0, Product=0, SerialNumber=0
-[   10.832380] Bluetooth: Core ver 2.15
-[   10.832418] NET: Registered protocol family 31
-[   10.832421] Bluetooth: HCI device and connection manager initialized
-[   10.832425] Bluetooth: HCI socket layer initialized
-[   10.871896] Bluetooth: Generic Bluetooth USB driver ver 0.6
-[   10.872246] usbcore: registered new interface driver btusb
-[   11.816907] input: ov519 as /devices/pci0000:00/0000:00:12.1/usb4/4-1/input/input6
-[   11.817153] gspca: video0 created
-[   11.817382] usbcore: registered new interface driver usbserial_generic
-[   11.817385] usbserial: USB Serial Driver core
-[   11.818128] usbcore: registered new interface driver ov519
-[   11.820102] USB Serial support registered for pl2303
-[   11.820200] pl2303 5-3:1.0: PL-2303 hack: descriptors matched but endpoints did not
-[   11.820234] pl2303 5-3:1.1: pl2303 converter detected
-[   11.841717] usb 5-3: pl2303 converter now attached to ttyUSB0
-[   11.841742] usbcore: registered new interface driver pl2303
-[   11.841745] pl2303: Prolific PL2303 USB to serial adaptor driver
-[   28.477896] sr0: scsi3-mmc drive: 40x/40x writer cd/rw xa/form2 cdda tray
-[   28.477900] cdrom: Uniform CD-ROM driver Revision: 3.20
-[   28.478226] sr 6:0:0:0: Attached scsi CD-ROM sr0
-[   30.195117] powernow-k8: Found 1 AMD Phenom(tm) II X4 940 Processor (4 cpu cores) (version 2.20.00)
-[   30.195167] powernow-k8:    0 : pstate 0 (3000 MHz)
-[   30.195169] powernow-k8:    1 : pstate 1 (2300 MHz)
-[   30.195172] powernow-k8:    2 : pstate 2 (1800 MHz)
-[   30.195174] powernow-k8:    3 : pstate 3 (800 MHz)
-[   30.899098] EXT4-fs (sdb3): re-mounted. Opts: (null)
-[   31.194619] EXT4-fs (sdc3): mounted filesystem with ordered data mode. Opts: (null)
-[   33.673078] Bluetooth: L2CAP ver 2.15
-[   33.673090] Bluetooth: L2CAP socket layer initialized
-[   33.727139] Bluetooth: RFCOMM TTY layer initialized
-[   33.727168] Bluetooth: RFCOMM socket layer initialized
-[   33.727177] Bluetooth: RFCOMM ver 1.11
-[   33.814213] Bluetooth: BNEP (Ethernet Emulation) ver 1.3
-[   33.814223] Bluetooth: BNEP filters: protocol multicast
-[   33.861898] Bluetooth: SCO (Voice Link) ver 0.6
-[   33.861907] Bluetooth: SCO socket layer initialized
-[   35.600125] sky2 0000:02:00.0: eth0: enabling interface
-[   36.103536] Adding 5986300k swap on /dev/sdc2.  Priority:-1 extents:1 across:5986300k 
-[   36.116190] Adding 1020120k swap on /dev/sda2.  Priority:-2 extents:1 across:1020120k 
-[   37.355836] NET: Registered protocol family 10
-[   37.357093] lo: Disabled Privacy Extensions
-[   37.357355] ADDRCONF(NETDEV_UP): eth0: link is not ready
-[   38.198205] sky2 0000:02:00.0: eth0: Link is up at 1000 Mbps, full duplex, flow control both
-[   38.203688] ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
-[   47.727778] IPv6 over IPv4 tunneling driver
-[   47.728551] sit0: Disabled Privacy Extensions
-[   47.761803] tun: Universal TUN/TAP device driver, 1.6
-[   47.761813] tun: (C) 1999-2004 Max Krasnyansky <maxk@qualcomm.com>
-[   48.434301] eth0: no IPv6 routers present
-[   48.960936] sixxs: Disabled Privacy Extensions
-[   79.568088] Bluetooth: HIDP (Human Interface Emulation) ver 1.2
-[   79.593964] input: Apple Wireless Mouse as /devices/pci0000:00/0000:00:13.2/usb2/2-4/2-4.7/2-4.7:1.0/bluetooth/hci0/hci0:41/input7
-[   79.595105] magicmouse 0005:05AC:030D.0004: input,hidraw3: BLUETOOTH HID v0.84 Mouse [Apple Wireless Mouse] on 00:0A:3A:55:07:5A
+Thanks,
+g.
 
 
+1 - Latest news
+---------------
+- devicetree/arm on git://git.secretlab.ca/git/linux-2.6 has
+everything needed to turn on basic device tree support for any
+platform.
+- Similarly, u-boot just needs to have the CONFIG_OF_LIBFDT defined to
+turn on device tree support.
+- IRQ handling is still a problem and only one interrupt controller
+can be supported at the moment, but Lennert is working on a solution.
+- I've posted a patch that will allow dt and non-dt device
+registration to co-exist peacefully by snooping platform device
+registrations.  I could use some feedback and testing.
+- hopefully the basic dt support can be merged into Nicolas' tree this
+week if I get a cleaned up branch pushed out for him quickly.
 
+2 - Task status
+---------------
+Core infrastructure:
+[glikely] basic infrastructure to enable dt: DONE
+[r-herring] Allow dtb to be located anywhere in RAM: DONE
+[bones] Debug dtb corruption during init: INPROGRESS
+[glikely] OF clock bindings: INPROGRESS
+[glikely] Correctly handle dtb reserved memory sections: TODO
+[glikely] merge basic dt support into nico's tree: TODO
+[buytenh] virtual irq infrastructure: INPROGRESS
+Remove u-boot restriction of first 16k for dtb: TODO
+add processing of dtb reserved regions: TODO
+verify dt gpio infrastructure works: TODO
+[glikely] Remove early validation of machine type number: INPROGRESS
 
+imx51 tasks
+enable dtb support in u-boot: TODO
+enable basic kernel dtb support: TODO
+enable registration of devices form dt: TODO
+... add more details here, specific devices, etc...
+
+OMAP tasks
+[buytenh] enable dtb support in u-boot: DONE
+[buytenh] enable basic kernel dtb support on OMAP3: INPROGRESS
+enable basic kernel dtb support on OMAP4: TODO
+[buytenh] enable registration of devices form dt: TODO
+... add more details here, specific devices, etc...
+
+qemu support tasks:
+Cleanup and mainline arm dtb support patches: TODO
+configure qemu emulation from dtb (like microblaze): TODO
+... add more details here, specific devices, etc...
+
+Samsung S5PV310 tasks:
+[thomas-ab] enable dtb support in u-boot: DONE?
+[thomas-ab] enable basic kernel dtb support on S5PV310: DONE?
+[thomas-ab] make gpio driver dt-aware: TODO
+[thomas-ab] Register devices from dt: INPROGRESS
+... add more details here, specific devices, etc...
+
+Tegra tasks:
+[glikely] enable dtb support in u-boot: DONE
+[glikely] enable basic kernel dtb support on Harmony board: DONE
+[glikely] probe irq controllers from device tree: TODO
+[glikely] make gpio controller driver dt aware: TODO
+[glikely] register devices from dt: INPROGRESS
+... add more details here, specific devices, etc...
+
+Versatile tasks:
+enable dtb support in u-boot: TODO
+[jk-ozlabs] enable basic kernel dtb support on versatile: DONE
+[jk-ozlabs] probe clocks from dt: DONE
+[jk-ozlabs] register devices from dt: DONE
+decode irqs from dt: TODO
+
+Versatile express tasks:
+[lorenzo-pieralisi] enable dtb support in u-boot: DONE?
+[lorenzo-pieralisi] enable basic kernel dtb support on versatile express: DONE
+[lorenzo-pieralisi] probe clocks from dt: DONE?
+[lorenzo-pieralisi] probe irq controllers from device tree: TODO
+[lorenzo-pieralisi] register devices from dt: DONE?
+... add more details here, specific devices, etc...
+
+Xilinx arm tasks:
+[john linn] enable dtb support in u-boot: TODO?
+[john linn] enable basic kernel dtb support on xilinx arm devboard: DONE
+[john linn] probe irq controllers from device tree: TODO
+[john linn] register devices from dt: INPROGRESS?
+... add more details here, specific devices, etc...
+
+A15 tasks:
+nothing yet
+
+As far as I know, Rob's dtb anywhere patch is pending mainline, but
+I'll carry it in devicetree/arm until it is merged.  Same for the
+patch that eliminates early vetting of the machine type number.
+
+Active engineering list:
+Thomas Abraham [thomas-ab] Samsung
+Lennert Buytenhek [no launchpad id] core infrastructure and OMAP
+Andy Green [] OMAP
+Shawn Guo [] imx51
+Rob Herring [r-herring] clock bindings, boot code
+Jason Hui [] imx51
+Jeremy Kerr [jk-ozlabs] clock bindings, imx51, versatile
+John Linn [no launchpad id] Xilinx ARM dev board
+Grant Likely [glikely] core infrastructure, tegra, versatile
+Lorenzo Pieralisi [lorenzo-pieralisi] versatile express
