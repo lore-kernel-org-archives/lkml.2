@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508Ab1BFSDZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 13:03:25 -0500
+	id S1753529Ab1BFSDa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 13:03:30 -0500
 Received: from mga01.intel.com ([192.55.52.88]:50627 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753488Ab1BFSDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 13:03:23 -0500
+	id S1753488Ab1BFSD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 13:03:28 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,434,1291622400"; 
-   d="scan'208";a="884836438"
+   d="scan'208";a="884836443"
 From: Pierre Tardy <pierre.tardy@intel.com>
 To: linux-pm@lists.linux-foundation.org, linux-mmc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: Yunpeng Gao <yunpeng.gao@intel.com>, Pierre Tardy <pierre.tardy@intel.com>
-Subject: [PATCH v2 2/3] sdhci-pci : Enable runtime PM support
-Date: Sun,  6 Feb 2011 19:02:49 +0100
-Message-Id: <6722fa7986194808f4d69a1e5ba6d3f163b77da9.1297014479.git.pierre.tardy@intel.com>
+Cc: Pierre Tardy <tardyp@gmail.com>
+Subject: [PATCH v2 3/3] sdhci:v2:use ios->clock to know when sdhci is idle
+Date: Sun,  6 Feb 2011 19:02:50 +0100
+Message-Id: <430729a58c5efc725455e1985b1facca8f784c92.1297014479.git.pierre.tardy@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <cover.1297014479.git.pierre.tardy@intel.com>
 References: <cover.1297014479.git.pierre.tardy@intel.com>
@@ -27,237 +27,154 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yunpeng Gao <yunpeng.gao@intel.com>
+From: Pierre Tardy <tardyp@gmail.com>
 
-Follow the kernel runtime PM framework, enable runtime PM support of the
-sdhci host controller with pci interface.
+This allows sdhci to detect its own activity and to autosuspend
+when not used
 
-Note that this patch implements runtime_pm but now actually detects
-activity.
-It relies on higher level (childrens) to do actual waking up
-Activity detection is put in following patch
+inspired from  mmci: handle clock frequency 0 properly
+>From Linus Walleij <linus.walleij@stericsson.com>
+author of mmc aggressive clock gating fw.
 
-Original version from: Yunpeng Gao <yunpeng.gao@intel.com>
-with modifications by: Pierre Tardy <pierre.tardy@intel.com>
+The idea of using mmc clock gating fw in order to power gate the
+sdhci is simple (it still need some other get/set because set_ios() is
+not cause first before any other acticity):
+Whenever the mmc fw tells we dont need the MMC clock, we dont need
+the sdhci power as well.
 
-Signed-off-by: Pierre Tardy <pierre.tardy@intel.com>
+This does not mean that the child (card) is
+suspended. In case of a Wifi SDIO card, the card will be suspended
+and resumed according to the ifconfig up/down status.
+Even if the Wifi interface is up, user might not use the network.
+Sdhci can be powered off during those period. It is up to the HW
+implementation to implement smart enough power gating to still
+support enough always-on circuitry allowing to detect sdio
+interrupts.
+
+Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+
+Signed-off-by: Pierre Tardy <tardyp@gmail.com>
 ---
- drivers/mmc/host/sdhci-pci.c |  121 ++++++++++++++++++++++++++++++++++++++++++
- drivers/mmc/host/sdhci.c     |   31 +++++++++++
- drivers/mmc/host/sdhci.h     |    5 ++
- 3 files changed, 157 insertions(+), 0 deletions(-)
+ drivers/mmc/host/sdhci-pci.c |    3 +++
+ drivers/mmc/host/sdhci.c     |   29 +++++++++++++++++++++++++++++
+ include/linux/mmc/sdhci.h    |    1 +
+ 3 files changed, 33 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-index 0dc905b..22581a1 100644
+index 22581a1..9d23f4c 100644
 --- a/drivers/mmc/host/sdhci-pci.c
 +++ b/drivers/mmc/host/sdhci-pci.c
-@@ -1027,6 +1027,8 @@ static int __devinit sdhci_pci_probe(struct pci_dev *pdev,
- 	if (ret)
- 		return ret;
- 
-+	pm_runtime_set_active(&pdev->dev);
-+
- 	slots = PCI_SLOT_INFO_SLOTS(slots) + 1;
- 	dev_dbg(&pdev->dev, "found %d slot(s)\n", slots);
- 	if (slots == 0)
-@@ -1082,6 +1084,8 @@ static int __devinit sdhci_pci_probe(struct pci_dev *pdev,
- 
- 		chip->slots[i] = slot;
+@@ -1086,6 +1086,9 @@ static int __devinit sdhci_pci_probe(struct pci_dev *pdev,
  	}
-+	pm_runtime_enable(&pdev->dev);
-+	pm_runtime_allow(&pdev->dev);
+ 	pm_runtime_enable(&pdev->dev);
+ 	pm_runtime_allow(&pdev->dev);
++	pm_runtime_set_autosuspend_delay(&pdev->dev, 50);
++	pm_runtime_use_autosuspend(&pdev->dev);
++	pm_suspend_ignore_children(&pdev->dev, 1);
  
  	return 0;
  
-@@ -1110,8 +1114,122 @@ static void __devexit sdhci_pci_remove(struct pci_dev *pdev)
- 	}
- 
- 	pci_disable_device(pdev);
-+
-+	pm_runtime_forbid(&pdev->dev);
-+	pm_runtime_disable(&pdev->dev);
-+
-+}
-+
-+#ifdef CONFIG_PM_RUNTIME
-+
-+static int sdhci_pci_runtime_suspend(struct device *dev)
-+{
-+	struct pci_dev *pdev = container_of(dev, struct pci_dev, dev);
-+	struct sdhci_pci_chip *chip;
-+	struct sdhci_pci_slot *slot;
-+	int i, ret;
-+	mmc_pm_flag_t pm_flags = 0;
-+	pm_message_t state;
-+
-+	chip = pci_get_drvdata(pdev);
-+	if (!chip)
-+		return 0;
-+
-+	for (i = 0; i < chip->num_slots; i++) {
-+		slot = chip->slots[i];
-+		if (!slot)
-+			continue;
-+
-+		ret = sdhci_runtime_suspend(slot->host);
-+
-+		if (ret) {
-+			for (i--; i >= 0; i--)
-+				sdhci_runtime_resume(chip->slots[i]->host);
-+			return ret;
-+		}
-+
-+		pm_flags |= slot->host->mmc->pm_flags;
-+	}
-+
-+	state.event = PM_EVENT_AUTO_SUSPEND;
-+	if (chip->fixes && chip->fixes->suspend) {
-+		ret = chip->fixes->suspend(chip, state);
-+		if (ret) {
-+			for (i = chip->num_slots - 1; i >= 0; i--)
-+				sdhci_runtime_resume(chip->slots[i]->host);
-+			return ret;
-+		}
-+	}
-+
-+	pci_save_state(pdev);
-+	if (pm_flags & MMC_PM_KEEP_POWER) {
-+		if (pm_flags & MMC_PM_WAKE_SDIO_IRQ)
-+			pci_enable_wake(pdev, PCI_D3hot, 1);
-+	} else {
-+		pci_enable_wake(pdev, PCI_D3hot, 0);
-+		pci_disable_device(pdev);
-+	}
-+	pci_set_power_state(pdev, PCI_D3hot);
-+
-+	return 0;
- }
- 
-+static int sdhci_pci_runtime_resume(struct device *dev)
-+{
-+	struct pci_dev *pdev = container_of(dev, struct pci_dev, dev);
-+	struct sdhci_pci_chip *chip;
-+	struct sdhci_pci_slot *slot;
-+	int i, ret;
-+
-+	chip = pci_get_drvdata(pdev);
-+	if (!chip)
-+		return 0;
-+
-+	pci_set_power_state(pdev, PCI_D0);
-+	pci_restore_state(pdev);
-+	ret = pci_enable_device(pdev);
-+	if (ret)
-+		return ret;
-+
-+	if (chip->fixes && chip->fixes->resume) {
-+		ret = chip->fixes->resume(chip);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	for (i = 0; i < chip->num_slots; i++) {
-+		slot = chip->slots[i];
-+		if (!slot)
-+			continue;
-+
-+		ret = sdhci_runtime_resume(slot->host);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int sdhci_pci_runtime_idle(struct device *dev)
-+{
-+	pm_runtime_autosuspend(dev);
-+	return -EAGAIN;
-+}
-+
-+#else
-+
-+#define sdhci_pci_runtime_suspend	NULL
-+#define sdhci_pci_runtime_resume	NULL
-+#define sdhci_pci_runtime_idle		NULL
-+
-+#endif
-+
-+static const struct dev_pm_ops sdhci_pci_pm_ops = {
-+	.runtime_suspend = sdhci_pci_runtime_suspend,
-+	.runtime_resume = sdhci_pci_runtime_resume,
-+	.runtime_idle = sdhci_pci_runtime_idle,
-+};
-+
- static struct pci_driver sdhci_driver = {
- 	.name = 	"sdhci-pci",
- 	.id_table =	pci_ids,
-@@ -1119,6 +1237,9 @@ static struct pci_driver sdhci_driver = {
- 	.remove =	__devexit_p(sdhci_pci_remove),
- 	.suspend =	sdhci_pci_suspend,
- 	.resume	=	sdhci_pci_resume,
-+	.driver =	{
-+		.pm =	&sdhci_pci_pm_ops
-+	},
- };
- 
- /*****************************************************************************\
 diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 9e15f41..3e65d94 100644
+index 3e65d94..655617c 100644
 --- a/drivers/mmc/host/sdhci.c
 +++ b/drivers/mmc/host/sdhci.c
-@@ -1715,6 +1715,37 @@ EXPORT_SYMBOL_GPL(sdhci_enable_irq_wakeups);
+@@ -20,6 +20,7 @@
+ #include <linux/slab.h>
+ #include <linux/scatterlist.h>
+ #include <linux/regulator/consumer.h>
++#include <linux/pm_runtime.h>
  
- #endif /* CONFIG_PM */
+ #include <linux/leds.h>
  
-+#ifdef CONFIG_PM_RUNTIME
-+
-+int sdhci_runtime_suspend(struct sdhci_host *host)
-+{
-+	/* Nothing to do yet. Still leave the placeholder */
-+	return 0;
-+}
-+
-+EXPORT_SYMBOL_GPL(sdhci_runtime_suspend);
-+
-+int sdhci_runtime_resume(struct sdhci_host *host)
-+{
-+	int ret = 0;
-+
-+	if (host->flags & (SDHCI_USE_SDMA | SDHCI_USE_ADMA)) {
-+		if (host->ops->enable_dma)
-+			host->ops->enable_dma(host);
+@@ -1161,6 +1162,7 @@ static void sdhci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+ {
+ 	struct sdhci_host *host;
+ 	unsigned long flags;
++	unsigned int lastclock;
+ 	u8 ctrl;
+ 
+ 	host = mmc_priv(mmc);
+@@ -1171,6 +1173,27 @@ static void sdhci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+ 		goto out;
+ 
+ 	/*
++	 * get/put runtime_pm usage counter at ios->clock transitions
++	 * We need to do it before any other chip access, as sdhci could
++	 * be power gated
++	 */
++	lastclock = host->iosclock;
++	host->iosclock = ios->clock;
++	if (lastclock == 0 && ios->clock != 0) {
++		spin_unlock_irqrestore(&host->lock, flags);
++		pm_runtime_get_sync(host->mmc->parent);
++		spin_lock_irqsave(&host->lock, flags);
++	} else if (lastclock != 0 && ios->clock == 0) {
++		spin_unlock_irqrestore(&host->lock, flags);
++		pm_runtime_mark_last_busy(host->mmc->parent);
++		pm_runtime_put_autosuspend(host->mmc->parent);
++		spin_lock_irqsave(&host->lock, flags);
 +	}
++	/* no need to configure the rest.. */
++	if (host->iosclock == 0)
++		goto out;
 +
-+	sdhci_init(host, (host->mmc->pm_flags & MMC_PM_KEEP_POWER));
-+	host->pwr = 0; /* force power reprogram */
-+	host->clock = 0; /* force clock reprogram */
-+	sdhci_set_ios(host->mmc, &host->mmc->ios);
-+	mmiowb();
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(sdhci_runtime_resume);
-+
-+#endif /* CONFIG_PM_RUNTIME */
-+
- /*****************************************************************************\
-  *                                                                           *
-  * Device allocation/registration                                            *
-diff --git a/drivers/mmc/host/sdhci.h b/drivers/mmc/host/sdhci.h
-index 6e0969e..1f032c0 100644
---- a/drivers/mmc/host/sdhci.h
-+++ b/drivers/mmc/host/sdhci.h
-@@ -327,4 +327,9 @@ extern int sdhci_resume_host(struct sdhci_host *host);
- extern void sdhci_enable_irq_wakeups(struct sdhci_host *host);
- #endif
++	/*
+ 	 * Reset the chip on each power off.
+ 	 * Should clear out any weird states.
+ 	 */
+@@ -1244,6 +1267,8 @@ static int sdhci_get_ro(struct mmc_host *mmc)
+ 	int is_readonly;
  
-+#ifdef CONFIG_PM_RUNTIME
-+extern int sdhci_runtime_suspend(struct sdhci_host *host);
-+extern int sdhci_runtime_resume(struct sdhci_host *host);
-+#endif
-+
- #endif /* __SDHCI_HW_H */
+ 	host = mmc_priv(mmc);
++	/* this function is called before set_ios... */
++	pm_runtime_get_sync(mmc->parent);
+ 
+ 	spin_lock_irqsave(&host->lock, flags);
+ 
+@@ -1257,6 +1282,7 @@ static int sdhci_get_ro(struct mmc_host *mmc)
+ 
+ 	spin_unlock_irqrestore(&host->lock, flags);
+ 
++	pm_runtime_put_autosuspend(mmc->parent);
+ 	/* This quirk needs to be replaced by a callback-function later */
+ 	return host->quirks & SDHCI_QUIRK_INVERTED_WRITE_PROTECT ?
+ 		!is_readonly : is_readonly;
+@@ -1268,6 +1294,7 @@ static void sdhci_enable_sdio_irq(struct mmc_host *mmc, int enable)
+ 	unsigned long flags;
+ 
+ 	host = mmc_priv(mmc);
++	pm_runtime_get_sync(mmc->parent);
+ 
+ 	spin_lock_irqsave(&host->lock, flags);
+ 
+@@ -1282,6 +1309,7 @@ out:
+ 	mmiowb();
+ 
+ 	spin_unlock_irqrestore(&host->lock, flags);
++	pm_runtime_put_autosuspend(mmc->parent);
+ }
+ 
+ static const struct mmc_host_ops sdhci_ops = {
+@@ -1766,6 +1794,7 @@ struct sdhci_host *sdhci_alloc_host(struct device *dev,
+ 
+ 	host = mmc_priv(mmc);
+ 	host->mmc = mmc;
++	host->iosclock = 0;
+ 
+ 	return host;
+ }
+diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
+index 83bd9f7..a38d040 100644
+--- a/include/linux/mmc/sdhci.h
++++ b/include/linux/mmc/sdhci.h
+@@ -116,6 +116,7 @@ struct sdhci_host {
+ 	unsigned int timeout_clk;	/* Timeout freq (KHz) */
+ 
+ 	unsigned int clock;	/* Current clock (MHz) */
++	unsigned int iosclock;	/* Last clock asked via set_ios  */
+ 	u8 pwr;			/* Current voltage */
+ 
+ 	struct mmc_request *mrq;	/* Current request */
 -- 
 1.7.2.3
 
