@@ -1,67 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151Ab1BFXGI (ORCPT <rfc822;w@1wt.eu>);
+	id S1754203Ab1BFXGU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 18:06:20 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:58085 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754082Ab1BFXGI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 6 Feb 2011 18:06:08 -0500
-Received: from void.printf.net ([89.145.121.20]:47269 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754067Ab1BFXGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 18:06:07 -0500
-Date: Sun, 6 Feb 2011 23:05:57 +0000
-From: Chris Ball <cjb@laptop.org>
-To: Andres Salomon <dilinger@queued.net>
-Cc: Greg KH <gregkh@suse.de>, Marek Belisko <marek.belisko@open-nandra.com>,
-        jon.nettleton@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] olpc_dcon: revert strtoul change
-Message-ID: <20110206230557.GA24626@void.printf.net>
-References: <1296746572-8998-1-git-send-email-marek.belisko@open-nandra.com> <20110204152341.7b869851@debxo> <20110204234443.GB4147@suse.de> <20110206143816.0355ddc5@queued.net>
+Date: Sun, 6 Feb 2011 23:05:58 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: akpm@linux-foundation.org, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rpurdie@rpsys.net
+Subject: Re: [PATCH 5/5] ACPI: Tie ACPI backlight devices to PCI devices if
+	possible
+Message-ID: <20110206230558.GA23889@srcf.ucam.org>
+References: <1295033065-13450-1-git-send-email-mjg@redhat.com> <201102062341.19631.rjw@sisk.pl> <20110206225308.GA23557@srcf.ucam.org> <201102070001.25814.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110206143816.0355ddc5@queued.net>
+In-Reply-To: <201102070001.25814.rjw@sisk.pl>
 User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Feb 07, 2011 at 12:01:25AM +0100, Rafael J. Wysocki wrote:
 
-On Sun, Feb 06, 2011 at 02:38:16PM -0800, Andres Salomon wrote:
-> The s/simple_strtoul/strict_strtoul/ from commit e107e6eb added a build
-> warning, as well as an oops.  This reverts that change.
-> 
-> Signed-off-by: Andres Salomon <dilinger@queued.net>
-> ---
->  drivers/staging/olpc_dcon/olpc_dcon.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c b/drivers/staging/olpc_dcon/olpc_dcon.c
-> index b19cd34..d6ad5d7 100644
-> --- a/drivers/staging/olpc_dcon/olpc_dcon.c
-> +++ b/drivers/staging/olpc_dcon/olpc_dcon.c
-> @@ -525,7 +525,7 @@ static int _strtoul(const char *buf, int len, unsigned int *val)
->  {
->  
->  	char *endp;
-> -	unsigned int output = strict_strtoul(buf, &endp, 0);
-> +	unsigned int output = simple_strtoul(buf, &endp, 0);
->  	int size = endp - buf;
->  
->  	if (*endp && isspace(*endp))
+> Yes, it seems so, but I'm not sure what the short term consequences of that
+> change will be.  Perhaps there will be none. :-)
 
-Yes, different prototypes:
-
-  unsigned long simple_strtoul(const char *cp, char **endp, unsigned int base)
-vs.
-  int strict_strtoul(const char *cp, unsigned int base, unsigned long *res)
-
-So, you'd need something like:
-
-unsigned int output;
-int ret = strict_strtoul(buf, 0, &output);
-if (ret < 0)
-	return ret;
+Ok, I'll have a play with that. Maybe we should be fixing this up 
+somehow in the acpi-pci glue code? It seems wrong to have acpi devices 
+resumed before the PCI device they're associated with.
 
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Matthew Garrett | mjg59@srcf.ucam.org
