@@ -1,106 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945Ab1BFUE0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 15:04:26 -0500
-Received: from moh2-ve3.go2.pl ([193.17.41.208]:53931 "EHLO moh2-ve3.go2.pl"
+	id S1753956Ab1BFUJr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 15:09:47 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:48388 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753756Ab1BFUEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 15:04:25 -0500
-Message-ID: <4D4EFEC3.5030702@o2.pl>
-Date: Sun, 06 Feb 2011 21:04:19 +0100
-From: Maciej Szmigiero <mhej@o2.pl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101204 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1753775Ab1BFUJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 15:09:46 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 1/2] USB / Hub: Do not call device_set_wakeup_capable() under spinlock
+Date: Sun, 6 Feb 2011 21:07:49 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc3+; KDE/4.4.4; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Greg KH <greg@kroah.com>
+References: <201102061519.11360.rjw@sisk.pl> <201102062106.29712.rjw@sisk.pl>
+In-Reply-To: <201102062106.29712.rjw@sisk.pl>
 MIME-Version: 1.0
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-CC: Greg KH <gregkh@suse.de>, Johan Hovold <jhovold@gmail.com>,
-        Joe Perches <joe@perches.com>, Alan Cox <alan@linux.intel.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [USB]Add Samsung SGH-I500/Android modem ID switch to visor driver
-References: <4D4D9F37.4010201@o2.pl> <20110205192831.GA334@suse.de> <4D4DC400.2040302@o2.pl> <4D4DDD54.1010905@ru.mvista.com>
-In-Reply-To: <4D4DDD54.1010905@ru.mvista.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-O2-Trust: 2, 67
-X-O2-SPF: neutral
+Message-Id: <201102062107.49909.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 06.02.2011 00:29, Sergei Shtylyov pisze:
-> Hello.
-> 
-> On 06.02.2011 0:41, Maciej Szmigiero wrote:
-> 
->> New version of patch which autodetects devices with ACM class.
->> Tested on Galaxy Spica.
-> 
->> Signed-off-by: Maciej Szmigiero <mhej@o2.pl>
-> 
->> diff --git a/drivers/usb/serial/visor.c b/drivers/usb/serial/visor.c
->> index 15a5d89..e1c4527 100644
->> --- a/drivers/usb/serial/visor.c
->> +++ b/drivers/usb/serial/visor.c
-> [...]
->> @@ -479,6 +480,15 @@ static int visor_probe(struct usb_serial *serial,
->>
->>       dbg("%s", __func__);
->>
->> +    /* some Samsung Android phones in modem mode have the same ID */
->> +    /* as SPH-I500, but they are ACM devices, so dont bind to them */
-> 
->    The preferred style for the multi-line comments is this:
-> 
-> /*
->  * bla
->  * bla
->  */
-> 
->> +    if ((id->idVendor == SAMSUNG_VENDOR_ID)&&
->> +        (id->idProduct == SAMSUNG_SPH_I500_ID)&&
->> +        (serial->dev->descriptor.bDeviceClass == USB_CLASS_COMM)&&
->> +        (serial->dev->descriptor.bDeviceSubClass ==
->> +            USB_CDC_SUBCLASS_ACM))
-> 
->    Parens around == not necessary...
-> 
-> WBR, Sergei
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Thanks for comments, new version of this patch with style fixes follows.
+A subsequent patch will modify device_set_wakeup_capable() in such
+a way that it will call functions which may sleep and therefore it
+shouldn't be called under spinlocks.  In preparation for that, modify
+usb_set_device_state() to avoid calling device_set_wakeup_capable()
+under device_state_lock.
 
-Best regards,
-Maciej Szmigiero
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/usb/core/hub.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-Signed-off-by: Maciej Szmigiero <mhej@o2.pl>
-
-diff --git a/drivers/usb/serial/visor.c b/drivers/usb/serial/visor.c
-index 15a5d89..0f75948 100644
---- a/drivers/usb/serial/visor.c
-+++ b/drivers/usb/serial/visor.c
-@@ -27,6 +27,7 @@
- #include <linux/uaccess.h>
- #include <linux/usb.h>
- #include <linux/usb/serial.h>
-+#include <linux/usb/cdc.h>
- #include "visor.h"
+Index: linux-2.6/drivers/usb/core/hub.c
+===================================================================
+--- linux-2.6.orig/drivers/usb/core/hub.c
++++ linux-2.6/drivers/usb/core/hub.c
+@@ -1465,6 +1465,7 @@ void usb_set_device_state(struct usb_dev
+ 		enum usb_device_state new_state)
+ {
+ 	unsigned long flags;
++	int wakeup = -1;
  
- /*
-@@ -479,6 +480,17 @@ static int visor_probe(struct usb_serial *serial,
+ 	spin_lock_irqsave(&device_state_lock, flags);
+ 	if (udev->state == USB_STATE_NOTATTACHED)
+@@ -1479,11 +1480,10 @@ void usb_set_device_state(struct usb_dev
+ 					|| new_state == USB_STATE_SUSPENDED)
+ 				;	/* No change to wakeup settings */
+ 			else if (new_state == USB_STATE_CONFIGURED)
+-				device_set_wakeup_capable(&udev->dev,
+-					(udev->actconfig->desc.bmAttributes
+-					 & USB_CONFIG_ATT_WAKEUP));
++				wakeup = udev->actconfig->desc.bmAttributes
++					 & USB_CONFIG_ATT_WAKEUP;
+ 			else
+-				device_set_wakeup_capable(&udev->dev, 0);
++				wakeup = 0;
+ 		}
+ 		if (udev->state == USB_STATE_SUSPENDED &&
+ 			new_state != USB_STATE_SUSPENDED)
+@@ -1495,6 +1495,8 @@ void usb_set_device_state(struct usb_dev
+ 	} else
+ 		recursively_mark_NOTATTACHED(udev);
+ 	spin_unlock_irqrestore(&device_state_lock, flags);
++	if (wakeup >= 0)
++		device_set_wakeup_capable(&udev->dev, wakeup);
+ }
+ EXPORT_SYMBOL_GPL(usb_set_device_state);
  
- 	dbg("%s", __func__);
- 
-+	/*
-+	 * some Samsung Android phones in modem mode have the same ID
-+	 * as SPH-I500, but they are ACM devices, so dont bind to them
-+	*/
-+	if (id->idVendor == SAMSUNG_VENDOR_ID &&
-+		id->idProduct == SAMSUNG_SPH_I500_ID &&
-+		serial->dev->descriptor.bDeviceClass == USB_CLASS_COMM &&
-+		serial->dev->descriptor.bDeviceSubClass ==
-+			USB_CDC_SUBCLASS_ACM)
-+		return -ENODEV;
-+
- 	if (serial->dev->actconfig->desc.bConfigurationValue != 1) {
- 		dev_err(&serial->dev->dev, "active config #%d != 1 ??\n",
- 			serial->dev->actconfig->desc.bConfigurationValue);
-
 
