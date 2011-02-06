@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452Ab1BFSDK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 13:03:10 -0500
-Received: from mga01.intel.com ([192.55.52.88]:15601 "EHLO mga01.intel.com"
+	id S1753483Ab1BFSDT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 13:03:19 -0500
+Received: from mga11.intel.com ([192.55.52.93]:26556 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753344Ab1BFSDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 13:03:08 -0500
+	id S1753454Ab1BFSDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 13:03:17 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,434,1291622400"; 
-   d="scan'208";a="884836420"
+   d="scan'208";a="884836432"
 From: Pierre Tardy <pierre.tardy@intel.com>
 To: linux-pm@lists.linux-foundation.org, linux-mmc@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: Pierre Tardy <pierre.tardy@intel.com>
-Subject: [PATCH v2 0/3] sdhci runtime_pm implementation using mmc clock gating fw
-Date: Sun,  6 Feb 2011 19:02:47 +0100
-Message-Id: <cover.1297014479.git.pierre.tardy@intel.com>
+Subject: [PATCH v2 1/3] mmc: put the led blinking code after clock ungating
+Date: Sun,  6 Feb 2011 19:02:48 +0100
+Message-Id: <171444bc8d0e6db780533b51d3e227fc5bc2c745.1297014479.git.pierre.tardy@intel.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <cover.1297014479.git.pierre.tardy@intel.com>
+References: <cover.1297014479.git.pierre.tardy@intel.com>
+In-Reply-To: <cover.1297014479.git.pierre.tardy@intel.com>
+References: <cover.1297014479.git.pierre.tardy@intel.com>
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please find a simple sdhci runtime_pm implementation
-that uses clock gating fw as a tip to know when 
-our chip is idle.
+as mmc clock gating can also be used as a power gating
+tip, this is better to put the led blinking after having
+ungate the clock
 
-Previous version was RFC and untested,
-This version has been tested on intel medfield platform.
+Signed-off-by: Pierre Tardy <pierre.tardy@intel.com>
+---
+ drivers/mmc/core/core.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-Pierre Tardy (2):
-  mmc: put the led blinking code after clock ungating
-  sdhci:v2:use ios->clock to know when sdhci is idle
-
-Yunpeng Gao (1):
-  sdhci-pci : Enable runtime PM support
-
- drivers/mmc/core/core.c      |    3 +-
- drivers/mmc/host/sdhci-pci.c |  124 ++++++++++++++++++++++++++++++++++++++++++
- drivers/mmc/host/sdhci.c     |   60 ++++++++++++++++++++
- drivers/mmc/host/sdhci.h     |    5 ++
- include/linux/mmc/sdhci.h    |    1 +
- 5 files changed, 191 insertions(+), 2 deletions(-)
-
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index 6625c05..34a7e8c 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -167,8 +167,6 @@ mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
+ 
+ 	WARN_ON(!host->claimed);
+ 
+-	led_trigger_event(host->led, LED_FULL);
+-
+ 	mrq->cmd->error = 0;
+ 	mrq->cmd->mrq = mrq;
+ 	if (mrq->data) {
+@@ -194,6 +192,7 @@ mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
+ 		}
+ 	}
+ 	mmc_host_clk_ungate(host);
++	led_trigger_event(host->led, LED_FULL);
+ 	host->ops->request(host, mrq);
+ }
+ 
 -- 
 1.7.2.3
 
