@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab1BFUDk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 15:03:40 -0500
-Received: from smtp-out-016.synserver.de ([212.40.185.16]:1133 "HELO
-	smtp-out-014.synserver.de" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with SMTP id S1753928Ab1BFUDh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 15:03:37 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 24265
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Rodolfo Giometti <giometti@linux.it>,
-        Grazvydas Ignotas <notasas@gmail.com>, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 03/14] POWER: bq27x00: Fix current now property
-Date: Sun,  6 Feb 2011 01:48:00 +0100
-Message-Id: <1296953291-10373-4-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1296953291-10373-1-git-send-email-lars@metafoo.de>
-References: <1296953291-10373-1-git-send-email-lars@metafoo.de>
+	id S1753921Ab1BFUDe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 15:03:34 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:48359 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753719Ab1BFUDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 15:03:33 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg KH <greg@kroah.com>
+Subject: Re: [PATCH] PM: Do not create wakeup sysfs files for devices that cannot wake up (v2)
+Date: Sun, 6 Feb 2011 21:03:11 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc3+; KDE/4.4.4; x86_64; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>
+References: <Pine.LNX.4.44L0.1102061024150.20379-100000@netrider.rowland.org> <201102061953.17433.rjw@sisk.pl> <20110206191421.GB7818@kroah.com>
+In-Reply-To: <20110206191421.GB7818@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102062103.12139.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pali Rohár <pali.rohar@gmail.com>
+On Sunday, February 06, 2011, Greg KH wrote:
+> On Sun, Feb 06, 2011 at 07:53:17PM +0100, Rafael J. Wysocki wrote:
+> > On Sunday, February 06, 2011, Alan Stern wrote:
+> > > On Sun, 6 Feb 2011, Rafael J. Wysocki wrote:
+> > > 
+> > > > Hi,
+> > > > 
+> > > > Below is the next version of the patch changing the PM core to only create
+> > > > wakeup sysfs files for devices that are wakeup-capable.  It contains a change
+> > > > in drivers/usb/core/hub.c that should avoid the problem described in the thread
+> > > > at https://lkml.org/lkml/2011/2/5/108 , but I'm not 100% it's the right
+> > > > approach.  Please have a look.
+> > > 
+> > > Yes, that's right -- in fact, it's exactly the same as what I was going
+> > > to do.  Of course, it should be separated out into a separate patch, to
+> > > be applied before the other wakeup changes.
+> > 
+> > OK, I'll split it out.
+> > 
+> > Greg, any objections to me putting the change below into the suspend tree as
+> > a separate commit:
+> 
+> No objection from me at all:
+> 	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-According to the bq27000 datasheet to obtain the current value in Micro-ampere
-from the AI register it has to be transformed by the following formula:
-    current = AI * 3570 / 20
+Thanks!
 
-This patch adjust the drivers code accordingly.
-
-Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- drivers/power/bq27x00_battery.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
-index 4f74659..1b06134 100644
---- a/drivers/power/bq27x00_battery.c
-+++ b/drivers/power/bq27x00_battery.c
-@@ -44,6 +44,8 @@
- #define BQ27500_FLAG_DSC		BIT(0)
- #define BQ27500_FLAG_FC			BIT(9)
- 
-+#define BQ27000_RS			20 /* Resistor sense */
-+
- /* If the system has several batteries we need a different name for each
-  * of them...
-  */
-@@ -149,7 +151,7 @@ static int bq27x00_battery_current(struct bq27x00_device_info *di)
- 
- 	if (di->chip == BQ27500) {
- 		/* bq27500 returns signed value */
--		curr = (int)(s16)curr;
-+		curr = (int)((s16)curr) * 1000;
- 	} else {
- 		ret = bq27x00_read(BQ27x00_REG_FLAGS, &flags, 0, di);
- 		if (ret < 0) {
-@@ -160,9 +162,10 @@ static int bq27x00_battery_current(struct bq27x00_device_info *di)
- 			dev_dbg(di->dev, "negative current!\n");
- 			curr = -curr;
- 		}
-+		curr = curr * 3570 / BQ27000_RS;
- 	}
- 
--	return curr * 1000;
-+	return curr;
- }
- 
- /*
--- 
-1.7.2.3
-
+Rafael
