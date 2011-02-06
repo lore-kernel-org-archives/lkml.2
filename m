@@ -1,94 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230Ab1BFQop (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 11:44:45 -0500
-Received: from xenotime.net ([72.52.115.56]:40015 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752932Ab1BFQoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 11:44:44 -0500
-Date: Sun, 6 Feb 2011 08:44:40 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Kconfig: XIP doesn't depend on block
-Message-Id: <20110206084440.a6c2df3b.rdunlap@xenotime.net>
-In-Reply-To: <4D4EBAF4.9070403@gmail.com>
-References: <4D4EBAF4.9070403@gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1753302Ab1BFQqG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 11:46:06 -0500
+Received: from smtp3-g21.free.fr ([212.27.42.3]:42669 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752841Ab1BFQqE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 11:46:04 -0500
+Date: Sun, 6 Feb 2011 17:44:45 +0100
+From: Emmanuel Florac <eflorac@intellique.com>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: Stan Hoeppner <stan@hardwarefreak.com>,
+        "Dr. David Alan Gilbert" <linux@treblig.org>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-net@vger.kernel.org, Alan Piszcz <ap@solarrain.com>
+Subject: Re: Supermicro X8DTH-6: Only ~250MiB/s from RAID<->RAID over 10GbE?
+Message-ID: <20110206174445.19419b0f@galadriel2.home>
+In-Reply-To: <alpine.DEB.2.00.1102060817590.28109@p34.internal.lan>
+References: <alpine.DEB.2.00.1102051427360.8518@p34.internal.lan>
+	<20110205214550.3cb0f0d1@galadriel2.home>
+	<alpine.DEB.2.00.1102051553591.8518@p34.internal.lan>
+	<20110205220621.GB17347@gallifrey>
+	<alpine.DEB.2.00.1102051729010.8518@p34.internal.lan>
+	<alpine.DEB.2.00.1102051753100.8518@p34.internal.lan>
+	<4D4DE34E.7010308@hardwarefreak.com>
+	<alpine.DEB.2.00.1102051958370.28109@p34.internal.lan>
+	<4D4E127D.3060105@hardwarefreak.com>
+	<alpine.DEB.2.00.1102060515230.28109@p34.internal.lan>
+	<alpine.DEB.2.00.1102060817590.28109@p34.internal.lan>
+Organization: Intellique
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; i686-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 06 Feb 2011 16:15:00 +0100 Marco Stornelli wrote:
+Le Sun, 6 Feb 2011 08:46:08 -0500 (EST) vous écriviez:
 
-> From: Marco Stornelli <marco.stornelli@gmail.com>
-> 
-> XIP doesn't depend on block symbol, then we can reorder the Kconfig.
-> For ext2 doesn't change the Kconfig behavior but if other fs will use
-> FS_XIP it won't need to include block support if not needed.
+> # for 3ware raid, use 16384 readahead, > 16384 readahead, no
+> improvement blockdev --setra 16384 /dev/sda
 
-Hi Marco,
+Also try this :
 
-Do you know of a filesystem where this matters?
+echo 512 > /sys/block/sda/queue/nr_requests
 
-> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
-> ---
-> 
-> --- Kconfig.orig	2011-01-19 00:14:02.000000000 +0100
-> +++ Kconfig	2011-02-06 16:04:51.000000000 +0100
-
-This filename should include path, like
---- fs/Kconfig.orig
-+++ fs/Kconfig
-
-> @@ -9,13 +9,6 @@ if BLOCK
->  source "fs/ext2/Kconfig"
->  source "fs/ext3/Kconfig"
->  source "fs/ext4/Kconfig"
-> -
-
-The 3 filesystems above are immediately under:
-
-if BLOCK
-
-so ext[234] depend on BLOCK.  Why would it matter about FS_XIP?
-
-I don't object to the patch if FS_XIP builds/works without BLOCK being
-enabled.
-
-
-> -config FS_XIP
-> -# execute in place
-> -	bool
-> -	depends on EXT2_FS_XIP
-> -	default y
-> -
->  source "fs/jbd/Kconfig"
->  source "fs/jbd2/Kconfig"
->  
-> @@ -38,6 +31,12 @@ source "fs/nilfs2/Kconfig"
->  
->  endif # BLOCK
->  
-> +config FS_XIP
-> +# execute in place
-> +	bool
-> +	depends on EXT2_FS_XIP
-> +	default y
-> +
->  # Posix ACL utility routines
->  #
->  # Note: Posix ACLs can be implemented without these helpers.  Never use
-> 
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
+------------------------------------------------------------------------
+Emmanuel Florac     |   Direction technique
+                    |   Intellique
+                    |	<eflorac@intellique.com>
+                    |   +33 1 78 94 84 02
+------------------------------------------------------------------------
