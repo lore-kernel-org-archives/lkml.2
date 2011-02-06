@@ -1,104 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754361Ab1BFXjf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 18:39:35 -0500
-Received: from www.tglx.de ([62.245.132.106]:40366 "EHLO www.tglx.de"
+	id S1754382Ab1BFXjh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 18:39:37 -0500
+Received: from www.tglx.de ([62.245.132.106]:40373 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754338Ab1BFXje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 18:39:34 -0500
-Message-Id: <20110206233904.777004540@linutronix.de>
+	id S1754338Ab1BFXjf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 18:39:35 -0500
+Message-Id: <20110206233904.874075727@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Sun, 06 Feb 2011 23:39:28 -0000
+Date: Sun, 06 Feb 2011 23:39:30 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Greg Ungerer <gerg@uclinux.org>
-Subject: [patch 07/10] m68knommu: Convert 5272 intc irq_chip to new functions
+Subject: [patch 08/10] m68knommu Convert 5249 intc irq_chip to new functions
 References: <20110206233845.480884215@linutronix.de>
-Content-Disposition: inline; filename=m68k-nommu-convert-5272-intc.patch
+Content-Disposition: inline; filename=m68k-nommu-convert-5249-intc.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+/me idly wonders what sets the handlers for this chip.
+
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/m68knommu/platform/5272/intc.c |   28 ++++++++++++++++++----------
- 1 file changed, 18 insertions(+), 10 deletions(-)
+ arch/m68knommu/platform/5249/intc2.c |   20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
-Index: linux-next/arch/m68knommu/platform/5272/intc.c
+Index: linux-next/arch/m68knommu/platform/5249/intc2.c
 ===================================================================
---- linux-next.orig/arch/m68knommu/platform/5272/intc.c
-+++ linux-next/arch/m68knommu/platform/5272/intc.c
-@@ -78,8 +78,10 @@ static struct irqmap intc_irqmap[MCFINT_
-  * an interrupt on this irq (for the external irqs). So this mask function
-  * is also an ack_mask function.
-  */
--static void intc_irq_mask(unsigned int irq)
-+static void intc_irq_mask(struct irq_data *d)
+--- linux-next.orig/arch/m68knommu/platform/5249/intc2.c
++++ linux-next/arch/m68knommu/platform/5249/intc2.c
+@@ -17,32 +17,32 @@
+ #include <asm/coldfire.h>
+ #include <asm/mcfsim.h>
+ 
+-static void intc2_irq_gpio_mask(unsigned int irq)
++static void intc2_irq_gpio_mask(struct irq_data *d)
  {
-+	unsigned int irq = d->irq;
-+
- 	if ((irq >= MCFINT_VECBASE) && (irq <= MCFINT_VECMAX)) {
- 		u32 v;
- 		irq -= MCFINT_VECBASE;
-@@ -88,8 +90,10 @@ static void intc_irq_mask(unsigned int i
- 	}
+ 	u32 imr;
+ 	imr = readl(MCF_MBAR2 + MCFSIM2_GPIOINTENABLE);
+-	imr &= ~(0x1 << (irq - MCFINTC2_GPIOIRQ0));
++	imr &= ~(0x1 << (d->irq - MCFINTC2_GPIOIRQ0));
+ 	writel(imr, MCF_MBAR2 + MCFSIM2_GPIOINTENABLE);
  }
  
--static void intc_irq_unmask(unsigned int irq)
-+static void intc_irq_unmask(struct irq_data *d)
+-static void intc2_irq_gpio_unmask(unsigned int irq)
++static void intc2_irq_gpio_unmask(struct irq_data *d)
  {
-+	unsigned int irq = d->irq;
-+
- 	if ((irq >= MCFINT_VECBASE) && (irq <= MCFINT_VECMAX)) {
- 		u32 v;
- 		irq -= MCFINT_VECBASE;
-@@ -98,8 +102,10 @@ static void intc_irq_unmask(unsigned int
- 	}
+ 	u32 imr;
+ 	imr = readl(MCF_MBAR2 + MCFSIM2_GPIOINTENABLE);
+-	imr |= (0x1 << (irq - MCFINTC2_GPIOIRQ0));
++	imr |= (0x1 << (d->irq - MCFINTC2_GPIOIRQ0));
+ 	writel(imr, MCF_MBAR2 + MCFSIM2_GPIOINTENABLE);
  }
  
--static void intc_irq_ack(unsigned int irq)
-+static void intc_irq_ack(struct irq_data *d)
+-static void intc2_irq_gpio_ack(unsigned int irq)
++static void intc2_irq_gpio_ack(struct irq_data *d)
  {
-+	unsigned int irq = d->irq;
-+
- 	/* Only external interrupts are acked */
- 	if ((irq >= MCFINT_VECBASE) && (irq <= MCFINT_VECMAX)) {
- 		irq -= MCFINT_VECBASE;
-@@ -113,8 +119,10 @@ static void intc_irq_ack(unsigned int ir
- 	}
+-	writel(0x1 << (irq - MCFINTC2_GPIOIRQ0), MCF_MBAR2 + MCFSIM2_GPIOINTCLEAR);
++	writel(0x1 << (d->irq - MCFINTC2_GPIOIRQ0), MCF_MBAR2 + MCFSIM2_GPIOINTCLEAR);
  }
  
--static int intc_irq_set_type(unsigned int irq, unsigned int type)
-+static int intc_irq_set_type(struct irq_data *d, unsigned int type)
- {
-+	unsigned int irq = d->irq;
-+
- 	if ((irq >= MCFINT_VECBASE) && (irq <= MCFINT_VECMAX)) {
- 		irq -= MCFINT_VECBASE;
- 		if (intc_irqmap[irq].ack) {
-@@ -137,17 +145,17 @@ static int intc_irq_set_type(unsigned in
-  */
- static void intc_external_irq(unsigned int irq, struct irq_desc *desc)
- {
--	desc->chip->ack(irq);
-+	get_irq_desc_chip(i)->irq_ack(desc->irq_data);
- 	handle_simple_irq(irq, desc);
- }
- 
- static struct irq_chip intc_irq_chip = {
- 	.name		= "CF-INTC",
--	.mask		= intc_irq_mask,
--	.unmask		= intc_irq_unmask,
--	.mask_ack	= intc_irq_mask,
--	.ack		= intc_irq_ack,
--	.set_type	= intc_irq_set_type,
-+	.irq_mask	= intc_irq_mask,
-+	.irq_unmask	= intc_irq_unmask,
-+	.irq_mask_ack	= intc_irq_mask,
-+	.irq_ack	= intc_irq_ack,
-+	.irq_set_type	= intc_irq_set_type,
+ static struct irq_chip intc2_irq_gpio_chip = {
+ 	.name		= "CF-INTC2",
+-	.mask		= intc2_irq_gpio_mask,
+-	.unmask		= intc2_irq_gpio_unmask,
+-	.ack		= intc2_irq_gpio_ack,
++	.irq_mask	= intc2_irq_gpio_mask,
++	.irq_unmask	= intc2_irq_gpio_unmask,
++	.irq_ack	= intc2_irq_gpio_ack,
  };
  
- void __init init_IRQ(void)
+ static int __init mcf_intc2_init(void)
+@@ -51,7 +51,7 @@ static int __init mcf_intc2_init(void)
+ 
+ 	/* GPIO interrupt sources */
+ 	for (irq = MCFINTC2_GPIOIRQ0; (irq <= MCFINTC2_GPIOIRQ7); irq++)
+-		irq_desc[irq].chip = &intc2_irq_gpio_chip;
++		set_irq_chip(irq, &intc2_irq_gpio_chip);
+ 
+ 	return 0;
+ }
 
 
