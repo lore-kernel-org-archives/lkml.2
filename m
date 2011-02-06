@@ -1,73 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754014Ab1BFUjd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 15:39:33 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:46432 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753951Ab1BFUjc (ORCPT
+	id S1754051Ab1BFUjp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 15:39:45 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:54226 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754020Ab1BFUjo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 15:39:32 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBALKVTk1Ld/sX/2dsb2JhbAAMhAucK7BIjyqEZHYEhHqMMQ
-X-IronPort-AV: E=Sophos;i="4.60,434,1291611600"; 
-   d="scan'208";a="90726795"
-Message-ID: <4D4F0701.5060602@teksavvy.com>
-Date: Sun, 06 Feb 2011 15:39:29 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Sun, 6 Feb 2011 15:39:44 -0500
+Message-ID: <ec297f333103ceed993a2f159f12617c.squirrel@www.firstfloor.org>
+In-Reply-To: <20110206130240.6b01f072@katamari>
+References: <20110201443.618138584@firstfloor.org>
+    <20110204173853.GC1808@nowhere>
+    <f3e6405c90188d308ccc6b39ee892178.squirrel@www.firstfloor.org>
+    <20110206130240.6b01f072@katamari>
+Date: Sun, 6 Feb 2011 21:39:43 +0100
+Subject: Re: [PATCH] [0/139] 2.6.35.11 longterm review
+From: "Andi Kleen" <andi@firstfloor.org>
+To: "Chuck Ebbert" <cebbert@redhat.com>
+Cc: "Andi Kleen" <andi@firstfloor.org>,
+        "Frederic Weisbecker" <fweisbec@gmail.com>,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Jarod Wilson <jarod@wilsonet.com>, Greg Kroah-Hartman <greg@kroah.com>
-Subject: PATCH: drivers/staging/lirc/lirc_serial.c: use IS_ERR()
-Content-Type: multipart/mixed;
- boundary="------------040005080103010501000803"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------040005080103010501000803
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 
-The lirc_serial.c module has never worked with ordinary homebrew
-serial blaster hardware, and leaks memory when this is attempted.
+>
+> When will 2.6.35.11 be released? I've been monitoring longterm/2.6.35/
+> but there's still no patch.
 
-Fix it by replacing incorrect usage of PTR_ERR() with IS_ERR().
-(patch is inline and also attached to bypass mailer issues).
+It's out now. Thanks for your patience.
 
-Signed-off-by: Mark Lord <mlord@pobox.com>
+-Andi
 
---- linux-2.6.37/drivers/staging/lirc/lirc_serial.c	2011-01-04
-19:50:19.000000000 -0500
-+++ linux/drivers/staging/lirc/lirc_serial.c	2011-02-06 15:33:49.854453928 -0500
-@@ -966,7 +966,7 @@
- 	if (n % sizeof(int) || count % 2 == 0)
- 		return -EINVAL;
- 	wbuf = memdup_user(buf, n);
--	if (PTR_ERR(wbuf))
-+	if (IS_ERR(wbuf))
- 		return PTR_ERR(wbuf);
- 	spin_lock_irqsave(&hardware[type].lock, flags);
- 	if (type == LIRC_IRDEO) {
 
---------------040005080103010501000803
-Content-Type: text/x-patch;
- name="lirc_serial_fix.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="lirc_serial_fix.patch"
-
---- linux-2.6.37/drivers/staging/lirc/lirc_serial.c.orig	2011-01-04 19:50:19.000000000 -0500
-+++ linux/drivers/staging/lirc/lirc_serial.c	2011-02-06 15:33:49.854453928 -0500
-@@ -966,7 +966,7 @@
- 	if (n % sizeof(int) || count % 2 == 0)
- 		return -EINVAL;
- 	wbuf = memdup_user(buf, n);
--	if (PTR_ERR(wbuf))
-+	if (IS_ERR(wbuf))
- 		return PTR_ERR(wbuf);
- 	spin_lock_irqsave(&hardware[type].lock, flags);
- 	if (type == LIRC_IRDEO) {
-
---------------040005080103010501000803--
