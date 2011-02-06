@@ -1,73 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102Ab1BFPJn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 10:09:43 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:39502 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752892Ab1BFPJl (ORCPT
+	id S1752988Ab1BFPRQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 10:17:16 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:35841 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752868Ab1BFPRO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 10:09:41 -0500
+	Sun, 6 Feb 2011 10:17:14 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=RCF7Y65GhANEVE62J9T6vDEHIpRFX2zS/+6gBOj+NHrTxdeuuIxtY1zOQvLBkzYhYX
-         50z8LVAS45k7UC9Ig5EqcoRzgwv/QM4JvZ/fcBnSyyHaYyJJeLheMDwf5UGrCcnvjeVJ
-         +wnbx42Kg5NeOxEcbVXjouSX8uNoQwKXuhD1E=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Rik van Riel <riel@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH] mm: Add hook of freepage
-Date: Mon,  7 Feb 2011 00:08:54 +0900
-Message-Id: <1297004934-4605-1-git-send-email-minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.1
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=j+RMlfItM4O43prjeMnVh528gH2Y1gOKarxsinOcXFC9OoPw7HgD6Tq+5F0Fktd64V
+         Vq9rIx0cUam78NUJ8pBeDulsdk6hrfUb6GqqXi5v2iuvu6Vm7coQLZiQgyxvl4gChOcq
+         JxoeaQ/qBv4ZQbuZNbBuFp4fpySoIUxqTFtto=
+Subject: Re: [PATCH 20/20] fs: ubifs: world-writable debugfs dump_* files
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: linux-kernel@vger.kernel.org, security@kernel.org,
+        Adrian Hunter <adrian.hunter@nokia.com>, linux-mtd@lists.infradead.org
+In-Reply-To: <cd575609cc07581a71ba925308d9d69c6e0c6d79.1296818921.git.segoon@openwall.com>
+References: <cover.1296818921.git.segoon@openwall.com>
+	 <cd575609cc07581a71ba925308d9d69c6e0c6d79.1296818921.git.segoon@openwall.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 06 Feb 2011 17:16:19 +0200
+Message-ID: <1297005379.4460.34.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recently, "Call the filesystem back whenever a page is removed from
-the page cache(6072d13c)" added new freepage hook in page cache
-drop function.
+On Fri, 2011-02-04 at 15:24 +0300, Vasiliy Kulikov wrote:
+> Don't allow everybody to dump sensitive information about filesystems.
+> 
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 
-So, replace_page_cache_page should call freepage to support
-page cleanup to fs.
+Good catch, thanks. I'll push this patch to the ubifs-2.6.git tree,
+thanks!
 
-Cc: Miklos Szeredi <mszeredi@suse.cz>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
----
- mm/filemap.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 3c89c96..a25c898 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -436,7 +436,10 @@ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
- 	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
- 	if (!error) {
- 		struct address_space *mapping = old->mapping;
-+		void (*freepage)(struct page *);
-+
- 		pgoff_t offset = old->index;
-+		freepage = mapping->a_ops->freepage;
- 
- 		page_cache_get(new);
- 		new->mapping = mapping;
-@@ -452,6 +455,8 @@ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
- 			__inc_zone_page_state(new, NR_SHMEM);
- 		spin_unlock_irq(&mapping->tree_lock);
- 		radix_tree_preload_end();
-+		if (freepage)
-+			freepage(old);
- 		page_cache_release(old);
- 		mem_cgroup_end_migration(memcg, old, new, true);
- 	} else {
 -- 
-1.7.1
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
