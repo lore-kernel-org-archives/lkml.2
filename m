@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab1BFWBg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 17:01:36 -0500
-Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:37963 "EHLO
-	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753198Ab1BFWBe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 17:01:34 -0500
-Message-ID: <4D4F1A3D.2090107@hardwarefreak.com>
-Date: Sun, 06 Feb 2011 16:01:33 -0600
-From: Stan Hoeppner <stan@hardwarefreak.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	id S1754103Ab1BFWGg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 17:06:36 -0500
+Received: from www.tglx.de ([62.245.132.106]:48424 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753295Ab1BFWGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 17:06:34 -0500
+Date: Sun, 6 Feb 2011 23:06:13 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Guan Xuetao <guanxuetao@mprc.pku.edu.cn>
+cc: sfr@canb.auug.org.au, Arnd Bergmann <arnd@arndb.de>, gregkh@suse.de,
+        jbarnes@virtuousgeek.org, dmitry.torokhov@gmail.com, dtor@mail.ru,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Subject: Re: Request (2nd) for unicore32 architecture codes to merge into
+ linux-next
+In-Reply-To: <01c701cbba0f$08185800$18490800$@mprc.pku.edu.cn>
+Message-ID: <alpine.LFD.2.00.1102062254560.31804@localhost6.localdomain6>
+References: <01c701cbba0f$08185800$18490800$@mprc.pku.edu.cn>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-CC: "Dr. David Alan Gilbert" <linux@treblig.org>,
-        Emmanuel Florac <eflorac@intellique.com>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-net@vger.kernel.org,
-        Alan Piszcz <ap@solarrain.com>
-Subject: Re: Supermicro X8DTH-6: Only ~250MiB/s from RAID<->RAID over 10GbE?
-References: <alpine.DEB.2.00.1102051427360.8518@p34.internal.lan> <20110205214550.3cb0f0d1@galadriel2.home> <alpine.DEB.2.00.1102051553591.8518@p34.internal.lan> <20110205220621.GB17347@gallifrey> <alpine.DEB.2.00.1102051729010.8518@p34.internal.lan> <alpine.DEB.2.00.1102051753100.8518@p34.internal.lan> <4D4DE34E.7010308@hardwarefreak.com> <alpine.DEB.2.00.1102051958370.28109@p34.internal.lan> <4D4E127D.3060105@hardwarefreak.com> <alpine.DEB.2.00.1102060515230.28109@p34.internal.lan>
-In-Reply-To: <alpine.DEB.2.00.1102060515230.28109@p34.internal.lan>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Justin Piszcz put forth on 2/6/2011 4:16 AM:
+On Sat, 22 Jan 2011, Guan Xuetao wrote:
 
-> Workflow process-
-> 
-> Migrate data from old/legacy RAID sets to new ones, possibly also 2TB->3TB, so
-> the faster the transfer speed, the better.
+> Hi, I want to merge unicore32 repo into linux-next tree, the
+> position is (unicore32 branch):
 
-This type of data migration is probably going to include many many files of
-various sizes from small to large.  You have optimized your system performance
-only for individual large file xfers.  Thus, when you go to copy directories
-containing hundreds or thousands of files of various sizes, you will likely see
-much lower throughput using a single copy stream.  Thus if you want to keep that
-10 GbE pipe full, you'll likely need to run multiple copies in parallel, one per
-large parent directory.  Or, run a single copy from say, 10 legacy systems to
-one new system simultaneously, etc.
+Sorry for late reply.
+ 
+>  arch/unicore32/kernel/time.c                  |  148 +++++
 
-Given this situation, you may want to consider tar'ing up entire directories
-with gz or bz compression, if you have enough free space on the legacy machines,
-and copying the tarballs to the new system.  This will maximize your throughput,
-although I don't know if it will decrease your total work flow completion time,
-which should really be your overall goal.
+static struct clock_event_device ckevt_puv3_osmr0 ...
+#ifdef CONFIG_ARCH_FPGA
+        .shift          = 18, /* correct shift val: 16, but warn_on_slowpath */
+#else
+        .shift          = 30,
+#endif
 
--- 
-Stan
+....
+        ckevt_puv3_osmr0.mult =
+                div_sc(CLOCK_TICK_RATE, NSEC_PER_SEC, ckevt_puv3_osmr0.shift);
+
+Please use the function which calculates the optimizes mult/shift
+values for you depending on the clock frequency.
+
+clockevents_calc_mult_shift() is your friend.
+
+>  arch/unicore32/kernel/irq.c                   |  426 +++++++++++++
+
+Please convert your irq_chips to the new function pointers:
+
+       .mask -> .irq_mask
+       ...
+
+The new functions replace the "unsigned int irq" argument with
+"struct irq_data *d".
+
+So conversion for your chips is simply
+
+s/unsigned int irq/struct irq_data *d/
+
+and 
+
+s/irq/d->irq/ in the implementation.
+
+Then your arch should select: GENERIC_HARDIRQS_NO_DEPRECATED
+
+Otherwise I'm happy with your irq and time related patches.
+
+Thanks,
+
+	tglx
