@@ -1,125 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751843Ab1BFHuc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 02:50:32 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57293 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751642Ab1BFHub (ORCPT
+	id S1751923Ab1BFIUH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 03:20:07 -0500
+Received: from webbox4.loswebos.de ([213.187.93.205]:33632 "EHLO
+	webbox4.loswebos.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751803Ab1BFIUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 02:50:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=AbAHauKsRKd/4/EuBSlLzXoeps0T5hW9L0g/8UaNNAwuLf8+SkXs/PfXSjDE/dQ9Qy
-         k2ZRTPRwlkegb5NuDUlUwVBZhSKrGUhHuX33qbaynfcYkXuRYEHS+ajqM3A9dtZIeUmI
-         Trv8j7uIkkql13fd1sJDOvyn50TotHV2IqLjA=
-Date: Sun, 6 Feb 2011 15:50:15 +0800
-From: HarryWei <jiaweiwei.xiyou@gmail.com>
-To: valentin.quequet@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Fwd: GIT - cloning torvalds/linux-2.6.git repository trouble.
-Message-ID: <20110206075007.GA3075@gmail.com>
-Mail-Followup-To: valentin.quequet@gmail.com, linux-kernel@vger.kernel.org
-References: <AANLkTikiKagzJMh_xuOSzfA4c-qxOHhVeU2jhmbaDHji@mail.gmail.com>
- <AANLkTikargkErr8BsMV+CwO74F++Dq-L4iQA3F=P4YEZ@mail.gmail.com>
+	Sun, 6 Feb 2011 03:20:05 -0500
+Date: Sun, 6 Feb 2011 09:19:51 +0100
+From: Marc Koschewski <marc@osknowledge.org>
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Takashi Iwai <tiwai@suse.de>,
+        Chris Wilson <chris@chris-wilson.co.uk>, Len Brown <lenb@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Commit 500f7147cf5bafd139056d521536b10c2bc2e154 breaks _resume_
+Message-ID: <20110206081950.GA12659@marc.osknowledge.org>
+References: <AANLkTi=h+H+N=f4m4pE+RZ4n5h7oxQuwzmK-qmmWAGtL@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTikargkErr8BsMV+CwO74F++Dq-L4iQA3F=P4YEZ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTi=h+H+N=f4m4pE+RZ4n5h7oxQuwzmK-qmmWAGtL@mail.gmail.com>
+X-PGP-Fingerprint: D514 7DC1 B5F5 8989 083E 38C9 5ECF E5BD 3430 ABF5
+X-PGP-Key: http://www.kosik.org/pubkey.asc
+X-Blog: http://www.kosik.org/blog/
+X-Operating-System: Linux marc 2.6.37-ck1-dezzy
+User-Agent: Mutt/1.5.21hg (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 06, 2011 at 03:11:55PM +0800, harryxiyou wrote:
-> ---------- Forwarded message ----------
-> From: Valentin QUEQUET <valentin.quequet@gmail.com>
-> Date: 2011/2/6
-> Subject: GIT - cloning torvalds/linux-2.6.git repository trouble.
-> To: linux-kernel@vger.kernel.org
-> 
-> 
-> Hi Dear Linux enthusiasts,
-> 
-> I recently (yesterday) began to fetch (clone, fetch, ...) the current
->  Linux GIT repository:
->    http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
-> 
-> I first failed to fetch it through any protocol ( git:// , http:// ,
-> https:// )
->  because of my UNRELIABLE WiFi connexion.
-> 
-> I eventually managed to download the following file :
-> 
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/refs/heads/master
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/info/packs
-> 
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-0b38509807589c455b1c769368348bd845441959.idx
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-c53d2db50f885f3803a3afd46484b54c06b1433e.idx
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-910f14bdd726702c46cfd622ee40fcaf4881a5ec.idx
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-81315ef1065b534c70a409978aa11daf2e27fdb5.idx
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-83898168fc5bce601472bd3260cd6b08f5f4f7b2.idx
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-7ff1ea46fec7532e88a900a9a1340794fb3ffa3f.idx
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-221cb4abe6bb3165bf062219200020148b83948b.idx
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-6576226aba312e2a3b610665e35cfc466f980c55.idx
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-0ab67efdf76cff54cd9fa5166d1df19c8edf685a.idx
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-0b7fc86700a243d2ea341c04926c4425fe85fd26.idx
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-fb3e46067bf5b97b6b49dbda9cda51cf3ef3b660.idx
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-04fb51824d013a5fbac892f95369d92daf60f195.idx
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-76001124ed6335482ee1cea785f93426ab278417.idx
-> 
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-0b38509807589c455b1c769368348bd845441959.pack
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-c53d2db50f885f3803a3afd46484b54c06b1433e.pack
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-910f14bdd726702c46cfd622ee40fcaf4881a5ec.pack
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-81315ef1065b534c70a409978aa11daf2e27fdb5.pack
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-83898168fc5bce601472bd3260cd6b08f5f4f7b2.pack
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-7ff1ea46fec7532e88a900a9a1340794fb3ffa3f.pack
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-221cb4abe6bb3165bf062219200020148b83948b.pack
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-6576226aba312e2a3b610665e35cfc466f980c55.pack
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-0ab67efdf76cff54cd9fa5166d1df19c8edf685a.pack
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-0b7fc86700a243d2ea341c04926c4425fe85fd26.pack
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-fb3e46067bf5b97b6b49dbda9cda51cf3ef3b660.pack
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-04fb51824d013a5fbac892f95369d92daf60f195.pack
-> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-76001124ed6335482ee1cea785f93426ab278417.pack
-> 
-> And all these .pack and .idx files appear to be valid ones, with
-> respect to the "git verify-pack" command.
-> 
-> This set of files seems to be consistent with the current state (by that
-> time)
->  of the Linux git repository (torvalds/linux-2.6.git)
-> 
-> Now, I would like YOU to tell ME how I can checkout from the PACKs
-> I've just downloaded.
-> 
-> How may I populate the working directory , objects/xy/... , refs/... ,
-> ... hierarchies to
->  make my (local) repository usable.
-> 
-> I suspect I shall find this information in documentation related to
-> the "git fetch" command,
->  but I haven't managed to get it right.
-> 
-> Your HELP is very welcome.
-Hello friend,
-        I remember that i just do the command 'git clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git', then i get the linus's git tree.
-        Maybe it is useful to you.
+Hi,
 
-	Thanks.
-	Best Regards.
-	Harry Wei.
+* Jeff Chua <jeff.chua.linux@gmail.com> [2011-02-06 09:50:51 +0800]:
+> On Sun, Feb 6, 2011 at 2:24 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> The suspend monster is back! The suspend-to-ram is fine, but upon
+> >> resume, screen is blank. Haven't bisected in case someone has also
+> >> done so.
+> >
+> > BTW, please don't reply to messages containing patches with reports of problems
+> > that aren't caused by those patches.  It's confusing at best and at worst it
+> > may result in the patches being rejected.
+> 
+> Sorry. New subject now:)
 > 
 > 
-> If you prefer not to pollute LKML, you may choose to aswer me at:
+> On Sun, Feb 6, 2011 at 2:51 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >> It's very recent. ... between commit
+> >> 831d52bc153971b70e64eccfbed2b232394f22f8 and
+> >> 44f2c5c841da1b1e0864d768197ab1497b5c2cc1.
+> >
+> > Hmm. It's almost certainly one of the DRI patches, but which one? I
+> > think bisection is the only way to figure it out. It shouldn't be too
+> > bad, since there's only 120 commits in that range.
+> >
+> > In fact, you can almost certainly just bisect from 89840966c579 to
+> > bb5b583b5279, which is just 31 commits and should get you bisected in
+> > just five tries or so.
 > 
->  valentin.quequet@gmail.com
+> Yea, I've just done that. It came down to the following commit.
+> Reverting it solves the problem. I've gone thru a few cycles, and
+> notebook still survives.
+> 
+> Thanks,
+> Jeff
+
+I reverted the specified commit and my box still suffers the
+resume-turns-into-cold-boot behavior. Retried two times with the commit reverted
+on top of HEAD...
+
+Regards,
+Marc
+
 > 
 > 
-> Thanks in advance,
+> commit 500f7147cf5bafd139056d521536b10c2bc2e154
+> Author: Chris Wilson <chris@chris-wilson.co.uk>
+> Date:   Mon Jan 24 15:14:41 2011 +0000
 > 
-> Valentin
+>     drm/i915: Reset state after a GPU reset or resume
+> 
+>     Call drm_mode_config_reset() after an invalidation event to restore any
+>     cached state to unknown.
+> 
+>     Tested-by: Takashi Iwai <tiwai@suse.de>
+>     Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
@@ -127,8 +93,6 @@ Hello friend,
 > Please read the FAQ at  http://www.tux.org/lkml/
 > 
 > 
-> 
-> -- 
-> Best Regards.
-> Harry Wei.
-> Do what u like!
+
+-- 
+Marc Koschewski
