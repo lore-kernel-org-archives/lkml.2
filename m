@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074Ab1BFWvg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 17:51:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13003 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753759Ab1BFWvf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 17:51:35 -0500
-Message-ID: <4D4F25A3.1090401@redhat.com>
-Date: Sun, 06 Feb 2011 23:50:11 +0100
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101213 Thunderbird/3.1.7
+	id S1754089Ab1BFWxR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 17:53:17 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:45528 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753759Ab1BFWxQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 17:53:16 -0500
+Date: Sun, 6 Feb 2011 22:53:09 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: akpm@linux-foundation.org, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rpurdie@rpsys.net
+Subject: Re: [PATCH 5/5] ACPI: Tie ACPI backlight devices to PCI devices if
+	possible
+Message-ID: <20110206225308.GA23557@srcf.ucam.org>
+References: <1295033065-13450-1-git-send-email-mjg@redhat.com> <201102062135.08171.rjw@sisk.pl> <20110206205619.GA21472@srcf.ucam.org> <201102062341.19631.rjw@sisk.pl>
 MIME-Version: 1.0
-To: Jesper Juhl <jj@chaosbits.net>
-CC: linux-kernel@vger.kernel.org, Alexander Kjeldaas <astor@fast.no>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: NULL deref in drivers/md/dm-crypt.c:crypt_convert()
-References: <alpine.LNX.2.00.1102062320230.13593@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1102062320230.13593@swampdragon.chaosbits.net>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201102062341.19631.rjw@sisk.pl>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2011 11:31 PM, Jesper Juhl wrote:
-> The coverity checker found this. I don't know how to fix it, so I'll just 
-> report it and hope that someone else can address the issue.
-
-Hi,
-can I see the plain output from the coverity check somewhere?
-
+On Sun, Feb 06, 2011 at 11:41:19PM +0100, Rafael J. Wysocki wrote:
+> On Sunday, February 06, 2011, Matthew Garrett wrote:
+> > Ugh. Ok, how can we fix this?
 > 
-> In drivers/md/dm-crypt.c:crypt_convert() we have this code:
-> ...
->   		while(ctx->idx_in < ctx->bio_in->bi_vcnt &&
->   		      ctx->idx_out < ctx->bio_out->bi_vcnt) {
->   	
->   			crypt_alloc_req(cc, ctx);
+> Not nicely, I'm afraid.
+> 
+> One possible way is to use device_pm_move_after() to rearrange the devices in
+> the PM core's suspend list, but that will happen in the video device being
+> suspended before the new parent (and resumed after it) -- of course, the only
+> option is to move the ACPI video device after the new parent.
 
-Here in crypt_alloc_req() you have:
+Hang on. Didn't we already have a related issue with the acpi video 
+device being resumed before the video card, resulting in an SMI that 
+hung the system? I thought we'd arranged things such that resuming the 
+ACPI video device wouldn't actually do anything until after the PCI 
+device had been handled? It seems like the correct thing is definitely 
+for it to be suspended before and resumed after...
 
-	struct crypt_cpu *this_cc = this_crypt_config(cc);
-	if (!this_cc->req)
-		this_cc->req = mempool_alloc(cc->req_pool, GFP_NOIO);
-
->   	
->   			atomic_inc(&ctx->pending);
->   	
->   			r = crypt_convert_block(cc, ctx, this_cc->req);
-
-this_cc is: struct crypt_cpu *this_cc = this_crypt_config(cc);
-and because it is always running on the same CPU, 
-this_cc->req cannot be NULL here, because it was allocated
-in crypt_alloc_req().
-
-It is false positive here.
-
-Milan
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
