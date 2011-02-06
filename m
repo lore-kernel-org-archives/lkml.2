@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753793Ab1BFWiW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 17:38:22 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:33313 "EHLO lunge.queued.net"
+	id S1753860Ab1BFWlm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 17:41:42 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:48576 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753606Ab1BFWiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 17:38:21 -0500
-Date: Sun, 6 Feb 2011 14:38:16 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: Greg KH <gregkh@suse.de>
-Cc: Marek Belisko <marek.belisko@open-nandra.com>, cjb@laptop.org,
-        jon.nettleton@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] olpc_dcon: revert strtoul change
-Message-ID: <20110206143816.0355ddc5@queued.net>
-In-Reply-To: <20110204234443.GB4147@suse.de>
-References: <1296746572-8998-1-git-send-email-marek.belisko@open-nandra.com>
-	<20110204152341.7b869851@debxo>
-	<20110204234443.GB4147@suse.de>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753259Ab1BFWlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 17:41:40 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [PATCH 5/5] ACPI: Tie ACPI backlight devices to PCI devices if possible
+Date: Sun, 6 Feb 2011 23:41:19 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc3+; KDE/4.4.4; x86_64; ; )
+Cc: akpm@linux-foundation.org, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rpurdie@rpsys.net
+References: <1295033065-13450-1-git-send-email-mjg@redhat.com> <201102062135.08171.rjw@sisk.pl> <20110206205619.GA21472@srcf.ucam.org>
+In-Reply-To: <20110206205619.GA21472@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201102062341.19631.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Feb 2011 15:44:43 -0800
-Greg KH <gregkh@suse.de> wrote:
-
-> On Fri, Feb 04, 2011 at 03:23:41PM -0800, Andres Salomon wrote:
-> > No opinions on this patch (there are some things I'd do differently,
-> > but overall it looks fine).  I'd just like to ensure that if it's
-> > merged, it gets into Linus's tree quickly so that the DCON reworking
-> > that I'm planning to do doesn't get sidetracked by conflicts.
+On Sunday, February 06, 2011, Matthew Garrett wrote:
+> On Sun, Feb 06, 2011 at 09:35:07PM +0100, Rafael J. Wysocki wrote:
+> > > +		acpi_get_parent(device->dev->handle, &acpi_parent);
+> > > +
+> > > +		pdev = acpi_get_pci_dev(acpi_parent);
+> > > +		if (pdev) {
+> > > +			parent = &pdev->dev;
+> > > +			pci_dev_put(pdev);
+> > > +		}
+> > 
+> > I'm afraid you can't do that or suspend problems will happen.
 > 
-> It is planned to go to Linus for .39 and is now in the linux-next tree
-> as of tomorrow.
-> 
-> thanks,
-> 
-> greg k-h
+> Ugh. Ok, how can we fix this?
 
+Not nicely, I'm afraid.
 
-Ugh, this actually causes build warnings and causes XOs to fail to
-boot.  Seems like the strict_strtoul change broke things; this patch
-backs that out.  We can fix it properly later.
-Greg, can you please apply?
+One possible way is to use device_pm_move_after() to rearrange the devices in
+the PM core's suspend list, but that will happen in the video device being
+suspended before the new parent (and resumed after it) -- of course, the only
+option is to move the ACPI video device after the new parent.
 
-
-
-From: Andres Salomon <dilinger@queued.net>
-
-The s/simple_strtoul/strict_strtoul/ from commit e107e6eb added a build
-warning, as well as an oops.  This reverts that change.
-
-Signed-off-by: Andres Salomon <dilinger@queued.net>
----
- drivers/staging/olpc_dcon/olpc_dcon.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c b/drivers/staging/olpc_dcon/olpc_dcon.c
-index b19cd34..d6ad5d7 100644
---- a/drivers/staging/olpc_dcon/olpc_dcon.c
-+++ b/drivers/staging/olpc_dcon/olpc_dcon.c
-@@ -525,7 +525,7 @@ static int _strtoul(const char *buf, int len, unsigned int *val)
- {
- 
- 	char *endp;
--	unsigned int output = strict_strtoul(buf, &endp, 0);
-+	unsigned int output = simple_strtoul(buf, &endp, 0);
- 	int size = endp - buf;
- 
- 	if (*endp && isspace(*endp))
--- 
-1.7.2.3
-
+Thanks,
+Rafael
