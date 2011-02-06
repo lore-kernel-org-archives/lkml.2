@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab1BFVPq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 16:15:46 -0500
-Received: from void.printf.net ([89.145.121.20]:40682 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753775Ab1BFVPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 16:15:45 -0500
-Date: Sun, 6 Feb 2011 21:15:44 +0000
-From: Chris Ball <cjb@laptop.org>
-To: Pierre Tardy <pierre.tardy@intel.com>
-Cc: linux-pm@lists.linux-foundation.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Yunpeng Gao <yunpeng.gao@intel.com>
-Subject: Re: [PATCH v2 2/3] sdhci-pci : Enable runtime PM support
-Message-ID: <20110206211544.GA23898@void.printf.net>
-References: <cover.1297014479.git.pierre.tardy@intel.com> <6722fa7986194808f4d69a1e5ba6d3f163b77da9.1297014479.git.pierre.tardy@intel.com>
+	id S1754074Ab1BFVet (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 16:34:49 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:22795 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753522Ab1BFVer (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 16:34:47 -0500
+Date: Sun, 6 Feb 2011 22:33:31 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+cc: "Struk, Tadeusz" <tadeusz.struk@intel.com>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Hoban, Adrian" <adrian.hoban@intel.com>,
+        "Paoloni, Gabriele" <gabriele.paoloni@intel.com>,
+        "O Mahony, Aidan" <aidan.o.mahony@intel.com>
+Subject: Re: [PATCH] rfc4106, Intel, AES-NI: Don't leak memory in
+ rfc4106_set_hash_subkey().
+In-Reply-To: <20110206204829.GA12652@gondor.apana.org.au>
+Message-ID: <alpine.LNX.2.00.1102062231530.13593@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1101161527440.8049@swampdragon.chaosbits.net> <24483BA4C9F69C43A7379639D35543D7C5398DB6@irsmsx502.ger.corp.intel.com> <alpine.LNX.2.00.1102062039080.13593@swampdragon.chaosbits.net> <20110206203408.GA12426@gondor.apana.org.au>
+ <alpine.LNX.2.00.1102062134150.13593@swampdragon.chaosbits.net> <20110206204829.GA12652@gondor.apana.org.au>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6722fa7986194808f4d69a1e5ba6d3f163b77da9.1297014479.git.pierre.tardy@intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 7 Feb 2011, Herbert Xu wrote:
 
-On Sun, Feb 06, 2011 at 07:02:49PM +0100, Pierre Tardy wrote:
-> From: Yunpeng Gao <yunpeng.gao@intel.com>
+> On Sun, Feb 06, 2011 at 09:34:33PM +0100, Jesper Juhl wrote:
+> > On Mon, 7 Feb 2011, Herbert Xu wrote:
+> > 
+> > > On Sun, Feb 06, 2011 at 08:43:22PM +0100, Jesper Juhl wrote:
+> > > > 
+> > > > Herbert: If Tadeusz agrees, could you please replace the patch you merged 
+> > > > with the one above?
+> > > 
+> > > Please send an incremental patch.
+> > > 
+> > Sure thing. What would you like it based on exactly?
 > 
-> Follow the kernel runtime PM framework, enable runtime PM support of the
-> sdhci host controller with pci interface.
+> The current cryptodev-2.6 tree should do.
 > 
-> Note that this patch implements runtime_pm but now actually detects
-> activity.
-> It relies on higher level (childrens) to do actual waking up
-> Activity detection is put in following patch
-> 
-> Original version from: Yunpeng Gao <yunpeng.gao@intel.com>
-> with modifications by: Pierre Tardy <pierre.tardy@intel.com>
-> 
-> Signed-off-by: Pierre Tardy <pierre.tardy@intel.com>
+Here goes.
 
-I had to add a:
+Fix up previous patch that attempted to fix a mem leak in 
+rfc4106_set_hash_subkey. The previous patch was flawed in that the 'goto 
+out' would still leak.
 
-diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-index 22581a1..48061b3 100644
---- a/drivers/mmc/host/sdhci-pci.c
-+++ b/drivers/mmc/host/sdhci-pci.c
-@@ -18,6 +18,7 @@
- #include <linux/dma-mapping.h>
- #include <linux/slab.h>
- #include <linux/device.h>
-+#include <linux/pm_runtime.h>
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ aesni-intel_glue.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git 
+a/arch/x86/crypto/aesni-intel_glue.c b/arch/x86/crypto/aesni-intel_glue.c
+index e013552..4a8c015 100644
+--- a/arch/x86/crypto/aesni-intel_glue.c
++++ b/arch/x86/crypto/aesni-intel_glue.c
+@@ -874,7 +874,7 @@ rfc4106_set_hash_subkey(u8 *hash_subkey, const u8 *key, unsigned int key_len)
  
- #include <linux/mmc/host.h>
+ 	ret = crypto_ablkcipher_setkey(ctr_tfm, key, key_len);
+ 	if (ret)
+-		goto out;
++		goto out_free_ablkcipher;
  
-to prevent a compile error.
+ 	req = ablkcipher_request_alloc(ctr_tfm, GFP_KERNEL);
+ 	if (!req) {
+@@ -916,7 +916,6 @@ out_free_request:
+ 	kfree(req_data);
+ out_free_ablkcipher:
+ 	crypto_free_ablkcipher(ctr_tfm);
+-out:
+ 	return ret;
+ }
+ 
+ 
 
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Plain text mails only, please.
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+
