@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993Ab1BFKQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 05:16:59 -0500
-Received: from lucidpixels.com ([75.144.35.66]:42666 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751806Ab1BFKQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 05:16:57 -0500
-Date: Sun, 6 Feb 2011 05:16:57 -0500 (EST)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Stan Hoeppner <stan@hardwarefreak.com>
-cc: "Dr. David Alan Gilbert" <linux@treblig.org>,
-        Emmanuel Florac <eflorac@intellique.com>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-net@vger.kernel.org,
-        Alan Piszcz <ap@solarrain.com>
-Subject: Re: Supermicro X8DTH-6: Only ~250MiB/s from RAID<->RAID over
- 10GbE?
-In-Reply-To: <4D4E127D.3060105@hardwarefreak.com>
-Message-ID: <alpine.DEB.2.00.1102060515230.28109@p34.internal.lan>
-References: <alpine.DEB.2.00.1102051427360.8518@p34.internal.lan> <20110205214550.3cb0f0d1@galadriel2.home> <alpine.DEB.2.00.1102051553591.8518@p34.internal.lan> <20110205220621.GB17347@gallifrey> <alpine.DEB.2.00.1102051729010.8518@p34.internal.lan>
- <alpine.DEB.2.00.1102051753100.8518@p34.internal.lan> <4D4DE34E.7010308@hardwarefreak.com> <alpine.DEB.2.00.1102051958370.28109@p34.internal.lan> <4D4E127D.3060105@hardwarefreak.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752030Ab1BFKab (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 05:30:31 -0500
+Received: from mail-in-09.arcor-online.net ([151.189.21.49]:39343 "EHLO
+	mail-in-09.arcor-online.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751957Ab1BFKa2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 05:30:28 -0500
+X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-14.arcor-online.net 69F059C188
+Message-Id: <E1Pm1so-00025V-Am@be1.7eggert.dyndns.org>
+From: Bodo Eggert 
+	<arcoristkaputtundbrauchtdiesentext.7eggert@nurfuerspam.de>
+Subject: Re: [PATCH] NX protection for kernel data : fix 32 bits S3 suspend
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        castet.matthieu@free.fr,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-security-module@vger.kernel.org, Matthias Hopf <mhopf@suse.de>,
+        rjw@sisk.pl, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Reply-To: 7eggert@nurfuerspam.de
+Date: Sun, 06 Feb 2011 11:30:17 +0100
+References: <ghb2G-3tw-7@gated-at.bofh.it> <ghjtg-WV-5@gated-at.bofh.it> <ghosV-TN-9@gated-at.bofh.it> <ghEo1-2IF-1@gated-at.bofh.it> <gifGW-7eL-13@gated-at.bofh.it>
+User-Agent: KNode/0.10.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+H. Peter Anvin <hpa@zytor.com> wrote:
 
+> In static_protections() we have:
+> 
+>>         /*
+>>          * The BIOS area between 640k and 1Mb needs to be executable for
+>>          * PCI BIOS based config access (CONFIG_PCI_GOBIOS) support.
+>>          */
 
-On Sat, 5 Feb 2011, Stan Hoeppner wrote:
+I don't think the CGA/MDA/VGA graphics memory areas should be executable,
+and I doubt execute access to these areas is required - is it?
 
-> Justin Piszcz put forth on 2/5/2011 7:08 PM:
->
->> Overall performance is good, but now I need to figure out how to tweak the
->> network and/or disk paths so I can achieve > 1Gbyte/sec, as the RAID-0s can
->> read and write > 1.2Gbyte/sec.
->>
->> Has anyone with 10GbE <-> 10GbE been able to transfer at or near line rate
->> with a single connection, or > 700MiB/s with multiple connections?  Problem
->> I worry about with creating multiple connections between two machines it will
->> create contention within the RAID that is being read from..
->
-> Are you trying to maximize this for the sake of maximizing it, or do you have an
-> actual application or work flow process that needs to be able to transfer a
-> single large file via NFS at >1 GB/s throughput?
+0xA000:0000 might be a BIOS area, if it is, you don't have a VGA and the
+ROM will be exactly 64K. 0xB800 and 0xB000 SHOULD NOT be a ROM, nobody dared
+to use it (I don't remember exactly where ROMs are searched).
+-- 
+Funny quotes:
+34. If FedEx and UPS were to merge, would they call it Fed UP?
 
-Workflow process-
-
-Migrate data from old/legacy RAID sets to new ones, possibly also 
-2TB->3TB, so the faster the transfer speed, the better.
-
-Justin.
+Friß, Spammer: igc@vhFgi.7eggert.dyndns.org fdnJu@jQOez.7eggert.dyndns.org
 
