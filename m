@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259Ab1BFLAV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 06:00:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47859 "EHLO mx2.suse.de"
+	id S1752152Ab1BFLCe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 06:02:34 -0500
+Received: from cantor.suse.de ([195.135.220.2]:39720 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751984Ab1BFLAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 06:00:19 -0500
-Date: Sun, 06 Feb 2011 12:00:15 +0100
-Message-ID: <s5hfws1whq8.wl%tiwai@suse.de>
+	id S1751455Ab1BFLCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 06:02:32 -0500
+Date: Sun, 06 Feb 2011 12:02:31 +0100
+Message-ID: <s5hei7lwhmg.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+To: Marc Koschewski <marc@osknowledge.org>
+Cc: Jeff Chua <jeff.chua.linux@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         "Rafael J. Wysocki" <rjw@sisk.pl>,
         Chris Wilson <chris@chris-wilson.co.uk>, Len Brown <lenb@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
 Subject: Re: Commit 500f7147cf5bafd139056d521536b10c2bc2e154 breaks _resume_
-In-Reply-To: <AANLkTi=h+H+N=f4m4pE+RZ4n5h7oxQuwzmK-qmmWAGtL@mail.gmail.com>
+In-Reply-To: <20110206081950.GA12659@marc.osknowledge.org>
 References: <AANLkTi=h+H+N=f4m4pE+RZ4n5h7oxQuwzmK-qmmWAGtL@mail.gmail.com>
+	<20110206081950.GA12659@marc.osknowledge.org>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -26,73 +28,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Sun, 6 Feb 2011 09:50:51 +0800,
-Jeff Chua wrote:
+At Sun, 6 Feb 2011 09:19:51 +0100,
+Marc Koschewski wrote:
 > 
-> On Sun, Feb 6, 2011 at 2:24 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> The suspend monster is back! The suspend-to-ram is fine, but upon
-> >> resume, screen is blank. Haven't bisected in case someone has also
-> >> done so.
-> >
-> > BTW, please don't reply to messages containing patches with reports of problems
-> > that aren't caused by those patches.  It's confusing at best and at worst it
-> > may result in the patches being rejected.
+> Hi,
 > 
-> Sorry. New subject now:)
+> * Jeff Chua <jeff.chua.linux@gmail.com> [2011-02-06 09:50:51 +0800]:
+> > On Sun, Feb 6, 2011 at 2:24 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > >> The suspend monster is back! The suspend-to-ram is fine, but upon
+> > >> resume, screen is blank. Haven't bisected in case someone has also
+> > >> done so.
+> > >
+> > > BTW, please don't reply to messages containing patches with reports of problems
+> > > that aren't caused by those patches.  It's confusing at best and at worst it
+> > > may result in the patches being rejected.
+> > 
+> > Sorry. New subject now:)
+> > 
+> > 
+> > On Sun, Feb 6, 2011 at 2:51 AM, Linus Torvalds
+> > <torvalds@linux-foundation.org> wrote:
+> > >> It's very recent. ... between commit
+> > >> 831d52bc153971b70e64eccfbed2b232394f22f8 and
+> > >> 44f2c5c841da1b1e0864d768197ab1497b5c2cc1.
+> > >
+> > > Hmm. It's almost certainly one of the DRI patches, but which one? I
+> > > think bisection is the only way to figure it out. It shouldn't be too
+> > > bad, since there's only 120 commits in that range.
+> > >
+> > > In fact, you can almost certainly just bisect from 89840966c579 to
+> > > bb5b583b5279, which is just 31 commits and should get you bisected in
+> > > just five tries or so.
+> > 
+> > Yea, I've just done that. It came down to the following commit.
+> > Reverting it solves the problem. I've gone thru a few cycles, and
+> > notebook still survives.
+> > 
+> > Thanks,
+> > Jeff
 > 
-> 
-> On Sun, Feb 6, 2011 at 2:51 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >> It's very recent. ... between commit
-> >> 831d52bc153971b70e64eccfbed2b232394f22f8 and
-> >> 44f2c5c841da1b1e0864d768197ab1497b5c2cc1.
-> >
-> > Hmm. It's almost certainly one of the DRI patches, but which one? I
-> > think bisection is the only way to figure it out. It shouldn't be too
-> > bad, since there's only 120 commits in that range.
-> >
-> > In fact, you can almost certainly just bisect from 89840966c579 to
-> > bb5b583b5279, which is just 31 commits and should get you bisected in
-> > just five tries or so.
-> 
-> Yea, I've just done that. It came down to the following commit.
-> Reverting it solves the problem. I've gone thru a few cycles, and
-> notebook still survives.
+> I reverted the specified commit and my box still suffers the
+> resume-turns-into-cold-boot behavior. Retried two times with the commit reverted
+> on top of HEAD...
 
-Hrm, what is the symptom?  I couldn't find it because you cut off the
-thread, and it's not cited.
-
-The commit you mentioned just adds an interface, and the the callbacks
-aren't defined.  The real change is either in
-  commit f3269058e7a80083dcdf89698bfcd1a6c6f8fd12
-    drm/i915/crt: Force the initial probe after reset
-or
-  commit 5d1d0cc87fc0887921993ea0742932e0c8adeda0
-    drm/i915: Reset crtc after resume
-
-Also the fix might interact with
-  commit 811aaa55ba21ab37407018cfc01770d6b037d3fb
-    drm: Only set DPMS ON when actually configuring a mode
+The cold-boot problem is very likely irrelevant with i915 patches.
+I've got the same issue with and without the i915 fix patches on test
+machines here.
 
 
 thanks,
 
 Takashi
-
-> 
-> Thanks,
-> Jeff
-> 
-> 
-> commit 500f7147cf5bafd139056d521536b10c2bc2e154
-> Author: Chris Wilson <chris@chris-wilson.co.uk>
-> Date:   Mon Jan 24 15:14:41 2011 +0000
-> 
->     drm/i915: Reset state after a GPU reset or resume
-> 
->     Call drm_mode_config_reset() after an invalidation event to restore any
->     cached state to unknown.
-> 
->     Tested-by: Takashi Iwai <tiwai@suse.de>
->     Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-> 
