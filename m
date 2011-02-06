@@ -1,101 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751923Ab1BFKQg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 05:16:36 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63906 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334Ab1BFKQf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 05:16:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=qRa9fewnAxfhBpLsQSfY1DnbiZr5Xq7VR4HQvmvd3S2cf7DeC60wJynzrI7Rv5IAYj
-         2aczkAeVijf+QHQsIIwOrq+ZBtYoaItiHCGq0niA4tYxsyn1gXf0ssRc0jId4ss9rP9k
-         EVsZHEKD+0tzZ5ePlwo6Gd8LIqTocEtYueFSc=
+	id S1751993Ab1BFKQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 05:16:59 -0500
+Received: from lucidpixels.com ([75.144.35.66]:42666 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751806Ab1BFKQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 05:16:57 -0500
+Date: Sun, 6 Feb 2011 05:16:57 -0500 (EST)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Stan Hoeppner <stan@hardwarefreak.com>
+cc: "Dr. David Alan Gilbert" <linux@treblig.org>,
+        Emmanuel Florac <eflorac@intellique.com>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-net@vger.kernel.org,
+        Alan Piszcz <ap@solarrain.com>
+Subject: Re: Supermicro X8DTH-6: Only ~250MiB/s from RAID<->RAID over
+ 10GbE?
+In-Reply-To: <4D4E127D.3060105@hardwarefreak.com>
+Message-ID: <alpine.DEB.2.00.1102060515230.28109@p34.internal.lan>
+References: <alpine.DEB.2.00.1102051427360.8518@p34.internal.lan> <20110205214550.3cb0f0d1@galadriel2.home> <alpine.DEB.2.00.1102051553591.8518@p34.internal.lan> <20110205220621.GB17347@gallifrey> <alpine.DEB.2.00.1102051729010.8518@p34.internal.lan>
+ <alpine.DEB.2.00.1102051753100.8518@p34.internal.lan> <4D4DE34E.7010308@hardwarefreak.com> <alpine.DEB.2.00.1102051958370.28109@p34.internal.lan> <4D4E127D.3060105@hardwarefreak.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikj+FU8OF_-KFr2hmTSWqTHMK5JnrnTVyn-XtxQ@mail.gmail.com>
-References: <AANLkTikj+FU8OF_-KFr2hmTSWqTHMK5JnrnTVyn-XtxQ@mail.gmail.com>
-Date: Sun, 6 Feb 2011 11:16:31 +0100
-X-Google-Sender-Auth: IZ8GFRF6Jb-wce_fiOlYWFyoiLc
-Message-ID: <AANLkTimcFvq-cSpain--STuVVg3dUJeTCDrykQ=24egg@mail.gmail.com>
-Subject: Re: [PATCH] printk-formats.txt documentation update
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andrew Murray <amurray@mpcdata.com>
-Cc: linux-embedded@vger.kernel.org,
-        linux kernel <linux-kernel@vger.kernel.org>, trivial@kernel.org,
-        rdunlap@xenotime.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 6, 2011 at 01:15, Andrew Murray <amurray@mpcdata.com> wrote:
-> From: Andrew Murray <amurray@mpc-data.co.uk>
+
+
+On Sat, 5 Feb 2011, Stan Hoeppner wrote:
+
+> Justin Piszcz put forth on 2/5/2011 7:08 PM:
 >
-> This patch updates the incomplete documentation concerning the printk
-> extended format specifiers.
+>> Overall performance is good, but now I need to figure out how to tweak the
+>> network and/or disk paths so I can achieve > 1Gbyte/sec, as the RAID-0s can
+>> read and write > 1.2Gbyte/sec.
+>>
+>> Has anyone with 10GbE <-> 10GbE been able to transfer at or near line rate
+>> with a single connection, or > 700MiB/s with multiple connections?  Problem
+>> I worry about with creating multiple connections between two machines it will
+>> create contention within the RAID that is being read from..
 >
-> Signed-off-by: Andrew Murray <amurray@mpc-data.co.uk>
-> ---
-> diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
-> index 1b5a5dd..df14336 100644
-> --- a/Documentation/printk-formats.txt
-> +++ b/Documentation/printk-formats.txt
-> @@ -9,7 +9,42 @@ If variable is of Type,                use printk format specifier:
->                size_t                  %zu or %zx
->                ssize_t                 %zd or %zx
->
-> -Raw pointer value SHOULD be printed with %p.
-> +Raw pointer value SHOULD be printed with %p. The kernel supports
-> +the following extended format specifiers for pointer types:
-> +
-> +       General:
-> +
-> +       %pF     function pointer with offset, e.g. module_start
-> +       %pf     function pointer without offset, e.g. module_start+0x0/0x62 [hello]
-> +       %pS     text symbol with offset
-> +       %ps     text symbol without offset
-> +       %pR     struct resource with decoded flags, e.g. [mem 0x0-0x1f 64 bit pref]
-> +       %pr     struct resource with raw flags, e.g. [mem 0x0-0x1f flags 0x201]
-> +
-> +       MAC/FDDI addresses:
-> +
-> +       %pM     colon-seperated 6-byte MAC address in hex notation, e.g. 00:01:02:03:04:05
-> +       %pm     non-colon-seperated 6-byte MAC address is hex notation, e.g. 000102030405
-> +       %pMF    6-byte dash-separated FDDI hex notation
-> +
-> +       IPv4 addresses:
-> +
-> +       %pI4    IPv4 dot-seperated decimal without leading 0's, e.g. 1.2.3.4
-> +       %pi4    IPv4 dot-seperated decimal with leading 0's, 001.002.003.004
-> +       %p[Ii]4[hl] IPv4 dot-seperated decimal with/without leading 0's for
-> +               host (h), little (l) or network/big (default) endian order
-> +
-> +       IPv6 addresses:
-> +       %pI6    IPv6 colon-seperated network-order 16 bit hex with leading 0's,
-> +               e.g. 0001:0203:...:0708
-> +       %pi6    IPv6 non-colon-seperated network-order 16 bit hex with leading 0's,
-> +               e.g. 000102...0f
-> +       %pI6c   IPv6 address as described by
-> +               http://tools.ietf.org/html/draft-ietf-6man-text-addr-representation-00,
-> +               e.g. 1::708
-> +
-> +       %pU[bBlL] 16 byte UUID/GUID in big or little endian using lower or upper case
-> +
+> Are you trying to maximize this for the sake of maximizing it, or do you have an
+> actual application or work flow process that needs to be able to transfer a
+> single large file via NFS at >1 GB/s throughput?
 
-In the mean time, we also got %pV and %pK. Can you please add them as well? Thx!
+Workflow process-
 
-Gr{oetje,eeting}s,
+Migrate data from old/legacy RAID sets to new ones, possibly also 
+2TB->3TB, so the faster the transfer speed, the better.
 
-                        Geert
+Justin.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
