@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754206Ab1BFXdX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 18:33:23 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44088 "EHLO mail.zytor.com"
+	id S1754195Ab1BFXfE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 18:35:04 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:48708 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754015Ab1BFXdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 18:33:22 -0500
-Message-ID: <4D4F2F92.9080902@zytor.com>
-Date: Sun, 06 Feb 2011 15:32:34 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1753438Ab1BFXfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 18:35:01 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Matthew Garrett <mjg59@srcf.ucam.org>, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH 5/5] ACPI: Tie ACPI backlight devices to PCI devices if possible
+Date: Mon, 7 Feb 2011 00:34:43 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc3+; KDE/4.4.4; x86_64; ; )
+Cc: akpm@linux-foundation.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rpurdie@rpsys.net,
+        Len Brown <lenb@kernel.org>
+References: <1295033065-13450-1-git-send-email-mjg@redhat.com> <201102070001.25814.rjw@sisk.pl> <20110206230558.GA23889@srcf.ucam.org>
+In-Reply-To: <20110206230558.GA23889@srcf.ucam.org>
 MIME-Version: 1.0
-To: 7eggert@nurfuerspam.de
-CC: Bodo Eggert 
-	<arcoristkaputtundbrauchtdiesentext.7eggert@nurfuerspam.de>,
-        Ingo Molnar <mingo@elte.hu>, castet.matthieu@free.fr,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-security-module@vger.kernel.org, Matthias Hopf <mhopf@suse.de>,
-        rjw@sisk.pl, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] NX protection for kernel data : fix 32 bits S3 suspend
-References: <ghb2G-3tw-7@gated-at.bofh.it> <ghjtg-WV-5@gated-at.bofh.it> <ghosV-TN-9@gated-at.bofh.it> <ghEo1-2IF-1@gated-at.bofh.it> <gifGW-7eL-13@gated-at.bofh.it> <E1Pm1so-00025V-Am@be1.7eggert.dyndns.org>
-In-Reply-To: <E1Pm1so-00025V-Am@be1.7eggert.dyndns.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201102070034.43691.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2011 02:30 AM, Bodo Eggert wrote:
-> H. Peter Anvin <hpa@zytor.com> wrote:
+On Monday, February 07, 2011, Matthew Garrett wrote:
+> On Mon, Feb 07, 2011 at 12:01:25AM +0100, Rafael J. Wysocki wrote:
 > 
->> In static_protections() we have:
->>
->>>         /*
->>>          * The BIOS area between 640k and 1Mb needs to be executable for
->>>          * PCI BIOS based config access (CONFIG_PCI_GOBIOS) support.
->>>          */
+> > Yes, it seems so, but I'm not sure what the short term consequences of that
+> > change will be.  Perhaps there will be none. :-)
 > 
-> I don't think the CGA/MDA/VGA graphics memory areas should be executable,
-> and I doubt execute access to these areas is required - is it?
-> 
-> 0xA000:0000 might be a BIOS area, if it is, you don't have a VGA and the
-> ROM will be exactly 64K. 0xB800 and 0xB000 SHOULD NOT be a ROM, nobody dared
-> to use it (I don't remember exactly where ROMs are searched).
+> Ok, I'll have a play with that. Maybe we should be fixing this up 
+> somehow in the acpi-pci glue code? It seems wrong to have acpi devices 
+> resumed before the PCI device they're associated with.
 
+Those device's don't have ACPI drivers and therefore they are not really
+suspended or resumed, so we don't need to fix anything in that area.
 
-0xA0000..0xBFFFF can be ROM if you don't have a VGA card; this is new in
-PCI 3.x IIRC.  However, in legacy systems you will not have ROM in this
-area.
+Still, IMO, there is a design issue in the entire ACPI subsystem, because the
+idea of "ACPI device" really is not well defined, so to speak.  Sometimes
+they are just "device interfaces" that can be used to ask the firmware for
+something (like in the case of the "ACPI devices" associated with PCI devices)
+and sometimes they are "real devices" with real drivers.  The video device
+apparently wants to be both at the same time, which is even more confusing. :-)
 
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+I _think_ that struct acpi_device shouldn't really contain the embedded device
+object and each of struct acpi_device objects should be pointed to by the
+archdata member of certain struct device.  In turn, struct acpi_device should
+contain a pointer to the struct device that it's pointed to by via the archdata
+field.  Then, the struct acpi_device objects will always be "device interfaces"
+and all of the device-driver interactions will be represented through their
+corresponding device objects.  That should allow us to avoid all of the
+suspend-resume complications (and all sorts of other ugliness).
