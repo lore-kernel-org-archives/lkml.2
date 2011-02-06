@@ -1,57 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599Ab1BFVxf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 16:53:35 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:23055 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752859Ab1BFVxd (ORCPT
+	id S1753714Ab1BFV5k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 16:57:40 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:52962 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752873Ab1BFV5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 16:53:33 -0500
-Date: Sun, 6 Feb 2011 22:52:17 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: devel@driverdev.osuosl.org
-cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        Jason Cooper <jason@lakedaemon.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Arend van Spriel <arend@broadcom.com>,
-        Roland Vossen <rvossen@broadcom.com>, Dowan Kim <dowan@broadcom.com>,
-        Henry Ptasinski <henryp@broadcom.com>,
-        Brett Rudley <brudley@broadcom.com>, trivial@kernel.org
-Subject: [PATCH][trivial] Remove duplicate inclusion of wlc_event.h in
- drivers/staging/brcm80211/sys/wlc_mac80211.c
-Message-ID: <alpine.LNX.2.00.1102062249180.13593@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 6 Feb 2011 16:57:38 -0500
+Date: Mon, 7 Feb 2011 06:57:33 +0900
+From: Simon Horman <horms@verge.net.au>
+To: "Ahmed S. Darwish" <darwish.07@gmail.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Vivek Goyal <vgoyal@redhat.com>,
+        Haren Myneni <hbabu@us.ibm.com>,
+        Eric Biederman <ebiederm@xmission.com>, kexec@lists.infradead.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org
+Subject: Re: [PATCH -next] Documentation: Improve crashkernel= description
+Message-ID: <20110206215733.GB26233@verge.net.au>
+References: <20110206154108.GA16542@laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110206154108.GA16542@laptop>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We include wlc_event.h twice in 
-drivers/staging/brcm80211/sys/wlc_mac80211.c
-Once is enough.
+On Sun, Feb 06, 2011 at 05:41:08PM +0200, Ahmed S. Darwish wrote:
+> (Also applicable over 2.6.38-rc3)
+> 
+> Had to explore two C code files to make sense of the 'crashkernel='
+> kernel parameter values.  Improve the situation.
+> 
+> Signed-off-by: Ahmed S. Darwish <darwish.07@gmail.com>
+> ---
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 89835a4..8f26b42 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -545,9 +545,12 @@ and is between 256 and 4096 characters. It is defined in the file
+>  			Format:
+>  			<first_slot>,<last_slot>,<port>,<enum_bit>[,<debug>]
+>  
+> -	crashkernel=nn[KMG]@ss[KMG]
+> -			[KNL] Reserve a chunk of physical memory to
+> -			hold a kernel to switch to with kexec on panic.
+> +	crashkernel=size[KMG][@offset[KMG]]
+> +			[KNL] Using kexec, Linux can switch to a 'crash kernel'
+> +			upon panic. This parameter reserves the physical
+> +			memory region [offset, offset + size] for that kernel
+> +			image. If the '@offset' part was ignored, Linux finds
+> +			a suitable crash image start address automatically.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- wlc_mac80211.c |    1 -
- 1 file changed, 1 deletion(-)
+I think this would be further improved as:
 
-diff --git a/drivers/staging/brcm80211/sys/wlc_mac80211.c b/drivers/staging/brcm80211/sys/wlc_mac80211.c
-index a130386..0a46d44 100644
---- a/drivers/staging/brcm80211/sys/wlc_mac80211.c
-+++ b/drivers/staging/brcm80211/sys/wlc_mac80211.c
-@@ -47,7 +47,6 @@
- #include <wlc_antsel.h>
- #include <wlc_stf.h>
- #include <wlc_ampdu.h>
--#include <wlc_event.h>
- #include <wl_export.h>
- #include "d11ucode_ext.h"
- #include <wlc_alloc.h>
+			... If '@offset' is omitted then a suitable
+			offset is selected automatically.
 
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Plain text mails only, please.
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-
+>  
+>  	crashkernel=range1:size1[,range2:size2,...][@offset]
+>  			[KNL] Same as above, but depends on the memory
+> 
+> regards,
+> 
+> -- 
+> Darwish
+> http://darwish.07.googlepages.com
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
