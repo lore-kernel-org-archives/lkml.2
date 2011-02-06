@@ -1,46 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751663Ab1BFHa4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 02:30:56 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53104 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751414Ab1BFHaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 02:30:55 -0500
-Message-ID: <4D4E4E0D.2080806@zytor.com>
-Date: Sat, 05 Feb 2011 23:30:21 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1751843Ab1BFHuc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 02:50:32 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57293 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751642Ab1BFHub (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 02:50:31 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=AbAHauKsRKd/4/EuBSlLzXoeps0T5hW9L0g/8UaNNAwuLf8+SkXs/PfXSjDE/dQ9Qy
+         k2ZRTPRwlkegb5NuDUlUwVBZhSKrGUhHuX33qbaynfcYkXuRYEHS+ajqM3A9dtZIeUmI
+         Trv8j7uIkkql13fd1sJDOvyn50TotHV2IqLjA=
+Date: Sun, 6 Feb 2011 15:50:15 +0800
+From: HarryWei <jiaweiwei.xiyou@gmail.com>
+To: valentin.quequet@gmail.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Fwd: GIT - cloning torvalds/linux-2.6.git repository trouble.
+Message-ID: <20110206075007.GA3075@gmail.com>
+Mail-Followup-To: valentin.quequet@gmail.com, linux-kernel@vger.kernel.org
+References: <AANLkTikiKagzJMh_xuOSzfA4c-qxOHhVeU2jhmbaDHji@mail.gmail.com>
+ <AANLkTikargkErr8BsMV+CwO74F++Dq-L4iQA3F=P4YEZ@mail.gmail.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jan Beulich <JBeulich@novell.com>
-Subject: Re: [PATCH] x86/mm/init: respect memblock reserved regions when destroying
- mappings
-References: <alpine.DEB.2.00.1101311514580.7277@kaball-desktop>	<4D4A3782.3050702@zytor.com>	<alpine.DEB.2.00.1102031114030.7277@kaball-desktop>	<4D4ADFAD.7060507@zytor.com>	<alpine.DEB.2.00.1102041130060.7277@kaball-desktop>	<4D4CA568.70907@goop.org> <AANLkTi=nEQka_19+nKQC-yJn2Czn9GCqsUWN6Byy7rCF@mail.gmail.com>
-In-Reply-To: <AANLkTi=nEQka_19+nKQC-yJn2Czn9GCqsUWN6Byy7rCF@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikargkErr8BsMV+CwO74F++Dq-L4iQA3F=P4YEZ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/05/2011 11:02 PM, Yinghai Lu wrote:
-> why not just move calling cleanup_highmap down?
+On Sun, Feb 06, 2011 at 03:11:55PM +0800, harryxiyou wrote:
+> ---------- Forwarded message ----------
+> From: Valentin QUEQUET <valentin.quequet@gmail.com>
+> Date: 2011/2/6
+> Subject: GIT - cloning torvalds/linux-2.6.git repository trouble.
+> To: linux-kernel@vger.kernel.org
 > 
-> something like attached patch.
+> 
+> Hi Dear Linux enthusiasts,
+> 
+> I recently (yesterday) began to fetch (clone, fetch, ...) the current
+>  Linux GIT repository:
+>    http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+> 
+> I first failed to fetch it through any protocol ( git:// , http:// ,
+> https:// )
+>  because of my UNRELIABLE WiFi connexion.
+> 
+> I eventually managed to download the following file :
+> 
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/refs/heads/master
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/info/packs
+> 
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-0b38509807589c455b1c769368348bd845441959.idx
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-c53d2db50f885f3803a3afd46484b54c06b1433e.idx
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-910f14bdd726702c46cfd622ee40fcaf4881a5ec.idx
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-81315ef1065b534c70a409978aa11daf2e27fdb5.idx
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-83898168fc5bce601472bd3260cd6b08f5f4f7b2.idx
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-7ff1ea46fec7532e88a900a9a1340794fb3ffa3f.idx
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-221cb4abe6bb3165bf062219200020148b83948b.idx
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-6576226aba312e2a3b610665e35cfc466f980c55.idx
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-0ab67efdf76cff54cd9fa5166d1df19c8edf685a.idx
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-0b7fc86700a243d2ea341c04926c4425fe85fd26.idx
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-fb3e46067bf5b97b6b49dbda9cda51cf3ef3b660.idx
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-04fb51824d013a5fbac892f95369d92daf60f195.idx
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-76001124ed6335482ee1cea785f93426ab278417.idx
+> 
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-0b38509807589c455b1c769368348bd845441959.pack
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-c53d2db50f885f3803a3afd46484b54c06b1433e.pack
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-910f14bdd726702c46cfd622ee40fcaf4881a5ec.pack
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-81315ef1065b534c70a409978aa11daf2e27fdb5.pack
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-83898168fc5bce601472bd3260cd6b08f5f4f7b2.pack
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-7ff1ea46fec7532e88a900a9a1340794fb3ffa3f.pack
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-221cb4abe6bb3165bf062219200020148b83948b.pack
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-6576226aba312e2a3b610665e35cfc466f980c55.pack
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-0ab67efdf76cff54cd9fa5166d1df19c8edf685a.pack
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-0b7fc86700a243d2ea341c04926c4425fe85fd26.pack
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-fb3e46067bf5b97b6b49dbda9cda51cf3ef3b660.pack
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-04fb51824d013a5fbac892f95369d92daf60f195.pack
+> http://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git/objects/pack/pack-76001124ed6335482ee1cea785f93426ab278417.pack
+> 
+> And all these .pack and .idx files appear to be valid ones, with
+> respect to the "git verify-pack" command.
+> 
+> This set of files seems to be consistent with the current state (by that
+> time)
+>  of the Linux git repository (torvalds/linux-2.6.git)
+> 
+> Now, I would like YOU to tell ME how I can checkout from the PACKs
+> I've just downloaded.
+> 
+> How may I populate the working directory , objects/xy/... , refs/... ,
+> ... hierarchies to
+>  make my (local) repository usable.
+> 
+> I suspect I shall find this information in documentation related to
+> the "git fetch" command,
+>  but I haven't managed to get it right.
+> 
+> Your HELP is very welcome.
+Hello friend,
+        I remember that i just do the command 'git clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git', then i get the linus's git tree.
+        Maybe it is useful to you.
 
-This patch looks very clean and looks on the surface of it like it is
-removing some ugly ad hoc code, but (as always) it needs a description
-about the problem it solves and why it is correct.
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+	Thanks.
+	Best Regards.
+	Harry Wei.
+> 
+> 
+> If you prefer not to pollute LKML, you may choose to aswer me at:
+> 
+>  valentin.quequet@gmail.com
+> 
+> 
+> Thanks in advance,
+> 
+> Valentin
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+> 
+> -- 
+> Best Regards.
+> Harry Wei.
+> Do what u like!
