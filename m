@@ -1,273 +1,562 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752505Ab1BFDWb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Feb 2011 22:22:31 -0500
-Received: from x35.xmailserver.org ([64.71.152.41]:37914 "EHLO
-	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752380Ab1BFDWa (ORCPT
+	id S1752515Ab1BFDr1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Feb 2011 22:47:27 -0500
+Received: from www.wytron.com.tw ([211.75.82.101]:42559 "EHLO
+	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752376Ab1BFDr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Feb 2011 22:22:30 -0500
-X-AuthUser: davidel@xmailserver.org
-Date: Sat, 5 Feb 2011 19:22:29 -0800 (PST)
-From: Davide Libenzi <davidel@xmailserver.org>
-X-X-Sender: davide@localhost6.localdomain6
-To: Nelson Elhage <nelhage@ksplice.com>
-cc: linux-fsdevel@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        security@kernel.org
-Subject: Re: [PATCH] epoll: Prevent deadlock through unsafe ->f_op->poll()
- calls.
-In-Reply-To: <1296954535-29495-1-git-send-email-nelhage@ksplice.com>
-Message-ID: <alpine.DEB.2.00.1102051916170.22851@localhost6.localdomain6>
-References: <1296954535-29495-1-git-send-email-nelhage@ksplice.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
-X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 5 Feb 2011 22:47:26 -0500
+From: Thomas Chou <thomas@wytron.com.tw>
+To: David Brownell <dbrownell@users.sourceforge.net>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
+        devicetree-discuss@lists.ozlabs.org,
+        spi-devel-general@lists.sourceforge.net,
+        Thomas Chou <thomas@wytron.com.tw>
+Subject: [PATCH v6] spi: add OpenCores tiny SPI driver
+Date: Sun,  6 Feb 2011 11:48:16 +0800
+Message-Id: <1296964096-30760-1-git-send-email-thomas@wytron.com.tw>
+X-Mailer: git-send-email 1.7.3.5
+In-Reply-To: <1296960998-19116-1-git-send-email-thomas@wytron.com.tw>
+References: <1296960998-19116-1-git-send-email-thomas@wytron.com.tw>
+X-SA-Exim-Connect-IP: 192.168.1.250
+X-SA-Exim-Mail-From: thomas@wytron.com.tw
+X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 5 Feb 2011, Nelson Elhage wrote:
+This patch adds support of OpenCores tiny SPI driver.
 
-> In several places, an epoll fd can call another file's ->f_op->poll() method
-> with ep->mtx held. This is in general unsafe, because that other file could
-> itself be an epoll fd that contains the original epoll fd.
-> 
-> The code defends against this possibility in its own ->poll() method using
-> ep_call_nested, but there are several other unsafe calls to ->poll elsewhere
-> that can be made to deadlock. For example, the following simple program causes
-> the call in ep_insert recursively call the original fd's ->poll, leading to
-> deadlock:
-> 
-> ------------------------------8<------------------------------
->  #include <unistd.h>
->  #include <sys/epoll.h>
-> 
->  int main(void) {
->      int e1, e2, p[2];
->      struct epoll_event evt = {
->          .events = EPOLLIN
->      };
-> 
->      e1 = epoll_create(1);
->      e2 = epoll_create(2);
->      pipe(p);
-> 
->      epoll_ctl(e2, EPOLL_CTL_ADD, e1, &evt);
->      epoll_ctl(e1, EPOLL_CTL_ADD, p[0], &evt);
->      write(p[1], p, sizeof p);
->      epoll_ctl(e1, EPOLL_CTL_ADD, e2, &evt);
-> 
->      return 0;
->  }
-> ------------------------------8<------------------------------
+http://opencores.org/project,tiny_spi
 
-Yuck, true :|
-The call nested function is heavy, and the patch below does it only if the 
-file descriptor is an epoll one.
-But, that does not fix the problem WRT the send-events proc, even if we 
-call the new ep_poll_file().
-At this point, we better remove the heavy checks from the fast path, and 
-perform a check at insetion time, if the inserted fd is an epoll one.
-That way, the price for the check is paid once, and only if the inserted 
-fd is an epoll one.
-
-
-
-- Davide
-
-
+Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
 ---
- fs/eventpoll.c |  127 ++++++++++++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 107 insertions(+), 20 deletions(-)
+v2 minor cleanup, same as Grant suggest for spi_altera.
+v3 rename driver to spi_oc_tiny as Grant suggested.
+   set version to tiny-spi-rtlsvn2 as Jonas suggested.
+v4 add dts binding doc.
+v5 use devm_* to help cleanup.
+   add of gpio support.
+v6 check len from of_get_property.
+   fix kerneldoc in header.
 
-Index: linux-2.6.mod/fs/eventpoll.c
-===================================================================
---- linux-2.6.mod.orig/fs/eventpoll.c	2011-02-05 17:39:48.000000000 -0800
-+++ linux-2.6.mod/fs/eventpoll.c	2011-02-05 19:04:46.000000000 -0800
-@@ -214,6 +214,25 @@
- };
+ .../devicetree/bindings/spi/spi_oc_tiny.txt        |   12 +
+ drivers/spi/Kconfig                                |    8 +
+ drivers/spi/Makefile                               |    1 +
+ drivers/spi/spi_oc_tiny.c                          |  424 ++++++++++++++++++++
+ include/linux/spi/spi_oc_tiny.h                    |   20 +
+ 5 files changed, 465 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/spi/spi_oc_tiny.txt
+ create mode 100644 drivers/spi/spi_oc_tiny.c
+ create mode 100644 include/linux/spi/spi_oc_tiny.h
+
+diff --git a/Documentation/devicetree/bindings/spi/spi_oc_tiny.txt b/Documentation/devicetree/bindings/spi/spi_oc_tiny.txt
+new file mode 100644
+index 0000000..d95c0b3
+--- /dev/null
++++ b/Documentation/devicetree/bindings/spi/spi_oc_tiny.txt
+@@ -0,0 +1,12 @@
++OpenCores tiny SPI
++
++Required properties:
++- compatible : should be "opencores,tiny-spi-rtlsvn2".
++- gpios : should specify GPIOs used for chipselect.
++Optional properties:
++- clock-frequency : input clock frequency to the core.
++- baud-width: width, in bits, of the programmable divider used to scale
++	the input clock to SCLK.
++
++The clock-frequency and baud-width properties are needed only if the divider
++is programmable. They are not needed if the divider is fixed.
+diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+index bb233a9..43d2a7c 100644
+--- a/drivers/spi/Kconfig
++++ b/drivers/spi/Kconfig
+@@ -231,6 +231,14 @@ config SPI_FSL_ESPI
+ 	  From MPC8536, 85xx platform uses the controller, and all P10xx,
+ 	  P20xx, P30xx,P40xx, P50xx uses this controller.
  
- /*
-+ * Structure used to channel f_op->poll() data through the ep_call_nested()
-+ * when calling f_op->poll() on an epoll descriptor.
-+ */
-+struct ep_poll_file_data {
-+	struct file *file;
-+	struct poll_table_struct *pt;
-+};
++config SPI_OC_TINY
++	tristate "OpenCores tiny SPI"
++	default n
++	depends on GENERIC_GPIO
++	select SPI_BITBANG
++	help
++	  This is the driver for OpenCores tiny SPI master controller.
 +
-+static int ep_eventpoll_release(struct inode *inode, struct file *file);
-+static unsigned int ep_eventpoll_poll(struct file *file, poll_table *wait);
-+
-+/* File callbacks that implement the eventpoll file behaviour */
-+static const struct file_operations eventpoll_fops = {
-+	.release	= ep_eventpoll_release,
-+	.poll		= ep_eventpoll_poll,
-+	.llseek		= noop_llseek,
-+};
-+
+ config SPI_OMAP_UWIRE
+ 	tristate "OMAP1 MicroWire"
+ 	depends on ARCH_OMAP1
+diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
+index 86d1b5f..c7e4c23 100644
+--- a/drivers/spi/Makefile
++++ b/drivers/spi/Makefile
+@@ -27,6 +27,7 @@ obj-$(CONFIG_SPI_IMX)			+= spi_imx.o
+ obj-$(CONFIG_SPI_LM70_LLP)		+= spi_lm70llp.o
+ obj-$(CONFIG_SPI_PXA2XX)		+= pxa2xx_spi.o
+ obj-$(CONFIG_SPI_PXA2XX_PCI)		+= pxa2xx_spi_pci.o
++obj-$(CONFIG_SPI_OC_TINY)		+= spi_oc_tiny.o
+ obj-$(CONFIG_SPI_OMAP_UWIRE)		+= omap_uwire.o
+ obj-$(CONFIG_SPI_OMAP24XX)		+= omap2_mcspi.o
+ obj-$(CONFIG_SPI_OMAP_100K)		+= omap_spi_100k.o
+diff --git a/drivers/spi/spi_oc_tiny.c b/drivers/spi/spi_oc_tiny.c
+new file mode 100644
+index 0000000..62a5267
+--- /dev/null
++++ b/drivers/spi/spi_oc_tiny.c
+@@ -0,0 +1,424 @@
 +/*
-  * Configuration options available inside /proc/sys/fs/epoll/
-  */
- /* Maximum number of epoll watched descriptors, per user */
-@@ -257,6 +276,11 @@
- };
- #endif /* CONFIG_SYSCTL */
- 
-+/* Fast test to see if the file is an evenpoll file */
-+static inline int is_file_epoll(struct file *f)
-+{
-+	return f->f_op == &eventpoll_fops;
-+}
- 
- /* Setup the structure that is used as key for the RB tree */
- static inline void ep_set_ffd(struct epoll_filefd *ffd,
-@@ -414,6 +438,82 @@
- 	put_cpu();
- }
- 
-+/**
-+ * ep_poll_file_proc - Callback passed to @ep_call_nested() when calling
-+ *                     @f_op->poll() on an epoll file descriptor.
++ * OpenCores tiny SPI master driver
 + *
-+ * @priv: Pointer to an @ep_poll_file_data structure.
-+ * @cookie: Cookie passed to the @ep_call_nested() API.
-+ * @call_nests: Current value of nested calls, during the @ep_call_nested()
-+ *              processing.
++ * http://opencores.org/project,tiny_spi
 + *
-+ * Returns: Returns the value of the wrapped @f_op->poll() call.
++ * Copyright (C) 2011 Thomas Chou <thomas@wytron.com.tw>
++ *
++ * Based on spi_s3c24xx.c, which is:
++ * Copyright (c) 2006 Ben Dooks
++ * Copyright (c) 2006 Simtec Electronics
++ *	Ben Dooks <ben@simtec.co.uk>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + */
-+static int ep_poll_file_proc(void *priv, void *cookie, int call_nests)
-+{
-+	struct ep_poll_file_data *epfd = priv;
 +
-+	return epfd->file->f_op->poll(epfd->file, epfd->pt);
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/errno.h>
++#include <linux/platform_device.h>
++#include <linux/spi/spi.h>
++#include <linux/spi/spi_bitbang.h>
++#include <linux/spi/spi_oc_tiny.h>
++#include <linux/io.h>
++#include <linux/gpio.h>
++#include <linux/of.h>
++
++#define DRV_NAME "spi_oc_tiny"
++
++#define TINY_SPI_RXDATA 0
++#define TINY_SPI_TXDATA 4
++#define TINY_SPI_STATUS 8
++#define TINY_SPI_CONTROL 12
++#define TINY_SPI_BAUD 16
++
++#define TINY_SPI_STATUS_TXE 0x1
++#define TINY_SPI_STATUS_TXR 0x2
++
++struct tiny_spi {
++	/* bitbang has to be first */
++	struct spi_bitbang bitbang;
++	struct completion done;
++
++	void __iomem *base;
++	int irq;
++	unsigned int freq;
++	unsigned int baudwidth;
++	unsigned int baud;
++	unsigned int speed_hz;
++	unsigned int mode;
++	unsigned int len;
++	unsigned int txc, rxc;
++	const u8 *txp;
++	u8 *rxp;
++	unsigned int gpio_cs_count;
++	int *gpio_cs;
++};
++
++static inline struct tiny_spi *tiny_spi_to_hw(struct spi_device *sdev)
++{
++	return spi_master_get_devdata(sdev->master);
 +}
++
++static unsigned int tiny_spi_baud(struct spi_device *spi, unsigned int hz)
++{
++	struct tiny_spi *hw = tiny_spi_to_hw(spi);
++
++	return min(DIV_ROUND_UP(hw->freq, hz * 2), (1U << hw->baudwidth)) - 1;
++}
++
++static void tiny_spi_chipselect(struct spi_device *spi, int is_active)
++{
++	struct tiny_spi *hw = tiny_spi_to_hw(spi);
++
++	if (hw->gpio_cs_count) {
++		gpio_set_value(hw->gpio_cs[spi->chip_select],
++			(spi->mode & SPI_CS_HIGH) ? is_active : !is_active);
++	}
++}
++
++static int tiny_spi_setup_transfer(struct spi_device *spi,
++				   struct spi_transfer *t)
++{
++	struct tiny_spi *hw = tiny_spi_to_hw(spi);
++	unsigned int baud = hw->baud;
++
++	if (t) {
++		if (t->speed_hz && t->speed_hz != hw->speed_hz)
++			baud = tiny_spi_baud(spi, t->speed_hz);
++	}
++	writel(baud, hw->base + TINY_SPI_BAUD);
++	writel(hw->mode, hw->base + TINY_SPI_CONTROL);
++	return 0;
++}
++
++static int tiny_spi_setup(struct spi_device *spi)
++{
++	struct tiny_spi *hw = tiny_spi_to_hw(spi);
++
++	if (spi->max_speed_hz != hw->speed_hz) {
++		hw->speed_hz = spi->max_speed_hz;
++		hw->baud = tiny_spi_baud(spi, hw->speed_hz);
++	}
++	hw->mode = spi->mode & (SPI_CPOL | SPI_CPHA);
++	return 0;
++}
++
++static inline void tiny_spi_wait_txr(struct tiny_spi *hw)
++{
++	while (!(readb(hw->base + TINY_SPI_STATUS) &
++		 TINY_SPI_STATUS_TXR))
++		cpu_relax();
++}
++
++static inline void tiny_spi_wait_txe(struct tiny_spi *hw)
++{
++	while (!(readb(hw->base + TINY_SPI_STATUS) &
++		 TINY_SPI_STATUS_TXE))
++		cpu_relax();
++}
++
++static int tiny_spi_txrx_bufs(struct spi_device *spi, struct spi_transfer *t)
++{
++	struct tiny_spi *hw = tiny_spi_to_hw(spi);
++	const u8 *txp = t->tx_buf;
++	u8 *rxp = t->rx_buf;
++	unsigned int i;
++
++	if (hw->irq >= 0) {
++		/* use intrrupt driven data transfer */
++		hw->len = t->len;
++		hw->txp = t->tx_buf;
++		hw->rxp = t->rx_buf;
++		hw->txc = 0;
++		hw->rxc = 0;
++
++		/* send the first byte */
++		if (t->len > 1) {
++			writeb(hw->txp ? *hw->txp++ : 0,
++			       hw->base + TINY_SPI_TXDATA);
++			hw->txc++;
++			writeb(hw->txp ? *hw->txp++ : 0,
++			       hw->base + TINY_SPI_TXDATA);
++			hw->txc++;
++			writeb(TINY_SPI_STATUS_TXR, hw->base + TINY_SPI_STATUS);
++		} else {
++			writeb(hw->txp ? *hw->txp++ : 0,
++			       hw->base + TINY_SPI_TXDATA);
++			hw->txc++;
++			writeb(TINY_SPI_STATUS_TXE, hw->base + TINY_SPI_STATUS);
++		}
++
++		wait_for_completion(&hw->done);
++	} else if (txp && rxp) {
++		/* we need to tighten the transfer loop */
++		writeb(*txp++, hw->base + TINY_SPI_TXDATA);
++		if (t->len > 1) {
++			writeb(*txp++, hw->base + TINY_SPI_TXDATA);
++			for (i = 2; i < t->len; i++) {
++				u8 rx, tx = *txp++;
++				tiny_spi_wait_txr(hw);
++				rx = readb(hw->base + TINY_SPI_TXDATA);
++				writeb(tx, hw->base + TINY_SPI_TXDATA);
++				*rxp++ = rx;
++			}
++			tiny_spi_wait_txr(hw);
++			*rxp++ = readb(hw->base + TINY_SPI_TXDATA);
++		}
++		tiny_spi_wait_txe(hw);
++		*rxp++ = readb(hw->base + TINY_SPI_RXDATA);
++	} else if (rxp) {
++		writeb(0, hw->base + TINY_SPI_TXDATA);
++		if (t->len > 1) {
++			writeb(0,
++			       hw->base + TINY_SPI_TXDATA);
++			for (i = 2; i < t->len; i++) {
++				u8 rx;
++				tiny_spi_wait_txr(hw);
++				rx = readb(hw->base + TINY_SPI_TXDATA);
++				writeb(0, hw->base + TINY_SPI_TXDATA);
++				*rxp++ = rx;
++			}
++			tiny_spi_wait_txr(hw);
++			*rxp++ = readb(hw->base + TINY_SPI_TXDATA);
++		}
++		tiny_spi_wait_txe(hw);
++		*rxp++ = readb(hw->base + TINY_SPI_RXDATA);
++	} else if (txp) {
++		writeb(*txp++, hw->base + TINY_SPI_TXDATA);
++		if (t->len > 1) {
++			writeb(*txp++, hw->base + TINY_SPI_TXDATA);
++			for (i = 2; i < t->len; i++) {
++				u8 tx = *txp++;
++				tiny_spi_wait_txr(hw);
++				writeb(tx, hw->base + TINY_SPI_TXDATA);
++			}
++		}
++		tiny_spi_wait_txe(hw);
++	} else {
++		writeb(0, hw->base + TINY_SPI_TXDATA);
++		if (t->len > 1) {
++			writeb(0, hw->base + TINY_SPI_TXDATA);
++			for (i = 2; i < t->len; i++) {
++				tiny_spi_wait_txr(hw);
++				writeb(0, hw->base + TINY_SPI_TXDATA);
++			}
++		}
++		tiny_spi_wait_txe(hw);
++	}
++	return t->len;
++}
++
++static irqreturn_t tiny_spi_irq(int irq, void *dev)
++{
++	struct tiny_spi *hw = dev;
++
++	writeb(0, hw->base + TINY_SPI_STATUS);
++	if (hw->rxc + 1 == hw->len) {
++		if (hw->rxp)
++			*hw->rxp++ = readb(hw->base + TINY_SPI_RXDATA);
++		hw->rxc++;
++		complete(&hw->done);
++	} else {
++		if (hw->rxp)
++			*hw->rxp++ = readb(hw->base + TINY_SPI_TXDATA);
++		hw->rxc++;
++		if (hw->txc < hw->len) {
++			writeb(hw->txp ? *hw->txp++ : 0,
++			       hw->base + TINY_SPI_TXDATA);
++			hw->txc++;
++			writeb(TINY_SPI_STATUS_TXR,
++			       hw->base + TINY_SPI_STATUS);
++		} else {
++			writeb(TINY_SPI_STATUS_TXE,
++			       hw->base + TINY_SPI_STATUS);
++		}
++	}
++	return IRQ_HANDLED;
++}
++
++#ifdef CONFIG_OF
++#include <linux/of_gpio.h>
++
++static int __devinit tiny_spi_of_probe(struct platform_device *pdev)
++{
++	struct tiny_spi *hw = platform_get_drvdata(pdev);
++	struct device_node *np = pdev->dev.of_node;
++	unsigned int i;
++	const __be32 *val;
++	int len;
++
++	if (!np)
++		return 0;
++	hw->gpio_cs_count = of_gpio_count(np);
++	if (hw->gpio_cs_count) {
++		hw->gpio_cs = devm_kzalloc(&pdev->dev,
++				hw->gpio_cs_count * sizeof(unsigned int),
++				GFP_KERNEL);
++		if (!hw->gpio_cs)
++			return -ENOMEM;
++	}
++	for (i = 0; i < hw->gpio_cs_count; i++) {
++		hw->gpio_cs[i] = of_get_gpio_flags(np, i, NULL);
++		if (hw->gpio_cs[i] < 0)
++			return -ENODEV;
++	}
++	hw->bitbang.master->dev.of_node = pdev->dev.of_node;
++	val = of_get_property(pdev->dev.of_node,
++			      "clock-frequency", &len);
++	if (val && len >= sizeof(__be32))
++		hw->freq = be32_to_cpup(val);
++	val = of_get_property(pdev->dev.of_node, "baud-width", &len);
++	if (val && len >= sizeof(__be32))
++		hw->baudwidth = be32_to_cpup(val);
++	return 0;
++}
++#else /* !CONFIG_OF */
++static int __devinit tiny_spi_of_probe(struct platform_device *pdev)
++{
++	return 0;
++}
++#endif /* CONFIG_OF */
++
++static int __devinit tiny_spi_probe(struct platform_device *pdev)
++{
++	struct tiny_spi_platform_data *platp = pdev->dev.platform_data;
++	struct tiny_spi *hw;
++	struct spi_master *master;
++	struct resource *res;
++	unsigned int i;
++	int err = -ENODEV;
++
++	master = spi_alloc_master(&pdev->dev, sizeof(struct tiny_spi));
++	if (!master)
++		return err;
++
++	/* setup the master state. */
++	master->bus_num = pdev->id;
++	master->num_chipselect = 255;
++	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_CS_HIGH;
++	master->setup = tiny_spi_setup;
++
++	hw = spi_master_get_devdata(master);
++	platform_set_drvdata(pdev, hw);
++
++	/* setup the state for the bitbang driver */
++	hw->bitbang.master = spi_master_get(master);
++	if (!hw->bitbang.master)
++		return err;
++	hw->bitbang.setup_transfer = tiny_spi_setup_transfer;
++	hw->bitbang.chipselect = tiny_spi_chipselect;
++	hw->bitbang.txrx_bufs = tiny_spi_txrx_bufs;
++
++	/* find and map our resources */
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res)
++		goto exit_busy;
++	if (!devm_request_mem_region(&pdev->dev, res->start, resource_size(res),
++				     pdev->name))
++		goto exit_busy;
++	hw->base = devm_ioremap_nocache(&pdev->dev, res->start,
++					resource_size(res));
++	if (!hw->base)
++		goto exit_busy;
++	/* irq is optional */
++	hw->irq = platform_get_irq(pdev, 0);
++	if (hw->irq >= 0) {
++		init_completion(&hw->done);
++		err = devm_request_irq(&pdev->dev, hw->irq, tiny_spi_irq, 0,
++				       pdev->name, hw);
++		if (err)
++			goto exit;
++	}
++	/* find platform data */
++	if (platp) {
++		hw->gpio_cs_count = platp->gpio_cs_count;
++		hw->gpio_cs = platp->gpio_cs;
++		if (platp->gpio_cs_count && !platp->gpio_cs)
++			goto exit_busy;
++		hw->freq = platp->freq;
++		hw->baudwidth = platp->baudwidth;
++	} else {
++		err = tiny_spi_of_probe(pdev);
++		if (err)
++			goto exit;
++	}
++	for (i = 0; i < hw->gpio_cs_count; i++) {
++		err = gpio_request(hw->gpio_cs[i], dev_name(&pdev->dev));
++		if (err)
++			goto exit_gpio;
++		gpio_direction_output(hw->gpio_cs[i], 1);
++	}
++	if (hw->gpio_cs_count)
++		hw->bitbang.master->num_chipselect = hw->gpio_cs_count;
++	else
++		hw->bitbang.master->num_chipselect = 1; /* no chipselect pin */
++
++	/* register our spi controller */
++	err = spi_bitbang_start(&hw->bitbang);
++	if (err)
++		goto exit;
++	dev_info(&pdev->dev, "base %p, irq %d\n", hw->base, hw->irq);
++
++	return 0;
++
++exit_gpio:
++	while (i-- > 0)
++		gpio_free(hw->gpio_cs[i]);
++exit_busy:
++	err = -EBUSY;
++exit:
++	platform_set_drvdata(pdev, NULL);
++	spi_master_put(master);
++	return err;
++}
++
++static int __devexit tiny_spi_remove(struct platform_device *pdev)
++{
++	struct tiny_spi *hw = platform_get_drvdata(pdev);
++	struct spi_master *master = hw->bitbang.master;
++	unsigned int i;
++
++	spi_bitbang_stop(&hw->bitbang);
++	for (i = 0; i < hw->gpio_cs_count; i++)
++		gpio_free(hw->gpio_cs[i]);
++	platform_set_drvdata(pdev, NULL);
++	spi_master_put(master);
++	return 0;
++}
++
++static const struct of_device_id tiny_spi_match[] = {
++	{ .compatible = "opencores,tiny-spi-rtlsvn2", },
++	{},
++}
++MODULE_DEVICE_TABLE(of, tiny_spi_match);
++
++static struct platform_driver tiny_spi_driver = {
++	.probe = tiny_spi_probe,
++	.remove = __devexit_p(tiny_spi_remove),
++	.driver = {
++		.name = DRV_NAME,
++		.owner = THIS_MODULE,
++		.pm = NULL,
++		.of_match_table = tiny_spi_match,
++	},
++};
++
++static int __init tiny_spi_init(void)
++{
++	return platform_driver_register(&tiny_spi_driver);
++}
++module_init(tiny_spi_init);
++
++static void __exit tiny_spi_exit(void)
++{
++	platform_driver_unregister(&tiny_spi_driver);
++}
++module_exit(tiny_spi_exit);
++
++MODULE_DESCRIPTION("OpenCores tiny SPI driver");
++MODULE_AUTHOR("Thomas Chou <thomas@wytron.com.tw>");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:" DRV_NAME);
+diff --git a/include/linux/spi/spi_oc_tiny.h b/include/linux/spi/spi_oc_tiny.h
+new file mode 100644
+index 0000000..1ac529c
+--- /dev/null
++++ b/include/linux/spi/spi_oc_tiny.h
+@@ -0,0 +1,20 @@
++#ifndef _LINUX_SPI_SPI_OC_TINY_H
++#define _LINUX_SPI_SPI_OC_TINY_H
 +
 +/**
-+ * ep_nested_poll_file - Uses the @ep_call_nested() API to call a file
-+ *                       pointer @f_op->poll() function.
++ * struct tiny_spi_platform_data - platform data of the OpenCores tiny SPI
++ * @freq:	input clock freq to the core.
++ * @baudwidth:	baud rate divider width of the core.
++ * @gpio_cs_count:	number of gpio pins used for chipselect.
++ * @gpio_cs:	array of gpio pins used for chipselect.
 + *
-+ * @ep: Pointer to the epoll private data structure.
-+ * @file: Pointer to the file of which we need to call the @f_op->poll()
-+ *        function.
-+ * @pt: Pointer to the @poll_table_struct structure to be passed to
-+ *      the @f_op->poll() call.
-+ *
-+ * Returns: Returns the ready flags returned by the file's @f_op->poll() API.
++ * freq and baudwidth are used only if the divider is programmable.
 + */
-+static unsigned int ep_nested_poll_file(struct eventpoll *ep, struct file *file,
-+					struct poll_table_struct *pt)
-+{
-+	int events;
-+	struct ep_poll_file_data epfd;
++struct tiny_spi_platform_data {
++	unsigned int freq;
++	unsigned int baudwidth;
++	unsigned int gpio_cs_count;
++	int *gpio_cs;
++};
 +
-+	/*
-+	 * This is merely a call to file->f_op->poll() under
-+	 * ep_call_nested. This shares a nested_calls struct with
-+	 * ep_eventpoll_poll in order to prevent other sites that call
-+	 * ->f_op->poll from recursing back into this file and deadlocking.
-+	 */
-+	epfd.file = file;
-+	epfd.pt = pt;
-+	events = ep_call_nested(&poll_readywalk_ncalls, EP_MAX_NESTS,
-+				ep_poll_file_proc, &epfd, ep, current);
-+
-+	return events != -1 ? events : 0;
-+}
-+
-+/**
-+ * ep_poll_file - Calls the file's @f_op->poll() callback, possibly
-+ *                using the @ep_call_nested() API if the target file is
-+ *                an epoll file.
-+ *
-+ * @ep: Pointer to the epoll private data structure.
-+ * @file: Pointer to the file of which we need to call the @f_op->poll()
-+ *        function.
-+ * @pt: Pointer to the @poll_table_struct structure to be passed to
-+ *      the @f_op->poll() call.
-+ *
-+ * Returns: Returns the ready flags returned by the file's @f_op->poll() API.
-+ */
-+static inline unsigned int ep_poll_file(struct eventpoll *ep, struct file *file,
-+					struct poll_table_struct *pt)
-+{
-+	/*
-+	 * Optimize for the common path. Most of the target files are not epoll
-+	 * file descriptors.
-+	 */
-+	if (unlikely(is_file_epoll(file)))
-+		return ep_nested_poll_file(ep, file, pt);
-+
-+	return file->f_op->poll(file, pt);
-+}
-+
- /*
-  * This function unregisters poll callbacks from the associated file
-  * descriptor.  Must be called with "mtx" held (or "epmutex" if called from
-@@ -652,7 +752,7 @@
- 
- static unsigned int ep_eventpoll_poll(struct file *file, poll_table *wait)
- {
--	int pollflags;
-+	int events;
- 	struct eventpoll *ep = file->private_data;
- 
- 	/* Insert inside our poll wait queue */
-@@ -664,23 +764,10 @@
- 	 * supervision, since the call to f_op->poll() done on listed files
- 	 * could re-enter here.
- 	 */
--	pollflags = ep_call_nested(&poll_readywalk_ncalls, EP_MAX_NESTS,
--				   ep_poll_readyevents_proc, ep, ep, current);
--
--	return pollflags != -1 ? pollflags : 0;
--}
-+	events = ep_call_nested(&poll_readywalk_ncalls, EP_MAX_NESTS,
-+				ep_poll_readyevents_proc, ep, ep, current);
- 
--/* File callbacks that implement the eventpoll file behaviour */
--static const struct file_operations eventpoll_fops = {
--	.release	= ep_eventpoll_release,
--	.poll		= ep_eventpoll_poll,
--	.llseek		= noop_llseek,
--};
--
--/* Fast test to see if the file is an evenpoll file */
--static inline int is_file_epoll(struct file *f)
--{
--	return f->f_op == &eventpoll_fops;
-+	return events != -1 ? events : 0;
- }
- 
- /*
-@@ -931,7 +1018,7 @@
- 	 * this operation completes, the poll callback can start hitting
- 	 * the new item.
- 	 */
--	revents = tfile->f_op->poll(tfile, &epq.pt);
-+	revents = ep_poll_file(ep, tfile, &epq.pt);
- 
- 	/*
- 	 * We have to check if something went wrong during the poll wait queue
-@@ -1017,7 +1104,7 @@
- 	 * Get current event bits. We can safely use the file* here because
- 	 * its usage count has been increased by the caller of this function.
- 	 */
--	revents = epi->ffd.file->f_op->poll(epi->ffd.file, NULL);
-+	revents = ep_poll_file(ep, epi->ffd.file, NULL);
- 
- 	/*
- 	 * If the item is "hot" and it is not registered inside the ready
-@@ -1064,7 +1151,7 @@
- 
- 		list_del_init(&epi->rdllink);
- 
--		revents = epi->ffd.file->f_op->poll(epi->ffd.file, NULL) &
-+		revents = ep_poll_file(ep, epi->ffd.file, NULL) &
- 			epi->event.events;
- 
- 		/*
++#endif /* _LINUX_SPI_SPI_OC_TINY_H */
+-- 
+1.7.3.5
+
