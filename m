@@ -1,42 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab1BFXGU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 18:06:20 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:58085 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754082Ab1BFXGI (ORCPT
+	id S1754172Ab1BFXIS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 18:08:18 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:46706 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754067Ab1BFXIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 18:06:08 -0500
-Date: Sun, 6 Feb 2011 23:05:58 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: akpm@linux-foundation.org, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rpurdie@rpsys.net
-Subject: Re: [PATCH 5/5] ACPI: Tie ACPI backlight devices to PCI devices if
-	possible
-Message-ID: <20110206230558.GA23889@srcf.ucam.org>
-References: <1295033065-13450-1-git-send-email-mjg@redhat.com> <201102062341.19631.rjw@sisk.pl> <20110206225308.GA23557@srcf.ucam.org> <201102070001.25814.rjw@sisk.pl>
+	Sun, 6 Feb 2011 18:08:17 -0500
+Message-ID: <4D4F2A3C.9070407@metafoo.de>
+Date: Mon, 07 Feb 2011 00:09:48 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201102070001.25814.rjw@sisk.pl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Felipe Contreras <felipe.contreras@gmail.com>
+CC: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Grazvydas Ignotas <notasas@gmail.com>, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
+Subject: Re: [PATCH 00/14] POWER: BQ27x00: New Properties, fixes, bq27000
+ support
+References: <1296953291-10373-1-git-send-email-lars@metafoo.de> <AANLkTi=4K8=QfqH1BB8WdTk8QuZf_WvhshwQdmFwQJ2L@mail.gmail.com>
+In-Reply-To: <AANLkTi=4K8=QfqH1BB8WdTk8QuZf_WvhshwQdmFwQJ2L@mail.gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 07, 2011 at 12:01:25AM +0100, Rafael J. Wysocki wrote:
+On 02/06/2011 11:47 PM, Felipe Contreras wrote:
+> Hi,
+> 
+> On Sun, Feb 6, 2011 at 2:47 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
+>> This patch series contains a few updates for the bq27x00 driver:
+>> * Support for additional power supply properties
+>> * Support for the bq27000 battery which is identical to the bq27200 but is
+>>  connected through the HDQ bus.
+>> * Adds a register cache to the driver and introduces polling the batteries state
+>> * Minor improvements and cleanups
+>>
+>> The last patch in this series is not specific to the bq27x00 driver but is
+>> required for uevents to be generated properly for this driver.
+>> The patch makes properties which return -ENODATA to be ignored when generating
+>> uevents. Previously in such a case uevent generation would have been aborted
+>> with an error. But since the bq27x00 return -ENODATA for the TIME_TO_FULL
+>> property when the battery is not charging and for the TIME_TO_EMPTY property
+>> when the battery is not discharging and at least one of them is always true
+>> uevent generation would always fail.
+>>
+>> This series has so far been tested with the bq27000 and the bq27200 battery, but
+>> not with the bq27500 battery, so it would be nice if somebody with a board
+>> containing such a battery could test the patches to make sure that there are no
+>> regressions.
+> 
+> This might be a bit off-topic, but I have tried to get the battery on
+> the Nokia N900 working, and so far I'm only able to query the
+> remaining capacity, but not really to enabling charging. This is very
+> annoying, as I can only hack a certain amount of time, and then I have
+> to reflash, reboot, and wait for the batter to charge with the
+> official system (if there's enough power to flash).
+> 
+> Do you have any hints how to do that?
+> 
 
-> Yes, it seems so, but I'm not sure what the short term consequences of that
-> change will be.  Perhaps there will be none. :-)
+Hi
 
-Ok, I'll have a play with that. Maybe we should be fixing this up 
-somehow in the acpi-pci glue code? It seems wrong to have acpi devices 
-resumed before the PCI device they're associated with.
+Sorry, I've never worked with the N900, so I have no idea. But Pali has tested this
+patch series on his N900, so he might have an idea.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+- Lars
