@@ -1,203 +1,504 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151Ab1BFXZW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 18:25:22 -0500
-Received: from x35.xmailserver.org ([64.71.152.41]:43866 "EHLO
-	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754015Ab1BFXZV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 18:25:21 -0500
-X-AuthUser: davidel@xmailserver.org
-Date: Sun, 6 Feb 2011 15:19:58 -0800 (PST)
-From: Davide Libenzi <davidel@xmailserver.org>
-X-X-Sender: davide@localhost6.localdomain6
-To: Nelson Elhage <nelhage@ksplice.com>
-cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        security@kernel.org
-Subject: Re: [PATCH] epoll: Prevent deadlock through unsafe ->f_op->poll()
- calls.
-In-Reply-To: <20110206224508.GA13579@ksplice.com>
-Message-ID: <alpine.DEB.2.00.1102061517370.3189@localhost6.localdomain6>
-References: <1296954535-29495-1-git-send-email-nelhage@ksplice.com> <alpine.DEB.2.00.1102051916170.22851@localhost6.localdomain6> <alpine.DEB.2.00.1102061248420.3189@localhost6.localdomain6> <20110206224508.GA13579@ksplice.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
-X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754172Ab1BFX2f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 18:28:35 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:54830 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754126Ab1BFX2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 18:28:34 -0500
+Date: Sun, 6 Feb 2011 15:28:30 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, cjb@laptop.org,
+        jon.nettleton@gmail.com
+Cc: devel@driverdev.osuosl.org
+Subject: [PATCH 1/4] olpc_dcon: get rid of global i2c_client, create a
+ dcon_priv struct
+Message-ID: <20110206152830.3f173e22@queued.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 6 Feb 2011, Nelson Elhage wrote:
 
-> Suppose thread A does epoll_ctl(e1, EPOLL_CTL_ADD, e2, evt) concurrently with
-> thread B doing epoll_ctl(e2, EPOLL_CTL_ADD, e1, evt).
-> 
-> Since you do the recursive scan before grabbing ep->mtx, I think there is
-> nothing to prevent the two scans from both succeeding, followed by the two
-> inserts, so you end up with a cycle anyways.
+Rather than using the global i2c_client variable, create a dcon_priv
+struct, store in the drvdata portion of the dev, and pass that around.
 
-Good point!
+In order to access dcon struct from various callbacks, include
+the reboot notifier and source switching work struct in the dcon struct.
 
-
-> One possibility is grabbing epmutex, or another global mutex, for both the scan
-> and the duration of inserting one epoll fd onto another. That's really
-> heavyweight, but maybe inserting an epoll fd onto another epoll fd is rare
-> enough that it's Ok.
-
-Yes, that'd be fine, since that is not a fast path.
-
-
-Signed-off-by: Davide Libenzi <davidel@xmailserver.org>
-
-
-- Davide
-
-
+Signed-off-by: Andres Salomon <dilinger@queued.net>
 ---
- fs/eventpoll.c |   96 +++++++++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 94 insertions(+), 2 deletions(-)
+ drivers/staging/olpc_dcon/olpc_dcon.c |  163 ++++++++++++++++++++-------------
+ 1 files changed, 99 insertions(+), 64 deletions(-)
 
-Index: linux-2.6.mod/fs/eventpoll.c
-===================================================================
---- linux-2.6.mod.orig/fs/eventpoll.c	2011-02-06 11:42:38.000000000 -0800
-+++ linux-2.6.mod/fs/eventpoll.c	2011-02-06 15:17:25.000000000 -0800
-@@ -224,6 +224,9 @@
-  */
- static DEFINE_MUTEX(epmutex);
+diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c b/drivers/staging/olpc_dcon/olpc_dcon.c
+index d6ad5d7..f43c4ec 100644
+--- a/drivers/staging/olpc_dcon/olpc_dcon.c
++++ b/drivers/staging/olpc_dcon/olpc_dcon.c
+@@ -53,10 +53,16 @@ struct dcon_platform_data {
  
-+/* Used to check for epoll file descriptor inclusion loops */
-+static struct nested_calls poll_loop_ncalls;
+ static struct dcon_platform_data *pdata;
+ 
++struct dcon_priv {
++	struct i2c_client *client;
 +
- /* Used for safe wake up implementation */
- static struct nested_calls poll_safewake_ncalls;
++	struct work_struct switch_source;
++	struct notifier_block reboot_nb;
++};
++
+ /* I2C structures */
  
-@@ -592,7 +595,6 @@
- 	 */
- 	for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
- 		epi = rb_entry(rbp, struct epitem, rbn);
--
- 		ep_unregister_pollwait(ep, epi);
+ static struct i2c_driver dcon_driver;
+-static struct i2c_client *dcon_client;
+ 
+ /* Platform devices */
+ static struct platform_device *dcon_device;
+@@ -93,16 +99,24 @@ static DECLARE_WAIT_QUEUE_HEAD(dcon_wait_queue);
+ 
+ static unsigned short normal_i2c[] = { 0x0d, I2C_CLIENT_END };
+ 
+-#define dcon_write(reg, val) i2c_smbus_write_word_data(dcon_client, reg, val)
+-#define dcon_read(reg) i2c_smbus_read_word_data(dcon_client, reg)
++static s32 dcon_write(struct dcon_priv *dcon, u8 reg, u16 val)
++{
++	return i2c_smbus_write_word_data(dcon->client, reg, val);
++}
++
++static s32 dcon_read(struct dcon_priv *dcon, u8 reg)
++{
++	return i2c_smbus_read_word_data(dcon->client, reg);
++}
+ 
+ /* The current backlight value - this saves us some smbus traffic */
+ static int bl_val = -1;
+ 
+ /* ===== API functions - these are called by a variety of users ==== */
+ 
+-static int dcon_hw_init(struct i2c_client *client, int is_init)
++static int dcon_hw_init(struct dcon_priv *dcon, int is_init)
+ {
++	struct i2c_client *client = dcon->client;
+ 	uint16_t ver;
+ 	int rc = 0;
+ 
+@@ -173,7 +187,7 @@ err:
+  * smbus.  For newer models, we simply BUG(); we want to know if this
+  * still happens despite the power fixes that have been made!
+  */
+-static int dcon_bus_stabilize(struct i2c_client *client, int is_powered_down)
++static int dcon_bus_stabilize(struct dcon_priv *dcon, int is_powered_down)
+ {
+ 	unsigned long timeout;
+ 	int x;
+@@ -194,7 +208,7 @@ power_up:
+ 
+ 	for (x = -1, timeout = 50; timeout && x < 0; timeout--) {
+ 		msleep(1);
+-		x = dcon_read(DCON_REG_ID);
++		x = dcon_read(dcon, DCON_REG_ID);
+ 	}
+ 	if (x < 0) {
+ 		printk(KERN_ERR "olpc-dcon:  unable to stabilize dcon's "
+@@ -208,51 +222,51 @@ power_up:
  	}
  
-@@ -711,7 +713,6 @@
- 
- 	while (!list_empty(lsthead)) {
- 		epi = list_first_entry(lsthead, struct epitem, fllink);
--
- 		ep = epi->ep;
- 		list_del_init(&epi->fllink);
- 		mutex_lock(&ep->mtx);
-@@ -1198,6 +1199,82 @@
- 	return res;
+ 	if (is_powered_down)
+-		return dcon_hw_init(client, 0);
++		return dcon_hw_init(dcon, 0);
+ 	return 0;
  }
  
-+/**
-+ * ep_loop_check_proc - Callback function to be passed to the @ep_call_nested()
-+ *                      API, to verify that adding an epoll file inside another
-+ *                      epoll structure, does not violate the constraints, in
-+ *                      terms of closed loops, or too deep chains (which can
-+ *                      result in excessive stack usage).
-+ *
-+ * @priv: Pointer to the epoll file to be currently checked.
-+ * @cookie: Original cookie for this call. This is the top-of-the-chain epoll
-+ *          data structure pointer.
-+ * @call_nests: Current dept of the @ep_call_nested() call stack.
-+ *
-+ * Returns: Returns zero if adding the epoll @file inside current epoll
-+ *          structure @ep does not violate the constraints, or -1 otherwise.
-+ */
-+static int ep_loop_check_proc(void *priv, void *cookie, int call_nests)
-+{
-+	int error = 0;
-+	struct file *file = priv;
-+	struct eventpoll *ep = file->private_data;
-+	struct rb_node *rbp;
-+	struct epitem *epi;
-+
-+	mutex_lock(&ep->mtx);
-+	for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
-+		epi = rb_entry(rbp, struct epitem, rbn);
-+		if (unlikely(is_file_epoll(epi->ffd.file))) {
-+			error = ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
-+					       ep_loop_check_proc, epi->ffd.file,
-+					       ep, current);
-+			if (error != 0)
-+				break;
-+		}
-+	}
-+	mutex_unlock(&ep->mtx);
-+
-+	return error;
-+}
-+
-+/**
-+ * ep_loop_check - Performs a check to verify that adding an epoll file (@file)
-+ *                 another epoll file (represented by @ep) does not create
-+ *                 closed loops or too deep chains.
-+ *
-+ * @ep: Pointer to the epoll private data structure.
-+ * @file: Pointer to the epoll file to be checked.
-+ *
-+ * Returns: Returns zero if adding the epoll @file inside current epoll
-+ *          structure @ep does not violate the constraints, or -1 otherwise.
-+ */
-+static int ep_loop_check(struct eventpoll *ep, struct file *file)
-+{
-+	int error;
-+
-+	/*
-+	 * It needs to grab the @epmutex lock, before doing this.
-+	 * This because two concurrent @ep_loop_check() might be going on,
-+	 * resulting in a closed loop due to both @ep_loop_check() functions
-+	 * succeeding:
-+	 *
-+	 * e1 = epoll_create();
-+	 * e2 = epoll_create();
-+	 *
-+	 * THREAD-0                            THREAD-1
-+	 *
-+	 * epoll_ctl(e1, EPOLL_CTL_ADD, e2)    epoll_ctl(e2, EPOLL_CTL_ADD, e1)
-+	 *
-+	 */
-+	mutex_lock(&epmutex);
-+	error = ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
-+			       ep_loop_check_proc, file, ep, current);
-+	mutex_unlock(&epmutex);
-+
-+	return error;
-+}
-+
- /*
-  * Open an eventpoll file descriptor.
+-static int dcon_get_backlight(void)
++static int dcon_get_backlight(struct dcon_priv *dcon)
+ {
+-	if (dcon_client == NULL)
++	if (!dcon || !dcon->client)
+ 		return 0;
+ 
+ 	if (bl_val == -1)
+-		bl_val = dcon_read(DCON_REG_BRIGHT) & 0x0F;
++		bl_val = dcon_read(dcon, DCON_REG_BRIGHT) & 0x0F;
+ 
+ 	return bl_val;
+ }
+ 
+ 
+-static void dcon_set_backlight_hw(int level)
++static void dcon_set_backlight_hw(struct dcon_priv *dcon, int level)
+ {
+ 	bl_val = level & 0x0F;
+-	dcon_write(DCON_REG_BRIGHT, bl_val);
++	dcon_write(dcon, DCON_REG_BRIGHT, bl_val);
+ 
+ 	/* Purposely turn off the backlight when we go to level 0 */
+ 	if (bl_val == 0) {
+ 		dcon_disp_mode &= ~MODE_BL_ENABLE;
+-		dcon_write(DCON_REG_MODE, dcon_disp_mode);
++		dcon_write(dcon, DCON_REG_MODE, dcon_disp_mode);
+ 	} else if (!(dcon_disp_mode & MODE_BL_ENABLE)) {
+ 		dcon_disp_mode |= MODE_BL_ENABLE;
+-		dcon_write(DCON_REG_MODE, dcon_disp_mode);
++		dcon_write(dcon, DCON_REG_MODE, dcon_disp_mode);
+ 	}
+ }
+ 
+-static void dcon_set_backlight(int level)
++static void dcon_set_backlight(struct dcon_priv *dcon, int level)
+ {
+-	if (dcon_client == NULL)
++	if (!dcon || !dcon->client)
+ 		return;
+ 
+ 	if (bl_val == (level & 0x0F))
+ 		return;
+ 
+-	dcon_set_backlight_hw(level);
++	dcon_set_backlight_hw(dcon, level);
+ }
+ 
+ /* Set the output type to either color or mono */
+ 
+-static int dcon_set_output(int arg)
++static int dcon_set_output(struct dcon_priv *dcon, int arg)
+ {
+ 	if (dcon_output == arg)
+ 		return 0;
+@@ -269,7 +283,7 @@ static int dcon_set_output(int arg)
+ 			dcon_disp_mode |= MODE_COL_AA;
+ 	}
+ 
+-	dcon_write(DCON_REG_MODE, dcon_disp_mode);
++	dcon_write(dcon, DCON_REG_MODE, dcon_disp_mode);
+ 	return 0;
+ }
+ 
+@@ -277,7 +291,7 @@ static int dcon_set_output(int arg)
+  * DCONLOAD works in a sleep and account for it accordingly
   */
-@@ -1287,6 +1364,15 @@
- 	 */
- 	ep = file->private_data;
  
-+	/*
-+	 * When we insert an epoll file descriptor, inside another epoll file
-+	 * descriptor, there is the change of creating closed loops, which are
-+	 * better be handled here, than in more critical paths.
-+	 */
-+	if (unlikely(is_file_epoll(tfile) && op == EPOLL_CTL_ADD &&
-+		     ep_loop_check(ep, tfile) != 0))
-+		goto error_tgt_fput;
+-static void dcon_sleep(int state)
++static void dcon_sleep(struct dcon_priv *dcon, int state)
+ {
+ 	int x;
+ 
+@@ -301,7 +315,7 @@ static void dcon_sleep(int state)
+ 		/* Only re-enable the backlight if the backlight value is set */
+ 		if (bl_val != 0)
+ 			dcon_disp_mode |= MODE_BL_ENABLE;
+-		x = dcon_bus_stabilize(dcon_client, 1);
++		x = dcon_bus_stabilize(dcon, 1);
+ 		if (x)
+ 			printk(KERN_WARNING "olpc-dcon:  unable to reinit dcon"
+ 					" hardware: %d!\n", x);
+@@ -309,7 +323,7 @@ static void dcon_sleep(int state)
+ 			dcon_sleep_val = state;
+ 
+ 		/* Restore backlight */
+-		dcon_set_backlight_hw(bl_val);
++		dcon_set_backlight_hw(dcon, bl_val);
+ 	}
+ 
+ 	/* We should turn off some stuff in the framebuffer - but what? */
+@@ -337,6 +351,8 @@ void dcon_load_holdoff(void)
+ 
+ static void dcon_source_switch(struct work_struct *work)
+ {
++	struct dcon_priv *dcon = container_of(work, struct dcon_priv,
++			switch_source);
+ 	DECLARE_WAITQUEUE(wait, current);
+ 	int source = dcon_pending;
+ 
+@@ -351,7 +367,8 @@ static void dcon_source_switch(struct work_struct *work)
+ 	case DCON_SOURCE_CPU:
+ 		printk("dcon_source_switch to CPU\n");
+ 		/* Enable the scanline interrupt bit */
+-		if (dcon_write(DCON_REG_MODE, dcon_disp_mode | MODE_SCAN_INT))
++		if (dcon_write(dcon, DCON_REG_MODE,
++				dcon_disp_mode | MODE_SCAN_INT))
+ 			printk(KERN_ERR
+ 			       "olpc-dcon:  couldn't enable scanline interrupt!\n");
+ 		else {
+@@ -364,7 +381,7 @@ static void dcon_source_switch(struct work_struct *work)
+ 			printk(KERN_ERR "olpc-dcon:  Timeout entering CPU mode; expect a screen glitch.\n");
+ 
+ 		/* Turn off the scanline interrupt */
+-		if (dcon_write(DCON_REG_MODE, dcon_disp_mode))
++		if (dcon_write(dcon, DCON_REG_MODE, dcon_disp_mode))
+ 			printk(KERN_ERR "olpc-dcon:  couldn't disable scanline interrupt!\n");
+ 
+ 		/*
+@@ -454,40 +471,39 @@ static void dcon_source_switch(struct work_struct *work)
+ 	dcon_source = source;
+ }
+ 
+-static DECLARE_WORK(dcon_work, dcon_source_switch);
+-
+-static void dcon_set_source(int arg)
++static void dcon_set_source(struct dcon_priv *dcon, int arg)
+ {
+ 	if (dcon_pending == arg)
+ 		return;
+ 
+ 	dcon_pending = arg;
+ 
+-	if ((dcon_source != arg) && !work_pending(&dcon_work))
+-		schedule_work(&dcon_work);
++	if ((dcon_source != arg) && !work_pending(&dcon->switch_source))
++		schedule_work(&dcon->switch_source);
+ }
+ 
+-static void dcon_set_source_sync(int arg)
++static void dcon_set_source_sync(struct dcon_priv *dcon, int arg)
+ {
+-	dcon_set_source(arg);
++	dcon_set_source(dcon, arg);
+ 	flush_scheduled_work();
+ }
+ 
+ static int dconbl_set(struct backlight_device *dev)
+ {
+-
++	struct dcon_priv *dcon = bl_get_data(dev);
+ 	int level = dev->props.brightness;
+ 
+ 	if (dev->props.power != FB_BLANK_UNBLANK)
+ 		level = 0;
+ 
+-	dcon_set_backlight(level);
++	dcon_set_backlight(dcon, level);
+ 	return 0;
+ }
+ 
+ static int dconbl_get(struct backlight_device *dev)
+ {
+-	return dcon_get_backlight();
++	struct dcon_priv *dcon = bl_get_data(dev);
++	return dcon_get_backlight(dcon);
+ }
+ 
+ static ssize_t dcon_mode_show(struct device *dev,
+@@ -548,7 +564,7 @@ static ssize_t dcon_output_store(struct device *dev,
+ 		return -EINVAL;
+ 
+ 	if (output == DCON_OUTPUT_COLOR || output == DCON_OUTPUT_MONO) {
+-		dcon_set_output(output);
++		dcon_set_output(dev_get_drvdata(dev), output);
+ 		rc = count;
+ 	}
+ 
+@@ -558,6 +574,7 @@ static ssize_t dcon_output_store(struct device *dev,
+ static ssize_t dcon_freeze_store(struct device *dev,
+ 	struct device_attribute *attr, const char *buf, size_t count)
+ {
++	struct dcon_priv *dcon = dev_get_drvdata(dev);
+ 	int output;
+ 
+ 	if (_strtoul(buf, count, &output))
+@@ -567,13 +584,13 @@ static ssize_t dcon_freeze_store(struct device *dev,
+ 
+ 	switch (output) {
+ 	case 0:
+-		dcon_set_source(DCON_SOURCE_CPU);
++		dcon_set_source(dcon, DCON_SOURCE_CPU);
+ 		break;
+ 	case 1:
+-		dcon_set_source_sync(DCON_SOURCE_DCON);
++		dcon_set_source_sync(dcon, DCON_SOURCE_DCON);
+ 		break;
+ 	case 2:  /* normally unused */
+-		dcon_set_source(DCON_SOURCE_DCON);
++		dcon_set_source(dcon, DCON_SOURCE_DCON);
+ 		break;
+ 	default:
+ 		return -EINVAL;
+@@ -592,7 +609,7 @@ static ssize_t dcon_resumeline_store(struct device *dev,
+ 		return rc;
+ 
+ 	resumeline = rl;
+-	dcon_write(DCON_REG_SCAN_INT, resumeline);
++	dcon_write(dev_get_drvdata(dev), DCON_REG_SCAN_INT, resumeline);
+ 	rc = count;
+ 
+ 	return rc;
+@@ -606,7 +623,7 @@ static ssize_t dcon_sleep_store(struct device *dev,
+ 	if (_strtoul(buf, count, &output))
+ 		return -EINVAL;
+ 
+-	dcon_sleep(output ? DCON_SLEEP : DCON_ACTIVE);
++	dcon_sleep(dev_get_drvdata(dev), output ? DCON_SLEEP : DCON_ACTIVE);
+ 	return count;
+ }
+ 
+@@ -627,20 +644,17 @@ static const struct backlight_ops dcon_bl_ops = {
+ static int dcon_reboot_notify(struct notifier_block *nb,
+ 			      unsigned long foo, void *bar)
+ {
+-	if (dcon_client == NULL)
++	struct dcon_priv *dcon = container_of(nb, struct dcon_priv, reboot_nb);
 +
- 	mutex_lock(&ep->mtx);
++	if (!dcon || !dcon->client)
+ 		return 0;
  
- 	/*
-@@ -1441,6 +1527,12 @@
- 		EP_ITEM_COST;
- 	BUG_ON(max_user_watches < 0);
+ 	/* Turn off the DCON. Entirely. */
+-	dcon_write(DCON_REG_MODE, 0x39);
+-	dcon_write(DCON_REG_MODE, 0x32);
++	dcon_write(dcon, DCON_REG_MODE, 0x39);
++	dcon_write(dcon, DCON_REG_MODE, 0x32);
+ 	return 0;
+ }
  
-+	/*
-+	 * Initialize the structure used to perform epoll file descriptor
-+	 * inclusion loops checks.
-+	 */
-+	ep_nested_calls_init(&poll_loop_ncalls);
+-static struct notifier_block dcon_nb = {
+-	.notifier_call = dcon_reboot_notify,
+-	.priority = -1,
+-};
+-
+ static int unfreeze_on_panic(struct notifier_block *nb,
+ 			     unsigned long e, void *p)
+ {
+@@ -660,11 +674,14 @@ static int fb_notifier_callback(struct notifier_block *self,
+ 				unsigned long event, void *data)
+ {
+ 	struct fb_event *evdata = data;
++	struct backlight_device *bl = container_of(self,
++			struct backlight_device, fb_notif);
++	struct dcon_priv *dcon = bl_get_data(bl);
+ 	int *blank = (int *) evdata->data;
+ 	if (((event != FB_EVENT_BLANK) && (event != FB_EVENT_CONBLANK)) ||
+ 			ignore_fb_events)
+ 		return 0;
+-	dcon_sleep((*blank) ? DCON_SLEEP : DCON_ACTIVE);
++	dcon_sleep(dcon, (*blank) ? DCON_SLEEP : DCON_ACTIVE);
+ 	return 0;
+ }
+ 
+@@ -681,12 +698,24 @@ static int dcon_detect(struct i2c_client *client, struct i2c_board_info *info)
+ 
+ static int dcon_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ {
++	struct dcon_priv *dcon;
+ 	int rc, i, j;
+ 
++	dcon = kzalloc(sizeof(*dcon), GFP_KERNEL);
++	if (!dcon)
++		return -ENOMEM;
 +
- 	/* Initialize the structure used to perform safe poll wait head wake ups */
- 	ep_nested_calls_init(&poll_safewake_ncalls);
++	dcon->client = client;
++	INIT_WORK(&dcon->switch_source, dcon_source_switch);
++	dcon->reboot_nb.notifier_call = dcon_reboot_notify;
++	dcon->reboot_nb.priority = -1;
++
++	i2c_set_clientdata(client, dcon);
++
+ 	if (num_registered_fb >= 1)
+ 		fbinfo = registered_fb[0];
  
+-	rc = dcon_hw_init(client, 1);
++	rc = dcon_hw_init(dcon, 1);
+ 	if (rc)
+ 		goto einit;
+ 
+@@ -699,9 +728,8 @@ static int dcon_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 		rc = -ENOMEM;
+ 		goto eirq;
+ 	}
+-	/* Place holder...*/
+-	i2c_set_clientdata(client, dcon_device);
+ 	rc = platform_device_add(dcon_device);
++	platform_set_drvdata(dcon_device, dcon);
+ 
+ 	if (rc) {
+ 		printk(KERN_ERR "dcon:  Unable to add the DCON device\n");
+@@ -718,11 +746,8 @@ static int dcon_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 	}
+ 
+ 	/* Add the backlight device for the DCON */
+-
+-	dcon_client = client;
+-
+ 	dcon_bl_dev = backlight_device_register("dcon-bl", &dcon_device->dev,
+-		NULL, &dcon_bl_ops, NULL);
++		dcon, &dcon_bl_ops, NULL);
+ 
+ 	if (IS_ERR(dcon_bl_dev)) {
+ 		printk(KERN_ERR "Cannot register the backlight device (%ld)\n",
+@@ -731,12 +756,12 @@ static int dcon_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 	} else {
+ 		dcon_bl_dev->props.max_brightness = 15;
+ 		dcon_bl_dev->props.power = FB_BLANK_UNBLANK;
+-		dcon_bl_dev->props.brightness = dcon_get_backlight();
++		dcon_bl_dev->props.brightness = dcon_get_backlight(dcon);
+ 
+ 		backlight_update_status(dcon_bl_dev);
+ 	}
+ 
+-	register_reboot_notifier(&dcon_nb);
++	register_reboot_notifier(&dcon->reboot_nb);
+ 	atomic_notifier_chain_register(&panic_notifier_list, &dcon_panic_nb);
+ 	fb_register_client(&fb_nb);
+ 
+@@ -751,15 +776,19 @@ static int dcon_probe(struct i2c_client *client, const struct i2c_device_id *id)
+  eirq:
+ 	free_irq(DCON_IRQ, &dcon_driver);
+  einit:
++	i2c_set_clientdata(client, NULL);
++	kfree(dcon);
+ 	return rc;
+ }
+ 
+ static int dcon_remove(struct i2c_client *client)
+ {
+-	dcon_client = NULL;
++	struct dcon_priv *dcon = i2c_get_clientdata(client);
++
++	i2c_set_clientdata(client, NULL);
+ 
+ 	fb_unregister_client(&fb_nb);
+-	unregister_reboot_notifier(&dcon_nb);
++	unregister_reboot_notifier(&dcon->reboot_nb);
+ 	atomic_notifier_chain_unregister(&panic_notifier_list, &dcon_panic_nb);
+ 
+ 	free_irq(DCON_IRQ, &dcon_driver);
+@@ -769,7 +798,9 @@ static int dcon_remove(struct i2c_client *client)
+ 
+ 	if (dcon_device != NULL)
+ 		platform_device_unregister(dcon_device);
+-	cancel_work_sync(&dcon_work);
++	cancel_work_sync(&dcon->switch_source);
++
++	kfree(dcon);
+ 
+ 	return 0;
+ }
+@@ -777,9 +808,11 @@ static int dcon_remove(struct i2c_client *client)
+ #ifdef CONFIG_PM
+ static int dcon_suspend(struct i2c_client *client, pm_message_t state)
+ {
++	struct dcon_priv *dcon = i2c_get_clientdata(client);
++
+ 	if (dcon_sleep_val == DCON_ACTIVE) {
+ 		/* Set up the DCON to have the source */
+-		dcon_set_source_sync(DCON_SOURCE_DCON);
++		dcon_set_source_sync(dcon, DCON_SOURCE_DCON);
+ 	}
+ 
+ 	return 0;
+@@ -787,9 +820,11 @@ static int dcon_suspend(struct i2c_client *client, pm_message_t state)
+ 
+ static int dcon_resume(struct i2c_client *client)
+ {
++	struct dcon_priv *dcon = i2c_get_clientdata(client);
++
+ 	if (dcon_sleep_val == DCON_ACTIVE) {
+-		dcon_bus_stabilize(client, 0);
+-		dcon_set_source(DCON_SOURCE_CPU);
++		dcon_bus_stabilize(dcon, 0);
++		dcon_set_source(dcon, DCON_SOURCE_CPU);
+ 	}
+ 
+ 	return 0;
+-- 
+1.7.2.3
+
