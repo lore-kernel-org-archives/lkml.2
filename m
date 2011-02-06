@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592Ab1BFXqP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 18:46:15 -0500
-Received: from 1wt.eu ([62.212.114.60]:60318 "EHLO 1wt.eu"
+	id S1754567Ab1BFXqK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 18:46:10 -0500
+Received: from 1wt.eu ([62.212.114.60]:60310 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754540Ab1BFXqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 18:46:14 -0500
-Message-Id: <20110206232252.702170293@pcw.home.local>
+	id S1754552Ab1BFXqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 18:46:08 -0500
+Message-Id: <20110206232253.039606823@pcw.home.local>
 User-Agent: quilt/0.48-1
-Date: Mon, 07 Feb 2011 00:22:56 +0100
+Date: Mon, 07 Feb 2011 00:23:04 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org
-Cc: Vitaly Kuznetsov <vitty@altlinux.ru>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+Cc: Sergey Vlasov <vsu@altlinux.ru>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
         Greg Kroah-Hartman <gregkh@suse.de>, Willy Tarreau <w@1wt.eu>
-Subject: [PATCH 04/23] USB: usb-storage: unusual_devs entry for the Samsung YP-CP3
+Subject: [PATCH 12/23] NFS: Fix fcntl F_GETLK not reporting some conflicts
 In-Reply-To: <4beed4da27f06efb2c13d6ed48850634@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,49 +24,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vitaly Kuznetsov <vitty@altlinux.ru>
+From: Sergey Vlasov <vsu@altlinux.ru>
 
-commit d73a9b3001f29271c2e9f2a806b05a431c5d9591 upstream.
+commit 21ac19d484a8ffb66f64487846c8d53afef04d2b upstream.
 
-Add an unusual_devs entry for the Samsung YP-CP3 MP4 player.
+The commit 129a84de2347002f09721cda3155ccfd19fade40 (locks: fix F_GETLK
+regression (failure to find conflicts)) fixed the posix_test_lock()
+function by itself, however, its usage in NFS changed by the commit
+9d6a8c5c213e34c475e72b245a8eb709258e968c (locks: give posix_test_lock
+same interface as ->lock) remained broken - subsequent NFS-specific
+locking code received F_UNLCK instead of the user-specified lock type.
+To fix the problem, fl->fl_type needs to be saved before the
+posix_test_lock() call and restored if no local conflicts were reported.
 
-User was getting the following errors in dmesg:
- usb 2-6: reset high speed USB device using ehci_hcd and address 2
- usb 2-6: reset high speed USB device using ehci_hcd and address 2
- usb 2-6: reset high speed USB device using ehci_hcd and address 2
- usb 2-6: USB disconnect, address 2
- sd 3:0:0:0: [sdb] Assuming drive cache: write through
- sdb:<2>ldm_validate_partition_table(): Disk read failed.
- Dev sdb: unable to read RDB block 0
-  unable to read partition table
-
-Signed-off-by: Vitaly Kuznetsov <vitty@altlinux.ru>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-CC: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=23892
+Tested-by: Alexander Morozov <amorozov@etersoft.ru>
+Signed-off-by: Sergey Vlasov <vsu@altlinux.ru>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Willy Tarreau <w@1wt.eu>
 
 ---
- drivers/usb/storage/unusual_devs.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ fs/nfs/file.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Index: longterm-2.6.27/drivers/usb/storage/unusual_devs.h
+Index: longterm-2.6.27/fs/nfs/file.c
 ===================================================================
---- longterm-2.6.27.orig/drivers/usb/storage/unusual_devs.h	2011-01-29 11:19:14.704065119 +0100
-+++ longterm-2.6.27/drivers/usb/storage/unusual_devs.h	2011-01-29 11:27:24.078067832 +0100
-@@ -608,6 +608,13 @@
- 		US_SC_DEVICE, US_PR_DEVICE, NULL,
- 		US_FL_MAX_SECTORS_64),
+--- longterm-2.6.27.orig/fs/nfs/file.c	2011-01-29 11:19:14.707063734 +0100
++++ longterm-2.6.27/fs/nfs/file.c	2011-01-29 11:27:16.154063024 +0100
+@@ -552,6 +552,7 @@
+ {
+ 	struct inode *inode = filp->f_mapping->host;
+ 	int status = 0;
++	unsigned int saved_type = fl->fl_type;
  
-+/* Reported by Vitaly Kuznetsov <vitty@altlinux.ru> */
-+UNUSUAL_DEV(  0x04e8, 0x5122, 0x0000, 0x9999,
-+		"Samsung",
-+		"YP-CP3",
-+		US_SC_DEVICE, US_PR_DEVICE, NULL,
-+		US_FL_MAX_SECTORS_64 | US_FL_BULK_IGNORE_TAG),
-+
- /* Entry and supporting patch by Theodore Kilgore <kilgota@auburn.edu>.
-  * Device uses standards-violating 32-byte Bulk Command Block Wrappers and
-  * reports itself as "Proprietary SCSI Bulk." Cf. device entry 0x084d:0x0011.
+ 	lock_kernel();
+ 	/* Try local locking first */
+@@ -560,6 +561,7 @@
+ 		/* found a conflict */
+ 		goto out;
+ 	}
++	fl->fl_type = saved_type;
+ 
+ 	if (nfs_have_delegation(inode, FMODE_READ))
+ 		goto out_noconflict;
 
 
