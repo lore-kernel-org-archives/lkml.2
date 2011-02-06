@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab1BFUVK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 15:21:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26614 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753775Ab1BFUVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 15:21:09 -0500
-Message-ID: <4D4F0291.4070301@redhat.com>
-Date: Sun, 06 Feb 2011 15:20:33 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1753975Ab1BFUX3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 15:23:29 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:59287 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753775Ab1BFUX1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 15:23:27 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=H1QPaGDYTCOiT1gIoeENC+OOdUdAwEy15do8TNH9pXSYwCgml4mdT8HP/X9gweDZOq
+         FfJuY8tL4xFXj4l0vEFPE+SU3YikTKf0Z9NoO2+SNxemuvrXqT1/ovQWBNIqTmtO8JMO
+         23APBQfuO5i4TWfqLfu31vEat6TBtOElEUFJA=
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: Thomas Chou <thomas@wytron.com.tw>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org,
+        spi-devel-general@lists.sourceforge.net,
+        nios2-dev@sopc.et.ntust.edu.tw, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7] spi: New driver for Altera SPI
+References: <20110203173430.GC6180@angua.secretlab.ca>
+	<1296914523-13740-1-git-send-email-thomas@wytron.com.tw>
+Date: Sun, 06 Feb 2011 21:23:22 +0100
+In-Reply-To: <1296914523-13740-1-git-send-email-thomas@wytron.com.tw> (Thomas
+	Chou's message of "Sat, 5 Feb 2011 22:02:03 +0800")
+Message-ID: <87aai8zzd1.fsf@macbook.be.48ers.dk>
+User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
-To: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Miklos Szeredi <mszeredi@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH] mm: Add hook of freepage
-References: <1297004934-4605-1-git-send-email-minchan.kim@gmail.com>
-In-Reply-To: <1297004934-4605-1-git-send-email-minchan.kim@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2011 10:08 AM, Minchan Kim wrote:
-> Recently, "Call the filesystem back whenever a page is removed from
-> the page cache(6072d13c)" added new freepage hook in page cache
-> drop function.
->
-> So, replace_page_cache_page should call freepage to support
-> page cleanup to fs.
->
-> Cc: Miklos Szeredi<mszeredi@suse.cz>
-> Cc: Rik van Riel<riel@redhat.com>
-> Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Mel Gorman<mel@csn.ul.ie>
-> Signed-off-by: Minchan Kim<minchan.kim@gmail.com>
+>>>>> "Thomas" == Thomas Chou <thomas@wytron.com.tw> writes:
 
-Acked-by: Rik van Riel <riel@redhat.com>
+Hi,
+
+ Thomas> +++ b/drivers/spi/Kconfig
+ Thomas> @@ -53,6 +53,13 @@ if SPI_MASTER
+ 
+ Thomas>  comment "SPI Master Controller Drivers"
+ 
+ Thomas> +config SPI_ALTERA
+ Thomas> +	tristate "Altera SPI Controller"
+ Thomas> +	default n
+
+'n' is the default anyway, so no need for this line.
 
 -- 
-All rights reversed
+Bye, Peter Korsgaard
