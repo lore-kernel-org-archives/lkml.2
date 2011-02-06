@@ -1,74 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753295Ab1BFQvf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 11:51:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58168 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753232Ab1BFQvd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 11:51:33 -0500
-Subject: Re: Using ftrace/perf as a basis for generic seccomp
-From: Eric Paris <eparis@redhat.com>
-To: Stefan Fritsch <sf@sfritsch.de>
-Cc: linux-kernel@vger.kernel.org, morgan@kernel.org, serge@canonical.com
-Date: Sun, 06 Feb 2011 11:51:02 -0500
-In-Reply-To: <alpine.DEB.1.10.1102051226110.26628@eru.sfritsch.de>
-References: <1294867725.3237.230.camel@localhost.localdomain>
-	  <1296665124.3145.17.camel@localhost.localdomain>
-	  <20110203190643.GC1769@nowhere> <201102032306.34251.sf@sfritsch.de>
-	 <1296837393.3145.80.camel@localhost.localdomain>
-	 <alpine.DEB.1.10.1102051226110.26628@eru.sfritsch.de>
-Content-Type: text/plain; charset="UTF-8"
+	id S1753315Ab1BFQ4D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 11:56:03 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55478 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753262Ab1BFQ4B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 11:56:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=brqop1qotSyh4tYgQjDrN6kFMM/y6KQ0d2hn0/m69dDuPN6Mdkj2aE4jxBC/DSPmv2
+         auDMhVVDIqwh4PrnGM37PAQFZ3+BpjKkz8N1VTw9l4M0efNkeFcMchUcVXfIFNDUZS6Z
+         bEj9sfRWnlt7foXdRwZoIxUiJskFBHSmi4kxs=
+Message-ID: <4D4ED29B.8010903@gmail.com>
+Date: Sun, 06 Feb 2011 17:55:55 +0100
+From: Zdenek Kaspar <zkaspar82@gmail.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; cs; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+CC: Stan Hoeppner <stan@hardwarefreak.com>,
+        "Dr. David Alan Gilbert" <linux@treblig.org>,
+        Emmanuel Florac <eflorac@intellique.com>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-net@vger.kernel.org,
+        Alan Piszcz <ap@solarrain.com>
+Subject: Re: Supermicro X8DTH-6: Only ~250MiB/s from RAID<->RAID over 10GbE?
+References: <alpine.DEB.2.00.1102051427360.8518@p34.internal.lan> <20110205214550.3cb0f0d1@galadriel2.home> <alpine.DEB.2.00.1102051553591.8518@p34.internal.lan> <20110205220621.GB17347@gallifrey> <alpine.DEB.2.00.1102051729010.8518@p34.internal.lan> <alpine.DEB.2.00.1102051753100.8518@p34.internal.lan> <4D4DE34E.7010308@hardwarefreak.com> <alpine.DEB.2.00.1102051958370.28109@p34.internal.lan> <4D4E127D.3060105@hardwarefreak.com> <alpine.DEB.2.00.1102060515230.28109@p34.internal.lan> <alpine.DEB.2.00.1102060817590.28109@p34.internal.lan>
+In-Reply-To: <alpine.DEB.2.00.1102060817590.28109@p34.internal.lan>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-ID: <1297011064.2530.17.camel@localhost.localdomain>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dropped a lot of people and added 2 more.  I'm going to try to shift the
-direction of this thread to discuss how to handle suid apps in a
-potential sandbox solution (and remember, I don't consider an extended
-seccomp to be a sandbox, it's just a tool to help create a sandbox)
-
-Stefan would like to be able to prevent SETUID programs and programs
-with fcaps from executing.  I suggested (below) that he play with prctl,
-drop things from bset, pP, pE, pI, and then remove the suid(2) syscall
-from the set of allowed syscalls.  He had some concerns:
-
-On Sat, 2011-02-05 at 12:42 +0100, Stefan Fritsch wrote:
-> On Fri, 4 Feb 2011, Eric Paris wrote:
-> > On Thu, 2011-02-03 at 23:06 +0100, Stefan Fritsch wrote:
-
-> >> - deny exec of setuid/setgid binaries
-> >> - deny exec of binaries with filesystem capabilities
-> >
-> > I think both of these are wrong to try to address here.  The right way
-> > to handle these is to
-> >
-> > 1) set prctl(SECBIT_NOROOT)
-> > 2) drop all caps from the bset, pP, pE, and pI
-> > 3) make sure the setuid(2) syscall (not to be confused with SETUID
-> > filesystem bit) is not in the set of allowed syscalls.  Thus rendering
-> > suid and file with fcaps irrelevant.
+Dne 6.2.2011 14:46, Justin Piszcz napsal(a):
 > 
-> I think that's a bad idea. Some programs may get confused if run as root 
-> but without capabilities (think sendmail). If a setuid root binary gets 
-> confused enough to write arbitrary files as root, you get all capabilities 
-> again by writing to /etc/crontab or /root/.ssh/authorized_keys. I admit 
-> that this is very unlikely if setuid(2)/setgid(2) lead to the process 
-> being killed, but better to be save and disallow the user change for 
-> SETUID binaries completely. And the simplest way to do that seemed to me 
-> to disallow exec'ing of SETUID binaries.
+> 
+> On Sun, 6 Feb 2011, Justin Piszcz wrote:
+> 
+>>
+>>
+>> On Sat, 5 Feb 2011, Stan Hoeppner wrote:
+>>
+>>> Justin Piszcz put forth on 2/5/2011 7:08 PM:
+>>>
+> 
+> 
+> Hi,
 
-I believe that my method should be safe for fcaps.  I believe the fcaps
-code will kill any process that is unable to get the caps it claims to
-need.  But I believe he's right about SUID apps with SECBIT_NOROOT.
-sendmail (unless it was smart) wouldn't know it didn't have permissions
-to do what it needed to do and would thus, likely break.  Anyone have
-thoughts on that?  I've thought a couple of times about adding a new LSM
-hook security_exec_suid() which would just be a big hammer blocking the
-execution of suid root files.  How can we safely and sanely prevent the
-execution of suid root files?
+Hi, just few comments for maximal throughput..
 
--Eric
+> 1. Defaults below:
+> sysctl -w net.core.wmem_max=131071
+> sysctl -w net.core.rmem_max=131071
+> sysctl -w net.core.wmem_default=118784
+> sysctl -w net.core.rmem_default=118784
+> sysctl -w net.core.optmem_max=20480
+> sysctl -w net.ipv4.igmp_max_memberships=20
+> sysctl -w net.ipv4.tcp_mem="379104       505472  758208"
+> sysctl -w net.ipv4.tcp_wmem="4096        16384   4194304"
+> sysctl -w net.ipv4.tcp_rmem="4096        87380   4194304"
+> sysctl -w net.ipv4.udp_mem="379104       505472  758208"
+> sysctl -w net.ipv4.udp_rmem_min=4096
+> sysctl -w net.ipv4.udp_wmem_min=4096
+> sysctl -w net.core.netdev_max_backlog=1024
 
+sysctl net.ipv4.tcp_timestamps=0
+
+> 2. Optimized settings, for > 800MiB/:
+> 
+> # for 3ware raid, use 16384 readahead, > 16384 readahead, no improvement
+> blockdev --setra 16384 /dev/sda
+
+elevator=deadline
+
+> # not sure if this helps much
+> ethtool -K eth0 lro on
+
+Maybe try to _disable_ NIC offloads functions, sometimes its contra
+productive (with enough CPU power, but I doubt on 2 socket box) + check
+irqbalance..
+
+If you have connection just between machines try the biggest possible MTU.
+
+> # seems to get performance > 600-700MiB/s faster
+> sysctl -w net.core.wmem_max=4194304
+> sysctl -w net.core.rmem_max=4194304
+> sysctl -w net.core.wmem_default=4194304
+> sysctl -w net.core.rmem_default=4194304
+> sysctl -w net.core.optmem_max=20480
+> sysctl -w net.ipv4.igmp_max_memberships=20
+> sysctl -w net.ipv4.tcp_mem="4194304 4194304 4194304"
+> sysctl -w net.ipv4.tcp_wmem="4194304 4194304 4194304"
+> sysctl -w net.ipv4.tcp_rmem="4194304 4194304 4194304"
+> sysctl -w net.ipv4.udp_mem="4194304 4194304 4194304"
+> sysctl -w net.ipv4.udp_rmem_min=4096
+> sysctl -w net.ipv4.udp_wmem_min=4096
+> sysctl -w net.core.netdev_max_backlog=1048576
+> 
+> # the main option that makes all of the difference, the golden option
+> # is the rszie and wsize of 1megabyte below:
+> 10.0.1.4:/r1    /nfs/box2/r1  nfs  
+> tcp,bg,rw,hard,intr,nolock,nfsvers=3,rsize=1048576,wsize=1048576  0 0
+> 
+> CPU utilization:
+>   PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+>  2069 root      20   0 18640 1304  688 R   91  0.0   0:15.50 cp
+>   703 root      20   0     0    0    0 S   25  0.0   2:46.95 kswapd0
+> 
+> With a single copy I get roughly 700-800MiB/s:
+> 
+> Device eth0 [10.0.1.3] (1/1):
+> ================================================================================
+> 
+> Incoming:
+> ######################     ####################  ####
+> ######################     ####################  ####
+> ######################     ####################  ####
+> ######################     ####################  ####
+> ######################     ####################  ####
+> ######################     ####################  ####  Curr: 808.71 MByte/s
+> ######################     ####################  ####  Avg: 706.11 MByte/s
+> ######################     ####################  ####  Min: 0.00 MByte/s
+> ######################     ####################  ####  Max: 860.17 MByte/s
+> ######################     ####################  ####  Ttl: 344.70 GByte
+> 
+> With two copies I get up to 830-850MiB/s:
+> 
+> Device eth0 [10.0.1.3] (1/1):
+> ================================================================================
+> 
+> Incoming:
+> ############################################     ####
+> ############################################     ####
+> ############################################     ####
+> ############################################     ####
+> ############################################     ####
+> ############################################     ####  Curr: 846.61 MByte/s
+> ############################################     ####  Avg: 683.14 MByte/s
+> ############################################     ####  Min: 0.00 MByte/s
+> ############################################     ####  Max: 860.17 MByte/s
+> ############################################     ####  Ttl: 305.71 GByte
+> 
+> Using a 4MiB r/w size with NFS improves performance to sustain > 750MiB/s
+> a little better I think:
+> 10.0.1.4:/r1    /nfs/box2/r1  nfs  
+> tcp,bg,rw,hard,intr,nolock,nfsvers=3,rsize=4194304,wsize=4194304 0
+
+What about using UDP ?
+
+> Anyhow, roughly 750-850MiB/s it would be nice to get 1Gbyte/sec but I guess
+> the kerrnel (or my HW, CPU not fast enough) is not there yet.
+> 
+> Also found a good doc from RedHat:
+> http://www.redhat.com/promo/summit/2008/downloads/pdf/Thursday/Mark_Wagner.pdf
+> 
+> 
+> Justin.
+> 
+
+HTH, Z.
