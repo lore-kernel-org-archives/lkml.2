@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751644Ab1BFFc7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 00:32:59 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:37941 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751108Ab1BFFc6 (ORCPT
+	id S1752099Ab1BFGL5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 01:11:57 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:42969 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549Ab1BFGL4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 00:32:58 -0500
-Message-ID: <4D4E32AD.5000102@vflare.org>
-Date: Sun, 06 Feb 2011 00:33:33 -0500
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] zram: fix data corruption issue
-References: <1296956060-13594-1-git-send-email-ngupta@vflare.org> <20110206050059.GA4465@kroah.com> <4D4E2B90.7010109@vflare.org> <20110206051111.GA4816@kroah.com>
-In-Reply-To: <20110206051111.GA4816@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 6 Feb 2011 01:11:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
+         :face:mime-version:content-type:content-transfer-encoding;
+        b=mFeQDggrjYZ63RUHw/OuUr+7hsqOP6O+jgujEVXBHIRNGS/sRdpaSCwnyQmtOlJeWZ
+         zbFpPLOhRlHJlW98xs65ik6ZHmlEWP7OzK4x/S9Dm8NnwCZvBIxMq3TN6RTRKQq6OdhE
+         6DKqi+vjoxR1V5vT7YliGdEmWmzisLEYcyMyY=
+Date: Sun, 6 Feb 2011 00:11:47 -0600
+From: Bobby Bingham <uhmmmm@gmail.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] reverse-engineer safe snb wm0 values
+Message-ID: <20110206001147.516daae4@duality>
+In-Reply-To: <1296810777-16645-1-git-send-email-chris@chris-wilson.co.uk>
+References: <20110203221108.281c8512@duality>
+	<1296810777-16645-1-git-send-email-chris@chris-wilson.co.uk>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAABhQTFRFCgYMLBEpThdDgTVgc1Jl3XeZ36FM2bm4ve5MKQAAAmtJREFUOMtVk01z2yAQhsFVJldA6uQagXOPhXU3zto6pzLtD6hHuSYzcvj7fRcUu9mxvvbZdz8ACyWEjLixyTbf7SM/Aq74XICwHLHqMhjVf8Cwy7oM4qZc2VYWt87m9zjuRAwLEAheuQIOsb4pBOrWpQQkv1R8FbdcNncghbgbHw9FIRlILqHbIJ6RqC9AtxrxEBi7ViK+3vkFCGdbAIaYNMbNWG/K6NJaY1tjuw4ffYy9M7me0RrBuDr+rGto+O0ljn4PYJ1dlqzuO6fET/i9X1tb2sVIXYuK6keMY++d7wDKOjgHrdWHnkEfPQLtooC/NeyL3o3d2nZFUnvuBGDsUCWiPrIxYH+rLYCPmxC3ZPdd2RYGxvb96KKnHsCtDfeLOa1uvesjg6ct7bGDnMv4diPbJxQ3cX06bImc2/FK+I1X0jrPippe/AG5gkSRsd/h2GDoWKMyK/ZoF4D3W5rOb+L2UBObafdCl3MldKe3AAjHT5vrERC6duj075YFRymfryDBLn46nonmo17tvvxVGmi+jNM0nYgmIdVVUQ0pDXuAt8vnJCpxsyp9pvk4TZ8pncU3u0cV+n0+zUTv38DQINv5DxRp9w2k8JAW+xqhtKBQBnaa0/vi0wsRBP/cBK7Q8HJIrXUGYUjD8YVbbZRQ5fy1LAqBPoa3HKIrBjjjLKmQUw0fnEMpaIQ2ps0gBB0oD6sUoWWNMwJeEcl7RUyU1PxoS/EhET1QBkE2TW6XAQ9BA9aDx9b5LjLgpUoEVRBSSiqj8YgZzMNlJsSH62pJlMgSmK4kXf1fABuJ4fRtA6VaQKJGqxD4H/8PjSueXT5olWEAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/06/2011 12:11 AM, Greg KH wrote:
-> On Sun, Feb 06, 2011 at 12:03:12AM -0500, Nitin Gupta wrote:
->> On 02/06/2011 12:00 AM, Greg KH wrote:
->>> On Sat, Feb 05, 2011 at 08:34:20PM -0500, Nitin Gupta wrote:
->>>> In zram_read() and zram_write() we were not incrementing the
->>>> index number and thus were reading/writing values from/to
->>>> incorrect sectors on zram disk, resulting in data corruption.
->>>
->>> Is this something that needs to go into .38 or can it wait until .39?
->>>
->>
->>
->> This really needs to get into .38 or users will see random data
->> corruption on zram devices.
->
-> Ok, I'll queue it up for there.  What about .37 and/or .36?
->
+On Fri,  4 Feb 2011 09:12:57 +0000
+Chris Wilson <chris@chris-wilson.co.uk> wrote:
 
+> ---
+> Hi Bobby,
+> 
+> this is a patch that I am testing, but so far no else one has experienced
+> the same symptoms that this fixes on my machines...
+> 
+> It looks like you have won the privilege of being my first victim^W
+> tester.
+> 
+> Also in drm-intel-fixes
+> (git://git.kernel.org/pub/scm/linux/kernel/git/ickle/drm-intel.git)
+> is a patch to invalidate the TLB on the BLT which also may cause hangs,
+> but has a different pattern of failure in
+> /sys/kernel/debug/dri/0/i915_error_state:
+> 
+> commit 71a77e07d0e33b57d4a50c173e5ce4fabceddbec
+> Author: Chris Wilson <chris@chris-wilson.co.uk>
+> Date:   Wed Feb 2 12:13:49 2011 +0000
+> 
+>     drm/i915: Invalidate TLB caches on SNB BLT/BSD rings
+> 
+> I hope one of these brings stability back to your machine...
+> -Chris
+> 
 
-The same problem exists on .37 and .36. I just checked that the same 
-patch applies cleanly to both these version so may be included in their 
-respective maintenance releases.
+Alas, neither of those patches seems to help.
 
-Thanks,
-Nitin
+-- 
+Bobby Bingham
+このメールは再利用されたバイトでできている。
