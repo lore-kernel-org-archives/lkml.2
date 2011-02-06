@@ -1,126 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491Ab1BFMYN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 07:24:13 -0500
-Received: from webbox4.loswebos.de ([213.187.93.205]:35948 "EHLO
-	webbox4.loswebos.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045Ab1BFMYM (ORCPT
+	id S1752307Ab1BFMZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 07:25:57 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52513 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751933Ab1BFMZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 07:24:12 -0500
-Date: Sun, 6 Feb 2011 13:24:08 +0100
-From: Marc Koschewski <marc@osknowledge.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jeff Chua <jeff.chua.linux@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Chris Wilson <chris@chris-wilson.co.uk>, Len Brown <lenb@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Commit 500f7147cf5bafd139056d521536b10c2bc2e154 breaks _resume_
-Message-ID: <20110206122408.GD22960@marc.osknowledge.org>
-References: <AANLkTi=h+H+N=f4m4pE+RZ4n5h7oxQuwzmK-qmmWAGtL@mail.gmail.com>
- <s5hfws1whq8.wl%tiwai@suse.de>
+	Sun, 6 Feb 2011 07:25:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=K17lUTEcj8fhOrL8pLAPhTZ6UUHSIr08gkpvP23+Bt4/TyzBt3FzdQEeOKwPFWlBDl
+         kkLoSw84NeGd24tOO6IVbmu9A5azgzYebc+lEBaRUc8m+njzw2BsNQyelxhRaAxk3fyi
+         36dLsCyXJ2HEZElA0EW7yg7VlIB6tKgHkpFeE=
+Date: Sun, 6 Feb 2011 15:25:39 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: rename_rev.pl script for reviewing renames
+Message-ID: <20110206122539.GB4384@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org,
+	devel@driverdev.osuosl.org
+References: <20110203100828.GO20606@bicker>
+ <20110203102219.GB6508@pengutronix.de>
+ <20110203105048.GR20606@bicker>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="envbJBWh7q8WU6mo"
 Content-Disposition: inline
-In-Reply-To: <s5hfws1whq8.wl%tiwai@suse.de>
-X-PGP-Fingerprint: D514 7DC1 B5F5 8989 083E 38C9 5ECF E5BD 3430 ABF5
-X-PGP-Key: http://www.kosik.org/pubkey.asc
-X-Blog: http://www.kosik.org/blog/
-X-Operating-System: Linux marc 2.6.37-ck1-dezzy
-User-Agent: Mutt/1.5.21hg (2010-09-15)
+In-Reply-To: <20110203105048.GR20606@bicker>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Read this
 
-	[REGRESSION g01539ba] Hibernate broken on T510i
+--envbJBWh7q8WU6mo
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-or this
+I've added the some flags:
+	-e : gets executed on old lines
+	-ea: executed on everything
+	-nc: strips one line comments
 
-	[REGRESSION] S3 resume on SandyBridge doesn't work with NX protection (5bd5a45)
+So say you have a patch that adds parenthesis around a bunch of macros
+like this:
+http://marc.info/?l=linux-kernel&m=129685142419550&w=2
 
-Marc
+Then you can just type:
+cat /home/dcarpenter/tmp/html23/parens.patch | \
+	./rename_rev.pl -e 's/(define \w+) (.*)/$1 ($2)/'
 
-* Takashi Iwai <tiwai@suse.de> [2011-02-06 12:00:15 +0100]:
+Or if you have a camel case script that changes "ThisVariable" to
+"this_variable".  Then the command would be:
+git show c659c38 | ./rename_rev.pl -ea '$_ = lc' -ea 's/_//g'
+Which changes everything to lower case and strips out all the
+underscores.  You might want to combine it with some other flags:
+git show c659c38 | ./rename_rev.pl -nc \
+	-e 's/TLanPrivateInfo/struct tlan_priv/' \
+	-e 's/TLanList/struct tlan_list/' \
+	-ea '$_ = lc' -ea 's/_//g'
 
-> At Sun, 6 Feb 2011 09:50:51 +0800,
-> Jeff Chua wrote:
-> > 
-> > On Sun, Feb 6, 2011 at 2:24 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > >> The suspend monster is back! The suspend-to-ram is fine, but upon
-> > >> resume, screen is blank. Haven't bisected in case someone has also
-> > >> done so.
-> > >
-> > > BTW, please don't reply to messages containing patches with reports of problems
-> > > that aren't caused by those patches.  It's confusing at best and at worst it
-> > > may result in the patches being rejected.
-> > 
-> > Sorry. New subject now:)
-> > 
-> > 
-> > On Sun, Feb 6, 2011 at 2:51 AM, Linus Torvalds
-> > <torvalds@linux-foundation.org> wrote:
-> > >> It's very recent. ... between commit
-> > >> 831d52bc153971b70e64eccfbed2b232394f22f8 and
-> > >> 44f2c5c841da1b1e0864d768197ab1497b5c2cc1.
-> > >
-> > > Hmm. It's almost certainly one of the DRI patches, but which one? I
-> > > think bisection is the only way to figure it out. It shouldn't be too
-> > > bad, since there's only 120 commits in that range.
-> > >
-> > > In fact, you can almost certainly just bisect from 89840966c579 to
-> > > bb5b583b5279, which is just 31 commits and should get you bisected in
-> > > just five tries or so.
-> > 
-> > Yea, I've just done that. It came down to the following commit.
-> > Reverting it solves the problem. I've gone thru a few cycles, and
-> > notebook still survives.
-> 
-> Hrm, what is the symptom?  I couldn't find it because you cut off the
-> thread, and it's not cited.
-> 
-> The commit you mentioned just adds an interface, and the the callbacks
-> aren't defined.  The real change is either in
->   commit f3269058e7a80083dcdf89698bfcd1a6c6f8fd12
->     drm/i915/crt: Force the initial probe after reset
-> or
->   commit 5d1d0cc87fc0887921993ea0742932e0c8adeda0
->     drm/i915: Reset crtc after resume
-> 
-> Also the fix might interact with
->   commit 811aaa55ba21ab37407018cfc01770d6b037d3fb
->     drm: Only set DPMS ON when actually configuring a mode
-> 
-> 
-> thanks,
-> 
-> Takashi
-> 
-> > 
-> > Thanks,
-> > Jeff
-> > 
-> > 
-> > commit 500f7147cf5bafd139056d521536b10c2bc2e154
-> > Author: Chris Wilson <chris@chris-wilson.co.uk>
-> > Date:   Mon Jan 24 15:14:41 2011 +0000
-> > 
-> >     drm/i915: Reset state after a GPU reset or resume
-> > 
-> >     Call drm_mode_config_reset() after an invalidation event to restore any
-> >     cached state to unknown.
-> > 
-> >     Tested-by: Takashi Iwai <tiwai@suse.de>
-> >     Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+What I would like is if there was some way to ignore changes which just
+introduced new lines, but didn't affect runtime behavior.  I'm not sure
+how to do that.
 
--- 
-Marc Koschewski
+regards,
+dan carpenter
+
+--envbJBWh7q8WU6mo
+Content-Type: text/x-perl; charset=us-ascii
+Content-Disposition: attachment; filename="rename_rev.pl"
+
+#!/usr/bin/perl
+
+use strict;
+use File::Temp qw/ :mktemp  /;
+
+sub usage() {
+    print "usage: cat diff | $0 old new old new old new...\n";
+    print "   or: cat diff | $0 -e 's/old/new/g'\n"; 
+    print " -e : execute on old lines\n";
+    print " -ea: execute on all lines\n";
+    print " -nc: strip one line comments\n"; 
+    exit(1);
+}
+
+my @subs;
+my @cmds;
+my $strip_comments;
+
+sub filter($) {
+    my $_ = shift();
+
+    my $old = 0;
+    if ($_ =~ /^-/) {
+        $old = 1;
+    }
+
+    # remove the first char
+    s/^[ +-]//;
+
+    if ($strip_comments) {
+        s/\/\*.*?\*\///g;
+        s/\/\/.*//;
+    }
+
+    foreach my $cmd (@cmds) {
+        if ($old || $cmd->[0] =~ /^-ea$/) {
+		eval $cmd->[1];
+	}
+    }
+
+    foreach my $sub (@subs) {
+	if ($old) {
+		s/$sub->[0]/$sub->[1]/g;
+	}
+    }
+
+    return $_;
+}
+
+
+my ($oldfh, $oldfile) = mkstemp("/tmp/oldXXXXX");
+my ($newfh, $newfile) = mkstemp("/tmp/newXXXXX");
+
+while (my $param1 = shift()) {
+    if ($param1 =~ /^-nc$/) {
+        $strip_comments = 1;
+        next;
+    }
+
+    my $param2 = shift;
+    if ($param2 =~ /^$/) {
+	usage();
+    }
+
+    if ($param1 =~ /^-e(a|)$/) {
+        push @cmds, [$param1, $param2];
+	next;
+    }
+    push @subs, [$param1, $param2];
+}
+
+while (<>) {
+    my $line = $_;
+
+    if ($line =~ /^(---|\+\+\+)/) {
+	next;
+    }
+
+    my $output = filter($line);
+    if ($line =~ /^-/) {
+	print $oldfh $output;
+	next;
+    }
+    if ($line =~ /^\+/) {
+	print $newfh $output;
+	next;
+    }
+    print $oldfh $output;
+    print $newfh $output;
+}
+
+system("diff -uw $oldfile $newfile");
+
+unlink($oldfile);
+unlink($newfile);
+
+--envbJBWh7q8WU6mo--
