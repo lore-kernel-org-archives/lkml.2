@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab1BGLid (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 06:38:33 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:29420 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753767Ab1BGLic (ORCPT
+	id S1753959Ab1BGLkQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 06:40:16 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:61483 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753767Ab1BGLkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 06:38:32 -0500
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: <wg@grandegger.com>, <socketcan-core@lists.berlios.de>
-Cc: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <cover.1296818921.git.segoon@openwall.com><a6800dc8b0daed78256f98f52844cbbb48f4a76d.1296818921.git.segoon@openwall.com><20110204124233.GB334@e-circ.dyndns.org> <20110204.130649.112613896.davem@davemloft.net>
-Subject: About bittiming calculation result
-Date: Mon, 7 Feb 2011 20:38:29 +0900
-Message-ID: <5009516791F146C49C73FAC57C437313@hacdom.okisemi.com>
+	Mon, 7 Feb 2011 06:40:14 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=g0KYLVkuNOpX/olmkIrLLB0m/chlRJt4RdV9Z6r+yOMA0QHMEiL60TAoNUCBki7gha
+         Ya2ehlmSEYAdkJlfxGAJZ+a60d0QNGogcg8dxoIvp42ODDCD8IUJr3G+pW4cqHa3lijp
+         qZh3WBVgmiPeJ+VChIpKqumQvk4rHIllas4oE=
+Date: Mon, 7 Feb 2011 13:40:05 +0200
+From: "Ahmed S. Darwish" <darwish.07@gmail.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH] Documentation: log_buf_len accepts [KMG]
+Message-ID: <20110207114005.GB10388@laptop>
+References: <20110206174504.GA23024@laptop> <20110206204002.2f3eab4e.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <20110204.130649.112613896.davem@davemloft.net>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
-Thread-Index: AcvEr15DNrIU5ocWQIK1ihJgNcfMNwCCeRWA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110206204002.2f3eab4e.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Feb 06, 2011 at 08:40:02PM -0800, Randy Dunlap wrote:
+> 
+> Update the "log_buf_len" description to use [KMG] syntax for the
+> buffer size.
+> 
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> ---
+> 
 
-I have a question for bittiming-value calculated by Can-core.
+This implies an ACK for the original patch?
 
-In case setting like below,
- - ip link set can0 type can bitrate 800000
- - clock=50MHz
- - Use pch_can
-
-Can-core calculates like below
-brp=21
-seg1=1
-seg2=1
-sjw=1
-prop_seg=0
-
-Is "prop_seg=0" true ?
-seg1/seg2/sjw/prop_seg must be more than 1 ?
-
-Also I can see the following kernel error log.
-bitrate error 0.7%
-
-Thanks,
------------------------------------------
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
-
+-- 
+Darwish
+http://darwish.07.googlepages.com
