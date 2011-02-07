@@ -1,86 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab1BGOop (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 09:44:45 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:60704 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753123Ab1BGOoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 09:44:44 -0500
-Date: Tue, 8 Feb 2011 01:44:32 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-embedded@vger.kernel.org,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH] PM: Hide CONFIG_PM from users
-Message-Id: <20110208014432.2c9288e4.sfr@canb.auug.org.au>
-In-Reply-To: <20110207141829.GK10564@opensource.wolfsonmicro.com>
-References: <1297081335-13631-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-	<20110208011324.d5371c4c.sfr@canb.auug.org.au>
-	<20110207141829.GK10564@opensource.wolfsonmicro.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__8_Feb_2011_01_44_32_+1100_WrhF_X_zbIe/bP27"
+	id S1753400Ab1BGOuK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 09:50:10 -0500
+Received: from webbox4.loswebos.de ([213.187.93.205]:34637 "EHLO
+	webbox4.loswebos.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753123Ab1BGOuJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 09:50:09 -0500
+Date: Mon, 7 Feb 2011 15:50:00 +0100
+From: Marc Koschewski <marc@osknowledge.org>
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        castet.matthieu@free.fr, mhopf@suse.de, suresh.b.siddha@intel.com,
+        tglx@linutronix.de, mingo@elte.hu
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86, nx: Mark the ACPI resume trampoline code
+ as +x - fixed
+Message-ID: <20110207145000.GA20671@marc.osknowledge.org>
+References: <4D4F8019.2090104@zytor.com>
+ <tip-d344e38b2c151ca5e5e39f562017127e93912528@git.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <tip-d344e38b2c151ca5e5e39f562017127e93912528@git.kernel.org>
+X-PGP-Fingerprint: D514 7DC1 B5F5 8989 083E 38C9 5ECF E5BD 3430 ABF5
+X-PGP-Key: http://www.kosik.org/pubkey.asc
+X-Blog: http://www.kosik.org/blog/
+X-Operating-System: Linux marc 2.6.38-rc3-dezzy-00238-g8dbdea8-dirty
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__8_Feb_2011_01_44_32_+1100_WrhF_X_zbIe/bP27
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* tip-bot for H. Peter Anvin <hpa@zytor.com> [2011-02-07 09:24:55 +0000]:
 
-Hi Mark,
+Great! That one fixes ACPI S3 resume on i7.
 
-On Mon, 7 Feb 2011 14:18:29 +0000 Mark Brown <broonie@opensource.wolfsonmic=
-ro.com> wrote:
->
-> On Tue, Feb 08, 2011 at 01:13:24AM +1100, Stephen Rothwell wrote:
-> > On Mon,  7 Feb 2011 12:22:15 +0000 Mark Brown <broonie@opensource.wolfs=
-onmicro.com> wrote:
->=20
-> > > +	bool
-> > > +	default y if !IA64_HP_SIM
->=20
-> > Several powerpc configs have CONFIG_PM (implicitly) disabled (e.g. the
-> > server configs), so this will unexpectedly turn it on for them.
->=20
-> Do you mean that these systems require CONFIG_PM be turned off, or just
-> that people tend not to turn it on?  If the latter would you expect any
-> ill effects from doing so?
+Regards,
+Marc
 
-I don't know the answer to either question without testing.  All I am
-saying is that currently the default for CONFIG_PM is "off" and you are
-changing it to be "on" and there may not have been any testing done of
-that in some situations.   We don't know where it was explicitly
-turned off any more since we shrank our defconfig files (which was done
-automatically) ... since it is off by default, it doesn't need to be
-mentioned in a defconfig unless it needs to be turned on.
+> Commit-ID:  d344e38b2c151ca5e5e39f562017127e93912528
+> Gitweb:     http://git.kernel.org/tip/d344e38b2c151ca5e5e39f562017127e93912528
+> Author:     H. Peter Anvin <hpa@zytor.com>
+> AuthorDate: Sun, 6 Feb 2011 21:16:09 -0800
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Mon, 7 Feb 2011 09:07:13 +0100
+> 
+> x86, nx: Mark the ACPI resume trampoline code as +x
+> 
+> We reserve lowmem for the things that need it, like the ACPI
+> wakeup code, way early to guarantee availability.  This happens
+> before we set up the proper pagetables, so set_memory_x() has no
+> effect.
+> 
+> Until we have a better solution, use an initcall to mark the
+> wakeup code executable.
+> 
+> Originally-by: Matthieu Castet <castet.matthieu@free.fr>
+> Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+> Cc: Matthias Hopf <mhopf@suse.de>
+> Cc: rjw@sisk.pl
+> Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+> LKML-Reference: <4D4F8019.2090104@zytor.com>
+> Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> ---
+>  arch/x86/kernel/acpi/sleep.c |   13 ++++++++++---
+>  1 files changed, 10 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
+> index 4d9ebba..68d1537 100644
+> --- a/arch/x86/kernel/acpi/sleep.c
+> +++ b/arch/x86/kernel/acpi/sleep.c
+> @@ -12,10 +12,8 @@
+>  #include <linux/cpumask.h>
+>  #include <asm/segment.h>
+>  #include <asm/desc.h>
+> -
+> -#ifdef CONFIG_X86_32
+>  #include <asm/pgtable.h>
+> -#endif
+> +#include <asm/cacheflush.h>
+>  
+>  #include "realmode/wakeup.h"
+>  #include "sleep.h"
+> @@ -149,6 +147,15 @@ void __init acpi_reserve_wakeup_memory(void)
+>  	memblock_x86_reserve_range(mem, mem + WAKEUP_SIZE, "ACPI WAKEUP");
+>  }
+>  
+> +int __init acpi_configure_wakeup_memory(void)
+> +{
+> +	if (acpi_realmode)
+> +		set_memory_x(acpi_realmode, WAKEUP_SIZE >> PAGE_SHIFT);
+> +
+> +	return 0;
+> +}
+> +arch_initcall(acpi_configure_wakeup_memory);
+> +
+>  
+>  static int __init acpi_sleep_setup(char *str)
+>  {
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__8_Feb_2011_01_44_32_+1100_WrhF_X_zbIe/bP27
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJNUAVQAAoJEDMEi1NhKgbsZLkH/0eWC8wFEXEtH3XBdO/79I1W
-5zTlj/bDi2QQjVb+8GYJxzyE7BR4rjOWvmLq0gs5vOxrBIE5+Tu4HmkUI5F1QZjp
-8kqaK2Q8W1fSHSPumoZFKXKcEupCvZgofALmoKp9FjHBS49baHVhrltNFNOarblu
-kRokJUceskm9aGq66SZQnvVK0Ux8OqcOdJmxZm06repkIcm6QenGoxYJPOTmjhfQ
-TtdkBF2R8OYk1SPtuezk2KsTu4p0/4B38ad573yEKuZ3q9nE4mIMkwWy7G9Now7t
-CPqqXsGPYgYRCj7nhPqgnRSK6fvoob9AHtdUwsumb1DI/gbFcGAZvENlhw07NEQ=
-=/pa9
------END PGP SIGNATURE-----
-
---Signature=_Tue__8_Feb_2011_01_44_32_+1100_WrhF_X_zbIe/bP27--
+-- 
+Marc Koschewski
