@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346Ab1BGIw6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 03:52:58 -0500
-Received: from cantor.suse.de ([195.135.220.2]:39303 "EHLO mx1.suse.de"
+	id S1753321Ab1BGIyF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 03:54:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47396 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753187Ab1BGIw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 03:52:56 -0500
-Date: Mon, 07 Feb 2011 09:52:55 +0100
-Message-ID: <s5htyggusyg.wl%tiwai@suse.de>
+	id S1753171Ab1BGIyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 03:54:04 -0500
+Date: Mon, 07 Feb 2011 09:54:02 +0100
+Message-ID: <s5hsjw0uswl.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Jeff Chua <jeff.chua.linux@gmail.com>
 Cc: Chris Wilson <chris@chris-wilson.co.uk>,
@@ -15,7 +15,7 @@ Cc: Chris Wilson <chris@chris-wilson.co.uk>,
         "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
 Subject: Re: Commit 500f7147cf5bafd139056d521536b10c2bc2e154 breaks _resume_
-In-Reply-To: <AANLkTi=KGMJ9vLaLfkzGQrc-F2eB5CRmDX1L5UohPTZ=@mail.gmail.com>
+In-Reply-To: <AANLkTimW_V96w4USjxX1=8_r6g-XJzdcGbYn_JDr9ANL@mail.gmail.com>
 References: <AANLkTi=h+H+N=f4m4pE+RZ4n5h7oxQuwzmK-qmmWAGtL@mail.gmail.com>
 	<s5hfws1whq8.wl%tiwai@suse.de>
 	<AANLkTi=iHL+eVPRPzFXRMBZkXU7nXwkeZQiQUcyqSS-H@mail.gmail.com>
@@ -25,6 +25,7 @@ References: <AANLkTi=h+H+N=f4m4pE+RZ4n5h7oxQuwzmK-qmmWAGtL@mail.gmail.com>
 	<AANLkTik0eJVr1S5=bCO8kmkwCxYzLE_kh9C3ccpn+mWX@mail.gmail.com>
 	<s5hy65suu7t.wl%tiwai@suse.de>
 	<AANLkTi=KGMJ9vLaLfkzGQrc-F2eB5CRmDX1L5UohPTZ=@mail.gmail.com>
+	<AANLkTimW_V96w4USjxX1=8_r6g-XJzdcGbYn_JDr9ANL@mail.gmail.com>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -35,63 +36,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Mon, 7 Feb 2011 16:36:33 +0800,
+At Mon, 7 Feb 2011 16:45:16 +0800,
 Jeff Chua wrote:
 > 
-> On Mon, Feb 7, 2011 at 4:25 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> > At Mon, 7 Feb 2011 13:02:46 +0800,
-> > Jeff Chua wrote:
+> On Mon, Feb 7, 2011 at 4:36 PM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+> > On Mon, Feb 7, 2011 at 4:25 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> >> At Mon, 7 Feb 2011 13:02:46 +0800,
+> >> Jeff Chua wrote:
+> >>>
+> >>> On Mon, Feb 7, 2011 at 12:48 PM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+> >>> > On Sun, Feb 6, 2011 at 11:27 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> >>> >> One last step: move contents of intel_crtc_reset() back to
+> >>> >> intel_crtc_init() one by one.
+> >>> >>
+> >>> >> The active flag is my suspicion. I was thinking that we brought up the
+> >>> >> outputs in a similar manner upon resume as upon initial boot. On
+> >>> >> reflection, this is the not case.
+> >>> >>
+> >>> >> However, the first action we take inside modesetting is to disable the
+> >>> >> outputs about to be reconfigured. So setting active should be the right
+> >>> >> course of action so that cleanup any residual state from resume.
+> >>> >>
+> >>> >> So I am intrigued as to which line is the cause, and just where the
+> >>> >> machine becomes unresponsive...
+> >>> >
+> >>> > It's this line causing the problem.
+> >>> >
+> >>> > intel_crtc->active = true; /* force the pipe off on setup_init_config */
+> >>> >
+> >>> >
+> >>> > When it's called before entering intel_crtc_reset(&intel_crtc->base),
+> >>> > it works, but if called within the function, it doesn't work. Strange.
+> >>> > Not sure whether is passing the correct value to to_intel_crtc(crtc)?
+> >>>
+> >>> I've added printk() below and the function returns a different value
+> >>> of intel_crtc.
+> >>>
+> >>>
+> >>> static void intel_crtc_reset(struct drm_crtc *crtc)
+> >>> {
+> >>>         struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+> >>>         printk("intel_crtc %p\n", intel_crtc); ===> intel_crtc ffff8802349d1000
+> >>>
+> >>> }
+> >>>
+> >>> printk("intel_crtc %p\n", intel_crtc); ===> intel_crtc ffff8802349d0000
+> >>> intel_crtc_reset(&intel_crtc->base);
 > >>
-> >> On Mon, Feb 7, 2011 at 12:48 PM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
-> >> > On Sun, Feb 6, 2011 at 11:27 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> >> >> One last step: move contents of intel_crtc_reset() back to
-> >> >> intel_crtc_init() one by one.
-> >> >>
-> >> >> The active flag is my suspicion. I was thinking that we brought up the
-> >> >> outputs in a similar manner upon resume as upon initial boot. On
-> >> >> reflection, this is the not case.
-> >> >>
-> >> >> However, the first action we take inside modesetting is to disable the
-> >> >> outputs about to be reconfigured. So setting active should be the right
-> >> >> course of action so that cleanup any residual state from resume.
-> >> >>
-> >> >> So I am intrigued as to which line is the cause, and just where the
-> >> >> machine becomes unresponsive...
-> >> >
-> >> > It's this line causing the problem.
-> >> >
-> >> > intel_crtc->active = true; /* force the pipe off on setup_init_config */
-> >> >
-> >> >
-> >> > When it's called before entering intel_crtc_reset(&intel_crtc->base),
-> >> > it works, but if called within the function, it doesn't work. Strange.
-> >> > Not sure whether is passing the correct value to to_intel_crtc(crtc)?
-> >>
-> >> I've added printk() below and the function returns a different value
-> >> of intel_crtc.
-> >>
-> >>
-> >> static void intel_crtc_reset(struct drm_crtc *crtc)
-> >> {
-> >>         struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
-> >>         printk("intel_crtc %p\n", intel_crtc); ===> intel_crtc ffff8802349d1000
-> >>
-> >> }
-> >>
-> >> printk("intel_crtc %p\n", intel_crtc); ===> intel_crtc ffff8802349d0000
-> >> intel_crtc_reset(&intel_crtc->base);
+> >> That's weird.  Since base is the first member, both intel_crtc and crtc
+> >> must be identical.
 > >
-> > That's weird.  Since base is the first member, both intel_crtc and crtc
-> > must be identical.
+> > In case I'm messing something up, here's my intel_display.c
 > 
-> In case I'm messing something up, here's my intel_display.c
+> Why not just pass intel_crtc as in
+> 
+> - static void intel_crtc_reset(struct drm_crtc *crtc)
+> + static void intel_crtc_reset(struct intel_crtc *intel_crtc)
 
-Thanks, that looks good.  What about other files?  Did you change
-(especially intel_drv.h) from Linus git tree?
+Because it's called from drm_crtc.c that has no idea about the
+driver-local type :)
 
-I'll also check later to be sure (now I have no machine for testing).
-
-
-thanks,
 
 Takashi
