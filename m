@@ -1,77 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754564Ab1BGD7t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 22:59:49 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:50921 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754317Ab1BGD7r convert rfc822-to-8bit (ORCPT
+	id S1754568Ab1BGEAr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 23:00:47 -0500
+Received: from smtp106.rog.mail.re2.yahoo.com ([68.142.225.204]:41666 "HELO
+	smtp106.rog.mail.re2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754237Ab1BGEAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 22:59:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=Omf+fAUDbWckvMVQut3FApIbV7Yolj52OXrDfo0D90/z7R+NZDXBiug9T6CXGtAo8i
-         Kh6K1s6jB5qg7KQs22X1KDyXxN1hG4ypGXdslJhBWB7sj1neM5xqj++9r6hMQ8g9DmjR
-         vIXFQMEjalB1bP19HNlkVRi0pCZmPZyPlWoJ0=
+	Sun, 6 Feb 2011 23:00:46 -0500
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Feb 2011 23:00:45 EST
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=rogers.com;
+  h=DKIM-Signature:Message-ID:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:From:To:Subject:Date:Organization:User-Agent:MIME-Version:Content-Transfer-Encoding:Content-Type;
+  b=RemUCiE/tBE2Df8BWZNlhye4Z3kn6KP/H3jrzCppE9RXRyTrk4zELvUexNJtve2V09l+0K8h/0M0gQPKMwVpRLenU374PORSTRYdtz4wAoG5rG6PIxepftoqmAKIMr9ggqoR6D/tJAbSv6QSVuzBTiUuBjX5er7aJNllnnfyghQ=  ;
+Message-ID: <613373.34172.qm@smtp106.rog.mail.re2.yahoo.com>
+X-Yahoo-SMTP: rZzhDImswBA_40COIyZI42.8nAz5YXic.zo1v550XQVtX7k-
+X-YMail-OSG: 5RRlcucVM1k2xHJuIYVsMDV1Lrk6mJHqKZEzvLwypF84rJZ
+ zd8Ep0fHNd4OwtHgu2AZiQURrbEgygkaZ6DTvTfrKUqy9HJYZB.Cdo8dpUN3
+ gJB4k5wWOlxiiv3.ranCQNB1tfg5yL0vXaPEM.BPuY0gi.EBk5wuSYfqWSA7
+ AM2_ccNhiQyGkGk1IivoVx2O7GQywF_uDldFQX6Pflr8J63q6KcOvyRdpjFx
+ H26q.WJwQ0hUQUPRC3O53gtm4R686
+X-Yahoo-Newman-Property: ymail-3
+From: Shawn Starr <shawn.starr@rogers.com>
+To: linux-kernel@vger.kernel.org
+Subject: [regression][2.6.38-rcX][net][iwlagn] WiFi signal after period of time tanks causing contant drops
+Date: Sun, 06 Feb 2011 22:54 -0500
+Organization: sh0n.net
+User-Agent: KMail/4.6 beta4 (Linux/2.6.38-0.rc3.git4.1.fc15.x86_64; KDE/4.6.0; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <4D4F1A3D.2090107@hardwarefreak.com>
-References: <alpine.DEB.2.00.1102051427360.8518@p34.internal.lan>
- <20110205214550.3cb0f0d1@galadriel2.home> <alpine.DEB.2.00.1102051553591.8518@p34.internal.lan>
- <20110205220621.GB17347@gallifrey> <alpine.DEB.2.00.1102051729010.8518@p34.internal.lan>
- <alpine.DEB.2.00.1102051753100.8518@p34.internal.lan> <4D4DE34E.7010308@hardwarefreak.com>
- <alpine.DEB.2.00.1102051958370.28109@p34.internal.lan> <4D4E127D.3060105@hardwarefreak.com>
- <alpine.DEB.2.00.1102060515230.28109@p34.internal.lan> <4D4F1A3D.2090107@hardwarefreak.com>
-From: Julian Calaby <julian.calaby@gmail.com>
-Date: Mon, 7 Feb 2011 14:59:26 +1100
-Message-ID: <AANLkTim8Qt25C+L+R3e-R2qW0K6XxQBv-Fsy8K=aVA2H@mail.gmail.com>
-Subject: Re: Supermicro X8DTH-6: Only ~250MiB/s from RAID<->RAID over 10GbE?
-To: Stan Hoeppner <stan@hardwarefreak.com>
-Cc: Justin Piszcz <jpiszcz@lucidpixels.com>,
-        "Dr. David Alan Gilbert" <linux@treblig.org>,
-        Emmanuel Florac <eflorac@intellique.com>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-net@vger.kernel.org,
-        Alan Piszcz <ap@solarrain.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 7, 2011 at 09:01, Stan Hoeppner <stan@hardwarefreak.com> wrote:
-> Justin Piszcz put forth on 2/6/2011 4:16 AM:
->
->> Workflow process-
->>
->> Migrate data from old/legacy RAID sets to new ones, possibly also 2TB->3TB, so
->> the faster the transfer speed, the better.
->
-> This type of data migration is probably going to include many many files of
-> various sizes from small to large.  You have optimized your system performance
-> only for individual large file xfers.  Thus, when you go to copy directories
-> containing hundreds or thousands of files of various sizes, you will likely see
-> much lower throughput using a single copy stream.  Thus if you want to keep that
-> 10 GbE pipe full, you'll likely need to run multiple copies in parallel, one per
-> large parent directory.  Or, run a single copy from say, 10 legacy systems to
-> one new system simultaneously, etc.
->
-> Given this situation, you may want to consider tar'ing up entire directories
-> with gz or bz compression, if you have enough free space on the legacy machines,
-> and copying the tarballs to the new system.  This will maximize your throughput,
-> although I don't know if it will decrease your total work flow completion time,
-> which should really be your overall goal.
 
-Another option might be to use tar and gzip to bundle the data up,
-then pipe it through netcat or ssh. When I have to transfer large
-chunks of data I find this is the fastest method. That said, if the
-connection is interrupted, then you're on your own. rsync might also
-be a good option.
+Using a Intel Corporation PRO/Wireless 5100 AGN [Shiloh] card after rebooting 
+and a period of of seveal hours signal begins to drop to low levels:
 
-Thanks,
 
--- 
-Julian Calaby
+wlan0     IEEE 802.11abgn  ESSID:"XXXXXXXX"  
+          Mode:Managed  Frequency:2.462 GHz  Access Point: AA:BB:CC:DD:EE:FF   
+          Bit Rate=11 Mb/s   Tx-Power=15 dBm   
+          Retry  long limit:7   RTS thr:off   Fragment thr:off
+          Power Management:off
+          Link Quality=12/70  Signal level=-98 dBm  
+          Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
+          Tx excessive retries:0  Invalid misc:35   Missed beacon:0
 
-Email: julian.calaby@gmail.com
-Profile: http://www.google.com/profiles/julian.calaby/
-.Plan: http://sites.google.com/site/juliancalaby/
+...
+
+          Link Quality=12/70  Signal level=-98 dBm  
+          Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
+          Tx excessive retries:0  Invalid misc:40   Missed beacon:0
+
+I start seeing lots of Invalid misc errors and connection drops. If I reboot, 
+then signal will be back to normal for a period of time again.
+
+My official kernel is from Fedora rawhide (2.6.38-0.rc3.git4.1.fc15.x86_64)
+
+Anyone else notice poor link/signal levels?
+
+.37 showed no such issues.
+
+
+-- snip -- 
+
+kernel messages when this occurred:
+
+
+[15110.285207] CE: hpet increased min_delta_ns to 20113 nsec
+[33809.732205] cfg80211: Calling CRDA to update world regulatory domain
+[33809.831816] cfg80211: World regulatory domain updated:
+[33809.831819] cfg80211:     (start_freq - end_freq @ bandwidth), 
+(max_antenna_gain, max_eirp)
+[33809.831822] cfg80211:     (2402000 KHz - 2472000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[33809.831825] cfg80211:     (2457000 KHz - 2482000 KHz @ 20000 KHz), (300 
+mBi, 2000 mBm)
+[33809.831827] cfg80211:     (2474000 KHz - 2494000 KHz @ 20000 KHz), (300 
+mBi, 2000 mBm)
+[33809.831830] cfg80211:     (5170000 KHz - 5250000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[33809.831832] cfg80211:     (5735000 KHz - 5835000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[33809.831841] cfg80211: Calling CRDA for country: US
+[33809.835215] cfg80211: Regulatory domain changed to country: US
+[33809.835217] cfg80211:     (start_freq - end_freq @ bandwidth), 
+(max_antenna_gain, max_eirp)
+[33809.835220] cfg80211:     (2402000 KHz - 2472000 KHz @ 40000 KHz), (300 
+mBi, 2700 mBm)
+[33809.835223] cfg80211:     (5170000 KHz - 5250000 KHz @ 40000 KHz), (300 
+mBi, 1700 mBm)
+[33809.835225] cfg80211:     (5250000 KHz - 5330000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[33809.835228] cfg80211:     (5490000 KHz - 5600000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[33809.835230] cfg80211:     (5650000 KHz - 5710000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[33809.835233] cfg80211:     (5735000 KHz - 5835000 KHz @ 40000 KHz), (300 
+mBi, 3000 mBm)
+[33812.364119] wlan0: authenticate with aa:bb:cc:dd:ee:ff (try 1)
+[33812.366620] wlan0: authenticated
+[33812.366643] wlan0: waiting for beacon from aa:bb:cc:dd:ee:ff
+[33828.410709] wlan0: authenticate with aa:bb:cc:dd:ee:ff (try 1)
+[33828.413725] wlan0: authenticated
+[33828.413748] wlan0: waiting for beacon from aa:bb:cc:dd:ee:ff
+[33828.418428] wlan0: beacon received
+[33828.421042] wlan0: associate with aa:bb:cc:dd:ee:ff (try 1)
+[33828.446039] wlan0: RX AssocResp from aa:bb:cc:dd:ee:ff (capab=0x411 
+status=0 aid=1)
+[33828.446042] wlan0: associated
+[34100.737227] cfg80211: Calling CRDA to update world regulatory domain
+[34100.740353] cfg80211: World regulatory domain updated:
+[34100.740355] cfg80211:     (start_freq - end_freq @ bandwidth), 
+(max_antenna_gain, max_eirp)
+[34100.740358] cfg80211:     (2402000 KHz - 2472000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[34100.740361] cfg80211:     (2457000 KHz - 2482000 KHz @ 20000 KHz), (300 
+mBi, 2000 mBm)
+[34100.740363] cfg80211:     (2474000 KHz - 2494000 KHz @ 20000 KHz), (300 
+mBi, 2000 mBm)
+[34100.740366] cfg80211:     (5170000 KHz - 5250000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[34100.740368] cfg80211:     (5735000 KHz - 5835000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[34100.740378] cfg80211: Calling CRDA for country: US
+[34100.742781] cfg80211: Regulatory domain changed to country: US
+[34100.742784] cfg80211:     (start_freq - end_freq @ bandwidth), 
+(max_antenna_gain, max_eirp)
+[34100.742787] cfg80211:     (2402000 KHz - 2472000 KHz @ 40000 KHz), (300 
+mBi, 2700 mBm)
+[34100.742789] cfg80211:     (5170000 KHz - 5250000 KHz @ 40000 KHz), (300 
+mBi, 1700 mBm)
+[34100.742792] cfg80211:     (5250000 KHz - 5330000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[34100.742794] cfg80211:     (5490000 KHz - 5600000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[34100.742797] cfg80211:     (5650000 KHz - 5710000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[34100.742799] cfg80211:     (5735000 KHz - 5835000 KHz @ 40000 KHz), (300 
+mBi, 3000 mBm)
+[34103.381063] wlan0: authenticate with aa:bb:cc:dd:ee:ff (try 1)
+[34103.385675] wlan0: authenticated
+[34103.385707] wlan0: waiting for beacon from aa:bb:cc:dd:ee:ff
+[34103.465542] wlan0: beacon received
+[34103.468042] wlan0: associate with aa:bb:cc:dd:ee:ff (try 1)
+[34103.470316] wlan0: RX AssocResp from aa:bb:cc:dd:ee:ff (capab=0x411 
+status=0 aid=1)
+[34103.470319] wlan0: associated
+[34114.737244] cfg80211: Calling CRDA to update world regulatory domain
+[34114.739837] cfg80211: World regulatory domain updated:
+[34114.739840] cfg80211:     (start_freq - end_freq @ bandwidth), 
+(max_antenna_gain, max_eirp)
+[34114.739843] cfg80211:     (2402000 KHz - 2472000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[34114.739846] cfg80211:     (2457000 KHz - 2482000 KHz @ 20000 KHz), (300 
+mBi, 2000 mBm)
+[34114.739848] cfg80211:     (2474000 KHz - 2494000 KHz @ 20000 KHz), (300 
+mBi, 2000 mBm)
+[34114.739851] cfg80211:     (5170000 KHz - 5250000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[34114.739853] cfg80211:     (5735000 KHz - 5835000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[34114.739863] cfg80211: Calling CRDA for country: US
+[34114.742475] cfg80211: Regulatory domain changed to country: US
+[34114.742477] cfg80211:     (start_freq - end_freq @ bandwidth), 
+(max_antenna_gain, max_eirp)
+[34114.742480] cfg80211:     (2402000 KHz - 2472000 KHz @ 40000 KHz), (300 
+mBi, 2700 mBm)
+[34114.742483] cfg80211:     (5170000 KHz - 5250000 KHz @ 40000 KHz), (300 
+mBi, 1700 mBm)
+[34114.742485] cfg80211:     (5250000 KHz - 5330000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[34114.742488] cfg80211:     (5490000 KHz - 5600000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[34114.742490] cfg80211:     (5650000 KHz - 5710000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[34114.742493] cfg80211:     (5735000 KHz - 5835000 KHz @ 40000 KHz), (300 
+mBi, 3000 mBm)
+[34124.964949] wlan0: authenticate with aa:bb:cc:dd:ee:ff (try 1)
+[34124.967818] wlan0: authenticated
+[34124.967842] wlan0: waiting for beacon from aa:bb:cc:dd:ee:ff
+[34124.969754] wlan0: beacon received
+[34124.972015] wlan0: associate with aa:bb:cc:dd:ee:ff (try 1)
+[34124.974327] wlan0: RX AssocResp from aa:bb:cc:dd:ee:ff (capab=0x411 
+status=0 aid=1)
+[34124.974329] wlan0: associated
+[34249.738240] cfg80211: Calling CRDA to update world regulatory domain
+[34249.740811] cfg80211: World regulatory domain updated:
+[34249.740814] cfg80211:     (start_freq - end_freq @ bandwidth), 
+(max_antenna_gain, max_eirp)
+[34249.740817] cfg80211:     (2402000 KHz - 2472000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[34249.740819] cfg80211:     (2457000 KHz - 2482000 KHz @ 20000 KHz), (300 
+mBi, 2000 mBm)
+[34249.740822] cfg80211:     (2474000 KHz - 2494000 KHz @ 20000 KHz), (300 
+mBi, 2000 mBm)
+[34249.740824] cfg80211:     (5170000 KHz - 5250000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[34249.740827] cfg80211:     (5735000 KHz - 5835000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[34249.740835] cfg80211: Calling CRDA for country: US
+[34249.743295] cfg80211: Regulatory domain changed to country: US
+[34249.743298] cfg80211:     (start_freq - end_freq @ bandwidth), 
+(max_antenna_gain, max_eirp)
+[34249.743300] cfg80211:     (2402000 KHz - 2472000 KHz @ 40000 KHz), (300 
+mBi, 2700 mBm)
+[34249.743303] cfg80211:     (5170000 KHz - 5250000 KHz @ 40000 KHz), (300 
+mBi, 1700 mBm)
+[34249.743305] cfg80211:     (5250000 KHz - 5330000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[34249.743308] cfg80211:     (5490000 KHz - 5600000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[34249.743310] cfg80211:     (5650000 KHz - 5710000 KHz @ 40000 KHz), (300 
+mBi, 2000 mBm)
+[34249.743313] cfg80211:     (5735000 KHz - 5835000 KHz @ 40000 KHz), (300 
+mBi, 3000 mBm)
+[34252.430829] wlan0: authenticate with aa:bb:cc:dd:ee:ff (try 1)
+[34252.433740] wlan0: authenticated
+[34252.433765] wlan0: waiting for beacon from aa:bb:cc:dd:ee:ff
+[34275.365426] wlan0: authenticate with aa:bb:cc:dd:ee:ff (try 1)
+[34275.367527] wlan0: authenticated
+[34275.367552] wlan0: waiting for beacon from aa:bb:cc:dd:ee:ff
+[35121.713088] wlan0: authenticate with aa:bb:cc:dd:ee:ff (try 1)
+[35121.716042] wlan0: authenticated
+[35121.716079] wlan0: waiting for beacon from aa:bb:cc:dd:ee:ff
+[35121.743282] wlan0: beacon received
+[35121.746047] wlan0: associate with aa:bb:cc:dd:ee:ff (try 1)
+[35121.750694] wlan0: RX AssocResp from aa:bb:cc:dd:ee:ff (capab=0x411 
+status=0 aid=2)
+[35121.750697] wlan0: associated
+
+Thanks, 
+Shawn.
+
+
+
