@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511Ab1BGSib (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 13:38:31 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58145 "EHLO
+	id S1754588Ab1BGSoR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 13:44:17 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56116 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752692Ab1BGSia (ORCPT
+	with ESMTP id S1753225Ab1BGSoQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 13:38:30 -0500
-Message-ID: <4D503C22.40509@monstr.eu>
-Date: Mon, 07 Feb 2011 19:38:26 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	Mon, 7 Feb 2011 13:44:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=qMyvru4ufi1obJq6F6RVwoVpR6p066G6fJidQswhSj/PWOvygKjDZ1pjn/zxnQ0qiJ
+         sL2j+NJB0yPOwQE6wiPII2hW9FRYRd2twa+rjEDt38gW+PcaAEGvaXQAILIju3i7fOAu
+         Ltz8mylMvjFwg0Z6g009ntnCmfMaOkcv7FLoU=
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: microblaze: Convert irq chip to new functions
-References: <1297102176-20768-1-git-send-email-monstr@monstr.eu> <alpine.LFD.2.00.1102071935440.31804@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1102071935440.31804@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4D503A06.3010403@redhat.com>
+References: <AANLkTi=gcf=A_6Kp6h7s2+OkxR4YUb6gqzc43asn-wfK@mail.gmail.com>
+	<20110207174552.GC3457@thunk.org>
+	<4D503A06.3010403@redhat.com>
+Date: Mon, 7 Feb 2011 18:44:14 +0000
+Message-ID: <AANLkTi=MPYjU4W4Zz=ajDeRAVoHCg+K68bNopgxf+DoE@mail.gmail.com>
+Subject: Re: ext4: Fix data corruption with multi-block writepages support
+From: Matt <jackdachef@gmail.com>
+To: Milan Broz <mbroz@redhat.com>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Gleixner wrote:
-> On Mon, 7 Feb 2011, Michal Simek wrote:
-> 
->> Hi Thomas,
+On Mon, Feb 7, 2011 at 6:29 PM, Milan Broz <mbroz@redhat.com> wrote:
+> On 02/07/2011 06:45 PM, Ted Ts'o wrote:
+>> On Fri, Feb 04, 2011 at 10:40:47PM +0000, Matt wrote:
+>>>
+>>> So that means that the file-corruption which existed until 2.6.37-rc6
+>>> and got triggered (for me) more easily via "dm crypt: scale to
+>>> multiple CPUs"
+>>> is fixed now ?
 >>
->> I have tested them and there are several problems which I've fixed.
->> I have added that changes to your patch 2/3. I am sending them as v2.
+>> Well, a patch exists for it that will be merged into 2.6.38.
 >>
->> For all others patches:
->> Tested-by: Michal Simek <monstr@monstr.eu>
+>>> That should give ext4 a nice speedup for >=2.6.38 :)
 >>
->> They can go through your tree because you have all patches around irq.
-> 
-> They are not core code specific, so you can send them to linus in the
-> .39 merge window.
+>> I'm not going to make it be the default for 2.6.38, since it's fairly
+>> late in the -rc features.  People who want it can explicitly enable it
+>> using the mount option mblk_io_submit, though.  (And let me know your
+>> success stories!  :-) I will be enabling it as the default in
+>> 2.6.39-rc1.
+>
+> So it was ext4 only bug in ext4_end_bio(),
+> dm-crypt per-cpu code was just trigger here, right?
+>
+> Milan
+>
 
-Ok. I will take care about.
+Hi Milan,
 
-Thanks,
-Michal
+Well, that was at least the experience that I made
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+ext4: after Ted had disabled support for multiple page-io submission
+
+I observed no data-corruption anymore (it had only appeared on the
+system-partition, /home - where ext4 also is used or on my backup
+partitions there was also no problem as far as I can tell)
+
+XFS: no corruption observed
+
+reiserfs: I can't say for sure since I'm only using it on my /boot partition :P
+
+for other filesystems I can't say anything - I didn't use additional
+ones at that time
+
+Regards
+
+Matt
