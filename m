@@ -1,90 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab1BGIGI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 03:06:08 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38624 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752601Ab1BGIGG (ORCPT
+	id S1752888Ab1BGIGo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 03:06:44 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43791 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752601Ab1BGIGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 03:06:06 -0500
-Date: Mon, 7 Feb 2011 09:05:55 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Jeremy Kerr <jeremy.kerr@canonical.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, Dima Zavin <dmitriyz@google.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>
-Subject: Re: [RFC, PATCH 3/3] clk: add warnings for incorrect
- enable/prepare semantics
-Message-ID: <20110207080555.GC27982@pengutronix.de>
-References: <201102011711.31258.jeremy.kerr@canonical.com>
- <1297058877.800990.238556019385.3.gpush@pororo>
+	Mon, 7 Feb 2011 03:06:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=jORPvuyI0KGaNyTXP1zagxBsDoYlyYzZ7k18gU5Syro0TVsMubaST2oofkSGUi5G5f
+         8mYqwMfsDLVJGCC6FYvN2xoZWd7YhOXpKhnnQx7sK7+nohFFxJOG6loVjH1dnY6z9IBl
+         S3TZUZqjxdwdlf3wPThvysArK59tXS7xfUUS8=
+Date: Mon, 7 Feb 2011 00:06:35 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Felix Fietkau <nbd@openwrt.org>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: Wireless regression (was 2.6.38-rc3: FUSE (sshfs) hangs under
+ load)
+Message-ID: <20110207080634.GA11580@core.coreip.homeip.net>
+References: <20110201175452.GB518@core.coreip.homeip.net>
+ <E1PkbGG-0005Rf-QL@pomaz-ex.szeredi.hu>
+ <20110202165236.GA3178@core.coreip.homeip.net>
+ <20110203065541.GB5592@core.coreip.homeip.net>
+ <E1Pkx7s-00073l-5B@pomaz-ex.szeredi.hu>
+ <20110203194115.GA14159@core.coreip.homeip.net>
+ <20110204064952.GA12914@core.coreip.homeip.net>
+ <4D4BE5D7.8090202@openwrt.org>
+ <4D4BEB99.4060202@openwrt.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1297058877.800990.238556019385.3.gpush@pororo>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <4D4BEB99.4060202@openwrt.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jeremy,
-
-On Mon, Feb 07, 2011 at 02:07:57PM +0800, Jeremy Kerr wrote:
-> This change adds warnings to check for:
+On Fri, Feb 04, 2011 at 01:05:45PM +0100, Felix Fietkau wrote:
+> On 2011-02-04 12:41 PM, Felix Fietkau wrote:
+> > On 2011-02-04 7:49 AM, Dmitry Torokhov wrote:
+> >> On Thu, Feb 03, 2011 at 11:41:15AM -0800, Dmitry Torokhov wrote:
+> >>> On Thu, Feb 03, 2011 at 12:13:24PM +0100, Miklos Szeredi wrote:
+> >>> > On Wed, 2 Feb 2011, Dmitry Torokhov wrote:
+> >>> > > On Wed, Feb 02, 2011 at 08:52:36AM -0800, Dmitry Torokhov wrote:
+> >>> > > > On Wed, Feb 02, 2011 at 12:52:36PM +0100, Miklos Szeredi wrote:
+> >>> > > > > On Tue, 1 Feb 2011, Dmitry Torokhov wrote:
+> >>> > > > > > Hi,
+> >>> > > > > > 
+> >>> > > > > > After installing 2.6.38-rc3 (plus a few input patches) sshfs started to
+> >>> > > > > > misbehave on me under load. It starts off fine but when I try to compile
+> >>> > > > > > a few modules against kernel sources residing on the other box the
+> >>> > > > > > processes go into 'D' state and just sit there doing nothing.
+> >>> > > > > 
+> >>> > > > > Can you please post a stack trace from SysRq-T?
+> >>> > > > > 
+> >>> > > > 
+> >> ...
+> >>> > > 
+> >>> > > OK, so here are the stack traces you requested. First one is snapshot of
+> >>> > > when compile got stuck, the 2nd one is when I interrupted make which
+> >>> > > caused gcc to go to 'D' state.
+> >>> > 
+> >>> > There doesn't appear anything abnormal there.
+> >>> > 
+> >>> > It's going into D state after it has received an interrupt and sent it
+> >>> > along to the userspace filesystem.  Then it will go into
+> >>> > uninterruptible sleep until the answer is received.
+> >>> > 
+> >>> > So the hang is because the answer to an open request is not being
+> >>> > received.  I can't tell where it got stuck, apparently not anywhere on
+> >>> > the local machine.
+> >>> > 
+> >>> > Can you please get a log from sshfs with "-odebug,sshfs_debug" and
+> >>> > redirect stderr to a file?  That might tell a bit more about the
+> >>> > situation.  Or it might not...
+> >>> 
+> >>> Hmm, it might be just the network itself, last night mutt in ssh session
+> >>> froze on me as well. I guess I'll just have to finish my bisect
+> >>> exercise.
+> >>> 
+> >> 
+> >> I finished bisecting and it turned out that the problematic commit
+> >> happened to be in wireless (I have iwl3945):
+> >> 
+> >> commit 4cd06a344db752f513437138953af191cbe9a691
+> >> Author: Felix Fietkau <nbd@openwrt.org>
+> >> Date:   Sat Dec 18 19:30:49 2010 +0100
+> >> 
+> >>     mac80211: skip unnecessary pskb_expand_head calls
+> >> 
+> >>     If the skb is not cloned and we don't need any extra headroom, there
+> >>     is no point in reallocating the skb head.
+> >> 
+> >>     Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+> >>     Signed-off-by: John W. Linville <linville@tuxdriver.com>
+> >> 
+> >> With this commit reverted from 2.6.38-rc3 I can not reproduce sshfs
+> >> getting stuck here.
+> > I really don't see how this commit could be causing these issues, and
+> > I'm not aware of any similar issues affecting other drivers.
+> Could you please try this patch to see if it fixes the issue as well?
 > 
->  1) enabling a clock that hasn't been prepared; and
-> 
->  2) unpreparing a clock that is still enabled
-> 
-> While the correctness can't be guaranteed, these warnings should cover
-> most situations.
-> 
-> Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
-> 
-> ---
->  drivers/clk/clk.c |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index 51dbd33..2369959 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -35,6 +35,8 @@ void clk_unprepare(struct clk *clk)
->  	if (!clk->ops->unprepare)
->  		return;
+> diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
+> index ffc6749..3168eae 100644
+> --- a/net/mac80211/tx.c
+> +++ b/net/mac80211/tx.c
+> @@ -1547,7 +1547,7 @@ static int ieee80211_skb_resize(struct ieee80211_local *local,
+>  		skb_orphan(skb);
+>  	}
 >  
-> +	WARN_ON(clk->enable_count);
-> +
->  	mutex_lock(&clk->prepare_lock);
->  	if (--clk->prepare_count == 0)
->  		clk->ops->unprepare(clk);
-> @@ -50,6 +52,8 @@ int clk_enable(struct clk *clk)
->  	if (!clk->ops->enable)
->  		return 0;
->  
-> +	WARN_ON(clk->ops->prepare && clk->prepare_count);
-> +
-This implies the warning is only issued on clocks that have a prepare
-callback.  If we want to enforce the new API the warning here shouldn't
-depend on clk->ops->prepare.  (clk_prepare and clk_unprepare need to
-be changed then to adapt the prepare_count even in the absence of
-clk->ops->prepare.)
+> -	if (skb_header_cloned(skb))
+> +	if (skb_cloned(skb))
+>  		I802_DEBUG_INC(local->tx_expand_skb_head_cloned);
+>  	else if (head_need || tail_need)
+>  		I802_DEBUG_INC(local->tx_expand_skb_head);
 
-Best regards
-Uwe
+Yes, it does, thank you for fixing it.
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Dmitry
