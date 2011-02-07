@@ -1,316 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354Ab1BGRM3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 12:12:29 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:2052 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754295Ab1BGRM1 (ORCPT
+	id S1754368Ab1BGRPd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 12:15:33 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36367 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753333Ab1BGRPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 12:12:27 -0500
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h)
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LG9BPT-02-JXW-02
-X-M-MSG: 
-From: Hans Rosenfeld <hans.rosenfeld@amd.com>
-To: <mingo@elte.hu>
-CC: <hpa@zytor.com>, <tglx@linutronix.de>, <Andreas.Herrmann3@amd.com>,
-        <linux-kernel@vger.kernel.org>, <x86@kernel.org>,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>
-Subject: [PATCH 4/4] x86, amd: Support L3 Cache Partitioning on AMD family 0x15 CPUs
-Date: Mon, 7 Feb 2011 18:10:39 +0100
-Message-ID: <1297098639-431383-1-git-send-email-hans.rosenfeld@amd.com>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <20110127124756.GA16094@elte.hu>
-References: <20110127124756.GA16094@elte.hu>
+	Mon, 7 Feb 2011 12:15:32 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=kT5L+QLobnAIL7B/TzP7l+QgIEA/dSLyv4SZ92DB4htIhygk994F88GDuvGd9ViT/l
+         oT4kaKoyDBl2zinCj5jJPAqo9OuQp4SI5j5DGIyBGsDsh3YNDPQyJ9HPMgFXIx69/IYA
+         /yZ3Aousql+ZvIjiNPk2FvGl0/luTeuiOyqDI=
+Date: Tue, 8 Feb 2011 01:15:28 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: linux-kernel@vger.kernel.org, greg@kroah.com
+Subject: [PATCH]Translated linux-2.6/Documentation/magic-number.txt into
+ Chinese
+Message-ID: <20110207171526.GB5223@gmail.com>
+References: <20110207075809.GA16214@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110207075809.GA16214@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-L3 Cache Partitioning allows selecting which of the 4 L3 subcaches can
-be used for evictions by the L2 cache of each compute unit. By writing a
-4-bit hexadecimal mask into the the sysfs file /sys/devices/system/cpu/\
-cpuX/cache/index3/subcaches, the user can set the enabled subcaches for
-a CPU. The settings are directly read from and written to the hardware,
-so there is no way to have contradicting settings for two CPUs belonging
-to the same compute unit. Writing will always overwrite any previous
-setting for a compute unit.
+On Mon, Feb 07, 2011 at 03:58:15PM +0800, Harry Wei wrote:
+> Hi us,
+>    I have translated linux-2.6/Documentation/magic-number.txt into Chinese.
+> When i paste the patch into my mutt, something wrong happened, which i can not close this mail. The mutt shows something wrong about /tmp/...
+>    So i have to add an accessory including my patcher. If you don't want to download it, you can also click the URL: http://harrywei.org/blog/?p=46
+> for it.
+> 
+> Thanks.
+> Best Regards.
+> Harry Wei.
+> Home Page: www.harrywei.org
+> 
 
-Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
----
- arch/x86/include/asm/amd_nb.h         |    3 +
- arch/x86/kernel/amd_nb.c              |   63 ++++++++++++++++++++++++++++
- arch/x86/kernel/cpu/intel_cacheinfo.c |   73 +++++++++++++++++++++++++++-----
- 3 files changed, 127 insertions(+), 12 deletions(-)
-
-diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
-index 3e70700..423f11c 100644
---- a/arch/x86/include/asm/amd_nb.h
-+++ b/arch/x86/include/asm/amd_nb.h
-@@ -18,6 +18,8 @@ extern int amd_cache_northbridges(void);
- extern void amd_flush_garts(void);
- extern int amd_numa_init(unsigned long start_pfn, unsigned long end_pfn);
- extern int amd_scan_nodes(void);
-+extern int amd_get_subcaches(int);
-+extern int amd_set_subcaches(int, int);
- 
- #ifdef CONFIG_NUMA_EMU
- extern void amd_fake_nodes(const struct bootnode *nodes, int nr_nodes);
-@@ -38,6 +40,7 @@ extern struct amd_northbridge_info amd_northbridges;
- 
- #define AMD_NB_GART			0x1
- #define AMD_NB_L3_INDEX_DISABLE		0x2
-+#define AMD_NB_L3_PARTITIONING		0x4
- 
- #ifdef CONFIG_AMD_NB
- 
-diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
-index 4ae9a96..bf79a4a 100644
---- a/arch/x86/kernel/amd_nb.c
-+++ b/arch/x86/kernel/amd_nb.c
-@@ -95,6 +95,10 @@ int amd_cache_northbridges(void)
- 	if (boot_cpu_data.x86 == 0x15)
- 		amd_northbridges.flags |= AMD_NB_L3_INDEX_DISABLE;
- 
-+	/* L3 cache partitioning is supported on family 0x15 */
-+	if (boot_cpu_data.x86 == 0x15)
-+		amd_northbridges.flags |= AMD_NB_L3_PARTITIONING;
-+
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(amd_cache_northbridges);
-@@ -112,6 +116,65 @@ int __init early_is_amd_nb(u32 device)
- 	return 0;
- }
- 
-+int amd_get_subcaches(int cpu)
-+{
-+	struct pci_dev *link = node_to_amd_nb(amd_get_nb_id(cpu))->link;
-+	unsigned int mask;
-+	int cuid = 0;
-+
-+	if (!amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
-+		return 0;
-+
-+	pci_read_config_dword(link, 0x1d4, &mask);
-+
-+#ifdef CONFIG_SMP
-+	cuid = cpu_data(cpu).compute_unit_id;
-+#endif
-+	return (mask >> (4 * cuid)) & 0xf;
-+}
-+
-+int amd_set_subcaches(int cpu, int mask)
-+{
-+	static unsigned int reset, ban;
-+	struct amd_northbridge *nb = node_to_amd_nb(amd_get_nb_id(cpu));
-+	unsigned int reg;
-+	int cuid = 0;
-+
-+	if (!amd_nb_has_feature(AMD_NB_L3_PARTITIONING) || mask > 0xf)
-+		return -EINVAL;
-+
-+	/* if necessary, collect reset state of L3 partitioning and BAN mode */
-+	if (reset == 0) {
-+		pci_read_config_dword(nb->link, 0x1d4, &reset);
-+		pci_read_config_dword(nb->misc, 0x1b8, &ban);
-+		ban &= 0x180000;
-+	}
-+
-+	/* deactivate BAN mode if any subcaches are to be disabled */
-+	if (mask != 0xf) {
-+		pci_read_config_dword(nb->misc, 0x1b8, &reg);
-+		pci_write_config_dword(nb->misc, 0x1b8, reg & ~0x180000);
-+	}
-+
-+#ifdef CONFIG_SMP
-+	cuid = cpu_data(cpu).compute_unit_id;
-+#endif
-+	mask <<= 4 * cuid;
-+	mask |= (0xf ^ (1 << cuid)) << 26;
-+
-+	pci_write_config_dword(nb->link, 0x1d4, mask);
-+
-+	/* reset BAN mode if L3 partitioning returned to reset state */
-+	pci_read_config_dword(nb->link, 0x1d4, &reg);
-+	if (reg == reset) {
-+		pci_read_config_dword(nb->misc, 0x1b8, &reg);
-+		reg &= ~0x180000;
-+		pci_write_config_dword(nb->misc, 0x1b8, reg | ban);
-+	}
-+
-+	return 0;
-+}
-+
- int amd_cache_gart(void)
- {
-        int i;
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index ec2c19a..4017a61 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -304,8 +304,9 @@ amd_cpuid4(int leaf, union _cpuid4_leaf_eax *eax,
- 
- struct _cache_attr {
- 	struct attribute attr;
--	ssize_t (*show)(struct _cpuid4_info *, char *);
--	ssize_t (*store)(struct _cpuid4_info *, const char *, size_t count);
-+	ssize_t (*show)(struct _cpuid4_info *, char *, unsigned int);
-+	ssize_t (*store)(struct _cpuid4_info *, const char *, size_t count,
-+			 unsigned int);
- };
- 
- #ifdef CONFIG_AMD_NB
-@@ -400,7 +401,8 @@ static ssize_t show_cache_disable(struct _cpuid4_info *this_leaf, char *buf,
- 
- #define SHOW_CACHE_DISABLE(slot)					\
- static ssize_t								\
--show_cache_disable_##slot(struct _cpuid4_info *this_leaf, char *buf)	\
-+show_cache_disable_##slot(struct _cpuid4_info *this_leaf, char *buf,	\
-+			  unsigned int cpu)				\
- {									\
- 	return show_cache_disable(this_leaf, buf, slot);		\
- }
-@@ -512,7 +514,8 @@ static ssize_t store_cache_disable(struct _cpuid4_info *this_leaf,
- #define STORE_CACHE_DISABLE(slot)					\
- static ssize_t								\
- store_cache_disable_##slot(struct _cpuid4_info *this_leaf,		\
--			   const char *buf, size_t count)		\
-+			   const char *buf, size_t count,		\
-+			   unsigned int cpu)				\
- {									\
- 	return store_cache_disable(this_leaf, buf, count, slot);	\
- }
-@@ -524,6 +527,41 @@ static struct _cache_attr cache_disable_0 = __ATTR(cache_disable_0, 0644,
- static struct _cache_attr cache_disable_1 = __ATTR(cache_disable_1, 0644,
- 		show_cache_disable_1, store_cache_disable_1);
- 
-+static ssize_t
-+show_subcaches(struct _cpuid4_info *this_leaf, char *buf, unsigned int cpu)
-+{
-+	if (!this_leaf->l3 ||
-+	    !amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
-+		return -EINVAL;
-+
-+	return sprintf(buf, "%x\n", amd_get_subcaches(cpu));
-+}
-+
-+static ssize_t
-+store_subcaches(struct _cpuid4_info *this_leaf, const char *buf, size_t count,
-+		unsigned int cpu)
-+{
-+	unsigned long val;
-+
-+	if (!capable(CAP_SYS_ADMIN))
-+		return -EPERM;
-+
-+	if (!this_leaf->l3 ||
-+	    !amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
-+		return -EINVAL;
-+
-+	if (strict_strtoul(buf, 16, &val) < 0)
-+		return -EINVAL;
-+
-+	if (amd_set_subcaches(cpu, val))
-+		return -EINVAL;
-+
-+	return count;
-+}
-+
-+static struct _cache_attr subcaches =
-+	__ATTR(subcaches, 0644, show_subcaches, store_subcaches);
-+
- #else	/* CONFIG_AMD_NB */
- #define amd_init_l3_cache(x, y)
- #endif /* CONFIG_AMD_NB */
-@@ -870,8 +908,8 @@ static DEFINE_PER_CPU(struct _index_kobject *, ici_index_kobject);
- #define INDEX_KOBJECT_PTR(x, y)		(&((per_cpu(ici_index_kobject, x))[y]))
- 
- #define show_one_plus(file_name, object, val)				\
--static ssize_t show_##file_name						\
--			(struct _cpuid4_info *this_leaf, char *buf)	\
-+static ssize_t show_##file_name(struct _cpuid4_info *this_leaf, char *buf, \
-+				unsigned int cpu)			\
- {									\
- 	return sprintf(buf, "%lu\n", (unsigned long)this_leaf->object + val); \
- }
-@@ -882,7 +920,8 @@ show_one_plus(physical_line_partition, ebx.split.physical_line_partition, 1);
- show_one_plus(ways_of_associativity, ebx.split.ways_of_associativity, 1);
- show_one_plus(number_of_sets, ecx.split.number_of_sets, 1);
- 
--static ssize_t show_size(struct _cpuid4_info *this_leaf, char *buf)
-+static ssize_t show_size(struct _cpuid4_info *this_leaf, char *buf,
-+			 unsigned int cpu)
- {
- 	return sprintf(buf, "%luK\n", this_leaf->size / 1024);
- }
-@@ -906,17 +945,20 @@ static ssize_t show_shared_cpu_map_func(struct _cpuid4_info *this_leaf,
- 	return n;
- }
- 
--static inline ssize_t show_shared_cpu_map(struct _cpuid4_info *leaf, char *buf)
-+static inline ssize_t show_shared_cpu_map(struct _cpuid4_info *leaf, char *buf,
-+					  unsigned int cpu)
- {
- 	return show_shared_cpu_map_func(leaf, 0, buf);
- }
- 
--static inline ssize_t show_shared_cpu_list(struct _cpuid4_info *leaf, char *buf)
-+static inline ssize_t show_shared_cpu_list(struct _cpuid4_info *leaf, char *buf,
-+					   unsigned int cpu)
- {
- 	return show_shared_cpu_map_func(leaf, 1, buf);
- }
- 
--static ssize_t show_type(struct _cpuid4_info *this_leaf, char *buf)
-+static ssize_t show_type(struct _cpuid4_info *this_leaf, char *buf,
-+			 unsigned int cpu)
- {
- 	switch (this_leaf->eax.split.type) {
- 	case CACHE_TYPE_DATA:
-@@ -974,6 +1016,9 @@ static struct attribute ** __cpuinit amd_l3_attrs(void)
- 	if (amd_nb_has_feature(AMD_NB_L3_INDEX_DISABLE))
- 		n += 2;
- 
-+	if (amd_nb_has_feature(AMD_NB_L3_PARTITIONING))
-+		n += 1;
-+
- 	attrs = kzalloc(n * sizeof (struct attribute *), GFP_KERNEL);
- 	if (attrs == NULL)
- 		return attrs = default_attrs;
-@@ -986,6 +1031,10 @@ static struct attribute ** __cpuinit amd_l3_attrs(void)
- 		attrs[n++] = &cache_disable_1.attr;
- 	}
- 
-+	if (amd_nb_has_feature(AMD_NB_L3_PARTITIONING)) {
-+		attrs[n++] = &subcaches.attr;
-+	}
-+
- 	return attrs;
- }
- #endif
-@@ -998,7 +1047,7 @@ static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
- 
- 	ret = fattr->show ?
- 		fattr->show(CPUID4_INFO_IDX(this_leaf->cpu, this_leaf->index),
--			buf) :
-+			buf, this_leaf->cpu) :
- 		0;
- 	return ret;
- }
-@@ -1012,7 +1061,7 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
- 
- 	ret = fattr->store ?
- 		fattr->store(CPUID4_INFO_IDX(this_leaf->cpu, this_leaf->index),
--			buf, count) :
-+			buf, count, this_leaf->cpu) :
- 		0;
- 	return ret;
- }
--- 
-1.5.6.5
-
+> Signed-off-by: Harry Wei <harryxiyou@gmail.com>
+> ---
+>  Documentation/zh_CN/magic-number.txt |  167 ++++++++++++++++++++++++++++++++++
+>  1 files changed, 167 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/zh_CN/magic-number.txt
+> 
+> diff --git a/Documentation/zh_CN/magic-number.txt b/Documentation/zh_CN/magic-number.txt
+> new file mode 100644
+> index 0000000..703dba9
+> --- /dev/null
+> +++ b/Documentation/zh_CN/magic-number.txt
+> @@ -0,0 +1,167 @@
+> +Chinese translated version of Documentation/magic-number.txt
+> +
+> +If you have any comment or update to the content, please post to LKML directly.
+> +However, if you have problem communicating in English you can also ask the
+> +Chinese maintainer for help.  Contact the Chinese maintainer, if this
+> +translation is outdated or there is problem with translation.
+> +
+> +Chinese maintainer: Jia Wei Wei <harryxiyou@gmail.com>
+> +---------------------------------------------------------------------
+> +Documentation/magic-number.txt的中文翻译
+> +
+> +如果想评论或更新本文的内容，请直接发信到LKML。如果你使用英文交流有困难的话，也可
+> +以向中文版维护者求助。如果本翻译更新不及时或者翻译存在问题，请联系中文版维护者。
+> +
+> +中文版维护者： 贾威威 Jia Wei Wei <harryxiyou@gmail.com>
+> +中文版翻译者： 贾威威 Jia Wei Wei <harryxiyou@gmail.com>
+> +中文版校译者： 贾威威 Jia Wei Wei <harryxiyou@gmail.com>
+> +
+> +以下为正文
+> +---------------------------------------------------------------------
+> +这个文件是有关当前使用的魔术值注册表。当你给一个结构添加了一个魔术值，你也应该把这个魔术值添加到这个文件，因为我们最好把用于各种结构的魔术值统一起来。
+> +
+> +使用魔术值来保护内核数据结构是一个非常好的主意。这就允许你在运行期检查(a)一个结构是否已经被攻击，或者(b)你已经给一个例行程序通过了一个错误的结构。后一种情况特别地有用---特别是当你通过一个空指针指向结构体的时候。tty源码，例如，经常通过特定驱动使用这种方法并且反复地排列特定方面的结构。
+We should use "例如tty的代码中就经常使用这种方法来传递一些驱动相关或者线路特性相关的数据结构。" instead of "tty源码，例如，经常通过特定驱动使用这种方法并且反复地排列特定方面的结构。" so that it is better for understanding.
+> +
+> +使用魔术值的方法是在结构的开始处声明的，如下：
+> +
+> +struct tty_ldisc {
+> +	int	magic;
+> +	...
+> +};
+> +
+> +当你以后给内核添加增强功能的时候，请遵守这条规则！这样就会节省数不清的调试时间，特别是一些古怪的情况，例如，数组超出范围并且重新写了超出部分。遵守这个规则，‪这些情况可以被快速地，安全地避免。
+> +
+> +		Theodore Ts'o
+> +		  31 Mar 94
+> +
+> +给当前的Linux 2.1.55添加魔术表。
+> +
+> +		Michael Chastain
+> +		<mailto:mec@shout.net>
+> +		22 Sep 1997
+> +
+> +现在应该最新的Linux 2.1.112.因为在特性冻结期间，不能在2.2.x前改变任何东西。这些条目被数域所排序。
+> +
+> +		Krzysztof G.Baranowski
+> +	        <mailto: kgb@knm.org.pl>
+> +		29 Jul 1998
+> +
+> +更新魔术表到Linux 2.5.45。刚好越过特性冻结，但是有可能还会有一些新的魔术值在2.6.x之前融入到内核中。
+> +
+> +		Petr Baudis
+> +		<pasky@ucw.cz>
+> +		03 Nov 2002
+> +
+> +更新魔术表到Linux 2.5.74。
+> +
+> +		Fabian Frederick
+> +                <ffrederick@users.sourceforge.net>
+> +		09 Jul 2003
+> +
+> +魔术名                 地址         结构               所在文件
+> +===========================================================================
+> +PG_MAGIC              'P'         pg_{read,write}_hdr include/linux/pg.h
+> +CMAGIC                0x0111      user              include/linux/a.out.h
+> +MKISS_DRIVER_MAGIC    0x04bf      mkiss_channel     drivers/net/mkiss.h
+> +RISCOM8_MAGIC         0x0907      riscom_port       drivers/char/riscom8.h
+> +SPECIALIX_MAGIC       0x0907      specialix_port    drivers/char/specialix_io8.h
+> +HDLC_MAGIC            0x239e      n_hdlc            drivers/char/n_hdlc.c
+> +APM_BIOS_MAGIC        0x4101      apm_user          arch/i386/kernel/apm.c
+> +CYCLADES_MAGIC        0x4359      cyclades_port     include/linux/cyclades.h
+> +DB_MAGIC              0x4442      fc_info           drivers/net/iph5526_novram.c
+> +DL_MAGIC              0x444d      fc_info           drivers/net/iph5526_novram.c
+> +FASYNC_MAGIC          0x4601      fasync_struct     include/linux/fs.h
+> +FF_MAGIC              0x4646      fc_info           drivers/net/iph5526_novram.c
+> +ISICOM_MAGIC          0x4d54      isi_port          include/linux/isicom.h
+> +PTY_MAGIC             0x5001                        drivers/char/pty.c
+> +PPP_MAGIC             0x5002      ppp               include/linux/if_pppvar.h
+> +SERIAL_MAGIC          0x5301      async_struct      include/linux/serial.h
+> +SSTATE_MAGIC          0x5302      serial_state      include/linux/serial.h
+> +SLIP_MAGIC            0x5302      slip              drivers/net/slip.h
+> +STRIP_MAGIC           0x5303      strip             drivers/net/strip.c
+> +X25_ASY_MAGIC         0x5303      x25_asy           drivers/net/x25_asy.h
+> +SIXPACK_MAGIC         0x5304      sixpack           drivers/net/hamradio/6pack.h
+> +AX25_MAGIC            0x5316      ax_disp           drivers/net/mkiss.h
+> +ESP_MAGIC             0x53ee      esp_struct        drivers/char/esp.h
+> +TTY_MAGIC             0x5401      tty_struct        include/linux/tty.h
+> +MGSL_MAGIC            0x5401      mgsl_info         drivers/char/synclink.c
+> +TTY_DRIVER_MAGIC      0x5402      tty_driver        include/linux/tty_driver.h
+> +MGSLPC_MAGIC          0x5402      mgslpc_info       drivers/char/pcmcia/synclink_cs.c
+> +TTY_LDISC_MAGIC       0x5403      tty_ldisc         include/linux/tty_ldisc.h
+> +USB_SERIAL_MAGIC      0x6702      usb_serial        drivers/usb/serial/usb-serial.h
+> +FULL_DUPLEX_MAGIC     0x6969                        drivers/net/tulip/de2104x.c
+> +USB_BLUETOOTH_MAGIC   0x6d02      usb_bluetooth     drivers/usb/class/bluetty.c
+> +RFCOMM_TTY_MAGIC      0x6d02                        net/bluetooth/rfcomm/tty.c
+> +USB_SERIAL_PORT_MAGIC 0x7301      usb_serial_port   drivers/usb/serial/usb-serial.h
+> +CG_MAGIC              0x00090255  ufs_cylinder_group include/linux/ufs_fs.h
+> +A2232_MAGIC           0x000a2232  gs_port           drivers/char/ser_a2232.h
+> +RPORT_MAGIC           0x00525001  r_port            drivers/char/rocket_int.h
+> +LSEMAGIC              0x05091998  lse               drivers/fc4/fc.c
+> +GDTIOCTL_MAGIC        0x06030f07  gdth_iowr_str     drivers/scsi/gdth_ioctl.h
+> +RIEBL_MAGIC           0x09051990                    drivers/net/atarilance.c
+> +RIO_MAGIC             0x12345678  gs_port           drivers/char/rio/rio_linux.c
+> +SX_MAGIC              0x12345678  gs_port           drivers/char/sx.h
+> +NBD_REQUEST_MAGIC     0x12560953  nbd_request       include/linux/nbd.h
+> +RED_MAGIC2            0x170fc2a5  (any)             mm/slab.c
+> +BAYCOM_MAGIC          0x19730510  baycom_state      drivers/net/baycom_epp.c
+> +ISDN_X25IFACE_MAGIC   0x1e75a2b9  isdn_x25iface_proto_data
+> +                                                    drivers/isdn/isdn_x25iface.h
+> +ECP_MAGIC             0x21504345  cdkecpsig         include/linux/cdk.h
+> +LSOMAGIC              0x27091997  lso               drivers/fc4/fc.c
+> +LSMAGIC               0x2a3b4d2a  ls                drivers/fc4/fc.c
+> +WANPIPE_MAGIC         0x414C4453  sdla_{dump,exec}  include/linux/wanpipe.h
+> +CS_CARD_MAGIC         0x43525553  cs_card           sound/oss/cs46xx.c
+> +LABELCL_MAGIC         0x4857434c  labelcl_info_s    include/asm/ia64/sn/labelcl.h
+> +ISDN_ASYNC_MAGIC      0x49344C01  modem_info        include/linux/isdn.h
+> +CTC_ASYNC_MAGIC       0x49344C01  ctc_tty_info      drivers/s390/net/ctctty.c
+> +ISDN_NET_MAGIC        0x49344C02  isdn_net_local_s  drivers/isdn/i4l/isdn_net_lib.h
+> +SAVEKMSG_MAGIC2       0x4B4D5347  savekmsg          arch/*/amiga/config.c
+> +STLI_BOARDMAGIC       0x4bc6c825  stlibrd           include/linux/istallion.h
+> +CS_STATE_MAGIC        0x4c4f4749  cs_state          sound/oss/cs46xx.c
+> +SLAB_C_MAGIC          0x4f17a36d  kmem_cache        mm/slab.c
+> +COW_MAGIC             0x4f4f4f4d  cow_header_v1     arch/um/drivers/ubd_user.c
+> +I810_CARD_MAGIC       0x5072696E  i810_card         sound/oss/i810_audio.c
+> +TRIDENT_CARD_MAGIC    0x5072696E  trident_card      sound/oss/trident.c
+> +ROUTER_MAGIC          0x524d4157  wan_device        include/linux/wanrouter.h
+> +SCC_MAGIC             0x52696368  gs_port           drivers/char/scc.h
+> +SAVEKMSG_MAGIC1       0x53415645  savekmsg          arch/*/amiga/config.c
+> +GDA_MAGIC             0x58464552  gda               arch/mips/include/asm/sn/gda.h
+> +RED_MAGIC1            0x5a2cf071  (any)             mm/slab.c
+> +STL_PORTMAGIC         0x5a7182c9  stlport           include/linux/stallion.h
+> +EEPROM_MAGIC_VALUE    0x5ab478d2  lanai_dev         drivers/atm/lanai.c
+> +HDLCDRV_MAGIC         0x5ac6e778  hdlcdrv_state     include/linux/hdlcdrv.h
+> +EPCA_MAGIC            0x5c6df104  channel           include/linux/epca.h
+> +PCXX_MAGIC            0x5c6df104  channel           drivers/char/pcxx.h
+> +KV_MAGIC              0x5f4b565f  kernel_vars_s     arch/mips/include/asm/sn/klkernvars.h
+> +I810_STATE_MAGIC      0x63657373  i810_state        sound/oss/i810_audio.c
+> +TRIDENT_STATE_MAGIC   0x63657373  trient_state      sound/oss/trident.c
+> +M3_CARD_MAGIC         0x646e6f50  m3_card           sound/oss/maestro3.c
+> +FW_HEADER_MAGIC       0x65726F66  fw_header         drivers/atm/fore200e.h
+> +SLOT_MAGIC            0x67267321  slot              drivers/hotplug/cpqphp.h
+> +SLOT_MAGIC            0x67267322  slot              drivers/hotplug/acpiphp.h
+> +LO_MAGIC              0x68797548  nbd_device        include/linux/nbd.h
+> +OPROFILE_MAGIC        0x6f70726f  super_block       drivers/oprofile/oprofilefs.h
+> +M3_STATE_MAGIC        0x734d724d  m3_state          sound/oss/maestro3.c
+> +STL_PANELMAGIC        0x7ef621a1  stlpanel          include/linux/stallion.h
+> +VMALLOC_MAGIC         0x87654320  snd_alloc_track   sound/core/memory.c
+> +KMALLOC_MAGIC         0x87654321  snd_alloc_track   sound/core/memory.c
+> +PWC_MAGIC             0x89DC10AB  pwc_device        drivers/usb/media/pwc.h
+> +NBD_REPLY_MAGIC       0x96744668  nbd_reply         include/linux/nbd.h
+> +STL_BOARDMAGIC        0xa2267f52  stlbrd            include/linux/stallion.h
+> +ENI155_MAGIC          0xa54b872d  midway_eprom	    drivers/atm/eni.h
+> +SCI_MAGIC             0xbabeface  gs_port           drivers/char/sh-sci.h
+> +CODA_MAGIC            0xC0DAC0DA  coda_file_info    include/linux/coda_fs_i.h
+> +DPMEM_MAGIC           0xc0ffee11  gdt_pci_sram      drivers/scsi/gdth.h
+> +STLI_PORTMAGIC        0xe671c7a1  stliport          include/linux/istallion.h
+> +YAM_MAGIC             0xF10A7654  yam_port          drivers/net/hamradio/yam.c
+> +CCB_MAGIC             0xf2691ad2  ccb               drivers/scsi/ncr53c8xx.c
+> +QUEUE_MAGIC_FREE      0xf7e1c9a3  queue_entry       drivers/scsi/arm/queue.c
+> +QUEUE_MAGIC_USED      0xf7e1cc33  queue_entry       drivers/scsi/arm/queue.c
+> +HTB_CMAGIC            0xFEFAFEF1  htb_class         net/sched/sch_htb.c
+> +NMI_MAGIC             0x48414d4d455201 nmi_s        arch/mips/include/asm/sn/nmi.h
+> +
+> +请注意，在声音记忆管理中仍然有每一些被定义的驱动魔术值。查看include/sound/sndmagic.h来获取他们完整的列表信息。很多OSS声音驱动拥有自己从声卡PCI ID构建的魔术值-他们也没有被列在这里。
+> +
+> +IrDA子系统也使用了大量的自己的魔术值，查看include/net/irda/irda.h来获取他们完整的信息。
+> +
+> +HFS是另外一个比较大的使用魔术值的文件系统-你可以在fs/hfs/hfs.h中找到他们。
+> -- 
+> 1.7.0.4
+> 
 
