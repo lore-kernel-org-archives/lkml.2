@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059Ab1BGEtA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 23:49:00 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:59515 "EHLO
+	id S1750931Ab1BGFAg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 00:00:36 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:47221 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751670Ab1BGEs7 (ORCPT
+	with ESMTP id S1750709Ab1BGFAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 23:48:59 -0500
+	Mon, 7 Feb 2011 00:00:35 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Medls446sh7RkOo3SgLkp0piXzBFNtZxl01ITQrpOZk26e+c6goTCTAU9x2oOAbzie
-         Hw+RK/24yDS3zZ5S0TDgQTSytOy2zfCDOaQcTf57iOVXCCqREEmzahnxOrxUKeXXoRFC
-         g5mGjfAPB/mGJ+hwmAkNOZ5P20OJPCp28f0vo=
-MIME-Version: 1.0
-In-Reply-To: <849307$bf0dak@azsmga001.ch.intel.com>
-References: <AANLkTi=h+H+N=f4m4pE+RZ4n5h7oxQuwzmK-qmmWAGtL@mail.gmail.com>
-	<s5hfws1whq8.wl%tiwai@suse.de>
-	<AANLkTi=iHL+eVPRPzFXRMBZkXU7nXwkeZQiQUcyqSS-H@mail.gmail.com>
-	<AANLkTikE_Oa=HGhW3zpc_rdeBvOWckpZ6dfFWq=JnL9R@mail.gmail.com>
-	<849307$bf0dak@azsmga001.ch.intel.com>
-Date: Mon, 7 Feb 2011 12:48:58 +0800
-Message-ID: <AANLkTi=Z1fCA1N47YaCh1tn=PCAAboWtNCUyUH-N3yUo@mail.gmail.com>
-Subject: Re: Commit 500f7147cf5bafd139056d521536b10c2bc2e154 breaks _resume_
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Takashi Iwai <tiwai@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=QWv5zg8k+NW3Nn3DK/zCcgy2KeXPM7kRM0qSW20jACYbPwdMKTMcJoaS4Z0eakrLEA
+         v2/oJ5VKeO3AOxdQsnIMEPYBu4ebreZOUl2fMPs0NXRBiN45BkRpOcml+rUTlj2/KC+g
+         6HHZ14TnWqUYBpVmNaZXjUetmKFK+mDIhXPNg=
+Subject: Re: [PATCH] memblock: Fix error path in memblock_add_region()
+From: Namhyung Kim <namhyung@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+In-Reply-To: <4D4EDE69.9060200@kernel.org>
+References: <1296999075-8022-1-git-send-email-namhyung@gmail.com>
+	 <4D4EDE69.9060200@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 Feb 2011 14:00:27 +0900
+Message-ID: <1297054827.1444.2.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 6, 2011 at 11:27 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> One last step: move contents of intel_crtc_reset() back to
-> intel_crtc_init() one by one.
->
-> The active flag is my suspicion. I was thinking that we brought up the
-> outputs in a similar manner upon resume as upon initial boot. On
-> reflection, this is the not case.
->
-> However, the first action we take inside modesetting is to disable the
-> outputs about to be reconfigured. So setting active should be the right
-> course of action so that cleanup any residual state from resume.
->
-> So I am intrigued as to which line is the cause, and just where the
-> machine becomes unresponsive...
+2011-02-06 (일), 09:46 -0800, Yinghai Lu:
+> we can skip the restoring.
+> 
+> Thanks
+> 
+> Yinghai
+> 
+> diff --git a/mm/memblock.c b/mm/memblock.c
+> index bdba245..3231657 100644
+> --- a/mm/memblock.c
+> +++ b/mm/memblock.c
+> @@ -374,13 +374,9 @@ static long __init_memblock memblock_add_region(struct memblock_type *type, phys
+>  	}
+>  	type->cnt++;
+>  
+> -	/* The array is full ? Try to resize it. If that fails, we undo
+> -	 * our allocation and return an error
+> -	 */
+> -	if (type->cnt == type->max && memblock_double_array(type)) {
+> -		type->cnt--;
+> +	/* The array is full ? Try to resize it  */
+> +	if (type->cnt == type->max && memblock_double_array(type))
+>  		return -1;
+> -	}
+>  
+>  	return 0;
+>  }
 
-It's this line causing the problem.
-
-intel_crtc->active = true; /* force the pipe off on setup_init_config */
-
-
-When it's called before entering intel_crtc_reset(&intel_crtc->base),
-it works, but if called within the function, it doesn't work. Strange.
-Not sure whether is passing the correct value to to_intel_crtc(crtc)?
+Looks OK to me, too.
+Thanks.
 
 
-Jeff
+-- 
+Regards,
+Namhyung Kim
+
+
