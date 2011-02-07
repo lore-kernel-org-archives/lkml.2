@@ -1,140 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752932Ab1BGH7l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 02:59:41 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:45329 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694Ab1BGH7i (ORCPT
+	id S1752816Ab1BGIGI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 03:06:08 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38624 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752601Ab1BGIGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 02:59:38 -0500
-Date: Mon, 7 Feb 2011 09:59:33 +0200
-From: Amit Kucheria <amit.kucheria@canonical.com>
-To: Julia Lawall <julia@diku.dk>
-Cc: Evgeniy Polyakov <johnpol@2ka.mipt.ru>, kernel-janitors@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/w1/masters/omap_hdq.c: Add missing clk_put
-Message-ID: <20110207075933.GA2723@matterhorn.lan>
-Mail-Followup-To: Julia Lawall <julia@diku.dk>,
-	Evgeniy Polyakov <johnpol@2ka.mipt.ru>,
-	kernel-janitors@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>,
-	Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-References: <1296754667-18049-1-git-send-email-julia@diku.dk>
+	Mon, 7 Feb 2011 03:06:06 -0500
+Date: Mon, 7 Feb 2011 09:05:55 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, Dima Zavin <dmitriyz@google.com>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>
+Subject: Re: [RFC, PATCH 3/3] clk: add warnings for incorrect
+ enable/prepare semantics
+Message-ID: <20110207080555.GC27982@pengutronix.de>
+References: <201102011711.31258.jeremy.kerr@canonical.com>
+ <1297058877.800990.238556019385.3.gpush@pororo>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1296754667-18049-1-git-send-email-julia@diku.dk>
-X-URL: http://www.verdurent.com/
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1297058877.800990.238556019385.3.gpush@pororo>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 Feb 03, Julia Lawall wrote:
-> This code makes two calls to clk_get, then test both return values
-> and fails if either failed.  The problem is that in the first inner if,
-> where the first call to clk_get has failed, it don't know if the second
-> call has failed as well.  So it don't know whether clk_get should be called
-> on the result of the second call.  Of course, it would be possible to test
-> that value again.  A simpler solution is just to test the result of calling
-> clk_get directly after each call.
-> 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @r@
-> position p1,p2;
-> expression e;
-> statement S;
-> @@
-> 
-> e = clk_get@p1(...)
-> ...
-> if@p2 (IS_ERR(e)) S
-> 
-> @@
-> expression e;
-> statement S;
-> identifier l;
-> position r.p1, p2 != r.p2;
-> @@
-> 
-> *e = clk_get@p1(...)
-> ... when != clk_put(e)
-> *if@p2 (...)
-> {
->   ... when != clk_put(e)
-> * return ...;
-> }// </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+Hello Jeremy,
 
-Makes the code easier to read.
-
-Acked-by: Amit Kucheria <amit.kucheria@canonical.com>
-
+On Mon, Feb 07, 2011 at 02:07:57PM +0800, Jeremy Kerr wrote:
+> This change adds warnings to check for:
+> 
+>  1) enabling a clock that hasn't been prepared; and
+> 
+>  2) unpreparing a clock that is still enabled
+> 
+> While the correctness can't be guaranteed, these warnings should cover
+> most situations.
+> 
+> Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
+> 
 > ---
->  drivers/w1/masters/omap_hdq.c |   28 ++++++++++++++--------------
->  1 file changed, 14 insertions(+), 14 deletions(-)
+>  drivers/clk/clk.c |    4 ++++
+>  1 file changed, 4 insertions(+)
 > 
-> diff --git a/drivers/w1/masters/omap_hdq.c b/drivers/w1/masters/omap_hdq.c
-> index 3a7e9ff..38e96ab 100644
-> --- a/drivers/w1/masters/omap_hdq.c
-> +++ b/drivers/w1/masters/omap_hdq.c
-> @@ -593,19 +593,17 @@ static int __devinit omap_hdq_probe(struct platform_device *pdev)
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index 51dbd33..2369959 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -35,6 +35,8 @@ void clk_unprepare(struct clk *clk)
+>  	if (!clk->ops->unprepare)
+>  		return;
 >  
->  	/* get interface & functional clock objects */
->  	hdq_data->hdq_ick = clk_get(&pdev->dev, "ick");
-> -	hdq_data->hdq_fck = clk_get(&pdev->dev, "fck");
-> +	if (IS_ERR(hdq_data->hdq_ick)) {
-> +		dev_dbg(&pdev->dev, "Can't get HDQ ick clock object\n");
-> +		ret = PTR_ERR(hdq_data->hdq_ick);
-> +		goto err_ick;
-> +	}
->  
-> -	if (IS_ERR(hdq_data->hdq_ick) || IS_ERR(hdq_data->hdq_fck)) {
-> -		dev_dbg(&pdev->dev, "Can't get HDQ clock objects\n");
-> -		if (IS_ERR(hdq_data->hdq_ick)) {
-> -			ret = PTR_ERR(hdq_data->hdq_ick);
-> -			goto err_clk;
-> -		}
-> -		if (IS_ERR(hdq_data->hdq_fck)) {
-> -			ret = PTR_ERR(hdq_data->hdq_fck);
-> -			clk_put(hdq_data->hdq_ick);
-> -			goto err_clk;
-> -		}
-> +	hdq_data->hdq_fck = clk_get(&pdev->dev, "fck");
-> +	if (IS_ERR(hdq_data->hdq_fck)) {
-> +		dev_dbg(&pdev->dev, "Can't get HDQ fck clock object\n");
-> +		ret = PTR_ERR(hdq_data->hdq_fck);
-> +		goto err_fck;
->  	}
->  
->  	hdq_data->hdq_usecount = 0;
-> @@ -665,10 +663,12 @@ err_fnclk:
->  	clk_disable(hdq_data->hdq_ick);
->  
->  err_intfclk:
-> -	clk_put(hdq_data->hdq_ick);
->  	clk_put(hdq_data->hdq_fck);
->  
-> -err_clk:
-> +err_fck:
-> +	clk_put(hdq_data->hdq_ick);
+> +	WARN_ON(clk->enable_count);
 > +
-> +err_ick:
->  	iounmap(hdq_data->hdq_base);
+>  	mutex_lock(&clk->prepare_lock);
+>  	if (--clk->prepare_count == 0)
+>  		clk->ops->unprepare(clk);
+> @@ -50,6 +52,8 @@ int clk_enable(struct clk *clk)
+>  	if (!clk->ops->enable)
+>  		return 0;
 >  
->  err_ioremap:
-> 
+> +	WARN_ON(clk->ops->prepare && clk->prepare_count);
+> +
+This implies the warning is only issued on clocks that have a prepare
+callback.  If we want to enforce the new API the warning here shouldn't
+depend on clk->ops->prepare.  (clk_prepare and clk_unprepare need to
+be changed then to adapt the prepare_count even in the absence of
+clk->ops->prepare.)
+
+Best regards
+Uwe
 
 -- 
-----------------------------------------------------------------------
-Amit Kucheria, Kernel Engineer || amit.kucheria@canonical.com
-----------------------------------------------------------------------
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
