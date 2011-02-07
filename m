@@ -1,85 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493Ab1BGO7E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 09:59:04 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:56228 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172Ab1BGO7C (ORCPT
+	id S1753543Ab1BGPAP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 10:00:15 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:28664 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752978Ab1BGPAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 09:59:02 -0500
-Date: Mon, 7 Feb 2011 14:58:58 +0000
-From: Jamie Iles <jamie@jamieiles.com>
-To: John Linn <John.Linn@xilinx.com>
-Cc: Jamie Iles <jamie@jamieiles.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        catalin.marinas@arm.com, glikely@secretlab.ca,
-        Kiran Sutariya <kiran.sutariya@einfochips.com>
-Subject: Re: [PATCH 3/4] ARM: Xilinx: Adding timer support to the platform
-Message-ID: <20110207145858.GC24893@pulham.picochip.com>
-References: <1296922637-24662-1-git-send-email-john.linn@xilinx.com>
- <1296922637-24662-2-git-send-email-john.linn@xilinx.com>
- <1296922637-24662-3-git-send-email-john.linn@xilinx.com>
- <66f1ca90-76f5-4571-b10e-8b79f62e5275@VA3EHSMHS020.ehs.local>
- <20110206010343.GB5563@pulham.picochip.com>
- <a58cfb3f-31d6-4120-a961-694aed8b7486@VA3EHSMHS006.ehs.local>
+	Mon, 7 Feb 2011 10:00:13 -0500
+Message-ID: <4D5008F0.5060200@siemens.com>
+Date: Mon, 07 Feb 2011 16:00:00 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <a58cfb3f-31d6-4120-a961-694aed8b7486@VA3EHSMHS006.ehs.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Zachary Amsden <zamsden@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] KVM: x86: Convert tsc_write_lock to raw_spinlock
+References: <4D4BCB97.6000900@siemens.com> <4D4C698A.4010201@redhat.com> <4D4FD8EE.6040009@siemens.com> <4D4FFD97.6010805@redhat.com>
+In-Reply-To: <4D4FFD97.6010805@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 07, 2011 at 07:16:01AM -0700, John Linn wrote:
-> > -----Original Message-----
-> > From: Jamie Iles [mailto:jamie@jamieiles.com]
-> > Sent: Saturday, February 05, 2011 6:04 PM
-> > To: John Linn
-> > Cc: linux-arm-kernel@lists.infradead.org;
-> linux-kernel@vger.kernel.org; linux@arm.linux.org.uk;
-> > catalin.marinas@arm.com; glikely@secretlab.ca; Kiran Sutariya
-> > Subject: Re: [PATCH 3/4] ARM: Xilinx: Adding timer support to the
-> platform
-> > 
-> > Hi John,
-> > 
-> > A couple more nitpicks.
-> > 
-> > Jamie
-> > 
-> > On Sat, Feb 05, 2011 at 09:17:16AM -0700, John Linn wrote:
-> > > +static irqreturn_t xttcpss_clock_event_interrupt(int irq, void
-> *dev_id)
-> > > +{
-> > > +	struct clock_event_device *evt = &xttcpss_clockevent;
-> > > +	struct xttcpss_timer *timer = dev_id;
-> > > +	u32 ctrl_reg;
-> > > +
-> > > +	/* Acknowledge the interrupt and call event handler */
-> > > +	xttcpss_write(timer->base_addr + XTTCPSS_ISR_OFFSET,
-> > > +		xttcpss_read(timer->base_addr + XTTCPSS_ISR_OFFSET));
-> > > +
-> > > +	if (timer->mode == CLOCK_EVT_MODE_ONESHOT) {
-> > > +
-> > > +		/* Disable the counter as it would keep running. */
-> > > +		ctrl_reg = xttcpss_read(timer->base_addr +
-> > > +					XTTCPSS_CNT_CNTRL_OFFSET);
-> > > +		ctrl_reg |= ~(XTTCPSS_CNT_CNTRL_ENABLE_MASK);
-> > 
-> > The clock events framework should reprogram the next event so you
-> don't
-> > actually need to disable the timer here.  Once the event handler has
-> > been called the timer will be reenabled with a new period, and as
-> we're
-> > running with interrupts disabled here we don't need to stop the timer.
-> > 
+On 2011-02-07 15:11, Zachary Amsden wrote:
+> On 02/07/2011 06:35 AM, Jan Kiszka wrote:
+>> On 2011-02-04 22:03, Zachary Amsden wrote:
+>>    
+>>> On 02/04/2011 04:49 AM, Jan Kiszka wrote:
+>>>      
+>>>> Code under this lock requires non-preemptibility. Ensure this also over
+>>>> -rt by converting it to raw spinlock.
+>>>>
+>>>>        
+>>> Oh dear, I had forgotten about that.  I believe kvm_lock might have the
+>>> same assumption in a few places regarding clock.
+>>>      
+>> I only found a problematic section in kvmclock_cpufreq_notifier. Didn't
+>> see this during my tests as I have CPUFREQ disabled in my .config.
+>>
+>> We may need something like this as converting kvm_lock would likely be
+>> overkill:
+>>
+>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+>> index 36f54fb..971ee0d 100644
+>> --- a/arch/x86/kvm/x86.c
+>> +++ b/arch/x86/kvm/x86.c
+>> @@ -4530,7 +4530,7 @@ static int kvmclock_cpufreq_notifier(struct notifier_block *nb, unsigned long va
+>>   	struct cpufreq_freqs *freq = data;
+>>   	struct kvm *kvm;
+>>   	struct kvm_vcpu *vcpu;
+>> -	int i, send_ipi = 0;
+>> +	int i, me, send_ipi = 0;
+>>
+>>   	/*
+>>   	 * We allow guests to temporarily run on slowing clocks,
+>> @@ -4583,9 +4583,11 @@ static int kvmclock_cpufreq_notifier(struct notifier_block *nb, unsigned long va
+>>   		kvm_for_each_vcpu(i, vcpu, kvm) {
+>>   			if (vcpu->cpu != freq->cpu)
+>>   				continue;
+>> +			me = get_cpu();
+>>   			kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+>> -			if (vcpu->cpu != smp_processor_id())
+>> +			if (vcpu->cpu != me)
+>>   				send_ipi = 1;
+>> +			put_cpu();
+>>   		}
+>>   	}
+>>   	spin_unlock(&kvm_lock);
+>>
+>> Jan
+>>
+>>    
 > 
-> What about if there's not another event to be started?
+> That looks like a good solution, and I do believe that is the only place 
+> the lock is used in that fashion - please add a comment though in the 
+> giant comment block above that preemption protection is needed for RT.  
+> Also, gcc should catch this, but moving the me variable into the 
+> kvm_for_each_vcpu loop should allow for better register allocation.
+> 
+> The only other thing I can think of is that RT lock preemption may break 
+> some of the CPU initialization semantics enforced by kvm_lock if you 
+> happen to get a hotplug event just as the module is loading.  That 
+> should be rare, but if it is indeed a bug, it would be nice to fix, it 
+> would be a panic for sure not to initialize VMX.
 
-Then the clockevents code can set the mode to CLOCK_EVT_MODE_SHUTDOWN 
-and this should disable the timer.  For NOHZ, AFAICT the 
-clockevents/tick code will make sure that the next tick always falls 
-within your max_delta_ns.
+Hmm, is a cpu hotplug notifier allowed to run sleepy code? Can't
+imagine. So we already have a strong reason to convert kvm_lock to a
+raw_spinlock which obsoletes the above workaround.
 
-Jamie
+Jan
+
+-- 
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
