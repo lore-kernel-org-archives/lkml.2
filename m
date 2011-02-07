@@ -1,159 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753507Ab1BGJcn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 04:32:43 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:39883 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752312Ab1BGJcm (ORCPT
+	id S1753511Ab1BGJdx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 04:33:53 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:53959 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752312Ab1BGJdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 04:32:42 -0500
-X-AuditID: b753bd60-a32b8ba000004916-1b-4d4fbc37fe13
-X-AuditID: b753bd60-a32b8ba000004916-1b-4d4fbc37fe13
-Message-ID: <4D4FBC2B.5000108@hitachi.com>
-Date: Mon, 07 Feb 2011 18:32:27 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Mon, 7 Feb 2011 04:33:52 -0500
+Message-ID: <4D4FBC79.5070602@linux.vnet.ibm.com>
+Date: Mon, 07 Feb 2011 15:03:45 +0530
+From: Ciju Rajan K <ciju@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Franck Bui-Huu <vagabon.xyz@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>, 2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH] perf-probe: rewrite find_lazy_match_lines() by using
- getline(3)
-References: <m3d3o185u1.fsf@gmail.com> <4D2ED322.4040508@hitachi.com>
-In-Reply-To: <4D2ED322.4040508@hitachi.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>
+Subject: Re: [PATCH 1/2 v2.0]sched: Removing unused fields from /proc/schedstat
+References: <4D3F3595.4020607@linux.vnet.ibm.com> <4D3F3676.1030601@linux.vnet.ibm.com> <4D3FBAD5.1070307@jp.fujitsu.com> <4D463647.7000106@linux.vnet.ibm.com> <4D491BE2.7010802@linux.vnet.ibm.com> <4D4A731E.5030401@jp.fujitsu.com>
+In-Reply-To: <4D4A731E.5030401@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+Hi Peter,
 
-Could you merge this patch into your perf/core tree?
-This makes code very simple and easy to read :-)
+Could you please consider this patch set for inclusion?
 
-Thank you,
+-Ciju
 
-(2011/01/13 19:25), Masami Hiramatsu wrote:
-> (2011/01/13 19:18), Franck Bui-Huu wrote:
->> From: Franck Bui-Huu <fbuihuu@gmail.com>
+On 02/03/2011 02:49 PM, Satoru Takeuchi wrote:
+> Hi Ciju,
+> 
+> (2011/02/02 17:54), Ciju Rajan K wrote:
+>> Hi Satoru,
 >>
->> Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
-> 
-> Looks very nice! :)
-> 
-> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> 
-> Thanks!
-> 
->> ---
->>  tools/perf/util/probe-finder.c |   70 +++++++++++++++------------------------
->>  1 files changed, 27 insertions(+), 43 deletions(-)
 >>
->> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
->> index ddf4d45..4221738 100644
->> --- a/tools/perf/util/probe-finder.c
->> +++ b/tools/perf/util/probe-finder.c
->> @@ -1092,51 +1092,38 @@ static int find_probe_point_by_line(struct probe_finder *pf)
->>  static int find_lazy_match_lines(struct list_head *head,
->>  				 const char *fname, const char *pat)
->>  {
->> -	char *fbuf, *p1, *p2;
->> -	int fd, line, nlines = -1;
->> -	struct stat st;
->> -
->> -	fd = open(fname, O_RDONLY);
->> -	if (fd < 0) {
->> -		pr_warning("Failed to open %s: %s\n", fname, strerror(-fd));
->> +	FILE *fp;
->> +	char *line = NULL;
->> +	size_t line_len;
->> +	ssize_t len;
->> +	int count = 0, linenum = 1;
->> +
->> +	fp = fopen(fname, "r");
->> +	if (!fp) {
->> +		pr_warning("Failed to open %s: %s\n", fname, strerror(errno));
->>  		return -errno;
->>  	}
->>  
->> -	if (fstat(fd, &st) < 0) {
->> -		pr_warning("Failed to get the size of %s: %s\n",
->> -			   fname, strerror(errno));
->> -		nlines = -errno;
->> -		goto out_close;
->> -	}
->> -
->> -	nlines = -ENOMEM;
->> -	fbuf = malloc(st.st_size + 2);
->> -	if (fbuf == NULL)
->> -		goto out_close;
->> -	if (read(fd, fbuf, st.st_size) < 0) {
->> -		pr_warning("Failed to read %s: %s\n", fname, strerror(errno));
->> -		nlines = -errno;
->> -		goto out_free_fbuf;
->> -	}
->> -	fbuf[st.st_size] = '\n';	/* Dummy line */
->> -	fbuf[st.st_size + 1] = '\0';
->> -	p1 = fbuf;
->> -	line = 1;
->> -	nlines = 0;
->> -	while ((p2 = strchr(p1, '\n')) != NULL) {
->> -		*p2 = '\0';
->> -		if (strlazymatch(p1, pat)) {
->> -			line_list__add_line(head, line);
->> -			nlines++;
->> +	while ((len = getline(&line, &line_len, fp)) > 0) {
->> +
->> +		if (line[len - 1] == '\n')
->> +			line[len - 1] = '\0';
->> +
->> +		if (strlazymatch(line, pat)) {
->> +			line_list__add_line(head, linenum);
->> +			count++;
->>  		}
->> -		line++;
->> -		p1 = p2 + 1;
->> -	}
->> -out_free_fbuf:
->> -	free(fbuf);
->> -out_close:
->> -	close(fd);
->> -	return nlines;
->> +		linenum++;
->> +	}
->> +
->> +	if (ferror(fp))
->> +		count = -errno;
->> +	free(line);
->> +	fclose(fp);
->> +
->> +	if (count == 0)
->> +		pr_debug("No matched lines found in %s.\n", fname);
->> +	return count;
->>  }
->>  
->>  /* Find probe points from lazy pattern  */
->> @@ -1154,10 +1141,7 @@ static int find_probe_point_lazy(Dwarf_Die *sp_die, struct probe_finder *pf)
->>  		/* Matching lazy line pattern */
->>  		ret = find_lazy_match_lines(&pf->lcache, pf->fname,
->>  					    pf->pev->point.lazy_line);
->> -		if (ret == 0) {
->> -			pr_debug("No matched lines found in %s.\n", pf->fname);
->> -			return 0;
->> -		} else if (ret < 0)
->> +		if (ret <= 0)
->>  			return ret;
->>  	}
->>  
+>>>> I think we can remove rq->sched_switch and rq->sched_switch
+>>>> without no problem because they are meaningless. The former
+>>>> is for old O(1) scheduler and means the number of runqueue
+>>>> switching among active/expired queue. The latter is for
+>>>> SD_WAKE_BALANCE flag and its logic is already gone.
+>>>>
+>>>> However sbe_* are for SD_BALANCE_EXEC flag and sbf_* are for
+>>>> SD_BALANCE_FORK flag. Since both logic for them are still alive,
+>>>> the absence of these accounting is regression in my perspective.
+>>>> In addition, these fields would be useful for analyzing load
+>>>> balance behavior.
+>>>>
+>>
+>> The sbe_*& sbf_* counters were added by the commit
+>> 68767a0ae428801649d510d9a65bb71feed44dd1 But it was subsequently
+>> removed by the commit 476d139c218e44e045e4bc6d4cc02b010b343939
+> 
+> OK, I understood. It's OK if user tools referring /proc/schedstat
+> are released sync with this change.
+> 
+> I confirmed the following:
+> 
+> - This patch removes some unused schedstat fields and related
+> data.
+> - The kernel applying this patch works fine on my i386 box.
+> 
+> Tested-by: Satoru Takeuchi <takeuchi_satoru@jp.fujitsu.com>
+> 
+> Thanks,
+> Satoru
+> 
+>>
+>> [ciju@ciju kernel]$ git describe 68767a0ae428801649d510d9a65bb71feed44dd1 --contains
+>> v2.6.13-rc1~68^2~148
+>> [ciju@ciju kernel]$ git describe 476d139c218e44e045e4bc6d4cc02b010b343939 --contains
+>> v2.6.13-rc1~68^2~140
+>>
+>> So.. it was introduced and removed in 2.6.13 time frame
+>>
+>>
+>> When the counters were removed the sbe_* sbf_* variable
+>> declarations were not removed. Hence it caused a little confusion.
+>> So I believe these stats were not available and hence can't be
+>> considered as regression.
+>>
+>> 476d139c218e44e045e4bc6d4cc02b010b343939 consolidated the fork and
+>> exec balance. Thereafter it became non-trivial to provide separate
+>> stats for fork and exec events. So if people think a consolidated
+>> balance-on-event is needed, it can be looked into separately. But
+>> that shouldn't prevent this documentation cleanup patch from
+>> getting in.
+>>
+>> -Ciju
+>>
+>>
+>> -- 
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at http://www.tux.org/lkml/
+>>
+>>
 > 
 > 
-
-
--- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
