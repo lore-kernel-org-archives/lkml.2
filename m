@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557Ab1BGAoP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 19:44:15 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:56735 "EHLO
+	id S1754602Ab1BGAoV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 19:44:21 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:56749 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754450Ab1BGAny (ORCPT
+	with ESMTP id S1754487Ab1BGAn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 19:43:54 -0500
+	Sun, 6 Feb 2011 19:43:57 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 1/6] perf top: Remove superfluous name_len field
-Date: Sun,  6 Feb 2011 22:42:12 -0200
-Message-Id: <1297039337-6690-2-git-send-email-acme@infradead.org>
+Subject: [PATCH 5/6] perf annotate: Separate objdump parsing from actual screen rendering
+Date: Sun,  6 Feb 2011 22:42:16 -0200
+Message-Id: <1297039337-6690-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1297039337-6690-1-git-send-email-acme@infradead.org>
 References: <1297039337-6690-1-git-send-email-acme@infradead.org>
@@ -29,7 +29,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
->From the sym_entry struct, struct symbol already has this field.
+Because in 'perf top' we'll need to parse just once and then, as samples
+come, render multiple times with evolving counter values.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -41,59 +42,123 @@ Cc: Tom Zanussi <tzanussi@gmail.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-top.c |    3 ---
- tools/perf/util/top.c    |    5 +++--
- tools/perf/util/top.h    |    1 -
- 3 files changed, 3 insertions(+), 6 deletions(-)
+ tools/perf/util/annotate.c |   62 ++++++++++++++++++++++++++++++-------------
+ tools/perf/util/annotate.h |    4 +++
+ 2 files changed, 47 insertions(+), 19 deletions(-)
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 104de9a..154e088 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -787,9 +787,6 @@ static int symbol_filter(struct map *map, struct symbol *sym)
- 		}
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 072bc8d..10cdbad 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -421,21 +421,16 @@ static void symbol__annotate_hits(struct symbol *sym, int evidx)
+ 	printf("%*s: %" PRIu64 "\n", BITS_PER_LONG / 2, "h->sum", h->sum);
+ }
+ 
+-int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
+-			 bool print_lines, bool full_paths, int min_pcnt,
+-			 int max_lines)
++void symbol__annotate_printf(struct symbol *sym, struct map *map,
++			     struct list_head *head, int evidx, bool full_paths,
++			     int min_pcnt, int max_lines)
+ {
+ 	struct dso *dso = map->dso;
+ 	const char *filename = dso->long_name, *d_filename;
+-	struct rb_root source_line = RB_ROOT;
+-	struct objdump_line *pos, *n;
+-	LIST_HEAD(head);
++	struct objdump_line *pos;
+ 	int printed = 2;
+ 	u64 len;
+ 
+-	if (symbol__annotate(sym, map, &head, 0) < 0)
+-		return -1;
+-
+ 	if (full_paths)
+ 		d_filename = filename;
+ 	else
+@@ -443,28 +438,57 @@ int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
+ 
+ 	len = sym->end - sym->start;
+ 
+-	if (print_lines) {
+-		symbol__get_source_line(sym, map, evidx, &source_line,
+-					len, filename);
+-		print_summary(&source_line, filename);
+-	}
+-
+ 	printf(" Percent |	Source code & Disassembly of %s\n", d_filename);
+ 	printf("------------------------------------------------\n");
+ 
+ 	if (verbose)
+ 		symbol__annotate_hits(sym, evidx);
+ 
+-	list_for_each_entry_safe(pos, n, &head, node) {
+-		objdump_line__print(pos, &head, sym, evidx, len, min_pcnt);
+-		list_del(&pos->node);
+-		objdump_line__free(pos);
++	list_for_each_entry(pos, head, node) {
++		objdump_line__print(pos, head, sym, evidx, len, min_pcnt);
+ 		if (max_lines && ++printed >= max_lines)
+ 			break;
++
++	}
++}
++
++void objdump_line_list__purge(struct list_head *head)
++{
++	struct objdump_line *pos, *n;
++
++	list_for_each_entry_safe(pos, n, head, node) {
++		list_del(&pos->node);
++		objdump_line__free(pos);
++	}
++}
++
++int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
++			 bool print_lines, bool full_paths, int min_pcnt,
++			 int max_lines)
++{
++	struct dso *dso = map->dso;
++	const char *filename = dso->long_name;
++	struct rb_root source_line = RB_ROOT;
++	LIST_HEAD(head);
++	u64 len;
++
++	if (symbol__annotate(sym, map, &head, 0) < 0)
++		return -1;
++
++	len = sym->end - sym->start;
++
++	if (print_lines) {
++		symbol__get_source_line(sym, map, evidx, &source_line,
++					len, filename);
++		print_summary(&source_line, filename);
  	}
  
--	if (!syme->skip)
--		syme->name_len = strlen(sym->name);
--
++	symbol__annotate_printf(sym, map, &head, evidx, full_paths,
++				min_pcnt, max_lines);
+ 	if (print_lines)
+ 		symbol__free_source_line(sym, len);
+ 
++	objdump_line_list__purge(&head);
++
  	return 0;
  }
+diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
+index 6b70732..53dd92d 100644
+--- a/tools/perf/util/annotate.h
++++ b/tools/perf/util/annotate.h
+@@ -67,6 +67,10 @@ int symbol__alloc_hist(struct symbol *sym, int nevents);
  
-diff --git a/tools/perf/util/top.c b/tools/perf/util/top.c
-index 1d2e265..70a9c13 100644
---- a/tools/perf/util/top.c
-+++ b/tools/perf/util/top.c
-@@ -200,6 +200,7 @@ void perf_top__find_widths(struct perf_top *top, struct rb_root *root,
+ int symbol__annotate(struct symbol *sym, struct map *map,
+ 		     struct list_head *head, size_t privsize);
++void symbol__annotate_printf(struct symbol *sym, struct map *map,
++			     struct list_head *head, int evidx, bool full_paths,
++			     int min_pcnt, int max_lines);
++void objdump_line_list__purge(struct list_head *head);
  
- 	for (nd = rb_first(root); nd; nd = rb_next(nd)) {
- 		struct sym_entry *syme = rb_entry(nd, struct sym_entry, rb_node);
-+		struct symbol *sym = sym_entry__symbol(syme);
- 
- 		if (++printed > top->print_entries ||
- 		    (int)syme->snap_count < top->count_filter)
-@@ -211,7 +212,7 @@ void perf_top__find_widths(struct perf_top *top, struct rb_root *root,
- 		if (syme->map->dso->short_name_len > *dso_short_width)
- 			*dso_short_width = syme->map->dso->short_name_len;
- 
--		if (syme->name_len > *sym_width)
--			*sym_width = syme->name_len;
-+		if (sym->namelen > *sym_width)
-+			*sym_width = sym->namelen;
- 	}
- }
-diff --git a/tools/perf/util/top.h b/tools/perf/util/top.h
-index 611370f..5009508 100644
---- a/tools/perf/util/top.h
-+++ b/tools/perf/util/top.h
-@@ -31,7 +31,6 @@ struct sym_entry {
- 	unsigned long		snap_count;
- 	double			weight;
- 	int			skip;
--	u16			name_len;
- 	u8			origin;
- 	struct map		*map;
- 	struct sym_entry_source	*src;
+ int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
+ 			 bool print_lines, bool full_paths, int min_pcnt,
 -- 
 1.6.2.5
 
