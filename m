@@ -1,96 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754433Ab1BGBwJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 20:52:09 -0500
-Received: from smtp-out-016.synserver.de ([212.40.185.16]:1077 "HELO
-	smtp-out-016.synserver.de" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with SMTP id S1754208Ab1BGBuh (ORCPT
+	id S1754397Ab1BGCZU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 21:25:20 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58131 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754293Ab1BGCZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 20:50:37 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 23313
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 03/09] ARM: s3c2440: gta02: Add button support
-Date: Mon,  7 Feb 2011 02:51:55 +0100
-Message-Id: <1297043521-21903-3-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1297043521-21903-1-git-send-email-lars@metafoo.de>
-References: <1297043521-21903-1-git-send-email-lars@metafoo.de>
+	Sun, 6 Feb 2011 21:25:19 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=vKjhs6d1ovHkCkeZXECFjy6xd1UIGwhLKfuYBIuPD/ZWQAr0iIdpI+9GYAVUUqKmYk
+         XRvBYSUsXEj6dQajIOFqXQfnfu8HIJWADWBWAlTPR26etnrQGPV9+mDQcfznU6SngIpD
+         wgVoBM8W2Pe/rl9LrOlpK8xRMV7QvtAw7pQVg=
+MIME-Version: 1.0
+In-Reply-To: <1297033463-14577-1-git-send-email-lars@metafoo.de>
+References: <1297033463-14577-1-git-send-email-lars@metafoo.de>
+Date: Mon, 7 Feb 2011 11:25:17 +0900
+Message-ID: <AANLkTinOHBA9YHyt8s1PgiJoDNpiOw8EZywt5kwJwTx-@mail.gmail.com>
+Subject: Re: [alsa-devel] [PATCH 1/7] ASoC: neo1973_wm8753: Remove scenario
+ management code.
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org,
+        Linux Samsung SoC <linux-samsung-soc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the two buttons found on the gta02 device, which are
-connectd to gpio pins, using the gpio-keys driver.
+On Mon, Feb 7, 2011 at 8:04 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
+> It has been proven to be inflexible to do scenario management in kernel space.
+>
+> Since actual neo1973 board support has not been merged in mainline and this
+> patch has been in the neo1973 tree for some time now it should be safe to remove
+> this functionality without breaking existing userspace.
+>
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- arch/arm/mach-s3c2440/mach-gta02.c |   34 ++++++++++++++++++++++++++++++++++
- 1 files changed, 34 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/mach-s3c2440/mach-gta02.c b/arch/arm/mach-s3c2440/mach-gta02.c
-index e83062b..6629998 100644
---- a/arch/arm/mach-s3c2440/mach-gta02.c
-+++ b/arch/arm/mach-s3c2440/mach-gta02.c
-@@ -58,6 +58,9 @@
- #include <linux/mfd/pcf50633/pmic.h>
- #include <linux/mfd/pcf50633/backlight.h>
- 
-+#include <linux/input.h>
-+#include <linux/gpio_keys.h>
-+
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
- #include <asm/mach/irq.h>
-@@ -489,6 +492,36 @@ static struct s3c2410_hcd_info gta02_usb_info __initdata = {
- 	},
- };
- 
-+/* Buttons */
-+static struct gpio_keys_button gta02_buttons[] = {
-+	{
-+		.gpio = GTA02_GPIO_AUX_KEY,
-+		.code = KEY_PHONE,
-+		.desc = "Aux",
-+		.type = EV_KEY,
-+		.debounce_interval = 100,
-+	},
-+	{
-+		.gpio = GTA02_GPIO_HOLD_KEY,
-+		.code = KEY_PAUSE,
-+		.desc = "Hold",
-+		.type = EV_KEY,
-+		.debounce_interval = 100,
-+	},
-+};
-+
-+static struct gpio_keys_platform_data gta02_buttons_pdata = {
-+	.buttons = gta02_buttons,
-+	.nbuttons = ARRAY_SIZE(gta02_buttons),
-+};
-+
-+static struct platform_device gta02_buttons_device = {
-+	.name = "gpio-keys",
-+	.id = -1,
-+	.dev = {
-+		.platform_data = &gta02_buttons_pdata,
-+	},
-+};
- 
- static void __init gta02_map_io(void)
- {
-@@ -511,6 +544,7 @@ static struct platform_device *gta02_devices[] __initdata = {
- 	&s3c_device_iis,
- 	&samsung_asoc_dma,
- 	&s3c_device_i2c0,
-+	&gta02_buttons_device,
- };
- 
- /* These guys DO need to be children of PMU. */
--- 
-1.7.2.3
-
+All
+Acked-by: Jassi Brar <jassi.brar@samsung.com>
