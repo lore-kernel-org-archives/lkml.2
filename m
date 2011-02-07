@@ -1,79 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab1BGSoR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 13:44:17 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56116 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753225Ab1BGSoQ convert rfc822-to-8bit (ORCPT
+	id S1754611Ab1BGSpQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 13:45:16 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:41844 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753225Ab1BGSpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 13:44:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=qMyvru4ufi1obJq6F6RVwoVpR6p066G6fJidQswhSj/PWOvygKjDZ1pjn/zxnQ0qiJ
-         sL2j+NJB0yPOwQE6wiPII2hW9FRYRd2twa+rjEDt38gW+PcaAEGvaXQAILIju3i7fOAu
-         Ltz8mylMvjFwg0Z6g009ntnCmfMaOkcv7FLoU=
-MIME-Version: 1.0
-In-Reply-To: <4D503A06.3010403@redhat.com>
-References: <AANLkTi=gcf=A_6Kp6h7s2+OkxR4YUb6gqzc43asn-wfK@mail.gmail.com>
-	<20110207174552.GC3457@thunk.org>
-	<4D503A06.3010403@redhat.com>
-Date: Mon, 7 Feb 2011 18:44:14 +0000
-Message-ID: <AANLkTi=MPYjU4W4Zz=ajDeRAVoHCg+K68bNopgxf+DoE@mail.gmail.com>
-Subject: Re: ext4: Fix data corruption with multi-block writepages support
-From: Matt <jackdachef@gmail.com>
-To: Milan Broz <mbroz@redhat.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 7 Feb 2011 13:45:15 -0500
+From: Borislav Petkov <bp@amd64.org>
+To: <akpm@linux-foundation.org>
+Cc: <linux-kernel@vger.kernel.org>, Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH] compiler, gcc: Unify macro definitions
+Date: Mon,  7 Feb 2011 19:46:53 +0100
+Message-Id: <1297104413-24711-1-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.4.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 7, 2011 at 6:29 PM, Milan Broz <mbroz@redhat.com> wrote:
-> On 02/07/2011 06:45 PM, Ted Ts'o wrote:
->> On Fri, Feb 04, 2011 at 10:40:47PM +0000, Matt wrote:
->>>
->>> So that means that the file-corruption which existed until 2.6.37-rc6
->>> and got triggered (for me) more easily via "dm crypt: scale to
->>> multiple CPUs"
->>> is fixed now ?
->>
->> Well, a patch exists for it that will be merged into 2.6.38.
->>
->>> That should give ext4 a nice speedup for >=2.6.38 :)
->>
->> I'm not going to make it be the default for 2.6.38, since it's fairly
->> late in the -rc features.  People who want it can explicitly enable it
->> using the mount option mblk_io_submit, though.  (And let me know your
->> success stories!  :-) I will be enabling it as the default in
->> 2.6.39-rc1.
->
-> So it was ext4 only bug in ext4_end_bio(),
-> dm-crypt per-cpu code was just trigger here, right?
->
-> Milan
->
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-Hi Milan,
+Unify identical gcc3.x and gcc4.x macros.
 
-Well, that was at least the experience that I made
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ include/linux/compiler-gcc.h  |    8 ++++++++
+ include/linux/compiler-gcc3.h |    8 --------
+ include/linux/compiler-gcc4.h |    8 --------
+ 3 files changed, 8 insertions(+), 16 deletions(-)
 
-ext4: after Ted had disabled support for multiple page-io submission
+diff --git a/include/linux/compiler-gcc.h b/include/linux/compiler-gcc.h
+index 16508bc..cb4c1eb 100644
+--- a/include/linux/compiler-gcc.h
++++ b/include/linux/compiler-gcc.h
+@@ -92,3 +92,11 @@
+ #if !defined(__noclone)
+ #define __noclone	/* not needed */
+ #endif
++
++/*
++ * A trick to suppress uninitialized variable warning without generating any
++ * code
++ */
++#define uninitialized_var(x) x = x
++
++#define __always_inline		inline __attribute__((always_inline))
+diff --git a/include/linux/compiler-gcc3.h b/include/linux/compiler-gcc3.h
+index b721129..37d4124 100644
+--- a/include/linux/compiler-gcc3.h
++++ b/include/linux/compiler-gcc3.h
+@@ -21,11 +21,3 @@
+ #   error "GCOV profiling support for gcc versions below 3.4 not included"
+ # endif /* __GNUC_MINOR__ */
+ #endif /* CONFIG_GCOV_KERNEL */
+-
+-/*
+- * A trick to suppress uninitialized variable warning without generating any
+- * code
+- */
+-#define uninitialized_var(x) x = x
+-
+-#define __always_inline		inline __attribute__((always_inline))
+diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
+index fcfa5b9..64b7c00 100644
+--- a/include/linux/compiler-gcc4.h
++++ b/include/linux/compiler-gcc4.h
+@@ -12,13 +12,6 @@
+ #define __used			__attribute__((__used__))
+ #define __must_check 		__attribute__((warn_unused_result))
+ #define __compiler_offsetof(a,b) __builtin_offsetof(a,b)
+-#define __always_inline		inline __attribute__((always_inline))
+-
+-/*
+- * A trick to suppress uninitialized variable warning without generating any
+- * code
+- */
+-#define uninitialized_var(x) x = x
+ 
+ #if __GNUC_MINOR__ >= 3
+ /* Mark functions as cold. gcc will assume any path leading to a call
+@@ -53,7 +46,6 @@
+ #define __noclone	__attribute__((__noclone__))
+ 
+ #endif
+-
+ #endif
+ 
+ #if __GNUC_MINOR__ > 0
+-- 
+1.7.4.rc2
 
-I observed no data-corruption anymore (it had only appeared on the
-system-partition, /home - where ext4 also is used or on my backup
-partitions there was also no problem as far as I can tell)
-
-XFS: no corruption observed
-
-reiserfs: I can't say for sure since I'm only using it on my /boot partition :P
-
-for other filesystems I can't say anything - I didn't use additional
-ones at that time
-
-Regards
-
-Matt
