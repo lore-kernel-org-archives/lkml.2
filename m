@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753959Ab1BGLkQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 06:40:16 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:61483 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753767Ab1BGLkO (ORCPT
+	id S1753988Ab1BGLlu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 06:41:50 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:37728 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753838Ab1BGLls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 06:40:14 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=g0KYLVkuNOpX/olmkIrLLB0m/chlRJt4RdV9Z6r+yOMA0QHMEiL60TAoNUCBki7gha
-         Ya2ehlmSEYAdkJlfxGAJZ+a60d0QNGogcg8dxoIvp42ODDCD8IUJr3G+pW4cqHa3lijp
-         qZh3WBVgmiPeJ+VChIpKqumQvk4rHIllas4oE=
-Date: Mon, 7 Feb 2011 13:40:05 +0200
-From: "Ahmed S. Darwish" <darwish.07@gmail.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH] Documentation: log_buf_len accepts [KMG]
-Message-ID: <20110207114005.GB10388@laptop>
-References: <20110206174504.GA23024@laptop> <20110206204002.2f3eab4e.randy.dunlap@oracle.com>
+	Mon, 7 Feb 2011 06:41:48 -0500
+Date: Mon, 7 Feb 2011 20:41:44 +0900
+From: Simon Horman <horms@verge.net.au>
+To: "Ahmed S. Darwish" <darwish.07@gmail.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Vivek Goyal <vgoyal@redhat.com>,
+        Haren Myneni <hbabu@us.ibm.com>,
+        Eric Biederman <ebiederm@xmission.com>, kexec@lists.infradead.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org
+Subject: Re: [PATCH v2 -next] Documentation: Improve crashkernel=
+ description
+Message-ID: <20110207114144.GC10983@verge.net.au>
+References: <20110206154108.GA16542@laptop>
+ <20110206215733.GB26233@verge.net.au>
+ <20110206201448.4a259575.rdunlap@xenotime.net>
+ <20110207113054.GA10388@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110206204002.2f3eab4e.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20110207113054.GA10388@laptop>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 06, 2011 at 08:40:02PM -0800, Randy Dunlap wrote:
+On Mon, Feb 07, 2011 at 01:30:54PM +0200, Ahmed S. Darwish wrote:
 > 
-> Update the "log_buf_len" description to use [KMG] syntax for the
-> buffer size.
+> Had to explore two C code files to make sense of the 'crashkernel='
+> kernel parameter values.  Improve the situation.
 > 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Signed-off-by: Ahmed S. Darwish <darwish.07@gmail.com>
+
+Thanks, that looks looks a good improvement over the existing documentation.
+
+Acked-by: Simon Horman <horms@verge.net.au>
+
 > ---
 > 
-
-This implies an ACK for the original patch?
-
--- 
-Darwish
-http://darwish.07.googlepages.com
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 89835a4..5ad9980 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -545,9 +545,12 @@ and is between 256 and 4096 characters. It is defined in the file
+>  			Format:
+>  			<first_slot>,<last_slot>,<port>,<enum_bit>[,<debug>]
+>  
+> -	crashkernel=nn[KMG]@ss[KMG]
+> -			[KNL] Reserve a chunk of physical memory to
+> -			hold a kernel to switch to with kexec on panic.
+> +	crashkernel=size[KMG][@offset[KMG]]
+> +			[KNL] Using kexec, Linux can switch to a 'crash kernel'
+> +			upon panic. This parameter reserves the physical
+> +			memory region [offset, offset + size] for that kernel
+> +			image. If '@offset' is omitted, then a suitable offset
+> +			is selected automatically.
+>  
+>  	crashkernel=range1:size1[,range2:size2,...][@offset]
+>  			[KNL] Same as above, but depends on the memory
+> 
+> -- 
+> Darwish
+> http://darwish.07.googlepages.com
+> 
