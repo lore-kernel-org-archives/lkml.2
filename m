@@ -1,201 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867Ab1BGK6A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 05:58:00 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:47194 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753529Ab1BGK5j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753578Ab1BGK5j (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 7 Feb 2011 05:57:39 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:56156 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753529Ab1BGK5f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 05:57:35 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:subject:date:user-agent:cc:mime-version:content-type
          :content-transfer-encoding:message-id;
-        b=N9BJ3JrFcy8Wym+zCp8QlhEZy9Uginpu/TIMWB9R68FR/xsfzUGL0aToFbIpVGFLCI
-         ENUme66GjH0N3Frdj/Q2Z+JN66hIEzELjXMBj5+y9iy68NkXayjYADKvIKj8trqJJRCo
-         FHr/He2QTeK3BwDomE8BiunanzPp+lT3u8OAk=
+        b=CXIBjV77d7t9iZxo561sP96LiKwUFExmn+ZEIz8j40PKQ70lyjgKiGqr3VUMfFBfSu
+         hDldGEufghQR72eUFkg9oCpwFv6nXWfr+quTvgZpz03GVJbNXQg/712aFy6j9uZg2aPU
+         WjjvGj3D8Y0txFAdQu2zt+YJZAy2vhuj3r8PM=
 From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
 To: linux-ide@vger.kernel.org
-Subject: [PATCH] ide-cs: housekeeping
-Date: Mon, 7 Feb 2011 11:51:07 +0100
+Subject: [PATCH 2/2] cmd640: always use enhanced support
+Date: Mon, 7 Feb 2011 11:48:11 +0100
 User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.7-desktop; KDE/4.4.4; x86_64; ; )
 Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201102071151.08396.bzolnier@gmail.com>
+Message-Id: <201102071148.12254.bzolnier@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* remove needless includes
-* remove stale comments
-* remove struct ide_info_t
-* remove legacy dev_dbg() debugging
-* inline ide_{config,release}()
-
-Compile-tested only.
-
 Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
 ---
- drivers/ide/ide-cs.c |   83 
-+++++++--------------------------------------------
- 1 file changed, 12 insertions(+), 71 deletions(-)
+ drivers/ide/Kconfig  |   10 ----------
+ drivers/ide/cmd640.c |   29 -----------------------------
+ 2 files changed, 39 deletions(-)
 
-Index: b/drivers/ide/ide-cs.c
+Index: b/drivers/ide/Kconfig
 ===================================================================
---- a/drivers/ide/ide-cs.c
-+++ b/drivers/ide/ide-cs.c
-@@ -32,13 +32,7 @@
- #include <linux/module.h>
- #include <linux/kernel.h>
- #include <linux/init.h>
--#include <linux/ptrace.h>
--#include <linux/slab.h>
--#include <linux/string.h>
--#include <linux/timer.h>
--#include <linux/ioport.h>
- #include <linux/ide.h>
--#include <linux/major.h>
- #include <linux/delay.h>
- #include <asm/io.h>
- #include <asm/system.h>
-@@ -50,58 +44,10 @@
+--- a/drivers/ide/Kconfig
++++ b/drivers/ide/Kconfig
+@@ -249,16 +249,6 @@ config BLK_DEV_CMD640
+ 	  the "CSA-6400E PCI to IDE controller" that some people have. For
+ 	  details, read <file:Documentation/ide/ide.txt>.
  
- #define DRV_NAME "ide-cs"
+-config BLK_DEV_CMD640_ENHANCED
+-	bool "CMD640 enhanced support"
+-	depends on BLK_DEV_CMD640
+-	help
+-	  This option includes support for setting/autotuning PIO modes and
+-	  prefetch on CMD640 IDE interfaces.  For details, read
+-	  <file:Documentation/ide/ide.txt>. If you have a CMD640 IDE interface
+-	  and your BIOS does not already do this for you, then say Y here.
+-	  Otherwise say N.
+-
+ config BLK_DEV_IDEPNP
+ 	tristate "PNP EIDE support"
+ 	depends on PNP
+Index: b/drivers/ide/cmd640.c
+===================================================================
+--- a/drivers/ide/cmd640.c
++++ b/drivers/ide/cmd640.c
+@@ -82,8 +82,6 @@ static int cmd640_vlb;
+ static u8 prefetch_regs[4]  = {CNTRL, CNTRL, ARTTIM23, ARTTIM23};
+ static u8 prefetch_masks[4] = {CNTRL_DIS_RA0, CNTRL_DIS_RA1, 
+ARTTIM23_DIS_RA2, ARTTIM23_DIS_RA3};
  
--/*====================================================================*/
+-#ifdef CONFIG_BLK_DEV_CMD640_ENHANCED
 -
--/* Module parameters */
--
- MODULE_AUTHOR("David Hinds <dahinds@users.sourceforge.net>");
- MODULE_DESCRIPTION("PCMCIA ATA/IDE card driver");
- MODULE_LICENSE("Dual MPL/GPL");
+ static u8 arttim_regs[4] = {ARTTIM0, ARTTIM1, ARTTIM23, ARTTIM23};
+ static u8 drwtim_regs[4] = {DRWTIM0, DRWTIM1, DRWTIM23, DRWTIM23};
  
--/*====================================================================*/
+@@ -95,8 +93,6 @@ static u8 setup_counts[4]    = {4, 4, 4,
+ static u8 active_counts[4]   = {16, 16, 16, 16}; /* Active count   (encoded) 
+*/
+ static u8 recovery_counts[4] = {16, 16, 16, 16}; /* Recovery count (encoded) 
+*/
+ 
+-#endif /* CONFIG_BLK_DEV_CMD640_ENHANCED */
 -
--typedef struct ide_info_t {
--	struct pcmcia_device	*p_dev;
--	struct ide_host		*host;
--	int			ndev;
--} ide_info_t;
--
--static void ide_release(struct pcmcia_device *);
--static int ide_config(struct pcmcia_device *);
--
--static void ide_detach(struct pcmcia_device *p_dev);
--
--static int ide_probe(struct pcmcia_device *link)
--{
--    ide_info_t *info;
--
--    dev_dbg(&link->dev, "ide_attach()\n");
--
--    /* Create new ide device */
--    info = kzalloc(sizeof(*info), GFP_KERNEL);
--    if (!info)
--	return -ENOMEM;
--
--    info->p_dev = link;
--    link->priv = info;
--
--    link->config_flags |= CONF_ENABLE_IRQ | CONF_AUTO_SET_IO |
--	    CONF_AUTO_SET_VPP | CONF_AUTO_CHECK_VCC;
--
--    return ide_config(link);
--} /* ide_attach */
--
--static void ide_detach(struct pcmcia_device *link)
--{
--    ide_info_t *info = link->priv;
--
--    dev_dbg(&link->dev, "ide_detach(0x%p)\n", link);
--
--    ide_release(link);
--
--    kfree(info);
--} /* ide_detach */
--
- static const struct ide_port_ops idecs_port_ops = {
- 	.quirkproc		= ide_undecoded_slave,
- };
-@@ -186,14 +132,14 @@ static int pcmcia_check_one_config(struc
- 	return pcmcia_request_io(pdev);
+ static DEFINE_SPINLOCK(cmd640_lock);
+ 
+ /*
+@@ -282,19 +278,6 @@ static void __set_prefetch_mode(ide_driv
+ 	}
  }
  
--static int ide_config(struct pcmcia_device *link)
-+static int ide_probe(struct pcmcia_device *link)
- {
--    ide_info_t *info = link->priv;
-     int ret = 0, is_kme = 0;
-     unsigned long io_base, ctl_base;
-     struct ide_host *host;
- 
--    dev_dbg(&link->dev, "ide_config(0x%p)\n", link);
-+    link->config_flags |= CONF_ENABLE_IRQ | CONF_AUTO_SET_IO |
-+	    CONF_AUTO_SET_VPP | CONF_AUTO_CHECK_VCC;
- 
-     is_kme = ((link->manf_id == MANFID_KME) &&
- 	      ((link->card_id == PRODID_KME_KXLC005_A) ||
-@@ -234,8 +180,7 @@ static int ide_config(struct pcmcia_devi
-     if (host == NULL)
- 	goto failed;
- 
--    info->ndev = 1;
--    info->host = host;
-+    link->priv = host;
-     dev_info(&link->dev, "ide-cs: hd%c: Vpp = %d.%d\n",
- 	    'a' + host->ports[0]->index * 2,
- 	    link->vpp / 10, link->vpp % 10);
-@@ -243,18 +188,15 @@ static int ide_config(struct pcmcia_devi
-     return 0;
- 
- failed:
--    ide_release(link);
-+    pcmcia_disable_device(link);
-     return -ENODEV;
--} /* ide_config */
-+}
- 
--static void ide_release(struct pcmcia_device *link)
-+static void ide_detach(struct pcmcia_device *link)
- {
--    ide_info_t *info = link->priv;
--    struct ide_host *host = info->host;
-+    struct ide_host *host = link->priv;
- 
--    dev_dbg(&link->dev, "ide_release(0x%p)\n", link);
+-#ifndef CONFIG_BLK_DEV_CMD640_ENHANCED
+-/*
+- * Check whether prefetch is on for a drive,
+- * and initialize the unmask flags for safe operation.
+- */
+-static void __init check_prefetch(ide_drive_t *drive, unsigned int index)
+-{
+-	u8 b = get_cmd640_reg(prefetch_regs[index]);
 -
--    if (info->ndev) {
-+    if (host) {
- 	ide_hwif_t *hwif = host->ports[0];
- 	unsigned long data_addr, ctl_addr;
- 
-@@ -262,15 +204,14 @@ static void ide_release(struct pcmcia_de
- 	ctl_addr = hwif->io_ports.ctl_addr;
- 
- 	ide_host_remove(host);
--	info->ndev = 0;
-+	link->priv = NULL;
- 
- 	release_region(ctl_addr, 1);
- 	release_region(data_addr, 8);
-     }
- 
-     pcmcia_disable_device(link);
--} /* ide_release */
+-	__set_prefetch_mode(drive, (b & prefetch_masks[index]) ? 0 : 1);
+-}
+-#else
 -
-+}
+ /*
+  * Sets prefetch mode for a drive.
+  */
+@@ -496,13 +479,11 @@ static void cmd640_set_pio_mode(ide_hwif
  
- static struct pcmcia_device_id ide_ids[] = {
- 	PCMCIA_DEVICE_FUNC_ID(4),
-@@ -344,7 +285,7 @@ MODULE_DEVICE_TABLE(pcmcia, ide_ids);
+ 	display_clocks(index);
+ }
+-#endif /* CONFIG_BLK_DEV_CMD640_ENHANCED */
  
- static struct pcmcia_driver ide_cs_driver = {
- 	.owner		= THIS_MODULE,
--	.name		= "ide-cs",
-+	.name		= DRV_NAME,
- 	.probe		= ide_probe,
- 	.remove		= ide_detach,
- 	.id_table       = ide_ids,
+ static void __init cmd640_init_dev(ide_drive_t *drive)
+ {
+ 	unsigned int i = drive->hwif->channel * 2 + (drive->dn & 1);
+ 
+-#ifdef CONFIG_BLK_DEV_CMD640_ENHANCED
+ 	/*
+ 	 * Reset timing to the slowest speed and turn off prefetch.
+ 	 * This way, the drive identify code has a better chance.
+@@ -513,14 +494,6 @@ static void __init cmd640_init_dev(ide_d
+ 	program_drive_counts(drive, i);
+ 	set_prefetch_mode(drive, i, 0);
+ 	printk(KERN_INFO DRV_NAME ": drive%d timings/prefetch cleared\n", i);
+-#else
+-	/*
+-	 * Set the drive unmask flags to match the prefetch setting.
+-	 */
+-	check_prefetch(drive, i);
+-	printk(KERN_INFO DRV_NAME ": drive%d timings/prefetch(%s) preserved\n",
+-		i, (drive->dev_flags & IDE_DFLAG_NO_IO_32BIT) ? "off" : "on");
+-#endif /* CONFIG_BLK_DEV_CMD640_ENHANCED */
+ }
+ 
+ static int cmd640_test_irq(ide_hwif_t *hwif)
+@@ -535,9 +508,7 @@ static int cmd640_test_irq(ide_hwif_t *h
+ 
+ static const struct ide_port_ops cmd640_port_ops = {
+ 	.init_dev		= cmd640_init_dev,
+-#ifdef CONFIG_BLK_DEV_CMD640_ENHANCED
+ 	.set_pio_mode		= cmd640_set_pio_mode,
+-#endif
+ 	.test_irq		= cmd640_test_irq,
+ };
+ 
