@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870Ab1BGVRK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 16:17:10 -0500
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:49315 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754524Ab1BGVRH (ORCPT
+	id S1754882Ab1BGVRN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 16:17:13 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:34309 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754857Ab1BGVRK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 16:17:07 -0500
+	Mon, 7 Feb 2011 16:17:10 -0500
 From: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
 To: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
         linux@arm.linux.org.uk
 Cc: john.stultz@linaro.org, tglx@linutronix.de, a.zummo@towertech.it,
         Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
-Subject: [PATCH 1/4] RTC: Include information about UIE and PIE in RTC driver proc.
-Date: Mon,  7 Feb 2011 19:16:05 -0200
-Message-Id: <1297113368-27174-2-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
+Subject: [PATCH 2/4] RTC: Remove UIE and PIE information from the sa1100 driver proc.
+Date: Mon,  7 Feb 2011 19:16:06 -0200
+Message-Id: <1297113368-27174-3-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1297113368-27174-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
 References: <1297113368-27174-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
@@ -22,72 +22,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Generic RTC code is always able to provide the necessary information
-about update and periodic interrupts. This patch add such information to
-the proc interface.
+This patch removes the UIE and PIE information that is now being
+supplied directly in the generic RTC code.
 
 Signed-off-by: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
 ---
- drivers/rtc/rtc-proc.c |   22 +++++++++++++++-------
- 1 files changed, 15 insertions(+), 7 deletions(-)
+ drivers/rtc/rtc-sa1100.c |   11 ++---------
+ 1 files changed, 2 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/rtc/rtc-proc.c b/drivers/rtc/rtc-proc.c
-index c086fc3..b4ecec0 100644
---- a/drivers/rtc/rtc-proc.c
-+++ b/drivers/rtc/rtc-proc.c
-@@ -30,15 +30,15 @@ static int rtc_proc_show(struct seq_file *seq, void *offset)
- 	err = rtc_read_time(rtc, &tm);
- 	if (err == 0) {
- 		seq_printf(seq,
--			"rtc_time\t: %02d:%02d:%02d\n"
--			"rtc_date\t: %04d-%02d-%02d\n",
-+			"rtc_time\t\t: %02d:%02d:%02d\n"
-+			"rtc_date\t\t: %04d-%02d-%02d\n",
- 			tm.tm_hour, tm.tm_min, tm.tm_sec,
- 			tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
- 	}
+diff --git a/drivers/rtc/rtc-sa1100.c b/drivers/rtc/rtc-sa1100.c
+index df1804f..6c8c74a 100644
+--- a/drivers/rtc/rtc-sa1100.c
++++ b/drivers/rtc/rtc-sa1100.c
+@@ -358,15 +358,8 @@ static int sa1100_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
  
- 	err = rtc_read_alarm(rtc, &alrm);
- 	if (err == 0) {
--		seq_printf(seq, "alrm_time\t: ");
-+		seq_printf(seq, "alrm_time\t\t: ");
- 		if ((unsigned int)alrm.time.tm_hour <= 24)
- 			seq_printf(seq, "%02d:", alrm.time.tm_hour);
- 		else
-@@ -52,7 +52,7 @@ static int rtc_proc_show(struct seq_file *seq, void *offset)
- 		else
- 			seq_printf(seq, "**\n");
+ static int sa1100_rtc_proc(struct device *dev, struct seq_file *seq)
+ {
+-	struct rtc_device *rtc = (struct rtc_device *)dev;
+-
+-	seq_printf(seq, "trim/divider\t: 0x%08x\n", (u32) RTTR);
+-	seq_printf(seq, "update_IRQ\t: %s\n",
+-			(RTSR & RTSR_HZE) ? "yes" : "no");
+-	seq_printf(seq, "periodic_IRQ\t: %s\n",
+-			(OIER & OIER_E1) ? "yes" : "no");
+-	seq_printf(seq, "periodic_freq\t: %d\n", rtc->irq_freq);
+-	seq_printf(seq, "RTSR\t\t: 0x%08x\n", (u32)RTSR);
++	seq_printf(seq, "trim/divider\t\t: 0x%08x\n", (u32) RTTR);
++	seq_printf(seq, "RTSR\t\t\t: 0x%08x\n", (u32)RTSR);
  
--		seq_printf(seq, "alrm_date\t: ");
-+		seq_printf(seq, "alrm_date\t\t: ");
- 		if ((unsigned int)alrm.time.tm_year <= 200)
- 			seq_printf(seq, "%04d-", alrm.time.tm_year + 1900);
- 		else
-@@ -65,13 +65,21 @@ static int rtc_proc_show(struct seq_file *seq, void *offset)
- 			seq_printf(seq, "%02d\n", alrm.time.tm_mday);
- 		else
- 			seq_printf(seq, "**\n");
--		seq_printf(seq, "alarm_IRQ\t: %s\n",
-+		seq_printf(seq, "alarm IRQ enabled\t: %s\n",
- 				alrm.enabled ? "yes" : "no");
--		seq_printf(seq, "alrm_pending\t: %s\n",
-+		seq_printf(seq, "alarm pending\t\t: %s\n",
- 				alrm.pending ? "yes" : "no");
-+		seq_printf(seq, "update IRQ enabled\t: %s\n",
-+			(rtc->uie_rtctimer.enabled) ? "yes" : "no");
-+		seq_printf(seq, "periodic IRQ enabled\t: %s\n",
-+			(rtc->pie_enabled) ? "yes" : "no");
-+		seq_printf(seq, "periodic IRQ frequency\t: %d\n",
-+			rtc->irq_freq);
-+		seq_printf(seq, "max user IRQ frequency\t: %d\n",
-+			rtc->max_user_freq);
- 	}
- 
--	seq_printf(seq, "24hr\t\t: yes\n");
-+	seq_printf(seq, "24hr\t\t\t: yes\n");
- 
- 	if (ops->proc)
- 		ops->proc(rtc->dev.parent, seq);
+ 	return 0;
+ }
 -- 
 1.7.3.4
 
