@@ -1,88 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab1BGQua (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 11:50:30 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:59325 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752428Ab1BGQu3 (ORCPT
+	id S1754418Ab1BGQwl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 11:52:41 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:45795 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754402Ab1BGQwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 11:50:29 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18Mqok/GBsl5DMmiI0ncaQW
-Date: Mon, 7 Feb 2011 08:50:25 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org
-Subject: [GIT PULL] omap fixes for v2.6.38-rc3
-Message-ID: <20110207165024.GL20795@atomide.com>
+	Mon, 7 Feb 2011 11:52:39 -0500
+Message-ID: <4D5023A4.3020209@metafoo.de>
+Date: Mon, 07 Feb 2011 17:53:56 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/7] ASoC: Samsung: neo1973_gta02: Fix bluetooth DAI registration
+References: <1297033463-14577-1-git-send-email-lars@metafoo.de> <1297033463-14577-6-git-send-email-lars@metafoo.de> <20110207115906.GD10564@opensource.wolfsonmicro.com>
+In-Reply-To: <20110207115906.GD10564@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 02/07/2011 12:59 PM, Mark Brown wrote:
+> On Mon, Feb 07, 2011 at 12:04:22AM +0100, Lars-Peter Clausen wrote:
+>> This patch fixes two issues with the bluethooth DAI registration:
+>> * The DAI has to be registered only after the sound device has been added.
+> 
+> This isn't a problem, components in the system can be registered in any
+> order.
 
-Please pull omap fixes from:
+By device I mean the soc-core platform device, which has to exist before a dai can be
+registered with that device.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-fixes-for-linus
+> 
+>> * Currently the DAI is registered with snd_soc_register_dai which causes it to
+>>   be named after the device it was registered for. Which is in this case the
+>>   "soc-audio" device. (Ab)use snd_soc_register_dais which causes the DAI to be
+>>   named after the DAI driver, which is what we want in this case.
+> 
+> This doesn't tie up with your change which...
+> 
+>> -	/* register bluetooth DAI here */
+>> -	ret = snd_soc_register_dai(&neo1973_gta02_snd_device->dev, &bt_dai);
+>> -	if (ret)
+>> -		goto err_put_device;
+> 
+>> +	/* register bluetooth DAI here */
+>> +	ret = snd_soc_register_dais(&neo1973_gta02_snd_device->dev, &bt_dai, 1);
+>>  	if (ret)
+>> -		goto err_unregister_dai;
+>> +		goto err_unregister_device;
+> 
+> ...uses the same device in both cases and looking briefly at the code
+> both register functions just use the dev that was passed in.
 
-This is mostly board specific and PM related fixes.
+The difference between the two is that snd_soc_register_dais calls fmt_multiple_name,
+but snd_soc_register_dai uses fmt_single_name. The later uses the name of device for
+which the dai is registered to generate the dai_device name, while the former uses
+the name of the dai_driver.
+So by calling snd_soc_register_dai the bluetooth dai_device will be name "soc-core"
+instead of "bluetooth-dai". So currently there is no match between the dai_link and
+the dai_device, as a result the sound card is not instantiated.
 
-Regards,
+> In any
+> case, we clearly shouldn't be applying patches which bodge around the
+> core.
 
-Tony
+Well the alternative would be a patch looking like this:
 
+-	.cpu_dai_name = "bluetooth-dai",
++	.cpu_dai_name = "soc-core",
 
-The following changes since commit ebf53826e105f488f4f628703a108e98940d1dc5:
+Which isn't really nice either.
 
-  Linux 2.6.38-rc3 (2011-02-01 13:05:49 +1000)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-fixes-for-linus
-
-Aaro Koskinen (3):
-      arm: mach-omap2: voltage: debugfs: fix memory leak
-      arm: mach-omap2: board-rm680: fix rm680_vemmc regulator constraints
-      arm: mach-omap2: mux: free allocated memory on error exit
-
-Huang Weiyi (1):
-      omap1: remove duplicated #include
-
-Julia Lawall (1):
-      OMAP: PM: SmartReflex: Add missing IS_ERR test
-
-Kevin Hilman (1):
-      OMAP3: PM: fix save secure RAM to restore MPU power state
-
-Marek Vasut (1):
-      OMAP1: Fix non-working LCD on OMAP310
-
-Ming Lei (1):
-      arm: omap4: panda: remove usb_nop_xceiv_register(v1)
-
-Stefan Weil (2):
-      OMAP: PM: SmartReflex: Fix possible memory leak
-      OMAP: PM: SmartReflex: Fix possible null pointer read access
-
-Thomas Weber (1):
-      OMAP3: Devkit8000: Change lcd power pin
-
-Tony Lindgren (1):
-      Merge branch 'for_2.6.38/pm-fixes' of ssh://master.kernel.org/.../khilman/linux-omap-pm into devel-fixes
-
- arch/arm/mach-omap1/lcd_dma.c          |   24 ++++++++++++------------
- arch/arm/mach-omap1/time.c             |    1 -
- arch/arm/mach-omap2/board-devkit8000.c |   27 ++++++++++++++++-----------
- arch/arm/mach-omap2/board-omap4panda.c |    2 --
- arch/arm/mach-omap2/board-rm680.c      |    3 ---
- arch/arm/mach-omap2/mux.c              |    1 +
- arch/arm/mach-omap2/pm34xx.c           |    7 ++++---
- arch/arm/mach-omap2/smartreflex.c      |   11 +++++------
- arch/arm/mach-omap2/voltage.c          |    1 +
- 9 files changed, 39 insertions(+), 38 deletions(-)
+- Lars
