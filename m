@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753680Ab1BGUGD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 15:06:03 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33036 "EHLO mail.zytor.com"
+	id S1754010Ab1BGUHz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 15:07:55 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33070 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752838Ab1BGUGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 15:06:01 -0500
-Message-ID: <4D50505D.2070402@zytor.com>
-Date: Mon, 07 Feb 2011 12:04:45 -0800
+	id S1752589Ab1BGUHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 15:07:54 -0500
+Message-ID: <4D5050FF.2060304@zytor.com>
+Date: Mon, 07 Feb 2011 12:07:27 -0800
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
 MIME-Version: 1.0
@@ -36,10 +36,12 @@ On 02/07/2011 11:59 AM, castet.matthieu@free.fr wrote:
 > section before enabling NX. A possible fix is to use its own page table [2]. And
 > the kernel one can be NX.
 
-No, you're really barking down the wrong path on this.  The trampoline
-code is tiny; I don't think it is really worth trying to NX-ify it.  The
-additional complexity caused by not being able to execute in this space
-will really damage some other incoming code, so it isn't an option as
-far as I'm concerned.
+What *should* happen -- ideally for .39 -- is that NX (and RO!)
+protection should be done per linear mapping, not per physical page.  A
+page that is mapped more than once is mapped for a different purpose,
+and as such probably should have different permissions.  A lot of the
+static_protections() garbage is about enforcing those as exceptions, but
+let's face it, that should be the *norm*.
 
 	-hpa
+
