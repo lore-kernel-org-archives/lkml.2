@@ -1,71 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755236Ab1BGWYE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 17:24:04 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:57921 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754937Ab1BGWYB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 17:24:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=vj/Y+gwflpcx8SSYXTOPr8Yx3Cd3cpfZPkJ9fzW13IHkPhk3Taz5S3sy/wwr30rFgF
-         WYNFP0ojuoHHyCgXdEZz0pIjZWYSGT1XCzLIoDIfZcwy/oVBanL2UKgkXHP8+j4td15J
-         +BF5q9v4Zh+42LNUvVBRrHs3uteaekn0LCDJk=
-Date: Mon, 7 Feb 2011 14:23:50 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Len Brown <len.brown@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-embedded@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] PM: Hide CONFIG_PM from users
-Message-ID: <20110207222350.GA24804@core.coreip.homeip.net>
-References: <1297081335-13631-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <201102072215.59921.rjw@sisk.pl>
- <20110207214732.GA24703@core.coreip.homeip.net>
- <201102072300.03986.rjw@sisk.pl>
+	id S1755196Ab1BGWX5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 17:23:57 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:51715 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754904Ab1BGWXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 17:23:46 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Len Brown <lenb@kernel.org>
+Subject: [PATCH 1/6] ACPI / PM: Drop acpi_restore_state_mem()
+Date: Mon, 7 Feb 2011 23:18:02 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc3+; KDE/4.4.4; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>
+References: <201102072316.41270.rjw@sisk.pl>
+In-Reply-To: <201102072316.41270.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201102072300.03986.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102072318.02829.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 07, 2011 at 11:00:03PM +0100, Rafael J. Wysocki wrote:
-> On Monday, February 07, 2011, Dmitry Torokhov wrote:
-> > On Mon, Feb 07, 2011 at 10:15:59PM +0100, Rafael J. Wysocki wrote:
-> > > On Monday, February 07, 2011, Mark Brown wrote:
-> > > > 
-> > > > Yeah, but some people seem very keen on removing the pointers to the PM
-> > > > ops entirely when CONFIG_PM is disabled which means that you end up with
-> > > > varying idioms for what you do with the PM ops as stuff gets ifdefed
-> > > > out.  Then again I'm not sure anything would make those people any
-> > > > happier.
-> > > 
-> > > I really think we should do things that makes sense rather that worry about
-> > > who's going to like or dislike it (except for Linus maybe, but he tends to like
-> > > things that make sense anyway).  At this point I think the change I suggested
-> > > makes sense, because it (a) simplifies things and (b) follows the quite common
-> > > practice which is to make PM callbacks depend on CONFIG_PM.
-> > 
-> > Many people make these callback dependent on PM not because it makes
-> > much sense but because it is possible to do so. However, aside of
-> > randconfig compile testing, nobody really tests drivers that implement
-> > PM in the !CONFIG_PM setting.
-> 
-> That I can agree with, but I'm not sure whether it is an argument against
-> the patch I've just posted or for it?
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-More of an observation for your (b) justification. I'd probably force
-CONFIG_PM to always 'y'w while we weeding references to it from
-drivers...
+The function acpi_restore_state_mem() has never been and most likely
+never will be used, so remove it.
 
--- 
-Dmitry
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ arch/ia64/include/asm/acpi.h |    4 ++--
+ arch/ia64/kernel/acpi.c      |    5 -----
+ arch/x86/include/asm/acpi.h  |    3 +--
+ arch/x86/kernel/acpi/sleep.c |    8 --------
+ drivers/acpi/sleep.c         |    4 ----
+ 5 files changed, 3 insertions(+), 21 deletions(-)
+
+Index: linux-2.6/drivers/acpi/sleep.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/sleep.c
++++ linux-2.6/drivers/acpi/sleep.c
+@@ -293,10 +293,6 @@ static int acpi_suspend_enter(suspend_st
+ 	local_irq_restore(flags);
+ 	printk(KERN_DEBUG "Back to C!\n");
+ 
+-	/* restore processor state */
+-	if (acpi_state == ACPI_STATE_S3)
+-		acpi_restore_state_mem();
+-
+ 	suspend_nvs_restore();
+ 
+ 	return ACPI_SUCCESS(status) ? 0 : -EFAULT;
+Index: linux-2.6/arch/ia64/include/asm/acpi.h
+===================================================================
+--- linux-2.6.orig/arch/ia64/include/asm/acpi.h
++++ linux-2.6/arch/ia64/include/asm/acpi.h
+@@ -128,9 +128,9 @@ static inline const char *acpi_get_sysna
+ int acpi_request_vector (u32 int_type);
+ int acpi_gsi_to_irq (u32 gsi, unsigned int *irq);
+ 
+-/* routines for saving/restoring kernel state */
++/* Routine for saving kernel state during suspend. */
+ extern int acpi_save_state_mem(void);
+-extern void acpi_restore_state_mem(void);
++
+ extern unsigned long acpi_wakeup_address;
+ 
+ /*
+Index: linux-2.6/arch/ia64/kernel/acpi.c
+===================================================================
+--- linux-2.6.orig/arch/ia64/kernel/acpi.c
++++ linux-2.6/arch/ia64/kernel/acpi.c
+@@ -1041,11 +1041,6 @@ EXPORT_SYMBOL(acpi_unregister_ioapic);
+ int acpi_save_state_mem(void) { return 0; } 
+ 
+ /*
+- * acpi_restore_state()
+- */
+-void acpi_restore_state_mem(void) {}
+-
+-/*
+  * do_suspend_lowlevel()
+  */
+ void do_suspend_lowlevel(void) {}
+Index: linux-2.6/arch/x86/include/asm/acpi.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/acpi.h
++++ linux-2.6/arch/x86/include/asm/acpi.h
+@@ -112,9 +112,8 @@ static inline void acpi_disable_pci(void
+ 	acpi_noirq_set();
+ }
+ 
+-/* routines for saving/restoring kernel state */
++/* Routine for saving kernel state during suspend. */
+ extern int acpi_save_state_mem(void);
+-extern void acpi_restore_state_mem(void);
+ 
+ extern unsigned long acpi_wakeup_address;
+ 
+Index: linux-2.6/arch/x86/kernel/acpi/sleep.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/acpi/sleep.c
++++ linux-2.6/arch/x86/kernel/acpi/sleep.c
+@@ -112,14 +112,6 @@ int acpi_save_state_mem(void)
+ 	return 0;
+ }
+ 
+-/*
+- * acpi_restore_state - undo effects of acpi_save_state_mem
+- */
+-void acpi_restore_state_mem(void)
+-{
+-}
+-
+-
+ /**
+  * acpi_reserve_wakeup_memory - do _very_ early ACPI initialisation
+  *
+
