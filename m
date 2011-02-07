@@ -1,45 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754397Ab1BGCZU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 21:25:20 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58131 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754293Ab1BGCZT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 21:25:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=vKjhs6d1ovHkCkeZXECFjy6xd1UIGwhLKfuYBIuPD/ZWQAr0iIdpI+9GYAVUUqKmYk
-         XRvBYSUsXEj6dQajIOFqXQfnfu8HIJWADWBWAlTPR26etnrQGPV9+mDQcfznU6SngIpD
-         wgVoBM8W2Pe/rl9LrOlpK8xRMV7QvtAw7pQVg=
+	id S1754525Ab1BGCZb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 21:25:31 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:35734 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754472Ab1BGCZ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 21:25:29 -0500
+Message-ID: <4D4F5810.3070300@parallels.com>
+Date: Sun, 6 Feb 2011 20:25:20 -0600
+From: Rob Landley <rlandley@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <1297033463-14577-1-git-send-email-lars@metafoo.de>
-References: <1297033463-14577-1-git-send-email-lars@metafoo.de>
-Date: Mon, 7 Feb 2011 11:25:17 +0900
-Message-ID: <AANLkTinOHBA9YHyt8s1PgiJoDNpiOw8EZywt5kwJwTx-@mail.gmail.com>
-Subject: Re: [alsa-devel] [PATCH 1/7] ASoC: neo1973_wm8753: Remove scenario
- management code.
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org,
-        Linux Samsung SoC <linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Simon Horman <horms@verge.net.au>
+CC: "Ahmed S. Darwish" <darwish.07@gmail.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, Vivek Goyal <vgoyal@redhat.com>,
+        Haren Myneni <hbabu@us.ibm.com>,
+        Eric Biederman <ebiederm@xmission.com>, <kexec@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH -next] Documentation: Improve crashkernel= description
+References: <20110206154108.GA16542@laptop> <20110206215733.GB26233@verge.net.au>
+In-Reply-To: <20110206215733.GB26233@verge.net.au>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [24.27.19.110]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 7, 2011 at 8:04 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
-> It has been proven to be inflexible to do scenario management in kernel space.
->
-> Since actual neo1973 board support has not been merged in mainline and this
-> patch has been in the neo1973 tree for some time now it should be safe to remove
-> this functionality without breaking existing userspace.
->
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+On 02/06/2011 03:57 PM, Simon Horman wrote:
+> On Sun, Feb 06, 2011 at 05:41:08PM +0200, Ahmed S. Darwish wrote:
+>> (Also applicable over 2.6.38-rc3)
+>>
+>> Had to explore two C code files to make sense of the 'crashkernel='
+>> kernel parameter values.  Improve the situation.
+>>
+>> Signed-off-by: Ahmed S. Darwish <darwish.07@gmail.com>
+>> ---
+>>
+>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+>> index 89835a4..8f26b42 100644
+>> --- a/Documentation/kernel-parameters.txt
+>> +++ b/Documentation/kernel-parameters.txt
+>> @@ -545,9 +545,12 @@ and is between 256 and 4096 characters. It is defined in the file
+>>  			Format:
+>>  			<first_slot>,<last_slot>,<port>,<enum_bit>[,<debug>]
+>>  
+>> -	crashkernel=nn[KMG]@ss[KMG]
+>> -			[KNL] Reserve a chunk of physical memory to
+>> -			hold a kernel to switch to with kexec on panic.
+>> +	crashkernel=size[KMG][@offset[KMG]]
+>> +			[KNL] Using kexec, Linux can switch to a 'crash kernel'
+>> +			upon panic. This parameter reserves the physical
+>> +			memory region [offset, offset + size] for that kernel
+>> +			image. If the '@offset' part was ignored, Linux finds
+>> +			a suitable crash image start address automatically.
+> 
+> I think this would be further improved as:
+> 
+> 			... If '@offset' is omitted then a suitable
+> 			offset is selected automatically.
 
-All
-Acked-by: Jassi Brar <jassi.brar@samsung.com>
+Suitable offset as in parses a known image type (ELF, bzImage, etc) to
+find the start address?  Or just assumes the entry point and load
+address are the same?
+
+Is this the size for just the kernel image, or also for the physical
+memory it uses so it won't overwrite the existing kernel's stuff on the
+way up?  (If a compressed kernel wants to decompress itself or extract
+an initramfs for itself, what happens?)
+
+Rob
