@@ -1,39 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853Ab1BGV0V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 16:26:21 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37425 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752388Ab1BGV0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 16:26:20 -0500
-Message-ID: <4D506363.4030707@zytor.com>
-Date: Mon, 07 Feb 2011 13:25:55 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+	id S1754818Ab1BGV3K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 16:29:10 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50880 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752388Ab1BGV3I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 16:29:08 -0500
 MIME-Version: 1.0
-To: John Villalovos <john.l.villalovos@intel.com>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        John Villalovos <jvillalo@redhat.com>, prarit@redhat.com
-Subject: Re: [PATCH 1/1 V2] x86, apic: Make "broken BIOS!!" messages unique
-References: <20110207135843.GA10121@linuxjohn3.jf.intel.com>
-In-Reply-To: <20110207135843.GA10121@linuxjohn3.jf.intel.com>
+In-Reply-To: <20110207084613.GC2723@matterhorn.lan>
+References: <AANLkTikLvO0Y44nCxEfCsNxU-Na+PzcLXZUjOsMUM1_A@mail.gmail.com> <20110207084613.GC2723@matterhorn.lan>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 7 Feb 2011 14:28:47 -0700
+X-Google-Sender-Auth: 8Ql9f-7PzV302Vo6GODIF-0c7nk
+Message-ID: <AANLkTi=dK2qYTH7vThJb8-3wED5F_5Hcmr7nNidxs25c@mail.gmail.com>
+Subject: Re: Device Tree on ARM status report
+To: Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        linaro-dev <linaro-dev@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2011 05:58 AM, John Villalovos wrote:
-> 
-> The 'inconceivable' messages are because it should not be possible to reach
-> those code paths.
-> 
+On Mon, Feb 7, 2011 at 1:46 AM, Amit Kucheria <amit.kucheria@linaro.org> wrote:
+> On 11 Feb 05, Grant Likely wrote:
+>> 2 - Task status
+>> ---------------
+>> Core infrastructure:
+>> [glikely] basic infrastructure to enable dt: DONE
+>> [r-herring] Allow dtb to be located anywhere in RAM: DONE
+>> [bones] Debug dtb corruption during init: INPROGRESS
+>> [glikely] OF clock bindings: INPROGRESS
+>
+> Does this include the common clock framework that Jeremy had been working on?
+> I see no mention of that explicitly, hence the question.
 
-More standard terminology would be "invalid" or "impossible".
-"Inconceivable" sounds like a combination of legal values which just
-don't make sense.
+No, since the common clk patches are taking some time to get right,
+the device tree clock bindings have been decoupled from the common clk
+patches so that dt support doesn't get held up.  When common clk gets
+merged, the dt support will be modified to use it.
 
-	-hpa
+g.
