@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752797Ab1BGH4T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 02:56:19 -0500
-Received: from hera.kernel.org ([140.211.167.34]:36442 "EHLO hera.kernel.org"
+	id S1752788Ab1BGH45 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 02:56:57 -0500
+Received: from hera.kernel.org ([140.211.167.34]:36465 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752643Ab1BGH4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 02:56:16 -0500
-Date: Mon, 7 Feb 2011 07:55:47 GMT
+	id S1752604Ab1BGH4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 02:56:55 -0500
+Date: Mon, 7 Feb 2011 07:56:11 GMT
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
@@ -19,31 +19,31 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
 In-Reply-To: <new-submission>
 References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf annotate: Config options for symbol__tty_annotate
-Message-ID: <tip-d040bd363824f9f0ad6610b91ee6c65f292c066c@git.kernel.org>
-Git-Commit-ID: d040bd363824f9f0ad6610b91ee6c65f292c066c
+Subject: [tip:perf/core] perf annotate: Separate objdump parsing from actual screen rendering
+Message-ID: <tip-f1e2701de02cff6d988b1dd49960620d5720cb89@git.kernel.org>
+Git-Commit-ID: f1e2701de02cff6d988b1dd49960620d5720cb89
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 07 Feb 2011 07:55:47 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 07 Feb 2011 07:56:12 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d040bd363824f9f0ad6610b91ee6c65f292c066c
-Gitweb:     http://git.kernel.org/tip/d040bd363824f9f0ad6610b91ee6c65f292c066c
+Commit-ID:  f1e2701de02cff6d988b1dd49960620d5720cb89
+Gitweb:     http://git.kernel.org/tip/f1e2701de02cff6d988b1dd49960620d5720cb89
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Sat, 5 Feb 2011 15:37:31 -0200
+AuthorDate: Sat, 5 Feb 2011 18:51:38 -0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Sat, 5 Feb 2011 15:37:31 -0200
+CommitDate: Sun, 6 Feb 2011 13:40:31 -0200
 
-perf annotate: Config options for symbol__tty_annotate
+perf annotate: Separate objdump parsing from actual screen rendering
 
-Max line# that should be printed, minimum percentage filter, just like
-'perf top', alas, due to it :-)
+Because in 'perf top' we'll need to parse just once and then, as samples
+come, render multiple times with evolving counter values.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -55,96 +55,120 @@ Cc: Tom Zanussi <tzanussi@gmail.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-annotate.c |    2 +-
- tools/perf/util/annotate.c    |   14 ++++++++++----
- tools/perf/util/annotate.h    |    3 ++-
- 3 files changed, 13 insertions(+), 6 deletions(-)
+ tools/perf/util/annotate.c |   62 ++++++++++++++++++++++++++++++-------------
+ tools/perf/util/annotate.h |    4 +++
+ 2 files changed, 47 insertions(+), 19 deletions(-)
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index f3e4423..ea6a116 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -95,7 +95,7 @@ static int process_sample_event(union perf_event *event,
- static int hist_entry__tty_annotate(struct hist_entry *he, int evidx)
- {
- 	return symbol__tty_annotate(he->ms.sym, he->ms.map, evidx,
--				    print_line, full_paths);
-+				    print_line, full_paths, 0, 0);
- }
- 
- static void hists__find_annotations(struct hists *self)
 diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 7488fe9..072bc8d 100644
+index 072bc8d..10cdbad 100644
 --- a/tools/perf/util/annotate.c
 +++ b/tools/perf/util/annotate.c
-@@ -87,7 +87,7 @@ struct objdump_line *objdump__get_next_ip_line(struct list_head *head,
- 
- static void objdump_line__print(struct objdump_line *oline,
- 				struct list_head *head, struct symbol *sym,
--				int evidx, u64 len)
-+				int evidx, u64 len, int min_pcnt)
- {
- 	static const char *prev_line;
- 	static const char *prev_color;
-@@ -118,6 +118,9 @@ static void objdump_line__print(struct objdump_line *oline,
- 		if (src_line == NULL && h->sum)
- 			percent = 100.0 * hits / h->sum;
- 
-+		if (percent < min_pcnt)
-+			return;
-+
- 		color = get_percent_color(percent);
- 
- 		/*
-@@ -419,13 +422,15 @@ static void symbol__annotate_hits(struct symbol *sym, int evidx)
+@@ -421,21 +421,16 @@ static void symbol__annotate_hits(struct symbol *sym, int evidx)
+ 	printf("%*s: %" PRIu64 "\n", BITS_PER_LONG / 2, "h->sum", h->sum);
  }
  
- int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
--			 bool print_lines, bool full_paths)
-+			 bool print_lines, bool full_paths, int min_pcnt,
-+			 int max_lines)
+-int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
+-			 bool print_lines, bool full_paths, int min_pcnt,
+-			 int max_lines)
++void symbol__annotate_printf(struct symbol *sym, struct map *map,
++			     struct list_head *head, int evidx, bool full_paths,
++			     int min_pcnt, int max_lines)
  {
  	struct dso *dso = map->dso;
  	const char *filename = dso->long_name, *d_filename;
- 	struct rb_root source_line = RB_ROOT;
- 	struct objdump_line *pos, *n;
- 	LIST_HEAD(head);
-+	int printed = 2;
+-	struct rb_root source_line = RB_ROOT;
+-	struct objdump_line *pos, *n;
+-	LIST_HEAD(head);
++	struct objdump_line *pos;
+ 	int printed = 2;
  	u64 len;
  
- 	if (symbol__annotate(sym, map, &head, 0) < 0)
-@@ -444,7 +449,6 @@ int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
- 		print_summary(&source_line, filename);
- 	}
+-	if (symbol__annotate(sym, map, &head, 0) < 0)
+-		return -1;
+-
+ 	if (full_paths)
+ 		d_filename = filename;
+ 	else
+@@ -443,28 +438,57 @@ int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
  
--	printf("\n\n------------------------------------------------\n");
+ 	len = sym->end - sym->start;
+ 
+-	if (print_lines) {
+-		symbol__get_source_line(sym, map, evidx, &source_line,
+-					len, filename);
+-		print_summary(&source_line, filename);
+-	}
+-
  	printf(" Percent |	Source code & Disassembly of %s\n", d_filename);
  	printf("------------------------------------------------\n");
  
-@@ -452,9 +456,11 @@ int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
+ 	if (verbose)
  		symbol__annotate_hits(sym, evidx);
  
- 	list_for_each_entry_safe(pos, n, &head, node) {
--		objdump_line__print(pos, &head, sym, evidx, len);
-+		objdump_line__print(pos, &head, sym, evidx, len, min_pcnt);
- 		list_del(&pos->node);
- 		objdump_line__free(pos);
-+		if (max_lines && ++printed >= max_lines)
-+			break;
+-	list_for_each_entry_safe(pos, n, &head, node) {
+-		objdump_line__print(pos, &head, sym, evidx, len, min_pcnt);
+-		list_del(&pos->node);
+-		objdump_line__free(pos);
++	list_for_each_entry(pos, head, node) {
++		objdump_line__print(pos, head, sym, evidx, len, min_pcnt);
+ 		if (max_lines && ++printed >= max_lines)
+ 			break;
++
++	}
++}
++
++void objdump_line_list__purge(struct list_head *head)
++{
++	struct objdump_line *pos, *n;
++
++	list_for_each_entry_safe(pos, n, head, node) {
++		list_del(&pos->node);
++		objdump_line__free(pos);
++	}
++}
++
++int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
++			 bool print_lines, bool full_paths, int min_pcnt,
++			 int max_lines)
++{
++	struct dso *dso = map->dso;
++	const char *filename = dso->long_name;
++	struct rb_root source_line = RB_ROOT;
++	LIST_HEAD(head);
++	u64 len;
++
++	if (symbol__annotate(sym, map, &head, 0) < 0)
++		return -1;
++
++	len = sym->end - sym->start;
++
++	if (print_lines) {
++		symbol__get_source_line(sym, map, evidx, &source_line,
++					len, filename);
++		print_summary(&source_line, filename);
  	}
  
++	symbol__annotate_printf(sym, map, &head, evidx, full_paths,
++				min_pcnt, max_lines);
  	if (print_lines)
+ 		symbol__free_source_line(sym, len);
+ 
++	objdump_line_list__purge(&head);
++
+ 	return 0;
+ }
 diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index 0a5069ca..6b70732 100644
+index 6b70732..53dd92d 100644
 --- a/tools/perf/util/annotate.h
 +++ b/tools/perf/util/annotate.h
-@@ -69,7 +69,8 @@ int symbol__annotate(struct symbol *sym, struct map *map,
+@@ -67,6 +67,10 @@ int symbol__alloc_hist(struct symbol *sym, int nevents);
+ 
+ int symbol__annotate(struct symbol *sym, struct map *map,
  		     struct list_head *head, size_t privsize);
++void symbol__annotate_printf(struct symbol *sym, struct map *map,
++			     struct list_head *head, int evidx, bool full_paths,
++			     int min_pcnt, int max_lines);
++void objdump_line_list__purge(struct list_head *head);
  
  int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
--			 bool print_lines, bool full_paths);
-+			 bool print_lines, bool full_paths, int min_pcnt,
-+			 int max_lines);
- 
- #ifdef NO_NEWT_SUPPORT
- static inline int symbol__tui_annotate(symbol *sym __used,
+ 			 bool print_lines, bool full_paths, int min_pcnt,
