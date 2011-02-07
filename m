@@ -1,365 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007Ab1BGIIw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 03:08:52 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35579 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694Ab1BGIIv (ORCPT
+	id S1753017Ab1BGIKk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 03:10:40 -0500
+Received: from 81-174-11-161.staticnet.ngi.it ([81.174.11.161]:55959 "EHLO
+	mail.enneenne.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1752601Ab1BGIKi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 03:08:51 -0500
-Date: Mon, 7 Feb 2011 09:08:32 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Jeremy Kerr <jeremy.kerr@canonical.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, Dima Zavin <dmitriyz@google.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>
-Subject: Re: [RFC,PATCH 1/3] Add a common struct clk
-Message-ID: <20110207080832.GD27982@pengutronix.de>
-References: <201102011711.31258.jeremy.kerr@canonical.com>
- <1297058877.800158.458894385837.1.gpush@pororo>
+	Mon, 7 Feb 2011 03:10:38 -0500
+Date: Mon, 7 Feb 2011 09:09:51 +0100
+From: Rodolfo Giometti <giometti@enneenne.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Grazvydas Ignotas <notasas@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20110207080951.GD6177@enneenne.com>
+Mail-Followup-To: Lars-Peter Clausen <lars@metafoo.de>,
+	Anton Vorontsov <cbouatmailru@gmail.com>,
+	Grazvydas Ignotas <notasas@gmail.com>, linux-kernel@vger.kernel.org
+References: <1296953291-10373-1-git-send-email-lars@metafoo.de>
+ <1296953291-10373-6-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1297058877.800158.458894385837.1.gpush@pororo>
+In-Reply-To: <1296953291-10373-6-git-send-email-lars@metafoo.de>
+Organization: GNU/Linux Device Drivers, Embedded Systems and Courses
+X-PGP-Key: gpg --keyserver keyserver.linux.it --recv-keys D25A5633
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-SA-Exim-Connect-IP: 192.168.32.37
+X-SA-Exim-Mail-From: giometti@enneenne.com
+Subject: Re: [PATCH 05/14] POWER: bq27x00: Prepare code for addition of
+ bq27000 platform driver
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on mail.enneenne.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 07, 2011 at 02:07:57PM +0800, Jeremy Kerr wrote:
-> We currently have ~21 definitions of struct clk in the ARM architecture,
-> each defined on a per-platform basis. This makes it difficult to define
-> platform- (or architecture-) independent clock sources without making
-> assumptions about struct clk, and impossible to compile two
-> platforms with different struct clks into a single image.
+On Sun, Feb 06, 2011 at 01:48:02AM +0100, Lars-Peter Clausen wrote:
+> This patch simplifies the drivers data structure and moves code to be shared by
+> both init functions into a common function.
+> This patch has no functional changes, it only moves code around.
 > 
-> This change is an effort to unify struct clk where possible, by defining
-> a common struct clk, containing a set of clock operations. Different
-> clock implementations can set their own operations, and have a standard
-> interface for generic code. The callback interface is exposed to the
-> kernel proper, while the clock implementations only need to be seen by
-> the platform internals.
-> 
-> This allows us to share clock code among platforms, and makes it
-> possible to dynamically create clock devices in platform-independent
-> code.
-> 
-> Platforms can enable the generic struct clock through
-> CONFIG_USE_COMMON_STRUCT_CLK. In this case, the clock infrastructure
-> consists of a common struct clk:
-> 
-> struct clk {
-> 	const struct clk_ops	*ops;
-> 	unsigned int		enable_count;
-> 	unsigned int		prepare_count;
-> 	spinlock_t		enable_lock;
-> 	struct mutex		prepare_lock;
-> };
-> 
-> And a set of clock operations (defined per type of clock):
-> 
-> struct clk_ops {
-> 	int             (*enable)(struct clk *);
-> 	void            (*disable)(struct clk *);
-> 	unsigned long   (*get_rate)(struct clk *);
-> 	[...]
-> };
-> 
-> To define a hardware-specific clock, machine code can "subclass" the
-> struct clock into a new struct (adding any device-specific data), and
-> provide a set of operations:
-> 
-> struct clk_foo {
-> 	struct clk	clk;
-> 	void __iomem	*some_register;
-> };
-> 
-> struct clk_ops clk_foo_ops = {
-> 	.get_rate = clk_foo_get_rate,
-> };
-> 
-> The common clock definitions are based on a development patch from Ben
-> Herrenschmidt <benh@kernel.crashing.org>.
-> 
-> Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
-> 
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 > ---
->  drivers/clk/Kconfig  |    3 
->  drivers/clk/Makefile |    1 
->  drivers/clk/clk.c    |  134 +++++++++++++++++++++++++++++++
->  drivers/clk/clkdev.c |    5 +
->  include/linux/clk.h  |  184 ++++++++++++++++++++++++++++++++++++++++---
->  5 files changed, 318 insertions(+), 9 deletions(-)
+>  drivers/power/bq27x00_battery.c |   86 +++++++++++++++++---------------------
+>  1 files changed, 39 insertions(+), 47 deletions(-)
 > 
-> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-> index 4168c88..6e3ae54 100644
-> --- a/drivers/clk/Kconfig
-> +++ b/drivers/clk/Kconfig
-> @@ -2,3 +2,6 @@
->  config CLKDEV_LOOKUP
->  	bool
->  	select HAVE_CLK
-> +
-> +config USE_COMMON_STRUCT_CLK
-> +	bool
-> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-> index 07613fa..a1a06d3 100644
-> --- a/drivers/clk/Makefile
-> +++ b/drivers/clk/Makefile
-> @@ -1,2 +1,3 @@
+> diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
+> index 9f16666..eee0120 100644
+> --- a/drivers/power/bq27x00_battery.c
+> +++ b/drivers/power/bq27x00_battery.c
+> @@ -54,8 +54,8 @@ static DEFINE_MUTEX(battery_mutex);
 >  
->  obj-$(CONFIG_CLKDEV_LOOKUP)	+= clkdev.o
-> +obj-$(CONFIG_USE_COMMON_STRUCT_CLK) += clk.o
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> new file mode 100644
-> index 0000000..12e0daf
-> --- /dev/null
-> +++ b/drivers/clk/clk.c
-> @@ -0,0 +1,134 @@
-> +/*
-> + * Copyright (C) 2010-2011 Canonical Ltd <jeremy.kerr@canonical.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * Standard functionality for the common clock API.
-> + */
-> +
-> +#include <linux/clk.h>
-> +#include <linux/module.h>
-> +
-> +int clk_prepare(struct clk *clk)
-> +{
-> +	int ret = 0;
-> +
-> +	if (!clk->ops->prepare)
-> +		return 0;
-> +
-> +	mutex_lock(&clk->prepare_lock);
-> +	if (clk->prepare_count == 0)
-> +		ret = clk->ops->prepare(clk);
-> +
-> +	if (!ret)
-> +		clk->prepare_count++;
-> +	mutex_unlock(&clk->prepare_lock);
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(clk_prepare);
-> +
-> +void clk_unprepare(struct clk *clk)
-> +{
-> +	if (!clk->ops->unprepare)
-> +		return;
-> +
-> +	mutex_lock(&clk->prepare_lock);
-> +	if (--clk->prepare_count == 0)
-> +		clk->ops->unprepare(clk);
-> +
-> +	mutex_unlock(&clk->prepare_lock);
-> +}
-> +EXPORT_SYMBOL_GPL(clk_unprepare);
-> +
-> +int clk_enable(struct clk *clk)
-> +{
-> +	int ret = 0;
-> +
-> +	if (!clk->ops->enable)
-> +		return 0;
-> +
-> +	spin_lock(&clk->enable_lock);
-> +	if (!clk->enable_count)
-> +		ret = clk->ops->enable(clk);
-> +
-> +	if (!ret)
-> +		clk->enable_count++;
-> +	spin_unlock(&clk->enable_lock);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(clk_enable);
-> +
-> +void clk_disable(struct clk *clk)
-> +{
-> +	if (!clk->ops->disable)
-> +		return;
-> +
-> +	spin_lock(&clk->enable_lock);
-> +
-> +	WARN_ON(!clk->enable_count);
-> +
-> +	if (!--clk->enable_count)
-> +		clk->ops->disable(clk);
-> +
-> +	spin_unlock(&clk->enable_lock);
-> +}
-> +EXPORT_SYMBOL_GPL(clk_disable);
-> +
-> +unsigned long clk_get_rate(struct clk *clk)
-> +{
-> +	if (clk->ops->get_rate)
-> +		return clk->ops->get_rate(clk);
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(clk_get_rate);
-> +
-> +int __clk_get(struct clk *clk)
-> +{
-> +	if (clk->ops->get)
-> +		return clk->ops->get(clk);
-> +	return 1;
-> +}
-> +EXPORT_SYMBOL_GPL(__clk_get);
-> +
-> +void clk_put(struct clk *clk)
-> +{
-> +	if (clk->ops->put)
-> +		clk->ops->put(clk);
-> +}
-> +EXPORT_SYMBOL_GPL(clk_put);
-> +
-> +long clk_round_rate(struct clk *clk, unsigned long rate)
-> +{
-> +	if (clk->ops->round_rate)
-> +		return clk->ops->round_rate(clk, rate);
-> +	return -ENOSYS;
-> +}
-> +EXPORT_SYMBOL_GPL(clk_round_rate);
-> +
-> +int clk_set_rate(struct clk *clk, unsigned long rate)
-> +{
-> +	if (clk->ops->set_rate)
-> +		return clk->ops->set_rate(clk, rate);
-> +	return -ENOSYS;
-> +}
-> +EXPORT_SYMBOL_GPL(clk_set_rate);
-> +
-> +int clk_set_parent(struct clk *clk, struct clk *parent)
-> +{
-> +	if (clk->ops->set_parent)
-> +		return clk->ops->set_parent(clk, parent);
-> +	return -ENOSYS;
-> +}
-> +EXPORT_SYMBOL_GPL(clk_set_parent);
-> +
-> +struct clk *clk_get_parent(struct clk *clk)
-> +{
-> +	if (clk->ops->get_parent)
-> +		return clk->ops->get_parent(clk);
-> +	return ERR_PTR(-ENOSYS);
-> +}
-> +EXPORT_SYMBOL_GPL(clk_get_parent);
-> diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-> index 0fc0a79..17619c7 100644
-> --- a/drivers/clk/clkdev.c
-> +++ b/drivers/clk/clkdev.c
-> @@ -84,12 +84,17 @@ struct clk *clk_get(struct device *dev, const char *con_id)
->  }
->  EXPORT_SYMBOL(clk_get);
+>  struct bq27x00_device_info;
+>  struct bq27x00_access_methods {
+> -	int (*read)(u8 reg, int *rt_value, int b_single,
+> -		struct bq27x00_device_info *di);
+> +	int (*read)(struct bq27x00_device_info *, u8 reg, int *rt_value,
+> +			bool single);
+>  };
 >  
-> +#ifndef CONFIG_USE_COMMON_STRUCT_CLK
-> +/* For the common struct clk case, clk_put is provided by clk.c */
-> +
->  void clk_put(struct clk *clk)
->  {
->  	__clk_put(clk);
->  }
->  EXPORT_SYMBOL(clk_put);
+>  enum bq27x00_chip { BQ27000, BQ27500 };
+> @@ -63,11 +63,11 @@ enum bq27x00_chip { BQ27000, BQ27500 };
+>  struct bq27x00_device_info {
+>  	struct device 		*dev;
+>  	int			id;
+> -	struct bq27x00_access_methods	*bus;
+> -	struct power_supply	bat;
+>  	enum bq27x00_chip	chip;
 >  
-> +#endif
+> -	struct i2c_client	*client;
+> +	struct power_supply	bat;
 > +
->  void clkdev_add(struct clk_lookup *cl)
->  {
->  	mutex_lock(&clocks_mutex);
-> diff --git a/include/linux/clk.h b/include/linux/clk.h
-> index 1d37f42..e081ca1 100644
-> --- a/include/linux/clk.h
-> +++ b/include/linux/clk.h
-> @@ -3,6 +3,7 @@
->   *
->   *  Copyright (C) 2004 ARM Limited.
->   *  Written by Deep Blue Solutions Limited.
-> + *  Copyright (c) 2010-2011 Jeremy Kerr <jeremy.kerr@canonical.com>
->   *
->   * This program is free software; you can redistribute it and/or modify
->   * it under the terms of the GNU General Public License version 2 as
-> @@ -11,18 +12,189 @@
->  #ifndef __LINUX_CLK_H
->  #define __LINUX_CLK_H
+> +	struct bq27x00_access_methods bus;
+>  };
 >  
-> +#include <linux/err.h>
-> +#include <linux/mutex.h>
-> +#include <linux/spinlock.h>
-> +
->  struct device;
->  
-> -/*
-> - * The base API.
-> +#ifdef CONFIG_USE_COMMON_STRUCT_CLK
-> +
-> +/* If we're using the common struct clk, we define the base clk object here */
-> +
-> +/**
-> + * struct clk - hardware independent clock structure
-> + * @ops:		implementation-specific ops for this clock
-> + * @enable_count:	count of clk_enable() calls active on this clock
-> + * @flags:		platform-independent flags
-> + * @lock:		lock for enable/disable or other HW-specific ops
-> + *
-> + * The base clock object, used by drivers for hardware-independent manipulation
-> + * of clock lines. This will be 'subclassed' by device-specific implementations,
-> + * which add device-specific data to struct clk. For example:
-> + *
-> + *  struct clk_foo {
-> + *      struct clk;
-> + *      [device specific fields]
-> + *  };
-> + *
-> + * The clock driver code will manage the device-specific data, and pass
-> + * clk_foo.clk to the common clock code. The clock driver will be called
-> + * through the @ops callbacks.
-> + *
-> + * The @lock member provides either a spinlock or a mutex to protect (at least)
-> + * @enable_count. The type of lock used will depend on @flags; if CLK_ATOMIC is
-> + * set, then the core clock code will use a spinlock, otherwise a mutex. This
-> + * lock will be acquired during clk_enable and clk_disable, so for atomic
-> + * clocks, these ops callbacks must not sleep.
-> + *
-> + * The choice of atomic or non-atomic clock depends on how the clock is enabled.
-> + * Typically, you'll want to use a non-atomic clock. For clocks that need to be
-> + * enabled/disabled in interrupt context, use CLK_ATOMIC. Note that atomic
-> + * clocks with parents will typically cascade enable/disable operations to
-> + * their parent, so the parent of an atomic clock *must* be atomic too.
+>  static enum power_supply_property bq27x00_battery_props[] = {
+> @@ -87,10 +87,10 @@ static enum power_supply_property bq27x00_battery_props[] = {
+>   * Common code for BQ27x00 devices
 >   */
-This comment needs a general overhaul.
+>  
+> -static int bq27x00_read(u8 reg, int *rt_value, int b_single,
+> -			struct bq27x00_device_info *di)
+> +static inline int bq27x00_read(struct bq27x00_device_info *di, u8 reg,
+> +		int *rt_value, bool single)
+>  {
+> -	return di->bus->read(reg, rt_value, b_single, di);
+> +	return di->bus.read(di, reg, rt_value, single);
+>  }
+>  
+>  /*
+> @@ -102,7 +102,7 @@ static int bq27x00_battery_temperature(struct bq27x00_device_info *di)
+>  	int ret;
+>  	int temp = 0;
+>  
+> -	ret = bq27x00_read(BQ27x00_REG_TEMP, &temp, 0, di);
+> +	ret = bq27x00_read(di, BQ27x00_REG_TEMP, &temp, false);
+>  	if (ret) {
+>  		dev_err(di->dev, "error reading temperature\n");
+>  		return ret;
+> @@ -123,7 +123,7 @@ static int bq27x00_battery_voltage(struct bq27x00_device_info *di)
+>  	int ret;
+>  	int volt = 0;
+>  
+> -	ret = bq27x00_read(BQ27x00_REG_VOLT, &volt, 0, di);
+> +	ret = bq27x00_read(di, BQ27x00_REG_VOLT, &volt, false);
+>  	if (ret) {
+>  		dev_err(di->dev, "error reading voltage\n");
+>  		return ret;
+> @@ -143,7 +143,7 @@ static int bq27x00_battery_current(struct bq27x00_device_info *di)
+>  	int curr = 0;
+>  	int flags = 0;
+>  
+> -	ret = bq27x00_read(BQ27x00_REG_AI, &curr, 0, di);
+> +	ret = bq27x00_read(di, BQ27x00_REG_AI, &curr, false);
+>  	if (ret) {
+>  		dev_err(di->dev, "error reading current\n");
+>  		return 0;
+> @@ -153,7 +153,7 @@ static int bq27x00_battery_current(struct bq27x00_device_info *di)
+>  		/* bq27500 returns signed value */
+>  		curr = (int)((s16)curr) * 1000;
+>  	} else {
+> -		ret = bq27x00_read(BQ27x00_REG_FLAGS, &flags, 0, di);
+> +		ret = bq27x00_read(di, BQ27x00_REG_FLAGS, &flags, false);
+>  		if (ret < 0) {
+>  			dev_err(di->dev, "error reading flags\n");
+>  			return 0;
+> @@ -178,9 +178,9 @@ static int bq27x00_battery_rsoc(struct bq27x00_device_info *di)
+>  	int rsoc = 0;
+>  
+>  	if (di->chip == BQ27500)
+> -		ret = bq27x00_read(BQ27500_REG_SOC, &rsoc, 0, di);
+> +		ret = bq27x00_read(di, BQ27500_REG_SOC, &rsoc, false);
+>  	else
+> -		ret = bq27x00_read(BQ27000_REG_RSOC, &rsoc, 1, di);
+> +		ret = bq27x00_read(di, BQ27000_REG_RSOC, &rsoc, true);
+>  	if (ret) {
+>  		dev_err(di->dev, "error reading relative State-of-Charge\n");
+>  		return ret;
+> @@ -196,7 +196,7 @@ static int bq27x00_battery_status(struct bq27x00_device_info *di,
+>  	int status;
+>  	int ret;
+>  
+> -	ret = bq27x00_read(BQ27x00_REG_FLAGS, &flags, 0, di);
+> +	ret = bq27x00_read(di, BQ27x00_REG_FLAGS, &flags, false);
+>  	if (ret < 0) {
+>  		dev_err(di->dev, "error reading flags\n");
+>  		return ret;
+> @@ -230,7 +230,7 @@ static int bq27x00_battery_time(struct bq27x00_device_info *di, int reg,
+>  	int tval = 0;
+>  	int ret;
+>  
+> -	ret = bq27x00_read(reg, &tval, 0, di);
+> +	ret = bq27x00_read(reg, &tval, false);
+>  	if (ret) {
+>  		dev_err(di->dev, "error reading register %02x\n", reg);
+>  		return ret;
+> @@ -296,23 +296,35 @@ static int bq27x00_battery_get_property(struct power_supply *psy,
+>  	return ret;
+>  }
+>  
+> -static void bq27x00_powersupply_init(struct bq27x00_device_info *di)
+> +static int bq27x00_powersupply_init(struct bq27x00_device_info *di)
+>  {
+> +	int ret;
+> +
+>  	di->bat.type = POWER_SUPPLY_TYPE_BATTERY;
+>  	di->bat.properties = bq27x00_battery_props;
+>  	di->bat.num_properties = ARRAY_SIZE(bq27x00_battery_props);
+>  	di->bat.get_property = bq27x00_battery_get_property;
+>  	di->bat.external_power_changed = NULL;
+> +
+> +	ret = power_supply_register(di->dev, &di->bat);
+> +	if (ret) {
+> +		dev_err(di->dev, "failed to register battery: %d\n", ret);
+> +		return ret;
+> +	}
+> +
+> +	dev_info(di->dev, "support ver. %s enabled\n", DRIVER_VERSION);
+> +
+> +	return 0;
+>  }
+>  
+>  /*
+>   * i2c specific code
+>   */
+>  
+> -static int bq27x00_read_i2c(u8 reg, int *rt_value, int b_single,
+> -			struct bq27x00_device_info *di)
+> +static int bq27x00_read_i2c(struct bq27x00_device_info *di, u8 reg,
+> +			int *rt_value, bool single)
+>  {
+> -	struct i2c_client *client = di->client;
+> +	struct i2c_client *client = to_i2c_client(di->dev);
+>  	struct i2c_msg msg[1];
+>  	unsigned char data[2];
+>  	int err;
+> @@ -329,7 +341,7 @@ static int bq27x00_read_i2c(u8 reg, int *rt_value, int b_single,
+>  	err = i2c_transfer(client->adapter, msg, 1);
+>  
+>  	if (err >= 0) {
+> -		if (!b_single)
+> +		if (!single)
+>  			msg->len = 2;
+>  		else
+>  			msg->len = 1;
+> @@ -337,7 +349,7 @@ static int bq27x00_read_i2c(u8 reg, int *rt_value, int b_single,
+>  		msg->flags = I2C_M_RD;
+>  		err = i2c_transfer(client->adapter, msg, 1);
+>  		if (err >= 0) {
+> -			if (!b_single)
+> +			if (!single)
+>  				*rt_value = get_unaligned_le16(data);
+>  			else
+>  				*rt_value = data[0];
+> @@ -353,7 +365,6 @@ static int bq27x00_battery_probe(struct i2c_client *client,
+>  {
+>  	char *name;
+>  	struct bq27x00_device_info *di;
+> -	struct bq27x00_access_methods *bus;
+>  	int num;
+>  	int retval = 0;
+>  
+> @@ -380,38 +391,20 @@ static int bq27x00_battery_probe(struct i2c_client *client,
+>  		retval = -ENOMEM;
+>  		goto batt_failed_2;
+>  	}
+> +
+>  	di->id = num;
+> +	di->dev = &client->dev;
+>  	di->chip = id->driver_data;
+> +	di->bat.name = name;
+> +	di->bus.read = &bq27x00_read_i2c;
+>  
+> -	bus = kzalloc(sizeof(*bus), GFP_KERNEL);
+> -	if (!bus) {
+> -		dev_err(&client->dev, "failed to allocate access method "
+> -					"data\n");
+> -		retval = -ENOMEM;
+> +	if (bq27x00_powersupply_init(di))
+>  		goto batt_failed_3;
+> -	}
+>  
+>  	i2c_set_clientdata(client, di);
+> -	di->dev = &client->dev;
+> -	di->bat.name = name;
+> -	bus->read = &bq27x00_read_i2c;
+> -	di->bus = bus;
+> -	di->client = client;
+> -
+> -	bq27x00_powersupply_init(di);
+> -
+> -	retval = power_supply_register(&client->dev, &di->bat);
+> -	if (retval) {
+> -		dev_err(&client->dev, "failed to register battery\n");
+> -		goto batt_failed_4;
+> -	}
+> -
+> -	dev_info(&client->dev, "support ver. %s enabled\n", DRIVER_VERSION);
+>  
+>  	return 0;
+>  
+> -batt_failed_4:
+> -	kfree(bus);
+>  batt_failed_3:
+>  	kfree(di);
+>  batt_failed_2:
+> @@ -430,7 +423,6 @@ static int bq27x00_battery_remove(struct i2c_client *client)
+>  
+>  	power_supply_unregister(&di->bat);
+>  
+> -	kfree(di->bus);
+>  	kfree(di->bat.name);
+>  
+>  	mutex_lock(&battery_mutex);
+> -- 
+> 1.7.2.3
+> 
 
-(I had this comment already in my first mail, but I must have deleted it
-when removing the unrealted quotes.)
-
-> +struct clk {
-> +	const struct clk_ops	*ops;
-> +	unsigned int		enable_count;
-> +	unsigned int		prepare_count;
-> +	spinlock_t		enable_lock;
-> +	struct mutex		prepare_lock;
-> +};
-
-Best regards
-Uwe
+Acked-by: Rodolfo Giometti <giometti@linux.it>
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+GNU/Linux Solutions                  e-mail: giometti@enneenne.com
+Linux Device Driver                          giometti@linux.it
+Embedded Systems                     phone:  +39 349 2432127
+UNIX programming                     skype:  rodolfo.giometti
+Freelance ICT Italia - Consulente ICT Italia - www.consulenti-ict.it
