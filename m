@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755340Ab1BGXfV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 18:35:21 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:51505 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755210Ab1BGXfT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 18:35:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=hN+7i0Q6yXSlpvD/A6fB/W8WpCeKz8h1Hx6f/M4YnmfpIUKaZHT1uZPzlv82pngGRr
-         15G9G0c8u16SsBvJaJzCl8Uox6dkEIH4rR6P0KcedHXrzcEObjO5Is+aetdXsIPUcNct
-         UMWdCun32fXoaaQVWZh+cgUmEDAgWwE5rSA70=
-MIME-Version: 1.0
-In-Reply-To: <20110205193740.964969119@linutronix.de>
-References: <20110205193740.964969119@linutronix.de>
-Date: Mon, 7 Feb 2011 15:35:17 -0800
-X-Google-Sender-Auth: SGDQbCwj-f3n0mzlp9KqpZC6EYA
-Message-ID: <AANLkTimd37W_PBtQhhHf3YHj_ms6d-g7F6EQVACNigc+@mail.gmail.com>
-Subject: Re: [patch 0/8] ia64: Convert irq_chips to new functions
-From: Tony Luck <tony.luck@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jes Sorensen <jes@sgi.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	id S1755324Ab1BGXfU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 18:35:20 -0500
+Received: from mga02.intel.com ([134.134.136.20]:32284 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755187Ab1BGXfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 18:35:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,439,1291622400"; 
+   d="scan'208";a="705066024"
+From: jacob.jun.pan@linux.intel.com
+To: LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Matt Helsley <matthltc@us.ibm.com>,
+        container cgroup <containers@lists.linux-foundation.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <menage@google.com>,
+        akpm@linux-foundation.org, rdunlap@xenotime.net,
+        Cedric Le Goater <clg@fr.ibm.com>
+Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH v4] cgroup/freezer: add per freezer duty ratio control
+Date: Mon,  7 Feb 2011 15:33:07 -0800
+Message-Id: <1297121587-306-1-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 5, 2011 at 11:44 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> The following series converts the interrupt chips to the new
-> functions.Compile tested only.
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
 
-I see a new warning while building:
+Fixing subject in cover letter, should be v4 instead of v3
 
-arch/ia64/sn/kernel/irq.c:427: warning: ‘force_interrupt’ defined but not used
+Changelog:
+v4:	- limit kthread creation only when valid duty ratio
+	  parameters are given.
+	- changed period back to milisecond
+	- consolidated paramter write functions
 
-since you deleted the only use of this function.
-sn_force_interrupt_flag doesn't
-seem to be useful either once this patch has been applied.
+v3:	- added documentation
 
-Apart from that it all seems to build and boot with no problems on my
-machine.  I haven't tested on SGI sn2 system (where you've made
-a moderately big change).  It'd be nice to get an Ack from there.
+v2:
+	- use read_u64/write_u64 instead of string read/write
+	- use period in second instead of ms
+	- renamed duty_ratio to duty_ratio_pct, be more specific
+	- removed locking around period and duty_ratio reads
 
--Tony
+
+Jacob Pan (1):
+  cgroup/freezer: add per freezer duty ratio control
+
+ Documentation/cgroups/freezer-subsystem.txt |   23 ++++++
+ kernel/cgroup_freezer.c                     |  109 ++++++++++++++++++++++++++-
+ 2 files changed, 130 insertions(+), 2 deletions(-)
+
