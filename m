@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754645Ab1BGWXm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 17:23:42 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:51703 "EHLO ogre.sisk.pl"
+	id S1755218Ab1BGWX7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 17:23:59 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:51717 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752242Ab1BGWXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 17:23:40 -0500
+	id S1754927Ab1BGWXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 17:23:47 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Len Brown <lenb@kernel.org>
-Subject: [PATCH 4/6] ACPI / PM: Call acpi_save_state_mem() right before low-level suspend
-Date: Mon, 7 Feb 2011 23:20:53 +0100
+Subject: [PATCH 3/6] ACPI / PM: Modify the "low-level resume finished" message
+Date: Mon, 7 Feb 2011 23:19:55 +0100
 User-Agent: KMail/1.13.5 (Linux/2.6.38-rc3+; KDE/4.4.4; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>,
         ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
@@ -21,53 +21,41 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201102072320.53799.rjw@sisk.pl>
+Message-Id: <201102072319.56040.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Since acpi_save_state_mem() is only called by acpi_suspend_enter()
-if the target sleep state is S3, it's better to call it under the
-switch (acpi_state), right before do_suspend_lowlevel().
+Move the low-level resume completion message to the point where
+control goes back to acpi_suspend_enter() during resume and change
+it so that it's more informative.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/acpi/sleep.c |   12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+ drivers/acpi/sleep.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
 Index: linux-2.6/drivers/acpi/sleep.c
 ===================================================================
 --- linux-2.6.orig/drivers/acpi/sleep.c
 +++ linux-2.6/drivers/acpi/sleep.c
-@@ -244,17 +244,10 @@ static int acpi_suspend_enter(suspend_st
- {
- 	acpi_status status = AE_OK;
- 	u32 acpi_state = acpi_target_sleep_state;
-+	int error;
- 
- 	ACPI_FLUSH_CPU_CACHE();
- 
--	/* Do arch specific saving of state. */
--	if (acpi_state == ACPI_STATE_S3) {
--		int error = acpi_save_state_mem();
--
--		if (error)
--			return error;
--	}
--
- 	switch (acpi_state) {
- 	case ACPI_STATE_S1:
- 		barrier();
-@@ -262,6 +255,9 @@ static int acpi_suspend_enter(suspend_st
- 		break;
+@@ -263,6 +263,7 @@ static int acpi_suspend_enter(suspend_st
  
  	case ACPI_STATE_S3:
-+		error = acpi_save_state_mem();
-+		if (error)
-+			return error;
  		do_suspend_lowlevel();
- 		pr_info(PREFIX "Low-level resume complete\n");
++		pr_info(PREFIX "Low-level resume complete\n");
  		break;
+ 	}
+ 
+@@ -288,8 +289,6 @@ static int acpi_suspend_enter(suspend_st
+ 	/* Allow EC transactions to happen. */
+ 	acpi_ec_unblock_transactions_early();
+ 
+-	printk(KERN_DEBUG "Back to C!\n");
+-
+ 	suspend_nvs_restore();
+ 
+ 	return ACPI_SUCCESS(status) ? 0 : -EFAULT;
 
