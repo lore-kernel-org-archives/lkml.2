@@ -1,514 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850Ab1BGH5U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 02:57:20 -0500
-Received: from hera.kernel.org ([140.211.167.34]:33086 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752601Ab1BGH5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 02:57:18 -0500
-Date: Mon, 7 Feb 2011 07:56:35 GMT
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
-        peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
-        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <new-submission>
-References: <new-submission>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf top: Ditch private annotation code, share perf annotate's
-Message-ID: <tip-36532461a0f60bb36c5470a0326f7394f19db23c@git.kernel.org>
-Git-Commit-ID: 36532461a0f60bb36c5470a0326f7394f19db23c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1752865Ab1BGH6e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 02:58:34 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46215 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752601Ab1BGH6c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 02:58:32 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :user-agent;
+        b=tcMPiNSHyIE7o2/6Y3hLvx6N+3oWQnae2XL8IAAHLQ6r0pLxlJu3OhCeXnTm3l5Yw7
+         jr9MVH5B9Q3Tx5BY0eCivWjz3gv7J5AXGWk4x0EquMtuYX6snjHTU38RthqSi3Grl8Hd
+         4mDOr4h0O/2h463BUFKn4fVgkhXcj8VeXM0zk=
+Date: Mon, 7 Feb 2011 15:58:15 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: linux-kernel@vger.kernel.org, greg@kroah.com
+Subject: [PATCH]Translated linux-2.6/Documentation/magic-number.txt into
+ Chinese
+Message-ID: <20110207075809.GA16214@gmail.com>
+Mail-Followup-To: linux-kernel@vger.kernel.org, greg@kroah.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/mixed; boundary="UugvWAfsgieZRqgk"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 07 Feb 2011 07:56:36 +0000 (UTC)
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  36532461a0f60bb36c5470a0326f7394f19db23c
-Gitweb:     http://git.kernel.org/tip/36532461a0f60bb36c5470a0326f7394f19db23c
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Sun, 6 Feb 2011 14:54:44 -0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Sun, 6 Feb 2011 16:08:50 -0200
 
-perf top: Ditch private annotation code, share perf annotate's
+--UugvWAfsgieZRqgk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Next step: Live TUI annotation in perf top, just press enter on a symbol
-line.
+Hi us,
+   I have translated linux-2.6/Documentation/magic-number.txt into Chinese.
+When i paste the patch into my mutt, something wrong happened, which i can not close this mail. The mutt shows something wrong about /tmp/...
+   So i have to add an accessory including my patcher. If you don't want to download it, you can also click the URL: http://harrywei.org/blog/?p=46
+for it.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Thanks.
+Best Regards.
+Harry Wei.
+Home Page: www.harrywei.org
+
+
+--UugvWAfsgieZRqgk
+Content-Type: text/x-diff; charset=utf-8
+Content-Disposition: attachment; filename="0001-Translated-linux-2.6-Documentation-magic-number.txt-.patch"
+Content-Transfer-Encoding: 8bit
+
+Signed-off-by: Harry Wei <harryxiyou@gmail.com>
 ---
- tools/perf/builtin-top.c   |  181 ++++++++------------------------------------
- tools/perf/util/annotate.c |   76 ++++++++++++++++---
- tools/perf/util/annotate.h |   11 ++-
- tools/perf/util/top.h      |   11 +---
- 4 files changed, 106 insertions(+), 173 deletions(-)
+ Documentation/zh_CN/magic-number.txt |  167 ++++++++++++++++++++++++++++++++++
+ 1 files changed, 167 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/zh_CN/magic-number.txt
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 154e088..716118a 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -20,6 +20,7 @@
- 
- #include "perf.h"
- 
-+#include "util/annotate.h"
- #include "util/cache.h"
- #include "util/color.h"
- #include "util/evlist.h"
-@@ -140,10 +141,7 @@ static int parse_source(struct sym_entry *syme)
- 	struct symbol *sym;
- 	struct sym_entry_source *source;
- 	struct map *map;
--	FILE *file;
--	char command[PATH_MAX*2];
--	const char *path;
--	u64 len;
-+	int err = -1;
- 
- 	if (!syme)
- 		return -1;
-@@ -162,197 +160,80 @@ static int parse_source(struct sym_entry *syme)
- 		if (syme->src == NULL)
- 			return -1;
- 		pthread_mutex_init(&syme->src->lock, NULL);
-+		INIT_LIST_HEAD(&syme->src->head);
- 	}
- 
- 	source = syme->src;
- 
--	if (source->lines) {
-+	if (symbol__annotation(sym)->histograms != NULL) {
- 		pthread_mutex_lock(&source->lock);
- 		goto out_assign;
- 	}
--	path = map->dso->long_name;
--
--	len = sym->end - sym->start;
--
--	sprintf(command,
--		"objdump --start-address=%#0*" PRIx64 " --stop-address=%#0*" PRIx64 " -dS %s",
--		BITS_PER_LONG / 4, map__rip_2objdump(map, sym->start),
--		BITS_PER_LONG / 4, map__rip_2objdump(map, sym->end), path);
--
--	file = popen(command, "r");
--	if (!file)
--		return -1;
- 
- 	pthread_mutex_lock(&source->lock);
--	source->lines_tail = &source->lines;
--	while (!feof(file)) {
--		struct source_line *src;
--		size_t dummy = 0;
--		char *c, *sep;
--
--		src = malloc(sizeof(struct source_line));
--		assert(src != NULL);
--		memset(src, 0, sizeof(struct source_line));
--
--		if (getline(&src->line, &dummy, file) < 0)
--			break;
--		if (!src->line)
--			break;
--
--		c = strchr(src->line, '\n');
--		if (c)
--			*c = 0;
- 
--		src->next = NULL;
--		*source->lines_tail = src;
--		source->lines_tail = &src->next;
--
--		src->eip = strtoull(src->line, &sep, 16);
--		if (*sep == ':')
--			src->eip = map__objdump_2ip(map, src->eip);
--		else /* this line has no ip info (e.g. source line) */
--			src->eip = 0;
-+	if (symbol__alloc_hist(sym, top.evlist->nr_entries) < 0) {
-+		pr_err("Not enough memory for annotating '%s' symbol!\n",
-+		       sym->name);
-+		goto out_unlock;
- 	}
--	pclose(file);
+diff --git a/Documentation/zh_CN/magic-number.txt b/Documentation/zh_CN/magic-number.txt
+new file mode 100644
+index 0000000..703dba9
+--- /dev/null
++++ b/Documentation/zh_CN/magic-number.txt
+@@ -0,0 +1,167 @@
++Chinese translated version of Documentation/magic-number.txt
 +
-+	err = symbol__annotate(sym, syme->map, &source->head, 0);
-+	if (err == 0) {
- out_assign:
- 	sym_filter_entry = syme;
-+	}
-+out_unlock:
- 	pthread_mutex_unlock(&source->lock);
--	return 0;
-+	return err;
- }
- 
- static void __zero_source_counters(struct sym_entry *syme)
- {
--	int i;
--	struct source_line *line;
--
--	line = syme->src->lines;
--	while (line) {
--		for (i = 0; i < top.evlist->nr_entries; i++)
--			line->count[i] = 0;
--		line = line->next;
--	}
-+	struct symbol *sym = sym_entry__symbol(syme);
-+	symbol__annotate_zero_histograms(sym);
- }
- 
- static void record_precise_ip(struct sym_entry *syme, int counter, u64 ip)
- {
--	struct source_line *line;
--
- 	if (syme != sym_filter_entry)
- 		return;
- 
- 	if (pthread_mutex_trylock(&syme->src->lock))
- 		return;
- 
--	if (syme->src == NULL || syme->src->source == NULL)
--		goto out_unlock;
--
--	for (line = syme->src->lines; line; line = line->next) {
--		/* skip lines without IP info */
--		if (line->eip == 0)
--			continue;
--		if (line->eip == ip) {
--			line->count[counter]++;
--			break;
--		}
--		if (line->eip > ip)
--			break;
--	}
--out_unlock:
--	pthread_mutex_unlock(&syme->src->lock);
--}
--
--#define PATTERN_LEN		(BITS_PER_LONG / 4 + 2)
-+	ip = syme->map->map_ip(syme->map, ip);
-+	symbol__inc_addr_samples(sym_entry__symbol(syme), syme->map, counter, ip);
- 
--static void lookup_sym_source(struct sym_entry *syme)
--{
--	struct symbol *symbol = sym_entry__symbol(syme);
--	struct source_line *line;
--	char pattern[PATTERN_LEN + 1];
--
--	sprintf(pattern, "%0*" PRIx64 " <", BITS_PER_LONG / 4,
--		map__rip_2objdump(syme->map, symbol->start));
--
--	pthread_mutex_lock(&syme->src->lock);
--	for (line = syme->src->lines; line; line = line->next) {
--		if (memcmp(line->line, pattern, PATTERN_LEN) == 0) {
--			syme->src->source = line;
--			break;
--		}
--	}
- 	pthread_mutex_unlock(&syme->src->lock);
- }
- 
--static void show_lines(struct source_line *queue, int count, int total)
--{
--	int i;
--	struct source_line *line;
--
--	line = queue;
--	for (i = 0; i < count; i++) {
--		float pcnt = 100.0*(float)line->count[top.sym_counter]/(float)total;
--
--		printf("%8li %4.1f%%\t%s\n", line->count[top.sym_counter], pcnt, line->line);
--		line = line->next;
--	}
--}
--
--#define TRACE_COUNT     3
--
- static void show_details(struct sym_entry *syme)
- {
- 	struct symbol *symbol;
--	struct source_line *line;
--	struct source_line *line_queue = NULL;
--	int displayed = 0;
--	int line_queue_count = 0, total = 0, more = 0;
-+	int more;
- 
- 	if (!syme)
- 		return;
- 
--	if (!syme->src->source)
--		lookup_sym_source(syme);
--
--	if (!syme->src->source)
-+	symbol = sym_entry__symbol(syme);
-+	if (!syme->src || symbol__annotation(symbol)->histograms == NULL)
- 		return;
- 
--	symbol = sym_entry__symbol(syme);
- 	printf("Showing %s for %s\n", event_name(top.sym_evsel), symbol->name);
- 	printf("  Events  Pcnt (>=%d%%)\n", sym_pcnt_filter);
- 
- 	pthread_mutex_lock(&syme->src->lock);
--	line = syme->src->source;
--	while (line) {
--		total += line->count[top.sym_counter];
--		line = line->next;
--	}
--
--	line = syme->src->source;
--	while (line) {
--		float pcnt = 0.0;
--
--		if (!line_queue_count)
--			line_queue = line;
--		line_queue_count++;
--
--		if (line->count[top.sym_counter])
--			pcnt = 100.0 * line->count[top.sym_counter] / (float)total;
--		if (pcnt >= (float)sym_pcnt_filter) {
--			if (displayed <= top.print_entries)
--				show_lines(line_queue, line_queue_count, total);
--			else more++;
--			displayed += line_queue_count;
--			line_queue_count = 0;
--			line_queue = NULL;
--		} else if (line_queue_count > TRACE_COUNT) {
--			line_queue = line_queue->next;
--			line_queue_count--;
--		}
--
--		line->count[top.sym_counter] = top.zero ? 0 : line->count[top.sym_counter] * 7 / 8;
--		line = line->next;
--	}
-+	more = symbol__annotate_printf(symbol, syme->map, &syme->src->head,
-+				       top.sym_evsel->idx, 0, sym_pcnt_filter,
-+				       top.print_entries);
-+	if (top.zero)
-+		symbol__annotate_zero_histogram(symbol, top.sym_evsel->idx);
-+	else
-+		symbol__annotate_decay_histogram(symbol, &syme->src->head,
-+						 top.sym_evsel->idx);
- 	pthread_mutex_unlock(&syme->src->lock);
--	if (more)
-+	if (more != 0)
- 		printf("%d lines not displayed, maybe increase display entries [e]\n", more);
- }
- 
-@@ -1172,7 +1053,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
- 
- 	top.sym_evsel = list_entry(top.evlist->entries.next, struct perf_evsel, node);
- 
--	symbol_conf.priv_size = (sizeof(struct sym_entry) +
-+	symbol_conf.priv_size = (sizeof(struct sym_entry) + sizeof(struct annotation) +
- 				 (top.evlist->nr_entries + 1) * sizeof(unsigned long));
- 
- 	symbol_conf.try_vmlinux_path = (symbol_conf.vmlinux_name == NULL);
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 10cdbad..2973376 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -22,9 +22,19 @@ int symbol__alloc_hist(struct symbol *sym, int nevents)
- 	notes->sizeof_sym_hist = (sizeof(*notes->histograms) +
- 				  (sym->end - sym->start) * sizeof(u64));
- 	notes->histograms = calloc(nevents, notes->sizeof_sym_hist);
-+	notes->nr_histograms = nevents;
- 	return notes->histograms == NULL ? -1 : 0;
- }
- 
-+void symbol__annotate_zero_histograms(struct symbol *sym)
-+{
-+	struct annotation *notes = symbol__annotation(sym);
++If you have any comment or update to the content, please post to LKML directly.
++However, if you have problem communicating in English you can also ask the
++Chinese maintainer for help.  Contact the Chinese maintainer, if this
++translation is outdated or there is problem with translation.
 +
-+	if (notes->histograms != NULL)
-+		memset(notes->histograms, 0,
-+		       notes->nr_histograms * notes->sizeof_sym_hist);
-+}
++Chinese maintainer: Jia Wei Wei <harryxiyou@gmail.com>
++---------------------------------------------------------------------
++Documentation/magic-number.txt的中文翻译
 +
- int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
- 			     int evidx, u64 addr)
- {
-@@ -85,9 +95,10 @@ struct objdump_line *objdump__get_next_ip_line(struct list_head *head,
- 	return NULL;
- }
- 
--static void objdump_line__print(struct objdump_line *oline,
--				struct list_head *head, struct symbol *sym,
--				int evidx, u64 len, int min_pcnt)
-+static int objdump_line__print(struct objdump_line *oline,
-+			       struct list_head *head, struct symbol *sym,
-+			       int evidx, u64 len, int min_pcnt,
-+			       int printed, int max_lines)
- {
- 	static const char *prev_line;
- 	static const char *prev_color;
-@@ -119,7 +130,10 @@ static void objdump_line__print(struct objdump_line *oline,
- 			percent = 100.0 * hits / h->sum;
- 
- 		if (percent < min_pcnt)
--			return;
-+			return -1;
++如果想评论或更新本文的内容，请直接发信到LKML。如果你使用英文交流有困难的话，也可
++以向中文版维护者求助。如果本翻译更新不及时或者翻译存在问题，请联系中文版维护者。
 +
-+		if (printed >= max_lines)
-+			return 1;
- 
- 		color = get_percent_color(percent);
- 
-@@ -140,12 +154,16 @@ static void objdump_line__print(struct objdump_line *oline,
- 		color_fprintf(stdout, color, " %7.2f", percent);
- 		printf(" :	");
- 		color_fprintf(stdout, PERF_COLOR_BLUE, "%s\n", oline->line);
--	} else {
-+	} else if (printed >= max_lines)
-+		return 1;
-+	else {
- 		if (!*oline->line)
- 			printf("         :\n");
- 		else
- 			printf("         :	%s\n", oline->line);
- 	}
++中文版维护者： 贾威威 Jia Wei Wei <harryxiyou@gmail.com>
++中文版翻译者： 贾威威 Jia Wei Wei <harryxiyou@gmail.com>
++中文版校译者： 贾威威 Jia Wei Wei <harryxiyou@gmail.com>
 +
-+	return 0;
- }
- 
- static int symbol__parse_objdump_line(struct symbol *sym, struct map *map, FILE *file,
-@@ -421,14 +439,15 @@ static void symbol__annotate_hits(struct symbol *sym, int evidx)
- 	printf("%*s: %" PRIu64 "\n", BITS_PER_LONG / 2, "h->sum", h->sum);
- }
- 
--void symbol__annotate_printf(struct symbol *sym, struct map *map,
--			     struct list_head *head, int evidx, bool full_paths,
--			     int min_pcnt, int max_lines)
-+int symbol__annotate_printf(struct symbol *sym, struct map *map,
-+			    struct list_head *head, int evidx, bool full_paths,
-+			    int min_pcnt, int max_lines)
- {
- 	struct dso *dso = map->dso;
- 	const char *filename = dso->long_name, *d_filename;
- 	struct objdump_line *pos;
- 	int printed = 2;
-+	int more = 0;
- 	u64 len;
- 
- 	if (full_paths)
-@@ -445,10 +464,47 @@ void symbol__annotate_printf(struct symbol *sym, struct map *map,
- 		symbol__annotate_hits(sym, evidx);
- 
- 	list_for_each_entry(pos, head, node) {
--		objdump_line__print(pos, head, sym, evidx, len, min_pcnt);
--		if (max_lines && ++printed >= max_lines)
-+		switch (objdump_line__print(pos, head, sym, evidx, len, min_pcnt,
-+					    printed, max_lines)) {
-+		case 0:
-+			++printed;
-+			break;
-+		case 1:
-+			/* filtered by max_lines */
-+			++more;
- 			break;
-+		case -1:
-+		default:
-+			/* filtered by min_pcnt */
-+			break;
-+		}
-+	}
++以下为正文
++---------------------------------------------------------------------
++这个文件是有关当前使用的魔术值注册表。当你给一个结构添加了一个魔术值，你也应该把这个魔术值添加到这个文件，因为我们最好把用于各种结构的魔术值统一起来。
 +
-+	return more;
-+}
- 
-+void symbol__annotate_zero_histogram(struct symbol *sym, int evidx)
-+{
-+	struct annotation *notes = symbol__annotation(sym);
-+	struct sym_hist *h = annotation__histogram(notes, evidx);
++使用魔术值来保护内核数据结构是一个非常好的主意。这就允许你在运行期检查(a)一个结构是否已经被攻击，或者(b)你已经给一个例行程序通过了一个错误的结构。后一种情况特别地有用---特别是当你通过一个空指针指向结构体的时候。tty源码，例如，经常通过特定驱动使用这种方法并且反复地排列特定方面的结构。
 +
-+	memset(h, 0, notes->sizeof_sym_hist);
-+}
++使用魔术值的方法是在结构的开始处声明的，如下：
 +
-+void symbol__annotate_decay_histogram(struct symbol *sym,
-+				      struct list_head *head, int evidx)
-+{
-+	struct annotation *notes = symbol__annotation(sym);
-+	struct sym_hist *h = annotation__histogram(notes, evidx);
-+	struct objdump_line *pos;
++struct tty_ldisc {
++	int	magic;
++	...
++};
 +
-+	h->sum = 0;
++当你以后给内核添加增强功能的时候，请遵守这条规则！这样就会节省数不清的调试时间，特别是一些古怪的情况，例如，数组超出范围并且重新写了超出部分。遵守这个规则，‪这些情况可以被快速地，安全地避免。
 +
-+	list_for_each_entry(pos, head, node) {
-+		if (pos->offset != -1) {
-+			h->addr[pos->offset] = h->addr[pos->offset] * 7 / 8;
-+			h->sum += h->addr[pos->offset];
-+		}
- 	}
- }
- 
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index 53dd92d..b1253aa 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -42,6 +42,7 @@ struct source_line {
- struct annotation {
- 	struct source_line *src_line;
- 	struct sym_hist	   *histograms;
-+	int    		   nr_histograms;
- 	int    		   sizeof_sym_hist;
- };
- 
-@@ -64,12 +65,16 @@ static inline struct annotation *symbol__annotation(struct symbol *sym)
- int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
- 			     int evidx, u64 addr);
- int symbol__alloc_hist(struct symbol *sym, int nevents);
-+void symbol__annotate_zero_histograms(struct symbol *sym);
- 
- int symbol__annotate(struct symbol *sym, struct map *map,
- 		     struct list_head *head, size_t privsize);
--void symbol__annotate_printf(struct symbol *sym, struct map *map,
--			     struct list_head *head, int evidx, bool full_paths,
--			     int min_pcnt, int max_lines);
-+int symbol__annotate_printf(struct symbol *sym, struct map *map,
-+			    struct list_head *head, int evidx, bool full_paths,
-+			    int min_pcnt, int max_lines);
-+void symbol__annotate_zero_histogram(struct symbol *sym, int evidx);
-+void symbol__annotate_decay_histogram(struct symbol *sym,
-+				      struct list_head *head, int evidx);
- void objdump_line_list__purge(struct list_head *head);
- 
- int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
-diff --git a/tools/perf/util/top.h b/tools/perf/util/top.h
-index 5009508..fe44afb 100644
---- a/tools/perf/util/top.h
-+++ b/tools/perf/util/top.h
-@@ -11,17 +11,8 @@
- struct perf_evlist;
- struct perf_evsel;
- 
--struct source_line {
--	u64			eip;
--	unsigned long		count[MAX_COUNTERS]; /* FIXME */
--	char			*line;
--	struct source_line	*next;
--};
--
- struct sym_entry_source {
--	struct source_line	*source;
--	struct source_line	*lines;
--	struct source_line	**lines_tail;
-+	struct list_head	head;
- 	pthread_mutex_t		lock;
- };
- 
++		Theodore Ts'o
++		  31 Mar 94
++
++给当前的Linux 2.1.55添加魔术表。
++
++		Michael Chastain
++		<mailto:mec@shout.net>
++		22 Sep 1997
++
++现在应该最新的Linux 2.1.112.因为在特性冻结期间，不能在2.2.x前改变任何东西。这些条目被数域所排序。
++
++		Krzysztof G.Baranowski
++	        <mailto: kgb@knm.org.pl>
++		29 Jul 1998
++
++更新魔术表到Linux 2.5.45。刚好越过特性冻结，但是有可能还会有一些新的魔术值在2.6.x之前融入到内核中。
++
++		Petr Baudis
++		<pasky@ucw.cz>
++		03 Nov 2002
++
++更新魔术表到Linux 2.5.74。
++
++		Fabian Frederick
++                <ffrederick@users.sourceforge.net>
++		09 Jul 2003
++
++魔术名                 地址         结构               所在文件
++===========================================================================
++PG_MAGIC              'P'         pg_{read,write}_hdr include/linux/pg.h
++CMAGIC                0x0111      user              include/linux/a.out.h
++MKISS_DRIVER_MAGIC    0x04bf      mkiss_channel     drivers/net/mkiss.h
++RISCOM8_MAGIC         0x0907      riscom_port       drivers/char/riscom8.h
++SPECIALIX_MAGIC       0x0907      specialix_port    drivers/char/specialix_io8.h
++HDLC_MAGIC            0x239e      n_hdlc            drivers/char/n_hdlc.c
++APM_BIOS_MAGIC        0x4101      apm_user          arch/i386/kernel/apm.c
++CYCLADES_MAGIC        0x4359      cyclades_port     include/linux/cyclades.h
++DB_MAGIC              0x4442      fc_info           drivers/net/iph5526_novram.c
++DL_MAGIC              0x444d      fc_info           drivers/net/iph5526_novram.c
++FASYNC_MAGIC          0x4601      fasync_struct     include/linux/fs.h
++FF_MAGIC              0x4646      fc_info           drivers/net/iph5526_novram.c
++ISICOM_MAGIC          0x4d54      isi_port          include/linux/isicom.h
++PTY_MAGIC             0x5001                        drivers/char/pty.c
++PPP_MAGIC             0x5002      ppp               include/linux/if_pppvar.h
++SERIAL_MAGIC          0x5301      async_struct      include/linux/serial.h
++SSTATE_MAGIC          0x5302      serial_state      include/linux/serial.h
++SLIP_MAGIC            0x5302      slip              drivers/net/slip.h
++STRIP_MAGIC           0x5303      strip             drivers/net/strip.c
++X25_ASY_MAGIC         0x5303      x25_asy           drivers/net/x25_asy.h
++SIXPACK_MAGIC         0x5304      sixpack           drivers/net/hamradio/6pack.h
++AX25_MAGIC            0x5316      ax_disp           drivers/net/mkiss.h
++ESP_MAGIC             0x53ee      esp_struct        drivers/char/esp.h
++TTY_MAGIC             0x5401      tty_struct        include/linux/tty.h
++MGSL_MAGIC            0x5401      mgsl_info         drivers/char/synclink.c
++TTY_DRIVER_MAGIC      0x5402      tty_driver        include/linux/tty_driver.h
++MGSLPC_MAGIC          0x5402      mgslpc_info       drivers/char/pcmcia/synclink_cs.c
++TTY_LDISC_MAGIC       0x5403      tty_ldisc         include/linux/tty_ldisc.h
++USB_SERIAL_MAGIC      0x6702      usb_serial        drivers/usb/serial/usb-serial.h
++FULL_DUPLEX_MAGIC     0x6969                        drivers/net/tulip/de2104x.c
++USB_BLUETOOTH_MAGIC   0x6d02      usb_bluetooth     drivers/usb/class/bluetty.c
++RFCOMM_TTY_MAGIC      0x6d02                        net/bluetooth/rfcomm/tty.c
++USB_SERIAL_PORT_MAGIC 0x7301      usb_serial_port   drivers/usb/serial/usb-serial.h
++CG_MAGIC              0x00090255  ufs_cylinder_group include/linux/ufs_fs.h
++A2232_MAGIC           0x000a2232  gs_port           drivers/char/ser_a2232.h
++RPORT_MAGIC           0x00525001  r_port            drivers/char/rocket_int.h
++LSEMAGIC              0x05091998  lse               drivers/fc4/fc.c
++GDTIOCTL_MAGIC        0x06030f07  gdth_iowr_str     drivers/scsi/gdth_ioctl.h
++RIEBL_MAGIC           0x09051990                    drivers/net/atarilance.c
++RIO_MAGIC             0x12345678  gs_port           drivers/char/rio/rio_linux.c
++SX_MAGIC              0x12345678  gs_port           drivers/char/sx.h
++NBD_REQUEST_MAGIC     0x12560953  nbd_request       include/linux/nbd.h
++RED_MAGIC2            0x170fc2a5  (any)             mm/slab.c
++BAYCOM_MAGIC          0x19730510  baycom_state      drivers/net/baycom_epp.c
++ISDN_X25IFACE_MAGIC   0x1e75a2b9  isdn_x25iface_proto_data
++                                                    drivers/isdn/isdn_x25iface.h
++ECP_MAGIC             0x21504345  cdkecpsig         include/linux/cdk.h
++LSOMAGIC              0x27091997  lso               drivers/fc4/fc.c
++LSMAGIC               0x2a3b4d2a  ls                drivers/fc4/fc.c
++WANPIPE_MAGIC         0x414C4453  sdla_{dump,exec}  include/linux/wanpipe.h
++CS_CARD_MAGIC         0x43525553  cs_card           sound/oss/cs46xx.c
++LABELCL_MAGIC         0x4857434c  labelcl_info_s    include/asm/ia64/sn/labelcl.h
++ISDN_ASYNC_MAGIC      0x49344C01  modem_info        include/linux/isdn.h
++CTC_ASYNC_MAGIC       0x49344C01  ctc_tty_info      drivers/s390/net/ctctty.c
++ISDN_NET_MAGIC        0x49344C02  isdn_net_local_s  drivers/isdn/i4l/isdn_net_lib.h
++SAVEKMSG_MAGIC2       0x4B4D5347  savekmsg          arch/*/amiga/config.c
++STLI_BOARDMAGIC       0x4bc6c825  stlibrd           include/linux/istallion.h
++CS_STATE_MAGIC        0x4c4f4749  cs_state          sound/oss/cs46xx.c
++SLAB_C_MAGIC          0x4f17a36d  kmem_cache        mm/slab.c
++COW_MAGIC             0x4f4f4f4d  cow_header_v1     arch/um/drivers/ubd_user.c
++I810_CARD_MAGIC       0x5072696E  i810_card         sound/oss/i810_audio.c
++TRIDENT_CARD_MAGIC    0x5072696E  trident_card      sound/oss/trident.c
++ROUTER_MAGIC          0x524d4157  wan_device        include/linux/wanrouter.h
++SCC_MAGIC             0x52696368  gs_port           drivers/char/scc.h
++SAVEKMSG_MAGIC1       0x53415645  savekmsg          arch/*/amiga/config.c
++GDA_MAGIC             0x58464552  gda               arch/mips/include/asm/sn/gda.h
++RED_MAGIC1            0x5a2cf071  (any)             mm/slab.c
++STL_PORTMAGIC         0x5a7182c9  stlport           include/linux/stallion.h
++EEPROM_MAGIC_VALUE    0x5ab478d2  lanai_dev         drivers/atm/lanai.c
++HDLCDRV_MAGIC         0x5ac6e778  hdlcdrv_state     include/linux/hdlcdrv.h
++EPCA_MAGIC            0x5c6df104  channel           include/linux/epca.h
++PCXX_MAGIC            0x5c6df104  channel           drivers/char/pcxx.h
++KV_MAGIC              0x5f4b565f  kernel_vars_s     arch/mips/include/asm/sn/klkernvars.h
++I810_STATE_MAGIC      0x63657373  i810_state        sound/oss/i810_audio.c
++TRIDENT_STATE_MAGIC   0x63657373  trient_state      sound/oss/trident.c
++M3_CARD_MAGIC         0x646e6f50  m3_card           sound/oss/maestro3.c
++FW_HEADER_MAGIC       0x65726F66  fw_header         drivers/atm/fore200e.h
++SLOT_MAGIC            0x67267321  slot              drivers/hotplug/cpqphp.h
++SLOT_MAGIC            0x67267322  slot              drivers/hotplug/acpiphp.h
++LO_MAGIC              0x68797548  nbd_device        include/linux/nbd.h
++OPROFILE_MAGIC        0x6f70726f  super_block       drivers/oprofile/oprofilefs.h
++M3_STATE_MAGIC        0x734d724d  m3_state          sound/oss/maestro3.c
++STL_PANELMAGIC        0x7ef621a1  stlpanel          include/linux/stallion.h
++VMALLOC_MAGIC         0x87654320  snd_alloc_track   sound/core/memory.c
++KMALLOC_MAGIC         0x87654321  snd_alloc_track   sound/core/memory.c
++PWC_MAGIC             0x89DC10AB  pwc_device        drivers/usb/media/pwc.h
++NBD_REPLY_MAGIC       0x96744668  nbd_reply         include/linux/nbd.h
++STL_BOARDMAGIC        0xa2267f52  stlbrd            include/linux/stallion.h
++ENI155_MAGIC          0xa54b872d  midway_eprom	    drivers/atm/eni.h
++SCI_MAGIC             0xbabeface  gs_port           drivers/char/sh-sci.h
++CODA_MAGIC            0xC0DAC0DA  coda_file_info    include/linux/coda_fs_i.h
++DPMEM_MAGIC           0xc0ffee11  gdt_pci_sram      drivers/scsi/gdth.h
++STLI_PORTMAGIC        0xe671c7a1  stliport          include/linux/istallion.h
++YAM_MAGIC             0xF10A7654  yam_port          drivers/net/hamradio/yam.c
++CCB_MAGIC             0xf2691ad2  ccb               drivers/scsi/ncr53c8xx.c
++QUEUE_MAGIC_FREE      0xf7e1c9a3  queue_entry       drivers/scsi/arm/queue.c
++QUEUE_MAGIC_USED      0xf7e1cc33  queue_entry       drivers/scsi/arm/queue.c
++HTB_CMAGIC            0xFEFAFEF1  htb_class         net/sched/sch_htb.c
++NMI_MAGIC             0x48414d4d455201 nmi_s        arch/mips/include/asm/sn/nmi.h
++
++请注意，在声音记忆管理中仍然有每一些被定义的驱动魔术值。查看include/sound/sndmagic.h来获取他们完整的列表信息。很多OSS声音驱动拥有自己从声卡PCI ID构建的魔术值-他们也没有被列在这里。
++
++IrDA子系统也使用了大量的自己的魔术值，查看include/net/irda/irda.h来获取他们完整的信息。
++
++HFS是另外一个比较大的使用魔术值的文件系统-你可以在fs/hfs/hfs.h中找到他们。
+-- 
+1.7.0.4
+
+
+--UugvWAfsgieZRqgk--
