@@ -1,49 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754914Ab1BGVcv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 16:32:51 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:47288 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754633Ab1BGVcu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 16:32:50 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=CoHOllCSD4cA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=mDV3o1hIAAAA:8 a=A0SP27yD7xIXQrL8MbUA:9 a=kZbi2jgiESBxHJRMR8AC8E_urQ4A:4 a=PUjeQqilurYA:10 a=FYyigxLieOIA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC 0/4] tracing,x86_64 - function/graph trace without
- mcount/-pg/framepointer
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <20110207212220.GA30070@feather>
-References: <20110207212220.GA30070@feather>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 07 Feb 2011 16:32:47 -0500
-Message-ID: <1297114367.23343.3.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1754907Ab1BGVd5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 16:33:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27498 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753313Ab1BGVd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 16:33:56 -0500
+Message-ID: <4D506525.8020605@redhat.com>
+Date: Mon, 07 Feb 2011 16:33:25 -0500
+From: John Villalovos <jvillalo@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: John Villalovos <john.l.villalovos@intel.com>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, prarit@redhat.com
+Subject: Re: [PATCH 1/1 V2] x86, apic: Make "broken BIOS!!" messages unique
+References: <20110207135843.GA10121@linuxjohn3.jf.intel.com> <4D506363.4030707@zytor.com>
+In-Reply-To: <4D506363.4030707@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-02-07 at 13:22 -0800, Josh Triplett wrote:
+On 02/07/2011 04:25 PM, H. Peter Anvin wrote:
+> On 02/07/2011 05:58 AM, John Villalovos wrote:
+>> The 'inconceivable' messages are because it should not be possible to reach
+>> those code paths.
+>>
+> More standard terminology would be "invalid" or "impossible".
+> "Inconceivable" sounds like a combination of legal values which just
+> don't make sense.
+To be honest I used it in homage to The Princess Bride movie.  And 
+frankly it is 'inconcievable' that code will ever be called :)
 
-> GCC 4.6 may help here.  According to
-> http://gcc.gnu.org/gcc-4.6/changes.html:
-> 
-> "Support for emitting profiler counter calls before function prologues.
-> This is enabled via a new command-line option -mfentry."
-> 
-> Looks like that option might only support x86 (32-bit and 64-bit) at the
-> moment, but it still seems like an improvement over the current
-> mechanism to work around GCC's placement of mcount.
-> 
-
-I may need to download this and try it out.
-
-Thanks for the reference!
-
--- Steve
-
-
+John
