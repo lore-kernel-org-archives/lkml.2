@@ -1,173 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab1BGVp7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 16:45:59 -0500
-Received: from cantor.suse.de ([195.135.220.2]:38743 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754230Ab1BGVp6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 16:45:58 -0500
-Date: Mon, 7 Feb 2011 22:45:53 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: khugepaged eating 100%CPU
-Message-ID: <20110207214553.GA26371@tiehlicka.suse.cz>
-References: <20110207210517.GA24837@tiehlicka.suse.cz>
- <20110207211601.GA25665@tiehlicka.suse.cz>
+	id S1755028Ab1BGVrs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 16:47:48 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:36296 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929Ab1BGVrr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 16:47:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=rFz9wScWSDmp+vH3tujBCpAcJmS7rTIAs1H2s8OP354evGH03kUhjNO2IUm0SwVhdq
+         SmV2wR2XgBdMT6Oivylv0PatlOjZoQ+KYG+sgBb85ImYNot16v07H5+Z5d3qXMSx2p97
+         BEZNZvGAbFx8+mDFNNdEY9pP5WAX9AUAu2i1s=
+Date: Mon, 7 Feb 2011 13:47:33 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Len Brown <len.brown@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-embedded@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] PM: Hide CONFIG_PM from users
+Message-ID: <20110207214732.GA24703@core.coreip.homeip.net>
+References: <1297081335-13631-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <201102072046.48763.rjw@sisk.pl>
+ <20110207201803.GU10564@opensource.wolfsonmicro.com>
+ <201102072215.59921.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110207211601.GA25665@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201102072215.59921.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 07-02-11 22:16:01, Michal Hocko wrote:
-> On Mon 07-02-11 22:06:54, Michal Hocko wrote:
-> > Hi Andrea,
+On Mon, Feb 07, 2011 at 10:15:59PM +0100, Rafael J. Wysocki wrote:
+> On Monday, February 07, 2011, Mark Brown wrote:
 > > 
-> > I am currently running into an issue when khugepaged is running 100% on
-> > one of my CPUs for a long time (at least one hour as I am writing the
-> > email). The kernel is the clean 2.6.38-rc3 (i386) vanilla kernel.
-> > 
-> > I have tried to disable defrag but it didn't help (I haven't rebooted
-> > after setting the value). I am not sure what information is helpful and
-> > also not sure whether I am able to reproduce it after restart (it is the
-> > first time I can see this problem) so sorry for the poor report.
-> > 
-> > Here is some basic info which might be useful (config and sysrq+t are
-> > attached):
-> > =========
+> > Yeah, but some people seem very keen on removing the pointers to the PM
+> > ops entirely when CONFIG_PM is disabled which means that you end up with
+> > varying idioms for what you do with the PM ops as stuff gets ifdefed
+> > out.  Then again I'm not sure anything would make those people any
+> > happier.
 > 
-> And I have just realized that I forgot about the daemon stack:
-> # cat /proc/573/stack 
-> [<c019c981>] shrink_zone+0x1b9/0x455
-> [<c019d462>] do_try_to_free_pages+0x9d/0x301
-> [<c019d803>] try_to_free_pages+0xb3/0x104
-> [<c01966d7>] __alloc_pages_nodemask+0x358/0x589
-> [<c01bf314>] khugepaged+0x13f/0xc60
-> [<c014c301>] kthread+0x67/0x6c
-> [<c0102db6>] kernel_thread_helper+0x6/0x10
-> [<ffffffff>] 0xffffffff
+> I really think we should do things that makes sense rather that worry about
+> who's going to like or dislike it (except for Linus maybe, but he tends to like
+> things that make sense anyway).  At this point I think the change I suggested
+> makes sense, because it (a) simplifies things and (b) follows the quite common
+> practice which is to make PM callbacks depend on CONFIG_PM.
 
-And the issue is gone. Same like it came - without any obvious trigger.
-$ cat /proc/573/stack
-[<c01bfc8a>] khugepaged+0xab5/0xc60
-[<c014c301>] kthread+0x67/0x6c
-[<c0102db6>] kernel_thread_helper+0x6/0x10]]]
+Many people make these callback dependent on PM not because it makes
+much sense but because it is possible to do so. However, aside of
+randconfig compile testing, nobody really tests drivers that implement
+PM in the !CONFIG_PM setting.
 
-So it looks like it managed to free some pages. Anyway it took a while
-(I would say an hour) to do it so something seems to be fishy.
-Just for reference I am attaching also the allocator state:
-====
-
-# cat /proc/buddyinfo
-Node 0, zone      DMA      8      3      2      5      6      5      3      1      1      1      1 
-Node 0, zone   Normal   2670   3000   2194   1489   1069    690    363    180     84     43      2 
-Node 0, zone  HighMem    657   3474   1338    873    254     12      0      0      0      0      0 
-====
-
-# cat /proc/vmstat
-nr_free_pages 187236
-nr_inactive_anon 27928
-nr_active_anon 94882
-nr_inactive_file 78838
-nr_active_file 97601
-nr_unevictable 0
-nr_mlock 0
-nr_anon_pages 71401
-nr_mapped 20701
-nr_file_pages 219722
-nr_dirty 8
-nr_writeback 0
-nr_slab_reclaimable 4269
-nr_slab_unreclaimable 4188
-nr_page_table_pages 827
-nr_kernel_stack 235
-nr_unstable 0
-nr_bounce 0
-nr_vmscan_write 23503
-nr_writeback_temp 0
-nr_isolated_anon 0
-nr_isolated_file 0
-nr_shmem 39642
-nr_dirtied 1735727
-nr_written 1607464
-nr_anon_transparent_hugepages 9
-nr_dirty_threshold 77463
-nr_dirty_background_threshold 19365
-pgpgin 19253206
-pgpgout 6972134
-pswpin 4233
-pswpout 23401
-pgalloc_dma 11688
-pgalloc_normal 153681036
-pgalloc_high 45511627
-pgalloc_movable 0
-pgfree 199845128
-pgactivate 1831896
-pgdeactivate 318554
-pgfault 87302686
-pgmajfault 15523
-pgrefill_dma 288
-pgrefill_normal 93009
-pgrefill_high 200394
-pgrefill_movable 0
-pgsteal_dma 0
-pgsteal_normal 3949660
-pgsteal_high 601671
-pgsteal_movable 0
-pgscan_kswapd_dma 0
-pgscan_kswapd_normal 3678094
-pgscan_kswapd_high 366447
-pgscan_kswapd_movable 0
-pgscan_direct_dma 0
-pgscan_direct_normal 290984
-pgscan_direct_high 303477
-pgscan_direct_movable 0
-pginodesteal 73185
-slabs_scanned 353792
-kswapd_steal 4026528
-kswapd_inodesteal 173760
-kswapd_low_wmark_hit_quickly 6
-kswapd_high_wmark_hit_quickly 7758
-kswapd_skip_congestion_wait 0
-pageoutrun 79411
-allocstall 310
-pgrotated 22447
-compact_blocks_moved 11205
-compact_pages_moved 325766
-compact_pagemigrate_failed 6165
-compact_stall 347
-compact_fail 67
-compact_success 280
-htlb_buddy_alloc_success 0
-htlb_buddy_alloc_fail 0
-unevictable_pgs_culled 1093
-unevictable_pgs_scanned 0
-unevictable_pgs_rescued 359
-unevictable_pgs_mlocked 1307
-unevictable_pgs_munlocked 1306
-unevictable_pgs_cleared 0
-unevictable_pgs_stranded 0
-unevictable_pgs_mlockfreed 0
-====
-
-# grep . -r /sys/kernel/mm/transparent_hugepage/
-/sys/kernel/mm/transparent_hugepage/enabled:[always] madvise never
-/sys/kernel/mm/transparent_hugepage/defrag:always madvise [never]
-/sys/kernel/mm/transparent_hugepage/khugepaged/defrag:yes [no]
-/sys/kernel/mm/transparent_hugepage/khugepaged/max_ptes_none:1023
-/sys/kernel/mm/transparent_hugepage/khugepaged/pages_to_scan:8192
-/sys/kernel/mm/transparent_hugepage/khugepaged/pages_collapsed:1524
-/sys/kernel/mm/transparent_hugepage/khugepaged/full_scans:1510
-/sys/kernel/mm/transparent_hugepage/khugepaged/scan_sleep_millisecs:10000
-/sys/kernel/mm/transparent_hugepage/khugepaged/alloc_sleep_millisecs:60000
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Dmitry
