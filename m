@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754925Ab1BGVRd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 16:17:33 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:34309 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754873Ab1BGVRM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 16:17:12 -0500
-From: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
-To: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        linux@arm.linux.org.uk
-Cc: john.stultz@linaro.org, tglx@linutronix.de, a.zummo@towertech.it,
-        Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
-Subject: [PATCH 3/4] RTC: Fix the cross interrupt issue on rtc-test.
-Date: Mon,  7 Feb 2011 19:16:07 -0200
-Message-Id: <1297113368-27174-4-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1297113368-27174-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
-References: <1297113368-27174-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
+	id S1754823Ab1BGVUl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 16:20:41 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:51559 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754744Ab1BGVUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 16:20:40 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+Subject: Re: Commit 500f7147cf5bafd139056d521536b10c2bc2e154 breaks _resume_
+Date: Mon, 7 Feb 2011 22:20:30 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc3+; KDE/4.4.4; x86_64; ; )
+Cc: Takashi Iwai <tiwai@suse.de>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+References: <AANLkTi=h+H+N=f4m4pE+RZ4n5h7oxQuwzmK-qmmWAGtL@mail.gmail.com> <AANLkTinv=pfArgT4VFCUeY_bKb4q3KSREvU+L8V5k0G9@mail.gmail.com> <AANLkTim2czZfsbGaG=K-=dV5hENgUOUhjBpWoa+mTjyb@mail.gmail.com>
+In-Reply-To: <AANLkTim2czZfsbGaG=K-=dV5hENgUOUhjBpWoa+mTjyb@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102072220.30706.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The rtc-test driver is meant to provide a test/debug code for the RTC
-subsystem.
+On Monday, February 07, 2011, Jeff Chua wrote:
+> On Mon, Feb 7, 2011 at 9:38 PM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+> > On Mon, Feb 7, 2011 at 6:15 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> >>> Thanks, that looks good.  What about other files?  Did you change
+> >>> (especially intel_drv.h) from Linus git tree?
+> >
+> > I will try again  from a fresh build tonight.
+> >
+> >>> I'll also check later to be sure (now I have no machine for testing).
+> >> I don't see any problem with my machine (but running in 32bit).
+> >>
+> >> Are you sure that you are seeing the same CRTC?  There are two active
+> >> CRTCs on Intel, and both are initialized and set up.
+> >
+> > I don't know about that. Even when I attempt to just the pointer
+> > directly as in "static void intel_crtc_reset(struct intel_crtc
+> > *intel_crtc)", it ended up getting a different value. Strange.
+> >
+> > intel_crtc ffff880239aa5800
+> > intel_crtc ffff880239aa5000
+> >
+> >
+> > I'm building everything fresh now.
+> 
+> Same issue encountered even after a fresh build.
 
-The rtc-test driver simulates specific interrupts by echoing to the
-sys interface. Those were the update, alarm and periodic interrupts.
+So, can you confirm that on your machine the issue is 100% reproducible and
+it goes away after reverting
 
-As a side effect of the new implementation, any interrupt generated in
-the rtc-test driver would trigger the same code path in the generic
-code, and thus the distinction among interrupts gets lost.
+commit 5d1d0cc87fc0887921993ea0742932e0c8adeda0
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Mon Jan 24 15:02:15 2011 +0000
 
-This patch preserves the previous behaviour of the rtc-test driver,
-where e.g. an update interrupt would not trigger an alarm or periodic
-interrupt, and vice-versa. In real world RTC drivers, this is not an
-issue, but in the rtc-test driver it may be interesting to distinguish
-these interrupts for testing purposes.
+    drm/i915: Reset crtc after resume
 
-Signed-off-by: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
----
- drivers/rtc/rtc-test.c |   13 +++++++++----
- 1 files changed, 9 insertions(+), 4 deletions(-)
+?
 
-diff --git a/drivers/rtc/rtc-test.c b/drivers/rtc/rtc-test.c
-index 61ad5ab..34d5631 100644
---- a/drivers/rtc/rtc-test.c
-+++ b/drivers/rtc/rtc-test.c
-@@ -71,11 +71,16 @@ static ssize_t test_irq_store(struct device *dev,
- 	struct rtc_device *rtc = platform_get_drvdata(plat_dev);
- 
- 	retval = count;
--	if (strncmp(buf, "tick", 4) == 0)
-+	if (strncmp(buf, "tick", 4) == 0 && rtc->pie_enabled)
- 		rtc_update_irq(rtc, 1, RTC_PF | RTC_IRQF);
--	else if (strncmp(buf, "alarm", 5) == 0)
--		rtc_update_irq(rtc, 1, RTC_AF | RTC_IRQF);
--	else if (strncmp(buf, "update", 6) == 0)
-+	else if (strncmp(buf, "alarm", 5) == 0) {
-+		struct rtc_wkalrm alrm;
-+		int err = rtc_read_alarm(rtc, &alrm);
-+
-+		if (!err && alrm.enabled)
-+			rtc_update_irq(rtc, 1, RTC_AF | RTC_IRQF);
-+
-+	} else if (strncmp(buf, "update", 6) == 0 && rtc->uie_rtctimer.enabled)
- 		rtc_update_irq(rtc, 1, RTC_UF | RTC_IRQF);
- 	else
- 		retval = -EINVAL;
--- 
-1.7.3.4
-
+Rafael
