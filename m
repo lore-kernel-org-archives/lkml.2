@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754518Ab1BGSG0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 13:06:26 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33340 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754484Ab1BGSGZ (ORCPT
+	id S1754529Ab1BGSGs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 13:06:48 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51996 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754290Ab1BGSGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 13:06:25 -0500
-Message-ID: <4D50343E.1020906@kernel.org>
-Date: Mon, 07 Feb 2011 10:04:46 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	Mon, 7 Feb 2011 13:06:46 -0500
+Date: Mon, 7 Feb 2011 18:06:07 +0000
+From: Russell King <rmk@arm.linux.org.uk>
+To: Shiyong Li <shi-yong.li@motorola.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>
+Subject: "slab: Fix missing DEBUG_SLAB last user" breaks ARM
+Message-ID: <20110207180606.GB2966@flint.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jan Beulich <JBeulich@novell.com>
-Subject: Re: [PATCH] x86/mm/init: respect memblock reserved regions when destroying
- mappings
-References: <alpine.DEB.2.00.1101311514580.7277@kaball-desktop> <4D4A3782.3050702@zytor.com> <alpine.DEB.2.00.1102031114030.7277@kaball-desktop> <4D4ADFAD.7060507@zytor.com> <alpine.DEB.2.00.1102041130060.7277@kaball-desktop> <4D4CA568.70907@goop.org> <AANLkTi=nEQka_19+nKQC-yJn2Czn9GCqsUWN6Byy7rCF@mail.gmail.com> <4D4E4E0D.2080806@zytor.com> <4D4EF553.6000000@kernel.org> <alpine.DEB.2.00.1102071524140.7277@kaball-desktop>
-In-Reply-To: <alpine.DEB.2.00.1102071524140.7277@kaball-desktop>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4D503489.0020,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2011 08:50 AM, Stefano Stabellini wrote:
-> On Sun, 6 Feb 2011, Yinghai Lu wrote:
->> On 02/05/2011 11:30 PM, H. Peter Anvin wrote:
->>> On 02/05/2011 11:02 PM, Yinghai Lu wrote:
->>>> why not just move calling cleanup_highmap down?
->>>>
->>>> something like attached patch.
->>>
->>> This patch looks very clean and looks on the surface of it like it is
->>> removing some ugly ad hoc code, but (as always) it needs a description
->>> about the problem it solves and why it is correct.
->>
->> Sure.
->>
->>
->> Jeremy and xen guys, can you please check if it works well with xen ?
->>
-> 
-> Actually this patch makes things worse on xen, because before
-> cleanup_highmap() wasn't called at all on xen (on purpose) and now it
-> is, fully destroying all the mappings we have at _end.
-> 
-> Can we add a check on memblock reserved regions in cleanup_highmap()?
-> Otherwise could we avoid calling cleanup_highmap() at all on xen?
+commit 5c5e3b33 appears to break ARM thusly:
 
-why DO xen need over-mapped kernel initial mapping?
+| Mount-cache hash table entries: 512
+| slab error in verify_redzone_free(): cache `idr_layer_cache': memory outside object was overwritten
+| Backtrace:               
+| [<c0227088>] (dump_backtrace+0x0/0x110) from [<c0431afc>] (dump_stack+0x18/0x1c)
+| [<c0431ae4>] (dump_stack+0x0/0x1c) from [<c0293304>] (__slab_error+0x28/0x30)
+| [<c02932dc>] (__slab_error+0x0/0x30) from [<c0293a74>] (cache_free_debugcheck+0x1c0/0x2b8)               
+| [<c02938b4>] (cache_free_debugcheck+0x0/0x2b8) from [<c0293f78>] (kmem_cache_free+0x3c/0xc0)             
+| [<c0293f3c>] (kmem_cache_free+0x0/0xc0) from [<c032b1c8>] (ida_get_new_above+0x19c/0x1c0)                
+| [<c032b02c>] (ida_get_new_above+0x0/0x1c0) from [<c02af7ec>] (alloc_vfsmnt+0x54/0x144)                   
+| [<c02af798>] (alloc_vfsmnt+0x0/0x144) from [<c0299830>] (vfs_kern_mount+0x30/0xec)                       
+| [<c0299800>] (vfs_kern_mount+0x0/0xec) from [<c0299908>] (kern_mount_data+0x1c/0x20)                     
+| [<c02998ec>] (kern_mount_data+0x0/0x20) from [<c02146c4>] (sysfs_init+0x68/0xc8)
+| [<c021465c>] (sysfs_init+0x0/0xc8) from [<c02137d4>] (mnt_init+0x90/0x1b0)
+| [<c0213744>] (mnt_init+0x0/0x1b0) from [<c0213388>] (vfs_caches_init+0x100/0x140)
+| [<c0213288>] (vfs_caches_init+0x0/0x140) from [<c0208c0c>] (start_kernel+0x2e8/0x368)                    
+| [<c0208924>] (start_kernel+0x0/0x368) from [<c0208034>] (__enable_mmu+0x0/0x2c)
+| c0113268: redzone 1:0xd84156c5c032b3ac, redzone 2:0xd84156c5635688c0.
+| slab error in cache_alloc_debugcheck_after(): cache `idr_layer_cache': double free, or memory outside object was overwritten
+| ...
+| c011307c: redzone 1:0x9f91102ffffffff, redzone 2:0x9f911029d74e35b
+| slab: Internal list corruption detected in cache 'idr_layer_cache'(24), slabp c0113000(16). Hexdump:     
+|                          
+| 000: 20 4f 10 c0 20 4f 10 c0 7c 00 00 00 7c 30 11 c0
+| 010: 10 00 00 00 10 00 00 00 00 00 c9 17 fe ff ff ff
+| 020: fe ff ff ff fe ff ff ff fe ff ff ff fe ff ff ff
+| 030: fe ff ff ff fe ff ff ff fe ff ff ff fe ff ff ff
+| 040: fe ff ff ff fe ff ff ff fe ff ff ff fe ff ff ff
+| 050: fe ff ff ff fe ff ff ff fe ff ff ff 11 00 00 00
+| 060: 12 00 00 00 13 00 00 00 14 00 00 00 15 00 00 00
+| 070: 16 00 00 00 17 00 00 00 c0 88 56 63
+| kernel BUG at /home/rmk/git/linux-2.6-rmk/mm/slab.c:2928!
 
-what is in that range after _end to 512M?
+This hasn't been noticed as I guess not many people use SLAB on ARM
+anymore, and even less people probably have SLAB debugging enabled.
+With SLAB debugging disabled, the system appears to behave correctly -
+or maybe the problem is just hidden.
 
-Yinghai
+--
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
