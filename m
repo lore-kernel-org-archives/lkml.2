@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028Ab1BGVrs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 16:47:48 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:36296 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab1BGVrr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 16:47:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=rFz9wScWSDmp+vH3tujBCpAcJmS7rTIAs1H2s8OP354evGH03kUhjNO2IUm0SwVhdq
-         SmV2wR2XgBdMT6Oivylv0PatlOjZoQ+KYG+sgBb85ImYNot16v07H5+Z5d3qXMSx2p97
-         BEZNZvGAbFx8+mDFNNdEY9pP5WAX9AUAu2i1s=
-Date: Mon, 7 Feb 2011 13:47:33 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Len Brown <len.brown@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-embedded@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] PM: Hide CONFIG_PM from users
-Message-ID: <20110207214732.GA24703@core.coreip.homeip.net>
-References: <1297081335-13631-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <201102072046.48763.rjw@sisk.pl>
- <20110207201803.GU10564@opensource.wolfsonmicro.com>
- <201102072215.59921.rjw@sisk.pl>
+	id S1755047Ab1BGV41 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 16:56:27 -0500
+Received: from claw.goop.org ([74.207.240.146]:36051 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755000Ab1BGV40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 16:56:26 -0500
+Message-ID: <4D506A85.9030802@goop.org>
+Date: Mon, 07 Feb 2011 13:56:21 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201102072215.59921.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <JBeulich@novell.com>
+Subject: Re: [PATCH] x86/mm/init: respect memblock reserved regions when destroying
+ mappings
+References: <alpine.DEB.2.00.1101311514580.7277@kaball-desktop> <4D4A3782.3050702@zytor.com> <alpine.DEB.2.00.1102031114030.7277@kaball-desktop> <4D4ADFAD.7060507@zytor.com> <alpine.DEB.2.00.1102041130060.7277@kaball-desktop> <4D4CA568.70907@goop.org> <AANLkTi=nEQka_19+nKQC-yJn2Czn9GCqsUWN6Byy7rCF@mail.gmail.com> <4D4E4E0D.2080806@zytor.com> <4D4EF553.6000000@kernel.org> <alpine.DEB.2.00.1102071524140.7277@kaball-desktop> <4D50343E.1020906@kernel.org> <alpine.DEB.2.00.1102071839060.7277@kaball-desktop> <4D504161.2060900@kernel.org>
+In-Reply-To: <4D504161.2060900@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 07, 2011 at 10:15:59PM +0100, Rafael J. Wysocki wrote:
-> On Monday, February 07, 2011, Mark Brown wrote:
-> > 
-> > Yeah, but some people seem very keen on removing the pointers to the PM
-> > ops entirely when CONFIG_PM is disabled which means that you end up with
-> > varying idioms for what you do with the PM ops as stuff gets ifdefed
-> > out.  Then again I'm not sure anything would make those people any
-> > happier.
-> 
-> I really think we should do things that makes sense rather that worry about
-> who's going to like or dislike it (except for Linus maybe, but he tends to like
-> things that make sense anyway).  At this point I think the change I suggested
-> makes sense, because it (a) simplifies things and (b) follows the quite common
-> practice which is to make PM callbacks depend on CONFIG_PM.
+On 02/07/2011 11:00 AM, Yinghai Lu wrote:
+> On 02/07/2011 10:58 AM, Stefano Stabellini wrote:
+>> On Mon, 7 Feb 2011, Yinghai Lu wrote:
+>>> On 02/07/2011 08:50 AM, Stefano Stabellini wrote:
+>>>> On Sun, 6 Feb 2011, Yinghai Lu wrote:
+>>>>> On 02/05/2011 11:30 PM, H. Peter Anvin wrote:
+>>>>>> On 02/05/2011 11:02 PM, Yinghai Lu wrote:
+>>>>>>> why not just move calling cleanup_highmap down?
+>>>>>>>
+>>>>>>> something like attached patch.
+>>>>>> This patch looks very clean and looks on the surface of it like it is
+>>>>>> removing some ugly ad hoc code, but (as always) it needs a description
+>>>>>> about the problem it solves and why it is correct.
+>>>>> Sure.
+>>>>>
+>>>>>
+>>>>> Jeremy and xen guys, can you please check if it works well with xen ?
+>>>>>
+>>>> Actually this patch makes things worse on xen, because before
+>>>> cleanup_highmap() wasn't called at all on xen (on purpose) and now it
+>>>> is, fully destroying all the mappings we have at _end.
+>>>>
+>>>> Can we add a check on memblock reserved regions in cleanup_highmap()?
+>>>> Otherwise could we avoid calling cleanup_highmap() at all on xen?
+>>> why DO xen need over-mapped kernel initial mapping?
+>>>
+>>> what is in that range after _end to 512M?
+>> The mfn list that is the list of machine frame numbers assigned to this
+>> domain; it is used across the kernel to convert pfns into mfns.
+>> It passed to us at that address by the domain builder.
+> is it possible for you to pass physical address, and then map it in kernel?
 
-Many people make these callback dependent on PM not because it makes
-much sense but because it is possible to do so. However, aside of
-randconfig compile testing, nobody really tests drivers that implement
-PM in the !CONFIG_PM setting.
+That is possible in principle, but very difficult in practice.
 
--- 
-Dmitry
+What's wrong with honouring reserved memory ranges under all circumstances?
+
+    J
