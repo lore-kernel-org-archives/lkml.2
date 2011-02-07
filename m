@@ -1,37 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755083Ab1BGV6E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 16:58:04 -0500
-Received: from claw.goop.org ([74.207.240.146]:42962 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755075Ab1BGV6B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 16:58:01 -0500
-Message-ID: <4D506AE6.6080900@goop.org>
-Date: Mon, 07 Feb 2011 13:57:58 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1755070Ab1BGV7i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 16:59:38 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54751 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754971Ab1BGV7h convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 16:59:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=XAMRoTiOjPCDCPXA2QdA/V00C6qqbPboRu4vLwuZ3/jka+r2CEhbbvA/bKn1pWJN3+
+         EzI8rXpqTpFP2YYE4+RDMWi8CDa0fp9W1EpUf/EYW/VbBda8ygXq2gR0wDdbx8sxgqA8
+         D4filzhpJyc0UaNeBLjk5Br4Y/Bwzw6GhZOKk=
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-Subject: Re: [patch 0/4] XEN: Interrupt cleanups
-References: <20110205200108.921707839@linutronix.de> <4D50641B.2090006@goop.org> <alpine.LFD.2.00.1102072231220.31804@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1102072231220.31804@localhost6.localdomain6>
+Date: Mon, 7 Feb 2011 15:59:32 -0600
+Message-ID: <AANLkTinknGa1WZ-kxFNG6pZOaJHgF_tkdz6aAjsLf6bM@mail.gmail.com>
+Subject: [RESEND PATCH] dcdbas: force SMI to happen when expected
+From: Stuart Hayes <stuart.w.hayes@gmail.com>
+To: linux-kernel@vger.kernel.org, douglas_warzecha@dell.com,
+        shyam_iyer@dell.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2011 01:33 PM, Thomas Gleixner wrote:
-> Ok. The irq_chip conversion is mostly mechanical, but I'm really
-> concerned about that IRQ_SUSPENDED hackery. It'd be nice if you
-> resp. Ian could give that a test ride. That would allow me to cleanup
-> stuff in the core code.
+Resending from a different email address so I don't have to attach the
+patch as a file.
 
-Ian notes: "tglx's 4 patch interrupt cleanup series on LKML causes some
-oddities on PV migration. Will dig further tomorrow..."
 
-So it looks like there's still something amiss.
+The dcdbas driver can do an I/O write to cause a SMI to occur.  On some sys=
+tems I/O writes are posted in the chipset and don't complete immediately.  =
+This can result in the SMI happening at a later time.  This can result in r=
+andom failures since the SMI handler expects the EBX register to contain a =
+pointer, and the handler can write to memory.
 
-    J
+Performing an I/O read to the same address as the I/O write will force the =
+I/O write to complete.  The patch is against the 2.6.37 kernel and has been=
+ tested.
+
+Signed-off-by: Stuart Hayes <stuart.w.hayes@gmail.com>
+Acked-by: Doug Warzecha <douglas_warzecha@dell.com>
+---
+diff -purN linux-2.6.37/drivers/firmware/dcdbas.c
+linux-2.6.37_test/drivers/firmware/dcdbas.c
+--- linux-2.6.37/drivers/firmware/dcdbas.c    2011-01-18
+10:44:44.869882461 -0500
++++ linux-2.6.37_test/drivers/firmware/dcdbas.c    2011-01-18
+10:41:15.404612154 -0500
+@@ -278,6 +278,9 @@ int dcdbas_smi_request(struct smi_cmd *s
+         : "memory"
+     );
+
++    /* read to force posted write through and make SMI happen now */
++    inb(smi_cmd->command_address);
++
+ out:
+     set_cpus_allowed_ptr(current, old_mask);
+     free_cpumask_var(old_mask);
