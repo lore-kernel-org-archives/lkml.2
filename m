@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754952Ab1BGVfJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 16:35:09 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:47051 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753313Ab1BGVfH (ORCPT
+	id S1754951Ab1BGVmH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 16:42:07 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58748
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750931Ab1BGVmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 16:35:07 -0500
-Date: Mon, 7 Feb 2011 21:34:26 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, dri-devel@lists.freedesktop.org,
-        akpm@linux-foundation.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rpurdie@rpsys.net,
-        Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH 5/5] ACPI: Tie ACPI backlight devices to PCI devices if
-	possible
-Message-ID: <20110207213426.GA23843@srcf.ucam.org>
-References: <1295033065-13450-1-git-send-email-mjg@redhat.com> <20110206230558.GA23889@srcf.ucam.org> <201102070034.43691.rjw@sisk.pl> <201102071432.35656.bjorn.helgaas@hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201102071432.35656.bjorn.helgaas@hp.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Mon, 7 Feb 2011 16:42:05 -0500
+Date: Mon, 07 Feb 2011 13:42:40 -0800 (PST)
+Message-Id: <20110207.134240.260080815.davem@davemloft.net>
+To: andrew.hendry@gmail.com
+Cc: apw@canonical.com, john@calva.com, linux-x25@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tim.gardner@canonical.com
+Subject: Re: x25: possible skb leak on bad facilities
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1297073295.9577.13.camel@jaunty>
+References: <20110206.202824.260090071.davem@davemloft.net>
+	<AANLkTik8hg5G2FYDCoRgh72v-_euGWKix9Fxm89UdXie@mail.gmail.com>
+	<1297073295.9577.13.camel@jaunty>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 07, 2011 at 02:32:35PM -0700, Bjorn Helgaas wrote:
+From: Andrew Hendry <andrew.hendry@gmail.com>
+Date: Mon, 07 Feb 2011 21:08:15 +1100
 
-> I'm not familiar with video devices, but I agree, this situation does
-> feel broken.  Is it the case that there's a PCI device as well as an
-> ACPI namespace Device for the same piece of hardware?  If so, I assume
-> the reason for the ACPI Device is to have a "standard" interface to
-> a platform knob like backlight control.
 > 
-> In that case, it seems like we should rely on PCI for enumeration and
-> driver binding, have some sort of hook the PCI driver could use to
-> twiddle that knob (using the ACPI methods), and make the ACPI Device
-> ineligible for driver binding.  In other words, it sounds like part
-> of the problem is that we have two drivers binding to what's really
-> a single piece of hardware.
+> Originally x25_parse_facilities returned
+> -1 for an error
+>  0 meaning 0 length facilities
+>>0 the length of the facilities parsed.
+> 
+> 5ef41308f94dc introduced more error checking in x25_parse_facilities
+> however used 0 to indicate bad parsing
+> a6331d6f9a429 followed this further for DTE facilities, again using 0 for bad parsing.
+> 
+> The meaning of 0 got confused in the callers.
+> If the facilities are messed up we can't determine where the data starts.
+> So patch makes all parsing errors return -1 and ensures callers close and don't use the skb further.
+> 
+> Reported-by: Andy Whitcroft <apw@canonical.com>
+> Signed-off-by: Andrew Hendry <andrew.hendry@gmail.com>
 
-Part of the problem is that ACPI video devices aren't inherently PCI 
-devices.
+Please reference the commit header line text when referring to SHA1
+IDs, because when backporting to other GIT trees the SHA1 IDs might be
+different.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+I took care of this when applying your patch, thanks.
+
