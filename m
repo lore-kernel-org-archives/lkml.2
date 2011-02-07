@@ -1,27 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674Ab1BGPEo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 10:04:44 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:41481 "EHLO mx3.mail.elte.hu"
+	id S1753622Ab1BGPHd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 10:07:33 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:54953 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753522Ab1BGPEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 10:04:42 -0500
-Date: Mon, 7 Feb 2011 16:04:28 +0100
+	id S1753054Ab1BGPHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 10:07:31 -0500
+Date: Mon, 7 Feb 2011 16:06:40 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Marc Koschewski <marc@osknowledge.org>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        castet.matthieu@free.fr, mhopf@suse.de, suresh.b.siddha@intel.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86, nx: Mark the ACPI resume trampoline code
- as +x - fixed
-Message-ID: <20110207150428.GA19046@elte.hu>
-References: <4D4F8019.2090104@zytor.com>
- <tip-d344e38b2c151ca5e5e39f562017127e93912528@git.kernel.org>
- <20110207145000.GA20671@marc.osknowledge.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Denis Kirjanov <dkirjanov@kernel.org>,
+        Franck Bui-Huu <fbuihuu@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H . Peter Anvin" <hpa@zytor.com>, Kyle McMartin <kyle@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Michael Witten <mfwitten@gmail.com>, Mike Galbraith <efault@gmx.de>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 0/9] perf/core improvements and fixes
+Message-ID: <20110207150640.GA20053@elte.hu>
+References: <1297090812-10782-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110207145000.GA20671@marc.osknowledge.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1297090812-10782-1-git-send-email-acme@infradead.org>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -35,13 +45,46 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Marc Koschewski <marc@osknowledge.org> wrote:
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-> * tip-bot for H. Peter Anvin <hpa@zytor.com> [2011-02-07 09:24:55 +0000]:
+> Hi Ingo,
 > 
-> Great! That one fixes ACPI S3 resume on i7.
+>         Please consider pulling from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
+> 
+> Regards,
+> 
+> - Arnaldo
+> 
+> Borislav Petkov (1):
+>   perf annotate: Fix build error
+> 
+> Denis Kirjanov (1):
+>   perf top: Use pid_t for target_{pid|tid}
+> 
+> Franck Bui-Huu (1):
+>   perf probe: Rewrite find_lazy_match_lines() by using getline(3)
+> 
+> Kyle McMartin (1):
+>   perf tool: Fix gcc 4.6.0 issues
+> 
+> Masami Hiramatsu (4):
+>   tracing/kprobes: Cleanup strict_strtol() using code
+>   tracing/kprobes: Support longer (>128 bytes) command
+>   tracing/kprobes: Add bitfield type
+>   perf probe: Add bitfield member support
+> 
+> Michael Witten (1):
+>   perf tools: Makefile: Use $(QUIET_GEN) for perf.so
 
-Ok, great - i'm sending it to Linus then.
+hm, the perf probe bits do not build on 32-bit:
+
+util/probe-finder.c: In function ‘convert_variable_type’:
+util/probe-finder.c:881: error: format ‘%lu’ expects type ‘long unsigned int’, but argument 6 has type ‘unsigned int’
+util/probe-finder.c:881: error: format ‘%lu’ expects type ‘long unsigned int’, but argument 6 has type ‘unsigned int’
+make: *** [util/probe-finder.o] Error 1
+make: *** Waiting for unfinished jobs....
 
 Thanks,
 
