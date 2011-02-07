@@ -1,80 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751552Ab1BGMUb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 07:20:31 -0500
-Received: from core.kaist.ac.kr ([143.248.147.118]:41310 "EHLO
-	core.kaist.ac.kr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827Ab1BGMUa (ORCPT
+	id S1751666Ab1BGMWV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 07:22:21 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33025 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751122Ab1BGMWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 07:20:30 -0500
-X-Greylist: delayed 3364 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Feb 2011 07:20:27 EST
-From: "Chulmin Kim" <cmkim@core.kaist.ac.kr>
-To: "'Daniel Tiron'" <dtiron@debian.armed.us>
-Cc: "'LKML'" <linux-kernel@vger.kernel.org>
-References: <20110207095141.GA26132@andariel.informatik.uni-erlangen.de>
-In-Reply-To: <20110207095141.GA26132@andariel.informatik.uni-erlangen.de>
-Subject: RE: Does the scheduler know about the cache topology?
-Date: Mon, 7 Feb 2011 20:24:07 +0900
-Message-ID: <02c101cbc6b9$8aa68790$9ff396b0$@core.kaist.ac.kr>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQG6GfuaJL4YZPy5XJ3iPIY+m6k3+pQZPPog
-Content-Language: ko
+	Mon, 7 Feb 2011 07:22:20 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-embedded@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] PM: Hide CONFIG_PM from users
+Date: Mon,  7 Feb 2011 12:22:15 +0000
+Message-Id: <1297081335-13631-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As far as I know, linux scheduler manages the physical cores using
-sched_domain. 
+It is very rare to find a current system which is both sufficiently
+resource constrained to want to compile out power management support
+and sufficiently power insensitive to be able to tolerate doing so.
+Since having the configuration option requires non-zero effort to
+maintain, with ifdefery in most drivers, but it is used with vanishing
+rarity it is simpler to just remove the option.
 
-Simply speaking, Sched_domain is a group of cpus. And the load balancing is
-usually done within the group. 
-(this group is hierarchical tree. you can find more specific information
-about this structure in web)
+Begin doing so by hiding it from users - this should attract complaints
+from any active users. The option is left disabled for the IA64 Ski
+simulator which is a partial simulator for IA64 systems mostly missing
+device support. This is a very limited use case which is unlikely to
+ever want to enable most drivers.
 
-This grouping can be done by SMT, NUMA and cache topology through ACPI
-information obtained when the system is booted.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ kernel/power/Kconfig |   21 ++-------------------
+ 1 files changed, 2 insertions(+), 19 deletions(-)
 
-Hope this is useful for you.
-
------Original Message-----
-From: linux-kernel-owner@vger.kernel.org
-[mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Daniel Tiron
-Sent: Monday, February 07, 2011 6:52 PM
-To: LKML
-Subject: Does the scheduler know about the cache topology?
-
-Hi all.
-
-I did some performance tests on a Core 2 Quad machine [1] with QEMU.
-A QEMU instance creates one main thread and one thread for each virtual CPU.
-There were two vms with one CPU each, which make four threads.
-
-I tried different combinations where I pinned one tgread to one physical
-core with taskset and measured the network performance between the vms with
-iperf [2]. The best result was achieved with each vm (main and CPU
-thread) assigned to one cache group (core 0 & 1 and 2 & 3).
-
-But it also turns out that letting the scheduler handle the assignment works
-well, too: The results where no pinning was done were just slightly below
-the best. So I was wondering, is the Linux scheduler aware of the CPU's
-cache topology?
-
-I'm curious to hear your opinion.
-
-Thanks,
-Daniel
-
-[1] Core 0 and 1 share one L2 cache and so do 2 and 3 [2] The topic of my
-research is networking performance. My interest in
-    cache awareness is only a side effect.
-
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org More majordomo info at
-http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
+index 2657299..99e3c52 100644
+--- a/kernel/power/Kconfig
++++ b/kernel/power/Kconfig
+@@ -1,23 +1,6 @@
+ config PM
+-	bool "Power Management support"
+-	depends on !IA64_HP_SIM
+-	---help---
+-	  "Power Management" means that parts of your computer are shut
+-	  off or put into a power conserving "sleep" mode if they are not
+-	  being used.  There are two competing standards for doing this: APM
+-	  and ACPI.  If you want to use either one, say Y here and then also
+-	  to the requisite support below.
+-
+-	  Power Management is most important for battery powered laptop
+-	  computers; if you have a laptop, check out the Linux Laptop home
+-	  page on the WWW at <http://www.linux-on-laptops.com/> or
+-	  Tuxmobil - Linux on Mobile Computers at <http://www.tuxmobil.org/>
+-	  and the Battery Powered Linux mini-HOWTO, available from
+-	  <http://www.tldp.org/docs.html#howto>.
+-
+-	  Note that, even if you say N here, Linux on the x86 architecture
+-	  will issue the hlt instruction if nothing is to be done, thereby
+-	  sending the processor to sleep and saving power.
++	bool
++	default y if !IA64_HP_SIM
+ 
+ config PM_DEBUG
+ 	bool "Power Management Debug Support"
+-- 
+1.7.2.3
 
