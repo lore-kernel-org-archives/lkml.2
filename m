@@ -1,124 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753106Ab1BGOMH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 09:12:07 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53872 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752965Ab1BGOLn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753270Ab1BGOLn (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 7 Feb 2011 09:11:43 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49491 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752965Ab1BGOLl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 09:11:41 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=ocsdgYEK7LJBTXnNwwSlh3a3DRaPT9dgE0tZfkZkF98iCE5rjT5q4IM/yf7rzrux80
-         OV7Z/Hd8hm/pVPrL4+wmha+X/0M+1AVjf6fFnFH9LsUm3S8JWpygnAGQZXac3o9HJKsz
-         vNlVD0fwor73Q8FXOFvfkhRzo/GYphQOPxNuM=
-From: Ivan Djelic <ivan.djelic@parrot.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-mtd@lists.infradead.org,
-        Ivan Djelic <ivan.djelic@parrot.com>
-Subject: [PATCH/RFC v2 3/3] mtd: nand: enable software BCH ECC in nand simulator
-Date: Mon,  7 Feb 2011 15:09:32 +0100
-Message-Id: <3b66f37e95b304381d76f06c405398f59a07ac6a.2296641159.git.ivan.djelic@parrot.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <181c9a1c88b781116615761109cccdf89ea877a1.2296641159.git.ivan.djelic@parrot.com>
-References: <181c9a1c88b781116615761109cccdf89ea877a1.2296641159.git.ivan.djelic@parrot.com>
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=fP7vr/bv8t760AUDg06TtoAPUoEDZDuSWDv42yT/bLA9tQ00N7ofdzimN9cbA2mevz
+         3/5keqofNxzrUXMoBNQkB79z+Y7YnFtkuIKgj/VFDnwH3aFaCf2OHR54sYMrp2YlSvp4
+         xFr+UhktJAvdQfTpmLR9PYbxnhFUJjzhlOXWY=
+Date: Mon, 7 Feb 2011 15:11:35 +0100
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
+ PTRACE_ATTACH
+Message-ID: <20110207141135.GA16992@htj.dyndns.org>
+References: <20110203204122.GA26371@redhat.com>
+ <20110203204154.GB26371@redhat.com>
+ <20110203213640.1F516180995@magilla.sf.frob.com>
+ <20110203214450.GA29496@redhat.com>
+ <20110204105343.GA12133@htj.dyndns.org>
+ <20110204130455.GA3671@redhat.com>
+ <20110204144858.GI12133@htj.dyndns.org>
+ <20110204170602.GB15301@redhat.com>
+ <20110205133926.GM12133@htj.dyndns.org>
+ <20110207134235.GB22538@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110207134235.GB22538@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds option 'bch' to nandsim, which can be used to enable
-software BCH ECC (introduced in previous patches) and select BCH error
-correction capability.
+Hello, Oleg.
 
-Signed-off-by: Ivan Djelic <ivan.djelic@parrot.com>
----
-v2 changelog
-- do not handle small page devices
+On Mon, Feb 07, 2011 at 02:42:35PM +0100, Oleg Nesterov wrote:
+> > That's the shortcomings of the current implementation.  The specific
+> > problem sure can be fixed by putting group stop on top of ptrace but
+> > that is not the only direction.  In fact, that actually is the
+> > direction we CAN'T take with ptrace because changing that will create
+> > a lot more problems that can't be worked around.
+> 
+> Which problems?
 
- drivers/mtd/nand/nandsim.c |   40 +++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 39 insertions(+), 1 deletions(-)
+I was talking about prioritizing group stop over ptrace in general.
+Please see the following messages.
 
-diff --git a/drivers/mtd/nand/nandsim.c b/drivers/mtd/nand/nandsim.c
-index a5aa99f..e4ed5d7 100644
---- a/drivers/mtd/nand/nandsim.c
-+++ b/drivers/mtd/nand/nandsim.c
-@@ -34,6 +34,7 @@
- #include <linux/string.h>
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/nand.h>
-+#include <linux/mtd/nand_bch.h>
- #include <linux/mtd/partitions.h>
- #include <linux/delay.h>
- #include <linux/list.h>
-@@ -108,6 +109,7 @@ static unsigned int rptwear = 0;
- static unsigned int overridesize = 0;
- static char *cache_file = NULL;
- static unsigned int bbt;
-+static unsigned int bch;
- 
- module_param(first_id_byte,  uint, 0400);
- module_param(second_id_byte, uint, 0400);
-@@ -132,6 +134,7 @@ module_param(rptwear,        uint, 0400);
- module_param(overridesize,   uint, 0400);
- module_param(cache_file,     charp, 0400);
- module_param(bbt,	     uint, 0400);
-+module_param(bch,	     uint, 0400);
- 
- MODULE_PARM_DESC(first_id_byte,  "The first byte returned by NAND Flash 'read ID' command (manufacturer ID)");
- MODULE_PARM_DESC(second_id_byte, "The second byte returned by NAND Flash 'read ID' command (chip ID)");
-@@ -165,6 +168,7 @@ MODULE_PARM_DESC(overridesize,   "Specifies the NAND Flash size overriding the I
- 				 " e.g. 5 means a size of 32 erase blocks");
- MODULE_PARM_DESC(cache_file,     "File to use to cache nand pages instead of memory");
- MODULE_PARM_DESC(bbt,		 "0 OOB, 1 BBT with marker in OOB, 2 BBT with marker in data area");
-+MODULE_PARM_DESC(bch,		 "Enable BCH ecc and set how many bits should be correctable in 512-byte blocks");
- 
- /* The largest possible page size */
- #define NS_LARGEST_PAGE_SIZE	4096
-@@ -2309,7 +2313,41 @@ static int __init ns_init_module(void)
- 	if ((retval = parse_gravepages()) != 0)
- 		goto error;
- 
--	if ((retval = nand_scan(nsmtd, 1)) != 0) {
-+	if ((retval = nand_scan_ident(nsmtd, 1, NULL)) != 0) {
-+		NS_ERR("cannot scan NAND Simulator device\n");
-+		if (retval > 0)
-+			retval = -ENXIO;
-+		goto error;
-+	}
-+
-+	if (bch) {
-+		unsigned int eccsteps, eccbytes;
-+		if (!mtd_nand_has_bch()) {
-+			NS_ERR("BCH ECC support is disabled\n");
-+			retval = -EINVAL;
-+			goto error;
-+		}
-+		/* use 512-byte ecc blocks */
-+		eccsteps = nsmtd->writesize/512;
-+		eccbytes = (bch*13+7)/8;
-+		/* do not bother supporting small page devices */
-+		if ((nsmtd->oobsize < 64) || !eccsteps) {
-+			NS_ERR("bch not available on small page devices\n");
-+			retval = -EINVAL;
-+			goto error;
-+		}
-+		if ((eccbytes*eccsteps+2) > nsmtd->oobsize) {
-+			NS_ERR("invalid bch value %u\n", bch);
-+			retval = -EINVAL;
-+			goto error;
-+		}
-+		chip->ecc.mode = NAND_ECC_SOFT_BCH;
-+		chip->ecc.size = 512;
-+		chip->ecc.bytes = eccbytes;
-+		NS_INFO("using %u-bit/%u bytes BCH ECC\n", bch, chip->ecc.size);
-+	}
-+
-+	if ((retval = nand_scan_tail(nsmtd)) != 0) {
- 		NS_ERR("can't register NAND Simulator\n");
- 		if (retval > 0)
- 			retval = -ENXIO;
+ http://article.gmane.org/gmane.linux.kernel/1095119
+ http://article.gmane.org/gmane.linux.kernel/1095603
+
+Notifying the parent w/o making group stop superior to ptrace sure is
+a possibility.
+
+> > This way, the existing users behave the same way
+> 
+> Wait. The current behaviour is just broken. This is bad. But, at the
+> same time, this is good: it gives us more rights to introduce the
+> user-visible changes once we decide what exactly we want.
+> 
+> Firstly, the current behaviour is unpredictable. Suppose that we have
+> two threads, T1 and T2. Only one thread is ptraced. Now, real_parent
+> will be notified or not, depending on which thread calls do_signal_stop()
+> last. I see no point to preserve this randomness. And note that
+> real_parent can be notified anyway.
+> 
+> Otoh, I don't really understand why should we delay the notification
+> to real_parent until detach in the simplest case (with your patches)
+> by default.
+
+Yeah, agreed regarding the notification.
+
+> > For example, the problem in this thread is cleanly solved by
+> > really examining the problem and fixing the problem at the source (the
+> > mixup of group and ptrace stop)
+> 
+> Yes, but I am worried that this change (in its current form) makes
+> impossible to create a TASK_STOPPED tracee, but you already know this.
+
+Why is that a problem?  A ptraced task stops in TASK_TRACED.  It
+should for a number of different reasons.  We can augment the group
+stop notification if desirable.
+
+> OK. But what I can't understand is why the alternative change is
+> not better. Once again:
+> 
+> 	- the stopping thread always notifies the debugger
+> 
+> 	- the last thread notifies both: debugger and real_parent
+> 
+> 	- do_wait() is modified so that WSTOPPED always works
+> 	  for real_parent, even if its child is ptraced.
+
+I think the disconnection comes from the scope of the problem.  If we
+restrict our attention to group stop notification.  I agree that what
+you're describing seems like a good compromise.  What I was objecting
+to was putting group stop mechanism in general on top of ptrace.  I
+can't see how that would work.
+
+Also, for a ptraced task, what would you consider to be participating
+in a group stop?  I think it should only include the case where the
+tracee actually stops for group stop excluding all other trapping
+points.  That way ptracer also can tell that the tracee has stopped
+for group stop and participated in group stop completion/notification.
+
+But, I don't think this really changes the need for state tracking.
+We would still have to put the tracee into approriate mode on detach.
+
+Thanks.
+
 -- 
-1.7.2.3
-
+tejun
