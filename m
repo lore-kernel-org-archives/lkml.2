@@ -1,78 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667Ab1BGHwo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 02:52:44 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:52587 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752453Ab1BGHwm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 02:52:42 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Sq3UjN8Vr3GEpttdbaj2cx0fsbUqcR8xSOkEaF0B30/0z+uyQgQssNTU7wyGLdYfOz
-         V/s3zNQC4hK6ZSU5zrEVUKkHtjrVZ6C7pxjCsUy+wh2QlJjRHeOjDcG/6dNC01kg4AfC
-         a/eOtxjqX0mspEdoH52Ke603wUNGgFNqjqEGI=
+	id S1752687Ab1BGHzK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 02:55:10 -0500
+Received: from hera.kernel.org ([140.211.167.34]:36378 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752582Ab1BGHzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 02:55:09 -0500
+Date: Mon, 7 Feb 2011 07:54:33 GMT
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, tzanussi@gmail.com,
+        peterz@infradead.org, efault@gmx.de, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, tzanussi@gmail.com,
+        efault@gmx.de, peterz@infradead.org, fweisbec@gmail.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <new-submission>
+References: <new-submission>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf top: Remove superfluous name_len field
+Message-ID: <tip-764328d3209dd81b02a55722556b07b6f35e3ca0@git.kernel.org>
+Git-Commit-ID: 764328d3209dd81b02a55722556b07b6f35e3ca0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20110206084440.a6c2df3b.rdunlap@xenotime.net>
-References: <4D4EBAF4.9070403@gmail.com>
-	<20110206084440.a6c2df3b.rdunlap@xenotime.net>
-Date: Mon, 7 Feb 2011 08:52:41 +0100
-Message-ID: <AANLkTi=T3TGYcxm2=C6QtYss09H9R+m0Zk9KDQepMqiL@mail.gmail.com>
-Subject: Re: [PATCH] Kconfig: XIP doesn't depend on block
-From: Marco Stornelli <marco.stornelli@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 07 Feb 2011 07:54:34 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/2/6 Randy Dunlap <rdunlap@xenotime.net>:
-> On Sun, 06 Feb 2011 16:15:00 +0100 Marco Stornelli wrote:
->
->> From: Marco Stornelli <marco.stornelli@gmail.com>
->>
->> XIP doesn't depend on block symbol, then we can reorder the Kconfig.
->> For ext2 doesn't change the Kconfig behavior but if other fs will use
->> FS_XIP it won't need to include block support if not needed.
->
-> Hi Marco,
->
-> Do you know of a filesystem where this matters?
->
+Commit-ID:  764328d3209dd81b02a55722556b07b6f35e3ca0
+Gitweb:     http://git.kernel.org/tip/764328d3209dd81b02a55722556b07b6f35e3ca0
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Fri, 4 Feb 2011 07:33:24 -0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Sat, 5 Feb 2011 12:26:40 -0200
 
-Yes, for example mine (pramfs) :)
+perf top: Remove superfluous name_len field
 
->> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
->> ---
->>
->> --- Kconfig.orig      2011-01-19 00:14:02.000000000 +0100
->> +++ Kconfig   2011-02-06 16:04:51.000000000 +0100
->
-> This filename should include path, like
-> --- fs/Kconfig.orig
-> +++ fs/Kconfig
->
->> @@ -9,13 +9,6 @@ if BLOCK
->>  source "fs/ext2/Kconfig"
->>  source "fs/ext3/Kconfig"
->>  source "fs/ext4/Kconfig"
->> -
->
-> The 3 filesystems above are immediately under:
->
-> if BLOCK
->
-> so ext[234] depend on BLOCK.  Why would it matter about FS_XIP?
->
+>From the sym_entry struct, struct symbol already has this field.
 
-I don't know but for example even POSIX ACL was under "if BLOCK",
-maybe there is only an historical refuse.
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-top.c |    3 ---
+ tools/perf/util/top.c    |    5 +++--
+ tools/perf/util/top.h    |    1 -
+ 3 files changed, 3 insertions(+), 6 deletions(-)
 
-Marco
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 104de9a..154e088 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -787,9 +787,6 @@ static int symbol_filter(struct map *map, struct symbol *sym)
+ 		}
+ 	}
+ 
+-	if (!syme->skip)
+-		syme->name_len = strlen(sym->name);
+-
+ 	return 0;
+ }
+ 
+diff --git a/tools/perf/util/top.c b/tools/perf/util/top.c
+index 1d2e265..70a9c13 100644
+--- a/tools/perf/util/top.c
++++ b/tools/perf/util/top.c
+@@ -200,6 +200,7 @@ void perf_top__find_widths(struct perf_top *top, struct rb_root *root,
+ 
+ 	for (nd = rb_first(root); nd; nd = rb_next(nd)) {
+ 		struct sym_entry *syme = rb_entry(nd, struct sym_entry, rb_node);
++		struct symbol *sym = sym_entry__symbol(syme);
+ 
+ 		if (++printed > top->print_entries ||
+ 		    (int)syme->snap_count < top->count_filter)
+@@ -211,7 +212,7 @@ void perf_top__find_widths(struct perf_top *top, struct rb_root *root,
+ 		if (syme->map->dso->short_name_len > *dso_short_width)
+ 			*dso_short_width = syme->map->dso->short_name_len;
+ 
+-		if (syme->name_len > *sym_width)
+-			*sym_width = syme->name_len;
++		if (sym->namelen > *sym_width)
++			*sym_width = sym->namelen;
+ 	}
+ }
+diff --git a/tools/perf/util/top.h b/tools/perf/util/top.h
+index 611370f..5009508 100644
+--- a/tools/perf/util/top.h
++++ b/tools/perf/util/top.h
+@@ -31,7 +31,6 @@ struct sym_entry {
+ 	unsigned long		snap_count;
+ 	double			weight;
+ 	int			skip;
+-	u16			name_len;
+ 	u8			origin;
+ 	struct map		*map;
+ 	struct sym_entry_source	*src;
