@@ -1,54 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264Ab1BGX0l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 18:26:41 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:17564 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755092Ab1BGX0k (ORCPT
+	id S1755281Ab1BGX3t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 18:29:49 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:52626 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755126Ab1BGX3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 18:26:40 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 06/11] x86, 64bit, numa: Allocate memnodemap under max_pfn_mapped
-Date: Mon,  7 Feb 2011 15:17:07 -0800
-Message-Id: <1297120632-24933-7-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1297120632-24933-1-git-send-email-yinghai@kernel.org>
-References: <1297120632-24933-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4D507F5A.0137,ss=1,fgs=0
+	Mon, 7 Feb 2011 18:29:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=Eko/Jk1uDlFKbYs1bgFwJCwY+AZcJyIowK7f0jBij4J5bszHGQWUipSAWxwh9fMcFE
+         fWgMjWUW8zPp8CChRZLL1LmksL69qCfJAd9ShH8SssLdxO9UVgek4YWzbgmVF8VZsFS5
+         n28ei6Fp7jQQvtTpzrMovFy6Pv9qoVZH/xtdo=
+MIME-Version: 1.0
+Date: Mon, 7 Feb 2011 18:29:48 -0500
+Message-ID: <AANLkTinLOSfdO0HVABANiBnKgN540fc0pzqhjDAKAa2B@mail.gmail.com>
+Subject: Regarding Buddy Allocator
+From: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
+To: Kernel-newbies <kernelnewbies@nl.linux.org>,
+        linux-kernel-mail <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to access it right way, so make sure that it is mapped already.
+Can anyone point me to implementation of buddy allocator, with
+efficient data structures used. Thanks in advance.
 
-Prepare to put page table on local node, and nodemap is used before that.
+I am trying to get another thought or implementation on code.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- arch/x86/mm/numa_64.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 95ea155..0cdfeea 100644
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -86,7 +86,7 @@ static int __init allocate_cachealigned_memnodemap(void)
- 
- 	addr = 0x8000;
- 	nodemap_size = roundup(sizeof(s16) * memnodemapsize, L1_CACHE_BYTES);
--	nodemap_addr = memblock_find_in_range(addr, max_pfn<<PAGE_SHIFT,
-+	nodemap_addr = memblock_find_in_range(addr, get_max_mapped(),
- 				      nodemap_size, L1_CACHE_BYTES);
- 	if (nodemap_addr == MEMBLOCK_ERROR) {
- 		printk(KERN_ERR
 -- 
-1.7.1
-
+Regards,
+Sri.
