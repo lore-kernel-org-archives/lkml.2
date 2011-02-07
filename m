@@ -1,290 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754564Ab1BGU7d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 15:59:33 -0500
-Received: from mga02.intel.com ([134.134.136.20]:3381 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754036Ab1BGU7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 15:59:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,438,1291622400"; 
-   d="scan'208";a="705018336"
-Date: Mon, 7 Feb 2011 12:57:26 -0800
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Matt Helsley <matthltc@us.ibm.com>,
-        container cgroup <containers@lists.linux-foundation.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <menage@google.com>,
-        akpm@linux-foundation.org, rdunlap@xenotime.net
-Subject: Re: [PATCH v3] cgroup/freezer: add per freezer duty ratio control
-Message-ID: <20110207125726.6b1ec1fb@putvin>
-In-Reply-To: <20110207182929.GA14038@shutemov.name>
-References: <1297102383-2658-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<1297102383-2658-2-git-send-email-jacob.jun.pan@linux.intel.com>
-	<20110207182929.GA14038@shutemov.name>
-Organization: OTC
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754679Ab1BGVEv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 16:04:51 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:51185 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754524Ab1BGVEs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 16:04:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=KYSAodcHSuPLPr4xd8Q8BJ3xVRW4bm0NWGMHY+/lPJb8tPqp87dLIDit+ZUibWxpFR
+         btmiGTSJwzCAPjNSre1x+ODrHYv5pJdA5ABIUSMNwzjvjk5LxQjg9SpFeig0GzqIHuaJ
+         l4bNzDGvVlTpJv+/yhcisfonVWITpTkETo/Ys=
+MIME-Version: 1.0
+In-Reply-To: <1297104732.15475.60.camel@sale659.sandia.gov>
+References: <cover.1290852958.git.npiggin@kernel.dk>
+	<d44ddcf1d1e0813b3ce2b3872c7c702a31b62894.1290852959.git.npiggin@kernel.dk>
+	<AANLkTi=pj-pLYVSrU+6+BtioCWLod2ueZecNaap619fw@mail.gmail.com>
+	<AANLkTik3ScP5rvR2bOXOEEH8SNZGg+xO6Gy32CW3XmU6@mail.gmail.com>
+	<AANLkTinVP=OuJ-3u9pHdDuuKJoVrP4Unr5Dx1x=qHtXC@mail.gmail.com>
+	<AANLkTimUjC8B0=nn5+yDshzp0hy6Zk1wxYHWEZbk83Tf@mail.gmail.com>
+	<AANLkTi=or1Ya21Am8Dr4KVHgqkwvNxFwgn407=wxRfVa@mail.gmail.com>
+	<AANLkTinmaojfNDYk1i4jMP33MmEQDur9XZvFp=qhV01e@mail.gmail.com>
+	<1297104732.15475.60.camel@sale659.sandia.gov>
+Date: Mon, 7 Feb 2011 13:04:46 -0800
+Message-ID: <AANLkTinhfZcr-Mz2jAZodSrH-914D7iJREmVSD-i8Fb-@mail.gmail.com>
+Subject: Re: [PATCH 17/46] fs: Use rename lock and RCU for multi-step operations
+From: Yehuda Sadeh Weinraub <yehudasa@gmail.com>
+To: Jim Schutt <jaschut@sandia.gov>
+Cc: Nick Piggin <npiggin@gmail.com>, Nick Piggin <npiggin@kernel.dk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sage Weil <sage@newdream.net>,
+        "ceph-devel@vger.kernel.org" <ceph-devel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 Feb 2011 20:29:29 +0200
-"Kirill A. Shutemov" <kirill@shutemov.name> wrote:
+On Mon, Feb 7, 2011 at 10:52 AM, Jim Schutt <jaschut@sandia.gov> wrote:
+>
+> On Wed, 2011-01-26 at 22:18 -0700, Nick Piggin wrote:
+>> On Wed, Jan 26, 2011 at 9:10 AM, Yehuda Sadeh Weinraub
+>> <yehudasa@gmail.com> wrote:
+>> > On Wed, Jan 19, 2011 at 2:32 PM, Nick Piggin <npiggin@gmail.com> wrote:
+>> >> On Thu, Jan 20, 2011 at 9:27 AM, Yehuda Sadeh Weinraub
+>> >> <yehudasa@gmail.com> wrote:
+>> >>> On Tue, Jan 18, 2011 at 2:42 PM, Nick Piggin <npiggin@gmail.com> wrote:
+>> >>>> On Wed, Jan 19, 2011 at 9:32 AM, Yehuda Sadeh Weinraub
+>> >>>
+>> >>>>> There's an issue with ceph as it references the
+>> >>>>> dentry->d_parent(->d_inode) at dentry_release(), so setting
+>> >>>>> dentry->d_parent to NULL here doesn't work with ceph. Though there is
+>> >>>>> some workaround for it, we would like to be sure that this one is
+>> >>>>> really required so that we don't exacerbate the ugliness. The
+>> >>>>> workaround is to keep a pointer to the parent inode in the private
+>> >>>>> dentry structure, which will be referenced only at the .release()
+>> >>>>> callback. This is clearly not ideal.
+>> >>>>
+>> >>>> Hmm, I'll have to think about it. Probably we can check for
+>> >>>> d_count == 0 rather than parent != NULL I think?
+>> >>>>
+>> >>>
+>> >>> That'll solve ceph's problem, don't know about how'd affect other
+>> >>> stuff. We'll need to know whether this is the solution, or whether
+>> >>> we'd need to introduce some other band aid fix.
+>> >>
+>> >> No I think it will work fine. Basically we just need to know whether
+>> >> we have been deleted, and if so then we restart rather than walking
+>> >> back up the parent.
+>> >>
+>> >> I'll send a patch in a few days. For the meantime, it's a rathe
+>> >> small window for ceph to worry about. So we'll have something
+>> >> before -rc2 which should be OK.
+>> >>
+>> >
+>> > I guess that it's a bit late for -rc2, should we assume that it'll be on -rc3?
+>>
+>> Yeah, I'm sorry I've been travelling and a bit disconnected.
+>>
+>> NFS folk are having a similar problem and looks like similar
+>> proposed fix will do it.
+>>
+>> http://marc.info/?l=linux-fsdevel&m=129599823927039&w=2
+>>
+>> So I think it is the best way to go to restore behaviour back to what
+>> filesystems already expect, to avoid more surprises in future.
+>
+> I think the following BUG indicates I'm hitting this problem?
+> All I have to do to cause it is unlink a file.
+>
+> My ceph client kernel is 8dbdea8444 (master branch) from
+>  git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+> + e41cdbb6c5 (master branch) + a3f5274e53 (unstable branch)
+>  from git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git
+>
+> Are there any patches available for this I can test?
+>
+> Thanks -- Jim
+>
 
-> On Mon, Feb 07, 2011 at 10:13:03AM -0800,
-> jacob.jun.pan@linux.intel.com wrote:
-> > From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> > 
-> > Freezer subsystem is used to manage batch jobs which can start
-> > stop at the same time. However, sometime it is desirable to let
-> > the kernel manage the freezer state automatically with a given
-> > duty ratio.
-> > For example, if we want to reduce the time that backgroup apps
-> > are allowed to run we can put them into a freezer subsystem and
-> > set the kernel to turn them THAWED/FROZEN at given duty ratio.
-> > 
-> > This patch introduces two file nodes under cgroup
-> > freezer.duty_ratio_pct and freezer.period_sec
-> > 
-> > Usage example: set period to be 5 seconds and frozen duty ratio 90%
-> > [root@localhost aoa]# echo 90 > freezer.duty_ratio_pct
-> > [root@localhost aoa]# echo 5 > freezer.period_sec
-> > 
-> > Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> > ---
-> >  Documentation/cgroups/freezer-subsystem.txt |   23 ++++++
-> >  kernel/cgroup_freezer.c                     |  109
-> > ++++++++++++++++++++++++++- 2 files changed, 130 insertions(+), 2
-> > deletions(-)
-> > 
-> > diff --git a/Documentation/cgroups/freezer-subsystem.txt
-> > b/Documentation/cgroups/freezer-subsystem.txt index
-> > 41f37fe..2bc1b98 100644 ---
-> > a/Documentation/cgroups/freezer-subsystem.txt +++
-> > b/Documentation/cgroups/freezer-subsystem.txt @@ -100,3 +100,26 @@
-> > things happens: and returns EINVAL)
-> >  	3) The tasks that blocked the cgroup from entering the
-> > "FROZEN" state disappear from the cgroup's set of tasks.
-> > +
-> > +In embedded systems, it is desirable to manage group of
-> > applications +for power saving. E.g. tasks that are not in the
-> > foreground may be +frozen unfrozen periodically to save power
-> > without affecting user +experience. In this case, user/management
-> > software can attach tasks +into freezer cgroup then specify duty
-> > ratio and period that the +managed tasks are allowed to run.
-> > +
-> > +Usage example:
-> > +Assuming freezer cgroup is already mounted, application being
-> > managed +are included the "tasks" file node of the given freezer
-> > cgroup. +To make the tasks frozen at 90% of the time every 5
-> > seconds, do: +
-> > +[root@localhost ]# echo 90 > freezer.duty_ratio_pct
-> > +[root@localhost ]# echo 5 > freezer.period_sec
-> > +
-> > +After that, the application in this freezer cgroup will only be
-> > +allowed to run at the following pattern.
-> > +     __                    __                    __
-> > +    |  |<-- 90% frozen -->|  |                  |  |
-> > +____|  |__________________|  |__________________|  |_____
-> > +
-> > +    |<---- 5 seconds ---->|
-> > diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-> > index e7bebb7..928f2ab 100644
-> > --- a/kernel/cgroup_freezer.c
-> > +++ b/kernel/cgroup_freezer.c
-> > @@ -21,6 +21,7 @@
-> >  #include <linux/uaccess.h>
-> >  #include <linux/freezer.h>
-> >  #include <linux/seq_file.h>
-> > +#include <linux/kthread.h>
-> >  
-> >  enum freezer_state {
-> >  	CGROUP_THAWED = 0,
-> > @@ -28,12 +29,23 @@ enum freezer_state {
-> >  	CGROUP_FROZEN,
-> >  };
-> >  
-> > +struct freezer_duty {
-> > +	u32 ratio; /* percentage of time frozen */
-> > +	u32 period_pct_ms; /* one percent of the period in
-> > miliseconds */ +};
-> > +
-> >  struct freezer {
-> >  	struct cgroup_subsys_state css;
-> >  	enum freezer_state state;
-> > +	struct freezer_duty duty;
-> > +	struct task_struct *fkh;
-> >  	spinlock_t lock; /* protects _writes_ to state */
-> >  };
-> >  
-> > +static struct task_struct *freezer_task;
-> > +static int try_to_freeze_cgroup(struct cgroup *cgroup, struct
-> > freezer *freezer); +static void unfreeze_cgroup(struct cgroup
-> > *cgroup, struct freezer *freezer); +
-> >  static inline struct freezer *cgroup_freezer(
-> >  		struct cgroup *cgroup)
-> >  {
-> > @@ -63,6 +75,35 @@ int cgroup_freezing_or_frozen(struct task_struct
-> > *task) return result;
-> >  }
-> >  
-> > +static DECLARE_WAIT_QUEUE_HEAD(freezer_wait);
-> > +
-> > +static int freezer_kh(void *data)
-> > +{
-> > +	struct cgroup *cgroup = (struct cgroup *)data;
-> > +	struct freezer *freezer = cgroup_freezer(cgroup);
-> > +
-> > +	do {
-> > +		if (freezer->duty.ratio < 100 &&
-> > freezer->duty.ratio >= 0 &&
-> > +			freezer->duty.period_pct_ms) {
-> > +			if (try_to_freeze_cgroup(cgroup, freezer))
-> > +				pr_info("cannot freeze\n");
-> > +			msleep(freezer->duty.period_pct_ms *
-> > +				freezer->duty.ratio);
-> > +			unfreeze_cgroup(cgroup, freezer);
-> > +			msleep(freezer->duty.period_pct_ms *
-> > +				(100 - freezer->duty.ratio));
-> > +		} else if (freezer->duty.ratio == 100) {
-> > +			if (try_to_freeze_cgroup(cgroup, freezer))
-> > +				pr_info("cannot freeze\n");
-> > +			sleep_on(&freezer_wait);
-> > +		} else {
-> > +			sleep_on(&freezer_wait);
-> > +			pr_debug("freezer thread wake up\n");
-> > +		}
-> > +	} while (!kthread_should_stop());
-> > +	return 0;
-> > +}
-> > +
-> >  /*
-> >   * cgroups_write_string() limits the size of freezer state strings
-> > to
-> >   * CGROUP_LOCAL_BUFFER_SIZE
-> > @@ -150,7 +191,11 @@ static struct cgroup_subsys_state
-> > *freezer_create(struct cgroup_subsys *ss, static void
-> > freezer_destroy(struct cgroup_subsys *ss, struct cgroup *cgroup)
-> >  {
-> > -	kfree(cgroup_freezer(cgroup));
-> > +	struct freezer *freezer;
-> > +
-> > +	freezer = cgroup_freezer(cgroup);
-> > +	kthread_stop(freezer->fkh);
-> > +	kfree(freezer);
-> >  }
-> >  
-> >  /*
-> > @@ -282,6 +327,16 @@ static int freezer_read(struct cgroup *cgroup,
-> > struct cftype *cft, return 0;
-> >  }
-> >  
-> > +static u64 freezer_read_duty_ratio(struct cgroup *cgroup, struct
-> > cftype *cft) +{
-> > +	return cgroup_freezer(cgroup)->duty.ratio;
-> > +}
-> > +
-> > +static u64 freezer_read_period(struct cgroup *cgroup, struct
-> > cftype *cft) +{
-> > +	return cgroup_freezer(cgroup)->duty.period_pct_ms / 10;
-> > +}
-> > +
-> >  static int try_to_freeze_cgroup(struct cgroup *cgroup, struct
-> > freezer *freezer) {
-> >  	struct cgroup_iter it;
-> > @@ -368,19 +423,69 @@ static int freezer_write(struct cgroup
-> > *cgroup, return retval;
-> >  }
-> >  
-> > +static int freezer_write_duty_ratio(struct cgroup *cgroup, struct
-> > cftype *cft,
-> > +		u64 val)
-> > +{
-> > +	if (!cgroup_lock_live_group(cgroup))
-> > +		return -ENODEV;
-> > +	cgroup_freezer(cgroup)->duty.ratio = val;
-> > +	cgroup_unlock();
-> > +	wake_up(&freezer_wait);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static int freezer_write_period(struct cgroup *cgroup, struct
-> > cftype *cft,
-> > +		u64 val)
-> > +{
-> > +	if (!cgroup_lock_live_group(cgroup))
-> > +		return -ENODEV;
-> > +	cgroup_freezer(cgroup)->duty.period_pct_ms = val * 10;
-> 
-> 1 second == 1000 millisecond, I guess ;)
-here is 1% of 1 second, so 1000 / 100 = 10ms.
-> 
-> I think better to use milliseconds for the interface.
-> 
-ok, I will change that back. I don't have preference.
+It does look like this specific problem.
+You can try cherry-pick commit 9c3db35 off the ceph git. It is just a
+temporary workaround, and it wasn't tested too much. Hopefully Nick
+will push his fix soon so that it wouldn't be needed.
 
-> > +	cgroup_unlock();
-> > +	wake_up(&freezer_wait);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> >  static struct cftype files[] = {
-> >  	{
-> >  		.name = "state",
-> >  		.read_seq_string = freezer_read,
-> >  		.write_string = freezer_write,
-> >  	},
-> > +	{
-> > +		.name = "duty_ratio_pct",
-> > +		.read_u64 = freezer_read_duty_ratio,
-> > +		.write_u64 = freezer_write_duty_ratio,
-> > +	},
-> > +	{
-> > +		.name = "period_sec",
-> > +		.read_u64 = freezer_read_period,
-> > +		.write_u64 = freezer_write_period,
-> > +	},
-> > +
-> >  };
-> >  
-> > +#define FREEZER_KH_PREFIX  "freezer_"
-> >  static int freezer_populate(struct cgroup_subsys *ss, struct
-> > cgroup *cgroup) {
-> > +	int ret = 0;
-> > +	char thread_name[32];
-> > +	struct freezer *freezer;
-> > +
-> >  	if (!cgroup->parent)
-> >  		return 0;
-> > -	return cgroup_add_files(cgroup, ss, files,
-> > ARRAY_SIZE(files)); +
-> > +	freezer = cgroup_freezer(cgroup);
-> > +	ret = cgroup_add_files(cgroup, ss, files,
-> > ARRAY_SIZE(files)); +
-> > +	snprintf(thread_name, 32, "%s%s", FREEZER_KH_PREFIX,
-> > +		cgroup->dentry->d_name.name);
-> > +	freezer->fkh = kthread_run(freezer_kh, (void *)cgroup,
-> > thread_name);
-> > +	if (IS_ERR(freezer_task))
-> > +		pr_debug("%s failed to create %s\n", __func__,
-> > thread_name); +
-> > +	return ret;
-> 
-> Hm.. I think it's waste of resources creates one threads for every
-> cgroup. In most cases auto freezing will not be enabled. Can we
-> create a thread when it's really needed (ratio != 0 && period != 0)?
-good point, i will fix that.
-> Can we use delayed workqueues instead of separate thread?
-I guess you mean having one private workqueue for all freezer cgroups. I
-think it is doable and save memory vs per active freezer kthread, but I
-am not sure the effect on concurrency. I will give that a try.
-
-Thanks
-
+Thanks,
+Yehuda
