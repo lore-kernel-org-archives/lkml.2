@@ -1,209 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab1BGMO1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 07:14:27 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53060 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753902Ab1BGMO0 (ORCPT
+	id S1754159Ab1BGMOh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 07:14:37 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:50787 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754088Ab1BGMOg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 07:14:26 -0500
-Message-ID: <4D4FE1D6.5050507@ru.mvista.com>
-Date: Mon, 07 Feb 2011 15:13:10 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	Mon, 7 Feb 2011 07:14:36 -0500
+Date: Mon, 7 Feb 2011 17:44:30 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>
+Subject: Re: [PATCH, v5 2/2] cgroups: introduce timer slack subsystem
+Message-ID: <20110207121430.GM27729@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <1297071962-11654-1-git-send-email-kirill@shutemov.name>
+ <1297071962-11654-3-git-send-email-kirill@shutemov.name>
+ <20110207100624.GB28911@balbir.in.ibm.com>
+ <20110207105730.GA11852@shutemov.name>
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ide: legacy VLB drivers housekeeping
-References: <201102071153.37633.bzolnier@gmail.com>
-In-Reply-To: <201102071153.37633.bzolnier@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20110207105730.GA11852@shutemov.name>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+* Kirill A. Shutemov <kirill@shutemov.name> [2011-02-07 12:57:30]:
 
-On 07-02-2011 13:53, Bartlomiej Zolnierkiewicz wrote:
+> On Mon, Feb 07, 2011 at 03:36:24PM +0530, Balbir Singh wrote:
+> > * Kirill A. Shutsemov <kirill@shutemov.name> [2011-02-07 11:46:02]:
+> > 
+> > > From: Kirill A. Shutemov <kirill@shutemov.name>
+> > > 
+> > > Provides a way of tasks grouping by timer slack value. Introduces per
+> > > cgroup max and min timer slack value. When a task attaches to a cgroup,
+> > > its timer slack value adjusts (if needed) to fit min-max range.
+> > > 
+> > > It also provides a way to set timer slack value for all tasks in the
+> > > cgroup at once.
+> > > 
+> > > This functionality is useful in mobile devices where certain background
+> > > apps are attached to a cgroup and minimum wakeups are desired.
+> > > 
+> > > Idea-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> > > Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+> > > ---
+> > >  include/linux/cgroup_subsys.h |    6 +
+> > >  include/linux/init_task.h     |    4 +-
+> > >  init/Kconfig                  |   10 ++
+> > >  kernel/Makefile               |    1 +
+> > >  kernel/cgroup_timer_slack.c   |  281 +++++++++++++++++++++++++++++++++++++++++
+> > >  kernel/sys.c                  |   19 ++-
+> > >  6 files changed, 314 insertions(+), 7 deletions(-)
+> > >  create mode 100644 kernel/cgroup_timer_slack.c
+> > > 
+> > > diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
+> > > index ccefff0..e399228 100644
+> > > --- a/include/linux/cgroup_subsys.h
+> > > +++ b/include/linux/cgroup_subsys.h
+> > > @@ -66,3 +66,9 @@ SUBSYS(blkio)
+> > >  #endif
+> > > 
+> > >  /* */
+> > > +
+> > > +#ifdef CONFIG_CGROUP_TIMER_SLACK
+> > > +SUBSYS(timer_slack)
+> > > +#endif
+> > > +
+> > > +/* */
+> > > diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+> > > index caa151f..48eca8f 100644
+> > > --- a/include/linux/init_task.h
+> > > +++ b/include/linux/init_task.h
+> > > @@ -124,6 +124,8 @@ extern struct cred init_cred;
+> > >  # define INIT_PERF_EVENTS(tsk)
+> > >  #endif
+> > > 
+> > > +#define TIMER_SLACK_NS_DEFAULT 50000
+> > > +
+> > >  /*
+> > >   *  INIT_TASK is used to set up the first task table, touch at
+> > >   * your own risk!. Base=0, limit=0x1fffff (=2MB)
+> > > @@ -177,7 +179,7 @@ extern struct cred init_cred;
+> > >  	.cpu_timers	= INIT_CPU_TIMERS(tsk.cpu_timers),		\
+> > >  	.fs_excl	= ATOMIC_INIT(0),				\
+> > >  	.pi_lock	= __RAW_SPIN_LOCK_UNLOCKED(tsk.pi_lock),	\
+> > > -	.timer_slack_ns = 50000, /* 50 usec default slack */		\
+> > > +	.timer_slack_ns = TIMER_SLACK_NS_DEFAULT,			\
+> > >  	.pids = {							\
+> > >  		[PIDTYPE_PID]  = INIT_PID_LINK(PIDTYPE_PID),		\
+> > >  		[PIDTYPE_PGID] = INIT_PID_LINK(PIDTYPE_PGID),		\
+> > > diff --git a/init/Kconfig b/init/Kconfig
+> > > index be788c0..6cf465f 100644
+> > > --- a/init/Kconfig
+> > > +++ b/init/Kconfig
+> > > @@ -596,6 +596,16 @@ config CGROUP_FREEZER
+> > >  	  Provides a way to freeze and unfreeze all tasks in a
+> > >  	  cgroup.
+> > > 
+> > > +config CGROUP_TIMER_SLACK
+> > > +	tristate "Timer slack cgroup subsystem"
+> > > +	help
+> > > +	  Provides a way of tasks grouping by timer slack value.
+> > > +	  Introduces per cgroup timer slack value which will override
+> > > +	  the default timer slack value once a task is attached to a
+> > > +	  cgroup.
+> > > +	  It's useful in mobile devices where certain background apps
+> > > +	  are attached to a cgroup and combined wakeups are desired.
+> > > +
+> > >  config CGROUP_DEVICE
+> > >  	bool "Device controller for cgroups"
+> > >  	help
+> > > diff --git a/kernel/Makefile b/kernel/Makefile
+> > > index 353d3fe..0b60239 100644
+> > > --- a/kernel/Makefile
+> > > +++ b/kernel/Makefile
+> > > @@ -61,6 +61,7 @@ obj-$(CONFIG_BACKTRACE_SELF_TEST) += backtracetest.o
+> > >  obj-$(CONFIG_COMPAT) += compat.o
+> > >  obj-$(CONFIG_CGROUPS) += cgroup.o
+> > >  obj-$(CONFIG_CGROUP_FREEZER) += cgroup_freezer.o
+> > > +obj-$(CONFIG_CGROUP_TIMER_SLACK) += cgroup_timer_slack.o
+> > >  obj-$(CONFIG_CPUSETS) += cpuset.o
+> > >  obj-$(CONFIG_CGROUP_NS) += ns_cgroup.o
+> > >  obj-$(CONFIG_UTS_NS) += utsname.o
+> > > diff --git a/kernel/cgroup_timer_slack.c b/kernel/cgroup_timer_slack.c
+> > > new file mode 100644
+> > > index 0000000..609e1f1
+> > > --- /dev/null
+> > > +++ b/kernel/cgroup_timer_slack.c
+> > > @@ -0,0 +1,281 @@
+> > > +/*
+> > > + * cgroup_timer_slack.c - control group timer slack subsystem
+> > > + *
+> > > + * Copyright Nokia Corparation, 2011
+> > > + * Author: Kirill A. Shutemov
+> > > + *
+> > > + * This program is free software; you can redistribute it and/or modify
+> > > + * it under the terms of the GNU General Public License as published by
+> > > + * the Free Software Foundation; either version 2 of the License, or
+> > > + * (at your option) any later version.
+> > > + *
+> > > + * This program is distributed in the hope that it will be useful,
+> > > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > > + * GNU General Public License for more details.
+> > > + */
+> > > +#include <linux/cgroup.h>
+> > > +#include <linux/init_task.h>
+> > > +#include <linux/module.h>
+> > > +#include <linux/slab.h>
+> > > +#include <linux/rcupdate.h>
+> > > +
+> > > +struct cgroup_subsys timer_slack_subsys;
+> > > +struct timer_slack_cgroup {
+> > > +	struct cgroup_subsys_state css;
+> > > +	unsigned long min_slack_ns;
+> > > +	unsigned long max_slack_ns;
+> > > +};
+> > > +
+> > > +enum {
+> > > +	TIMER_SLACK_MIN,
+> > > +	TIMER_SLACK_MAX,
+> > > +};
+> > > +
+> > > +extern int (*timer_slack_check)(struct task_struct *task,
+> > > +		unsigned long slack_ns);
+> > > +
+> > > +static struct timer_slack_cgroup *cgroup_to_tslack_cgroup(struct cgroup *cgroup)
+> > > +{
+> > > +	struct cgroup_subsys_state *css;
+> > > +
+> > > +	css = cgroup_subsys_state(cgroup, timer_slack_subsys.subsys_id);
+> > > +	return container_of(css, struct timer_slack_cgroup, css);
+> > > +}
+> > > +
+> > > +static int is_timer_slack_allowed(struct timer_slack_cgroup *tslack_cgroup,
+> > > +		unsigned long slack_ns)
+> > > +{
+> > > +	if (slack_ns < tslack_cgroup->min_slack_ns ||
+> > > +			slack_ns > tslack_cgroup->max_slack_ns)
+> > > +		return false;
+> > > +	return true;
+> > > +}
+> > > +
+> > > +static int cgroup_timer_slack_check(struct task_struct *task,
+> > > +		unsigned long slack_ns)
+> > > +{
+> > > +	struct cgroup_subsys_state *css;
+> > > +	struct timer_slack_cgroup *tslack_cgroup;
+> > > +
+> > > +	/* XXX: lockdep false positive? */
+> > > +	rcu_read_lock();
+> > > +	css = task_subsys_state(task, timer_slack_subsys.subsys_id);
+> > > +	tslack_cgroup = container_of(css, struct timer_slack_cgroup, css);
+> > 
+> > Shouldn't the rcu_read_unlock() be after the check of is_timer_slack_allowed()?
+> 
+> I'm not sure if this rcu_read_lock() is needed. See freezer_fork().
+> 
+> > > +	rcu_read_unlock();
+> > > +
+> > > +	if (!is_timer_slack_allowed(tslack_cgroup, slack_ns))
+> > > +		return -EPERM;
+> > > +	return 0;
+> > > +}
+> > > +
+> > > +static struct cgroup_subsys_state *
+> > > +tslack_cgroup_create(struct cgroup_subsys *subsys, struct cgroup *cgroup)
+> > > +{
+> > > +	struct timer_slack_cgroup *tslack_cgroup;
+> > > +
+> > > +	tslack_cgroup = kmalloc(sizeof(*tslack_cgroup), GFP_KERNEL);
+> > > +	if (!tslack_cgroup)
+> > > +		return ERR_PTR(-ENOMEM);
+> > > +
+> > > +	if (cgroup->parent) {
+> > > +		struct timer_slack_cgroup *parent;
+> > > +		parent = cgroup_to_tslack_cgroup(cgroup->parent);
+> > > +		tslack_cgroup->min_slack_ns = parent->min_slack_ns;
+> > > +		tslack_cgroup->max_slack_ns = parent->max_slack_ns;
+> > > +	} else {
+> > > +		tslack_cgroup->min_slack_ns = 0UL;
+> > > +		tslack_cgroup->max_slack_ns = ULONG_MAX;
+> > > +	}
+> > > +
+> > > +	return &tslack_cgroup->css;
+> > > +}
+> > > +
+> > > +static void tslack_cgroup_destroy(struct cgroup_subsys *subsys,
+> > > +		struct cgroup *cgroup)
+> > > +{
+> > > +	kfree(cgroup_to_tslack_cgroup(cgroup));
+> > > +}
+> > > +
+> > > +/*
+> > > + * Adjust ->timer_slack_ns and ->default_max_slack_ns of the task to fit
+> > > + * limits of the cgroup.
+> > > + */
+> > > +static void tslack_adjust_task(struct timer_slack_cgroup *tslack_cgroup,
+> > > +		struct task_struct *tsk)
+> > > +{
+> > > +	if (tslack_cgroup->min_slack_ns > tsk->timer_slack_ns)
+> > > +		tsk->timer_slack_ns = tslack_cgroup->min_slack_ns;
+> > > +	else if (tslack_cgroup->max_slack_ns < tsk->timer_slack_ns)
+> > > +		tsk->timer_slack_ns = tslack_cgroup->max_slack_ns;
+> > > +
+> > > +	if (tslack_cgroup->min_slack_ns > tsk->default_timer_slack_ns)
+> > > +		tsk->default_timer_slack_ns = tslack_cgroup->min_slack_ns;
+> > > +	else if (tslack_cgroup->max_slack_ns < tsk->default_timer_slack_ns)
+> > > +		tsk->default_timer_slack_ns = tslack_cgroup->max_slack_ns;
+> > > +}
+> > > +
+> > > +static void tslack_cgroup_attach(struct cgroup_subsys *subsys,
+> > > +		struct cgroup *cgroup, struct cgroup *prev,
+> > > +		struct task_struct *tsk, bool threadgroup)
+> > > +{
+> > > +	tslack_adjust_task(cgroup_to_tslack_cgroup(cgroup), tsk);
+> > > +}
+> > > +
+> > > +static int tslack_write_set_slack_ns(struct cgroup *cgroup, struct cftype *cft,
+> > > +		u64 val)
+> > > +{
+> > > +	struct timer_slack_cgroup *tslack_cgroup;
+> > > +	struct cgroup_iter it;
+> > > +	struct task_struct *task;
+> > > +
+> > > +	tslack_cgroup = cgroup_to_tslack_cgroup(cgroup);
+> > > +	if (!is_timer_slack_allowed(cgroup_to_tslack_cgroup(cgroup), val))
+> > > +		return -EPERM;
+> > > +
+> > > +	/* Change timer slack value for all tasks in the cgroup */
+> > > +	cgroup_iter_start(cgroup, &it);
+> > > +	while ((task = cgroup_iter_next(cgroup, &it)))
+> > > +		task->timer_slack_ns = val;
+> > > +	cgroup_iter_end(cgroup, &it);
+> > 
+> > OK, I've got questions, are the following possible
+> > 
+> > 1. Assign a task to a cgroup based on timer slack, it is accepted
+> > based on min and max values
+> 
+> Hm.. Currently, there is no such functionality. Do we need it? What's use
+> case?
+> 
+> > 2. We update the slack
+> > 
+> > Can't this be bad for some tasks, is there a way for a task to prevent
+> > the max slack from being updated?
+> 
+> If a non-RT task can't tolerate not being on time it's totally broken.
 
-> * remove stale documentation
-> * remove dead ALWAYS_SET_DTC2278_PIO_MODE code from dtc2278
-> * remove legacy debugging code from ht6560b
+Yes, I agree, except that the slack might be overwritten after the
+application set an acceptable slack.
 
-> There should be no functional changes caused by this patch.
+> RT-tasks are not affected by timer slack.
+> 
+> And we believe that user knows what he does.
+> 
+> > 2. Can there be an overlap in the ranges?
+> 
+> What overlap do you mean?
+> There is only one rule: parent's range should be wider then child's.
 
-> Signed-off-by: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
-[...]
+Between the children, can we have something like
 
-> Index: b/drivers/ide/ali14xx.c
-> ===================================================================
-> --- a/drivers/ide/ali14xx.c
-> +++ b/drivers/ide/ali14xx.c
-> @@ -7,32 +7,7 @@
->    *
->    * Works for ALI M1439/1443/1445/1487/1489 chipsets.
->    *
-> - * Adapted from code developed by derekn@vw.ece.cmu.edu.  -ml
-> - * Derek's notes follow:
-> - *
-> - * I think the code should be pretty understandable,
-> - * but I'll be happy to (try to) answer questions.
-> - *
-> - * The critical part is in the setupDrive function.  The initRegisters
-> - * function doesn't seem to be necessary, but the DOS driver does it, so
-> - * I threw it in.
-> - *
-> - * I've only tested this on my system, which only has one disk.  I posted
-> - * it to comp.sys.linux.hardware, so maybe some other people will try it
-> - * out.
-> - *
-> - * Derek Noonburg  (derekn@ece.cmu.edu)
-> - * 95-sep-26
-> - *
-> - * Update 96-jul-13:
-> - *
-> - * I've since upgraded to two disks and a CD-ROM, with no trouble, and
-> - * I've also heard from several others who have used it successfully.
-> - * This driver appears to work with both the 1443/1445 and the 1487/1489
-> - * chipsets.  I've added support for PIO mode 4 for the 1487.  This
-> - * seems to work just fine on the 1443 also, although I'm not sure it's
-> - * advertised as supporting mode 4.  (I've been running a WDC AC21200 in
-> - * mode 4 for a while now with no trouble.)  -Derek
-> + * Adapted from code developed by Derek Noonburg<derekn@vw.ece.cmu.edu>.  -
-> ml
+        10-200
+        /    \
+       /      \
+      V        V
+   10-110    100-200
 
-    The patch is line-wrapped...
-
-> Index: b/drivers/ide/dtc2278.c
-> ===================================================================
-> --- a/drivers/ide/dtc2278.c
-> +++ b/drivers/ide/dtc2278.c
-> @@ -2,6 +2,17 @@
->    *  Copyright (C) 1996  Linus Torvalds&  author (see below)
->    */
->
-> +/*
-> + * Initial DTC-2278 support from Dyan Wile<andy@cercle.cts.com>.
-> + */
-> +
-> +/*
-> + * DTC2278S has only a single IDE interface
-> + * DTC2278D has two IDE interfaces and is otherwise identical to the S
-> version
-
-    Here too...
-
-> + * DTC2278E also has serial ports and a printer port
-> + * DTC2278EB: has onboard BIOS
-> + */
-> +
->   #include<linux/module.h>
->   #include<linux/types.h>
->   #include<linux/kernel.h>
-> @@ -17,37 +28,6 @@
->
->   #define DRV_NAME "dtc2278"
->
-> -/*
-> - * Changing this #undef to #define may solve start up problems in some
-> systems.
-
-    And here...
-
-> - */
-> -#undef ALWAYS_SET_DTC2278_PIO_MODE
-> -
-> -/*
-> - * From: andy@cercle.cts.com (Dyan Wile)
-> - *
-> - * Below is a patch for DTC-2278 - alike software-programmable controllers
-> - * The code enables the secondary IDE controller and the PIO4 (3?) timings on
-> - * the primary (EIDE). You may probably have to enable the 32-bit support to
-> - * get the full speed. You better get the disk interrupts disabled ( hdparm -
-> u0
-> - * /dev/hd.. ) for the drives connected to the EIDE interface. (I get my
-> - * filesystem  corrupted with -u1, but under heavy disk load only :-)
-> - *
-> - * This card is now forced to use the "serialize" feature,
-> - * and irq-unmasking is disallowed.  If io_32bit is enabled,
-> - * it must be done for BOTH drives on each interface.
-> - *
-> - * This code was written for the DTC2278E, but might work with any of these:
-> - *
-> - * DTC2278S has only a single IDE interface.
-> - * DTC2278D has two IDE interfaces and is otherwise identical to the S
-> version.
-> - * DTC2278E also has serial ports and a printer port
-> - * DTC2278EB: has onboard BIOS, and "works like a charm" -- Kent Bradford
-> <kent@theory.caltech.edu>
-
-    And above...
-
-> Index: b/drivers/ide/ht6560b.c
-> ===================================================================
-> --- a/drivers/ide/ht6560b.c
-> +++ b/drivers/ide/ht6560b.c
-
-> @@ -227,20 +173,10 @@ static u8 ht_pio2timings(ide_drive_t *dr
->   		if (recovery_cycles<  2)  recovery_cycles = 2;
->   		if (active_cycles>  15) active_cycles   = 15;
->   		if (recovery_cycles>  15) recovery_cycles = 0;  /* 0==16 */
-> -		
-> -#ifdef DEBUG
-> -		printk("ht6560b: drive %s setting pio=%d recovery=%d (%dns)
-> active=%d (%dns)\n", drive->name, pio, recovery_cycles, recovery_time,
-> active_cycles, active_time);
-
-    Here too...
-
-> @@ -272,10 +208,6 @@ static void ht_set_prefetch(ide_drive_t
->   	ide_set_drivedata(drive, (void *)config);
->
->   	spin_unlock_irqrestore(&ht6560b_lock, flags);
-> -
-> -#ifdef DEBUG
-> -	printk("ht6560b: drive %s prefetch mode %sabled\n", drive->name, (state ?
-> "en" : "dis"));
-
-    And here.
-
-> @@ -299,10 +231,6 @@ static void ht6560b_set_pio_mode(ide_hwi
->   	config |= timing;
->   	ide_set_drivedata(drive, (void *)config);
->   	spin_unlock_irqrestore(&ht6560b_lock, flags);
-> -
-> -#ifdef DEBUG
-> -	printk("ht6560b: drive %s tuned to pio mode %#x timing=%#x\n", drive-
->> name, pio, timing);
-
-    Here too...
-
-> Index: b/drivers/ide/umc8672.c
-> ===================================================================
-> --- a/drivers/ide/umc8672.c
-> +++ b/drivers/ide/umc8672.c
-[...]
-> @@ -18,23 +17,6 @@
->    *			add detection of possible race condition  -ml
->    */
->
-> -/*
-> - * VLB Controller Support from
-> - * Wolfram Podien
-> - * Rohoefe 3
-> - * D28832 Achim
-> - * Germany
-> - *
-> - * To enable UMC8672 support there must a lilo line like
-> - * append="ide0=umc8672"...
-> - * To set the speed according to the abilities of the hardware there must be
-> a
-> - * line like
-> - * #define UMC_DRIVE0 11
-> - * in the beginning of the driver, which sets the speed of drive 0 to 11
-> (there
-
-    And above...
-
-WBR, Sergei
+-- 
+	Three Cheers,
+	Balbir
