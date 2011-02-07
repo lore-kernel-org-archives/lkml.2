@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476Ab1BGGIp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 01:08:45 -0500
-Received: from ozlabs.org ([203.10.76.45]:35573 "EHLO ozlabs.org"
+	id S1752523Ab1BGGJA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 01:09:00 -0500
+Received: from ozlabs.org ([203.10.76.45]:35571 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752147Ab1BGGI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752103Ab1BGGI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Feb 2011 01:08:29 -0500
 Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Subject: [RFC,PATCH 2/3] clk: Generic support for fixed-rate clocks
-Message-Id: <1297058877.800455.891273153193.2.gpush@pororo>
+Subject: [RFC,
+	PATCH 3/3] clk: add warnings for incorrect enable/prepare semantics
+Message-Id: <1297058877.800990.238556019385.3.gpush@pororo>
 In-Reply-To: <201102011711.31258.jeremy.kerr@canonical.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, Dima Zavin <dmitriyz@google.com>,
@@ -32,62 +33,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since most platforms will need a fixed-rate clock, add one. This will
-also serve as a basic example of an implementation of struct clk.
+This change adds warnings to check for:
+
+ 1) enabling a clock that hasn't been prepared; and
+
+ 2) unpreparing a clock that is still enabled
+
+While the correctness can't be guaranteed, these warnings should cover
+most situations.
 
 Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
 
 ---
- drivers/clk/clk.c   |   14 ++++++++++++++
- include/linux/clk.h |   16 ++++++++++++++++
- 2 files changed, 30 insertions(+)
+ drivers/clk/clk.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
 diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 12e0daf..51dbd33 100644
+index 51dbd33..2369959 100644
 --- a/drivers/clk/clk.c
 +++ b/drivers/clk/clk.c
-@@ -132,3 +132,17 @@ struct clk *clk_get_parent(struct clk *clk)
- 	return ERR_PTR(-ENOSYS);
- }
- EXPORT_SYMBOL_GPL(clk_get_parent);
-+
-+/* clk_fixed support */
-+
-+#define to_clk_fixed(clk) (container_of(clk, struct clk_fixed, clk))
-+
-+static unsigned long clk_fixed_get_rate(struct clk *clk)
-+{
-+	return to_clk_fixed(clk)->rate;
-+}
-+
-+struct clk_ops clk_fixed_ops = {
-+	.get_rate = clk_fixed_get_rate,
-+};
-+EXPORT_SYMBOL_GPL(clk_fixed_ops);
-diff --git a/include/linux/clk.h b/include/linux/clk.h
-index e081ca1..daa2d5a 100644
---- a/include/linux/clk.h
-+++ b/include/linux/clk.h
-@@ -176,6 +176,22 @@ static inline void clk_common_init(struct clk *clk)
- 	mutex_init(&clk->prepare_lock);
- }
+@@ -35,6 +35,8 @@ void clk_unprepare(struct clk *clk)
+ 	if (!clk->ops->unprepare)
+ 		return;
  
-+/* Simple fixed-rate clock */
-+struct clk_fixed {
-+	struct clk	clk;
-+	unsigned long	rate;
-+};
++	WARN_ON(clk->enable_count);
 +
-+extern struct clk_ops clk_fixed_ops;
-+
-+#define INIT_CLK_FIXED(name, r) { \
-+	.clk = INIT_CLK(name.clk, clk_fixed_ops), \
-+	.rate = (r) \
-+}
-+
-+#define DEFINE_CLK_FIXED(name, r) \
-+	struct clk_fixed name = INIT_CLK_FIXED(name, r)
-+
- #else /* !CONFIG_USE_COMMON_STRUCT_CLK */
+ 	mutex_lock(&clk->prepare_lock);
+ 	if (--clk->prepare_count == 0)
+ 		clk->ops->unprepare(clk);
+@@ -50,6 +52,8 @@ int clk_enable(struct clk *clk)
+ 	if (!clk->ops->enable)
+ 		return 0;
  
- /*
++	WARN_ON(clk->ops->prepare && clk->prepare_count);
++
+ 	spin_lock(&clk->enable_lock);
+ 	if (!clk->enable_count)
+ 		ret = clk->ops->enable(clk);
