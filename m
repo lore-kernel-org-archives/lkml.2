@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295Ab1BGBo4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 20:44:56 -0500
-Received: from home.keithp.com ([63.227.221.253]:58773 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754178Ab1BGBoz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 20:44:55 -0500
-From: Keith Packard <keithp@keithp.com>
-To: Jiri Kosina <jkosnia@suse.cz>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@kernel.org, Keith Packard <keithp@keithp.com>
-Subject: [PATCH] hid: Ortek W/L rdesc has incorrect Logical Maximum for keyboard
-Date: Sun,  6 Feb 2011 17:44:23 -0800
-Message-Id: <1297043063-22539-1-git-send-email-keithp@keithp.com>
+	id S1754365Ab1BGBuk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 20:50:40 -0500
+Received: from smtp-out-016.synserver.de ([212.40.185.16]:1041 "HELO
+	smtp-out-016.synserver.de" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with SMTP id S1754206Ab1BGBug (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 20:50:36 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 23313
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 02/09] ARM: s3c2440: gta02: Register PCM device
+Date: Mon,  7 Feb 2011 02:51:54 +0100
+Message-Id: <1297043521-21903-2-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <1297043521-21903-1-git-send-email-lars@metafoo.de>
+References: <1297043521-21903-1-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Ortek WKB-2000 had the same rdesc bug -- the Logical Maximum value
-was reported as '1' instead of the correct value (146), preventing
-most of the keyboard keys from working. This patch simply shares
-precisely the same quirk code for this other device.
+The ASoC multi-component patch introduced a new pcm platform device, which needs
+to be registered by board files in order for sound to work.
+This patch does this for the gta02 board.
 
-Signed-off-by: Keith Packard <keithp@keithp.com>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 ---
- drivers/hid/hid-core.c  |    1 +
- drivers/hid/hid-ids.h   |    1 +
- drivers/hid/hid-ortek.c |    3 ++-
- 3 files changed, 4 insertions(+), 1 deletions(-)
+ arch/arm/mach-s3c2440/mach-gta02.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index d678cf3..233bbf2 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1401,6 +1401,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_17) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_18) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_WKB2000) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_WL) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_PETALYNX, USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_PIXART_IMAGING_INC_OPTICAL_TOUCH_SCREEN) },
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 92a0d61..b478b25 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -467,6 +467,7 @@
- 
- #define USB_VENDOR_ID_ORTEK		0x05a4
- #define USB_DEVICE_ID_ORTEK_WKB2000	0x2000
-+#define USB_DEVICE_ID_ORTEK_WL		0x1700
- 
- #define USB_VENDOR_ID_PANJIT		0x134c
- 
-diff --git a/drivers/hid/hid-ortek.c b/drivers/hid/hid-ortek.c
-index e90edfc..74011af 100644
---- a/drivers/hid/hid-ortek.c
-+++ b/drivers/hid/hid-ortek.c
-@@ -23,7 +23,7 @@ static __u8 *ortek_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		unsigned int *rsize)
- {
- 	if (*rsize >= 56 && rdesc[54] == 0x25 && rdesc[55] == 0x01) {
--		hid_info(hdev, "Fixing up Ortek WKB-2000 report descriptor\n");
-+		hid_info(hdev, "Fixing up Ortek WKB-2000 or W/L report descriptor\n");
- 		rdesc[55] = 0x92;
- 	}
- 	return rdesc;
-@@ -31,6 +31,7 @@ static __u8 *ortek_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 
- static const struct hid_device_id ortek_devices[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_WKB2000) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_WL) },
- 	{ }
+diff --git a/arch/arm/mach-s3c2440/mach-gta02.c b/arch/arm/mach-s3c2440/mach-gta02.c
+index 9f2c14e..e83062b 100644
+--- a/arch/arm/mach-s3c2440/mach-gta02.c
++++ b/arch/arm/mach-s3c2440/mach-gta02.c
+@@ -509,6 +509,7 @@ static struct platform_device *gta02_devices[] __initdata = {
+ 	&gta02_nor_flash,
+ 	&s3c24xx_pwm_device,
+ 	&s3c_device_iis,
++	&samsung_asoc_dma,
+ 	&s3c_device_i2c0,
  };
- MODULE_DEVICE_TABLE(hid, ortek_devices);
+ 
 -- 
 1.7.2.3
 
