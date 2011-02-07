@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab1BGQ3S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 11:29:18 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:55328 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754068Ab1BGQ3Q (ORCPT
+	id S1754166Ab1BGQ3r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 11:29:47 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:57012 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752061Ab1BGQ3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 11:29:16 -0500
-Message-ID: <4D501500.3090707@oracle.com>
-Date: Mon, 07 Feb 2011 07:51:28 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Mon, 7 Feb 2011 11:29:46 -0500
+Date: Mon, 7 Feb 2011 14:29:16 -0200
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Denis Kirjanov <dkirjanov@kernel.org>,
+        Franck Bui-Huu <fbuihuu@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H . Peter Anvin" <hpa@zytor.com>, Kyle McMartin <kyle@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Michael Witten <mfwitten@gmail.com>, Mike Galbraith <efault@gmx.de>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [PATCH 0/9] perf/core improvements and fixes
+Message-ID: <20110207162916.GB4470@ghostprotocols.net>
+References: <1297090812-10782-1-git-send-email-acme@infradead.org>
+ <20110207150640.GA20053@elte.hu>
 MIME-Version: 1.0
-To: "Ahmed S. Darwish" <darwish.07@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH] Documentation: log_buf_len accepts [KMG]
-References: <20110206174504.GA23024@laptop> <20110206204002.2f3eab4e.randy.dunlap@oracle.com> <20110207114005.GB10388@laptop>
-In-Reply-To: <20110207114005.GB10388@laptop>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0204.4D501DD6.0193:SCFMA4539814,ss=1,fgs=0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110207150640.GA20053@elte.hu>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/11 03:40, Ahmed S. Darwish wrote:
-> On Sun, Feb 06, 2011 at 08:40:02PM -0800, Randy Dunlap wrote:
->>
->> Update the "log_buf_len" description to use [KMG] syntax for the
->> buffer size.
->>
->> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
->> ---
->>
+Em Mon, Feb 07, 2011 at 04:06:40PM +0100, Ingo Molnar escreveu:
+> * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+> > Masami Hiramatsu (4):
+> >   perf probe: Add bitfield member support
 > 
-> This implies an ACK for the original patch?
+> hm, the perf probe bits do not build on 32-bit:
+> 
+> util/probe-finder.c: In function ‘convert_variable_type’:
+> util/probe-finder.c:881: error: format ‘%lu’ expects type ‘long unsigned int’, but argument 6 has type ‘unsigned int’
+> util/probe-finder.c:881: error: format ‘%lu’ expects type ‘long unsigned int’, but argument 6 has type ‘unsigned int’
+> make: *** [util/probe-finder.o] Error 1
+> make: *** Waiting for unfinished jobs....
 
-Sorry, I meant to do that separately, but yes, I'll merge it.
+I already reworked this and force pushed, see:
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+http://git.kernel.org/?p=linux/kernel/git/acme/linux-2.6.git;a=commitdiff;h=2b4f8985a2c2309852d20d16d3589eba15b64c4e
+
+[ committer note: Fixed up '%lu' use for return of die_get_byte_size (int) ]
+
+Thanks,
+
+- Arnaldo
