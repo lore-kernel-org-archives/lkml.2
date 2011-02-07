@@ -1,63 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab1BGOZF (ORCPT <rfc822;w@1wt.eu>);
+	id S1753079Ab1BGOZb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 09:25:31 -0500
+Received: from co202.xi-lite.net ([149.6.83.202]:56244 "EHLO co202.xi-lite.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752693Ab1BGOZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Feb 2011 09:25:05 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:49716 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752551Ab1BGOZD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 09:25:03 -0500
-Date: Mon, 7 Feb 2011 09:24:58 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-X-X-Sender: nico@xanadu.home
-To: Jeremy Kerr <jeremy.kerr@canonical.com>
-cc: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, Dima Zavin <dmitriyz@google.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>
-Subject: Re: [RFC, PATCH 3/3] clk: add warnings for incorrect enable/prepare
- semantics
-In-Reply-To: <201102071608.42855.jeremy.kerr@canonical.com>
-Message-ID: <alpine.LFD.2.00.1102070908120.14920@xanadu.home>
-References: <201102011711.31258.jeremy.kerr@canonical.com> <1297058877.800990.238556019385.3.gpush@pororo> <20110207080555.GC27982@pengutronix.de> <201102071608.42855.jeremy.kerr@canonical.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+X-Greylist: delayed 446 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Feb 2011 09:25:04 EST
+Date: Mon, 7 Feb 2011 15:16:28 +0100
+From: Ivan Djelic <ivan.djelic@parrot.com>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+CC: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Tim Barr <tbarr@multitech.com>, Sukumar Ghorai <s-ghorai@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH/RFC v2 1/3] Shared BCH ECC library
+Message-ID: <20110207141628.GA1369@parrot.com>
+References: <181c9a1c88b781116615761109cccdf89ea877a1.1296641159.git.ivan.djelic@parrot.com>
+ <1297004627.4460.28.camel@localhost>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1297004627.4460.28.camel@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 Feb 2011, Jeremy Kerr wrote:
-
-> Hi Uwe,
+On Sun, Feb 06, 2011 at 03:03:47PM +0000, Artem Bityutskiy wrote:
+(...)
+> Hi Ivan,
 > 
-> > This implies the warning is only issued on clocks that have a prepare
-> > callback.  If we want to enforce the new API the warning here shouldn't
-> > depend on clk->ops->prepare.  (clk_prepare and clk_unprepare need to
-> > be changed then to adapt the prepare_count even in the absence of
-> > clk->ops->prepare.)
+> thanks for the library, but could you please re-send it with LKML in CC.
 > 
-> Yeah, it's a decision about either adding a small cost to all clk_prepare()s 
-> (ie, adding cost when there is no prepare callback), or checking for the 
-> correct prepare/enable semantics for all clocks (even when it doesn't matter 
-> for that particular clock). I chose the first as more important, but happy to 
-> go either way here.
+> This is not strictly MTD code, you are adding this as a generic library.
+> So send it to Andrew Morton and CC mtd list and LKML list, ask for
+> review, wait for comments and then ask Andrew to pick it.
 
-The prepare method being called from non-atomic context cannot be 
-considered to be in a speed critical path.  Most of the time, this is 
-going to be called on driver initialization or the like, and that's a 
-relatively rare event. Therefore this really small cost to clk_prepare() 
-is definitively worth it to help proper usage of the API.  If this ever 
-becomes a problem then this could be confined to some CONFIG_CLK_DEBUG 
-or the like.  But when introducing a new API it is best to be more 
-strict to help people get its usage right (without going overboard with 
-it of course).
+OK, done. Thanks!
 
-
-Nicolas
+Ivan
