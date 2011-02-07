@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594Ab1BGPEI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 10:04:08 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:41407 "EHLO mx3.mail.elte.hu"
+	id S1753674Ab1BGPEo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 10:04:44 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:41481 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752828Ab1BGPEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 10:04:07 -0500
-Date: Mon, 7 Feb 2011 16:03:47 +0100
+	id S1753522Ab1BGPEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 10:04:42 -0500
+Date: Mon, 7 Feb 2011 16:04:28 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86 fix
-Message-ID: <20110207150347.GA18589@elte.hu>
+To: Marc Koschewski <marc@osknowledge.org>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        castet.matthieu@free.fr, mhopf@suse.de, suresh.b.siddha@intel.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86, nx: Mark the ACPI resume trampoline code
+ as +x - fixed
+Message-ID: <20110207150428.GA19046@elte.hu>
+References: <4D4F8019.2090104@zytor.com>
+ <tip-d344e38b2c151ca5e5e39f562017127e93912528@git.kernel.org>
+ <20110207145000.GA20671@marc.osknowledge.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20110207145000.GA20671@marc.osknowledge.org>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -29,53 +34,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
 
-Please pull the latest x86-fixes-for-linus git tree from:
+* Marc Koschewski <marc@osknowledge.org> wrote:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-fixes-for-linus
+> * tip-bot for H. Peter Anvin <hpa@zytor.com> [2011-02-07 09:24:55 +0000]:
+> 
+> Great! That one fixes ACPI S3 resume on i7.
 
- Thanks,
+Ok, great - i'm sending it to Linus then.
+
+Thanks,
 
 	Ingo
-
------------------->
-H. Peter Anvin (1):
-      x86, nx: Mark the ACPI resume trampoline code as +x
-
-
- arch/x86/kernel/acpi/sleep.c |   13 ++++++++++---
- 1 files changed, 10 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
-index 4d9ebba..68d1537 100644
---- a/arch/x86/kernel/acpi/sleep.c
-+++ b/arch/x86/kernel/acpi/sleep.c
-@@ -12,10 +12,8 @@
- #include <linux/cpumask.h>
- #include <asm/segment.h>
- #include <asm/desc.h>
--
--#ifdef CONFIG_X86_32
- #include <asm/pgtable.h>
--#endif
-+#include <asm/cacheflush.h>
- 
- #include "realmode/wakeup.h"
- #include "sleep.h"
-@@ -149,6 +147,15 @@ void __init acpi_reserve_wakeup_memory(void)
- 	memblock_x86_reserve_range(mem, mem + WAKEUP_SIZE, "ACPI WAKEUP");
- }
- 
-+int __init acpi_configure_wakeup_memory(void)
-+{
-+	if (acpi_realmode)
-+		set_memory_x(acpi_realmode, WAKEUP_SIZE >> PAGE_SHIFT);
-+
-+	return 0;
-+}
-+arch_initcall(acpi_configure_wakeup_memory);
-+
- 
- static int __init acpi_sleep_setup(char *str)
- {
