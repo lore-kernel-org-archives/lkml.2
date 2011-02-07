@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659Ab1BGNiH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 08:38:07 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:40846 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751938Ab1BGNiF convert rfc822-to-8bit (ORCPT
+	id S1752729Ab1BGNtl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 08:49:41 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:37859 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752563Ab1BGNtk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 08:38:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=wnbNR3aElR/BmvRhnJH6tX4p8J8Tp38K62Wk9GMO0Rwir2S2YYZhUln8AzCHCua9rK
-         mvWZXsivD80bMPUFYWi03wk1ZlRj7VZ4q4Qzar9LlGvV00CxYW8PQ+ShmNUCSgEBVotb
-         8/Bo29YpAHXdGiD76fqCR5kQq+UB7qSbJk5aY=
-MIME-Version: 1.0
-In-Reply-To: <s5htyggi21m.wl%tiwai@suse.de>
-References: <AANLkTi=h+H+N=f4m4pE+RZ4n5h7oxQuwzmK-qmmWAGtL@mail.gmail.com>
-	<s5hfws1whq8.wl%tiwai@suse.de>
-	<AANLkTi=iHL+eVPRPzFXRMBZkXU7nXwkeZQiQUcyqSS-H@mail.gmail.com>
-	<AANLkTikE_Oa=HGhW3zpc_rdeBvOWckpZ6dfFWq=JnL9R@mail.gmail.com>
-	<849307$bf0dak@azsmga001.ch.intel.com>
-	<AANLkTi=Z1fCA1N47YaCh1tn=PCAAboWtNCUyUH-N3yUo@mail.gmail.com>
-	<AANLkTik0eJVr1S5=bCO8kmkwCxYzLE_kh9C3ccpn+mWX@mail.gmail.com>
-	<s5hy65suu7t.wl%tiwai@suse.de>
-	<AANLkTi=KGMJ9vLaLfkzGQrc-F2eB5CRmDX1L5UohPTZ=@mail.gmail.com>
-	<s5htyggusyg.wl%tiwai@suse.de>
-	<s5htyggi21m.wl%tiwai@suse.de>
-Date: Mon, 7 Feb 2011 21:38:04 +0800
-Message-ID: <AANLkTinv=pfArgT4VFCUeY_bKb4q3KSREvU+L8V5k0G9@mail.gmail.com>
-Subject: Re: Commit 500f7147cf5bafd139056d521536b10c2bc2e154 breaks _resume_
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 7 Feb 2011 08:49:40 -0500
+Subject: Re: [PATCH] sched: Resolve sd_idle and first_idle_cpu Catch-22 - v1
+From: Peter Zijlstra <peterz@infradead.org>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>
+In-Reply-To: <1296854731-25039-1-git-send-email-venki@google.com>
+References: <1296852688-1665-1-git-send-email-venki@google.com>
+	 <1296854731-25039-1-git-send-email-venki@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 Feb 2011 14:50:42 +0100
+Message-ID: <1297086642.13327.15.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 7, 2011 at 6:15 PM, Takashi Iwai <tiwai@suse.de> wrote:
->> Thanks, that looks good.  What about other files?  Did you change
->> (especially intel_drv.h) from Linus git tree?
+On Fri, 2011-02-04 at 13:25 -0800, Venkatesh Pallipadi wrote:
+> Consider a system with { [ (A B) (C D) ] [ (E F) (G H) ] },
+> () denoting SMT siblings, [] cores on same socket and {} system wide
+> Further, A, C and D are idle, B is busy and one of EFGH has excess load.
+> 
+> With sd_idle logic, a check in rebalance_domains() converts tick
+> based load balance requests from CPU A to busy load balance for core
+> and above domains (lower rate of balance and higher load_idx).
 
-I will try again  from a fresh build tonight.
+the if (load_balance())
+	idle = CPU_NOT_IDLE;
+bit, right?
 
->> I'll also check later to be sure (now I have no machine for testing).
-> I don't see any problem with my machine (but running in 32bit).
->
-> Are you sure that you are seeing the same CRTC?  There are two active
-> CRTCs on Intel, and both are initialized and set up.
+> With first_idle_cpu logic, when CPU C or D tries to balance across domains
+> the logic finds CPU A as first idle CPU in the group and nominates CPU A to
+> idle balance across sockets.
 
-I don't know about that. Even when I attempt to just the pointer
-directly as in "static void intel_crtc_reset(struct intel_crtc
-*intel_crtc)", it ended up getting a different value. Strange.
+Right..
 
-intel_crtc ffff880239aa5800
-intel_crtc ffff880239aa5000
+> But, sd_idle above would not allow CPU A to do cross socket idle balance
+> as CPU A switches its higher level balancing to busy balance.
 
+Because it fails the sd->flags & SD_SHARE_CPUPOWER test at the beginning
+of load_balance() and hence sd_idle will remain 0, right?
 
-I'm building everything fresh now.
+I'm just not quite sure how we then end up returning !0 for
+load_balance(), both branches returning -1 seem conditional on
+SD_SHARE_CPUPOWER but the [ (A B) (C D) ], domain doesn't have that set.
 
-Jeff
+> So, this can result is no cross socket balancing for extended periods.
+
+Which is bad
+
+> The fix here adds additional check to detect sd_idle logic in
+> first_idle_cpu code path. We will now nominate (in order or preference):
+> * First fully idle CPU
+> * First semi-idle CPU
+> * First CPU
+> 
+> Note that this solution works fine for 2 SMT siblings case and won't be
+> perfect in picking proper semi-idle in case of more than 2 SMT threads.
+
+All these SMT exceptions make my head hurt, can't we clean that up
+instead of making them worse?
+
+Why is SMT treaded differently from say a shared cache? In both cases we
+want to spread the load as wide as possible to provide as much of the
+resources to the few runnable tasks.
+
