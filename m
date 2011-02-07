@@ -1,97 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222Ab1BGIpT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 03:45:19 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:59879 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752954Ab1BGIpS convert rfc822-to-8bit (ORCPT
+	id S1753243Ab1BGIqU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 03:46:20 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:46585 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752955Ab1BGIqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 03:45:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=qWS7oJe34uJ9S3DSgXZZpitIgDjIBZ1X4JOBeBnLXNdzlpWBJ+LXzbkgvh4byalZZv
-         9jSXc+O8CBuCyCyxn1Ecyp5x3Tw/Q+TmZ1FloFLgcqzRkfS1sX5/ejbxz0kCQ8TcDOyp
-         HM/vxmGYtc7PjSQ5ERnrxAjYhhx/2DMEZb+x4=
+	Mon, 7 Feb 2011 03:46:19 -0500
+Date: Mon, 7 Feb 2011 10:46:13 +0200
+From: Amit Kucheria <amit.kucheria@linaro.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        linaro-dev <linaro-dev@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Device Tree on ARM status report
+Message-ID: <20110207084613.GC2723@matterhorn.lan>
+Mail-Followup-To: Grant Likely <grant.likely@secretlab.ca>,
+	devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+	linaro-dev <linaro-dev@lists.linaro.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <AANLkTikLvO0Y44nCxEfCsNxU-Na+PzcLXZUjOsMUM1_A@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=KGMJ9vLaLfkzGQrc-F2eB5CRmDX1L5UohPTZ=@mail.gmail.com>
-References: <AANLkTi=h+H+N=f4m4pE+RZ4n5h7oxQuwzmK-qmmWAGtL@mail.gmail.com>
-	<s5hfws1whq8.wl%tiwai@suse.de>
-	<AANLkTi=iHL+eVPRPzFXRMBZkXU7nXwkeZQiQUcyqSS-H@mail.gmail.com>
-	<AANLkTikE_Oa=HGhW3zpc_rdeBvOWckpZ6dfFWq=JnL9R@mail.gmail.com>
-	<849307$bf0dak@azsmga001.ch.intel.com>
-	<AANLkTi=Z1fCA1N47YaCh1tn=PCAAboWtNCUyUH-N3yUo@mail.gmail.com>
-	<AANLkTik0eJVr1S5=bCO8kmkwCxYzLE_kh9C3ccpn+mWX@mail.gmail.com>
-	<s5hy65suu7t.wl%tiwai@suse.de>
-	<AANLkTi=KGMJ9vLaLfkzGQrc-F2eB5CRmDX1L5UohPTZ=@mail.gmail.com>
-Date: Mon, 7 Feb 2011 16:45:16 +0800
-Message-ID: <AANLkTimW_V96w4USjxX1=8_r6g-XJzdcGbYn_JDr9ANL@mail.gmail.com>
-Subject: Re: Commit 500f7147cf5bafd139056d521536b10c2bc2e154 breaks _resume_
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <AANLkTikLvO0Y44nCxEfCsNxU-Na+PzcLXZUjOsMUM1_A@mail.gmail.com>
+X-URL: http://www.verdurent.com/
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 7, 2011 at 4:36 PM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
-> On Mon, Feb 7, 2011 at 4:25 PM, Takashi Iwai <tiwai@suse.de> wrote:
->> At Mon, 7 Feb 2011 13:02:46 +0800,
->> Jeff Chua wrote:
->>>
->>> On Mon, Feb 7, 2011 at 12:48 PM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
->>> > On Sun, Feb 6, 2011 at 11:27 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
->>> >> One last step: move contents of intel_crtc_reset() back to
->>> >> intel_crtc_init() one by one.
->>> >>
->>> >> The active flag is my suspicion. I was thinking that we brought up the
->>> >> outputs in a similar manner upon resume as upon initial boot. On
->>> >> reflection, this is the not case.
->>> >>
->>> >> However, the first action we take inside modesetting is to disable the
->>> >> outputs about to be reconfigured. So setting active should be the right
->>> >> course of action so that cleanup any residual state from resume.
->>> >>
->>> >> So I am intrigued as to which line is the cause, and just where the
->>> >> machine becomes unresponsive...
->>> >
->>> > It's this line causing the problem.
->>> >
->>> > intel_crtc->active = true; /* force the pipe off on setup_init_config */
->>> >
->>> >
->>> > When it's called before entering intel_crtc_reset(&intel_crtc->base),
->>> > it works, but if called within the function, it doesn't work. Strange.
->>> > Not sure whether is passing the correct value to to_intel_crtc(crtc)?
->>>
->>> I've added printk() below and the function returns a different value
->>> of intel_crtc.
->>>
->>>
->>> static void intel_crtc_reset(struct drm_crtc *crtc)
->>> {
->>>         struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
->>>         printk("intel_crtc %p\n", intel_crtc); ===> intel_crtc ffff8802349d1000
->>>
->>> }
->>>
->>> printk("intel_crtc %p\n", intel_crtc); ===> intel_crtc ffff8802349d0000
->>> intel_crtc_reset(&intel_crtc->base);
->>
->> That's weird.  Since base is the first member, both intel_crtc and crtc
->> must be identical.
->
-> In case I'm messing something up, here's my intel_display.c
+On 11 Feb 05, Grant Likely wrote:
+> Hi all,
+> 
+> With several more engineers working on ARM device tree support, I'm
+> going to start collecting the status of all the work that is going on
+> (and I know about) and posting it in a regular status report,
+> hopefully weekly, for the next few months until the all of the major
+> features are implemented and working on several arm platforms.  I'll
+> try to use roughly the following format:
+> 
+> 1) latest news and status updates
+> 2) list of tasks with current state and who is responsible for them in
+> the same format as Launchpad blueprint whiteboards[1]. (In fact, I'll
+> probably move much, if not all, of this into Launchpad anyway, in
+> which case these emails will be a summary of all the blueprints. not
+> all of us work with Linaro, but it is a useful method for tracking
+> progress).
+> 3) List of active engineers
+> 
+> [1] https://wiki.linaro.org/Process/Blueprints
+> 
+> Please read through and reply with comments/corrections.  Feel free to
+> add or remove tasks from the list I've given below.
+> 
+> Thanks,
+> g.
+> 
+> 
+> 1 - Latest news
+> ---------------
+> - devicetree/arm on git://git.secretlab.ca/git/linux-2.6 has
+> everything needed to turn on basic device tree support for any
+> platform.
+> - Similarly, u-boot just needs to have the CONFIG_OF_LIBFDT defined to
+> turn on device tree support.
+> - IRQ handling is still a problem and only one interrupt controller
+> can be supported at the moment, but Lennert is working on a solution.
+> - I've posted a patch that will allow dt and non-dt device
+> registration to co-exist peacefully by snooping platform device
+> registrations.  I could use some feedback and testing.
+> - hopefully the basic dt support can be merged into Nicolas' tree this
+> week if I get a cleaned up branch pushed out for him quickly.
+> 
+> 2 - Task status
+> ---------------
+> Core infrastructure:
+> [glikely] basic infrastructure to enable dt: DONE
+> [r-herring] Allow dtb to be located anywhere in RAM: DONE
+> [bones] Debug dtb corruption during init: INPROGRESS
+> [glikely] OF clock bindings: INPROGRESS
 
-Why not just pass intel_crtc as in
+Does this include the common clock framework that Jeremy had been working on?
+I see no mention of that explicitly, hence the question.
 
-- static void intel_crtc_reset(struct drm_crtc *crtc)
-+ static void intel_crtc_reset(struct intel_crtc *intel_crtc)
-
-Jeff.
+Regards,
+Amit
