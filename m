@@ -1,308 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620Ab1BGSbo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 13:31:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53896 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754463Ab1BGSbm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 13:31:42 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: alan@lxorguk.ukuu.org.uk, gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 2/2] tty,vcs removing con_buf/conf_buf_mtx
-Date: Mon,  7 Feb 2011 19:31:25 +0100
-Message-Id: <1297103485-8319-3-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1297103485-8319-1-git-send-email-jolsa@redhat.com>
-References: <1297103485-8319-1-git-send-email-jolsa@redhat.com>
+	id S1754636Ab1BGSbt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 13:31:49 -0500
+Received: from exprod7og105.obsmtp.com ([64.18.2.163]:40172 "EHLO
+	exprod7og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754483Ab1BGSbr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 13:31:47 -0500
+Message-ID: <4D5039F6.8000408@genband.com>
+Date: Mon, 07 Feb 2011 12:29:10 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        pekkas@netcore.fi, davem@davemloft.net, yoshfuji@linux-ipv6.org
+Subject: BUG?  behaviour mismatch between ipv4 and ipv6 in UDP rx path
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 07 Feb 2011 18:29:11.0634 (UTC) FILETIME=[EA5AF320:01CBC6F4]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-17942.000
+X-TM-AS-Result: No--20.588500-5.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
 
-seems there's no longer need for using con_buf/conf_buf_mtx
-as vcs_read/vcs_write buffer for user's data.
+Hi,
 
-The do_con_write function, that was the other user of this,
-is currently using its own kmalloc-ed buffer.
+One of our guys is seeing occasional dropped ipv4 packets coming in on
+an ipv6 udp socket obtained via socket(AF_INET6,  SOCK_DGRAM, IPPROTO_UDP).
 
-Not sure when this got changed, as I was able to find this code
-in 2.6.9, but it's already gone as far as current git history
-goes - 2.6.12-rc2.
-
-AFAICS there's a behaviour change with the current change.
-The lseek is not completely mutually exclusive with the
-vcs_read/vcs_write - the file->f_pos might get updated
-via lseek callback during the vcs_read/vcs_write processing.
-
-I tried to find out if the prefered behaviour is to keep
-this in sync within read/write/lseek functions, but I did
-not find any pattern on different places.
-
-I guess if user end up calling write/lseek from different
-threads she should know what she's doing. If needed we
-could use dedicated fd mutex/buffer.
-
-wbr,
-jirka
+Here's what he says:
 
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- drivers/tty/vt/vc_screen.c |   98 +++++++++++++++++++++++--------------------
- drivers/tty/vt/vt.c        |   12 -----
- include/linux/vt_kern.h    |    8 ----
- 3 files changed, 52 insertions(+), 66 deletions(-)
+"The problem happens when release_sock() goes down an interesting code
+path.  If (sk->sk_backlog.tail) is non-NULL then release_sock() invokes
+__release_sock() which loops over all queue packets and invokes the
+socket's backlog receive function for each previously queued packet.
 
-diff --git a/drivers/tty/vt/vc_screen.c b/drivers/tty/vt/vc_screen.c
-index 3c27c4b..7b3bfbe 100644
---- a/drivers/tty/vt/vc_screen.c
-+++ b/drivers/tty/vt/vc_screen.c
-@@ -28,7 +28,6 @@
- #include <linux/interrupt.h>
- #include <linux/mm.h>
- #include <linux/init.h>
--#include <linux/mutex.h>
- #include <linux/vt_kern.h>
- #include <linux/selection.h>
- #include <linux/kbd_kern.h>
-@@ -51,6 +50,8 @@
- #undef addr
- #define HEADER_SIZE	4
- 
-+#define CON_BUF_SIZE (CONFIG_BASE_SMALL ? 256 : PAGE_SIZE)
-+
- struct vcs_poll_data {
- 	struct notifier_block notifier;
- 	unsigned int cons_num;
-@@ -131,21 +132,45 @@ vcs_poll_data_get(struct file *file)
- 	return poll;
- }
- 
-+/*
-+ * Returns VC for inode.
-+ * Must be called with console_lock.
-+ */
-+static struct vc_data*
-+vcs_vc(struct inode *inode, int *viewed)
-+{
-+	unsigned int currcons = iminor(inode) & 127;
-+
-+	WARN_CONSOLE_UNLOCKED();
-+
-+	if (currcons == 0) {
-+		currcons = fg_console;
-+		if (viewed)
-+			*viewed = 1;
-+	} else {
-+		currcons--;
-+		if (viewed)
-+			*viewed = 0;
-+	}
-+	return vc_cons[currcons].d;
-+}
-+
-+/*
-+ * Returns size for VC carried by inode.
-+ * Must be called with console_lock.
-+ */
- static int
- vcs_size(struct inode *inode)
- {
- 	int size;
- 	int minor = iminor(inode);
--	int currcons = minor & 127;
- 	struct vc_data *vc;
- 
--	if (currcons == 0)
--		currcons = fg_console;
--	else
--		currcons--;
--	if (!vc_cons_allocated(currcons))
-+	WARN_CONSOLE_UNLOCKED();
-+
-+	vc = vcs_vc(inode, NULL);
-+	if (!vc)
- 		return -ENXIO;
--	vc = vc_cons[currcons].d;
- 
- 	size = vc->vc_rows * vc->vc_cols;
- 
-@@ -158,17 +183,13 @@ static loff_t vcs_lseek(struct file *file, loff_t offset, int orig)
- {
- 	int size;
- 
--	mutex_lock(&con_buf_mtx);
- 	console_lock();
- 	size = vcs_size(file->f_path.dentry->d_inode);
- 	console_unlock();
--	if (size < 0) {
--		mutex_unlock(&con_buf_mtx);
-+	if (size < 0)
- 		return size;
--	}
- 	switch (orig) {
- 		default:
--			mutex_unlock(&con_buf_mtx);
- 			return -EINVAL;
- 		case 2:
- 			offset += size;
-@@ -179,11 +200,9 @@ static loff_t vcs_lseek(struct file *file, loff_t offset, int orig)
- 			break;
- 	}
- 	if (offset < 0 || offset > size) {
--		mutex_unlock(&con_buf_mtx);
- 		return -EINVAL;
- 	}
- 	file->f_pos = offset;
--	mutex_unlock(&con_buf_mtx);
- 	return file->f_pos;
- }
- 
-@@ -196,12 +215,15 @@ vcs_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
- 	struct vc_data *vc;
- 	struct vcs_poll_data *poll;
- 	long pos;
--	long viewed, attr, read;
--	int col, maxcol;
-+	long attr, read;
-+	int col, maxcol, viewed;
- 	unsigned short *org = NULL;
- 	ssize_t ret;
-+	char *con_buf;
- 
--	mutex_lock(&con_buf_mtx);
-+	con_buf = (char *) __get_free_page(GFP_KERNEL);
-+	if (!con_buf)
-+		return -ENOMEM;
- 
- 	pos = *ppos;
- 
-@@ -211,18 +233,10 @@ vcs_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
- 	console_lock();
- 
- 	attr = (currcons & 128);
--	currcons = (currcons & 127);
--	if (currcons == 0) {
--		currcons = fg_console;
--		viewed = 1;
--	} else {
--		currcons--;
--		viewed = 0;
--	}
- 	ret = -ENXIO;
--	if (!vc_cons_allocated(currcons))
-+	vc = vcs_vc(inode, &viewed);
-+	if (!vc)
- 		goto unlock_out;
--	vc = vc_cons[currcons].d;
- 
- 	ret = -EINVAL;
- 	if (pos < 0)
-@@ -367,7 +381,7 @@ vcs_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
- 		ret = read;
- unlock_out:
- 	console_unlock();
--	mutex_unlock(&con_buf_mtx);
-+	free_page((unsigned long) con_buf);
- 	return ret;
- }
- 
-@@ -378,13 +392,16 @@ vcs_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
- 	unsigned int currcons = iminor(inode);
- 	struct vc_data *vc;
- 	long pos;
--	long viewed, attr, size, written;
-+	long attr, size, written;
- 	char *con_buf0;
--	int col, maxcol;
-+	int col, maxcol, viewed;
- 	u16 *org0 = NULL, *org = NULL;
- 	size_t ret;
-+	char *con_buf;
- 
--	mutex_lock(&con_buf_mtx);
-+	con_buf = (char *) __get_free_page(GFP_KERNEL);
-+	if (!con_buf)
-+		return -ENOMEM;
- 
- 	pos = *ppos;
- 
-@@ -394,19 +411,10 @@ vcs_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
- 	console_lock();
- 
- 	attr = (currcons & 128);
--	currcons = (currcons & 127);
--
--	if (currcons == 0) {
--		currcons = fg_console;
--		viewed = 1;
--	} else {
--		currcons--;
--		viewed = 0;
--	}
- 	ret = -ENXIO;
--	if (!vc_cons_allocated(currcons))
-+	vc = vcs_vc(inode, &viewed);
-+	if (!vc)
- 		goto unlock_out;
--	vc = vc_cons[currcons].d;
- 
- 	size = vcs_size(inode);
- 	ret = -EINVAL;
-@@ -561,9 +569,7 @@ vcs_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
- 
- unlock_out:
- 	console_unlock();
--
--	mutex_unlock(&con_buf_mtx);
--
-+	free_page((unsigned long) con_buf);
- 	return ret;
- }
- 
-diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-index 147ede3..0fd6df5 100644
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -2068,18 +2068,6 @@ static void do_con_trol(struct tty_struct *tty, struct vc_data *vc, int c)
- 	}
- }
- 
--/* This is a temporary buffer used to prepare a tty console write
-- * so that we can easily avoid touching user space while holding the
-- * console spinlock.  It is allocated in con_init and is shared by
-- * this code and the vc_screen read/write tty calls.
-- *
-- * We have to allocate this statically in the kernel data section
-- * since console_init (and thus con_init) are called before any
-- * kernel memory allocation is available.
-- */
--char con_buf[CON_BUF_SIZE];
--DEFINE_MUTEX(con_buf_mtx);
--
- /* is_double_width() is based on the wcwidth() implementation by
-  * Markus Kuhn -- 2007-05-26 (Unicode 5.0)
-  * Latest version: http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
-diff --git a/include/linux/vt_kern.h b/include/linux/vt_kern.h
-index 6625cc1..4d05e14 100644
---- a/include/linux/vt_kern.h
-+++ b/include/linux/vt_kern.h
-@@ -142,14 +142,6 @@ static inline bool vt_force_oops_output(struct vc_data *vc)
- 	return false;
- }
- 
--/*
-- * vc_screen.c shares this temporary buffer with the console write code so that
-- * we can easily avoid touching user space while holding the console spinlock.
-- */
--
--#define CON_BUF_SIZE (CONFIG_BASE_SMALL ? 256 : PAGE_SIZE)
--extern char con_buf[CON_BUF_SIZE];
--extern struct mutex con_buf_mtx;
- extern char vt_dont_switch;
- extern int default_utf8;
- extern int global_cursor_default;
+Now for the interesting part.  The UDPv6 backlog receive function (in
+net/ipv6/udp.c, udpv6_queue_rcv_skb()) invokes xfrm6_policy_check() to
+confirm that the packet is allowed, but the problem is that it calls
+this function regardless of whether the packet is IPv4 or IPv6.  The
+xfrm6_policy_check() function then assumes that it is an IPv6 packet and
+tries to match a policy based on its packet header... but that clearly
+won't work because the addresses that it finds when it decodes the skb
+are completely bogus."
+
+
+Looking at the ipv4 code, git commit 9382177 split __udp_queue_rcv_skb()
+out of udp_queue_rcv_skb().  It was done for locking purposes, but it
+also means that backlog_rcv is bound to __udp_queue_rcv_skb(), which
+doesn't call xfrm4_policy_check().
+
+
+Should a new function __udpv6_queue_rcv_skb() be split out from
+udpv6_queue_rcv_skb() and bound to backlog_rcv to resolve the xfrm
+issue?  What about the locking that was the reason for the split in the
+ipv4 case--is there a similar problem with ipv6?
+
+Thanks,
+Chris
+
+
 -- 
-1.7.1
-
+Chris Friesen
+Software Developer
+GENBAND
+chris.friesen@genband.com
+www.genband.com
