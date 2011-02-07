@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283Ab1BGXYN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 18:24:13 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49438 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755092Ab1BGXYL (ORCPT
+	id S1755264Ab1BGX0l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 18:26:41 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:17564 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755092Ab1BGX0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 18:24:11 -0500
-Date: Mon, 7 Feb 2011 15:23:30 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Howells <dhowells@redhat.com>
-Cc: torvalds@linux-foundation.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Subject: Re: [PATCH 1/2] CRED: Fix BUG() upon security_cred_alloc_blank()
- failure
-Message-Id: <20110207152330.3771a11c.akpm@linux-foundation.org>
-In-Reply-To: <20110207133610.18389.5602.stgit@warthog.procyon.org.uk>
-References: <20110207133610.18389.5602.stgit@warthog.procyon.org.uk>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 7 Feb 2011 18:26:40 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 06/11] x86, 64bit, numa: Allocate memnodemap under max_pfn_mapped
+Date: Mon,  7 Feb 2011 15:17:07 -0800
+Message-Id: <1297120632-24933-7-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1297120632-24933-1-git-send-email-yinghai@kernel.org>
+References: <1297120632-24933-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4D507F5A.0137,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 07 Feb 2011 13:36:10 +0000
-David Howells <dhowells@redhat.com> wrote:
+We need to access it right way, so make sure that it is mapped already.
 
-> In cred_alloc_blank() since 2.6.32, abort_creds(new) is called with
-> new->security == NULL and new->magic == 0 when security_cred_alloc_blank()
-> returns an error.  As a result, BUG() will be triggered if SELinux is enabled
-> or CONFIG_DEBUG_CREDENTIALS=y.
-> 
-> If CONFIG_DEBUG_CREDENTIALS=y, BUG() is called from __invalid_creds() because
-> cred->magic == 0.  Failing that, BUG() is called from selinux_cred_free()
-> because selinux_cred_free() is not expecting cred->security == NULL.  This does
-> not affect smack_cred_free(), tomoyo_cred_free() or apparmor_cred_free().
-> 
-> Fix these bugs by
-> 
-> (1) Set new->magic before calling security_cred_alloc_blank().
-> 
-> (2) Handle null cred->security in creds_are_invalid() and selinux_cred_free().
+Prepare to put page table on local node, and nodemap is used before that.
 
-You don't feel that these two patches should be backported into -stable?
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ arch/x86/mm/numa_64.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
+index 95ea155..0cdfeea 100644
+--- a/arch/x86/mm/numa_64.c
++++ b/arch/x86/mm/numa_64.c
+@@ -86,7 +86,7 @@ static int __init allocate_cachealigned_memnodemap(void)
+ 
+ 	addr = 0x8000;
+ 	nodemap_size = roundup(sizeof(s16) * memnodemapsize, L1_CACHE_BYTES);
+-	nodemap_addr = memblock_find_in_range(addr, max_pfn<<PAGE_SHIFT,
++	nodemap_addr = memblock_find_in_range(addr, get_max_mapped(),
+ 				      nodemap_size, L1_CACHE_BYTES);
+ 	if (nodemap_addr == MEMBLOCK_ERROR) {
+ 		printk(KERN_ERR
+-- 
+1.7.1
+
