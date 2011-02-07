@@ -1,269 +1,649 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298Ab1BGOOD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 09:14:03 -0500
-Received: from router-fw.net-space.pl ([89.174.63.77]:46917 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172Ab1BGOOC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 09:14:02 -0500
-Date: Mon, 7 Feb 2011 15:12:27 +0100
-From: Daniel Kiper <dkiper@net-space.pl>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Daniel Kiper <dkiper@net-space.pl>, ian.campbell@citrix.com,
-        akpm@linux-foundation.org, andi.kleen@intel.com,
-        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
-        konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
-        v.tolstov@selfip.ru, pasik@iki.fi, wdauchy@gmail.com,
-        rientjes@google.com, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH R3 7/7] xen/balloon: Memory hotplug support for Xen balloon driver
-Message-ID: <20110207141227.GA10852@router-fw-old.local.net-space.pl>
-References: <20110203163033.GJ1364@router-fw-old.local.net-space.pl> <1296756744.8299.1440.camel@nimitz>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1296756744.8299.1440.camel@nimitz>
-User-Agent: Mutt/1.3.28i
+	id S1753273Ab1BGOQN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 09:16:13 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:34088
+	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752269Ab1BGOQL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 09:16:11 -0500
+X-SpamScore: -28
+X-BigFish: VPS-28(zz1803M542N1432N98dN9371Pc8kzz1202hzz8275bh8275dh84d07hz2dh95h668h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH 3/4] ARM: Xilinx: Adding timer support to the platform
+Date: Mon, 7 Feb 2011 07:16:01 -0700
+In-Reply-To: <20110206010343.GB5563@pulham.picochip.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 3/4] ARM: Xilinx: Adding timer support to the platform
+Thread-Index: AcvFmbr+SK9XemC8STOC+9eMJp1AbABNlqMA
+References: <1296922637-24662-1-git-send-email-john.linn@xilinx.com> <1296922637-24662-2-git-send-email-john.linn@xilinx.com> <1296922637-24662-3-git-send-email-john.linn@xilinx.com> <66f1ca90-76f5-4571-b10e-8b79f62e5275@VA3EHSMHS020.ehs.local> <20110206010343.GB5563@pulham.picochip.com>
+From: John Linn <John.Linn@xilinx.com>
+To: Jamie Iles <jamie@jamieiles.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
+        <glikely@secretlab.ca>, Kiran Sutariya <kiran.sutariya@einfochips.com>
+X-OriginalArrivalTime: 07 Feb 2011 14:16:02.0877 (UTC) FILETIME=[8D268ED0:01CBC6D1]
+X-RCIS-Action: ALLOW
+Message-ID: <a58cfb3f-31d6-4120-a961-694aed8b7486@VA3EHSMHS006.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Feb 03, 2011 at 10:12:24AM -0800, Dave Hansen wrote:
-> On Thu, 2011-02-03 at 17:30 +0100, Daniel Kiper wrote:
-> > +static struct resource *allocate_memory_resource(unsigned long nr_pages)
-> > +{
-> > +	resource_size_t r_min, r_size;
-> > +	struct resource *r;
-> > +
-> > +	/*
-> > +	 * Look for first unused memory region starting at page
-> > +	 * boundary. Skip last memory section created at boot time
-> > +	 * because it may contains unused memory pages with PG_reserved
-> > +	 * bit not set (online_pages() require PG_reserved bit set).
-> > +	 */
->
-> Could you elaborate on this comment a bit?  I think it's covering both
-> the "PAGE_SIZE" argument to allocate_resource() and something else, but
-> I'm not quite sure.
-
-Yes, you are right. Aligment to PAGE_SIZE is done by allocate_resource().
-Additionally, r_min (calculated below) sets lower limit at which hoplugged
-memory could be installed (due to PG_reserved bit requirment set up by
-online_pages()). Later r_min is put as an argument to allocate_resource() call.
-
-> > +	r = kzalloc(sizeof(struct resource), GFP_KERNEL);
-> > +
-> > +	if (!r)
-> > +		return NULL;
-> > +
-> > +	r->name = "System RAM";
-> > +	r->flags = IORESOURCE_MEM | IORESOURCE_BUSY;
-> > +	r_min = PFN_PHYS(section_nr_to_pfn(pfn_to_section_nr(balloon_stats.boot_max_pfn) + 1));
->
-> Did you do this for alignment reasons?  It might be a better idea to
-> just make a nice sparsemem function to do alignment.
-
-Please look above.
-
-> > +	r_size = nr_pages << PAGE_SHIFT;
-> > +
-> > +	if (allocate_resource(&iomem_resource, r, r_size, r_min,
-> > +					ULONG_MAX, PAGE_SIZE, NULL, NULL) < 0) {
-> > +		kfree(r);
-> > +		return NULL;
-> > +	}
-> > +
-> > +	return r;
-> > +}
->
-> This function should probably be made generic.  I bet some more
-> hypervisors come around and want to use this.  They generally won't care
-> where the memory goes, and the kernel can allocate a spot for them.
-
-Yes, you are right. I think about new project in which
-this function will be generic and then I would move it to
-some more generic place. Now, I think it should stay here.
-
-> ...
-> > +static void hotplug_allocated_memory(struct resource *r)
-> >  {
-> > -	unsigned long target = balloon_stats.target_pages;
-> > +	int nid, rc;
-> > +	resource_size_t r_size;
-> > +	struct memory_block *mem;
-> > +	unsigned long pfn;
-> > +
-> > +	r_size = r->end + 1 - r->start;
-> > +	nid = memory_add_physaddr_to_nid(r->start);
-> > +
-> > +	rc = add_registered_memory(nid, r->start, r_size);
-> > +
-> > +	if (rc) {
-> > +		pr_err("%s: add_registered_memory: Memory hotplug failed: %i\n",
-> > +			__func__, rc);
-> > +		balloon_stats.target_pages = balloon_stats.current_pages;
-> > +		return;
-> > +	}
-> > +
-> > +	if (xen_pv_domain())
-> > +		for (pfn = PFN_DOWN(r->start); pfn < PFN_UP(r->end); ++pfn)
-> > +			if (!PageHighMem(pfn_to_page(pfn))) {
-> > +				rc = HYPERVISOR_update_va_mapping(
-> > +					(unsigned long)__va(pfn << PAGE_SHIFT),
-> > +					mfn_pte(pfn_to_mfn(pfn), PAGE_KERNEL), 0);
-> > +				BUG_ON(rc);
-> > +			}
+> -----Original Message-----
+> From: Jamie Iles [mailto:jamie@jamieiles.com]
+> Sent: Saturday, February 05, 2011 6:04 PM
+> To: John Linn
+> Cc: linux-arm-kernel@lists.infradead.org;
+linux-kernel@vger.kernel.org; linux@arm.linux.org.uk;
+> catalin.marinas@arm.com; glikely@secretlab.ca; Kiran Sutariya
+> Subject: Re: [PATCH 3/4] ARM: Xilinx: Adding timer support to the
+platform
+> 
+> Hi John,
+> 
+> A couple more nitpicks.
+> 
+> Jamie
+> 
+> On Sat, Feb 05, 2011 at 09:17:16AM -0700, John Linn wrote:
+> > The timer driver supports the Xilinx PS Timer Counter IP.
 > >
-> > -	target = min(target,
-> > -		     balloon_stats.current_pages +
-> > -		     balloon_stats.balloon_low +
-> > -		     balloon_stats.balloon_high);
-> > +	rc = online_pages(PFN_DOWN(r->start), r_size >> PAGE_SHIFT);
->
-> The memory hotplug code is a bit weird at first glance.  It has two
-> distinct stages: first, add_memory() is called from
-> architecture-specific code.  Later, online_pages() is called, but that
-> part is driven by userspace.
->
-> For all the other hotplug users online_pages() is done later, and
-> triggered by userspace.  The idea is that you could have memory sitting
-> in "added, but offline" state which would be trivial to remove if
-> someone else needed it, but also trivial to add without the need to
-> allocate additional memory.
->
-> In other words, I think you can take everything from and including
-> online_pages() down in the function and take it out.  Use a udev hotplug
-> rule to online it immediately if that's what you want.
-
-I agree. I discussed a bit about this problem with Jeremy, too. However,
-there are some problems to implement that solution now. First of all it is
-possible to online hotplugged memory using sysfs interface only in chunks
-called sections. It means that it is not possible online once again section
-which was onlined ealier partialy populated and now it contains new pages
-to online. In this situation sysfs interface emits Invalid argument error.
-In theory it should be possible to offline and then online whole section
-once again, however, if memory from this section was used is not possible
-to do that. It means that those properties does not allow hotplug memory
-in guest in finer granulity than section and sysfs interface is too inflexible
-to be used in that solution. That is why I decided to online hoplugged memory
-using API which does not have those limitations.
-
-I think that two solutions are possible (in order of prefernce) to cope
-with that problem and move onlining to user domain:
-  - migrate to new sysfs interface for onlining which allows
-    address space description when onlining memory,
-  - create new onlining sysfs inteface for Xen only (I think that
-    first solution is much better because it will be generic).
-
-However, those solution require time to implementation and that is
-why, I think, that my solution (let's call it workaround) should
-be implemented till new sysfs interface will be available.
-
-> > -	return target;
-> > +	if (rc) {
-> > +		pr_err("%s: online_pages: Failed: %i\n", __func__, rc);
-> > +		balloon_stats.target_pages = balloon_stats.current_pages;
-> > +		return;
-> > +	}
-> > +
-> > +	for (pfn = PFN_DOWN(r->start); pfn < PFN_UP(r->end); pfn += PAGES_PER_SECTION) {
-> > +		mem = find_memory_block(__pfn_to_section(pfn));
-> > +		BUG_ON(!mem);
-> > +		BUG_ON(!present_section_nr(mem->phys_index));
-> > +		mutex_lock(&mem->state_mutex);
-> > +		mem->state = MEM_ONLINE;
-> > +		mutex_unlock(&mem->state_mutex);
-> > +	}
-> > +
-> > +	balloon_stats.current_pages += r_size >> PAGE_SHIFT;
-> >  }
+> > Signed-off-by: Kiran Sutariya <kiran.sutariya@einfochips.com>
+> > Signed-off-by: John Linn <john.linn@xilinx.com>
+> > ---
+> >  arch/arm/mach-xilinx/timer.c |  452
+++++++++++++++++++++++++++++++++++++++++++
+> >  1 files changed, 452 insertions(+), 0 deletions(-)
+> >  create mode 100644 arch/arm/mach-xilinx/timer.c
 > >
-> > +static enum bp_state request_additional_memory(long credit)
+> > diff --git a/arch/arm/mach-xilinx/timer.c
+b/arch/arm/mach-xilinx/timer.c
+> > new file mode 100644
+> > index 0000000..c713e3c
+> > --- /dev/null
+> > +++ b/arch/arm/mach-xilinx/timer.c
+> > @@ -0,0 +1,452 @@
+> > +/* arch/arm/mach-xilinx/timer.c
+> > + *
+> > + * This file contains driver for the Xilinx PS Timer Counter IP.
+> > + *
+> > + *  Copyright (C) 2011 Xilinx
+> > + *
+> > + * based on arch\mips\kernel\time.c timer driver
+> > + *
+> > + * This program is free software; you can redistribute it and/or
+modify it under
+> > + * the terms of the GNU General Public License version 2 as
+published by the
+> > + * Free Software Foundation; either version 2 of the License, or
+(at your
+> > + * option) any later version.
+> > + *
+> > + * You should have received a copy of the GNU General Public
+License along with
+> > + * this program; if not, write to the Free Software Foundation,
+Inc., 59 Temple
+> > + * Place, Suite 330, Boston, MA  02111-1307  USA
+> > + */
+> > +
+> > +#include <linux/kernel.h>
+> > +#include <linux/init.h>
+> > +#include <linux/interrupt.h>
+> > +#include <linux/irq.h>
+> > +#include <linux/types.h>
+> > +#include <linux/clocksource.h>
+> > +#include <linux/clockchips.h>
+> > +#include <linux/io.h>
+> > +#include <asm/mach/time.h>
+> > +#include <mach/hardware.h>
+> > +
+> > +/*
+> > + * This driver configures the 2 16-bit count-up timers as follows:
+> > + *
+> > + * T1: Timer 1, clocksource for generic timekeeping
+> > + * T2: Timer 2, clockevent source for hrtimers
+> > + * T3: Timer 3, <unused>
+> > + *
+> > + * The input frequency to the timer module is 200MHz which is
+common to all the
+> > + * timer channel (T1, T2, and T3)
+> > + * Clocksource timer resolution is 160ns
+> > + * Clockevent timer resolution is 160ns
+> > + */
+> > +#define XTTCPSS_CLOCKSOURCE	0	/* Timer 1 as a generic
+timekeeping */
+> > +#define XTTCPSS_CLOCKEVENT	1	/* Timer 2 as a clock event */
+> > +
+> > +#define XTTCPSS_TIMER_BASE	TTC0_BASE
+> > +
+> > +/*
+> > + * Timer Register Offset Definitions of Timer 1, Increment base
+address by 4
+> > + * and use same offsets for Timer 2
+> > + */
+> > +#define XTTCPSS_CLK_CNTRL_OFFSET	0x00 /* Clock Control Reg, RW */
+> > +#define XTTCPSS_CNT_CNTRL_OFFSET	0x0C /* Counter Control Reg, RW
+*/
+> > +#define XTTCPSS_COUNT_VAL_OFFSET	0x18 /* Counter Value Reg, RO */
+> > +#define XTTCPSS_INTR_VAL_OFFSET		0x24 /* Interval Count
+Reg, RW */
+> > +#define XTTCPSS_MATCH_1_OFFSET		0x30 /* Match 1 Value
+Reg, RW */
+> > +#define XTTCPSS_MATCH_2_OFFSET		0x3C /* Match 2 Value
+Reg, RW */
+> > +#define XTTCPSS_MATCH_3_OFFSET		0x48 /* Match 3 Value
+Reg, RW */
+> > +#define XTTCPSS_ISR_OFFSET		0x54 /* Interrupt Status Reg, RO
+*/
+> > +#define XTTCPSS_IER_OFFSET		0x60 /* Interrupt Enable Reg, RW
+*/
+> > +
+> > +/*
+> > + * Bit mask to enable/disable the timer
+> > + */
+> > +#define XTTCPSS_CNT_CNTRL_ENABLE_MASK	0xFFFFFFFE
+> 
+> I found this really confusing reading through the code, but that's
+> probably just me!  Perhaps if this was called
+> XTTCPSS_CNT_CNTRL_DISABLE_MASK and defined to 1 then that might be a
+> little easier to follow.
+> 
+
+I'll take a look, maybe the name change would be clearer.
+
+> > +
+> > +/*
+> > + * Definitions of the timer read/write macro
+> > + */
+> > +#define xttcpss_read(addr)	__raw_readl((void __iomem *)addr)
+> > +#define xttcpss_write(addr, val) __raw_writel(val, (void __iomem
+*)(addr))
+> > +
+> > +
+> > +/**
+> > + * struct xttcpss_timer - This definition defines local timer
+structure
+> > + *
+> > + * @name:	Name of Timer
+> > + * @base_addr:	Base address of timer
+> > + * @timer_irq:	irqaction structure for the timer device
+> > + * @mode:       only valid for an clock event, periodic or one-shot
+> > + **/
+> > +struct xttcpss_timer {
+> > +	char *name;
+> > +	unsigned long base_addr;
+> 
+> Shouldn't this really be a void __iomem pointer?  This could eliminate
+> the need for xttcpss_write and xttcpss_read.
+
+That would work too. I kind of like having the I/O accessors as I've
+found them handy 
+sometimes for debugging.  I'll check it out and consider it as maybe
+it's simpler 
+and clearer.
+
+> 
+> > +	struct irqaction timer_irq;
+> > +	enum clock_event_mode mode;
+> > +};
+> > +
+> > +
+> > +static struct xttcpss_timer timers[];
+> > +static struct clock_event_device xttcpss_clockevent;
+> > +
+> > +/*
+> > + * xttcpss_timer_irqs - Timers IRQ number
+> > + */
+> > +static int xttcpss_timer_irqs[2] = {
+> > +	IRQ_TIMERCOUNTER0,	/* Timer 1 IRQ number */
+> > +	IRQ_TIMERCOUNTER0 + 1,	/* Timer 2 IRQ number */
+> > +};
+> > +
+> > +/**
+> > + * xttcpss_set_interval - Set the timer interval value
+> > + *
+> > + * @timer:	Pointer to the timer instance
+> > + * @cycles:	Timer interval ticks
+> > + **/
+> > +static void xttcpss_set_interval(struct xttcpss_timer *timer,
+> > +					unsigned long cycles)
 > > +{
-> > +	int rc;
-> > +	static struct resource *r;
-> > +	static unsigned long pages_left;
+> > +	u32 ctrl_reg;
 > > +
-> > +	if ((credit <= 0 || balloon_stats.balloon_low ||
-> > +				balloon_stats.balloon_high) && !r)
-> > +		return BP_DONE;
+> > +	/* Disable the counter, set the counter value  and re-enable
+counter */
+> > +	ctrl_reg = xttcpss_read(timer->base_addr +
+XTTCPSS_CNT_CNTRL_OFFSET);
+> > +	ctrl_reg |= ~(XTTCPSS_CNT_CNTRL_ENABLE_MASK);
+> > +	xttcpss_write(timer->base_addr + XTTCPSS_CNT_CNTRL_OFFSET,
+> > ctrl_reg);
 > > +
-> > +	if (!r) {
-> > +		r = allocate_memory_resource(credit);
+> > +	pr_debug("set_interval, name = %s, period = %08X\n",
+> > +			timer->name, (unsigned int)cycles);
 > > +
-> > +		if (!r)
-> > +			return BP_ERROR;
+> > +	xttcpss_write(timer->base_addr + XTTCPSS_INTR_VAL_OFFSET,
+cycles);
 > > +
-> > +		pages_left = credit;
-> > +	}
->
-> 'r' is effectively a global variable here.  Could you give it a more
-> proper name?  Maybe "last add location" or something.  It might even
-> make sense to move it up in to the global scope to make it _much_ more
-> clear that it's not just locally used.
-
-This is used between subsequent calls (memory is allocated in chunks
-and onlined when all requested memory is allocated) to store address
-space for allocation. That is why it is static. It is used only in this
-function and if it is required then pointer to this variable is passed
-to called functions. I think that it should stay local to this function
-and do not pollute global variable namespace. However, I will rename it to
-something more meaningful.
-
-> > +	rc = allocate_additional_memory(r, pages_left);
-> > +
-> > +	if (rc < 0) {
-> > +		if (balloon_stats.mh_policy == MH_POLICY_TRY_UNTIL_SUCCESS)
-> > +			return BP_ERROR;
-> > +
-> > +		r = adjust_memory_resource(r, pages_left);
-> > +
-> > +		if (!r)
-> > +			return BP_ERROR;
-> > +	} else {
-> > +		pages_left -= rc;
-> > +
-> > +		if (pages_left)
-> > +			return BP_HUNGRY;
-> > +	}
-> > +
-> > +	hotplug_allocated_memory(r);
-> > +
-> > +	r = NULL;
-> > +
-> > +	return BP_DONE;
+> > +	/* Reset the counter (0x10) so that it starts from 0, one-shot
+> > +	   mode makes this needed for timing to be right. */
+> > +	ctrl_reg &= XTTCPSS_CNT_CNTRL_ENABLE_MASK;
+> > +	ctrl_reg |= 0x10;
+> > +	xttcpss_write(timer->base_addr + XTTCPSS_CNT_CNTRL_OFFSET,
+> > ctrl_reg);
 > > +}
->
-> Could you explain a bit about why you chose to do this stuff with memory
-> resources?  Is that the only visibility that you have in to what memory
-> the guest actually has?
+> > +
+> > +/**
+> > + * xttcpss_clock_source_interrupt - Clock source timer interrupt
+handler
+> > + *
+> > + * @irq:	IRQ number of the Timer
+> > + * @dev_id:	void pointer to the xttcpss_timer instance
+> > + *
+> > + * This will be called when 16-bit clock source counter wraps
+> > + *
+> > + * returns: Always IRQ_HANDLED - success
+> > + **/
+> > +static irqreturn_t xttcpss_clock_source_interrupt(int irq, void
+*dev_id)
+> > +{
+> > +	struct xttcpss_timer *timer = dev_id;
+> > +
+> > +	/* Acknowledge the interrupt */
+> > +	xttcpss_write(timer->base_addr + XTTCPSS_ISR_OFFSET,
+> > +		xttcpss_read(timer->base_addr + XTTCPSS_ISR_OFFSET));
+> > +
+> > +	return IRQ_HANDLED;
+> > +}
+> > +
+> > +/**
+> > + * xttcpss_clock_event_interrupt - Clock event timer interrupt
+handler
+> > + *
+> > + * @irq:	IRQ number of the Timer
+> > + * @dev_id:	void pointer to the xttcpss_timer instance
+> > + *
+> > + * returns: Always IRQ_HANDLED - success
+> > + **/
+> > +static irqreturn_t xttcpss_clock_event_interrupt(int irq, void
+*dev_id)
+> > +{
+> > +	struct clock_event_device *evt = &xttcpss_clockevent;
+> > +	struct xttcpss_timer *timer = dev_id;
+> > +	u32 ctrl_reg;
+> > +
+> > +	/* Acknowledge the interrupt and call event handler */
+> > +	xttcpss_write(timer->base_addr + XTTCPSS_ISR_OFFSET,
+> > +		xttcpss_read(timer->base_addr + XTTCPSS_ISR_OFFSET));
+> > +
+> > +	if (timer->mode == CLOCK_EVT_MODE_ONESHOT) {
+> > +
+> > +		/* Disable the counter as it would keep running. */
+> > +		ctrl_reg = xttcpss_read(timer->base_addr +
+> > +					XTTCPSS_CNT_CNTRL_OFFSET);
+> > +		ctrl_reg |= ~(XTTCPSS_CNT_CNTRL_ENABLE_MASK);
+> 
+> The clock events framework should reprogram the next event so you
+don't
+> actually need to disable the timer here.  Once the event handler has
+> been called the timer will be reenabled with a new period, and as
+we're
+> running with interrupts disabled here we don't need to stop the timer.
+> 
 
-That depends on balloon_stats.mh_policy. If it is MH_POLICY_TRY_UNTIL_SUCCESS
-and memory allocation error appears then *r is not changed and attempts
-are made to allocate more memory. If it is MH_POLICY_STOP_AT_FIRST_ERROR
-and memory allocation error appears then *r is alligned to currently
-successfully allocated memory and memory is onlined (if size != 0).
+What about if there's not another event to be started?
 
-> What troubles did you run in to when you did
->
-> 	add_memory(0, balloon_stats.boot_max_pfn, credit);
->
-> ?
->
-> It's just that all the other memory hotplug users are _told_ by the
-> hardware where to put things.  Is that not the case here?
+> > +		xttcpss_write(timer->base_addr +
+XTTCPSS_CNT_CNTRL_OFFSET,
+> > +				ctrl_reg);
+> > +	}
+> > +
+> > +	evt->event_handler(evt);
+> > +
+> > +	return IRQ_HANDLED;
+> > +}
+> > +
+> > +/*
+> > + * struct xttcpss_timer timers - This definition defines local
+timers
+> > + */
+> > +static struct xttcpss_timer timers[] = {
+> > +	[XTTCPSS_CLOCKSOURCE] = {
+> > +		.name = "xttcpss clocksource",
+> > +		.timer_irq = {
+> > +			.flags = IRQF_DISABLED | IRQF_TIMER,
+> > +			.handler = xttcpss_clock_source_interrupt,
+> > +		}
+> > +	},
+> > +	[XTTCPSS_CLOCKEVENT] = {
+> > +		.name = "xttcpss clockevent",
+> > +		.timer_irq = {
+> > +			.flags = IRQF_DISABLED | IRQF_TIMER,
+> > +			.handler = xttcpss_clock_event_interrupt,
+> > +		}
+> > +	},
+> > +};
+> > +
+> > +
+> > +/**
+> > + * xttcpss_timer_hardware_init - Initialize the timer hardware
+> > + *
+> > + * Initialize the hardware, registers the timer interrupts, set the
+clock source
+> > + * timer interval and enable the clock source timer
+> > + **/
+> > +static void __init xttcpss_timer_hardware_init(void)
+> > +{
+> > +	int timer_id;
+> > +	struct xttcpss_timer *timer;
+> > +
+> > +	for (timer_id = 0; timer_id < ARRAY_SIZE(timers); timer_id++) {
+> > +		timer = &timers[timer_id];
+> > +
+> > +		if (!(timer->name))
+> > +			continue;
+> > +
+> > +		timer->base_addr = XTTCPSS_TIMER_BASE + (4*timer_id);
+> > +
+> > +		/* Disable counter, Enable Interval mode, Count up
+timer,
+> > +		 * Disable Match mode, Internal Clock source select, set
+> > +		 * prescalar to 32, and Enable the Interval interrupt */
+> > +		xttcpss_write(timer->base_addr +
+XTTCPSS_CNT_CNTRL_OFFSET,
+> > +				0x23);
+> > +		xttcpss_write(timer->base_addr +
+XTTCPSS_CLK_CNTRL_OFFSET, 0x9);
+> > +		xttcpss_write(timer->base_addr + XTTCPSS_IER_OFFSET,
+0x1);
+> > +
+> > +		/* Setup IRQ */
+> > +		timer->timer_irq.name = timer->name;
+> > +		timer->timer_irq.dev_id = (void *)timer;
+> > +		if (timer->timer_irq.handler != NULL) {
+> > +			setup_irq(xttcpss_timer_irqs[timer_id],
+> > +				&timer->timer_irq);
+> > +		}
+> > +		if (timer_id == XTTCPSS_CLOCKSOURCE)
+> > +			xttcpss_set_interval(timer, ~0);
+> > +	}
+> > +}
+> > +
+> > +/**
+> > + * xttcpss_read_cycles - Reads the timer counter register
+> > + *
+> > + * returns: Current timer counter register value
+> > + **/
+> > +static cycle_t xttcpss_read_cycles(struct clocksource *cs)
+> > +{
+> > +	struct xttcpss_timer *timer = &timers[XTTCPSS_CLOCKSOURCE];
+> > +
+> > +	return (cycle_t)xttcpss_read(timer->base_addr +
+> > +				XTTCPSS_COUNT_VAL_OFFSET);
+> > +}
+> > +
+> > +
+> > +/*
+> > + * Instantiate and initialize the clock source structure
+> > + */
+> > +static struct clocksource clocksource_xttcpss = {
+> > +	.name		= "xttcpss_timer1",
+> > +	.rating		= 200,			/* Reasonable clock
+source */
+> > +	.read		= xttcpss_read_cycles,
+> > +	.mask		= CLOCKSOURCE_MASK(16),
+> > +	.shift		= 0,			/* Initialized to zero
+*/
+> > +	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
+> > +};
+> > +
+> > +
+> > +/**
+> > + * xttcpss_set_next_event - Sets the time interval for next event
+> > + *
+> > + * @cycles:	Timer interval ticks
+> > + * @evt:	Address of clock event instance
+> > + *
+> > + * returns: Always 0 - success
+> > + **/
+> > +static int xttcpss_set_next_event(unsigned long cycles,
+> > +					struct clock_event_device *evt)
+> > +{
+> > +	struct xttcpss_timer *timer = &timers[XTTCPSS_CLOCKEVENT];
+> > +
+> > +	xttcpss_set_interval(timer, cycles);
+> > +	return 0;
+> > +}
+> > +
+> > +/**
+> > + * xttcpss_set_mode - Sets the mode of timer
+> > + *
+> > + * @mode:	Mode to be set
+> > + * @evt:	Address of clock event instance
+> > + **/
+> > +static void xttcpss_set_mode(enum clock_event_mode mode,
+> > +					struct clock_event_device *evt)
+> > +{
+> > +	struct xttcpss_timer *timer = &timers[XTTCPSS_CLOCKEVENT];
+> > +	u32 ctrl_reg;
+> > +
+> > +	timer->mode = mode;
+> > +
+> > +	switch (mode) {
+> > +	case CLOCK_EVT_MODE_PERIODIC:
+> > +		xttcpss_set_interval(timer, CLOCK_TICK_RATE / HZ);
+> > +		break;
+> > +	case CLOCK_EVT_MODE_ONESHOT:
+> > +	case CLOCK_EVT_MODE_UNUSED:
+> > +	case CLOCK_EVT_MODE_SHUTDOWN:
+> > +		ctrl_reg = xttcpss_read(timer->base_addr +
+> > +					XTTCPSS_CNT_CNTRL_OFFSET);
+> > +		ctrl_reg |= ~(XTTCPSS_CNT_CNTRL_ENABLE_MASK);
+> > +		xttcpss_write(timer->base_addr +
+XTTCPSS_CNT_CNTRL_OFFSET,
+> > +				ctrl_reg);
+> > +		break;
+> > +	case CLOCK_EVT_MODE_RESUME:
+> > +		ctrl_reg = xttcpss_read(timer->base_addr +
+> > +					XTTCPSS_CNT_CNTRL_OFFSET);
+> > +		ctrl_reg &= XTTCPSS_CNT_CNTRL_ENABLE_MASK;
+> > +		xttcpss_write(timer->base_addr +
+XTTCPSS_CNT_CNTRL_OFFSET,
+> > +				ctrl_reg);
+> > +		break;
+> > +	}
+> > +}
+> > +
+> > +/*
+> > + * Instantiate and initialize the clock event structure
+> > + */
+> > +static struct clock_event_device xttcpss_clockevent = {
+> > +	.name		= "xttcpss_timer2",
+> > +	.features	= CLOCK_EVT_FEAT_PERIODIC |
+CLOCK_EVT_FEAT_ONESHOT,
+> > +	.shift		= 0,		/* Initialized to zero */
+> > +	.set_next_event	= xttcpss_set_next_event,
+> > +	.set_mode	= xttcpss_set_mode,
+> > +	.rating		= 200,
+> > +};
+> > +
+> > +/**
+> > + * xttcpss_timer_init - Initialize the timer
+> > + *
+> > + * Initializes the timer hardware and registers the clock source
+and clock event
+> > + * timers with Linux kernal timer framework
+> > + **/
+> > +static void __init xttcpss_timer_init(void)
+> > +{
+> > +	u32 shift;
+> > +	u64 temp;
+> > +
+> > +	xttcpss_timer_hardware_init();
+> > +
+> > +	/* Calculate the nanoseconds to cycles divisor value for clock
+source
+> > +	 * timer */
+> > +	for (shift = 16; shift > 0; shift--) {
+> > +		temp = (u64) NSEC_PER_SEC << shift;
+> > +		do_div(temp, CLOCK_TICK_RATE);
+> > +		if ((temp >> 32) == 0)
+> > +			break;
+> > +	}
+> > +
+> > +	/* Setup clocksource */
+> > +	clocksource_xttcpss.shift = shift;
+> > +	clocksource_xttcpss.mult =
+> > +		clocksource_hz2mult(CLOCK_TICK_RATE,
+clocksource_xttcpss.shift);
+> > +
+> > +	if (clocksource_register(&clocksource_xttcpss))
+> > +		printk(KERN_ERR "xttcpss_timer_init: can't register
+clocksource"
+> > +				" for %s\n", clocksource_xttcpss.name);
+> 
+> If you use clocksource_register_hz() then you don't need to worry
+about
+> calculating shift and mult, the generic framework will do that for
+you.
+> 
 
-No. On bare metal BIOS/firmware cares about proper address space and
-when everything goes OK then notify operating system about memory hotplug.
-In Xen (and probably in others platforms will be) it is not a case and
-memory should be allocated ealier by guest. However, before doing
-that, I think, address space should be reserved (it is small chance that
-something will request overlaping address space, however, I think it is
-better to do that than sorry). Additionally, IIRC, add_memory() requires
-that underlying memory is available before its call. That is why I
-decided to create add_registered_memory() which do all things which are
-done by add_memory() excluding address space reservation which is done
-by allocate_memory_resource() before memory allocation.
+Yes, sounds easier.
 
-Daniel
+> > +	/* Calculate the nanoseconds to cycles divisor value for clock
+event
+> > +	 * timer */
+> > +	for (shift = 16; shift > 0; shift--) {
+> > +		temp = (u64) CLOCK_TICK_RATE << shift;
+> > +		do_div(temp, NSEC_PER_SEC);
+> > +		if ((temp >> 32) == 0)
+> > +			break;
+> > +	}
+> > +
+> > +	/* Setup clockevent */
+> > +	xttcpss_clockevent.shift = shift;
+> > +	xttcpss_clockevent.mult = div_sc(CLOCK_TICK_RATE, NSEC_PER_SEC,
+> > +
+xttcpss_clockevent.shift);
+> 
+> clockevents_calc_mult_shift()?
+> 
+
+Yep, Russell mentioned these type of changes also. Thanks a lot for the
+review Jamie. 
+
+I Will try to get changes incorporated into a V2 of the patches.
+
+-- John
+
+> > +
+> > +	xttcpss_clockevent.max_delta_ns =
+> > +		clockevent_delta2ns(0xfffe, &xttcpss_clockevent);
+> > +	xttcpss_clockevent.min_delta_ns =
+> > +		clockevent_delta2ns(1, &xttcpss_clockevent);
+> > +
+> > +	xttcpss_clockevent.cpumask = cpumask_of(0);
+> > +	clockevents_register_device(&xttcpss_clockevent);
+> > +}
+> > +
+> > +#ifdef CONFIG_PM
+> > +/**
+> > + * xttcpss_timer_suspend - Suspend the timer
+> > + *
+> > + * Disables all (clock source and clock event) the timers
+> > + **/
+> > +static void xttcpss_timer_suspend(void)
+> > +{
+> > +	struct xttcpss_timer *source_timer =
+&timers[XTTCPSS_CLOCKSOURCE];
+> > +	struct xttcpss_timer *event_timer = &timers[XTTCPSS_CLOCKEVENT];
+> > +	u32 ctrl_reg;
+> > +
+> > +	/* Disable clocksource timer */
+> > +	ctrl_reg = xttcpss_read(source_timer->base_addr +
+> > +				XTTCPSS_CNT_CNTRL_OFFSET);
+> > +	ctrl_reg |= ~(XTTCPSS_CNT_CNTRL_ENABLE_MASK);
+> > +	xttcpss_write(source_timer->base_addr +
+> > XTTCPSS_CNT_CNTRL_OFFSET,
+> > +				ctrl_reg);
+> > +
+> > +	/* Disable clockevent timer */
+> > +	ctrl_reg = xttcpss_read(event_timer->base_addr +
+> > +				XTTCPSS_CNT_CNTRL_OFFSET);
+> > +	ctrl_reg |= ~(XTTCPSS_CNT_CNTRL_ENABLE_MASK);
+> > +	xttcpss_write(event_timer->base_addr + XTTCPSS_CNT_CNTRL_OFFSET,
+> > +				ctrl_reg);
+> > +}
+> > +
+> > +/**
+> > + * xttcpss_timer_resume - Resume the timer
+> > + *
+> > + * Enables  all (clock source and clock event) the timers
+> > + **/
+> > +static void xttcpss_timer_resume(void)
+> > +{
+> > +	struct xttcpss_timer *source_timer =
+&timers[XTTCPSS_CLOCKSOURCE];
+> > +	struct xttcpss_timer *event_timer = &timers[XTTCPSS_CLOCKEVENT];
+> > +	u32 ctrl_reg;
+> > +
+> > +	/* Enable clocksource timer */
+> > +	ctrl_reg = xttcpss_read(source_timer->base_addr +
+> > +				XTTCPSS_CNT_CNTRL_OFFSET);
+> > +	ctrl_reg &= XTTCPSS_CNT_CNTRL_ENABLE_MASK;
+> > +	xttcpss_write(source_timer->base_addr +
+> > XTTCPSS_CNT_CNTRL_OFFSET,
+> > +				ctrl_reg);
+> > +
+> > +	/* Enable clockevent timer */
+> > +	ctrl_reg = xttcpss_read(event_timer->base_addr +
+> > +				XTTCPSS_CNT_CNTRL_OFFSET);
+> > +	ctrl_reg &= XTTCPSS_CNT_CNTRL_ENABLE_MASK;
+> > +	xttcpss_write(event_timer->base_addr + XTTCPSS_CNT_CNTRL_OFFSET,
+> > +				ctrl_reg);
+> > +}
+> > +#else
+> > +#define xttcpss_timer_suspend NULL
+> > +#define xttcpss_timer_resume NULL
+> > +#endif
+> > +
+> > +/*
+> > + * Instantiate and initialize the system timer structure
+> > + */
+> > +struct sys_timer xttcpss_sys_timer = {
+> > +	.init		= xttcpss_timer_init,
+> > +	.suspend	= xttcpss_timer_suspend,
+> > +	.resume		= xttcpss_timer_resume,
+> > +};
+> > --
+> > 1.6.2.1
+> >
+> >
+> >
+> > This email and any attachments are intended for the sole use of the
+named recipient(s) and
+> contain(s) confidential information that may be proprietary,
+privileged or copyrighted under
+> applicable law. If you are not the intended recipient, do not read,
+copy, or forward this email
+> message or any attachments. Delete this email message and any
+attachments immediately.
+> >
+> >
+> >
+> > _______________________________________________
+> > linux-arm-kernel mailing list
+> > linux-arm-kernel@lists.infradead.org
+> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
+
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+
+
