@@ -1,276 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab1BGXcu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 18:32:50 -0500
-Received: from mga02.intel.com ([134.134.136.20]:47503 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755187Ab1BGXcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 18:32:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,439,1291622400"; 
-   d="scan'208";a="705065548"
-From: jacob.jun.pan@linux.intel.com
-To: LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Matt Helsley <matthltc@us.ibm.com>,
-        container cgroup <containers@lists.linux-foundation.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <menage@google.com>,
-        akpm@linux-foundation.org, rdunlap@xenotime.net,
-        Cedric Le Goater <clg@fr.ibm.com>
-Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: [PATCH v4] cgroup/freezer: add per freezer duty ratio control
-Date: Mon,  7 Feb 2011 15:30:24 -0800
-Message-Id: <1297121424-32726-2-git-send-email-jacob.jun.pan@linux.intel.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1297121424-32726-1-git-send-email-jacob.jun.pan@linux.intel.com>
-References: <1297121424-32726-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	id S1755340Ab1BGXfV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 18:35:21 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:51505 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755210Ab1BGXfT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 18:35:19 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=hN+7i0Q6yXSlpvD/A6fB/W8WpCeKz8h1Hx6f/M4YnmfpIUKaZHT1uZPzlv82pngGRr
+         15G9G0c8u16SsBvJaJzCl8Uox6dkEIH4rR6P0KcedHXrzcEObjO5Is+aetdXsIPUcNct
+         UMWdCun32fXoaaQVWZh+cgUmEDAgWwE5rSA70=
+MIME-Version: 1.0
+In-Reply-To: <20110205193740.964969119@linutronix.de>
+References: <20110205193740.964969119@linutronix.de>
+Date: Mon, 7 Feb 2011 15:35:17 -0800
+X-Google-Sender-Auth: SGDQbCwj-f3n0mzlp9KqpZC6EYA
+Message-ID: <AANLkTimd37W_PBtQhhHf3YHj_ms6d-g7F6EQVACNigc+@mail.gmail.com>
+Subject: Re: [patch 0/8] ia64: Convert irq_chips to new functions
+From: Tony Luck <tony.luck@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jes Sorensen <jes@sgi.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+On Sat, Feb 5, 2011 at 11:44 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> The following series converts the interrupt chips to the new
+> functions.Compile tested only.
 
-Freezer subsystem is used to manage batch jobs which can start
-stop at the same time. However, sometime it is desirable to let
-the kernel manage the freezer state automatically with a given
-duty ratio.
-For example, if we want to reduce the time that backgroup apps
-are allowed to run we can put them into a freezer subsystem and
-set the kernel to turn them THAWED/FROZEN at given duty ratio.
+I see a new warning while building:
 
-This patch introduces two file nodes under cgroup
-freezer.duty_ratio_pct and freezer.period_sec
+arch/ia64/sn/kernel/irq.c:427: warning: ‘force_interrupt’ defined but not used
 
-Usage example: set period to be 5 seconds and frozen duty ratio 90%
-[root@localhost aoa]# echo 90 > freezer.duty_ratio_pct
-[root@localhost aoa]# echo 5000 > freezer.period_ms
+since you deleted the only use of this function.
+sn_force_interrupt_flag doesn't
+seem to be useful either once this patch has been applied.
 
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
----
- Documentation/cgroups/freezer-subsystem.txt |   23 +++++
- kernel/cgroup_freezer.c                     |  130 ++++++++++++++++++++++++++-
- 2 files changed, 152 insertions(+), 1 deletions(-)
+Apart from that it all seems to build and boot with no problems on my
+machine.  I haven't tested on SGI sn2 system (where you've made
+a moderately big change).  It'd be nice to get an Ack from there.
 
-diff --git a/Documentation/cgroups/freezer-subsystem.txt b/Documentation/cgroups/freezer-subsystem.txt
-index 41f37fe..7f06f05 100644
---- a/Documentation/cgroups/freezer-subsystem.txt
-+++ b/Documentation/cgroups/freezer-subsystem.txt
-@@ -100,3 +100,26 @@ things happens:
- 		and returns EINVAL)
- 	3) The tasks that blocked the cgroup from entering the "FROZEN"
- 		state disappear from the cgroup's set of tasks.
-+
-+In embedded systems, it is desirable to manage group of applications
-+for power saving. E.g. tasks that are not in the foreground may be
-+frozen unfrozen periodically to save power without affecting user
-+experience. In this case, user/management software can attach tasks
-+into freezer cgroup then specify duty ratio and period that the
-+managed tasks are allowed to run.
-+
-+Usage example:
-+Assuming freezer cgroup is already mounted, application being managed
-+are included the "tasks" file node of the given freezer cgroup.
-+To make the tasks frozen at 90% of the time every 5 seconds, do:
-+
-+[root@localhost ]# echo 90 > freezer.duty_ratio_pct
-+[root@localhost ]# echo 5000 > freezer.period_ms
-+
-+After that, the application in this freezer cgroup will only be
-+allowed to run at the following pattern.
-+     __                    __                    __
-+    |  |<-- 90% frozen -->|  |                  |  |
-+____|  |__________________|  |__________________|  |_____
-+
-+    |<---- 5 seconds ---->|
-diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-index e7bebb7..b1c5d19 100644
---- a/kernel/cgroup_freezer.c
-+++ b/kernel/cgroup_freezer.c
-@@ -21,6 +21,7 @@
- #include <linux/uaccess.h>
- #include <linux/freezer.h>
- #include <linux/seq_file.h>
-+#include <linux/kthread.h>
- 
- enum freezer_state {
- 	CGROUP_THAWED = 0,
-@@ -28,12 +29,28 @@ enum freezer_state {
- 	CGROUP_FROZEN,
- };
- 
-+enum duty_ratio_params {
-+	FREEZER_DUTY_RATIO = 0,
-+	FREEZER_PERIOD,
-+};
-+
-+struct freezer_duty {
-+	u32 ratio; /* percentage of time frozen */
-+	u32 period_pct_ms; /* one percent of the period in miliseconds */
-+};
-+
- struct freezer {
- 	struct cgroup_subsys_state css;
- 	enum freezer_state state;
-+	struct freezer_duty duty;
-+	struct task_struct *fkh;
- 	spinlock_t lock; /* protects _writes_ to state */
- };
- 
-+static struct task_struct *freezer_task;
-+static int try_to_freeze_cgroup(struct cgroup *cgroup, struct freezer *freezer);
-+static void unfreeze_cgroup(struct cgroup *cgroup, struct freezer *freezer);
-+
- static inline struct freezer *cgroup_freezer(
- 		struct cgroup *cgroup)
- {
-@@ -63,6 +80,35 @@ int cgroup_freezing_or_frozen(struct task_struct *task)
- 	return result;
- }
- 
-+static DECLARE_WAIT_QUEUE_HEAD(freezer_wait);
-+
-+static int freezer_kh(void *data)
-+{
-+	struct cgroup *cgroup = (struct cgroup *)data;
-+	struct freezer *freezer = cgroup_freezer(cgroup);
-+
-+	do {
-+		if (freezer->duty.ratio < 100 && freezer->duty.ratio >= 0 &&
-+			freezer->duty.period_pct_ms) {
-+			if (try_to_freeze_cgroup(cgroup, freezer))
-+				pr_info("cannot freeze\n");
-+			msleep(freezer->duty.period_pct_ms *
-+				freezer->duty.ratio);
-+			unfreeze_cgroup(cgroup, freezer);
-+			msleep(freezer->duty.period_pct_ms *
-+				(100 - freezer->duty.ratio));
-+		} else if (freezer->duty.ratio == 100) {
-+			if (try_to_freeze_cgroup(cgroup, freezer))
-+				pr_info("cannot freeze\n");
-+			sleep_on(&freezer_wait);
-+		} else {
-+			sleep_on(&freezer_wait);
-+			pr_debug("freezer thread wake up\n");
-+		}
-+	} while (!kthread_should_stop());
-+	return 0;
-+}
-+
- /*
-  * cgroups_write_string() limits the size of freezer state strings to
-  * CGROUP_LOCAL_BUFFER_SIZE
-@@ -150,7 +196,12 @@ static struct cgroup_subsys_state *freezer_create(struct cgroup_subsys *ss,
- static void freezer_destroy(struct cgroup_subsys *ss,
- 			    struct cgroup *cgroup)
- {
--	kfree(cgroup_freezer(cgroup));
-+	struct freezer *freezer;
-+
-+	freezer = cgroup_freezer(cgroup);
-+	if (freezer->fkh)
-+		kthread_stop(freezer->fkh);
-+	kfree(freezer);
- }
- 
- /*
-@@ -282,6 +333,16 @@ static int freezer_read(struct cgroup *cgroup, struct cftype *cft,
- 	return 0;
- }
- 
-+static u64 freezer_read_duty_ratio(struct cgroup *cgroup, struct cftype *cft)
-+{
-+	return cgroup_freezer(cgroup)->duty.ratio;
-+}
-+
-+static u64 freezer_read_period(struct cgroup *cgroup, struct cftype *cft)
-+{
-+	return cgroup_freezer(cgroup)->duty.period_pct_ms * 100;
-+}
-+
- static int try_to_freeze_cgroup(struct cgroup *cgroup, struct freezer *freezer)
- {
- 	struct cgroup_iter it;
-@@ -368,12 +429,79 @@ static int freezer_write(struct cgroup *cgroup,
- 	return retval;
- }
- 
-+#define FREEZER_KH_PREFIX  "freezer_"
-+static int freezer_write_param(struct cgroup *cgroup, struct cftype *cft,
-+		u64 val)
-+{
-+	struct freezer *freezer;
-+	char thread_name[32];
-+
-+	freezer = cgroup_freezer(cgroup);
-+
-+	if (!cgroup_lock_live_group(cgroup))
-+		return -ENODEV;
-+
-+	switch (cft->private) {
-+	case FREEZER_DUTY_RATIO:
-+		if (val > 100)
-+			val = 100;
-+		else if (val <= 0)
-+			val = 0;
-+		freezer->duty.ratio = val;
-+		break;
-+	case FREEZER_PERIOD:
-+		if (val)
-+			do_div(val, 100);
-+			freezer->duty.period_pct_ms = val;
-+		break;
-+	default:
-+		BUG();
-+	}
-+
-+	/* start/stop management kthread as needed, the rule is that
-+	 * if both duty ratio and period values are zero, then no management
-+	 * kthread is created. when both are non-zero, we create a kthread
-+	 * for the cgroup. When user set zero to duty ratio and period again
-+	 * the kthread is stopped.
-+	 */
-+	if (freezer->duty.ratio && freezer->duty.period_pct_ms) {
-+		if (!freezer->fkh) {
-+			snprintf(thread_name, 32, "%s%s", FREEZER_KH_PREFIX,
-+				cgroup->dentry->d_name.name);
-+			freezer->fkh = kthread_run(freezer_kh, (void *)cgroup,
-+						thread_name);
-+			if (IS_ERR(freezer_task))
-+				pr_debug("create %s failed\n", thread_name);
-+		} else
-+			wake_up(&freezer_wait);
-+	} else if (!freezer->duty.ratio && !freezer->duty.period_pct_ms) {
-+		kthread_stop(freezer->fkh);
-+		freezer->fkh = NULL;
-+	}
-+	cgroup_unlock();
-+
-+	return 0;
-+}
-+
- static struct cftype files[] = {
- 	{
- 		.name = "state",
- 		.read_seq_string = freezer_read,
- 		.write_string = freezer_write,
- 	},
-+	{
-+		.name = "duty_ratio_pct",
-+		.private = FREEZER_DUTY_RATIO,
-+		.read_u64 = freezer_read_duty_ratio,
-+		.write_u64 = freezer_write_param,
-+	},
-+	{
-+		.name = "period_ms",
-+		.private = FREEZER_PERIOD,
-+		.read_u64 = freezer_read_period,
-+		.write_u64 = freezer_write_param,
-+	},
-+
- };
- 
- static int freezer_populate(struct cgroup_subsys *ss, struct cgroup *cgroup)
--- 
-1.7.0.4
-
+-Tony
