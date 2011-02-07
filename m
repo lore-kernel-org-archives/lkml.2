@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242Ab1BGXJj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 18:09:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:65283 "EHLO mx1.redhat.com"
+	id S1755213Ab1BGXMe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 18:12:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754899Ab1BGXJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 18:09:38 -0500
-From: Matthew Garrett <mjg@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH] [PATCH] Clarify source code distribution requirements
-Date: Mon,  7 Feb 2011 18:09:04 -0500
-Message-Id: <1297120144-2142-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 66.187.233.203
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1754899Ab1BGXMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 18:12:33 -0500
+Date: Tue, 8 Feb 2011 00:12:28 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: khugepaged eating 100%CPU
+Message-ID: <20110207231228.GI3347@random.random>
+References: <20110207210517.GA24837@tiehlicka.suse.cz>
+ <20110207211601.GA25665@tiehlicka.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110207211601.GA25665@tiehlicka.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some vendors (such as http://users.livejournal.com/joshua_/43185.html)
-insist that since section 3(b) of GPLv2 does not contain an explicit
-timeframe for source distribution, they can ignore requests for source
-for up to 120 days. Clarify the introduction to the license to indicate
-that this isn't what's meant.
+Hello Michal,
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
----
- COPYING |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+On Mon, Feb 07, 2011 at 10:16:01PM +0100, Michal Hocko wrote:
+> On Mon 07-02-11 22:06:54, Michal Hocko wrote:
+> > Hi Andrea,
+> > 
+> > I am currently running into an issue when khugepaged is running 100% on
+> > one of my CPUs for a long time (at least one hour as I am writing the
+> > email). The kernel is the clean 2.6.38-rc3 (i386) vanilla kernel.
+> > 
+> > I have tried to disable defrag but it didn't help (I haven't rebooted
+> > after setting the value). I am not sure what information is helpful and
+> > also not sure whether I am able to reproduce it after restart (it is the
+> > first time I can see this problem) so sorry for the poor report.
+> > 
+> > Here is some basic info which might be useful (config and sysrq+t are
+> > attached):
+> > =========
+> 
+> And I have just realized that I forgot about the daemon stack:
+> # cat /proc/573/stack 
+> [<c019c981>] shrink_zone+0x1b9/0x455
+> [<c019d462>] do_try_to_free_pages+0x9d/0x301
+> [<c019d803>] try_to_free_pages+0xb3/0x104
+> [<c01966d7>] __alloc_pages_nodemask+0x358/0x589
+> [<c01bf314>] khugepaged+0x13f/0xc60
+> [<c014c301>] kthread+0x67/0x6c
+> [<c0102db6>] kernel_thread_helper+0x6/0x10
+> [<ffffffff>] 0xffffffff
 
-diff --git a/COPYING b/COPYING
-index ca442d3..4cda18e 100644
---- a/COPYING
-+++ b/COPYING
-@@ -10,6 +10,12 @@
-  is concerned is _this_ particular version of the license (ie v2, not
-  v2.2 or v3.x or whatever), unless explicitly otherwise stated.
- 
-+ While this version of the GPL does not place an explicit timeframe
-+ upon fulfilment of source distribution under section 3(b), it is the
-+ consensus viewpoint of the Linux community that such distribution
-+ take place as soon as is practical and certainly no more than 14 days
-+ after a request is made.
-+
- 			Linus Torvalds
- 
- ----------------------------------------
--- 
-1.7.4
+It would be great to know if __alloc_pages_nodemask returned or if it
+was calling it in a loop.
 
+When __alloc_pages_nodemask fails in collapse_huge_page, hpage is set
+to ERR_PTR(-ENOMEM), then khugepaged_scan_pmd returns 1, then
+khugepaged_scan_mm_slot goto breakouterloop_mmap_sem and return
+progress, then the khugepaged_do_scan main loop should notice that
+IS_ERR(*hpage) is set and break out of the loop and return void, then
+khugepaged_loop should notice that IS_ERR(hpage) is set and it should
+throttle for alloc_sleep_millisecs inside khugepaged_alloc_sleep
+before setting hpage to NULL and trying again to allocate. I wonder
+what could be going wrong in khugepaged.. I wonder if it's a bug inside
+__alloc_pages_nodemask and not a khugepaged issue. Best would be if
+you run SYSRQ+l several times (/proc/*/stack don't seem to be the best
+for running tasks even if it should be accurate enough already, but if
+you run it often and with sysrq+l it'll be more clear what is
+running).
+
+I hope you can reproduce, if it's an allocator issue you should notice
+it again by keeping the same workload on that same system. I doubt I
+can reproduce at the moment as I don't know what's going on to
+simulate your load.
+
+Thanks a lot,
+Andrea
