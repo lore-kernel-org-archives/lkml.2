@@ -1,93 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431Ab1BGJZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 04:25:27 -0500
-Received: from hera.kernel.org ([140.211.167.34]:47051 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753143Ab1BGJZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 04:25:26 -0500
-Date: Mon, 7 Feb 2011 09:24:55 GMT
-From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        castet.matthieu@free.fr, suresh.b.siddha@intel.com, mhopf@suse.de,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        castet.matthieu@free.fr, mhopf@suse.de, suresh.b.siddha@intel.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <4D4F8019.2090104@zytor.com>
-References: <4D4F8019.2090104@zytor.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, nx: Mark the ACPI resume trampoline code as +x
-Message-ID: <tip-d344e38b2c151ca5e5e39f562017127e93912528@git.kernel.org>
-Git-Commit-ID: d344e38b2c151ca5e5e39f562017127e93912528
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1753423Ab1BGJ3g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 04:29:36 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49227 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591Ab1BGJ3e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 04:29:34 -0500
+Date: Mon, 7 Feb 2011 10:29:30 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Andrew Murray <amurray@mpcdata.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-embedded@vger.kernel.org,
+        linux kernel <linux-kernel@vger.kernel.org>, trivial@kernel.org,
+        rdunlap@xenotime.net
+Subject: Re: [PATCH] printk-formats.txt documentation update
+Message-ID: <20110207092930.GA3123@pengutronix.de>
+References: <AANLkTikj+FU8OF_-KFr2hmTSWqTHMK5JnrnTVyn-XtxQ@mail.gmail.com>
+ <AANLkTimcFvq-cSpain--STuVVg3dUJeTCDrykQ=24egg@mail.gmail.com>
+ <AANLkTimsTJ4smnJUfkvYEkJixKQoZNfq6RHU4moLhT0o@mail.gmail.com>
+ <AANLkTi=bHe_h1F6Lh=rv6BXmVzkyPSW9u5EKXxpYGuL_@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VbJkn9YxBvnuCH5J"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 07 Feb 2011 09:24:56 +0000 (UTC)
+In-Reply-To: <AANLkTi=bHe_h1F6Lh=rv6BXmVzkyPSW9u5EKXxpYGuL_@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d344e38b2c151ca5e5e39f562017127e93912528
-Gitweb:     http://git.kernel.org/tip/d344e38b2c151ca5e5e39f562017127e93912528
-Author:     H. Peter Anvin <hpa@zytor.com>
-AuthorDate: Sun, 6 Feb 2011 21:16:09 -0800
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 7 Feb 2011 09:07:13 +0100
 
-x86, nx: Mark the ACPI resume trampoline code as +x
+--VbJkn9YxBvnuCH5J
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-We reserve lowmem for the things that need it, like the ACPI
-wakeup code, way early to guarantee availability.  This happens
-before we set up the proper pagetables, so set_memory_x() has no
-effect.
+On Sun, Feb 06, 2011 at 04:23:09PM +0000, Andrew Murray wrote:
+> On 6 February 2011 16:14, Andrew Murray <amurray@mpcdata.com> wrote:
+> From: Andrew Murray <amurray@mpc-data.co.uk>
+>=20
+> This patch updates the incomplete documentation concerning the printk
+> extended format specifiers.
 
-Until we have a better solution, use an initcall to mark the
-wakeup code executable.
+Good one, thanks!
 
-Originally-by: Matthieu Castet <castet.matthieu@free.fr>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Matthias Hopf <mhopf@suse.de>
-Cc: rjw@sisk.pl
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-LKML-Reference: <4D4F8019.2090104@zytor.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/acpi/sleep.c |   13 ++++++++++---
- 1 files changed, 10 insertions(+), 3 deletions(-)
+> +Kernel Pointers:
+> +
+> +	%pK	0x0
+> +
+> +	For printing kernel pointers which should be hidden from unprivileged
+> +	users. The behaviour of %pK depends on the kptr_resrict sysctl - see
 
-diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
-index 4d9ebba..68d1537 100644
---- a/arch/x86/kernel/acpi/sleep.c
-+++ b/arch/x86/kernel/acpi/sleep.c
-@@ -12,10 +12,8 @@
- #include <linux/cpumask.h>
- #include <asm/segment.h>
- #include <asm/desc.h>
--
--#ifdef CONFIG_X86_32
- #include <asm/pgtable.h>
--#endif
-+#include <asm/cacheflush.h>
- 
- #include "realmode/wakeup.h"
- #include "sleep.h"
-@@ -149,6 +147,15 @@ void __init acpi_reserve_wakeup_memory(void)
- 	memblock_x86_reserve_range(mem, mem + WAKEUP_SIZE, "ACPI WAKEUP");
- }
- 
-+int __init acpi_configure_wakeup_memory(void)
-+{
-+	if (acpi_realmode)
-+		set_memory_x(acpi_realmode, WAKEUP_SIZE >> PAGE_SHIFT);
-+
-+	return 0;
-+}
-+arch_initcall(acpi_configure_wakeup_memory);
-+
- 
- static int __init acpi_sleep_setup(char *str)
- {
+Typo: Should be kptr_restrict.
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--VbJkn9YxBvnuCH5J
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk1Pu3kACgkQD27XaX1/VRtm1wCgwnMBdLX3kUwURReBPGdgqych
+vFEAn0gRJn6kmTXAwYH+B3G1eCusi8+j
+=2PET
+-----END PGP SIGNATURE-----
+
+--VbJkn9YxBvnuCH5J--
