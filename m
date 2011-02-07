@@ -1,302 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520Ab1BGK5d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 05:57:33 -0500
-Received: from shutemov.name ([188.40.19.243]:57658 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753177Ab1BGK5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 05:57:32 -0500
-Date: Mon, 7 Feb 2011 12:57:30 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Balbir Singh <balbir@linux.vnet.ibm.com>
-Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>
-Subject: Re: [PATCH, v5 2/2] cgroups: introduce timer slack subsystem
-Message-ID: <20110207105730.GA11852@shutemov.name>
-References: <1297071962-11654-1-git-send-email-kirill@shutemov.name>
- <1297071962-11654-3-git-send-email-kirill@shutemov.name>
- <20110207100624.GB28911@balbir.in.ibm.com>
+	id S1753627Ab1BGK5k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 05:57:40 -0500
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:62311 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753177Ab1BGK5e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 05:57:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:mime-version:message-id:cc
+         :content-type:content-transfer-encoding;
+        b=ZDeBTM4PKor+F9ke5mBh8lz/N/CgnzlOOD4lCzq4yi7F3Ep/pOqIinXEEaTU1PCOw0
+         mXVxNTqw6OC+FQske+ZltRqm5N2BMV8X42Uwik8ZJOinBSiarDuESRLUNw5QlZGoxGgf
+         ZbvpzOggHtkhJotQM1dDIYtkYsQIAkG5KbZ3s=
+From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+To: linux-ide@vger.kernel.org
+Subject: [PATCH 1/2] cmd640: housekeeping
+Date: Mon, 7 Feb 2011 11:47:28 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.7-desktop; KDE/4.4.4; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110207100624.GB28911@balbir.in.ibm.com>
-User-Agent: Mutt/1.5.20 (2010-08-04)
+Message-Id: <201102071147.29355.bzolnier@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 07, 2011 at 03:36:24PM +0530, Balbir Singh wrote:
-> * Kirill A. Shutsemov <kirill@shutemov.name> [2011-02-07 11:46:02]:
-> 
-> > From: Kirill A. Shutemov <kirill@shutemov.name>
-> > 
-> > Provides a way of tasks grouping by timer slack value. Introduces per
-> > cgroup max and min timer slack value. When a task attaches to a cgroup,
-> > its timer slack value adjusts (if needed) to fit min-max range.
-> > 
-> > It also provides a way to set timer slack value for all tasks in the
-> > cgroup at once.
-> > 
-> > This functionality is useful in mobile devices where certain background
-> > apps are attached to a cgroup and minimum wakeups are desired.
-> > 
-> > Idea-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> > Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
-> > ---
-> >  include/linux/cgroup_subsys.h |    6 +
-> >  include/linux/init_task.h     |    4 +-
-> >  init/Kconfig                  |   10 ++
-> >  kernel/Makefile               |    1 +
-> >  kernel/cgroup_timer_slack.c   |  281 +++++++++++++++++++++++++++++++++++++++++
-> >  kernel/sys.c                  |   19 ++-
-> >  6 files changed, 314 insertions(+), 7 deletions(-)
-> >  create mode 100644 kernel/cgroup_timer_slack.c
-> > 
-> > diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
-> > index ccefff0..e399228 100644
-> > --- a/include/linux/cgroup_subsys.h
-> > +++ b/include/linux/cgroup_subsys.h
-> > @@ -66,3 +66,9 @@ SUBSYS(blkio)
-> >  #endif
-> > 
-> >  /* */
-> > +
-> > +#ifdef CONFIG_CGROUP_TIMER_SLACK
-> > +SUBSYS(timer_slack)
-> > +#endif
-> > +
-> > +/* */
-> > diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-> > index caa151f..48eca8f 100644
-> > --- a/include/linux/init_task.h
-> > +++ b/include/linux/init_task.h
-> > @@ -124,6 +124,8 @@ extern struct cred init_cred;
-> >  # define INIT_PERF_EVENTS(tsk)
-> >  #endif
-> > 
-> > +#define TIMER_SLACK_NS_DEFAULT 50000
-> > +
-> >  /*
-> >   *  INIT_TASK is used to set up the first task table, touch at
-> >   * your own risk!. Base=0, limit=0x1fffff (=2MB)
-> > @@ -177,7 +179,7 @@ extern struct cred init_cred;
-> >  	.cpu_timers	= INIT_CPU_TIMERS(tsk.cpu_timers),		\
-> >  	.fs_excl	= ATOMIC_INIT(0),				\
-> >  	.pi_lock	= __RAW_SPIN_LOCK_UNLOCKED(tsk.pi_lock),	\
-> > -	.timer_slack_ns = 50000, /* 50 usec default slack */		\
-> > +	.timer_slack_ns = TIMER_SLACK_NS_DEFAULT,			\
-> >  	.pids = {							\
-> >  		[PIDTYPE_PID]  = INIT_PID_LINK(PIDTYPE_PID),		\
-> >  		[PIDTYPE_PGID] = INIT_PID_LINK(PIDTYPE_PGID),		\
-> > diff --git a/init/Kconfig b/init/Kconfig
-> > index be788c0..6cf465f 100644
-> > --- a/init/Kconfig
-> > +++ b/init/Kconfig
-> > @@ -596,6 +596,16 @@ config CGROUP_FREEZER
-> >  	  Provides a way to freeze and unfreeze all tasks in a
-> >  	  cgroup.
-> > 
-> > +config CGROUP_TIMER_SLACK
-> > +	tristate "Timer slack cgroup subsystem"
-> > +	help
-> > +	  Provides a way of tasks grouping by timer slack value.
-> > +	  Introduces per cgroup timer slack value which will override
-> > +	  the default timer slack value once a task is attached to a
-> > +	  cgroup.
-> > +	  It's useful in mobile devices where certain background apps
-> > +	  are attached to a cgroup and combined wakeups are desired.
-> > +
-> >  config CGROUP_DEVICE
-> >  	bool "Device controller for cgroups"
-> >  	help
-> > diff --git a/kernel/Makefile b/kernel/Makefile
-> > index 353d3fe..0b60239 100644
-> > --- a/kernel/Makefile
-> > +++ b/kernel/Makefile
-> > @@ -61,6 +61,7 @@ obj-$(CONFIG_BACKTRACE_SELF_TEST) += backtracetest.o
-> >  obj-$(CONFIG_COMPAT) += compat.o
-> >  obj-$(CONFIG_CGROUPS) += cgroup.o
-> >  obj-$(CONFIG_CGROUP_FREEZER) += cgroup_freezer.o
-> > +obj-$(CONFIG_CGROUP_TIMER_SLACK) += cgroup_timer_slack.o
-> >  obj-$(CONFIG_CPUSETS) += cpuset.o
-> >  obj-$(CONFIG_CGROUP_NS) += ns_cgroup.o
-> >  obj-$(CONFIG_UTS_NS) += utsname.o
-> > diff --git a/kernel/cgroup_timer_slack.c b/kernel/cgroup_timer_slack.c
-> > new file mode 100644
-> > index 0000000..609e1f1
-> > --- /dev/null
-> > +++ b/kernel/cgroup_timer_slack.c
-> > @@ -0,0 +1,281 @@
-> > +/*
-> > + * cgroup_timer_slack.c - control group timer slack subsystem
-> > + *
-> > + * Copyright Nokia Corparation, 2011
-> > + * Author: Kirill A. Shutemov
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License as published by
-> > + * the Free Software Foundation; either version 2 of the License, or
-> > + * (at your option) any later version.
-> > + *
-> > + * This program is distributed in the hope that it will be useful,
-> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> > + * GNU General Public License for more details.
-> > + */
-> > +#include <linux/cgroup.h>
-> > +#include <linux/init_task.h>
-> > +#include <linux/module.h>
-> > +#include <linux/slab.h>
-> > +#include <linux/rcupdate.h>
-> > +
-> > +struct cgroup_subsys timer_slack_subsys;
-> > +struct timer_slack_cgroup {
-> > +	struct cgroup_subsys_state css;
-> > +	unsigned long min_slack_ns;
-> > +	unsigned long max_slack_ns;
-> > +};
-> > +
-> > +enum {
-> > +	TIMER_SLACK_MIN,
-> > +	TIMER_SLACK_MAX,
-> > +};
-> > +
-> > +extern int (*timer_slack_check)(struct task_struct *task,
-> > +		unsigned long slack_ns);
-> > +
-> > +static struct timer_slack_cgroup *cgroup_to_tslack_cgroup(struct cgroup *cgroup)
-> > +{
-> > +	struct cgroup_subsys_state *css;
-> > +
-> > +	css = cgroup_subsys_state(cgroup, timer_slack_subsys.subsys_id);
-> > +	return container_of(css, struct timer_slack_cgroup, css);
-> > +}
-> > +
-> > +static int is_timer_slack_allowed(struct timer_slack_cgroup *tslack_cgroup,
-> > +		unsigned long slack_ns)
-> > +{
-> > +	if (slack_ns < tslack_cgroup->min_slack_ns ||
-> > +			slack_ns > tslack_cgroup->max_slack_ns)
-> > +		return false;
-> > +	return true;
-> > +}
-> > +
-> > +static int cgroup_timer_slack_check(struct task_struct *task,
-> > +		unsigned long slack_ns)
-> > +{
-> > +	struct cgroup_subsys_state *css;
-> > +	struct timer_slack_cgroup *tslack_cgroup;
-> > +
-> > +	/* XXX: lockdep false positive? */
-> > +	rcu_read_lock();
-> > +	css = task_subsys_state(task, timer_slack_subsys.subsys_id);
-> > +	tslack_cgroup = container_of(css, struct timer_slack_cgroup, css);
-> 
-> Shouldn't the rcu_read_unlock() be after the check of is_timer_slack_allowed()?
+* remove stale ChangeLog
+* removed unused defines
+* remove CMD640_PREFETCH_MASKS define
+* removed dead STUPIDLY_TRUST_BROKEN_PCMD_ENA_BIT code
+* remove legacy CMD640_DUMP_REGS debugging code
 
-I'm not sure if this rcu_read_lock() is needed. See freezer_fork().
+There should be no functional changes caused by this patch.
 
-> > +	rcu_read_unlock();
-> > +
-> > +	if (!is_timer_slack_allowed(tslack_cgroup, slack_ns))
-> > +		return -EPERM;
-> > +	return 0;
-> > +}
-> > +
-> > +static struct cgroup_subsys_state *
-> > +tslack_cgroup_create(struct cgroup_subsys *subsys, struct cgroup *cgroup)
-> > +{
-> > +	struct timer_slack_cgroup *tslack_cgroup;
-> > +
-> > +	tslack_cgroup = kmalloc(sizeof(*tslack_cgroup), GFP_KERNEL);
-> > +	if (!tslack_cgroup)
-> > +		return ERR_PTR(-ENOMEM);
-> > +
-> > +	if (cgroup->parent) {
-> > +		struct timer_slack_cgroup *parent;
-> > +		parent = cgroup_to_tslack_cgroup(cgroup->parent);
-> > +		tslack_cgroup->min_slack_ns = parent->min_slack_ns;
-> > +		tslack_cgroup->max_slack_ns = parent->max_slack_ns;
-> > +	} else {
-> > +		tslack_cgroup->min_slack_ns = 0UL;
-> > +		tslack_cgroup->max_slack_ns = ULONG_MAX;
-> > +	}
-> > +
-> > +	return &tslack_cgroup->css;
-> > +}
-> > +
-> > +static void tslack_cgroup_destroy(struct cgroup_subsys *subsys,
-> > +		struct cgroup *cgroup)
-> > +{
-> > +	kfree(cgroup_to_tslack_cgroup(cgroup));
-> > +}
-> > +
-> > +/*
-> > + * Adjust ->timer_slack_ns and ->default_max_slack_ns of the task to fit
-> > + * limits of the cgroup.
-> > + */
-> > +static void tslack_adjust_task(struct timer_slack_cgroup *tslack_cgroup,
-> > +		struct task_struct *tsk)
-> > +{
-> > +	if (tslack_cgroup->min_slack_ns > tsk->timer_slack_ns)
-> > +		tsk->timer_slack_ns = tslack_cgroup->min_slack_ns;
-> > +	else if (tslack_cgroup->max_slack_ns < tsk->timer_slack_ns)
-> > +		tsk->timer_slack_ns = tslack_cgroup->max_slack_ns;
-> > +
-> > +	if (tslack_cgroup->min_slack_ns > tsk->default_timer_slack_ns)
-> > +		tsk->default_timer_slack_ns = tslack_cgroup->min_slack_ns;
-> > +	else if (tslack_cgroup->max_slack_ns < tsk->default_timer_slack_ns)
-> > +		tsk->default_timer_slack_ns = tslack_cgroup->max_slack_ns;
-> > +}
-> > +
-> > +static void tslack_cgroup_attach(struct cgroup_subsys *subsys,
-> > +		struct cgroup *cgroup, struct cgroup *prev,
-> > +		struct task_struct *tsk, bool threadgroup)
-> > +{
-> > +	tslack_adjust_task(cgroup_to_tslack_cgroup(cgroup), tsk);
-> > +}
-> > +
-> > +static int tslack_write_set_slack_ns(struct cgroup *cgroup, struct cftype *cft,
-> > +		u64 val)
-> > +{
-> > +	struct timer_slack_cgroup *tslack_cgroup;
-> > +	struct cgroup_iter it;
-> > +	struct task_struct *task;
-> > +
-> > +	tslack_cgroup = cgroup_to_tslack_cgroup(cgroup);
-> > +	if (!is_timer_slack_allowed(cgroup_to_tslack_cgroup(cgroup), val))
-> > +		return -EPERM;
-> > +
-> > +	/* Change timer slack value for all tasks in the cgroup */
-> > +	cgroup_iter_start(cgroup, &it);
-> > +	while ((task = cgroup_iter_next(cgroup, &it)))
-> > +		task->timer_slack_ns = val;
-> > +	cgroup_iter_end(cgroup, &it);
-> 
-> OK, I've got questions, are the following possible
-> 
-> 1. Assign a task to a cgroup based on timer slack, it is accepted
-> based on min and max values
+Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+---
+ drivers/ide/cmd640.c |  120 
+---------------------------------------------------
+ 1 file changed, 2 insertions(+), 118 deletions(-)
 
-Hm.. Currently, there is no such functionality. Do we need it? What's use
-case?
-
-> 2. We update the slack
-> 
-> Can't this be bad for some tasks, is there a way for a task to prevent
-> the max slack from being updated?
-
-If a non-RT task can't tolerate not being on time it's totally broken.
-RT-tasks are not affected by timer slack.
-
-And we believe that user knows what he does.
-
-> 2. Can there be an overlap in the ranges?
-
-What overlap do you mean?
-There is only one rule: parent's range should be wider then child's.
-
--- 
- Kirill A. Shutemov
+Index: b/drivers/ide/cmd640.c
+===================================================================
+--- a/drivers/ide/cmd640.c
++++ b/drivers/ide/cmd640.c
+@@ -31,75 +31,13 @@
+  *  steve@ei.org, ulrpeg@bigcomm.gun.de, ism@tardis.ed.ac.uk, mack@cray.com
+  *  liug@mama.indstate.edu, and others.
+  *
+- *  Version 0.01	Initial version, hacked out of ide.c,
+- *			and #include'd rather than compiled separately.
+- *			This will get cleaned up in a subsequent release.
+- *
+- *  Version 0.02	Fixes for vlb initialization code, enable prefetch
+- *			for versions 'B' and 'C' of chip by default,
+- *			some code cleanup.
+- *
+- *  Version 0.03	Added reset of secondary interface,
+- *			and black list for devices which are not compatible
+- *			with prefetch mode. Separate function for setting
+- *			prefetch is added, possibly it will be called some
+- *			day from ioctl processing code.
+- *
+- *  Version 0.04	Now configs/compiles separate from ide.c
+- *
+- *  Version 0.05	Major rewrite of interface timing code.
+- *			Added new function cmd640_set_mode to set PIO mode
+- *			from ioctl call. New drives added to black list.
+- *
+- *  Version 0.06	More code cleanup. Prefetch is enabled only for
+- *			detected hard drives, not included in prefetch
+- *			black list.
+- *
+- *  Version 0.07	Changed to more conservative drive tuning policy.
+- *			Unknown drives, which report PIO < 4 are set to
+- *			(reported_PIO - 1) if it is supported, or to PIO0.
+- *			List of known drives extended by info provided by
+- *			CMD at their ftp site.
+- *
+- *  Version 0.08	Added autotune/noautotune support.
+- *
+- *  Version 0.09	Try to be smarter about 2nd port enabling.
+- *  Version 0.10	Be nice and don't reset 2nd port.
+- *  Version 0.11	Try to handle more weird situations.
+- *
++ * ...
+  *  Version 0.12	Lots of bug fixes from Laszlo Peter
+- *			irq unmasking disabled for reliability.
+- *			try to be even smarter about the second port.
+- *			tidy up source code formatting.
+- *  Version 0.13	permit irq unmasking again.
+- *  Version 0.90	massive code cleanup, some bugs fixed.
+- *			defaults all drives to PIO mode0, prefetch off.
+- *			autotune is OFF by default, with compile time flag.
+- *			prefetch can be turned OFF/ON using "hdparm -p8/-p9"
+- *			 (requires hdparm-3.1 or newer)
+- *  Version 0.91	first release to linux-kernel list.
+- *  Version 0.92	move initial reg dump to separate callable function
+- *			change "readahead" to "prefetch" to avoid confusion
+- *  Version 0.95	respect original BIOS timings unless autotuning.
+- *			tons of code cleanup and rearrangement.
+- *			added CONFIG_BLK_DEV_CMD640_ENHANCED option
+- *			prevent use of unmask when prefetch is on
+- *  Version 0.96	prevent use of io_32bit when prefetch is off
+- *  Version 0.97	fix VLB secondary interface for sjd@slip.net
+- *			other minor tune-ups:  0.96 was very good.
+- *  Version 0.98	ignore PCI version when disabled by BIOS
+- *  Version 0.99	display setup/active/recovery clocks with PIO mode
+- *  Version 1.00	Mmm.. cannot depend on PCMD_ENA in all systems
+- *  Version 1.01	slow/fast devsel can be selected with "hdparm -p6/-p7"
+- *			 ("fast" is necessary for 32bit I/O in some systems)
++ * ...
+  *  Version 1.02	fix bug that resulted in slow "setup times"
+  *			 (patch courtesy of Zoltan Hidvegi)
+  */
+ 
+-#define CMD640_PREFETCH_MASKS 1
+-
+-/*#define CMD640_DUMP_REGS */
+-
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+ #include <linux/delay.h>
+@@ -116,29 +54,10 @@ static int cmd640_vlb;
+  * CMD640 specific registers definition.
+  */
+ 
+-#define VID		0x00
+-#define DID		0x02
+-#define PCMD		0x04
+-#define   PCMD_ENA	0x01
+-#define PSTTS		0x06
+-#define REVID		0x08
+-#define PROGIF		0x09
+-#define SUBCL		0x0a
+-#define BASCL		0x0b
+-#define BaseA0		0x10
+-#define BaseA1		0x14
+-#define BaseA2		0x18
+-#define BaseA3		0x1c
+-#define INTLINE		0x3c
+-#define INPINE		0x3d
+-
+ #define	CFR		0x50
+ #define   CFR_DEVREV		0x03
+ #define   CFR_IDE01INTR		0x04
+-#define	  CFR_DEVID		0x18
+ #define	  CFR_AT_VESA_078h	0x20
+-#define	  CFR_DSA1		0x40
+-#define	  CFR_DSA0		0x80
+ 
+ #define CNTRL		0x51
+ #define	  CNTRL_DIS_RA0		0x40
+@@ -273,12 +192,6 @@ static int __init match_pci_cmd640_devic
+ 		if (get_cmd640_reg(i) != ven_dev[i])
+ 			return 0;
+ 	}
+-#ifdef STUPIDLY_TRUST_BROKEN_PCMD_ENA_BIT
+-	if ((get_cmd640_reg(PCMD) & PCMD_ENA) == 0) {
+-		printk("ide: cmd640 on PCI disabled by BIOS\n");
+-		return 0;
+-	}
+-#endif /* STUPIDLY_TRUST_BROKEN_PCMD_ENA_BIT */
+ 	return 1; /* success */
+ }
+ 
+@@ -356,32 +269,11 @@ static int __init secondary_port_respond
+ 	return 1; /* success */
+ }
+ 
+-#ifdef CMD640_DUMP_REGS
+-/*
+- * Dump out all cmd640 registers.  May be called from ide.c
+- */
+-static void cmd640_dump_regs(void)
+-{
+-	unsigned int reg = cmd640_vlb ? 0x50 : 0x00;
+-
+-	/* Dump current state of chip registers */
+-	printk("ide: cmd640 internal register dump:");
+-	for (; reg <= 0x59; reg++) {
+-		if (!(reg & 0x0f))
+-			printk("\n%04x:", reg);
+-		printk(" %02x", get_cmd640_reg(reg));
+-	}
+-	printk("\n");
+-}
+-#endif
+-
+ static void __set_prefetch_mode(ide_drive_t *drive, int mode)
+ {
+ 	if (mode) {	/* want prefetch on? */
+-#if CMD640_PREFETCH_MASKS
+ 		drive->dev_flags |= IDE_DFLAG_NO_UNMASK;
+ 		drive->dev_flags &= ~IDE_DFLAG_UNMASK;
+-#endif
+ 		drive->dev_flags &= ~IDE_DFLAG_NO_IO_32BIT;
+ 	} else {
+ 		drive->dev_flags &= ~IDE_DFLAG_NO_UNMASK;
+@@ -745,10 +637,6 @@ static int __init cmd640x_init(void)
+ 	}
+ 	put_cmd640_reg(0x5b, 0);
+ 
+-#ifdef CMD640_DUMP_REGS
+-	cmd640_dump_regs();
+-#endif
+-
+ 	/*
+ 	 * Documented magic begins here
+ 	 */
+@@ -830,10 +718,6 @@ static int __init cmd640x_init(void)
+ 	printk(KERN_INFO "cmd640: %sserialized, secondary interface %s\n",
+ 			 second_port_cmd640 ? "" : "not ", port2);
+ 
+-#ifdef CMD640_DUMP_REGS
+-	cmd640_dump_regs();
+-#endif
+-
+ 	return ide_host_add(&cmd640_port_info, hws, second_port_cmd640 ? 2 : 1,
+ 			    NULL);
+ }
