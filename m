@@ -1,72 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523Ab1BGGJA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 01:09:00 -0500
-Received: from ozlabs.org ([203.10.76.45]:35571 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752103Ab1BGGI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 01:08:29 -0500
-Content-Type: text/plain; charset="us-ascii"
+	id S1752224Ab1BGGN1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 01:13:27 -0500
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:40257 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752059Ab1BGGN0 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 01:13:26 -0500
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+References: <1295834493-5019-5-git-send-email-ccross@android.com><1295968464.10109.264.camel@e102109-lin.cambridge.arm.com><20110125154133.GB17280@n2100.arm.linux.org.uk><1295979242.10109.308.camel@e102109-lin.cambridge.arm.com><2f97ec8a084e590220e1548fc927b60e@mail.gmail.com><-8932138696981683633@unknownmsgid><AANLkTi=cTXmQFm_s5OL2pGyyaFv5UR_f9MV=S5Ajx0tu@mail.gmail.com><20110204234331.GF8732@n2100.arm.linux.org.uk><AANLkTi=fHnivHXHnYrQvdP6JWbEA3t1X3DuBxj5gN3H0@mail.gmail.com><1bebe4b5c8590059b70a146d5486fa6a@mail.gmail.com><20110205094730.GA23965@n2100.arm.linux.org.uk><cb528285e8aa8cdda01d7ced0121b2cf@mail.gmail.com>
+ <AANLkTik_r4k_5o+F47vRbGPcWLwfgHgWqhym49XfhBZ9@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Subject: [RFC,
-	PATCH 3/3] clk: add warnings for incorrect enable/prepare semantics
-Message-Id: <1297058877.800990.238556019385.3.gpush@pororo>
-In-Reply-To: <201102011711.31258.jeremy.kerr@canonical.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, Dima Zavin <dmitriyz@google.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        <linux-sh@vger.kernel.org>,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Russell King <linux@arm.linux.org.uk>
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
-Date: Mon, 07 Feb 2011 14:07:57 +0800
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <AANLkTik_r4k_5o+F47vRbGPcWLwfgHgWqhym49XfhBZ9@mail.gmail.com>
+Thread-Index: AcvFUth5p8lcRsDnRGyHG55pYP0LewBOlGYA
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
+Date: Mon, 7 Feb 2011 11:43:23 +0530
+Message-ID: <97f50b099a5ce498eea7a7abfa59eca6@mail.gmail.com>
+Subject: RE: [PATCH v2 04/28] ARM: mm: cache-l2x0: Add support forre-enabling l2x0
+To: Colin Cross <ccross@android.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Linus Walleij <linus.walleij@stericsson.com>, konkers@android.com,
+        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, olof@lixom.net,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change adds warnings to check for:
+> -----Original Message-----
+> From: ccross@google.com [mailto:ccross@google.com] On Behalf Of
+> Colin Cross
+> Sent: Saturday, February 05, 2011 10:06 PM
+> To: Santosh Shilimkar
+> Cc: Russell King - ARM Linux; Will Deacon; Catalin Marinas; Linus
+> Walleij; konkers@android.com; Tony Lindgren; linux-
+> kernel@vger.kernel.org; linux-tegra@vger.kernel.org; olof@lixom.net;
+> linux-arm-kernel@lists.infradead.org
+> Subject: Re: [PATCH v2 04/28] ARM: mm: cache-l2x0: Add support
+> forre-enabling l2x0
+>
+> On Sat, Feb 5, 2011 at 4:41 AM, Santosh Shilimkar
+> <santosh.shilimkar@ti.com> wrote:
+[....]
 
- 1) enabling a clock that hasn't been prepared; and
+> >> On Sat, Feb 05, 2011 at 01:21:24PM +0530, Santosh Shilimkar
+> wrote:
+> >> > GIC save/restore on OMAP follows different strategy. There is a
+> >> > Predefined layout to save content and restore is done
+> atomically
+> >> > by boot ROM code.
+> >> > L2 cache also same case. Only AUXCTRL needs to be programmed on
+> >> > wakeup from low power mode and that too with secure call. Rest
+> >> > of the registers are managed by boot ROM code.
+> >> >
+> >> > TWD is already managed through framework. Othe CPU low power
+> >> > sequence is very small and OMAP has restrictions on the last
+> >> > core to go down and first to wakeup.
+> >> >
+> >> > So at least I don't see any use of common notifiers for GIC
+> >> > and L2 will help OMAP lower power code.
+> >>
+> >> What this means is that we're going to end up littering things
+> like
+> >> GIC
+> >> and other stuff with lots of individual SoC specific code to save
+> >> state
+> >> into individual SoC specific structures.  This is not sane, and
+> >> we're
+> >> not going to corrupt generic code with SoC specific code.
+> >
+> > Fully agree and hence flagged it early.
+> >
+[....]
 
- 2) unpreparing a clock that is still enabled
+>
+> Would putting dummy values in the areas the boot ROM uses and then
+> letting the common GIC code restore over them cause any problems?
 
-While the correctness can't be guaranteed, these warnings should cover
-most situations.
+Ya there are few issue. GIC and GIC OMAP extension are managed
+together by BOOT ROM code. It's far optimal save and restore. Only
+needed registers from OMAP point of view are saved/restored.
+And for such reasons I would not like to use dummy stuff.
 
-Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
-
----
- drivers/clk/clk.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 51dbd33..2369959 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -35,6 +35,8 @@ void clk_unprepare(struct clk *clk)
- 	if (!clk->ops->unprepare)
- 		return;
- 
-+	WARN_ON(clk->enable_count);
-+
- 	mutex_lock(&clk->prepare_lock);
- 	if (--clk->prepare_count == 0)
- 		clk->ops->unprepare(clk);
-@@ -50,6 +52,8 @@ int clk_enable(struct clk *clk)
- 	if (!clk->ops->enable)
- 		return 0;
- 
-+	WARN_ON(clk->ops->prepare && clk->prepare_count);
-+
- 	spin_lock(&clk->enable_lock);
- 	if (!clk->enable_count)
- 		ret = clk->ops->enable(clk);
+Regards
+Santosh
