@@ -1,124 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab1BGWP2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 17:15:28 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:44891 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821Ab1BGWP1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 17:15:27 -0500
-Message-ID: <4D506EDC.2070609@kernel.org>
-Date: Mon, 07 Feb 2011 14:14:52 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1754645Ab1BGWXm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 17:23:42 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:51703 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752242Ab1BGWXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 17:23:40 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Len Brown <lenb@kernel.org>
+Subject: [PATCH 4/6] ACPI / PM: Call acpi_save_state_mem() right before low-level suspend
+Date: Mon, 7 Feb 2011 23:20:53 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc3+; KDE/4.4.4; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>
+References: <201102072316.41270.rjw@sisk.pl>
+In-Reply-To: <201102072316.41270.rjw@sisk.pl>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH -v2] x86: early_quirk check all bus/dev/func in domain 0
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4D506EEB.00AC,ss=1,fgs=0
+Message-Id: <201102072320.53799.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-When we have 00:1a.0, 00:1a.1, 00:1a.2, 00:1a.7
-Found only 00:1a.0, and 00:1a.1 get processed. and 00:1a.2 and 00:1a.7 get skipped.
+Since acpi_save_state_mem() is only called by acpi_suspend_enter()
+if the target sleep state is S3, it's better to call it under the
+switch (acpi_state), right before do_suspend_lowlevel().
 
-We should only check header type on func0.
-Also should not bail out when have gap.
-
-At last try to process bus 00 - 0xff instead of only bus 00.
-
--v2: check with VENDOR_ID instead of CLASS_DEVICE for invalid device.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- arch/x86/kernel/early-quirks.c |   44 +++++++++++++++++++++++------------------
- 1 file changed, 25 insertions(+), 19 deletions(-)
+ drivers/acpi/sleep.c |   12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
 
-Index: linux-2.6/arch/x86/kernel/early-quirks.c
+Index: linux-2.6/drivers/acpi/sleep.c
 ===================================================================
---- linux-2.6.orig/arch/x86/kernel/early-quirks.c
-+++ linux-2.6/arch/x86/kernel/early-quirks.c
-@@ -234,20 +234,22 @@ static struct chipset early_qrk[] __init
-  */
- static int __init check_dev_quirk(int num, int slot, int func)
+--- linux-2.6.orig/drivers/acpi/sleep.c
++++ linux-2.6/drivers/acpi/sleep.c
+@@ -244,17 +244,10 @@ static int acpi_suspend_enter(suspend_st
  {
-+	u32 l;
- 	u16 class;
- 	u16 vendor;
- 	u16 device;
- 	u8 type;
- 	int i;
+ 	acpi_status status = AE_OK;
+ 	u32 acpi_state = acpi_target_sleep_state;
++	int error;
  
--	class = read_pci_config_16(num, slot, func, PCI_CLASS_DEVICE);
+ 	ACPI_FLUSH_CPU_CACHE();
+ 
+-	/* Do arch specific saving of state. */
+-	if (acpi_state == ACPI_STATE_S3) {
+-		int error = acpi_save_state_mem();
 -
--	if (class == 0xffff)
--		return -1; /* no class, treat as single function */
+-		if (error)
+-			return error;
+-	}
 -
--	vendor = read_pci_config_16(num, slot, func, PCI_VENDOR_ID);
-+	l = read_pci_config(num, slot, func, PCI_VENDOR_ID);
-+	/* some broken boards return 0 or ~0 if a slot is empty: */
-+	if (l == 0xffffffff || l == 0x00000000 ||
-+	    l == 0x0000ffff || l == 0xffff0000)
-+		return 0;
+ 	switch (acpi_state) {
+ 	case ACPI_STATE_S1:
+ 		barrier();
+@@ -262,6 +255,9 @@ static int acpi_suspend_enter(suspend_st
+ 		break;
  
--	device = read_pci_config_16(num, slot, func, PCI_DEVICE_ID);
-+	class = read_pci_config_16(num, slot, func, PCI_CLASS_DEVICE);
-+	vendor = l & 0xffff;
-+	device = l >> 16;
- 
- 	for (i = 0; early_qrk[i].f != NULL; i++) {
- 		if (((early_qrk[i].vendor == PCI_ANY_ID) ||
-@@ -263,27 +265,31 @@ static int __init check_dev_quirk(int nu
- 			}
- 	}
- 
--	type = read_pci_config_byte(num, slot, func,
--				    PCI_HEADER_TYPE);
--	if (!(type & 0x80))
--		return -1;
-+	/* only check header type on func 0 */
-+	if (func == 0) {
-+		type = read_pci_config_byte(num, slot, func,
-+					    PCI_HEADER_TYPE);
-+		if (!(type & 0x80))
-+			return -1;
-+	}
- 
- 	return 0;
- }
- 
- void __init early_quirks(void)
- {
--	int slot, func;
-+	int num, slot, func;
- 
- 	if (!early_pci_allowed())
- 		return;
- 
- 	/* Poor man's PCI discovery */
--	/* Only scan the root bus */
--	for (slot = 0; slot < 32; slot++)
--		for (func = 0; func < 8; func++) {
--			/* Only probe function 0 on single fn devices */
--			if (check_dev_quirk(0, slot, func))
--				break;
--		}
-+	/* Only can scan first domain */
-+	for (num = 0; num < 256; num++)
-+		for (slot = 0; slot < 32; slot++)
-+			for (func = 0; func < 8; func++) {
-+				/* Only probe func 0 on single fn devices */
-+				if (check_dev_quirk(num, slot, func))
-+					break;
-+			}
- }
+ 	case ACPI_STATE_S3:
++		error = acpi_save_state_mem();
++		if (error)
++			return error;
+ 		do_suspend_lowlevel();
+ 		pr_info(PREFIX "Low-level resume complete\n");
+ 		break;
+
