@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495Ab1BGSFd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 13:05:33 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:42462 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752692Ab1BGSFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 13:05:32 -0500
-X-Greylist: delayed 1177 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Feb 2011 13:05:32 EST
-Date: Mon, 7 Feb 2011 13:05:24 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Ozan =?utf-8?B?w4dhxJ9sYXlhbg==?= <ozan@pardus.org.tr>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: A lot of [ext4-dio-unwrit] threads around
-Message-ID: <20110207180524.GD3457@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Ozan =?utf-8?B?w4dhxJ9sYXlhbg==?= <ozan@pardus.org.tr>,
-	linux-kernel@vger.kernel.org
-References: <4D502746.4030500@pardus.org.tr>
+	id S1754518Ab1BGSG0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 13:06:26 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33340 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754484Ab1BGSGZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 13:06:25 -0500
+Message-ID: <4D50343E.1020906@kernel.org>
+Date: Mon, 07 Feb 2011 10:04:46 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4D502746.4030500@pardus.org.tr>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <JBeulich@novell.com>
+Subject: Re: [PATCH] x86/mm/init: respect memblock reserved regions when destroying
+ mappings
+References: <alpine.DEB.2.00.1101311514580.7277@kaball-desktop> <4D4A3782.3050702@zytor.com> <alpine.DEB.2.00.1102031114030.7277@kaball-desktop> <4D4ADFAD.7060507@zytor.com> <alpine.DEB.2.00.1102041130060.7277@kaball-desktop> <4D4CA568.70907@goop.org> <AANLkTi=nEQka_19+nKQC-yJn2Czn9GCqsUWN6Byy7rCF@mail.gmail.com> <4D4E4E0D.2080806@zytor.com> <4D4EF553.6000000@kernel.org> <alpine.DEB.2.00.1102071524140.7277@kaball-desktop>
+In-Reply-To: <alpine.DEB.2.00.1102071524140.7277@kaball-desktop>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4D503489.0020,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 07, 2011 at 07:09:26PM +0200, Ozan Çağlayan wrote:
+On 02/07/2011 08:50 AM, Stefano Stabellini wrote:
+> On Sun, 6 Feb 2011, Yinghai Lu wrote:
+>> On 02/05/2011 11:30 PM, H. Peter Anvin wrote:
+>>> On 02/05/2011 11:02 PM, Yinghai Lu wrote:
+>>>> why not just move calling cleanup_highmap down?
+>>>>
+>>>> something like attached patch.
+>>>
+>>> This patch looks very clean and looks on the surface of it like it is
+>>> removing some ugly ad hoc code, but (as always) it needs a description
+>>> about the problem it solves and why it is correct.
+>>
+>> Sure.
+>>
+>>
+>> Jeremy and xen guys, can you please check if it works well with xen ?
+>>
 > 
-> This is 2.6.35.11 on a 24-core HP Proliant server with 8 mounted
-> ext4 filesystems. There are 7 LXC containers which does heavy
-> compiling workload during the day.
+> Actually this patch makes things worse on xen, because before
+> cleanup_highmap() wasn't called at all on xen (on purpose) and now it
+> is, fully destroying all the mappings we have at _end.
 > 
-> Uptime is 3 days and currently there are 216 ext4-dio-unwrit threads
-> in ps aux output? Is it normal or a symptom of a problem?
+> Can we add a check on memblock reserved regions in cleanup_highmap()?
+> Otherwise could we avoid calling cleanup_highmap() at all on xen?
 
-It's normal; the workqueues are created statically at mount time, one
-per cpu per file system.  There are some plans in train for a more
-efficient way of dealing with workqueues in general on systems with
-large numbers of CPU's, but for 2.6.35, yes, that's normal.
+why DO xen need over-mapped kernel initial mapping?
 
-      	      	 	    		- Ted
+what is in that range after _end to 512M?
+
+Yinghai
