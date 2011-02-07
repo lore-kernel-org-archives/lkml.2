@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493Ab1BGGbI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 01:31:08 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:65100 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752273Ab1BGGbH (ORCPT
+	id S1752631Ab1BGHAz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 02:00:55 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:50985 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752365Ab1BGHAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 01:31:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=MnNm7uljXsbsESnClZiOzA3QeaAi24r03QE1Zyivzeq6N2N+WVHpIe9pczFscRvg4D
-         G5oGdGTL5JqpXrNmjDSvp5tsUNG+pzMUGng2FYU+NxirGgDfGML6Vj7nLVILDEwcrY7x
-         jCmt0WgYb8A1j8NhEKy/tBJTrTW05EuWyaAi8=
-Date: Mon, 7 Feb 2011 09:30:47 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Andres Salomon <dilinger@queued.net>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, jon.nettleton@gmail.com,
-        cjb@laptop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] olpc_dcon: move more variables into dcon_priv
-Message-ID: <20110207063047.GC4384@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Andres Salomon <dilinger@queued.net>, gregkh@suse.de,
-	devel@driverdev.osuosl.org, jon.nettleton@gmail.com, cjb@laptop.org,
-	linux-kernel@vger.kernel.org
-References: <20110206152846.68f14482@queued.net>
+	Mon, 7 Feb 2011 02:00:54 -0500
+From: Jeremy Kerr <jeremy.kerr@canonical.com>
+To: Jassi Brar <jassisinghbrar@gmail.com>
+Subject: Re: [RFC, PATCH 3/3] clk: add warnings for incorrect enable/prepare semantics
+Date: Mon, 7 Feb 2011 15:00:30 +0800
+User-Agent: KMail/1.13.5 (Linux/2.6.35-25-generic; KDE/4.5.1; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, Dima Zavin <dmitriyz@google.com>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Ben Dooks <ben-linux@fluff.org>,
+        "Uwe =?utf-8?q?Kleine-K=C3=B6nig?=" <u.kleine-koenig@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>
+References: <201102011711.31258.jeremy.kerr@canonical.com> <1297058877.800990.238556019385.3.gpush@pororo> <AANLkTinq=HieqGUFthm04F21RuLijg2mZH+eoan9p5HN@mail.gmail.com>
+In-Reply-To: <AANLkTinq=HieqGUFthm04F21RuLijg2mZH+eoan9p5HN@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110206152846.68f14482@queued.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201102071500.31276.jeremy.kerr@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 06, 2011 at 03:28:46PM -0800, Andres Salomon wrote:
->  	bool mono:1;
-> +	bool asleep:1;
-                   ^^ 
+Hi Jassi,
 
-Not needed.
+> Shouldn't the prepare_count be checked against 0 ?
 
-> -	return sprintf(buf, "%d\n", dcon_sleep_val);
-> +	struct dcon_priv *dcon = dev_get_drvdata(dev);
-> +	return sprintf(buf, "%d\n", dcon->asleep ? 1 : 0);
-                                                 ^^^^^^^
+Yes, you're right, it should be clk->prepare_count == 0.
 
-Also not needed.
+Will update for the next revision.
 
-These are fussy things.  Feel free to fix them in a later patch series.
+Cheers,
 
-regards,
-dan carpenter
 
+Jeremy
