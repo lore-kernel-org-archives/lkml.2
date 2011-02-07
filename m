@@ -1,49 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089Ab1BGM42 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 07:56:28 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:51962 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937Ab1BGM41 (ORCPT
+	id S1752118Ab1BGM6t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 07:58:49 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50192 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750937Ab1BGM6r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 07:56:27 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Paul Bolle <pebolle@tiscali.nl>
-Subject: Re: [PATCH] Export linux/syslog.h
-Date: Mon, 7 Feb 2011 13:55:55 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Kees Cook <kees.cook@canonical.com>,
-        David Woodhouse <dwmw2@infradead.org>
-References: <1297079503.1741.10.camel@t41.thuisdomein>
-In-Reply-To: <1297079503.1741.10.camel@t41.thuisdomein>
+	Mon, 7 Feb 2011 07:58:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=abaCJmTr99xre+6Pj+13dVA++XukrSGpneH4mRSxei7P66eKrWTahIunGJjcxJGjSw
+         nl7v9KTQdS3OAyi15NMF5T3J/LWXPyvKpIF5+G7SxCSwjFK3+bREcg5+o5X8k4PxO3dl
+         OEdaJYDKD5ItvjtxbjWd3Hfa21eGlKknRaQSM=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102071355.55978.arnd@arndb.de>
-X-Provags-ID: V02:K0:4zeMJqsHZ05z+kbvQ4Ta5/+F8pBNwG13MxoVIfecDce
- czogYAW3dBkyodmHxebrRNWjCKbDHN0V0r+QU1jYsBOOOtRxVJ
- HCB3DQHqENMBEZ/TUroHIbccnZN4TAsAeUyMMWDWvoDCicupaO
- 9jUH0/tlAiTM85EBVqHrM0NrKDMrBmU7Xhuo9MCPTA9AMTsrTl
- nO2y9lguTYQakpozFCNtQ==
+In-Reply-To: <4D4FE1D6.5050507@ru.mvista.com>
+References: <201102071153.37633.bzolnier@gmail.com>
+	<4D4FE1D6.5050507@ru.mvista.com>
+Date: Mon, 7 Feb 2011 13:58:47 +0100
+Message-ID: <AANLkTikjwjvHXMqYaVpHH3pkxM-Uo_C+kn0DLY2NfTzi@mail.gmail.com>
+Subject: Re: [PATCH] ide: legacy VLB drivers housekeeping
+From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 07 February 2011, Paul Bolle wrote:
-> Userspace programs (like util-linux' dmesg) still use magic numbers for
-> the klogctl function (glibc's interface to the syslog system call).
-> Exporting linux/syslog.h makes the more descriptive named constants
-> available as a single reference for these values.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> Signed-off-by: Kees Cook <kees.cook@canonical.com>
+On Mon, Feb 7, 2011 at 1:13 PM, Sergei Shtylyov <sshtylyov@mvista.com> wrote:
+> Hello.
 
-It sounds reasonable to make this a proper ABI in general.
+Hi,
 
-The comment in the header file currently starts with "Syslog internals".
-If you want to export it, you should probably change that, too.
-Further, the man page currently documents the raw numbers and should
-be changed as well with the new constants.
+> On 07-02-2011 13:53, Bartlomiej Zolnierkiewicz wrote:
+>
+>> * remove stale documentation
+>> * remove dead ALWAYS_SET_DTC2278_PIO_MODE code from dtc2278
+>> * remove legacy debugging code from ht6560b
+>
+>> There should be no functional changes caused by this patch.
+>
+>> Signed-off-by: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
+>
+> [...]
+>
+>> Index: b/drivers/ide/ali14xx.c
+>> ===================================================================
+>> --- a/drivers/ide/ali14xx.c
+>> +++ b/drivers/ide/ali14xx.c
+>> @@ -7,32 +7,7 @@
+>>   *
+>>   * Works for ALI M1439/1443/1445/1487/1489 chipsets.
+>>   *
+>> - * Adapted from code developed by derekn@vw.ece.cmu.edu.  -ml
+>> - * Derek's notes follow:
+>> - *
+>> - * I think the code should be pretty understandable,
+>> - * but I'll be happy to (try to) answer questions.
+>> - *
+>> - * The critical part is in the setupDrive function.  The initRegisters
+>> - * function doesn't seem to be necessary, but the DOS driver does it, so
+>> - * I threw it in.
+>> - *
+>> - * I've only tested this on my system, which only has one disk.  I posted
+>> - * it to comp.sys.linux.hardware, so maybe some other people will try it
+>> - * out.
+>> - *
+>> - * Derek Noonburg  (derekn@ece.cmu.edu)
+>> - * 95-sep-26
+>> - *
+>> - * Update 96-jul-13:
+>> - *
+>> - * I've since upgraded to two disks and a CD-ROM, with no trouble, and
+>> - * I've also heard from several others who have used it successfully.
+>> - * This driver appears to work with both the 1443/1445 and the 1487/1489
+>> - * chipsets.  I've added support for PIO mode 4 for the 1487.  This
+>> - * seems to work just fine on the 1443 also, although I'm not sure it's
+>> - * advertised as supporting mode 4.  (I've been running a WDC AC21200 in
+>> - * mode 4 for a while now with no trouble.)  -Derek
+>> + * Adapted from code developed by Derek Noonburg<derekn@vw.ece.cmu.edu>.
+>>  -
+>> ml
+>
+>   The patch is line-wrapped...
 
-	Arnd
+[...]
+
+>   And above...
+
+Sorry for that,  I somehow managed to not notice it until now..
+(ah, the joys of fresh OS installation)..
