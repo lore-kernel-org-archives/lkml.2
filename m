@@ -1,58 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab1BGL7K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 06:59:10 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52059 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754054Ab1BGL7I (ORCPT
+	id S1754106Ab1BGL70 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 06:59:26 -0500
+Received: from mail-out.m-online.net ([212.18.0.10]:50811 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754037Ab1BGL7X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 06:59:08 -0500
-Date: Mon, 7 Feb 2011 11:59:06 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/7] ASoC: Samsung: neo1973_gta02: Fix bluetooth DAI
- registration
-Message-ID: <20110207115906.GD10564@opensource.wolfsonmicro.com>
-References: <1297033463-14577-1-git-send-email-lars@metafoo.de>
- <1297033463-14577-6-git-send-email-lars@metafoo.de>
+	Mon, 7 Feb 2011 06:59:23 -0500
+X-Auth-Info: OcxdlVYRuk7xKALUCxBfNZ2CpEkS/NS/vpcJ0hXh8gM=
+Message-ID: <4D4FDEF9.2030305@grandegger.com>
+Date: Mon, 07 Feb 2011 13:00:57 +0100
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297033463-14577-6-git-send-email-lars@metafoo.de>
-X-Cookie: You are fairminded, just and loving.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+CC: socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: About bittiming calculation result
+References: <cover.1296818921.git.segoon@openwall.com><a6800dc8b0daed78256f98f52844cbbb48f4a76d.1296818921.git.segoon@openwall.com><20110204124233.GB334@e-circ.dyndns.org> <20110204.130649.112613896.davem@davemloft.net> <5009516791F146C49C73FAC57C437313@hacdom.okisemi.com>
+In-Reply-To: <5009516791F146C49C73FAC57C437313@hacdom.okisemi.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 07, 2011 at 12:04:22AM +0100, Lars-Peter Clausen wrote:
-> This patch fixes two issues with the bluethooth DAI registration:
-> * The DAI has to be registered only after the sound device has been added.
+Hi Tomoya,
 
-This isn't a problem, components in the system can be registered in any
-order.
+On 02/07/2011 12:38 PM, Tomoya MORINAGA wrote:
+> Hi,
+> 
+> I have a question for bittiming-value calculated by Can-core.
+> 
+> In case setting like below,
+>  - ip link set can0 type can bitrate 800000
+>  - clock=50MHz
+>  - Use pch_can
+> 
+> Can-core calculates like below
+> brp=21
+> seg1=1
+> seg2=1
+> sjw=1
+> prop_seg=0
+> 
+> Is "prop_seg=0" true ?
 
-> * Currently the DAI is registered with snd_soc_register_dai which causes it to
->   be named after the device it was registered for. Which is in this case the
->   "soc-audio" device. (Ab)use snd_soc_register_dais which causes the DAI to be
->   named after the DAI driver, which is what we want in this case.
+Well, only prop_seg+phase_seg=tseg1 is relevant and the pch_can driver
+sets the allowed minimum "tseg1_min1" currently to 1:
 
-This doesn't tie up with your change which...
+static struct can_bittiming_const pch_can_bittiming_const = {
+        .name = KBUILD_MODNAME,
+        .tseg1_min = 1,
+        .tseg1_max = 16,
+        .tseg2_min = 1,
+        .tseg2_max = 8,
+        .sjw_max = 4,
+        .brp_min = 1,
+        .brp_max = 1024, /* 6bit + extended 4bit */
+        .brp_inc = 1,
+};
 
-> -	/* register bluetooth DAI here */
-> -	ret = snd_soc_register_dai(&neo1973_gta02_snd_device->dev, &bt_dai);
-> -	if (ret)
-> -		goto err_put_device;
+> seg1/seg2/sjw/prop_seg must be more than 1 ?
 
-> +	/* register bluetooth DAI here */
-> +	ret = snd_soc_register_dais(&neo1973_gta02_snd_device->dev, &bt_dai, 1);
->  	if (ret)
-> -		goto err_unregister_dai;
-> +		goto err_unregister_device;
+Then "tseg1_min" should be set to *2*.
 
-...uses the same device in both cases and looking briefly at the code
-both register functions just use the dev that was passed in.  In any
-case, we clearly shouldn't be applying patches which bodge around the
-core.
+> Also I can see the following kernel error log.
+> bitrate error 0.7%
+
+A clock frequency of 50 MHz is sub-optimal for CAN and some
+bit-rates cannot be reproduced properly. Here is the output of
+the can-utils program "can-calc-bit-timing" (with an entry for
+the pch-can added):
+
+$ ./can-calc-bit-timing pch-can
+Bit timing parameters for pch-can with 50.000000 MHz ref clock
+nominal                                 real Bitrt   nom  real SampP
+Bitrate TQ[ns] PrS PhS1 PhS2 SJW BRP Bitrate Error SampP SampP Error CNF1 CNF2 CNF3
+1000000    100   3    3    3   1   5 1000000  0.0% 75.0% 70.0%  6.7% 0x05 0x92 0x02
+ 800000    420   0    1    1   1  21  793650  0.8% 80.0% 66.6% 16.8% 0x15 0xff 0x00
+ 500000    100   8    8    3   1   5  500000  0.0% 87.5% 85.0%  2.9% 0x05 0xbf 0x02
+ 250000    500   3    3    1   1  25  250000  0.0% 87.5% 87.5%  0.0% 0x19 0x92 0x00
+ 125000    500   6    7    2   1  25  125000  0.0% 87.5% 87.5%  0.0% 0x19 0xb5 0x01
+ 100000    500   8    8    3   1  25  100000  0.0% 87.5% 85.0%  2.9% 0x19 0xbf 0x02
+  50000   2500   3    3    1   1 125   50000  0.0% 87.5% 87.5%  0.0% 0x7d 0x92 0x00
+  20000   2500   8    8    3   1 125   20000  0.0% 87.5% 85.0%  2.9% 0x7d 0xbf 0x02
+  10000  12500   3    3    1   1 625   10000  0.0% 87.5% 87.5%  0.0% 0x71 0x92 0x00
+
+As you can see, especially 800000 gives rather bad results.
+
+Wolfgang.
