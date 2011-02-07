@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab1BGO6L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 09:58:11 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:49301 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752926Ab1BGO6I convert rfc822-to-8bit (ORCPT
+	id S1753493Ab1BGO7E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 09:59:04 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:56228 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753172Ab1BGO7C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 09:58:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Rqsh+RmOHMW5YgEDHhoY4+67HvJGvSuSZ4lQhDIRwshKHeDz4FjrsYvikyNMVbQT5h
-         wLF3QlOS/MfWq3EXdW/6FdIjVW1DxBG6ofbywHFuvneLcXAYdlfShLzF8SConxuI9q+m
-         K5zdh4qesd2mALxVCzMPGGnWEsW1ez8V0Maw8=
+	Mon, 7 Feb 2011 09:59:02 -0500
+Date: Mon, 7 Feb 2011 14:58:58 +0000
+From: Jamie Iles <jamie@jamieiles.com>
+To: John Linn <John.Linn@xilinx.com>
+Cc: Jamie Iles <jamie@jamieiles.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        catalin.marinas@arm.com, glikely@secretlab.ca,
+        Kiran Sutariya <kiran.sutariya@einfochips.com>
+Subject: Re: [PATCH 3/4] ARM: Xilinx: Adding timer support to the platform
+Message-ID: <20110207145858.GC24893@pulham.picochip.com>
+References: <1296922637-24662-1-git-send-email-john.linn@xilinx.com>
+ <1296922637-24662-2-git-send-email-john.linn@xilinx.com>
+ <1296922637-24662-3-git-send-email-john.linn@xilinx.com>
+ <66f1ca90-76f5-4571-b10e-8b79f62e5275@VA3EHSMHS020.ehs.local>
+ <20110206010343.GB5563@pulham.picochip.com>
+ <a58cfb3f-31d6-4120-a961-694aed8b7486@VA3EHSMHS006.ehs.local>
 MIME-Version: 1.0
-In-Reply-To: <87ei7mxss8.fsf@linux.vnet.ibm.com>
-References: <1296928005-9529-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<87ei7mxss8.fsf@linux.vnet.ibm.com>
-Date: Mon, 7 Feb 2011 08:58:06 -0600
-Message-ID: <AANLkTi=2XB+jK_fManbO93TEbZ2=r51YR_HpWpTt8Mcx@mail.gmail.com>
-Subject: Re: [V9fs-developer] [RFC PATCH -V2 0/17] Buffered write and
- writeable mmap support for 9P
-From: Eric Van Hensbergen <ericvh@gmail.com>
-To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: v9fs-developer@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <a58cfb3f-31d6-4120-a961-694aed8b7486@VA3EHSMHS006.ehs.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 5, 2011 at 12:03 PM, Aneesh Kumar K. V
-<aneesh.kumar@linux.vnet.ibm.com> wrote:
-> On Sat,  5 Feb 2011 23:16:28 +0530, "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
->> The patch series implement buffered write and writeable mmap for 9P
->>
->> Changes from V1:
->> a) Add fsync and syncfs support
->>
->
-> I haven't yet addressed the previous review feedback from
-> Miklos. http://article.gmane.org/gmane.linux.kernel/1093869
-> Running 9p server and client on the same host even though possible
-> is not a strong use case at this point. I will get to that later.
->
+On Mon, Feb 07, 2011 at 07:16:01AM -0700, John Linn wrote:
+> > -----Original Message-----
+> > From: Jamie Iles [mailto:jamie@jamieiles.com]
+> > Sent: Saturday, February 05, 2011 6:04 PM
+> > To: John Linn
+> > Cc: linux-arm-kernel@lists.infradead.org;
+> linux-kernel@vger.kernel.org; linux@arm.linux.org.uk;
+> > catalin.marinas@arm.com; glikely@secretlab.ca; Kiran Sutariya
+> > Subject: Re: [PATCH 3/4] ARM: Xilinx: Adding timer support to the
+> platform
+> > 
+> > Hi John,
+> > 
+> > A couple more nitpicks.
+> > 
+> > Jamie
+> > 
+> > On Sat, Feb 05, 2011 at 09:17:16AM -0700, John Linn wrote:
+> > > +static irqreturn_t xttcpss_clock_event_interrupt(int irq, void
+> *dev_id)
+> > > +{
+> > > +	struct clock_event_device *evt = &xttcpss_clockevent;
+> > > +	struct xttcpss_timer *timer = dev_id;
+> > > +	u32 ctrl_reg;
+> > > +
+> > > +	/* Acknowledge the interrupt and call event handler */
+> > > +	xttcpss_write(timer->base_addr + XTTCPSS_ISR_OFFSET,
+> > > +		xttcpss_read(timer->base_addr + XTTCPSS_ISR_OFFSET));
+> > > +
+> > > +	if (timer->mode == CLOCK_EVT_MODE_ONESHOT) {
+> > > +
+> > > +		/* Disable the counter as it would keep running. */
+> > > +		ctrl_reg = xttcpss_read(timer->base_addr +
+> > > +					XTTCPSS_CNT_CNTRL_OFFSET);
+> > > +		ctrl_reg |= ~(XTTCPSS_CNT_CNTRL_ENABLE_MASK);
+> > 
+> > The clock events framework should reprogram the next event so you
+> don't
+> > actually need to disable the timer here.  Once the event handler has
+> > been called the timer will be reenabled with a new period, and as
+> we're
+> > running with interrupts disabled here we don't need to stop the timer.
+> > 
+> 
+> What about if there's not another event to be started?
 
-It is for a lot of the legacy cases including using 9p to access
-user-space file servers.  Of course, there are some long standing
-issues with this for anything which re-exports the name space.  Also -
-most user-space file servers on the same host wouldn't want cache
-support anyways.
+Then the clockevents code can set the mode to CLOCK_EVT_MODE_SHUTDOWN 
+and this should disable the timer.  For NOHZ, AFAICT the 
+clockevents/tick code will make sure that the next tick always falls 
+within your max_delta_ns.
 
->
-> The patch series also don't address cache consistency issue that
-> can arise due to direct modification in the server. I am not
-> sure we need to complicate the client code for that considering
-> the cache model that we follow is loose.
->
-
-Agreed, the loose cache model doesn't respect any consistency
-guarantees.  Once we implement any of the more conventional cache
-policies we'll have to worry about it.
-
-       -eric
+Jamie
