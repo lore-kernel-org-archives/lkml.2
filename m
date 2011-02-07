@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735Ab1BGT30 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 14:29:26 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:36532 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753936Ab1BGT3Z convert rfc822-to-8bit (ORCPT
+	id S1754748Ab1BGTaa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 14:30:30 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36121 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753936Ab1BGTa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 14:29:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=I14SwtJAfow99WnIDSuLF5bfisffBV8O81DjWJNWREq4m2CJ1t+AeiBTnOTUHIG0Om
-         EAW4iGVy0dgTWDxxAd/g==
+	Mon, 7 Feb 2011 14:30:28 -0500
+Date: Mon, 7 Feb 2011 19:30:26 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Len Brown <len.brown@intel.com>, Alan Stern <stern@rowland.harvard.edu>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-embedded@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] PM: Hide CONFIG_PM from users
+Message-ID: <20110207193026.GT10564@opensource.wolfsonmicro.com>
+References: <1297081335-13631-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <201102072014.04259.rjw@sisk.pl>
 MIME-Version: 1.0
-In-Reply-To: <1297095033.13327.46.camel@laptop>
-References: <4d384700.2308e30a.70bc.ffffd532@mx.google.com>
- <1295534345.28776.175.camel@laptop> <1296646160.26581.315.camel@laptop>
- <20110202115012.GA16409@balbir.in.ibm.com> <1296650792.26581.319.camel@laptop>
- <20110202190251.GB16409@balbir.in.ibm.com> <1297095033.13327.46.camel@laptop>
-From: Paul Menage <menage@google.com>
-Date: Mon, 7 Feb 2011 11:28:59 -0800
-Message-ID: <AANLkTimF+8XAZxF4psrXSKx1CHFxin6AW=tu5OLGUgNi@mail.gmail.com>
-Subject: Re: [RFC][PATCH] cgroup: Fix cgroup_subsys::exit callback
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: balbir@linux.vnet.ibm.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
-        eranian@gmail.com, robert.richter@amd.com, acme@redhat.com,
-        lizf@cn.fujitsu.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201102072014.04259.rjw@sisk.pl>
+X-Cookie: You are fairminded, just and loving.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 7, 2011 at 8:10 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->
-> Make the ::exit method act like ::attach, it is after all very nearly
-> the same thing.
+On Mon, Feb 07, 2011 at 08:14:03PM +0100, Rafael J. Wysocki wrote:
+> On Monday, February 07, 2011, Mark Brown wrote:
 
-The major difference between attach and exit is that the former is
-only triggered in response to user cgroup-management action, whereas
-the latter is triggered whenever a task exits, even if cgroups aren't
-set up.
+> >  config PM_DEBUG
+> >  	bool "Power Management Debug Support"
 
+> I think it would be better to simply rename CONFIG_PM_OPS into CONFIG_PM.
 
->  void cgroup_exit(struct task_struct *tsk, int run_callbacks)
->  {
-> -       int i;
->        struct css_set *cg;
-> +       int i;
->
-> -       if (run_callbacks && need_forkexit_callback) {
-> -               /*
-> -                * modular subsystems can't use callbacks, so no need to lock
-> -                * the subsys array
-> -                */
-> -               for (i = 0; i < CGROUP_BUILTIN_SUBSYS_COUNT; i++) {
-> -                       struct cgroup_subsys *ss = subsys[i];
-> -                       if (ss->exit)
-> -                               ss->exit(ss, tsk);
-> -               }
-> -       }
-> +       mutex_lock(&cgroup_mutex);
+That still leaves the IA64 emulator to worry about but I'm not
+fundamentally opposed to that, it achieves a similar effect.  The main
+thing I'm looking for here is to cut down on the configuration options
+we have to maintain.
 
-NACK - cgroup_mutex is way too heavy to take in the task exit path.
-We'll need to find some other way to fix this if it's really needed.
-task->alloc_lock is also normally a valid thing to synchronize against
-cgroup moves, but I'd have to look at the exit path to see if it's
-still valid there.
+> However, there's a number of things that I'm afraid wouldn't build correctly
+> if none of CONFIG_PM_SLEEP and CONFIG_PM_RUNTIME were set in that case.
 
-Paul
+Actually CONFIG_PM_OPS probably also wants to be on independantly of
+those two sometimes for .poweroff() which I'd expect to run even if we
+can't suspend.
