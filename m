@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab1BGUHz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 15:07:55 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33070 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752589Ab1BGUHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 15:07:54 -0500
-Message-ID: <4D5050FF.2060304@zytor.com>
-Date: Mon, 07 Feb 2011 12:07:27 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: castet.matthieu@free.fr
-CC: Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-security-module@vger.kernel.org, Matthias Hopf <mhopf@suse.de>,
-        rjw@sisk.pl, Andrew Morton <akpm@linux-foundation.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [PATCH] NX protection for kernel data : fix 32 bits S3 suspend
-References: <4D473FD5.1090903@free.fr> <20110201080223.GB20372@elte.hu> <1296566732.4d4809cc1f963@imp.free.fr> <20110202062632.GA12256@elte.hu> <4D4CA3FD.6000901@zytor.com> <1296924395.4d4d7eeb6f1fe@imp.free.fr> <4D4F31BC.3000709@zytor.com> <1297108754.4d504f1281802@imp.free.fr>
-In-Reply-To: <1297108754.4d504f1281802@imp.free.fr>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754173Ab1BGUIT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 15:08:19 -0500
+Received: from casper.infradead.org ([85.118.1.10]:56774 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752589Ab1BGUIR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 15:08:17 -0500
+Subject: Re: [PATCH 1/2] perf_events: add cgroup support (v8)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Paul Menage <menage@google.com>
+Cc: balbir@linux.vnet.ibm.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
+        eranian@gmail.com, robert.richter@amd.com, acme@redhat.com,
+        lizf@cn.fujitsu.com
+In-Reply-To: <AANLkTi=+W-BXHFG94MeOnqV82HxtqtyDwEt1RCOUMrcq@mail.gmail.com>
+References: <4d384700.2308e30a.70bc.ffffd532@mx.google.com>
+	 <1295534345.28776.175.camel@laptop> <1296646160.26581.315.camel@laptop>
+	 <20110202115012.GA16409@balbir.in.ibm.com>
+	 <1296650792.26581.319.camel@laptop>
+	 <AANLkTi=+W-BXHFG94MeOnqV82HxtqtyDwEt1RCOUMrcq@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 Feb 2011 21:09:22 +0100
+Message-ID: <1297109362.13327.56.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2011 11:59 AM, castet.matthieu@free.fr wrote:
-> For .39 I hope we could remove most of the RWX rights after init (This means
-> make low memory trampoline NX or !RW).
-> This should be possible on :
-> - 32 bit if wakeup use trampoline_32 [1] that doesn't enable paging in low
-> memory (can be NX)
-> - trampoline_64 need fix to support NX on data section. It tries to read data
-> section before enabling NX. A possible fix is to use its own page table [2]. And
-> the kernel one can be NX.
+On Mon, 2011-02-07 at 11:29 -0800, Paul Menage wrote:
+> > This again means that all such notification handlers must poll state,
+> > which is ridiculous.
+> >
+> 
+> Not necessarily - we could make it that a failed rmdir() sets a bit
+> that causes a notification again once the final refcount is dropped
+> again on the cgroup. 
 
-What *should* happen -- ideally for .39 -- is that NX (and RO!)
-protection should be done per linear mapping, not per physical page.  A
-page that is mapped more than once is mapped for a different purpose,
-and as such probably should have different permissions.  A lot of the
-static_protections() garbage is about enforcing those as exceptions, but
-let's face it, that should be the *norm*.
+But that doesn't work if you fail for any other reason than a refcount,
+which you yourself proposed a while back.
 
-	-hpa
+Also, the core cgroup code should deal with the cgroup refcount, not
+individual controllers.
 
