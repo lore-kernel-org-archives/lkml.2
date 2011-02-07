@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237Ab1BGQ7q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 11:59:46 -0500
-Received: from thoth.sbs.de ([192.35.17.2]:29734 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753880Ab1BGQ7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 11:59:45 -0500
-Message-ID: <4D5024F3.9090105@siemens.com>
-Date: Mon, 07 Feb 2011 17:59:31 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1754269Ab1BGRAT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 12:00:19 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:46568 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754123Ab1BGRAR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 12:00:17 -0500
+Message-ID: <4D502575.8080501@metafoo.de>
+Date: Mon, 07 Feb 2011 18:01:41 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Zachary Amsden <zamsden@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] KVM: x86: Convert tsc_write_lock to raw_spinlock
-References: <4D4BCB97.6000900@siemens.com> <4D4C698A.4010201@redhat.com> <4D4FD8EE.6040009@siemens.com> <4D4FFD97.6010805@redhat.com> <4D5008F0.5060200@siemens.com> <4D500C9F.2080501@redhat.com> <4D50120F.4030809@siemens.com> <4D501547.6040907@redhat.com> <4D501698.1000507@siemens.com> <4D501D43.5060608@redhat.com>
-In-Reply-To: <4D501D43.5060608@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-15
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/7] ASoC: neo1973_wm8753: Remove scenario management
+ code.
+References: <1297033463-14577-1-git-send-email-lars@metafoo.de> <20110207114255.GB10564@opensource.wolfsonmicro.com>
+In-Reply-To: <20110207114255.GB10564@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-02-07 17:26, Avi Kivity wrote:
-> On 02/07/2011 05:58 PM, Jan Kiszka wrote:
->> On 2011-02-07 16:52, Avi Kivity wrote:
->>>  On 02/07/2011 05:38 PM, Jan Kiszka wrote:
->>>>>
->>>>>   I don't know as it is allowed to sleep, it doesn't call any sleeping
->>>>>   functions to my knowledge.  What worries me in the RT case is that the
->>>>>   spinlock acquired for hardware_enable might be preempted and run on
->>>>>   another CPU, which obviously isn't what you want.
->>>>
->>>>  I see now, there are calls to raw_smp_processor_id.
->>>>
->>>>  I think it's best to make this a raw lock. At this chance, some
->>>>  read-only users of vm_list should be rcu'ified. Will have a look.
->>>
->>>  vm_list is rarely used, for either read or write.  I don't see the need
->>>  to rcu it.
->>
->> Avoid that code under this lock expands the preempt-disabled period,
->> specifically under -rt, and specifically as the number of objects over
->> which we loop is user-defined.
+On 02/07/2011 12:42 PM, Mark Brown wrote:
+> On Mon, Feb 07, 2011 at 12:04:17AM +0100, Lars-Peter Clausen wrote:
 > 
-> Good point; even under non-rt.
+>> +	snd_soc_dapm_disable_pin(codec, "Audio Out");
+>> +	snd_soc_dapm_disable_pin(codec, "GSM Line Out");
+>> +	snd_soc_dapm_disable_pin(codec, "GSM Line In");
+>> +	snd_soc_dapm_disable_pin(codec, "Headset Mic");
+>> +	snd_soc_dapm_disable_pin(codec, "Call Mic");
 > 
-> (well, actually, cpufreq_notifier and kvm_arch_hardware_enable are 
-> already non preemptible, and the stats code should just go away?)
+> This will mean that it's impossible to enable most (if not all) of the
+> audio paths in the system which probably isn't what you want.
 
-The stats code is trivial to convert, so it doesn't matter.
+I've seem to have overlooked to add DAPM_SWITCH_PIN controls for these pins, since it
+has been done implicitly in the patch merging the gta01 and gta02 driver.
 
-But what about mmu_shrink and its list_move_tail? How is this
-synchronized against kvm_destroy_vm - already today?
+I'll resend a updated version.
 
-Jan
-
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+- Lars
