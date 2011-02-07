@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943Ab1BGLfZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 06:35:25 -0500
-Received: from thoth.sbs.de ([192.35.17.2]:32979 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753508Ab1BGLfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 06:35:24 -0500
-Message-ID: <4D4FD8EE.6040009@siemens.com>
-Date: Mon, 07 Feb 2011 12:35:10 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1753956Ab1BGLid (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 06:38:33 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:29420 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753767Ab1BGLic (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 06:38:32 -0500
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: <wg@grandegger.com>, <socketcan-core@lists.berlios.de>
+Cc: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <cover.1296818921.git.segoon@openwall.com><a6800dc8b0daed78256f98f52844cbbb48f4a76d.1296818921.git.segoon@openwall.com><20110204124233.GB334@e-circ.dyndns.org> <20110204.130649.112613896.davem@davemloft.net>
+Subject: About bittiming calculation result
+Date: Mon, 7 Feb 2011 20:38:29 +0900
+Message-ID: <5009516791F146C49C73FAC57C437313@hacdom.okisemi.com>
 MIME-Version: 1.0
-To: Zachary Amsden <zamsden@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] KVM: x86: Convert tsc_write_lock to raw_spinlock
-References: <4D4BCB97.6000900@siemens.com> <4D4C698A.4010201@redhat.com>
-In-Reply-To: <4D4C698A.4010201@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-15
+Content-Type: text/plain;
+	charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <20110204.130649.112613896.davem@davemloft.net>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+Thread-Index: AcvEr15DNrIU5ocWQIK1ihJgNcfMNwCCeRWA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-02-04 22:03, Zachary Amsden wrote:
-> On 02/04/2011 04:49 AM, Jan Kiszka wrote:
->> Code under this lock requires non-preemptibility. Ensure this also over
->> -rt by converting it to raw spinlock.
->>    
-> 
-> Oh dear, I had forgotten about that.  I believe kvm_lock might have the 
-> same assumption in a few places regarding clock.
+Hi,
 
-I only found a problematic section in kvmclock_cpufreq_notifier. Didn't
-see this during my tests as I have CPUFREQ disabled in my .config.
+I have a question for bittiming-value calculated by Can-core.
 
-We may need something like this as converting kvm_lock would likely be
-overkill:
+In case setting like below,
+ - ip link set can0 type can bitrate 800000
+ - clock=50MHz
+ - Use pch_can
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 36f54fb..971ee0d 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -4530,7 +4530,7 @@ static int kvmclock_cpufreq_notifier(struct notifier_block *nb, unsigned long va
- 	struct cpufreq_freqs *freq = data;
- 	struct kvm *kvm;
- 	struct kvm_vcpu *vcpu;
--	int i, send_ipi = 0;
-+	int i, me, send_ipi = 0;
- 
- 	/*
- 	 * We allow guests to temporarily run on slowing clocks,
-@@ -4583,9 +4583,11 @@ static int kvmclock_cpufreq_notifier(struct notifier_block *nb, unsigned long va
- 		kvm_for_each_vcpu(i, vcpu, kvm) {
- 			if (vcpu->cpu != freq->cpu)
- 				continue;
-+			me = get_cpu();
- 			kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
--			if (vcpu->cpu != smp_processor_id())
-+			if (vcpu->cpu != me)
- 				send_ipi = 1;
-+			put_cpu();
- 		}
- 	}
- 	spin_unlock(&kvm_lock);
+Can-core calculates like below
+brp=21
+seg1=1
+seg2=1
+sjw=1
+prop_seg=0
 
-Jan
+Is "prop_seg=0" true ?
+seg1/seg2/sjw/prop_seg must be more than 1 ?
 
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+Also I can see the following kernel error log.
+bitrate error 0.7%
+
+Thanks,
+-----------------------------------------
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD.
+
