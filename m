@@ -1,212 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829Ab1BGKI3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 05:08:29 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:56197 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752075Ab1BGKI1 (ORCPT
+	id S1752895Ab1BGKJy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 05:09:54 -0500
+Received: from webbox4.loswebos.de ([213.187.93.205]:44176 "EHLO
+	webbox4.loswebos.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752595Ab1BGKJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 05:08:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=ITbBu3RUyI07wqb0J2mXMrZSIpgv+IGO5MrXvV9gwvfmtC+qmOBhvkj/CS4uStAitQ
-         440tc6BfIZVFIz0mSHJZ9UxSVsOAntg2sqpvEZuU3BbwXVNXWdXzd+eBVg3UKKATZ1rK
-         qQ0HnGXgHtKIl0ZA79JXonYlA6tPFSoSRDaqw=
-Subject: Re: x25: possible skb leak on bad facilities
-From: Andrew Hendry <andrew.hendry@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: apw@canonical.com, john@calva.com, linux-x25@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tim.gardner@canonical.com
-In-Reply-To: <AANLkTik8hg5G2FYDCoRgh72v-_euGWKix9Fxm89UdXie@mail.gmail.com>
-References: <20110131130826.GC16804@shadowen.org>
-	 <AANLkTik-ywwtNg2AxAXtsKYJviDp=1zCZ-43JXp9i3g6@mail.gmail.com>
-	 <20110206.202824.260090071.davem@davemloft.net>
-	 <AANLkTik8hg5G2FYDCoRgh72v-_euGWKix9Fxm89UdXie@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 07 Feb 2011 21:08:15 +1100
-Message-ID: <1297073295.9577.13.camel@jaunty>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 7 Feb 2011 05:09:53 -0500
+Date: Mon, 7 Feb 2011 11:09:43 +0100
+From: Marc Koschewski <marc@osknowledge.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Jeff Chua <jeff.chua.linux@gmail.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Commit 500f7147cf5bafd139056d521536b10c2bc2e154 breaks _resume_
+Message-ID: <20110207100943.GA30215@marc.osknowledge.org>
+References: <AANLkTi=h+H+N=f4m4pE+RZ4n5h7oxQuwzmK-qmmWAGtL@mail.gmail.com>
+ <s5hfws1whq8.wl%tiwai@suse.de>
+ <AANLkTi=iHL+eVPRPzFXRMBZkXU7nXwkeZQiQUcyqSS-H@mail.gmail.com>
+ <AANLkTikE_Oa=HGhW3zpc_rdeBvOWckpZ6dfFWq=JnL9R@mail.gmail.com>
+ <849307$bf0dak@azsmga001.ch.intel.com>
+ <AANLkTi=Z1fCA1N47YaCh1tn=PCAAboWtNCUyUH-N3yUo@mail.gmail.com>
+ <AANLkTik0eJVr1S5=bCO8kmkwCxYzLE_kh9C3ccpn+mWX@mail.gmail.com>
+ <s5hy65suu7t.wl%tiwai@suse.de>
+ <20110207100210.GB12725@marc.osknowledge.org>
+ <s5hy65si2fe.wl%tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hy65si2fe.wl%tiwai@suse.de>
+X-PGP-Fingerprint: D514 7DC1 B5F5 8989 083E 38C9 5ECF E5BD 3430 ABF5
+X-PGP-Key: http://www.kosik.org/pubkey.asc
+X-Blog: http://www.kosik.org/blog/
+X-Operating-System: Linux marc 2.6.37-ck1-dezzy
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Takashi Iwai <tiwai@suse.de> [2011-02-07 11:06:45 +0100]:
 
-Originally x25_parse_facilities returned
--1 for an error
- 0 meaning 0 length facilities
->0 the length of the facilities parsed.
+OK,
 
-5ef41308f94dc introduced more error checking in x25_parse_facilities
-however used 0 to indicate bad parsing
-a6331d6f9a429 followed this further for DTE facilities, again using 0 for bad parsing.
+seems like there's a fix for ACPI wakeup memory in tip/urgent. Maybe the fix relates to
+this resume issue as well.
 
-The meaning of 0 got confused in the callers.
-If the facilities are messed up we can't determine where the data starts.
-So patch makes all parsing errors return -1 and ensures callers close and don't use the skb further.
+Marc
 
-Reported-by: Andy Whitcroft <apw@canonical.com>
-Signed-off-by: Andrew Hendry <andrew.hendry@gmail.com>
+> At Mon, 7 Feb 2011 11:02:10 +0100,
+> Marc Koschewski wrote:
+> > 
+> > Takashi,
+> > 
+> > is this potentially breaking S3 resume with nouveau cards, too?
+> 
+> There is no reset callback except for i915, so there shouldn't be any
+> change for nouveau regarding these commits.
+> 
+> 
+> Takashi
+> 
+> > Regards,
+> > Marc
+> > 
+> > * Takashi Iwai <tiwai@suse.de> [2011-02-07 09:25:42 +0100]:
+> > 
+> > > At Mon, 7 Feb 2011 13:02:46 +0800,
+> > > Jeff Chua wrote:
+> > > > 
+> > > > On Mon, Feb 7, 2011 at 12:48 PM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+> > > > > On Sun, Feb 6, 2011 at 11:27 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> > > > >> One last step: move contents of intel_crtc_reset() back to
+> > > > >> intel_crtc_init() one by one.
+> > > > >>
+> > > > >> The active flag is my suspicion. I was thinking that we brought up the
+> > > > >> outputs in a similar manner upon resume as upon initial boot. On
+> > > > >> reflection, this is the not case.
+> > > > >>
+> > > > >> However, the first action we take inside modesetting is to disable the
+> > > > >> outputs about to be reconfigured. So setting active should be the right
+> > > > >> course of action so that cleanup any residual state from resume.
+> > > > >>
+> > > > >> So I am intrigued as to which line is the cause, and just where the
+> > > > >> machine becomes unresponsive...
+> > > > >
+> > > > > It's this line causing the problem.
+> > > > >
+> > > > > intel_crtc->active = true; /* force the pipe off on setup_init_config */
+> > > > >
+> > > > >
+> > > > > When it's called before entering intel_crtc_reset(&intel_crtc->base),
+> > > > > it works, but if called within the function, it doesn't work. Strange.
+> > > > > Not sure whether is passing the correct value to to_intel_crtc(crtc)?
+> > > > 
+> > > > I've added printk() below and the function returns a different value
+> > > > of intel_crtc.
+> > > > 
+> > > > 
+> > > > static void intel_crtc_reset(struct drm_crtc *crtc)
+> > > > {
+> > > >         struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+> > > >         printk("intel_crtc %p\n", intel_crtc); ===> intel_crtc ffff8802349d1000
+> > > > 
+> > > > }
+> > > > 
+> > > > printk("intel_crtc %p\n", intel_crtc); ===> intel_crtc ffff8802349d0000
+> > > > intel_crtc_reset(&intel_crtc->base);
+> > > 
+> > > That's weird.  Since base is the first member, both intel_crtc and crtc
+> > > must be identical.
+> > > 
+> > > 
+> > > Takashi
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > Please read the FAQ at  http://www.tux.org/lkml/
+> > > 
+> > > 
+> > 
+> > -- 
+> > Marc Koschewski
+> > 
+> 
+> 
 
-
----
- net/x25/x25_facilities.c |   28 +++++++++++++++++++---------
- net/x25/x25_in.c         |   14 +++++++++++---
- 2 files changed, 30 insertions(+), 12 deletions(-)
-
-diff --git a/net/x25/x25_facilities.c b/net/x25/x25_facilities.c
-index 55187c8..4062075 100644
---- a/net/x25/x25_facilities.c
-+++ b/net/x25/x25_facilities.c
-@@ -27,9 +27,19 @@
- #include <net/sock.h>
- #include <net/x25.h>
- 
--/*
-- * Parse a set of facilities into the facilities structures. Unrecognised
-- *	facilities are written to the debug log file.
-+/**
-+ * x25_parse_facilities - Parse facilities from skb into the facilities structs
-+ *
-+ * @skb: sk_buff to parse
-+ * @facilities: Regular facilites, updated as facilities are found
-+ * @dte_facs: ITU DTE facilities, updated as DTE facilities are found
-+ * @vc_fac_mask: mask is updated with all facilities found
-+ *
-+ * Return codes:
-+ *  -1 - Parsing error, caller should drop call and clean up
-+ *   0 - Parse OK, this skb has no facilities
-+ *  >0 - Parse OK, returns the length of the facilities header
-+ *
-  */
- int x25_parse_facilities(struct sk_buff *skb, struct x25_facilities *facilities,
- 		struct x25_dte_facilities *dte_facs, unsigned long *vc_fac_mask)
-@@ -62,7 +72,7 @@ int x25_parse_facilities(struct sk_buff *skb, struct x25_facilities *facilities,
- 		switch (*p & X25_FAC_CLASS_MASK) {
- 		case X25_FAC_CLASS_A:
- 			if (len < 2)
--				return 0;
-+				return -1;
- 			switch (*p) {
- 			case X25_FAC_REVERSE:
- 				if((p[1] & 0x81) == 0x81) {
-@@ -107,7 +117,7 @@ int x25_parse_facilities(struct sk_buff *skb, struct x25_facilities *facilities,
- 			break;
- 		case X25_FAC_CLASS_B:
- 			if (len < 3)
--				return 0;
-+				return -1;
- 			switch (*p) {
- 			case X25_FAC_PACKET_SIZE:
- 				facilities->pacsize_in  = p[1];
-@@ -130,7 +140,7 @@ int x25_parse_facilities(struct sk_buff *skb, struct x25_facilities *facilities,
- 			break;
- 		case X25_FAC_CLASS_C:
- 			if (len < 4)
--				return 0;
-+				return -1;
- 			printk(KERN_DEBUG "X.25: unknown facility %02X, "
- 			       "values %02X, %02X, %02X\n",
- 			       p[0], p[1], p[2], p[3]);
-@@ -139,18 +149,18 @@ int x25_parse_facilities(struct sk_buff *skb, struct x25_facilities *facilities,
- 			break;
- 		case X25_FAC_CLASS_D:
- 			if (len < p[1] + 2)
--				return 0;
-+				return -1;
- 			switch (*p) {
- 			case X25_FAC_CALLING_AE:
- 				if (p[1] > X25_MAX_DTE_FACIL_LEN || p[1] <= 1)
--					return 0;
-+					return -1;
- 				dte_facs->calling_len = p[2];
- 				memcpy(dte_facs->calling_ae, &p[3], p[1] - 1);
- 				*vc_fac_mask |= X25_MASK_CALLING_AE;
- 				break;
- 			case X25_FAC_CALLED_AE:
- 				if (p[1] > X25_MAX_DTE_FACIL_LEN || p[1] <= 1)
--					return 0;
-+					return -1;
- 				dte_facs->called_len = p[2];
- 				memcpy(dte_facs->called_ae, &p[3], p[1] - 1);
- 				*vc_fac_mask |= X25_MASK_CALLED_AE;
-diff --git a/net/x25/x25_in.c b/net/x25/x25_in.c
-index f729f02..15de65f 100644
---- a/net/x25/x25_in.c
-+++ b/net/x25/x25_in.c
-@@ -91,10 +91,10 @@ static int x25_state1_machine(struct sock *sk, struct sk_buff *skb, int frametyp
- {
- 	struct x25_address source_addr, dest_addr;
- 	int len;
-+	struct x25_sock *x25 = x25_sk(sk);
- 
- 	switch (frametype) {
- 		case X25_CALL_ACCEPTED: {
--			struct x25_sock *x25 = x25_sk(sk);
- 
- 			x25_stop_timer(sk);
- 			x25->condition = 0x00;
-@@ -113,14 +113,16 @@ static int x25_state1_machine(struct sock *sk, struct sk_buff *skb, int frametyp
- 						&dest_addr);
- 			if (len > 0)
- 				skb_pull(skb, len);
-+			else if (len < 0)
-+				goto out_clear;
- 
- 			len = x25_parse_facilities(skb, &x25->facilities,
- 						&x25->dte_facilities,
- 						&x25->vc_facil_mask);
- 			if (len > 0)
- 				skb_pull(skb, len);
--			else
--				return -1;
-+			else if (len < 0)
-+				goto out_clear;
- 			/*
- 			 *	Copy any Call User Data.
- 			 */
-@@ -144,6 +146,12 @@ static int x25_state1_machine(struct sock *sk, struct sk_buff *skb, int frametyp
- 	}
- 
- 	return 0;
-+
-+out_clear:
-+	x25_write_internal(sk, X25_CLEAR_REQUEST);
-+	x25->state = X25_STATE_2;
-+	x25_start_t23timer(sk);
-+	return 0;
- }
- 
- /*
 -- 
-1.7.1
-
-
-
-On Mon, 2011-02-07 at 17:29 +1100, Andrew Hendry wrote:
-> The issue is a bit more complex than Andy's patch, I think I have a full fix.
-> Burning it in on test system now, if thats OK ill post patch in a few hours.
-> 
-> 
-> On Mon, Feb 7, 2011 at 3:28 PM, David Miller <davem@davemloft.net> wrote:
-> > From: Andrew Hendry <andrew.hendry@gmail.com>
-> > Date: Tue, 1 Feb 2011 22:55:13 +1100
-> >
-> >> There are two callers, when I was crashing it I don't remember it
-> >> using the backlog path.
-> >> x25_process_rx_frame is called from both x25_backlog_rcv and also
-> >> x25_receive_data (via x25_lapb_receive_frame)
-> >>
-> >> But reviewing that second path now it looks like it will also leak, -1
-> >> would make it skip the kfree_skb there as well.
-> >> So patch looks good to me, when I have some time I'll run it through
-> >> the environment I had setup originally to confirm.
-> >
-> > Andrew, have you had a chance to do this yet?
-> >
-
-
+Marc Koschewski
