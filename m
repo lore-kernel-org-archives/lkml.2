@@ -1,44 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab1BGPwq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 10:52:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54907 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754076Ab1BGPwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 10:52:44 -0500
-Message-ID: <4D501547.6040907@redhat.com>
-Date: Mon, 07 Feb 2011 17:52:39 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+	id S1754194Ab1BGP4P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 10:56:15 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:47726 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754167Ab1BGP4O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 10:56:14 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+fkN9maRmp9h7wXXHS36Q4
+Date: Mon, 7 Feb 2011 07:55:32 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>
+Subject: Re: [RFC] arm: Defer lookup of machine_type and vet of atags to
+ setup.c
+Message-ID: <20110207155532.GD20795@atomide.com>
+References: <20110111104051.GA11039@n2100.arm.linux.org.uk>
+ <20110111153630.GB2707@angua.secretlab.ca>
+ <20110111154833.GF11039@n2100.arm.linux.org.uk>
+ <AANLkTi=29LB66j123ufMHQk=46hGYdmR4nZZQFnN=Tku@mail.gmail.com>
+ <20110112155215.GB11039@n2100.arm.linux.org.uk>
+ <AANLkTinwGd9pa7YQ=5hXfarw=MB=YdpBuN7xJAd+Ps4f@mail.gmail.com>
+ <alpine.LFD.2.00.1101121145430.24532@xanadu.home>
+ <AANLkTinPibTVUu2zoMbDYnSWXGvB6dVjCp54DoN9S1p3@mail.gmail.com>
+ <20110112172552.GF11039@n2100.arm.linux.org.uk>
+ <AANLkTi=dNaOF0wxU+OYEKiWfoGeVKGnqvF3gK8-mQjo5@mail.gmail.com>
 MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@siemens.com>
-CC: Zachary Amsden <zamsden@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] KVM: x86: Convert tsc_write_lock to raw_spinlock
-References: <4D4BCB97.6000900@siemens.com> <4D4C698A.4010201@redhat.com> <4D4FD8EE.6040009@siemens.com> <4D4FFD97.6010805@redhat.com> <4D5008F0.5060200@siemens.com> <4D500C9F.2080501@redhat.com> <4D50120F.4030809@siemens.com>
-In-Reply-To: <4D50120F.4030809@siemens.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=dNaOF0wxU+OYEKiWfoGeVKGnqvF3gK8-mQjo5@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2011 05:38 PM, Jan Kiszka wrote:
+* Grant Likely <grant.likely@secretlab.ca> [110112 09:48]:
+> On Wed, Jan 12, 2011 at 10:25 AM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> > On Wed, Jan 12, 2011 at 10:16:44AM -0700, Grant Likely wrote:
+> >> On Wed, Jan 12, 2011 at 9:53 AM, Nicolas Pitre <nico@fluxnic.net> wrote:
+> >> > On Wed, 12 Jan 2011, Grant Likely wrote:
+> >> >
+> >> >> Actually it looks like the real problem is that the mmu has been
+> >> >> turned on, but the virtual mappings for devices have not yet been
+> >> >> established, and so the debug macros aren't using a valid address.
+> >> >
+> >> > A temporary virtual mapping should be there -- look for addruart in
+> >> > head.S.
+> >>
+> >> Hi Russell and Nicolas,
+> >>
+> >> Oops, yes all the early debug stuff works fine.  Stupid human trick on
+> >> my end, but I've sorted it out now.  Thanks for the help.  I'll have
+> >> patches to post later today.
 > >
-> >  I don't know as it is allowed to sleep, it doesn't call any sleeping
-> >  functions to my knowledge.  What worries me in the RT case is that the
-> >  spinlock acquired for hardware_enable might be preempted and run on
-> >  another CPU, which obviously isn't what you want.
->
-> I see now, there are calls to raw_smp_processor_id.
->
-> I think it's best to make this a raw lock. At this chance, some
-> read-only users of vm_list should be rcu'ified. Will have a look.
+> > I just hacked this up, and on Versatile (real hardware) it produces
+> > the below for an invalid r1 value - and of course works for a proper r1
+> > value.
+> 
+> Heh, that look pretty close to identical to what I was just about to send.
+> 
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-vm_list is rarely used, for either read or write.  I don't see the need 
-to rcu it.
-
--- 
-error compiling committee.c: too many arguments to function
-
+Tested-by: Tony Lindgren <tony@atomide.com>
