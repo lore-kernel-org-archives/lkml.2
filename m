@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530Ab1BGDjf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 22:39:35 -0500
-Received: from mail.perches.com ([173.55.12.10]:3615 "EHLO mail.perches.com"
+	id S1754515Ab1BGD5W (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 22:57:22 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39005 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754467Ab1BGDje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 22:39:34 -0500
-Subject: Re: rename_rev.pl script for reviewing renames
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <error27@gmail.com>
-Cc: Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-In-Reply-To: <20110206122539.GB4384@bicker>
-References: <20110203100828.GO20606@bicker>
-	 <20110203102219.GB6508@pengutronix.de> <20110203105048.GR20606@bicker>
-	 <20110206122539.GB4384@bicker>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 06 Feb 2011 19:39:32 -0800
-Message-ID: <1297049972.17359.5.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1754223Ab1BGD5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 22:57:20 -0500
+Message-ID: <4D4F6D7C.5090405@zytor.com>
+Date: Sun, 06 Feb 2011 19:56:44 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: castet.matthieu@free.fr
+CC: Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-security-module@vger.kernel.org, Matthias Hopf <mhopf@suse.de>,
+        rjw@sisk.pl, Andrew Morton <akpm@linux-foundation.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: [PATCH] NX protection for kernel data : fix 32 bits S3 suspend
+References: <4D473FD5.1090903@free.fr> <20110201080223.GB20372@elte.hu> <1296566732.4d4809cc1f963@imp.free.fr> <20110202062632.GA12256@elte.hu> <4D4CA3FD.6000901@zytor.com> <1296924395.4d4d7eeb6f1fe@imp.free.fr>
+In-Reply-To: <1296924395.4d4d7eeb6f1fe@imp.free.fr>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-02-06 at 15:25 +0300, Dan Carpenter wrote:
-> Or if you have a camel case script that changes "ThisVariable" to
-> "this_variable".  Then the command would be:
-> git show c659c38 | ./rename_rev.pl -ea '$_ = lc' -ea 's/_//g'
-> Which changes everything to lower case and strips out all the
-> underscores.  You might want to combine it with some other flags:
-> git show c659c38 | ./rename_rev.pl -nc \
-> 	-e 's/TLanPrivateInfo/struct tlan_priv/' \
-> 	-e 's/TLanList/struct tlan_list/' \
-> 	-ea '$_ = lc' -ea 's/_//g'
+On 02/05/2011 08:46 AM, castet.matthieu@free.fr wrote:
+> 
+> Doing the setting in a arch_initcall make it work.
+> 
 
-Hi Dan.
+Thinking about it, it's probably the sanest thing to do in the very
+short term.  I don't get the #ifdef CONFIG_X86_32 bit in your patch,
+though.  We reserve this area even on 64 bits, and so we should
+logically do the same thing, if nothing else to avoid gratuitous
+differences.
 
-I think you'll need to add '\b$1\b' to your tests
-otherwise your first example will check things like
-"TLanPrivateInfoType" as well.
+	-hpa
 
-> What I would like is if there was some way to ignore changes which just
-> introduced new lines, but didn't affect runtime behavior.  I'm not sure
-> how to do that.
-
-Any object change will affect runtime behavior.
-
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
