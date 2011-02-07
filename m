@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab1BGNyM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 08:54:12 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:35324 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752701Ab1BGNyL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 08:54:11 -0500
-Subject: Re: [PATCH 01/25] tile: Fix __pte_free_tlb
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>
-In-Reply-To: <4D4C63ED.6060104@tilera.com>
-References: <20110125173111.720927511@chello.nl>
-	 <20110125174907.220115681@chello.nl>  <4D4C63ED.6060104@tilera.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 07 Feb 2011 14:55:11 +0100
-Message-ID: <1297086911.13327.17.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752868Ab1BGOAg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 09:00:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59779 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752779Ab1BGOAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 09:00:35 -0500
+From: Jan Kara <jack@suse.cz>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>
+Subject: [PATCH] debugfs: Fix filesystem reference counting on debugfs_remove() failure
+Date: Mon,  7 Feb 2011 15:00:27 +0100
+Message-Id: <1297087227-11480-1-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-02-04 at 15:39 -0500, Chris Metcalf wrote:
-> On 1/25/2011 12:31 PM, Peter Zijlstra wrote:
-> > Tile's __pte_free_tlb() implementation makes assumptions about the
-> > generic mmu_gather implementation, cure this ;-)
-> 
-> I assume you will take this patch into your tree?  If so:
-> 
-> Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+When __debugfs_remove() fails (because simple_rmdir() fails e.g. when a
+directory is not empty), we must not decrement use count of the filesystem
+as nothing was in fact deleted.
 
-Feel free to take it yourself, this series might take a while to land..
+This fixes use after free caused by debugfs in some cases.
 
-> > [ Chris, from a quick look L2_USER_PGTABLE_PAGES is something like:
-> >   1 << (24 - 16 + 3), which looks awefully large for an on-stack
-> >   array. ]
-> 
-> Yes, the pte_pages[] array in this routine is 2KB currently.  Currently we
-> ship with 64KB pagesize, so the kernel stack has plenty of room.  I do like
-> that your patch removes this buffer, however, since we're currently looking
-> into (re-)supporting 4KB pages, which would totally blow the kernel stack
-> in this routine.
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ fs/debugfs/inode.c |   11 +++++++----
+ 1 files changed, 7 insertions(+), 4 deletions(-)
 
-Ah, ok.
+diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
+index 37a8ca7..8ddc59a 100644
+--- a/fs/debugfs/inode.c
++++ b/fs/debugfs/inode.c
+@@ -310,7 +310,7 @@ struct dentry *debugfs_create_symlink(const char *name, struct dentry *parent,
+ }
+ EXPORT_SYMBOL_GPL(debugfs_create_symlink);
+ 
+-static void __debugfs_remove(struct dentry *dentry, struct dentry *parent)
++static int __debugfs_remove(struct dentry *dentry, struct dentry *parent)
+ {
+ 	int ret = 0;
+ 
+@@ -333,6 +333,7 @@ static void __debugfs_remove(struct dentry *dentry, struct dentry *parent)
+ 			dput(dentry);
+ 		}
+ 	}
++	return ret;
+ }
+ 
+ /**
+@@ -351,7 +352,8 @@ static void __debugfs_remove(struct dentry *dentry, struct dentry *parent)
+ void debugfs_remove(struct dentry *dentry)
+ {
+ 	struct dentry *parent;
+-	
++	int ret;
++
+ 	if (!dentry)
+ 		return;
+ 
+@@ -360,9 +362,10 @@ void debugfs_remove(struct dentry *dentry)
+ 		return;
+ 
+ 	mutex_lock(&parent->d_inode->i_mutex);
+-	__debugfs_remove(dentry, parent);
++	ret = __debugfs_remove(dentry, parent);
+ 	mutex_unlock(&parent->d_inode->i_mutex);
+-	simple_release_fs(&debugfs_mount, &debugfs_mount_count);
++	if (!ret)
++		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
+ }
+ EXPORT_SYMBOL_GPL(debugfs_remove);
+ 
+-- 
+1.7.1
 
