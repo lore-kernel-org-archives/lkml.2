@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754387Ab1BGRR3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 12:17:29 -0500
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:27856 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754100Ab1BGRR2 (ORCPT
+	id S1754372Ab1BGRW1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 12:22:27 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:32907 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752587Ab1BGRW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 12:17:28 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: VctnhKwVM1lzzESMIJ0Y1L0DwjiPo5gWUHXmOwBbxCoQlaQ
- SyZzXVgfxSdxWyeXYKTVadEXik_AECYerwkmYePDLr8Z9NOMVmqUTHL.cj9I
- vx2ZBZrXiVGkJMevxB_hnqiJcya3G_8VD.i_FhPAdpQXPzWVf2J.09OJBXFn
- FkFnXfBIix.NHBUkGzU_u7omaKahFPSXjVvT3y2iim1DTb11WN.9hjj5k2Sk
- UAGs2QS6NkKWwlBPHVlnpXY7sRzqEkGiKmg5fKy4kMDvLmAjrMgliY2BtYFi
- I2qkFLsNEB_t0m2YZsy4bxDZUNdqJ89_ITOpahQBM8FvzRZQ-
-X-Yahoo-Newman-Property: ymail-3
-Date: Mon, 7 Feb 2011 11:17:25 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Jan Beulich <JBeulich@novell.com>
-cc: tj@kernel.org, mingo@elte.hu, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: x86: mis-named percpu_xchg_op() after switch to cmpxchg?
-In-Reply-To: <4D4FDF050200007800030883@vpn.id2.novell.com>
-Message-ID: <alpine.DEB.2.00.1102071115070.3911@router.home>
-References: <4D4FDF050200007800030883@vpn.id2.novell.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 7 Feb 2011 12:22:26 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=GBQXQZsyYzfBtVHpN6NSug46KRttNVvsMVlpIaggICCkgaeyFySFN/P2P8q/B81Xnp
+         bxaafj4bIEx2eeBG/Qu/stkshpXlIM46ywbNOlE3cUYZC1NPO4eEnIlgIITLqbMuTWAA
+         qtg90hf8HYy/PYFpSCUrGWwrLRyk1zues0cDk=
+Message-ID: <4D502A4D.1040301@gmail.com>
+Date: Mon, 07 Feb 2011 20:22:21 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Don Zickus <dzickus@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>, George Spelvin <linux@horizon.com>,
+        Meelis Roos <mroos@linux.ee>, Lin Ming <ming.m.lin@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: Re: [PATCH] perf, x86: P4 PMU -- Fix unflagged overflows test
+References: <AANLkTin5gCnhVos3Lu_0GZSxFQmvsNEYTO=Jq7UdmYb1@mail.gmail.com> <20110204165944.GB21209@redhat.com> <4D4EF4BC.6040206@gmail.com>
+In-Reply-To: <4D4EF4BC.6040206@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 Feb 2011, Jan Beulich wrote:
+On 02/06/2011 10:21 PM, Cyrill Gorcunov wrote:
+> On 02/04/2011 07:59 PM, Don Zickus wrote:
+>> On Fri, Feb 04, 2011 at 03:17:28PM +0300, Cyrill Gorcunov wrote:
+>>> Please apply it, sorry for non-inlined patch (have a web access only at moment).
+>>>
+>>> Note that I've tested the patch on non-HT machine so if someone have HT'ed one
+>>> -- it would be great to test the patch there.
+>>
+>> Hmm. For some reason, when I enable the kgdb testsuite, the box fails to
+>> boot with hardlockup issues.  It seems like the code is swallowing the
+>> NMIs? I basically applied this patch on top of 2.6.38-rc3 and ran it on my
+>> Xeon box (p4 w/HT).
+>>
+>> Cheers,
+>> Don
+> 
+>   Don, I hope to get access to p4 machine tomorrow and investigate this issue
+> (didn't manage to read kgdb code this weekend). Sorry for delay.
+> 
 
-> Other than its name implies, with the switch to use cmpxchg instead of
-> xchg (commit 8270137a0d50507a5b40f880db636527045b8466) this
-> macro is no longer suitable for accessing anything that may be written
-> by other than the local CPU (i.e. anything but the various this_cpu
-> accessors). Shouldn't it therefore get renamed to eg this_cpu_xchg_op()?
-
-No. The intend of the percpu_xchg_op was also to provide local cpu only
-semantics. percpu_xx operations in general have the same semantics as
-this_cpu operations.
-
+  Just for info -- I've tested the patch on p4 machine with kgdb bootup tests
+and results are somehow strange. If I disable nmi-watchdog the tests passes
+fine and i'm able to run perf top (or anything related). Same time if I leave
+nmi-watchdog enabled by default the borrowed event reported, kgdb tests passes
+but nmi-watchdog never fires (ie I see nmi irq counter remains zero). So I've added
+debug prints and found that counter reaches positive values and didn't issues
+nmi at all. All in one -- i'm still investigating this issue unfortunatelly
+the kernel build procedure sometime takes hours on this machine (even with
+ccache enabled) so it goes a way slower then I expected :(
+-- 
+    Cyrill
