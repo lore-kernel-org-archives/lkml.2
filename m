@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187Ab1BGOSd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 09:18:33 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33866 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752693Ab1BGOSc (ORCPT
+	id S1752796Ab1BGOZF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 09:25:05 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:49716 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752551Ab1BGOZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 09:18:32 -0500
-Date: Mon, 7 Feb 2011 14:18:29 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-embedded@vger.kernel.org,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH] PM: Hide CONFIG_PM from users
-Message-ID: <20110207141829.GK10564@opensource.wolfsonmicro.com>
-References: <1297081335-13631-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <20110208011324.d5371c4c.sfr@canb.auug.org.au>
+	Mon, 7 Feb 2011 09:25:03 -0500
+Date: Mon, 7 Feb 2011 09:24:58 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+X-X-Sender: nico@xanadu.home
+To: Jeremy Kerr <jeremy.kerr@canonical.com>
+cc: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
+        Ben Herrenschmidt <benh@kernel.crashing.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Paul Mundt <lethal@linux-sh.org>, Dima Zavin <dmitriyz@google.com>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>
+Subject: Re: [RFC, PATCH 3/3] clk: add warnings for incorrect enable/prepare
+ semantics
+In-Reply-To: <201102071608.42855.jeremy.kerr@canonical.com>
+Message-ID: <alpine.LFD.2.00.1102070908120.14920@xanadu.home>
+References: <201102011711.31258.jeremy.kerr@canonical.com> <1297058877.800990.238556019385.3.gpush@pororo> <20110207080555.GC27982@pengutronix.de> <201102071608.42855.jeremy.kerr@canonical.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110208011324.d5371c4c.sfr@canb.auug.org.au>
-X-Cookie: You are fairminded, just and loving.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 08, 2011 at 01:13:24AM +1100, Stephen Rothwell wrote:
-> On Mon,  7 Feb 2011 12:22:15 +0000 Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+On Mon, 7 Feb 2011, Jeremy Kerr wrote:
 
-> > +	bool
-> > +	default y if !IA64_HP_SIM
+> Hi Uwe,
+> 
+> > This implies the warning is only issued on clocks that have a prepare
+> > callback.  If we want to enforce the new API the warning here shouldn't
+> > depend on clk->ops->prepare.  (clk_prepare and clk_unprepare need to
+> > be changed then to adapt the prepare_count even in the absence of
+> > clk->ops->prepare.)
+> 
+> Yeah, it's a decision about either adding a small cost to all clk_prepare()s 
+> (ie, adding cost when there is no prepare callback), or checking for the 
+> correct prepare/enable semantics for all clocks (even when it doesn't matter 
+> for that particular clock). I chose the first as more important, but happy to 
+> go either way here.
 
-> Several powerpc configs have CONFIG_PM (implicitly) disabled (e.g. the
-> server configs), so this will unexpectedly turn it on for them.
+The prepare method being called from non-atomic context cannot be 
+considered to be in a speed critical path.  Most of the time, this is 
+going to be called on driver initialization or the like, and that's a 
+relatively rare event. Therefore this really small cost to clk_prepare() 
+is definitively worth it to help proper usage of the API.  If this ever 
+becomes a problem then this could be confined to some CONFIG_CLK_DEBUG 
+or the like.  But when introducing a new API it is best to be more 
+strict to help people get its usage right (without going overboard with 
+it of course).
 
-Do you mean that these systems require CONFIG_PM be turned off, or just
-that people tend not to turn it on?  If the latter would you expect any
-ill effects from doing so?
+
+Nicolas
