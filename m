@@ -1,106 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631Ab1BGNgt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 08:36:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58791 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751938Ab1BGNgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 08:36:47 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 1/2] CRED: Fix BUG() upon security_cred_alloc_blank() failure
-To: torvalds@osdl.org, akpm@linux-foundation.org
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        David Howells <dhowells@redhat.com>
-Date: Mon, 07 Feb 2011 13:36:10 +0000
-Message-ID: <20110207133610.18389.5602.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1752659Ab1BGNiH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 08:38:07 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:40846 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751938Ab1BGNiF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 08:38:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=wnbNR3aElR/BmvRhnJH6tX4p8J8Tp38K62Wk9GMO0Rwir2S2YYZhUln8AzCHCua9rK
+         mvWZXsivD80bMPUFYWi03wk1ZlRj7VZ4q4Qzar9LlGvV00CxYW8PQ+ShmNUCSgEBVotb
+         8/Bo29YpAHXdGiD76fqCR5kQq+UB7qSbJk5aY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <s5htyggi21m.wl%tiwai@suse.de>
+References: <AANLkTi=h+H+N=f4m4pE+RZ4n5h7oxQuwzmK-qmmWAGtL@mail.gmail.com>
+	<s5hfws1whq8.wl%tiwai@suse.de>
+	<AANLkTi=iHL+eVPRPzFXRMBZkXU7nXwkeZQiQUcyqSS-H@mail.gmail.com>
+	<AANLkTikE_Oa=HGhW3zpc_rdeBvOWckpZ6dfFWq=JnL9R@mail.gmail.com>
+	<849307$bf0dak@azsmga001.ch.intel.com>
+	<AANLkTi=Z1fCA1N47YaCh1tn=PCAAboWtNCUyUH-N3yUo@mail.gmail.com>
+	<AANLkTik0eJVr1S5=bCO8kmkwCxYzLE_kh9C3ccpn+mWX@mail.gmail.com>
+	<s5hy65suu7t.wl%tiwai@suse.de>
+	<AANLkTi=KGMJ9vLaLfkzGQrc-F2eB5CRmDX1L5UohPTZ=@mail.gmail.com>
+	<s5htyggusyg.wl%tiwai@suse.de>
+	<s5htyggi21m.wl%tiwai@suse.de>
+Date: Mon, 7 Feb 2011 21:38:04 +0800
+Message-ID: <AANLkTinv=pfArgT4VFCUeY_bKb4q3KSREvU+L8V5k0G9@mail.gmail.com>
+Subject: Re: Commit 500f7147cf5bafd139056d521536b10c2bc2e154 breaks _resume_
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+On Mon, Feb 7, 2011 at 6:15 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>> Thanks, that looks good.  What about other files?  Did you change
+>> (especially intel_drv.h) from Linus git tree?
 
-In cred_alloc_blank() since 2.6.32, abort_creds(new) is called with
-new->security == NULL and new->magic == 0 when security_cred_alloc_blank()
-returns an error.  As a result, BUG() will be triggered if SELinux is enabled
-or CONFIG_DEBUG_CREDENTIALS=y.
+I will try again  from a fresh build tonight.
 
-If CONFIG_DEBUG_CREDENTIALS=y, BUG() is called from __invalid_creds() because
-cred->magic == 0.  Failing that, BUG() is called from selinux_cred_free()
-because selinux_cred_free() is not expecting cred->security == NULL.  This does
-not affect smack_cred_free(), tomoyo_cred_free() or apparmor_cred_free().
+>> I'll also check later to be sure (now I have no machine for testing).
+> I don't see any problem with my machine (but running in 32bit).
+>
+> Are you sure that you are seeing the same CRTC?  There are two active
+> CRTCs on Intel, and both are initialized and set up.
 
-Fix these bugs by
+I don't know about that. Even when I attempt to just the pointer
+directly as in "static void intel_crtc_reset(struct intel_crtc
+*intel_crtc)", it ended up getting a different value. Strange.
 
-(1) Set new->magic before calling security_cred_alloc_blank().
+intel_crtc ffff880239aa5800
+intel_crtc ffff880239aa5000
 
-(2) Handle null cred->security in creds_are_invalid() and selinux_cred_free().
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+I'm building everything fresh now.
 
- kernel/cred.c            |   12 ++++++++----
- security/selinux/hooks.c |    6 +++++-
- 2 files changed, 13 insertions(+), 5 deletions(-)
-
-diff --git a/kernel/cred.c b/kernel/cred.c
-index 6a1aa00..fcf104b 100644
---- a/kernel/cred.c
-+++ b/kernel/cred.c
-@@ -252,13 +252,13 @@ struct cred *cred_alloc_blank(void)
- #endif
- 
- 	atomic_set(&new->usage, 1);
-+#ifdef CONFIG_DEBUG_CREDENTIALS
-+	new->magic = CRED_MAGIC;
-+#endif
- 
- 	if (security_cred_alloc_blank(new, GFP_KERNEL) < 0)
- 		goto error;
- 
--#ifdef CONFIG_DEBUG_CREDENTIALS
--	new->magic = CRED_MAGIC;
--#endif
- 	return new;
- 
- error:
-@@ -748,7 +748,11 @@ bool creds_are_invalid(const struct cred *cred)
- 	if (cred->magic != CRED_MAGIC)
- 		return true;
- #ifdef CONFIG_SECURITY_SELINUX
--	if (selinux_is_enabled()) {
-+	/*
-+	 * cred->security == NULL if security_cred_alloc_blank() or
-+	 * security_prepare_creds() returned an error.
-+	 */
-+	if (selinux_is_enabled() && cred->security) {
- 		if ((unsigned long) cred->security < PAGE_SIZE)
- 			return true;
- 		if ((*(u32 *)cred->security & 0xffffff00) ==
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index e276eb4..c8d6992 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -3198,7 +3198,11 @@ static void selinux_cred_free(struct cred *cred)
- {
- 	struct task_security_struct *tsec = cred->security;
- 
--	BUG_ON((unsigned long) cred->security < PAGE_SIZE);
-+	/*
-+	 * cred->security == NULL if security_cred_alloc_blank() or
-+	 * security_prepare_creds() returned an error.
-+	 */
-+	BUG_ON(cred->security && (unsigned long) cred->security < PAGE_SIZE);
- 	cred->security = (void *) 0x7UL;
- 	kfree(tsec);
- }
-
+Jeff
