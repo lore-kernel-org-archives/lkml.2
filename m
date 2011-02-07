@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753988Ab1BGLlu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 06:41:50 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:37728 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753838Ab1BGLls (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 06:41:48 -0500
-Date: Mon, 7 Feb 2011 20:41:44 +0900
-From: Simon Horman <horms@verge.net.au>
-To: "Ahmed S. Darwish" <darwish.07@gmail.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Vivek Goyal <vgoyal@redhat.com>,
-        Haren Myneni <hbabu@us.ibm.com>,
-        Eric Biederman <ebiederm@xmission.com>, kexec@lists.infradead.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org
-Subject: Re: [PATCH v2 -next] Documentation: Improve crashkernel=
- description
-Message-ID: <20110207114144.GC10983@verge.net.au>
-References: <20110206154108.GA16542@laptop>
- <20110206215733.GB26233@verge.net.au>
- <20110206201448.4a259575.rdunlap@xenotime.net>
- <20110207113054.GA10388@laptop>
+	id S1754003Ab1BGLmo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 06:42:44 -0500
+Received: from moh1-ve3.go2.pl ([193.17.41.134]:37455 "EHLO moh1-ve3.go2.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753767Ab1BGLmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 06:42:43 -0500
+Message-ID: <4D4FDAAC.9020602@o2.pl>
+Date: Mon, 07 Feb 2011 12:42:36 +0100
+From: Maciej Szmigiero <mhej@o2.pl>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101204 Lightning/1.0b3pre Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110207113054.GA10388@laptop>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: Greg KH <gregkh@suse.de>, Johan Hovold <jhovold@gmail.com>,
+        Joe Perches <joe@perches.com>, Alan Cox <alan@linux.intel.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [USB]Add Samsung SGH-I500/Android modem ID switch to visor driver
+References: <4D4D9F37.4010201@o2.pl> <20110205192831.GA334@suse.de> <4D4DC400.2040302@o2.pl> <4D4DDD54.1010905@ru.mvista.com> <4D4EFEC3.5030702@o2.pl> <4D4FD695.5050507@mvista.com>
+In-Reply-To: <4D4FD695.5050507@mvista.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-O2-Trust: 2, 68
+X-O2-SPF: neutral
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 07, 2011 at 01:30:54PM +0200, Ahmed S. Darwish wrote:
+W dniu 07.02.2011 12:25, Sergei Shtylyov pisze:
+> Hello.
 > 
-> Had to explore two C code files to make sense of the 'crashkernel='
-> kernel parameter values.  Improve the situation.
+> On 06-02-2011 23:04, Maciej Szmigiero wrote:
 > 
-> Signed-off-by: Ahmed S. Darwish <darwish.07@gmail.com>
+>>>> New version of patch which autodetects devices with ACM class.
+>>>> Tested on Galaxy Spica.
+> 
+> 
+>> diff --git a/drivers/usb/serial/visor.c b/drivers/usb/serial/visor.c
+>> index 15a5d89..0f75948 100644
+>> --- a/drivers/usb/serial/visor.c
+>> +++ b/drivers/usb/serial/visor.c
+> [...]
+>> @@ -479,6 +480,17 @@ static int visor_probe(struct usb_serial *serial,
+>>
+>>       dbg("%s", __func__);
+>>
+>> +    /*
+>> +     * some Samsung Android phones in modem mode have the same ID
+>> +     * as SPH-I500, but they are ACM devices, so dont bind to them
+>> +    */
+> 
+>    Space is missing. You were close. :-)
+> 
+> WBR, Sergei
+> 
 
-Thanks, that looks looks a good improvement over the existing documentation.
+Damn :)
 
-Acked-by: Simon Horman <horms@verge.net.au>
+Signed-off-by: Maciej Szmigiero<mhej@o2.pl>
 
-> ---
-> 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 89835a4..5ad9980 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -545,9 +545,12 @@ and is between 256 and 4096 characters. It is defined in the file
->  			Format:
->  			<first_slot>,<last_slot>,<port>,<enum_bit>[,<debug>]
->  
-> -	crashkernel=nn[KMG]@ss[KMG]
-> -			[KNL] Reserve a chunk of physical memory to
-> -			hold a kernel to switch to with kexec on panic.
-> +	crashkernel=size[KMG][@offset[KMG]]
-> +			[KNL] Using kexec, Linux can switch to a 'crash kernel'
-> +			upon panic. This parameter reserves the physical
-> +			memory region [offset, offset + size] for that kernel
-> +			image. If '@offset' is omitted, then a suitable offset
-> +			is selected automatically.
->  
->  	crashkernel=range1:size1[,range2:size2,...][@offset]
->  			[KNL] Same as above, but depends on the memory
-> 
-> -- 
-> Darwish
-> http://darwish.07.googlepages.com
-> 
+diff --git a/drivers/usb/serial/visor.c b/drivers/usb/serial/visor.c
+index 15a5d89..1c11959 100644
+--- a/drivers/usb/serial/visor.c
++++ b/drivers/usb/serial/visor.c
+@@ -27,6 +27,7 @@
+ #include <linux/uaccess.h>
+ #include <linux/usb.h>
+ #include <linux/usb/serial.h>
++#include <linux/usb/cdc.h>
+ #include "visor.h"
+ 
+ /*
+@@ -479,6 +480,17 @@ static int visor_probe(struct usb_serial *serial,
+ 
+ 	dbg("%s", __func__);
+ 
++	/*
++	 * some Samsung Android phones in modem mode have the same ID
++	 * as SPH-I500, but they are ACM devices, so dont bind to them
++	 */
++	if (id->idVendor == SAMSUNG_VENDOR_ID &&
++		id->idProduct == SAMSUNG_SPH_I500_ID &&
++		serial->dev->descriptor.bDeviceClass == USB_CLASS_COMM &&
++		serial->dev->descriptor.bDeviceSubClass ==
++			USB_CDC_SUBCLASS_ACM)
++		return -ENODEV;
++
+ 	if (serial->dev->actconfig->desc.bConfigurationValue != 1) {
+ 		dev_err(&serial->dev->dev, "active config #%d != 1 ??\n",
+ 			serial->dev->actconfig->desc.bConfigurationValue);
