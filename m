@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754418Ab1BGQwl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 11:52:41 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:45795 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754402Ab1BGQwj (ORCPT
+	id S1754218Ab1BGQ6b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 11:58:31 -0500
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:29256 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753880Ab1BGQ63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 11:52:39 -0500
-Message-ID: <4D5023A4.3020209@metafoo.de>
-Date: Mon, 07 Feb 2011 17:53:56 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+	Mon, 7 Feb 2011 11:58:29 -0500
+Date: Mon, 7 Feb 2011 08:58:29 -0800
+From: Dmitry Torokhov <dtor@vmware.com>
+To: David Miller <davem@davemloft.net>
+Cc: "schwab@linux-m68k.org" <schwab@linux-m68k.org>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-m68k@vger.kernel.org" <linux-m68k@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: Early crash
+Message-ID: <20110207165829.GA13101@dtor-ws.eng.vmware.com>
+References: <m2bp2udllv.fsf@igel.home>
+ <20110203002459.GA26729@dtor-ws.eng.vmware.com>
+ <20110207081933.GA11855@dtor-ws.eng.vmware.com>
+ <20110207.005010.28814928.davem@davemloft.net>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/7] ASoC: Samsung: neo1973_gta02: Fix bluetooth DAI registration
-References: <1297033463-14577-1-git-send-email-lars@metafoo.de> <1297033463-14577-6-git-send-email-lars@metafoo.de> <20110207115906.GD10564@opensource.wolfsonmicro.com>
-In-Reply-To: <20110207115906.GD10564@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110207.005010.28814928.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2011 12:59 PM, Mark Brown wrote:
-> On Mon, Feb 07, 2011 at 12:04:22AM +0100, Lars-Peter Clausen wrote:
->> This patch fixes two issues with the bluethooth DAI registration:
->> * The DAI has to be registered only after the sound device has been added.
+On Mon, Feb 07, 2011 at 12:50:10AM -0800, David Miller wrote:
+> From: Dmitry Torokhov <dtor@vmware.com>
+> Date: Mon, 7 Feb 2011 00:19:33 -0800
 > 
-> This isn't a problem, components in the system can be registered in any
-> order.
+> > So here is the patch that explicitly specifies alignment for struct
+> > module_version_attribute. I tested it on i386 and x86_64 and I believe
+> > it will fix the issue with m68k but I do not have access to such a box.
+> 
+> While this may or may not fix the m68k issue, this isn't really
+> sufficient to make this thing work in all cases.  And the older
+> tracepoint commits referenced in this thread are known to cause
+> problems with platforms such as sparc64.
+> 
+> You can't reliably put structures into independent objects, put them
+> into a special section, and then expect array access over them (via
+> the section boundaries) after linking the objects together to just
+> "work".
+> 
+> Your attribute specification is only a lower-bound.
 
-By device I mean the soc-core platform device, which has to exist before a dai can be
-registered with that device.
+Right.
 
 > 
->> * Currently the DAI is registered with snd_soc_register_dai which causes it to
->>   be named after the device it was registered for. Which is in this case the
->>   "soc-audio" device. (Ab)use snd_soc_register_dais which causes the DAI to be
->>   named after the DAI driver, which is what we want in this case.
+> GCC can and does use variable alignment choices in different situations,
+> so the align directive in the various objects can all be different.  So
+> the array iteration will assume the iterations should use one object
+> size, but within the linked together section the alignments are all
+> different so the inter-struct gap is different.
 > 
-> This doesn't tie up with your change which...
-> 
->> -	/* register bluetooth DAI here */
->> -	ret = snd_soc_register_dai(&neo1973_gta02_snd_device->dev, &bt_dai);
->> -	if (ret)
->> -		goto err_put_device;
-> 
->> +	/* register bluetooth DAI here */
->> +	ret = snd_soc_register_dais(&neo1973_gta02_snd_device->dev, &bt_dai, 1);
->>  	if (ret)
->> -		goto err_unregister_dai;
->> +		goto err_unregister_device;
-> 
-> ...uses the same device in both cases and looking briefly at the code
-> both register functions just use the dev that was passed in.
+> The only portable mechanism that will work in all cases, as we've
+> found recently for tracepoints and similar, is to make an array of
+> plain pointers to the objects in the special section.
 
-The difference between the two is that snd_soc_register_dais calls fmt_multiple_name,
-but snd_soc_register_dai uses fmt_single_name. The later uses the name of device for
-which the dai is registered to generate the dai_device name, while the former uses
-the name of the dai_driver.
-So by calling snd_soc_register_dai the bluetooth dai_device will be name "soc-core"
-instead of "bluetooth-dai". So currently there is no match between the dai_link and
-the dai_device, as a result the sound card is not instantiated.
+But, theoretically speaking, nothing stops GCC to align pointers with
+"gaps" as well? Let's say having everything (or some) aligned on
+quadword boundary even though arch is 32 bit?
 
-> In any
-> case, we clearly shouldn't be applying patches which bodge around the
-> core.
 
-Well the alternative would be a patch looking like this:
+Thanks,
 
--	.cpu_dai_name = "bluetooth-dai",
-+	.cpu_dai_name = "soc-core",
-
-Which isn't really nice either.
-
-- Lars
+Dmitry
