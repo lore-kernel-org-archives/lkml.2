@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab1BGNex (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 08:34:53 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:34355 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751938Ab1BGNew (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 08:34:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=Fui+ucUijuuJpJLK7PtPn6C3wxCywhapj56CTdV/4aAycLmllOSmlLPvUuYZHm1/59
-         iYYyiB7jjP7Dhftdt7pcVArXlkXYpKxQBm7lZXECg0PjVUBiIjmu59F+uUq9NTa3ukyN
-         7ycGSnYgqa/BdyNZ+21YZqiv2g74v2md9cEmk=
-Date: Mon, 7 Feb 2011 21:34:48 +0800
-From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-To: Tao Ma <tm@tao.ma>, linux-kernel@vger.kernel.org, greg@kroah.com
-Subject: Re: [PATCH]Translated linux-2.6/Documentation/magic-number.txt
- into Chinese
-Message-ID: <20110207133447.GB2162@gmail.com>
-References: <20110207075809.GA16214@gmail.com>
- <4D4FB3BE.1040203@tao.ma>
+	id S1752682Ab1BGNgx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 08:36:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13663 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751938Ab1BGNgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 08:36:50 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 2/2] CRED: Fix memory and refcount leaks upon
+ security_prepare_creds() failure
+To: torvalds@osdl.org, akpm@linux-foundation.org
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        David Howells <dhowells@redhat.com>
+Date: Mon, 07 Feb 2011 13:36:16 +0000
+Message-ID: <20110207133615.18389.19276.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20110207133610.18389.5602.stgit@warthog.procyon.org.uk>
+References: <20110207133610.18389.5602.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=gb2312
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4D4FB3BE.1040203@tao.ma>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 07, 2011 at 04:56:30PM +0800, Tao Ma wrote:
-> On 02/07/2011 03:58 PM, Harry Wei wrote:
-> >Hi us,
-> >    I have translated linux-2.6/Documentation/magic-number.txt into Chinese.
-> >When i paste the patch into my mutt, something wrong happened, which i can not close this mail. The mutt shows something wrong about /tmp/...
-> >    So i have to add an accessory including my patcher. If you don't want to download it, you can also click the URL: http://harrywei.org/blog/?p=46
-> >for it.
-> Please try git send-email so that we can reply to it directly.
-> 
-> The following small comment is in chinese.
-> 你是自己翻译的，还是使用了类似google翻译一类的软件？
-I just use dict.youdao.com to translate some words, which i am not sure.
-You can use google-translation to translate my sentences then check if they are the same :)
-> 很抱歉我提出这样的问题，但是请看这一句：
-> The tty code, for example, does this frequently to pass
-> driver-specific and line discipline-specific structures back and
-> forth.
-> 你的翻译是：
-> 
-> tty源码，例如，经常通过特定驱动使用这种方法并且反复地排列特定方面的结构。
-> 
-> “例如”在中文中很少有这么用的吧？ 而且似乎应该翻译成
-> 
-> 例如tty的代码中就经常使用这种方法来传递一些驱动相关或者线路特性相关的数据结构。
-> 你的翻译我实在是无法读懂，谢谢！
-> 
-> Regards,
-> Tao
-> 
-> 
-> 
-> 
-> 
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+
+In prepare_kernel_cred() since 2.6.29, put_cred(new) is called without
+assigning new->usage when security_prepare_creds() returned an error.  As a
+result, memory for new and refcount for new->{user,group_info,tgcred} are
+leaked because put_cred(new) won't call __put_cred() unless old->usage == 1.
+
+Fix these leaks by assigning new->usage (and new->subscribers which was added
+in 2.6.32) before calling security_prepare_creds().
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ kernel/cred.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/cred.c b/kernel/cred.c
+index fcf104b..3a9d6dd 100644
+--- a/kernel/cred.c
++++ b/kernel/cred.c
+@@ -657,6 +657,8 @@ struct cred *prepare_kernel_cred(struct task_struct *daemon)
+ 	validate_creds(old);
+ 
+ 	*new = *old;
++	atomic_set(&new->usage, 1);
++	set_cred_subscribers(new, 0);
+ 	get_uid(new->user);
+ 	get_group_info(new->group_info);
+ 
+@@ -674,8 +676,6 @@ struct cred *prepare_kernel_cred(struct task_struct *daemon)
+ 	if (security_prepare_creds(new, old, GFP_KERNEL) < 0)
+ 		goto error;
+ 
+-	atomic_set(&new->usage, 1);
+-	set_cred_subscribers(new, 0);
+ 	put_cred(old);
+ 	validate_creds(new);
+ 	return new;
+
