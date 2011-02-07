@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557Ab1BGQZv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 11:25:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54290 "EHLO mx1.redhat.com"
+	id S1754042Ab1BGQ0u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 11:26:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17014 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751318Ab1BGQZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 11:25:50 -0500
-From: Tom Tromey <tromey@redhat.com>
-To: Hui Zhu <teawater@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Michael Snyder <msnyder@vmware.com>,
-        Marc Khouzam <marc.khouzam@ericsson.com>,
-        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
-        Steven <mqyoung@gmail.com>, colyli@gmail.com,
-        Christoph Hellwig <hch@infradead.org>,
-        "gdb\@sourceware.org" <gdb@sourceware.org>
-Subject: Re: [PATCH] Linux Kernel GDB tracepoint module 2011-02-05
-References: <AANLkTikhfhYjvmvXtjW-Mszpq8d_3Syo=H4zqWe+1hEg__12255.0142732964$1296923928$gmane$org@mail.gmail.com>
-X-Attribution: Tom
-Date: Mon, 07 Feb 2011 09:25:33 -0700
-In-Reply-To: <AANLkTikhfhYjvmvXtjW-Mszpq8d_3Syo=H4zqWe+1hEg__12255.0142732964$1296923928$gmane$org@mail.gmail.com>
-	(Hui Zhu's message of "Sun, 6 Feb 2011 00:37:37 +0800")
-Message-ID: <m3hbcfzu9u.fsf@fleche.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1752428Ab1BGQ0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 11:26:49 -0500
+Message-ID: <4D501D43.5060608@redhat.com>
+Date: Mon, 07 Feb 2011 18:26:43 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Jan Kiszka <jan.kiszka@siemens.com>
+CC: Zachary Amsden <zamsden@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] KVM: x86: Convert tsc_write_lock to raw_spinlock
+References: <4D4BCB97.6000900@siemens.com> <4D4C698A.4010201@redhat.com> <4D4FD8EE.6040009@siemens.com> <4D4FFD97.6010805@redhat.com> <4D5008F0.5060200@siemens.com> <4D500C9F.2080501@redhat.com> <4D50120F.4030809@siemens.com> <4D501547.6040907@redhat.com> <4D501698.1000507@siemens.com>
+In-Reply-To: <4D501698.1000507@siemens.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> ">" == Hui Zhu <teawater@gmail.com> writes:
+On 02/07/2011 05:58 PM, Jan Kiszka wrote:
+> On 2011-02-07 16:52, Avi Kivity wrote:
+> >  On 02/07/2011 05:38 PM, Jan Kiszka wrote:
+> >>>
+> >>>   I don't know as it is allowed to sleep, it doesn't call any sleeping
+> >>>   functions to my knowledge.  What worries me in the RT case is that the
+> >>>   spinlock acquired for hardware_enable might be preempted and run on
+> >>>   another CPU, which obviously isn't what you want.
+> >>
+> >>  I see now, there are calls to raw_smp_processor_id.
+> >>
+> >>  I think it's best to make this a raw lock. At this chance, some
+> >>  read-only users of vm_list should be rcu'ified. Will have a look.
+> >
+> >  vm_list is rarely used, for either read or write.  I don't see the need
+> >  to rcu it.
+>
+> Avoid that code under this lock expands the preempt-disabled period,
+> specifically under -rt, and specifically as the number of objects over
+> which we loop is user-defined.
 
->> We have trouble for this printf is GDB is still not accept the patch
->> that make tracepoint support printf, So if you want use it, you need
->> patch the patch in
->> http://sourceware.org/ml/gdb-patches/2011-02/msg00063.html and build
->> your GDB with yourself.
+Good point; even under non-rt.
 
-Thanks, I think this example was helpful.
+(well, actually, cpufreq_notifier and kvm_arch_hardware_enable are 
+already non preemptible, and the stats code should just go away?)
 
->> Sometimes, GDB will output some value like:
->> inode has been optimized out of existence.
->> res has been optimized out of existence.
->> That is because value of inode and res is optimized. Linux Kernel is
->> built with -O2 so you will get this trouble sometimes. If you do not
->> care about the speed when you debug the Kernel, you can use the patch
->> for Linux Kernel in
+-- 
+error compiling committee.c: too many arguments to function
 
-I am curious to know what version of GCC you are using.  IME, the VTA
-patches really helped with this problem a lot -- though not completely.
-If you are not using a VTA-enabled GCC, you should.  And if you are, I
-think bug reports about values that are still optimized out would be
-useful.
-
-Tom
