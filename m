@@ -1,57 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657Ab1BGHlJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 02:41:09 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:35702 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752358Ab1BGHlH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 02:41:07 -0500
-Date: Mon, 7 Feb 2011 08:40:54 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: castet.matthieu@free.fr, Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-security-module@vger.kernel.org, Matthias Hopf <mhopf@suse.de>,
-        rjw@sisk.pl, Andrew Morton <akpm@linux-foundation.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [PATCH] NX protection for kernel data : fix 32 bits S3 suspend
-Message-ID: <20110207074054.GA21704@elte.hu>
-References: <4D473FD5.1090903@free.fr>
- <20110201080223.GB20372@elte.hu>
- <1296566732.4d4809cc1f963@imp.free.fr>
- <20110202062632.GA12256@elte.hu>
- <4D4CA3FD.6000901@zytor.com>
- <1296924395.4d4d7eeb6f1fe@imp.free.fr>
- <4D4F31BC.3000709@zytor.com>
+	id S1752667Ab1BGHwo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 02:52:44 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:52587 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752453Ab1BGHwm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 02:52:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Sq3UjN8Vr3GEpttdbaj2cx0fsbUqcR8xSOkEaF0B30/0z+uyQgQssNTU7wyGLdYfOz
+         V/s3zNQC4hK6ZSU5zrEVUKkHtjrVZ6C7pxjCsUy+wh2QlJjRHeOjDcG/6dNC01kg4AfC
+         a/eOtxjqX0mspEdoH52Ke603wUNGgFNqjqEGI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D4F31BC.3000709@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110206084440.a6c2df3b.rdunlap@xenotime.net>
+References: <4D4EBAF4.9070403@gmail.com>
+	<20110206084440.a6c2df3b.rdunlap@xenotime.net>
+Date: Mon, 7 Feb 2011 08:52:41 +0100
+Message-ID: <AANLkTi=T3TGYcxm2=C6QtYss09H9R+m0Zk9KDQepMqiL@mail.gmail.com>
+Subject: Re: [PATCH] Kconfig: XIP doesn't depend on block
+From: Marco Stornelli <marco.stornelli@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2011/2/6 Randy Dunlap <rdunlap@xenotime.net>:
+> On Sun, 06 Feb 2011 16:15:00 +0100 Marco Stornelli wrote:
+>
+>> From: Marco Stornelli <marco.stornelli@gmail.com>
+>>
+>> XIP doesn't depend on block symbol, then we can reorder the Kconfig.
+>> For ext2 doesn't change the Kconfig behavior but if other fs will use
+>> FS_XIP it won't need to include block support if not needed.
+>
+> Hi Marco,
+>
+> Do you know of a filesystem where this matters?
+>
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
+Yes, for example mine (pramfs) :)
 
-> The trampoline unification patch could have made this less broken, but
-> that code is certainly not ready for .38.
-> 
-> I'm officially proposing that we mark the low 1 MiB +x for .38, and do
-> something saner for .39, including my finishing the trampoline
-> unification code.
-> 
-> Ingo: ok with you?
+>> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+>> ---
+>>
+>> --- Kconfig.orig      2011-01-19 00:14:02.000000000 +0100
+>> +++ Kconfig   2011-02-06 16:04:51.000000000 +0100
+>
+> This filename should include path, like
+> --- fs/Kconfig.orig
+> +++ fs/Kconfig
+>
+>> @@ -9,13 +9,6 @@ if BLOCK
+>>  source "fs/ext2/Kconfig"
+>>  source "fs/ext3/Kconfig"
+>>  source "fs/ext4/Kconfig"
+>> -
+>
+> The 3 filesystems above are immediately under:
+>
+> if BLOCK
+>
+> so ext[234] depend on BLOCK.  Why would it matter about FS_XIP?
+>
 
-Sure thing, sounds sane!
+I don't know but for example even POSIX ACL was under "if BLOCK",
+maybe there is only an historical refuse.
 
-Thanks,
-
-	Ingo
+Marco
