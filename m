@@ -1,89 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830Ab1BGL00 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 06:26:26 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:32856 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752312Ab1BGL0Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 06:26:25 -0500
-Message-ID: <4D4FD695.5050507@mvista.com>
-Date: Mon, 07 Feb 2011 14:25:09 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	id S1753831Ab1BGLaU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 06:30:20 -0500
+Received: from www.tglx.de ([62.245.132.106]:36301 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753508Ab1BGLaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 06:30:18 -0500
+Date: Mon, 7 Feb 2011 12:30:03 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: [patch 2/4] xen: Switch to new irq_chip functions
+In-Reply-To: <1297076919.13091.846.camel@zakaz.uk.xensource.com>
+Message-ID: <alpine.LFD.2.00.1102071229050.31804@localhost6.localdomain6>
+References: <20110205200108.921707839@linutronix.de>  <20110205200703.925495018@linutronix.de> <1297076919.13091.846.camel@zakaz.uk.xensource.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Maciej Szmigiero <mhej@o2.pl>
-CC: Greg KH <gregkh@suse.de>, Johan Hovold <jhovold@gmail.com>,
-        Joe Perches <joe@perches.com>, Alan Cox <alan@linux.intel.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [USB]Add Samsung SGH-I500/Android modem ID switch to visor driver
-References: <4D4D9F37.4010201@o2.pl> <20110205192831.GA334@suse.de> <4D4DC400.2040302@o2.pl> <4D4DDD54.1010905@ru.mvista.com> <4D4EFEC3.5030702@o2.pl>
-In-Reply-To: <4D4EFEC3.5030702@o2.pl>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Mon, 7 Feb 2011, Ian Campbell wrote:
 
-On 06-02-2011 23:04, Maciej Szmigiero wrote:
+> On Sat, 2011-02-05 at 20:08 +0000, Thomas Gleixner wrote:
+> > 
+> > -static void ack_pirq(unsigned int irq)
+> > +static void ack_pirq(struct irq_data *data)
+> >  {
+> > -       int evtchn = evtchn_from_irq(irq);
+> > +       int evtchn = evtchn_from_irq(data->irq);
+> >  
+> > -       move_native_irq(irq);
+> > +       irq_move_irq(data); 
+> 
+> I tried to test with Linus latest but with this patch:
+> 
+> /local/scratch/ianc/devel/kernels/linux-2.6/drivers/xen/events.c: In function 'ack_pirq':
+> /local/scratch/ianc/devel/kernels/linux-2.6/drivers/xen/events.c:568: error: implicit declaration of function 'irq_move_irq'
+> 
+> I can't find irq_move_irq in any of the tip.git branches (incl. master,
+> auto-latest and .*irq.*), via google or in any of the other conversion
+> patches you posted for other arches. Am I just looking in the wrong
+> places or was this a mistake?
+> 
+> For now I went with the following sort-of-reversion to allow me to
+> continue:
+> 
+> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+> index 65f05e2..6f5dd38 100644
+> --- a/drivers/xen/events.c
+> +++ b/drivers/xen/events.c
+> @@ -565,7 +565,7 @@ static void ack_pirq(struct irq_data *data)
+>  {
+>  	int evtchn = evtchn_from_irq(data->irq);
+>  
+> -	irq_move_irq(data);
+> +	move_native_irq(data->irq);
 
->>> New version of patch which autodetects devices with ACM class.
->>> Tested on Galaxy Spica.
+Sorry, had another patch applied before that. Did not recheck before
+sending it. Yes, that's the correct resolution.
 
->>> Signed-off-by: Maciej Szmigiero<mhej@o2.pl>
+Thanks,
 
->>> diff --git a/drivers/usb/serial/visor.c b/drivers/usb/serial/visor.c
->>> index 15a5d89..e1c4527 100644
->>> --- a/drivers/usb/serial/visor.c
->>> +++ b/drivers/usb/serial/visor.c
->> [...]
->>> @@ -479,6 +480,15 @@ static int visor_probe(struct usb_serial *serial,
->>>
->>>        dbg("%s", __func__);
->>>
->>> +    /* some Samsung Android phones in modem mode have the same ID */
->>> +    /* as SPH-I500, but they are ACM devices, so dont bind to them */
+	tglx
 
->>     The preferred style for the multi-line comments is this:
 
->> /*
->>  * bla
->>  * bla
->>  */
-
->>> +    if ((id->idVendor == SAMSUNG_VENDOR_ID)&&
->>> +        (id->idProduct == SAMSUNG_SPH_I500_ID)&&
->>> +        (serial->dev->descriptor.bDeviceClass == USB_CLASS_COMM)&&
->>> +        (serial->dev->descriptor.bDeviceSubClass ==
->>> +            USB_CDC_SUBCLASS_ACM))
->>
->>     Parens around == not necessary...
-
->> WBR, Sergei
-
-> Thanks for comments, new version of this patch with style fixes follows.
-
-> Best regards,
-> Maciej Szmigiero
-
-> Signed-off-by: Maciej Szmigiero<mhej@o2.pl>
-
-> diff --git a/drivers/usb/serial/visor.c b/drivers/usb/serial/visor.c
-> index 15a5d89..0f75948 100644
-> --- a/drivers/usb/serial/visor.c
-> +++ b/drivers/usb/serial/visor.c
-[...]
-> @@ -479,6 +480,17 @@ static int visor_probe(struct usb_serial *serial,
->
->   	dbg("%s", __func__);
->
-> +	/*
-> +	 * some Samsung Android phones in modem mode have the same ID
-> +	 * as SPH-I500, but they are ACM devices, so dont bind to them
-> +	*/
-
-    Space is missing. You were close. :-)
-
-WBR, Sergei
