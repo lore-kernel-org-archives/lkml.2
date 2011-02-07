@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136Ab1BGWFG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 17:05:06 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:51659 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755064Ab1BGWFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 17:05:04 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [PATCH 5/5] ACPI: Tie ACPI backlight devices to PCI devices if possible
-Date: Mon, 7 Feb 2011 23:04:56 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.38-rc3+; KDE/4.4.4; x86_64; ; )
-Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>, dri-devel@lists.freedesktop.org,
-        akpm@linux-foundation.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rpurdie@rpsys.net,
-        Len Brown <lenb@kernel.org>
-References: <1295033065-13450-1-git-send-email-mjg@redhat.com> <201102071432.35656.bjorn.helgaas@hp.com> <20110207213426.GA23843@srcf.ucam.org>
-In-Reply-To: <20110207213426.GA23843@srcf.ucam.org>
+	id S1755145Ab1BGWJD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 17:09:03 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:10387 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755064Ab1BGWJC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 17:09:02 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:message-id:user-agent
+         :mime-version:content-type;
+        b=KyD4wWowdHYs67nJ6utR2t5mEOox5FiGBOKjHYcuQKOErtW+3o1eJIDArcMwrLeESa
+         oNXD67u2ixitXnh8kmcw==
+Date: Mon, 7 Feb 2011 14:08:53 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+cc: Andrew Morton <akpm@linux-foundation.org>, Jesper Juhl <jj@chaosbits.net>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [patch] x86, numa: Add error handling for bad cpu-to-node mappings
+Message-ID: <alpine.DEB.2.00.1102071407250.7812@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102072304.57030.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, February 07, 2011, Matthew Garrett wrote:
-> On Mon, Feb 07, 2011 at 02:32:35PM -0700, Bjorn Helgaas wrote:
-> 
-> > I'm not familiar with video devices, but I agree, this situation does
-> > feel broken.  Is it the case that there's a PCI device as well as an
-> > ACPI namespace Device for the same piece of hardware?  If so, I assume
-> > the reason for the ACPI Device is to have a "standard" interface to
-> > a platform knob like backlight control.
-> > 
-> > In that case, it seems like we should rely on PCI for enumeration and
-> > driver binding, have some sort of hook the PCI driver could use to
-> > twiddle that knob (using the ACPI methods), and make the ACPI Device
-> > ineligible for driver binding.  In other words, it sounds like part
-> > of the problem is that we have two drivers binding to what's really
-> > a single piece of hardware.
-> 
-> Part of the problem is that ACPI video devices aren't inherently PCI 
-> devices.
+CONFIG_DEBUG_PER_CPU_MAPS may return NUMA_NO_NODE when an
+early_cpu_to_node() mapping hasn't been initialized.  In such a case, it
+emits a warning and continues without an issue but callers may try to use
+the return value to index into an array.
 
-To me, this really isn't about video devices.  The problem is that objects
-of type struct acpi_device are treated _differently_ depending on the context.
+We can catch those errors and fail silently since a warning has already
+been emitted.  No current user of numa_add_cpu() requires this error
+checking to avoid a crash, but it's better to be proactive in case a
+future user happens to have a bug and a user tries to diagnose it with
+CONFIG_DEBUG_PER_CPU_MAPS.
 
-In the meantime I've reviewed the code a bit and noticed that there's a
-parent pointer in struct acpi_device, which basically duplicates the device
-tree dependency, so it looks like the embedded dev in struct acpi_device is
-really redundant.
+Reported-by: Jesper Juhl <jj@chaosbits.net>
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ arch/x86/mm/numa.c    |    4 ++++
+ arch/x86/mm/numa_64.c |    4 ++++
+ 2 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -219,6 +219,10 @@ struct cpumask __cpuinit *debug_cpumask_set_cpu(int cpu, int enable)
+ 	struct cpumask *mask;
+ 	char buf[64];
+ 
++	if (node == NUMA_NO_NODE) {
++		/* early_cpu_to_node() already emits a warning and trace */
++		return NULL;
++	}
+ 	mask = node_to_cpumask_map[node];
+ 	if (!mask) {
+ 		pr_err("node_to_cpumask_map[%i] NULL\n", node);
+diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
+--- a/arch/x86/mm/numa_64.c
++++ b/arch/x86/mm/numa_64.c
+@@ -709,6 +709,10 @@ static void __cpuinit numa_set_cpumask(int cpu, int enable)
+ 	struct cpumask *mask;
+ 	int i;
+ 
++	if (node == NUMA_NO_NODE) {
++		/* early_cpu_to_node() already emits a warning and trace */
++		return;
++	}
+ 	for_each_online_node(i) {
+ 		unsigned long addr;
+ 
