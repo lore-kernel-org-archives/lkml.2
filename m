@@ -1,87 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940Ab1BGPBF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 10:01:05 -0500
-Received: from casper.infradead.org ([85.118.1.10]:39155 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753902Ab1BGPBD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 10:01:03 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        2nddept-manager@sdl.hitachi.co.jp,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Denis Kirjanov <dkirjanov@kernel.org>,
-        Franck Bui-Huu <fbuihuu@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H . Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Kyle McMartin <kyle@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Michael Witten <mfwitten@gmail.com>, Mike Galbraith <efault@gmx.de>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 0/9] perf/core improvements and fixes
-Date: Mon,  7 Feb 2011 13:00:03 -0200
-Message-Id: <1297090812-10782-1-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1753997Ab1BGPBo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 10:01:44 -0500
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:42993
+	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753977Ab1BGPBl convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 10:01:41 -0500
+X-SpamScore: -30
+X-BigFish: VPS-30(zz542N1432N98dN4015L9371Pzz1202hzzz2dh95h668h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-Class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH 3/4] ARM: Xilinx: Adding timer support to the platform
+Date: Mon, 7 Feb 2011 08:01:37 -0700
+In-Reply-To: <20110207145858.GC24893@pulham.picochip.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 3/4] ARM: Xilinx: Adding timer support to the platform
+Thread-Index: AcvG15SaV17tFGjET4SvS5hLHbpoIQAAC3GQ
+References: <1296922637-24662-1-git-send-email-john.linn@xilinx.com> <1296922637-24662-2-git-send-email-john.linn@xilinx.com> <1296922637-24662-3-git-send-email-john.linn@xilinx.com> <66f1ca90-76f5-4571-b10e-8b79f62e5275@VA3EHSMHS020.ehs.local> <20110206010343.GB5563@pulham.picochip.com> <a58cfb3f-31d6-4120-a961-694aed8b7486@VA3EHSMHS006.ehs.local> <20110207145858.GC24893@pulham.picochip.com>
+From: John Linn <John.Linn@xilinx.com>
+To: Jamie Iles <jamie@jamieiles.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
+        <glikely@secretlab.ca>, Kiran Sutariya <kiran.sutariya@einfochips.com>
+X-OriginalArrivalTime: 07 Feb 2011 15:01:37.0116 (UTC) FILETIME=[EAE251C0:01CBC6D7]
+X-RCIS-Action: ALLOW
+Message-ID: <74e0d395-ca75-4ac0-8dcc-fdb55d3deeb3@VA3EHSMHS004.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+> -----Original Message-----
+> From: Jamie Iles [mailto:jamie@jamieiles.com]
+> Sent: Monday, February 07, 2011 7:59 AM
+> To: John Linn
+> Cc: Jamie Iles; linux-arm-kernel@lists.infradead.org;
+linux-kernel@vger.kernel.org;
+> linux@arm.linux.org.uk; catalin.marinas@arm.com; glikely@secretlab.ca;
+Kiran Sutariya
+> Subject: Re: [PATCH 3/4] ARM: Xilinx: Adding timer support to the
+platform
+> 
+> On Mon, Feb 07, 2011 at 07:16:01AM -0700, John Linn wrote:
+> > > -----Original Message-----
+> > > From: Jamie Iles [mailto:jamie@jamieiles.com]
+> > > Sent: Saturday, February 05, 2011 6:04 PM
+> > > To: John Linn
+> > > Cc: linux-arm-kernel@lists.infradead.org;
+> > linux-kernel@vger.kernel.org; linux@arm.linux.org.uk;
+> > > catalin.marinas@arm.com; glikely@secretlab.ca; Kiran Sutariya
+> > > Subject: Re: [PATCH 3/4] ARM: Xilinx: Adding timer support to the
+> > platform
+> > >
+> > > Hi John,
+> > >
+> > > A couple more nitpicks.
+> > >
+> > > Jamie
+> > >
+> > > On Sat, Feb 05, 2011 at 09:17:16AM -0700, John Linn wrote:
+> > > > +static irqreturn_t xttcpss_clock_event_interrupt(int irq, void
+> > *dev_id)
+> > > > +{
+> > > > +	struct clock_event_device *evt = &xttcpss_clockevent;
+> > > > +	struct xttcpss_timer *timer = dev_id;
+> > > > +	u32 ctrl_reg;
+> > > > +
+> > > > +	/* Acknowledge the interrupt and call event handler */
+> > > > +	xttcpss_write(timer->base_addr + XTTCPSS_ISR_OFFSET,
+> > > > +		xttcpss_read(timer->base_addr +
+XTTCPSS_ISR_OFFSET));
+> > > > +
+> > > > +	if (timer->mode == CLOCK_EVT_MODE_ONESHOT) {
+> > > > +
+> > > > +		/* Disable the counter as it would keep running.
+*/
+> > > > +		ctrl_reg = xttcpss_read(timer->base_addr +
+> > > > +
+XTTCPSS_CNT_CNTRL_OFFSET);
+> > > > +		ctrl_reg |= ~(XTTCPSS_CNT_CNTRL_ENABLE_MASK);
+> > >
+> > > The clock events framework should reprogram the next event so you
+> > don't
+> > > actually need to disable the timer here.  Once the event handler
+has
+> > > been called the timer will be reenabled with a new period, and as
+> > we're
+> > > running with interrupts disabled here we don't need to stop the
+timer.
+> > >
+> >
+> > What about if there's not another event to be started?
+> 
+> Then the clockevents code can set the mode to CLOCK_EVT_MODE_SHUTDOWN
+> and this should disable the timer.  For NOHZ, AFAICT the
+> clockevents/tick code will make sure that the next tick always falls
+> within your max_delta_ns.
+> 
+> Jamie
 
-        Please consider pulling from:
+Thanks, appreciate that help as I'm still learning more on the clock
+mgmt.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
+Sounds good, I can stop it and test that.
 
-Regards,
+-- John
 
-- Arnaldo
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
 
-Borislav Petkov (1):
-  perf annotate: Fix build error
-
-Denis Kirjanov (1):
-  perf top: Use pid_t for target_{pid|tid}
-
-Franck Bui-Huu (1):
-  perf probe: Rewrite find_lazy_match_lines() by using getline(3)
-
-Kyle McMartin (1):
-  perf tool: Fix gcc 4.6.0 issues
-
-Masami Hiramatsu (4):
-  tracing/kprobes: Cleanup strict_strtol() using code
-  tracing/kprobes: Support longer (>128 bytes) command
-  tracing/kprobes: Add bitfield type
-  perf probe: Add bitfield member support
-
-Michael Witten (1):
-  perf tools: Makefile: Use $(QUIET_GEN) for perf.so
-
- Documentation/trace/kprobetrace.txt                |   16 ++-
- kernel/trace/trace_kprobe.c                        |  111 +++++++++++++-
- tools/perf/Makefile                                |    2 +-
- tools/perf/bench/sched-pipe.c                      |    2 +-
- tools/perf/builtin-sched.c                         |   12 +-
- tools/perf/builtin-top.c                           |    2 +-
- tools/perf/util/annotate.c                         |    3 -
- tools/perf/util/annotate.h                         |    2 +-
- tools/perf/util/header.c                           |    2 +-
- tools/perf/util/probe-finder.c                     |  165 +++++++++++--------
- .../util/scripting-engines/trace-event-python.c    |    3 +-
- tools/perf/util/symbol.c                           |    4 +-
- tools/perf/util/top.h                              |    4 +-
- tools/perf/util/trace-event-parse.c                |    2 +-
- tools/perf/util/ui/browsers/map.c                  |    2 +-
- 15 files changed, 231 insertions(+), 101 deletions(-)
 
