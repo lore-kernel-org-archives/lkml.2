@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751666Ab1BGMWV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 07:22:21 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33025 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751122Ab1BGMWU (ORCPT
+	id S1751469Ab1BGMZJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 07:25:09 -0500
+Received: from casper.infradead.org ([85.118.1.10]:58126 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753Ab1BGMZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 07:22:20 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-embedded@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] PM: Hide CONFIG_PM from users
-Date: Mon,  7 Feb 2011 12:22:15 +0000
-Message-Id: <1297081335-13631-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.3
+	Mon, 7 Feb 2011 07:25:07 -0500
+Subject: Re: Using ftrace/perf as a basis for generic seccomp
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Stefan Fritsch <sf@sfritsch.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Eric Paris <eparis@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org, agl@google.com, tzanussi@gmail.com,
+        Jason Baron <jbaron@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        2nddept-manager@sdl.hitachi.co.jp,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, James Morris <jmorris@namei.org>
+In-Reply-To: <alpine.DEB.1.10.1102051243480.26628@eru.sfritsch.de>
+References: <1294867725.3237.230.camel@localhost.localdomain>
+	 <1296665124.3145.17.camel@localhost.localdomain>
+	 <20110203190643.GC1769@nowhere> <201102032306.34251.sf@sfritsch.de>
+	 <20110203231051.GA1840@nowhere>
+	 <1296784230.3145.44.camel@localhost.localdomain>
+	 <1296829915.26581.658.camel@laptop>
+	 <1296836962.3145.75.camel@localhost.localdomain>
+	 <20110204170448.GA1808@nowhere>
+	 <alpine.DEB.1.10.1102051243480.26628@eru.sfritsch.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 Feb 2011 13:26:09 +0100
+Message-ID: <1297081569.13327.3.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is very rare to find a current system which is both sufficiently
-resource constrained to want to compile out power management support
-and sufficiently power insensitive to be able to tolerate doing so.
-Since having the configuration option requires non-zero effort to
-maintain, with ifdefery in most drivers, but it is used with vanishing
-rarity it is simpler to just remove the option.
+On Sat, 2011-02-05 at 12:51 +0100, Stefan Fritsch wrote:
 
-Begin doing so by hiding it from users - this should attract complaints
-from any active users. The option is left disabled for the IA64 Ski
-simulator which is a partial simulator for IA64 systems mostly missing
-device support. This is a very limited use case which is unlikely to
-ever want to enable most drivers.
+> A really major use case is socketcall(2). All socket related syscalls 
+> (accept, bind, connect, receivemsg, ...) are implemented as socketcall 
+> with an appropriate argument. There will be many cases where you want a 
+> sandboxed process to be able to do recvmsg(2) to receive new file 
+> descriptors over an already open unix-domain socket from a broker process. 
+> But you may want to disallow other socket operations, especially listen, 
+> accept, and connect.
+> 
+> Of course one could also add some special case handling for socketcall 
+> in seccomp instead of using the full filtering.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- kernel/power/Kconfig |   21 ++-------------------
- 1 files changed, 2 insertions(+), 19 deletions(-)
+That looks like a perfect use-case for the LSM bits, attach some state
+to both the fd object and the task object and if they don't match, don't
+allow the action.
 
-diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
-index 2657299..99e3c52 100644
---- a/kernel/power/Kconfig
-+++ b/kernel/power/Kconfig
-@@ -1,23 +1,6 @@
- config PM
--	bool "Power Management support"
--	depends on !IA64_HP_SIM
--	---help---
--	  "Power Management" means that parts of your computer are shut
--	  off or put into a power conserving "sleep" mode if they are not
--	  being used.  There are two competing standards for doing this: APM
--	  and ACPI.  If you want to use either one, say Y here and then also
--	  to the requisite support below.
--
--	  Power Management is most important for battery powered laptop
--	  computers; if you have a laptop, check out the Linux Laptop home
--	  page on the WWW at <http://www.linux-on-laptops.com/> or
--	  Tuxmobil - Linux on Mobile Computers at <http://www.tuxmobil.org/>
--	  and the Battery Powered Linux mini-HOWTO, available from
--	  <http://www.tldp.org/docs.html#howto>.
--
--	  Note that, even if you say N here, Linux on the x86 architecture
--	  will issue the hlt instruction if nothing is to be done, thereby
--	  sending the processor to sleep and saving power.
-+	bool
-+	default y if !IA64_HP_SIM
- 
- config PM_DEBUG
- 	bool "Power Management Debug Support"
--- 
-1.7.2.3
+
 
