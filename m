@@ -1,40 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007Ab1BGLuY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 06:50:24 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35934 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753767Ab1BGLuX (ORCPT
+	id S1754014Ab1BGLvp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 06:51:45 -0500
+Received: from smtp-out3.tiscali.nl ([195.241.79.178]:58205 "EHLO
+	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753767Ab1BGLvo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 06:50:23 -0500
-Date: Mon, 7 Feb 2011 11:50:21 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/7] ASoC: neo1973_wm8753: Move lm4857 specefic code to
- its own module
-Message-ID: <20110207115021.GC10564@opensource.wolfsonmicro.com>
-References: <1297033463-14577-1-git-send-email-lars@metafoo.de>
- <1297033463-14577-2-git-send-email-lars@metafoo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297033463-14577-2-git-send-email-lars@metafoo.de>
-X-Cookie: You are fairminded, just and loving.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 7 Feb 2011 06:51:44 -0500
+Subject: [PATCH] Export linux/syslog.h
+From: Paul Bolle <pebolle@tiscali.nl>
+To: linux-kernel@vger.kernel.org
+Cc: Kees Cook <kees.cook@canonical.com>, David Woodhouse <dwmw2@infradead.org>
+Date: Mon, 07 Feb 2011 12:51:36 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 2.91.5 (2.91.5-4.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1297079503.1741.10.camel@t41.thuisdomein>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 07, 2011 at 12:04:18AM +0100, Lars-Peter Clausen wrote:
+Userspace programs (like util-linux' dmesg) still use magic numbers for
+the klogctl function (glibc's interface to the syslog system call).
+Exporting linux/syslog.h makes the more descriptive named constants
+available as a single reference for these values.
 
-> +int lm4857_add_controls(struct snd_soc_codec *codec)
-> +{
-> +	return snd_soc_add_controls(codec, lm4857_controls,
-> +				ARRAY_SIZE(lm4857_controls));
-> +}
-> +EXPORT_SYMBOL_GPL(lm4857_add_controls);
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Kees Cook <kees.cook@canonical.com>
+---
+ include/linux/Kbuild   |    1 +
+ include/linux/syslog.h |    2 ++
+ 2 files changed, 3 insertions(+), 0 deletions(-)
 
-If you're moving this into a standalone driver it should be updated to
-register as a CODEC.
+diff --git a/include/linux/Kbuild b/include/linux/Kbuild
+index b0ada6f..c80f55f 100644
+--- a/include/linux/Kbuild
++++ b/include/linux/Kbuild
+@@ -347,6 +347,7 @@ header-y += suspend_ioctls.h
+ header-y += swab.h
+ header-y += synclink.h
+ header-y += sysctl.h
++header-y += syslog.h
+ header-y += taskstats.h
+ header-y += tcp.h
+ header-y += telephony.h
+diff --git a/include/linux/syslog.h b/include/linux/syslog.h
+index 3891139..75950af 100644
+--- a/include/linux/syslog.h
++++ b/include/linux/syslog.h
+@@ -44,9 +44,11 @@
+ /* Return size of the log buffer */
+ #define SYSLOG_ACTION_SIZE_BUFFER   10
+ 
++#ifdef __KERNEL__
+ #define SYSLOG_FROM_CALL 0
+ #define SYSLOG_FROM_FILE 1
+ 
+ int do_syslog(int type, char __user *buf, int count, bool from_file);
++#endif
+ 
+ #endif /* _LINUX_SYSLOG_H */
+-- 
+1.7.4
+
+
+
