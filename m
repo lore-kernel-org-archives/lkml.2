@@ -1,93 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106Ab1BGL70 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 06:59:26 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:50811 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754037Ab1BGL7X (ORCPT
+	id S1754081Ab1BGMIY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 07:08:24 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:60379 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753958Ab1BGMIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 06:59:23 -0500
-X-Auth-Info: OcxdlVYRuk7xKALUCxBfNZ2CpEkS/NS/vpcJ0hXh8gM=
-Message-ID: <4D4FDEF9.2030305@grandegger.com>
-Date: Mon, 07 Feb 2011 13:00:57 +0100
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	Mon, 7 Feb 2011 07:08:23 -0500
+Message-ID: <4D4FE06B.1080705@ru.mvista.com>
+Date: Mon, 07 Feb 2011 15:07:07 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-CC: socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: About bittiming calculation result
-References: <cover.1296818921.git.segoon@openwall.com><a6800dc8b0daed78256f98f52844cbbb48f4a76d.1296818921.git.segoon@openwall.com><20110204124233.GB334@e-circ.dyndns.org> <20110204.130649.112613896.davem@davemloft.net> <5009516791F146C49C73FAC57C437313@hacdom.okisemi.com>
-In-Reply-To: <5009516791F146C49C73FAC57C437313@hacdom.okisemi.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ide/pmac: housekeeping
+References: <201102071152.19326.bzolnier@gmail.com>
+In-Reply-To: <201102071152.19326.bzolnier@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomoya,
+Hello.
 
-On 02/07/2011 12:38 PM, Tomoya MORINAGA wrote:
-> Hi,
-> 
-> I have a question for bittiming-value calculated by Can-core.
-> 
-> In case setting like below,
->  - ip link set can0 type can bitrate 800000
->  - clock=50MHz
->  - Use pch_can
-> 
-> Can-core calculates like below
-> brp=21
-> seg1=1
-> seg2=1
-> sjw=1
-> prop_seg=0
-> 
-> Is "prop_seg=0" true ?
+On 07-02-2011 13:52, Bartlomiej Zolnierkiewicz wrote:
 
-Well, only prop_seg+phase_seg=tseg1 is relevant and the pch_can driver
-sets the allowed minimum "tseg1_min1" currently to 1:
+> * remove legacy IDE_PMAC_DEBUG debugging code
+> * rename struct pmac_ide_hwif to struct pmac_ide_priv
+> * remove pmac_ide_hwif_t
+> * remove needless {dev,pci}_get_drvdata() casts
 
-static struct can_bittiming_const pch_can_bittiming_const = {
-        .name = KBUILD_MODNAME,
-        .tseg1_min = 1,
-        .tseg1_max = 16,
-        .tseg2_min = 1,
-        .tseg2_max = 8,
-        .sjw_max = 4,
-        .brp_min = 1,
-        .brp_max = 1024, /* 6bit + extended 4bit */
-        .brp_inc = 1,
-};
+> Compile-time tested only.
 
-> seg1/seg2/sjw/prop_seg must be more than 1 ?
+> Signed-off-by: Bartlomiej Zolnierkiewicz<bzolnier@gmail.com>
+[...]
 
-Then "tseg1_min" should be set to *2*.
+> Index: b/drivers/ide/pmac.c
+> ===================================================================
+> --- a/drivers/ide/pmac.c
+> +++ b/drivers/ide/pmac.c
+[...]
+> @@ -698,11 +683,6 @@ set_timings_mdma(ide_drive_t *drive, int
+>   		cycleTime = tm[i].cycleTime;
+>   		accessTime = tm[i].accessTime;
+>   		recTime = tm[i].recoveryTime;
+> -
+> -#ifdef IDE_PMAC_DEBUG
+> -		printk(KERN_ERR "%s: MDMA, cycleTime: %d, accessTime: %d, recTime:
+> %d\n",
 
-> Also I can see the following kernel error log.
-> bitrate error 0.7%
+    Hm, the patch is line-wrapped...
 
-A clock frequency of 50 MHz is sub-optimal for CAN and some
-bit-rates cannot be reproduced properly. Here is the output of
-the can-utils program "can-calc-bit-timing" (with an entry for
-the pch-can added):
-
-$ ./can-calc-bit-timing pch-can
-Bit timing parameters for pch-can with 50.000000 MHz ref clock
-nominal                                 real Bitrt   nom  real SampP
-Bitrate TQ[ns] PrS PhS1 PhS2 SJW BRP Bitrate Error SampP SampP Error CNF1 CNF2 CNF3
-1000000    100   3    3    3   1   5 1000000  0.0% 75.0% 70.0%  6.7% 0x05 0x92 0x02
- 800000    420   0    1    1   1  21  793650  0.8% 80.0% 66.6% 16.8% 0x15 0xff 0x00
- 500000    100   8    8    3   1   5  500000  0.0% 87.5% 85.0%  2.9% 0x05 0xbf 0x02
- 250000    500   3    3    1   1  25  250000  0.0% 87.5% 87.5%  0.0% 0x19 0x92 0x00
- 125000    500   6    7    2   1  25  125000  0.0% 87.5% 87.5%  0.0% 0x19 0xb5 0x01
- 100000    500   8    8    3   1  25  100000  0.0% 87.5% 85.0%  2.9% 0x19 0xbf 0x02
-  50000   2500   3    3    1   1 125   50000  0.0% 87.5% 87.5%  0.0% 0x7d 0x92 0x00
-  20000   2500   8    8    3   1 125   20000  0.0% 87.5% 85.0%  2.9% 0x7d 0xbf 0x02
-  10000  12500   3    3    1   1 625   10000  0.0% 87.5% 87.5%  0.0% 0x71 0x92 0x00
-
-As you can see, especially 800000 gives rather bad results.
-
-Wolfgang.
+WBR, Sergei
