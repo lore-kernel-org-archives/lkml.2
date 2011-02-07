@@ -1,68 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754014Ab1BGLvp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 06:51:45 -0500
-Received: from smtp-out3.tiscali.nl ([195.241.79.178]:58205 "EHLO
-	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753767Ab1BGLvo (ORCPT
+	id S1754050Ab1BGL66 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 06:58:58 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:48196 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751934Ab1BGL65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 06:51:44 -0500
-Subject: [PATCH] Export linux/syslog.h
-From: Paul Bolle <pebolle@tiscali.nl>
-To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <kees.cook@canonical.com>, David Woodhouse <dwmw2@infradead.org>
-Date: Mon, 07 Feb 2011 12:51:36 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 2.91.5 (2.91.5-4.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1297079503.1741.10.camel@t41.thuisdomein>
-Mime-Version: 1.0
+	Mon, 7 Feb 2011 06:58:57 -0500
+Date: Mon, 7 Feb 2011 11:58:20 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 07/09] ARM: s3c2440: gta02: Call
+	regulator_has_full_constraints
+Message-ID: <20110207115820.GB1196@sirena.org.uk>
+References: <1297043521-21903-1-git-send-email-lars@metafoo.de> <1297043521-21903-7-git-send-email-lars@metafoo.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1297043521-21903-7-git-send-email-lars@metafoo.de>
+X-Cookie: Torque is cheap.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Userspace programs (like util-linux' dmesg) still use magic numbers for
-the klogctl function (glibc's interface to the syslog system call).
-Exporting linux/syslog.h makes the more descriptive named constants
-available as a single reference for these values.
+On Mon, Feb 07, 2011 at 02:51:59AM +0100, Lars-Peter Clausen wrote:
+> At the end of gta02_pmu_attach_child_devices all drivers should have taken
+> control of their regulators and we can tell the regulator core to disable all
+> regulators which are currently not in use.
+> 
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
----
- include/linux/Kbuild   |    1 +
- include/linux/syslog.h |    2 ++
- 2 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/Kbuild b/include/linux/Kbuild
-index b0ada6f..c80f55f 100644
---- a/include/linux/Kbuild
-+++ b/include/linux/Kbuild
-@@ -347,6 +347,7 @@ header-y += suspend_ioctls.h
- header-y += swab.h
- header-y += synclink.h
- header-y += sysctl.h
-+header-y += syslog.h
- header-y += taskstats.h
- header-y += tcp.h
- header-y += telephony.h
-diff --git a/include/linux/syslog.h b/include/linux/syslog.h
-index 3891139..75950af 100644
---- a/include/linux/syslog.h
-+++ b/include/linux/syslog.h
-@@ -44,9 +44,11 @@
- /* Return size of the log buffer */
- #define SYSLOG_ACTION_SIZE_BUFFER   10
- 
-+#ifdef __KERNEL__
- #define SYSLOG_FROM_CALL 0
- #define SYSLOG_FROM_FILE 1
- 
- int do_syslog(int type, char __user *buf, int count, bool from_file);
-+#endif
- 
- #endif /* _LINUX_SYSLOG_H */
--- 
-1.7.4
-
-
-
+You're misunderstanding this API.  It can be called at any time and will
+only actually do anything at the end of init.  You should just call it
+from your machine init.
