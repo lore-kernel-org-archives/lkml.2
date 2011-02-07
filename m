@@ -1,233 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082Ab1BGQb3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 11:31:29 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33251 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752428Ab1BGQb2 (ORCPT
+	id S1754104Ab1BGQoM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 11:44:12 -0500
+Received: from artax.karlin.mff.cuni.cz ([195.113.26.195]:56481 "EHLO
+	artax.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752836Ab1BGQoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 11:31:28 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=YWy3pBtaUe7apKrp8Q3U/KVNdZ/j9mK9qvVns5BdVt6Teb6yJ0/NpJB6oypkDxmkh6
-         J5FI8SE+UpAMM8pbic7oin5StZVtYkZU/mjd4AnVMVJLOL/aND0qP6P1zAUR/gwqWwoN
-         cD+m5wxhFrGyFSw+V64K15MaRIP4bLtBJGmY4=
-Date: Mon, 7 Feb 2011 17:31:21 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Roland McGrath <roland@redhat.com>, jan.kratochvil@redhat.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1] ptrace: make sure do_wait() won't hang after
- PTRACE_ATTACH
-Message-ID: <20110207163121.GB16992@htj.dyndns.org>
-References: <20110203213640.1F516180995@magilla.sf.frob.com>
- <20110203214450.GA29496@redhat.com>
- <20110204105343.GA12133@htj.dyndns.org>
- <20110204130455.GA3671@redhat.com>
- <20110204144858.GI12133@htj.dyndns.org>
- <20110204170602.GB15301@redhat.com>
- <20110205133926.GM12133@htj.dyndns.org>
- <20110207134235.GB22538@redhat.com>
- <20110207141135.GA16992@htj.dyndns.org>
- <20110207153723.GA27997@redhat.com>
+	Mon, 7 Feb 2011 11:44:11 -0500
+X-Greylist: delayed 1593 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Feb 2011 11:44:11 EST
+Date: Mon, 7 Feb 2011 17:17:37 +0100 (CET)
+From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 11/20] hpfs: move to drivers/staging
+In-Reply-To: <1295993854-4971-12-git-send-email-arnd@arndb.de>
+Message-ID: <alpine.DEB.1.10.1102071716420.31987@artax.karlin.mff.cuni.cz>
+References: <1295993854-4971-1-git-send-email-arnd@arndb.de> <1295993854-4971-12-git-send-email-arnd@arndb.de>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+X-Personality-Disorder: Schizoid
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110207153723.GA27997@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Oleg.
+Hey, I will solve it sometimes, but I am in a mental hospital now.
 
-On Mon, Feb 07, 2011 at 04:37:23PM +0100, Oleg Nesterov wrote:
-> On 02/07, Tejun Heo wrote:
-> >  http://article.gmane.org/gmane.linux.kernel/1095119
-> >  http://article.gmane.org/gmane.linux.kernel/1095603
+Mikulas
+
+On Tue, 25 Jan 2011, Arnd Bergmann wrote:
+
+> hpfs has not seen a single patch from its maintainer
+> since the start of the git history, and the user base
+> seems to be completely gone after the end of OS/2.
 > 
-> Yes, I tried to read this... But I have to admit I can hardly understand
-> your discussion with Roland. More precisely, I don't understand what
-> exactly you have in mind.
-
-Heh, okay, I'll try harder.  :-)
-
-> One (may be off-topic) note,
+> I have tried to keep the file system alive as much
+> as possible through the BKL removal, but this its
+> time seems to have come. If we can find an actual
+> user who is willing to test patches, or even a
+> maintainer that can work on the code, it can easily
+> be moved back into the main tree.
 > 
-> 	On 01/31, Tejun Heo wrote:
-> 	>
-> 	> On Fri, Jan 28, 2011 at 01:30:09PM -0800, Roland McGrath wrote:
-> 	> > > A visible behavior change is increased likelihood of delayed group
-> 	> > > stop completion if the thread group contains one or more ptraced
-> 	> > > tasks.
-> 	> >
-> 	> > I object to that difference in behavior.  As I've said before, I don't
-> 	> > think there should be any option to circumvent a group stop via ptrace.
-> 	> > If you think otherwise, you have a hard road to convince me of it.
+> If that does not happen, it will get removed from
+> the kernel tree after a few releases in staging/.
 > 
-> I agree with Roland here.
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+> Cc: linux-fsdevel@vger.kernel.org
+> ---
+>  MAINTAINERS                            |    2 +-
+>  drivers/staging/Kconfig                |    2 ++
+>  drivers/staging/Makefile               |    1 +
+>  {fs => drivers/staging}/hpfs/Kconfig   |    3 +++
+>  {fs => drivers/staging}/hpfs/Makefile  |    0
+>  drivers/staging/hpfs/TODO              |    5 +++++
+>  {fs => drivers/staging}/hpfs/alloc.c   |    0
+>  {fs => drivers/staging}/hpfs/anode.c   |    0
+>  {fs => drivers/staging}/hpfs/buffer.c  |    0
+>  {fs => drivers/staging}/hpfs/dentry.c  |    0
+>  {fs => drivers/staging}/hpfs/dir.c     |    0
+>  {fs => drivers/staging}/hpfs/dnode.c   |    0
+>  {fs => drivers/staging}/hpfs/ea.c      |    0
+>  {fs => drivers/staging}/hpfs/file.c    |    0
+>  {fs => drivers/staging}/hpfs/hpfs.h    |    0
+>  {fs => drivers/staging}/hpfs/hpfs_fn.h |    0
+>  {fs => drivers/staging}/hpfs/inode.c   |    0
+>  {fs => drivers/staging}/hpfs/map.c     |    0
+>  {fs => drivers/staging}/hpfs/name.c    |    0
+>  {fs => drivers/staging}/hpfs/namei.c   |    0
+>  {fs => drivers/staging}/hpfs/super.c   |    0
+>  fs/Kconfig                             |    1 -
+>  fs/Makefile                            |    1 -
+>  23 files changed, 12 insertions(+), 3 deletions(-)
+>  rename {fs => drivers/staging}/hpfs/Kconfig (85%)
+>  rename {fs => drivers/staging}/hpfs/Makefile (100%)
+>  create mode 100644 drivers/staging/hpfs/TODO
+>  rename {fs => drivers/staging}/hpfs/alloc.c (100%)
+>  rename {fs => drivers/staging}/hpfs/anode.c (100%)
+>  rename {fs => drivers/staging}/hpfs/buffer.c (100%)
+>  rename {fs => drivers/staging}/hpfs/dentry.c (100%)
+>  rename {fs => drivers/staging}/hpfs/dir.c (100%)
+>  rename {fs => drivers/staging}/hpfs/dnode.c (100%)
+>  rename {fs => drivers/staging}/hpfs/ea.c (100%)
+>  rename {fs => drivers/staging}/hpfs/file.c (100%)
+>  rename {fs => drivers/staging}/hpfs/hpfs.h (100%)
+>  rename {fs => drivers/staging}/hpfs/hpfs_fn.h (100%)
+>  rename {fs => drivers/staging}/hpfs/inode.c (100%)
+>  rename {fs => drivers/staging}/hpfs/map.c (100%)
+>  rename {fs => drivers/staging}/hpfs/name.c (100%)
+>  rename {fs => drivers/staging}/hpfs/namei.c (100%)
+>  rename {fs => drivers/staging}/hpfs/super.c (100%)
 > 
-> 	> Yes, I do have some other ideas.  When a ptraced task gets a stop
-> 	> signal, its delivery is controlled by the tracer, right?
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 246ee22..fe5ca5f 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -3009,7 +3009,7 @@ HPFS FILESYSTEM
+>  M:	Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+>  W:	http://artax.karlin.mff.cuni.cz/~mikulas/vyplody/hpfs/index-e.cgi
+>  S:	Maintained
+> -F:	fs/hpfs/
+> +F:	drivers/staging/hpfs/
+>  
+>  HSO 3G MODEM DRIVER
+>  M:	Jan Dumon <j.dumon@option.com>
+> diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
+> index 6ac0418..9fc5aa6 100644
+> --- a/drivers/staging/Kconfig
+> +++ b/drivers/staging/Kconfig
+> @@ -175,5 +175,7 @@ source "drivers/staging/cptm1217/Kconfig"
+>  
+>  source "drivers/staging/ste_rmi4/Kconfig"
+>  
+> +source "drivers/staging/hpfs/Kconfig"
+> +
+>  endif # !STAGING_EXCLUDE_BUILD
+>  endif # STAGING
+> diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+> index a834d2e..878f381 100644
+> --- a/drivers/staging/Makefile
+> +++ b/drivers/staging/Makefile
+> @@ -68,3 +68,4 @@ obj-$(CONFIG_SND_INTEL_SST)		+= intel_sst/
+>  obj-$(CONFIG_SPEAKUP)	+= speakup/
+>  obj-$(CONFIG_TOUCHSCREEN_CLEARPAD_TM1217)	+= cptm1217/
+>  obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4)	+= ste_rmi4/
+> +obj-$(CONFIG_HPFS_FS)		+= hpfs/
+> diff --git a/fs/hpfs/Kconfig b/drivers/staging/hpfs/Kconfig
+> similarity index 85%
+> rename from fs/hpfs/Kconfig
+> rename to drivers/staging/hpfs/Kconfig
+> index 73476c1..f979319 100644
+> --- a/fs/hpfs/Kconfig
+> +++ b/drivers/staging/hpfs/Kconfig
+> @@ -11,5 +11,8 @@ config HPFS_FS
+>  	  option in order to be able to read them. Read
+>  	  <file:Documentation/filesystems/hpfs.txt>.
+>  
+> +	  The HPFS code is about to get removed from the kernel and is no
+> +	  longer supported on SMP or PREEMPT kernels.
+> +
+>  	  To compile this file system support as a module, choose M here: the
+>  	  module will be called hpfs.  If unsure, say N.
+> diff --git a/fs/hpfs/Makefile b/drivers/staging/hpfs/Makefile
+> similarity index 100%
+> rename from fs/hpfs/Makefile
+> rename to drivers/staging/hpfs/Makefile
+> diff --git a/drivers/staging/hpfs/TODO b/drivers/staging/hpfs/TODO
+> new file mode 100644
+> index 0000000..576a01c
+> --- /dev/null
+> +++ b/drivers/staging/hpfs/TODO
+> @@ -0,0 +1,5 @@
+> +HPFS seems to have no remaining users, and it is getting
+> +increasingly hard to maintain. It will be removed in one
+> +of the next kernel releases unless someone puts effort
+> +into fixing the locking. The new hpfs_lock that replaces
+> +the BKL has not been tested.
+> diff --git a/fs/hpfs/alloc.c b/drivers/staging/hpfs/alloc.c
+> similarity index 100%
+> rename from fs/hpfs/alloc.c
+> rename to drivers/staging/hpfs/alloc.c
+> diff --git a/fs/hpfs/anode.c b/drivers/staging/hpfs/anode.c
+> similarity index 100%
+> rename from fs/hpfs/anode.c
+> rename to drivers/staging/hpfs/anode.c
+> diff --git a/fs/hpfs/buffer.c b/drivers/staging/hpfs/buffer.c
+> similarity index 100%
+> rename from fs/hpfs/buffer.c
+> rename to drivers/staging/hpfs/buffer.c
+> diff --git a/fs/hpfs/dentry.c b/drivers/staging/hpfs/dentry.c
+> similarity index 100%
+> rename from fs/hpfs/dentry.c
+> rename to drivers/staging/hpfs/dentry.c
+> diff --git a/fs/hpfs/dir.c b/drivers/staging/hpfs/dir.c
+> similarity index 100%
+> rename from fs/hpfs/dir.c
+> rename to drivers/staging/hpfs/dir.c
+> diff --git a/fs/hpfs/dnode.c b/drivers/staging/hpfs/dnode.c
+> similarity index 100%
+> rename from fs/hpfs/dnode.c
+> rename to drivers/staging/hpfs/dnode.c
+> diff --git a/fs/hpfs/ea.c b/drivers/staging/hpfs/ea.c
+> similarity index 100%
+> rename from fs/hpfs/ea.c
+> rename to drivers/staging/hpfs/ea.c
+> diff --git a/fs/hpfs/file.c b/drivers/staging/hpfs/file.c
+> similarity index 100%
+> rename from fs/hpfs/file.c
+> rename to drivers/staging/hpfs/file.c
+> diff --git a/fs/hpfs/hpfs.h b/drivers/staging/hpfs/hpfs.h
+> similarity index 100%
+> rename from fs/hpfs/hpfs.h
+> rename to drivers/staging/hpfs/hpfs.h
+> diff --git a/fs/hpfs/hpfs_fn.h b/drivers/staging/hpfs/hpfs_fn.h
+> similarity index 100%
+> rename from fs/hpfs/hpfs_fn.h
+> rename to drivers/staging/hpfs/hpfs_fn.h
+> diff --git a/fs/hpfs/inode.c b/drivers/staging/hpfs/inode.c
+> similarity index 100%
+> rename from fs/hpfs/inode.c
+> rename to drivers/staging/hpfs/inode.c
+> diff --git a/fs/hpfs/map.c b/drivers/staging/hpfs/map.c
+> similarity index 100%
+> rename from fs/hpfs/map.c
+> rename to drivers/staging/hpfs/map.c
+> diff --git a/fs/hpfs/name.c b/drivers/staging/hpfs/name.c
+> similarity index 100%
+> rename from fs/hpfs/name.c
+> rename to drivers/staging/hpfs/name.c
+> diff --git a/fs/hpfs/namei.c b/drivers/staging/hpfs/namei.c
+> similarity index 100%
+> rename from fs/hpfs/namei.c
+> rename to drivers/staging/hpfs/namei.c
+> diff --git a/fs/hpfs/super.c b/drivers/staging/hpfs/super.c
+> similarity index 100%
+> rename from fs/hpfs/super.c
+> rename to drivers/staging/hpfs/super.c
+> diff --git a/fs/Kconfig b/fs/Kconfig
+> index 3db9caa..5a54574 100644
+> --- a/fs/Kconfig
+> +++ b/fs/Kconfig
+> @@ -184,7 +184,6 @@ source "fs/squashfs/Kconfig"
+>  source "fs/freevxfs/Kconfig"
+>  source "fs/minix/Kconfig"
+>  source "fs/omfs/Kconfig"
+> -source "fs/hpfs/Kconfig"
+>  source "fs/qnx4/Kconfig"
+>  source "fs/romfs/Kconfig"
+>  source "fs/sysv/Kconfig"
+> diff --git a/fs/Makefile b/fs/Makefile
+> index a7f7cef..c920ca9 100644
+> --- a/fs/Makefile
+> +++ b/fs/Makefile
+> @@ -90,7 +90,6 @@ obj-$(CONFIG_NLS)		+= nls/
+>  obj-$(CONFIG_SYSV_FS)		+= sysv/
+>  obj-$(CONFIG_CIFS)		+= cifs/
+>  obj-$(CONFIG_NCP_FS)		+= ncpfs/
+> -obj-$(CONFIG_HPFS_FS)		+= hpfs/
+>  obj-$(CONFIG_NTFS_FS)		+= ntfs/
+>  obj-$(CONFIG_UFS_FS)		+= ufs/
+>  obj-$(CONFIG_EFS_FS)		+= efs/
+> -- 
+> 1.7.1
 > 
-> Right, but note that the tracer does not fully control the group-stop.
-> One a thread dequeues SIGSTOP (and please note this thread can be !traced),
-> all other threads (traced or not) should participate.
-
-I don't know.  Maybe it's more consistent that way and I'm not
-fundamentally against that but it is a big behavior change and I don't
-think it falls in the corner case category.  Please read on.
-
-> As for SIGCONT priority, see below.
-> 
-> > Notifying the parent w/o making group stop superior to ptrace sure is
-> > a possibility.
-> 
-> Could you please reiterate? I think I missed something before, and
-> now I do not really understand what do you mean.
-
-I was trying to say that it's still possible to deliver group stop
-notifications to the real parent while letting the ptracer override
-group stop with PTRACE_CONT.
-
-> > > > For example, the problem in this thread is cleanly solved by
-> > > > really examining the problem and fixing the problem at the source (the
-> > > > mixup of group and ptrace stop)
-> > >
-> > > Yes, but I am worried that this change (in its current form) makes
-> > > impossible to create a TASK_STOPPED tracee, but you already know this.
-> >
-> > Why is that a problem?
-> 
-> See above. Because I think ptrace should not "hide" jctl stops (at
-> least by default), and SIGCONT should work in this case.
->
-> > A ptraced task stops in TASK_TRACED.
-> 
-> Unless it reacts to SIGSTOP/group_stop_count.
-
-What do you do about PTRACE requests while a task is group stopped?
-Reject them?  Block them?
-
-> > I agree that what
-> > you're describing seems like a good compromise.  What I was objecting
-> > to was putting group stop mechanism in general on top of ptrace.  I
-> > can't see how that would work.
-> 
-> And I still can't understand why this can't work ;)
-> 
-> And I don't really understand "putting group stop mechanism in general
-> on top of ptrace". It is very possible I am wrong, but I see this from
-> the different angle: stop/ptrace should be "parallel".
-
-Hmmm... currently ptrace overrides group stop and has full control
-over when and where the tracee stops and continues, which I think is a
-quite visible assumption.  I don't think it's an extreme corner case
-we can break.  For example, if a user gdb's a program which raises one
-of the stop signals, currently the user expects to be able to continue
-the program from whithin the gdb.  If we make group stop override
-ptrace, there's no other recourse than sending signal from outside.
-
-It is a deep rooted assumption that ptracer has full control over
-execution of the tracee.  I can't see how we would be able to change
-that.  Moreover, although it may not be immediately intuitive, I
-actually think it is more useful behavior for ptrace for
-e.g. debugging multithread behavior as long as we can keep the whole
-thing well defined.
-
-> > I think it should only include the case where the
-> > tracee actually stops for group stop excluding all other trapping
-> > points.
-> 
-> I was thinking about this too and probably this makes sense. But
-> I think at least initial changes should keep the current behaviour
-> (assuming this behaviour is fixed).
-
-But if you make the other change but not this one, we end up with
-ptrace which doesn't notify the ptracer what's going on.  Apart from
-_polling_ /proc/tid/status, there is no mechanism to discover the
-tracee's state.  The only thing it achieves is the integrity of group
-stop and I'm not really sure whether that's something worth achieving
-at the cost of debugging capabilities especially when we don't _have_
-to lose them.
-
-> > But, I don't think this really changes the need for state tracking.
-> > We would still have to put the tracee into approriate mode on detach.
-> 
-> Sure, but we already have SIGNAL_STOP_STOPPED/group_signal_stop. I meant,
-> we do not need to remember the state per-thread.
-
-Yeah, yeah, I was still thinking about allowing PTRACE_CONT in which
-case we need to keep track of who did what.
-
-> As for SIGCONT. Roland suggests (roughly) to change ptrace_resume()
-> so that it doesn't wakeup the stopped tracee until the real SIGCONT
-> comes. And this makes sense to me.
-
-I agree it adds more integrity to group stop but at the cost of
-debugging capabilities.  I'm not yet convinced integrity of group stop
-is that important.  Why is it such a big deal?
-
-> 	> For example, if a gdb traced task is instructed to participate in a
-> 	> group stop and then hits a ptrace trap, it would have to participate
-> 	> in the group stop as it enters ptrace trap, right?  gdb's wait(2)
-> 	> would complete indicating ptrace trap.  After the user tells the task
-> 	> to continue, the task shouldn't resume until SIGCONT is received;
-> 
-> Yes. But to me, this looks correct! The tracee shouldn't resume exactly
-> because it is stopped.
-> 
-> 	> however, at this point, there's no way for gdb to tell what's going on
-> 	> with the tracee.
-> 
-> Yes. I think this should be improved somehow, currently gdb can only
-> look in /proc/tid/status to detect this case.
-> 
-> 	> If ptrace behaved like that from the beginning, gdb would have behaved
-> 	> differently and worked around those cases but that hasn't been the
-> 	> case
-> 
-> Cough... I thought we agreed it is better to break some corner cases
-> but make ptrace more consistent ;)
-
-Yeah, yeah, sure.  I just don't agree it is a corner case that we can
-change.  It looks like a quite fundamental assumption/expectation to
-me and changing it takes away existing debugging capabilities.  It's
-something people would actually be using / used to.
-
-> But yes, I see your point. And while I think that Roland's suggestion is
-> fine, I also have another proposal
-> 
-> 	- never send CLD_CONTINUED to the tracer, always send it to parent.
-> 
-> 	  Firstly, this is completely pointless: ptrace is per-thread, while
-> 	  this notification is per-process
-
-CLD_STOPPED is too but while ptrace is attached the notifications are
-made per-task and delivered to the tracer.  But, if there's no side
-effect to worry about, sure.
-
-> 	- change do_wait() so that WCONTINUED for real_parent
-> 
-> 	- change ptrace_resume() to check SIGNAL_STOP_STOPPED case. It should
-> 	  act as SIGCONT in this case. Yes: "act as SIGCONT" needs more
-> 	  discussion.
-
-I don't know.  I think this is the key question.  Whether to de-throne
-PTRACE_CONT such that it cannot override group stop.  As I've already
-said several times already, I think it is a pretty fundamental
-property of ptrace and change to it would be quite visible, in
-negative way, from userland.  Furthermore, I think actually the
-current behavior is more desirable, not from the POV of group stop
-integrity but from that of debugging capabilities.  I don't think
-group stop integrity is that important as long as we can keep the
-state well defined while ptraced && consistent after the debugger is
-gone.
-
-Thanks.
-
--- 
-tejun
