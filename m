@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab1BGQ6b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 11:58:31 -0500
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:29256 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753880Ab1BGQ63 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 11:58:29 -0500
-Date: Mon, 7 Feb 2011 08:58:29 -0800
-From: Dmitry Torokhov <dtor@vmware.com>
-To: David Miller <davem@davemloft.net>
-Cc: "schwab@linux-m68k.org" <schwab@linux-m68k.org>,
-        "geert@linux-m68k.org" <geert@linux-m68k.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-m68k@vger.kernel.org" <linux-m68k@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Subject: Re: Early crash
-Message-ID: <20110207165829.GA13101@dtor-ws.eng.vmware.com>
-References: <m2bp2udllv.fsf@igel.home>
- <20110203002459.GA26729@dtor-ws.eng.vmware.com>
- <20110207081933.GA11855@dtor-ws.eng.vmware.com>
- <20110207.005010.28814928.davem@davemloft.net>
+	id S1754237Ab1BGQ7q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 11:59:46 -0500
+Received: from thoth.sbs.de ([192.35.17.2]:29734 "EHLO thoth.sbs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753880Ab1BGQ7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 11:59:45 -0500
+Message-ID: <4D5024F3.9090105@siemens.com>
+Date: Mon, 07 Feb 2011 17:59:31 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110207.005010.28814928.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Avi Kivity <avi@redhat.com>
+CC: Zachary Amsden <zamsden@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] KVM: x86: Convert tsc_write_lock to raw_spinlock
+References: <4D4BCB97.6000900@siemens.com> <4D4C698A.4010201@redhat.com> <4D4FD8EE.6040009@siemens.com> <4D4FFD97.6010805@redhat.com> <4D5008F0.5060200@siemens.com> <4D500C9F.2080501@redhat.com> <4D50120F.4030809@siemens.com> <4D501547.6040907@redhat.com> <4D501698.1000507@siemens.com> <4D501D43.5060608@redhat.com>
+In-Reply-To: <4D501D43.5060608@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 07, 2011 at 12:50:10AM -0800, David Miller wrote:
-> From: Dmitry Torokhov <dtor@vmware.com>
-> Date: Mon, 7 Feb 2011 00:19:33 -0800
+On 2011-02-07 17:26, Avi Kivity wrote:
+> On 02/07/2011 05:58 PM, Jan Kiszka wrote:
+>> On 2011-02-07 16:52, Avi Kivity wrote:
+>>>  On 02/07/2011 05:38 PM, Jan Kiszka wrote:
+>>>>>
+>>>>>   I don't know as it is allowed to sleep, it doesn't call any sleeping
+>>>>>   functions to my knowledge.  What worries me in the RT case is that the
+>>>>>   spinlock acquired for hardware_enable might be preempted and run on
+>>>>>   another CPU, which obviously isn't what you want.
+>>>>
+>>>>  I see now, there are calls to raw_smp_processor_id.
+>>>>
+>>>>  I think it's best to make this a raw lock. At this chance, some
+>>>>  read-only users of vm_list should be rcu'ified. Will have a look.
+>>>
+>>>  vm_list is rarely used, for either read or write.  I don't see the need
+>>>  to rcu it.
+>>
+>> Avoid that code under this lock expands the preempt-disabled period,
+>> specifically under -rt, and specifically as the number of objects over
+>> which we loop is user-defined.
 > 
-> > So here is the patch that explicitly specifies alignment for struct
-> > module_version_attribute. I tested it on i386 and x86_64 and I believe
-> > it will fix the issue with m68k but I do not have access to such a box.
+> Good point; even under non-rt.
 > 
-> While this may or may not fix the m68k issue, this isn't really
-> sufficient to make this thing work in all cases.  And the older
-> tracepoint commits referenced in this thread are known to cause
-> problems with platforms such as sparc64.
-> 
-> You can't reliably put structures into independent objects, put them
-> into a special section, and then expect array access over them (via
-> the section boundaries) after linking the objects together to just
-> "work".
-> 
-> Your attribute specification is only a lower-bound.
+> (well, actually, cpufreq_notifier and kvm_arch_hardware_enable are 
+> already non preemptible, and the stats code should just go away?)
 
-Right.
+The stats code is trivial to convert, so it doesn't matter.
 
-> 
-> GCC can and does use variable alignment choices in different situations,
-> so the align directive in the various objects can all be different.  So
-> the array iteration will assume the iterations should use one object
-> size, but within the linked together section the alignments are all
-> different so the inter-struct gap is different.
-> 
-> The only portable mechanism that will work in all cases, as we've
-> found recently for tracepoints and similar, is to make an array of
-> plain pointers to the objects in the special section.
+But what about mmu_shrink and its list_move_tail? How is this
+synchronized against kvm_destroy_vm - already today?
 
-But, theoretically speaking, nothing stops GCC to align pointers with
-"gaps" as well? Let's say having everything (or some) aligned on
-quadword boundary even though arch is 32 bit?
+Jan
 
-
-Thanks,
-
-Dmitry
+-- 
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
