@@ -1,75 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab1BGEOz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Feb 2011 23:14:55 -0500
-Received: from xenotime.net ([72.52.115.56]:39220 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754361Ab1BGEOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Feb 2011 23:14:54 -0500
-Date: Sun, 6 Feb 2011 20:14:48 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Simon Horman <horms@verge.net.au>
-Cc: "Ahmed S. Darwish" <darwish.07@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Haren Myneni <hbabu@us.ibm.com>,
-        Eric Biederman <ebiederm@xmission.com>, kexec@lists.infradead.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org
-Subject: Re: [PATCH -next] Documentation: Improve crashkernel= description
-Message-Id: <20110206201448.4a259575.rdunlap@xenotime.net>
-In-Reply-To: <20110206215733.GB26233@verge.net.au>
-References: <20110206154108.GA16542@laptop>
-	<20110206215733.GB26233@verge.net.au>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754570Ab1BGEPm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Feb 2011 23:15:42 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:39570 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754269Ab1BGEPl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Feb 2011 23:15:41 -0500
+Date: Sun, 6 Feb 2011 19:27:09 -0800
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: gregkh@suse.de, chris.mason@oracle.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, matthew@wil.cx,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, ngupta@vflare.org,
+        jeremy@goop.org, kurt.hackel@oracle.com, npiggin@kernel.dk,
+        riel@redhat.com, konrad.wilk@oracle.com, dan.magenheimer@oracle.com,
+        mel@csn.ul.ie, minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
+        sfr@canb.auug.org.au, wfg@mail.ustc.edu.cn, tytso@mit.edu,
+        viro@ZenIV.linux.org.uk, hughd@google.com, hannes@cmpxchg.org
+Subject: [PATCH V2 3/3] drivers/staging: zcache: misc build/config
+Message-ID: <20110207032709.GA27475@ca-server1.us.oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.16 (2007-06-11)
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4D4F71AB.004E:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 Feb 2011 06:57:33 +0900 Simon Horman wrote:
+[PATCH V2 3/3] drivers/staging: zcache: misc build/config
 
-> On Sun, Feb 06, 2011 at 05:41:08PM +0200, Ahmed S. Darwish wrote:
-> > (Also applicable over 2.6.38-rc3)
-> > 
-> > Had to explore two C code files to make sense of the 'crashkernel='
-> > kernel parameter values.  Improve the situation.
-> > 
-> > Signed-off-by: Ahmed S. Darwish <darwish.07@gmail.com>
-> > ---
-> > 
-> > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> > index 89835a4..8f26b42 100644
-> > --- a/Documentation/kernel-parameters.txt
-> > +++ b/Documentation/kernel-parameters.txt
-> > @@ -545,9 +545,12 @@ and is between 256 and 4096 characters. It is defined in the file
-> >  			Format:
-> >  			<first_slot>,<last_slot>,<port>,<enum_bit>[,<debug>]
-> >  
-> > -	crashkernel=nn[KMG]@ss[KMG]
-> > -			[KNL] Reserve a chunk of physical memory to
-> > -			hold a kernel to switch to with kexec on panic.
-> > +	crashkernel=size[KMG][@offset[KMG]]
-> > +			[KNL] Using kexec, Linux can switch to a 'crash kernel'
-> > +			upon panic. This parameter reserves the physical
-> > +			memory region [offset, offset + size] for that kernel
-> > +			image. If the '@offset' part was ignored, Linux finds
-> > +			a suitable crash image start address automatically.
-> 
-> I think this would be further improved as:
-> 
-> 			... If '@offset' is omitted then a suitable
-> 			offset is selected automatically.
-> 
-> >  
-> >  	crashkernel=range1:size1[,range2:size2,...][@offset]
-> >  			[KNL] Same as above, but depends on the memory
+Makefiles and Kconfigs to build zcache in drivers/staging
 
-Hi,
+There is a dependency on xvmalloc.* which in 2.6.37 resides
+in drivers/staging/zram.  Should this move or disappear,
+some Makefile/Kconfig changes will be required.
 
-I also prefer Simon's change.  Can you please resend an updated patch?
+Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+Signed-off-by: Nitin Gupta <ngupta@vflare.org>
 
-thanks,
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+
+Diffstat:
+ drivers/staging/Kconfig                  |    2 ++
+ drivers/staging/Makefile                 |    1 +
+ drivers/staging/zcache/Kconfig           |   13 +++++++++++++
+ drivers/staging/zcache/Makefile          |    1 +
+ 4 files changed, 17 insertions(+)
+
+--- linux-2.6.37/drivers/staging/zcache/Makefile	1969-12-31 17:00:00.000000000 -0700
++++ linux-2.6.37-zcache/drivers/staging/zcache/Makefile	2011-02-05 15:47:15.000000000 -0700
+@@ -0,0 +1 @@
++obj-$(CONFIG_ZCACHE)	+=	zcache.o tmem.o
+--- linux-2.6.37/drivers/staging/zcache/Kconfig	1969-12-31 17:00:00.000000000 -0700
++++ linux-2.6.37-zcache/drivers/staging/zcache/Kconfig	2011-02-05 15:54:10.000000000 -0700
+@@ -0,0 +1,13 @@
++config ZCACHE
++	tristate "Dynamic compression of swap pages and clean pagecache pages"
++	depends on CLEANCACHE || FRONTSWAP
++	select XVMALLOC
++	select LZO_COMPRESS
++	select LZO_DECOMPRESS
++	default n
++	help
++	  Zcache doubles RAM efficiency while providing a significant
++	  performance boosts on many workloads.  Zcache uses lzo1x
++	  compression and an in-kernel implementation of transcendent
++	  memory to store clean page cache pages and swap in RAM,
++	  providing a noticeable reduction in disk I/O.
+--- linux-2.6.37/drivers/staging/Makefile	2011-01-04 17:50:19.000000000 -0700
++++ linux-2.6.37-zcache/drivers/staging/Makefile	2011-02-05 15:46:16.000000000 -0700
+@@ -44,6 +44,7 @@ obj-$(CONFIG_VME_BUS)		+= vme/
+ obj-$(CONFIG_MRST_RAR_HANDLER)	+= memrar/
+ obj-$(CONFIG_IIO)		+= iio/
+ obj-$(CONFIG_ZRAM)		+= zram/
++obj-$(CONFIG_ZCACHE)		+= zcache/
+ obj-$(CONFIG_WLAGS49_H2)	+= wlags49_h2/
+ obj-$(CONFIG_WLAGS49_H25)	+= wlags49_h25/
+ obj-$(CONFIG_BATMAN_ADV)	+= batman-adv/
+--- linux-2.6.37/drivers/staging/Kconfig	2011-01-04 17:50:19.000000000 -0700
++++ linux-2.6.37-zcache/drivers/staging/Kconfig	2011-02-05 15:46:48.000000000 -0700
+@@ -123,6 +123,8 @@ source "drivers/staging/iio/Kconfig"
+ 
+ source "drivers/staging/zram/Kconfig"
+ 
++source "drivers/staging/zcache/Kconfig"
++
+ source "drivers/staging/wlags49_h2/Kconfig"
+ 
+ source "drivers/staging/wlags49_h25/Kconfig"
