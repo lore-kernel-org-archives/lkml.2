@@ -1,202 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317Ab1BHKak (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 05:30:40 -0500
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:44987 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753198Ab1BHKai (ORCPT
+	id S1753294Ab1BHKdi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 05:33:38 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:42935 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752681Ab1BHKdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 05:30:38 -0500
-To: Hugh Dickins <hughd@google.com>
-CC: miklos@szeredi.hu, hch@infradead.org, akpm@linux-foundation.org,
-        gurudas.pai@oracle.com, lkml20101129@newton.leun.net,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-reply-to: <AANLkTimBR=CuMpWE2juJG2jsLsTqK=tc00sRrEjhkHg=@mail.gmail.com>
-	(message from Hugh Dickins on Wed, 26 Jan 2011 20:19:15 -0800)
-Subject: Re: [PATCH] mm: prevent concurrent unmap_mapping_range() on the same inode
-References: <E1PftfG-0007w1-Ek@pomaz-ex.szeredi.hu>
-	<20110120124043.GA4347@infradead.org>
-	<E1PfvGx-00086O-IA@pomaz-ex.szeredi.hu>
-	<alpine.LSU.2.00.1101212014330.4301@sister.anvils>
-	<E1PhSO8-0005yN-Dp@pomaz-ex.szeredi.hu> <AANLkTimBR=CuMpWE2juJG2jsLsTqK=tc00sRrEjhkHg=@mail.gmail.com>
-Message-Id: <E1Pmkpt-0006Cd-Q6@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Tue, 08 Feb 2011 11:30:17 +0100
+	Tue, 8 Feb 2011 05:33:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=KxBAgaJsf2Eeev7Xg9h8mi/FvPDWrVMfI3EFs6IAi2/szdVug01K4WFzYrB9AuSvIS
+         Aa3VPl+HwuaOSDs1Uw3Fl31ZzXsOG7V25/2B26ue5OHvFe9bBmRA1LoqGstG8jjpE1k9
+         7yHpY1L5edW1t0YS/3C5JToURlNJgLoNEMJSc=
+Date: Tue, 8 Feb 2011 18:33:33 +0800
+From: Harry Wei <jiaweiwei.xiyou@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, joe@perches.com,
+        davem@davemloft.net, greg@kroah.com, rdunlap@xenotime,
+        xiyou.wangcong@gmail.com, w.sang@pengutronix.de
+Subject: [PATCH]Maintain Chinese Documentations
+Message-ID: <20110208103332.GA2932@gmail.com>
+References: <AANLkTimFFT-B_aPyfFJmMpvt9jhd98ckBah2vbK+WQJf@mail.gmail.com>
+ <20110208033818.GA4922@gmail.com>
+ <iiqti3$3b5$2@dough.gmane.org>
+ <AANLkTinGn5oN01+33VgnnWHAqEZNxkoJeTgkjAjpC8LZ@mail.gmail.com>
+ <20110208093020.GA2016@gmail.com>
+ <20110208093528.GA2580@pengutronix.de>
+ <AANLkTi=RgPS_tzBP+0=wxuh58cV=3_m+5=gYwG8ffkY0@mail.gmail.com>
+ <20110208100153.GA2815@gmail.com>
+ <20110208101328.GB2580@pengutronix.de>
+ <AANLkTimSgeRKsAckU+2iE9oqo33uanLeLaKTQdYkpfw=@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimSgeRKsAckU+2iE9oqo33uanLeLaKTQdYkpfw=@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Jan 2011, Hugh Dickins wrote:
-> I had wanted to propose that for now you modify just fuse to use
-> i_alloc_sem for serialization there, and I provide a patch to
-> unmap_mapping_range() to give safety to whatever other cases there are
-> (I'm now sure there are other cases, but also sure that I cannot
-> safely identify them all and fix them correctly at source myself -
-> even if I found time to do the patches, they'd need at least a release
-> cycle to bed in with BUG_ONs).
+On Tue, Feb 08, 2011 at 06:25:21PM +0800, harryxiyou wrote:
+> ---------- Forwarded message ----------
+> From: Wolfram Sang <w.sang@pengutronix.de>
+> Date: 2011/2/8
+> Subject: Re: Fwd: Fwd: [PATCH]Maintain Chinese Documentations♫
+> To: Harry Wei <jiaweiwei.xiyou@gmail.com>
+> Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, joe@perches.com,
+> davem@davemloft.net, greg@kroah.com, rdunlap@xenotime.net,
+> xiyou.wangcong@gmail.com
+> 
+> 
+> > +CHINESE DOCUMENTATION
+> > +M:     Harry Wei <harryxiyou@gmail.com>
+> > +L:     xiyoulinuxkernelgroup@googlegroups.com
+> > +L:   linux-kernel@zh-kernel.org(moderated for non-subscribers)
+> > +S:     Maintained
+> > +F:     Documentation/zh_CN/
+> 
+> Space missing after .org
+> 
+> Some lines use spaces, one uses tabs. Please change that so it is
+> consistent with the rest of the file.
+Ok, updated like following :)
 
-Since fuse is the only one where the BUG has actually been triggered,
-and since there are problems with all the proposed generic approaches,
-I concur.  I didn't want to use i_alloc_sem here as it's more
-confusing than a new mutex.
+Thanks.
+Best Regards.
+Harry Wei.
 
-Gurudas, could you please give this patch a go in your testcase?
-
-Thanks,
-Miklos
+Signed-off-by: Harry Wei <harryxiyou@gmail.com>
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+Acked-by: Wang Cong <xiyou.wangcong@gmail.com>
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
 ---
+ MAINTAINERS |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-From: Miklos Szeredi <mszeredi@suse.cz>
-Subject: fuse: prevent concurrent unmap on the same inode
+diff --git a/MAINTAINERS b/MAINTAINERS
+index dc0279e..afb6f7c 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1692,6 +1692,12 @@ M:       Andy Whitcroft <apw@canonical.com>
+ S:     Supported
+ F:     scripts/checkpatch.pl
 
-Running a fuse filesystem with multiple open()'s in parallel can
-trigger a "kernel BUG at mm/truncate.c:475"
-
-The reason is, unmap_mapping_range() is not prepared for more than
-one concurrent invocation per inode.
-
-Truncate and hole punching already serialize with i_mutex.  Other
-callers of unmap_mapping_range() do not, and it's difficult to get
-i_mutex protection for all callers.  In particular ->d_revalidate(),
-which calls invalidate_inode_pages2_range() in fuse, may be called
-with or without i_mutex.
-
-This patch adds a new mutex to fuse_inode to prevent running multiple
-concurrent unmap_mapping_range() on the same mapping.
-
-Reported-by: Michael Leun <lkml20101129@newton.leun.net>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Gurudas Pai <gurudas.pai@oracle.com>
-Cc: stable@kernel.org
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/fuse/dir.c    |    8 +++-----
- fs/fuse/file.c   |   10 +++++++++-
- fs/fuse/fuse_i.h |    3 +++
- fs/fuse/inode.c  |    6 ++++++
- 4 files changed, 21 insertions(+), 6 deletions(-)
-
-Index: linux-2.6/fs/fuse/dir.c
-===================================================================
---- linux-2.6.orig/fs/fuse/dir.c	2011-02-07 17:52:34.000000000 +0100
-+++ linux-2.6/fs/fuse/dir.c	2011-02-07 17:52:35.000000000 +0100
-@@ -1255,16 +1255,12 @@ void fuse_release_nowrite(struct inode *
- 
- /*
-  * Set attributes, and at the same time refresh them.
-- *
-- * Truncation is slightly complicated, because the 'truncate' request
-- * may fail, in which case we don't want to touch the mapping.
-- * vmtruncate() doesn't allow for this case, so do the rlimit checking
-- * and the actual truncation by hand.
-  */
- static int fuse_do_setattr(struct dentry *entry, struct iattr *attr,
- 			   struct file *file)
- {
- 	struct inode *inode = entry->d_inode;
-+	struct fuse_inode *fi = get_fuse_inode(inode);
- 	struct fuse_conn *fc = get_fuse_conn(inode);
- 	struct fuse_req *req;
- 	struct fuse_setattr_in inarg;
-@@ -1352,8 +1348,10 @@ static int fuse_do_setattr(struct dentry
- 	 * FUSE_NOWRITE, otherwise fuse_launder_page() would deadlock.
- 	 */
- 	if (S_ISREG(inode->i_mode) && oldsize != outarg.attr.size) {
-+		mutex_lock(&fi->unmap_mutex);
- 		truncate_pagecache(inode, oldsize, outarg.attr.size);
- 		invalidate_inode_pages2(inode->i_mapping);
-+		mutex_unlock(&fi->unmap_mutex);
- 	}
- 
- 	return 0;
-Index: linux-2.6/fs/fuse/file.c
-===================================================================
---- linux-2.6.orig/fs/fuse/file.c	2011-02-07 17:52:34.000000000 +0100
-+++ linux-2.6/fs/fuse/file.c	2011-02-07 17:52:35.000000000 +0100
-@@ -170,11 +170,15 @@ void fuse_finish_open(struct inode *inod
- {
- 	struct fuse_file *ff = file->private_data;
- 	struct fuse_conn *fc = get_fuse_conn(inode);
-+	struct fuse_inode *fi = get_fuse_inode(inode);
- 
- 	if (ff->open_flags & FOPEN_DIRECT_IO)
- 		file->f_op = &fuse_direct_io_file_operations;
--	if (!(ff->open_flags & FOPEN_KEEP_CACHE))
-+	if (!(ff->open_flags & FOPEN_KEEP_CACHE)) {
-+		mutex_lock(&fi->unmap_mutex);
- 		invalidate_inode_pages2(inode->i_mapping);
-+		mutex_unlock(&fi->unmap_mutex);
-+	}
- 	if (ff->open_flags & FOPEN_NONSEEKABLE)
- 		nonseekable_open(inode, file);
- 	if (fc->atomic_o_trunc && (file->f_flags & O_TRUNC)) {
-@@ -1403,11 +1407,15 @@ static int fuse_file_mmap(struct file *f
- 
- static int fuse_direct_mmap(struct file *file, struct vm_area_struct *vma)
- {
-+	struct fuse_inode *fi = get_fuse_inode(file->f_mapping->host);
++CHINESE DOCUMENTATION
++M:	Harry Wei <harryxiyou@gmail.com>
++L:	xiyoulinuxkernelgroup@googlegroups.com
++L:	linux-kernel@zh-kernel.org (moderated for non-subscribers)
++S:	Maintained
++F:	Documentation/zh_CN/
 +
- 	/* Can't provide the coherency needed for MAP_SHARED */
- 	if (vma->vm_flags & VM_MAYSHARE)
- 		return -ENODEV;
- 
-+	mutex_lock(&fi->unmap_mutex);
- 	invalidate_inode_pages2(file->f_mapping);
-+	mutex_unlock(&fi->unmap_mutex);
- 
- 	return generic_file_mmap(file, vma);
- }
-Index: linux-2.6/fs/fuse/fuse_i.h
-===================================================================
---- linux-2.6.orig/fs/fuse/fuse_i.h	2011-02-07 17:52:34.000000000 +0100
-+++ linux-2.6/fs/fuse/fuse_i.h	2011-02-07 17:52:35.000000000 +0100
-@@ -100,6 +100,9 @@ struct fuse_inode {
- 
- 	/** List of writepage requestst (pending or sent) */
- 	struct list_head writepages;
-+
-+	/** to protect unmapping */
-+	struct mutex unmap_mutex;
- };
- 
- struct fuse_conn;
-Index: linux-2.6/fs/fuse/inode.c
-===================================================================
---- linux-2.6.orig/fs/fuse/inode.c	2011-02-07 17:52:34.000000000 +0100
-+++ linux-2.6/fs/fuse/inode.c	2011-02-07 17:54:03.000000000 +0100
-@@ -95,6 +95,7 @@ static struct inode *fuse_alloc_inode(st
- 	INIT_LIST_HEAD(&fi->queued_writes);
- 	INIT_LIST_HEAD(&fi->writepages);
- 	init_waitqueue_head(&fi->page_waitq);
-+	mutex_init(&fi->unmap_mutex);
- 	fi->forget = fuse_alloc_forget();
- 	if (!fi->forget) {
- 		kmem_cache_free(fuse_inode_cachep, inode);
-@@ -197,8 +198,10 @@ void fuse_change_attributes(struct inode
- 	spin_unlock(&fc->lock);
- 
- 	if (S_ISREG(inode->i_mode) && oldsize != attr->size) {
-+		mutex_lock(&fi->unmap_mutex);
- 		truncate_pagecache(inode, oldsize, attr->size);
- 		invalidate_inode_pages2(inode->i_mapping);
-+		mutex_unlock(&fi->unmap_mutex);
- 	}
- }
- 
-@@ -286,13 +289,16 @@ int fuse_reverse_inval_inode(struct supe
- 
- 	fuse_invalidate_attr(inode);
- 	if (offset >= 0) {
-+		struct fuse_inode *fi = get_fuse_inode(inode);
- 		pg_start = offset >> PAGE_CACHE_SHIFT;
- 		if (len <= 0)
- 			pg_end = -1;
- 		else
- 			pg_end = (offset + len - 1) >> PAGE_CACHE_SHIFT;
-+		mutex_lock(&fi->unmap_mutex);
- 		invalidate_inode_pages2_range(inode->i_mapping,
- 					      pg_start, pg_end);
-+		mutex_unlock(&fi->unmap_mutex);
- 	}
- 	iput(inode);
- 	return 0;
+ CISCO VIC ETHERNET NIC DRIVER
+ M:     Vasanthy Kolluri <vkolluri@cisco.com>
+ M:     Roopa Prabhu <roprabhu@cisco.com>
+--
+1.7.0.4
+> 
+> --
+> Pengutronix e.K.                           | Wolfram Sang                |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> 
+> -----BEGIN PGP SIGNATURE-----
+> Version: GnuPG v1.4.10 (GNU/Linux)
+> 
+> iEYEARECAAYFAk1RF0gACgkQD27XaX1/VRuFJACcCT6xukjRk9qPFXiIO/Zl1CwX
+> Jo8AoJwFg6JbKyortM5bK7tuKFl4i75T
+> =k2h8
+> -----END PGP SIGNATURE-----
+> 
+> 
+> 
+> 
+> -- 
+> Best Regards.
+> Harry Wei.
+> Do what u like!
+
+
