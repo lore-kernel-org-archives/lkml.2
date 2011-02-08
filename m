@@ -1,88 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893Ab1BHTiE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 14:38:04 -0500
-Received: from mga11.intel.com ([192.55.52.93]:29661 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755029Ab1BHTfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 14:35:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,443,1291622400"; 
-   d="scan'208";a="885571363"
-From: james_p_freyensee@linux.intel.com
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
-        james_p_freyensee@linux.intel.com
-Subject: [PATCH 06/12] PTI header file.
-Date: Tue,  8 Feb 2011 11:34:51 -0800
-Message-Id: <1297193697-5417-7-git-send-email-james_p_freyensee@linux.intel.com>
-X-Mailer: git-send-email 1.6.6.1
-In-Reply-To: <1297193697-5417-6-git-send-email-james_p_freyensee@linux.intel.com>
+	id S1755701Ab1BHTjB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 14:39:01 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:60552 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755155Ab1BHTjA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 14:39:00 -0500
+Date: Tue, 8 Feb 2011 14:38:57 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: james_p_freyensee@linux.intel.com
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, suhail.ahmed@intel.com
+Subject: Re: [PATCH 01/12] export kernel call get_task_comm()
+Message-ID: <20110208193857.GA8839@infradead.org>
 References: <james_p_freyensee@linux.intel.com>
  <1297193697-5417-1-git-send-email-james_p_freyensee@linux.intel.com>
  <1297193697-5417-2-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-3-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-4-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-5-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-6-git-send-email-james_p_freyensee@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1297193697-5417-2-git-send-email-james_p_freyensee@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: J Freyensee <james_p_freyensee@linux.intel.com>
+On Tue, Feb 08, 2011 at 11:34:46AM -0800, james_p_freyensee@linux.intel.com wrote:
+> From: J Freyensee <james_p_freyensee@linux.intel.com>
+> 
+> This allows drivers who call this function to be compiled modularly.
+> Otherwise, a driver who is interested in this type of functionality
+> has to implement their own.
 
-This adds PTI header information for the PTI project.
+NAK.
 
-Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
----
- include/linux/pti.h |   38 ++++++++++++++++++++++++++++++++++++++
- 1 files changed, 38 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/pti.h
-
-diff --git a/include/linux/pti.h b/include/linux/pti.h
-new file mode 100644
-index 0000000..4b1c9f6
---- /dev/null
-+++ b/include/linux/pti.h
-@@ -0,0 +1,38 @@
-+/*
-+ *  Copyright (C) Intel 2010
-+ *  Ken Mills <ken.k.mills@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
-+ * USA
-+ *
-+ */
-+
-+#ifndef PTI_H_
-+#define PTI_H_
-+
-+/* basic structure used as a write address to the PTI HW */
-+struct masterchannel {
-+	u8 master;
-+	u8 channel;
-+};
-+
-+/* the following functions are defined in misc/pti.c */
-+void mipi_pti_writedata(struct masterchannel *mc, u8 *cp, int count);
-+struct masterchannel *mipi_request_masterchannel(u8 kerneluser);
-+void mipi_release_masterchannel(struct masterchannel *mc);
-+
-+#define APERTURE_14 0x3800000
-+#define APERTURE_LEN 0x400000
-+
-+#endif /*PTI_H_*/
--- 
-1.6.6.1
+>From current you can just dereference current->comm, and access from
+other threads from drivers is a bad idea.
 
