@@ -1,119 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230Ab1BHWVn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 17:21:43 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:5057 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753651Ab1BHWVm convert rfc822-to-8bit (ORCPT
+	id S1754315Ab1BHWWz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 17:22:55 -0500
+Received: from eazy.amigager.de ([213.239.192.238]:36316 "EHLO
+	eazy.amigager.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753295Ab1BHWWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 17:21:42 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=uTIk8ehYYOoeO5zI5ijkzRl7KqBQOU9ecUVrAj45YdBVCcDr81tUzRYz5jd6XURCey
-         UX6+J0C2zzHTa/Rdyt4g==
+	Tue, 8 Feb 2011 17:22:53 -0500
+X-Greylist: delayed 616 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Feb 2011 17:22:53 EST
+Date: Tue, 8 Feb 2011 23:12:35 +0100
+From: Tino Keitel <tino.keitel@tikei.de>
+To: linux-kernel@vger.kernel.org
+Subject: 2.6.38-rc3: kernel BUG at fs/nfsd/nfs4state.c:3132!
+Message-ID: <20110208221235.GA16984@mac.home>
+Mail-Followup-To: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <20110208194826.GC29081@redhat.com>
-References: <1297192697-29978-1-git-send-email-teravest@google.com> <20110208194826.GC29081@redhat.com>
-From: Justin TerAvest <teravest@google.com>
-Date: Tue, 8 Feb 2011 14:21:18 -0800
-Message-ID: <AANLkTimawcpJRFPW5kKdZtKQ_PvKHc6oFSOVAcqy39Y9@mail.gmail.com>
-Subject: Re: [PATCH] Don't wait if queue already has requests.
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: jaxboe@fusionio.com, ctalbott@google.com, mrubin@google.com,
-        jmoyer@redhat.com, guijianfeng@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 8, 2011 at 11:48 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Tue, Feb 08, 2011 at 11:18:17AM -0800, Justin TerAvest wrote:
->> Commit 7667aa0630407bc07dc38dcc79d29cc0a65553c1 added logic to wait for
->> the last queue of the group to become busy (have at least one request),
->> so that the group does not lose out for not being continuously
->> backlogged. The commit did not check for the condition that the last
->> queue already has some requests. As a result, if the queue already has
->> requests, wait_busy is set. Later on, cfq_select_queue() checks the
->> flag, and decides that since the queue has a request now and wait_busy
->> is set, the queue is expired.  This results in early expiration of the
->> queue.
->
-> Hi Justin,
->
-> wait_busy will be set only if slice has expired or about to be expired. So
-> even if we are setting wait_busy flag, it is not a huge deal even if
-> select_queue() expires it? Anyway queue has consumed or almost consumed
-> its allocated slice?
+Hi,
 
-Correct, the queue will have consumed or almost consumed its allocated
-slice. However, this must be happening often enough because there is a
-measurable impact in our testing.
+I get the following error with kernel 2.6.38-rc3 during normal file access via
+NFS v4.
 
->
-> Having said that, it does not make sense to set wait_busy flag if
-> cfqq has requests. So I would be fine with the patch. I am just
-> curious that how did you see a difference in practice.
+At least one other user seems to have the same problem:
+http://pastebin.com/QRq1TMkj
 
-In practice,
-  - We see some better isolation between tasks with this patch alone
-(Possibly those writes are getting marked SYNC somehow, or it's
-another timing change)
-  - With other patches that introduce isolation between buffered
-writes, we see that isolation works better, especially for cgroups
-with small weights.
+<0>------------[ cut here ]------------
+kernel BUG at fs/nfsd/nfs4state.c:3132!
+<0>invalid opcode: 0000 [#1] SMP 
+<0>last sysfs file: /sys/devices/virtual/block/dm-8/uevent
+CPU 0 
+Modules linked in: ipv6 usblp btusb bluetooth loop arc4 ecb
+snd_hda_codec_idt snd_hda_intel snd_hda_codec snd_pcm_oss ath5k
+dvb_usb_vp7045 ath dvb_usb snd_pcm snd_timer mac80211
+ snd_page_alloc evdev dvb_core sky2 rc_core ata_piix cfg80211
 
->
->>
->> This patch fixes the problem by adding a check to see if queue already
->> has requests. If it does, wait_busy is not set. As a result, time slices
->> do not expire early.
->>
->> The queues with more than one request are usually buffered writers.
->> Testing shows improvement in isolation between buffered writers.
->
-> Upstream code puts all the buffered WRITES in root cgroup. So there
-> is no isolation between buffered WRITES?
+Pid: 2280, comm: nfsd Not tainted 2.6.38-rc3-00062-gb64606b #6
+Mac-F4208EAA/Macmini2,1
+RIP: 0010:[<ffffffff8119f973>]  [<ffffffff8119f973>]
+nfs4_preprocess_stateid_op+0x3a3/0x490
+RSP: 0018:ffff8800b399bd50  EFLAGS: 00010246
+RAX: 0000000000000000 RBX: ffff8800b60a9000 RCX: ffffffff8175a010
+RDX: ffff8800ab784e48 RSI: ffffffff8175a020 RDI: ffffffff8175a000
+RBP: ffff8800a4ce5678 R08: 0000000000000000 R09: 0000000000000000
+R10: ffff8800b3910180 R11: c600000000000000 R12: ffff8800b390f1c0
+R13: ffff8800b390f1a0 R14: 0000000000000000 R15: ffff8800aba079a0
+FS:  0000000000000000(0000) GS:ffff8800bde00000(0000)
+knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 00007f2b8805d000 CR3: 00000000b6fe8000 CR4: 00000000000006b0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process nfsd (pid: 2280, threadinfo ffff8800b399a000, task
+ffff8800b63a62d0)
+<0>Stack:
+ 000000004d507f0d ffff8800b390f1a0 ffff8800b3910040 ffff8800b391c000
+ 0000000016000000 0000000000000000 ffff8800b3910040 ffffffff8118f549
+ ffff8800b390f000 ffff8800b3910000 ffff8800b390f000 ffff8800b391c000
+<0>Call Trace:
+ [<ffffffff8118f549>] ? nfsd4_read+0x79/0xc0
+ [<ffffffff81190096>] ? nfsd4_proc_compound+0x416/0x4d0
+ [<ffffffff8117f5ad>] ? nfsd_dispatch+0xfd/0x240
+ [<ffffffff8146f1f9>] ? svc_process_common+0x339/0x680
+ [<ffffffff81035b70>] ? default_wake_function+0x0/0x20
+ [<ffffffff8117ecc0>] ? nfsd+0x0/0x150
+ [<ffffffff8146f80a>] ? svc_process+0x10a/0x160
+ [<ffffffff8117ecc0>] ? nfsd+0x0/0x150
+ [<ffffffff8117ed72>] ? nfsd+0xb2/0x150
+ [<ffffffff81055ff6>] ? kthread+0x96/0xa0
+ [<ffffffff810039b4>] ? kernel_thread_helper+0x4/0x10
+ [<ffffffff81055f60>] ? kthread+0x0/0xa0
+ [<ffffffff810039b0>] ? kernel_thread_helper+0x0/0x10
+<0>Code: 27 29 41 3b 47 50 0f 87 9a fd ff ff 0f 83 e9 fe ff ff e9 76 ff
+ff ff 48 8b 42 48 45 31 f6 49 89 04 24 48 85 c0 0f 85 7b fd ff ff <0f>
+0b 49 8b 57 48 48 8b 42 40 48 85 c
+0 0f 85 2a ff ff ff 48 8b 
+RIP  [<ffffffff8119f973>] nfs4_preprocess_stateid_op+0x3a3/0x490
+ RSP <ffff8800b399bd50>
+---[ end trace 7ef2fa5b1b62014a ]---
 
-This was a mistake on my part, we have other patches that add
-isolation between buffered writes; I just took this one out of order.
-If you'd like, we can hold on this patch for now and I can resend this
-later, but I think the actual patch itself is still good.
-
-My apologies for the confusion.
-
-Thanks,
-Justin
-
->
-> Thanks
-> Vivek
->
->>
->> Signed-off-by: Justin TerAvest <teravest@google.com>
->> ---
->>  block/cfq-iosched.c |    4 ++++
->>  1 files changed, 4 insertions(+), 0 deletions(-)
->>
->> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
->> index 501ffdf..5dcc353 100644
->> --- a/block/cfq-iosched.c
->> +++ b/block/cfq-iosched.c
->> @@ -3432,6 +3432,10 @@ static bool cfq_should_wait_busy(struct cfq_data *cfqd, struct cfq_queue *cfqq)
->>  {
->>       struct cfq_io_context *cic = cfqd->active_cic;
->>
->> +     /* If the queue already has requests, don't wait */
->> +     if (!RB_EMPTY_ROOT(&cfqq->sort_list))
->> +             return false;
->> +
->>       /* If there are other queues in the group, don't wait */
->>       if (cfqq->cfqg->nr_cfqq > 1)
->>               return false;
->> --
->> 1.7.3.1
->
+Regards,
+Tino
