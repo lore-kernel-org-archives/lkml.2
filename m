@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521Ab1BHCCT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 21:02:19 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45988 "EHLO
+	id S1755511Ab1BHCCR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 21:02:17 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:60035 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753133Ab1BHB7d (ORCPT
+	with ESMTP id S1753303Ab1BHB7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Feb 2011 20:59:33 -0500
-X-Authority-Analysis: v=1.1 cv=UQuFHoD2CPQ248x8AXEbKhr4z9AaDqApxmEl3BhfZ64= c=1 sm=0 a=o_DRAuQgDocA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=TnT-oeF1a4GWkS7kZacA:9 a=U4fFQpU4h-oh_f-_NpQA:7 a=JXZ7xv6z4gqFeIDHvsF5vz9bpaMA:4 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=XDMctFE3c-7AwwtU:21 a=aXIHvb7uSaJogfFK:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=MLuF7r21MCgA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=sqFdJYbxHO_ElygKPz0A:9 a=tdiBwGw4tEo29lwBVd8A:7 a=Q1g8eQll7nrK9RrrxbW5fsQHjngA:4 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110208015931.037802175@goodmis.org>
+Message-Id: <20110208015931.941386793@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Mon, 07 Feb 2011 20:56:19 -0500
+Date: Mon, 07 Feb 2011 20:56:22 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
@@ -22,174 +22,130 @@ Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 02/14] tracing/filter: Move OR and AND logic out of fn() method
+Subject: [PATCH 05/14] tracing/filter: Allocate the preds in an array
 References: <20110208015617.902200587@goodmis.org>
-Content-Disposition: inline; filename=0002-tracing-filter-Move-OR-and-AND-logic-out-of-fn-metho.patch
+Content-Disposition: inline; filename=0005-tracing-filter-Allocate-the-preds-in-an-array.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-The ops OR and AND act different from the other ops, as they
-are the only ones to take other ops as their arguements.
-These ops als change the logic of the filter_match_preds.
+Currently we allocate an array of pointers to filter_preds, and then
+allocate a separate filter_pred for each item in the array.
+This adds slight overhead in the filters as it needs to derefernce
+twice to get to the op condition.
 
-By removing the OR and AND fn's we can also remove the val1 and val2
-that is passed to all other fn's and are unused.
+Allocating the preds themselves in a single array removes a dereference
+as well as helps on the cache footprint.
 
 Cc: Tom Zanussi <tzanussi@gmail.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace.h               |    3 +-
- kernel/trace/trace_events_filter.c |   51 +++++++++++++----------------------
- 2 files changed, 20 insertions(+), 34 deletions(-)
+ kernel/trace/trace.h               |    2 +-
+ kernel/trace/trace_events_filter.c |   31 +++++++++----------------------
+ 2 files changed, 10 insertions(+), 23 deletions(-)
 
 diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 9021f8c..1597bc0 100644
+index 441fc1b..254d04a 100644
 --- a/kernel/trace/trace.h
 +++ b/kernel/trace/trace.h
-@@ -677,8 +677,7 @@ struct event_subsystem {
- struct filter_pred;
- struct regex;
- 
--typedef int (*filter_pred_fn_t) (struct filter_pred *pred, void *event,
--				 int val1, int val2);
-+typedef int (*filter_pred_fn_t) (struct filter_pred *pred, void *event);
- 
- typedef int (*regex_match_func)(char *str, struct regex *r, int len);
- 
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index 7275f03..5d719b3 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -124,8 +124,7 @@ struct filter_parse_state {
+@@ -663,7 +663,7 @@ struct ftrace_event_field {
+ struct event_filter {
+ 	int			n_preds;	/* Number assigned */
+ 	int			a_preds;	/* allocated */
+-	struct filter_pred	**preds;
++	struct filter_pred	*preds;
+ 	char			*filter_string;
  };
  
- #define DEFINE_COMPARISON_PRED(type)					\
--static int filter_pred_##type(struct filter_pred *pred, void *event,	\
--			      int val1, int val2)			\
-+static int filter_pred_##type(struct filter_pred *pred, void *event)	\
- {									\
- 	type *addr = (type *)(event + pred->offset);			\
- 	type val = (type)pred->val;					\
-@@ -152,8 +151,7 @@ static int filter_pred_##type(struct filter_pred *pred, void *event,	\
- }
- 
- #define DEFINE_EQUALITY_PRED(size)					\
--static int filter_pred_##size(struct filter_pred *pred, void *event,	\
--			      int val1, int val2)			\
-+static int filter_pred_##size(struct filter_pred *pred, void *event)	\
- {									\
- 	u##size *addr = (u##size *)(event + pred->offset);		\
- 	u##size val = (u##size)pred->val;				\
-@@ -178,23 +176,8 @@ DEFINE_EQUALITY_PRED(32);
- DEFINE_EQUALITY_PRED(16);
- DEFINE_EQUALITY_PRED(8);
- 
--static int filter_pred_and(struct filter_pred *pred __attribute((unused)),
--			   void *event __attribute((unused)),
--			   int val1, int val2)
--{
--	return val1 && val2;
--}
--
--static int filter_pred_or(struct filter_pred *pred __attribute((unused)),
--			  void *event __attribute((unused)),
--			  int val1, int val2)
--{
--	return val1 || val2;
--}
--
- /* Filter predicate for fixed sized arrays of characters */
--static int filter_pred_string(struct filter_pred *pred, void *event,
--			      int val1, int val2)
-+static int filter_pred_string(struct filter_pred *pred, void *event)
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+index 8f00a11..b6c9106 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -362,7 +362,7 @@ int filter_match_preds(struct event_filter *filter, void *rec)
  {
- 	char *addr = (char *)(event + pred->offset);
- 	int cmp, match;
-@@ -207,8 +190,7 @@ static int filter_pred_string(struct filter_pred *pred, void *event,
- }
- 
- /* Filter predicate for char * pointers */
--static int filter_pred_pchar(struct filter_pred *pred, void *event,
--			     int val1, int val2)
-+static int filter_pred_pchar(struct filter_pred *pred, void *event)
- {
- 	char **addr = (char **)(event + pred->offset);
- 	int cmp, match;
-@@ -231,8 +213,7 @@ static int filter_pred_pchar(struct filter_pred *pred, void *event,
-  * and add it to the address of the entry, and at last we have
-  * the address of the string.
-  */
--static int filter_pred_strloc(struct filter_pred *pred, void *event,
--			      int val1, int val2)
-+static int filter_pred_strloc(struct filter_pred *pred, void *event)
- {
- 	u32 str_item = *(u32 *)(event + pred->offset);
- 	int str_loc = str_item & 0xffff;
-@@ -247,8 +228,7 @@ static int filter_pred_strloc(struct filter_pred *pred, void *event,
- 	return match;
- }
- 
--static int filter_pred_none(struct filter_pred *pred, void *event,
--			    int val1, int val2)
-+static int filter_pred_none(struct filter_pred *pred, void *event)
- {
- 	return 0;
- }
-@@ -380,7 +360,7 @@ static void filter_build_regex(struct filter_pred *pred)
- /* return 1 if event matches, 0 otherwise (discard) */
- int filter_match_preds(struct event_filter *filter, void *rec)
- {
--	int match, top = 0, val1 = 0, val2 = 0;
-+	int match = -1, top = 0, val1 = 0, val2 = 0;
+ 	int match = -1, top = 0, val1 = 0, val2 = 0;
  	int stack[MAX_FILTER_PRED];
+-	struct filter_pred **preds;
++	struct filter_pred *preds;
  	struct filter_pred *pred;
  	int n_preds = ACCESS_ONCE(filter->n_preds);
-@@ -393,7 +373,7 @@ int filter_match_preds(struct event_filter *filter, void *rec)
+ 	int i;
+@@ -377,7 +377,7 @@ int filter_match_preds(struct event_filter *filter, void *rec)
+ 	preds = rcu_dereference_sched(filter->preds);
+ 
  	for (i = 0; i < n_preds; i++) {
- 		pred = filter->preds[i];
+-		pred = preds[i];
++		pred = &preds[i];
  		if (!pred->pop_n) {
--			match = pred->fn(pred, rec, val1, val2);
-+			match = pred->fn(pred, rec);
+ 			match = pred->fn(pred, rec);
  			stack[top++] = match;
- 			continue;
- 		}
-@@ -403,7 +383,16 @@ int filter_match_preds(struct event_filter *filter, void *rec)
- 		}
- 		val1 = stack[--top];
- 		val2 = stack[--top];
--		match = pred->fn(pred, rec, val1, val2);
-+		switch (pred->op) {
-+		case OP_AND:
-+			match = val1 && val2;
-+			break;
-+		case OP_OR:
-+			match = val1 || val2;
-+			break;
-+		default:
-+			WARN_ONCE(1, "filter op is not AND or OR");
-+		}
- 		stack[top++] = match;
+@@ -559,10 +559,8 @@ static void __free_preds(struct event_filter *filter)
+ 	int i;
+ 
+ 	if (filter->preds) {
+-		for (i = 0; i < filter->a_preds; i++) {
+-			if (filter->preds[i])
+-				filter_free_pred(filter->preds[i]);
+-		}
++		for (i = 0; i < filter->a_preds; i++)
++			kfree(filter->preds[i].field_name);
+ 		kfree(filter->preds);
+ 		filter->preds = NULL;
+ 	}
+@@ -572,7 +570,6 @@ static void __free_preds(struct event_filter *filter)
+ 
+ static void reset_preds(struct event_filter *filter)
+ {
+-	struct filter_pred *pred;
+ 	int n_preds = filter->n_preds;
+ 	int i;
+ 
+@@ -580,10 +577,8 @@ static void reset_preds(struct event_filter *filter)
+ 	if (!filter->preds)
+ 		return;
+ 
+-	for (i = 0; i < n_preds; i++) {
+-		pred = filter->preds[i];
+-		pred->fn = filter_pred_none;
+-	}
++	for (i = 0; i < n_preds; i++)
++		filter->preds[i].fn = filter_pred_none;
+ }
+ 
+ static void filter_disable_preds(struct ftrace_event_call *call)
+@@ -658,19 +653,11 @@ static int __alloc_preds(struct event_filter *filter, int n_preds)
+ 		return -EINVAL;
+ 
+ 	for (i = 0; i < n_preds; i++) {
+-		pred = filter->preds[i];
+-		if (!pred)
+-			pred = kzalloc(sizeof(*pred), GFP_KERNEL);
+-		if (!pred)
+-			goto oom;
++		pred = &filter->preds[i];
+ 		pred->fn = filter_pred_none;
+-		filter->preds[i] = pred;
  	}
  
-@@ -775,15 +764,13 @@ static int filter_add_pred(struct filter_parse_state *ps,
- 	unsigned long long val;
- 	int ret;
+ 	return 0;
+- oom:
+-	__free_preds(filter);
+-	return -ENOMEM;
+ }
  
--	pred->fn = filter_pred_none;
-+	fn = pred->fn = filter_pred_none;
- 
- 	if (pred->op == OP_AND) {
- 		pred->pop_n = 2;
--		fn = filter_pred_and;
- 		goto add_pred_fn;
- 	} else if (pred->op == OP_OR) {
- 		pred->pop_n = 2;
--		fn = filter_pred_or;
- 		goto add_pred_fn;
+ static int init_filter(struct ftrace_event_call *call)
+@@ -730,8 +717,8 @@ static int filter_add_pred_fn(struct filter_parse_state *ps,
  	}
+ 
+ 	idx = filter->n_preds;
+-	filter_clear_pred(filter->preds[idx]);
+-	err = filter_set_pred(filter->preds[idx], pred, fn);
++	filter_clear_pred(&filter->preds[idx]);
++	err = filter_set_pred(&filter->preds[idx], pred, fn);
+ 	if (err)
+ 		return err;
  
 -- 
 1.7.2.3
