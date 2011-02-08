@@ -1,249 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283Ab1BHWPn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 17:15:43 -0500
-Received: from smtp-out1.tiscali.nl ([195.241.79.176]:56150 "EHLO
-	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753725Ab1BHWPl (ORCPT
+	id S1755864Ab1BHWR1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 17:17:27 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:46174 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754261Ab1BHWRX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 17:15:41 -0500
-Subject: [PATCH v2 2/2] man-pages: SYSLOG_ACTION_* constants are now exported
-From: Paul Bolle <pebolle@tiscali.nl>
+	Tue, 8 Feb 2011 17:17:23 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=1pt1xNAsmFoA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VnNF1IyMAAAA:8 a=meVymXHHAAAA:8 a=6mJaMgxvitTUPu_o8w4A:9 a=IW7Ln_FEvjvrRije5W4A:7 a=ATNV7eMnFecrMncLqFTIKPnj_04A:4 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20110208221719.829336875@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Tue, 08 Feb 2011 17:16:16 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <kees.cook@canonical.com>, David Woodhouse <dwmw2@infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>, mtk.manpages@gmail.com
-Date: Tue, 08 Feb 2011 23:15:34 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 2.91.5 (2.91.5-4.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1297203340.1748.15.camel@t41.thuisdomein>
-Mime-Version: 1.0
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ian Munsie <imunsie@au1.ibm.com>
+Subject: [PATCH 04/10] tracing/syscalls: Allow arch specific syscall symbol matching
+References: <20110208221612.084294240@goodmis.org>
+Content-Disposition: inline; filename=0004-tracing-syscalls-Allow-arch-specific-syscall-symbol-.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel now exports <linux/syslog.h>. This makes the SYSLOG_ACTION_*
-constants available to userspace. This allows to replace the magic
-numbers used in this man page with (what should be) more descriptive
-names. The quote form kernel/printk.c can now also be dropped.
+From: Ian Munsie <imunsie@au1.ibm.com>
 
-A few (more or less related) things were also fixed or changed:
-- add a new sub section "The command types";
-- the (userspace) buffer is called bufp everywhere (and not buf);
-- add some whitespace to all call descriptions;
-- use "ignored" in some call descriptions (instead of "dummy").
+Some architectures have unusual symbol names and the generic code to
+match the symbol name with the function name for the syscall metadata
+will fail. For example, symbols on PPC64 start with a period and the
+generic code will fail to match them.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+This patch moves the match logic out into a separate function which an
+arch can override by defining ARCH_HAS_SYSCALL_MATCH_SYM_NAME in
+asm/ftrace.h and implementing arch_syscall_match_sym_name.
+
+Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+LKML-Reference: <1296703645-18718-5-git-send-email-imunsie@au1.ibm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- man2/syslog.2 |  110 +++++++++++++++++++++++++++------------------------------
- 1 files changed, 52 insertions(+), 58 deletions(-)
+ Documentation/trace/ftrace-design.txt |    4 ++++
+ kernel/trace/trace_syscalls.c         |   21 ++++++++++++++-------
+ 2 files changed, 18 insertions(+), 7 deletions(-)
 
-diff --git a/man2/syslog.2 b/man2/syslog.2
-index fb018a6..9c4438b 100644
---- a/man2/syslog.2
-+++ b/man2/syslog.2
-@@ -38,6 +38,7 @@ set console_loglevel
- /* The glibc interface */
- .br
- .B "#include <sys/klog.h>"
-+.BR "#include <linux/syslog.h>" "    /* For SYSLOG_ACTION_* constants */"
- .sp
- .BI "int klogctl(int " type ", char *" bufp ", int " len );
- .fi
-@@ -52,31 +53,6 @@ The system call of this name is about controlling the kernel
- .IR printk ()
- buffer, and the glibc version is called
- .BR klogctl ().
--
--The \fItype\fP argument determines the action taken by this function.
--
--Quoting from
--.IR kernel/printk.c :
--.nf
--/*
-- * Commands to sys_syslog:
-- *
-- *      0 \-\- Close the log.  Currently a NOP.
-- *      1 \-\- Open the log. Currently a NOP.
-- *      2 \-\- Read from the log.
-- *      3 \-\- Read all messages remaining in the ring buffer.
-- *      4 \-\- Read and clear all messages remaining in the ring buffer
-- *      5 \-\- Clear ring buffer.
-- *      6 \-\- Disable printk to console
-- *      7 \-\- Enable printk to console
-- *      8 \-\- Set level of messages printed to console
-- *      9 \-\- Return number of unread characters in the log buffer
-- *     10 \-\- Return size of the log buffer
-- */
--.fi
--
--Only command types 3 and 10 are allowed to unprivileged processes.
--Type 9 was added in 2.4.10; type 10 in 2.6.6.
- .SS The kernel log buffer
- The kernel has a cyclic buffer of length
- .B LOG_BUF_LEN
-@@ -91,12 +67,32 @@ from kernel 2.1.113 it was 16384;
- since 2.4.23/2.6 the value is a kernel configuration option.
- .\" Under "General setup" ==> "Kernel log buffer size"
- .\" For 2.6, precisely the option seems to have appeared in 2.5.55.
--In recent kernels the size can be queried with command type 10.
-+Since kernel 2.6.6 the size can be queried with the
-+\fBSYSLOG_ACTION_SIZE_BUFFER\fP command.
-+.SS The command types
-+The \fItype\fP argument determines the action taken by this function.
-+Since kernel 2.6.34
-+.IR <linux/syslog.h>
-+defines these constants:
+diff --git a/Documentation/trace/ftrace-design.txt b/Documentation/trace/ftrace-design.txt
+index 6fca17b..79fcafc 100644
+--- a/Documentation/trace/ftrace-design.txt
++++ b/Documentation/trace/ftrace-design.txt
+@@ -250,6 +250,10 @@ You need very few things to get the syscalls tracing in an arch.
+ - If the system call table on this arch is more complicated than a simple array
+   of addresses of the system calls, implement an arch_syscall_addr to return
+   the address of a given system call.
++- If the symbol names of the system calls do not match the function names on
++  this arch, define ARCH_HAS_SYSCALL_MATCH_SYM_NAME in asm/ftrace.h and
++  implement arch_syscall_match_sym_name with the appropriate logic to return
++  true if the function name corresponds with the symbol name.
+ - Tag this arch as HAVE_SYSCALL_TRACEPOINTS.
+ 
+ 
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index af83154..86a23e7 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -60,6 +60,19 @@ extern struct syscall_metadata *__stop_syscalls_metadata[];
+ 
+ static struct syscall_metadata **syscalls_metadata;
+ 
++#ifndef ARCH_HAS_SYSCALL_MATCH_SYM_NAME
++static inline bool arch_syscall_match_sym_name(const char *sym, const char *name)
++{
++	/*
++	 * Only compare after the "sys" prefix. Archs that use
++	 * syscall wrappers may have syscalls symbols aliases prefixed
++	 * with "SyS" instead of "sys", leading to an unwanted
++	 * mismatch.
++	 */
++	return !strcmp(sym + 3, name + 3);
++}
++#endif
 +
-+.nf
-+#define SYSLOG_ACTION_CLOSE          0  /* Currently a NOP. */
-+#define SYSLOG_ACTION_OPEN           1  /* Currently a NOP. */
-+#define SYSLOG_ACTION_READ           2
-+#define SYSLOG_ACTION_READ_ALL       3
-+#define SYSLOG_ACTION_READ_CLEAR     4
-+#define SYSLOG_ACTION_CLEAR          5
-+#define SYSLOG_ACTION_CONSOLE_OFF    6
-+#define SYSLOG_ACTION_CONSOLE_ON     7
-+#define SYSLOG_ACTION_CONSOLE_LEVEL  8
-+#define SYSLOG_ACTION_SIZE_UNREAD    9
-+#define SYSLOG_ACTION_SIZE_BUFFER   10
-+.fi
+ static __init struct syscall_metadata *
+ find_syscall_meta(unsigned long syscall)
+ {
+@@ -73,13 +86,7 @@ find_syscall_meta(unsigned long syscall)
+ 	kallsyms_lookup(syscall, NULL, NULL, NULL, str);
  
- The call
--.I "syslog(2,buf,len)"
-+.I "syslog(SYSLOG_ACTION_READ, bufp, len)"
- waits until this kernel log buffer is nonempty, and then reads
--at most \fIlen\fP bytes into the buffer \fIbuf\fP.
-+at most \fIlen\fP bytes into the buffer \fIbufp\fP.
- It returns
- the number of bytes read.
- Bytes read from the log disappear from
-@@ -106,37 +102,34 @@ reads
- .IR /proc/kmsg .
- 
- The call
--.I syslog(3,buf,len)
-+.I syslog(SYSLOG_ACTION_READ_ALL, bufp, len)
- will read the last \fIlen\fP bytes from the log buffer (nondestructively),
- but will not read more than was written into the buffer since the
--last "clear ring buffer" command (which does not clear the buffer at all).
--It returns the number of bytes read.
-+last \fBSYSLOG_ACTION_CLEAR\fP command (which does not clear the buffer at
-+all). It returns the number of bytes read. This call is allowed to
-+unprivileged processes.
- 
- The call
--.I syslog(4,buf,len)
--does precisely the same, but also executes the "clear ring buffer" command.
-+.I syslog(SYSLOG_ACTION_READ_CLEAR, bufp, len)
-+does precisely the same, but also executes the \fBSYSLOG_ACTION_CLEAR\fP
-+command.
- 
- The call
--.I syslog(5,dummy,dummy)
-+.I syslog(SYSLOG_ACTION_CLEAR, ignored, ignored)
- executes just the "clear ring buffer" command.
--(In each call where
--.I buf
--or
--.I len
--is shown as "dummy", the value of the argument is ignored by the call.)
- 
- The call
--.I syslog(6,dummy,dummy)
-+.I syslog(SYSLOG_ACTION_CONSOLE_OFF, ignored, ignored)
- sets the console log level to minimum, so that no messages are printed
- to the console.
- 
- The call
--.I syslog(7,dummy,dummy)
-+.I syslog(SYSLOG_ACTION_CONSOLE_ON, ignored, ignored)
- sets the console log level to default, so that messages are printed
- to the console.
- 
- The call
--.I syslog(8,dummy,level)
-+.I syslog(SYSLOG_ACTION_CONSOLE_LEVEL, ignored, level)
- sets the console log level to
- .IR level ,
- which must be an integer between 1 and 8 (inclusive).
-@@ -145,13 +138,14 @@ See the
- section for details.
- 
- The call
--.I syslog(9,dummy,dummy)
-+.I syslog(SYSLOG_ACTION_SIZE_UNREAD, ignored, ignored)
- returns the number of bytes currently available to be read
--on the kernel log buffer.
-+on the kernel log buffer. (This call was added in 2.4.10.)
- 
- The call
--.I syslog(10,dummy,dummy)
--returns the total size of the kernel log buffer.
-+.I syslog(SYSLOG_ACTION_SIZE_BUFFER, ignored, ignored)
-+returns the total size of the kernel log buffer. This call is allowed to
-+unprivileged processes. (This call was added in 2.6.6.)
- .SS The loglevel
- The kernel routine
- .BR printk ()
-@@ -163,12 +157,10 @@ This variable initially has the value
- (7), but is set to 10 if the
- kernel command line contains the word "debug", and to 15 in case
- of a kernel fault (the 10 and 15 are just silly, and equivalent to 8).
--This variable is set (to a value in the range 1-8) by the call
--.IR syslog(8,dummy,value) .
--The calls
--.I syslog(type,dummy,dummy)
--with \fItype\fP equal to 6 or 7, set it to 1 (kernel panics only)
--or 7 (all except debugging messages), respectively.
-+This variable is set (to a value in the range 1-8) by the
-+\fBSYSLOG_ACTION_CONSOLE_LEVEL\fP command. The \fBSYSLOG_ACTION_CONSOLE_OFF\fP
-+command sets it to 1 (kernel panics only). The \fBSYSLOG_ACTION_CONSOLE_ON\fP
-+command sets it to 7 (all messages except debugging messages).
- 
- Every text line in a message has its own loglevel.
- This level is
-@@ -191,15 +183,16 @@ as follows:
- #define KERN_DEBUG    "<7>"  /* debug-level messages             */
- .fi
- .SH "RETURN VALUE"
--For \fItype\fP equal to 2, 3, or 4, a successful call to
-+For \fItype\fP \fBSYSLOG_ACTION_READ\fP, \fBSYSLOG_ACTION_READ_ALL\fP,
-+or \fBSYSLOG_ACTION_READ_CLEAR\fP, a successful call to
- .BR syslog ()
- returns the number
- of bytes read.
--For \fItype\fP 9,
-+For \fItype\fP \fBSYSLOG_ACTION_SIZE_UNREAD\fP,
- .BR syslog ()
- returns the number of bytes currently
- available to be read on the kernel log buffer.
--For \fItype\fP 10,
-+For \fItype\fP \fBSYSLOG_ACTION_SIZE_BUFFER\fP,
- .BR syslog ()
- returns the total size of the kernel log buffer.
- For other values of \fItype\fP, 0 is returned on success.
-@@ -214,14 +207,15 @@ bad
- .IR type ;
- or for
- .I type
--2, 3, or 4,
--.I buf
-+\fBSYSLOG_ACTION_READ\fP, \fBSYSLOG_ACTION_READ_ALL\fP, or
-+\fBSYSLOG_ACTION_READ_CLEAR\fP,
-+.I bufp
- is NULL,
- or
- .I len
- is less than zero; or for
- .I type
--8, the
-+\fBSYSLOG_ACTION_CONSOLE_LEVEL\fP, the
- .I level
- is outside the range 1 to 8).
- .TP
+ 	for ( ; start < stop; start++) {
+-		/*
+-		 * Only compare after the "sys" prefix. Archs that use
+-		 * syscall wrappers may have syscalls symbols aliases prefixed
+-		 * with "SyS" instead of "sys", leading to an unwanted
+-		 * mismatch.
+-		 */
+-		if ((*start)->name && !strcmp((*start)->name + 3, str + 3))
++		if ((*start)->name && arch_syscall_match_sym_name(str, (*start)->name))
+ 			return *start;
+ 	}
+ 	return NULL;
 -- 
-1.7.4
-
+1.7.2.3
 
 
