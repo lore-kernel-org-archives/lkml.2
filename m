@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804Ab1BHJcV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 04:32:21 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44024 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752754Ab1BHJcU (ORCPT
+	id S1752594Ab1BHJfb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 04:35:31 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49437 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752121Ab1BHJf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 04:32:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=BDXjWPzUz77x7exi7hLe0hL5NazrMLK4zf2mons1VIMFbAtMCbwZwa6VdmO5ZNAO2m
-         p9gyUSrFBSml4vRrG2fMPA9WT317p0XDW6rduMCuPALnoeIxOnnmS3zxCzRrbvyyyUu9
-         0WVzWxacDs7j7uT96MOgrTFuP+oGFY6OSKbgQ=
-Date: Tue, 8 Feb 2011 10:32:12 +0100
-From: Tejun Heo <tj@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Len Brown <len.brown@intel.com>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: [PATCH] thermal: Use freezable workqueue
-Message-ID: <20110208093212.GA6558@htj.dyndns.org>
-References: <201102080029.57195.rjw@sisk.pl>
- <20110208044712.GA906@core.coreip.homeip.net>
- <201102081020.25646.rjw@sisk.pl>
+	Tue, 8 Feb 2011 04:35:29 -0500
+Date: Tue, 8 Feb 2011 10:35:28 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Harry Wei <jiaweiwei.xiyou@gmail.com>
+Cc: linux-kernel@vger.kernel.org, xiyou.wangcong@gmail.com
+Subject: Re: Fwd: [PATCH]Maintain Chinese Documentations
+Message-ID: <20110208093528.GA2580@pengutronix.de>
+References: <20110208023735.GA4599@gmail.com>
+ <20110207184027.468e2a03.rdunlap@xenotime.net>
+ <AANLkTimacOStZv-hrxo6iOWUDNem+h1cmaKCZQzw=0jr@mail.gmail.com>
+ <20110208031638.GA4828@gmail.com>
+ <20110207192249.5a478469.rdunlap@xenotime.net>
+ <AANLkTimFFT-B_aPyfFJmMpvt9jhd98ckBah2vbK+WQJf@mail.gmail.com>
+ <20110208033818.GA4922@gmail.com>
+ <iiqti3$3b5$2@dough.gmane.org>
+ <AANLkTinGn5oN01+33VgnnWHAqEZNxkoJeTgkjAjpC8LZ@mail.gmail.com>
+ <20110208093020.GA2016@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Nq2Wo0NMKNjxTN9z"
 Content-Disposition: inline
-In-Reply-To: <201102081020.25646.rjw@sisk.pl>
+In-Reply-To: <20110208093020.GA2016@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Dmitry, Rafael.
 
-On Tue, Feb 08, 2011 at 10:20:25AM +0100, Rafael J. Wysocki wrote:
-> > > +	thermal_wq = alloc_workqueue("thermal", WQ_FREEZEABLE, 0);
-> > 
-> > Should probably be unbound as well.
-> 
-> Yup, thanks.
+--Nq2Wo0NMKNjxTN9z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hmm.. why should it be unbound?  Unbound wqs are primarily useful for
-very long running (system daemon type) works which may also consume
-considerable amount of cpu cycles.
+> > > +L:   xiyoulinuxkernelgroup@googlegroups.com
+> >=20
+> > NAK.
+> >=20
+> > Clearly linux-kernel@zh-kernel.org is more "official".
 
-> > FWIW, I would not mind if we had a global freezeable workqueue already
-> > predefined. I could switch input_polldev and vmw_balloon to it and there
-> > probably could be more users...
-> 
-> Hmm, OK.
-> 
-> Do you think we should add system_freezeable_wq to the set of predefined
-> workqueues?
+> Hi Brother Wang, I have mailed to linux-kernel@zh-kernel.org for some
+> translation problems but there is no response. So ... In fact, any
+> mailing list is ok if they are absolutely interested in kernel. We
+> will also send our translations for kernel-docs to
+> linux-kernel@zh-kernel.org. After talking with them we will patch for
+> kernel :)
 
-Oh, yeah, definitely.  I'll write up a patch.
+If it helps the case, you could also have two "L:" entries?
 
-Thanks.
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
--- 
-tejun
+--Nq2Wo0NMKNjxTN9z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk1RDmAACgkQD27XaX1/VRt4UACgmAEnPGGDTzAivTBUI0+ce+8A
+kv8An3QIH0SbS8LxZ2kkjna6anoHlRpZ
+=TCxh
+-----END PGP SIGNATURE-----
+
+--Nq2Wo0NMKNjxTN9z--
