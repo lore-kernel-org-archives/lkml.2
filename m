@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195Ab1BHQyw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 11:54:52 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:60186 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754689Ab1BHQyu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 11:54:50 -0500
-X-Authority-Analysis: v=1.1 cv=dquaJDitHqzHCdqWSoZ6IgapSuTzW/4TaRYx9N9k4W8= c=1 sm=0 a=q1gOGqRNiosA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=eLvBjSu_9cH7wookToIA:9 a=ir91xW_BGd7ynhMXhKYDzU-pyWUA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 5/6] ftrace, powerpc: Implement raw syscall tracepoints
- on PowerPC
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Ian Munsie <imunsie@au1.ibm.com>, linux-kernel@vger.kernel.org,
-        Andreas Dilger <adilger@dilger.ca>,
-        Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Jason Baron <jbaron@redhat.com>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Alexander Graf <agraf@suse.de>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Scott Wood <scottwood@freescale.com>, Nathan Lynch <ntl@pobox.com>,
-        Avantika Mathur <mathur@linux.vnet.ibm.com>,
-        David Gibson <dwg@au1.ibm.com>, Andreas Schwab <schwab@linux-m68k.org>,
-        Namhyung Kim <namhyung@gmail.com>
-In-Reply-To: <1297159672.14982.205.camel@pasglop>
-References: <1296703645-18718-1-git-send-email-imunsie@au1.ibm.com>
-	 <1296703645-18718-6-git-send-email-imunsie@au1.ibm.com>
-	 <1297131028.23343.7.camel@gandalf.stny.rr.com>
-	 <1297159672.14982.205.camel@pasglop>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 08 Feb 2011 11:54:46 -0500
-Message-ID: <1297184086.23343.10.camel@gandalf.stny.rr.com>
+	id S1755188Ab1BHRDK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 12:03:10 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:56761 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754689Ab1BHRDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 12:03:08 -0500
+Subject: Re: [PATCH v2] flex_array: Change behaviour on zero size
+ allocations
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Eric Paris <eparis@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+In-Reply-To: <20110207122903.GO3070@secunet.com>
+References: <20110207122903.GO3070@secunet.com>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Tue, 08 Feb 2011 09:02:41 -0800
+Message-ID: <1297184561.6737.12074.camel@nimitz>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-08 at 21:07 +1100, Benjamin Herrenschmidt wrote:
-> On Mon, 2011-02-07 at 21:10 -0500, Steven Rostedt wrote:
-> > Ben,
-> > 
-> > How do you want to work this? Do you want to ack it and I take this
-> > patch with the others through the tracing tree, or do you want to wait
-> > till the tracing tree gets updated into mainline and then pull this in
-> > though the ppc tree. As this touches a bit of the ppc side.
+On Mon, 2011-02-07 at 13:29 +0100, Steffen Klassert wrote:
+>  int flex_array_prealloc(struct flex_array *fa, unsigned int start,
+> -                       unsigned int end, gfp_t flags)
+> +                       unsigned int nr_elements, gfp_t flags)
+>  {
+>         int start_part;
+>         int end_part;
+>         int part_nr;
+> +       unsigned int end;
+>         struct flex_array_part *part;
 > 
-> I was waiting to see what you were up to vs. the rest of the series :-)
-> 
-> I still need to review that one closely, at which point I'm happy for
-> you to take it.
+> -       if (start >= fa->total_nr_elements || end >= fa->total_nr_elements)
+> +       if (!fa->total_nr_elements && !start)
+> +               return 0;
+> +       if (start >= fa->total_nr_elements)
+> +               return -ENOSPC;
+> +       if (!nr_elements)
+> +               return 0;
+> +
+> +       end = start + nr_elements - 1;
+> +
+> +       if (end >= fa->total_nr_elements)
+>                 return -ENOSPC;
+> +       if (!fa->element_size)
+> +               return 0; 
 
-It survived my tests, I'm continuing with other patches for 39 and I
-have no problem with Ian's patches.
+The rest of this patch looks good.  When you resend, you need to break
+this up in to at least two patches: one to change 'end' to
+'nr_elements' (or something else) and the one to handle zero-sized
+elements and arrays.
 
--- Steve
+I also think we need to remove the ability to do zero-sized elements.
+Unless there's some new code that I'm missing, I don't see any of the
+existing security policy code which would be able to do that.
 
+-- Dave
 
