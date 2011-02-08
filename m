@@ -1,125 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182Ab1BHWaH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 17:30:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64592 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753425Ab1BHWaG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 17:30:06 -0500
-Date: Tue, 8 Feb 2011 17:29:57 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Justin TerAvest <teravest@google.com>
-Cc: jaxboe@fusionio.com, ctalbott@google.com, mrubin@google.com,
-        jmoyer@redhat.com, guijianfeng@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Don't wait if queue already has requests.
-Message-ID: <20110208222957.GD29081@redhat.com>
-References: <1297192697-29978-1-git-send-email-teravest@google.com>
- <20110208194826.GC29081@redhat.com>
- <AANLkTimawcpJRFPW5kKdZtKQ_PvKHc6oFSOVAcqy39Y9@mail.gmail.com>
+	id S1755825Ab1BHWbI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 17:31:08 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:10311 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753679Ab1BHWbF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 17:31:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ERgKVrfqb9VxHaaJ2x3Q2DUNeaFqbHd5oS6vxOAqITHJb3AprHwXVX9gTTxLVyCTdO
+         Hizdmtne/Fb9sVXORVtg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimawcpJRFPW5kKdZtKQ_PvKHc6oFSOVAcqy39Y9@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1297095037.13327.47.camel@laptop>
+References: <4d384700.2308e30a.70bc.ffffd532@mx.google.com>
+	<1297095037.13327.47.camel@laptop>
+Date: Tue, 8 Feb 2011 23:31:02 +0100
+Message-ID: <AANLkTi=abaUN6m9ZWQuri_Y-487YZzjnTujQMP61QdmW@mail.gmail.com>
+Subject: Re: [PATCH 1/2] perf_events: add cgroup support (v8)
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
+        eranian@gmail.com, robert.richter@amd.com, acme@redhat.com,
+        lizf@cn.fujitsu.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 08, 2011 at 02:21:18PM -0800, Justin TerAvest wrote:
-> On Tue, Feb 8, 2011 at 11:48 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > On Tue, Feb 08, 2011 at 11:18:17AM -0800, Justin TerAvest wrote:
-> >> Commit 7667aa0630407bc07dc38dcc79d29cc0a65553c1 added logic to wait for
-> >> the last queue of the group to become busy (have at least one request),
-> >> so that the group does not lose out for not being continuously
-> >> backlogged. The commit did not check for the condition that the last
-> >> queue already has some requests. As a result, if the queue already has
-> >> requests, wait_busy is set. Later on, cfq_select_queue() checks the
-> >> flag, and decides that since the queue has a request now and wait_busy
-> >> is set, the queue is expired. �This results in early expiration of the
-> >> queue.
-> >
-> > Hi Justin,
-> >
-> > wait_busy will be set only if slice has expired or about to be expired. So
-> > even if we are setting wait_busy flag, it is not a huge deal even if
-> > select_queue() expires it? Anyway queue has consumed or almost consumed
-> > its allocated slice?
-> 
-> Correct, the queue will have consumed or almost consumed its allocated
-> slice. However, this must be happening often enough because there is a
-> measurable impact in our testing.
-> 
-> >
-> > Having said that, it does not make sense to set wait_busy flag if
-> > cfqq has requests. So I would be fine with the patch. I am just
-> > curious that how did you see a difference in practice.
-> 
-> In practice,
->   - We see some better isolation between tasks with this patch alone
-> (Possibly those writes are getting marked SYNC somehow, or it's
-> another timing change)
->   - With other patches that introduce isolation between buffered
-> writes, we see that isolation works better, especially for cgroups
-> with small weights.
-> 
-> >
-> >>
-> >> This patch fixes the problem by adding a check to see if queue already
-> >> has requests. If it does, wait_busy is not set. As a result, time slices
-> >> do not expire early.
-> >>
-> >> The queues with more than one request are usually buffered writers.
-> >> Testing shows improvement in isolation between buffered writers.
-> >
-> > Upstream code puts all the buffered WRITES in root cgroup. So there
-> > is no isolation between buffered WRITES?
-> 
-> This was a mistake on my part, we have other patches that add
-> isolation between buffered writes; I just took this one out of order.
-> If you'd like, we can hold on this patch for now and I can resend this
-> later, but I think the actual patch itself is still good.
+Peter,
 
-I think this patch as it is good as there is no point in marking a
-queue wait_busy if it already has requests.
+See comments below.
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-Thanks
-Vivek
+On Mon, Feb 7, 2011 at 5:10 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> Compile tested only, depends on the cgroup::exit patch
+>
+> --- linux-2.6.orig/include/linux/perf_event.h
+> +++ linux-2.6/include/linux/perf_event.h
+> @@ -905,6 +929,9 @@ struct perf_cpu_context {
+>        struct list_head                rotation_list;
+>        int                             jiffies_interval;
+>        struct pmu                      *active_pmu;
+> +#ifdef CONFIG_CGROUP_PERF
+> +       struct perf_cgroup              *cgrp;
+> +#endif
+>  };
+>
+I don't quite understand the motivation for adding cgrp to cpuctx.
 
-> 
-> My apologies for the confusion.
-> 
-> Thanks,
-> Justin
-> 
-> >
-> > Thanks
-> > Vivek
-> >
-> >>
-> >> Signed-off-by: Justin TerAvest <teravest@google.com>
-> >> ---
-> >> �block/cfq-iosched.c | � �4 ++++
-> >> �1 files changed, 4 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> >> index 501ffdf..5dcc353 100644
-> >> --- a/block/cfq-iosched.c
-> >> +++ b/block/cfq-iosched.c
-> >> @@ -3432,6 +3432,10 @@ static bool cfq_should_wait_busy(struct cfq_data *cfqd, struct cfq_queue *cfqq)
-> >> �{
-> >> � � � struct cfq_io_context *cic = cfqd->active_cic;
-> >>
-> >> + � � /* If the queue already has requests, don't wait */
-> >> + � � if (!RB_EMPTY_ROOT(&cfqq->sort_list))
-> >> + � � � � � � return false;
-> >> +
-> >> � � � /* If there are other queues in the group, don't wait */
-> >> � � � if (cfqq->cfqg->nr_cfqq > 1)
-> >> � � � � � � � return false;
-> >> --
-> >> 1.7.3.1
-> >
+> --- linux-2.6.orig/kernel/perf_event.c
+> +++ linux-2.6/kernel/perf_event.c
+> +static inline void update_cgrp_time_from_cpuctx(struct perf_cpu_context *cpuctx)
+> +{
+> +       struct perf_cgroup *cgrp_out = cpuctx->cgrp;
+> +       if (cgrp_out)
+> +               __update_cgrp_time(cgrp_out);
+> +}
+> +
+What's the benefit of this form compared to the original from_task() version?
+
+> +void perf_cgroup_switch(struct task_struct *task, int mode)
+> +{
+> +       struct perf_cpu_context *cpuctx;
+> +       struct pmu *pmu;
+> +       unsigned long flags;
+> +
+> +       /*
+> +        * disable interrupts to avoid geting nr_cgroup
+> +        * changes via __perf_event_disable(). Also
+> +        * avoids preemption.
+> +        */
+> +       local_irq_save(flags);
+> +
+> +       /*
+> +        * we reschedule only in the presence of cgroup
+> +        * constrained events.
+> +        */
+> +       rcu_read_lock();
+> +
+> +       list_for_each_entry_rcu(pmu, &pmus, entry) {
+> +
+> +               cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
+> +
+> +               perf_pmu_disable(cpuctx->ctx.pmu);
+> +
+> +               /*
+> +                * perf_cgroup_events says at least one
+> +                * context on this CPU has cgroup events.
+> +                *
+> +                * ctx->nr_cgroups reports the number of cgroup
+> +                * events for a context.
+> +                */
+> +               if (cpuctx->ctx.nr_cgroups > 0) {
+> +
+> +                       if (mode & PERF_CGROUP_SWOUT)
+> +                               cpu_ctx_sched_out(cpuctx, EVENT_ALL);
+> +
+> +                       if (mode & PERF_CGROUP_SWIN) {
+> +                               cpu_ctx_sched_in(cpuctx, EVENT_ALL, task, 1);
+> +                               cpuctx->cgrp = perf_cgroup_from_task(task);
+> +                       }
+> +               }
+I think there is a risk on cpuctx->cgrp pointing to stale cgrp information.
+Shouldn't we also set cpuctx->cgrp = NULL on SWOUT?
+
+> +static int __perf_cgroup_move(void *info)
+> +{
+> +       struct task_struct *task = info;
+> +       perf_cgroup_switch(task, PERF_CGROUP_SWOUT | PERF_CGROUP_SWIN);
+> +       return 0;
+> +}
+> +
+> +static void perf_cgroup_move(struct task_struct *task)
+> +{
+> +       task_function_call(task, __perf_cgroup_move, task);
+> +}
+> +
+> +static void perf_cgroup_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
+> +               struct cgroup *old_cgrp, struct task_struct *task,
+> +               bool threadgroup)
+> +{
+> +       perf_cgroup_move(task);
+> +       if (threadgroup) {
+> +               struct task_struct *c;
+> +               rcu_read_lock();
+> +               list_for_each_entry_rcu(c, &task->thread_group, thread_group) {
+> +                       perf_cgroup_move(c);
+> +               }
+> +               rcu_read_unlock();
+> +       }
+> +}
+> +
+I suspect my original patch was not necessarily handling the attach completely
+when you move an existing task into a cgroup which was already monitored.
+I think you may have had to wait until a ctxsw. Looks like this callback handles
+this better.
+
+Let me make sure I understand the threadgroup iteration, though. I suspect
+this handles the situation where a multi-threaded app is moved into a cgroup
+while there is already cgroup monitoring active. In that case and if we do not
+want to wait until there is at least one ctxsw on all CPUs, then we have to
+check if the other threads are not already running on the other CPUs.If so,
+we need to do a cgroup switch on those CPUs. Otherwise, we have nothing to
+do. Am I getting this right?
+
+> +static void perf_cgroup_exit(struct cgroup_subsys *ss, struct cgroup *cgrp,
+> +               struct cgroup *old_cgrp, struct task_struct *task)
+> +{
+> +       /*
+> +        * cgroup_exit() is called in the copy_process() failure path.
+> +        * Ignore this case since the task hasn't ran yet, this avoids
+> +        * trying to poke a half freed task state from generic code.
+> +        */
+> +       if (!(task->flags & PF_EXITING))
+> +               return;
+> +
+> +       perf_cgroup_move(task);
+> +}
+> +
+Those callbacks looks good to me. They certainly alleviate the need for the
+hack in cgorup_exit().
+
+Thanks for fixing this.
+
+> +struct cgroup_subsys perf_subsys = {
+> +       .name = "perf_event",
+> +       .subsys_id = perf_subsys_id,
+> +       .create = perf_cgroup_create,
+> +       .destroy = perf_cgroup_destroy,
+> +       .exit = perf_cgroup_exit,
+> +       .attach = perf_cgroup_attach,
+> +};
+> +#endif /* CONFIG_CGROUP_PERF */
+>
+>
+>
