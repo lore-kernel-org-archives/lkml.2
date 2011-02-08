@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411Ab1BHSOX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 13:14:23 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:12315 "EHLO
+	id S1755430Ab1BHSOa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 13:14:30 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:56289 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755393Ab1BHSOU (ORCPT
+	with ESMTP id S1755413Ab1BHSO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 13:14:20 -0500
+	Tue, 8 Feb 2011 13:14:28 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=tazHd1ECgfnRgpoHq0yVFzmCXBLI9jvviAlrCglGYzQumXUPmULETIqInbRLko8X7C
-         zIgTSegAUWNVzjY4GXJg==
+        b=vklOelCs1rz9wLOJzeXfn/msnPjRg8WeEgkAcyNfqwdX8Cp1zTHVGeIXtFW3iDMlrQ
+         RhxI3phDwRVc6455GjCA==
 From: Venkatesh Pallipadi <venki@google.com>
 To: Suresh Siddha <suresh.b.siddha@intel.com>
 Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
         Mike Galbraith <efault@gmx.de>, Nick Piggin <npiggin@gmail.com>,
         Venkatesh Pallipadi <venki@google.com>
-Subject: [PATCH 1/3] sched: Resolve sd_idle and first_idle_cpu Catch-22
-Date: Tue,  8 Feb 2011 10:13:37 -0800
-Message-Id: <1297188819-19999-2-git-send-email-venki@google.com>
+Subject: [PATCH 2/3] sched: fix_up broken SMT load balance dilation
+Date: Tue,  8 Feb 2011 10:13:38 -0800
+Message-Id: <1297188819-19999-3-git-send-email-venki@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <AANLkTikmWfLv3iMNUky7TRvQtUknLckftiQ4-Br614Rm@mail.gmail.com>
 References: <AANLkTikmWfLv3iMNUky7TRvQtUknLckftiQ4-Br614Rm@mail.gmail.com>
@@ -29,103 +29,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Consider a system with { [ (A B) (C D) ] [ (E F) (G H) ] },
-() denoting SMT siblings, [] cores on same socket and {} system wide
-Further, A, C and D are idle, B is busy and one of EFGH has excess load.
+There is logic in rebalance_domains that intends to change CPU_IDLE
+load balancing from an SMT CPU to CPU_NOT_IDLE, in presence of
+a busy SMT sibling.
 
-With sd_idle logic, a check in rebalance_domains() converts tick
-based load balance requests from CPU A to busy load balance for core
-and above domains (lower rate of balance and higher load_idx).
+load_balance() at SIBLING domain returns -1, when there is a busy
+sibling in that domain and the check in rebalance domain for non-zero
+return values following which idle is changed to CPU_NOT_IDLE.
 
-With first_idle_cpu logic, when CPU C or D tries to balance across domains
-the logic finds CPU A as first idle CPU in the group and nominates CPU A to
-idle balance across sockets.
+But this does not work as intended. This does reduce the number of
+higher domain load balancing on such SMT CPUs. But, they end up
+doing CPU_IDLE balance most of the times.
 
-But, sd_idle above would not allow CPU A to do cross socket idle balance
-as CPU A switches its higher level balancing to busy balance.
+Here is a "10s diff" of CPU_IDLE and CPU_NOT_IDLE lb_count from
+sched_stat (fields 2, 3, 11 from domain lines) on the particular
+CPU of interest.
 
-So, this can result is no cross socket balancing for extended periods.
+sd_cpus lb_count[CPU_IDLE] lb_count[CPU_NOT_IDLE]
 
-The fix here adds additional check to detect sd_idle logic in
-first_idle_cpu code path. We will now nominate (in order or preference):
-* First fully idle CPU
-* First semi-idle CPU
-* First CPU
+00001001 4579 0
+0003f03f 1200 0
+00ffffff 310 0
 
-Note that this solution works fine for 2 SMT siblings case and won't be
-perfect in picking proper semi-idle in case of more than 2 SMT threads.
+00001001 4485 0
+0003f03f 999 0
+00ffffff 341 0
 
-The problem was found by looking at the code and schedstat output. I don't
-yet have any data to show impact of this on any workload.
+00001001 4593 0
+0003f03f 1031 0
+00ffffff 293 0
+
+The reason for this is, we do successfully avoid load balancing of higher
+domain when SIBLING domain says one of the siblings is busy. But, next
+CORE or NODE load balancing can trigger (and is triggering) at a jiffy
+when there is no SIBLING load balance pending and thus those
+load balances will not know about SMT sibling being busy and go ahead
+with CPU_IDLE.
+
+One way to solve this is to remember the idle state from last sibling
+load balance and bubble it up the domain levels. With that, under
+same conditions as above, schedstat shows
+
+sd_cpus lb_count[CPU_IDLE] lb_count[CPU_NOT_IDLE]
+
+00001001 4677 0
+0003f03f 2 39
+00ffffff 2 9
+
+00001001 4684 0
+0003f03f 3 37
+00ffffff 3 12
+
+00001001 4781 0
+0003f03f 1 39
+00ffffff 1 21
 
 Signed-off-by: Venkatesh Pallipadi <venki@google.com>
 ---
- kernel/sched_fair.c |   38 ++++++++++++++++++++++++++++++++++++--
- 1 files changed, 36 insertions(+), 2 deletions(-)
+ include/linux/sched.h |    1 +
+ kernel/sched_fair.c   |    4 ++++
+ 2 files changed, 5 insertions(+), 0 deletions(-)
 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index d747f94..56194b3 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -937,6 +937,7 @@ struct sched_domain {
+ 	unsigned int nr_balance_failed; /* initialise to 0 */
+ 
+ 	u64 last_update;
++	enum cpu_idle_type bubble_up_idle;
+ 
+ #ifdef CONFIG_SCHEDSTATS
+ 	/* load_balance() stats */
 diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 0c26e2d..d7e6da3 100644
+index d7e6da3..91227d9 100644
 --- a/kernel/sched_fair.c
 +++ b/kernel/sched_fair.c
-@@ -2603,6 +2603,34 @@ fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
- 	return 0;
- }
- 
-+/*
-+ * Find if there is any busy CPUs in SD_SHARE_CPUPOWER domain of
-+ * requested CPU.
-+ * Bypass the check in case of SD_POWERSAVINGS_BALANCE on
-+ * parent domain. In that case requested CPU can still be nominated as
-+ * balancer for higher domains.
-+ */
-+static int is_cpupower_sharing_domain_idle(int cpu)
-+{
-+	struct sched_domain *sd;
-+	int i;
-+
-+	for_each_domain(cpu, sd) {
-+		if (!(sd->flags & SD_SHARE_CPUPOWER))
-+			break;
-+
-+		if (test_sd_parent(sd, SD_POWERSAVINGS_BALANCE))
-+			return 1;
-+
-+		for_each_cpu(i, sched_domain_span(sd)) {
-+			if (!idle_cpu(i))
-+				return 0;
-+		}
-+	}
-+
-+	return 1;
-+}
-+
- /**
-  * update_sg_lb_stats - Update sched_group's statistics for load balancing.
-  * @sd: The sched_domain whose statistics are to be updated.
-@@ -2625,6 +2653,7 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
- 	unsigned long load, max_cpu_load, min_cpu_load, max_nr_running;
- 	int i;
- 	unsigned int balance_cpu = -1, first_idle_cpu = 0;
-+	unsigned int first_semiidle_cpu = 0;
- 	unsigned long avg_load_per_task = 0;
- 
- 	if (local_group)
-@@ -2644,8 +2673,13 @@ static inline void update_sg_lb_stats(struct sched_domain *sd,
- 		/* Bias balancing toward cpus of our domain */
- 		if (local_group) {
- 			if (idle_cpu(i) && !first_idle_cpu) {
--				first_idle_cpu = 1;
--				balance_cpu = i;
-+				if (is_cpupower_sharing_domain_idle(i)) {
-+					first_idle_cpu = 1;
-+					balance_cpu = i;
-+				} else if (!first_semiidle_cpu) {
-+					first_semiidle_cpu = 1;
-+					balance_cpu = i;
-+				}
+@@ -3871,6 +3871,7 @@ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
+ 				idle = CPU_NOT_IDLE;
  			}
+ 			sd->last_balance = jiffies;
++			sd->bubble_up_idle = idle;
+ 		}
+ 		if (need_serialize)
+ 			spin_unlock(&balancing);
+@@ -3887,6 +3888,9 @@ out:
+ 		 */
+ 		if (!balance)
+ 			break;
++
++		if (idle == CPU_IDLE)
++			idle = sd->bubble_up_idle;
+ 	}
  
- 			load = target_load(i, load_idx);
+ 	/*
 -- 
 1.7.3.1
 
