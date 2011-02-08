@@ -1,172 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752388Ab1BHIY6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 03:24:58 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:19132 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750799Ab1BHIY4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 03:24:56 -0500
-Message-ID: <4D50FDAA.1060506@dsn.okisemi.com>
-Date: Tue, 08 Feb 2011 17:24:10 +0900
-From: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1752440Ab1BHIqA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 03:46:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60823 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751253Ab1BHIp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 03:45:59 -0500
+Date: Tue, 8 Feb 2011 09:45:57 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: khugepaged eating 100%CPU
+Message-ID: <20110208084557.GC28138@tiehlicka.suse.cz>
+References: <20110207210517.GA24837@tiehlicka.suse.cz>
+ <20110207211601.GA25665@tiehlicka.suse.cz>
+ <20110207231228.GI3347@random.random>
 MIME-Version: 1.0
-To: ML netdev <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-CC: LKML <linux-kernel@vger.kernel.org>, "Wang, Qi" <qi.wang@intel.com>,
-        "Wang, Yong Y" <yong.y.wang@intel.com>,
-        Andrew <andrew.chih.howe.khor@intel.com>,
-        Intel OTC <joel.clark@intel.com>,
-        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>,
-        Tomoya Morinaga <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH] pch_gbe: Fix the issue that the receiving data is not normal.
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110207231228.GI3347@random.random>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Devid
+On Tue 08-02-11 00:12:28, Andrea Arcangeli wrote:
+> Hello Michal,
+> 
+> On Mon, Feb 07, 2011 at 10:16:01PM +0100, Michal Hocko wrote:
+> > On Mon 07-02-11 22:06:54, Michal Hocko wrote:
+> > > Hi Andrea,
+> > > 
+> > > I am currently running into an issue when khugepaged is running 100% on
+> > > one of my CPUs for a long time (at least one hour as I am writing the
+> > > email). The kernel is the clean 2.6.38-rc3 (i386) vanilla kernel.
+> > > 
+> > > I have tried to disable defrag but it didn't help (I haven't rebooted
+> > > after setting the value). I am not sure what information is helpful and
+> > > also not sure whether I am able to reproduce it after restart (it is the
+> > > first time I can see this problem) so sorry for the poor report.
+> > > 
+> > > Here is some basic info which might be useful (config and sysrq+t are
+> > > attached):
+> > > =========
+> > 
+> > And I have just realized that I forgot about the daemon stack:
+> > # cat /proc/573/stack 
+> > [<c019c981>] shrink_zone+0x1b9/0x455
+> > [<c019d462>] do_try_to_free_pages+0x9d/0x301
+> > [<c019d803>] try_to_free_pages+0xb3/0x104
+> > [<c01966d7>] __alloc_pages_nodemask+0x358/0x589
+> > [<c01bf314>] khugepaged+0x13f/0xc60
+> > [<c014c301>] kthread+0x67/0x6c
+> > [<c0102db6>] kernel_thread_helper+0x6/0x10
+> > [<ffffffff>] 0xffffffff
+> 
+> It would be great to know if __alloc_pages_nodemask returned or if it
+> was calling it in a loop.
+> 
+> When __alloc_pages_nodemask fails in collapse_huge_page, hpage is set
+> to ERR_PTR(-ENOMEM), then khugepaged_scan_pmd returns 1, then
+> khugepaged_scan_mm_slot goto breakouterloop_mmap_sem and return
+> progress, then the khugepaged_do_scan main loop should notice that
+> IS_ERR(*hpage) is set and break out of the loop and return void, then
+> khugepaged_loop should notice that IS_ERR(hpage) is set and it should
+> throttle for alloc_sleep_millisecs inside khugepaged_alloc_sleep
+> before setting hpage to NULL and trying again to allocate. I wonder
+> what could be going wrong in khugepaged.. I wonder if it's a bug inside
+> __alloc_pages_nodemask and not a khugepaged issue. Best would be if
+> you run SYSRQ+l several times.
 
-I resubmit this patch modified.
-Please check them.
+OK, I will try if I see it again.
 
-Best regards
-Toshiharu Okada(OKI semiconductor)
----
+> 
+> I hope you can reproduce, if it's an allocator issue you should notice
+> it again by keeping the same workload on that same system. I doubt I
+> can reproduce at the moment as I don't know what's going on to
+> simulate your load.
 
-This PCH_GBE driver had an issue that the receiving data is not normal.
-This driver had not removed correctly the padding data 
-which the DMA include in receiving data. 
+My workload is rather "normal", I would say. Firefox with couple of
+tabs, skype, mutt, xine (wathing the stream television), kernel builds)
+and repeated suspend/wakeup cycles (I am rebooting only when installing
+a new kernel - aka new rc is released or I need to test something). So
+it is hard to find out what triggered this situation.
 
-This patch fixed this issue.
+I will let you know when I get into the same situation and provide the
+sysrq+l.
 
-Signed-off-by: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
----
- drivers/net/pch_gbe/pch_gbe_main.c |   77 +++++++++++++++++++++--------------
- 1 files changed, 46 insertions(+), 31 deletions(-)
-
-diff --git a/drivers/net/pch_gbe/pch_gbe_main.c b/drivers/net/pch_gbe/pch_gbe_main.c
-index 03a1d28..3248313 100644
---- a/drivers/net/pch_gbe/pch_gbe_main.c
-+++ b/drivers/net/pch_gbe/pch_gbe_main.c
-@@ -29,6 +29,7 @@ const char pch_driver_version[] = DRV_VERSION;
- #define PCH_GBE_SHORT_PKT		64
- #define DSC_INIT16			0xC000
- #define PCH_GBE_DMA_ALIGN		0
-+#define PCH_GBE_DMA_PADDING		2
- #define PCH_GBE_WATCHDOG_PERIOD		(1 * HZ)	/* watchdog time */
- #define PCH_GBE_COPYBREAK_DEFAULT	256
- #define PCH_GBE_PCI_BAR			1
-@@ -1373,7 +1374,7 @@ pch_gbe_clean_rx(struct pch_gbe_adapter *adapter,
- 	unsigned int i;
- 	unsigned int cleaned_count = 0;
- 	bool cleaned = false;
--	struct sk_buff *skb;
-+	struct sk_buff *skb, *new_skb;
- 	u8 dma_status;
- 	u16 gbec_status;
- 	u32 tcp_ip_status;
-@@ -1422,55 +1423,69 @@ pch_gbe_clean_rx(struct pch_gbe_adapter *adapter,
- 			pr_err("Receive CRC Error\n");
- 		} else {
- 			/* get receive length */
--			/* length convert[-3], padding[-2] */
--			length = (rx_desc->rx_words_eob) - 3 - 2;
-+			/* length convert[-3] */
-+			length = (rx_desc->rx_words_eob) - 3;
- 
- 			/* Decide the data conversion method */
- 			if (!adapter->rx_csum) {
- 				/* [Header:14][payload] */
- 				skb_padding_flag = 0;
--				skb_copy_flag = 1;
-+				if (NET_IP_ALIGN)
-+					/* [NET_IP_ALIGN][Header:14][payload] */
-+					skb_copy_flag = 1;
-+				else
-+					skb_copy_flag = 0;
- 			} else {
- 				/* [Header:14][padding:2][payload] */
- 				skb_padding_flag = 1;
-+				/* The length includes padding length */
-+				length = length - PCH_GBE_DMA_PADDING;
- 				if (length < copybreak)
- 					skb_copy_flag = 1;
--				else
--					skb_copy_flag = 0;
-+				else {
-+					/* [Header:14][padding:2][payload]
-+					 *   Chenge to the following
-+					 * [NET_IP_ALIGN][Header:14][payload] */
-+					if (NET_IP_ALIGN == PCH_GBE_DMA_PADDING)
-+						skb_copy_flag = 0;
-+					else
-+						skb_copy_flag = 1;
-+				}
- 			}
--
- 			/* Data conversion */
--			if (skb_copy_flag) {	/* recycle  skb */
--				struct sk_buff *new_skb;
--				new_skb =
--				    netdev_alloc_skb(netdev,
--						     length + NET_IP_ALIGN);
--				if (new_skb) {
--					if (!skb_padding_flag) {
--						skb_reserve(new_skb,
--								NET_IP_ALIGN);
--					}
--					memcpy(new_skb->data, skb->data,
--						length);
--					/* save the skb
--					 * in buffer_info as good */
--					skb = new_skb;
--				} else if (!skb_padding_flag) {
-+			if (skb_copy_flag) {
-+				new_skb = netdev_alloc_skb(netdev,
-+							 length + NET_IP_ALIGN);
-+				if (!new_skb) {
- 					/* dorrop error */
- 					pr_err("New skb allocation Error\n");
- 					goto dorrop;
- 				}
-+				skb_reserve(new_skb, NET_IP_ALIGN);
-+				if (skb_padding_flag) {
-+					memcpy(new_skb->data, skb->data,
-+					       ETH_HLEN);
-+					memcpy(&new_skb->data[ETH_HLEN],
-+					       &skb->data[ETH_HLEN +
-+					       PCH_GBE_DMA_PADDING],
-+					       length - ETH_HLEN);
-+				} else {
-+					memcpy(new_skb->data, skb->data,
-+					       length);
-+				}
-+				skb = new_skb;
- 			} else {
-+				if (skb_padding_flag) {
-+					memcpy(&tmp_packet[0], &skb->data[0],
-+					       ETH_HLEN);
-+					memcpy(&skb->data[PCH_GBE_DMA_PADDING],
-+					       &tmp_packet[0], ETH_HLEN);
-+					skb_reserve(skb, PCH_GBE_DMA_PADDING);
-+				}
- 				buffer_info->skb = NULL;
- 			}
--			if (skb_padding_flag) {
--				memcpy(&tmp_packet[0], &skb->data[0], ETH_HLEN);
--				memcpy(&skb->data[NET_IP_ALIGN], &tmp_packet[0],
--					ETH_HLEN);
--				skb_reserve(skb, NET_IP_ALIGN);
--
--			}
--
-+			/* The length includes FCS length */
-+			length = length - ETH_FCS_LEN;
- 			/* update status of driver */
- 			adapter->stats.rx_bytes += length;
- 			adapter->stats.rx_packets++;
+Thanks
 -- 
-1.6.2.5
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
