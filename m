@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972Ab1BHKDy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 05:03:54 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:35358 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752557Ab1BHKDx convert rfc822-to-8bit (ORCPT
+	id S1752965Ab1BHKEj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 05:04:39 -0500
+Received: from sncsmrelay2.nai.com ([67.97.80.206]:32484 "EHLO
+	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752671Ab1BHKEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 05:03:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=bYuh5uB8JEcG0ktfiEjqRrvq8ihKuQ7ho90mNACzeuEm2OAWUwysitFRNoHIavkh6L
-         ju18kiv8ZQ643Z54yFZUfpa0ftRtRmK9mGOMVhrz1eRegVR16U804jrPpnKH2q7BYz3L
-         P3hZcrq7rhgeQa2wh0xfZZaGuCXnG1SKg2KS8=
+	Tue, 8 Feb 2011 05:04:38 -0500
+Message-ID: <4D5114D6.7080806@snapgear.com>
+Date: Tue, 8 Feb 2011 20:03:02 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-In-Reply-To: <4D511268.5040804@ladisch.de>
-References: <AANLkTi=1wjdu3kT6nimU0fnZStG01a57D3O5Up+oJRdr@mail.gmail.com> <4D511268.5040804@ladisch.de>
-From: dave b <db.pub.mail@gmail.com>
-Date: Tue, 8 Feb 2011 21:03:33 +1100
-Message-ID: <AANLkTik=DJV+E3BQwAc+3MfZiwB1WjjP-cD2U0A9_CPd@mail.gmail.com>
-Subject: Re: I do not know if this is the correct place to ask about this but...
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Greg Ungerer <gerg@uclinux.org>
+Subject: Re: [patch 07/10] m68knommu: Convert 5272 intc irq_chip to new functions
+References: <20110206233845.480884215@linutronix.de> <20110206233904.777004540@linutronix.de> <4D50B773.2070507@snapgear.com> <alpine.LFD.2.00.1102081047020.31804@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1102081047020.31804@localhost6.localdomain6>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Feb 2011 10:03:50.0580 (UTC) FILETIME=[7C030740:01CBC777]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 February 2011 20:52, Clemens Ladisch <clemens@ladisch.de> wrote:
-> dave b wrote:
->> I do not know if this is the correct place to ask about this but...
+
+Hi Thomas,
+
+On 08/02/11 19:48, Thomas Gleixner wrote:
+> On Tue, 8 Feb 2011, Greg Ungerer wrote:
+>>>   static void intc_external_irq(unsigned int irq, struct irq_desc *desc)
+>>>   {
+>>> -	desc->chip->ack(irq);
+>>> +	get_irq_desc_chip(i)->irq_ack(desc->irq_data);
+>>                           ^^^         ^^^
+>> should this be:
 >>
->> [Hardware Error]:
+>>          get_irq_desc_chip(desc)->irq_ack(&desc->irq_data)
 >
-> This is a hardware error that was detected by the kernel.
+> Yes.
 >
->> I have only seen the following output output twice
+>> I can't runtime test this right at the moment, but otherwise:
 >>
->> ... Corrected error
->> ... L3 ECC data cache error.
+>> Acked-by: Greg Ungerer<gerg@uclinux.org>
 >
-> There was a wrong bit in your CPU's level 3 cache, but with the help of
-> the redundant error correction bits, this was caught and corrected.
+> Can you push that stuff linus wards for 39 or want me to do it ? It
+> has no dependencies whatsoever.
 
-Yep I got that.
+I am happy to push this for 39.
 
-> (If possible, enable background scrubbing of the caches in the BIOS ECC
-> settings to catch these errors earlier.)
+Thanks
+Greg
 
-Ok I will look into that.
 
-> If this is an overclocked CPU or one with an unlocked core, you deserve
-> what you got.  Otherwise, if this happens repeatedly, it indicates
-> a hardware defect, and your warranty should cover this.
-
-Ok fair enough.
-
-Notes:
-The cpu is not overclocked.
-I forgot to list the hardware specifications:
-cpu is a AMD Phenom(tm) II X6 1055T Processor
-running on a ASUS  M4A88TD-M motherboard.
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
