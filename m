@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155Ab1BHNYP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 08:24:15 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:46578 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752644Ab1BHNYO convert rfc822-to-8bit (ORCPT
+	id S1754085Ab1BHN1O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 08:27:14 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:47562 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751519Ab1BHN1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 08:24:14 -0500
+	Tue, 8 Feb 2011 08:27:12 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=cAgCsSarg1+LWNkED/1x4LbMxPNUyoLzg1MegAMHMqMcNI6rK9Sarm9+A8hHemQvvv
-         o67FkifhY/IshZZuqP00HR4yB7qZwdY00t/qDGDYuPxSpX7kUyfSo+WojY8NCSCv2Hha
-         5o/26NGQTuwEsn5I0gwQgciHmlKiSk4IRTClo=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Oh2fhdb8/I4a9uQtkX+ZKRm6g4z7ic+FbcjHTiqAHZfMOvUks+tqrnH+f4utCcxaz9
+         /ti6+36RVi1pWictibIok/6jdDcBqU6x5GZM/eZSoj4zCJfZVXmzIxAnaMAWWv49WjD5
+         z6R8QXMJmwoDqxOdzfpTrUDN3XYs7T+sXFqh4=
 MIME-Version: 1.0
-In-Reply-To: <m3hbcfzu9u.fsf@fleche.redhat.com>
-References: <AANLkTikhfhYjvmvXtjW-Mszpq8d_3Syo=H4zqWe+1hEg__12255.0142732964$1296923928$gmane$org@mail.gmail.com>
- <m3hbcfzu9u.fsf@fleche.redhat.com>
-From: Hui Zhu <teawater@gmail.com>
-Date: Tue, 8 Feb 2011 21:23:52 +0800
-Message-ID: <AANLkTinMx8mJYiDps3TuuaA1B4NLHi-PuCKm2=sTqyR0@mail.gmail.com>
-Subject: Re: [PATCH] Linux Kernel GDB tracepoint module 2011-02-05
-To: Tom Tromey <tromey@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Michael Snyder <msnyder@vmware.com>,
-        Marc Khouzam <marc.khouzam@ericsson.com>,
-        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
-        Steven <mqyoung@gmail.com>, colyli@gmail.com,
-        Christoph Hellwig <hch@infradead.org>,
-        "gdb@sourceware.org" <gdb@sourceware.org>
+In-Reply-To: <20110208131321.6ceb9a43@lxorguk.ukuu.org.uk>
+References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site>
+	<20110208122534.19110.89437.sendpatchset@linux-mhg7.site>
+	<20110208131321.6ceb9a43@lxorguk.ukuu.org.uk>
+Date: Tue, 8 Feb 2011 14:27:10 +0100
+Message-ID: <AANLkTikYXWAbCjLpSyEqgDKBsZuM1na-tohLoLJx3Yr4@mail.gmail.com>
+Subject: Re: [PATCH 16/20] ata_piix: add EFAR SLC90E66 support
+From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 8, 2011 at 00:25, Tom Tromey <tromey@redhat.com> wrote:
->>>>>> ">" == Hui Zhu <teawater@gmail.com> writes:
+On Tue, Feb 8, 2011 at 2:13 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> On Tue, 08 Feb 2011 13:25:34 +0100
+> Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
 >
->>> We have trouble for this printf is GDB is still not accept the patch
->>> that make tracepoint support printf, So if you want use it, you need
->>> patch the patch in
->>> http://sourceware.org/ml/gdb-patches/2011-02/msg00063.html and build
->>> your GDB with yourself.
+>> >From 11bed7feff5de752c9440ca58b232846b20e2ed6 Mon Sep 17 00:00:00 2001
+>> From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+>> Date: Tue, 8 Feb 2011 12:39:28 +0100
+>> Subject: [PATCH 16/20] ata_piix: add EFAR SLC90E66 support
+>>
+>> Add EFAR SLC90E66 support to ata_piix and remove no longer
+>> needed pata_efar driver.
 >
-> Thanks, I think this example was helpful.
->
->>> Sometimes, GDB will output some value like:
->>> inode has been optimized out of existence.
->>> res has been optimized out of existence.
->>> That is because value of inode and res is optimized. Linux Kernel is
->>> built with -O2 so you will get this trouble sometimes. If you do not
->>> care about the speed when you debug the Kernel, you can use the patch
->>> for Linux Kernel in
->
-> I am curious to know what version of GCC you are using.  IME, the VTA
-> patches really helped with this problem a lot -- though not completely.
-> If you are not using a VTA-enabled GCC, you should.  And if you are, I
-> think bug reports about values that are still optimized out would be
-> useful.
+> Jeff specifically asked that these were not all folded into ata_piix
+> originally. This also makes memory usage higher and the system less
+> efficient as these are all motherboard chipsets (except an obscure dual
+> PIIX4 setup) so you are loading more not less code.
 
-My gcc is 4.4.5.  Does it have VTA?
-Use the patch is easier than update gcc sometimes, right?  :)
+A lot more from a generic SCSI code if you want to optimize things for
+old or embedded systems. IMHO this is not a best place to look for
+such optimizations because maintenance cost > potential savings (i.e.
+making SCSI quirks optional, I have draft patch for this, itself cuts
+like 10k).
 
-BTW does VTA can handle the issue that after -O2 a lot of code
-execution order is worong?
-It affect me when I debug the Linux Kernel in qemu.
+> It also leads to hideous uglies in the main code paths like this :
+>
+> +       unsigned int has_sitre  = (dev->vendor != 0x8086 ||
+> +                                  dev->device != 0x1230);
+>
+> which also has exactly zero comments.
 
-Thanks,
-Hui
+has_sitre variable name is documentation in itself for anyone knowing
+the hardware or has read a chipset/code documentation.
+
+Though more comments can certainly be added if needed..
