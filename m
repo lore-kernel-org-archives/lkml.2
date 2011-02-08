@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755088Ab1BHBkq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 20:40:46 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:58797 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755034Ab1BHBkn (ORCPT
+	id S1754848Ab1BHBv1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 20:51:27 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52562 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168Ab1BHBv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 20:40:43 -0500
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
-To: Colin Cross <ccross@google.com>
-Subject: Re: [RFC,PATCH 1/3] Add a common struct clk
-Date: Tue, 8 Feb 2011 09:40:32 +0800
-User-Agent: KMail/1.13.5 (Linux/2.6.35-25-generic; KDE/4.5.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>, linux-sh@vger.kernel.org,
-        Ben Herrenschmidt <benh@kernel.crashing.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Paul Mundt <lethal@linux-sh.org>, Dima Zavin <dmitriyz@google.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Ben Dooks <ben-linux@fluff.org>,
-        "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
-	<u.kleine-koenig@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>
-References: <201102011711.31258.jeremy.kerr@canonical.com> <1297058877.800158.458894385837.1.gpush@pororo> <AANLkTi=5FNvWKQf6cRt4wNejC7u4XKsqLp9Pwc2Z45_3@mail.gmail.com>
-In-Reply-To: <AANLkTi=5FNvWKQf6cRt4wNejC7u4XKsqLp9Pwc2Z45_3@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Mon, 7 Feb 2011 20:51:26 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 8 Feb 2011 10:45:05 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: linux-mm@kvack.org, Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mlock: fix race when munlocking pages in
+ do_wp_page()
+Message-Id: <20110208104505.a737d179.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1297126056-14322-2-git-send-email-walken@google.com>
+References: <1297126056-14322-1-git-send-email-walken@google.com>
+	<1297126056-14322-2-git-send-email-walken@google.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201102080940.33251.jeremy.kerr@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ryan,
+On Mon,  7 Feb 2011 16:47:35 -0800
+Michel Lespinasse <walken@google.com> wrote:
 
-> > +int clk_enable(struct clk *clk)
-> > +{
-> > +       int ret = 0;
-> > +
-> > +       if (!clk->ops->enable)
-> > +               return 0;
-> > +
-> > +       spin_lock(&clk->enable_lock);
+> vmscan can lazily find pages that are mapped within VM_LOCKED vmas,
+> and set the PageMlocked bit on these pages, transfering them onto the
+> unevictable list. When do_wp_page() breaks COW within a VM_LOCKED vma,
+> it may need to clear PageMlocked on the old page and set it on the
+> new page instead.
 > 
-> spin_lock_irqsave/spin_unlock_irqrestore.  This could get called with
-> irqs on or off.
+> This change fixes an issue where do_wp_page() was clearing PageMlocked on
+> the old page while the pte was still pointing to it (as well as rmap).
+> Therefore, we were not protected against vmscan immediately trasnfering
+> the old page back onto the unevictable list. This could cause pages to
+> get stranded there forever.
+> 
+> I propose to move the corresponding code to the end of do_wp_page(),
+> after the pte (and rmap) have been pointed to the new page. Additionally,
+> we can use munlock_vma_page() instead of clear_page_mlock(), so that
+> the old page stays mlocked if there are still other VM_LOCKED vmas
+> mapping it.
+> 
+> Signed-off-by: Michel Lespinasse <walken@google.com>
 
-Ah, I had planned to change this but (obviously) didn't get to it. Thanks for 
-the reminder, I'll include this in the next revision.
-
-Cheers,
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
 
-Jeremy
