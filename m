@@ -1,209 +1,436 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751332Ab1BHFQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 00:16:29 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:63508 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750701Ab1BHFQ2 convert rfc822-to-8bit (ORCPT
+	id S1751655Ab1BHFTJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 00:19:09 -0500
+Received: from www.wytron.com.tw ([211.75.82.101]:59436 "EHLO
+	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794Ab1BHFTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 00:16:28 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=rhT0XBDDtQpra+0GFpmPqDoWrfNkVA71KdfvzZYEH+HSYor/RXsjXvA3BZ5CPtPXD3
-         so86FjV8U8f4vGxe0RxWR5eOrbmxQL8xvGMW6X55W3c0R0x54ZhoglWqj7Dhgcat63pv
-         T3rltM+qHH2uDWi7Qj9tD4JQYBKi64unSQQxM=
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1102071858230.7277@kaball-desktop>
-References: <alpine.DEB.2.00.1101311514580.7277@kaball-desktop>
-	<4D4A3782.3050702@zytor.com>
-	<alpine.DEB.2.00.1102031114030.7277@kaball-desktop>
-	<4D4ADFAD.7060507@zytor.com>
-	<alpine.DEB.2.00.1102041130060.7277@kaball-desktop>
-	<4D4CA568.70907@goop.org>
-	<AANLkTi=nEQka_19+nKQC-yJn2Czn9GCqsUWN6Byy7rCF@mail.gmail.com>
-	<4D4E4E0D.2080806@zytor.com>
-	<4D4EF553.6000000@kernel.org>
-	<alpine.DEB.2.00.1102071524140.7277@kaball-desktop>
-	<alpine.DEB.2.00.1102071858230.7277@kaball-desktop>
-Date: Mon, 7 Feb 2011 21:16:27 -0800
-X-Google-Sender-Auth: 0-alprStSC9R11CPWMdoXUA35pM
-Message-ID: <AANLkTimcdVvmhBr6g_Eo0kWX9mdeNmXjd=CBQrvUGm8S@mail.gmail.com>
-Subject: Re: [PATCH] x86/mm/init: respect memblock reserved regions when
- destroying mappings
-From: Yinghai Lu <yinghai@kernel.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jan Beulich <JBeulich@novell.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 8 Feb 2011 00:19:07 -0500
+From: Thomas Chou <thomas@wytron.com.tw>
+To: David Brownell <dbrownell@users.sourceforge.net>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
+        devicetree-discuss@lists.ozlabs.org,
+        spi-devel-general@lists.sourceforge.net,
+        Thomas Chou <thomas@wytron.com.tw>
+Subject: [PATCH v8] spi: New driver for Altera SPI
+Date: Tue,  8 Feb 2011 13:21:49 +0800
+Message-Id: <1297142509-20158-1-git-send-email-thomas@wytron.com.tw>
+X-Mailer: git-send-email 1.7.4
+In-Reply-To: <87aai8zzd1.fsf@macbook.be.48ers.dk>
+References: <87aai8zzd1.fsf@macbook.be.48ers.dk>
+X-SA-Exim-Connect-IP: 192.168.1.15
+X-SA-Exim-Mail-From: thomas@wytron.com.tw
+X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 7, 2011 at 11:00 AM, Stefano Stabellini
-<stefano.stabellini@eu.citrix.com> wrote:
-> On Mon, 7 Feb 2011, Stefano Stabellini wrote:
->> On Sun, 6 Feb 2011, Yinghai Lu wrote:
->> > On 02/05/2011 11:30 PM, H. Peter Anvin wrote:
->> > > On 02/05/2011 11:02 PM, Yinghai Lu wrote:
->> > >> why not just move calling cleanup_highmap down?
->> > >>
->> > >> something like attached patch.
->> > >
->> > > This patch looks very clean and looks on the surface of it like it is
->> > > removing some ugly ad hoc code, but (as always) it needs a description
->> > > about the problem it solves and why it is correct.
->> >
->> > Sure.
->> >
->> >
->> > Jeremy and xen guys, can you please check if it works well with xen ?
->> >
->>
->> Actually this patch makes things worse on xen, because before
->> cleanup_highmap() wasn't called at all on xen (on purpose) and now it
->> is, fully destroying all the mappings we have at _end.
->>
->> Can we add a check on memblock reserved regions in cleanup_highmap()?
->
-> In case you are wondering how Yinghai Lu's patch would look like with
-> the added check, here it is:
->
->
-> diff --git a/arch/x86/include/asm/memblock.h b/arch/x86/include/asm/memblock.h
-> index 19ae14b..184f778 100644
-> --- a/arch/x86/include/asm/memblock.h
-> +++ b/arch/x86/include/asm/memblock.h
-> @@ -3,6 +3,7 @@
->
->  #define ARCH_DISCARD_MEMBLOCK
->
-> +bool memblock_check_reserved_size(u64 *addrp, u64 *sizep, u64 align);
->  u64 memblock_x86_find_in_range_size(u64 start, u64 *sizep, u64 align);
->  void memblock_x86_to_bootmem(u64 start, u64 end);
->
-> diff --git a/arch/x86/include/asm/pgtable_64.h b/arch/x86/include/asm/pgtable_64.h
-> index 975f709..28686b6 100644
-> --- a/arch/x86/include/asm/pgtable_64.h
-> +++ b/arch/x86/include/asm/pgtable_64.h
-> @@ -165,7 +165,7 @@ static inline int pgd_large(pgd_t pgd) { return 0; }
->  #define __swp_entry_to_pte(x)          ((pte_t) { .pte = (x).val })
->
->  extern int kern_addr_valid(unsigned long addr);
-> -extern void cleanup_highmap(void);
-> +extern void cleanup_highmap(unsigned long end);
->
->  #define HAVE_ARCH_UNMAPPED_AREA
->  #define HAVE_ARCH_UNMAPPED_AREA_TOPDOWN
-> diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-> index 2d2673c..5655c22 100644
-> --- a/arch/x86/kernel/head64.c
-> +++ b/arch/x86/kernel/head64.c
-> @@ -77,9 +77,6 @@ void __init x86_64_start_kernel(char * real_mode_data)
->        /* Make NULL pointers segfault */
->        zap_identity_mappings();
->
-> -       /* Cleanup the over mapped high alias */
-> -       cleanup_highmap();
-> -
->        max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
->
->        for (i = 0; i < NUM_EXCEPTION_VECTORS; i++) {
-> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> index d3cfe26..91afde6 100644
-> --- a/arch/x86/kernel/setup.c
-> +++ b/arch/x86/kernel/setup.c
-> @@ -297,6 +297,9 @@ static void __init init_gbpages(void)
->  static inline void init_gbpages(void)
->  {
->  }
-> +static void __init cleanup_highmap(unsigned long end)
-> +{
-> +}
->  #endif
->
->  static void __init reserve_brk(void)
-> @@ -922,6 +925,9 @@ void __init setup_arch(char **cmdline_p)
->         */
->        reserve_brk();
->
-> +       /* Cleanup the over mapped high alias after _brk_end*/
-> +       cleanup_highmap(_brk_end);
-> +
->        memblock.current_limit = get_max_mapped();
->        memblock_x86_fill();
->
-> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-> index 947f42a..f13ff3a 100644
-> --- a/arch/x86/mm/init.c
-> +++ b/arch/x86/mm/init.c
-> @@ -279,25 +279,6 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
->        load_cr3(swapper_pg_dir);
->  #endif
->
-> -#ifdef CONFIG_X86_64
-> -       if (!after_bootmem && !start) {
-> -               pud_t *pud;
-> -               pmd_t *pmd;
-> -
-> -               mmu_cr4_features = read_cr4();
-> -
-> -               /*
-> -                * _brk_end cannot change anymore, but it and _end may be
-> -                * located on different 2M pages. cleanup_highmap(), however,
-> -                * can only consider _end when it runs, so destroy any
-> -                * mappings beyond _brk_end here.
-> -                */
-> -               pud = pud_offset(pgd_offset_k(_brk_end), _brk_end);
-> -               pmd = pmd_offset(pud, _brk_end - 1);
-> -               while (++pmd <= pmd_offset(pud, (unsigned long)_end - 1))
-> -                       pmd_clear(pmd);
-> -       }
-> -#endif
->        __flush_tlb_all();
->
->        if (!after_bootmem && e820_table_end > e820_table_start)
-> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-> index 71a5929..028c49e 100644
-> --- a/arch/x86/mm/init_64.c
-> +++ b/arch/x86/mm/init_64.c
-> @@ -297,18 +297,26 @@ void __init init_extra_mapping_uc(unsigned long phys, unsigned long size)
->  * rounded up to the 2MB boundary. This catches the invalid pmds as
->  * well, as they are located before _text:
->  */
-> -void __init cleanup_highmap(void)
-> +void __init cleanup_highmap(unsigned long end)
->  {
->        unsigned long vaddr = __START_KERNEL_map;
-> -       unsigned long end = roundup((unsigned long)_end, PMD_SIZE) - 1;
->        pmd_t *pmd = level2_kernel_pgt;
->        pmd_t *last_pmd = pmd + PTRS_PER_PMD;
-> +       u64 size, addrp;
-> +       bool changed;
-> +
-> +       end = roundup(end, PMD_SIZE) - 1;
->
->        for (; pmd < last_pmd; pmd++, vaddr += PMD_SIZE) {
->                if (pmd_none(*pmd))
->                        continue;
-> -               if (vaddr < (unsigned long) _text || vaddr > end)
-> -                       set_pmd(pmd, __pmd(0));
-> +               if (vaddr < (unsigned long) _text || vaddr > end) {
-> +                       addrp = __pa(vaddr);
-> +                       size = PMD_SIZE;
-> +                       changed = memblock_check_reserved_size(&addrp, &size, PMD_SIZE);
-> +                       if (!changed && size)
-> +                               set_pmd(pmd, __pmd(0));
-> +               }
+This patch adds a new SPI driver to support the Altera SOPC Builder
+SPI component. It uses the bitbanging library.
 
-for native path, memblock_check_reserved_size() are called 256 times
-without obvious reasons.
+Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
+---
+v2 add devicetree support
+v3 remove platform header, as Grant suggested.
+   no irq resource means polling.
+v4 minor cleanup, as Grant suggested.
+v5 add compat version.
+v6 change compatible vendor to uppercase, ALTR.
+   add dts binding doc.
+v7 use platform driver register.
+   use devm_ to help cleanup.
+v8 remove default n in Kconfig.
 
-Yinghai
+ .../devicetree/bindings/spi/spi_altera.txt         |    4 +
+ drivers/spi/Kconfig                                |    6 +
+ drivers/spi/Makefile                               |    1 +
+ drivers/spi/spi_altera.c                           |  335 ++++++++++++++++++++
+ 4 files changed, 346 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/spi/spi_altera.txt
+ create mode 100644 drivers/spi/spi_altera.c
+
+diff --git a/Documentation/devicetree/bindings/spi/spi_altera.txt b/Documentation/devicetree/bindings/spi/spi_altera.txt
+new file mode 100644
+index 0000000..dda3759
+--- /dev/null
++++ b/Documentation/devicetree/bindings/spi/spi_altera.txt
+@@ -0,0 +1,4 @@
++Altera SPI
++
++Required properties:
++- compatible : should be "ALTR,spi-1.0".
+diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+index bb233a9..e791579 100644
+--- a/drivers/spi/Kconfig
++++ b/drivers/spi/Kconfig
+@@ -53,6 +53,12 @@ if SPI_MASTER
+ 
+ comment "SPI Master Controller Drivers"
+ 
++config SPI_ALTERA
++	tristate "Altera SPI Controller"
++	select SPI_BITBANG
++	help
++	  This is the driver for the Altera SPI Controller.
++
+ config SPI_ATH79
+ 	tristate "Atheros AR71XX/AR724X/AR913X SPI controller driver"
+ 	depends on ATH79 && GENERIC_GPIO
+diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
+index 86d1b5f..4d2e35a 100644
+--- a/drivers/spi/Makefile
++++ b/drivers/spi/Makefile
+@@ -9,6 +9,7 @@ ccflags-$(CONFIG_SPI_DEBUG) := -DDEBUG
+ obj-$(CONFIG_SPI_MASTER)		+= spi.o
+ 
+ # SPI master controller drivers (bus)
++obj-$(CONFIG_SPI_ALTERA)		+= spi_altera.o
+ obj-$(CONFIG_SPI_ATMEL)			+= atmel_spi.o
+ obj-$(CONFIG_SPI_ATH79)			+= ath79_spi.o
+ obj-$(CONFIG_SPI_BFIN)			+= spi_bfin5xx.o
+diff --git a/drivers/spi/spi_altera.c b/drivers/spi/spi_altera.c
+new file mode 100644
+index 0000000..e7f4835
+--- /dev/null
++++ b/drivers/spi/spi_altera.c
+@@ -0,0 +1,335 @@
++/*
++ * Altera SPI driver
++ *
++ * Copyright (C) 2008 Thomas Chou <thomas@wytron.com.tw>
++ *
++ * Based on spi_s3c24xx.c, which is:
++ * Copyright (c) 2006 Ben Dooks
++ * Copyright (c) 2006 Simtec Electronics
++ *	Ben Dooks <ben@simtec.co.uk>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/errno.h>
++#include <linux/platform_device.h>
++#include <linux/spi/spi.h>
++#include <linux/spi/spi_bitbang.h>
++#include <linux/io.h>
++#include <linux/of.h>
++
++#define DRV_NAME "spi_altera"
++
++#define ALTERA_SPI_RXDATA	0
++#define ALTERA_SPI_TXDATA	4
++#define ALTERA_SPI_STATUS	8
++#define ALTERA_SPI_CONTROL	12
++#define ALTERA_SPI_SLAVE_SEL	20
++
++#define ALTERA_SPI_STATUS_ROE_MSK	0x8
++#define ALTERA_SPI_STATUS_TOE_MSK	0x10
++#define ALTERA_SPI_STATUS_TMT_MSK	0x20
++#define ALTERA_SPI_STATUS_TRDY_MSK	0x40
++#define ALTERA_SPI_STATUS_RRDY_MSK	0x80
++#define ALTERA_SPI_STATUS_E_MSK		0x100
++
++#define ALTERA_SPI_CONTROL_IROE_MSK	0x8
++#define ALTERA_SPI_CONTROL_ITOE_MSK	0x10
++#define ALTERA_SPI_CONTROL_ITRDY_MSK	0x40
++#define ALTERA_SPI_CONTROL_IRRDY_MSK	0x80
++#define ALTERA_SPI_CONTROL_IE_MSK	0x100
++#define ALTERA_SPI_CONTROL_SSO_MSK	0x400
++
++struct altera_spi {
++	/* bitbang has to be first */
++	struct spi_bitbang bitbang;
++	struct completion done;
++
++	void __iomem *base;
++	int irq;
++	int len;
++	int count;
++	int bytes_per_word;
++	unsigned long imr;
++
++	/* data buffers */
++	const unsigned char *tx;
++	unsigned char *rx;
++};
++
++static inline struct altera_spi *altera_spi_to_hw(struct spi_device *sdev)
++{
++	return spi_master_get_devdata(sdev->master);
++}
++
++static void altera_spi_chipsel(struct spi_device *spi, int value)
++{
++	struct altera_spi *hw = altera_spi_to_hw(spi);
++
++	if (spi->mode & SPI_CS_HIGH) {
++		switch (value) {
++		case BITBANG_CS_INACTIVE:
++			writel(1 << spi->chip_select,
++			       hw->base + ALTERA_SPI_SLAVE_SEL);
++			hw->imr |= ALTERA_SPI_CONTROL_SSO_MSK;
++			writel(hw->imr, hw->base + ALTERA_SPI_CONTROL);
++			break;
++
++		case BITBANG_CS_ACTIVE:
++			hw->imr &= ~ALTERA_SPI_CONTROL_SSO_MSK;
++			writel(hw->imr, hw->base + ALTERA_SPI_CONTROL);
++			writel(0, hw->base + ALTERA_SPI_SLAVE_SEL);
++			break;
++		}
++	} else {
++		switch (value) {
++		case BITBANG_CS_INACTIVE:
++			hw->imr &= ~ALTERA_SPI_CONTROL_SSO_MSK;
++			writel(hw->imr, hw->base + ALTERA_SPI_CONTROL);
++			break;
++
++		case BITBANG_CS_ACTIVE:
++			writel(1 << spi->chip_select,
++			       hw->base + ALTERA_SPI_SLAVE_SEL);
++			hw->imr |= ALTERA_SPI_CONTROL_SSO_MSK;
++			writel(hw->imr, hw->base + ALTERA_SPI_CONTROL);
++			break;
++		}
++	}
++}
++
++static int altera_spi_setupxfer(struct spi_device *spi, struct spi_transfer *t)
++{
++	return 0;
++}
++
++static int altera_spi_setup(struct spi_device *spi)
++{
++	return 0;
++}
++
++static inline unsigned int hw_txbyte(struct altera_spi *hw, int count)
++{
++	if (hw->tx) {
++		switch (hw->bytes_per_word) {
++		case 1:
++			return hw->tx[count];
++		case 2:
++			return (hw->tx[count * 2]
++				| (hw->tx[count * 2 + 1] << 8));
++		}
++	}
++	return 0;
++}
++
++static int altera_spi_txrx(struct spi_device *spi, struct spi_transfer *t)
++{
++	struct altera_spi *hw = altera_spi_to_hw(spi);
++
++	hw->tx = t->tx_buf;
++	hw->rx = t->rx_buf;
++	hw->count = 0;
++	hw->bytes_per_word = (t->bits_per_word ? : spi->bits_per_word) / 8;
++	hw->len = t->len / hw->bytes_per_word;
++
++	if (hw->irq >= 0) {
++		/* enable receive interrupt */
++		hw->imr |= ALTERA_SPI_CONTROL_IRRDY_MSK;
++		writel(hw->imr, hw->base + ALTERA_SPI_CONTROL);
++
++		/* send the first byte */
++		writel(hw_txbyte(hw, 0), hw->base + ALTERA_SPI_TXDATA);
++
++		wait_for_completion(&hw->done);
++		/* disable receive interrupt */
++		hw->imr &= ~ALTERA_SPI_CONTROL_IRRDY_MSK;
++		writel(hw->imr, hw->base + ALTERA_SPI_CONTROL);
++	} else {
++		/* send the first byte */
++		writel(hw_txbyte(hw, 0), hw->base + ALTERA_SPI_TXDATA);
++
++		while (1) {
++			unsigned int rxd;
++
++			while (!(readl(hw->base + ALTERA_SPI_STATUS) &
++				 ALTERA_SPI_STATUS_RRDY_MSK))
++				cpu_relax();
++
++			rxd = readl(hw->base + ALTERA_SPI_RXDATA);
++			if (hw->rx) {
++				switch (hw->bytes_per_word) {
++				case 1:
++					hw->rx[hw->count] = rxd;
++					break;
++				case 2:
++					hw->rx[hw->count * 2] = rxd;
++					hw->rx[hw->count * 2 + 1] = rxd >> 8;
++					break;
++				}
++			}
++
++			hw->count++;
++
++			if (hw->count < hw->len)
++				writel(hw_txbyte(hw, hw->count),
++				       hw->base + ALTERA_SPI_TXDATA);
++			else
++				break;
++		}
++
++	}
++
++	return hw->count * hw->bytes_per_word;
++}
++
++static irqreturn_t altera_spi_irq(int irq, void *dev)
++{
++	struct altera_spi *hw = dev;
++	unsigned int rxd;
++
++	rxd = readl(hw->base + ALTERA_SPI_RXDATA);
++	if (hw->rx) {
++		switch (hw->bytes_per_word) {
++		case 1:
++			hw->rx[hw->count] = rxd;
++			break;
++		case 2:
++			hw->rx[hw->count * 2] = rxd;
++			hw->rx[hw->count * 2 + 1] = rxd >> 8;
++			break;
++		}
++	}
++
++	hw->count++;
++
++	if (hw->count < hw->len)
++		writel(hw_txbyte(hw, hw->count), hw->base + ALTERA_SPI_TXDATA);
++	else
++		complete(&hw->done);
++
++	return IRQ_HANDLED;
++}
++
++static int __devinit altera_spi_probe(struct platform_device *pdev)
++{
++	struct altera_spi_platform_data *platp = pdev->dev.platform_data;
++	struct altera_spi *hw;
++	struct spi_master *master;
++	struct resource *res;
++	int err = -ENODEV;
++
++	master = spi_alloc_master(&pdev->dev, sizeof(struct altera_spi));
++	if (!master)
++		return err;
++
++	/* setup the master state. */
++	master->bus_num = pdev->id;
++	master->num_chipselect = 16;
++	master->mode_bits = SPI_CS_HIGH;
++	master->setup = altera_spi_setup;
++
++	hw = spi_master_get_devdata(master);
++	platform_set_drvdata(pdev, hw);
++
++	/* setup the state for the bitbang driver */
++	hw->bitbang.master = spi_master_get(master);
++	if (!hw->bitbang.master)
++		return err;
++	hw->bitbang.setup_transfer = altera_spi_setupxfer;
++	hw->bitbang.chipselect = altera_spi_chipsel;
++	hw->bitbang.txrx_bufs = altera_spi_txrx;
++
++	/* find and map our resources */
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res)
++		goto exit_busy;
++	if (!devm_request_mem_region(&pdev->dev, res->start, resource_size(res),
++				     pdev->name))
++		goto exit_busy;
++	hw->base = devm_ioremap_nocache(&pdev->dev, res->start,
++					resource_size(res));
++	if (!hw->base)
++		goto exit_busy;
++	/* program defaults into the registers */
++	hw->imr = 0;		/* disable spi interrupts */
++	writel(hw->imr, hw->base + ALTERA_SPI_CONTROL);
++	writel(0, hw->base + ALTERA_SPI_STATUS);	/* clear status reg */
++	if (readl(hw->base + ALTERA_SPI_STATUS) & ALTERA_SPI_STATUS_RRDY_MSK)
++		readl(hw->base + ALTERA_SPI_RXDATA);	/* flush rxdata */
++	/* irq is optional */
++	hw->irq = platform_get_irq(pdev, 0);
++	if (hw->irq >= 0) {
++		init_completion(&hw->done);
++		err = devm_request_irq(&pdev->dev, hw->irq, altera_spi_irq, 0,
++				       pdev->name, hw);
++		if (err)
++			goto exit;
++	}
++	/* find platform data */
++	if (!platp)
++		hw->bitbang.master->dev.of_node = pdev->dev.of_node;
++
++	/* register our spi controller */
++	err = spi_bitbang_start(&hw->bitbang);
++	if (err)
++		goto exit;
++	dev_info(&pdev->dev, "base %p, irq %d\n", hw->base, hw->irq);
++
++	return 0;
++
++exit_busy:
++	err = -EBUSY;
++exit:
++	platform_set_drvdata(pdev, NULL);
++	spi_master_put(master);
++	return err;
++}
++
++static int __devexit altera_spi_remove(struct platform_device *dev)
++{
++	struct altera_spi *hw = platform_get_drvdata(dev);
++	struct spi_master *master = hw->bitbang.master;
++
++	spi_bitbang_stop(&hw->bitbang);
++	platform_set_drvdata(dev, NULL);
++	spi_master_put(master);
++	return 0;
++}
++
++static const struct of_device_id altera_spi_match[] = {
++	{ .compatible = "ALTR,spi-1.0", },
++	{},
++}
++MODULE_DEVICE_TABLE(of, altera_spi_match);
++
++static struct platform_driver altera_spi_driver = {
++	.probe = altera_spi_probe,
++	.remove = __devexit_p(altera_spi_remove),
++	.driver = {
++		.name = DRV_NAME,
++		.owner = THIS_MODULE,
++		.pm = NULL,
++		.of_match_table = altera_spi_match,
++	},
++};
++
++static int __init altera_spi_init(void)
++{
++	return platform_driver_register(&altera_spi_driver);
++}
++module_init(altera_spi_init);
++
++static void __exit altera_spi_exit(void)
++{
++	platform_driver_unregister(&altera_spi_driver);
++}
++module_exit(altera_spi_exit);
++
++MODULE_DESCRIPTION("Altera SPI driver");
++MODULE_AUTHOR("Thomas Chou <thomas@wytron.com.tw>");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:" DRV_NAME);
+-- 
+1.7.4
+
