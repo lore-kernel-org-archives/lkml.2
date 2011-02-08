@@ -1,74 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637Ab1BHJaZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 04:30:25 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:55654 "EHLO
+	id S1752749Ab1BHJcM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 04:32:12 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:43972 "EHLO
 	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752341Ab1BHJaX (ORCPT
+	with ESMTP id S1752568Ab1BHJcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 04:30:23 -0500
+	Tue, 8 Feb 2011 04:32:10 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=WqaEK3+2srQQaY4mPUI1+Yeitk1rrBMkY1cP3SZcPc5LdoUDaPfs6O9hBIMPTlcLk4
-         HLhMHtl8leGkpbomSIri5ZDRs6WIIO20kj/PBR7/arOfzaXt/LoAcbqtKu7wQ3JLSKbm
-         1cHYiOaZg7La882SAeullv9bHlxRqfVqryiDA=
-Date: Tue, 8 Feb 2011 17:30:21 +0800
-From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-To: linux-kernel@vger.kernel.org, xiyou.wangcong@gmail.com
-Subject: Re: Fwd: [PATCH]Maintain Chinese Documentations
-Message-ID: <20110208093020.GA2016@gmail.com>
-References: <20110208023735.GA4599@gmail.com>
- <20110207184027.468e2a03.rdunlap@xenotime.net>
- <AANLkTimacOStZv-hrxo6iOWUDNem+h1cmaKCZQzw=0jr@mail.gmail.com>
- <20110208031638.GA4828@gmail.com>
- <20110207192249.5a478469.rdunlap@xenotime.net>
- <AANLkTimFFT-B_aPyfFJmMpvt9jhd98ckBah2vbK+WQJf@mail.gmail.com>
- <20110208033818.GA4922@gmail.com>
- <iiqti3$3b5$2@dough.gmane.org>
- <AANLkTinGn5oN01+33VgnnWHAqEZNxkoJeTgkjAjpC8LZ@mail.gmail.com>
+        h=mime-version:from:date:message-id:subject:to:content-type;
+        b=sqqAu+3zCGifJjqM9ylzzGtSUs79304Ij218HAvbgrjGRGJ3FkepAbpDQjqgQArpyU
+         0m+8QWKcptT9wDaJlJZlIz5KxuwphMEsX8ULUvizXPqR2Q11hwxYOX9xaIYKtm+tqWFP
+         brkaI7mDMr6ljsVu8yC4tdbWRXO2h3rX+99xw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinGn5oN01+33VgnnWHAqEZNxkoJeTgkjAjpC8LZ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: dave b <db.pub.mail@gmail.com>
+Date: Tue, 8 Feb 2011 20:31:50 +1100
+Message-ID: <AANLkTi=1wjdu3kT6nimU0fnZStG01a57D3O5Up+oJRdr@mail.gmail.com>
+Subject: I do not know if this is the correct place to ask about this but...
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 08, 2011 at 05:19:02PM +0800, harryxiyou wrote:
-> ---------- Forwarded message ----------
-> From: WANG Cong <xiyou.wangcong@gmail.com>
-> Date: 2011/2/8
-> Subject: Re: [PATCH]Maintain Chinese Documentations
-> To: linux-kernel@vger.kernel.org
-> 
-> 
-> On Tue, 08 Feb 2011 11:38:21 +0800, Harry Wei wrote:
-> 
-> > +L:   xiyoulinuxkernelgroup@googlegroups.com
-> 
-> NAK.
-> 
-> Clearly linux-kernel@zh-kernel.org is more "official".
-Hi Brother Wang,
-   	I have mailed to linux-kernel@zh-kernel.org for some translation problems but there is no response. So ...
-	In fact, any mailing list is ok if they are absolutely interested in kernel. We will also send our translations for kernel-docs to linux-kernel@zh-kernel.org. After talking with them we will patch for kernel :)
+I do not know if this is the correct place to ask about this but...
+I have only seen the following output output twice and both times have
+been when I was running a 2.6.37 kernel.
 
-Thanks.
-Best Regards.
-Harry Wei.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
-> 
-> -- 
-> Best Regards.
-> Harry Wei.
-> Do what u like!
+[152399.816058] [Hardware Error]: MC4_STATUS: Corrected error, other
+errors lost: no, CPU context corrupt: no, CECC Error
+[152399.816075] [Hardware Error]: Northbridge Error, node 0: , core:
+1L3 ECC data cache error.
+[152399.816086] [Hardware Error]: Transaction: RD, Type: GEN, Cache
+Level: L3/GEN
+[152399.816092] Disabling lock debugging due to kernel taint
+[152399.816099] [Hardware Error]: Machine check events logged
+
+I assume it is just a coincidence. Also, I am not exactly sure what
+the message "means". (Yes I can read the text - but I haven't found
+good documentation which describes the impact it). Note: I submitted a
+bug[0] regarding 'the output' the first time this occurrence.
+
+[0] - https://bugzilla.kernel.org/show_bug.cgi?id=27332
