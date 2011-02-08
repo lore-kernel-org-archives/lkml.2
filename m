@@ -1,82 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876Ab1BHMOZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 07:14:25 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:56058 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753778Ab1BHMOX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 07:14:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=XpQkVN59y65+50qDAEX/vqBhF8UgI/SJGaI7xFyA6Bv9lwrP9c4TFm45RYVSRuReux
-         +YwYEPliZAIuWCZ9Z0WAOceYUcx/5DcPjv5otn2goVJWbXQh2c04v1eTBm0ThWwBBxW/
-         oa9SqLkb3UET4UdTKJz3z6v0B4Gj2xG75+154=
-Date: Tue, 8 Feb 2011 20:14:10 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, tglx <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+	id S1751668Ab1BHMWd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 07:22:33 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:59818 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751137Ab1BHMWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 07:22:31 -0500
+Date: Tue, 8 Feb 2011 13:21:59 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Len Brown <len.brown@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 2/2] timer: use local_bh_enable_force_wake() in
- del_timer_sync()
-Message-ID: <20110208121410.GB4824@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com>
- <20110208101730.GB7020@liondog.tnic>
- <1297161712.13327.100.camel@laptop>
- <20110208121108.GA4824@zhy>
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-embedded@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] Remove CONFIG_PM altogether, enable power management all
+ the time
+Message-ID: <20110208122159.GA8284@elte.hu>
+References: <1297081335-13631-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <201102072046.48763.rjw@sisk.pl>
+ <20110207201803.GU10564@opensource.wolfsonmicro.com>
+ <201102072215.59921.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110208121108.GA4824@zhy>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201102072215.59921.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yong Zhang <yong.zhang0@gmail.com>
-Subject: [PATCH 2/2] timer: use local_bh_enable_force_wake() in del_timer_sync()
 
-raw_local_irq_save()/raw_local_irq_restore() is also not suitable
-here because lockdep will report "possible reason: unannotated irqs-off"
+* Rafael J. Wysocki <rjw@sisk.pl> wrote:
 
-To cure this issue, use local_bh_enable_force_wake() here in case of
-we have pending softirq left during this time.
+> I'd appreciate it if people could review/test it and drop their comments.
+> 
+> Thanks,
+> Rafael
+> 
+> ---
+>  arch/x86/xen/Kconfig               |    2 +-
+>  drivers/acpi/Kconfig               |    1 -
+>  drivers/acpi/bus.c                 |    4 +---
+>  drivers/acpi/internal.h            |    6 ++++++
+>  drivers/acpi/sleep.c               |   13 +++++++++++--
+>  drivers/base/power/Makefile        |    3 +--
+>  drivers/net/e1000e/netdev.c        |    8 ++++----
+>  drivers/net/pch_gbe/pch_gbe_main.c |    2 +-
+>  drivers/pci/pci-driver.c           |    4 ++--
+>  drivers/scsi/Makefile              |    2 +-
+>  drivers/scsi/scsi_priv.h           |    2 +-
+>  drivers/scsi/scsi_sysfs.c          |    2 +-
+>  drivers/usb/core/hcd-pci.c         |    4 ++--
+>  include/acpi/acpi_bus.h            |    2 +-
+>  include/linux/pm.h                 |    2 +-
+>  kernel/power/Kconfig               |   29 +++--------------------------
+>  16 files changed, 37 insertions(+), 49 deletions(-)
 
-Reported-by: Borislav Petkov <bp@alien8.de>
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- kernel/timer.c |    6 +-----
- 1 files changed, 1 insertions(+), 5 deletions(-)
+Ok, there's some real bang for bucks in this patch, nice! It's a beginning.
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index d53ce66..1654dc1 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -969,14 +969,10 @@ EXPORT_SYMBOL(try_to_del_timer_sync);
- int del_timer_sync(struct timer_list *timer)
- {
- #ifdef CONFIG_LOCKDEP
--	unsigned long flags;
--
--	raw_local_irq_save(flags);
- 	local_bh_disable();
- 	lock_map_acquire(&timer->lockdep_map);
- 	lock_map_release(&timer->lockdep_map);
--	_local_bh_enable();
--	raw_local_irq_restore(flags);
-+	local_bh_enable_force_wake();
- #endif
- 	/*
- 	 * don't use it in hardirq context, because it
--- 
-1.7.1
+Reviewed-by: Ingo Molnar <mingo@elte.hu>
+
+Also, i've Cc:-ed Linus, to check whether the idea to make power management a 
+permanent, core portion of Linux has any obvious downsides we missed.
+
+Rafael, could you do a defconfig-ish x86 build with and without CONFIG_PM, and post 
+the 'size vmlinux' comparison - so that we can see the size difference? We make some 
+things CONFIG_EXPERT configurable just to enable folks who *really* want to cut down 
+on kernel size to configure it out.
+
+Note that those usecases, even if they want a super-small kernel, might not care 
+about PM at all while they care about size: small boot kernels in ROMs, or simple 
+devices where CPU-idling implies deep low power mode, etc.
+
+So the vmlinux size comparisons would be needed really. If it's 5k nobody will care. 
+If it's 50k-100k that's borderline. In the other side of the scale we have the 1500+
+#ifdef CONFIG_PM lines strewn around the kernel source, and the frequent !PM build
+breakages.
+
+	Ingo
