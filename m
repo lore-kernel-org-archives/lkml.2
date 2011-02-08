@@ -1,263 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876Ab1BHPSK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 10:18:10 -0500
-Received: from hera.kernel.org ([140.211.167.34]:34226 "EHLO hera.kernel.org"
+	id S1754892Ab1BHPS0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 10:18:26 -0500
+Received: from hera.kernel.org ([140.211.167.34]:34246 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754764Ab1BHPSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 10:18:07 -0500
-Date: Tue, 8 Feb 2011 15:17:42 GMT
-From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@redhat.com, masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, srikar@linux.vnet.ibm.com, tglx@linutronix.de,
-        mingo@elte.hu
+	id S1752900Ab1BHPSY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 10:18:24 -0500
+Date: Tue, 8 Feb 2011 15:18:05 GMT
+From: tip-bot for Kyle McMartin <kyle@mcmartin.ca>
+Cc: acme@redhat.com, kyle@redhat.com, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, kyle@mcmartin.ca
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, fweisbec@gmail.com, masami.hiramatsu.pt@hitachi.com,
-        rostedt@goodmis.org, srikar@linux.vnet.ibm.com, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <20110204125205.9507.11363.stgit@ltc236.sdl.hitachi.co.jp>
-References: <20110204125205.9507.11363.stgit@ltc236.sdl.hitachi.co.jp>
+        kyle@redhat.com, acme@redhat.com, tglx@linutronix.de, kyle@mcmartin.ca
+In-Reply-To: <20110124161304.GK27353@bombadil.infradead.org>
+References: <20110124161304.GK27353@bombadil.infradead.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tracing/kprobes: Add bitfield type
-Message-ID: <tip-1ff511e35ed87cc2ebade9e678e4a2fe39b6f9c5@git.kernel.org>
-Git-Commit-ID: 1ff511e35ed87cc2ebade9e678e4a2fe39b6f9c5
+Subject: [tip:perf/core] perf tool: Fix gcc 4.6.0 issues
+Message-ID: <tip-fb7d0b3cefb80a105f7fd26bbc62e0cbf9192822@git.kernel.org>
+Git-Commit-ID: fb7d0b3cefb80a105f7fd26bbc62e0cbf9192822
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 08 Feb 2011 15:17:42 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 08 Feb 2011 15:18:06 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1ff511e35ed87cc2ebade9e678e4a2fe39b6f9c5
-Gitweb:     http://git.kernel.org/tip/1ff511e35ed87cc2ebade9e678e4a2fe39b6f9c5
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Fri, 4 Feb 2011 21:52:05 +0900
+Commit-ID:  fb7d0b3cefb80a105f7fd26bbc62e0cbf9192822
+Gitweb:     http://git.kernel.org/tip/fb7d0b3cefb80a105f7fd26bbc62e0cbf9192822
+Author:     Kyle McMartin <kyle@mcmartin.ca>
+AuthorDate: Mon, 24 Jan 2011 11:13:04 -0500
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 7 Feb 2011 09:18:11 -0200
+CommitDate: Mon, 7 Feb 2011 12:41:41 -0200
 
-tracing/kprobes: Add bitfield type
+perf tool: Fix gcc 4.6.0 issues
 
-Add bitfield type for tracing arguments on kprobe-tracer.  The syntax of
-a bitfield type is:
+GCC 4.6.0 in Fedora rawhide turned up some compile errors in tools/perf
+due to the -Werror=unused-but-set-variable flag.
 
- b<bit-size>@<bit-offset>/<container-size>
+I've gone through and annotated some of the assignments that had side
+effects (ie: return value from a function) with the __used annotation,
+and in some cases, just removed unused code.
 
-e.g.
+In a few cases, we were assigning something useful, but not using it in
+later parts of the function.
 
-Accessing 2 bits-width field with 4 bits-offset in 32 bits-width data at
-4 bytes offseted from the address pointed by AX register:
+kyle@dreadnought:~/src% gcc --version
+gcc (GCC) 4.6.0 20110122 (Red Hat 4.6.0-0.3)
 
- +4(%ax):b2@4/32
-
-Since the width of container data depends on the arch, so I just added
-the container-size at the end.
-
-Cc: 2nddept-manager@sdl.hitachi.co.jp
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-LKML-Reference: <20110204125205.9507.11363.stgit@ltc236.sdl.hitachi.co.jp>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+LKML-Reference: <20110124161304.GK27353@bombadil.infradead.org>
+Signed-off-by: Kyle McMartin <kyle@redhat.com>
+[ committer note: Fixed up the annotation fixes, as that code moved recently ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- Documentation/trace/kprobetrace.txt |   16 +++++-
- kernel/trace/trace_kprobe.c         |  104 ++++++++++++++++++++++++++++++++++-
- 2 files changed, 118 insertions(+), 2 deletions(-)
+ tools/perf/bench/sched-pipe.c                      |    2 +-
+ tools/perf/builtin-sched.c                         |   12 +++---------
+ tools/perf/builtin-top.c                           |    2 +-
+ tools/perf/util/annotate.c                         |    3 ---
+ tools/perf/util/header.c                           |    2 +-
+ .../util/scripting-engines/trace-event-python.c    |    3 +--
+ tools/perf/util/symbol.c                           |    4 ++--
+ tools/perf/util/trace-event-parse.c                |    2 +-
+ tools/perf/util/ui/browsers/map.c                  |    2 +-
+ 9 files changed, 11 insertions(+), 21 deletions(-)
 
-diff --git a/Documentation/trace/kprobetrace.txt b/Documentation/trace/kprobetrace.txt
-index 5f77d94..6d27ab8 100644
---- a/Documentation/trace/kprobetrace.txt
-+++ b/Documentation/trace/kprobetrace.txt
-@@ -42,11 +42,25 @@ Synopsis of kprobe_events
-   +|-offs(FETCHARG) : Fetch memory at FETCHARG +|- offs address.(**)
-   NAME=FETCHARG : Set NAME as the argument name of FETCHARG.
-   FETCHARG:TYPE : Set TYPE as the type of FETCHARG. Currently, basic types
--		  (u8/u16/u32/u64/s8/s16/s32/s64) and string are supported.
-+		  (u8/u16/u32/u64/s8/s16/s32/s64), "string" and bitfield
-+		  are supported.
+diff --git a/tools/perf/bench/sched-pipe.c b/tools/perf/bench/sched-pipe.c
+index d9ab3ce..0c7454f 100644
+--- a/tools/perf/bench/sched-pipe.c
++++ b/tools/perf/bench/sched-pipe.c
+@@ -55,7 +55,7 @@ int bench_sched_pipe(int argc, const char **argv,
+ 	 * discarding returned value of read(), write()
+ 	 * causes error in building environment for perf
+ 	 */
+-	int ret, wait_stat;
++	int __used ret, wait_stat;
+ 	pid_t pid, retpid;
  
-   (*) only for return probe.
-   (**) this is useful for fetching a field of data structures.
- 
-+Types
-+-----
-+Several types are supported for fetch-args. Kprobe tracer will access memory
-+by given type. Prefix 's' and 'u' means those types are signed and unsigned
-+respectively. Traced arguments are shown in decimal (signed) or hex (unsigned).
-+String type is a special type, which fetches a "null-terminated" string from
-+kernel space. This means it will fail and store NULL if the string container
-+has been paged out.
-+Bitfield is another special type, which takes 3 parameters, bit-width, bit-
-+offset, and container-size (usually 32). The syntax is;
-+
-+ b<bit-width>@<bit-offset>/<container-size>
-+
- 
- Per-Probe Event Filtering
- -------------------------
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index c6ed886..ccdc542 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -353,6 +353,43 @@ static __kprobes void free_deref_fetch_param(struct deref_fetch_param *data)
- 	kfree(data);
- }
- 
-+/* Bitfield fetch function */
-+struct bitfield_fetch_param {
-+	struct fetch_param orig;
-+	unsigned char hi_shift;
-+	unsigned char low_shift;
-+};
-+
-+#define DEFINE_FETCH_bitfield(type)					\
-+static __kprobes void FETCH_FUNC_NAME(bitfield, type)(struct pt_regs *regs,\
-+					    void *data, void *dest)	\
-+{									\
-+	struct bitfield_fetch_param *bprm = data;			\
-+	type buf = 0;							\
-+	call_fetch(&bprm->orig, regs, &buf);				\
-+	if (buf) {							\
-+		buf <<= bprm->hi_shift;					\
-+		buf >>= bprm->low_shift;				\
-+	}								\
-+	*(type *)dest = buf;						\
-+}
-+DEFINE_BASIC_FETCH_FUNCS(bitfield)
-+#define fetch_bitfield_string NULL
-+#define fetch_bitfield_string_size NULL
-+
-+static __kprobes void
-+free_bitfield_fetch_param(struct bitfield_fetch_param *data)
-+{
-+	/*
-+	 * Don't check the bitfield itself, because this must be the
-+	 * last fetch function.
-+	 */
-+	if (CHECK_FETCH_FUNCS(deref, data->orig.fn))
-+		free_deref_fetch_param(data->orig.data);
-+	else if (CHECK_FETCH_FUNCS(symbol, data->orig.fn))
-+		free_symbol_cache(data->orig.data);
-+	kfree(data);
-+}
- /* Default (unsigned long) fetch type */
- #define __DEFAULT_FETCH_TYPE(t) u##t
- #define _DEFAULT_FETCH_TYPE(t) __DEFAULT_FETCH_TYPE(t)
-@@ -367,6 +404,7 @@ enum {
- 	FETCH_MTD_memory,
- 	FETCH_MTD_symbol,
- 	FETCH_MTD_deref,
-+	FETCH_MTD_bitfield,
- 	FETCH_MTD_END,
- };
- 
-@@ -387,6 +425,7 @@ ASSIGN_FETCH_FUNC(retval, ftype),			\
- ASSIGN_FETCH_FUNC(memory, ftype),			\
- ASSIGN_FETCH_FUNC(symbol, ftype),			\
- ASSIGN_FETCH_FUNC(deref, ftype),			\
-+ASSIGN_FETCH_FUNC(bitfield, ftype),			\
- 	  }						\
- 	}
- 
-@@ -430,9 +469,33 @@ static const struct fetch_type *find_fetch_type(const char *type)
- 	if (!type)
- 		type = DEFAULT_FETCH_TYPE_STR;
- 
-+	/* Special case: bitfield */
-+	if (*type == 'b') {
-+		unsigned long bs;
-+		type = strchr(type, '/');
-+		if (!type)
-+			goto fail;
-+		type++;
-+		if (strict_strtoul(type, 0, &bs))
-+			goto fail;
-+		switch (bs) {
-+		case 8:
-+			return find_fetch_type("u8");
-+		case 16:
-+			return find_fetch_type("u16");
-+		case 32:
-+			return find_fetch_type("u32");
-+		case 64:
-+			return find_fetch_type("u64");
-+		default:
-+			goto fail;
-+		}
-+	}
-+
- 	for (i = 0; i < ARRAY_SIZE(fetch_type_table); i++)
- 		if (strcmp(type, fetch_type_table[i].name) == 0)
- 			return &fetch_type_table[i];
-+fail:
- 	return NULL;
- }
- 
-@@ -586,7 +649,9 @@ error:
- 
- static void free_probe_arg(struct probe_arg *arg)
+ 	argc = parse_options(argc, argv, options,
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index ae26211..a32f411 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -369,11 +369,6 @@ static void
+ process_sched_event(struct task_desc *this_task __used, struct sched_atom *atom)
  {
--	if (CHECK_FETCH_FUNCS(deref, arg->fetch.fn))
-+	if (CHECK_FETCH_FUNCS(bitfield, arg->fetch.fn))
-+		free_bitfield_fetch_param(arg->fetch.data);
-+	else if (CHECK_FETCH_FUNCS(deref, arg->fetch.fn))
- 		free_deref_fetch_param(arg->fetch.data);
- 	else if (CHECK_FETCH_FUNCS(symbol, arg->fetch.fn))
- 		free_symbol_cache(arg->fetch.data);
-@@ -806,6 +871,41 @@ static int __parse_probe_arg(char *arg, const struct fetch_type *t,
- 	return ret;
+ 	int ret = 0;
+-	u64 now;
+-	long long delta;
+-
+-	now = get_nsecs();
+-	delta = start_time + atom->timestamp - now;
+ 
+ 	switch (atom->type) {
+ 		case SCHED_EVENT_RUN:
+@@ -562,7 +557,7 @@ static void wait_for_tasks(void)
+ 
+ static void run_one_test(void)
+ {
+-	u64 T0, T1, delta, avg_delta, fluct, std_dev;
++	u64 T0, T1, delta, avg_delta, fluct;
+ 
+ 	T0 = get_nsecs();
+ 	wait_for_tasks();
+@@ -578,7 +573,6 @@ static void run_one_test(void)
+ 	else
+ 		fluct = delta - avg_delta;
+ 	sum_fluct += fluct;
+-	std_dev = sum_fluct / nr_runs / sqrt(nr_runs);
+ 	if (!run_avg)
+ 		run_avg = delta;
+ 	run_avg = (run_avg*9 + delta)/10;
+@@ -799,7 +793,7 @@ replay_switch_event(struct trace_switch_event *switch_event,
+ 		    u64 timestamp,
+ 		    struct thread *thread __used)
+ {
+-	struct task_desc *prev, *next;
++	struct task_desc *prev, __used *next;
+ 	u64 timestamp0;
+ 	s64 delta;
+ 
+@@ -1404,7 +1398,7 @@ map_switch_event(struct trace_switch_event *switch_event,
+ 		 u64 timestamp,
+ 		 struct thread *thread __used)
+ {
+-	struct thread *sched_out, *sched_in;
++	struct thread *sched_out __used, *sched_in;
+ 	int new_shortname;
+ 	u64 timestamp0;
+ 	s64 delta;
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 716118a..b790673 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -865,7 +865,7 @@ static int __cmd_top(void)
+ {
+ 	pthread_t thread;
+ 	struct perf_evsel *first;
+-	int ret;
++	int ret __used;
+ 	/*
+ 	 * FIXME: perf_session__new should allow passing a O_MMAP, so that all this
+ 	 * mmap reading, etc is encapsulated in it. Use O_WRONLY for now.
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 2973376..1012841 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -236,7 +236,6 @@ int symbol__annotate(struct symbol *sym, struct map *map,
+ 	char command[PATH_MAX * 2];
+ 	FILE *file;
+ 	int err = 0;
+-	u64 len;
+ 	char symfs_filename[PATH_MAX];
+ 
+ 	if (filename) {
+@@ -281,8 +280,6 @@ fallback:
+ 		 filename, sym->name, map->unmap_ip(map, sym->start),
+ 		 map->unmap_ip(map, sym->end));
+ 
+-	len = sym->end - sym->start;
+-
+ 	pr_debug("annotating [%p] %30s : [%p] %30s\n",
+ 		 dso, dso->long_name, sym, sym->name);
+ 
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index c0de5ec..72c124d 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1145,7 +1145,7 @@ int perf_event__synthesize_tracing_data(int fd, struct perf_evlist *evlist,
+ {
+ 	union perf_event ev;
+ 	ssize_t size = 0, aligned_size = 0, padding;
+-	int err = 0;
++	int err __used = 0;
+ 
+ 	memset(&ev, 0, sizeof(ev));
+ 
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index c6d9933..2040b85 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -248,8 +248,7 @@ static void python_process_event(int cpu, void *data,
+ 	context = PyCObject_FromVoidPtr(scripting_context, NULL);
+ 
+ 	PyTuple_SetItem(t, n++, PyString_FromString(handler_name));
+-	PyTuple_SetItem(t, n++,
+-			PyCObject_FromVoidPtr(scripting_context, NULL));
++	PyTuple_SetItem(t, n++, context);
+ 
+ 	if (handler) {
+ 		PyTuple_SetItem(t, n++, PyInt_FromLong(cpu));
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 7821d0e..3e193f8 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1525,8 +1525,8 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+ 			     symbol_conf.symfs, self->long_name);
+ 			break;
+ 		case DSO__ORIG_GUEST_KMODULE:
+-			if (map->groups && map->groups->machine)
+-				root_dir = map->groups->machine->root_dir;
++			if (map->groups && machine)
++				root_dir = machine->root_dir;
+ 			else
+ 				root_dir = "";
+ 			snprintf(name, size, "%s%s%s", symbol_conf.symfs,
+diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+index 73a0222..d8e622d 100644
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -153,7 +153,7 @@ void parse_proc_kallsyms(char *file, unsigned int size __unused)
+ 	char *next = NULL;
+ 	char *addr_str;
+ 	char ch;
+-	int ret;
++	int ret __used;
+ 	int i;
+ 
+ 	line = strtok_r(file, "\n", &next);
+diff --git a/tools/perf/util/ui/browsers/map.c b/tools/perf/util/ui/browsers/map.c
+index e515836..8462bff 100644
+--- a/tools/perf/util/ui/browsers/map.c
++++ b/tools/perf/util/ui/browsers/map.c
+@@ -41,7 +41,7 @@ static int ui_entry__read(const char *title, char *bf, size_t size, int width)
+ out_free_form:
+ 	newtPopWindow();
+ 	newtFormDestroy(form);
+-	return 0;
++	return err;
  }
  
-+#define BYTES_TO_BITS(nb)	((BITS_PER_LONG * (nb)) / sizeof(long))
-+
-+/* Bitfield type needs to be parsed into a fetch function */
-+static int __parse_bitfield_probe_arg(const char *bf,
-+				      const struct fetch_type *t,
-+				      struct fetch_param *f)
-+{
-+	struct bitfield_fetch_param *bprm;
-+	unsigned long bw, bo;
-+	char *tail;
-+
-+	if (*bf != 'b')
-+		return 0;
-+
-+	bprm = kzalloc(sizeof(*bprm), GFP_KERNEL);
-+	if (!bprm)
-+		return -ENOMEM;
-+	bprm->orig = *f;
-+	f->fn = t->fetch[FETCH_MTD_bitfield];
-+	f->data = (void *)bprm;
-+
-+	bw = simple_strtoul(bf + 1, &tail, 0);	/* Use simple one */
-+	if (bw == 0 || *tail != '@')
-+		return -EINVAL;
-+
-+	bf = tail + 1;
-+	bo = simple_strtoul(bf, &tail, 0);
-+	if (tail == bf || *tail != '/')
-+		return -EINVAL;
-+
-+	bprm->hi_shift = BYTES_TO_BITS(t->size) - (bw + bo);
-+	bprm->low_shift = bprm->hi_shift + bo;
-+	return (BYTES_TO_BITS(t->size) < (bw + bo)) ? -EINVAL : 0;
-+}
-+
- /* String length checking wrapper */
- static int parse_probe_arg(char *arg, struct trace_probe *tp,
- 			   struct probe_arg *parg, int is_return)
-@@ -835,6 +935,8 @@ static int parse_probe_arg(char *arg, struct trace_probe *tp,
- 	parg->offset = tp->size;
- 	tp->size += parg->type->size;
- 	ret = __parse_probe_arg(arg, parg->type, &parg->fetch, is_return);
-+	if (ret >= 0)
-+		ret = __parse_bitfield_probe_arg(t, parg->type, &parg->fetch);
- 	if (ret >= 0) {
- 		parg->fetch_size.fn = get_fetch_size_function(parg->type,
- 							      parg->fetch.fn);
+ struct map_browser {
