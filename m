@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909Ab1BHWJW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 17:09:22 -0500
-Received: from casper.infradead.org ([85.118.1.10]:38280 "EHLO
+	id S1751082Ab1BHWJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 17:09:28 -0500
+Received: from casper.infradead.org ([85.118.1.10]:38294 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752897Ab1BHWJV (ORCPT
+	with ESMTP id S1753921Ab1BHWJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 17:09:21 -0500
+	Tue, 8 Feb 2011 17:09:27 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,11 +16,11 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Stephane Eranian <eranian@google.com>,
         Tom Zanussi <tzanussi@gmail.com>
 Subject: [PATCH 1/3] perf annotate: Fix --stdio rendering
-Date: Tue,  8 Feb 2011 20:09:08 -0200
-Message-Id: <1297202950-15208-2-git-send-email-acme@infradead.org>
+Date: Tue,  8 Feb 2011 20:09:18 -0200
+Message-Id: <1297202960-15269-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1297202950-15208-1-git-send-email-acme@infradead.org>
-References: <1297202950-15208-1-git-send-email-acme@infradead.org>
+In-Reply-To: <1297202960-15269-1-git-send-email-acme@infradead.org>
+References: <1297202960-15269-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
