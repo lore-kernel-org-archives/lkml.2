@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549Ab1BHLk0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 06:40:26 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:57103 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752811Ab1BHLkZ convert rfc822-to-8bit (ORCPT
+	id S1753590Ab1BHLuA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 06:50:00 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:53617 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753516Ab1BHLt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 06:40:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=RAV0b5MwyUYB9VYy6xHR1CUgvecz/+tj35r6qs34SwgNbAvmoXZc2U9sJXCb7tPGWd
-         Fk2RvssUG/dNmbGRiQQIFfSkNIkPmt9STQInmp+Bji38j/UpkXLLq3382OPb4c3hTpN0
-         J4qTlBN/reBk4ustBz2rFyElt9EyeeKg9DhUw=
+	Tue, 8 Feb 2011 06:49:59 -0500
+Message-ID: <4D512E63.1040202@oracle.com>
+Date: Tue, 08 Feb 2011 17:22:03 +0530
+From: Gurudas Pai <gurudas.pai@oracle.com>
+User-Agent: Thunderbird 2.0.0.14 (X11/20080501)
 MIME-Version: 1.0
-In-Reply-To: <4D4F4B18.6030502@metafoo.de>
-References: <1296953291-10373-1-git-send-email-lars@metafoo.de>
-	<AANLkTimN1ACy=rREGhvAqTwfywHb7_Td7ZeKosQc9txC@mail.gmail.com>
-	<4D4F4B18.6030502@metafoo.de>
-Date: Tue, 8 Feb 2011 13:40:24 +0200
-Message-ID: <AANLkTimgejf7D9LWyxa=W7Hc4MTWEotMnr7h2SC9iPCQ@mail.gmail.com>
-Subject: Re: [PATCH 00/14] POWER: BQ27x00: New Properties, fixes, bq27000 support
-From: Grazvydas Ignotas <notasas@gmail.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Rodolfo Giometti <giometti@linux.it>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: Hugh Dickins <hughd@google.com>, hch@infradead.org,
+        akpm@linux-foundation.org, lkml20101129@newton.leun.net,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: prevent concurrent unmap_mapping_range() on the same
+ inode
+References: <E1PftfG-0007w1-Ek@pomaz-ex.szeredi.hu>	<20110120124043.GA4347@infradead.org>	<E1PfvGx-00086O-IA@pomaz-ex.szeredi.hu>	<alpine.LSU.2.00.1101212014330.4301@sister.anvils>	<E1PhSO8-0005yN-Dp@pomaz-ex.szeredi.hu> <AANLkTimBR=CuMpWE2juJG2jsLsTqK=tc00sRrEjhkHg=@mail.gmail.com> <E1Pmkpt-0006Cd-Q6@pomaz-ex.szeredi.hu>
+In-Reply-To: <E1Pmkpt-0006Cd-Q6@pomaz-ex.szeredi.hu>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4D512DB8.00E7:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 7, 2011 at 3:30 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
-> On 02/07/2011 01:58 AM, Grazvydas Ignotas wrote:
->> On Sun, Feb 6, 2011 at 2:47 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
->>> This series has so far been tested with the bq27000 and the bq27200 battery, but
->>> not with the bq27500 battery, so it would be nice if somebody with a board
->>> containing such a battery could test the patches to make sure that there are no
->>> regressions.
->>
->> Trying this on pandora board (bq27500 over i2c) and it seems there is
->> something wrong with the cache, I'm always getting the old values. I'm
->> reading them manually over sysfs, uptime is over 25min but values
->> still match ones on boot, even after turning off the backlight.
->>
->> Looking at the code delayed_work handling looks suspicious,
->> bq27x00_battery_get_property() flushes it and nothing ever reschedules
->> it. Other than that all new property values looks sane.
->
-> Hi
->
-> Hm, I tought that rescheduling from withing the work function would work, even when
-> flushing the work, at least it did here.
-> But the current code is broken if poll_interval is 0 anyway, cause then it wont
-> reschedule itself and is never run again.
->
-> Could you try:
->
-> if (time_is_before_jiffies(di->last_update + 6 * HZ)) {
->        cancel_delayed_work_sync(&di->work);
->        bq27x00_battery_work(&di->work);
-> }
+> On Wed, 26 Jan 2011, Hugh Dickins wrote:
+>> I had wanted to propose that for now you modify just fuse to use
+>> i_alloc_sem for serialization there, and I provide a patch to
+>> unmap_mapping_range() to give safety to whatever other cases there are
+>> (I'm now sure there are other cases, but also sure that I cannot
+>> safely identify them all and fix them correctly at source myself -
+>> even if I found time to do the patches, they'd need at least a release
+>> cycle to bed in with BUG_ONs).
+> 
+> Since fuse is the only one where the BUG has actually been triggered,
+> and since there are problems with all the proposed generic approaches,
+> I concur.  I didn't want to use i_alloc_sem here as it's more
+> confusing than a new mutex.
+> 
+> Gurudas, could you please give this patch a go in your testcase?
+I found this BUG with nfs, so trying with current patch may not help.
+https://lkml.org/lkml/2010/12/29/9
 
-That works. However I wonder about the delay, I've experimentally
-determined that bq27500 refreshes in about a second, so before this
-series I could for example run 'watch -n 1 cat current_now' and see
-current changes almost in realtime (when toggling backlight, for
-example). Maybe we could have different cache timeout for different
-chips or have quickly changing properties (like current and voltage)
-bypass the cache.
+Let me know if I have to run this
+> 
+> From: Miklos Szeredi <mszeredi@suse.cz>
+> Subject: fuse: prevent concurrent unmap on the same inode
+> 
+> Running a fuse filesystem with multiple open()'s in parallel can
+> trigger a "kernel BUG at mm/truncate.c:475"
+> 
+> The reason is, unmap_mapping_range() is not prepared for more than
+> one concurrent invocation per inode.
+> 
+> Truncate and hole punching already serialize with i_mutex.  Other
+> callers of unmap_mapping_range() do not, and it's difficult to get
+> i_mutex protection for all callers.  In particular ->d_revalidate(),
+> which calls invalidate_inode_pages2_range() in fuse, may be called
+> with or without i_mutex.
+> 
+> This patch adds a new mutex to fuse_inode to prevent running multiple
+> concurrent unmap_mapping_range() on the same mapping.
+
+Thanks,
+-Guru
+
+
+
