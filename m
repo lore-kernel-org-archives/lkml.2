@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510Ab1BHJSA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 04:18:00 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:55920 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751253Ab1BHJR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 04:17:58 -0500
-X-IronPort-AV: E=Sophos;i="4.60,441,1291611600"; 
-   d="scan'208";a="12417974"
-Subject: Re: [patch 0/4] XEN: Interrupt cleanups
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Jeremy Fitzhardinge <jeremy@goop.org>
-In-Reply-To: <20110205200108.921707839@linutronix.de>
-References: <20110205200108.921707839@linutronix.de>
+	id S1752438Ab1BHJUG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 04:20:06 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:50600 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253Ab1BHJUE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 04:20:04 -0500
+Subject: Re: RFC: /proc/<pid>/sched should contain cumulative data for all
+ threads in process
+From: Peter Zijlstra <peterz@infradead.org>
+To: Chris Friesen <chris.friesen@genband.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <4D50723B.7020400@genband.com>
+References: <4D50723B.7020400@genband.com>
 Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Mon, 7 Feb 2011 21:56:51 +0000
-Message-ID: <1297115811.2959.395.camel@zakaz.uk.xensource.com>
-MIME-Version: 1.0
+Date: Tue, 08 Feb 2011 10:21:05 +0100
+Message-ID: <1297156865.13327.57.camel@laptop>
+Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-02-05 at 20:08 +0000, Thomas Gleixner wrote: 
-> Jeremy,
+On Mon, 2011-02-07 at 16:29 -0600, Chris Friesen wrote:
+> Hi,
 > 
-> the following series converts the interrupt chips of XEN to the new
-> chip functions and the last patches replace the xen private resume
-> hackery.
+> We've got a tool that gathers lots of scheduling data for each process
+> (not task/thread) on the system.
 > 
-> The first two patches have no dependencies.
+> For /proc/<pid>/{stat,io} this is straightforward, as the per-thread
+> values are summed together for the process as a whole.
 > 
-> The last two need the modification to the generic interrupt layer. I
-> could either carry them through the genirq tree with your
-> acked-tested-whatever-by or I provide you a branch to pull that change
-> from. I need the genirq change local as it conflicts with other patches
-> in the pipeline. Either way works fine.
+> However, /proc/<pid>/sched only shows the data for the individual thread
+> with the same tid as the pid.  To get a per-process view we need to
+> manually scan all the threads and sum them--and this can get expensive
+> due to all the extra file operations, parsing, etc.
+> 
+> Was this a concious design decision, or just an oversight?  Would a
+> patch converting it to whole-process values be accepted or is it enough
+> of a standard interface that we can't break existing apps that expect
+> the current behaviour?
 
-I definitely like IRQF_FORCE_RESUME bits, clearly much better than the
-current solution.
-
-I applied the complete series applied on top of current Linus tree (with
-fixlet from my reply to 2/4 and a little reject fixup in irq.h from
-3/4). 
-
-It appears that with all 4 patches applied IPIs aren't getting
-resumed/unmasked/something else after a migration.
-
-Adding an irq_enable hook to the relevant irq_chip didn't fix it and I
-didn't get a chance to dig any deeper this evening.
-
-I'll look a bit closer tomorrow and get back to you.
-
-Ian. 
+I'd as soon remove all that stuff than extend it, its an abi liability,
+esp since you're talking about tools parsing this stuff.
 
