@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab1BHNXk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 08:23:40 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:51657 "EHLO
-	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751519Ab1BHNXj (ORCPT
+	id S1754155Ab1BHNYP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 08:24:15 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:46578 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752644Ab1BHNYO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 08:23:39 -0500
-Date: Tue, 8 Feb 2011 13:26:57 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: martin capitanio <m@capitanio.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: Re: mmap, the language go, problems with the linux kernel
-Message-ID: <20110208132657.1cf55782@lxorguk.ukuu.org.uk>
-In-Reply-To: <1297168678.2190.21.camel@marvin>
-References: <1297168678.2190.21.camel@marvin>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Feb 2011 08:24:14 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=cAgCsSarg1+LWNkED/1x4LbMxPNUyoLzg1MegAMHMqMcNI6rK9Sarm9+A8hHemQvvv
+         o67FkifhY/IshZZuqP00HR4yB7qZwdY00t/qDGDYuPxSpX7kUyfSo+WojY8NCSCv2Hha
+         5o/26NGQTuwEsn5I0gwQgciHmlKiSk4IRTClo=
+MIME-Version: 1.0
+In-Reply-To: <m3hbcfzu9u.fsf@fleche.redhat.com>
+References: <AANLkTikhfhYjvmvXtjW-Mszpq8d_3Syo=H4zqWe+1hEg__12255.0142732964$1296923928$gmane$org@mail.gmail.com>
+ <m3hbcfzu9u.fsf@fleche.redhat.com>
+From: Hui Zhu <teawater@gmail.com>
+Date: Tue, 8 Feb 2011 21:23:52 +0800
+Message-ID: <AANLkTinMx8mJYiDps3TuuaA1B4NLHi-PuCKm2=sTqyR0@mail.gmail.com>
+Subject: Re: [PATCH] Linux Kernel GDB tracepoint module 2011-02-05
+To: Tom Tromey <tromey@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Michael Snyder <msnyder@vmware.com>,
+        Marc Khouzam <marc.khouzam@ericsson.com>,
+        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
+        Steven <mqyoung@gmail.com>, colyli@gmail.com,
+        Christoph Hellwig <hch@infradead.org>,
+        "gdb@sourceware.org" <gdb@sourceware.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 08 Feb 2011 13:37:58 +0100
-martin capitanio <m@capitanio.org> wrote:
+On Tue, Feb 8, 2011 at 00:25, Tom Tromey <tromey@redhat.com> wrote:
+>>>>>> ">" == Hui Zhu <teawater@gmail.com> writes:
+>
+>>> We have trouble for this printf is GDB is still not accept the patch
+>>> that make tracepoint support printf, So if you want use it, you need
+>>> patch the patch in
+>>> http://sourceware.org/ml/gdb-patches/2011-02/msg00063.html and build
+>>> your GDB with yourself.
+>
+> Thanks, I think this example was helpful.
+>
+>>> Sometimes, GDB will output some value like:
+>>> inode has been optimized out of existence.
+>>> res has been optimized out of existence.
+>>> That is because value of inode and res is optimized. Linux Kernel is
+>>> built with -O2 so you will get this trouble sometimes. If you do not
+>>> care about the speed when you debug the Kernel, you can use the patch
+>>> for Linux Kernel in
+>
+> I am curious to know what version of GCC you are using.  IME, the VTA
+> patches really helped with this problem a lot -- though not completely.
+> If you are not using a VTA-enabled GCC, you should.  And if you are, I
+> think bug reports about values that are still optimized out would be
+> useful.
 
-> There popped up a serious problem by implementing a fast memory
-> management for the language go. Maybe some experienced kernel hacker
-> could join the discussion and help to find the best linux solution for
-> the "mmap fiasco" problem.
-> 
-> https://groups.google.com/forum/#!msg/golang-dev/EpUlHQXWykg/LN2o9fV6R3wJ
-> 
-> Thanks (in behave of all linux go users:),
+My gcc is 4.4.5.  Does it have VTA?
+Use the patch is easier than update gcc sometimes, right?  :)
 
-I don't actually see a problem.
+BTW does VTA can handle the issue that after -O2 a lot of code
+execution order is worong?
+It affect me when I debug the Linux Kernel in qemu.
 
-Linux implements virtual address space limits, and enforces them. The go
-language stuff wants to allocate huge amounts of virtual space so you
-need to tell the OS you want to allow it to do crazy stuff, which you can
-do so. But virtual address space is not free - it has to be tracked and
-if the application suddenely tries to fill all of it what will happen ?
-
-You'll hit problems if the kernel is running with vm overcommit disabled
-(as well configured servers do),
-
-There are of course ways and means - you can provide your own mmap to
-override the libc one for example and manage the address space yourself -
-within limits by allocating addresses and doing the syscall giving an
-address request.
-
-You'll be ok I suspect on Linux on x86 but there are platforms with very
-complicated aliasing rules where the OS tries very hard to map certain
-things at certain addresses to avoid cache aliasing work and big slow
-downs. There are good reasons why mmap works the way it does.
-
-Alan
-
-
+Thanks,
+Hui
