@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843Ab1BHPRj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 10:17:39 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:62902 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645Ab1BHPRh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 10:17:37 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ABgXFwbXTNHx8p4GxL8BXBr82MLjikXvRuk09xt8BiyiXSOpc7WYN/tBJH/R9h68J7
-         9Ptv8Yw3AViX5tj+3XjVRxXuw9VQby2wGEnPoM+qSWlf7BKlDn+D+0KreNE0Ft0HHc0+
-         4wbRRhP9pYCEXmZ1k/McYr01/Ayuvsko8ucyg=
+	id S1754857Ab1BHPRq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 10:17:46 -0500
+Received: from hera.kernel.org ([140.211.167.34]:34211 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753848Ab1BHPRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 10:17:44 -0500
+Date: Tue, 8 Feb 2011 15:17:17 GMT
+From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@redhat.com, acme@ghostprotocols.net,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
+        rostedt@goodmis.org, srikar@linux.vnet.ibm.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, acme@ghostprotocols.net,
+        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
+        rostedt@goodmis.org, srikar@linux.vnet.ibm.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <20110204125159.9507.20895.stgit@ltc236.sdl.hitachi.co.jp>
+References: <20110204125159.9507.20895.stgit@ltc236.sdl.hitachi.co.jp>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tracing/kprobes: Support longer (>128 bytes) command
+Message-ID: <tip-e3745369986ddcdaa19f70e2d24e658876b97e84@git.kernel.org>
+Git-Commit-ID: e3745369986ddcdaa19f70e2d24e658876b97e84
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20110208145301.GA12930@srcf.ucam.org>
-References: <AANLkTim5kG-pZRpj+6ckOvuk5ZSJ_O7zbwBnC4JNQPtS@mail.gmail.com>
-	<20110208145301.GA12930@srcf.ucam.org>
-Date: Tue, 8 Feb 2011 15:17:35 +0000
-Message-ID: <AANLkTin5_jqEc3hxh02n7PU5C0BGXah=n_Bj9cN1Yar1@mail.gmail.com>
-Subject: Re: What's part of the ABI (breaking eeepc-wmi)
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: platform-driver-x86@vger.kernel.org,
-        linux acpi <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 08 Feb 2011 15:17:18 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 8, 2011 at 2:53 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> On Tue, Feb 08, 2011 at 08:51:27AM +0000, Corentin Chary wrote:
->
->> A first solution is to rename eeepc-wmi asus-wmi, and create an alias
->> to make eeepc-wmi work. Then this driver would handle asus-wmi and
->> eeepc-wmi platform drivers (it could also be splitted in 3
->> files/modules, common/notebook/eeepc).
->> But then, is it important to keep these strings ?
->> - hotplug string ("eeepc-wifi")
->> - rfkill names ("eeepc-xxxxx")
->> - input strings (.phys and .name)
->
-> I think that, realistically, these changes should be fine but may break
-> some user code. We don't have a good way of enforcing proper sysfs
-> usage.
+Commit-ID:  e3745369986ddcdaa19f70e2d24e658876b97e84
+Gitweb:     http://git.kernel.org/tip/e3745369986ddcdaa19f70e2d24e658876b97e84
+Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+AuthorDate: Fri, 4 Feb 2011 21:51:59 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 7 Feb 2011 09:15:59 -0200
 
-Unfortunatly, it would break udev (well.. only the touchpad key, which
-probably never worked, does it really matters ?) ...
+tracing/kprobes: Support longer (>128 bytes) command
 
-http://git.kernel.org/?p=linux/hotplug/udev.git;a=blobdiff;f=extras/keymap/95-keymap.rules;h=9059a8c41e4505f0d8088a90fc0c3a64fe8d5f2d;hp=053838d803d7142dd80fbca361ef65565c6189f2;hb=0d8b6be5f5238360d2d8e220d6da280f842c5358;hpb=e99cc72398d1d5057cc6d1e4c065799f8daaf29e
+Expand command line buffer of kprobe-tracer to 4096 bytes.
 
-But your probably right for rfkill and hotplug slot name.
+Reported-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: 2nddept-manager@sdl.hitachi.co.jp
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+LKML-Reference: <20110204125159.9507.20895.stgit@ltc236.sdl.hitachi.co.jp>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ kernel/trace/trace_kprobe.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
->> - led names ("eeepc::xxxxxx")
->
-> But I don't think there's any other way of identifying LEDs, so this
-> probably has to stay.
-
-Yep .. but as this led probably never worked before the last patchset,
-this is probably not the most important string to keep. And users
-tends to use only the second part of the led name (*::touchpad,
-*::kbd_backlight, etc...).
-
->> Any thoughts on that ?
->
-> Seems less ugly than the alternatives!
-
-Ok, I'll try to do something like that.
-
-asus-wmi.ko - generic stuff
-asus-nb-wmi.ko - used only on notebooks (bweark, asus-nb-wmi is an
-horrible name :/)
-eeepc-wmi.ko  - used only on eeepcs
-
-And you'll be able to register only one asus_wmi_driver at a time,
-since asus-wmi will have some static stuff in it (hotplug_slot_ops,
-device_attribute, attribute, attribute_group, dev_pm_ops).
-
--- 
-Corentin Chary
-http://xf.iksaif.net
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 2088893..c6ed886 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -1129,7 +1129,7 @@ static int command_trace_probe(const char *buf)
+ 	return ret;
+ }
+ 
+-#define WRITE_BUFSIZE 128
++#define WRITE_BUFSIZE 4096
+ 
+ static ssize_t probes_write(struct file *file, const char __user *buffer,
+ 			    size_t count, loff_t *ppos)
