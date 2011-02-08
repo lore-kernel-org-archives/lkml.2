@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab1BHNI0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 08:08:26 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60941 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752811Ab1BHNIZ (ORCPT
+	id S1754015Ab1BHNJv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 08:09:51 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:40996 "EHLO
+	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752954Ab1BHNJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 08:08:25 -0500
-Date: Tue, 8 Feb 2011 13:08:23 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>
-Subject: Re: Adding bluetooth PCM interface support to ASoC (Was: Re:
- [PATCH 6/7] ASoC: Samsung: neo1973_gta02: Fix bluetooth DAI registration)
-Message-ID: <20110208130823.GG29850@opensource.wolfsonmicro.com>
-References: <1297033463-14577-1-git-send-email-lars@metafoo.de>
- <1297033463-14577-6-git-send-email-lars@metafoo.de>
- <20110207115906.GD10564@opensource.wolfsonmicro.com>
- <4D5023A4.3020209@metafoo.de>
- <20110207170213.GP10564@opensource.wolfsonmicro.com>
- <4D502DBF.3050205@metafoo.de>
- <20110207174950.GQ10564@opensource.wolfsonmicro.com>
- <4D50355A.60500@metafoo.de>
- <20110207181702.GR10564@opensource.wolfsonmicro.com>
- <4D50785A.7050801@metafoo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D50785A.7050801@metafoo.de>
-X-Cookie: Be cautious in your daily affairs.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 8 Feb 2011 08:09:50 -0500
+Date: Tue, 8 Feb 2011 13:13:21 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 16/20] ata_piix: add EFAR SLC90E66 support
+Message-ID: <20110208131321.6ceb9a43@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110208122534.19110.89437.sendpatchset@linux-mhg7.site>
+References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site>
+	<20110208122534.19110.89437.sendpatchset@linux-mhg7.site>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 07, 2011 at 11:55:22PM +0100, Lars-Peter Clausen wrote:
+On Tue, 08 Feb 2011 13:25:34 +0100
+Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
 
-> I did some research on the topic and it seems that this is a pretty common
-> setup in embedded devices.
+> >From 11bed7feff5de752c9440ca58b232846b20e2ed6 Mon Sep 17 00:00:00 2001
+> From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+> Date: Tue, 8 Feb 2011 12:39:28 +0100
+> Subject: [PATCH 16/20] ata_piix: add EFAR SLC90E66 support
+> 
+> Add EFAR SLC90E66 support to ata_piix and remove no longer
+> needed pata_efar driver.
 
-Yes, this is a totally vanilla setup except that for modern hardware the
-baseband is connected digitally also.
+Jeff specifically asked that these were not all folded into ata_piix
+originally. This also makes memory usage higher and the system less
+efficient as these are all motherboard chipsets (except an obscure dual
+PIIX4 setup) so you are loading more not less code.
 
-> But the bluetooth audio support seems to be entirely written in userspace. The
-> in-kernel bluetooth drivers in general seem only to provide a common interface
-> to the underlying hardware and all of the higher level functionality seems to
-> be implemented in userspace.
-> So right now I have no idea where to start if one wanted to add a ASoC driver
-> which did the bt-dai configuration.
+It also leads to hideous uglies in the main code paths like this :
 
-The obvious starting point would seem to be to provide a driver which
-allows userspace to tell the kernel about configuration changes - that's
-what we're doing at the minute for the trivial case where the hardware
-doesn't change configuration.  We could then look at pushing more of the
-code into the kernel if that made sense.
++	unsigned int has_sitre	= (dev->vendor != 0x8086 ||
++				   dev->device != 0x1230);
+
+which also has exactly zero comments.
+
+and it gets better as we go on...
+
++	unsigned int is_radisys	= (dev->vendor ==
+  PCI_VENDOR_ID_RADISYS &&
++				   dev->device == 0x8201);
++	unsigned int has_sitre	= (dev->vendor !=
+  PCI_VENDOR_ID_INTEL ||
++				   dev->device != 0x1230) && !is_radisys;
+
+
+Folding these together just makes no sense at all. The PIO/DMA folds
+internally do look sensible, but really should be tested before anything
+goes in. The current code works - its slower than it should be because of
+core libata bugs, but it works.
+
+Alan
