@@ -1,182 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417Ab1BHXRJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 18:17:09 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:54497 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753790Ab1BHXRF (ORCPT
+	id S1755906Ab1BHXVT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 18:21:19 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:60022 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753802Ab1BHXVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 18:17:05 -0500
-Message-ID: <4D51CF3D.9000103@metafoo.de>
-Date: Wed, 09 Feb 2011 00:18:21 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
-MIME-Version: 1.0
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: linux-kernel@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Eric Miao <eric.y.miao@gmail.com>, Dmitry Torokhov <dtor@mail.ru>,
-        "Arnd Bergmann (maintainer:GENERIC INCLUDE/A...)" <arnd@arndb.de>,
-        "Andrew Morton (commit_signer:4/8=50%)" <akpm@linux-foundation.org>,
-        "Mark Brown (commit_signer:1/8=12%)" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "Anton Vorontsov (commit_signer:1/8=12%)" <cbouatmailru@gmail.com>,
-        "Greg Kroah-Hartman (commit_signer:1/8=12%)" <greg@kroah.com>,
-        "open list:GENERIC INCLUDE/A..." <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] gpio: make newer functionality available outside of GPIOLIB
-References: <1297205075-11396-1-git-send-email-w.sang@pengutronix.de>
-In-Reply-To: <1297205075-11396-1-git-send-email-w.sang@pengutronix.de>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Feb 2011 18:21:18 -0500
+From: Thieu Le <thieule@chromium.org>
+To: tyhicks@linux.vnet.ibm.com, kirkland@canonical.com
+Cc: ecryptfs-devel@lists.launchpad.net, linux-kernel@vger.kernel.org,
+        Thieu Le <thieule@chromium.org>
+Subject: [PATCH] ecryptfs: modify write path to encrypt page in writepage
+Date: Tue,  8 Feb 2011 15:20:12 -0800
+Message-Id: <1297207213-31279-1-git-send-email-thieule@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/2011 11:44 PM, Wolfram Sang wrote:
-> The gpio subsystems offers an API which requires a dependency on GENERIC_GPIO
-> when used by drivers. There is also implementation framework of this API, so
-> archs can select GPIOLIB if they intend to use it. But they don't have to, they
-> can still provide GENERIC_GPIO without GPIOLIB using custom routines.
-> 
-> Commit 3e45f1d1155894e6f4291f5536b224874d52d8e2 (gpio: introduce
-> gpio_request_one() and friends) added some functions, defines and a struct to
-> the API, but made them available only for GPIOLIB. So, drivers using these new
-> functions will fail in the case of GENERIC_GPIO && !GPIOLIB.
-Actually the patch fixes only the case where !GENERIC_GPIO.
-In the GENERIC_GPIO && !GPIOLIB case gpio_request_one and friends are likely to
-be undefined unless the arch gpio code actually implements them.
+Change the write path to encrypt the data only when the page is written to
+disk in ecryptfs_writepage. Previously, ecryptfs encrypts the page in
+ecryptfs_write_end which means that if there are multiple write requests to
+the same page, ecryptfs ends up re-encrypting that page over and over again.
+This patch minimizes the number of encryptions needed.
 
-Given that these functions are pretty generic and build on top of the generic
-gpio interface I think they should be available if GENERIC_GPIO is selected and
-not only just through GPIOLIB. Otherwise all the archs not using gpiolib but
-providing the gpio api would have to be patched as well.
+Signed-off-by: Thieu Le <thieule@chromium.org>
+---
+ fs/ecryptfs/ecryptfs_kernel.h |    1 -
+ fs/ecryptfs/file.c            |    9 ++++++++-
+ fs/ecryptfs/main.c            |    2 --
+ fs/ecryptfs/mmap.c            |   20 ++++++++------------
+ fs/ecryptfs/read_write.c      |   12 ++----------
+ fs/ecryptfs/super.c           |    1 -
+ 6 files changed, 18 insertions(+), 27 deletions(-)
 
-- Lars
-
-> the include-files.
-> 
-> Fixes issues like (in linux-next currently):
-> 
-> drivers/input/touchscreen/ads7846.c:959: error: 'GPIOF_DIR_IN' undeclared (first use in this function)
-> 
-> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-> Cc: David Brownell <dbrownell@users.sourceforge.net>
-> Cc: Eric Miao <eric.y.miao@gmail.com>
-> Cc: Dmitry Torokhov <dtor@mail.ru>
-> ---
-> 
-> Based on 2.6.38-rc4. Compile tested on x86.
-> 
->  include/asm-generic/gpio.h   |   31 +++++--------------------------
->  include/linux/gpio.h         |    2 +-
->  include/linux/gpio_generic.h |   26 ++++++++++++++++++++++++++
->  3 files changed, 32 insertions(+), 27 deletions(-)
->  create mode 100644 include/linux/gpio_generic.h
-> 
-> diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-> index ff5c660..ebc73bc 100644
-> --- a/include/asm-generic/gpio.h
-> +++ b/include/asm-generic/gpio.h
-> @@ -4,6 +4,7 @@
->  #include <linux/kernel.h>
->  #include <linux/types.h>
->  #include <linux/errno.h>
-> +#include <linux/gpio_generic.h>
->  
->  #ifdef CONFIG_GPIOLIB
->  
-> @@ -158,6 +159,10 @@ extern int gpio_set_debounce(unsigned gpio, unsigned debounce);
->  extern int gpio_get_value_cansleep(unsigned gpio);
->  extern void gpio_set_value_cansleep(unsigned gpio, int value);
->  
-> +extern int gpio_request_one(unsigned gpio, unsigned long flags, const char *label);
-> +extern int gpio_request_array(struct gpio *array, size_t num);
-> +extern void gpio_free_array(struct gpio *array, size_t num);
-> +
->  
->  /* A platform's <asm/gpio.h> code may want to inline the I/O calls when
->   * the GPIO is constant and refers to some always-present controller,
-> @@ -170,32 +175,6 @@ extern int __gpio_cansleep(unsigned gpio);
->  
->  extern int __gpio_to_irq(unsigned gpio);
->  
-> -#define GPIOF_DIR_OUT	(0 << 0)
-> -#define GPIOF_DIR_IN	(1 << 0)
-> -
-> -#define GPIOF_INIT_LOW	(0 << 1)
-> -#define GPIOF_INIT_HIGH	(1 << 1)
-> -
-> -#define GPIOF_IN		(GPIOF_DIR_IN)
-> -#define GPIOF_OUT_INIT_LOW	(GPIOF_DIR_OUT | GPIOF_INIT_LOW)
-> -#define GPIOF_OUT_INIT_HIGH	(GPIOF_DIR_OUT | GPIOF_INIT_HIGH)
-> -
-> -/**
-> - * struct gpio - a structure describing a GPIO with configuration
-> - * @gpio:	the GPIO number
-> - * @flags:	GPIO configuration as specified by GPIOF_*
-> - * @label:	a literal description string of this GPIO
-> - */
-> -struct gpio {
-> -	unsigned	gpio;
-> -	unsigned long	flags;
-> -	const char	*label;
-> -};
-> -
-> -extern int gpio_request_one(unsigned gpio, unsigned long flags, const char *label);
-> -extern int gpio_request_array(struct gpio *array, size_t num);
-> -extern void gpio_free_array(struct gpio *array, size_t num);
-This conflicts with the patch making "array" const.
-
-> -
->  #ifdef CONFIG_GPIO_SYSFS
->  
->  /*
-> diff --git a/include/linux/gpio.h b/include/linux/gpio.h
-> index 32720ba..584ceb6 100644
-> --- a/include/linux/gpio.h
-> +++ b/include/linux/gpio.h
-> @@ -11,9 +11,9 @@
->  #include <linux/kernel.h>
->  #include <linux/types.h>
->  #include <linux/errno.h>
-> +#include <linux/gpio_generic.h>
->  
->  struct device;
-> -struct gpio;
->  struct gpio_chip;
->  
->  /*
-> diff --git a/include/linux/gpio_generic.h b/include/linux/gpio_generic.h
-> new file mode 100644
-> index 0000000..d662697
-> --- /dev/null
-> +++ b/include/linux/gpio_generic.h
-> @@ -0,0 +1,26 @@
-> +#ifndef __LINUX_GPIO_GENERIC_H
-> +#define __LINUX_GPIO_GENERIC_H
-> +
-> +/**
-> + * struct gpio - a structure describing a GPIO with configuration
-> + * @gpio:	the GPIO number
-> + * @flags:	GPIO configuration as specified by GPIOF_*
-> + * @label:	a literal description string of this GPIO
-> + */
-> +struct gpio {
-> +	unsigned	gpio;
-> +	unsigned long	flags;
-> +	const char	*label;
-> +};
-> +
-> +#define GPIOF_DIR_OUT	(0 << 0)
-> +#define GPIOF_DIR_IN	(1 << 0)
-> +
-> +#define GPIOF_INIT_LOW	(0 << 1)
-> +#define GPIOF_INIT_HIGH	(1 << 1)
-> +
-> +#define GPIOF_IN		(GPIOF_DIR_IN)
-> +#define GPIOF_OUT_INIT_LOW	(GPIOF_DIR_OUT | GPIOF_INIT_LOW)
-> +#define GPIOF_OUT_INIT_HIGH	(GPIOF_DIR_OUT | GPIOF_INIT_HIGH)
-> +
-> +#endif /* __LINUX_GPIO_GENERIC_H */
+diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
+index dbc84ed..13517ac 100644
+--- a/fs/ecryptfs/ecryptfs_kernel.h
++++ b/fs/ecryptfs/ecryptfs_kernel.h
+@@ -297,7 +297,6 @@ struct ecryptfs_inode_info {
+ 	struct inode vfs_inode;
+ 	struct inode *wii_inode;
+ 	struct file *lower_file;
+-	struct mutex lower_file_mutex;
+ 	struct ecryptfs_crypt_stat crypt_stat;
+ };
+ 
+diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
+index 81e10e6..9f7ce63 100644
+--- a/fs/ecryptfs/file.c
++++ b/fs/ecryptfs/file.c
+@@ -273,7 +273,14 @@ static int ecryptfs_release(struct inode *inode, struct file *file)
+ static int
+ ecryptfs_fsync(struct file *file, int datasync)
+ {
+-	return vfs_fsync(ecryptfs_file_to_lower(file), datasync);
++	int rc = 0;
++
++	rc = generic_file_fsync(file, datasync);
++	if (rc)
++		goto out;
++	rc = vfs_fsync(ecryptfs_file_to_lower(file), datasync);
++out:
++	return rc;
+ }
+ 
+ static int ecryptfs_fasync(int fd, struct file *file, int flag)
+diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
+index 758323a..63e412c 100644
+--- a/fs/ecryptfs/main.c
++++ b/fs/ecryptfs/main.c
+@@ -122,7 +122,6 @@ int ecryptfs_init_persistent_file(struct dentry *ecryptfs_dentry)
+ 		ecryptfs_inode_to_private(ecryptfs_dentry->d_inode);
+ 	int rc = 0;
+ 
+-	mutex_lock(&inode_info->lower_file_mutex);
+ 	if (!inode_info->lower_file) {
+ 		struct dentry *lower_dentry;
+ 		struct vfsmount *lower_mnt =
+@@ -138,7 +137,6 @@ int ecryptfs_init_persistent_file(struct dentry *ecryptfs_dentry)
+ 			inode_info->lower_file = NULL;
+ 		}
+ 	}
+-	mutex_unlock(&inode_info->lower_file_mutex);
+ 	return rc;
+ }
+ 
+diff --git a/fs/ecryptfs/mmap.c b/fs/ecryptfs/mmap.c
+index cc64fca..c5676e6 100644
+--- a/fs/ecryptfs/mmap.c
++++ b/fs/ecryptfs/mmap.c
+@@ -512,24 +512,20 @@ static int ecryptfs_write_end(struct file *file,
+ 			"zeros in page with index = [0x%.16lx]\n", index);
+ 		goto out;
+ 	}
+-	rc = ecryptfs_encrypt_page(page);
+-	if (rc) {
+-		ecryptfs_printk(KERN_WARNING, "Error encrypting page (upper "
+-				"index [0x%.16lx])\n", index);
+-		goto out;
+-	}
++	set_page_dirty(page);
+ 	if (pos + copied > i_size_read(ecryptfs_inode)) {
+ 		i_size_write(ecryptfs_inode, pos + copied);
+ 		ecryptfs_printk(KERN_DEBUG, "Expanded file size to "
+ 			"[0x%.16llx]\n",
+ 			(unsigned long long)i_size_read(ecryptfs_inode));
++		rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
++		if (rc) {
++			printk(KERN_ERR "Error writing inode size to metadata; "
++			       "rc = [%d]\n", rc);
++			goto out;
++		}
+ 	}
+-	rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
+-	if (rc)
+-		printk(KERN_ERR "Error writing inode size to metadata; "
+-		       "rc = [%d]\n", rc);
+-	else
+-		rc = copied;
++	rc = copied;
+ out:
+ 	unlock_page(page);
+ 	page_cache_release(page);
+diff --git a/fs/ecryptfs/read_write.c b/fs/ecryptfs/read_write.c
+index db184ef..85d4309 100644
+--- a/fs/ecryptfs/read_write.c
++++ b/fs/ecryptfs/read_write.c
+@@ -44,15 +44,11 @@ int ecryptfs_write_lower(struct inode *ecryptfs_inode, char *data,
+ 	ssize_t rc;
+ 
+ 	inode_info = ecryptfs_inode_to_private(ecryptfs_inode);
+-	mutex_lock(&inode_info->lower_file_mutex);
+ 	BUG_ON(!inode_info->lower_file);
+-	inode_info->lower_file->f_pos = offset;
+ 	fs_save = get_fs();
+ 	set_fs(get_ds());
+-	rc = vfs_write(inode_info->lower_file, data, size,
+-		       &inode_info->lower_file->f_pos);
++	rc = vfs_write(inode_info->lower_file, data, size, &offset);
+ 	set_fs(fs_save);
+-	mutex_unlock(&inode_info->lower_file_mutex);
+ 	mark_inode_dirty_sync(ecryptfs_inode);
+ 	return rc;
+ }
+@@ -234,15 +230,11 @@ int ecryptfs_read_lower(char *data, loff_t offset, size_t size,
+ 	mm_segment_t fs_save;
+ 	ssize_t rc;
+ 
+-	mutex_lock(&inode_info->lower_file_mutex);
+ 	BUG_ON(!inode_info->lower_file);
+-	inode_info->lower_file->f_pos = offset;
+ 	fs_save = get_fs();
+ 	set_fs(get_ds());
+-	rc = vfs_read(inode_info->lower_file, data, size,
+-		      &inode_info->lower_file->f_pos);
++	rc = vfs_read(inode_info->lower_file, data, size, &offset);
+ 	set_fs(fs_save);
+-	mutex_unlock(&inode_info->lower_file_mutex);
+ 	return rc;
+ }
+ 
+diff --git a/fs/ecryptfs/super.c b/fs/ecryptfs/super.c
+index 3042fe1..15c969e 100644
+--- a/fs/ecryptfs/super.c
++++ b/fs/ecryptfs/super.c
+@@ -55,7 +55,6 @@ static struct inode *ecryptfs_alloc_inode(struct super_block *sb)
+ 	if (unlikely(!inode_info))
+ 		goto out;
+ 	ecryptfs_init_crypt_stat(&inode_info->crypt_stat);
+-	mutex_init(&inode_info->lower_file_mutex);
+ 	inode_info->lower_file = NULL;
+ 	inode = &inode_info->vfs_inode;
+ out:
+-- 
+1.7.3.1
 
