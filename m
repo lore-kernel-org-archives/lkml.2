@@ -1,152 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851Ab1BHXDi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 18:03:38 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48880
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752568Ab1BHXDg (ORCPT
+	id S1755904Ab1BHXJf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 18:09:35 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41915 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754091Ab1BHXJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 18:03:36 -0500
-Date: Tue, 08 Feb 2011 15:04:11 -0800 (PST)
-Message-Id: <20110208.150411.102552333.davem@davemloft.net>
-To: Knut_Petersen@t-online.de
-Cc: paulus@samba.org, linux-kernel@vger.kernel.org, mostrows@earthlink.net,
-        linux-ppp@vger.kernel.org, xiaosuo@gmail.com, eric.dumazet@gmail.com,
-        ebiederm@xmission.com
-Subject: Re: [BUG] 2.6.38-rc2: Circular Locking Dependency
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110208.000721.193716330.davem@davemloft.net>
-References: <20110207104315.GB17044@brick.ozlabs.ibm.com>
-	<4D50F5FA.7050202@t-online.de>
-	<20110208.000721.193716330.davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 8 Feb 2011 18:09:34 -0500
+Date: Tue, 8 Feb 2011 15:08:35 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Kirill A. Shutsemov" <kirill@shutemov.name>
+Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>
+Subject: Re: [PATCH, v4 2/2] cgroups: introduce timer slack subsystem
+Message-Id: <20110208150835.42e184be.akpm@linux-foundation.org>
+In-Reply-To: <1296743654-2984-3-git-send-email-kirill@shutemov.name>
+References: <1296743654-2984-1-git-send-email-kirill@shutemov.name>
+	<1296743654-2984-3-git-send-email-kirill@shutemov.name>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller <davem@davemloft.net>
-Date: Tue, 08 Feb 2011 00:07:21 -0800 (PST)
+On Thu,  3 Feb 2011 16:34:14 +0200
+"Kirill A. Shutsemov" <kirill@shutemov.name> wrote:
 
-[ Eric B., CC:'ing you so that you are aware of the init network
-  namespace leak that's fixed as a side effect of this change. ]
-
-> From: Knut Petersen <Knut_Petersen@t-online.de>
-> Date: Tue, 08 Feb 2011 08:51:22 +0100
+> From: Kirill A. Shutemov <kirill@shutemov.name>
 > 
->> I bisected the problem with the following result:
->> 
->> aa9421041128abb4d269ee1dc502ff65fb3b7d69 is the first bad commit
->> commit aa9421041128abb4d269ee1dc502ff65fb3b7d69
->> Author: Changli Gao <xiaosuo@gmail.com>
->> Date:   Sat Dec 4 02:31:41 2010 +0000
->> 
->>     net: init ingress queue
->> 
->>     The dev field of ingress queue is forgot to initialized, then NULL
->>     pointer dereference happens in qdisc_alloc().
->> 
->>     Move inits of tx queues to netif_alloc_netdev_queues().
->> 
->>     Signed-off-by: Changli Gao <xiaosuo@gmail.com>
->>     Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
->>     Signed-off-by: David S. Miller <davem@davemloft.net>
->> 
->> :040000 040000 dcbb6ab41c4308cba1bc6823d200dcf92aa402d8
->> b5e190ec681d26ffe62d1d0214c4ef77b8034189 M      net
+> Provides a way of tasks grouping by timer slack value. Introduces per
+> cgroup max and min timer slack value. When a task attaches to a cgroup,
+> its timer slack value adjusts (if needed) to fit min-max range.
 > 
-> Indeed, this initialization is now too early for the sake
-> of getting the lockdep bits right.  The problem is that at
-> the point in which we call netif_alloc_netdev_queue() we
-> haven't initialized dev->type yet, it is therefore always
-> zero when we setup the lockdep class for ->_xmit_lock.
+> It also provides a way to set timer slack value for all tasks in the
+> cgroup at once.
+> 
+> This functionality is useful in mobile devices where certain background
+> apps are attached to a cgroup and minimum wakeups are desired.
 
-Ok, this should fix it, please test it out for me.
+This description is quite scanty.  It doesn't explain what the benefit
+is, when one might want to use it, how to use it, etc.  A nice
+description under Documentation/cgroups/ would be appropriate.
 
-Thanks!
+I read this and come away with no sense of how useful or desirable this
+code is.
 
---------------------
-net: Fix lockdep regression caused by initializing netdev queues too early.
+>
+> ...
+>
+> --- a/include/linux/init_task.h
+> +++ b/include/linux/init_task.h
+> @@ -124,6 +124,8 @@ extern struct cred init_cred;
+>  # define INIT_PERF_EVENTS(tsk)
+>  #endif
+>  
+> +#define TIMER_SLACK_NS_DEFAULT 50000
 
-In commit aa9421041128abb4d269ee1dc502ff65fb3b7d69 ("net: init ingress
-queue") we moved the allocation and lock initialization of the queues
-into alloc_netdev_mq() since register_netdevice() is way too late.
+Seems to be an unrelated cleanup.  And given that this #define is only
+used in a single place, its cleanliness is questionable.
 
-The problem is that dev->type is not setup until the setup()
-callback is invoked by alloc_netdev_mq(), and the dev->type is
-what determines the lockdep class to use for the locks in the
-queues.
+>  /*
+>   *  INIT_TASK is used to set up the first task table, touch at
+>   * your own risk!. Base=0, limit=0x1fffff (=2MB)
+> @@ -177,7 +179,7 @@ extern struct cred init_cred;
+>  	.cpu_timers	= INIT_CPU_TIMERS(tsk.cpu_timers),		\
+>  	.fs_excl	= ATOMIC_INIT(0),				\
+>  	.pi_lock	= __RAW_SPIN_LOCK_UNLOCKED(tsk.pi_lock),	\
+> -	.timer_slack_ns = 50000, /* 50 usec default slack */		\
+> +	.timer_slack_ns = TIMER_SLACK_NS_DEFAULT,			\
+>  	.pids = {							\
+>  		[PIDTYPE_PID]  = INIT_PID_LINK(PIDTYPE_PID),		\
+>  		[PIDTYPE_PGID] = INIT_PID_LINK(PIDTYPE_PGID),		\
+>
+> ...
+>
+> +extern int (*timer_slack_check)(struct task_struct *task,
+> +		unsigned long slack_ns);
 
-Fix this by doing the queue allocation after the setup() callback
-runs.
+Nope.  Please put this in a header file so we can be sure that callers
+see the same prototype as does the definition.
 
-This is safe because the setup() callback is not allowed to make any
-state changes that need to be undone on error (memory allocations,
-etc.).  It may, however, make state changes that are undone by
-free_netdev() (such as netif_napi_add(), which is done by the
-ipoib driver's setup routine).
+>
+> ...
+>
+> +/*
+> + * Adjust ->timer_slack_ns and ->default_max_slack_ns of the task to fit
+> + * limits of the cgroup.
+> + */
+> +static void tslack_adjust_task(struct timer_slack_cgroup *tslack_cgroup,
+> +		struct task_struct *tsk)
+> +{
+> +	if (tslack_cgroup->min_slack_ns > tsk->timer_slack_ns)
+> +		tsk->timer_slack_ns = tslack_cgroup->min_slack_ns;
+> +	else if (tslack_cgroup->max_slack_ns < tsk->timer_slack_ns)
+> +		tsk->timer_slack_ns = tslack_cgroup->max_slack_ns;
+> +
+> +	if (tslack_cgroup->min_slack_ns > tsk->default_timer_slack_ns)
+> +		tsk->default_timer_slack_ns = tslack_cgroup->min_slack_ns;
+> +	else if (tslack_cgroup->max_slack_ns < tsk->default_timer_slack_ns)
+> +		tsk->default_timer_slack_ns = tslack_cgroup->max_slack_ns;
+> +}
+> +
+> +static void tslack_cgroup_attach(struct cgroup_subsys *subsys,
+> +		struct cgroup *cgroup, struct cgroup *prev,
+> +		struct task_struct *tsk, bool threadgroup)
+> +{
+> +	tslack_adjust_task(cgroup_to_tslack_cgroup(cgroup), tsk);
+> +}
+> +
+> +static int tslack_write_set_slack_ns(struct cgroup *cgroup, struct cftype *cft,
+> +		u64 val)
+> +{
+> +	struct timer_slack_cgroup *tslack_cgroup;
+> +	struct cgroup_iter it;
+> +	struct task_struct *task;
+> +
+> +	tslack_cgroup = cgroup_to_tslack_cgroup(cgroup);
+> +	if (!is_timer_slack_allowed(cgroup_to_tslack_cgroup(cgroup), val))
+> +		return -EPERM;
+> +
+> +	/* Change timer slack value for all tasks in the cgroup */
+> +	cgroup_iter_start(cgroup, &it);
+> +	while ((task = cgroup_iter_next(cgroup, &it)))
+> +		task->timer_slack_ns = val;
+> +	cgroup_iter_end(cgroup, &it);
+> +
+> +	return 0;
+> +}
+> +
+> +static u64 tslack_read_range(struct cgroup *cgroup, struct cftype *cft)
+> +{
+> +	struct timer_slack_cgroup *tslack_cgroup;
+> +
+> +	tslack_cgroup = cgroup_to_tslack_cgroup(cgroup);
+> +	switch (cft->private) {
+> +	case TIMER_SLACK_MIN:
+> +		return tslack_cgroup->min_slack_ns;
+> +	case TIMER_SLACK_MAX:
+> +		return tslack_cgroup->max_slack_ns;
+> +	default:
+> +		BUG();
+> +	};
 
-The previous code also leaked a reference to the &init_net namespace
-object on RX/TX queue allocation failures.
+Extraneous ";".
 
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- net/core/dev.c |   27 ++++++++++++++++-----------
- 1 files changed, 16 insertions(+), 11 deletions(-)
+> +}
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index b6d0bf8..8e726cb 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -5660,30 +5660,35 @@ struct net_device *alloc_netdev_mqs(int sizeof_priv, const char *name,
- 
- 	dev_net_set(dev, &init_net);
- 
-+	dev->gso_max_size = GSO_MAX_SIZE;
-+
-+	INIT_LIST_HEAD(&dev->ethtool_ntuple_list.list);
-+	dev->ethtool_ntuple_list.count = 0;
-+	INIT_LIST_HEAD(&dev->napi_list);
-+	INIT_LIST_HEAD(&dev->unreg_list);
-+	INIT_LIST_HEAD(&dev->link_watch_list);
-+	dev->priv_flags = IFF_XMIT_DST_RELEASE;
-+	setup(dev);
-+
- 	dev->num_tx_queues = txqs;
- 	dev->real_num_tx_queues = txqs;
- 	if (netif_alloc_netdev_queues(dev))
--		goto free_pcpu;
-+		goto free_all;
- 
- #ifdef CONFIG_RPS
- 	dev->num_rx_queues = rxqs;
- 	dev->real_num_rx_queues = rxqs;
- 	if (netif_alloc_rx_queues(dev))
--		goto free_pcpu;
-+		goto free_all;
- #endif
- 
--	dev->gso_max_size = GSO_MAX_SIZE;
--
--	INIT_LIST_HEAD(&dev->ethtool_ntuple_list.list);
--	dev->ethtool_ntuple_list.count = 0;
--	INIT_LIST_HEAD(&dev->napi_list);
--	INIT_LIST_HEAD(&dev->unreg_list);
--	INIT_LIST_HEAD(&dev->link_watch_list);
--	dev->priv_flags = IFF_XMIT_DST_RELEASE;
--	setup(dev);
- 	strcpy(dev->name, name);
- 	return dev;
- 
-+free_all:
-+	free_netdev(dev);
-+	return NULL;
-+
- free_pcpu:
- 	free_percpu(dev->pcpu_refcnt);
- 	kfree(dev->_tx);
--- 
-1.7.4
+These proposed new userspace interfaces should be documented somewhere,
+please.  They are the most important part of the patch.
+
+>
+> ...
+>
+> +struct cgroup_subsys timer_slack_subsys = {
+> +	.name = "timer_slack",
+> +	.module = THIS_MODULE,
+> +#ifdef CONFIG_CGROUP_TIMER_SLACK
+
+Confused.  This file won't even be compiled if
+CONFIG_CGROUP_TIMER_SLACK=n?
+
+> +	.subsys_id = timer_slack_subsys_id,
+> +#endif
+> +	.create = tslack_cgroup_create,
+> +	.destroy = tslack_cgroup_destroy,
+> +	.attach = tslack_cgroup_attach,
+> +	.populate = tslack_cgroup_populate,
+> +};
+> +
+>
+> ...
+>
+> @@ -1694,12 +1698,15 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+>  			error = current->timer_slack_ns;
+>  			break;
+>  		case PR_SET_TIMERSLACK:
+> -			if (arg2 <= 0)
+> -				current->timer_slack_ns =
+> -					current->default_timer_slack_ns;
+> -			else
+> -				current->timer_slack_ns = arg2;
+> -			error = 0;
+> +			if (arg2 <= 0) {
+> +				me->timer_slack_ns = me->default_timer_slack_ns;
+> +				break;
+> +			}
+> +
+> +			error = timer_slack_check ?
+> +				timer_slack_check(me, arg2) : 0;
+
+This is racy against init_cgroup_timer_slack().  And against
+exit_cgroup_timer_slack().
+
+This whole scheme of using a single hook to a single "check" function
+is rather grubby.  I guess that using a notifier_call_chain() would fix
+things: support multiple "check" functions and hopefully fix the races.
+
+> +			if (!error)
+> +				me->timer_slack_ns = arg2;
+>  			break;
+>  		case PR_MCE_KILL:
+>  			if (arg4 | arg5)
+
+I don't know whether PR_SET_TIMERSLACK is presently documented in the
+manpages.
+
+Please cc linux-api@vger.kernel.org on future versions of this work and
+ensure that the patch (via changelog, Documentation or code comments)
+has sufficient information for the manpages maintainers to be able to
+easily update the manpages.
+
 
