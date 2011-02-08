@@ -1,90 +1,354 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527Ab1BHOAF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 09:00:05 -0500
-Received: from swan.madduck.net ([80.68.90.58]:43207 "EHLO swan.madduck.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754219Ab1BHOAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 09:00:04 -0500
-Date: Tue, 8 Feb 2011 14:59:56 +0100
-From: martin f krafft <madduck@madduck.net>
-To: Borislav Petkov <bp@amd64.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Opteron ECC/ChipKill error
-Message-ID: <20110208135956.GA7055@albatross.oerlikon.madduck.net>
-Mail-Followup-To: Borislav Petkov <bp@amd64.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <20110208133010.GA26487@albatross.oerlikon.madduck.net>
- <20110208134910.GA3849@kryptos.osrc.amd.com>
+	id S1754543Ab1BHOBe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 09:01:34 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:49692 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754490Ab1BHOBc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 09:01:32 -0500
+X-IronPort-AV: E=Sophos;i="4.60,442,1291593600"; 
+   d="scan'208";a="4216265"
+Date: Tue, 8 Feb 2011 14:03:38 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <JBeulich@novell.com>
+Subject: Re: [PATCH] x86/mm/init: respect memblock reserved regions when
+ destroying mappings
+In-Reply-To: <AANLkTimcdVvmhBr6g_Eo0kWX9mdeNmXjd=CBQrvUGm8S@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1102081401390.7277@kaball-desktop>
+References: <alpine.DEB.2.00.1101311514580.7277@kaball-desktop> <4D4A3782.3050702@zytor.com> <alpine.DEB.2.00.1102031114030.7277@kaball-desktop> <4D4ADFAD.7060507@zytor.com> <alpine.DEB.2.00.1102041130060.7277@kaball-desktop> <4D4CA568.70907@goop.org>
+ <AANLkTi=nEQka_19+nKQC-yJn2Czn9GCqsUWN6Byy7rCF@mail.gmail.com> <4D4E4E0D.2080806@zytor.com> <4D4EF553.6000000@kernel.org> <alpine.DEB.2.00.1102071524140.7277@kaball-desktop> <alpine.DEB.2.00.1102071858230.7277@kaball-desktop>
+ <AANLkTimcdVvmhBr6g_Eo0kWX9mdeNmXjd=CBQrvUGm8S@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="wac7ysb48OaltWcw"
-Content-Disposition: inline
-In-Reply-To: <20110208134910.GA3849@kryptos.osrc.amd.com>
-X-Motto: Keep the good times rollin'
-X-OS: Debian GNU/Linux 6.0 kernel 2.6.36-trunk-amd64 x86_64
-X-Spamtrap: madduck.bogus@madduck.net
-X-Subliminal-Message: debian/rules!
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: multipart/mixed; boundary="8323329-633095284-1297173818=:7277"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--8323329-633095284-1297173818=:7277
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
 
---wac7ysb48OaltWcw
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 8 Feb 2011, Yinghai Lu wrote:
+> On Mon, Feb 7, 2011 at 11:00 AM, Stefano Stabellini
+> <stefano.stabellini@eu.citrix.com> wrote:
+> > On Mon, 7 Feb 2011, Stefano Stabellini wrote:
+> >> On Sun, 6 Feb 2011, Yinghai Lu wrote:
+> >> > On 02/05/2011 11:30 PM, H. Peter Anvin wrote:
+> >> > > On 02/05/2011 11:02 PM, Yinghai Lu wrote:
+> >> > >> why not just move calling cleanup_highmap down?
+> >> > >>
+> >> > >> something like attached patch.
+> >> > >
+> >> > > This patch looks very clean and looks on the surface of it like it is
+> >> > > removing some ugly ad hoc code, but (as always) it needs a description
+> >> > > about the problem it solves and why it is correct.
+> >> >
+> >> > Sure.
+> >> >
+> >> >
+> >> > Jeremy and xen guys, can you please check if it works well with xen ?
+> >> >
+> >>
+> >> Actually this patch makes things worse on xen, because before
+> >> cleanup_highmap() wasn't called at all on xen (on purpose) and now it
+> >> is, fully destroying all the mappings we have at _end.
+> >>
+> >> Can we add a check on memblock reserved regions in cleanup_highmap()?
+> >
+> > In case you are wondering how Yinghai Lu's patch would look like with
+> > the added check, here it is:
+> >
+> >
+> > diff --git a/arch/x86/include/asm/memblock.h b/arch/x86/include/asm/memblock.h
+> > index 19ae14b..184f778 100644
+> > --- a/arch/x86/include/asm/memblock.h
+> > +++ b/arch/x86/include/asm/memblock.h
+> > @@ -3,6 +3,7 @@
+> >
+> >  #define ARCH_DISCARD_MEMBLOCK
+> >
+> > +bool memblock_check_reserved_size(u64 *addrp, u64 *sizep, u64 align);
+> >  u64 memblock_x86_find_in_range_size(u64 start, u64 *sizep, u64 align);
+> >  void memblock_x86_to_bootmem(u64 start, u64 end);
+> >
+> > diff --git a/arch/x86/include/asm/pgtable_64.h b/arch/x86/include/asm/pgtable_64.h
+> > index 975f709..28686b6 100644
+> > --- a/arch/x86/include/asm/pgtable_64.h
+> > +++ b/arch/x86/include/asm/pgtable_64.h
+> > @@ -165,7 +165,7 @@ static inline int pgd_large(pgd_t pgd) { return 0; }
+> >  #define __swp_entry_to_pte(x)          ((pte_t) { .pte = (x).val })
+> >
+> >  extern int kern_addr_valid(unsigned long addr);
+> > -extern void cleanup_highmap(void);
+> > +extern void cleanup_highmap(unsigned long end);
+> >
+> >  #define HAVE_ARCH_UNMAPPED_AREA
+> >  #define HAVE_ARCH_UNMAPPED_AREA_TOPDOWN
+> > diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+> > index 2d2673c..5655c22 100644
+> > --- a/arch/x86/kernel/head64.c
+> > +++ b/arch/x86/kernel/head64.c
+> > @@ -77,9 +77,6 @@ void __init x86_64_start_kernel(char * real_mode_data)
+> >        /* Make NULL pointers segfault */
+> >        zap_identity_mappings();
+> >
+> > -       /* Cleanup the over mapped high alias */
+> > -       cleanup_highmap();
+> > -
+> >        max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
+> >
+> >        for (i = 0; i < NUM_EXCEPTION_VECTORS; i++) {
+> > diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> > index d3cfe26..91afde6 100644
+> > --- a/arch/x86/kernel/setup.c
+> > +++ b/arch/x86/kernel/setup.c
+> > @@ -297,6 +297,9 @@ static void __init init_gbpages(void)
+> >  static inline void init_gbpages(void)
+> >  {
+> >  }
+> > +static void __init cleanup_highmap(unsigned long end)
+> > +{
+> > +}
+> >  #endif
+> >
+> >  static void __init reserve_brk(void)
+> > @@ -922,6 +925,9 @@ void __init setup_arch(char **cmdline_p)
+> >         */
+> >        reserve_brk();
+> >
+> > +       /* Cleanup the over mapped high alias after _brk_end*/
+> > +       cleanup_highmap(_brk_end);
+> > +
+> >        memblock.current_limit = get_max_mapped();
+> >        memblock_x86_fill();
+> >
+> > diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+> > index 947f42a..f13ff3a 100644
+> > --- a/arch/x86/mm/init.c
+> > +++ b/arch/x86/mm/init.c
+> > @@ -279,25 +279,6 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+> >        load_cr3(swapper_pg_dir);
+> >  #endif
+> >
+> > -#ifdef CONFIG_X86_64
+> > -       if (!after_bootmem && !start) {
+> > -               pud_t *pud;
+> > -               pmd_t *pmd;
+> > -
+> > -               mmu_cr4_features = read_cr4();
+> > -
+> > -               /*
+> > -                * _brk_end cannot change anymore, but it and _end may be
+> > -                * located on different 2M pages. cleanup_highmap(), however,
+> > -                * can only consider _end when it runs, so destroy any
+> > -                * mappings beyond _brk_end here.
+> > -                */
+> > -               pud = pud_offset(pgd_offset_k(_brk_end), _brk_end);
+> > -               pmd = pmd_offset(pud, _brk_end - 1);
+> > -               while (++pmd <= pmd_offset(pud, (unsigned long)_end - 1))
+> > -                       pmd_clear(pmd);
+> > -       }
+> > -#endif
+> >        __flush_tlb_all();
+> >
+> >        if (!after_bootmem && e820_table_end > e820_table_start)
+> > diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+> > index 71a5929..028c49e 100644
+> > --- a/arch/x86/mm/init_64.c
+> > +++ b/arch/x86/mm/init_64.c
+> > @@ -297,18 +297,26 @@ void __init init_extra_mapping_uc(unsigned long phys, unsigned long size)
+> >  * rounded up to the 2MB boundary. This catches the invalid pmds as
+> >  * well, as they are located before _text:
+> >  */
+> > -void __init cleanup_highmap(void)
+> > +void __init cleanup_highmap(unsigned long end)
+> >  {
+> >        unsigned long vaddr = __START_KERNEL_map;
+> > -       unsigned long end = roundup((unsigned long)_end, PMD_SIZE) - 1;
+> >        pmd_t *pmd = level2_kernel_pgt;
+> >        pmd_t *last_pmd = pmd + PTRS_PER_PMD;
+> > +       u64 size, addrp;
+> > +       bool changed;
+> > +
+> > +       end = roundup(end, PMD_SIZE) - 1;
+> >
+> >        for (; pmd < last_pmd; pmd++, vaddr += PMD_SIZE) {
+> >                if (pmd_none(*pmd))
+> >                        continue;
+> > -               if (vaddr < (unsigned long) _text || vaddr > end)
+> > -                       set_pmd(pmd, __pmd(0));
+> > +               if (vaddr < (unsigned long) _text || vaddr > end) {
+> > +                       addrp = __pa(vaddr);
+> > +                       size = PMD_SIZE;
+> > +                       changed = memblock_check_reserved_size(&addrp, &size, PMD_SIZE);
+> > +                       if (!changed && size)
+> > +                               set_pmd(pmd, __pmd(0));
+> > +               }
+> 
+> for native path, memblock_check_reserved_size() are called 256 times
+> without obvious reasons.
 
-also sprach Borislav Petkov <bp@amd64.org> [2011.02.08.1449 +0100]:
-> It is a DRAM ECC error on one of the DIMMs on your node 1. If it is a
-> single occurrence I wouldn't start to worry yet - I'd monitor to see
-> whether the same row above (row 6) starts increasing its error rate.
-> Also, sometimes reseating the DIMMs helps.
 
-Thanks. I really hope this won't happen again as I really don't want
-to go to the hosting place and open the server. ;)
+what about this patch, does it look like a reasonable solution?
 
-> Can you send your dmesg please?
 
-Don't want to spam the list, so:
-http://scratch.madduck.net/__tmp__dmesg.gz
 
---=20
-martin | http://madduck.net/ | http://two.sentenc.es/
-=20
-"women, when they are not in love,
- have all the cold blood of an experienced attorney."
-                                                   -- honor=E9 de balzac
-=20
-spamtraps: madduck.bogus@madduck.net
-
---wac7ysb48OaltWcw
-Content-Type: application/pgp-signature; name="digital_signature_gpg.asc"
-Content-Description: Digital signature (see http://martin-krafft.net/gpg/sig-policy/999bbcc4/current)
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQLvBAEBCgDZBQJNUUxcwBEaaHR0cDovL21hcnRpbi1rcmFmZnQubmV0L2dwZy9z
-aWctcG9saWN5LzU1Yzk4ODJkOTk5YmJjYzQvMjAxMTAxMjQxMTI1P3NoYTUxMnN1
-bT0xY2FkOTZmZDI3ZDMyMzNmNTNlMjI4NDk1MzM2NDgxMDdlNWVlOGQ1YmU2NTUy
-NTFkNzRjOGYxYzVjM2JjNDJmMjMwNGZhNTE1MTUwZjdiZDRkZDA1ZTk4MTk5MjRm
-MDQ5NTEzZWU5OTYyY2E3MTcwOWY4MWQ5NDUxNTg1MmJkOAAKCRBVyYgtmZu8xOxS
-EACfwYZlRK4qSowWD25PItVxdz0YQOrJjhZLP5n96MSl3avTesO71+RYNmeGPSmF
-rudHRkSett3X2v6N0POOvAoh5IVb7k/V4f5YhkC93NWjl8eS/NDDcTDG6dv7uKid
-udn4ngBV4kgckPufmCtQ6KVsze/Ga2Ajo3pe2LSqYy64Z5xPHttWMsoQqYinUhu4
-GM4bTgPyg9dC1CQK5ZrZcordXetB+O7uAztBkpZfry6QoFEdN2CDoVNR78PJR2h1
-vInS18SDi1rr/Vn+6BHFnJ4yips9Kl6E7ayJPrNoEt/sw5QiWdRsb2M8roEgiAud
-1DkT4cLhbaz1o/jH5t7Pjb8USdsN9OfJsu61DhmKVQBctHc9GIOjYNMKOEFD0hWF
-uel8E85NUfIDjpbcsl95f/Fl2R9ZajxNSdk0LSE0s8+ZYOs64AeI3F4PwlobDMCK
-R6T0hE9EpH4tZWimLXMlVn/f9dvsnoXGSLD4gjrfnpxNWBPgfPBJ1SWKioGqDHB0
-RcTYptxVelLURIeJx7FikLr04ElIHREX2seTRSNpI4CPJAhmjaQSHt1TDWjtcnK3
-SOETCNRwNFM2Xsn5MHwaN2bgqu+yQpQETySGR630AHhRfuZM2R8g+9VfLjJSDu3G
-kUY6EXlaidYRTXZSqTuOwyz98P40fbijfZkYykekgwqv9w==
-=d1dZ
------END PGP SIGNATURE-----
-
---wac7ysb48OaltWcw--
-
+diff --git a/arch/x86/include/asm/memblock.h b/arch/x86/include/asm/memblock.h
+index 19ae14b..184f778 100644
+--- a/arch/x86/include/asm/memblock.h
++++ b/arch/x86/include/asm/memblock.h
+@@ -3,6 +3,7 @@
+ 
+ #define ARCH_DISCARD_MEMBLOCK
+ 
++bool memblock_check_reserved_size(u64 *addrp, u64 *sizep, u64 align);
+ u64 memblock_x86_find_in_range_size(u64 start, u64 *sizep, u64 align);
+ void memblock_x86_to_bootmem(u64 start, u64 end);
+ 
+diff --git a/arch/x86/include/asm/pgtable_64.h b/arch/x86/include/asm/pgtable_64.h
+index 975f709..28686b6 100644
+--- a/arch/x86/include/asm/pgtable_64.h
++++ b/arch/x86/include/asm/pgtable_64.h
+@@ -165,7 +165,7 @@ static inline int pgd_large(pgd_t pgd) { return 0; }
+ #define __swp_entry_to_pte(x)		((pte_t) { .pte = (x).val })
+ 
+ extern int kern_addr_valid(unsigned long addr);
+-extern void cleanup_highmap(void);
++extern void cleanup_highmap(unsigned long end);
+ 
+ #define HAVE_ARCH_UNMAPPED_AREA
+ #define HAVE_ARCH_UNMAPPED_AREA_TOPDOWN
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index 2d2673c..5655c22 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -77,9 +77,6 @@ void __init x86_64_start_kernel(char * real_mode_data)
+ 	/* Make NULL pointers segfault */
+ 	zap_identity_mappings();
+ 
+-	/* Cleanup the over mapped high alias */
+-	cleanup_highmap();
+-
+ 	max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
+ 
+ 	for (i = 0; i < NUM_EXCEPTION_VECTORS; i++) {
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index d3cfe26..91afde6 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -297,6 +297,9 @@ static void __init init_gbpages(void)
+ static inline void init_gbpages(void)
+ {
+ }
++static void __init cleanup_highmap(unsigned long end)
++{
++}
+ #endif
+ 
+ static void __init reserve_brk(void)
+@@ -922,6 +925,9 @@ void __init setup_arch(char **cmdline_p)
+ 	 */
+ 	reserve_brk();
+ 
++	/* Cleanup the over mapped high alias after _brk_end*/
++	cleanup_highmap(_brk_end);
++
+ 	memblock.current_limit = get_max_mapped();
+ 	memblock_x86_fill();
+ 
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 947f42a..f13ff3a 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -279,25 +279,6 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 	load_cr3(swapper_pg_dir);
+ #endif
+ 
+-#ifdef CONFIG_X86_64
+-	if (!after_bootmem && !start) {
+-		pud_t *pud;
+-		pmd_t *pmd;
+-
+-		mmu_cr4_features = read_cr4();
+-
+-		/*
+-		 * _brk_end cannot change anymore, but it and _end may be
+-		 * located on different 2M pages. cleanup_highmap(), however,
+-		 * can only consider _end when it runs, so destroy any
+-		 * mappings beyond _brk_end here.
+-		 */
+-		pud = pud_offset(pgd_offset_k(_brk_end), _brk_end);
+-		pmd = pmd_offset(pud, _brk_end - 1);
+-		while (++pmd <= pmd_offset(pud, (unsigned long)_end - 1))
+-			pmd_clear(pmd);
+-	}
+-#endif
+ 	__flush_tlb_all();
+ 
+ 	if (!after_bootmem && e820_table_end > e820_table_start)
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 71a5929..90a64de 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -297,12 +297,25 @@ void __init init_extra_mapping_uc(unsigned long phys, unsigned long size)
+  * rounded up to the 2MB boundary. This catches the invalid pmds as
+  * well, as they are located before _text:
+  */
+-void __init cleanup_highmap(void)
++void __init cleanup_highmap(unsigned long end)
+ {
+ 	unsigned long vaddr = __START_KERNEL_map;
+-	unsigned long end = roundup((unsigned long)_end, PMD_SIZE) - 1;
+ 	pmd_t *pmd = level2_kernel_pgt;
+ 	pmd_t *last_pmd = pmd + PTRS_PER_PMD;
++	u64 size, addrp;
++	bool changed;
++
++	end = roundup(end, PMD_SIZE) - 1;
++
++	/* check for reserved regions after end */
++	addrp = __pa(end);
++	size = (PTRS_PER_PMD * PMD_SIZE + vaddr) - end;
++	changed = memblock_check_reserved_size(&addrp, &size, PMD_SIZE);
++	if (changed || !size) {
++		/* reserved regions found, avoid removing mappings after end */
++		pud_t *pud = pud_offset(pgd_offset_k(end), end);
++		last_pmd = pmd_offset(pud, end);
++	}
+ 
+ 	for (; pmd < last_pmd; pmd++, vaddr += PMD_SIZE) {
+ 		if (pmd_none(*pmd))
+diff --git a/arch/x86/mm/memblock.c b/arch/x86/mm/memblock.c
+index aa11693..fac21d4 100644
+--- a/arch/x86/mm/memblock.c
++++ b/arch/x86/mm/memblock.c
+@@ -8,7 +8,7 @@
+ #include <linux/range.h>
+ 
+ /* Check for already reserved areas */
+-static bool __init check_with_memblock_reserved_size(u64 *addrp, u64 *sizep, u64 align)
++bool __init memblock_check_reserved_size(u64 *addrp, u64 *sizep, u64 align)
+ {
+ 	struct memblock_region *r;
+ 	u64 addr = *addrp, last;
+@@ -59,7 +59,7 @@ u64 __init memblock_x86_find_in_range_size(u64 start, u64 *sizep, u64 align)
+ 		if (addr >= ei_last)
+ 			continue;
+ 		*sizep = ei_last - addr;
+-		while (check_with_memblock_reserved_size(&addr, sizep, align))
++		while (memblock_check_reserved_size(&addr, sizep, align))
+ 			;
+ 
+ 		if (*sizep)
+--8323329-633095284-1297173818=:7277--
