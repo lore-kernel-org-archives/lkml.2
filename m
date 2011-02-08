@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753524Ab1BHLer (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 06:34:47 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:10806 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752446Ab1BHLeq (ORCPT
+	id S1753549Ab1BHLk0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 06:40:26 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:57103 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752811Ab1BHLkZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 06:34:46 -0500
-Message-ID: <4D512A27.2030406@dsn.okisemi.com>
-Date: Tue, 08 Feb 2011 20:33:59 +0900
-From: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Tue, 8 Feb 2011 06:40:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=RAV0b5MwyUYB9VYy6xHR1CUgvecz/+tj35r6qs34SwgNbAvmoXZc2U9sJXCb7tPGWd
+         Fk2RvssUG/dNmbGRiQQIFfSkNIkPmt9STQInmp+Bji38j/UpkXLLq3382OPb4c3hTpN0
+         J4qTlBN/reBk4ustBz2rFyElt9EyeeKg9DhUw=
 MIME-Version: 1.0
-To: ML netdev <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-CC: Tomoya Morinaga <tomoya-linux@dsn.okisemi.com>,
-        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
-        Andrew <andrew.chih.howe.khor@intel.com>,
-        Intel OTC <joel.clark@intel.com>,
-        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] pch_gbe: Fix the issue which a driver locks when rx offload
- is set by ethtool
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4D4F4B18.6030502@metafoo.de>
+References: <1296953291-10373-1-git-send-email-lars@metafoo.de>
+	<AANLkTimN1ACy=rREGhvAqTwfywHb7_Td7ZeKosQc9txC@mail.gmail.com>
+	<4D4F4B18.6030502@metafoo.de>
+Date: Tue, 8 Feb 2011 13:40:24 +0200
+Message-ID: <AANLkTimgejf7D9LWyxa=W7Hc4MTWEotMnr7h2SC9iPCQ@mail.gmail.com>
+Subject: Re: [PATCH 00/14] POWER: BQ27x00: New Properties, fixes, bq27000 support
+From: Grazvydas Ignotas <notasas@gmail.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Rodolfo Giometti <giometti@linux.it>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver will be in a deadlock, When the rx offload is set by ethtool.
-So, The pch_gbe_reinit_locked function was modified.
+On Mon, Feb 7, 2011 at 3:30 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
+> On 02/07/2011 01:58 AM, Grazvydas Ignotas wrote:
+>> On Sun, Feb 6, 2011 at 2:47 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
+>>> This series has so far been tested with the bq27000 and the bq27200 battery, but
+>>> not with the bq27500 battery, so it would be nice if somebody with a board
+>>> containing such a battery could test the patches to make sure that there are no
+>>> regressions.
+>>
+>> Trying this on pandora board (bq27500 over i2c) and it seems there is
+>> something wrong with the cache, I'm always getting the old values. I'm
+>> reading them manually over sysfs, uptime is over 25min but values
+>> still match ones on boot, even after turning off the backlight.
+>>
+>> Looking at the code delayed_work handling looks suspicious,
+>> bq27x00_battery_get_property() flushes it and nothing ever reschedules
+>> it. Other than that all new property values looks sane.
+>
+> Hi
+>
+> Hm, I tought that rescheduling from withing the work function would work, even when
+> flushing the work, at least it did here.
+> But the current code is broken if poll_interval is 0 anyway, cause then it wont
+> reschedule itself and is never run again.
+>
+> Could you try:
+>
+> if (time_is_before_jiffies(di->last_update + 6 * HZ)) {
+>        cancel_delayed_work_sync(&di->work);
+>        bq27x00_battery_work(&di->work);
+> }
 
-Signed-off-by: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
----
- drivers/net/pch_gbe/pch_gbe_main.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/net/pch_gbe/pch_gbe_main.c b/drivers/net/pch_gbe/pch_gbe_main.c
-index 3248313..0e6922f 100644
---- a/drivers/net/pch_gbe/pch_gbe_main.c
-+++ b/drivers/net/pch_gbe/pch_gbe_main.c
-@@ -520,7 +520,9 @@ static void pch_gbe_reset_task(struct work_struct *work)
- 	struct pch_gbe_adapter *adapter;
- 	adapter = container_of(work, struct pch_gbe_adapter, reset_task);
- 
-+	rtnl_lock();
- 	pch_gbe_reinit_locked(adapter);
-+	rtnl_unlock();
- }
- 
- /**
-@@ -531,12 +533,8 @@ void pch_gbe_reinit_locked(struct pch_gbe_adapter *adapter)
- {
- 	struct net_device *netdev = adapter->netdev;
- 
--	rtnl_lock();
--	if (netif_running(netdev)) {
--		pch_gbe_down(adapter);
--		pch_gbe_up(adapter);
--	}
--	rtnl_unlock();
-+	pch_gbe_down(adapter);
-+	pch_gbe_up(adapter);
- }
- 
- /**
--- 
-1.6.2.5
+That works. However I wonder about the delay, I've experimentally
+determined that bq27500 refreshes in about a second, so before this
+series I could for example run 'watch -n 1 cat current_now' and see
+current changes almost in realtime (when toggling backlight, for
+example). Maybe we could have different cache timeout for different
+chips or have quickly changing properties (like current and voltage)
+bypass the cache.
