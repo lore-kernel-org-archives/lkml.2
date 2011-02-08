@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753759Ab1BHWGL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 17:06:11 -0500
-Received: from e24smtp03.br.ibm.com ([32.104.18.24]:41567 "EHLO
-	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708Ab1BHWGI (ORCPT
+	id S1753909Ab1BHWJW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 17:09:22 -0500
+Received: from casper.infradead.org ([85.118.1.10]:38280 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752897Ab1BHWJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 17:06:08 -0500
-Message-ID: <4D51BE48.7000406@linux.vnet.ibm.com>
-Date: Tue, 08 Feb 2011 20:06:00 -0200
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Guillaume Chazarain <guichaz@gmail.com>
-CC: Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net
-Subject: Re: [PATCH] tpm_tis: Use timeouts returned from TPM
-References: <1294774649.1337.7.camel@d941e-10> <AANLkTi=BXgDKk3c97XJ+WiCiiPjiYL3dZPWiGg=i3KXp@mail.gmail.com> <AANLkTi=cfNXONM5EvGPaS7N2kgAbUZmn1Oe+qE9fd7aO@mail.gmail.com>
-In-Reply-To: <AANLkTi=cfNXONM5EvGPaS7N2kgAbUZmn1Oe+qE9fd7aO@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 11020822-9254-0000-0000-0000005171B4
+	Tue, 8 Feb 2011 17:09:21 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 1/3] perf annotate: Fix --stdio rendering
+Date: Tue,  8 Feb 2011 20:09:08 -0200
+Message-Id: <1297202950-15208-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1297202950-15208-1-git-send-email-acme@infradead.org>
+References: <1297202950-15208-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/2011 07:45 PM, Guillaume Chazarain wrote:
-> [ + jmorris ]
->
-> On Thu, Jan 27, 2011 at 11:44 PM, Guillaume Chazarain<guichaz@gmail.com>  wrote:
->> On Tue, Jan 11, 2011 at 8:37 PM, Stefan Berger
->> <stefanb@linux.vnet.ibm.com>  wrote:
->>> The current TPM TIS driver in git discards the timeout values returned
->>> from the TPM.
->> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=c4ff4b829ef9e6353c0b133b7adb564a68054979
->> broke the TPM for me on a thinkpad T410. When using the TPM, dmesg
->> complains:
->>
->> [   65.728310] tpm_tis 00:0b: Operation Timed out
->> [   67.651450] tpm_tis 00:0b: Operation Timed out
->> [   69.669421] tpm_tis 00:0b: Operation Timed out
->>
->> This patch fixes it, so consider it:
->>
->> Tested-by: Guillaume Chazarain<guichaz@gmail.com>
-> This patch (https://lkml.org/lkml/2011/1/11/341) fixes a regression
-> introduced in 2.6.38-rc3, any chance of having it merged?
->
-> Thanks.
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-This patch solves a bug existent before the commit that made into 
-2.6.38-rc3. Prior to such commit, the device driver was using default 
-values that were big enough to allow TPM commands to succeed, but that 
-stalled the kernel for too long during boot (2 minutes for each command 
-sent) when buggy TPMs don't respond.
+The checks for not using a max_lines parameter were b0rked, problem
+introduced in 3653246.
 
-I'll apply this patch to my tree, and ask James to pull from it.
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/annotate.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Rajiv
-
-
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 1012841..6db4351 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -132,7 +132,7 @@ static int objdump_line__print(struct objdump_line *oline,
+ 		if (percent < min_pcnt)
+ 			return -1;
+ 
+-		if (printed >= max_lines)
++		if (max_lines && printed >= max_lines)
+ 			return 1;
+ 
+ 		color = get_percent_color(percent);
+@@ -154,7 +154,7 @@ static int objdump_line__print(struct objdump_line *oline,
+ 		color_fprintf(stdout, color, " %7.2f", percent);
+ 		printf(" :	");
+ 		color_fprintf(stdout, PERF_COLOR_BLUE, "%s\n", oline->line);
+-	} else if (printed >= max_lines)
++	} else if (max_lines && printed >= max_lines)
+ 		return 1;
+ 	else {
+ 		if (!*oline->line)
+-- 
+1.6.2.5
 
