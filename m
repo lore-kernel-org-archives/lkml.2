@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473Ab1BHTde (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 14:33:34 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54530 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754441Ab1BHTdc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 14:33:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=JaV8Tl9/X5AvPkj+tnGUv50GxyIl5dpVahtmN4VdEBi/nBzQ6I8S4S1QAtSjheHlaS
-         mr3UVH1f5J0onmGpuFV78xCsTfZ0rH2gfgWTUjfj5TcmotdD/7X2y+LQ9hlogoHo/RO2
-         6khiWy18tH1S0SKzeboVjXImcVauJHkhTr4jw=
-Date: Tue, 8 Feb 2011 11:33:21 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "Ira W. Snyder" <iws@ovro.caltech.edu>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] misc: add CARMA DATA-FPGA Access Driver
-Message-ID: <20110208193321.GA16527@core.coreip.homeip.net>
-References: <1297121021-3522-1-git-send-email-iws@ovro.caltech.edu>
- <1297121021-3522-2-git-send-email-iws@ovro.caltech.edu>
- <20110208073309.GB906@core.coreip.homeip.net>
- <20110208172046.GB10125@ovro.caltech.edu>
- <20110208175028.GD4476@core.coreip.homeip.net>
- <20110208191143.GC10125@ovro.caltech.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110208191143.GC10125@ovro.caltech.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755634Ab1BHTfC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 14:35:02 -0500
+Received: from mga11.intel.com ([192.55.52.93]:29661 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754790Ab1BHTfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 14:35:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,443,1291622400"; 
+   d="scan'208";a="655725659"
+From: james_p_freyensee@linux.intel.com
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
+        james_p_freyensee@linux.intel.com
+Subject: [PATCH 05/12] PTI misc Makefile addition.
+Date: Tue,  8 Feb 2011 11:34:50 -0800
+Message-Id: <1297193697-5417-6-git-send-email-james_p_freyensee@linux.intel.com>
+X-Mailer: git-send-email 1.6.6.1
+In-Reply-To: <1297193697-5417-5-git-send-email-james_p_freyensee@linux.intel.com>
+References: <james_p_freyensee@linux.intel.com>
+ <1297193697-5417-1-git-send-email-james_p_freyensee@linux.intel.com>
+ <1297193697-5417-2-git-send-email-james_p_freyensee@linux.intel.com>
+ <1297193697-5417-3-git-send-email-james_p_freyensee@linux.intel.com>
+ <1297193697-5417-4-git-send-email-james_p_freyensee@linux.intel.com>
+ <1297193697-5417-5-git-send-email-james_p_freyensee@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 08, 2011 at 11:11:44AM -0800, Ira W. Snyder wrote:
-> On Tue, Feb 08, 2011 at 09:50:29AM -0800, Dmitry Torokhov wrote:
-> > On Tue, Feb 08, 2011 at 09:20:46AM -0800, Ira W. Snyder wrote:
-> > 
-> > > Go back and re-think my loop. This is a
-> > > common idiom straight of out LDD3 pages 153-154.
-> > > 
-> > > You should note that it is only possible to exit the loop with the lock
-> > > held AND !list_empty(used). The lock protects the used list, and
-> > > therefore, there must be a buffer on the list.
-> > 
-> > No, because you are woken up while not holding the lock so another
-> > reader is free to take it off the list.
-> > 
-> 
-> Correct. But then I go around the loop and check list_empty() again
-> before exiting the loop. The list MUST NOT be empty before the loop will
-> terminate.
+From: J Freyensee <james_p_freyensee@linux.intel.com>
 
-Yes, you are right, I competely missed the fact that we'd loop around
-and check the condition again. I'll go grab another coffee now.
+This allows the Intel implementation of the PTI standard to be compiled.
 
+Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
+---
+ drivers/misc/Makefile |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+index 98009cc..cae0463 100644
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@ -6,6 +6,7 @@ obj-$(CONFIG_IBM_ASM)		+= ibmasm/
+ obj-$(CONFIG_AD525X_DPOT)	+= ad525x_dpot.o
+ obj-$(CONFIG_AD525X_DPOT_I2C)	+= ad525x_dpot-i2c.o
+ obj-$(CONFIG_AD525X_DPOT_SPI)	+= ad525x_dpot-spi.o
++obj-$(CONFIG_INTEL_MID_PTI)     += pti.o
+ obj-$(CONFIG_ATMEL_PWM)		+= atmel_pwm.o
+ obj-$(CONFIG_ATMEL_SSC)		+= atmel-ssc.o
+ obj-$(CONFIG_ATMEL_TCLIB)	+= atmel_tclib.o
 -- 
-Dmitry
+1.6.6.1
+
