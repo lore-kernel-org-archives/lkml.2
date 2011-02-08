@@ -1,87 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab1BHVDv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 16:03:51 -0500
-Received: from xenotime.net ([72.52.115.56]:50746 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755820Ab1BHVDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 16:03:50 -0500
-Message-ID: <4D51AFBA.9080409@xenotime.net>
-Date: Tue, 08 Feb 2011 13:03:54 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: james_p_freyensee@linux.intel.com
-CC: gregkh@suse.de, linux-kernel@vger.kernel.org, suhail.ahmed@intel.com
-Subject: Re: [PATCH 11/12] n_tracerouter and n_tracesink Kconfig.
-References: <james_p_freyensee@linux.intel.com> <1297193697-5417-1-git-send-email-james_p_freyensee@linux.intel.com> <1297193697-5417-2-git-send-email-james_p_freyensee@linux.intel.com> <1297193697-5417-3-git-send-email-james_p_freyensee@linux.intel.com> <1297193697-5417-4-git-send-email-james_p_freyensee@linux.intel.com> <1297193697-5417-5-git-send-email-james_p_freyensee@linux.intel.com> <1297193697-5417-6-git-send-email-james_p_freyensee@linux.intel.com> <1297193697-5417-7-git-send-email-james_p_freyensee@linux.intel.com> <1297193697-5417-8-git-send-email-james_p_freyensee@linux.intel.com> <1297193697-5417-9-git-send-email-james_p_freyensee@linux.intel.com> <1297193697-5417-10-git-send-email-james_p_freyensee@linux.intel.com> <1297193697-5417-11-git-send-email-james_p_freyensee@linux.intel.com> <1297193697-5417-12-git-send-email-james_p_freyensee@linux.intel.com>
-In-Reply-To: <1297193697-5417-12-git-send-email-james_p_freyensee@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755837Ab1BHVKU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 16:10:20 -0500
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:51371 "HELO
+	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754047Ab1BHVKT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 16:10:19 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=L1o0UYLFHobJXLne2/l/6El2H98qdcyBrqVtfJT2pLhgv1fOpMCUOXiWiZxT+TDS9cZOi2lZsayts6JGT61FT0bnxLXh9VRtebkbQObroK5vWjAbOS9TCInwHBmo9lnj;
+Date: Tue, 8 Feb 2011 13:10:15 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Seth Heasley <seth.heasley@intel.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        khali@linux-fr.org
+Subject: Re: [PATCH 2.6.37] lpc: irq and pci_ids patch for Intel DH89xxCC
+ DeviceIDs
+Message-ID: <20110208131015.7345a4df@jbarnes-desktop>
+In-Reply-To: <201101101308.37805.seth.heasley@intel.com>
+References: <201101101308.37805.seth.heasley@intel.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/8/2011 11:34 AM, james_p_freyensee@linux.intel.com wrote:
-> From: J Freyensee<james_p_freyensee@linux.intel.com>
->
-> This patch allows n_tracerouter and n_tracesink ldisc drivers
-> to be configured in menuconfig.
+On Mon, 10 Jan 2011 13:08:37 -0800
+Seth Heasley <seth.heasley@intel.com> wrote:
 
-s/menuconfig/kconfig tools/
+> This patch adds the LPC Controller DeviceIDs for the Intel DH89xxCC PCH.
+> 
+> The code for capturing ranges of LPC Controller DeviceIDs has also been updated.
+> 
+> Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+> 
+> --- linux-2.6.37/include/linux/pci_ids.h.orig	2011-01-04 16:50:19.000000000 -0800
+> +++ linux-2.6.37/include/linux/pci_ids.h	2011-01-10 11:23:19.000000000 -0800
+> @@ -2469,6 +2469,9 @@
+>  #define PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX	0x1c5f
+>  #define PCI_DEVICE_ID_INTEL_PATSBURG_SMBUS	0x1d22
+>  #define PCI_DEVICE_ID_INTEL_PATSBURG_LPC	0x1d40
+> +#define PCI_DEVICE_ID_INTEL_DH89XXCC_LPC_MIN	0x2310
+> +#define PCI_DEVICE_ID_INTEL_DH89XXCC_LPC_MAX	0x231f
+> +#define PCI_DEVICE_ID_INTEL_DH89XXCC_SMBUS	0x2330
+>  #define PCI_DEVICE_ID_INTEL_82801AA_0	0x2410
+>  #define PCI_DEVICE_ID_INTEL_82801AA_1	0x2411
+>  #define PCI_DEVICE_ID_INTEL_82801AA_3	0x2413
+> --- linux-2.6.37/arch/x86/pci/irq.c.orig	2011-01-04 16:50:19.000000000 -0800
+> +++ linux-2.6.37/arch/x86/pci/irq.c	2011-01-10 11:31:02.000000000 -0800
+> @@ -596,21 +596,18 @@
+>  		return 1;
+>  	}
+>  
+> -	if ((device >= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MIN) && 
+> -		(device <= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MAX)) {
+> +	if ((device >= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MIN && 
+> +	     device <= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MAX) 
+> +	||  (device >= PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MIN && 
+> +	     device <= PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX)
+> +	||  (device >= PCI_DEVICE_ID_INTEL_DH89XXCC_LPC_MIN &&
+> +	     device <= PCI_DEVICE_ID_INTEL_DH89XXCC_LPC_MAX)) {
+>  		r->name = "PIIX/ICH";
+>  		r->get = pirq_piix_get;
+>  		r->set = pirq_piix_set;
+>  		return 1;
+>  	}
+>  
+> -	if ((device >= PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MIN) && 
+> -		(device <= PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX)) {
+> -		r->name = "PIIX/ICH";
+> -		r->get = pirq_piix_get;
+> -		r->set = pirq_piix_set;
+> -		return 1;
+> -	}
+>  	return 0;
+>  }
 
+Applied to linux-next, thanks.
 
-> Signed-off-by: J Freyensee<james_p_freyensee@linux.intel.com>
-> ---
->   drivers/char/Kconfig |   32 ++++++++++++++++++++++++++++++++
->   1 files changed, 32 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
-> index 43d3395..02b9be2 100644
-> --- a/drivers/char/Kconfig
-> +++ b/drivers/char/Kconfig
-> @@ -289,6 +289,38 @@ config N_GSM
->   	  This line discipline provides support for the GSM MUX protocol and
->   	  presents the mux as a set of 61 individual tty devices.
->
-> +config TRACE_ROUTER
-> +        tristate "Trace data router for MIPI P1149.7 cJTAG standard"
-> +                depends on TRACE_SINK
-> +                default Y
+It would be cool if you could figure out a way to avoid having to
+continually send these sorts of patches for new chipsets as they come
+out.  Maybe for stuff newer than a certain date we can just assume PIIX
+style interfaces?  Or maybe there's a way to refactor this even more
+cleanly?
 
-Indentation above and on the "default" below looks flaky.
-Should line up with "tristate".
-
-> +        ---help---
-> +          The trace router uses the Linux tty line discipline framework to
-> +          route trace data coming from a tty port (say UART for example) to
-> +           the trace sink line discipline driver and to another tty port(say USB).
-> +           This is part of a solution for the MIPI P1149.7, compact JTAG,
-> +           standard, which is for debugging mobile devices. The PTI driver in
-> +           drivers/misc/pti.c defines the majority of this MIPI solution.
-> +
-> +          You should select this driver if the target kernel is meant for
-> +          a mobile device containing a modem.  Then you will need to select
-> +          "Trace data sink for MIPI P1149.7 cJTAG standard" line discipline
-> +          driver.
-> +
-> +config TRACE_SINK
-> +        tristate "Trace data sink for MIPI P1149.7 cJTAG standard"
-> +                default Y
-> +        ---help---
-> +          The trace sink uses the Linux line discipline framework to receive
-> +          trace data coming from the trace router line discipline driver
-> +          to a user-defined tty port target, like USB.
-> +          This is to provide a way to extract modem trace data on
-> +          devices that do not have a PTI HW module, or just need modem
-> +          trace data to come out of a different HW output port.
-> +          This is part of a solution for the P1149.7, compact JTAG, standard.
-> +
-> +          If you select this option, you need to select
-> +          "Trace data router for MIPI P1149.7 cJTAG standard".
-> +
->   config RISCOM8
->   	tristate "SDL RISCom/8 card support"
->   	depends on SERIAL_NONSTANDARD
-
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
