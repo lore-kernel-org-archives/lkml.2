@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438Ab1BHJUG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 04:20:06 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:50600 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253Ab1BHJUE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 04:20:04 -0500
-Subject: Re: RFC: /proc/<pid>/sched should contain cumulative data for all
- threads in process
-From: Peter Zijlstra <peterz@infradead.org>
-To: Chris Friesen <chris.friesen@genband.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <4D50723B.7020400@genband.com>
-References: <4D50723B.7020400@genband.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 08 Feb 2011 10:21:05 +0100
-Message-ID: <1297156865.13327.57.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752583Ab1BHJUo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 04:20:44 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:52659 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751253Ab1BHJUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 04:20:40 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH] thermal: Use freezable workqueue
+Date: Tue, 8 Feb 2011 10:20:25 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.38-rc3+; KDE/4.4.4; x86_64; ; )
+Cc: Len Brown <len.brown@intel.com>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>
+References: <201102080029.57195.rjw@sisk.pl> <20110208044712.GA906@core.coreip.homeip.net>
+In-Reply-To: <20110208044712.GA906@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201102081020.25646.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-02-07 at 16:29 -0600, Chris Friesen wrote:
-> Hi,
+On Tuesday, February 08, 2011, Dmitry Torokhov wrote:
+> On Tue, Feb 08, 2011 at 12:29:57AM +0100, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > 
+> > If thermal polling is enabled, which for example is the case for
+> > ACPI thermal zones with the _TZP object defined, the thermal driver
+> > uses delayed work items for this purpose.  Unfortunately, since
+> > they are queued up using schedule_delayed_work(), the work function
+> > may be executed during system suspend or resume, which is not
+> > desirable.
+> > 
+> > To prevent that from happening, use a freezable workqueue for
+> > queuing up delayed work items in the thermal driver.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > ---
+> >  drivers/thermal/thermal_sys.c |   22 ++++++++++++++++++++--
+> >  1 file changed, 20 insertions(+), 2 deletions(-)
+> > 
+> > Index: linux-2.6/drivers/thermal/thermal_sys.c
+> > ===================================================================
+> > --- linux-2.6.orig/drivers/thermal/thermal_sys.c
+> > +++ linux-2.6/drivers/thermal/thermal_sys.c
+> > @@ -62,6 +62,20 @@ static DEFINE_MUTEX(thermal_list_lock);
+> >  
+> >  static unsigned int thermal_event_seqnum;
+> >  
+> > +static struct workqueue_struct *thermal_wq;
+> > +
+> > +static int __init thermal_start_workqueue(void)
+> > +{
+> > +	thermal_wq = alloc_workqueue("thermal", WQ_FREEZEABLE, 0);
 > 
-> We've got a tool that gathers lots of scheduling data for each process
-> (not task/thread) on the system.
-> 
-> For /proc/<pid>/{stat,io} this is straightforward, as the per-thread
-> values are summed together for the process as a whole.
-> 
-> However, /proc/<pid>/sched only shows the data for the individual thread
-> with the same tid as the pid.  To get a per-process view we need to
-> manually scan all the threads and sum them--and this can get expensive
-> due to all the extra file operations, parsing, etc.
-> 
-> Was this a concious design decision, or just an oversight?  Would a
-> patch converting it to whole-process values be accepted or is it enough
-> of a standard interface that we can't break existing apps that expect
-> the current behaviour?
+> Should probably be unbound as well.
 
-I'd as soon remove all that stuff than extend it, its an abi liability,
-esp since you're talking about tools parsing this stuff.
+Yup, thanks.
 
+> FWIW, I would not mind if we had a global freezeable workqueue already
+> predefined. I could switch input_polldev and vmw_balloon to it and there
+> probably could be more users...
+
+Hmm, OK.
+
+Do you think we should add system_freezeable_wq to the set of predefined
+workqueues?
+
+Rafael
