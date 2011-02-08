@@ -1,57 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375Ab1BHSMs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 13:12:48 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:46873 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754835Ab1BHSMq (ORCPT
+	id S1755390Ab1BHSOQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 13:14:16 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:56179 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755303Ab1BHSOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 13:12:46 -0500
+	Tue, 8 Feb 2011 13:14:15 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=s77WCbqchprvJDgUP+pxqaKPVEv3FFu0bxEbWleWuLhMEpzIf+JFzbXULk8j3x4Vce
-         gX/ppye+uuAcz2dDFKpIc0T5xqFj/6KDCVt+no93LzCgS0TIhqPRe72Ta9lv1g7QI997
-         HW1FZ1vxAvaEzMlo/S4qf8hJDr8XAx55L+0pQ=
-Date: Tue, 8 Feb 2011 10:12:04 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Anton Chikin <kverlin@gmail.com>, jkosina@suse.cz,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anton Chikin <anton.chikin@dataart.com>
-Subject: Re: [PATCH] HID: added new driver for Panasonic Elite Panaboard
- UB-T780 and UB-T880
-Message-ID: <20110208181204.GF4476@core.coreip.homeip.net>
-References: <1297157786-2004-1-git-send-email-kverlin@gmail.com>
- <20110208103923.GA2009@polaris.bitmath.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110208103923.GA2009@polaris.bitmath.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        d=google.com; s=beta;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=LXuNziF4tSfvO5ieMDH71GXQbCk2cjtXOspuCeJSw6rwT1yEmuM+VWYJ4nWCN72/6f
+         i5jHaEzz+T2OrnHv1qYA==
+From: Venkatesh Pallipadi <venki@google.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
+        Mike Galbraith <efault@gmx.de>, Nick Piggin <npiggin@gmail.com>
+Subject: Misc sd_idle related fixes
+Date: Tue,  8 Feb 2011 10:13:36 -0800
+Message-Id: <1297188819-19999-1-git-send-email-venki@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <AANLkTikmWfLv3iMNUky7TRvQtUknLckftiQ4-Br614Rm@mail.gmail.com>
+References: <AANLkTikmWfLv3iMNUky7TRvQtUknLckftiQ4-Br614Rm@mail.gmail.com>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 08, 2011 at 11:39:23AM +0100, Henrik Rydberg wrote:
-> 
-> > +int xold = 0, yold = 0;
-> 
-> static
-> 
+Here are the 3 sd_idle related changes I tested with, for reference. Among
+the three, the third patch is the one that helps us in reducing idle cycles
+with one of our workloads and thus improves the latency response.
 
-Not even that. This is an USB device, not a platform one, so it shoudl
-be opssible to connect more than one to a box. All state should go into
-per-device structure.
+Thanks,
+Venki
 
-This is also does not appear to be a HID driver, really - it does not
-use HID infrastucture but does custom parsing.
-
-Calibration - normally we offload this task to userspace (tslib
-or other library/driver).
-
-Thanks.
-
--- 
-Dmitry
