@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589Ab1BHONB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 09:13:01 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:34018 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754047Ab1BHONA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 09:13:00 -0500
-Date: Tue, 8 Feb 2011 14:12:54 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH] [PATCH] Clarify source code distribution requirements
-Message-ID: <20110208141254.GA371@srcf.ucam.org>
-References: <1297120144-2142-1-git-send-email-mjg@redhat.com> <20110208101840.52ae59f5@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110208101840.52ae59f5@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1754616Ab1BHONI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 09:13:08 -0500
+Received: from lo.gmane.org ([80.91.229.12]:38847 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754593Ab1BHONG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 09:13:06 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: WANG Cong <xiyou.wangcong@gmail.com>
+Subject: Re: [PATCH]Maintain Chinese Documentations
+Date: Tue, 8 Feb 2011 14:12:46 +0000 (UTC)
+Message-ID: <iirj0u$nb3$1@dough.gmane.org>
+References: <AANLkTimFFT-B_aPyfFJmMpvt9jhd98ckBah2vbK+WQJf@mail.gmail.com>
+	<20110208033818.GA4922@gmail.com> <iiqti3$3b5$2@dough.gmane.org>
+	<AANLkTinGn5oN01+33VgnnWHAqEZNxkoJeTgkjAjpC8LZ@mail.gmail.com>
+	<20110208093020.GA2016@gmail.com> <20110208093528.GA2580@pengutronix.de>
+	<AANLkTi=RgPS_tzBP+0=wxuh58cV=3_m+5=gYwG8ffkY0@mail.gmail.com>
+	<20110208100153.GA2815@gmail.com> <20110208101328.GB2580@pengutronix.de>
+	<AANLkTimSgeRKsAckU+2iE9oqo33uanLeLaKTQdYkpfw=@mail.gmail.com>
+	<20110208103332.GA2932@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 123.125.1.164
+User-Agent: Pan/0.133 (House of Butterflies)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 08, 2011 at 10:18:40AM +0000, Alan Cox wrote:
-> On Mon,  7 Feb 2011 18:09:04 -0500
-> Matthew Garrett <mjg@redhat.com> wrote:
-> 
-> > Some vendors (such as http://users.livejournal.com/joshua_/43185.html)
-> > insist that since section 3(b) of GPLv2 does not contain an explicit
-> > timeframe for source distribution, they can ignore requests for source
-> > for up to 120 days. Clarify the introduction to the license to indicate
-> > that this isn't what's meant.
-> > 
-> > Signed-off-by: Matthew Garrett <mjg@redhat.com>
-> 
-> 1. You've put it so it as if Linus said it
+On Tue, 08 Feb 2011 18:33:33 +0800，Harry Wei wrote:
 
-If he merged it, he effectively would be saying it...
+> Acked-by: Wang Cong <xiyou.wangcong@gmail.com>
 
-> 2. I'd like to see a lawyers take on it first (Linux Foundation perhaps)
-> before it goes in
+I never ACK your patch.
 
-And yes, I'd expect legal feedback to be a requirement.
+
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+
