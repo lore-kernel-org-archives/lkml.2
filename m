@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788Ab1BHMGT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 07:06:19 -0500
-Received: from elasmtp-dupuy.atl.sa.earthlink.net ([209.86.89.62]:53929 "EHLO
-	elasmtp-dupuy.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752955Ab1BHMGR (ORCPT
+	id S1753820Ab1BHMHB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 07:07:01 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:64313 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752955Ab1BHMG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 07:06:17 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=earthlink.net;
-  b=U3FczqoMEcpJvy2WyNOBJaZ5mNHLT2Zl1ofodfHy0nTSnelELDoExABEHSPmVByP;
-  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:Subject:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
-Message-ID: <4D5131B6.4050205@earthlink.net>
-Date: Tue, 08 Feb 2011 07:06:14 -0500
-From: Stephen Clark <sclark46@earthlink.net>
-Reply-To: sclark46@earthlink.net
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Tue, 8 Feb 2011 07:06:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ajAy8Wpsm2ieaALhy9X6hiM7t5geeLIsMQkp1AuDG3myRANKAhihu0bSx6i6nbtvVS
+         dFKg9S9xexjYzQkIiYbv4tPh7cLulwl2/lWPXp1Z8nrL7PqqFi4wC3G37vrsFVd9riyp
+         JDEVQtl49ekgCav6ihQ17H1DW8FsmSOkmFN7Q=
 MIME-Version: 1.0
-To: linux-kernel <linux-kernel@vger.kernel.org>,
-        Steve Clark <sclark@netwolves.com>
-Subject: ipsec with ipv4 and ipv6 not working
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec799fc74f27dc2289ee26d8cd1fa9f214b5350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 69.22.83.66
+In-Reply-To: <4D511FA7.4040207@samsung.com>
+References: <AANLkTi=0RtvsGX+Q3goL3mdG6oKeNidYtiudTZ8ZTpRP@mail.gmail.com>
+	<20101208115510.GD10998@console-pimps.org>
+	<AANLkTi=KqOa-MRQiptCtZGvoafRCgULfE3QFs=hmGpdi@mail.gmail.com>
+	<AANLkTi=PpTi1_JO9Q=ph7w9Jim8iXMf9LbCfmEkWuo-h@mail.gmail.com>
+	<20101209064751.GA21128@void.printf.net>
+	<AANLkTimMgrawcndvUTYYjq9BGFqs-sbRsZkwVQ0Uvhvb@mail.gmail.com>
+	<20101209160157.GA28586@void.printf.net>
+	<AANLkTim3Rj2tTbqvT8nM4L=p=Wx8bdOnGq=EDv+cs02g@mail.gmail.com>
+	<20101211192320.GA24430@void.printf.net>
+	<AANLkTik7cMwgwXR1zK44HXC+1YtzpU3_zW2GUjcBMi8X@mail.gmail.com>
+	<4D354752.3030401@samsung.com>
+	<AANLkTi=SEXYk9B6N6RGmLKAx_QF6sybgHMVVpEo8mcp8@mail.gmail.com>
+	<4D50E4DD.4030500@samsung.com>
+	<AANLkTikTxjbkA9d9WjVNm9bC3bPLQDndwSXCxp3jOLKS@mail.gmail.com>
+	<4D511FA7.4040207@samsung.com>
+Date: Tue, 8 Feb 2011 12:06:57 +0000
+Message-ID: <AANLkTimuC1yu6ggeM3TEwzdsfGV8+=_=y5JzSEfRmBwU@mail.gmail.com>
+Subject: Re: [PATCH v4] dw_mmc: Add Synopsys DesignWare mmc host driver.
+From: Will Newton <will.newton@gmail.com>
+To: Jaehoon Chung <jh80.chung@samsung.com>
+Cc: Chris Ball <cjb@laptop.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-mmc@vger.kernel.org, Matt Fleming <matt@console-pimps.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Feb 8, 2011 at 10:49 AM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
+> Hi Will
+>
+> I'm probing dw_mmc on Samsung SoC...
+>
+> So i have some board specific data..
+>
+> But i didn't want to add board specific data in dw_mmc.c
+> I want to use get_cd()/get_wd()/init()...So i asked to you..:)
 
-How do I find out what is happening to my packets thru my ipsec tunnel.
-They just seem to disappear on the remote side.
+It may be possible to use your board specific data in your callbacks
+directly rather than passing the board data to the driver and passing
+it back, although it depends on the structure of your code.
 
-I have successfully got the pings thru
-when everything has an ipv6 address, but am not successful when trying
-to connect two ipv4 lans across an ipv6 ipsec tunnel. All fw chains both 4 and 6
-are set to ACCEPT. NAT is turned off.
+> If i need not the data information, i will not append them..
+> you're right, maybe "struct dw_mci" need not..(just example)
+>
+> And i think that need card_detect irq-handler function..if we use pdata->init..isn't? :)
 
-      eth0               eth1                                         eth1 
-       eth0
-10.1.254.254/17  2001:xxxx:1628::254 <----ipv6 internet -----> 
-2001:xxxx:e334::254  10.0.254.254/17
+I think the use of pdata->init should be made optional, as it doesn't
+seem to be needed on most SoCs.
 
-12:00:02.296972 IP6 2001:xxxx:1628::254 > 2001:xxxx:e334::254: 
-ESP(spi=0x07454bc3,seq=0x28b), length 132
-12:00:03.308751 IP6 2001:xxxx:1628::254 > 2001:xxxx:e334::254: 
-ESP(spi=0x07454bc3,seq=0x28c), length 132
-12:00:04.296857 IP6 2001:xxxx:1628::254 > 2001:xxxx:e334::254: 
-ESP(spi=0x07454bc3,seq=0x28d), length 132
-12:00:05.293748 IP6 2001:xxxx:1628::254 > 2001:xxxx:e334::254: 
-ESP(spi=0x07454bc3,seq=0x28e), length 132
-12:00:06.296623 IP6 2001:xxxx:1628::254 > 2001:xxxx:e334::254: 
-ESP(spi=0x07454bc3,seq=0x28f), length 132
+> In future, if i need your help, can i ask to you?
 
-I have posted to the ipsec-devel list and haven't gotten any responses. Also I 
-have spent 2 days googling with
-no results about the above setup. Is it even possible to tunnel ipv4 packet thru 
-an ipv6 ipsec tunnel?
+Yes, certainly. We continue to work on the driver and would be happy
+to have our bugs fixed! ;-)
 
-Thanks,
-Steve
+> Onemore...Did you test the dw_mmc..?
+> If you can answer, i want to know the performance..
 
--- 
-
-"They that give up essential liberty to obtain temporary safety,
-deserve neither liberty nor safety."  (Ben Franklin)
-
-"The course of history shows that as a government grows, liberty
-decreases."  (Thomas Jefferson)
-
-
-
+We have tested it, unfortunately I don't have any accurate performance
+figures to hand. The perform seems to be in the expected range though.
