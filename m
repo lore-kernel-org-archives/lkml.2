@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440Ab1BHKwO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 05:52:14 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:38485 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753349Ab1BHKwM (ORCPT
+	id S1753458Ab1BHKw0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 05:52:26 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:37463 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753280Ab1BHKwX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 05:52:12 -0500
+	Tue, 8 Feb 2011 05:52:23 -0500
 From: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
-Subject: [RFC PATCH V3 2/3] cpuidle: list based cpuidle driver registration
-	and selection
+Subject: [RFC PATCH V3 3/3] cpuidle: default idle driver for x86
 To: arjan@linux.intel.com, peterz@infradead.org, lenb@kernel.org,
         suresh.b.siddha@intel.com, benh@kernel.crashing.org, venki@google.com,
         ak@linux.intel.com
 Cc: linux-kernel@vger.kernel.org
-Date: Tue, 08 Feb 2011 16:22:04 +0530
-Message-ID: <20110208105203.9998.35678.stgit@tringupt.in.ibm.com>
+Date: Tue, 08 Feb 2011 16:22:15 +0530
+Message-ID: <20110208105214.9998.85114.stgit@tringupt.in.ibm.com>
 In-Reply-To: <20110208105146.9998.22103.stgit@tringupt.in.ibm.com>
 References: <20110208105146.9998.22103.stgit@tringupt.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -26,366 +25,873 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A cpuidle_driver structure represents a cpuidle driver like
-acpi_idle, intel_idle providing low level idle routines.
-A cpuidle_driver is global in nature as it provides routines
-for all the CPUS. Each CPU registered with the cpuidle subsystem is
-represented as a cpuidle_device. A cpuidle_device structure
-points to the low level idle routines for that CPU provided by
-a certain driver. In other words, a cpuidle driver creates a
-cpuidle_device structure for each CPU that it registers with the
-cpuidle subsystem. Whenever cpuidle idle loop is called, the cpuidle
-subsystem picks the cpuidle_device structure for that cpu and
-calls one of the low level idle routines through that structure.
+This default cpuidle_driver parses idle= boot parameters, selects
+the optimal idle routine for x86 during bootup and registers with
+cpuidle. The code for idle routines and the selection of optimal
+routine is moved from arch/x86/kernel/process.c . At device_initcall
+this default driver is registered with cpuidle and for non ACPI
+platforms it continues to be used. For ACPI platforms, acpi_idle
+driver would replace this driver at a later point in time during
+bootup. Until this driver's registration, architecture supplied
+compile time default idle routine is called from within
+cpuidle_idle_call().
 
-In the current design, only one cpuidle_driver may be registered
-and registration of any subsequent driver fails. The same registered
-driver provides low level idle routines for each cpuidle_device.
-
-A list based registration for cpuidle_driver provides a clean
-mechanism for multiple subsystems/modules to register their own idle
-routines and thus avoids using pm_idle.
-
-This patch implements a list based registration for cpuidle
-driver. Different drivers can be registered and the driver to
-be used is selected based on a per driver priority. On a
-cpuidle driver registration or unregistration cpuidle_device
-structure for each CPU is changed. Each cpuidle_device points
-to its driver to facilitate this registration and unregistration.
-
-        ---------                        ---------
-        |cpuidle|                        |cpuidle|
-        |driver |----------------------- |driver |
-        |default|                        |acpi   |
-        ---------                        ---------
-            ^                                ^
-            |                                |
-----------------------------      ---------------------------
-^                    ^            ^                ^
-|                    |            |                |
-|                    |            |                |
----------    ---------            ---------    ----------
-|cpuidle|    |cpuidle|            |cpuidle|    |cpuidle |
-|device |    |device | ....       |device |    |device  | .....
-|  CPU0 |    | CPU1  |            |CPU0   |    |CPU1    |
----------    ---------            ---------    ----------
+ToDo:
+1. Design methods to override current idle routine from xen/setup.c
 
 Signed-off-by: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
 ---
 
- drivers/acpi/processor_idle.c |    2 +
- drivers/cpuidle/Kconfig       |    6 ++
- drivers/cpuidle/cpuidle.c     |   41 ++++++++++++---
- drivers/cpuidle/driver.c      |  114 ++++++++++++++++++++++++++++++++++++++---
- include/linux/cpuidle.h       |    3 +
- 5 files changed, 152 insertions(+), 14 deletions(-)
+ arch/x86/kernel/process.c     |  340 -------------------------------
+ arch/x86/xen/setup.c          |    1 
+ drivers/idle/Makefile         |    2 
+ drivers/idle/default_driver.c |  453 +++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 454 insertions(+), 342 deletions(-)
+ create mode 100644 drivers/idle/default_driver.c
 
-diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-index dcb38f8..b53c7fb 100644
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@ -964,6 +964,7 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
- struct cpuidle_driver acpi_idle_driver = {
- 	.name =		"acpi_idle",
- 	.owner =	THIS_MODULE,
-+	.priority =	10,
- };
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 57d1868..6267f89 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -7,7 +7,6 @@
+ #include <linux/sched.h>
+ #include <linux/module.h>
+ #include <linux/pm.h>
+-#include <linux/clockchips.h>
+ #include <linux/random.h>
+ #include <linux/user-return-notifier.h>
+ #include <linux/dmi.h>
+@@ -22,11 +21,6 @@
+ #include <asm/i387.h>
+ #include <asm/debugreg.h>
  
- /**
-@@ -985,6 +986,7 @@ static int acpi_processor_setup_cpuidle(struct acpi_processor *pr)
- 	}
+-unsigned long idle_halt;
+-EXPORT_SYMBOL(idle_halt);
+-unsigned long idle_nomwait;
+-EXPORT_SYMBOL(idle_nomwait);
+-
+ struct kmem_cache *task_xstate_cachep;
+ EXPORT_SYMBOL_GPL(task_xstate_cachep);
  
- 	dev->cpu = pr->id;
-+	dev->drv = &acpi_idle_driver;
- 	for (i = 0; i < CPUIDLE_STATE_MAX; i++) {
- 		dev->states[i].name[0] = '\0';
- 		dev->states[i].desc[0] = '\0';
-diff --git a/drivers/cpuidle/Kconfig b/drivers/cpuidle/Kconfig
-index e67c258..8cc73c8 100644
---- a/drivers/cpuidle/Kconfig
-+++ b/drivers/cpuidle/Kconfig
-@@ -19,3 +19,9 @@ config CPU_IDLE_GOV_MENU
- 	bool
- 	depends on CPU_IDLE && NO_HZ
- 	default y
-+
-+config ARCH_USES_PMIDLE
-+	bool
-+	depends on CPUIDLE
-+	depends on !X86
-+	default y
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index 9bf4640..dc472d8 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -109,6 +109,7 @@ void cpuidle_idle_call(void)
- 	trace_power_end(smp_processor_id());
+@@ -325,340 +319,6 @@ long sys_execve(const char __user *name,
+ 	return error;
  }
  
-+#ifdef CONFIG_ARCH_USES_PMIDLE
- /**
-  * cpuidle_install_idle_handler - installs the cpuidle idle loop handler
-  */
-@@ -131,6 +132,10 @@ void cpuidle_uninstall_idle_handler(void)
- 		cpuidle_kick_cpus();
- 	}
- }
-+#else
-+void cpuidle_install_idle_handler(void) {}
-+void cpuidle_uninstall_idle_handler(void) {}
-+#endif
- 
- /**
-  * cpuidle_pause_and_lock - temporarily disables CPUIDLE
-@@ -284,9 +289,21 @@ static int __cpuidle_register_device(struct cpuidle_device *dev)
- 	struct sys_device *sys_dev = get_cpu_sysdev((unsigned long)dev->cpu);
- 	struct cpuidle_driver *cpuidle_driver = cpuidle_get_driver();
- 
-+	if (dev->registered)
-+		return 0;
- 	if (!sys_dev)
- 		return -EINVAL;
--	if (!try_module_get(cpuidle_driver->owner))
-+	/*
-+	 * This will maintain compatibility with old cpuidle_device
-+	 * structure where driver pointer is not set.
-+	 *
-+	 * To Do: Change all call sites to set dev->drv pointer.
-+	 * This can be changed to BUG() later in case somebody
-+	 * registers without a driver pointer.
-+	 */
-+	if (!dev->drv)
-+		dev->drv = cpuidle_driver;
-+	if (!try_module_get(dev->drv->owner))
- 		return -EINVAL;
- 
- 	init_completion(&dev->kobj_unregister);
-@@ -313,10 +330,11 @@ static int __cpuidle_register_device(struct cpuidle_device *dev)
- 			dev->states[i].power_usage = -1 - i;
- 	}
- 
--	per_cpu(cpuidle_devices, dev->cpu) = dev;
-+	if (cpuidle_driver == dev->drv)
-+		per_cpu(cpuidle_devices, dev->cpu) = dev;
- 	list_add(&dev->device_list, &cpuidle_detected_devices);
- 	if ((ret = cpuidle_add_sysfs(sys_dev))) {
--		module_put(cpuidle_driver->owner);
-+		module_put(dev->drv->owner);
- 		return ret;
- 	}
- 
-@@ -367,13 +385,13 @@ void cpuidle_unregister_device(struct cpuidle_device *dev)
- 	cpuidle_disable_device(dev);
- 
- 	cpuidle_remove_sysfs(sys_dev);
--	list_del(&dev->device_list);
- 	wait_for_completion(&dev->kobj_unregister);
--	per_cpu(cpuidle_devices, dev->cpu) = NULL;
-+	if (cpuidle_driver == dev->drv)
-+		per_cpu(cpuidle_devices, dev->cpu) = NULL;
- 
- 	cpuidle_resume_and_unlock();
- 
--	module_put(cpuidle_driver->owner);
-+	module_put(dev->drv->owner);
- }
- 
- EXPORT_SYMBOL_GPL(cpuidle_unregister_device);
-@@ -413,6 +431,15 @@ static inline void latency_notifier_init(struct notifier_block *n)
- 
- #endif /* CONFIG_SMP */
- 
-+#ifdef CONFIG_ARCH_USES_PMIDLE
-+static inline void save_pm_idle(void)
-+{
-+	pm_idle_old = pm_idle;
-+}
-+#else
-+static inline void save_pm_idle(void) {}
-+#endif
-+
- /**
-  * cpuidle_init - core initializer
-  */
-@@ -420,7 +447,7 @@ static int __init cpuidle_init(void)
- {
- 	int ret;
- 
--	pm_idle_old = pm_idle;
-+	save_pm_idle();
- 
- 	ret = cpuidle_add_class_sysfs(&cpu_sysdev_class);
- 	if (ret)
-diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
-index fd1601e..c235286 100644
---- a/drivers/cpuidle/driver.c
-+++ b/drivers/cpuidle/driver.c
-@@ -14,8 +14,83 @@
- 
- #include "cpuidle.h"
- 
-+#define MAX_PRIORITY 1000
-+#define DEFAULT_PRIORITY 100
-+
- static struct cpuidle_driver *cpuidle_curr_driver;
- DEFINE_SPINLOCK(cpuidle_driver_lock);
-+LIST_HEAD(registered_cpuidle_drivers);
-+
-+static struct cpuidle_driver *select_cpuidle_driver(void)
-+{
-+	struct cpuidle_driver *item = NULL, *selected = NULL;
-+	unsigned int min_priority = MAX_PRIORITY;
-+
-+	list_for_each_entry(item, &registered_cpuidle_drivers,
-+		driver_list) {
-+		if (item->priority <= min_priority) {
-+			selected = item;
-+			min_priority = item->priority;
-+		}
-+	}
-+	return selected;
-+}
-+
-+static void set_current_cpuidle_driver(struct cpuidle_driver *drv)
-+{
-+	struct cpuidle_device *item = NULL;
-+	if (drv == cpuidle_curr_driver)
-+		return;
-+
-+	/* Unregister the previous drivers devices */
-+	/* Do we need to take cpuidle_lock ? {un}register_device takes lock*/
-+	if (cpuidle_curr_driver) {
-+		list_for_each_entry(item, &cpuidle_detected_devices,
-+			device_list) {
-+			if (item->drv == cpuidle_curr_driver)
-+				cpuidle_unregister_device(item);
-+		}
-+	}
-+
-+	cpuidle_curr_driver = drv;
-+
-+	if (drv == NULL)
-+		return;
-+	else {
-+		/* Register the new driver devices */
-+		list_for_each_entry(item, &cpuidle_detected_devices,
-+			device_list) {
-+			if (item->drv == drv)
-+				cpuidle_register_device(item);
-+		}
-+	}
-+}
-+
-+static inline int arch_allow_register(void)
-+{
-+#ifdef CONFIG_ARCH_USES_PMIDLE
-+	if (cpuidle_curr_driver)
-+		return -EPERM;
-+	else
-+		return 0;
-+#else
-+	return 0;
-+#endif
-+}
-+
-+static inline int arch_allow_unregister(struct cpuidle_driver *drv)
-+{
-+#ifdef CONFIG_ARCH_USES_PMIDLE
-+	if (drv != cpuidle_curr_driver) {
-+		WARN(1, "invalid cpuidle_unregister_driver(%s)\n",
-+			drv->name);
-+		return -EPERM;
-+	} else
-+		return 0;
-+#else
-+	return 0;
-+#endif
-+}
- 
- /**
-  * cpuidle_register_driver - registers a driver
-@@ -23,15 +98,29 @@ DEFINE_SPINLOCK(cpuidle_driver_lock);
-  */
- int cpuidle_register_driver(struct cpuidle_driver *drv)
- {
-+	struct cpuidle_driver *item = NULL;
- 	if (!drv)
- 		return -EINVAL;
-+	if (drv->priority == 0)
-+		drv->priority = DEFAULT_PRIORITY;
- 
- 	spin_lock(&cpuidle_driver_lock);
--	if (cpuidle_curr_driver) {
-+
-+	if (arch_allow_register()) {
- 		spin_unlock(&cpuidle_driver_lock);
- 		return -EBUSY;
- 	}
--	cpuidle_curr_driver = drv;
-+
-+	/* Check if driver already registered */
-+	list_for_each_entry(item, &registered_cpuidle_drivers, driver_list) {
-+		if (item == drv) {
-+			spin_unlock(&cpuidle_driver_lock);
-+			return -EINVAL;
-+		}
-+	}
-+
-+	list_add(&drv->driver_list, &registered_cpuidle_drivers);
-+	set_current_cpuidle_driver(select_cpuidle_driver());
- 	spin_unlock(&cpuidle_driver_lock);
- 
- 	return 0;
-@@ -54,14 +143,25 @@ EXPORT_SYMBOL_GPL(cpuidle_get_driver);
-  */
- void cpuidle_unregister_driver(struct cpuidle_driver *drv)
- {
--	if (drv != cpuidle_curr_driver) {
--		WARN(1, "invalid cpuidle_unregister_driver(%s)\n",
--			drv->name);
-+	struct cpuidle_device *item = NULL;
-+
-+	if (arch_allow_unregister(drv))
- 		return;
+-/*
+- * Idle related variables and functions
+- */
+-unsigned long boot_option_idle_override = 0;
+-EXPORT_SYMBOL(boot_option_idle_override);
+-
+-/*
+- * Powermanagement idle function, if any..
+- */
+-void (*pm_idle)(void);
+-EXPORT_SYMBOL(pm_idle);
+-
+-#ifdef CONFIG_X86_32
+-/*
+- * This halt magic was a workaround for ancient floppy DMA
+- * wreckage. It should be safe to remove.
+- */
+-static int hlt_counter;
+-void disable_hlt(void)
+-{
+-	hlt_counter++;
+-}
+-EXPORT_SYMBOL(disable_hlt);
+-
+-void enable_hlt(void)
+-{
+-	hlt_counter--;
+-}
+-EXPORT_SYMBOL(enable_hlt);
+-
+-static inline int hlt_use_halt(void)
+-{
+-	return (!hlt_counter && boot_cpu_data.hlt_works_ok);
+-}
+-#else
+-static inline int hlt_use_halt(void)
+-{
+-	return 1;
+-}
+-#endif
+-
+-/*
+- * We use this if we don't have any better
+- * idle routine..
+- */
+-void default_idle(void)
+-{
+-	if (hlt_use_halt()) {
+-		trace_power_start(POWER_CSTATE, 1, smp_processor_id());
+-		current_thread_info()->status &= ~TS_POLLING;
+-		/*
+-		 * TS_POLLING-cleared state must be visible before we
+-		 * test NEED_RESCHED:
+-		 */
+-		smp_mb();
+-
+-		if (!need_resched())
+-			safe_halt();	/* enables interrupts racelessly */
+-		else
+-			local_irq_enable();
+-		current_thread_info()->status |= TS_POLLING;
+-	} else {
+-		local_irq_enable();
+-		/* loop is done by the caller */
+-		cpu_relax();
 -	}
+-}
+-#ifdef CONFIG_APM_MODULE
+-EXPORT_SYMBOL(default_idle);
+-#endif
+-
+-void stop_this_cpu(void *dummy)
+-{
+-	local_irq_disable();
+-	/*
+-	 * Remove this CPU:
+-	 */
+-	set_cpu_online(smp_processor_id(), false);
+-	disable_local_APIC();
+-
+-	for (;;) {
+-		if (hlt_works(smp_processor_id()))
+-			halt();
+-	}
+-}
+-
+-static void do_nothing(void *unused)
+-{
+-}
+-
+-/*
+- * cpu_idle_wait - Used to ensure that all the CPUs discard old value of
+- * pm_idle and update to new pm_idle value. Required while changing pm_idle
+- * handler on SMP systems.
+- *
+- * Caller must have changed pm_idle to the new value before the call. Old
+- * pm_idle value will not be used by any CPU after the return of this function.
+- */
+-void cpu_idle_wait(void)
+-{
+-	smp_mb();
+-	/* kick all the CPUs so that they exit out of pm_idle */
+-	smp_call_function(do_nothing, NULL, 1);
+-}
+-EXPORT_SYMBOL_GPL(cpu_idle_wait);
+-
+-/*
+- * This uses new MONITOR/MWAIT instructions on P4 processors with PNI,
+- * which can obviate IPI to trigger checking of need_resched.
+- * We execute MONITOR against need_resched and enter optimized wait state
+- * through MWAIT. Whenever someone changes need_resched, we would be woken
+- * up from MWAIT (without an IPI).
+- *
+- * New with Core Duo processors, MWAIT can take some hints based on CPU
+- * capability.
+- */
+-void mwait_idle_with_hints(unsigned long ax, unsigned long cx)
+-{
+-	trace_power_start(POWER_CSTATE, (ax>>4)+1, smp_processor_id());
+-	if (!need_resched()) {
+-		if (cpu_has(&current_cpu_data, X86_FEATURE_CLFLUSH_MONITOR))
+-			clflush((void *)&current_thread_info()->flags);
+-
+-		__monitor((void *)&current_thread_info()->flags, 0, 0);
+-		smp_mb();
+-		if (!need_resched())
+-			__mwait(ax, cx);
+-	}
+-}
+-
+-/* Default MONITOR/MWAIT with no hints, used for default C1 state */
+-static void mwait_idle(void)
+-{
+-	if (!need_resched()) {
+-		trace_power_start(POWER_CSTATE, 1, smp_processor_id());
+-		if (cpu_has(&current_cpu_data, X86_FEATURE_CLFLUSH_MONITOR))
+-			clflush((void *)&current_thread_info()->flags);
+-
+-		__monitor((void *)&current_thread_info()->flags, 0, 0);
+-		smp_mb();
+-		if (!need_resched())
+-			__sti_mwait(0, 0);
+-		else
+-			local_irq_enable();
+-	} else
+-		local_irq_enable();
+-}
+-
+-/*
+- * On SMP it's slightly faster (but much more power-consuming!)
+- * to poll the ->work.need_resched flag instead of waiting for the
+- * cross-CPU IPI to arrive. Use this option with caution.
+- */
+-static void poll_idle(void)
+-{
+-	trace_power_start(POWER_CSTATE, 0, smp_processor_id());
+-	local_irq_enable();
+-	while (!need_resched())
+-		cpu_relax();
+-	trace_power_end(0);
+-}
+-
+-/*
+- * mwait selection logic:
+- *
+- * It depends on the CPU. For AMD CPUs that support MWAIT this is
+- * wrong. Family 0x10 and 0x11 CPUs will enter C1 on HLT. Powersavings
+- * then depend on a clock divisor and current Pstate of the core. If
+- * all cores of a processor are in halt state (C1) the processor can
+- * enter the C1E (C1 enhanced) state. If mwait is used this will never
+- * happen.
+- *
+- * idle=mwait overrides this decision and forces the usage of mwait.
+- */
+-static int __cpuinitdata force_mwait;
+-
+-#define MWAIT_INFO			0x05
+-#define MWAIT_ECX_EXTENDED_INFO		0x01
+-#define MWAIT_EDX_C1			0xf0
+-
+-static int __cpuinit mwait_usable(const struct cpuinfo_x86 *c)
+-{
+-	u32 eax, ebx, ecx, edx;
+-
+-	if (force_mwait)
+-		return 1;
+-
+-	if (c->cpuid_level < MWAIT_INFO)
+-		return 0;
+-
+-	cpuid(MWAIT_INFO, &eax, &ebx, &ecx, &edx);
+-	/* Check, whether EDX has extended info about MWAIT */
+-	if (!(ecx & MWAIT_ECX_EXTENDED_INFO))
+-		return 1;
+-
+-	/*
+-	 * edx enumeratios MONITOR/MWAIT extensions. Check, whether
+-	 * C1  supports MWAIT
+-	 */
+-	return (edx & MWAIT_EDX_C1);
+-}
+-
+-bool c1e_detected;
+-EXPORT_SYMBOL(c1e_detected);
+-
+-static cpumask_var_t c1e_mask;
+-
+-void c1e_remove_cpu(int cpu)
+-{
+-	if (c1e_mask != NULL)
+-		cpumask_clear_cpu(cpu, c1e_mask);
+-}
+-
+-/*
+- * C1E aware idle routine. We check for C1E active in the interrupt
+- * pending message MSR. If we detect C1E, then we handle it the same
+- * way as C3 power states (local apic timer and TSC stop)
+- */
+-static void c1e_idle(void)
+-{
+-	if (need_resched())
+-		return;
+-
+-	if (!c1e_detected) {
+-		u32 lo, hi;
+-
+-		rdmsr(MSR_K8_INT_PENDING_MSG, lo, hi);
+-
+-		if (lo & K8_INTP_C1E_ACTIVE_MASK) {
+-			c1e_detected = true;
+-			if (!boot_cpu_has(X86_FEATURE_NONSTOP_TSC))
+-				mark_tsc_unstable("TSC halt in AMD C1E");
+-			printk(KERN_INFO "System has AMD C1E enabled\n");
+-		}
+-	}
+-
+-	if (c1e_detected) {
+-		int cpu = smp_processor_id();
+-
+-		if (!cpumask_test_cpu(cpu, c1e_mask)) {
+-			cpumask_set_cpu(cpu, c1e_mask);
+-			/*
+-			 * Force broadcast so ACPI can not interfere.
+-			 */
+-			clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_FORCE,
+-					   &cpu);
+-			printk(KERN_INFO "Switch to broadcast mode on CPU%d\n",
+-			       cpu);
+-		}
+-		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
+-
+-		default_idle();
+-
+-		/*
+-		 * The switch back from broadcast mode needs to be
+-		 * called with interrupts disabled.
+-		 */
+-		 local_irq_disable();
+-		 clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
+-		 local_irq_enable();
+-	} else
+-		default_idle();
+-}
+-
+-void __cpuinit select_idle_routine(const struct cpuinfo_x86 *c)
+-{
+-#ifdef CONFIG_SMP
+-	if (pm_idle == poll_idle && smp_num_siblings > 1) {
+-		printk_once(KERN_WARNING "WARNING: polling idle and HT enabled,"
+-			" performance may degrade.\n");
+-	}
+-#endif
+-	if (pm_idle)
+-		return;
+-
+-	if (cpu_has(c, X86_FEATURE_MWAIT) && mwait_usable(c)) {
+-		/*
+-		 * One CPU supports mwait => All CPUs supports mwait
+-		 */
+-		printk(KERN_INFO "using mwait in idle threads.\n");
+-		pm_idle = mwait_idle;
+-	} else if (cpu_has_amd_erratum(amd_erratum_400)) {
+-		/* E400: APIC timer interrupt does not wake up CPU from C1e */
+-		printk(KERN_INFO "using C1E aware idle routine\n");
+-		pm_idle = c1e_idle;
+-	} else
+-		pm_idle = default_idle;
+-}
+-
+-void __init init_c1e_mask(void)
+-{
+-	/* If we're using c1e_idle, we need to allocate c1e_mask. */
+-	if (pm_idle == c1e_idle)
+-		zalloc_cpumask_var(&c1e_mask, GFP_KERNEL);
+-}
+-
+-static int __init idle_setup(char *str)
+-{
+-	if (!str)
+-		return -EINVAL;
+-
+-	if (!strcmp(str, "poll")) {
+-		printk("using polling idle threads.\n");
+-		pm_idle = poll_idle;
+-	} else if (!strcmp(str, "mwait"))
+-		force_mwait = 1;
+-	else if (!strcmp(str, "halt")) {
+-		/*
+-		 * When the boot option of idle=halt is added, halt is
+-		 * forced to be used for CPU idle. In such case CPU C2/C3
+-		 * won't be used again.
+-		 * To continue to load the CPU idle driver, don't touch
+-		 * the boot_option_idle_override.
+-		 */
+-		pm_idle = default_idle;
+-		idle_halt = 1;
+-		return 0;
+-	} else if (!strcmp(str, "nomwait")) {
+-		/*
+-		 * If the boot option of "idle=nomwait" is added,
+-		 * it means that mwait will be disabled for CPU C2/C3
+-		 * states. In such case it won't touch the variable
+-		 * of boot_option_idle_override.
+-		 */
+-		idle_nomwait = 1;
+-		return 0;
+-	} else
+-		return -1;
+-
+-	boot_option_idle_override = 1;
+-	return 0;
+-}
+-early_param("idle", idle_setup);
+-
+ unsigned long arch_align_stack(unsigned long sp)
+ {
+ 	if (!(current->personality & ADDR_NO_RANDOMIZE) && randomize_va_space)
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index b5a7f92..ee93c83 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -349,7 +349,6 @@ void __init xen_arch_setup(void)
+ #ifdef CONFIG_X86_32
+ 	boot_cpu_data.hlt_works_ok = 1;
+ #endif
+-	pm_idle = default_idle;
  
- 	spin_lock(&cpuidle_driver_lock);
--	cpuidle_curr_driver = NULL;
-+
-+	/* Set some other driver as current */
-+	list_del(&drv->driver_list);
-+	set_current_cpuidle_driver(select_cpuidle_driver());
-+
-+	/* Delete all devices corresponding to this driver */
-+	mutex_lock(&cpuidle_lock);
-+	list_for_each_entry(item, &cpuidle_detected_devices, device_list) {
-+		if (item->drv == drv)
-+			list_del(&item->device_list);
-+	}
-+	mutex_unlock(&cpuidle_lock);
-+
- 	spin_unlock(&cpuidle_driver_lock);
+ 	fiddle_vdso();
  }
- 
-diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-index 1be416b..cbb504c 100644
---- a/include/linux/cpuidle.h
-+++ b/include/linux/cpuidle.h
-@@ -96,6 +96,7 @@ struct cpuidle_device {
- 	struct cpuidle_state	*last_state;
- 
- 	struct list_head 	device_list;
-+	struct cpuidle_driver	*drv;
- 	struct kobject		kobj;
- 	struct completion	kobj_unregister;
- 	void			*governor_data;
-@@ -125,6 +126,8 @@ static inline int cpuidle_get_last_residency(struct cpuidle_device *dev)
- struct cpuidle_driver {
- 	char			name[CPUIDLE_NAME_LEN];
- 	struct module 		*owner;
-+	unsigned int		priority;
-+	struct list_head	driver_list;
- };
- 
- #ifdef CONFIG_CPU_IDLE
+diff --git a/drivers/idle/Makefile b/drivers/idle/Makefile
+index 23d295c..d7d9ee2 100644
+--- a/drivers/idle/Makefile
++++ b/drivers/idle/Makefile
+@@ -1,3 +1,3 @@
+ obj-$(CONFIG_I7300_IDLE)			+= i7300_idle.o
+ obj-$(CONFIG_INTEL_IDLE)			+= intel_idle.o
+-
++obj-$(CONFIG_X86)				+= default_driver.o
+diff --git a/drivers/idle/default_driver.c b/drivers/idle/default_driver.c
+new file mode 100644
+index 0000000..54534aa
+--- /dev/null
++++ b/drivers/idle/default_driver.c
+@@ -0,0 +1,453 @@
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/sched.h>
++#include <linux/cpuidle.h>
++#include <linux/clockchips.h>
++#include <linux/slab.h>
++#include <trace/events/power.h>
++#include <asm/mwait.h>
++
++unsigned long boot_option_idle_override = 0;
++EXPORT_SYMBOL(boot_option_idle_override);
++
++unsigned long idle_halt;
++EXPORT_SYMBOL(idle_halt);
++unsigned long idle_nomwait;
++EXPORT_SYMBOL(idle_nomwait);
++
++static struct cpuidle_state *opt_state;
++
++#ifdef CONFIG_X86_32
++/*
++ * This halt magic was a workaround for ancient floppy DMA
++ * wreckage. It should be safe to remove.
++ */
++static int hlt_counter;
++void disable_hlt(void)
++{
++	hlt_counter++;
++}
++EXPORT_SYMBOL(disable_hlt);
++
++void enable_hlt(void)
++{
++	hlt_counter--;
++}
++EXPORT_SYMBOL(enable_hlt);
++
++static inline int hlt_use_halt(void)
++{
++	return (!hlt_counter && boot_cpu_data.hlt_works_ok);
++}
++#else
++static inline int hlt_use_halt(void)
++{
++	return 1;
++}
++#endif
++
++/*
++ * We use this if we don't have any better
++ * idle routine..
++ */
++void default_idle(void)
++{
++	if (hlt_use_halt()) {
++		trace_power_start(POWER_CSTATE, 1, smp_processor_id());
++		current_thread_info()->status &= ~TS_POLLING;
++		/*
++		 * TS_POLLING-cleared state must be visible before we
++		 * test NEED_RESCHED:
++		 */
++		smp_mb();
++
++		if (!need_resched())
++			safe_halt();	/* enables interrupts racelessly */
++		else
++			local_irq_enable();
++		current_thread_info()->status |= TS_POLLING;
++	} else {
++		local_irq_enable();
++		/* loop is done by the caller */
++		cpu_relax();
++	}
++}
++#ifdef CONFIG_APM_MODULE
++EXPORT_SYMBOL(default_idle);
++#endif
++
++void stop_this_cpu(void *dummy)
++{
++	local_irq_disable();
++	/*
++	 * Remove this CPU:
++	 */
++	set_cpu_online(smp_processor_id(), false);
++	disable_local_APIC();
++
++	for (;;) {
++		if (hlt_works(smp_processor_id()))
++			halt();
++	}
++}
++
++static void do_nothing(void *unused)
++{
++}
++
++/*
++ * cpu_idle_wait - Used to ensure that all the CPUs discard old value of
++ * pm_idle and update to new pm_idle value. Required while changing pm_idle
++ * handler on SMP systems.
++ *
++ * Caller must have changed pm_idle to the new value before the call. Old
++ * pm_idle value will not be used by any CPU after the return of this function.
++ */
++void cpu_idle_wait(void)
++{
++	smp_mb();
++	/* kick all the CPUs so that they exit out of pm_idle */
++	smp_call_function(do_nothing, NULL, 1);
++}
++
++/*
++ * This uses new MONITOR/MWAIT instructions on P4 processors with PNI,
++ * which can obviate IPI to trigger checking of need_resched.
++ * We execute MONITOR against need_resched and enter optimized wait state
++ * through MWAIT. Whenever someone changes need_resched, we would be woken
++ * up from MWAIT (without an IPI).
++ *
++ * New with Core Duo processors, MWAIT can take some hints based on CPU
++ * capability.
++ */
++void mwait_idle_with_hints(unsigned long ax, unsigned long cx)
++{
++	trace_power_start(POWER_CSTATE, (ax>>4)+1, smp_processor_id());
++	if (!need_resched()) {
++		if (cpu_has(&current_cpu_data, X86_FEATURE_CLFLUSH_MONITOR))
++			clflush((void *)&current_thread_info()->flags);
++
++		__monitor((void *)&current_thread_info()->flags, 0, 0);
++		smp_mb();
++		if (!need_resched())
++			__mwait(ax, cx);
++	}
++}
++
++/* Default MONITOR/MWAIT with no hints, used for default C1 state */
++static void mwait_idle(void)
++{
++	if (!need_resched()) {
++		trace_power_start(POWER_CSTATE, 1, smp_processor_id());
++		if (cpu_has(&current_cpu_data, X86_FEATURE_CLFLUSH_MONITOR))
++			clflush((void *)&current_thread_info()->flags);
++
++		__monitor((void *)&current_thread_info()->flags, 0, 0);
++		smp_mb();
++		if (!need_resched())
++			__sti_mwait(0, 0);
++		else
++			local_irq_enable();
++	} else
++		local_irq_enable();
++}
++
++/*
++ * On SMP it's slightly faster (but much more power-consuming!)
++ * to poll the ->work.need_resched flag instead of waiting for the
++ * cross-CPU IPI to arrive. Use this option with caution.
++ */
++static void poll_idle(void)
++{
++	trace_power_start(POWER_CSTATE, 0, smp_processor_id());
++	local_irq_enable();
++	while (!need_resched())
++		cpu_relax();
++	trace_power_end(0);
++}
++
++/*
++ * mwait selection logic:
++ *
++ * It depends on the CPU. For AMD CPUs that support MWAIT this is
++ * wrong. Family 0x10 and 0x11 CPUs will enter C1 on HLT. Powersavings
++ * then depend on a clock divisor and current Pstate of the core. If
++ * all cores of a processor are in halt state (C1) the processor can
++ * enter the C1E (C1 enhanced) state. If mwait is used this will never
++ * happen.
++ *
++ * idle=mwait overrides this decision and forces the usage of mwait.
++ */
++static int __cpuinitdata force_mwait;
++
++#define MWAIT_INFO			0x05
++#define MWAIT_ECX_EXTENDED_INFO		0x01
++#define MWAIT_EDX_C1			0xf0
++
++static int __cpuinit mwait_usable(const struct cpuinfo_x86 *c)
++{
++	u32 eax, ebx, ecx, edx;
++
++	if (force_mwait)
++		return 1;
++
++	if (c->cpuid_level < MWAIT_INFO)
++		return 0;
++
++	cpuid(MWAIT_INFO, &eax, &ebx, &ecx, &edx);
++	/* Check, whether EDX has extended info about MWAIT */
++	if (!(ecx & MWAIT_ECX_EXTENDED_INFO))
++		return 1;
++
++	/*
++	 * edx enumeratios MONITOR/MWAIT extensions. Check, whether
++	 * C1  supports MWAIT
++	 */
++	return (edx & MWAIT_EDX_C1);
++}
++
++bool c1e_detected;
++EXPORT_SYMBOL(c1e_detected);
++
++static cpumask_var_t c1e_mask;
++
++void c1e_remove_cpu(int cpu)
++{
++	if (c1e_mask != NULL)
++		cpumask_clear_cpu(cpu, c1e_mask);
++}
++
++/*
++ * C1E aware idle routine. We check for C1E active in the interrupt
++ * pending message MSR. If we detect C1E, then we handle it the same
++ * way as C3 power states (local apic timer and TSC stop)
++ */
++static void c1e_idle(void)
++{
++	if (need_resched())
++		return;
++
++	if (!c1e_detected) {
++		u32 lo, hi;
++
++		rdmsr(MSR_K8_INT_PENDING_MSG, lo, hi);
++
++		if (lo & K8_INTP_C1E_ACTIVE_MASK) {
++			c1e_detected = true;
++			if (!boot_cpu_has(X86_FEATURE_NONSTOP_TSC))
++				mark_tsc_unstable("TSC halt in AMD C1E");
++			printk(KERN_INFO "System has AMD C1E enabled\n");
++		}
++	}
++
++	if (c1e_detected) {
++		int cpu = smp_processor_id();
++
++		if (!cpumask_test_cpu(cpu, c1e_mask)) {
++			cpumask_set_cpu(cpu, c1e_mask);
++			/*
++			 * Force broadcast so ACPI can not interfere.
++			 */
++			clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_FORCE,
++					   &cpu);
++			printk(KERN_INFO "Switch to broadcast mode on CPU%d\n",
++			       cpu);
++		}
++		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
++
++		default_idle();
++
++		/*
++		 * The switch back from broadcast mode needs to be
++		 * called with interrupts disabled.
++		 */
++		 local_irq_disable();
++		 clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
++		 local_irq_enable();
++	} else
++		default_idle();
++}
++
++static int poll_idle_wrapper(struct cpuidle_device *dev,
++			struct cpuidle_state *state)
++{
++	poll_idle();
++	return 0;
++}
++
++static int mwait_idle_wrapper(struct cpuidle_device *dev,
++			struct cpuidle_state *state)
++{
++	mwait_idle();
++	return 0;
++}
++
++static int c1e_idle_wrapper(struct cpuidle_device *dev,
++			struct cpuidle_state *state)
++{
++	c1e_idle();
++	return 0;
++}
++
++static int default_idle_wrapper(struct cpuidle_device *dev,
++			struct cpuidle_state *state)
++{
++	default_idle();
++	return 0;
++}
++
++static struct cpuidle_state state_poll = {
++		.name = "POLL",
++		.desc = "POLL",
++		.driver_data = (void *) 0x00,
++		.flags = CPUIDLE_FLAG_TIME_VALID,
++		.exit_latency = 1,
++		.target_residency = 1,
++		.enter = &poll_idle_wrapper,
++};
++
++static struct cpuidle_state state_mwait = {
++		.name = "C1",
++		.desc = "MWAIT No Hints",
++		.driver_data = (void *) 0x01,
++		.flags = CPUIDLE_FLAG_TIME_VALID,
++		.exit_latency = 1,
++		.target_residency = 1,
++		.enter = &mwait_idle_wrapper,
++};
++
++static struct cpuidle_state state_c1e = {
++		.name = "C1E",
++		.desc = "C1E",
++		.driver_data = (void *) 0x02,
++		.flags = CPUIDLE_FLAG_TIME_VALID,
++		.exit_latency = 1,
++		.target_residency = 1,
++		.enter = &c1e_idle_wrapper,
++};
++
++static struct cpuidle_state state_default_idle = {
++		.name = "DEFAULT-IDLE",
++		.desc = "Default idle routine",
++		.driver_data = (void *) 0x03,
++		.flags = CPUIDLE_FLAG_TIME_VALID,
++		.exit_latency = 1,
++		.target_residency = 1,
++		.enter = &default_idle_wrapper,
++};
++
++void __cpuinit select_idle_routine(const struct cpuinfo_x86 *c)
++{
++#ifdef CONFIG_SMP
++	if (opt_state == &state_poll && smp_num_siblings > 1) {
++		printk_once(KERN_WARNING "WARNING: polling idle and HT enabled,"
++			" performance may degrade.\n");
++	}
++#endif
++	if (opt_state)
++		return;
++
++	if (cpu_has(c, X86_FEATURE_MWAIT) && mwait_usable(c)) {
++		/*
++		 * One CPU supports mwait => All CPUs supports mwait
++		 */
++		printk(KERN_INFO "using mwait in idle threads.\n");
++		opt_state = &state_mwait;
++	} else if (cpu_has_amd_erratum(amd_erratum_400)) {
++		/* E400: APIC timer interrupt does not wake up CPU from C1e */
++		printk(KERN_INFO "using C1E aware idle routine\n");
++		opt_state = &state_c1e;
++	} else
++		opt_state = &state_default_idle;
++}
++
++void __init init_c1e_mask(void)
++{
++	/* If we're using c1e_idle, we need to allocate c1e_mask. */
++	if (opt_state == &state_c1e)
++		zalloc_cpumask_var(&c1e_mask, GFP_KERNEL);
++}
++
++static int __init idle_setup(char *str)
++{
++	if (!str)
++		return -EINVAL;
++
++	if (!strcmp(str, "poll")) {
++		printk(KERN_INFO "using polling idle threads.\n");
++		opt_state = &state_poll;
++	} else if (!strcmp(str, "mwait"))
++		force_mwait = 1;
++	else if (!strcmp(str, "halt")) {
++		/*
++		 * When the boot option of idle=halt is added, halt is
++		 * forced to be used for CPU idle. In such case CPU C2/C3
++		 * won't be used again.
++		 * To continue to load the CPU idle driver, don't touch
++		 * the boot_option_idle_override.
++		 */
++		opt_state = &state_default_idle;
++		idle_halt = 1;
++		return 0;
++	} else if (!strcmp(str, "nomwait")) {
++		/*
++		 * If the boot option of "idle=nomwait" is added,
++		 * it means that mwait will be disabled for CPU C2/C3
++		 * states. In such case it won't touch the variable
++		 * of boot_option_idle_override.
++		 */
++		idle_nomwait = 1;
++		return 0;
++	} else
++		return -1;
++
++	boot_option_idle_override = 1;
++	return 0;
++}
++early_param("idle", idle_setup);
++
++static struct cpuidle_driver default_idle_driver = {
++	.name = "default_idle",
++	.owner = THIS_MODULE,
++	.priority = 100,
++};
++
++static int setup_cpuidle(int cpu)
++{
++	struct cpuidle_device *dev = kzalloc(sizeof(struct cpuidle_device),
++					GFP_KERNEL);
++	int count = CPUIDLE_DRIVER_STATE_START;
++	dev->cpu = cpu;
++	dev->drv = &default_idle_driver;
++
++	BUG_ON(opt_state == NULL);
++	dev->states[count] = *opt_state;
++	count++;
++
++	dev->state_count = count;
++
++	if (cpuidle_register_device(dev))
++		return -EIO;
++	return 0;
++}
++
++static int __init default_idle_init(void)
++{
++	int retval, i;
++	retval = cpuidle_register_driver(&default_idle_driver);
++
++	for_each_online_cpu(i) {
++		setup_cpuidle(i);
++	}
++
++	return 0;
++}
++
++
++static void  __exit default_idle_exit(void)
++{
++	cpuidle_unregister_driver(&default_idle_driver);
++	return;
++}
++
++device_initcall(default_idle_init);
 
