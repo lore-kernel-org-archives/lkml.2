@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab1BHS3U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 13:29:20 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:20214 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755233Ab1BHS3T (ORCPT
+	id S1755460Ab1BHSbu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 13:31:50 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:64115 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755371Ab1BHSbt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 13:29:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=CoK7FADPLk2wR7Y6xGhdxnM29fGbvP9BXu+zr6DoKH9BticjcDjLuUNRCTgwiPqYJ8
-         t/ZqrLmx3s7x5gbIWM+A==
+	Tue, 8 Feb 2011 13:31:49 -0500
+Message-ID: <4D518BBC.8050904@ru.mvista.com>
+Date: Tue, 08 Feb 2011 21:30:20 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
 MIME-Version: 1.0
-In-Reply-To: <1297126056-14322-3-git-send-email-walken@google.com>
-References: <1297126056-14322-1-git-send-email-walken@google.com>
-	<1297126056-14322-3-git-send-email-walken@google.com>
-Date: Tue, 8 Feb 2011 10:29:16 -0800
-Message-ID: <AANLkTimXQJxFHC_NcBJkutiv9N_57DDHBUGawdKrt2xH@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mlock: do not munlock pages in __do_fault()
-From: Hugh Dickins <hughd@google.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: linux-mm@kvack.org, Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+CC: Sergei Shtylyov <sshtylyov@mvista.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 21/20] ata_piix: add new PIIX_FLAG_* flags
+References: <201102081652.36752.bzolnier@gmail.com>	<4D51796C.8020008@ru.mvista.com> <AANLkTikyV579TRSMw_g_rTB7C641fWbdSELP9mpa30bG@mail.gmail.com>
+In-Reply-To: <AANLkTikyV579TRSMw_g_rTB7C641fWbdSELP9mpa30bG@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 7, 2011 at 4:47 PM, Michel Lespinasse <walken@google.com> wrote:
-> If the page is going to be written to, __do_page needs to break COW.
-> However, the old page (before breaking COW) was never mapped mapped into
-> the current pte (__do_fault is only called when the pte is not present),
-> so vmscan can't have marked the old page as PageMlocked due to being
-> mapped in __do_fault's VMA. Therefore, __do_fault() does not need to worry
-> about clearing PageMlocked() on the old page.
->
-> Signed-off-by: Michel Lespinasse <walken@google.com>
+Bartlomiej Zolnierkiewicz wrote:
 
-Acked-by: Hugh Dickins <hughd@google.com>
+>>> Turn open-coded checks in piix_set_timings() into PIIX_FLAG_* flags
+>>> per suggestion from Alan Cox.
+>>> Suggested-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
+>>> Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+>> [...]
+
+>>> Index: b/drivers/ata/ata_piix.c
+>>> ===================================================================
+>>> --- a/drivers/ata/ata_piix.c
+>>> +++ b/drivers/ata/ata_piix.c
+>>> @@ -133,6 +133,8 @@ enum {
+>>>        PIIX_FLAG_CHECKINTR     = (1 << 28), /* make sure PCI INTx enabled
+>>> */
+>>>        PIIX_FLAG_SIDPR         = (1 << 29), /* SATA idx/data pair regs */
+>>> +       PIIX_FLAG_NO_SITRE      = (1 << 30), /* no SITRE register */
+
+>>   The register in question is called SIDETIM, SITRE is a bit that enables
+>> its use.
+
+> ICH4-M databook that I have at hand (Intel IDE PRM seems to be gone
+> from Intel's website, though I'm sure I have a backup _somewhere_) it
+> is called SLV_IDETIM so lets just stick with the current naming for
+> now..
+
+    Why not just say that SITRE is a bit, not register? :-)
+
+> Thanks,
+> Bartlomiej
+
+WBR, Sergei
