@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab1BHTTB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 14:19:01 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:48965 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754212Ab1BHTTA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 14:19:00 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=oxABctuiYrOfJ7boCIVzs9nwN6wcqnJqQ8YNxqpTnwL0mvxvUILp6HphbG/lsN7Y/
-	4sdqi/2hujPVMQwX/wMQw==
-From: Justin TerAvest <teravest@google.com>
-To: jaxboe@fusionio.com, vgoyal@redhat.com
-Cc: ctalbott@google.com, mrubin@google.com, jmoyer@redhat.com,
-        guijianfeng@cn.fujitsu.com, linux-kernel@vger.kernel.org,
-        Justin TerAvest <teravest@google.com>
-Subject: [PATCH] Don't wait if queue already has requests.
-Date: Tue,  8 Feb 2011 11:18:17 -0800
-Message-Id: <1297192697-29978-1-git-send-email-teravest@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	id S1755496Ab1BHTYP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 14:24:15 -0500
+Received: from claw.goop.org ([74.207.240.146]:60973 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750923Ab1BHTYO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 14:24:14 -0500
+Message-ID: <4D51985B.7080003@goop.org>
+Date: Tue, 08 Feb 2011 11:24:11 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Konrad Rzeszutek Wilk <konrad.wilk@Oracle.Com>
+CC: Yinghai Lu <yinghai@kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>, Jan Beulich <JBeulich@novell.com>
+Subject: Re: [PATCH] x86/mm/init: respect memblock reserved regions when destroying
+ mappings
+References: <4D4E4E0D.2080806@zytor.com> <4D4EF553.6000000@kernel.org> <alpine.DEB.2.00.1102071524140.7277@kaball-desktop> <4D50343E.1020906@kernel.org> <alpine.DEB.2.00.1102071839060.7277@kaball-desktop> <4D504161.2060900@kernel.org> <4D506A85.9030802@goop.org> <4D50B4B5.4050505@kernel.org> <4D50CCFA.1040004@goop.org> <AANLkTi=koyyz8h1A3qWbp2F+N3kA46rJfHPSPN+Ms8hm@mail.gmail.com> <20110208145551.GA4606@dumpdata.com>
+In-Reply-To: <20110208145551.GA4606@dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 7667aa0630407bc07dc38dcc79d29cc0a65553c1 added logic to wait for
-the last queue of the group to become busy (have at least one request),
-so that the group does not lose out for not being continuously
-backlogged. The commit did not check for the condition that the last
-queue already has some requests. As a result, if the queue already has
-requests, wait_busy is set. Later on, cfq_select_queue() checks the
-flag, and decides that since the queue has a request now and wait_busy
-is set, the queue is expired.  This results in early expiration of the
-queue.
+On 02/08/2011 06:55 AM, Konrad Rzeszutek Wilk wrote:
+>>>> could be used to skip clear highmap for xen path?
+>>> Seems pretty ad-hoc.
+>>>
+>> then what is size for mfn-list after _end...
+> 8 bytes * nr_pages. For 4GB, 2048 pages. For 32GB, 8192 pages. For 128GB,
+> 32768 pages, and so on.
+>> could be copied or move to BRK.
+> The _brk size is determined during build-time. We don't know what the
+> memory size will be during bootup time and would have to select the
+> highest values (128MB) which is quite a large amount to be reserved
+> in _brk area.
 
-This patch fixes the problem by adding a check to see if queue already
-has requests. If it does, wait_busy is not set. As a result, time slices
-do not expire early.
+If the brk is guaranteed to be the last thing in the kernel, we could
+remove the static allocation of brk space, and just make it dynamic, and
+then use the dynamic end-of-brk instead of _end.
 
-The queues with more than one request are usually buffered writers.
-Testing shows improvement in isolation between buffered writers.
+That would require mapping the brk space at runtime, which would require
+a (conservative) runtime estimate of how much space we would end up
+needing, I guess by adding together the static allocations and then
+adding any dynamic ones we need.
 
-Signed-off-by: Justin TerAvest <teravest@google.com>
----
- block/cfq-iosched.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+For Xen, specifically, we could just extend brk to include all the stuff
+the domain builder sticks after the kernel, so it would both be brk
+allocated and left in-situ.
 
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 501ffdf..5dcc353 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -3432,6 +3432,10 @@ static bool cfq_should_wait_busy(struct cfq_data *cfqd, struct cfq_queue *cfqq)
- {
- 	struct cfq_io_context *cic = cfqd->active_cic;
- 
-+	/* If the queue already has requests, don't wait */
-+	if (!RB_EMPTY_ROOT(&cfqq->sort_list))
-+		return false;
-+
- 	/* If there are other queues in the group, don't wait */
- 	if (cfqq->cfqg->nr_cfqq > 1)
- 		return false;
--- 
-1.7.3.1
+But I'm not sure if this would work in the native case - would there be
+a guarantee that there's enough space after the kernel to fit any brk usage?
+
+    J
 
