@@ -1,57 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab1BHOxL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 09:53:11 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:33572 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754662Ab1BHOxH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 09:53:07 -0500
-Date: Tue, 8 Feb 2011 14:53:01 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Corentin Chary <corentin.chary@gmail.com>
-Cc: platform-driver-x86@vger.kernel.org,
-        linux acpi <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: What's part of the ABI (breaking eeepc-wmi)
-Message-ID: <20110208145301.GA12930@srcf.ucam.org>
-References: <AANLkTim5kG-pZRpj+6ckOvuk5ZSJ_O7zbwBnC4JNQPtS@mail.gmail.com>
+	id S1754713Ab1BHOxM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 09:53:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53041 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754663Ab1BHOxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 09:53:09 -0500
+Date: Tue, 8 Feb 2011 16:53:01 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org
+Subject: Re: [PATCHv2] Fix EDD3.0 data verification.
+Message-ID: <20110208145301.GO14984@redhat.com>
+References: <20110203122948.GX14984@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTim5kG-pZRpj+6ckOvuk5ZSJ_O7zbwBnC4JNQPtS@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20110203122948.GX14984@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 08, 2011 at 08:51:27AM +0000, Corentin Chary wrote:
+Peter, ping.
 
-> A first solution is to rename eeepc-wmi asus-wmi, and create an alias
-> to make eeepc-wmi work. Then this driver would handle asus-wmi and
-> eeepc-wmi platform drivers (it could also be splitted in 3
-> files/modules, common/notebook/eeepc).
-> But then, is it important to keep these strings ?
-> - hotplug string ("eeepc-wifi")
-> - rfkill names ("eeepc-xxxxx")
-> - input strings (.phys and .name)
+Is this version acceptable?
 
-I think that, realistically, these changes should be fine but may break 
-some user code. We don't have a good way of enforcing proper sysfs 
-usage.
+On Thu, Feb 03, 2011 at 02:29:48PM +0200, Gleb Natapov wrote:
+> Check for nonzero path in edd_has_edd30() has no sense. First, it looks
+> at the wrong memory. Device path starts at offset 30 of the info->params
+> structure which is at offset 8 from the beginning of info structure, but
+> code looks at info + 4 instead. This was correct when code was introduced,
+> but around v2.6.4 three more fields were added to edd_info structure
+> (commit 66b61a5c in history.git). Second, even if it will check correct
+> memory it will always succeed since at offset 30 (params->key) there will
+> be non-zero values otherwise previous check would fail.
+> 
+> The patch replaces this bogus check with one that verifies checksum.
+> 
+> Signed-off-by: Gleb Natapov <gleb@redhat.com>
+> ---
+> v1->v2
+>   use device path info length to calculate csum.
+> 
+> diff --git a/drivers/firmware/edd.c b/drivers/firmware/edd.c
+> index 96c25d9..f1b7f65 100644
+> --- a/drivers/firmware/edd.c
+> +++ b/drivers/firmware/edd.c
+> @@ -531,8 +531,8 @@ static int
+>  edd_has_edd30(struct edd_device *edev)
+>  {
+>  	struct edd_info *info;
+> -	int i, nonzero_path = 0;
+> -	char c;
+> +	int i;
+> +	u8 csum = 0;
+>  
+>  	if (!edev)
+>  		return 0;
+> @@ -544,16 +544,16 @@ edd_has_edd30(struct edd_device *edev)
+>  		return 0;
+>  	}
+>  
+> -	for (i = 30; i <= 73; i++) {
+> -		c = *(((uint8_t *) info) + i + 4);
+> -		if (c) {
+> -			nonzero_path++;
+> -			break;
+> -		}
+> -	}
+> -	if (!nonzero_path) {
+> +
+> +	/* We support only T13 spec */
+> +	if (info->params.device_path_info_length != 44)
+> +		return 0;
+> +
+> +	for (i = 30; i < info->params.device_path_info_length + 30; i++)
+> +		csum += *(((u8 *)&info->params) + i);
+> +
+> +	if (csum)
+>  		return 0;
+> -	}
+>  
+>  	return 1;
+>  }
+> --
+> 			Gleb.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-> - led names ("eeepc::xxxxxx")
-
-But I don't think there's any other way of identifying LEDs, so this 
-probably has to stay.
-
-> Any thoughts on that ?
-
-Seems less ugly than the alternatives!
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+--
+			Gleb.
