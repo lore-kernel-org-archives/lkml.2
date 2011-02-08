@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038Ab1BHNQN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 08:16:13 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:65092 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753516Ab1BHNQL (ORCPT
+	id S1754026Ab1BHNUu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 08:20:50 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:16932 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752811Ab1BHNUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 08:16:11 -0500
+	Tue, 8 Feb 2011 08:20:49 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Xwr/cuaUzgA8IlWE8celbErDP4pFpgpOTjhyABwBQ3aJ/SvYyb4qczOCQtDVhHHlUw
-         2EWRGsNKOTAQjvfUP2tdB59YBmtWgv9RRw7tFby2iwv74X1QvryY7dBJKqq2ev9WAtFL
-         ltckpM2ZN9R26q5cgx4w+MqfArD4o4+dw4twA=
-MIME-Version: 1.0
-In-Reply-To: <20110208130701.19709cc6@lxorguk.ukuu.org.uk>
-References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site>
-	<20110208122409.19110.4233.sendpatchset@linux-mhg7.site>
-	<20110208130701.19709cc6@lxorguk.ukuu.org.uk>
-Date: Tue, 8 Feb 2011 14:16:09 +0100
-Message-ID: <AANLkTimAioh_xu0qoQCndSWDAYJ4bpWv01NZn_bZ9g2a@mail.gmail.com>
-Subject: Re: [PATCH 05/20] pata_efar: always program master_data before slave_data
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+        d=google.com; s=beta;
+        h=message-id:from:date:to:reply-to:cc:subject;
+        b=WwS8QvPGaoJAo8qacXrO2Sl8XdGI6X//WiWNdQpLmi/JBUzj8XUbFwKR1jYQXOY55x
+         /IFxzcEDv49Af5ya8JIA==
+Message-ID: <4d51432a.a7fed80a.1571.fffffe9f@mx.google.com>
+From: Stephane Eranian <eranian@google.com>
+Date: Tue, 8 Feb 2011 14:20:01 +0200
+To: linux-kernel@vger.kernel.org
+Reply-to: eranian@google.com
+Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
+        eranian@google.com, robert.richter@amd.com, acme@redhat.com
+Subject: [PATCH] perf: fix compile error in annotate.h
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 8, 2011 at 2:07 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Tue, 08 Feb 2011 13:24:09 +0100
-> Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
->
->> >From 8acc9371550ce5f98da56f6888ae4b898096ed2c Mon Sep 17 00:00:00 2001
->> From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
->> Date: Tue, 8 Feb 2011 12:39:25 +0100
->> Subject: [PATCH 05/20] pata_efar: always program master_data before slave_data
->>
->> We may need to set SITRE before programming slave_data.
->
-> Do you have a documentation cite for this or is it random fiddling with a
-> driver you can't test ?
+The following patch is necessary to compile without NEWT.
 
-It is good to enable SITRE register before programming it and all
-Intel controllers
-(from which EFAR chipset is derived) are programmed this way (per ata_piix.c).
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+
+diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
+index b1253aa..bc08b36 100644
+--- a/tools/perf/util/annotate.h
++++ b/tools/perf/util/annotate.h
+@@ -82,7 +82,7 @@ int symbol__tty_annotate(struct symbol *sym, struct map *map, int evidx,
+ 			 int max_lines);
+ 
+ #ifdef NO_NEWT_SUPPORT
+-static inline int symbol__tui_annotate(symbol *sym __used,
++static inline int symbol__tui_annotate(struct symbol *sym __used,
+ 				       struct map *map __used, int evidx __used)
+ {
+ 	return 0;
