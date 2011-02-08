@@ -1,92 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755834Ab1BHTga (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 14:36:30 -0500
-Received: from mga11.intel.com ([192.55.52.93]:29661 "EHLO mga11.intel.com"
+	id S1755877Ab1BHTg6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 14:36:58 -0500
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:44153 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754441Ab1BHTfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 14:35:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,443,1291622400"; 
-   d="scan'208";a="655725666"
-From: james_p_freyensee@linux.intel.com
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
-        james_p_freyensee@linux.intel.com
-Subject: [PATCH 11/12] n_tracerouter and n_tracesink Kconfig.
-Date: Tue,  8 Feb 2011 11:34:56 -0800
-Message-Id: <1297193697-5417-12-git-send-email-james_p_freyensee@linux.intel.com>
-X-Mailer: git-send-email 1.6.6.1
-In-Reply-To: <1297193697-5417-11-git-send-email-james_p_freyensee@linux.intel.com>
-References: <james_p_freyensee@linux.intel.com>
- <1297193697-5417-1-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-2-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-3-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-4-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-5-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-6-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-7-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-8-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-9-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-10-git-send-email-james_p_freyensee@linux.intel.com>
- <1297193697-5417-11-git-send-email-james_p_freyensee@linux.intel.com>
+	id S1755867Ab1BHTg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 14:36:56 -0500
+Date: Tue, 8 Feb 2011 11:36:50 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Milton Miller <miltonm@bga.com>, Peter Zijlstra <peterz@infradead.org>,
+        akpm@linux-foundation.org, Anton Blanchard <anton@samba.org>,
+        xiaoguangrong@cn.fujitsu.com, mingo@elte.hu, jaxboe@fusionio.com,
+        npiggin@gmail.com, JBeulich@novell.com, rusty@rustcorp.com.au,
+        torvalds@linux-foundation.org, benh@kernel.crashing.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3 v2] call_function_many: fix list delete vs add race
+Message-ID: <20110208193650.GG2146@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <smp-call-function-move-writes@mdm.bga.com>
+ <1296145360.15234.234.camel@laptop>
+ <smp-call-function-list-race@mdm.bga.com>
+ <smp-call-function-list-race-fix@mdm.bga.com>
+ <ipi-list-reply@mdm.bga.com>
+ <smp-call-function-list-race-fix-v2@mdm.bga.com>
+ <20110201220026.GD2142@linux.vnet.ibm.com>
+ <ipi-paul-reply@mdm.bga.com>
+ <20110202041740.GB2129@linux.vnet.ibm.com>
+ <1297066374.5739.38.camel@marge.simson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1297066374.5739.38.camel@marge.simson.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: J Freyensee <james_p_freyensee@linux.intel.com>
+On Mon, Feb 07, 2011 at 09:12:54AM +0100, Mike Galbraith wrote:
+> On Tue, 2011-02-01 at 20:17 -0800, Paul E. McKenney wrote:
+> 
+> FWIW, my red headed stepchild (.32 xen cluster beast) with..
+>    smp-smp_call_function_many-fix-SMP-race (6dc1989)
+>    smp-consolidate-writes-in-smp_call_function_interrupt (225c8e0)
+>    smp-smp_call_function_many-fix-list-delete-vs-add-race (V2)
+>    smp-smp_call_function_many-handle-concurrent-clearing-of-mask (V2)
+>    smp-generic_smp_call_function_interrupt-additional-memory-order-tightening (below)
+> ..has not experienced any IPI problems lately, nor have I been able to
+> trigger anything beating up my box running normal x64_64 kernels.
+> 
+> That's not saying much since my IPI woes were only the concurrent
+> clearing variety, just letting you know that these patches have received
+> (and are receiving) hefty thumpage.
 
-This patch allows n_tracerouter and n_tracesink ldisc drivers
-to be configured in menuconfig.
+Very good, I have added your Tested-by to my patch.
 
-Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
----
- drivers/char/Kconfig |   32 ++++++++++++++++++++++++++++++++
- 1 files changed, 32 insertions(+), 0 deletions(-)
+							Thanx, Paul
 
-diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
-index 43d3395..02b9be2 100644
---- a/drivers/char/Kconfig
-+++ b/drivers/char/Kconfig
-@@ -289,6 +289,38 @@ config N_GSM
- 	  This line discipline provides support for the GSM MUX protocol and
- 	  presents the mux as a set of 61 individual tty devices.
- 
-+config TRACE_ROUTER
-+        tristate "Trace data router for MIPI P1149.7 cJTAG standard"
-+                depends on TRACE_SINK
-+                default Y
-+        ---help---
-+          The trace router uses the Linux tty line discipline framework to
-+          route trace data coming from a tty port (say UART for example) to
-+           the trace sink line discipline driver and to another tty port(say USB).
-+           This is part of a solution for the MIPI P1149.7, compact JTAG,
-+           standard, which is for debugging mobile devices. The PTI driver in
-+           drivers/misc/pti.c defines the majority of this MIPI solution.
-+
-+          You should select this driver if the target kernel is meant for
-+          a mobile device containing a modem.  Then you will need to select
-+          "Trace data sink for MIPI P1149.7 cJTAG standard" line discipline
-+          driver.
-+
-+config TRACE_SINK
-+        tristate "Trace data sink for MIPI P1149.7 cJTAG standard"
-+                default Y
-+        ---help---
-+          The trace sink uses the Linux line discipline framework to receive
-+          trace data coming from the trace router line discipline driver
-+          to a user-defined tty port target, like USB.
-+          This is to provide a way to extract modem trace data on
-+          devices that do not have a PTI HW module, or just need modem
-+          trace data to come out of a different HW output port.
-+          This is part of a solution for the P1149.7, compact JTAG, standard.
-+
-+          If you select this option, you need to select
-+          "Trace data router for MIPI P1149.7 cJTAG standard".
-+
- config RISCOM8
- 	tristate "SDL RISCom/8 card support"
- 	depends on SERIAL_NONSTANDARD
--- 
-1.6.6.1
-
+> > ------------------------------------------------------------------------
+> > 
+> > smp_call_function: additional memory-order tightening.
+> > 
+> > The csd_lock() and csd_unlock() interaction guarantees that the
+> > smp_call_function_many() function sees the results of interactions
+> > with prior incarnations of the callback, so the check is not needed.
+> > Instead, tighter memory ordering is required in the companion
+> > generic_smp_call_function_interrupt() function to ensure proper
+> > interaction with partially initialized callbacks.
+> > 
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > 
+> > diff --git a/kernel/smp.c b/kernel/smp.c
+> > index 064bb6e..e091905 100644
+> > --- a/kernel/smp.c
+> > +++ b/kernel/smp.c
+> > @@ -182,7 +182,7 @@ void generic_smp_call_function_interrupt(void)
+> >  
+> >  	/*
+> >  	 * Ensure entry is visible on call_function_queue after we have
+> > -	 * entered the IPI. See comment in smp_call_function_many.
+> > +	 * entered the IPI. See comment in smp_call_function_many
+> >  	 * If we don't have this, then we may miss an entry on the list
+> >  	 * and never get another IPI to process it.
+> >  	 */
+> > @@ -209,13 +209,18 @@ void generic_smp_call_function_interrupt(void)
+> >  		if (!cpumask_test_cpu(cpu, data->cpumask))
+> >  			continue;
+> >  
+> > -		smp_rmb();
+> > +		smp_mb(); /* If we see our bit set above, we need to see */
+> > +			  /* all the processing associated with the prior */
+> > +			  /* incarnation of this callback. */
+> >  
+> >  		if (atomic_read(&data->refs) == 0)
+> >  			continue;
+> >  
+> > +		smp_rmb(); /* We need to read ->refs before we read either */
+> > +			   /* ->csd.func and ->csd.info. */
+> > +
+> >  		func = data->csd.func;			/* for later warn */
+> > -		data->csd.func(data->csd.info);
+> > +		func(data->csd.info);
+> >  
+> >  		/*
+> >  		 * If the cpu mask is not still set then func enabled
+> 
+> 
