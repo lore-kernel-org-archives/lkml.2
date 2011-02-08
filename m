@@ -1,60 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754257Ab1BHNfW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 08:35:22 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:38634 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754212Ab1BHNfU (ORCPT
+	id S1754322Ab1BHNfu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 08:35:50 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48235 "EHLO
+	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753887Ab1BHNfs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 08:35:20 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Subject: Re: [PATCH v8 03/12] media: Entities, pads and links
-Date: Tue, 8 Feb 2011 14:35:14 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.36-gentoo-r3; KDE/4.6.0; x86_64; ; )
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, sakari.ailus@maxwell.research.nokia.com,
-        broonie@opensource.wolfsonmicro.com, clemens@ladisch.de
-References: <1296131437-29954-1-git-send-email-laurent.pinchart@ideasonboard.com> <1296131437-29954-4-git-send-email-laurent.pinchart@ideasonboard.com> <201102041120.37541.hverkuil@xs4all.nl>
-In-Reply-To: <201102041120.37541.hverkuil@xs4all.nl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201102081435.15911.laurent.pinchart@ideasonboard.com>
+	Tue, 8 Feb 2011 08:35:48 -0500
+Date: Tue, 8 Feb 2011 13:39:22 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/20] pata_efar: always program master_data before
+ slave_data
+Message-ID: <20110208133922.6cf8142e@lxorguk.ukuu.org.uk>
+In-Reply-To: <AANLkTimYbC+zgnct9j75WNR7f4M4m2=hYvODUm9mc-3W@mail.gmail.com>
+References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site>
+	<20110208122409.19110.4233.sendpatchset@linux-mhg7.site>
+	<20110208130701.19709cc6@lxorguk.ukuu.org.uk>
+	<AANLkTimAioh_xu0qoQCndSWDAYJ4bpWv01NZn_bZ9g2a@mail.gmail.com>
+	<20110208132518.300bb098@lxorguk.ukuu.org.uk>
+	<AANLkTimYbC+zgnct9j75WNR7f4M4m2=hYvODUm9mc-3W@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-14
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
-
-On Friday 04 February 2011 11:20:37 Hans Verkuil wrote:
-> On Thursday, January 27, 2011 13:30:28 Laurent Pinchart wrote:
-
-<snip>
-
-> > +#define MEDIA_ENT_TYPE_SHIFT		16
-> > +#define MEDIA_ENT_TYPE_MASK		0x00ff0000
-> > +#define MEDIA_ENT_SUBTYPE_MASK		0x0000ffff
-> > +
-> > +#define MEDIA_ENT_T_DEVNODE		(1 << MEDIA_ENTITY_TYPE_SHIFT)
-> > +#define MEDIA_ENT_T_DEVNODE_V4L		(MEDIA_ENTITY_T_DEVNODE + 1)
-> > +#define MEDIA_ENT_T_DEVNODE_FB		(MEDIA_ENTITY_T_DEVNODE + 2)
-> > +#define MEDIA_ENT_T_DEVNODE_ALSA	(MEDIA_ENTITY_T_DEVNODE + 3)
-> > +#define MEDIA_ENT_T_DEVNODE_DVB		(MEDIA_ENTITY_T_DEVNODE + 4)
-> > +
-> > +#define MEDIA_ENT_T_V4L2_SUBDEV		(2 << MEDIA_ENTITY_TYPE_SHIFT)
-> > +#define MEDIA_ENT_T_V4L2_SUBDEV_SENSOR	(MEDIA_ENTITY_T_V4L2_SUBDEV + 1)
-> > +#define MEDIA_ENT_T_V4L2_SUBDEV_FLASH	(MEDIA_ENTITY_T_V4L2_SUBDEV + 2)
-> > +#define MEDIA_ENT_T_V4L2_SUBDEV_LENS	(MEDIA_ENTITY_T_V4L2_SUBDEV + 3)
+> > That sounds like someone quoting religion. Documentation cite please.
 > 
-> MEDIA_ENTITY_? That should be MEDIA_ENT_. It looks like this was never
-> compiled...
+> s/religion/common sense/
 
-Oops. I probably forgot to compile this intermediate patch (the end result is 
-correct though). I'll fix it.
+Anyone who programs ATA controllers on the basis of common sense rather
+than documentation, errata sheets and actually testing rather than
+speculating is naïve. In the case of ATA more so than most hardware.
 
--- 
-Regards,
-
-Laurent Pinchart
+Stil waiting a documentation cite for your otherwise gratuitious and
+untested change
