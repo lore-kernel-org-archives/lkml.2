@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779Ab1BHPQG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 10:16:06 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:50460 "EHLO mx2.mail.elte.hu"
+	id S1754795Ab1BHPQR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 10:16:17 -0500
+Received: from hera.kernel.org ([140.211.167.34]:43441 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752787Ab1BHPQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 10:16:05 -0500
-Date: Tue, 8 Feb 2011 16:15:51 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Yong Zhang <yong.zhang0@gmail.com>, Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, tglx <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: lockdep: possible reason: unannotated irqs-off. (was: Re: Linux
- 2.6.38-rc4)
-Message-ID: <20110208151551.GB20357@elte.hu>
-References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com>
- <20110208101730.GB7020@liondog.tnic>
- <1297161712.13327.100.camel@laptop>
- <20110208121108.GA4824@zhy>
- <20110208133457.GA5813@zhy>
- <1297172906.13327.104.camel@laptop>
- <1297174680.13327.107.camel@laptop>
+	id S1754575Ab1BHPQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 10:16:06 -0500
+Date: Tue, 8 Feb 2011 15:15:47 GMT
+From: tip-bot for Michael Witten <mfwitten@gmail.com>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@redhat.com, mfwitten@gmail.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, mfwitten@gmail.com, tglx@linutronix.de
+In-Reply-To: <1296890359-22659-1-git-send-email-mfwitten@gmail.com>
+References: <1296890359-22659-1-git-send-email-mfwitten@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Makefile: Use $(QUIET_GEN) for perf.so
+Message-ID: <tip-9c56dfeb784a586713f467e2028a127a2a58a238@git.kernel.org>
+Git-Commit-ID: 9c56dfeb784a586713f467e2028a127a2a58a238
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1297174680.13327.107.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 08 Feb 2011 15:15:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  9c56dfeb784a586713f467e2028a127a2a58a238
+Gitweb:     http://git.kernel.org/tip/9c56dfeb784a586713f467e2028a127a2a58a238
+Author:     Michael Witten <mfwitten@gmail.com>
+AuthorDate: Thu, 3 Feb 2011 22:10:55 -0600
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 7 Feb 2011 08:38:03 -0200
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+perf tools: Makefile: Use $(QUIET_GEN) for perf.so
 
-> On Tue, 2011-02-08 at 14:48 +0100, Peter Zijlstra wrote:
-> > 
-> > Well that and modifying softirq bits for a lockdep annotation really
-> > feels wrong. 
-> 
-> How about we revert it for this release and try again later?
+So that we get this:
 
-That's the sanest way forward i think ...
+    CC /home/acme/git/build/perf/bench/mem-memcpy-x86-64-asm.o
+    GEN perf-archive
+*   GEN /home/acme/git/build/perf/python/perf.so
+    CC /home/acme/git/build/perf/builtin-annotate.o
 
-I've queued up the revert.
+Instead of silently building the python binding.
 
-Thanks,
+LKML-Reference: <1296890359-22659-1-git-send-email-mfwitten@gmail.com>
+Signed-off-by: Michael Witten <mfwitten@gmail.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-	Ingo
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index be3eb1d..94f73ab 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -326,7 +326,7 @@ grep-libs = $(filter -l%,$(1))
+ strip-libs = $(filter-out -l%,$(1))
+ 
+ $(OUTPUT)python/perf.so: $(PYRF_OBJS)
+-	@python util/setup.py --quiet  build_ext --build-lib='$(OUTPUT)python' \
++	$(QUIET_GEN)python util/setup.py --quiet  build_ext --build-lib='$(OUTPUT)python' \
+ 						--build-temp='$(OUTPUT)python/temp'
+ #
+ # No Perl scripts right now:
