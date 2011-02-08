@@ -1,292 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755630Ab1BHW2b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 17:28:31 -0500
-Received: from smtp107.prem.mail.sp1.yahoo.com ([98.136.44.62]:39013 "HELO
-	smtp107.prem.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754500Ab1BHW23 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 17:28:29 -0500
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-YMail-OSG: ghrvZJgVM1nTwUM1XublQN5IFQmbf7h9ecFhWepmi3hoDIq
- xxD4wMkZrI5XSet2BkJYS4gJJ.aIey8nuxLMgWj8ktRXFWXi1.5lwmTQSugi
- DNGsdWDm04Oq6GDtMrdna8z_2UL8WsN3UX1AWu8s.RiH0if.lny8S5.hoZt0
- LdZUeuMG1hB1tWcMl59iV.DI4G8UuIyDcGy7V0Yliuz.6AE5ovgSePAF.TiQ
- IlIqPrU_BydDf_hdTHFk6cNcxHdG0QEYgLoeUE7TgkJ.QrVrlRiNvtg73gW6
- gyfqFKj7X0qjIZB9h1_kqoorGT6s-
-X-Yahoo-Newman-Property: ymail-3
-Message-ID: <4D51C38B.1060902@schaufler-ca.com>
-Date: Tue, 08 Feb 2011 14:28:27 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
+	id S1754182Ab1BHWaH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 17:30:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64592 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753425Ab1BHWaG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 17:30:06 -0500
+Date: Tue, 8 Feb 2011 17:29:57 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Justin TerAvest <teravest@google.com>
+Cc: jaxboe@fusionio.com, ctalbott@google.com, mrubin@google.com,
+        jmoyer@redhat.com, guijianfeng@cn.fujitsu.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Don't wait if queue already has requests.
+Message-ID: <20110208222957.GD29081@redhat.com>
+References: <1297192697-29978-1-git-send-email-teravest@google.com>
+ <20110208194826.GC29081@redhat.com>
+ <AANLkTimawcpJRFPW5kKdZtKQ_PvKHc6oFSOVAcqy39Y9@mail.gmail.com>
 MIME-Version: 1.0
-To: LKLM <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
-CC: Casey Schaufler <casey@schaufler-ca.com>,
-        "Sakkinen Jarkko.2 \(EXT-Tieto/Tampere\)" 
-	<ext-jarkko.2.sakkinen@nokia.com>,
-        Janne Karhunen <Janne.Karhunen@nokia.com>,
-        "Reshetova Elena \(Nokia-D/Helsinki\)" <elena.reshetova@nokia.com>
-Subject: [PATCH] net: provide capability and group sets via SCM
-References: <4D3466BD.10500@schaufler-ca.com>
-In-Reply-To: <4D3466BD.10500@schaufler-ca.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimawcpJRFPW5kKdZtKQ_PvKHc6oFSOVAcqy39Y9@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Feb 08, 2011 at 02:21:18PM -0800, Justin TerAvest wrote:
+> On Tue, Feb 8, 2011 at 11:48 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Tue, Feb 08, 2011 at 11:18:17AM -0800, Justin TerAvest wrote:
+> >> Commit 7667aa0630407bc07dc38dcc79d29cc0a65553c1 added logic to wait for
+> >> the last queue of the group to become busy (have at least one request),
+> >> so that the group does not lose out for not being continuously
+> >> backlogged. The commit did not check for the condition that the last
+> >> queue already has some requests. As a result, if the queue already has
+> >> requests, wait_busy is set. Later on, cfq_select_queue() checks the
+> >> flag, and decides that since the queue has a request now and wait_busy
+> >> is set, the queue is expired.  This results in early expiration of the
+> >> queue.
+> >
+> > Hi Justin,
+> >
+> > wait_busy will be set only if slice has expired or about to be expired. So
+> > even if we are setting wait_busy flag, it is not a huge deal even if
+> > select_queue() expires it? Anyway queue has consumed or almost consumed
+> > its allocated slice?
+> 
+> Correct, the queue will have consumed or almost consumed its allocated
+> slice. However, this must be happening often enough because there is a
+> measurable impact in our testing.
+> 
+> >
+> > Having said that, it does not make sense to set wait_busy flag if
+> > cfqq has requests. So I would be fine with the patch. I am just
+> > curious that how did you see a difference in practice.
+> 
+> In practice,
+>   - We see some better isolation between tasks with this patch alone
+> (Possibly those writes are getting marked SYNC somehow, or it's
+> another timing change)
+>   - With other patches that introduce isolation between buffered
+> writes, we see that isolation works better, especially for cgroups
+> with small weights.
+> 
+> >
+> >>
+> >> This patch fixes the problem by adding a check to see if queue already
+> >> has requests. If it does, wait_busy is not set. As a result, time slices
+> >> do not expire early.
+> >>
+> >> The queues with more than one request are usually buffered writers.
+> >> Testing shows improvement in isolation between buffered writers.
+> >
+> > Upstream code puts all the buffered WRITES in root cgroup. So there
+> > is no isolation between buffered WRITES?
+> 
+> This was a mistake on my part, we have other patches that add
+> isolation between buffered writes; I just took this one out of order.
+> If you'd like, we can hold on this patch for now and I can resend this
+> later, but I think the actual patch itself is still good.
 
-Subject: [PATCH] net: provide group lists and capability set via CMSG
+I think this patch as it is good as there is no point in marking a
+queue wait_busy if it already has requests.
 
-Provide the namespace converted group list of the peer
-process using the SCM mechanism. Provide the capability
-set of the peer process. The capability set is not
-namespace converted on the assumption that there is no
-such conversion available or required.
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
----
- include/asm-generic/socket.h |    4 ++
- include/linux/net.h          |    2 +
- include/linux/socket.h       |   18 +++++++++
- include/net/scm.h            |   33 +++++++++++++++++
- net/core/sock.c              |   82 ++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 139 insertions(+), 0 deletions(-)
+Thanks
+Vivek
 
-diff --git a/include/asm-generic/socket.h b/include/asm-generic/socket.h
-index 9a6115e..fc2d609 100644
---- a/include/asm-generic/socket.h
-+++ b/include/asm-generic/socket.h
-@@ -64,4 +64,8 @@
- #define SO_DOMAIN		39
- 
- #define SO_RXQ_OVFL             40
-+
-+#define SO_PASSGROUPS		41
-+#define SO_PASSCAPS		42
-+
- #endif /* __ASM_GENERIC_SOCKET_H */
-diff --git a/include/linux/net.h b/include/linux/net.h
-index 16faa13..929e241 100644
---- a/include/linux/net.h
-+++ b/include/linux/net.h
-@@ -71,6 +71,8 @@ struct net;
- #define SOCK_NOSPACE		2
- #define SOCK_PASSCRED		3
- #define SOCK_PASSSEC		4
-+#define SOCK_PASSGROUPS		5
-+#define SOCK_PASSCAPS		6
- 
- #ifndef ARCH_HAS_SOCKET_TYPES
- /**
-diff --git a/include/linux/socket.h b/include/linux/socket.h
-index edbb1d0..63f64f0 100644
---- a/include/linux/socket.h
-+++ b/include/linux/socket.h
-@@ -23,6 +23,7 @@ struct __kernel_sockaddr_storage {
- #include <linux/uio.h>			/* iovec support		*/
- #include <linux/types.h>		/* pid_t			*/
- #include <linux/compiler.h>		/* __user			*/
-+#include <linux/capability.h>		/* _KERNEL_CAPABILITY_U32S	*/
- 
- struct pid;
- struct cred;
-@@ -145,6 +146,8 @@ static inline struct cmsghdr * cmsg_nxthdr (struct msghdr *__msg, struct cmsghdr
- #define	SCM_RIGHTS	0x01		/* rw: access rights (array of int) */
- #define SCM_CREDENTIALS 0x02		/* rw: struct ucred		*/
- #define SCM_SECURITY	0x03		/* rw: security label		*/
-+#define SCM_GROUPS	0x04		/* rw: group list		*/
-+#define SCM_CAPS	0x05		/* rw: capability set		*/
- 
- struct ucred {
- 	__u32	pid;
-@@ -152,6 +155,16 @@ struct ucred {
- 	__u32	gid;
- };
- 
-+struct scm_groups {
-+	__u32	count;
-+	__u32	gids[0];
-+};
-+
-+struct scm_capabilities {
-+	struct __user_cap_data_struct caps[_KERNEL_CAPABILITY_U32S];
-+};
-+
-+
- /* Supported address families. */
- #define AF_UNSPEC	0
- #define AF_UNIX		1	/* Unix domain sockets 		*/
-@@ -313,6 +326,11 @@ struct ucred {
- #define IPX_TYPE	1
- 
- extern void cred_to_ucred(struct pid *pid, const struct cred *cred, struct ucred *ucred);
-+extern void cred_to_scm_groups(const struct cred *cred,
-+				struct scm_groups **sgp, int *size);
-+extern void cred_to_scm_capabilities(const struct cred *cred,
-+					struct scm_capabilities **scp,
-+					int *size);
- 
- extern int memcpy_fromiovec(unsigned char *kdata, struct iovec *iov, int len);
- extern int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
-diff --git a/include/net/scm.h b/include/net/scm.h
-index 745460f..b263867 100644
---- a/include/net/scm.h
-+++ b/include/net/scm.h
-@@ -102,6 +102,36 @@ static inline void scm_passec(struct socket *sock, struct msghdr *msg, struct sc
- { }
- #endif /* CONFIG_SECURITY_NETWORK */
- 
-+static inline void scm_passgroups(struct socket *sock, struct msghdr *msg,
-+					struct scm_cookie *scm)
-+{
-+	struct scm_groups *data;
-+	int size = 0;
-+
-+	if (test_bit(SOCK_PASSGROUPS, &sock->flags)) {
-+		cred_to_scm_groups(scm->cred, &data, &size);
-+		if (size) {
-+			put_cmsg(msg, SOL_SOCKET, SCM_GROUPS, size, data);
-+			kfree(data);
-+		}
-+	}
-+}
-+
-+static inline void scm_passcaps(struct socket *sock, struct msghdr *msg,
-+				struct scm_cookie *scm)
-+{
-+	struct scm_capabilities *data;
-+	int size = 0;
-+
-+	if (test_bit(SOCK_PASSCAPS, &sock->flags)) {
-+		cred_to_scm_capabilities(scm->cred, &data, &size);
-+		if (size) {
-+			put_cmsg(msg, SOL_SOCKET, SCM_CAPS, size, data);
-+			kfree(data);
-+		}
-+	}
-+}
-+
- static __inline__ void scm_recv(struct socket *sock, struct msghdr *msg,
- 				struct scm_cookie *scm, int flags)
- {
-@@ -115,6 +145,9 @@ static __inline__ void scm_recv(struct socket *sock, struct msghdr *msg,
- 	if (test_bit(SOCK_PASSCRED, &sock->flags))
- 		put_cmsg(msg, SOL_SOCKET, SCM_CREDENTIALS, sizeof(scm->creds), &scm->creds);
- 
-+	scm_passgroups(sock, msg, scm);
-+	scm_passcaps(sock, msg, scm);
-+
- 	scm_destroy_cred(scm);
- 
- 	scm_passec(sock, msg, scm);
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 7dfed79..80eb5d7 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -648,6 +648,20 @@ set_rcvbuf:
- 			clear_bit(SOCK_PASSCRED, &sock->flags);
- 		break;
- 
-+	case SO_PASSGROUPS:
-+		if (valbool)
-+			set_bit(SOCK_PASSGROUPS, &sock->flags);
-+		else
-+			clear_bit(SOCK_PASSGROUPS, &sock->flags);
-+		break;
-+
-+	case SO_PASSCAPS:
-+		if (valbool)
-+			set_bit(SOCK_PASSCAPS, &sock->flags);
-+		else
-+			clear_bit(SOCK_PASSCAPS, &sock->flags);
-+		break;
-+
- 	case SO_TIMESTAMP:
- 	case SO_TIMESTAMPNS:
- 		if (valbool)  {
-@@ -764,6 +778,66 @@ void cred_to_ucred(struct pid *pid, const struct cred *cred,
- }
- EXPORT_SYMBOL_GPL(cred_to_ucred);
- 
-+void cred_to_scm_groups(const struct cred *cred,
-+			struct scm_groups **scm_groups, int *size)
-+{
-+	struct user_namespace *current_ns;
-+	struct scm_groups *sgp;
-+	struct group_info *gip;
-+	int bytes;
-+	int i;
-+
-+	if (!cred || !scm_groups)
-+		return;
-+
-+	gip = cred->group_info;
-+	if (gip == NULL)
-+		return;
-+
-+	bytes = sizeof(struct scm_groups) + gip->ngroups * sizeof(__u32);
-+	sgp = kmalloc(bytes, GFP_KERNEL);
-+	if (sgp == NULL) {
-+		*scm_groups = NULL;
-+		*size = 0;
-+		return;
-+	}
-+
-+	current_ns = current_user_ns();
-+
-+	for (i = 0 ; i < gip->ngroups; i++)
-+		sgp->gids[i] = user_ns_map_gid(current_ns, cred,
-+						GROUP_AT(gip, i));
-+	sgp->count = gip->ngroups;
-+	*scm_groups = sgp;
-+	*size = bytes;
-+}
-+EXPORT_SYMBOL_GPL(cred_to_scm_groups);
-+
-+void cred_to_scm_capabilities(const struct cred *cred,
-+				struct scm_capabilities **scm_caps, int *size)
-+{
-+	struct scm_capabilities *scp;
-+	int i;
-+
-+	if (!cred || !scm_caps)
-+		return;
-+
-+	scp = kmalloc(sizeof(struct scm_capabilities), GFP_KERNEL);
-+	if (!scp) {
-+		*scm_caps = NULL;
-+		*size = 0;
-+		return;
-+	}
-+	for (i = 0; i < _LINUX_CAPABILITY_U32S_3; i++) {
-+		scp->caps[i].permitted = cred->cap_permitted.cap[i];
-+		scp->caps[i].effective = cred->cap_effective.cap[i];
-+		scp->caps[i].inheritable = cred->cap_inheritable.cap[i];
-+	}
-+	*scm_caps = scp;
-+	*size = sizeof(struct scm_capabilities);
-+}
-+EXPORT_SYMBOL_GPL(cred_to_scm_capabilities);
-+
- int sock_getsockopt(struct socket *sock, int level, int optname,
- 		    char __user *optval, int __user *optlen)
- {
-@@ -915,6 +989,14 @@ int sock_getsockopt(struct socket *sock, int level, int optname,
- 		v.val = test_bit(SOCK_PASSCRED, &sock->flags) ? 1 : 0;
- 		break;
- 
-+	case SO_PASSGROUPS:
-+		v.val = test_bit(SOCK_PASSGROUPS, &sock->flags) ? 1 : 0;
-+		break;
-+
-+	case SO_PASSCAPS:
-+		v.val = test_bit(SOCK_PASSCAPS, &sock->flags) ? 1 : 0;
-+		break;
-+
- 	case SO_PEERCRED:
- 	{
- 		struct ucred peercred;
-
-
+> 
+> My apologies for the confusion.
+> 
+> Thanks,
+> Justin
+> 
+> >
+> > Thanks
+> > Vivek
+> >
+> >>
+> >> Signed-off-by: Justin TerAvest <teravest@google.com>
+> >> ---
+> >>  block/cfq-iosched.c |    4 ++++
+> >>  1 files changed, 4 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> >> index 501ffdf..5dcc353 100644
+> >> --- a/block/cfq-iosched.c
+> >> +++ b/block/cfq-iosched.c
+> >> @@ -3432,6 +3432,10 @@ static bool cfq_should_wait_busy(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+> >>  {
+> >>       struct cfq_io_context *cic = cfqd->active_cic;
+> >>
+> >> +     /* If the queue already has requests, don't wait */
+> >> +     if (!RB_EMPTY_ROOT(&cfqq->sort_list))
+> >> +             return false;
+> >> +
+> >>       /* If there are other queues in the group, don't wait */
+> >>       if (cfqq->cfqg->nr_cfqq > 1)
+> >>               return false;
+> >> --
+> >> 1.7.3.1
+> >
