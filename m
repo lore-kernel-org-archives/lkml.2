@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab1BHMNA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 07:13:00 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39117 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753568Ab1BHMM6 (ORCPT
+	id S1753876Ab1BHMOZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 07:14:25 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:56058 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753778Ab1BHMOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 07:12:58 -0500
-Date: Tue, 8 Feb 2011 12:12:55 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Len Brown <len.brown@intel.com>, Alan Stern <stern@rowland.harvard.edu>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+	Tue, 8 Feb 2011 07:14:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=XpQkVN59y65+50qDAEX/vqBhF8UgI/SJGaI7xFyA6Bv9lwrP9c4TFm45RYVSRuReux
+         +YwYEPliZAIuWCZ9Z0WAOceYUcx/5DcPjv5otn2goVJWbXQh2c04v1eTBm0ThWwBBxW/
+         oa9SqLkb3UET4UdTKJz3z6v0B4Gj2xG75+154=
+Date: Tue, 8 Feb 2011 20:14:10 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        x86@kernel.org, tglx <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-embedded@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] PM: Hide CONFIG_PM from users
-Message-ID: <20110208121254.GE29850@opensource.wolfsonmicro.com>
-References: <1297081335-13631-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <201102072046.48763.rjw@sisk.pl>
- <20110207201803.GU10564@opensource.wolfsonmicro.com>
- <201102072215.59921.rjw@sisk.pl>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 2/2] timer: use local_bh_enable_force_wake() in
+ del_timer_sync()
+Message-ID: <20110208121410.GB4824@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com>
+ <20110208101730.GB7020@liondog.tnic>
+ <1297161712.13327.100.camel@laptop>
+ <20110208121108.GA4824@zhy>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <201102072215.59921.rjw@sisk.pl>
-X-Cookie: Be cautious in your daily affairs.
+In-Reply-To: <20110208121108.GA4824@zhy>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 07, 2011 at 10:15:59PM +0100, Rafael J. Wysocki wrote:
+From: Yong Zhang <yong.zhang0@gmail.com>
+Subject: [PATCH 2/2] timer: use local_bh_enable_force_wake() in del_timer_sync()
 
-> I really think we should do things that makes sense rather that worry about
-> who's going to like or dislike it (except for Linus maybe, but he tends to like
-> things that make sense anyway).  At this point I think the change I suggested
-> makes sense, because it (a) simplifies things and (b) follows the quite common
-> practice which is to make PM callbacks depend on CONFIG_PM.
+raw_local_irq_save()/raw_local_irq_restore() is also not suitable
+here because lockdep will report "possible reason: unannotated irqs-off"
 
-So, part of the issue here is that it's not clear if having the ifdefs
-in the drivers is really something that makes sense.  It's not at all
-clear that anyone is actually making active use of them on real systems
-rather than just doing build coverage testing, it really feels like the
-ifdefs that people are currently using are just being cargo culted
-around.
+To cure this issue, use local_bh_enable_force_wake() here in case of
+we have pending softirq left during this time.
 
-The reason it's come up for me is that dev_pm_ops changes things a bit
-as you've got to decide how to handle the struct itself and there's no
-clear decision on what the best way forward for that is (is it OK to
-leave the struct if it's empty?) so you end up with the approach you
-need to take varying between maintainers which is annoying.
+Reported-by: Borislav Petkov <bp@alien8.de>
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ kernel/timer.c |    6 +-----
+ 1 files changed, 1 insertions(+), 5 deletions(-)
 
-> I'd appreciate it if people could review/test it and drop their comments.
-
-Looks good to me:
-
-Reviewed/Tested-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+diff --git a/kernel/timer.c b/kernel/timer.c
+index d53ce66..1654dc1 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -969,14 +969,10 @@ EXPORT_SYMBOL(try_to_del_timer_sync);
+ int del_timer_sync(struct timer_list *timer)
+ {
+ #ifdef CONFIG_LOCKDEP
+-	unsigned long flags;
+-
+-	raw_local_irq_save(flags);
+ 	local_bh_disable();
+ 	lock_map_acquire(&timer->lockdep_map);
+ 	lock_map_release(&timer->lockdep_map);
+-	_local_bh_enable();
+-	raw_local_irq_restore(flags);
++	local_bh_enable_force_wake();
+ #endif
+ 	/*
+ 	 * don't use it in hardirq context, because it
+-- 
+1.7.1
