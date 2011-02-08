@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab1BHAsK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 19:48:10 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:3044 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753369Ab1BHAsE (ORCPT
+	id S1752562Ab1BHAvG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 19:51:06 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:36234 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751821Ab1BHAvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 19:48:04 -0500
+	Mon, 7 Feb 2011 19:51:04 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=p/kbohI9Oq4Vk8wI5xg9iSAlMDxNCjEaHvNJkdFRQJyVUsmUrWLIb6tZouUAx9/mBL
-         f8CcZmtvPI1Fl6AE8ZWw==
-From: Michel Lespinasse <walken@google.com>
-To: linux-mm@kvack.org, Lee Schermerhorn <lee.schermerhorn@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] mlock: do not munlock pages in __do_fault()
-Date: Mon,  7 Feb 2011 16:47:36 -0800
-Message-Id: <1297126056-14322-3-git-send-email-walken@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1297126056-14322-1-git-send-email-walken@google.com>
-References: <1297126056-14322-1-git-send-email-walken@google.com>
-X-System-Of-Record: true
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Ro4GnLs2yyv4++M7R33+qJO1TCbV24eEKz+YMd15+Lmg4rjkRMeRk5+85HvA4rosjD
+         kIpay84HVYQ71nyqUx6Rx1u8r8OFXEsq1OEDKF9CDUDYSZu4IzEAwjz+brMAUljy6RjZ
+         Hbj7UOtmc6J32OsIxESGTKVls5Id4OeayndJE=
+Date: Mon, 7 Feb 2011 16:50:53 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Len Brown <len.brown@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-embedded@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] PM: Hide CONFIG_PM from users
+Message-ID: <20110208005053.GB24804@core.coreip.homeip.net>
+References: <1297081335-13631-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <201102072300.03986.rjw@sisk.pl>
+ <20110207222350.GA24804@core.coreip.homeip.net>
+ <201102080005.40448.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201102080005.40448.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the page is going to be written to, __do_page needs to break COW.
-However, the old page (before breaking COW) was never mapped mapped into
-the current pte (__do_fault is only called when the pte is not present),
-so vmscan can't have marked the old page as PageMlocked due to being
-mapped in __do_fault's VMA. Therefore, __do_fault() does not need to worry
-about clearing PageMlocked() on the old page.
+On Tue, Feb 08, 2011 at 12:05:40AM +0100, Rafael J. Wysocki wrote:
+> On Monday, February 07, 2011, Dmitry Torokhov wrote:
+> > On Mon, Feb 07, 2011 at 11:00:03PM +0100, Rafael J. Wysocki wrote:
+> > > On Monday, February 07, 2011, Dmitry Torokhov wrote:
+> > > > On Mon, Feb 07, 2011 at 10:15:59PM +0100, Rafael J. Wysocki wrote:
+> > > > > On Monday, February 07, 2011, Mark Brown wrote:
+> > > > > > 
+> > > > > > Yeah, but some people seem very keen on removing the pointers to the PM
+> > > > > > ops entirely when CONFIG_PM is disabled which means that you end up with
+> > > > > > varying idioms for what you do with the PM ops as stuff gets ifdefed
+> > > > > > out.  Then again I'm not sure anything would make those people any
+> > > > > > happier.
+> > > > > 
+> > > > > I really think we should do things that makes sense rather that worry about
+> > > > > who's going to like or dislike it (except for Linus maybe, but he tends to like
+> > > > > things that make sense anyway).  At this point I think the change I suggested
+> > > > > makes sense, because it (a) simplifies things and (b) follows the quite common
+> > > > > practice which is to make PM callbacks depend on CONFIG_PM.
+> > > > 
+> > > > Many people make these callback dependent on PM not because it makes
+> > > > much sense but because it is possible to do so. However, aside of
+> > > > randconfig compile testing, nobody really tests drivers that implement
+> > > > PM in the !CONFIG_PM setting.
+> > > 
+> > > That I can agree with, but I'm not sure whether it is an argument against
+> > > the patch I've just posted or for it?
+> > 
+> > More of an observation for your (b) justification. I'd probably force
+> > CONFIG_PM to always 'y'w while we weeding references to it from
+> > drivers...
+> 
+> We simply can't force CONFIG_PM to 'y', because some platforms want it to be 'n'.
+> 
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
----
- mm/memory.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+Again, want or need? It would be nice to know answer to this question.
 
-diff --git a/mm/memory.c b/mm/memory.c
-index 32df03c..8e8c1832 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3051,12 +3051,6 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 				goto out;
- 			}
- 			charged = 1;
--			/*
--			 * Don't let another task, with possibly unlocked vma,
--			 * keep the mlocked page.
--			 */
--			if (vma->vm_flags & VM_LOCKED)
--				clear_page_mlock(vmf.page);
- 			copy_user_highpage(page, vmf.page, address, vma);
- 			__SetPageUptodate(page);
- 		} else {
+
+Thanks.
+
 -- 
-1.7.3.1
+Dmitry
