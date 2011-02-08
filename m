@@ -1,217 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755904Ab1BHXJf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 18:09:35 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41915 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754091Ab1BHXJe (ORCPT
+	id S1755417Ab1BHXRJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 18:17:09 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:54497 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753790Ab1BHXRF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 18:09:34 -0500
-Date: Tue, 8 Feb 2011 15:08:35 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Kirill A. Shutsemov" <kirill@shutemov.name>
-Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, jacob.jun.pan@linux.intel.com,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>
-Subject: Re: [PATCH, v4 2/2] cgroups: introduce timer slack subsystem
-Message-Id: <20110208150835.42e184be.akpm@linux-foundation.org>
-In-Reply-To: <1296743654-2984-3-git-send-email-kirill@shutemov.name>
-References: <1296743654-2984-1-git-send-email-kirill@shutemov.name>
-	<1296743654-2984-3-git-send-email-kirill@shutemov.name>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 8 Feb 2011 18:17:05 -0500
+Message-ID: <4D51CF3D.9000103@metafoo.de>
+Date: Wed, 09 Feb 2011 00:18:21 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+MIME-Version: 1.0
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: linux-kernel@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Eric Miao <eric.y.miao@gmail.com>, Dmitry Torokhov <dtor@mail.ru>,
+        "Arnd Bergmann (maintainer:GENERIC INCLUDE/A...)" <arnd@arndb.de>,
+        "Andrew Morton (commit_signer:4/8=50%)" <akpm@linux-foundation.org>,
+        "Mark Brown (commit_signer:1/8=12%)" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "Anton Vorontsov (commit_signer:1/8=12%)" <cbouatmailru@gmail.com>,
+        "Greg Kroah-Hartman (commit_signer:1/8=12%)" <greg@kroah.com>,
+        "open list:GENERIC INCLUDE/A..." <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] gpio: make newer functionality available outside of GPIOLIB
+References: <1297205075-11396-1-git-send-email-w.sang@pengutronix.de>
+In-Reply-To: <1297205075-11396-1-git-send-email-w.sang@pengutronix.de>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  3 Feb 2011 16:34:14 +0200
-"Kirill A. Shutsemov" <kirill@shutemov.name> wrote:
-
-> From: Kirill A. Shutemov <kirill@shutemov.name>
+On 02/08/2011 11:44 PM, Wolfram Sang wrote:
+> The gpio subsystems offers an API which requires a dependency on GENERIC_GPIO
+> when used by drivers. There is also implementation framework of this API, so
+> archs can select GPIOLIB if they intend to use it. But they don't have to, they
+> can still provide GENERIC_GPIO without GPIOLIB using custom routines.
 > 
-> Provides a way of tasks grouping by timer slack value. Introduces per
-> cgroup max and min timer slack value. When a task attaches to a cgroup,
-> its timer slack value adjusts (if needed) to fit min-max range.
+> Commit 3e45f1d1155894e6f4291f5536b224874d52d8e2 (gpio: introduce
+> gpio_request_one() and friends) added some functions, defines and a struct to
+> the API, but made them available only for GPIOLIB. So, drivers using these new
+> functions will fail in the case of GENERIC_GPIO && !GPIOLIB.
+Actually the patch fixes only the case where !GENERIC_GPIO.
+In the GENERIC_GPIO && !GPIOLIB case gpio_request_one and friends are likely to
+be undefined unless the arch gpio code actually implements them.
+
+Given that these functions are pretty generic and build on top of the generic
+gpio interface I think they should be available if GENERIC_GPIO is selected and
+not only just through GPIOLIB. Otherwise all the archs not using gpiolib but
+providing the gpio api would have to be patched as well.
+
+- Lars
+
+> the include-files.
 > 
-> It also provides a way to set timer slack value for all tasks in the
-> cgroup at once.
+> Fixes issues like (in linux-next currently):
 > 
-> This functionality is useful in mobile devices where certain background
-> apps are attached to a cgroup and minimum wakeups are desired.
-
-This description is quite scanty.  It doesn't explain what the benefit
-is, when one might want to use it, how to use it, etc.  A nice
-description under Documentation/cgroups/ would be appropriate.
-
-I read this and come away with no sense of how useful or desirable this
-code is.
-
->
-> ...
->
-> --- a/include/linux/init_task.h
-> +++ b/include/linux/init_task.h
-> @@ -124,6 +124,8 @@ extern struct cred init_cred;
->  # define INIT_PERF_EVENTS(tsk)
->  #endif
+> drivers/input/touchscreen/ads7846.c:959: error: 'GPIOF_DIR_IN' undeclared (first use in this function)
+> 
+> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> Cc: David Brownell <dbrownell@users.sourceforge.net>
+> Cc: Eric Miao <eric.y.miao@gmail.com>
+> Cc: Dmitry Torokhov <dtor@mail.ru>
+> ---
+> 
+> Based on 2.6.38-rc4. Compile tested on x86.
+> 
+>  include/asm-generic/gpio.h   |   31 +++++--------------------------
+>  include/linux/gpio.h         |    2 +-
+>  include/linux/gpio_generic.h |   26 ++++++++++++++++++++++++++
+>  3 files changed, 32 insertions(+), 27 deletions(-)
+>  create mode 100644 include/linux/gpio_generic.h
+> 
+> diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+> index ff5c660..ebc73bc 100644
+> --- a/include/asm-generic/gpio.h
+> +++ b/include/asm-generic/gpio.h
+> @@ -4,6 +4,7 @@
+>  #include <linux/kernel.h>
+>  #include <linux/types.h>
+>  #include <linux/errno.h>
+> +#include <linux/gpio_generic.h>
 >  
-> +#define TIMER_SLACK_NS_DEFAULT 50000
+>  #ifdef CONFIG_GPIOLIB
+>  
+> @@ -158,6 +159,10 @@ extern int gpio_set_debounce(unsigned gpio, unsigned debounce);
+>  extern int gpio_get_value_cansleep(unsigned gpio);
+>  extern void gpio_set_value_cansleep(unsigned gpio, int value);
+>  
+> +extern int gpio_request_one(unsigned gpio, unsigned long flags, const char *label);
+> +extern int gpio_request_array(struct gpio *array, size_t num);
+> +extern void gpio_free_array(struct gpio *array, size_t num);
+> +
+>  
+>  /* A platform's <asm/gpio.h> code may want to inline the I/O calls when
+>   * the GPIO is constant and refers to some always-present controller,
+> @@ -170,32 +175,6 @@ extern int __gpio_cansleep(unsigned gpio);
+>  
+>  extern int __gpio_to_irq(unsigned gpio);
+>  
+> -#define GPIOF_DIR_OUT	(0 << 0)
+> -#define GPIOF_DIR_IN	(1 << 0)
+> -
+> -#define GPIOF_INIT_LOW	(0 << 1)
+> -#define GPIOF_INIT_HIGH	(1 << 1)
+> -
+> -#define GPIOF_IN		(GPIOF_DIR_IN)
+> -#define GPIOF_OUT_INIT_LOW	(GPIOF_DIR_OUT | GPIOF_INIT_LOW)
+> -#define GPIOF_OUT_INIT_HIGH	(GPIOF_DIR_OUT | GPIOF_INIT_HIGH)
+> -
+> -/**
+> - * struct gpio - a structure describing a GPIO with configuration
+> - * @gpio:	the GPIO number
+> - * @flags:	GPIO configuration as specified by GPIOF_*
+> - * @label:	a literal description string of this GPIO
+> - */
+> -struct gpio {
+> -	unsigned	gpio;
+> -	unsigned long	flags;
+> -	const char	*label;
+> -};
+> -
+> -extern int gpio_request_one(unsigned gpio, unsigned long flags, const char *label);
+> -extern int gpio_request_array(struct gpio *array, size_t num);
+> -extern void gpio_free_array(struct gpio *array, size_t num);
+This conflicts with the patch making "array" const.
 
-Seems to be an unrelated cleanup.  And given that this #define is only
-used in a single place, its cleanliness is questionable.
-
+> -
+>  #ifdef CONFIG_GPIO_SYSFS
+>  
 >  /*
->   *  INIT_TASK is used to set up the first task table, touch at
->   * your own risk!. Base=0, limit=0x1fffff (=2MB)
-> @@ -177,7 +179,7 @@ extern struct cred init_cred;
->  	.cpu_timers	= INIT_CPU_TIMERS(tsk.cpu_timers),		\
->  	.fs_excl	= ATOMIC_INIT(0),				\
->  	.pi_lock	= __RAW_SPIN_LOCK_UNLOCKED(tsk.pi_lock),	\
-> -	.timer_slack_ns = 50000, /* 50 usec default slack */		\
-> +	.timer_slack_ns = TIMER_SLACK_NS_DEFAULT,			\
->  	.pids = {							\
->  		[PIDTYPE_PID]  = INIT_PID_LINK(PIDTYPE_PID),		\
->  		[PIDTYPE_PGID] = INIT_PID_LINK(PIDTYPE_PGID),		\
->
-> ...
->
-> +extern int (*timer_slack_check)(struct task_struct *task,
-> +		unsigned long slack_ns);
-
-Nope.  Please put this in a header file so we can be sure that callers
-see the same prototype as does the definition.
-
->
-> ...
->
-> +/*
-> + * Adjust ->timer_slack_ns and ->default_max_slack_ns of the task to fit
-> + * limits of the cgroup.
+> diff --git a/include/linux/gpio.h b/include/linux/gpio.h
+> index 32720ba..584ceb6 100644
+> --- a/include/linux/gpio.h
+> +++ b/include/linux/gpio.h
+> @@ -11,9 +11,9 @@
+>  #include <linux/kernel.h>
+>  #include <linux/types.h>
+>  #include <linux/errno.h>
+> +#include <linux/gpio_generic.h>
+>  
+>  struct device;
+> -struct gpio;
+>  struct gpio_chip;
+>  
+>  /*
+> diff --git a/include/linux/gpio_generic.h b/include/linux/gpio_generic.h
+> new file mode 100644
+> index 0000000..d662697
+> --- /dev/null
+> +++ b/include/linux/gpio_generic.h
+> @@ -0,0 +1,26 @@
+> +#ifndef __LINUX_GPIO_GENERIC_H
+> +#define __LINUX_GPIO_GENERIC_H
+> +
+> +/**
+> + * struct gpio - a structure describing a GPIO with configuration
+> + * @gpio:	the GPIO number
+> + * @flags:	GPIO configuration as specified by GPIOF_*
+> + * @label:	a literal description string of this GPIO
 > + */
-> +static void tslack_adjust_task(struct timer_slack_cgroup *tslack_cgroup,
-> +		struct task_struct *tsk)
-> +{
-> +	if (tslack_cgroup->min_slack_ns > tsk->timer_slack_ns)
-> +		tsk->timer_slack_ns = tslack_cgroup->min_slack_ns;
-> +	else if (tslack_cgroup->max_slack_ns < tsk->timer_slack_ns)
-> +		tsk->timer_slack_ns = tslack_cgroup->max_slack_ns;
-> +
-> +	if (tslack_cgroup->min_slack_ns > tsk->default_timer_slack_ns)
-> +		tsk->default_timer_slack_ns = tslack_cgroup->min_slack_ns;
-> +	else if (tslack_cgroup->max_slack_ns < tsk->default_timer_slack_ns)
-> +		tsk->default_timer_slack_ns = tslack_cgroup->max_slack_ns;
-> +}
-> +
-> +static void tslack_cgroup_attach(struct cgroup_subsys *subsys,
-> +		struct cgroup *cgroup, struct cgroup *prev,
-> +		struct task_struct *tsk, bool threadgroup)
-> +{
-> +	tslack_adjust_task(cgroup_to_tslack_cgroup(cgroup), tsk);
-> +}
-> +
-> +static int tslack_write_set_slack_ns(struct cgroup *cgroup, struct cftype *cft,
-> +		u64 val)
-> +{
-> +	struct timer_slack_cgroup *tslack_cgroup;
-> +	struct cgroup_iter it;
-> +	struct task_struct *task;
-> +
-> +	tslack_cgroup = cgroup_to_tslack_cgroup(cgroup);
-> +	if (!is_timer_slack_allowed(cgroup_to_tslack_cgroup(cgroup), val))
-> +		return -EPERM;
-> +
-> +	/* Change timer slack value for all tasks in the cgroup */
-> +	cgroup_iter_start(cgroup, &it);
-> +	while ((task = cgroup_iter_next(cgroup, &it)))
-> +		task->timer_slack_ns = val;
-> +	cgroup_iter_end(cgroup, &it);
-> +
-> +	return 0;
-> +}
-> +
-> +static u64 tslack_read_range(struct cgroup *cgroup, struct cftype *cft)
-> +{
-> +	struct timer_slack_cgroup *tslack_cgroup;
-> +
-> +	tslack_cgroup = cgroup_to_tslack_cgroup(cgroup);
-> +	switch (cft->private) {
-> +	case TIMER_SLACK_MIN:
-> +		return tslack_cgroup->min_slack_ns;
-> +	case TIMER_SLACK_MAX:
-> +		return tslack_cgroup->max_slack_ns;
-> +	default:
-> +		BUG();
-> +	};
-
-Extraneous ";".
-
-> +}
-
-These proposed new userspace interfaces should be documented somewhere,
-please.  They are the most important part of the patch.
-
->
-> ...
->
-> +struct cgroup_subsys timer_slack_subsys = {
-> +	.name = "timer_slack",
-> +	.module = THIS_MODULE,
-> +#ifdef CONFIG_CGROUP_TIMER_SLACK
-
-Confused.  This file won't even be compiled if
-CONFIG_CGROUP_TIMER_SLACK=n?
-
-> +	.subsys_id = timer_slack_subsys_id,
-> +#endif
-> +	.create = tslack_cgroup_create,
-> +	.destroy = tslack_cgroup_destroy,
-> +	.attach = tslack_cgroup_attach,
-> +	.populate = tslack_cgroup_populate,
+> +struct gpio {
+> +	unsigned	gpio;
+> +	unsigned long	flags;
+> +	const char	*label;
 > +};
 > +
->
-> ...
->
-> @@ -1694,12 +1698,15 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
->  			error = current->timer_slack_ns;
->  			break;
->  		case PR_SET_TIMERSLACK:
-> -			if (arg2 <= 0)
-> -				current->timer_slack_ns =
-> -					current->default_timer_slack_ns;
-> -			else
-> -				current->timer_slack_ns = arg2;
-> -			error = 0;
-> +			if (arg2 <= 0) {
-> +				me->timer_slack_ns = me->default_timer_slack_ns;
-> +				break;
-> +			}
+> +#define GPIOF_DIR_OUT	(0 << 0)
+> +#define GPIOF_DIR_IN	(1 << 0)
 > +
-> +			error = timer_slack_check ?
-> +				timer_slack_check(me, arg2) : 0;
-
-This is racy against init_cgroup_timer_slack().  And against
-exit_cgroup_timer_slack().
-
-This whole scheme of using a single hook to a single "check" function
-is rather grubby.  I guess that using a notifier_call_chain() would fix
-things: support multiple "check" functions and hopefully fix the races.
-
-> +			if (!error)
-> +				me->timer_slack_ns = arg2;
->  			break;
->  		case PR_MCE_KILL:
->  			if (arg4 | arg5)
-
-I don't know whether PR_SET_TIMERSLACK is presently documented in the
-manpages.
-
-Please cc linux-api@vger.kernel.org on future versions of this work and
-ensure that the patch (via changelog, Documentation or code comments)
-has sufficient information for the manpages maintainers to be able to
-easily update the manpages.
-
+> +#define GPIOF_INIT_LOW	(0 << 1)
+> +#define GPIOF_INIT_HIGH	(1 << 1)
+> +
+> +#define GPIOF_IN		(GPIOF_DIR_IN)
+> +#define GPIOF_OUT_INIT_LOW	(GPIOF_DIR_OUT | GPIOF_INIT_LOW)
+> +#define GPIOF_OUT_INIT_HIGH	(GPIOF_DIR_OUT | GPIOF_INIT_HIGH)
+> +
+> +#endif /* __LINUX_GPIO_GENERIC_H */
 
