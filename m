@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780Ab1BHTg2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 14:36:28 -0500
-Received: from mga03.intel.com ([143.182.124.21]:14403 "EHLO mga03.intel.com"
+	id S1755834Ab1BHTga (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 14:36:30 -0500
+Received: from mga11.intel.com ([192.55.52.93]:29661 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755578Ab1BHTfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754441Ab1BHTfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Feb 2011 14:35:01 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.60,443,1291622400"; 
-   d="scan'208";a="385927884"
+   d="scan'208";a="655725666"
 From: james_p_freyensee@linux.intel.com
 To: gregkh@suse.de
 Cc: linux-kernel@vger.kernel.org, suhail.ahmed@intel.com,
         james_p_freyensee@linux.intel.com
-Subject: [PATCH 07/12] n_tracerouter and n_tracesink additions.
-Date: Tue,  8 Feb 2011 11:34:52 -0800
-Message-Id: <1297193697-5417-8-git-send-email-james_p_freyensee@linux.intel.com>
+Subject: [PATCH 11/12] n_tracerouter and n_tracesink Kconfig.
+Date: Tue,  8 Feb 2011 11:34:56 -0800
+Message-Id: <1297193697-5417-12-git-send-email-james_p_freyensee@linux.intel.com>
 X-Mailer: git-send-email 1.6.6.1
-In-Reply-To: <1297193697-5417-7-git-send-email-james_p_freyensee@linux.intel.com>
+In-Reply-To: <1297193697-5417-11-git-send-email-james_p_freyensee@linux.intel.com>
 References: <james_p_freyensee@linux.intel.com>
  <1297193697-5417-1-git-send-email-james_p_freyensee@linux.intel.com>
  <1297193697-5417-2-git-send-email-james_p_freyensee@linux.intel.com>
@@ -26,34 +26,67 @@ References: <james_p_freyensee@linux.intel.com>
  <1297193697-5417-5-git-send-email-james_p_freyensee@linux.intel.com>
  <1297193697-5417-6-git-send-email-james_p_freyensee@linux.intel.com>
  <1297193697-5417-7-git-send-email-james_p_freyensee@linux.intel.com>
+ <1297193697-5417-8-git-send-email-james_p_freyensee@linux.intel.com>
+ <1297193697-5417-9-git-send-email-james_p_freyensee@linux.intel.com>
+ <1297193697-5417-10-git-send-email-james_p_freyensee@linux.intel.com>
+ <1297193697-5417-11-git-send-email-james_p_freyensee@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: J Freyensee <james_p_freyensee@linux.intel.com>
 
-This patch adds line discipline numbers to n_tracerouter and
-n_tracesink line disciplines for the Intel-Atom PTI implementation
-for mobile devices.
+This patch allows n_tracerouter and n_tracesink ldisc drivers
+to be configured in menuconfig.
 
 Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
 ---
- include/linux/tty.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ drivers/char/Kconfig |   32 ++++++++++++++++++++++++++++++++
+ 1 files changed, 32 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 54e4eaa..c507f53 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -50,6 +50,8 @@
- #define N_CAIF		20      /* CAIF protocol for talking to modems */
- #define N_GSM0710	21	/* GSM 0710 Mux */
- #define N_TI_WL		22	/* for TI's WL BT, FM, GPS combo chips */
-+#define N_TRACESINK	23	/* Trace data routing for MIPI P1149.7 */
-+#define N_TRACEROUTER	24	/* Trace data routing for MIPI P1149.7 */
+diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
+index 43d3395..02b9be2 100644
+--- a/drivers/char/Kconfig
++++ b/drivers/char/Kconfig
+@@ -289,6 +289,38 @@ config N_GSM
+ 	  This line discipline provides support for the GSM MUX protocol and
+ 	  presents the mux as a set of 61 individual tty devices.
  
- /*
-  * This character is the same as _POSIX_VDISABLE: it cannot be used as
++config TRACE_ROUTER
++        tristate "Trace data router for MIPI P1149.7 cJTAG standard"
++                depends on TRACE_SINK
++                default Y
++        ---help---
++          The trace router uses the Linux tty line discipline framework to
++          route trace data coming from a tty port (say UART for example) to
++           the trace sink line discipline driver and to another tty port(say USB).
++           This is part of a solution for the MIPI P1149.7, compact JTAG,
++           standard, which is for debugging mobile devices. The PTI driver in
++           drivers/misc/pti.c defines the majority of this MIPI solution.
++
++          You should select this driver if the target kernel is meant for
++          a mobile device containing a modem.  Then you will need to select
++          "Trace data sink for MIPI P1149.7 cJTAG standard" line discipline
++          driver.
++
++config TRACE_SINK
++        tristate "Trace data sink for MIPI P1149.7 cJTAG standard"
++                default Y
++        ---help---
++          The trace sink uses the Linux line discipline framework to receive
++          trace data coming from the trace router line discipline driver
++          to a user-defined tty port target, like USB.
++          This is to provide a way to extract modem trace data on
++          devices that do not have a PTI HW module, or just need modem
++          trace data to come out of a different HW output port.
++          This is part of a solution for the P1149.7, compact JTAG, standard.
++
++          If you select this option, you need to select
++          "Trace data router for MIPI P1149.7 cJTAG standard".
++
+ config RISCOM8
+ 	tristate "SDL RISCom/8 card support"
+ 	depends on SERIAL_NONSTANDARD
 -- 
 1.6.6.1
 
