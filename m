@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755830Ab1BHUwZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 15:52:25 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:59025 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755256Ab1BHUwY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 15:52:24 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=ChltTtFlVMP3o6KCCGqc17ba+cRDW+YPfUjBEPeoINLO8eTW8L8ni4eEO8JEWCs79a
-         24khzlXKznlr5ryWiH1PJZiDXAiHgzT6A9GITJ/aRI1N4RM+GTKqVkHX0dNAzB2HUlZR
-         3aVLmqf2Wj3jrLfT4iVepbQVTAXwSECFYXGQk=
-Message-ID: <4D51AD03.7030401@gmail.com>
-Date: Tue, 08 Feb 2011 12:52:19 -0800
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	id S1755816Ab1BHUzH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 15:55:07 -0500
+Received: from xenotime.net ([72.52.115.56]:53541 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755328Ab1BHUzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 15:55:04 -0500
+Message-ID: <4D51ADA6.6000200@xenotime.net>
+Date: Tue, 08 Feb 2011 12:55:02 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.13) Gecko/20101207 Thunderbird/3.1.7
 MIME-Version: 1.0
-To: dri-devel@lists.freedesktop.org
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        airlied@redhat.com, alexdeucher@gmail.com
-Subject: [BISECTED] commit 619efb1059 makes the MacBookPro2,2 screen flicker
- like its broken or half plugged in
+To: james_p_freyensee@linux.intel.com
+CC: gregkh@suse.de, linux-kernel@vger.kernel.org, suhail.ahmed@intel.com
+Subject: Re: [PATCH 02/12] Kernel documentation for the PTI feature.
+References: <james_p_freyensee@linux.intel.com> <1297193697-5417-1-git-send-email-james_p_freyensee@linux.intel.com> <1297193697-5417-2-git-send-email-james_p_freyensee@linux.intel.com> <1297193697-5417-3-git-send-email-james_p_freyensee@linux.intel.com>
+In-Reply-To: <1297193697-5417-3-git-send-email-james_p_freyensee@linux.intel.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the current HEAD Im getting screen flickering really bad to point 
-where it looks like the screen is damaged and/or half plugged-in etc..
+On 2/8/2011 11:34 AM, james_p_freyensee@linux.intel.com wrote:
+> From: J Freyensee<james_p_freyensee@linux.intel.com>
+>
+> This provides Kernel documentation for the PTI
+> feature for Linux mobile solutions.
+>
+> Signed-off-by: J Freyensee<james_p_freyensee@linux.intel.com>
+> ---
+>   Documentation/pti/pti_intel_mid.txt |   89 +++++++++++++++++++++++++++++++++++
+>   1 files changed, 89 insertions(+), 0 deletions(-)
+>   create mode 100644 Documentation/pti/pti_intel_mid.txt
+>
+> diff --git a/Documentation/pti/pti_intel_mid.txt b/Documentation/pti/pti_intel_mid.txt
+> new file mode 100644
+> index 0000000..b9c3f3a
+> --- /dev/null
+> +++ b/Documentation/pti/pti_intel_mid.txt
+> @@ -0,0 +1,89 @@
+> +The Intel MID PTI project is HW implemented in Intel Atom
+> +system-on-a-chip designs based on the Parallel Trace
+> +Interface for MIPI P1149.7 cJTAG standard.  The kernel solution
+> +for this platform involves the following files:
+> +
+> +./include/linux/pti.h
+> +./include/linux/n_tracesink.h
+> +./drivers/.../n_tracerouter.c
+> +./drivers/.../n_tracesink.c
+> +./drivers/.../pti.c
+> +
+> +pti.c is the driver that enables various debugging features
+> +popular on certain mobile manufacturers.  n_tracerouter.c
+> +and n_tracesink.c allow extra system information to be
+> +collected and routed to the pti driver, such as trace
+> +debugging data from a modem.  Altough n_tracerouter
 
-the bisect pointed to here:
+                                  Although
 
-commit 619efb105924d8cafa0c1dd9389e9ab506f5425d
+> +and n_tracesink are a part of the complete PTI solution,
+> +these two line disciplines can work separate from
 
-doing a git revert 619efb10592
-gets the screen working properly again.
-I havent looked much through the code to see if I can fix this. for the 
-time being I'll revert this on my machine with the current, until later on.
+                                        separately
 
-lspci -vv shows my card info(let me know if you need anymore)
+> +pti.c and route any data stream from one /dev/tty node
+> +to another /dev/tty node via kernel-space.  This provides
+> +a stable, reliable connection that will not break unless
+> +the user-space application shuts down (plus avoids
+> +kernel->user->kernel context switch overheads of routing
+> +data).
 
-01:00.0 VGA compatible controller: ATI Technologies Inc M56P [Radeon 
-Mobility X1600] (prog-if 00 [VGA controller])
-         Subsystem: Apple Computer Inc. MacBook Pro
-         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- 
-ParErr- Stepping- SERR- FastB2B- DisINTx+
-         Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- 
-<TAbort- <MAbort- >SERR- <PERR- INTx-
-         Latency: 0, Cache Line Size: 256 bytes
-         Interrupt: pin A routed to IRQ 42
-         Region 0: Memory at 40000000 (32-bit, prefetchable) [size=128M]
-         Region 1: I/O ports at 3000 [size=256]
-         Region 2: Memory at 50300000 (32-bit, non-prefetchable) [size=64K]
-         Expansion ROM at 50320000 [disabled] [size=128K]
-         Capabilities: <access denied>
-         Kernel driver in use: radeon
-         Kernel modules: radeon
-
-
-Justin P. Mattock
+~Randy
