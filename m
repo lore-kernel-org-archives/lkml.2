@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755768Ab1BHUpM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 15:45:12 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33091 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754565Ab1BHUpK convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 15:45:10 -0500
+	id S1755830Ab1BHUwZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 15:52:25 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:59025 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755256Ab1BHUwY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 15:52:24 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=ChltTtFlVMP3o6KCCGqc17ba+cRDW+YPfUjBEPeoINLO8eTW8L8ni4eEO8JEWCs79a
+         24khzlXKznlr5ryWiH1PJZiDXAiHgzT6A9GITJ/aRI1N4RM+GTKqVkHX0dNAzB2HUlZR
+         3aVLmqf2Wj3jrLfT4iVepbQVTAXwSECFYXGQk=
+Message-ID: <4D51AD03.7030401@gmail.com>
+Date: Tue, 08 Feb 2011 12:52:19 -0800
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-In-Reply-To: <m1hbce46fw.fsf@fess.ebiederm.org>
-References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com> <m1hbce46fw.fsf@fess.ebiederm.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 8 Feb 2011 12:44:17 -0800
-Message-ID: <AANLkTikJL_4-7F_2oSuefSpL7ak3+OWLk7F+bDqWT8XJ@mail.gmail.com>
-Subject: Re: Heads up Linux 2.6.38-rc4 compile problems.
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Miller <davem@davemloft.net>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: dri-devel@lists.freedesktop.org
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        airlied@redhat.com, alexdeucher@gmail.com
+Subject: [BISECTED] commit 619efb1059 makes the MacBookPro2,2 screen flicker
+ like its broken or half plugged in
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 8, 2011 at 12:28 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
->
-> A quick heads up.  2.6.38-rc4 looks like the worst kernel I've ever tried to
-> test.  It boots up properly and looks ok, but I can't get it to even
-> compile the programs I usually test with. 2.6.38-rc3 at least managed
-> that yesterday.
+With the current HEAD Im getting screen flickering really bad to point 
+where it looks like the screen is damaged and/or half plugged-in etc..
 
-gcc dying with ICE or SIGSEGV? Or what? Seriously lacking information here.
+the bisect pointed to here:
 
-Are you using btrfs or cifs (the two filesystems that had
-bigger-than-average changes)?
+commit 619efb105924d8cafa0c1dd9389e9ab506f5425d
 
-Any chance to bisect it (even if just partially - a couple of
-bisection runs would already narrow it down quite a bit)?
+doing a git revert 619efb10592
+gets the screen working properly again.
+I havent looked much through the code to see if I can fix this. for the 
+time being I'll revert this on my machine with the current, until later on.
 
-> From 2.6.38-rc3 I managed to figure out that tftp transfers over ipv6
-> with curl are dying in with a getpeername problem.
+lspci -vv shows my card info(let me know if you need anymore)
 
-Hmm. Adding Davem for that one, although I'd expect you to be able to
-figure out some networking problem on your own and perhaps give a
-better report?
+01:00.0 VGA compatible controller: ATI Technologies Inc M56P [Radeon 
+Mobility X1600] (prog-if 00 [VGA controller])
+         Subsystem: Apple Computer Inc. MacBook Pro
+         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- 
+ParErr- Stepping- SERR- FastB2B- DisINTx+
+         Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- 
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+         Latency: 0, Cache Line Size: 256 bytes
+         Interrupt: pin A routed to IRQ 42
+         Region 0: Memory at 40000000 (32-bit, prefetchable) [size=128M]
+         Region 1: I/O ports at 3000 [size=256]
+         Region 2: Memory at 50300000 (32-bit, non-prefetchable) [size=64K]
+         Expansion ROM at 50320000 [disabled] [size=128K]
+         Capabilities: <access denied>
+         Kernel driver in use: radeon
+         Kernel modules: radeon
 
-                             Linus
+
+Justin P. Mattock
