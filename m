@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312Ab1BHRiL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 12:38:11 -0500
-Received: from www.tglx.de ([62.245.132.106]:58085 "EHLO www.tglx.de"
+	id S1755317Ab1BHRip (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 12:38:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21116 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755133Ab1BHRiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 12:38:09 -0500
-Date: Tue, 8 Feb 2011 18:38:00 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-cc: Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 0/4] XEN: Interrupt cleanups
-In-Reply-To: <20110208162442.GC4606@dumpdata.com>
-Message-ID: <alpine.LFD.2.00.1102081836370.31804@localhost6.localdomain6>
-References: <20110205200108.921707839@linutronix.de> <4D50641B.2090006@goop.org> <alpine.LFD.2.00.1102072231220.31804@localhost6.localdomain6> <4D506AE6.6080900@goop.org> <1297173811.9388.95.camel@zakaz.uk.xensource.com> <alpine.LFD.2.00.1102081544290.31804@localhost6.localdomain6>
- <1297177506.9388.135.camel@zakaz.uk.xensource.com> <alpine.LFD.2.00.1102081619410.31804@localhost6.localdomain6> <20110208162442.GC4606@dumpdata.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754705Ab1BHRio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 12:38:44 -0500
+Date: Tue, 8 Feb 2011 12:38:36 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: fix setup NMI_LOCAL_APIC watchdog
+Message-ID: <20110208173836.GA27728@redhat.com>
+References: <AANLkTikLveTej7m7UkT6thCxD_nWbEFbF6q=ayGSj2oT@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikLveTej7m7UkT6thCxD_nWbEFbF6q=ayGSj2oT@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Feb 2011, Konrad Rzeszutek Wilk wrote:
-
-> > Core change is in 
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git irq/for-xen
+On Thu, Feb 03, 2011 at 11:07:11PM +0800, Hillf Danton wrote:
+> when testing NMI watchdog, at leat for NMI_LOCAL_APIC, the default
+> value of nmi_active could prevent the dog from being tested. Even
+> could not, lapic_adjust_nmi_hz() could misplay its role since the
+> underlying hardware is still not initialized by lapic_watchdog_init().
 > 
-> I just noticed that the patch you put in there differs from the
-> one you posted: "genirq: Add IRQF_FORCE_RESUME". You missed the
-> changes in include/linux/interrupt.h for the IRQF_MODIFY_MASK.
+> And for same reason the check for wd_ops could be removed in
+> enable_lapic_nmi_watchdog(), in which nmi_active is also checked.
 > 
-> Was that intentional?
+> If NMI_LOCAL_APIC is enabled thru sysctl on cmdline after bootup, how
+> to test stuckup?
 
-Yes, because irq.h is missing the IRQ_... flag as well. It's only
-settable via: IRQF_... which is a flag for request/setup_irq.
+Your patch doesn't apply to 2.6.38 any more because that code has been
+removed.  We have switched to the new nmi_watchdog.  Unless you have other
+concerns, I am going to drop your patch.
 
-Thanks,
-
-	tglx
-
- 
+Cheers,
+Don
