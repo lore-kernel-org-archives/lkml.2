@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab1BHRyl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 12:54:41 -0500
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:38811 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755037Ab1BHRyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 12:54:40 -0500
-Subject: Re: [RFC][PATCH 0/6] more detailed per-process transparent
- hugepage statistics
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Michael J Wolf <mjwolf@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110202000750.GC16981@random.random>
-References: <20110201003357.D6F0BE0D@kernel>
-	 <20110201153857.GA18740@random.random> <1296580547.27022.3370.camel@nimitz>
-	 <20110201203936.GB16981@random.random> <1296593801.27022.3920.camel@nimitz>
-	 <20110202000750.GC16981@random.random>
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Tue, 08 Feb 2011 09:54:34 -0800
-Message-ID: <1297187674.6737.12145.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
+	id S1755368Ab1BHR6i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 12:58:38 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:64890 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755130Ab1BHR6g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 12:58:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=KfMcLiiZ1Jwx/CZcr2VVLffauTUkBlR3KFiUaffNbddSuqiHHYjx0UEuHeb7Q+dY39
+         H/shbyLwPpzgEyXnWtPKjXpC09qBBrjB8llQHjmBVKB/pURw0yahTU6vDtWJ1kIE5G4S
+         +Weio5p/JpUtqkKNKp7XTmql3v9s2tawEmPaU=
+Date: Tue, 8 Feb 2011 09:58:26 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: [PATCH wq#for-2.6.39] workqueue: add system_freezeable_wq
+Message-ID: <20110208175825.GE4476@core.coreip.homeip.net>
+References: <201102080029.57195.rjw@sisk.pl>
+ <20110208044712.GA906@core.coreip.homeip.net>
+ <201102081020.25646.rjw@sisk.pl>
+ <20110208093212.GA6558@htj.dyndns.org>
+ <20110208094155.GB6558@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110208094155.GB6558@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-02-02 at 01:07 +0100, Andrea Arcangeli wrote:
-> > I guess we could also try and figure out whether the khugepaged CPU
-> > overhead really comes from the scanning or the collapsing operations
-> > themselves.  Should be as easy as some oprofiling.
+On Tue, Feb 08, 2011 at 10:41:55AM +0100, Tejun Heo wrote:
+> From de62c151df9b6568c67977920267392c432f340a Mon Sep 17 00:00:00 2001
+> From: Tejun Heo <tj@kernel.org>
+> Date: Tue, 8 Feb 2011 10:39:03 +0100
 > 
-> Actually I already know, the scanning is super fast. So it's no real
-> big deal to increase the scanning. It's big deal only if there are
-> plenty more of collapse/split. Compared to the KSM scan, the
-> khugepaged scan costs nothing.
+> Add system wide freezeable workqueue.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-Just FYI, I did some profiling on a workload that constantly split and
-joined pages.  Very little of the overhead was in the scanning itself,
-so I think you're dead-on here.
+Acked-by: Dmitry Torokhov <dtor@mail.ru>
 
--- Dave
+And if, as Alan said, it could be "freezable" that would be great.
 
+-- 
+Dmitry
