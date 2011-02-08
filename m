@@ -1,61 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab1BHVpo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 16:45:44 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53289 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753186Ab1BHVpm convert rfc822-to-8bit (ORCPT
+	id S1753460Ab1BHVs1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 16:48:27 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:60633 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753186Ab1BHVs0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 16:45:42 -0500
+	Tue, 8 Feb 2011 16:48:26 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=U3hO0QGhrd3nG/eXTWOa0V8I5/gZvsSsBCCsB1M40750THaRMLjz8AHJst4LD/AD1r
-         qRTfNFvm1crVcL5rckuluXLzvP+sGI3bom26KtG8YnpvHB3iq/t6+6AksGrAsZbTtbgl
-         tWX8vPhsCU/6RDNJQ79VRfq3gb2TG3VLZf2RQ=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=BXgDKk3c97XJ+WiCiiPjiYL3dZPWiGg=i3KXp@mail.gmail.com>
-References: <1294774649.1337.7.camel@d941e-10>
-	<AANLkTi=BXgDKk3c97XJ+WiCiiPjiYL3dZPWiGg=i3KXp@mail.gmail.com>
-Date: Tue, 8 Feb 2011 22:45:42 +0100
-Message-ID: <AANLkTi=cfNXONM5EvGPaS7N2kgAbUZmn1Oe+qE9fd7aO@mail.gmail.com>
-Subject: Re: [PATCH] tpm_tis: Use timeouts returned from TPM
-From: Guillaume Chazarain <guichaz@gmail.com>
-To: Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>
-Cc: linux-kernel@vger.kernel.org, srajiv@linux.vnet.ibm.com,
-        tpmdd-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        h=cc:message-id:from:to:in-reply-to:content-type
+         :content-transfer-encoding:mime-version:subject:date:references
+         :x-mailer;
+        b=AB+crVU2HxITv/GhBRKd2veOKLe9qlk/zXrjgEX3EJTDtmG9HSmvyI2CdUuOWxkrN8
+         PvKSKEDG1k564L7IF0CH8hUIy1YMo1iE+XHtQphpUcEeDCsUncCk2imibmIOoiWNrV2d
+         QHqlNf6gZAxQpc7Pfslw4IJjVCj55rdQDGLDw=
+Cc: dri-devel@lists.freedesktop.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        airlied@redhat.com
+Message-Id: <69DE7FE9-2298-4531-8684-777D6A3487A4@gmail.com>
+From: Justin Mattock <justinmattock@gmail.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+In-Reply-To: <AANLkTimXbbCJHs7WEfkbbQLpKqMM1G_qZ-cN1hcQ+3KJ@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII; format=flowed; delsp=yes
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0 (Apple Message framework v936)
+Subject: Re: [BISECTED] commit 619efb1059 makes the MacBookPro2,2 screen flicker like its broken or half plugged in
+Date: Tue, 8 Feb 2011 13:48:21 -0800
+References: <4D51AD03.7030401@gmail.com> <AANLkTimXbbCJHs7WEfkbbQLpKqMM1G_qZ-cN1hcQ+3KJ@mail.gmail.com>
+X-Mailer: Apple Mail (2.936)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ + jmorris ]
 
-On Thu, Jan 27, 2011 at 11:44 PM, Guillaume Chazarain <guichaz@gmail.com> wrote:
-> On Tue, Jan 11, 2011 at 8:37 PM, Stefan Berger
-> <stefanb@linux.vnet.ibm.com> wrote:
->> The current TPM TIS driver in git discards the timeout values returned
->> from the TPM.
->
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=c4ff4b829ef9e6353c0b133b7adb564a68054979
-> broke the TPM for me on a thinkpad T410. When using the TPM, dmesg
-> complains:
->
-> [   65.728310] tpm_tis 00:0b: Operation Timed out
-> [   67.651450] tpm_tis 00:0b: Operation Timed out
-> [   69.669421] tpm_tis 00:0b: Operation Timed out
->
-> This patch fixes it, so consider it:
->
-> Tested-by: Guillaume Chazarain <guichaz@gmail.com>
+On Feb 8, 2011, at 1:20 PM, Alex Deucher wrote:
 
-This patch (https://lkml.org/lkml/2011/1/11/341) fixes a regression
-introduced in 2.6.38-rc3, any chance of having it merged?
+> On Tue, Feb 8, 2011 at 3:52 PM, Justin P. Mattock
+> <justinmattock@gmail.com> wrote:
+>> With the current HEAD Im getting screen flickering really bad to  
+>> point where
+>> it looks like the screen is damaged and/or half plugged-in etc..
+>>
+>> the bisect pointed to here:
+>>
+>> commit 619efb105924d8cafa0c1dd9389e9ab506f5425d
+>>
+>> doing a git revert 619efb10592
+>> gets the screen working properly again.
+>> I havent looked much through the code to see if I can fix this. for  
+>> the time
+>> being I'll revert this on my machine with the current, until later  
+>> on.
+>
+> The attached patch should fix it assuming I got your pci ids correct.
+> I'm done with the pll stuff; too may fixes break other boards.  Just
+> add a quirk table and be done with it.
+>
+> Alex
+>
+>>
+>> lspci -vv shows my card info(let me know if you need anymore)
+>>
+>> 01:00.0 VGA compatible controller: ATI Technologies Inc M56P [Radeon
+>> Mobility X1600] (prog-if 00 [VGA controller])
+>>        Subsystem: Apple Computer Inc. MacBook Pro
+>>        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-  
+>> ParErr-
+>> Stepping- SERR- FastB2B- DisINTx+
+>>        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+>> <TAbort- <MAbort- >SERR- <PERR- INTx-
+>>        Latency: 0, Cache Line Size: 256 bytes
+>>        Interrupt: pin A routed to IRQ 42
+>>        Region 0: Memory at 40000000 (32-bit, prefetchable)  
+>> [size=128M]
+>>        Region 1: I/O ports at 3000 [size=256]
+>>        Region 2: Memory at 50300000 (32-bit, non-prefetchable)  
+>> [size=64K]
+>>        Expansion ROM at 50320000 [disabled] [size=128K]
+>>        Capabilities: <access denied>
+>>        Kernel driver in use: radeon
+>>        Kernel modules: radeon
+>>
+>>
+>> Justin P. Mattock
+>>
+> <0001-drm-radeon-kms-fix-pll-algo-quirk-function.patch>
 
-Thanks.
 
--- 
-Guillaume
+
+cool... The patch fixes it over here
+
+Reported-and-Tested by: Justin P. Mattock<justinmattock@gmail.com>
+
+Thanks..
+
+Justin P. Mattock
