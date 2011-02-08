@@ -1,88 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315Ab1BHWWz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 17:22:55 -0500
-Received: from eazy.amigager.de ([213.239.192.238]:36316 "EHLO
-	eazy.amigager.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753295Ab1BHWWx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 17:22:53 -0500
-X-Greylist: delayed 616 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Feb 2011 17:22:53 EST
-Date: Tue, 8 Feb 2011 23:12:35 +0100
-From: Tino Keitel <tino.keitel@tikei.de>
-To: linux-kernel@vger.kernel.org
-Subject: 2.6.38-rc3: kernel BUG at fs/nfsd/nfs4state.c:3132!
-Message-ID: <20110208221235.GA16984@mac.home>
-Mail-Followup-To: linux-kernel@vger.kernel.org
+	id S1754592Ab1BHWXi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 17:23:38 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:35885 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753425Ab1BHWXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 17:23:37 -0500
+Date: Tue, 8 Feb 2011 14:23:04 -0800
+From: Kees Cook <kees.cook@canonical.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>, mtk.manpages@gmail.com
+Subject: Re: [PATCH v2 1/2] Export linux/syslog.h
+Message-ID: <20110208222304.GO1457@outflux.net>
+References: <1297203320.1748.14.camel@t41.thuisdomein>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1297203320.1748.14.camel@t41.thuisdomein>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-I get the following error with kernel 2.6.38-rc3 during normal file access via
-NFS v4.
+Looks fine to me.
 
-At least one other user seems to have the same problem:
-http://pastebin.com/QRq1TMkj
+On Tue, Feb 08, 2011 at 11:15:08PM +0100, Paul Bolle wrote:
+> Userspace programs (like util-linux' dmesg) still use magic numbers for
+> the klogctl function (glibc's interface to the syslog system call).
+> Exporting linux/syslog.h makes the more descriptive named constants
+> available as a single reference for these values.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-<0>------------[ cut here ]------------
-kernel BUG at fs/nfsd/nfs4state.c:3132!
-<0>invalid opcode: 0000 [#1] SMP 
-<0>last sysfs file: /sys/devices/virtual/block/dm-8/uevent
-CPU 0 
-Modules linked in: ipv6 usblp btusb bluetooth loop arc4 ecb
-snd_hda_codec_idt snd_hda_intel snd_hda_codec snd_pcm_oss ath5k
-dvb_usb_vp7045 ath dvb_usb snd_pcm snd_timer mac80211
- snd_page_alloc evdev dvb_core sky2 rc_core ata_piix cfg80211
+Signed-off-by: Kees Cook <kees.cook@canonical.com>
 
-Pid: 2280, comm: nfsd Not tainted 2.6.38-rc3-00062-gb64606b #6
-Mac-F4208EAA/Macmini2,1
-RIP: 0010:[<ffffffff8119f973>]  [<ffffffff8119f973>]
-nfs4_preprocess_stateid_op+0x3a3/0x490
-RSP: 0018:ffff8800b399bd50  EFLAGS: 00010246
-RAX: 0000000000000000 RBX: ffff8800b60a9000 RCX: ffffffff8175a010
-RDX: ffff8800ab784e48 RSI: ffffffff8175a020 RDI: ffffffff8175a000
-RBP: ffff8800a4ce5678 R08: 0000000000000000 R09: 0000000000000000
-R10: ffff8800b3910180 R11: c600000000000000 R12: ffff8800b390f1c0
-R13: ffff8800b390f1a0 R14: 0000000000000000 R15: ffff8800aba079a0
-FS:  0000000000000000(0000) GS:ffff8800bde00000(0000)
-knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00007f2b8805d000 CR3: 00000000b6fe8000 CR4: 00000000000006b0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process nfsd (pid: 2280, threadinfo ffff8800b399a000, task
-ffff8800b63a62d0)
-<0>Stack:
- 000000004d507f0d ffff8800b390f1a0 ffff8800b3910040 ffff8800b391c000
- 0000000016000000 0000000000000000 ffff8800b3910040 ffffffff8118f549
- ffff8800b390f000 ffff8800b3910000 ffff8800b390f000 ffff8800b391c000
-<0>Call Trace:
- [<ffffffff8118f549>] ? nfsd4_read+0x79/0xc0
- [<ffffffff81190096>] ? nfsd4_proc_compound+0x416/0x4d0
- [<ffffffff8117f5ad>] ? nfsd_dispatch+0xfd/0x240
- [<ffffffff8146f1f9>] ? svc_process_common+0x339/0x680
- [<ffffffff81035b70>] ? default_wake_function+0x0/0x20
- [<ffffffff8117ecc0>] ? nfsd+0x0/0x150
- [<ffffffff8146f80a>] ? svc_process+0x10a/0x160
- [<ffffffff8117ecc0>] ? nfsd+0x0/0x150
- [<ffffffff8117ed72>] ? nfsd+0xb2/0x150
- [<ffffffff81055ff6>] ? kthread+0x96/0xa0
- [<ffffffff810039b4>] ? kernel_thread_helper+0x4/0x10
- [<ffffffff81055f60>] ? kthread+0x0/0xa0
- [<ffffffff810039b0>] ? kernel_thread_helper+0x0/0x10
-<0>Code: 27 29 41 3b 47 50 0f 87 9a fd ff ff 0f 83 e9 fe ff ff e9 76 ff
-ff ff 48 8b 42 48 45 31 f6 49 89 04 24 48 85 c0 0f 85 7b fd ff ff <0f>
-0b 49 8b 57 48 48 8b 42 40 48 85 c
-0 0f 85 2a ff ff ff 48 8b 
-RIP  [<ffffffff8119f973>] nfs4_preprocess_stateid_op+0x3a3/0x490
- RSP <ffff8800b399bd50>
----[ end trace 7ef2fa5b1b62014a ]---
+-Kees
 
-Regards,
-Tino
+-- 
+Kees Cook
+Ubuntu Security Team
