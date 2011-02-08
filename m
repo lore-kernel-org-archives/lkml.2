@@ -1,72 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248Ab1BHDHc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 22:07:32 -0500
-Received: from ch1outboundpool.messaging.microsoft.com ([216.32.181.185]:28162
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752762Ab1BHDHb (ORCPT
+	id S1755451Ab1BHDJh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 22:09:37 -0500
+Received: from utopia.booyaka.com ([72.9.107.138]:41224 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755097Ab1BHDJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 22:07:31 -0500
-X-Greylist: delayed 904 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Feb 2011 22:07:30 EST
-X-SpamScore: -9
-X-BigFish: VPS-9(zzbb2dK98dNzz1202hzzz2fh2a8h637h668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4D50AFD0.9020704@am.sony.com>
-Date: Mon, 7 Feb 2011 18:52:00 -0800
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.1) Gecko/20090814 Fedora/3.0-2.6.b3.fc11 Thunderbird/3.0b3
+	Mon, 7 Feb 2011 22:09:36 -0500
+Date: Mon, 7 Feb 2011 20:09:34 -0700 (MST)
+From: Paul Walmsley <paul@pwsan.com>
+To: John Ogness <john.ogness@linutronix.de>
+cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com
+Subject: Re: [PATCH v3] OMAP2/3: clock: fix fint calculation for
+ DPLL_FREQSEL
+In-Reply-To: <87y66e3bc2.fsf_-_@vostro.fn.ogness.net>
+Message-ID: <alpine.DEB.2.00.1102072008480.21991@utopia.booyaka.com>
+References: <87ei8726wf.fsf@vostro.fn.ogness.net> <20110120111645.GB2223@legolas.emea.dhcp.ti.com> <8739on1wdd.fsf_-_@vostro.fn.ogness.net> <20110121031553.GA2448@legolas.emea.dhcp.ti.com> <87y66e3bc2.fsf_-_@vostro.fn.ogness.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        <linux-embedded@vger.kernel.org>
-Subject: Re: [PATCH] PM: Hide CONFIG_PM from users
-References: <1297081335-13631-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <1297081335-13631-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/11 04:22, Mark Brown wrote:
-> It is very rare to find a current system which is both sufficiently
-> resource constrained to want to compile out power management support
-> and sufficiently power insensitive to be able to tolerate doing so.
-> Since having the configuration option requires non-zero effort to
-> maintain, with ifdefery in most drivers, but it is used with vanishing
-> rarity it is simpler to just remove the option.
+On Fri, 21 Jan 2011, John Ogness wrote:
 
-Proof by assertion that it is used with vanishing rarity.
+> From: John Ogness <john.ogness@linutronix.de>
+> 
+> In OMAP35X TRM Rev 2010-05 Figure 7-18 "DPLL With EMI Reduction
+> Feature", it is shown that the internal frequency is calculated by
+> CLK_IN/(N+1). However, the value passed to _dpll_test_fint() is
+> already "N+1" since Linux is using the values to divide by. In the
+> technical reference manual, "N" is referring to the divider's register
+> value (0-127).
+> 
+> Signed-off-by: John Ogness <john.ogness@linutronix.de>
 
-> Begin doing so by hiding it from users - this should attract complaints
-> from any active users. The option is left disabled for the IA64 Ski
-> simulator which is a partial simulator for IA64 systems mostly missing
-> device support. This is a very limited use case which is unlikely to
-> ever want to enable most drivers.
+Thanks for the patch, John.  Probably this should go into the -rc series 
+since it could affect system stability, so will queue it there.
 
-That is not a good method of getting feedback from users.
 
- 1) It immediately removes the ability to have CONFIG_PM undefined,
-    without first giving active users a chance to provide feedback.
-
- 2) The removal of that ability is not obvious ("make oldconfig" does
-    not say anything about CONFIG_PM).  It is easy to overlook a
-    config change that happens silently.
-
- 3) The active users may not move to a newer version of the kernel
-    that contains this change until after it has been decided that
-    there are no users of the config option since no one complained
-    in a timely manner.
-
-Would it be appropriate to use Documentation/feature-removal-schedule.txt
-if this truly will be removed?
-
--Frank
-
+- Paul
