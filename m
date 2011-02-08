@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755422Ab1BHSSP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 13:18:15 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:36039 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755173Ab1BHSSN convert rfc822-to-8bit (ORCPT
+	id S1755396Ab1BHS2S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 13:28:18 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:1232 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755233Ab1BHS2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 13:18:13 -0500
+	Tue, 8 Feb 2011 13:28:16 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
+        d=google.com; s=beta;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=BT6imf559Klb7ZE/y4HS3nkY9HkjndsR9fj/PCpCXOwiJf/Y1UlR44M8rQlxY6+aom
-         0Px6TWFidmlHqeYMPkJ11FDQjJMq9ND9Me9O52cIXnqkOQTsmce5KYX4Gq4wy01rmOM3
-         TZTt9G8/VwY9ZKFNRuFYck7GGMmC6LQByGjvw=
+         :cc:content-type;
+        b=mxEhElBta2/03vUvVhUC+ZUX79bXj6FFREhqVmeq3Eg4/jcyYGuKPs3BB9RKb63oHl
+         8wv+5GZ9YY+4LMcMpQ4g==
 MIME-Version: 1.0
-In-Reply-To: <4D51796C.8020008@ru.mvista.com>
-References: <201102081652.36752.bzolnier@gmail.com>
-	<4D51796C.8020008@ru.mvista.com>
-Date: Tue, 8 Feb 2011 19:18:12 +0100
-Message-ID: <AANLkTikyV579TRSMw_g_rTB7C641fWbdSELP9mpa30bG@mail.gmail.com>
-Subject: Re: [PATCH 21/20] ata_piix: add new PIIX_FLAG_* flags
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1297126056-14322-2-git-send-email-walken@google.com>
+References: <1297126056-14322-1-git-send-email-walken@google.com>
+	<1297126056-14322-2-git-send-email-walken@google.com>
+Date: Tue, 8 Feb 2011 10:28:12 -0800
+Message-ID: <AANLkTi=iYQCmKsE_xR4x0h-6BiVkpD3R2y6pKa1b9K0+@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mlock: fix race when munlocking pages in do_wp_page()
+From: Hugh Dickins <hughd@google.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: linux-mm@kvack.org, Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Feb 7, 2011 at 4:47 PM, Michel Lespinasse <walken@google.com> wrote:
+>
+> vmscan can lazily find pages that are mapped within VM_LOCKED vmas,
+> and set the PageMlocked bit on these pages, transfering them onto the
+> unevictable list. When do_wp_page() breaks COW within a VM_LOCKED vma,
+> it may need to clear PageMlocked on the old page and set it on the
+> new page instead.
+>
+> This change fixes an issue where do_wp_page() was clearing PageMlocked on
+> the old page while the pte was still pointing to it (as well as rmap).
+> Therefore, we were not protected against vmscan immediately trasnfering
+> the old page back onto the unevictable list. This could cause pages to
+> get stranded there forever.
+>
+> I propose to move the corresponding code to the end of do_wp_page(),
+> after the pte (and rmap) have been pointed to the new page. Additionally,
+> we can use munlock_vma_page() instead of clear_page_mlock(), so that
+> the old page stays mlocked if there are still other VM_LOCKED vmas
+> mapping it.
+>
+> Signed-off-by: Michel Lespinasse <walken@google.com>
 
-On Tue, Feb 8, 2011 at 6:12 PM, Sergei Shtylyov <sshtylyov@mvista.com> wrote:
-> Hello.
->
-> Bartlomiej Zolnierkiewicz wrote:
->
->> Turn open-coded checks in piix_set_timings() into PIIX_FLAG_* flags
->> per suggestion from Alan Cox.
->
->> Suggested-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
->> Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
->
-> [...]
->
->> Index: b/drivers/ata/ata_piix.c
->> ===================================================================
->> --- a/drivers/ata/ata_piix.c
->> +++ b/drivers/ata/ata_piix.c
->> @@ -133,6 +133,8 @@ enum {
->>        PIIX_FLAG_CHECKINTR     = (1 << 28), /* make sure PCI INTx enabled
->> */
->>        PIIX_FLAG_SIDPR         = (1 << 29), /* SATA idx/data pair regs */
->> +       PIIX_FLAG_NO_SITRE      = (1 << 30), /* no SITRE register */
->
->   The register in question is called SIDETIM, SITRE is a bit that enables
-> its use.
+Acked-by: Hugh Dickins <hughd@google.com>
 
-ICH4-M databook that I have at hand (Intel IDE PRM seems to be gone
-from Intel's website, though I'm sure I have a backup _somewhere_) it
-is called SLV_IDETIM so lets just stick with the current naming for
-now..
-
-Thanks,
-Bartlomiej
+(but I have to say, do_wp_page() grows even ughlier!)
