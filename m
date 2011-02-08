@@ -1,49 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630Ab1BHBSW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 20:18:22 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63028 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752011Ab1BHBSU (ORCPT
+	id S1754710Ab1BHB1P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 20:27:15 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:3040 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752594Ab1BHB1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 20:18:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=u/U62TN1vm6+MXuwrT8xGDD5Koh+6j37rljBzAEEu7+0X1nO73Bnk8WrDlshDzsYAJ
-         vA+RGel2f5NB4G8XEghDo992V0RY1j2LVsrzmKwzNvFnlmFJFOATn/PZ5IhjVdusGGpP
-         MAd3lA35sJ7Ddq0GYii7KxhQwQi+ougdNcvzg=
+	Mon, 7 Feb 2011 20:27:14 -0500
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "'Wolfgang Grandegger'" <wg@grandegger.com>
+Cc: <socketcan-core@lists.berlios.de>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+References: <cover.1296818921.git.segoon@openwall.com><a6800dc8b0daed78256f98f52844cbbb48f4a76d.1296818921.git.segoon@openwall.com><20110204124233.GB334@e-circ.dyndns.org>	<20110204.130649.112613896.davem@davemloft.net>	<5009516791F146C49C73FAC57C437313@hacdom.okisemi.com> <4D4FDEF9.2030305@grandegger.com> <4D501555.5000905@grandegger.com>
+Subject: RE: About bittiming calculation result
+Date: Tue, 8 Feb 2011 10:27:11 +0900
+Message-ID: <93C12206407640199DCDD3A89A333F13@hacdom.okisemi.com>
 MIME-Version: 1.0
-In-Reply-To: <20110207154953.GN10564@opensource.wolfsonmicro.com>
-References: <20110207152132.GM10564@opensource.wolfsonmicro.com>
- <Pine.LNX.4.44L0.1102071035320.1924-100000@iolanthe.rowland.org> <20110207154953.GN10564@opensource.wolfsonmicro.com>
-From: Ray Lee <ray-lk@madrabbit.org>
-Date: Mon, 7 Feb 2011 17:17:59 -0800
-X-Google-Sender-Auth: 1cwbc0wu15brE2AF0q55dCcZEJk
-Message-ID: <AANLkTimh=8pSmQ6i-5H5+agSso7dCOcOrUJ6Uq_fu7nh@mail.gmail.com>
-Subject: Re: [PATCH] PM: Hide CONFIG_PM from users
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-embedded@vger.kernel.org,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <4D501555.5000905@grandegger.com>
+Thread-Index: AcvG3tDmfwoxeK2tQpOgtjmXClC0gAATjLew
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 7, 2011 at 7:49 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> I'm rather hoping that they'll notice the mailing list thread or that
-> someone else who knows what's going on with them does
+On Tuesday, February 08, 2011 12:53 AM,  Wolfgang Grandegger wrote:
 
-Surely you're joking. I mean, do _you_ scan every message that comes
-through lkml and its various sister lists?
+> BTW, it's always possible to specify optimized bit-timing 
+> parameters directly, e.g. the following seem better:
+> 
+>    800000     60  12    4    4   4   3  793650  0.8% 80.0% 81.0%  1.2%
+> 
+> You could set these with:
+> 
+>   $ ip link set can0 type can \
+>     tq 60 prop-seg 12 phase-seg1 4 phase-seg2 4 sjw 4
 
-Do a git blame and add them to the CC:. It's the polite thing to do.
+I can confirm 800K comms works well using the above.
+
+I wish Can-core could calculate like above.
+
+>> seg1/seg2/sjw/prop_seg must be more than 1 ?
+BTW, according to EG20T PCH data sheet, 
+CAN bit-timing parameters(BRP, Prop_Seg, Phase_Seg1, Phase_Seg2, SJW) must not be set 0.
+
+Thanks,
+-----------------------------------------
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD.
+
+
+> -----Original Message-----
+> From: Wolfgang Grandegger [mailto:wg@grandegger.com] 
+> Sent: Tuesday, February 08, 2011 12:53 AM
+> To: Tomoya MORINAGA
+> Cc: socketcan-core@lists.berlios.de; netdev@vger.kernel.org; 
+> linux-kernel@vger.kernel.org
+> Subject: Re: About bittiming calculation result
+> 
+> On 02/07/2011 01:00 PM, Wolfgang Grandegger wrote:
+> > Hi Tomoya,
+> > 
+> > On 02/07/2011 12:38 PM, Tomoya MORINAGA wrote:
+> >> Hi,
+> >>
+> >> I have a question for bittiming-value calculated by Can-core.
+> >>
+> >> In case setting like below,
+> >>  - ip link set can0 type can bitrate 800000
+> >>  - clock=50MHz
+> >>  - Use pch_can
+> >>
+> >> Can-core calculates like below
+> >> brp=21
+> >> seg1=1
+> >> seg2=1
+> >> sjw=1
+> >> prop_seg=0
+> >>
+> >> Is "prop_seg=0" true ?
+> > 
+> > Well, only prop_seg+phase_seg=tseg1 is relevant and the 
+> pch_can driver 
+> > sets the allowed minimum "tseg1_min1" currently to 1:
+> > 
+> > static struct can_bittiming_const pch_can_bittiming_const = {
+> >         .name = KBUILD_MODNAME,
+> >         .tseg1_min = 1,
+> >         .tseg1_max = 16,
+> >         .tseg2_min = 1,
+> >         .tseg2_max = 8,
+> >         .sjw_max = 4,
+> >         .brp_min = 1,
+> >         .brp_max = 1024, /* 6bit + extended 4bit */
+> >         .brp_inc = 1,
+> > };
+> > 
+> >> seg1/seg2/sjw/prop_seg must be more than 1 ?
+> > 
+> > Then "tseg1_min" should be set to *2*.
+> > 
+> >> Also I can see the following kernel error log.
+> >> bitrate error 0.7%
+> > 
+> > A clock frequency of 50 MHz is sub-optimal for CAN and some 
+> bit-rates 
+> > cannot be reproduced properly. Here is the output of the can-utils 
+> > program "can-calc-bit-timing" (with an entry for the pch-can added):
+> > 
+> > $ ./can-calc-bit-timing pch-can
+> > Bit timing parameters for pch-can with 50.000000 MHz ref clock
+> > nominal                                 real Bitrt   nom  real SampP
+> > Bitrate TQ[ns] PrS PhS1 PhS2 SJW BRP Bitrate Error SampP 
+> SampP Error CNF1 CNF2 CNF3
+> > 1000000    100   3    3    3   1   5 1000000  0.0% 75.0% 
+> 70.0%  6.7% 0x05 0x92 0x02
+> >  800000    420   0    1    1   1  21  793650  0.8% 80.0% 
+> 66.6% 16.8% 0x15 0xff 0x00
+> >  500000    100   8    8    3   1   5  500000  0.0% 87.5% 
+> 85.0%  2.9% 0x05 0xbf 0x02
+> >  250000    500   3    3    1   1  25  250000  0.0% 87.5% 
+> 87.5%  0.0% 0x19 0x92 0x00
+> >  125000    500   6    7    2   1  25  125000  0.0% 87.5% 
+> 87.5%  0.0% 0x19 0xb5 0x01
+> >  100000    500   8    8    3   1  25  100000  0.0% 87.5% 
+> 85.0%  2.9% 0x19 0xbf 0x02
+> >   50000   2500   3    3    1   1 125   50000  0.0% 87.5% 
+> 87.5%  0.0% 0x7d 0x92 0x00
+> >   20000   2500   8    8    3   1 125   20000  0.0% 87.5% 
+> 85.0%  2.9% 0x7d 0xbf 0x02
+> >   10000  12500   3    3    1   1 625   10000  0.0% 87.5% 
+> 87.5%  0.0% 0x71 0x92 0x00
+> > 
+> > As you can see, especially 800000 gives rather bad results.
+> 
+> BTW, it's always possible to specify optimized bit-timing 
+> parameters directly, e.g. the following seem better:
+> 
+>    800000     60  12    4    4   4   3  793650  0.8% 80.0% 81.0%  1.2%
+> 
+> You could set these with:
+> 
+>   $ ip link set can0 type can \
+>     tq 60 prop-seg 12 phase-seg1 4 phase-seg2 4 sjw 4
+> 
+> Wolfgang.
+> 
+
