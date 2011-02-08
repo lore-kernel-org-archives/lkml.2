@@ -1,146 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755409Ab1BHTxF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 14:53:05 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:53235 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753860Ab1BHTxD (ORCPT
+	id S1755239Ab1BHT6Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 14:58:16 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:46368 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754501Ab1BHT6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 14:53:03 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=F+QBdQvNWxAN/9NnjLjtNhYadoPw1SwNW4NnRfCP6GnmJBgeEP8A9A5n90DH4mKEee
-         XJLnU/CBDNstoHh3MOOw==
-Date: Tue, 8 Feb 2011 11:52:45 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Mario Kleiner <mario.kleiner@tuebingen.mpg.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm/i915: Suppress spurious vblank interrupts
-In-Reply-To: <20110202091838.5efaa660@jbarnes-desktop>
-Message-ID: <alpine.LSU.2.00.1102081132160.1591@sister.anvils>
-References: <849307$bc24ct@azsmga001.ch.intel.com> <1296471462-8578-1-git-send-email-chris@chris-wilson.co.uk> <alpine.LSU.2.00.1102010909270.1586@sister.anvils> <20110201094643.366bc073@jbarnes-desktop> <20110201100833.3219687e@jbarnes-desktop>
- <AANLkTim4kL9OjBDiQQ1MBfOCzThxmDonBic11N45NKxj@mail.gmail.com> <20110201113238.60b33ff9@jbarnes-desktop> <AANLkTikwfHd6t95-jhbXCy1ciW3OV+HVYVikZNs5LHfz@mail.gmail.com> <20110202091838.5efaa660@jbarnes-desktop>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Tue, 8 Feb 2011 14:58:14 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jarod Wilson <jwilson@redhat.com>
+References: <20110131225939.GH11974@redhat.com>
+	<20110203094715.939C.A69D9226@jp.fujitsu.com>
+	<20110203020528.GA21603@redhat.com>
+	<5C4C569E8A4B9B42A84A977CF070A35B2C147F4346@USINDEVS01.corp.hds.com>
+	<m14o8klt3w.fsf@fess.ebiederm.org>
+	<5C4C569E8A4B9B42A84A977CF070A35B2C147F43B7@USINDEVS01.corp.hds.com>
+	<20110208164656.GA29081@redhat.com> <m1ei7i8m5o.fsf@fess.ebiederm.org>
+	<20110208192756.GB29081@redhat.com>
+Date: Tue, 08 Feb 2011 11:58:05 -0800
+In-Reply-To: <20110208192756.GB29081@redhat.com> (Vivek Goyal's message of
+	"Tue, 8 Feb 2011 14:27:56 -0500")
+Message-ID: <m1r5bi5meq.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-1820850924-1297194777=:1591"
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19bBsibC+UCpay2KjEJjWBoCAt7LkQ/ipM=
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  1.0 XM_Sft_Co_L33T XM_Sft_Co_L33T
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Vivek Goyal <vgoyal@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: Query about kdump_msg hook into crash_kexec()
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Vivek Goyal <vgoyal@redhat.com> writes:
 
---8323584-1820850924-1297194777=:1591
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+> On Tue, Feb 08, 2011 at 09:35:15AM -0800, Eric W. Biederman wrote:
+>> Vivek Goyal <vgoyal@redhat.com> writes:
+>> 
+>> > On Thu, Feb 03, 2011 at 05:08:01PM -0500, Seiji Aguchi wrote:
+>> >> Hi Eric,
+>> >> 
+>> >> Thank you for your prompt reply.
+>> >> 
+>> >> I would like to consider "Needs in enterprise area" and "Implementation of kmsg_dump()" separately.
+>> >> 
+>> >> (1) Needs in enterprise area
+>> >>   In case of kdump failure, we would like to store kernel buffer to NVRAM/flush memory
+>> >>   for detecting root cause of kernel crash.
+>> >> 
+>> >> (2) Implementation of kmsg_dump 
+>> >>   You suggest to review/test cording of kmsg_dump() more.
+>> >> 
+>> >> What do you think about (1)?
+>> >> Is it acceptable for you?
+>> >
+>> > Ok, I am just trying to think loud about this problem and see if something
+>> > fruitful comes out which paves the way forward.
+>> >
+>> > - So ideally we would like kdump_msg() to be called after crash_kexec() so
+>> >   that any unaudited (third party modules), unreliable calls do not 
+>> >   compromise the realiability of kdump operation.
+>> >
+>> >   But hitachi folks seems to be wanting to save atleast kernel buffers
+>> >   somwhere in the NVRAM etc because they think that kdump can be
+>> >   unreliable and we might not capture any information after the crash. So
+>> >   they kind of want two mechanisms in place. One is light weight which
+>> >   tries to save kernel buffers in NVRAM and then one heavy weight one
+>> >   which tries to save the entire/filtered kernel core.
+>> >
+>> >   Personally I am not too excited about the idea but I guess I can live
+>> >   with it. We can try to audit atleast in kernel module and for external
+>> >   modules we don't have much control and live with the fact that if
+>> >   modules screw up, we don't capture the dump.
+>> >
+>> >  Those who don't want this behavior can do three things.
+>> >
+>> > 	- Disable kdump_msg() at compile time.
+>> > 	- Do not load any module which registers for kdump_msg()
+>> > 	- Implement a /proc tunable which allows controlling this
+>> > 	  behavior.
+>> >
+>> > - Ok, having said why do we want it, comes the question of how to  
+>> >   do it so that it works reasonably well.
+>> >
+>> >   - There seems to be on common requirement of kmsg_dump() and kdump()
+>> >     and that is stop other cpus reliably (use nmi if possible). Can
+>> >     we try to share this code between kmsg_dump and crash_kexec(). So
+>> >     something like as follows.
+>> >
+>> > 	- panic happens
+>> > 	- Do all the activities related to printing panic string and
+>> > 	  stack dump.
+>> > 	- Stop other cpus.
+>> > 		- This can be probably be done with the equivalent of
+>> > 		  machine_crash_shutdown() function. In fact this function
+>> > 		  can probably be broken down in two parts. First part
+>> > 	  	  does shutdown_prepare() where all other cpus are shot
+>> > 		  down and second part can do the actual disabling of
+>> > 		  LAPIC/IOAPIC and saving cpu registers etc.
+>> >
+>> > 		if (mutex_trylock(some_shutdown_mutex)) {
+>> > 			/* setp regs, fix vmcoreinfo etc */
+>> > 			crash_kexec_prepare();
+>> > 			machine_shutdown_prepare();
+>> > 			kdump_msg();	
+>> > 			crash_kexec_execute()
+>> > 			/* Also call panic_notifier_list here ? */
+>> > 		}
+>> >
+>> > crash_kexec_prepare () {
+>> > 		crash_setup_regs(&fixed_regs, regs);
+>> > 		crash_save_vmcoreinfo();
+>> > }
+>> >
+>> > crash_kexec_execute() {
+>> > 			/* Shutdown lapic/ioapic, save this cpu register etc */
+>> > 			machine_shutdown();
+>> > 			machine_kexec()
+>> > }
+>> >
+>> > So basically we break down machine_shutdown() function in two parts
+>> > and start sharing common part between kdump_msg(), crash_kexec and
+>> > possibly panic_notifiers. 
+>> >
+>> > If kdump is not configured, then after executing kdump_msg() and panic
+>> > notifiers, we should either be sitting in tight loop with interrupt
+>> > enabled for somebody to press Ctrl-boot or reboot system upon lapse
+>> > of panic_timeout().
+>> >
+>> > Eric, does it make sense to you?
+>> 
+>> kexec on panic doesn't strictly require that we stop other cpus.
+>
+> Yes but it is desirable.
+>
+> - We don't want cpus to be scribbling on old memory and possibly on
+>   new kernel's memory also in case of corrupted pointer and crash
+>   the freshly booted kernel (New kerenl's memory is mapped in old
+>   kernel)
+>
+> - We don't want other cpus to complete panic() and jump to BIOS or
+>   lead to some kind of triple fault and reset the system etc.
+>
+> So that would suggest to be robust, stopping other cpus is required.
+>
+> On a side note, kdump_msg() hook is present in emergency_reboot() too.
+> So if these paths are not properly designed, then system might not
+> even reboot automatically even if panic_timeout() has been specified.
 
-On Wed, 2 Feb 2011, Jesse Barnes wrote:
-> On Tue, 1 Feb 2011 19:37:09 -0800
-> Hugh Dickins <hughd@google.com> wrote:
->=20
-> > On Tue, Feb 1, 2011 at 11:32 AM, Jesse Barnes <jbarnes@virtuousgeek.org=
-> wrote:
-> >=20
-> > > What I find strange is that you're seeing flip pending interrupts. =
-=C2=A0Are
-> > > your symptoms affected if you remove the
-> > > I915_DISPLAY_PLANE_[AB]_FLIP_PENDING_INTERRUPT lines from
-> > > I915_INTERRUPT_ENABLE_FIX at the top of i915_irq.c?
-> >=20
-> > No.  The first time it looked like yes it fixed it; but when I
-> > rebooted again, same symptoms and same underruns back: this thing is
-> > very erratic.
-> >=20
-> > > Do you see any calls to drm_mode_page_flip_ioctl() in your environmen=
-t?
-> >=20
-> > None at all.
-> >=20
-> > Sometime I should do a bisection between v2.6.36 and v2.6.37 to see
-> > what started the underruns; but I can't promise when "sometime" will
-> > arrive.
->=20
-> But presumably the FLIP_PENDING_INTERRUPT bits are stuck on in your
-> case, otherwise we wouldn't be getting to flip prepare/finish at all.
->=20
-> Some updated docs indicate those bits may not be reliable on 965
-> (though earlier ones did), so we may need to disable the flip code
-> entirely on 965 if we can't figure out what's going wrong on your
-> config...
+Ouch! Ouch! Ouch!
 
-Sometime arrived, I did a bisection between v2.6.36 and v2.6.37,
-and my "pipe a underrun"s on 965 begin with 29e1316ab129 drm/i915/tv:
-Sleep before checking for state changes (appended below).
+emergency_restart is just supposed to be the restart bits, so
+that it always works!  We wouldn't need to use emergency restart
+if we could trust the normal hardware shutdown code.  Sigh.
 
-But that's a necessary patch for me: without it both VESA framebuffer
-and X mistake the size and shape of the laptop screen, and my windows
-don't fit in properly.
+I guess this is another issue I have with the design of kmsg_dump.
+Instead of being a good citizen like everyone else and placing their
+hooks explicitly where they can be seen.  The kmsg_dump hooks were
+buried in other routines changing the semantics of those routines.
 
-I experimented a little with intel_tv.c on 2.6.38-rc3 and rc4.
-Indeed, just deleting that intel_wait_for_vblank() stops the underruns,
-but leaves the display missized.  Replacing it by msleep(20), as used to
-be done, behaves the same as with intel_wait_for_vblank() there: underruns
-with correctly sized display.  "#if 0"ing all of intel_tv_detect_type(),
-just returning -1 from it, gives no underruns and correctly sized display.
+What makes this scary is the modified routines are deliberately simple
+so they are robust and can be audited and now on those code paths we
+have the hooks that are so big everyone gives up before reading and
+understanding all of the code involved.
 
-I was going to work with the latter, when my original unflushed text
-problem resurfaced again (just as it had later done when trying Chris's
-"Suppress spurious vblank interrupts" patch).  It appears that the
-underruns, while mysterious and worrisome, have litte or nothing to do
-with the unflushed text problem which is making 2.6.38-rc unusable.
+>> What makes sense to me at this point is for someone on the kmsg_dump
+>> side to make a strong case that the code actually works in a crash dump
+>> scenario.  We have lots of experience over the years that says a design
+>> like kmsg_dump is attractive but turns out to be a unreliable piece of
+>> junk that fails just when you need it.  Because developers only test
+>> the case when the kernel is happy and because people share code with
+>> the regular path drivers, and that code assumes things are happy.
+>> 
+>> I forget exactly why but last I looked.
+>> local_irq_disable()
+>> kmsg_dump()
+>> local_irq_enalbe()
+>
+> I agree that kdump_msg() code should be able to work with interrupts
+> disabled, atleast. 
+>
+> There seem to be two pieces to it. One is generic call which calls
+> all the dumpers and then respective dumpers.
+>
+> Looking at generic dumping call, I can't think why does it need interrupts
+> to be enabled. There is one spin_lock() and then rcu_read_lock(). That's
+> it.
+>
+> Regarding mtdoops, it is hard to tell. There is lot of code. But the good
+> thing is that they have introduced a separate write path for panic context.
+> That way atleast one can do special casing in panic path to avoid
+> taking locks and not be dependent on interrupts.
 
-For the moment I've gone back to my patch moving intel_display.c's
-do_gettimeofday() call into the block where it's needed; though that
-too disappointed eventually before.  It all rather stinks of something
-uninitialized somewhere.
+I think that is part of my problem.   There is a lot of code so it is
+really hard to audit, and really hard to trust.  I'm still leary with
+the amount of code on the kexec on panic code path.
 
-Hugh
+> ramoops seems to be simple. It seems to be just memcpy() except
+> do_gettimeofday(). I noticed that in the past you raised concern about usage
+> of do_gettimeofday(), but I am not sure what is the concern here (silly
+> question i guess).
+>
+> So to me, ramoops seems to be simple memcpy (atleast in principle) and
+> mtdoops has a dedicated path for handling panic context. So atleast
+> it is fixable for possible issues. Generic code seems harmless to me
+> at this point of time.
+>  
+>> 
+>> Was a recipe for disaster, and you have be at least that good to even
+>> have a chance of working in a crash dump scenario.
+>> 
+>> In part I am puzzled why the kmsg dump doesn't just use the printk
+>> interface.  Strangely enough printk works in the event of a crash and
+>> has been shown to be reliable over the years.
+>
+> Are you suggesting implementing these things as console driver and
+> register with printk as console? Sounds interesting. I think one of
+> the issues they probably will find that they don't want to log everything.
+> They want to do selective logging. Not sure how would they get this
+> info.
+>
+> In some cases like emergency_restart(), there are no printk() and they
+> just consider it one of the events to dump the kernel buffer contents.
 
-commit 29e1316ab129f2d3a9ea874e7c9a4cb936f43542
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Wed Sep 22 19:10:09 2010 +0100
+Sorry.  I am tired and I'm really not ready to deal with yet another
+mechanism like this, that is over designed and was flaky the first time
+I looked at it.  That flakiness combined with the authors not stepping
+forward and rushing off to fix things or telling me they have fixed
+things, means that I don't have any confidence in the mechanism.
 
-    drm/i915/tv: Sleep before checking for state changes.
-   =20
-    We need to wait for the PLLs to settle prior to detecting the state
-    changes. The BIOS writers guide suggests waiting for the next vblank.
-   =20
-    Reported-by: Carlos R. Mafra <crmafra2@gmail.com>
-    Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Vivek if you want to step forward and be one of the people taking care
+of kmsg_dump, then this conversation might have a point.
 
-diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_t=
-v.c
-index 49ab11c..106560b 100644
---- a/drivers/gpu/drm/i915/intel_tv.c
-+++ b/drivers/gpu/drm/i915/intel_tv.c
-@@ -1271,8 +1271,12 @@ intel_tv_detect_type (struct intel_tv *intel_tv)
- =09I915_WRITE(TV_DAC, tv_dac);
- =09POSTING_READ(TV_DAC);
-=20
-+=09intel_wait_for_vblank(intel_tv->base.base.dev,
-+=09=09=09      to_intel_crtc(intel_tv->base.base.crtc)->pipe);
-+
- =09type =3D -1;
- =09if (wait_for((tv_dac =3D I915_READ(TV_DAC)) & TVDAC_STATE_CHG, 20) =3D=
-=3D 0) {
-+=09=09DRM_DEBUG_KMS("TV detected: %x, %x\n", tv_ctl, tv_dac);
- =09=09/*
- =09=09 *  A B C
- =09=09 *  0 1 1 Composite
-@@ -1289,8 +1293,7 @@ intel_tv_detect_type (struct intel_tv *intel_tv)
- =09=09=09DRM_DEBUG_KMS("Detected Component TV connection\n");
- =09=09=09type =3D DRM_MODE_CONNECTOR_Component;
- =09=09} else {
--=09=09=09DRM_DEBUG_KMS("Unrecognised TV connection: %x\n",
--=09=09=09=09      tv_dac);
-+=09=09=09DRM_DEBUG_KMS("Unrecognised TV connection\n");
- =09=09}
- =09}
-=20
---8323584-1820850924-1297194777=:1591--
+What I know for certain is that kmsg_dump and kexec on panic are
+used in pretty exclusive ways, so getting the kmsg_dump code out
+of crash_kexec does not hurt anyone today.
+
+Right now I can't even get 2.6.38-rc4 to compile a reasonably sized
+program, so I see a lot worse regressions to deal with than something
+I can just avoid for now.
+
+Eric
