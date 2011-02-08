@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135Ab1BHHvd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 02:51:33 -0500
-Received: from mailout09.t-online.de ([194.25.134.84]:44810 "EHLO
-	mailout09.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087Ab1BHHvb (ORCPT
+	id S1752147Ab1BHHzV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 02:55:21 -0500
+Received: from mail-out.m-online.net ([212.18.0.10]:48640 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752013Ab1BHHzU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 02:51:31 -0500
-Message-ID: <4D50F5FA.7050202@t-online.de>
-Date: Tue, 08 Feb 2011 08:51:22 +0100
-From: Knut Petersen <Knut_Petersen@t-online.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	Tue, 8 Feb 2011 02:55:20 -0500
+X-Auth-Info: abF9G/0zPcQWUKNHpxcVsSmyMa8tM5kNv+o0ZpyAcfI=
+Message-ID: <4D50F75A.5040700@grandegger.com>
+Date: Tue, 08 Feb 2011 08:57:14 +0100
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-To: Paul Mackerras <paulus@samba.org>
-CC: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        mostrows@earthlink.net, linux-ppp@vger.kernel.org, xiaosuo@gmail.com,
-        eric.dumazet@gmail.com
-Subject: Re: [BUG] 2.6.38-rc2: Circular Locking Dependency
-References: <4D3D45A3.7040809@t-online.de> <20110206.232856.246531984.davem@davemloft.net> <20110207102950.GA17044@brick.ozlabs.ibm.com> <20110207104315.GB17044@brick.ozlabs.ibm.com>
-In-Reply-To: <20110207104315.GB17044@brick.ozlabs.ibm.com>
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+CC: socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: About bittiming calculation result
+References: <cover.1296818921.git.segoon@openwall.com><a6800dc8b0daed78256f98f52844cbbb48f4a76d.1296818921.git.segoon@openwall.com><20110204124233.GB334@e-circ.dyndns.org>	<20110204.130649.112613896.davem@davemloft.net>	<5009516791F146C49C73FAC57C437313@hacdom.okisemi.com>	<4D4FDEF9.2030305@grandegger.com> <4D501555.5000905@grandegger.com> <93C12206407640199DCDD3A89A333F13@hacdom.okisemi.com>
+In-Reply-To: <93C12206407640199DCDD3A89A333F13@hacdom.okisemi.com>
+X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-ID: TQ1B-rZOrh5xACPhR6VCRIRt1Q4OOOv1Yw+9iMfZpSulWH1SDQF0rVZWc16SksyQPn
-X-TOI-MSGID: 6c657531-0135-4819-997c-3f1284e45023
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everybody!
+Hi Tomoya,
 
-I bisected the problem with the following result:
+On 02/08/2011 02:27 AM, Tomoya MORINAGA wrote:
+> On Tuesday, February 08, 2011 12:53 AM,  Wolfgang Grandegger wrote:
+> 
+>> BTW, it's always possible to specify optimized bit-timing 
+>> parameters directly, e.g. the following seem better:
+>>
+>>    800000     60  12    4    4   4   3  793650  0.8% 80.0% 81.0%  1.2%
+>>
+>> You could set these with:
+>>
+>>   $ ip link set can0 type can \
+>>     tq 60 prop-seg 12 phase-seg1 4 phase-seg2 4 sjw 4
+> 
+> I can confirm 800K comms works well using the above.
 
-aa9421041128abb4d269ee1dc502ff65fb3b7d69 is the first bad commit
-commit aa9421041128abb4d269ee1dc502ff65fb3b7d69
-Author: Changli Gao <xiaosuo@gmail.com>
-Date:   Sat Dec 4 02:31:41 2010 +0000
+Cool, I got these magic values from a CAN hardware expert.
 
-    net: init ingress queue
+> I wish Can-core could calculate like above.
 
-    The dev field of ingress queue is forgot to initialized, then NULL
-    pointer dereference happens in qdisc_alloc().
+Me too! I also got some indication on how to improve our algorithm in
+case the bit-rate does not match. Hope to find some time soon to work
+on this issue.
 
-    Move inits of tx queues to netif_alloc_netdev_queues().
+>>> seg1/seg2/sjw/prop_seg must be more than 1 ?
+> BTW, according to EG20T PCH data sheet, 
+> CAN bit-timing parameters(BRP, Prop_Seg, Phase_Seg1, Phase_Seg2, SJW) must not be set 0.
 
-    Signed-off-by: Changli Gao <xiaosuo@gmail.com>
-    Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
+OK, then please provide a patch setting tseg1_min to 2.
 
-:040000 040000 dcbb6ab41c4308cba1bc6823d200dcf92aa402d8
-b5e190ec681d26ffe62d1d0214c4ef77b8034189 M      net
-
-cu,
- Knut
+Wolfgang.
