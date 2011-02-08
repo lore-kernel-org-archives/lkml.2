@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910Ab1BHEU4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 23:20:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55375 "EHLO mx2.suse.de"
+	id S1753647Ab1BHEZK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 23:25:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35747 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750758Ab1BHEUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 23:20:54 -0500
-Date: Tue, 8 Feb 2011 15:20:44 +1100
-From: NeilBrown <neilb@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PULL REQUEST] md updates for 2.6.38
-Message-ID: <20110208152044.06dfc9ba@notabene.brown>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752225Ab1BHEZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Feb 2011 23:25:09 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: x86@kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>
+Subject: [PATCH] x86: use int instead of long to set reset vector back to 0
+Date: Mon,  7 Feb 2011 23:25:00 -0500
+Message-Id: <1297139100-424-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+A customer of ours, complained that when setting the reset vector
+back to 0, it trashed other data and hung their box.  They noticed
+when only 4 bytes were set to 0 instead of 8, everything worked
+correctly.
 
-Hi Linus,
- here are a few more md updates.
- most are bugs in relatively recent code.
- This is small "enhancement" in there in that raid1->raid0 conversion is now
- possible.  That is largely just an extension to the other conversions that
- were added in the merge window.
+I don't know where to find this in the spec to know if this is
+correct, but looking at historical info of the code, x86_64 used
+to use 'int' here whereas i386 used to use 'long'.  When they got
+merged it seemed like 'long' was used.  So the change seems to
+make sense from that point of view.
 
- One fix (from Chris Mason) is tagged for -stable.
+I am hoping someone smarter than me can verify this.
 
-Thanks,
-NeilBrown
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ arch/x86/include/asm/smpboot_hooks.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/arch/x86/include/asm/smpboot_hooks.h b/arch/x86/include/asm/smpboot_hooks.h
+index 6c22bf3..42d0366 100644
+--- a/arch/x86/include/asm/smpboot_hooks.h
++++ b/arch/x86/include/asm/smpboot_hooks.h
+@@ -34,7 +34,7 @@ static inline void smpboot_restore_warm_reset_vector(void)
+ 	 */
+ 	CMOS_WRITE(0, 0xf);
+ 
+-	*((volatile long *)phys_to_virt(apic->trampoline_phys_low)) = 0;
++	*((volatile int *)phys_to_virt(apic->trampoline_phys_low)) = 0;
+ }
+ 
+ static inline void __init smpboot_setup_io_apic(void)
+-- 
+1.7.3.5
 
-The following changes since commit 1f0324caefd39985e9fe052fac97da31694db31e:
-
-  Merge branch 'stable/bug-fixes-rc2' of git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen (2011-01-28 12:24:34 +1000)
-
-are available in the git repository at:
-
-  git://neil.brown.name/md for-linus
-
-Chris Mason (1):
-      md_make_request: don't touch the bio after calling make_request
-
-Krzysztof Wojcik (2):
-      Add raid1->raid0 takeover support
-      FIX: md: process hangs at wait_barrier after 0->10 takeover
-
-NeilBrown (8):
-      md: revert change to raid_disks on failure.
-      md: simplify some 'if' conditionals in raid5_start_reshape.
-      md: fix the test for finding spares in raid5_start_reshape.
-      md: don't abort checking spares as soon as one cannot be added.
-      md: Remove the AllReserved flag for component devices.
-      md: Don't use remove_and_add_spares to remove failed devices from a read-only array
-      md: don't clear curr_resync_completed at end of resync.
-      md: Don't allow slot_store while resync/recovery is happening.
-
- drivers/md/md.c     |   47 +++++++++++++++++++++++++++------------
- drivers/md/md.h     |    2 -
- drivers/md/raid0.c  |   40 ++++++++++++++++++++++++++++++++++
- drivers/md/raid10.c |    6 +++-
- drivers/md/raid5.c  |   60 +++++++++++++++++++++++++-------------------------
- 5 files changed, 106 insertions(+), 49 deletions(-)
