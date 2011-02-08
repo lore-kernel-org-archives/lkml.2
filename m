@@ -1,81 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826Ab1BHM5h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 07:57:37 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:33594 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208Ab1BHM5g (ORCPT
+	id S1753902Ab1BHNAn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 08:00:43 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:51428 "EHLO
+	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753572Ab1BHNAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 07:57:36 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Subject: Re: [PATCH v8 05/12] media: Entity use count
-Date: Tue, 8 Feb 2011 13:57:33 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.36-gentoo-r3; KDE/4.6.0; x86_64; ; )
-Cc: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
-        clemens@ladisch.de
-References: <1296131437-29954-1-git-send-email-laurent.pinchart@ideasonboard.com> <4D4BF23A.1050800@maxwell.research.nokia.com> <201102041419.19916.hverkuil@xs4all.nl>
-In-Reply-To: <201102041419.19916.hverkuil@xs4all.nl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Tue, 8 Feb 2011 08:00:42 -0500
+Date: Tue, 8 Feb 2011 13:04:16 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/20] ata_piix: SITRE handling fix
+Message-ID: <20110208130416.675181fe@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110208122337.19110.8889.sendpatchset@linux-mhg7.site>
+References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site>
+	<20110208122337.19110.8889.sendpatchset@linux-mhg7.site>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201102081357.34145.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
+On Tue, 08 Feb 2011 13:23:37 +0100
+Bartlomiej Zolnierkiewicz <bzolnier@gmail.com> wrote:
 
-On Friday 04 February 2011 14:19:19 Hans Verkuil wrote:
-> On Friday, February 04, 2011 13:34:02 Sakari Ailus wrote:
-> > Hi,
-> > 
-> > And many thanks for the comments!
-> > 
-> > Hans Verkuil wrote:
-> > ...
-> > 
-> > >> diff --git a/include/media/media-entity.h
-> > >> b/include/media/media-entity.h index b82f824..114541a 100644
-> > >> --- a/include/media/media-entity.h
-> > >> +++ b/include/media/media-entity.h
-> > >> @@ -81,6 +81,8 @@ struct media_entity {
-> > >> 
-> > >>  	struct media_pad *pads;		/* Pads array (num_pads elements) */
-> > >>  	struct media_link *links;	/* Links array (max_links elements)*/
-> > >> 
-> > >> +	int use_count;			/* Use count for the entity. */
-> > > 
-> > > Isn't unsigned better?
-> > 
-> > Could be. The result, though, will be slightly more difficult checking
-> > for bad use count --- which always is a driver bug.
-> > 
-> > me->use_count += change;
-> > WARN_ON(me->use_count < 0);
-> > 
-> > we must do something like this:
-> > 
-> > if (change < 0)
-> > 
-> > 	WARN_ON(me->use_count < (unsigned)-change);
-> > 
-> > me->use_count += change;
-> > 
-> > I'd perhaps also go with unsigned int; the choice for signed was made
-> > mainly since the above check and with signed int the check was more
-> > trivial.
+> >From 7b6d27a9d65fef8795fdeee3733316450f840aa6 Mon Sep 17 00:00:00 2001
+> From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+> Date: Tue, 8 Feb 2011 12:39:24 +0100
+> Subject: [PATCH 01/20] ata_piix: SITRE handling fix
 > 
-> I saw this WARN_ON as well. I think there is a good reason for that
-> WARN_ON, but I think a comment in the header explaining why it is an int
-> will be useful. If I trip over it, then others will as well :-)
+> Set SITRE bit also in master-only configurations.
 
-I'll add a comment. Thanks.
-
--- 
-Regards,
-
-Laurent Pinchart
+Why ?
