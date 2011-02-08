@@ -1,95 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab1BHQew (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 11:34:52 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:42440 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752727Ab1BHQev convert rfc822-to-8bit (ORCPT
+	id S1754977Ab1BHQgF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 11:36:05 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37378 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754717Ab1BHQgC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 11:34:51 -0500
+	Tue, 8 Feb 2011 11:36:02 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition
+         :content-transfer-encoding:in-reply-to:user-agent;
+        b=JrMTs+uldYRa8PJPQbZslsGMSJJQ9mcR4vDRFhrcaX+VM213YwaNz5FYEqQ8/p8DjR
+         ul9yGql1vsc/eLcEvxqwPSnx9HrdEN9t45yQ8rFPOmECcwkCV90M6dNzSN/8mZRKrbaY
+         9u/EtubWVRHJ3UZftxnQqxA2vIaLcjes7os1U=
+Date: Tue, 8 Feb 2011 19:35:31 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Belisko Marek <marek.belisko@gmail.com>
+Cc: Marek Belisko <marek.belisko@open-nandra.com>, gregkh@suse.de,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] staging: ft1000: Fix coding style in
+ write_blk_fifo() function.
+Message-ID: <20110208163531.GO4384@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Belisko Marek <marek.belisko@gmail.com>,
+	Marek Belisko <marek.belisko@open-nandra.com>, gregkh@suse.de,
+	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+References: <1296042555-29145-1-git-send-email-marek.belisko@open-nandra.com>
+ <1296042555-29145-4-git-send-email-marek.belisko@open-nandra.com>
+ <20110126130718.GN2721@bicker>
+ <20110126143045.GP2721@bicker>
+ <AANLkTi=ygn3Go7kCYe1fAo6OrKQaVVGaV_=xMgxM=u5s@mail.gmail.com>
 MIME-Version: 1.0
-Message-ID: <e908a602-35b8-4ecc-aad2-8973da171161@default>
-Date: Tue, 8 Feb 2011 08:30:57 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Greg KH <greg@kroah.com>
-Cc: gregkh@suse.de, Chris Mason <chris.mason@oracle.com>,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        matthew@wil.cx, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        ngupta@vflare.org, jeremy@goop.org,
-        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
-        riel@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>, mel@csn.ul.ie,
-        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        sfr@canb.auug.org.au, wfg@mail.ustc.edu.cn, tytso@mit.edu,
-        viro@ZenIV.linux.org.uk, hughd@google.com, hannes@cmpxchg.org
-Subject: RE: [PATCH V1 3/3] drivers/staging: kztmem: misc build/config
-References: <20110118172151.GA20507@ca-server1.us.oracle.com
- 20110204212843.GA18924@kroah.com>
-In-Reply-To: <20110204212843.GA18924@kroah.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6550.5003]
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4D517038.00E1:SCFMA4539814,ss=1,fgs=0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=ygn3Go7kCYe1fAo6OrKQaVVGaV_=xMgxM=u5s@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Greg KH [mailto:greg@kroah.com]
-> Subject: Re: [PATCH V1 3/3] drivers/staging: kztmem: misc build/config
-> 
-> On Tue, Jan 18, 2011 at 09:21:51AM -0800, Dan Magenheimer wrote:
-> > [PATCH V1 3/3] drivers/staging: kztmem: misc build/config
+On Tue, Feb 08, 2011 at 02:40:49PM +0100, Belisko Marek wrote:
+> On Wed, Jan 26, 2011 at 3:30 PM, Dan Carpenter <error27@gmail.com> wrote:
+> > Also when it does:
+> >        memcpy(ft1000dev->tx_buf, *pUcFile, byte_length);
 > >
-> > Makefiles and Kconfigs to build kztmem in drivers/staging
-> >
-> > There is a dependency on xvmalloc.* which in 2.6.37 resides
-> > in drivers/staging/zram.  Should this move or disappear,
-> > some Makefile/Kconfig changes will be required.
+> > That should probably be:
+> >        memcpy(ft1000dev->tx_buf, *pUcFile, word_length * 4);
+> No this shouldn't because before you have additional check:
+> if (byte_length && ((byte_length % 64) == 0))
+>         byte_length += 4;
 > 
-> There is some other kind of dependancy as well, because I get the
-> following errors when building:
-> : 
-> If you require a kbuild dependancy, then put it in your Kconfig file
-> please, don't break the build.
-> 
-> I'll not apply these patches for now until that's fixed up.
-> 
-> thanks,
-> greg k-h
+> if (byte_length < 64)
+>         byte_length = 68;
+> So in my opinion byte_length should stay.
 
-Hi Greg --
+Yes.  We make byte_length longer than the caller intended.  The caller
+knows the size of the source buffer.  We have to pad the length of the
+other buffer, but we should fill up the last part with zeroes instead
+of reading past the end of the source buffer.
 
-Just wanted to confirm that this is now fixed and hope that you
-can now apply BUT note that per agreement with Nitin Gupta [1]
-the patchset has been modified to be named zcache and the
-renamed patchset (with the proper kbuild dependency) has been
-posted at [2].
+(I am not very familiar with the code and I haven't looked outside this
+function, so I may be wrong).
 
-ALSO, could you please confirm the path by which this patchset
-will find its way upstream?  I see from your blog [3] that after
-you apply it, I should be able to see it in sfr's linux-next
-tree [4] which IIUC sfr pulls regularly from your staging-next
-tree [5].  And I think at the next merge window, YOU will
-provide the pull request to Linus included with any other
-staging drivers?  Is this all correct?
+Also I really bet that the thing where byte_length can't be a multiple
+of 64 is bogus.  I've never heard of anything with a requirement like
+that.
 
-Sorry for the driver-staging-newbie question but your blog
-entry is 2 years old and I'd like to (1) ensure that I don't
-drop some important task *I* still need to do and (2) be able
-to track the progress of zcache through the various trees as
-a self-educational exercise.
+regards,
+dan carpenter
 
-Thanks,
-Dan
 
-[1] https://lkml.org/lkml/2011/2/5/181 
-[2] https://lkml.org/lkml/2011/2/6/346
-    https://lkml.org/lkml/2011/2/6/345 
-    https://lkml.org/lkml/2011/2/6/344 
-    https://lkml.org/lkml/2011/2/6/343 
-[3] http://www.kroah.com/log/linux/linux-staging-update.html 
-[4] http://git.kernel.org/?p=linux/kernel/git/sfr/linux-next.git 
-[5] http://git.kernel.org/?p=linux/kernel/git/gregkh/staging-2.6.git;a=shortlog;h=refs/heads/staging-next
