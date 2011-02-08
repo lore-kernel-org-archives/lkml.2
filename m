@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509Ab1BHLYV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 06:24:21 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43118 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491Ab1BHLYU (ORCPT
+	id S1753524Ab1BHLer (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 06:34:47 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:10806 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752446Ab1BHLeq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 06:24:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=cNjT2z8gUVFggvlJv7Dbaci2A2KAr9lruCHP6wHVDyVve0LDOT+FPVSLJx1BKrI7kU
-         kWmUQb/ON5pwC9PGVZyHJcgMjtGIlc07I/ddNo4W0yvibbgzOQf0/TQY7azeZSrJQ6Ub
-         cDDRG2XFDBoLivjLVRQNt9XyQ3Sleaf77ut+8=
-Date: Tue, 8 Feb 2011 14:23:54 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Marek Belisko <marek.belisko@open-nandra.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, jon.nettleton@gmail.com,
-        linux-kernel@vger.kernel.org, dilinger@queued.net, cjb@laptop.org
-Subject: Re: [PATCH RFC] staging: olpc_dcon: Remove _strtoul() function.
-Message-ID: <20110208112354.GN4384@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Marek Belisko <marek.belisko@open-nandra.com>, gregkh@suse.de,
-	devel@driverdev.osuosl.org, jon.nettleton@gmail.com,
-	linux-kernel@vger.kernel.org, dilinger@queued.net, cjb@laptop.org
-References: <1297163160-23429-1-git-send-email-marek.belisko@open-nandra.com>
+	Tue, 8 Feb 2011 06:34:46 -0500
+Message-ID: <4D512A27.2030406@dsn.okisemi.com>
+Date: Tue, 08 Feb 2011 20:33:59 +0900
+From: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1297163160-23429-1-git-send-email-marek.belisko@open-nandra.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: ML netdev <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>
+CC: Tomoya Morinaga <tomoya-linux@dsn.okisemi.com>,
+        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
+        Andrew <andrew.chih.howe.khor@intel.com>,
+        Intel OTC <joel.clark@intel.com>,
+        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] pch_gbe: Fix the issue which a driver locks when rx offload
+ is set by ethtool
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 08, 2011 at 12:06:00PM +0100, Marek Belisko wrote:
-> olpc_dcon driver use self invented _strtoul  function
-> which make similar check like strict_strtoul just extend
-> for space checking at last string place. Normally access
-> to sys file looks echo 1024 > /sys/... so space could be considered
-> as error character and we could simplify code using just strict_strtoul
-> function instead self invented.
-> 
+This driver will be in a deadlock, When the rx offload is set by ethtool.
+So, The pch_gbe_reinit_locked function was modified.
 
-Could you do it on top of the patches that Andres Salomon sent?
+Signed-off-by: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
+---
+ drivers/net/pch_gbe/pch_gbe_main.c |   10 ++++------
+ 1 files changed, 4 insertions(+), 6 deletions(-)
 
-http://driverdev.linuxdriverproject.org/pipermail/devel/2011-February/thread.html
-
-# [PATCH 1/4] olpc_dcon: get rid of global i2c_client, create a dcon_priv struct   Andres Salomon
-# [PATCH 2/4] olpc_dcon: change sysfs 'output' toggle to be clearer...   Andres Salomon
-# [PATCH 3/4] olpc_dcon: move more variables into dcon_priv   Andres Salomon
-# [PATCH 4/4] olpc_dcon: actually return the value of i2c_add_driver   Andres Salomon 
-
-regards,
-dan carpenter
-
-
+diff --git a/drivers/net/pch_gbe/pch_gbe_main.c b/drivers/net/pch_gbe/pch_gbe_main.c
+index 3248313..0e6922f 100644
+--- a/drivers/net/pch_gbe/pch_gbe_main.c
++++ b/drivers/net/pch_gbe/pch_gbe_main.c
+@@ -520,7 +520,9 @@ static void pch_gbe_reset_task(struct work_struct *work)
+ 	struct pch_gbe_adapter *adapter;
+ 	adapter = container_of(work, struct pch_gbe_adapter, reset_task);
+ 
++	rtnl_lock();
+ 	pch_gbe_reinit_locked(adapter);
++	rtnl_unlock();
+ }
+ 
+ /**
+@@ -531,12 +533,8 @@ void pch_gbe_reinit_locked(struct pch_gbe_adapter *adapter)
+ {
+ 	struct net_device *netdev = adapter->netdev;
+ 
+-	rtnl_lock();
+-	if (netif_running(netdev)) {
+-		pch_gbe_down(adapter);
+-		pch_gbe_up(adapter);
+-	}
+-	rtnl_unlock();
++	pch_gbe_down(adapter);
++	pch_gbe_up(adapter);
+ }
+ 
+ /**
+-- 
+1.6.2.5
