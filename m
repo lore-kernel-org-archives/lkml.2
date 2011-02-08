@@ -1,180 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906Ab1BHXVT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 18:21:19 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:60022 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753802Ab1BHXVS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 18:21:18 -0500
-From: Thieu Le <thieule@chromium.org>
-To: tyhicks@linux.vnet.ibm.com, kirkland@canonical.com
-Cc: ecryptfs-devel@lists.launchpad.net, linux-kernel@vger.kernel.org,
-        Thieu Le <thieule@chromium.org>
-Subject: [PATCH] ecryptfs: modify write path to encrypt page in writepage
-Date: Tue,  8 Feb 2011 15:20:12 -0800
-Message-Id: <1297207213-31279-1-git-send-email-thieule@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-X-System-Of-Record: true
+	id S1755908Ab1BHX1R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 18:27:17 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28199 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754091Ab1BHX1Q (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 8 Feb 2011 18:27:16 -0500
+Date: Tue, 8 Feb 2011 18:25:38 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Daniel Kiper <dkiper@net-space.pl>
+Cc: ian.campbell@citrix.com, akpm@linux-foundation.org, andi.kleen@intel.com,
+        haicheng.li@linux.intel.com, fengguang.wu@intel.com, jeremy@goop.org,
+        dan.magenheimer@oracle.com, v.tolstov@selfip.ru, pasik@iki.fi,
+        dave@linux.vnet.ibm.com, wdauchy@gmail.com, rientjes@google.com,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH R3 1/7] mm: Add add_registered_memory() to memory
+ hotplug API
+Message-ID: <20110208232538.GB9857@dumpdata.com>
+References: <20110203162514.GD1364@router-fw-old.local.net-space.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110203162514.GD1364@router-fw-old.local.net-space.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4D51D132.004A:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the write path to encrypt the data only when the page is written to
-disk in ecryptfs_writepage. Previously, ecryptfs encrypts the page in
-ecryptfs_write_end which means that if there are multiple write requests to
-the same page, ecryptfs ends up re-encrypting that page over and over again.
-This patch minimizes the number of encryptions needed.
+On Thu, Feb 03, 2011 at 05:25:14PM +0100, Daniel Kiper wrote:
+> add_registered_memory() adds memory ealier registered
+> as memory resource. It is required by memory hotplug
+> for Xen guests, however it could be used also by other
+> modules.
+> 
+> Signed-off-by: Daniel Kiper <dkiper@net-space.pl>
+> ---
+>  include/linux/memory_hotplug.h |    1 +
+>  mm/memory_hotplug.c            |   50 ++++++++++++++++++++++++++++++---------
+>  2 files changed, 39 insertions(+), 12 deletions(-)
+> 
+> diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+> index 8122018..fe63912 100644
+> --- a/include/linux/memory_hotplug.h
+> +++ b/include/linux/memory_hotplug.h
+> @@ -223,6 +223,7 @@ static inline int is_mem_section_removable(unsigned long pfn,
+>  #endif /* CONFIG_MEMORY_HOTREMOVE */
+>  
+>  extern int mem_online_node(int nid);
+> +extern int add_registered_memory(int nid, u64 start, u64 size);
+>  extern int add_memory(int nid, u64 start, u64 size);
+>  extern int arch_add_memory(int nid, u64 start, u64 size);
+>  extern int remove_memory(u64 start, u64 size);
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index 321fc74..7947bdf 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -532,20 +532,12 @@ out:
+>  }
+>  
+>  /* we are OK calling __meminit stuff here - we have CONFIG_MEMORY_HOTPLUG */
+> -int __ref add_memory(int nid, u64 start, u64 size)
+> +static int __ref __add_memory(int nid, u64 start, u64 size)
+>  {
+>  	pg_data_t *pgdat = NULL;
+>  	int new_pgdat = 0;
+> -	struct resource *res;
+>  	int ret;
+>  
+> -	lock_memory_hotplug();
+> -
+> -	res = register_memory_resource(start, size);
+> -	ret = -EEXIST;
+> -	if (!res)
+> -		goto out;
+> -
+>  	if (!node_online(nid)) {
+>  		pgdat = hotadd_new_pgdat(nid, start);
+>  		ret = -ENOMEM;
+> @@ -579,14 +571,48 @@ int __ref add_memory(int nid, u64 start, u64 size)
+>  	goto out;
+>  
+>  error:
+> -	/* rollback pgdat allocation and others */
+> +	/* rollback pgdat allocation */
+>  	if (new_pgdat)
+>  		rollback_node_hotadd(nid, pgdat);
+> -	if (res)
+> -		release_memory_resource(res);
+> +
+> +out:
+> +	return ret;
+> +}
+> +
+> +int add_registered_memory(int nid, u64 start, u64 size)
+> +{
+> +	int ret;
+> +
+> +	lock_memory_hotplug();
+> +	ret = __add_memory(nid, start, size);
+> +	unlock_memory_hotplug();
 
-Signed-off-by: Thieu Le <thieule@chromium.org>
----
- fs/ecryptfs/ecryptfs_kernel.h |    1 -
- fs/ecryptfs/file.c            |    9 ++++++++-
- fs/ecryptfs/main.c            |    2 --
- fs/ecryptfs/mmap.c            |   20 ++++++++------------
- fs/ecryptfs/read_write.c      |   12 ++----------
- fs/ecryptfs/super.c           |    1 -
- 6 files changed, 18 insertions(+), 27 deletions(-)
+Isn't this a duplicate call to the mutex?
+The __add_memory does an unlock_memory_hotplug when it finishes
+and then you do another unlock_memory_hotplug here too.
 
-diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
-index dbc84ed..13517ac 100644
---- a/fs/ecryptfs/ecryptfs_kernel.h
-+++ b/fs/ecryptfs/ecryptfs_kernel.h
-@@ -297,7 +297,6 @@ struct ecryptfs_inode_info {
- 	struct inode vfs_inode;
- 	struct inode *wii_inode;
- 	struct file *lower_file;
--	struct mutex lower_file_mutex;
- 	struct ecryptfs_crypt_stat crypt_stat;
- };
- 
-diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
-index 81e10e6..9f7ce63 100644
---- a/fs/ecryptfs/file.c
-+++ b/fs/ecryptfs/file.c
-@@ -273,7 +273,14 @@ static int ecryptfs_release(struct inode *inode, struct file *file)
- static int
- ecryptfs_fsync(struct file *file, int datasync)
- {
--	return vfs_fsync(ecryptfs_file_to_lower(file), datasync);
-+	int rc = 0;
-+
-+	rc = generic_file_fsync(file, datasync);
-+	if (rc)
-+		goto out;
-+	rc = vfs_fsync(ecryptfs_file_to_lower(file), datasync);
-+out:
-+	return rc;
- }
- 
- static int ecryptfs_fasync(int fd, struct file *file, int flag)
-diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
-index 758323a..63e412c 100644
---- a/fs/ecryptfs/main.c
-+++ b/fs/ecryptfs/main.c
-@@ -122,7 +122,6 @@ int ecryptfs_init_persistent_file(struct dentry *ecryptfs_dentry)
- 		ecryptfs_inode_to_private(ecryptfs_dentry->d_inode);
- 	int rc = 0;
- 
--	mutex_lock(&inode_info->lower_file_mutex);
- 	if (!inode_info->lower_file) {
- 		struct dentry *lower_dentry;
- 		struct vfsmount *lower_mnt =
-@@ -138,7 +137,6 @@ int ecryptfs_init_persistent_file(struct dentry *ecryptfs_dentry)
- 			inode_info->lower_file = NULL;
- 		}
- 	}
--	mutex_unlock(&inode_info->lower_file_mutex);
- 	return rc;
- }
- 
-diff --git a/fs/ecryptfs/mmap.c b/fs/ecryptfs/mmap.c
-index cc64fca..c5676e6 100644
---- a/fs/ecryptfs/mmap.c
-+++ b/fs/ecryptfs/mmap.c
-@@ -512,24 +512,20 @@ static int ecryptfs_write_end(struct file *file,
- 			"zeros in page with index = [0x%.16lx]\n", index);
- 		goto out;
- 	}
--	rc = ecryptfs_encrypt_page(page);
--	if (rc) {
--		ecryptfs_printk(KERN_WARNING, "Error encrypting page (upper "
--				"index [0x%.16lx])\n", index);
--		goto out;
--	}
-+	set_page_dirty(page);
- 	if (pos + copied > i_size_read(ecryptfs_inode)) {
- 		i_size_write(ecryptfs_inode, pos + copied);
- 		ecryptfs_printk(KERN_DEBUG, "Expanded file size to "
- 			"[0x%.16llx]\n",
- 			(unsigned long long)i_size_read(ecryptfs_inode));
-+		rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
-+		if (rc) {
-+			printk(KERN_ERR "Error writing inode size to metadata; "
-+			       "rc = [%d]\n", rc);
-+			goto out;
-+		}
- 	}
--	rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
--	if (rc)
--		printk(KERN_ERR "Error writing inode size to metadata; "
--		       "rc = [%d]\n", rc);
--	else
--		rc = copied;
-+	rc = copied;
- out:
- 	unlock_page(page);
- 	page_cache_release(page);
-diff --git a/fs/ecryptfs/read_write.c b/fs/ecryptfs/read_write.c
-index db184ef..85d4309 100644
---- a/fs/ecryptfs/read_write.c
-+++ b/fs/ecryptfs/read_write.c
-@@ -44,15 +44,11 @@ int ecryptfs_write_lower(struct inode *ecryptfs_inode, char *data,
- 	ssize_t rc;
- 
- 	inode_info = ecryptfs_inode_to_private(ecryptfs_inode);
--	mutex_lock(&inode_info->lower_file_mutex);
- 	BUG_ON(!inode_info->lower_file);
--	inode_info->lower_file->f_pos = offset;
- 	fs_save = get_fs();
- 	set_fs(get_ds());
--	rc = vfs_write(inode_info->lower_file, data, size,
--		       &inode_info->lower_file->f_pos);
-+	rc = vfs_write(inode_info->lower_file, data, size, &offset);
- 	set_fs(fs_save);
--	mutex_unlock(&inode_info->lower_file_mutex);
- 	mark_inode_dirty_sync(ecryptfs_inode);
- 	return rc;
- }
-@@ -234,15 +230,11 @@ int ecryptfs_read_lower(char *data, loff_t offset, size_t size,
- 	mm_segment_t fs_save;
- 	ssize_t rc;
- 
--	mutex_lock(&inode_info->lower_file_mutex);
- 	BUG_ON(!inode_info->lower_file);
--	inode_info->lower_file->f_pos = offset;
- 	fs_save = get_fs();
- 	set_fs(get_ds());
--	rc = vfs_read(inode_info->lower_file, data, size,
--		      &inode_info->lower_file->f_pos);
-+	rc = vfs_read(inode_info->lower_file, data, size, &offset);
- 	set_fs(fs_save);
--	mutex_unlock(&inode_info->lower_file_mutex);
- 	return rc;
- }
- 
-diff --git a/fs/ecryptfs/super.c b/fs/ecryptfs/super.c
-index 3042fe1..15c969e 100644
---- a/fs/ecryptfs/super.c
-+++ b/fs/ecryptfs/super.c
-@@ -55,7 +55,6 @@ static struct inode *ecryptfs_alloc_inode(struct super_block *sb)
- 	if (unlikely(!inode_info))
- 		goto out;
- 	ecryptfs_init_crypt_stat(&inode_info->crypt_stat);
--	mutex_init(&inode_info->lower_file_mutex);
- 	inode_info->lower_file = NULL;
- 	inode = &inode_info->vfs_inode;
- out:
--- 
-1.7.3.1
 
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(add_registered_memory);
+> +
+> +int add_memory(int nid, u64 start, u64 size)
+> +{
+> +	int ret = -EEXIST;
+> +	struct resource *res;
+> +
+> +	lock_memory_hotplug();
+> +
+> +	res = register_memory_resource(start, size);
+> +
+> +	if (!res)
+> +		goto out;
+> +
+> +	ret = __add_memory(nid, start, size);
+
+Ditto here. When __add_memory finishes the unlock_memory_hotplug
+has been called, but you end up doing it in the out: label
+too?
+
+> +
+> +	if (!ret)
+> +		goto out;
+> +
+> +	release_memory_resource(res);
+>  
+>  out:
+>  	unlock_memory_hotplug();
+> +
+>  	return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(add_memory);
+> -- 
+> 1.5.6.5
