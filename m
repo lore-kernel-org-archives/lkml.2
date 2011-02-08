@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab1BHODf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 09:03:35 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:5640 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754439Ab1BHODe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 09:03:34 -0500
-X-IronPort-AV: E=Sophos;i="4.60,442,1291611600"; 
-   d="scan'208";a="134825004"
-Subject: Re: [patch 0/4] XEN: Interrupt cleanups
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4D506AE6.6080900@goop.org>
-References: <20110205200108.921707839@linutronix.de>
-	 <4D50641B.2090006@goop.org>
-	 <alpine.LFD.2.00.1102072231220.31804@localhost6.localdomain6>
-	 <4D506AE6.6080900@goop.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Tue, 8 Feb 2011 14:03:31 +0000
-Message-ID: <1297173811.9388.95.camel@zakaz.uk.xensource.com>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754585Ab1BHOJI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 09:09:08 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:38893 "EHLO
+	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754416Ab1BHOJG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 09:09:06 -0500
+Date: Tue, 8 Feb 2011 14:12:39 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/20] pata_efar: always program master_data before
+ slave_data
+Message-ID: <20110208141239.28d80615@lxorguk.ukuu.org.uk>
+In-Reply-To: <AANLkTik744+r8y1FK9P6-aOcH0OMLyg5nvfJb2ZBVSdv@mail.gmail.com>
+References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site>
+	<20110208122409.19110.4233.sendpatchset@linux-mhg7.site>
+	<20110208130701.19709cc6@lxorguk.ukuu.org.uk>
+	<AANLkTimAioh_xu0qoQCndSWDAYJ4bpWv01NZn_bZ9g2a@mail.gmail.com>
+	<20110208132518.300bb098@lxorguk.ukuu.org.uk>
+	<AANLkTimYbC+zgnct9j75WNR7f4M4m2=hYvODUm9mc-3W@mail.gmail.com>
+	<20110208133922.6cf8142e@lxorguk.ukuu.org.uk>
+	<AANLkTik744+r8y1FK9P6-aOcH0OMLyg5nvfJb2ZBVSdv@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-14
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-02-07 at 13:57 -0800, Jeremy Fitzhardinge wrote:
-> On 02/07/2011 01:33 PM, Thomas Gleixner wrote:
-> > Ok. The irq_chip conversion is mostly mechanical, but I'm really
-> > concerned about that IRQ_SUSPENDED hackery. It'd be nice if you
-> > resp. Ian could give that a test ride. That would allow me to cleanup
-> > stuff in the core code.
-> 
-> Ian notes: "tglx's 4 patch interrupt cleanup series on LKML causes some
-> oddities on PV migration. Will dig further tomorrow..."
-> 
-> So it looks like there's still something amiss.
+> respect some of my time spent on all this burdensome silly little
+> driver differences comparisons and read the whole patch set before
+> making comments on individual changes (which you certainly haven't
+> done given timing of your review mails and complexity of changes)..
 
-The patches missed an indirect use of IRQF_NO_SUSPEND pulled in via
-IRQF_TIMER. The following fixed things for me (probably belongs in your
-patch 4/4).
+I was hoping you'd improved but apparently not.
 
-With this fixlet PV guest migration works just fine. I also booted the
-entire series as a dom0 kernel and it appeared fine.
+Any untested change is dangerous. An untested change that merges drivers
+together simply means you can break lots of stuff for no gain at all.
 
-I also tested alongside the cleanup patches Jeremy mentioned before and
-as expected there is no interaction.
+If these were all PCI card devices it might make some sense but given
+they are all motherboard chipsets putting them into one driver merely
+increases memory use as well.
 
-So, with the fixes to 2/4 (irq_move_irq think from yesterday) and 4/4
-(below), the entire series is:
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
+As far as stuff like 
 
-Ian.
+   unsigned int has_sitre  = (dev->vendor != 0x8086 ||
+                                  dev->device != 0x1230);
 
-diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-index 067759e..2e2d370 100644
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -397,7 +397,9 @@ void xen_setup_timer(int cpu)
- 		name = "<timer kasprintf failed>";
- 
- 	irq = bind_virq_to_irqhandler(VIRQ_TIMER, cpu, xen_timer_interrupt,
--				      IRQF_DISABLED|IRQF_PERCPU|IRQF_NOBALANCING|IRQF_TIMER,
-+				      IRQF_DISABLED|IRQF_PERCPU|
-+				      IRQF_NOBALANCING|IRQF_TIMER|
-+				      IRQF_FORCE_RESUME,
- 				      name, NULL);
- 
- 	evt = &per_cpu(xen_clock_events, cpu);
+and the even worse mess you generate with the added patch all the other
+PIIX code does this by flags, and if you had a HAS_SITRE (or NO_SITRE)
+flag in the device data it would be obvious to anyone reading stuff how
+it all fitted together.
+
+Alan
 
 
