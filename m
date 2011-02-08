@@ -1,78 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084Ab1BHKNe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 05:13:34 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57694 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752563Ab1BHKNd (ORCPT
+	id S1753228Ab1BHKP6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 05:15:58 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:58644 "EHLO
+	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752873Ab1BHKP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 05:13:33 -0500
-Date: Tue, 8 Feb 2011 11:13:28 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Harry Wei <jiaweiwei.xiyou@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, joe@perches.com,
-        davem@davemloft.net, greg@kroah.com, rdunlap@xenotime.net,
-        xiyou.wangcong@gmail.com
-Subject: Re: Fwd: Fwd: [PATCH]Maintain =?utf-8?Q?Ch?=
-	=?utf-8?Q?inese_Documentations=E2=99=AB?=
-Message-ID: <20110208101328.GB2580@pengutronix.de>
-References: <20110208031638.GA4828@gmail.com>
- <20110207192249.5a478469.rdunlap@xenotime.net>
- <AANLkTimFFT-B_aPyfFJmMpvt9jhd98ckBah2vbK+WQJf@mail.gmail.com>
- <20110208033818.GA4922@gmail.com>
- <iiqti3$3b5$2@dough.gmane.org>
- <AANLkTinGn5oN01+33VgnnWHAqEZNxkoJeTgkjAjpC8LZ@mail.gmail.com>
- <20110208093020.GA2016@gmail.com>
- <20110208093528.GA2580@pengutronix.de>
- <AANLkTi=RgPS_tzBP+0=wxuh58cV=3_m+5=gYwG8ffkY0@mail.gmail.com>
- <20110208100153.GA2815@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DKU6Jbt7q3WqK7+M"
-Content-Disposition: inline
-In-Reply-To: <20110208100153.GA2815@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 8 Feb 2011 05:15:57 -0500
+Date: Tue, 8 Feb 2011 10:18:40 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: Re: [PATCH] [PATCH] Clarify source code distribution requirements
+Message-ID: <20110208101840.52ae59f5@lxorguk.ukuu.org.uk>
+In-Reply-To: <1297120144-2142-1-git-send-email-mjg@redhat.com>
+References: <1297120144-2142-1-git-send-email-mjg@redhat.com>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon,  7 Feb 2011 18:09:04 -0500
+Matthew Garrett <mjg@redhat.com> wrote:
 
---DKU6Jbt7q3WqK7+M
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Some vendors (such as http://users.livejournal.com/joshua_/43185.html)
+> insist that since section 3(b) of GPLv2 does not contain an explicit
+> timeframe for source distribution, they can ignore requests for source
+> for up to 120 days. Clarify the introduction to the license to indicate
+> that this isn't what's meant.
+> 
+> Signed-off-by: Matthew Garrett <mjg@redhat.com>
 
-> +CHINESE DOCUMENTATION
-> +M:     Harry Wei <harryxiyou@gmail.com>
-> +L:     xiyoulinuxkernelgroup@googlegroups.com
-> +L:	linux-kernel@zh-kernel.org(moderated for non-subscribers)
-> +S:     Maintained
-> +F:     Documentation/zh_CN/
+1. You've put it so it as if Linus said it
+2. I'd like to see a lawyers take on it first (Linux Foundation perhaps)
+before it goes in
 
-Space missing after .org
+Unless it's been past someone with legal knowledge you risk making the
+problem worse not better even when doing apparently sane things.
 
-Some lines use spaces, one uses tabs. Please change that so it is
-consistent with the rest of the file.
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---DKU6Jbt7q3WqK7+M
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk1RF0gACgkQD27XaX1/VRuFJACcCT6xukjRk9qPFXiIO/Zl1CwX
-Jo8AoJwFg6JbKyortM5bK7tuKFl4i75T
-=k2h8
------END PGP SIGNATURE-----
-
---DKU6Jbt7q3WqK7+M--
+You may also be weakening things if the legal view is that there being no
+timescale means that the two should be going out together.
