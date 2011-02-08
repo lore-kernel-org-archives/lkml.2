@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912Ab1BHWSE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 17:18:04 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:40099 "EHLO
+	id S1755353Ab1BHWRY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 17:17:24 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:46174 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754629Ab1BHWRX (ORCPT
+	with ESMTP id S1753425Ab1BHWRV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 17:17:23 -0500
-X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=wQI09XP816YA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=mLB1ou05ELASDr6fn6YA:9 a=oTAsKbZ22xPWnDzmNwAA:7 a=B6_irCaxWqVgUKyucwK2Ux53vxUA:4 a=XNN-oNMjSfgA:10 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Tue, 8 Feb 2011 17:17:21 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=9x9OqnSY49kA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VnNF1IyMAAAA:8 a=meVymXHHAAAA:8 a=90kiD33hs-Ks5ULzG28A:9 a=tyOXpw9aDWD-Isi8qUEA:7 a=AvWZG078ClZBc5psvsT5gr8xT3gA:4 a=jeBq3FmKZ4MA:10 a=LK-WTlb07Qpcb0PZ:21 a=bdjB0cZWkPnr1gCF:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110208221720.579342174@goodmis.org>
+Message-Id: <20110208221719.309444699@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Tue, 08 Feb 2011 17:16:19 -0500
+Date: Tue, 08 Feb 2011 17:16:14 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        =?ISO-8859-15?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: [PATCH 07/10] trivial: Fix Stevens Copyright typos
+        Ian Munsie <imunsie@au1.ibm.com>
+Subject: [PATCH 02/10] tracing/syscalls: Convert redundant syscall_nr checks into WARN_ON
 References: <20110208221612.084294240@goodmis.org>
-Content-Disposition: inline; filename=0007-trivial-Fix-Steven-s-Copyright-typos.patch
+Content-Disposition: inline; filename=0002-tracing-syscalls-Convert-redundant-syscall_nr-checks.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
+From: Ian Munsie <imunsie@au1.ibm.com>
 
-OK, the copyright allows you to write a copy, still I think the lawyers
-prefer the correct spelling.
+With the ftrace events now checking if the syscall_nr is valid upon
+initialisation it should no longer be possible to register or unregister
+a syscall event without a valid syscall_nr since they should not be
+created. This adds a WARN_ON_ONCE in the register and unregister
+functions to locate potential regressions in the future.
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-LKML-Reference: <1295899921-11333-1-git-send-email-u.kleine-koenig@pengutronix.de>
+Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+LKML-Reference: <1296703645-18718-3-git-send-email-imunsie@au1.ibm.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- scripts/kconfig/streamline_config.pl |    2 +-
- tools/testing/ktest/ktest.pl         |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/trace/trace_syscalls.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/scripts/kconfig/streamline_config.pl b/scripts/kconfig/streamline_config.pl
-index fd81fc3..a4fe923 100644
---- a/scripts/kconfig/streamline_config.pl
-+++ b/scripts/kconfig/streamline_config.pl
-@@ -1,6 +1,6 @@
- #!/usr/bin/perl -w
- #
--# Copywrite 2005-2009 - Steven Rostedt
-+# Copyright 2005-2009 - Steven Rostedt
- # Licensed under the terms of the GNU GPL License version 2
- #
- #  It's simple enough to figure out how this works.
-diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index e1c62ee..ba7c63a 100755
---- a/tools/testing/ktest/ktest.pl
-+++ b/tools/testing/ktest/ktest.pl
-@@ -1,6 +1,6 @@
- #!/usr/bin/perl -w
- #
--# Copywrite 2010 - Steven Rostedt <srostedt@redhat.com>, Red Hat Inc.
-+# Copyright 2010 - Steven Rostedt <srostedt@redhat.com>, Red Hat Inc.
- # Licensed under the terms of the GNU GPL License version 2
- #
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index a9ceabd..4230942 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -359,7 +359,7 @@ int reg_event_syscall_enter(struct ftrace_event_call *call)
+ 	int num;
  
+ 	num = ((struct syscall_metadata *)call->data)->syscall_nr;
+-	if (num < 0 || num >= NR_syscalls)
++	if (WARN_ON_ONCE(num < 0 || num >= NR_syscalls))
+ 		return -ENOSYS;
+ 	mutex_lock(&syscall_trace_lock);
+ 	if (!sys_refcount_enter)
+@@ -377,7 +377,7 @@ void unreg_event_syscall_enter(struct ftrace_event_call *call)
+ 	int num;
+ 
+ 	num = ((struct syscall_metadata *)call->data)->syscall_nr;
+-	if (num < 0 || num >= NR_syscalls)
++	if (WARN_ON_ONCE(num < 0 || num >= NR_syscalls))
+ 		return;
+ 	mutex_lock(&syscall_trace_lock);
+ 	sys_refcount_enter--;
+@@ -393,7 +393,7 @@ int reg_event_syscall_exit(struct ftrace_event_call *call)
+ 	int num;
+ 
+ 	num = ((struct syscall_metadata *)call->data)->syscall_nr;
+-	if (num < 0 || num >= NR_syscalls)
++	if (WARN_ON_ONCE(num < 0 || num >= NR_syscalls))
+ 		return -ENOSYS;
+ 	mutex_lock(&syscall_trace_lock);
+ 	if (!sys_refcount_exit)
+@@ -411,7 +411,7 @@ void unreg_event_syscall_exit(struct ftrace_event_call *call)
+ 	int num;
+ 
+ 	num = ((struct syscall_metadata *)call->data)->syscall_nr;
+-	if (num < 0 || num >= NR_syscalls)
++	if (WARN_ON_ONCE(num < 0 || num >= NR_syscalls))
+ 		return;
+ 	mutex_lock(&syscall_trace_lock);
+ 	sys_refcount_exit--;
 -- 
 1.7.2.3
 
