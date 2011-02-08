@@ -1,37 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755669Ab1BHTlO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 14:41:14 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:57012
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755185Ab1BHTlN (ORCPT
+	id S1755726Ab1BHTll (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 14:41:41 -0500
+Received: from miraculix-out.informatik.uni-kiel.de ([134.245.248.209]:59692
+	"EHLO miraculix.informatik.uni-kiel.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755237Ab1BHTlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 14:41:13 -0500
-Date: Tue, 08 Feb 2011 11:41:49 -0800 (PST)
-Message-Id: <20110208.114149.104062266.davem@davemloft.net>
-To: axel.lin@gmail.com
-Cc: linux-kernel@vger.kernel.org, lethal@linux-sh.org,
-        linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH] video: ffb: fix ffb_probe error path
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1297177125.2343.3.camel@phoenix>
-References: <1297177125.2343.3.camel@phoenix>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Feb 2011 14:41:40 -0500
+From: Timo von Holtz <tvh@informatik.uni-kiel.de>
+To: gregkh@suse.de
+Cc: error27@gmail.com, hjk@linutronix.de, jkosina@suse.cz,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Timo von Holtz <tvh@informatik.uni-kiel.de>
+Subject: [PATCH] Staging: quickstart: fixed coding style issues
+Date: Tue,  8 Feb 2011 20:41:19 +0100
+Message-Id: <1297194079-4336-1-git-send-email-tvh@informatik.uni-kiel.de>
+X-Mailer: git-send-email 1.7.4
+X-Null-Tag: a9c3fde13fa093d9f1e2af689d4b1059
+X-Authenticated-Sender: user tvh from 86.103.149.108
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Axel Lin <axel.lin@gmail.com>
-Date: Tue, 08 Feb 2011 22:58:45 +0800
+Fixed the Following coding Style Issues:
+drivers/staging/quickstart/quickstart.c:8: ERROR: trailing whitespace
+drivers/staging/quickstart/quickstart.c:144: ERROR: spaces required around that '?' (ctx:VxV)
+drivers/staging/quickstart/quickstart.c:144: ERROR: spaces required around that ':' (ctx:VxV)
 
-> Current implementation calls of_iounmap for par->fbc twice in error path.
-> In the case of goto out_unmap_dac, we should call of_iounmap for par->dac.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Timo von Holtz <tvh@informatik.uni-kiel.de>
+---
+ drivers/staging/quickstart/quickstart.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-Good spotting:
+diff --git a/drivers/staging/quickstart/quickstart.c b/drivers/staging/quickstart/quickstart.c
+index d83bec8..c60911c 100644
+--- a/drivers/staging/quickstart/quickstart.c
++++ b/drivers/staging/quickstart/quickstart.c
+@@ -5,7 +5,7 @@
+  *  Copyright (C) 2007-2010 Angelo Arrifano <miknix@gmail.com>
+  *
+  *  Information gathered from disassebled dsdt and from here:
+- *  <http://www.microsoft.com/whdc/system/platform/firmware/DirAppLaunch.mspx> 
++ *  <http://www.microsoft.com/whdc/system/platform/firmware/DirAppLaunch.mspx>
+  *
+  *  This program is free software; you can redistribute it and/or modify
+  *  it under the terms of the GNU General Public License as published by
+@@ -141,7 +141,8 @@ static ssize_t pressed_button_show(struct device *dev,
+ 					char *buf)
+ {
+ 	return snprintf(buf, PAGE_SIZE, "%s\n",
+-		(quickstart_data.pressed?quickstart_data.pressed->name:"none"));
++			(quickstart_data.pressed ?
++			 quickstart_data.pressed->name : "none"));
+ }
+ 
+ 
+-- 
+1.7.4
 
-Acked-by: David S. Miller <davem@davemloft.net>
