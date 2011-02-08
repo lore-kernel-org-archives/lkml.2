@@ -1,57 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180Ab1BHNeg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 08:34:36 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48232 "EHLO
-	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753539Ab1BHNef (ORCPT
+	id S1754209Ab1BHNfK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 08:35:10 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:64773 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753539Ab1BHNfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 08:34:35 -0500
-Date: Tue, 8 Feb 2011 13:38:09 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 16/20] ata_piix: add EFAR SLC90E66 support
-Message-ID: <20110208133809.2386ee86@lxorguk.ukuu.org.uk>
-In-Reply-To: <AANLkTikYXWAbCjLpSyEqgDKBsZuM1na-tohLoLJx3Yr4@mail.gmail.com>
-References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site>
-	<20110208122534.19110.89437.sendpatchset@linux-mhg7.site>
-	<20110208131321.6ceb9a43@lxorguk.ukuu.org.uk>
-	<AANLkTikYXWAbCjLpSyEqgDKBsZuM1na-tohLoLJx3Yr4@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Feb 2011 08:35:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=M0RybAiL37VX8nN+Y2lFu/K5yDFghGrJfncjbG0l+iy91wY22aNjUSnD6K9g1HpUxM
+         Xl0YbQ3uB5DOHOC8uewIWgivumVmbrRu9mNZ6NT6fg12UecARLYOSC+KUOwUZXAtvhTj
+         uEL5R4JDDTJ+u16V3Fx8jk/EQus73wYarW304=
+Date: Tue, 8 Feb 2011 21:34:57 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        x86@kernel.org, tglx <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: lockdep: possible reason: unannotated irqs-off. (was: Re:
+ Linux 2.6.38-rc4)
+Message-ID: <20110208133457.GA5813@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com>
+ <20110208101730.GB7020@liondog.tnic>
+ <1297161712.13327.100.camel@laptop>
+ <20110208121108.GA4824@zhy>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110208121108.GA4824@zhy>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> such optimizations because maintenance cost > potential savings (i.e.
-> making SCSI quirks optional, I have draft patch for this, itself cuts
-> like 10k).
-
-Interesting in itself but irrelevant because the current situation is
-that a piix change cannot break oldpiix, efar, it8213, radisys etc and
-vice versa. Particuarly important when the other chips are not common so
-test coverage is difficult, and that far outweighs the maintenance
-savings for other things, especially as this is code that just doesn't
-change.
-
+On Tue, Feb 08, 2011 at 08:11:08PM +0800, Yong Zhang wrote:
+> From: Yong Zhang <yong.zhang0@gmail.com>
+> Subject: [PATCH 1/2] softirq: introduce loacal_bh_enable_force_wake()
 > 
-> > It also leads to hideous uglies in the main code paths like this :
-> >
-> > +       unsigned int has_sitre  = (dev->vendor != 0x8086 ||
-> > +                                  dev->device != 0x1230);
-> >
-> > which also has exactly zero comments.
+> If there is pending softirq, don't handle it in the caller's
+> context, invoke ksoftirqd directly instead.
 > 
-> has_sitre variable name is documentation in itself for anyone knowing
-> the hardware or has read a chipset/code documentation.
+> del_timer_sync() will be the first caller.
+> 
+> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>  include/linux/bottom_half.h |    1 +
+>  kernel/softirq.c            |   21 +++++++++++++++------
+>  2 files changed, 16 insertions(+), 6 deletions(-)
+> 
+> diff --git a/include/linux/bottom_half.h b/include/linux/bottom_half.h
+> index 27b1bcf..665d697 100644
+> --- a/include/linux/bottom_half.h
+> +++ b/include/linux/bottom_half.h
+> @@ -5,5 +5,6 @@ extern void local_bh_disable(void);
+>  extern void _local_bh_enable(void);
+>  extern void local_bh_enable(void);
+>  extern void local_bh_enable_ip(unsigned long ip);
+> +extern void local_bh_enable_force_wake(void);
+>  
+>  #endif /* _LINUX_BH_H */
+> diff --git a/kernel/softirq.c b/kernel/softirq.c
+> index 68eb5ef..3c05dfa 100644
+> --- a/kernel/softirq.c
+> +++ b/kernel/softirq.c
+> @@ -154,9 +154,9 @@ void _local_bh_enable(void)
+>  
+>  EXPORT_SYMBOL(_local_bh_enable);
+>  
+> -static inline void _local_bh_enable_ip(unsigned long ip)
+> +static inline void _local_bh_enable_ip(unsigned long ip, bool force_wake)
+>  {
+> -	WARN_ON_ONCE(in_irq() || irqs_disabled());
+> +	WARN_ON_ONCE(in_irq() || (!force_wake && irqs_disabled()));
 
-And naturally anyone randomly glancing at the code knows why it's
-checking 0x8086 & 0x1230, and why the radisys check interacts with it.
+Only suppressing the warning is not enough here :(
 
-Bartlomiej - those are a mess, a complete and total mess. It doesn't
-necessarily argue against folding them together, but at least do a clean
-job of it.
+>  #ifdef CONFIG_TRACE_IRQFLAGS
+>  	local_irq_disable();
+
+
+The semantic "called with irqs_disabled" is showed on several place
+of _local_bh_enable_ip().
+
+Need more thinking about it...
