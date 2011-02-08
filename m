@@ -1,103 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974Ab1BHXgA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 18:36:00 -0500
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:42909
-	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755514Ab1BHXf6 (ORCPT
+	id S1755959Ab1BHXh6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 18:37:58 -0500
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:49370 "EHLO
+	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752924Ab1BHXh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 18:35:58 -0500
-X-SpamScore: -15
-X-BigFish: VPS-15(zzbb2dK1432N98dNzz1202hzzz2fh2a8h637h668h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4D51D341.3040209@am.sony.com>
-Date: Tue, 8 Feb 2011 15:35:29 -0800
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.1) Gecko/20090814 Fedora/3.0-2.6.b3.fc11 Thunderbird/3.0b3
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Len Brown <len.brown@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        <linux-embedded@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] Remove CONFIG_PM altogether, enable power management
- all the time
-References: <1297081335-13631-1-git-send-email-broonie@opensource.wolfsonmicro.com> <201102072046.48763.rjw@sisk.pl> <20110207201803.GU10564@opensource.wolfsonmicro.com> <201102072215.59921.rjw@sisk.pl> <20110208122159.GA8284@elte.hu>
-In-Reply-To: <20110208122159.GA8284@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+	Tue, 8 Feb 2011 18:37:57 -0500
+From: "Ira W. Snyder" <iws@ovro.caltech.edu>
+To: linuxppc-dev@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org, dmitry.torokhov@gmail.com,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>
+Subject: [PATCH RFCv5 0/2] CARMA Board Support
+Date: Tue,  8 Feb 2011 15:37:45 -0800
+Message-Id: <1297208267-27087-1-git-send-email-iws@ovro.caltech.edu>
+X-Mailer: git-send-email 1.7.3.4
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (ovro.ovro.caltech.edu); Tue, 08 Feb 2011 15:37:55 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/11 04:21, Ingo Molnar wrote:
+Hello everyone,
 
-< snip >
+This is the fifth posting of these drivers, taking into account comments from
+earlier postings. I would appreciate as much review as you can offer.
 
-> Also, i've Cc:-ed Linus, to check whether the idea to make power management a 
-> permanent, core portion of Linux has any obvious downsides we missed.
-> 
-> Rafael, could you do a defconfig-ish x86 build with and without CONFIG_PM, and post 
-> the 'size vmlinux' comparison - so that we can see the size difference? We make some 
-> things CONFIG_EXPERT configurable just to enable folks who *really* want to cut down 
-> on kernel size to configure it out.
+RFCv4 -> RFCv5:
+- remove unecessary locking per review comments
+- do not clobber return values from *_interruptible()
+- explicitly track buffer DMA mapping
+- use #defines instead of raw hex addresses
+- change enable sysfs attribute to root-writeable only
 
-For 2.6.38-rc4, x86_64, CONFIG_NR_CPUS=4:
+RFCv3 -> RFCv4:
+- updates for DATA-FPGA version 2
 
-size vmlinux
-   text     data       bss       dec      hex  filename
+RFCv2 -> RFCv3:
+- use miscdevice framework (removing the carma class)
+- add bitfile readback capability to the programmer
 
-6553910  3555020   9994240  20103170  132c002  vmlinux    with    CONFIG_PM
-6512652  3553116   9994240  20060008  1321768  vmlinux    without CONFIG_PM
+RFCv1 -> RFCv2:
+- change comments to kerneldoc format
+- Kconfig improvements
+- use the videobuf_dma_sg API in the programmer
+- updates for Freescale DMAEngine DMA_SLAVE API changes
 
-  41258     1904         0     43162                      delta
+Information about the CARMA board:
 
+The CARMA board is essentially an MPC8349EA MDS reference design with a
+1GHz ADC and 4 high powered data processing FPGAs connected to the local
+bus. It is all packed into a compact PCI form factor. It is used at the
+Owens Valley Radio Observatory as the main component in the correlator
+system.
 
-That is big enough for me to care.
+For board information, see:
+http://www.mmarray.org/~dwh/carma_board/index.html
 
-Turning on CONFIG_PM also forces a few other options on:
+For DATA-FPGA register layout, see:
+http://www.mmarray.org/memos/carma_memo46.pdf
 
- 295a296
- > CONFIG_XEN_SAVE_RESTORE=y
- 422c423,431
- < # CONFIG_PM is not set
- ---
- > CONFIG_PM=y
- > # CONFIG_PM_DEBUG is not set
- > CONFIG_PM_SLEEP_SMP=y
- > CONFIG_PM_SLEEP=y
- > # CONFIG_SUSPEND is not set
- > # CONFIG_HIBERNATION is not set
- > # CONFIG_PM_RUNTIME is not set
- > CONFIG_PM_OPS=y
- > # CONFIG_ACPI is not set
- 451,454c460
- < CONFIG_CPU_IDLE=y
- < CONFIG_CPU_IDLE_GOV_LADDER=y
- < CONFIG_CPU_IDLE_GOV_MENU=y
- < # CONFIG_INTEL_IDLE is not set
- ---
- > # CONFIG_CPU_IDLE is not set
+These drivers are the necessary pieces to get the data processing FPGAs
+working and producing data. Despite the fact that the hardware is custom
+and we are the only users, I'd still like to get the drivers upstream.
+Several people have suggested that this is possible.
 
-> 
-> Note that those usecases, even if they want a super-small kernel, might not care 
-> about PM at all while they care about size: small boot kernels in ROMs, or simple 
-> devices where CPU-idling implies deep low power mode, etc.
-> 
-> So the vmlinux size comparisons would be needed really. If it's 5k nobody will care. 
-> If it's 50k-100k that's borderline. In the other side of the scale we have the 1500+
-> #ifdef CONFIG_PM lines strewn around the kernel source, and the frequent !PM build
-> breakages.
-> 
-> 	Ingo
+Some further patches will be forthcoming. I have a driver for the LED
+subsystem and the PPS subsystem. The LED register layout is expected to
+change soon, so I won't post the driver until that is finished. The PPS
+driver will be posted seperately from this patch series; it is very
+generic.
 
--Frank
+Thanks to everyone who has provided comments on earlier versions!
+
+Ira W. Snyder (2):
+  misc: add CARMA DATA-FPGA Access Driver
+  misc: add CARMA DATA-FPGA Programmer support
+
+ drivers/misc/Kconfig                    |    1 +
+ drivers/misc/Makefile                   |    1 +
+ drivers/misc/carma/Kconfig              |   18 +
+ drivers/misc/carma/Makefile             |    2 +
+ drivers/misc/carma/carma-fpga-program.c | 1084 ++++++++++++++++++++++++
+ drivers/misc/carma/carma-fpga.c         | 1396 +++++++++++++++++++++++++++++++
+ 6 files changed, 2502 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/carma/Kconfig
+ create mode 100644 drivers/misc/carma/Makefile
+ create mode 100644 drivers/misc/carma/carma-fpga-program.c
+ create mode 100644 drivers/misc/carma/carma-fpga.c
+
+-- 
+1.7.3.4
 
