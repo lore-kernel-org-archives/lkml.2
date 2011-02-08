@@ -1,327 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751278Ab1BHFNl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 00:13:41 -0500
-Received: from www.wytron.com.tw ([211.75.82.101]:41023 "EHLO
-	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750701Ab1BHFNk (ORCPT
+	id S1751332Ab1BHFQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 00:16:29 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:63508 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750701Ab1BHFQ2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 00:13:40 -0500
-From: Thomas Chou <thomas@wytron.com.tw>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
-        Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org,
-        Thomas Chou <thomas@wytron.com.tw>
-Subject: [PATCH v3] gpio: add new Altera PIO driver
-Date: Tue,  8 Feb 2011 13:16:24 +0800
-Message-Id: <1297142184-20050-1-git-send-email-thomas@wytron.com.tw>
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <20110203165406.GA6180@angua.secretlab.ca>
-References: <20110203165406.GA6180@angua.secretlab.ca>
-X-SA-Exim-Connect-IP: 192.168.1.15
-X-SA-Exim-Mail-From: thomas@wytron.com.tw
-X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
+	Tue, 8 Feb 2011 00:16:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=rhT0XBDDtQpra+0GFpmPqDoWrfNkVA71KdfvzZYEH+HSYor/RXsjXvA3BZ5CPtPXD3
+         so86FjV8U8f4vGxe0RxWR5eOrbmxQL8xvGMW6X55W3c0R0x54ZhoglWqj7Dhgcat63pv
+         T3rltM+qHH2uDWi7Qj9tD4JQYBKi64unSQQxM=
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1102071858230.7277@kaball-desktop>
+References: <alpine.DEB.2.00.1101311514580.7277@kaball-desktop>
+	<4D4A3782.3050702@zytor.com>
+	<alpine.DEB.2.00.1102031114030.7277@kaball-desktop>
+	<4D4ADFAD.7060507@zytor.com>
+	<alpine.DEB.2.00.1102041130060.7277@kaball-desktop>
+	<4D4CA568.70907@goop.org>
+	<AANLkTi=nEQka_19+nKQC-yJn2Czn9GCqsUWN6Byy7rCF@mail.gmail.com>
+	<4D4E4E0D.2080806@zytor.com>
+	<4D4EF553.6000000@kernel.org>
+	<alpine.DEB.2.00.1102071524140.7277@kaball-desktop>
+	<alpine.DEB.2.00.1102071858230.7277@kaball-desktop>
+Date: Mon, 7 Feb 2011 21:16:27 -0800
+X-Google-Sender-Auth: 0-alprStSC9R11CPWMdoXUA35pM
+Message-ID: <AANLkTimcdVvmhBr6g_Eo0kWX9mdeNmXjd=CBQrvUGm8S@mail.gmail.com>
+Subject: Re: [PATCH] x86/mm/init: respect memblock reserved regions when
+ destroying mappings
+From: Yinghai Lu <yinghai@kernel.org>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <JBeulich@novell.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver supports the Altera PIO core.
+On Mon, Feb 7, 2011 at 11:00 AM, Stefano Stabellini
+<stefano.stabellini@eu.citrix.com> wrote:
+> On Mon, 7 Feb 2011, Stefano Stabellini wrote:
+>> On Sun, 6 Feb 2011, Yinghai Lu wrote:
+>> > On 02/05/2011 11:30 PM, H. Peter Anvin wrote:
+>> > > On 02/05/2011 11:02 PM, Yinghai Lu wrote:
+>> > >> why not just move calling cleanup_highmap down?
+>> > >>
+>> > >> something like attached patch.
+>> > >
+>> > > This patch looks very clean and looks on the surface of it like it is
+>> > > removing some ugly ad hoc code, but (as always) it needs a description
+>> > > about the problem it solves and why it is correct.
+>> >
+>> > Sure.
+>> >
+>> >
+>> > Jeremy and xen guys, can you please check if it works well with xen ?
+>> >
+>>
+>> Actually this patch makes things worse on xen, because before
+>> cleanup_highmap() wasn't called at all on xen (on purpose) and now it
+>> is, fully destroying all the mappings we have at _end.
+>>
+>> Can we add a check on memblock reserved regions in cleanup_highmap()?
+>
+> In case you are wondering how Yinghai Lu's patch would look like with
+> the added check, here it is:
+>
+>
+> diff --git a/arch/x86/include/asm/memblock.h b/arch/x86/include/asm/memblock.h
+> index 19ae14b..184f778 100644
+> --- a/arch/x86/include/asm/memblock.h
+> +++ b/arch/x86/include/asm/memblock.h
+> @@ -3,6 +3,7 @@
+>
+>  #define ARCH_DISCARD_MEMBLOCK
+>
+> +bool memblock_check_reserved_size(u64 *addrp, u64 *sizep, u64 align);
+>  u64 memblock_x86_find_in_range_size(u64 start, u64 *sizep, u64 align);
+>  void memblock_x86_to_bootmem(u64 start, u64 end);
+>
+> diff --git a/arch/x86/include/asm/pgtable_64.h b/arch/x86/include/asm/pgtable_64.h
+> index 975f709..28686b6 100644
+> --- a/arch/x86/include/asm/pgtable_64.h
+> +++ b/arch/x86/include/asm/pgtable_64.h
+> @@ -165,7 +165,7 @@ static inline int pgd_large(pgd_t pgd) { return 0; }
+>  #define __swp_entry_to_pte(x)          ((pte_t) { .pte = (x).val })
+>
+>  extern int kern_addr_valid(unsigned long addr);
+> -extern void cleanup_highmap(void);
+> +extern void cleanup_highmap(unsigned long end);
+>
+>  #define HAVE_ARCH_UNMAPPED_AREA
+>  #define HAVE_ARCH_UNMAPPED_AREA_TOPDOWN
+> diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+> index 2d2673c..5655c22 100644
+> --- a/arch/x86/kernel/head64.c
+> +++ b/arch/x86/kernel/head64.c
+> @@ -77,9 +77,6 @@ void __init x86_64_start_kernel(char * real_mode_data)
+>        /* Make NULL pointers segfault */
+>        zap_identity_mappings();
+>
+> -       /* Cleanup the over mapped high alias */
+> -       cleanup_highmap();
+> -
+>        max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
+>
+>        for (i = 0; i < NUM_EXCEPTION_VECTORS; i++) {
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index d3cfe26..91afde6 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -297,6 +297,9 @@ static void __init init_gbpages(void)
+>  static inline void init_gbpages(void)
+>  {
+>  }
+> +static void __init cleanup_highmap(unsigned long end)
+> +{
+> +}
+>  #endif
+>
+>  static void __init reserve_brk(void)
+> @@ -922,6 +925,9 @@ void __init setup_arch(char **cmdline_p)
+>         */
+>        reserve_brk();
+>
+> +       /* Cleanup the over mapped high alias after _brk_end*/
+> +       cleanup_highmap(_brk_end);
+> +
+>        memblock.current_limit = get_max_mapped();
+>        memblock_x86_fill();
+>
+> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+> index 947f42a..f13ff3a 100644
+> --- a/arch/x86/mm/init.c
+> +++ b/arch/x86/mm/init.c
+> @@ -279,25 +279,6 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+>        load_cr3(swapper_pg_dir);
+>  #endif
+>
+> -#ifdef CONFIG_X86_64
+> -       if (!after_bootmem && !start) {
+> -               pud_t *pud;
+> -               pmd_t *pmd;
+> -
+> -               mmu_cr4_features = read_cr4();
+> -
+> -               /*
+> -                * _brk_end cannot change anymore, but it and _end may be
+> -                * located on different 2M pages. cleanup_highmap(), however,
+> -                * can only consider _end when it runs, so destroy any
+> -                * mappings beyond _brk_end here.
+> -                */
+> -               pud = pud_offset(pgd_offset_k(_brk_end), _brk_end);
+> -               pmd = pmd_offset(pud, _brk_end - 1);
+> -               while (++pmd <= pmd_offset(pud, (unsigned long)_end - 1))
+> -                       pmd_clear(pmd);
+> -       }
+> -#endif
+>        __flush_tlb_all();
+>
+>        if (!after_bootmem && e820_table_end > e820_table_start)
+> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+> index 71a5929..028c49e 100644
+> --- a/arch/x86/mm/init_64.c
+> +++ b/arch/x86/mm/init_64.c
+> @@ -297,18 +297,26 @@ void __init init_extra_mapping_uc(unsigned long phys, unsigned long size)
+>  * rounded up to the 2MB boundary. This catches the invalid pmds as
+>  * well, as they are located before _text:
+>  */
+> -void __init cleanup_highmap(void)
+> +void __init cleanup_highmap(unsigned long end)
+>  {
+>        unsigned long vaddr = __START_KERNEL_map;
+> -       unsigned long end = roundup((unsigned long)_end, PMD_SIZE) - 1;
+>        pmd_t *pmd = level2_kernel_pgt;
+>        pmd_t *last_pmd = pmd + PTRS_PER_PMD;
+> +       u64 size, addrp;
+> +       bool changed;
+> +
+> +       end = roundup(end, PMD_SIZE) - 1;
+>
+>        for (; pmd < last_pmd; pmd++, vaddr += PMD_SIZE) {
+>                if (pmd_none(*pmd))
+>                        continue;
+> -               if (vaddr < (unsigned long) _text || vaddr > end)
+> -                       set_pmd(pmd, __pmd(0));
+> +               if (vaddr < (unsigned long) _text || vaddr > end) {
+> +                       addrp = __pa(vaddr);
+> +                       size = PMD_SIZE;
+> +                       changed = memblock_check_reserved_size(&addrp, &size, PMD_SIZE);
+> +                       if (!changed && size)
+> +                               set_pmd(pmd, __pmd(0));
+> +               }
 
-Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
----
-v2 change compatible vendor to uppercase, ALTR.
-   add dts binding doc.
-v3 remove subsys_initcall.
-   add to_altera_gpio() macro.
+for native path, memblock_check_reserved_size() are called 256 times
+without obvious reasons.
 
- .../devicetree/bindings/gpio/altera_gpio.txt       |    7 +
- drivers/gpio/Kconfig                               |    6 +
- drivers/gpio/Makefile                              |    1 +
- drivers/gpio/altera_gpio.c                         |  231 ++++++++++++++++++++
- 4 files changed, 245 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/gpio/altera_gpio.txt
- create mode 100644 drivers/gpio/altera_gpio.c
-
-diff --git a/Documentation/devicetree/bindings/gpio/altera_gpio.txt b/Documentation/devicetree/bindings/gpio/altera_gpio.txt
-new file mode 100644
-index 0000000..5ab751a
---- /dev/null
-+++ b/Documentation/devicetree/bindings/gpio/altera_gpio.txt
-@@ -0,0 +1,7 @@
-+Altera GPIO
-+
-+Required properties:
-+- compatible : should be "ALTR,pio-1.0".
-+Optional properties:
-+- resetvalue : the reset value of the output port.
-+- width : the width of the port in number of bits.
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 664660e..40271f0 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -70,6 +70,12 @@ config GPIO_MAX730X
- 
- comment "Memory mapped GPIO expanders:"
- 
-+config GPIO_ALTERA
-+	bool "Altera GPIO"
-+	depends on OF
-+	help
-+	  Say yes here to support the Altera PIO device
-+
- config GPIO_BASIC_MMIO
- 	tristate "Basic memory-mapped GPIO controllers support"
- 	help
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 3351cf8..3b7b737 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -10,6 +10,7 @@ obj-$(CONFIG_GPIOLIB)		+= gpiolib.o
- 
- obj-$(CONFIG_GPIO_ADP5520)	+= adp5520-gpio.o
- obj-$(CONFIG_GPIO_ADP5588)	+= adp5588-gpio.o
-+obj-$(CONFIG_GPIO_ALTERA)	+= altera_gpio.o
- obj-$(CONFIG_GPIO_BASIC_MMIO)	+= basic_mmio_gpio.o
- obj-$(CONFIG_GPIO_LANGWELL)	+= langwell_gpio.o
- obj-$(CONFIG_GPIO_MAX730X)	+= max730x.o
-diff --git a/drivers/gpio/altera_gpio.c b/drivers/gpio/altera_gpio.c
-new file mode 100644
-index 0000000..ab09f81
---- /dev/null
-+++ b/drivers/gpio/altera_gpio.c
-@@ -0,0 +1,231 @@
-+/*
-+ * Altera GPIO driver
-+ *
-+ * Copyright (C) 2011 Thomas Chou <thomas@wytron.com.tw>
-+ *
-+ * Based on Xilinx gpio driver, which is
-+ * Copyright 2008 Xilinx, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2
-+ * as published by the Free Software Foundation.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/errno.h>
-+#include <linux/of_device.h>
-+#include <linux/of_platform.h>
-+#include <linux/of_gpio.h>
-+#include <linux/io.h>
-+#include <linux/gpio.h>
-+#include <linux/slab.h>
-+
-+#define DRV_NAME "altera_gpio"
-+
-+/* Register Offset Definitions */
-+#define ALTERA_GPIO_DATA_OFFSET   0x0	/* Data register  */
-+#define ALTERA_GPIO_DIR_OFFSET    0x4	/* I/O direction register  */
-+
-+struct altera_gpio_instance {
-+	struct of_mm_gpio_chip mmchip;
-+	u32 gpio_state;		/* GPIO state shadow register */
-+	u32 gpio_dir;		/* GPIO direction shadow register */
-+	spinlock_t gpio_lock;	/* Lock used for synchronization */
-+};
-+
-+static inline struct altera_gpio_instance *to_altera_gpio(
-+	struct of_mm_gpio_chip *mm_gc)
-+{
-+	return container_of(mm_gc, struct altera_gpio_instance, mmchip);
-+}
-+
-+/*
-+ * altera_gpio_get - Read the specified signal of the GPIO device.
-+ * @gc:     Pointer to gpio_chip device structure.
-+ * @gpio:   GPIO signal number.
-+ *
-+ * This function reads the specified signal of the GPIO device. It returns 0 if
-+ * the signal clear, 1 if signal is set or negative value on error.
-+ */
-+static int altera_gpio_get(struct gpio_chip *gc, unsigned int gpio)
-+{
-+	struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
-+
-+	return (readl(mm_gc->regs + ALTERA_GPIO_DATA_OFFSET) >> gpio) & 1;
-+}
-+
-+/*
-+ * altera_gpio_set - Write the specified signal of the GPIO device.
-+ * @gc:     Pointer to gpio_chip device structure.
-+ * @gpio:   GPIO signal number.
-+ * @val:    Value to be written to specified signal.
-+ *
-+ * This function writes the specified value in to the specified signal of the
-+ * GPIO device.
-+ */
-+static void altera_gpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
-+{
-+	unsigned long flags;
-+	struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
-+	struct altera_gpio_instance *chip = to_altera_gpio(mm_gc);
-+
-+	spin_lock_irqsave(&chip->gpio_lock, flags);
-+
-+	/* Write to shadow register and output */
-+	if (val)
-+		chip->gpio_state |= 1 << gpio;
-+	else
-+		chip->gpio_state &= ~(1 << gpio);
-+	writel(chip->gpio_state, mm_gc->regs + ALTERA_GPIO_DATA_OFFSET);
-+
-+	spin_unlock_irqrestore(&chip->gpio_lock, flags);
-+}
-+
-+/*
-+ * altera_gpio_dir_in - Set the direction of the specified GPIO signal as input.
-+ * @gc:     Pointer to gpio_chip device structure.
-+ * @gpio:   GPIO signal number.
-+ *
-+ * This function sets the direction of specified GPIO signal as input.
-+ * It returns 0 if direction of GPIO signals is set as input otherwise it
-+ * returns negative error value.
-+ */
-+static int altera_gpio_dir_in(struct gpio_chip *gc, unsigned int gpio)
-+{
-+	unsigned long flags;
-+	struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
-+	struct altera_gpio_instance *chip = to_altera_gpio(mm_gc);
-+
-+	spin_lock_irqsave(&chip->gpio_lock, flags);
-+
-+	/* Clear the GPIO bit in shadow register and set direction as input */
-+	chip->gpio_dir &= ~(1 << gpio);
-+	writel(chip->gpio_dir, mm_gc->regs + ALTERA_GPIO_DIR_OFFSET);
-+
-+	spin_unlock_irqrestore(&chip->gpio_lock, flags);
-+
-+	return 0;
-+}
-+
-+/*
-+ * altera_gpio_dir_out - Set the direction of the specified GPIO as output.
-+ * @gc:     Pointer to gpio_chip device structure.
-+ * @gpio:   GPIO signal number.
-+ * @val:    Value to be written to specified signal.
-+ *
-+ * This function sets the direction of specified GPIO signal as output. If all
-+ * GPIO signals of GPIO chip is configured as input then it returns
-+ * error otherwise it returns 0.
-+ */
-+static int altera_gpio_dir_out(struct gpio_chip *gc, unsigned int gpio, int val)
-+{
-+	unsigned long flags;
-+	struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
-+	struct altera_gpio_instance *chip = to_altera_gpio(mm_gc);
-+
-+	spin_lock_irqsave(&chip->gpio_lock, flags);
-+
-+	/* Write state of GPIO signal */
-+	if (val)
-+		chip->gpio_state |= 1 << gpio;
-+	else
-+		chip->gpio_state &= ~(1 << gpio);
-+	writel(chip->gpio_state, mm_gc->regs + ALTERA_GPIO_DATA_OFFSET);
-+
-+	/* Set the GPIO bit in shadow register and set direction as output */
-+	chip->gpio_dir |= (1 << gpio);
-+	writel(chip->gpio_dir, mm_gc->regs + ALTERA_GPIO_DIR_OFFSET);
-+
-+	spin_unlock_irqrestore(&chip->gpio_lock, flags);
-+
-+	return 0;
-+}
-+
-+/*
-+ * altera_gpio_save_regs - Set initial values of GPIO pins
-+ * @mm_gc: pointer to memory mapped GPIO chip structure
-+ */
-+static void altera_gpio_save_regs(struct of_mm_gpio_chip *mm_gc)
-+{
-+	struct altera_gpio_instance *chip = to_altera_gpio(mm_gc);
-+
-+	writel(chip->gpio_state, mm_gc->regs + ALTERA_GPIO_DATA_OFFSET);
-+	writel(chip->gpio_dir, mm_gc->regs + ALTERA_GPIO_DIR_OFFSET);
-+}
-+
-+/*
-+ * altera_gpio_of_probe - Probe method for the GPIO device.
-+ * @np: pointer to device tree node
-+ *
-+ * This function probes the GPIO device in the device tree. It initializes the
-+ * driver data structure. It returns 0, if the driver is bound to the GPIO
-+ * device, or a negative value if there is an error.
-+ */
-+static int __devinit altera_gpio_of_probe(struct device_node *np)
-+{
-+	struct altera_gpio_instance *chip;
-+	int status = 0;
-+	int len;
-+	const __be32 *tree_info;
-+
-+	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
-+	if (!chip)
-+		return -ENOMEM;
-+
-+	/* Update GPIO state shadow register with default value */
-+	tree_info = of_get_property(np, "resetvalue", &len);
-+	if (tree_info && len >= sizeof(__be32))
-+		chip->gpio_state = be32_to_cpup(tree_info);
-+
-+	/* Update GPIO direction shadow register with default value */
-+	chip->gpio_dir = 0; /* By default, all pins are inputs */
-+
-+	/* Check device node for device width */
-+	chip->mmchip.gc.ngpio = 32; /* By default assume full GPIO controller */
-+	tree_info = of_get_property(np, "width", &len);
-+	if (tree_info && len >= sizeof(__be32))
-+		chip->mmchip.gc.ngpio = be32_to_cpup(tree_info);
-+
-+	spin_lock_init(&chip->gpio_lock);
-+
-+	chip->mmchip.gc.direction_input = altera_gpio_dir_in;
-+	chip->mmchip.gc.direction_output = altera_gpio_dir_out;
-+	chip->mmchip.gc.get = altera_gpio_get;
-+	chip->mmchip.gc.set = altera_gpio_set;
-+
-+	chip->mmchip.save_regs = altera_gpio_save_regs;
-+
-+	/* Call the OF gpio helper to setup and register the GPIO device */
-+	status = of_mm_gpiochip_add(np, &chip->mmchip);
-+	if (status) {
-+		kfree(chip);
-+		pr_err("%s: error in probe function with status %d\n",
-+		       np->full_name, status);
-+		return status;
-+	}
-+	pr_info(DRV_NAME ": %s: registered\n", np->full_name);
-+	return 0;
-+}
-+
-+static struct of_device_id altera_gpio_of_match[] __devinitdata = {
-+	{ .compatible = "ALTR,pio-1.0", },
-+	{},
-+};
-+
-+/* Make sure we get initialized before anyone else tries to use us */
-+void __init altera_gpio_init(void)
-+{
-+	struct device_node *np;
-+
-+	for_each_matching_node(np, altera_gpio_of_match)
-+		altera_gpio_of_probe(np);
-+}
-+
-+MODULE_DESCRIPTION("Altera GPIO driver");
-+MODULE_AUTHOR("Thomas Chou <thomas@wytron.com.tw>");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:" DRV_NAME);
--- 
-1.7.4
-
+Yinghai
