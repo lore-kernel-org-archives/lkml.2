@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866Ab1BHVKr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 16:10:47 -0500
-Received: from oproxy2-pub.bluehost.com ([67.222.39.60]:57251 "HELO
-	oproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755841Ab1BHVKp (ORCPT
+	id S1755888Ab1BHVKx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 16:10:53 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:34039 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755841Ab1BHVKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 16:10:45 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=VEl3F6hVa11HAn9z4jX1dNivF35GqoZFRWUzbb7k8V8xR9dVD7S2/U5EhfzFpe02/yytr2KKeoLUyTgOkhVSc7sboWGzqMckjKQ416mhRG84wFNaEvUB9+4po5epmLB0;
-Date: Tue, 8 Feb 2011 13:10:43 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PCI: Avoid potential NULL pointer dereference in
- pci_scan_bridge
-Message-ID: <20110208131043.3b1ca905@jbarnes-desktop>
-In-Reply-To: <alpine.LNX.2.00.1101242108220.10252@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1101242108220.10252@swampdragon.chaosbits.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+	Tue, 8 Feb 2011 16:10:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=aNjvXjO5Pcdx3gz1P4DwIwDXEAh7d1OJnbFJ8JySaZPV0MVtGWkwyeOmLdTUKp2i7z
+         Z3ISasam18XwSaKWekNep9bBUJ875OKglwDmJAwkk4ydXuRHxmwKKoeS4Alnu52bSCNo
+         6gt4bX02n23eaH4/QiJKnC3pVKs9lX8LHUoIQ=
+Date: Tue, 8 Feb 2011 13:10:36 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Sourav Poddar <sourav.poddar@ti.com>, Wolfram Sang <w.sang@pengutronix.de>,
+        Linux-Next <linux-next@vger.kernel.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: drivers/input/touchscreen/ads7846.c:959: error: 'GPIOF_DIR_IN'
+ undeclared
+Message-ID: <20110208211035.GC16527@core.coreip.homeip.net>
+References: <AANLkTim2706Negrvd-ektbNMLwucM9M0icphb_uFY_9D@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTim2706Negrvd-ektbNMLwucM9M0icphb_uFY_9D@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Jan 2011 21:14:33 +0100 (CET)
-Jesper Juhl <jj@chaosbits.net> wrote:
-
-> pci_add_new_bus() calls pci_alloc_child_bus() which calls pci_alloc_bus() 
-> that allocates memory dynamically with kzalloc(). The return value of 
-> kzalloc() is the pointer that's eventually returned from 
-> pci_add_new_bus(), so since kzalloc() can fail and return NULL so can 
-> pci_add_new_bus(). Thus we may end up dereferencing a NULL pointer in 
-> drivers/pci/probe.c::pci_scan_bridge(). Seems to me we should test for 
-> this and bail out if it happens rather than crashing.
-> Also removed some trailing whitespace that bugged me while looking at 
-> this.
+On Tue, Feb 08, 2011 at 09:03:27PM +0100, Geert Uytterhoeven wrote:
+> linux-next/m68k-allmodconfig/m68k:
+> http://kisskb.ellerman.id.au/kisskb/buildresult/3899710/
 > 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
+> drivers/input/touchscreen/ads7846.c:959: error: 'GPIOF_DIR_IN'
+> undeclared (first use in this function)
+> drivers/input/touchscreen/ads7846.c:959: error: (Each undeclared
+> identifier is reported only once
+> drivers/input/touchscreen/ads7846.c:959: error: for each function it
+> appears in.)
+> make[4]: *** [drivers/input/touchscreen/ads7846.o] Error 1
+> 
+> As of commit e9b6e245c727767e6d64cb3dd47a0c6982aa5d23
+> ("Input: ads7846 - use gpio_request_one to configure pendown_gpio"), this
+> driver should depend on GENERIC_GPIO?
+> Else <linux/gpio.h> doesn't include <asm/gpio.h>, and we never see the
+> definition of GPIOF_DIR_IN.
 
-Applied to linux-next (in the absence of actual reports I'll be
-conservative), thanks.
+Crap, sorry about that, I'll fix it up tonight.
 
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+Dmitry
