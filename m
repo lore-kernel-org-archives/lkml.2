@@ -1,166 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752955Ab1BHMqF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 07:46:05 -0500
-Received: from ns1.dataart.com ([195.206.224.40]:62937 "EHLO
-	relay1.dataart.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750856Ab1BHMqD convert rfc822-to-8bit (ORCPT
+	id S1753671Ab1BHM4N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 07:56:13 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33601 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753516Ab1BHM4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 07:46:03 -0500
-X-Greylist: delayed 1052 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Feb 2011 07:46:03 EST
-From: Anton Chikin <Anton.Chikin@dataart.com>
-To: Henrik Rydberg <rydberg@euromail.se>, Anton Chikin <kverlin@gmail.com>
-CC: "jkosina@suse.cz" <jkosina@suse.cz>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Gregory Burmistrov <grig@dataart.com>
-Date: Tue, 8 Feb 2011 15:28:24 +0300
-Subject: RE: [PATCH] HID: added new driver for Panasonic Elite Panaboard
- UB-T780 and UB-T880
-Thread-Topic: [PATCH] HID: added new driver for Panasonic Elite Panaboard
- UB-T780 and UB-T880
-Thread-Index: AcvHfKpLIRaXwx7LTyuPGwjgAx5SKgABzd9w
-Message-ID: <3BF066A8BAB61C43B779966CEE6D7FA09B6CC9DB2D@e6.universe.dart.spb>
-References: <1297157786-2004-1-git-send-email-kverlin@gmail.com>
- <20110208103923.GA2009@polaris.bitmath.org>
-In-Reply-To: <20110208103923.GA2009@polaris.bitmath.org>
-Accept-Language: ru-RU
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ru-RU
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 8 Feb 2011 07:56:12 -0500
+Date: Tue, 8 Feb 2011 12:55:46 +0000
+From: Russell King <rmk@arm.linux.org.uk>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Shiyong Li <shi-yong.li@motorola.com>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>
+Subject: Re: "slab: Fix missing DEBUG_SLAB last user" breaks ARM
+Message-ID: <20110208125546.GA4286@flint.arm.linux.org.uk>
+References: <20110207180606.GB2966@flint.arm.linux.org.uk> <AANLkTi=Lftr41mHDXzK0c=pf7JYYOVWMjLX65JCLqDsU@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=Lftr41mHDXzK0c=pf7JYYOVWMjLX65JCLqDsU@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik,
+On Tue, Feb 08, 2011 at 07:44:56AM +0200, Pekka Enberg wrote:
+> Hi!
+> 
+> On Mon, Feb 7, 2011 at 8:06 PM, Russell King <rmk@arm.linux.org.uk> wrote:
+> > commit 5c5e3b33 appears to break ARM thusly:
+> >
+> > | Mount-cache hash table entries: 512
+> > | slab error in verify_redzone_free(): cache `idr_layer_cache': memory outside object was overwritten
+> > | Backtrace:
+> > | [<c0227088>] (dump_backtrace+0x0/0x110) from [<c0431afc>] (dump_stack+0x18/0x1c)
+> > | [<c0431ae4>] (dump_stack+0x0/0x1c) from [<c0293304>] (__slab_error+0x28/0x30)
+> > | [<c02932dc>] (__slab_error+0x0/0x30) from [<c0293a74>] (cache_free_debugcheck+0x1c0/0x2b8)
+> > | [<c02938b4>] (cache_free_debugcheck+0x0/0x2b8) from [<c0293f78>] (kmem_cache_free+0x3c/0xc0)
+> > | [<c0293f3c>] (kmem_cache_free+0x0/0xc0) from [<c032b1c8>] (ida_get_new_above+0x19c/0x1c0)
+> > | [<c032b02c>] (ida_get_new_above+0x0/0x1c0) from [<c02af7ec>] (alloc_vfsmnt+0x54/0x144)
+> > | [<c02af798>] (alloc_vfsmnt+0x0/0x144) from [<c0299830>] (vfs_kern_mount+0x30/0xec)
+> > | [<c0299800>] (vfs_kern_mount+0x0/0xec) from [<c0299908>] (kern_mount_data+0x1c/0x20)
+> > | [<c02998ec>] (kern_mount_data+0x0/0x20) from [<c02146c4>] (sysfs_init+0x68/0xc8)
+> > | [<c021465c>] (sysfs_init+0x0/0xc8) from [<c02137d4>] (mnt_init+0x90/0x1b0)
+> > | [<c0213744>] (mnt_init+0x0/0x1b0) from [<c0213388>] (vfs_caches_init+0x100/0x140)
+> > | [<c0213288>] (vfs_caches_init+0x0/0x140) from [<c0208c0c>] (start_kernel+0x2e8/0x368)
+> > | [<c0208924>] (start_kernel+0x0/0x368) from [<c0208034>] (__enable_mmu+0x0/0x2c)
+> > | c0113268: redzone 1:0xd84156c5c032b3ac, redzone 2:0xd84156c5635688c0.
+> > | slab error in cache_alloc_debugcheck_after(): cache `idr_layer_cache': double free, or memory outside object was overwritten
+> > | ...
+> > | c011307c: redzone 1:0x9f91102ffffffff, redzone 2:0x9f911029d74e35b
+> > | slab: Internal list corruption detected in cache 'idr_layer_cache'(24), slabp c0113000(16). Hexdump:
+> > |
+> > | 000: 20 4f 10 c0 20 4f 10 c0 7c 00 00 00 7c 30 11 c0
+> > | 010: 10 00 00 00 10 00 00 00 00 00 c9 17 fe ff ff ff
+> > | 020: fe ff ff ff fe ff ff ff fe ff ff ff fe ff ff ff
+> > | 030: fe ff ff ff fe ff ff ff fe ff ff ff fe ff ff ff
+> > | 040: fe ff ff ff fe ff ff ff fe ff ff ff fe ff ff ff
+> > | 050: fe ff ff ff fe ff ff ff fe ff ff ff 11 00 00 00
+> > | 060: 12 00 00 00 13 00 00 00 14 00 00 00 15 00 00 00
+> > | 070: 16 00 00 00 17 00 00 00 c0 88 56 63
+> > | kernel BUG at /home/rmk/git/linux-2.6-rmk/mm/slab.c:2928!
+> >
+> > This hasn't been noticed as I guess not many people use SLAB on ARM
+> > anymore, and even less people probably have SLAB debugging enabled.
+> > With SLAB debugging disabled, the system appears to behave correctly -
+> > or maybe the problem is just hidden.
+> 
+> I thought the fix was for ARM, actually, but unfortunately the
+> changelog is somewhat terse (shame on me). Hmm?
 
-Thank you for your comments. I'll clean up the code. I still have several questions for you. Please find them above.
+As you say, the changelog is soo terse that we now have no idea why this
+commit was created.
 
-With best regards,
-Anton
------Original Message-----
-From: Henrik Rydberg [mailto:rydberg@euromail.se] 
+So, what's the fix here?  It looks to me like a revert is in order.
 
+I suggest that if it does get reverted, a copy of my original bug report
+is included in the revert commit so that all the details are available if
+it needs revisiting.
 
-> +static int LTx = -1;
-> +static int LTy = -1;
-> +static int LBx = -1;
-> +static int LBy = -1;
-> +static int RTx = -1;
-> +static int RTy = -1;
-> +static int RBx = -1;
-> +static int RBy = -1;
-> +
-> +static int LTX = -1;
-> +static int LTY = -1;
-> +static int LBX = -1;
-> +static int LBY = -1;
-> +static int RTX = -1;
-> +static int RTY = -1;
-> +static int RBX = -1;
-> +static int RBY = -1;
-> +
-> +static int Xoff_A = -1;
-> +static int Xmag_A = -1;
-> +static int Xmag_B = -1;
-> +static int Yoff_A = -1;
-> +static int Ymag_A = -1;
-> +static int Ymag_B = -1;
-
-> This is a lot of variables. Surely it can be simplified someway?
-First 16 vars are screen and device coordinates. Other 6 are precalculated in userspace during calibration.
-I can eliminate them and add more calculations to calibration function. Should I?
-
-> +	if (!Xmag)
-> +		Xmag = 1;
-
->Why?
-
-> +	x  = (inX * 10000 - Xoff) / Xmag;
-
-Not to divide by zero here.
-
-> +static void ubt780_set_input(struct input_dev *input) {
-> +	input->evbit[0] |= BIT(EV_KEY) | BIT(EV_ABS);
-> +	input->absbit[0] |= BIT(ABS_X) | BIT(ABS_Y);
-> +	set_bit(BTN_LEFT, input->keybit);
-> +	set_bit(BTN_RIGHT, input->keybit);
-> +
-> +	input->absmax[ABS_X] = UBT780_MAX_AXIS_X;
-> +	input->absmax[ABS_Y] = UBT780_MAX_AXIS_Y;
-> +	input->absmin[ABS_X] = 0;
-> +	input->absmin[ABS_Y] = 0;
-> +}
-
-> This looks like standard HID stuff, and could probably be setup automatically.
-The report of UB-T780 is a little bit broken. I prefer to write 8 straight and clear lines of code from scratch
-Instead of tuning and debugging standard HID parser.
-
-> +
-> +int ubt_set_device(struct ubt880_data *data, __u32 devid) {
-> +	int ret;
-> +	data->calib.calibrated = 0;
-> +	data->ubt_packet.report = 0;
-> +	set_calib_to_device(data);
-> +	switch (devid) {
-> +	case USB_DEVICE_ID_PANABOARD_UBT780: {
-> +		data->switch_mode = ubt780_switch_mode;
-> +		data->set_input = ubt780_set_input;
-> +		break;
-> +	}
-> +	case USB_DEVICE_ID_PANABOARD_UBT880: {
-> +		data->switch_mode = ubt880_switch_mode;
-> +		data->set_input = ubt880_set_input;
-> +		break;
-> +	}
-> +	default: {
-> +		ret = -1;
-> +	}
-> +	}
-> +	return 0;
-> +}
-
-> Static table would work too.
-Do you mean that it would be better to make a separate static table 
-for each device and keep one pointer to it instead of multiple pointers to functions?
-
-
-> +static const struct file_operations ubt880_fops = {
-> +	.owner = THIS_MODULE,
-> +	.open = ubt880_open_io,
-> +	.release = ubt880_release_io,
-> +	.unlocked_ioctl = ubt880_ioctl,
-> +};
-
-> And this is used solely to communicate with the device for calibration and such? Why is it even part of this driver?
-> The above seems like a different driver altogether, and possibly better implemented in userland.
-
-I really need your advice at this point. To calibrate the device we need to do the following:
-1. set particular device state
-2. read coordinates from device
-3. set calibration data back to device
-4. set back the device state
-
-I have not written this driver from scratch - I've got the driver and userland calibration utility from previous developers.
-At that time it was usbhid fork so I've considered to rewirte it using hid framework, but I've left ioctl communications to keep it compatible
-with userland utilities.
-Is there a better way to achieve all this not using ioctls? 
-Is it worth redoing all this work using sysfs?
-
-
-> +static void ubt880_report_mt(struct input_dev *input, struct 
-> +ubt_mt_contact *pack, int size, struct ubt_calib *calib) {
-> +	int i = 0;
-> +	/* Report MT contacts */
-> +	if (size < 1)
-> +		return;
-> +	if (!input || !pack || !calib)
-> +		return;
-
-> what do these error paths mean?
-This is just checks to defend from errors in calling code.
-
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
