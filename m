@@ -1,141 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799Ab1BHML0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 07:11:26 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45585 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491Ab1BHMLZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 07:11:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=tY+RmA5fdWj1gT5RYwS/InY1OKiDkC88oUhPBiWQfVeYFpFTQKXuABgAzc9dS7128Y
-         IxpuTFGCaNZQWwLTFrIApQNgSjM5WxGdGvP0lc4xSM05ClXBeWr2eDVDYzh4arWrV05b
-         p5asKmKTvshgiik1+kYqDaESzGaX2HbkbDg34=
-Date: Tue, 8 Feb 2011 20:11:09 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
+	id S1753811Ab1BHML5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 07:11:57 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:38003 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752491Ab1BHML4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 07:11:56 -0500
+Date: Tue, 8 Feb 2011 13:11:44 +0100
+From: Ingo Molnar <mingo@elte.hu>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, tglx <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: lockdep: possible reason: unannotated irqs-off. (was: Re:
- Linux 2.6.38-rc4)
-Message-ID: <20110208121108.GA4824@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com>
- <20110208101730.GB7020@liondog.tnic>
- <1297161712.13327.100.camel@laptop>
+Cc: Chris Friesen <chris.friesen@genband.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: /proc/<pid>/sched should contain cumulative data for all
+ threads in process
+Message-ID: <20110208121144.GA7550@elte.hu>
+References: <4D50723B.7020400@genband.com>
+ <1297156865.13327.57.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1297161712.13327.100.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1297156865.13327.57.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 08, 2011 at 11:41:52AM +0100, Peter Zijlstra wrote:
-> Argh! Its an annotation nightmare that.. it didn't trigger for me when
-> running that because I didn't have DEBUG_LOCKDEP=y.
 
-Me too...
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
+> On Mon, 2011-02-07 at 16:29 -0600, Chris Friesen wrote:
+> > Hi,
+> > 
+> > We've got a tool that gathers lots of scheduling data for each process
+> > (not task/thread) on the system.
+> > 
+> > For /proc/<pid>/{stat,io} this is straightforward, as the per-thread
+> > values are summed together for the process as a whole.
+> > 
+> > However, /proc/<pid>/sched only shows the data for the individual thread
+> > with the same tid as the pid.  To get a per-process view we need to
+> > manually scan all the threads and sum them--and this can get expensive
+> > due to all the extra file operations, parsing, etc.
+> > 
+> > Was this a concious design decision, or just an oversight?  Would a
+> > patch converting it to whole-process values be accepted or is it enough
+> > of a standard interface that we can't break existing apps that expect
+> > the current behaviour?
 > 
-> OK, let me try and come up with another way to annotate this
-> del_timer_sync() muck,
+> I'd as soon remove all that stuff than extend it, its an abi liability,
+> esp since you're talking about tools parsing this stuff.
 
-Is my previous patch acceptable?
+So assuming a tool would want to capture such stats of the system, what would be its 
+options? Could we do all this via system-wide counters and perf stat alike cheap, 
+transparent gathering without having to patch/rebuild the kernel?
 
-I inlined it as below(and updated based on linux-2.6.38-rc4)
+Thanks,
 
----
-From: Yong Zhang <yong.zhang0@gmail.com>
-Subject: [PATCH 1/2] softirq: introduce loacal_bh_enable_force_wake()
-
-If there is pending softirq, don't handle it in the caller's
-context, invoke ksoftirqd directly instead.
-
-del_timer_sync() will be the first caller.
-
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- include/linux/bottom_half.h |    1 +
- kernel/softirq.c            |   21 +++++++++++++++------
- 2 files changed, 16 insertions(+), 6 deletions(-)
-
-diff --git a/include/linux/bottom_half.h b/include/linux/bottom_half.h
-index 27b1bcf..665d697 100644
---- a/include/linux/bottom_half.h
-+++ b/include/linux/bottom_half.h
-@@ -5,5 +5,6 @@ extern void local_bh_disable(void);
- extern void _local_bh_enable(void);
- extern void local_bh_enable(void);
- extern void local_bh_enable_ip(unsigned long ip);
-+extern void local_bh_enable_force_wake(void);
- 
- #endif /* _LINUX_BH_H */
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 68eb5ef..3c05dfa 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -154,9 +154,9 @@ void _local_bh_enable(void)
- 
- EXPORT_SYMBOL(_local_bh_enable);
- 
--static inline void _local_bh_enable_ip(unsigned long ip)
-+static inline void _local_bh_enable_ip(unsigned long ip, bool force_wake)
- {
--	WARN_ON_ONCE(in_irq() || irqs_disabled());
-+	WARN_ON_ONCE(in_irq() || (!force_wake && irqs_disabled()));
- #ifdef CONFIG_TRACE_IRQFLAGS
- 	local_irq_disable();
- #endif
-@@ -171,8 +171,12 @@ static inline void _local_bh_enable_ip(unsigned long ip)
-  	 */
- 	sub_preempt_count(SOFTIRQ_DISABLE_OFFSET - 1);
- 
--	if (unlikely(!in_interrupt() && local_softirq_pending()))
--		do_softirq();
-+	if (unlikely(!in_interrupt() && local_softirq_pending())) {
-+		if (!force_wake)
-+			do_softirq();
-+		else
-+			wakeup_softirqd();
-+	}
- 
- 	dec_preempt_count();
- #ifdef CONFIG_TRACE_IRQFLAGS
-@@ -183,16 +187,21 @@ static inline void _local_bh_enable_ip(unsigned long ip)
- 
- void local_bh_enable(void)
- {
--	_local_bh_enable_ip((unsigned long)__builtin_return_address(0));
-+	_local_bh_enable_ip((unsigned long)__builtin_return_address(0), false);
- }
- EXPORT_SYMBOL(local_bh_enable);
- 
- void local_bh_enable_ip(unsigned long ip)
- {
--	_local_bh_enable_ip(ip);
-+	_local_bh_enable_ip(ip, false);
- }
- EXPORT_SYMBOL(local_bh_enable_ip);
- 
-+void local_bh_enable_force_wake(void)
-+{
-+	_local_bh_enable_ip((unsigned long)__builtin_return_address(0), true);
-+}
-+EXPORT_SYMBOL(local_bh_enable_force_wake);
- /*
-  * We restart softirq processing MAX_SOFTIRQ_RESTART times,
-  * and we fall back to softirqd after that.
--- 
-1.7.1
+	Ingo
