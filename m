@@ -1,436 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655Ab1BHFTJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 00:19:09 -0500
-Received: from www.wytron.com.tw ([211.75.82.101]:59436 "EHLO
-	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750794Ab1BHFTH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 00:19:07 -0500
-From: Thomas Chou <thomas@wytron.com.tw>
-To: David Brownell <dbrownell@users.sourceforge.net>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, nios2-dev@sopc.et.ntust.edu.tw,
-        devicetree-discuss@lists.ozlabs.org,
-        spi-devel-general@lists.sourceforge.net,
-        Thomas Chou <thomas@wytron.com.tw>
-Subject: [PATCH v8] spi: New driver for Altera SPI
-Date: Tue,  8 Feb 2011 13:21:49 +0800
-Message-Id: <1297142509-20158-1-git-send-email-thomas@wytron.com.tw>
-X-Mailer: git-send-email 1.7.4
-In-Reply-To: <87aai8zzd1.fsf@macbook.be.48ers.dk>
-References: <87aai8zzd1.fsf@macbook.be.48ers.dk>
-X-SA-Exim-Connect-IP: 192.168.1.15
-X-SA-Exim-Mail-From: thomas@wytron.com.tw
-X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
+	id S1751530Ab1BHFTI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 00:19:08 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:48836 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750701Ab1BHFTG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 00:19:06 -0500
+Date: Tue, 8 Feb 2011 16:18:57 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for February 8
+Message-Id: <20110208161857.ee3a92c0.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__8_Feb_2011_16_18_57_+1100_h97W1ZDPKh1Y04.T"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new SPI driver to support the Altera SOPC Builder
-SPI component. It uses the bitbanging library.
+--Signature=_Tue__8_Feb_2011_16_18_57_+1100_h97W1ZDPKh1Y04.T
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
----
-v2 add devicetree support
-v3 remove platform header, as Grant suggested.
-   no irq resource means polling.
-v4 minor cleanup, as Grant suggested.
-v5 add compat version.
-v6 change compatible vendor to uppercase, ALTR.
-   add dts binding doc.
-v7 use platform driver register.
-   use devm_ to help cleanup.
-v8 remove default n in Kconfig.
+Hi all,
 
- .../devicetree/bindings/spi/spi_altera.txt         |    4 +
- drivers/spi/Kconfig                                |    6 +
- drivers/spi/Makefile                               |    1 +
- drivers/spi/spi_altera.c                           |  335 ++++++++++++++++++++
- 4 files changed, 346 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/spi/spi_altera.txt
- create mode 100644 drivers/spi/spi_altera.c
+Changes since 20110207:
 
-diff --git a/Documentation/devicetree/bindings/spi/spi_altera.txt b/Documentation/devicetree/bindings/spi/spi_altera.txt
-new file mode 100644
-index 0000000..dda3759
---- /dev/null
-+++ b/Documentation/devicetree/bindings/spi/spi_altera.txt
-@@ -0,0 +1,4 @@
-+Altera SPI
-+
-+Required properties:
-+- compatible : should be "ALTR,spi-1.0".
-diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index bb233a9..e791579 100644
---- a/drivers/spi/Kconfig
-+++ b/drivers/spi/Kconfig
-@@ -53,6 +53,12 @@ if SPI_MASTER
- 
- comment "SPI Master Controller Drivers"
- 
-+config SPI_ALTERA
-+	tristate "Altera SPI Controller"
-+	select SPI_BITBANG
-+	help
-+	  This is the driver for the Altera SPI Controller.
-+
- config SPI_ATH79
- 	tristate "Atheros AR71XX/AR724X/AR913X SPI controller driver"
- 	depends on ATH79 && GENERIC_GPIO
-diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
-index 86d1b5f..4d2e35a 100644
---- a/drivers/spi/Makefile
-+++ b/drivers/spi/Makefile
-@@ -9,6 +9,7 @@ ccflags-$(CONFIG_SPI_DEBUG) := -DDEBUG
- obj-$(CONFIG_SPI_MASTER)		+= spi.o
- 
- # SPI master controller drivers (bus)
-+obj-$(CONFIG_SPI_ALTERA)		+= spi_altera.o
- obj-$(CONFIG_SPI_ATMEL)			+= atmel_spi.o
- obj-$(CONFIG_SPI_ATH79)			+= ath79_spi.o
- obj-$(CONFIG_SPI_BFIN)			+= spi_bfin5xx.o
-diff --git a/drivers/spi/spi_altera.c b/drivers/spi/spi_altera.c
-new file mode 100644
-index 0000000..e7f4835
---- /dev/null
-+++ b/drivers/spi/spi_altera.c
-@@ -0,0 +1,335 @@
-+/*
-+ * Altera SPI driver
-+ *
-+ * Copyright (C) 2008 Thomas Chou <thomas@wytron.com.tw>
-+ *
-+ * Based on spi_s3c24xx.c, which is:
-+ * Copyright (c) 2006 Ben Dooks
-+ * Copyright (c) 2006 Simtec Electronics
-+ *	Ben Dooks <ben@simtec.co.uk>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/errno.h>
-+#include <linux/platform_device.h>
-+#include <linux/spi/spi.h>
-+#include <linux/spi/spi_bitbang.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+
-+#define DRV_NAME "spi_altera"
-+
-+#define ALTERA_SPI_RXDATA	0
-+#define ALTERA_SPI_TXDATA	4
-+#define ALTERA_SPI_STATUS	8
-+#define ALTERA_SPI_CONTROL	12
-+#define ALTERA_SPI_SLAVE_SEL	20
-+
-+#define ALTERA_SPI_STATUS_ROE_MSK	0x8
-+#define ALTERA_SPI_STATUS_TOE_MSK	0x10
-+#define ALTERA_SPI_STATUS_TMT_MSK	0x20
-+#define ALTERA_SPI_STATUS_TRDY_MSK	0x40
-+#define ALTERA_SPI_STATUS_RRDY_MSK	0x80
-+#define ALTERA_SPI_STATUS_E_MSK		0x100
-+
-+#define ALTERA_SPI_CONTROL_IROE_MSK	0x8
-+#define ALTERA_SPI_CONTROL_ITOE_MSK	0x10
-+#define ALTERA_SPI_CONTROL_ITRDY_MSK	0x40
-+#define ALTERA_SPI_CONTROL_IRRDY_MSK	0x80
-+#define ALTERA_SPI_CONTROL_IE_MSK	0x100
-+#define ALTERA_SPI_CONTROL_SSO_MSK	0x400
-+
-+struct altera_spi {
-+	/* bitbang has to be first */
-+	struct spi_bitbang bitbang;
-+	struct completion done;
-+
-+	void __iomem *base;
-+	int irq;
-+	int len;
-+	int count;
-+	int bytes_per_word;
-+	unsigned long imr;
-+
-+	/* data buffers */
-+	const unsigned char *tx;
-+	unsigned char *rx;
-+};
-+
-+static inline struct altera_spi *altera_spi_to_hw(struct spi_device *sdev)
-+{
-+	return spi_master_get_devdata(sdev->master);
-+}
-+
-+static void altera_spi_chipsel(struct spi_device *spi, int value)
-+{
-+	struct altera_spi *hw = altera_spi_to_hw(spi);
-+
-+	if (spi->mode & SPI_CS_HIGH) {
-+		switch (value) {
-+		case BITBANG_CS_INACTIVE:
-+			writel(1 << spi->chip_select,
-+			       hw->base + ALTERA_SPI_SLAVE_SEL);
-+			hw->imr |= ALTERA_SPI_CONTROL_SSO_MSK;
-+			writel(hw->imr, hw->base + ALTERA_SPI_CONTROL);
-+			break;
-+
-+		case BITBANG_CS_ACTIVE:
-+			hw->imr &= ~ALTERA_SPI_CONTROL_SSO_MSK;
-+			writel(hw->imr, hw->base + ALTERA_SPI_CONTROL);
-+			writel(0, hw->base + ALTERA_SPI_SLAVE_SEL);
-+			break;
-+		}
-+	} else {
-+		switch (value) {
-+		case BITBANG_CS_INACTIVE:
-+			hw->imr &= ~ALTERA_SPI_CONTROL_SSO_MSK;
-+			writel(hw->imr, hw->base + ALTERA_SPI_CONTROL);
-+			break;
-+
-+		case BITBANG_CS_ACTIVE:
-+			writel(1 << spi->chip_select,
-+			       hw->base + ALTERA_SPI_SLAVE_SEL);
-+			hw->imr |= ALTERA_SPI_CONTROL_SSO_MSK;
-+			writel(hw->imr, hw->base + ALTERA_SPI_CONTROL);
-+			break;
-+		}
-+	}
-+}
-+
-+static int altera_spi_setupxfer(struct spi_device *spi, struct spi_transfer *t)
-+{
-+	return 0;
-+}
-+
-+static int altera_spi_setup(struct spi_device *spi)
-+{
-+	return 0;
-+}
-+
-+static inline unsigned int hw_txbyte(struct altera_spi *hw, int count)
-+{
-+	if (hw->tx) {
-+		switch (hw->bytes_per_word) {
-+		case 1:
-+			return hw->tx[count];
-+		case 2:
-+			return (hw->tx[count * 2]
-+				| (hw->tx[count * 2 + 1] << 8));
-+		}
-+	}
-+	return 0;
-+}
-+
-+static int altera_spi_txrx(struct spi_device *spi, struct spi_transfer *t)
-+{
-+	struct altera_spi *hw = altera_spi_to_hw(spi);
-+
-+	hw->tx = t->tx_buf;
-+	hw->rx = t->rx_buf;
-+	hw->count = 0;
-+	hw->bytes_per_word = (t->bits_per_word ? : spi->bits_per_word) / 8;
-+	hw->len = t->len / hw->bytes_per_word;
-+
-+	if (hw->irq >= 0) {
-+		/* enable receive interrupt */
-+		hw->imr |= ALTERA_SPI_CONTROL_IRRDY_MSK;
-+		writel(hw->imr, hw->base + ALTERA_SPI_CONTROL);
-+
-+		/* send the first byte */
-+		writel(hw_txbyte(hw, 0), hw->base + ALTERA_SPI_TXDATA);
-+
-+		wait_for_completion(&hw->done);
-+		/* disable receive interrupt */
-+		hw->imr &= ~ALTERA_SPI_CONTROL_IRRDY_MSK;
-+		writel(hw->imr, hw->base + ALTERA_SPI_CONTROL);
-+	} else {
-+		/* send the first byte */
-+		writel(hw_txbyte(hw, 0), hw->base + ALTERA_SPI_TXDATA);
-+
-+		while (1) {
-+			unsigned int rxd;
-+
-+			while (!(readl(hw->base + ALTERA_SPI_STATUS) &
-+				 ALTERA_SPI_STATUS_RRDY_MSK))
-+				cpu_relax();
-+
-+			rxd = readl(hw->base + ALTERA_SPI_RXDATA);
-+			if (hw->rx) {
-+				switch (hw->bytes_per_word) {
-+				case 1:
-+					hw->rx[hw->count] = rxd;
-+					break;
-+				case 2:
-+					hw->rx[hw->count * 2] = rxd;
-+					hw->rx[hw->count * 2 + 1] = rxd >> 8;
-+					break;
-+				}
-+			}
-+
-+			hw->count++;
-+
-+			if (hw->count < hw->len)
-+				writel(hw_txbyte(hw, hw->count),
-+				       hw->base + ALTERA_SPI_TXDATA);
-+			else
-+				break;
-+		}
-+
-+	}
-+
-+	return hw->count * hw->bytes_per_word;
-+}
-+
-+static irqreturn_t altera_spi_irq(int irq, void *dev)
-+{
-+	struct altera_spi *hw = dev;
-+	unsigned int rxd;
-+
-+	rxd = readl(hw->base + ALTERA_SPI_RXDATA);
-+	if (hw->rx) {
-+		switch (hw->bytes_per_word) {
-+		case 1:
-+			hw->rx[hw->count] = rxd;
-+			break;
-+		case 2:
-+			hw->rx[hw->count * 2] = rxd;
-+			hw->rx[hw->count * 2 + 1] = rxd >> 8;
-+			break;
-+		}
-+	}
-+
-+	hw->count++;
-+
-+	if (hw->count < hw->len)
-+		writel(hw_txbyte(hw, hw->count), hw->base + ALTERA_SPI_TXDATA);
-+	else
-+		complete(&hw->done);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int __devinit altera_spi_probe(struct platform_device *pdev)
-+{
-+	struct altera_spi_platform_data *platp = pdev->dev.platform_data;
-+	struct altera_spi *hw;
-+	struct spi_master *master;
-+	struct resource *res;
-+	int err = -ENODEV;
-+
-+	master = spi_alloc_master(&pdev->dev, sizeof(struct altera_spi));
-+	if (!master)
-+		return err;
-+
-+	/* setup the master state. */
-+	master->bus_num = pdev->id;
-+	master->num_chipselect = 16;
-+	master->mode_bits = SPI_CS_HIGH;
-+	master->setup = altera_spi_setup;
-+
-+	hw = spi_master_get_devdata(master);
-+	platform_set_drvdata(pdev, hw);
-+
-+	/* setup the state for the bitbang driver */
-+	hw->bitbang.master = spi_master_get(master);
-+	if (!hw->bitbang.master)
-+		return err;
-+	hw->bitbang.setup_transfer = altera_spi_setupxfer;
-+	hw->bitbang.chipselect = altera_spi_chipsel;
-+	hw->bitbang.txrx_bufs = altera_spi_txrx;
-+
-+	/* find and map our resources */
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res)
-+		goto exit_busy;
-+	if (!devm_request_mem_region(&pdev->dev, res->start, resource_size(res),
-+				     pdev->name))
-+		goto exit_busy;
-+	hw->base = devm_ioremap_nocache(&pdev->dev, res->start,
-+					resource_size(res));
-+	if (!hw->base)
-+		goto exit_busy;
-+	/* program defaults into the registers */
-+	hw->imr = 0;		/* disable spi interrupts */
-+	writel(hw->imr, hw->base + ALTERA_SPI_CONTROL);
-+	writel(0, hw->base + ALTERA_SPI_STATUS);	/* clear status reg */
-+	if (readl(hw->base + ALTERA_SPI_STATUS) & ALTERA_SPI_STATUS_RRDY_MSK)
-+		readl(hw->base + ALTERA_SPI_RXDATA);	/* flush rxdata */
-+	/* irq is optional */
-+	hw->irq = platform_get_irq(pdev, 0);
-+	if (hw->irq >= 0) {
-+		init_completion(&hw->done);
-+		err = devm_request_irq(&pdev->dev, hw->irq, altera_spi_irq, 0,
-+				       pdev->name, hw);
-+		if (err)
-+			goto exit;
-+	}
-+	/* find platform data */
-+	if (!platp)
-+		hw->bitbang.master->dev.of_node = pdev->dev.of_node;
-+
-+	/* register our spi controller */
-+	err = spi_bitbang_start(&hw->bitbang);
-+	if (err)
-+		goto exit;
-+	dev_info(&pdev->dev, "base %p, irq %d\n", hw->base, hw->irq);
-+
-+	return 0;
-+
-+exit_busy:
-+	err = -EBUSY;
-+exit:
-+	platform_set_drvdata(pdev, NULL);
-+	spi_master_put(master);
-+	return err;
-+}
-+
-+static int __devexit altera_spi_remove(struct platform_device *dev)
-+{
-+	struct altera_spi *hw = platform_get_drvdata(dev);
-+	struct spi_master *master = hw->bitbang.master;
-+
-+	spi_bitbang_stop(&hw->bitbang);
-+	platform_set_drvdata(dev, NULL);
-+	spi_master_put(master);
-+	return 0;
-+}
-+
-+static const struct of_device_id altera_spi_match[] = {
-+	{ .compatible = "ALTR,spi-1.0", },
-+	{},
-+}
-+MODULE_DEVICE_TABLE(of, altera_spi_match);
-+
-+static struct platform_driver altera_spi_driver = {
-+	.probe = altera_spi_probe,
-+	.remove = __devexit_p(altera_spi_remove),
-+	.driver = {
-+		.name = DRV_NAME,
-+		.owner = THIS_MODULE,
-+		.pm = NULL,
-+		.of_match_table = altera_spi_match,
-+	},
-+};
-+
-+static int __init altera_spi_init(void)
-+{
-+	return platform_driver_register(&altera_spi_driver);
-+}
-+module_init(altera_spi_init);
-+
-+static void __exit altera_spi_exit(void)
-+{
-+	platform_driver_unregister(&altera_spi_driver);
-+}
-+module_exit(altera_spi_exit);
-+
-+MODULE_DESCRIPTION("Altera SPI driver");
-+MODULE_AUTHOR("Thomas Chou <thomas@wytron.com.tw>");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:" DRV_NAME);
--- 
-1.7.4
+Dropped tree: xen
 
+The drivers-x86 tree gained a build failure so I used the version from
+next-20110207.
+
+The powerpc allyesconfig build is still broken by some obscure bloating
+of the low memory code.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 186 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/rc-fixes
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging linux-spec/for-next
+Merging msm/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-msm7x27.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-msm7x30.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-qsd8x50.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/board-sapphire.c
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/include/mach/memory=
+.h
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-tegra/timer.c
+Merging ux500-core/ux500-core
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
+e.txt
+Merging wireless/master
+Merging bluetooth/master
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging suspend/linux-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging catalin/for-next
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in drivers/Makefile
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+CONFLICT (content): Merge conflict in lib/Kconfig
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+Merging spi/spi/next
+Merging tip/auto-latest
+Merging rcu/rcu/next
+Merging oprofile/for-next
+Merging xen-two/linux-next
+Merging xen-pvhvm/linux-next
+CONFLICT (content): Merge conflict in arch/x86/include/asm/xen/page.h
+Merging edac-amd/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+$ git reset --hard HEAD^
+Merging refs/next/20110207/drivers-x86
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+CONFLICT (content): Merge conflict in drivers/tty/serial/Kconfig
+Merging usb/usb-next
+CONFLICT (content): Merge conflict in drivers/usb/gadget/Kconfig
+CONFLICT (content): Merge conflict in drivers/usb/host/ehci-pci.c
+Merging staging/staging-next
+Merging slabh/slabh
+Merging bkl-trivial/trivial
+Merging bkl-llseek/llseek
+Merging bkl-vfs/vfs
+Merging bkl-config/config
+CONFLICT (content): Merge conflict in arch/powerpc/kernel/setup_64.c
+CONFLICT (delete/modify): drivers/staging/stradis/Kconfig deleted in HEAD a=
+nd modified in bkl-config/config. Version bkl-config/config of drivers/stag=
+ing/stradis/Kconfig left in tree.
+CONFLICT (content): Merge conflict in fs/nfsd/nfs4state.c
+CONFLICT (content): Merge conflict in include/linux/hardirq.h
+CONFLICT (content): Merge conflict in include/linux/smp_lock.h
+$ git rm -f drivers/staging/stradis/Kconfig
+Merging irqflags/master
+Merging cleancache/linux-next
+CONFLICT (content): Merge conflict in fs/ocfs2/super.c
+CONFLICT (content): Merge conflict in fs/super.c
+CONFLICT (content): Merge conflict in include/linux/fs.h
+CONFLICT (content): Merge conflict in mm/Kconfig
+Merging scsi-post-merge/merge-base:master
+$ git checkout scsi-post-merge/master
+
+--Signature=_Tue__8_Feb_2011_16_18_57_+1100_h97W1ZDPKh1Y04.T
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJNUNJBAAoJEDMEi1NhKgbsfHwH/i5ag5cwSccj6b/7i+TkzPVJ
+xlvomP1+Uh946ZrDWgPAbNcafLqI8P4sySBSYneA64sxsuQMmJeHboyeroeTCihd
+S5/hqqyf5f4Tz5wtlMnCrts11KaaaUPXLsptB1Xjab4v0yCjvdIN4uoirHSeNxxR
+JzaUPeySQvwkwELP1DXXAD/sOBnEkE8fKgllE5CpbJiUzjd6DYuWizAoSG39qJry
+PuHmigGkN/tq3dsDMEiU4yMxUbRgsZiWlJNFLjOdMVMnYpQU9UHCifYRslLFeMCU
+BWUias0kXsJXFgU2LGwY06uHWPLSXDCM2o4HaM/WT3HOe5V6IyTdu5sL+GUcuJ8=
+=8X4l
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__8_Feb_2011_16_18_57_+1100_h97W1ZDPKh1Y04.T--
