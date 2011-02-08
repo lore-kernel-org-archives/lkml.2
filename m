@@ -1,56 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602Ab1BHJlk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 04:41:40 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:50466 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904Ab1BHJli (ORCPT
+	id S1752754Ab1BHJmC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 04:42:02 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39093 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752555Ab1BHJmA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 04:41:38 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Date: Tue, 08 Feb 2011 01:41:32 -0800
-Message-ID: <m1ei7iamnn.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Tue, 8 Feb 2011 04:42:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=We8tHYWV7RIqWGwwrSUdC4/8DeKQdhvb5D/Bw7p8/bbHVoMSE5sIOchgMSwI438uKK
+         SF5Gv25W++QMHzd2FM90QkwnnuPOPUkoN3aXk1Psu8gLKIq7Wy7ta16h/idC5ZTmP6mW
+         fjJPnfUKR7+mXMx/meRrev8TJZp7QJCsSkwKI=
+Date: Tue, 8 Feb 2011 10:41:55 +0100
+From: Tejun Heo <tj@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Len Brown <len.brown@intel.com>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: [PATCH wq#for-2.6.39] workqueue: add system_freezeable_wq
+Message-ID: <20110208094155.GB6558@htj.dyndns.org>
+References: <201102080029.57195.rjw@sisk.pl>
+ <20110208044712.GA906@core.coreip.homeip.net>
+ <201102081020.25646.rjw@sisk.pl>
+ <20110208093212.GA6558@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/C75Rf8YUPEur8wFjYhBktAKHrLZ15+kU=
-X-SA-Exim-Connect-IP: 98.207.157.188
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;<netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-X-Spam-Relay-Country: 
-Subject: 2.6.38-rc3 regression ipv6 TFTP download with curl failing in getpeername?
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Disposition: inline
+In-Reply-To: <20110208093212.GA6558@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>From de62c151df9b6568c67977920267392c432f340a Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Tue, 8 Feb 2011 10:39:03 +0100
 
-Does anyone have a clue what could be causing this?  It looks like
-getpeername for ipv6 has changed in the tcp case did udp possibly get
-missed?
+Add system wide freezeable workqueue.
 
-Currently curl is failing for me like this.  When doing a tftp transfer
-over ::1.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+---
+Please feel free to pull from the following branch.
 
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0  200M    0     0    0  570k      0  12.7M  0:00:15 --:--:--  0:00:15 12.7M
-curl: (55) getpeername() failed with errno 107: Transport endpoint is not connected
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-2.6.39
 
-Tomorrow I will dig deeper but for tonight I wanted to ask and see what
-other people see.
+Thanks.
 
-Eric
+ include/linux/workqueue.h |    4 ++++
+ kernel/workqueue.c        |    4 +++-
+ 2 files changed, 7 insertions(+), 1 deletions(-)
 
+diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+index 1ac1158..de6a755 100644
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -286,11 +286,15 @@ enum {
+  * any specific CPU, not concurrency managed, and all queued works are
+  * executed immediately as long as max_active limit is not reached and
+  * resources are available.
++ *
++ * system_freezeable_wq is equivalent to system_wq except that it's
++ * freezeable.
+  */
+ extern struct workqueue_struct *system_wq;
+ extern struct workqueue_struct *system_long_wq;
+ extern struct workqueue_struct *system_nrt_wq;
+ extern struct workqueue_struct *system_unbound_wq;
++extern struct workqueue_struct *system_freezeable_wq;
+ 
+ extern struct workqueue_struct *
+ __alloc_workqueue_key(const char *name, unsigned int flags, int max_active,
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 11869fa..2b8de0c 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -3764,8 +3764,10 @@ static int __init init_workqueues(void)
+ 	system_nrt_wq = alloc_workqueue("events_nrt", WQ_NON_REENTRANT, 0);
+ 	system_unbound_wq = alloc_workqueue("events_unbound", WQ_UNBOUND,
+ 					    WQ_UNBOUND_MAX_ACTIVE);
++	system_freezeable_wq = alloc_workqueue("events_freezeable",
++					       WQ_FREEZEABLE, 0);
+ 	BUG_ON(!system_wq || !system_long_wq || !system_nrt_wq ||
+-	       !system_unbound_wq);
++	       !system_unbound_wq || !system_freezeable_wq);
+ 	return 0;
+ }
+ early_initcall(init_workqueues);
+-- 
+1.7.1
 
