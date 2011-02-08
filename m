@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751082Ab1BHWJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 17:09:28 -0500
-Received: from casper.infradead.org ([85.118.1.10]:38294 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753921Ab1BHWJ1 (ORCPT
+	id S1754507Ab1BHWJj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 17:09:39 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:46259 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754230Ab1BHWJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 17:09:27 -0500
+	Tue, 8 Feb 2011 17:09:37 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 1/3] perf annotate: Fix --stdio rendering
-Date: Tue,  8 Feb 2011 20:09:18 -0200
-Message-Id: <1297202960-15269-2-git-send-email-acme@infradead.org>
+        Tom Zanussi <tzanussi@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [GIT PULL 0/3] perf/core improvements and fixes
+Date: Tue,  8 Feb 2011 20:09:17 -0200
+Message-Id: <1297202960-15269-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1297202960-15269-1-git-send-email-acme@infradead.org>
-References: <1297202960-15269-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Hi Ingo,
 
-The checks for not using a max_lines parameter were b0rked, problem
-introduced in 3653246.
+        Please consider pulling from:
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/annotate.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 1012841..6db4351 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -132,7 +132,7 @@ static int objdump_line__print(struct objdump_line *oline,
- 		if (percent < min_pcnt)
- 			return -1;
- 
--		if (printed >= max_lines)
-+		if (max_lines && printed >= max_lines)
- 			return 1;
- 
- 		color = get_percent_color(percent);
-@@ -154,7 +154,7 @@ static int objdump_line__print(struct objdump_line *oline,
- 		color_fprintf(stdout, color, " %7.2f", percent);
- 		printf(" :	");
- 		color_fprintf(stdout, PERF_COLOR_BLUE, "%s\n", oline->line);
--	} else if (printed >= max_lines)
-+	} else if (max_lines && printed >= max_lines)
- 		return 1;
- 	else {
- 		if (!*oline->line)
--- 
-1.6.2.5
+Regards,
+
+- Arnaldo
+
+Arnaldo Carvalho de Melo (3):
+  perf annotate: Fix --stdio rendering
+  perf annotate: Move locking to struct annotation
+  perf annotate: Fix annotate context lines regression
+
+ tools/perf/builtin-annotate.c          |   14 ++--
+ tools/perf/builtin-report.c            |    5 +-
+ tools/perf/builtin-top.c               |   67 ++++++++--------
+ tools/perf/util/annotate.c             |  134 +++++++++++++++++++++-----------
+ tools/perf/util/annotate.h             |   35 +++++----
+ tools/perf/util/hist.c                 |    5 +-
+ tools/perf/util/hist.h                 |    3 +-
+ tools/perf/util/top.h                  |    6 --
+ tools/perf/util/ui/browsers/annotate.c |   18 ++--
+ 9 files changed, 168 insertions(+), 119 deletions(-)
 
