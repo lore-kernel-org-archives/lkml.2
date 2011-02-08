@@ -1,71 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751917Ab1BHGjC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 01:39:02 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:41374 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923Ab1BHGjA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 01:39:00 -0500
-Date: Tue, 08 Feb 2011 15:38:21 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-Subject: Re: [PATCH v4] dw_mmc: Add Synopsys DesignWare mmc host driver.
-In-reply-to: <AANLkTi=SEXYk9B6N6RGmLKAx_QF6sybgHMVVpEo8mcp8@mail.gmail.com>
-To: Will Newton <will.newton@gmail.com>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-mmc@vger.kernel.org, Matt Fleming <matt@console-pimps.org>,
-        linux-arm-kernel@lists.infradead.org
-Message-id: <4D50E4DD.4030500@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7BIT
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
-References: <AANLkTi=0RtvsGX+Q3goL3mdG6oKeNidYtiudTZ8ZTpRP@mail.gmail.com>
- <20101208115510.GD10998@console-pimps.org>
- <AANLkTi=KqOa-MRQiptCtZGvoafRCgULfE3QFs=hmGpdi@mail.gmail.com>
- <AANLkTi=PpTi1_JO9Q=ph7w9Jim8iXMf9LbCfmEkWuo-h@mail.gmail.com>
- <20101209064751.GA21128@void.printf.net>
- <AANLkTimMgrawcndvUTYYjq9BGFqs-sbRsZkwVQ0Uvhvb@mail.gmail.com>
- <20101209160157.GA28586@void.printf.net>
- <AANLkTim3Rj2tTbqvT8nM4L=p=Wx8bdOnGq=EDv+cs02g@mail.gmail.com>
- <20101211192320.GA24430@void.printf.net>
- <AANLkTik7cMwgwXR1zK44HXC+1YtzpU3_zW2GUjcBMi8X@mail.gmail.com>
- <4D354752.3030401@samsung.com>
- <AANLkTi=SEXYk9B6N6RGmLKAx_QF6sybgHMVVpEo8mcp8@mail.gmail.com>
-X-OriginalArrivalTime: 08 Feb 2011 06:38:24.0602 (UTC)
- FILETIME=[C9280BA0:01CBC75A]
+	id S1751957Ab1BHGqk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 01:46:40 -0500
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:57823 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750923Ab1BHGqi convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 01:46:38 -0500
+MIME-Version: 1.0
+In-Reply-To: <201102072115.20858.edt@aei.ca>
+References: <201102051417.58953.edt@aei.ca> <201102071009.51238.oneukum@suse.de>
+ <201102071920.22543.edt@aei.ca> <201102072115.20858.edt@aei.ca>
+From: "Gadiyar, Anand" <gadiyar@ti.com>
+Date: Tue, 8 Feb 2011 12:16:16 +0530
+Message-ID: <AANLkTinpKwe2vWH3=Ur+N76a6KyfuFp0V-EznXXS7m+p@mail.gmail.com>
+Subject: Re: [BUG] usb problems in .38-rc3+
+To: Ed Tomlinson <edt@aei.ca>
+Cc: Oliver Neukum <oneukum@suse.de>, linux-kernel@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will..
+On Tue, Feb 8, 2011 at 7:45 AM, Ed Tomlinson <edt@aei.ca> wrote:
+> I tried bisecting without much luck.  It started with about 4000 commits to check.  It was still bad
+> when it reached the first 1000 commits post .37.  Then all boots started crashing.  I think its possible
+> to restrict a bisect to a directory - if so, what dir should I try?
+>
 
-I need your help for your code..
+Maybe drivers/ or drivers/usb would be enough for a first attempt?
+I usually start there.
 
-In dw_mmc.h, exist some function pointer..
+You could just do:
 
-int *get_ro(u32 slot_id);
-int *get_cd(u32 slot_id);
-...
+git bisect start -- [path]
 
-Just only need slot_id??
-If i need the "struct dw_mci", could i append the parameter?
+to restrict bisection to commits that touch [path].
 
-Will Newton wrote:
-> On Tue, Jan 18, 2011 at 7:54 AM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
->> Hi Will.
->>
->> I have some question...i'm testing dw_mmc in our environment.
->> but i didn't understand pdata->init(?)...what initialize in there?
-> 
-> In most of our platforms init is empty so I guess it would be fine to
-> change that code to ignore a null init pointer. An example of one of
-> the things we do use the init function for is to switch pins to GPIO
-> to handle card detect.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
+- Anand
