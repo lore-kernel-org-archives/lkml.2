@@ -1,108 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816Ab1BHPxr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 10:53:47 -0500
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:40852 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754749Ab1BHPxp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 10:53:45 -0500
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: gyZxMnwVM1kK5QFGNIdsYd0woAOscFi2Xa65odtnqk5BgGO
- 3o0bFVErg8pHLDIPtt6jIhYxGeVeaDjTtaP4p5MYTG95IQLLBHilkxDEnU1h
- VkggdF6PTOV_C_Z5CIsaiI3kwHqpTqlgLbxYIKPtqGNi3ZCdAi1lXs4lIZYo
- Idi9bvYOncFHbmjVD0w1zgem8DKkBSKvcMBJqMV19bFD6WuPRncRpisecXI_
- 1TgpwYMGX0906kfpRUpHDG9AIUYttkQIt.ZfzSIlrBrwmYdWf1pmuA3oBDMb
- n6oAC66qxbfa981AYjqnSdHwAtEjv
-X-Yahoo-Newman-Property: ymail-3
-Date: Tue, 8 Feb 2011 09:53:42 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Theodore Tso <tytso@MIT.EDU>
-Subject: Re: linux-next: build failure after merge of the slab tree
-In-Reply-To: <alpine.DEB.2.00.1102030919380.6519@router.home>
-Message-ID: <alpine.DEB.2.00.1102080952490.13202@router.home>
-References: <20110131144246.dfa2abe3.sfr@canb.auug.org.au> <1296502339.30654.13.camel@jaguar> <alpine.DEB.2.00.1102030919380.6519@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754749Ab1BHPy6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 10:54:58 -0500
+Received: from sputnik.urmx.de ([88.198.51.18]:36508 "EHLO sputnik.urmx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754320Ab1BHPy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 10:54:57 -0500
+X-Spam-Processed: srv201.gdsys.de, Tue, 08 Feb 2011 16:54:54 +0100
+	(not processed: message from trusted or authenticated source)
+X-Return-Path: Eibach@gdsys.de
+X-Envelope-From: Eibach@gdsys.de
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Importance: normal
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4721
+Date: Tue, 8 Feb 2011 16:54:52 +0100
+Message-ID: <48D3D52125C49B43AE880038E2E5314BB5BE41@SRV101.gdsys.de>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+thread-index: AcvHpdQarLmqmVeZTc+xvXlRCe1vGwAAc+4g
+References: <1297170966-13101-1-git-send-email-eibach@gdsys.de> <20110208152815.GA13436@ericsson.com>
+From: "Eibach, Dirk" <Eibach@gdsys.de>
+To: "Guenter Roeck" <guenter.roeck@ericsson.com>
+Cc: <linux-kernel@vger.kernel.org>, <khali@linux-fr.org>,
+        <lm-sensors@lm-sensors.org>
+X-SafeGuard_MailGateway: Version: 5.60.3.10058 SGMG Date: 20110208155457Z
+Subject: RE: [PATCH] hwmon: Consider LM64 temperature offset
+Thread-Topic: RE: [PATCH] hwmon: Consider LM64 temperature offset
+Content-Class: urn:content-classes:message
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-AntiVirus: checked by AntiVir MailGate (version: 2.0.2-5; AVE: 7.9.4.162; VDF: 7.11.2.101; host: mailrelay)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is a patch to fix ext4 (and slab)
 
-Subject: ext4: Remove use of kmem_cache_name
+Dear Guenter, 
 
-Remove the use of kmem_cache_name from ext4. In order to do that we need to
-strdup the name of the cache passed to kmem_cache_create.
+> Chip id is already detected in lm63_detect. You don't need to 
+> detect it again.
+> The more common approach would be something along the line of
+> 	data->kind = id->driver_data;
+>     You would then use
+> 	if (data->kind == lm64)
+>     throughout the code. In addition to that, you could define
+> 	data->kind = id->driver_data;
+> 	if (data->kind == lm64)
+> 		data->offset = 16000;
+>     which would save you the repeated recalculation of offset 
+> as mentioned before.
 
-Signed-off-by: Christoph Lameter <cl@linux.com>
+I don't understand, what structures "data" and "id" you are referring to
+here and where the fields driver_data and kind come from. I remember to
+have seen such in older kernels, but wasn't that replaced sometime ago?
+
+Cheers
+Dirk
 
 
----
- fs/ext4/mballoc.c |   12 ++----------
- mm/slab.c         |    7 ++++++-
- 2 files changed, 8 insertions(+), 11 deletions(-)
-
-Index: linux-2.6/fs/ext4/mballoc.c
-===================================================================
---- linux-2.6.orig/fs/ext4/mballoc.c	2011-02-08 09:02:40.000000000 -0600
-+++ linux-2.6/fs/ext4/mballoc.c	2011-02-08 09:11:16.000000000 -0600
-@@ -2448,15 +2448,10 @@ int ext4_mb_init(struct super_block *sb,
- 					bb_counters[sb->s_blocksize_bits + 2]);
-
- 		sprintf(name, "ext4_groupinfo_%d", sb->s_blocksize_bits);
--		namep = kstrdup(name, GFP_KERNEL);
--		if (!namep) {
--			ret = -ENOMEM;
--			goto out;
--		}
-
- 		/* Need to free the kmem_cache_name() when we
- 		 * destroy the slab */
--		cachep = kmem_cache_create(namep, len, 0,
-+		cachep = kmem_cache_create(name, len, 0,
- 					     SLAB_RECLAIM_ACCOUNT, NULL);
- 		if (!cachep) {
- 			ret = -ENOMEM;
-@@ -2746,11 +2741,8 @@ void ext4_exit_mballoc(void)
-
- 	for (i = 0; i < NR_GRPINFO_CACHES; i++) {
- 		struct kmem_cache *cachep = ext4_groupinfo_caches[i];
--		if (cachep) {
--			char *name = (char *)kmem_cache_name(cachep);
-+		if (cachep)
- 			kmem_cache_destroy(cachep);
--			kfree(name);
--		}
- 	}
- 	ext4_remove_debugfs_entry();
- }
-Index: linux-2.6/mm/slab.c
-===================================================================
---- linux-2.6.orig/mm/slab.c	2011-02-08 09:06:38.000000000 -0600
-+++ linux-2.6/mm/slab.c	2011-02-08 09:09:48.000000000 -0600
-@@ -2005,6 +2005,7 @@ static void __kmem_cache_destroy(struct
- 			kfree(l3);
- 		}
- 	}
-+	kfree(cachep->name);
- 	kmem_cache_free(&cache_cache, cachep);
- }
-
-@@ -2412,7 +2413,11 @@ kmem_cache_create (const char *name, siz
- 		BUG_ON(ZERO_OR_NULL_PTR(cachep->slabp_cache));
- 	}
- 	cachep->ctor = ctor;
--	cachep->name = name;
-+	if (slab_is_available())
-+		cachep->name = strdup(name);
-+	else
-+		/* Will never be freed so it does not matter */
-+		cachep->name = name;
-
- 	if (setup_cpu_cache(cachep, gfp)) {
- 		__kmem_cache_destroy(cachep);
