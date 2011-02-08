@@ -1,76 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755151Ab1BHRHp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 12:07:45 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:63841 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754705Ab1BHRHo (ORCPT
+	id S1755202Ab1BHRLI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 12:11:08 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:62358 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755155Ab1BHRLF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 12:07:44 -0500
-Message-ID: <4D5178B3.4050900@metafoo.de>
-Date: Tue, 08 Feb 2011 18:09:07 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+	Tue, 8 Feb 2011 12:11:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=Dbe83qBsYVa+lCm/AS91jTCcAZmmTgq5t3l0W9DfxD/oLbk4+lK67yq6OfsWHjJttE
+         MUzfTpnrVlHBRb1Wsx7pITro9VD3ttBDzD8t6TGoYM05WiNLpzmTyOSPe2ST8gQV2/ct
+         9FKJXPh5R+UV7U77R7gTTIEiJwOgP6XWbO4f4=
 MIME-Version: 1.0
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-CC: Grazvydas Ignotas <notasas@gmail.com>,
-        Rodolfo Giometti <giometti@linux.it>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/14] POWER: BQ27x00: New Properties, fixes, bq27000
- support
-References: <1296953291-10373-1-git-send-email-lars@metafoo.de> <AANLkTimN1ACy=rREGhvAqTwfywHb7_Td7ZeKosQc9txC@mail.gmail.com> <4D4F4B18.6030502@metafoo.de> <AANLkTimgejf7D9LWyxa=W7Hc4MTWEotMnr7h2SC9iPCQ@mail.gmail.com> <4D516BBB.5090506@metafoo.de> <20110208162802.GA29842@oksana.dev.rtsoft.ru>
-In-Reply-To: <20110208162802.GA29842@oksana.dev.rtsoft.ru>
-X-Enigmail-Version: 1.0.1
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <alpine.DEB.2.00.1102080954330.13649@router.home>
+References: <20110131144246.dfa2abe3.sfr@canb.auug.org.au>
+	<1296502339.30654.13.camel@jaguar>
+	<alpine.DEB.2.00.1102030919380.6519@router.home>
+	<alpine.DEB.2.00.1102080952490.13202@router.home>
+	<alpine.DEB.2.00.1102080954330.13649@router.home>
+Date: Tue, 8 Feb 2011 18:11:04 +0100
+Message-ID: <AANLkTi=Hykzpb+oK7HOXJCCNwpgRRbsJNuXz-2Uc9WbB@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the slab tree
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Theodore Tso <tytso@mit.edu>,
+        sandeen@redhat.com
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p18HBHUm015472
 
-On 02/08/2011 05:28 PM, Anton Vorontsov wrote:
-> On Tue, Feb 08, 2011 at 05:13:47PM +0100, Lars-Peter Clausen wrote:
->> On 02/08/2011 12:40 PM, Grazvydas Ignotas wrote:
->>> That works. However I wonder about the delay, I've experimentally
->>> determined that bq27500 refreshes in about a second, so before this
->>> series I could for example run 'watch -n 1 cat current_now' and see
->>> current changes almost in realtime (when toggling backlight, for
->>> example). Maybe we could have different cache timeout for different
->>> chips or have quickly changing properties (like current and voltage)
->>> bypass the cache.
->>
->> Looking at the datasheet confirms that the bq27500 updates the current register
->> every second. The bq27000 updates it only every 5.12 seconds.
->> I think reducing the the cache time for bq27500 to 1 second would render the
->> cache mostly useless, but maybe it makes sense to bypass the cache for voltage
->> and current on the bq27500.
-> 
-> Nope, it's not useless. I.e. for `cat /sys/class/power_supply/*/*`.
-> Actually, it was only the purpose for caching the battery values.
-> 
-> So, 1 second is OK.
+On Tue, Feb 8, 2011 at 4:55 PM, Christoph Lameter <cl@linux.com> wrote:
+> Argh. I accidentally sent an older version of the patch. This one is the
+> tested one.
+>
+>
+> Subject: ext4: Remove use of kmem_cache_name
+>
+> Remove the use of kmem_cache_name from ext4. In order to do that we need to
+> strdup the name of the cache passed to kmem_cache_create.
+>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
+>
+>
+> ---
+>  fs/ext4/mballoc.c |   12 ++----------
+>  mm/slab.c         |    7 ++++++-
+>  2 files changed, 8 insertions(+), 11 deletions(-)
+>
+> Index: linux-2.6/fs/ext4/mballoc.c
+> ===================================================================
+> --- linux-2.6.orig/fs/ext4/mballoc.c    2011-02-08 09:02:40.000000000 -0600
+> +++ linux-2.6/fs/ext4/mballoc.c 2011-02-08 09:11:16.000000000 -0600
+> @@ -2448,15 +2448,10 @@ int ext4_mb_init(struct super_block *sb,
+>                                        bb_counters[sb->s_blocksize_bits + 2]);
+>
+>                sprintf(name, "ext4_groupinfo_%d", sb->s_blocksize_bits);
+> -               namep = kstrdup(name, GFP_KERNEL);
+> -               if (!namep) {
+> -                       ret = -ENOMEM;
+> -                       goto out;
+> -               }
+>
+>                /* Need to free the kmem_cache_name() when we
+>                 * destroy the slab */
+> -               cachep = kmem_cache_create(namep, len, 0,
+> +               cachep = kmem_cache_create(name, len, 0,
+>                                             SLAB_RECLAIM_ACCOUNT, NULL);
+>                if (!cachep) {
+>                        ret = -ENOMEM;
+> @@ -2746,11 +2741,8 @@ void ext4_exit_mballoc(void)
+>
+>        for (i = 0; i < NR_GRPINFO_CACHES; i++) {
+>                struct kmem_cache *cachep = ext4_groupinfo_caches[i];
+> -               if (cachep) {
+> -                       char *name = (char *)kmem_cache_name(cachep);
+> +               if (cachep)
+>                        kmem_cache_destroy(cachep);
+> -                       kfree(name);
+> -               }
+>        }
+>        ext4_remove_debugfs_entry();
+>  }
+> Index: linux-2.6/mm/slab.c
+> ===================================================================
+> --- linux-2.6.orig/mm/slab.c    2011-02-08 09:06:38.000000000 -0600
+> +++ linux-2.6/mm/slab.c 2011-02-08 09:25:39.000000000 -0600
+> @@ -2005,6 +2005,7 @@ static void __kmem_cache_destroy(struct
+>                        kfree(l3);
+>                }
+>        }
+> +       kfree(cachep->name);
+>        kmem_cache_free(&cache_cache, cachep);
+>  }
+>
+> @@ -2412,7 +2413,11 @@ kmem_cache_create (const char *name, siz
+>                BUG_ON(ZERO_OR_NULL_PTR(cachep->slabp_cache));
+>        }
+>        cachep->ctor = ctor;
+> -       cachep->name = name;
+> +       if (slab_is_available())
+> +               cachep->name = kstrdup(name, GFP_KERNEL);
+> +       else
+> +               /* Will never be freed so it does not matter */
+> +               cachep->name = name;
+>
+>        if (setup_cpu_cache(cachep, gfp)) {
+>                __kmem_cache_destroy(cachep);
+>
 
-Yes, the purpose of the register cache was that registers aren't read multiple
-times if multiple properties are queried at once. Which is what I consider the
-standard use case, since this is what a power monitor application would
-normally do.
-The other use case is constantly monitor a single property like CURRENT_NOW.
-Since we would now read all properties instead of just one and would increase
-the load on the bus by 12 times.
+Isn't the fs/ext4 part obsolete by Eric's "ext4: make grpinfo slab
+cache names static"?
+The mentionned patch is pending in ext4.git#{master, for_linus} [1].
 
-The other purpose of the register cache was to be able to tell whether
-registers have changed when polling the battery. Since we already ignore the
-*_NOW properties when comparing the the old and the new state it would make
-sense to bypass the cache completely for them.
-This would reduce the load when monitoring such a property and it would also
-reduce the load when polling the battery since we would only read 8 instead of
-12 registers.
+Shouldn't this patch reduced to the mm/slab part?
 
-> 
-> p.s. Lars, on the next resend, can you please remove "POWER:"
-> prefix from the patch description line, bound the commit message
-> width to 76 symbols, and add all the collected Acked-by lines.
-> That way I can just pull your tree.
+- Sedat -
 
-Sure.
 
-- Lars
-
+[1] http://git.kernel.org/?p=linux/kernel/git/tytso/ext4.git;a=commit;h=11510460562fb3fa1b061ed4d7350ccdc39a984f
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
