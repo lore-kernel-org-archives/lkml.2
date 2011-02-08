@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965Ab1BHKEj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 05:04:39 -0500
-Received: from sncsmrelay2.nai.com ([67.97.80.206]:32484 "EHLO
-	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752671Ab1BHKEi (ORCPT
+	id S1753014Ab1BHKFX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 05:05:23 -0500
+Received: from mailout07.t-online.de ([194.25.134.83]:52810 "EHLO
+	mailout07.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752450Ab1BHKFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 05:04:38 -0500
-Message-ID: <4D5114D6.7080806@snapgear.com>
-Date: Tue, 8 Feb 2011 20:03:02 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Tue, 8 Feb 2011 05:05:22 -0500
+Message-ID: <4D511552.7030409@t-online.de>
+Date: Tue, 08 Feb 2011 11:05:06 +0100
+From: Knut Petersen <Knut_Petersen@t-online.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Greg Ungerer <gerg@uclinux.org>
-Subject: Re: [patch 07/10] m68knommu: Convert 5272 intc irq_chip to new functions
-References: <20110206233845.480884215@linutronix.de> <20110206233904.777004540@linutronix.de> <4D50B773.2070507@snapgear.com> <alpine.LFD.2.00.1102081047020.31804@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1102081047020.31804@localhost6.localdomain6>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: perex@perex.cz
+CC: tiwai@suse.de, linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: ALSA: Reasonable buffer size / where should it be implemented?
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Feb 2011 10:03:50.0580 (UTC) FILETIME=[7C030740:01CBC777]
+X-ID: TiVsjOZUwh8iY2H1JfHJ4yNSFig0-ok-8vkNwKpoPTDCwvQhKCmdXqLGo-yVjzrwGh
+X-TOI-MSGID: 241d286f-9296-44f3-9950-f9f57423c7f7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I use a RME Digi 96 PAD audio card, and I do have
+buffer overrun/underrun problems if I use the standard
+rme96c linux driver.
 
-Hi Thomas,
+I need a simple recording machine. It should not fail if
+e.g. cron starts updatedb or if I start a make -j 15 icecream
+compile job and decide to surf the internet while I record
+the digital satellite radio 48kHz stream.
 
-On 08/02/11 19:48, Thomas Gleixner wrote:
-> On Tue, 8 Feb 2011, Greg Ungerer wrote:
->>>   static void intc_external_irq(unsigned int irq, struct irq_desc *desc)
->>>   {
->>> -	desc->chip->ack(irq);
->>> +	get_irq_desc_chip(i)->irq_ack(desc->irq_data);
->>                           ^^^         ^^^
->> should this be:
->>
->>          get_irq_desc_chip(desc)->irq_ack(&desc->irq_data)
->
-> Yes.
->
->> I can't runtime test this right at the moment, but otherwise:
->>
->> Acked-by: Greg Ungerer<gerg@uclinux.org>
->
-> Can you push that stuff linus wards for 39 or want me to do it ? It
-> has no dependencies whatsoever.
+There is a lot of information about xrun problems, but
+somehow that information either does not help to prevent
+xruns on my system, is outdated, or asks for system
+changes I do not accept.
 
-I am happy to push this for 39.
+No, JACK does not help. No, I do not need low latency.
+No, I don't want to switch to rt kernels. No, I don't want
+to use an audio PC without X, without cron, network, etc.
 
-Thanks
-Greg
+The hardware provides independent 64k ringbuffers for
+capture and playback, that's not more than 85msec for a
+96 kHz / 2 channel / 32 bit setup or ADAT. That's simply
+not enough for reliable operation.
 
+My private solution is a rme96.c that kmallocs  4 MB
+software buffers for capture and playback, data transfer
+between software and hardware buffer in the interrupt
+service routine. That does efficiently prevent xruns even
+on a really loaded system.
 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+But I don't know if that is the right way to go.
+
+Wouldn't  it be better if there would be an (optional) software
+buffer one layer above the hardware driver? That would
+increase reliability for all audio hardware with insufficient
+hardware buffers.
+
+Is there any other audio hardware with similar small
+buffers?
+
+Has somebody already written an "extended alsa buffer"
+patch? Did I miss something?
+
+To put it into one question: How much buffer should be
+provided by an alsa hardware driver module?
+
+cu,
+ Knut
