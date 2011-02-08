@@ -1,42 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751957Ab1BHGqk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 01:46:40 -0500
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:57823 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750923Ab1BHGqi convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 01:46:38 -0500
+	id S1751993Ab1BHGyg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 01:54:36 -0500
+Received: from lav-w.yar.ru ([193.233.48.101]:48508 "EHLO
+	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751108Ab1BHGyf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 01:54:35 -0500
+X-Greylist: delayed 886 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Feb 2011 01:54:34 EST
+Date: Tue, 8 Feb 2011 09:39:25 +0300
+From: "Alexander V. Lukyanov" <lav@netis.ru>
+To: linux-ext4@vger.kernel.org
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger@sun.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ext4: allow inode_readahead_blks=0 (linux-2.6.37)
+Message-ID: <20110208063925.GA13619@lw.yar.ru>
 MIME-Version: 1.0
-In-Reply-To: <201102072115.20858.edt@aei.ca>
-References: <201102051417.58953.edt@aei.ca> <201102071009.51238.oneukum@suse.de>
- <201102071920.22543.edt@aei.ca> <201102072115.20858.edt@aei.ca>
-From: "Gadiyar, Anand" <gadiyar@ti.com>
-Date: Tue, 8 Feb 2011 12:16:16 +0530
-Message-ID: <AANLkTinpKwe2vWH3=Ur+N76a6KyfuFp0V-EznXXS7m+p@mail.gmail.com>
-Subject: Re: [BUG] usb problems in .38-rc3+
-To: Ed Tomlinson <edt@aei.ca>
-Cc: Oliver Neukum <oneukum@suse.de>, linux-kernel@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 8, 2011 at 7:45 AM, Ed Tomlinson <edt@aei.ca> wrote:
-> I tried bisecting without much luck.  It started with about 4000 commits to check.  It was still bad
-> when it reached the first 1000 commits post .37.  Then all boots started crashing.  I think its possible
-> to restrict a bisect to a directory - if so, what dir should I try?
->
+Hello!
 
-Maybe drivers/ or drivers/usb would be enough for a first attempt?
-I usually start there.
+I cannot disable inode-read-ahead feature of ext4 (on 2.6.37):
 
-You could just do:
+# echo 0 > /sys/fs/ext4/sda2/inode_readahead_blks 
+bash: echo: write error: Invalid argument
 
-git bisect start -- [path]
+On a server with lots of small files and random access this read-ahead makes
+performance worse, and I'd like to disable it. I work around this problem
+by using value of 1, but it still reads an extra block.
 
-to restrict bisection to commits that touch [path].
+This patch fixes the problem by checking for zero explicitly.
 
-- Anand
+--- a/fs/ext4/super.c.0	2010-11-16 10:48:33.418629215 +0300
++++ b/fs/ext4/super.c	2010-11-16 10:46:07.739753246 +0300
+@@ -1657,7 +1657,7 @@ set_qf_format:
+ 				return 0;
+ 			if (option < 0 || option > (1 << 30))
+ 				return 0;
+-			if (!is_power_of_2(option)) {
++			if (option && !is_power_of_2(option)) {
+ 				ext4_msg(sb, KERN_ERR,
+ 					 "EXT4-fs: inode_readahead_blks"
+ 					 " must be a power of 2");
+@@ -2274,7 +2274,7 @@ static ssize_t inode_readahead_blks_stor
+ 	if (parse_strtoul(buf, 0x40000000, &t))
+ 		return -EINVAL;
+ 
+-	if (!is_power_of_2(t))
++	if (t && !is_power_of_2(t))
+ 		return -EINVAL;
+ 
+ 	sbi->s_inode_readahead_blks = t;
+
+Signed-off-by: Alexander V. Lukyanov <lav@netis.ru>
+
+-- 
+   Alexander.
