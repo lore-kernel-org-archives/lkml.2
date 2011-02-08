@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754428Ab1BHNoj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 08:44:39 -0500
-Received: from casper.infradead.org ([85.118.1.10]:40656 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751519Ab1BHNoi (ORCPT
+	id S1754462Ab1BHNqq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 08:46:46 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:57562 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754343Ab1BHNqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 08:44:38 -0500
-Subject: Re: RFC: /proc/<pid>/sched should contain cumulative data for all
- threads in process
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Chris Friesen <chris.friesen@genband.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110208121144.GA7550@elte.hu>
-References: <4D50723B.7020400@genband.com>
-	 <1297156865.13327.57.camel@laptop>  <20110208121144.GA7550@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 08 Feb 2011 14:45:42 +0100
-Message-ID: <1297172742.13327.102.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 8 Feb 2011 08:46:45 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
+Subject: Re: [PATCH v8 03/12] media: Entities, pads and links
+Date: Tue, 8 Feb 2011 14:46:43 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.36-gentoo-r3; KDE/4.6.0; x86_64; ; )
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
+        clemens@ladisch.de
+References: <1296131437-29954-1-git-send-email-laurent.pinchart@ideasonboard.com> <1296131437-29954-4-git-send-email-laurent.pinchart@ideasonboard.com> <4D42A033.9030906@maxwell.research.nokia.com>
+In-Reply-To: <4D42A033.9030906@maxwell.research.nokia.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201102081446.43643.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-02-08 at 13:11 +0100, Ingo Molnar wrote:
-> * Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > On Mon, 2011-02-07 at 16:29 -0600, Chris Friesen wrote:
-> > > Hi,
-> > > 
-> > > We've got a tool that gathers lots of scheduling data for each process
-> > > (not task/thread) on the system.
-> > > 
-> > > For /proc/<pid>/{stat,io} this is straightforward, as the per-thread
-> > > values are summed together for the process as a whole.
-> > > 
-> > > However, /proc/<pid>/sched only shows the data for the individual thread
-> > > with the same tid as the pid.  To get a per-process view we need to
-> > > manually scan all the threads and sum them--and this can get expensive
-> > > due to all the extra file operations, parsing, etc.
-> > > 
-> > > Was this a concious design decision, or just an oversight?  Would a
-> > > patch converting it to whole-process values be accepted or is it enough
-> > > of a standard interface that we can't break existing apps that expect
-> > > the current behaviour?
-> > 
-> > I'd as soon remove all that stuff than extend it, its an abi liability,
-> > esp since you're talking about tools parsing this stuff.
-> 
-> So assuming a tool would want to capture such stats of the system, what would be its 
-> options? Could we do all this via system-wide counters and perf stat alike cheap, 
-> transparent gathering without having to patch/rebuild the kernel?
+Hi Sakari,
 
-Very much depends on what is wanted, but most of the stuff inside those
-files is very specific to the implementation and pinning any of that to
-an ABI is like silly.
+On Friday 28 January 2011 11:53:39 Sakari Ailus wrote:
+> Hi Laurent,
+> 
+> Thanks for the patches!
+> 
+> I've got one comment that I should have made long time ago... Pads are
+> inputs or outputs... or: are they sinks or sources? I recall that it was
+> agreed on some occasion that sink and source are much less ambiguous and
+> they should be used instead.
+> 
+> So we'd have MEDIA_PAD_FL_{SINK,SOURCE}, for example. Currently the
+> source and documentation is using input/output and source/sink
+> interchangeably. I think sink and source should be used all the time.
+> 
+> What do you think?
 
+I think it makes sense. Hans ?
+
+-- 
+Regards,
+
+Laurent Pinchart
