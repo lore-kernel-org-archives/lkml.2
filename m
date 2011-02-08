@@ -1,50 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583Ab1BHPrU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 10:47:20 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:31949 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754231Ab1BHPrT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 10:47:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=uO8hInVMOyNPr/ENycSW7jpj61XS8C+bgBykS+0hQ1ig+fp1KGeAXn4PPcIZ0lAmbi
-         bpLhpVXo+mG11mGCF6Kw==
+	id S1754678Ab1BHPw6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 10:52:58 -0500
+Received: from hera.kernel.org ([140.211.167.34]:42958 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754320Ab1BHPw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 10:52:57 -0500
+Date: Tue, 8 Feb 2011 15:51:46 GMT
+From: tip-bot for Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        peterz@infradead.org, bp@alien8.de, tglx@linutronix.de,
+        yong.zhang0@gmail.com, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        peterz@infradead.org, bp@alien8.de, tglx@linutronix.de,
+        yong.zhang0@gmail.com, mingo@elte.hu
+In-Reply-To: <1297174680.13327.107.camel@laptop>
+References: <1297174680.13327.107.camel@laptop>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/urgent] Revert "lockdep, timer: Fix del_timer_sync() annotation"
+Message-ID: <tip-7ff207928eb0761fa6b6c39eda82ac07a5241acf@git.kernel.org>
+Git-Commit-ID: 7ff207928eb0761fa6b6c39eda82ac07a5241acf
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20110208151925.GC20357@elte.hu>
-References: <4d51432a.a7fed80a.1571.fffffe9f@mx.google.com>
-	<20110208135144.GE7651@ghostprotocols.net>
-	<20110208151925.GC20357@elte.hu>
-Date: Tue, 8 Feb 2011 16:47:15 +0100
-Message-ID: <AANLkTik9CycDJ4f3wJCEuxDwiwkiEHeEwMu3SYae14zg@mail.gmail.com>
-Subject: Re: [PATCH] perf: fix compile error in annotate.h
-From: Stephane Eranian <eranian@google.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, paulus@samba.org, davem@davemloft.net,
-        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
-        robert.richter@amd.com, Borislav Petkov <bp@amd64.org>
 Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 08 Feb 2011 15:51:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 8, 2011 at 4:19 PM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
->
->> Em Tue, Feb 08, 2011 at 02:20:01PM +0200, Stephane Eranian escreveu:
->> > The following patch is necessary to compile without NEWT.
->>
->> Merged already, Borislav Petkov sent a similar patch.
->
-> I just pushed it out - Stephane, mind checking that latest -tip indeed fixes things
-> for you?
->
-Works for me now,  thanks.
+Commit-ID:  7ff207928eb0761fa6b6c39eda82ac07a5241acf
+Gitweb:     http://git.kernel.org/tip/7ff207928eb0761fa6b6c39eda82ac07a5241acf
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Tue, 8 Feb 2011 15:18:00 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 8 Feb 2011 16:18:39 +0100
 
-Acked-by: Stephane Eranian <eranian@google.com>
+Revert "lockdep, timer: Fix del_timer_sync() annotation"
+
+Both attempts at trying to allow softirq usage for
+del_timer_sync() failed (produced bogus warnings),
+so revert the commit for this release:
+
+  f266a5110d45: lockdep, timer: Fix del_timer_sync() annotation
+
+and try again later.
+
+Reported-by: Borislav Petkov <bp@alien8.de>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+LKML-Reference: <1297174680.13327.107.camel@laptop>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/timer.c |    8 +++-----
+ 1 files changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/timer.c b/kernel/timer.c
+index d53ce66..d645992 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -959,7 +959,7 @@ EXPORT_SYMBOL(try_to_del_timer_sync);
+  *
+  * Synchronization rules: Callers must prevent restarting of the timer,
+  * otherwise this function is meaningless. It must not be called from
+- * hardirq contexts. The caller must not hold locks which would prevent
++ * interrupt contexts. The caller must not hold locks which would prevent
+  * completion of the timer's handler. The timer's handler must not call
+  * add_timer_on(). Upon exit the timer is not queued and the handler is
+  * not running on any CPU.
+@@ -971,12 +971,10 @@ int del_timer_sync(struct timer_list *timer)
+ #ifdef CONFIG_LOCKDEP
+ 	unsigned long flags;
+ 
+-	raw_local_irq_save(flags);
+-	local_bh_disable();
++	local_irq_save(flags);
+ 	lock_map_acquire(&timer->lockdep_map);
+ 	lock_map_release(&timer->lockdep_map);
+-	_local_bh_enable();
+-	raw_local_irq_restore(flags);
++	local_irq_restore(flags);
+ #endif
+ 	/*
+ 	 * don't use it in hardirq context, because it
