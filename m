@@ -1,152 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab1BHB1P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Feb 2011 20:27:15 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:3040 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752594Ab1BHB1O (ORCPT
+	id S1754737Ab1BHB3V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Feb 2011 20:29:21 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45298 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754425Ab1BHB3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Feb 2011 20:27:14 -0500
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "'Wolfgang Grandegger'" <wg@grandegger.com>
-Cc: <socketcan-core@lists.berlios.de>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-References: <cover.1296818921.git.segoon@openwall.com><a6800dc8b0daed78256f98f52844cbbb48f4a76d.1296818921.git.segoon@openwall.com><20110204124233.GB334@e-circ.dyndns.org>	<20110204.130649.112613896.davem@davemloft.net>	<5009516791F146C49C73FAC57C437313@hacdom.okisemi.com> <4D4FDEF9.2030305@grandegger.com> <4D501555.5000905@grandegger.com>
-Subject: RE: About bittiming calculation result
-Date: Tue, 8 Feb 2011 10:27:11 +0900
-Message-ID: <93C12206407640199DCDD3A89A333F13@hacdom.okisemi.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+	Mon, 7 Feb 2011 20:29:20 -0500
+Date: Mon, 7 Feb 2011 17:28:06 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Miklos Szeredi <mszeredi@suse.cz>
+Cc: Minchan Kim <minchan.kim@gmail.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH] mm: Add hook of freepage
+Message-Id: <20110207172806.dbca2cae.akpm@linux-foundation.org>
+In-Reply-To: <1297071421.25994.58.camel@tucsk.pomaz.szeredi.hu>
+References: <1297004934-4605-1-git-send-email-minchan.kim@gmail.com>
+	<1297071421.25994.58.camel@tucsk.pomaz.szeredi.hu>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <4D501555.5000905@grandegger.com>
-Thread-Index: AcvG3tDmfwoxeK2tQpOgtjmXClC0gAATjLew
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, February 08, 2011 12:53 AM,  Wolfgang Grandegger wrote:
+On Mon, 07 Feb 2011 10:37:01 +0100
+Miklos Szeredi <mszeredi@suse.cz> wrote:
 
-> BTW, it's always possible to specify optimized bit-timing 
-> parameters directly, e.g. the following seem better:
+> On Mon, 2011-02-07 at 00:08 +0900, Minchan Kim wrote:
+> > Recently, "Call the filesystem back whenever a page is removed from
+> > the page cache(6072d13c)" added new freepage hook in page cache
+> > drop function.
+> > 
+> > So, replace_page_cache_page should call freepage to support
+> > page cleanup to fs.
 > 
->    800000     60  12    4    4   4   3  793650  0.8% 80.0% 81.0%  1.2%
-> 
-> You could set these with:
-> 
->   $ ip link set can0 type can \
->     tq 60 prop-seg 12 phase-seg1 4 phase-seg2 4 sjw 4
+> Thanks Minchan for fixing this.
 
-I can confirm 800K comms works well using the above.
+What's happening with mm-add-replace_page_cache_page-function.patch,
+btw?  When last discussed nearly three weeks ago we had identified:
 
-I wish Can-core could calculate like above.
-
->> seg1/seg2/sjw/prop_seg must be more than 1 ?
-BTW, according to EG20T PCH data sheet, 
-CAN bit-timing parameters(BRP, Prop_Seg, Phase_Seg1, Phase_Seg2, SJW) must not be set 0.
-
-Thanks,
------------------------------------------
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
-
-
-> -----Original Message-----
-> From: Wolfgang Grandegger [mailto:wg@grandegger.com] 
-> Sent: Tuesday, February 08, 2011 12:53 AM
-> To: Tomoya MORINAGA
-> Cc: socketcan-core@lists.berlios.de; netdev@vger.kernel.org; 
-> linux-kernel@vger.kernel.org
-> Subject: Re: About bittiming calculation result
-> 
-> On 02/07/2011 01:00 PM, Wolfgang Grandegger wrote:
-> > Hi Tomoya,
-> > 
-> > On 02/07/2011 12:38 PM, Tomoya MORINAGA wrote:
-> >> Hi,
-> >>
-> >> I have a question for bittiming-value calculated by Can-core.
-> >>
-> >> In case setting like below,
-> >>  - ip link set can0 type can bitrate 800000
-> >>  - clock=50MHz
-> >>  - Use pch_can
-> >>
-> >> Can-core calculates like below
-> >> brp=21
-> >> seg1=1
-> >> seg2=1
-> >> sjw=1
-> >> prop_seg=0
-> >>
-> >> Is "prop_seg=0" true ?
-> > 
-> > Well, only prop_seg+phase_seg=tseg1 is relevant and the 
-> pch_can driver 
-> > sets the allowed minimum "tseg1_min1" currently to 1:
-> > 
-> > static struct can_bittiming_const pch_can_bittiming_const = {
-> >         .name = KBUILD_MODNAME,
-> >         .tseg1_min = 1,
-> >         .tseg1_max = 16,
-> >         .tseg2_min = 1,
-> >         .tseg2_max = 8,
-> >         .sjw_max = 4,
-> >         .brp_min = 1,
-> >         .brp_max = 1024, /* 6bit + extended 4bit */
-> >         .brp_inc = 1,
-> > };
-> > 
-> >> seg1/seg2/sjw/prop_seg must be more than 1 ?
-> > 
-> > Then "tseg1_min" should be set to *2*.
-> > 
-> >> Also I can see the following kernel error log.
-> >> bitrate error 0.7%
-> > 
-> > A clock frequency of 50 MHz is sub-optimal for CAN and some 
-> bit-rates 
-> > cannot be reproduced properly. Here is the output of the can-utils 
-> > program "can-calc-bit-timing" (with an entry for the pch-can added):
-> > 
-> > $ ./can-calc-bit-timing pch-can
-> > Bit timing parameters for pch-can with 50.000000 MHz ref clock
-> > nominal                                 real Bitrt   nom  real SampP
-> > Bitrate TQ[ns] PrS PhS1 PhS2 SJW BRP Bitrate Error SampP 
-> SampP Error CNF1 CNF2 CNF3
-> > 1000000    100   3    3    3   1   5 1000000  0.0% 75.0% 
-> 70.0%  6.7% 0x05 0x92 0x02
-> >  800000    420   0    1    1   1  21  793650  0.8% 80.0% 
-> 66.6% 16.8% 0x15 0xff 0x00
-> >  500000    100   8    8    3   1   5  500000  0.0% 87.5% 
-> 85.0%  2.9% 0x05 0xbf 0x02
-> >  250000    500   3    3    1   1  25  250000  0.0% 87.5% 
-> 87.5%  0.0% 0x19 0x92 0x00
-> >  125000    500   6    7    2   1  25  125000  0.0% 87.5% 
-> 87.5%  0.0% 0x19 0xb5 0x01
-> >  100000    500   8    8    3   1  25  100000  0.0% 87.5% 
-> 85.0%  2.9% 0x19 0xbf 0x02
-> >   50000   2500   3    3    1   1 125   50000  0.0% 87.5% 
-> 87.5%  0.0% 0x7d 0x92 0x00
-> >   20000   2500   8    8    3   1 125   20000  0.0% 87.5% 
-> 85.0%  2.9% 0x7d 0xbf 0x02
-> >   10000  12500   3    3    1   1 625   10000  0.0% 87.5% 
-> 87.5%  0.0% 0x71 0x92 0x00
-> > 
-> > As you can see, especially 800000 gives rather bad results.
-> 
-> BTW, it's always possible to specify optimized bit-timing 
-> parameters directly, e.g. the following seem better:
-> 
->    800000     60  12    4    4   4   3  793650  0.8% 80.0% 81.0%  1.2%
-> 
-> You could set these with:
-> 
->   $ ip link set can0 type can \
->     tq 60 prop-seg 12 phase-seg1 4 phase-seg2 4 sjw 4
-> 
-> Wolfgang.
-> 
+1) remove radix_tree_preload
+2) single radix_tree_lookup_slot and replace radix tree slot
+3) page accounting optimization if both pages are in same zone.
 
