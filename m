@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755460Ab1BHSbu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 13:31:50 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:64115 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755371Ab1BHSbt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 13:31:49 -0500
-Message-ID: <4D518BBC.8050904@ru.mvista.com>
-Date: Tue, 08 Feb 2011 21:30:20 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+	id S1755484Ab1BHSk0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 13:40:26 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27387 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755379Ab1BHSkX (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 8 Feb 2011 13:40:23 -0500
+Date: Tue, 8 Feb 2011 13:39:37 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 0/4] XEN: Interrupt cleanups
+Message-ID: <20110208183937.GD4606@dumpdata.com>
+References: <20110205200108.921707839@linutronix.de>
+ <4D50641B.2090006@goop.org>
+ <alpine.LFD.2.00.1102072231220.31804@localhost6.localdomain6>
+ <4D506AE6.6080900@goop.org>
+ <1297173811.9388.95.camel@zakaz.uk.xensource.com>
+ <alpine.LFD.2.00.1102081544290.31804@localhost6.localdomain6>
+ <1297177506.9388.135.camel@zakaz.uk.xensource.com>
+ <alpine.LFD.2.00.1102081619410.31804@localhost6.localdomain6>
+ <20110208162045.GB4606@dumpdata.com>
+ <alpine.LFD.2.00.1102081829330.31804@localhost6.localdomain6>
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-CC: Sergei Shtylyov <sshtylyov@mvista.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 21/20] ata_piix: add new PIIX_FLAG_* flags
-References: <201102081652.36752.bzolnier@gmail.com>	<4D51796C.8020008@ru.mvista.com> <AANLkTikyV579TRSMw_g_rTB7C641fWbdSELP9mpa30bG@mail.gmail.com>
-In-Reply-To: <AANLkTikyV579TRSMw_g_rTB7C641fWbdSELP9mpa30bG@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1102081829330.31804@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4D518E0B.00FE:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bartlomiej Zolnierkiewicz wrote:
+> > <scratches his head> The rework was in Xen code not in generic, and
+> > the only generic changes that are in there ..  are your code?
+> 
+> The point is:
+> 
+> If you play with generic irq code in Xen in some weird way then you
+> basically block me to cleanup something in the core code w/o breaking
+> Xen. I wanted to move IRQ_SUSPENDED to a different field and
+> accidentally noticed that Xen was fiddling with in -next.
 
->>> Turn open-coded checks in piix_set_timings() into PIIX_FLAG_* flags
->>> per suggestion from Alan Cox.
->>> Suggested-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
->>> Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
->> [...]
+Aaaaah. I somehow thought the problems were with code proposed for
+2.6.39, but you are referring to: "xen: events: do not unmask event channels
+on resume" (6903591f314b8947d0e362bda7715e90eb9df75e) which was added way
+back in November (post 2.6.37 time-frame) - and is already in Linus tree.
 
->>> Index: b/drivers/ata/ata_piix.c
->>> ===================================================================
->>> --- a/drivers/ata/ata_piix.c
->>> +++ b/drivers/ata/ata_piix.c
->>> @@ -133,6 +133,8 @@ enum {
->>>        PIIX_FLAG_CHECKINTR     = (1 << 28), /* make sure PCI INTx enabled
->>> */
->>>        PIIX_FLAG_SIDPR         = (1 << 29), /* SATA idx/data pair regs */
->>> +       PIIX_FLAG_NO_SITRE      = (1 << 30), /* no SITRE register */
+OK, now that I've that clear in my head (sorry about this confusion):
+> 
+> So that's what I'm grumpy about. You hack away in Xen and claim it's
+> confined to your code, while in reality it is _NOT_.
 
->>   The register in question is called SIDETIM, SITRE is a bit that enables
->> its use.
+.. I can quite understand why you are unhappy about this.
+> 
+> Again, if there is a problem with the generic code then talk to me.
 
-> ICH4-M databook that I have at hand (Intel IDE PRM seems to be gone
-> from Intel's website, though I'm sure I have a backup _somewhere_) it
-> is called SLV_IDETIM so lets just stick with the current naming for
-> now..
+Absolutely. We appreciate you being quite dilligient about other
+sub-platforms and sorry for this screwup.
 
-    Why not just say that SITRE is a bit, not register? :-)
+> 
+> That's going to be impossible anyway when I'm done with the
+> encapsulation.
 
+Any thoughts on how to fix that code Xen code for that issue?
+
+> 
 > Thanks,
-> Bartlomiej
-
-WBR, Sergei
+> 
+> 	tglx
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
