@@ -1,42 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754388Ab1BHNgM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 08:36:12 -0500
-Received: from mga09.intel.com ([134.134.136.24]:19454 "EHLO mga09.intel.com"
+	id S1754282Ab1BHNiN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 08:38:13 -0500
+Received: from swan.madduck.net ([80.68.90.58]:48192 "EHLO swan.madduck.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753991Ab1BHNgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 08:36:11 -0500
-Message-Id: <b9dded$hsnlfd@orsmga002.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,441,1291622400"; 
-   d="scan'208";a="600561133"
-Date: Tue, 08 Feb 2011 13:36:06 +0000
-To: Jeff Chua <jeff.chua.linux@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: Re: Commit 500f7147cf5bafd139056d521536b10c2bc2e154 breaks _resume_
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <AANLkTi=h+H+N=f4m4pE+RZ4n5h7oxQuwzmK-qmmWAGtL@mail.gmail.com> <s5hfws1whq8.wl%tiwai@suse.de> <AANLkTi=iHL+eVPRPzFXRMBZkXU7nXwkeZQiQUcyqSS-H@mail.gmail.com> <AANLkTikE_Oa=HGhW3zpc_rdeBvOWckpZ6dfFWq=JnL9R@mail.gmail.com> <849307$bf0dak@azsmga001.ch.intel.com> <AANLkTi=Z1fCA1N47YaCh1tn=PCAAboWtNCUyUH-N3yUo@mail.gmail.com> <AANLkTik0eJVr1S5=bCO8kmkwCxYzLE_kh9C3ccpn+mWX@mail.gmail.com> <s5hy65suu7t.wl%tiwai@suse.de> <AANLkTi=KGMJ9vLaLfkzGQrc-F2eB5CRmDX1L5UohPTZ=@mail.gmail.com> <s5htyggusyg.wl%tiwai@suse.de> <s5htyggi21m.wl%tiwai@suse.de> <AANLkTinv=pfArgT4VFCUeY_bKb4q3KSREvU+L8V5k0G9@mail.gmail.com> <AANLkTim2czZfsbGaG=K-=dV5hENgUOUhjBpWoa+mTjyb@mail.gmail.com>
-From: Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <AANLkTim2czZfsbGaG=K-=dV5hENgUOUhjBpWoa+mTjyb@mail.gmail.com>
+	id S1753987Ab1BHNiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 08:38:12 -0500
+X-Greylist: delayed 477 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Feb 2011 08:38:11 EST
+Date: Tue, 8 Feb 2011 14:30:11 +0100
+From: martin f krafft <madduck@madduck.net>
+To: linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Opteron ECC/ChipKill error
+Message-ID: <20110208133010.GA26487@albatross.oerlikon.madduck.net>
+Mail-Followup-To: linux kernel mailing list <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="vkogqOf2sHV7VnPd"
+Content-Disposition: inline
+X-Motto: Keep the good times rollin'
+X-OS: Debian GNU/Linux 6.0 kernel 2.6.36-trunk-amd64 x86_64
+X-Spamtrap: madduck.bogus@madduck.net
+X-Subliminal-Message: debian/rules!
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 Feb 2011 22:11:29 +0800, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
-> Same issue encountered even after a fresh build.
 
-I've been testing on the same hardware (x201s, 64bit, with and without
-external DP) and I've not encountered the same issue. Every time I look
-at the code, by not setting crtc->active we may incorrectly skip disabling
-an active output after resume. If the output is inactive, then disabling it
-*should* be a no-op, and thus safe. So I am still at a loss to understand
-what fails here and so whether we have a bigger problem on our hands.
+--vkogqOf2sHV7VnPd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Please can you add drm.debug=0xe to your boot parameters (or echo 0xe >
-/sys/module/drm/parameters/debug might just be enough) and attach the
-dmesg whilst resuming. Also attaching the failing Xorg.0.log would be
-useful to rule out any other issues.
--Chris
--- 
-Chris Wilson, Intel Open Source Technology Centre
+Dear list,
+
+I just got to see the following message on my Opteron server:
+
+  kernel: [810137.744689]  Northbridge Error, node 1
+  kernel: [810137.756250] ECC/ChipKill ECC error.
+  kernel: [810137.766975] EDAC amd64 MC1: CE ERROR_ADDRESS=3D 0x26bdd40f0
+  kernel: [810137.766982] EDAC MC1: CE page 0x26bdd4, offset 0xf0, grain 0,=
+ syndrome 0xe1e2, row 6, channel 1, label "": amd64_edac
+
+Is there any way to deduce from these data the actual
+culprit/component to replace?
+
+Thanks,
+
+--=20
+martin | http://madduck.net/ | http://two.sentenc.es/
+=20
+"a cigarette is the perfect type of pleasure.
+ it is exquisite, and it leaves one unsatisfied."
+                                                        -- oscar wilde
+=20
+spamtraps: madduck.bogus@madduck.net
+
+--vkogqOf2sHV7VnPd
+Content-Type: application/pgp-signature; name="digital_signature_gpg.asc"
+Content-Description: Digital signature (see http://martin-krafft.net/gpg/sig-policy/999bbcc4/current)
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQLvBAEBCgDZBQJNUUViwBEaaHR0cDovL21hcnRpbi1rcmFmZnQubmV0L2dwZy9z
+aWctcG9saWN5LzU1Yzk4ODJkOTk5YmJjYzQvMjAxMTAxMjQxMTI1P3NoYTUxMnN1
+bT0xY2FkOTZmZDI3ZDMyMzNmNTNlMjI4NDk1MzM2NDgxMDdlNWVlOGQ1YmU2NTUy
+NTFkNzRjOGYxYzVjM2JjNDJmMjMwNGZhNTE1MTUwZjdiZDRkZDA1ZTk4MTk5MjRm
+MDQ5NTEzZWU5OTYyY2E3MTcwOWY4MWQ5NDUxNTg1MmJkOAAKCRBVyYgtmZu8xNo3
+D/9PHKWUkBVlsKuOYMCSXcOw53Vtx6VnsZqSzORgYuUjGe6qMG2jnEyMexrkBAL+
+D8rOeobQ40LNWIZMQuIs5F++JfaOsTHzJpLvIyKaM605Osf7MarMQo4jG8BnwWfV
+1ejUbP/eU/3gDp9u9vX22mCNVpR3a9tlnbKU+3h8XTmODJKLqmUjelaP0yV21NB5
+d2IuPvcnvGWrZjNnRQM+0tQJ3MTmfsPDQVMibY1qFAtsqKlcLPURCoSouZAMFLxT
+yzu/TnEADZSuLXyhcnYj8XccjQjtPOfL4xFH1qBZJDKYt9KInqtpc3A2lTXz2VBG
+gR3aN24LTI0FCqrQCiHjHq7riWg25pWZWZleFuZVDkUXgyt7i2EzIAzu/3nPTxaq
+q9JkfSoZTMAuhphBE6ktEqN9xINXxEGWosKk9VqURp/d/izGVHaHGXp1caTxKkII
+4h8CadrZtNNe/Hig8miod8GuVdG6+PDG9iLPLuZiRPYuQilW3Q6FhBGYrtZCxgZn
+ja9g6hRs7V32T6iL45l8Pmsv5dUqm5/pYDkCvN0eEM3z6Ku84A8wrMzUDgnQ1K7w
+aVywj/yldbo+RQudBGbdFQnvH9mOhiD9hx606O7MaLM/wiRDw3qATK7LGNKiC5LZ
+w/JhKDiPXLuh3FHqY77qzUHm31UBX7MTOaqfT9J82sqpcg==
+=ILzk
+-----END PGP SIGNATURE-----
+
+--vkogqOf2sHV7VnPd--
+
