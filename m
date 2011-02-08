@@ -1,102 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755520Ab1BHSvF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 13:51:05 -0500
-Received: from xenotime.net ([72.52.115.56]:55858 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755413Ab1BHSvD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 13:51:03 -0500
-Date: Tue, 8 Feb 2011 10:50:58 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: "Ahmed S. Darwish" <darwish.07@gmail.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Simon Horman <horms@verge.net.au>,
-        Haren Myneni <hbabu@us.ibm.com>,
-        Eric Biederman <ebiederm@xmission.com>, kexec@lists.infradead.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org
-Subject: Re: [PATCH v3 -next] Documentation: Improve crashkernel=
- description
-Message-Id: <20110208105058.0cc7da2d.rdunlap@xenotime.net>
-In-Reply-To: <20110207160127.GA25828@laptop>
-References: <20110206154108.GA16542@laptop>
-	<20110206215733.GB26233@verge.net.au>
-	<20110206201448.4a259575.rdunlap@xenotime.net>
-	<20110207113054.GA10388@laptop>
-	<20110207142550.GA7437@redhat.com>
-	<20110207160127.GA25828@laptop>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755491Ab1BHTGP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 14:06:15 -0500
+Received: from www.tglx.de ([62.245.132.106]:44277 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755310Ab1BHTGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 14:06:14 -0500
+Date: Tue, 8 Feb 2011 20:05:56 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+cc: Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 0/4] XEN: Interrupt cleanups
+In-Reply-To: <20110208183937.GD4606@dumpdata.com>
+Message-ID: <alpine.LFD.2.00.1102082003560.31804@localhost6.localdomain6>
+References: <20110205200108.921707839@linutronix.de> <4D50641B.2090006@goop.org> <alpine.LFD.2.00.1102072231220.31804@localhost6.localdomain6> <4D506AE6.6080900@goop.org> <1297173811.9388.95.camel@zakaz.uk.xensource.com> <alpine.LFD.2.00.1102081544290.31804@localhost6.localdomain6>
+ <1297177506.9388.135.camel@zakaz.uk.xensource.com> <alpine.LFD.2.00.1102081619410.31804@localhost6.localdomain6> <20110208162045.GB4606@dumpdata.com> <alpine.LFD.2.00.1102081829330.31804@localhost6.localdomain6> <20110208183937.GD4606@dumpdata.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 Feb 2011 18:01:27 +0200 Ahmed S. Darwish wrote:
+On Tue, 8 Feb 2011, Konrad Rzeszutek Wilk wrote:
+> Aaaaah. I somehow thought the problems were with code proposed for
+> 2.6.39, but you are referring to: "xen: events: do not unmask event channels
+> on resume" (6903591f314b8947d0e362bda7715e90eb9df75e) which was added way
+> back in November (post 2.6.37 time-frame) - and is already in Linus tree.
 
-> On Mon, Feb 07, 2011 at 09:25:50AM -0500, Vivek Goyal wrote:
-> > On Mon, Feb 07, 2011 at 01:30:54PM +0200, Ahmed S. Darwish wrote:
-> > > 
-> > > Had to explore two C code files to make sense of the 'crashkernel='
-> > > kernel parameter values.  Improve the situation.
-> > > 
-> > 
-> > Did you look at Documentation/kdump/kdump.txt before looking into the
-> > code. I thought kdump.txt explained the meaning of crashkernel= well.
-> > 
-> > In case if it was not obivious that for further details look into
-> > kdump.txt, I will suggest to add a line asking reader to look into
-> > kdump.txt for more details.
-> > 
+Ah, right. I was looking at 2.6.37 plain + pending irq changes and next :)
+ 
+> > That's going to be impossible anyway when I'm done with the
+> > encapsulation.
 > 
-> Yes, I jumped to the code first :-) Here's a new patch with the link:
-> 
-> (Also applicable over latest -rc3)
-> 
-> ==>
-> 
-> Complete the crashkernel= kernel parameter documentation.
-> 
-> Signed-off-by: Ahmed S. Darwish <darwish.07@gmail.com>
-> ---
-> 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 89835a4..050b0e5 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -545,16 +545,20 @@ and is between 256 and 4096 characters. It is defined in the file
->  			Format:
->  			<first_slot>,<last_slot>,<port>,<enum_bit>[,<debug>]
->  
-> -	crashkernel=nn[KMG]@ss[KMG]
-> -			[KNL] Reserve a chunk of physical memory to
-> -			hold a kernel to switch to with kexec on panic.
-> +	crashkernel=size[KMG][@offset[KMG]]
-> +			[KNL] Using kexec, Linux can switch to a 'crash kernel'
-> +			upon panic. This parameter reserves the physical
-> +			memory region [offset, offset + size] for that kernel
-> +			image. If '@offset' is omitted, then a suitable offset
-> +			is selected automatically. Check
-> +			Documentation/kdump/kdump.txt for further details.
->  
->  	crashkernel=range1:size1[,range2:size2,...][@offset]
->  			[KNL] Same as above, but depends on the memory
->  			in the running system. The syntax of range is
->  			start-[end] where start and end are both
->  			a memory unit (amount[KMG]). See also
-> -			Documentation/kdump/kdump.txt for a example.
-> +			Documentation/kdump/kdump.txt for an example.
->  
->  	cs89x0_dma=	[HW,NET]
->  			Format: <dma>
-> 
-> 
-> > 
-> > Acked-by: Vivek Goyal <vgoyal@redhat.com>
+> Any thoughts on how to fix that code Xen code for that issue?
 
+That's what the patch you pulled and Ian tested is about. It does the
+unmask in the core code when that IRQF_FORCE_RESUME flag is set.
 
-Applied v3, along with your KMG info patch.  Thanks.
+Thanks,
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+	tglx
