@@ -1,42 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754322Ab1BHNfu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 08:35:50 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48235 "EHLO
-	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753887Ab1BHNfs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 08:35:48 -0500
-Date: Tue, 8 Feb 2011 13:39:22 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/20] pata_efar: always program master_data before
- slave_data
-Message-ID: <20110208133922.6cf8142e@lxorguk.ukuu.org.uk>
-In-Reply-To: <AANLkTimYbC+zgnct9j75WNR7f4M4m2=hYvODUm9mc-3W@mail.gmail.com>
-References: <20110208122314.19110.4092.sendpatchset@linux-mhg7.site>
-	<20110208122409.19110.4233.sendpatchset@linux-mhg7.site>
-	<20110208130701.19709cc6@lxorguk.ukuu.org.uk>
-	<AANLkTimAioh_xu0qoQCndSWDAYJ4bpWv01NZn_bZ9g2a@mail.gmail.com>
-	<20110208132518.300bb098@lxorguk.ukuu.org.uk>
-	<AANLkTimYbC+zgnct9j75WNR7f4M4m2=hYvODUm9mc-3W@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-14
-Content-Transfer-Encoding: 8BIT
+	id S1754388Ab1BHNgM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 08:36:12 -0500
+Received: from mga09.intel.com ([134.134.136.24]:19454 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753991Ab1BHNgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 08:36:11 -0500
+Message-Id: <b9dded$hsnlfd@orsmga002.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,441,1291622400"; 
+   d="scan'208";a="600561133"
+Date: Tue, 08 Feb 2011 13:36:06 +0000
+To: Jeff Chua <jeff.chua.linux@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Subject: Re: Commit 500f7147cf5bafd139056d521536b10c2bc2e154 breaks _resume_
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <AANLkTi=h+H+N=f4m4pE+RZ4n5h7oxQuwzmK-qmmWAGtL@mail.gmail.com> <s5hfws1whq8.wl%tiwai@suse.de> <AANLkTi=iHL+eVPRPzFXRMBZkXU7nXwkeZQiQUcyqSS-H@mail.gmail.com> <AANLkTikE_Oa=HGhW3zpc_rdeBvOWckpZ6dfFWq=JnL9R@mail.gmail.com> <849307$bf0dak@azsmga001.ch.intel.com> <AANLkTi=Z1fCA1N47YaCh1tn=PCAAboWtNCUyUH-N3yUo@mail.gmail.com> <AANLkTik0eJVr1S5=bCO8kmkwCxYzLE_kh9C3ccpn+mWX@mail.gmail.com> <s5hy65suu7t.wl%tiwai@suse.de> <AANLkTi=KGMJ9vLaLfkzGQrc-F2eB5CRmDX1L5UohPTZ=@mail.gmail.com> <s5htyggusyg.wl%tiwai@suse.de> <s5htyggi21m.wl%tiwai@suse.de> <AANLkTinv=pfArgT4VFCUeY_bKb4q3KSREvU+L8V5k0G9@mail.gmail.com> <AANLkTim2czZfsbGaG=K-=dV5hENgUOUhjBpWoa+mTjyb@mail.gmail.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <AANLkTim2czZfsbGaG=K-=dV5hENgUOUhjBpWoa+mTjyb@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > That sounds like someone quoting religion. Documentation cite please.
-> 
-> s/religion/common sense/
+On Mon, 7 Feb 2011 22:11:29 +0800, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+> Same issue encountered even after a fresh build.
 
-Anyone who programs ATA controllers on the basis of common sense rather
-than documentation, errata sheets and actually testing rather than
-speculating is naïve. In the case of ATA more so than most hardware.
+I've been testing on the same hardware (x201s, 64bit, with and without
+external DP) and I've not encountered the same issue. Every time I look
+at the code, by not setting crtc->active we may incorrectly skip disabling
+an active output after resume. If the output is inactive, then disabling it
+*should* be a no-op, and thus safe. So I am still at a loss to understand
+what fails here and so whether we have a bigger problem on our hands.
 
-Stil waiting a documentation cite for your otherwise gratuitious and
-untested change
+Please can you add drm.debug=0xe to your boot parameters (or echo 0xe >
+/sys/module/drm/parameters/debug might just be enough) and attach the
+dmesg whilst resuming. Also attaching the failing Xorg.0.log would be
+useful to rule out any other issues.
+-Chris
+-- 
+Chris Wilson, Intel Open Source Technology Centre
