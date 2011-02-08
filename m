@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188Ab1BHRDK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 12:03:10 -0500
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:56761 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754689Ab1BHRDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 12:03:08 -0500
-Subject: Re: [PATCH v2] flex_array: Change behaviour on zero size
- allocations
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Eric Paris <eparis@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-In-Reply-To: <20110207122903.GO3070@secunet.com>
-References: <20110207122903.GO3070@secunet.com>
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Tue, 08 Feb 2011 09:02:41 -0800
-Message-ID: <1297184561.6737.12074.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755151Ab1BHRHp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 12:07:45 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:63841 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754705Ab1BHRHo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 12:07:44 -0500
+Message-ID: <4D5178B3.4050900@metafoo.de>
+Date: Tue, 08 Feb 2011 18:09:07 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20101226 Icedove/3.0.11
+MIME-Version: 1.0
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+CC: Grazvydas Ignotas <notasas@gmail.com>,
+        Rodolfo Giometti <giometti@linux.it>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/14] POWER: BQ27x00: New Properties, fixes, bq27000
+ support
+References: <1296953291-10373-1-git-send-email-lars@metafoo.de> <AANLkTimN1ACy=rREGhvAqTwfywHb7_Td7ZeKosQc9txC@mail.gmail.com> <4D4F4B18.6030502@metafoo.de> <AANLkTimgejf7D9LWyxa=W7Hc4MTWEotMnr7h2SC9iPCQ@mail.gmail.com> <4D516BBB.5090506@metafoo.de> <20110208162802.GA29842@oksana.dev.rtsoft.ru>
+In-Reply-To: <20110208162802.GA29842@oksana.dev.rtsoft.ru>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-02-07 at 13:29 +0100, Steffen Klassert wrote:
->  int flex_array_prealloc(struct flex_array *fa, unsigned int start,
-> -                       unsigned int end, gfp_t flags)
-> +                       unsigned int nr_elements, gfp_t flags)
->  {
->         int start_part;
->         int end_part;
->         int part_nr;
-> +       unsigned int end;
->         struct flex_array_part *part;
+On 02/08/2011 05:28 PM, Anton Vorontsov wrote:
+> On Tue, Feb 08, 2011 at 05:13:47PM +0100, Lars-Peter Clausen wrote:
+>> On 02/08/2011 12:40 PM, Grazvydas Ignotas wrote:
+>>> That works. However I wonder about the delay, I've experimentally
+>>> determined that bq27500 refreshes in about a second, so before this
+>>> series I could for example run 'watch -n 1 cat current_now' and see
+>>> current changes almost in realtime (when toggling backlight, for
+>>> example). Maybe we could have different cache timeout for different
+>>> chips or have quickly changing properties (like current and voltage)
+>>> bypass the cache.
+>>
+>> Looking at the datasheet confirms that the bq27500 updates the current register
+>> every second. The bq27000 updates it only every 5.12 seconds.
+>> I think reducing the the cache time for bq27500 to 1 second would render the
+>> cache mostly useless, but maybe it makes sense to bypass the cache for voltage
+>> and current on the bq27500.
 > 
-> -       if (start >= fa->total_nr_elements || end >= fa->total_nr_elements)
-> +       if (!fa->total_nr_elements && !start)
-> +               return 0;
-> +       if (start >= fa->total_nr_elements)
-> +               return -ENOSPC;
-> +       if (!nr_elements)
-> +               return 0;
-> +
-> +       end = start + nr_elements - 1;
-> +
-> +       if (end >= fa->total_nr_elements)
->                 return -ENOSPC;
-> +       if (!fa->element_size)
-> +               return 0; 
+> Nope, it's not useless. I.e. for `cat /sys/class/power_supply/*/*`.
+> Actually, it was only the purpose for caching the battery values.
+> 
+> So, 1 second is OK.
 
-The rest of this patch looks good.  When you resend, you need to break
-this up in to at least two patches: one to change 'end' to
-'nr_elements' (or something else) and the one to handle zero-sized
-elements and arrays.
+Yes, the purpose of the register cache was that registers aren't read multiple
+times if multiple properties are queried at once. Which is what I consider the
+standard use case, since this is what a power monitor application would
+normally do.
+The other use case is constantly monitor a single property like CURRENT_NOW.
+Since we would now read all properties instead of just one and would increase
+the load on the bus by 12 times.
 
-I also think we need to remove the ability to do zero-sized elements.
-Unless there's some new code that I'm missing, I don't see any of the
-existing security policy code which would be able to do that.
+The other purpose of the register cache was to be able to tell whether
+registers have changed when polling the battery. Since we already ignore the
+*_NOW properties when comparing the the old and the new state it would make
+sense to bypass the cache completely for them.
+This would reduce the load when monitoring such a property and it would also
+reduce the load when polling the battery since we would only read 8 instead of
+12 registers.
 
--- Dave
+> 
+> p.s. Lars, on the next resend, can you please remove "POWER:"
+> prefix from the patch description line, bound the commit message
+> width to 76 symbols, and add all the collected Acked-by lines.
+> That way I can just pull your tree.
+
+Sure.
+
+- Lars
 
