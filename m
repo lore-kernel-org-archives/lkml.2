@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755726Ab1BHTll (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 14:41:41 -0500
-Received: from miraculix-out.informatik.uni-kiel.de ([134.245.248.209]:59692
-	"EHLO miraculix.informatik.uni-kiel.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755237Ab1BHTlk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 14:41:40 -0500
-From: Timo von Holtz <tvh@informatik.uni-kiel.de>
-To: gregkh@suse.de
-Cc: error27@gmail.com, hjk@linutronix.de, jkosina@suse.cz,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Timo von Holtz <tvh@informatik.uni-kiel.de>
-Subject: [PATCH] Staging: quickstart: fixed coding style issues
-Date: Tue,  8 Feb 2011 20:41:19 +0100
-Message-Id: <1297194079-4336-1-git-send-email-tvh@informatik.uni-kiel.de>
-X-Mailer: git-send-email 1.7.4
-X-Null-Tag: a9c3fde13fa093d9f1e2af689d4b1059
-X-Authenticated-Sender: user tvh from 86.103.149.108
+	id S1755435Ab1BHToR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 14:44:17 -0500
+Received: from mga11.intel.com ([192.55.52.93]:26453 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754212Ab1BHToQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 14:44:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.60,443,1291622400"; 
+   d="scan'208";a="655728058"
+Message-ID: <45773.10.23.16.85.1297194256.squirrel@linux.intel.com>
+In-Reply-To: <20110208193857.GA8839@infradead.org>
+References: <james_p_freyensee@linux.intel.com>
+    <1297193697-5417-1-git-send-email-james_p_freyensee@linux.intel.com>
+    <1297193697-5417-2-git-send-email-james_p_freyensee@linux.intel.com>
+    <20110208193857.GA8839@infradead.org>
+Date: Tue, 8 Feb 2011 11:44:16 -0800 (PST)
+Subject: Re: [PATCH 01/12] export kernel call get_task_comm()
+From: james_p_freyensee@linux.intel.com
+To: "Christoph Hellwig" <hch@infradead.org>
+Cc: james_p_freyensee@linux.intel.com, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, suhail.ahmed@intel.com
+User-Agent: SquirrelMail/1.4.8-5.el4.centos.8
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed the Following coding Style Issues:
-drivers/staging/quickstart/quickstart.c:8: ERROR: trailing whitespace
-drivers/staging/quickstart/quickstart.c:144: ERROR: spaces required around that '?' (ctx:VxV)
-drivers/staging/quickstart/quickstart.c:144: ERROR: spaces required around that ':' (ctx:VxV)
+> On Tue, Feb 08, 2011 at 11:34:46AM -0800,
+> james_p_freyensee@linux.intel.com wrote:
+>> From: J Freyensee <james_p_freyensee@linux.intel.com>
+>>
+>> This allows drivers who call this function to be compiled modularly.
+>> Otherwise, a driver who is interested in this type of functionality
+>> has to implement their own.
+>
+> NAK.
+>
+> From current you can just dereference current->comm, and access from
+> other threads from drivers is a bad idea.
+>
+>
 
-Signed-off-by: Timo von Holtz <tvh@informatik.uni-kiel.de>
----
- drivers/staging/quickstart/quickstart.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/staging/quickstart/quickstart.c b/drivers/staging/quickstart/quickstart.c
-index d83bec8..c60911c 100644
---- a/drivers/staging/quickstart/quickstart.c
-+++ b/drivers/staging/quickstart/quickstart.c
-@@ -5,7 +5,7 @@
-  *  Copyright (C) 2007-2010 Angelo Arrifano <miknix@gmail.com>
-  *
-  *  Information gathered from disassebled dsdt and from here:
-- *  <http://www.microsoft.com/whdc/system/platform/firmware/DirAppLaunch.mspx> 
-+ *  <http://www.microsoft.com/whdc/system/platform/firmware/DirAppLaunch.mspx>
-  *
-  *  This program is free software; you can redistribute it and/or modify
-  *  it under the terms of the GNU General Public License as published by
-@@ -141,7 +141,8 @@ static ssize_t pressed_button_show(struct device *dev,
- 					char *buf)
- {
- 	return snprintf(buf, PAGE_SIZE, "%s\n",
--		(quickstart_data.pressed?quickstart_data.pressed->name:"none"));
-+			(quickstart_data.pressed ?
-+			 quickstart_data.pressed->name : "none"));
- }
- 
- 
--- 
-1.7.4
+That is originally what I did, but after talking with Greg KH, Arjan vdv,
+and Alan Cox I made this patch instead.
 
