@@ -1,163 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753761Ab1BIT7X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 14:59:23 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62367 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753572Ab1BIT7V (ORCPT
+	id S1753673Ab1BIUCn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 15:02:43 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:50545 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab1BIUCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 14:59:21 -0500
-Message-ID: <4D52F1BF.3090006@ru.mvista.com>
-Date: Wed, 09 Feb 2011 22:57:51 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
-MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ata: add CONFIG_SATA_HOST config option
-References: <201102091514.31355.bzolnier@gmail.com>
-In-Reply-To: <201102091514.31355.bzolnier@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 9 Feb 2011 15:02:42 -0500
+Subject: Re: Linux 2.6.38-rc4 (target_core: rmmod GP fault)
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        James Bottomley <James.Bottomley@suse.de>,
+        scsi <linux-scsi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTikvGppAi1JCGY1vjAugzpk3g5rDriBjc8k6M9Qg@mail.gmail.com>
+References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com>
+	 <20110209092851.bba6c40c.randy.dunlap@oracle.com>
+	 <AANLkTikvGppAi1JCGY1vjAugzpk3g5rDriBjc8k6M9Qg@mail.gmail.com>
+Content-Type: text/plain
+Date: Wed, 09 Feb 2011 12:02:24 -0800
+Message-Id: <1297281744.18212.44.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Wed, 2011-02-09 at 11:00 -0800, Linus Torvalds wrote:
+> On Wed, Feb 9, 2011 at 9:28 AM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> > x86_64, nearly allmodconfig.  No target hardware.
+> >
+> >
+> > [  144.508473] general protection fault: 0000 [#1] SMP DEBUG_PAGEALLOC
+> > [  144.509901] last sysfs file: /sys/devices/pci0000:00/0000:00:1d.1/usb6/6-1/6-1.3/devnum
+> > [  144.512026] CPU 1
+> > [  144.512026]
+> > [  144.512026] Pid: 2597, comm: rmmod Not tainted 2.6.38-rc4 #1 0TY565/OptiPlex 745
+> > [  144.512026] RIP: 0010:[<ffffffff810c3e5f>]  [<ffffffff810c3e5f>] __lock_acquire+0xd8/0x4e8
+> > [  144.512026] RSP: 0018:ffff88006df1bb78  EFLAGS: 00010006
+> > [  144.512026] RAX: 0000000000000002 RBX: 6b6b6b6b6b6b6be3 RCX: 0000000000000000
+> 
+> The code disassembles to
+> 
+>    0:	8d 01                	lea    (%rcx),%eax
+>    2:	e8 6c b1 fb ff       	callq  0xfffffffffffbb173
+>    7:	48 ff 05 8b 32 8d 01 	incq   0x18d328b(%rip)        # 0x18d3299
+>    e:	48 ff 05 8c 32 8d 01 	incq   0x18d328c(%rip)        # 0x18d32a1
+>   15:	48 ff 05 95 32 8d 01 	incq   0x18d3295(%rip)        # 0x18d32b1
+>   1c:	e9 e3 03 00 00       	jmpq   0x404
+>   21:	48 ff 05 81 32 8d 01 	incq   0x18d3281(%rip)        # 0x18d32a9
+>   28:*	48 81 3b 40 5f 26 82 	cmpq   $0xffffffff82265f40,(%rbx)     <--
+> trapping instruction
+>   2f:	75 07                	jne    0x38
+>   31:	48 ff 05 81 32 8d 01 	incq   0x18d3281(%rip)        # 0x18d32b9
+>   38:	83 fe 01             	cmp    $0x1,%esi
+> 
+> and %rbx (and %rdi) contains the poison pattern for free'd memory (0x6b6b6b..).
+> 
+> > [  144.512026] Process rmmod (pid: 2597, threadinfo ffff88006df1a000, task ffff88006dec3000)
+> 
+> .. and that's likely not a very commonly tested case.
+> 
+> > [  144.512026]  [<ffffffffa06ace26>] configfs_unregister_subsystem+0x105/0x194 [configfs]
+> > [  144.512026]  [<ffffffffa06baf55>] target_core_exit_configfs+0x185/0x1eb [target_core_mod]
+> > [  144.512026]  [<ffffffff810d46a8>] sys_delete_module+0x2d6/0x368
+> 
+> The target_core_exit_configfs() code looks _very_ broken. It looks
+> broken for two reasons:
+> 
+>  - it's very different from the cleanup code for the "failed to init"
+> case in target_core_init_configfs, which does a lot less (see the
+> "out:" code there)
+> 
 
-Bartlomiej Zolnierkiewicz wrote:
+When registering a top level struct configfs_subsystem to appear under
 
-> Add CONFIG_SATA_HOST config option (for selecting SATA Host
-> support) to make setup easier on PATA-only systems.
+	/sys/kernel/config/$SUBSYSTEM
 
-> Additionally this allows us to save ~9.5k of the output code
-> size (x86-64) on such systems:
+the releasing of the top-level default group via
+configfs_unregister_subsystem() during a failure in
+target_core_init_configfs() is done for us, but we are still missing the
+extra config_item_put()'s on the sub top-level groups (Joel, please
+correct me)
 
->    text    data     bss     dec     hex filename
->   49909    6576      57   56542    dcde drivers/ata/libata-core.o.before
->   31862      16       2   31880    7c88 drivers/ata/libata-eh.o.before
->   20256       0      19   20275    4f33 drivers/ata/libata-sff.o.before
->   44495    6576      57   51128    c7b8 drivers/ata/libata-core.o.after
->   27831      16       2   27849    6cc9 drivers/ata/libata-eh.o.after
->   20144       0      19   20163    4ec3 drivers/ata/libata-sff.o.after
+The original 'out:' failure path code does not call config_item_put() on
+these default groups, because config_group_init_type_name() has only
+initialized struct config_group until configfs_register_subsystem() is
+called to register the top level struct config_subsystem.
 
-    Good job!
+With the current 'out:' path being broken, to address the first point I
+think moving the following code chunk in target_core_init_configfs to
+before the configfs_register_subsystem() would make sense so that
+configfs_register_subsystem() will fail last:
 
-> Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-> ---
-> I also wonder if  SATA code should be moved to libata-sata.c (to avoid ifdefs)?
+        /*
+         * Register built-in RAMDISK subsystem logic for virtual LUN 0
+         */
+        ret = rd_module_init();
+        if (ret < 0)
+                goto out;
 
->  drivers/ata/Kconfig       |   25 ++++++++--
->  drivers/ata/libata-core.c |  107 +++++++++++++++++++++++++++++++++++++++-------
->  drivers/ata/libata-eh.c   |   21 ++++++++-
->  drivers/ata/libata-sff.c  |    8 +++
->  4 files changed, 141 insertions(+), 20 deletions(-)
+        if (core_dev_setup_virtual_lun0() < 0)
+                goto out;
 
-> Index: b/drivers/ata/Kconfig
-> ===================================================================
-> --- a/drivers/ata/Kconfig
-> +++ b/drivers/ata/Kconfig
-[...]
-> @@ -122,7 +133,7 @@ comment "SFF controllers with custom DMA
->  
->  config PDC_ADMA
->  	tristate "Pacific Digital ADMA support"
-> -	depends on PCI
-> +	depends on PCI && SATA_HOST
+        return 0;
 
-    I thought ADMA spec. was designed for PATA... are you sure this should 
-depend on CONFIG_SATA_HOST?
+However looking at fs/configfs/dir.c:configfs_register_subsystem(), I
+think the caller is still expected to release any sub top-level struct
+config_group->default_groups[] w/ config_item_put() even though
+unlink_group() is called from the configfs_attach_group() failure path..
+(Joel..?)
 
-> @@ -165,8 +176,6 @@ config ATA_BMDMA
->  
->  if ATA_BMDMA
->  
-> -comment "SATA SFF controllers with BMDMA"
-> -
->  config ATA_PIIX
->  	tristate "Intel ESB, ICH, PIIX3, PIIX4 PATA/SATA support"
->  	depends on PCI
-> @@ -177,6 +186,10 @@ config ATA_PIIX
->  
->  	  If unsure, say N.
->  
-> +if SATA_HOST
-> +
-> +comment "SATA/PATA SFF controllers with BMDMA"
+>  - it seems to do a lot of manual freeing of the
+> "su_group.default_groups" stuff etc, which is all internal configfs
+> stuff, and seems to be used by the register/unregister phases.
+> 
 
-    How it can be "SATA/PATA" if it's only enabled when CONFIG_SATA_HOST=y?
+The specific issue rmmod with SLUB poisioning had been reported by Fubo
+Chen to linux-scsi in the last weeks.  The patch to address the proper
+release of the top-level + sub top-level struct configfs_subsystem's
+default_groups in target_core_exit_configfs() has been committed into
+the upstream tree in lio-core-2.6.git/linus-38-rc3 and sent out to
+linux-scsi here:
 
-> Index: b/drivers/ata/libata-core.c
-> ===================================================================
-> --- a/drivers/ata/libata-core.c
-> +++ b/drivers/ata/libata-core.c
-[...]
-> @@ -601,6 +609,9 @@ void ata_tf_from_fis(const u8 *fis, stru
->  	tf->nsect	= fis[12];
->  	tf->hob_nsect	= fis[13];
->  }
-> +#else
-> +void ata_tf_from_fis(const u8 *fis, struct ata_taskfile *tf) { }
-> +#endif
+[PATCH] target: Fix top-level configfs_subsystem default_group shutdown breakage
+http://marc.info/?l=linux-scsi&m=129662389218924&w=2
 
-    Is it really ever called by non-SATA code? Ah, it's exported at end of file 
-and so should be defined... isn't it better to carry over the export from the 
-bottom of the file (and thus silence one of checkpatch.pl's warnings :-).
+> So somebody show knows configfs better should really check that
+> cleanup, but it looks like target-core is just totally broken for the
+> rmmod case.
+> 
+> Added more people to the cc. Nicholas, Joel and James. Guys: please
+> check the insmod/rmmod case with
+>  (a) spinlock debugging and lockdep enabled
+>  (b) SLUB poisoning enabled.
+> ie all of these should be on:
+> 
+>   CONFIG_SLUB_DEBUG_ON=y
+>   CONFIG_DEBUG_SPINLOCK=y
+>   CONFIG_DEBUG_MUTEXES=y
+>   CONFIG_DEBUG_LOCK_ALLOC=y
+>   CONFIG_PROVE_LOCKING=y
+>   CONFIG_LOCKDEP=y
+>   CONFIG_DEBUG_LOCKDEP=y
+>   CONFIG_TRACE_IRQFLAGS=y
+>   CONFIG_DEBUG_SPINLOCK_SLEEP=y
+>   CONFIG_STACKTRACE=y
+> 
+> and you might also want to add CONFIG_DEBUG_PAGEALLOC to the mix.
+> 
 
-> @@ -2690,6 +2718,7 @@ struct ata_device *ata_dev_pair(struct a
->  	return pair;
->  }
->  
-> +#ifdef CONFIG_SATA_HOST
->  /**
->   *	sata_down_spd_limit - adjust SATA spd limit downward
->   *	@link: Link to adjust SATA spd limit for
-> @@ -2843,6 +2872,18 @@ int sata_set_spd(struct ata_link *link)
->  
->  	return 1;
->  }
-> +#else
-[...]
-> +int sata_set_spd(struct ata_link *link)
-> +{
-> +	return 0;
-> +}
+<nod>  I believe the above patch resolves the specific rmmod issue.
+However, during SLUB poisioning testing we also came across errors with
+the incorrect use of struct config_item_operations->release() in
+target_core_configfs.c and target_core_fabric_configfs.c code.  The
+series to address these was included in the last series to James here:
 
-    Again, I don't think that's called by non-SATA code...
+[PATCH 00/12] target: Updates for .38-rc4
+http://marc.info/?l=linux-scsi&m=129680191624837&w=2
 
-> +#endif
-> +EXPORT_SYMBOL_GPL(sata_set_spd);
+Note that this series for-38 mainline needs to be applied on top of the
+original update series after the drivers/target/ mainline merge:
 
-    Here you're carrying over the export...
+[PATCH 00/24] target updates for .38-rc3 (v2)
+http://marc.info/?l=linux-scsi&m=129632617326015&w=2
 
-> @@ -3436,6 +3477,7 @@ int ata_wait_after_reset(struct ata_link
->  	return ata_wait_ready(link, deadline, check_ready);
->  }
->  
-> +#ifdef CONFIG_SATA_HOST
->  /**
->   *	sata_link_debounce - debounce SATA phy status
->   *	@link: ATA link to debounce SATA phy status for
-> @@ -3638,6 +3680,26 @@ int sata_link_scr_lpm(struct ata_link *l
->  	ehc->i.serror &= ~SERR_PHYRDY_CHG;
->  	return sata_scr_write(link, SCR_ERROR, SERR_PHYRDY_CHG);
->  }
-> +#else
-> +int sata_link_debounce(struct ata_link *link, const unsigned long *params,
-> +		       unsigned long deadline)
-> +{
-> +	return -EOPNOTSUPP;
-> +}
+The entire series is available from
+     
+   git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-post-merge-2.6.git for-38-rc4
 
-    Again, not called by non-SATA code...
-
-> +int sata_link_resume(struct ata_link *link, const unsigned long *params,
-> +		     unsigned long deadline)
-> +{
-> +	return -EOPNOTSUPP;
-> +}
-
-    This one is not called by non-SATA code now either...
-
-WBR, Sergei
+James, please review + sign-off so we can get these updates into mainline.
 
