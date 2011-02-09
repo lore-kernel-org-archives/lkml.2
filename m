@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197Ab1BIRgJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 12:36:09 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:64414 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754958Ab1BIRgI (ORCPT
+	id S1755247Ab1BIRhs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 12:37:48 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:58154 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754605Ab1BIRhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 12:36:08 -0500
-Message-ID: <4D52D091.1000504@vflare.org>
-Date: Wed, 09 Feb 2011 12:36:17 -0500
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	Wed, 9 Feb 2011 12:37:47 -0500
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: "R. Herbst" <ruediger.herbst@googlemail.com>, linux-kernel@vger.kernel.org,
+        David Miller <davem@davemloft.net>, Matt <jackdachef@gmail.com>,
+        geert@linux-m68k.org
+Subject: Re: Sun GEM PPC32 Bug?
+References: <AANLkTin4ha5tkU_xgxkq7Kr6dG1-C2xR_04kBOrAngLH@mail.gmail.com>
+	<1297056878.14982.65.camel@pasglop> <m2y65qe1ss.fsf@igel.home>
+	<1297210693.14982.329.camel@pasglop>
+X-Yow: I predict that by 1993 everyone will live in and around LAS VEGAS and
+ wear BEATLE HAIRCUTS!
+Date: Wed, 09 Feb 2011 18:37:42 +0100
+In-Reply-To: <1297210693.14982.329.camel@pasglop> (Benjamin Herrenschmidt's
+	message of "Wed, 09 Feb 2011 11:18:13 +1100")
+Message-ID: <m2r5bhw1ll.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2.93 (gnu/linux)
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Minchan Kim <minchan.kim@gmail.com>, gregkh@suse.de,
-        Chris Mason <chris.mason@oracle.com>, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, matthew@wil.cx,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-        Kurt Hackel <kurt.hackel@oracle.com>, npiggin@kernel.dk,
-        riel@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>, mel@csn.ul.ie,
-        kosaki.motohiro@jp.fujitsu.com, sfr@canb.auug.org.au,
-        wfg@mail.ustc.edu.cn, tytso@mit.edu, viro@zeniv.linux.org.uk,
-        hughd@google.com, hannes@cmpxchg.org
-Subject: Re: [PATCH V2 2/3] drivers/staging: zcache: host services and PAM
- services
-References: <AANLkTi=CEXiOdqPZgQZmQwatHqZ_nsnmnVhwpdt=7q3f@mail.gmail.com> <0d1aa13e-be1f-4e21-adf2-f0162c67ede3@default AANLkTimm8o6FnDon=eMTepDaoViU9tjteAYE9kmJhMsx@mail.gmail.com> <5c529b08-cf36-43c7-b368-f3f602faf358@default>
-In-Reply-To: <5c529b08-cf36-43c7-b368-f3f602faf358@default>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/09/2011 11:39 AM, Dan Magenheimer wrote:
->
->
->> From: Minchan Kim [mailto:minchan.kim@gmail.com]
->
->> As I read your comment, I can't find the benefit of zram compared to
->> frontswap.
->
-> Well, I am biased, but I agree that frontswap is a better technical
-> solution than zram. ;-)  But "dynamic-ity" is very important to
-> me and may be less important to others.
->
+Benjamin Herrenschmidt <benh@kernel.crashing.org> writes:
 
+> On Tue, 2011-02-08 at 20:58 +0100, Andreas Schwab wrote:
+>> Benjamin Herrenschmidt <benh@kernel.crashing.org> writes:
+>> 
+>> > What's your machine model (cat /proc/cpuinfo) and what do you do to
+>> > trigger the problem ? I'm trying to reproduce here and so far had
+>> > no success doing so.
+>> 
+>> Just today I saw the same problem on my PowerMac G5, while sending a lot
+>> of data over LAN.
+>
+> This isn't the same problem... this looks like a tx timeout. Or do you
+> have some previous messages you didn't paste indicating that it all
+> started with an RX overflow ? :-)
 
-I agree that frontswap is better than zram when considering swap as the 
-use case - no bio overhead, dynamic resizing. However, zram being a 
-*generic* block-device has some unique cases too like hosting files on 
-/tmp, various caches under /var or any place where a compressed 
-in-memory block device can help.
+No, there was no RX overflow.
 
-So, frontswap and zram have overlapping use case of swap but are not the 
-same.
+Andreas.
 
-Thanks,
-Nitin
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
