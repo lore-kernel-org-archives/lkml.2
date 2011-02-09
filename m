@@ -1,102 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483Ab1BIQRZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 11:17:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24368 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752105Ab1BIQRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 11:17:23 -0500
-Date: Wed, 9 Feb 2011 11:16:55 -0500
-From: Josef Bacik <josef@redhat.com>
-To: Josef Bacik <josef@redhat.com>
-Cc: Dan Rosenberg <drosenberg@vsecurity.com>, chris.mason@oracle.com,
-        security@kernel.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH] btrfs: prevent heap corruption in
-	btrfs_ioctl_space_info()
-Message-ID: <20110209161654.GB2564@localhost.localdomain>
-References: <1297260766.2327.40.camel@dan> <20110209155130.GA2564@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110209155130.GA2564@localhost.localdomain>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1753657Ab1BIQag (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 11:30:36 -0500
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:26755 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752544Ab1BIQaf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 11:30:35 -0500
+X-RZG-AUTH: :O2kGeEG7b/pS1E64W3aniLTNDUcEh+JwjGMyQkjVygg3aAH02IubSkmAm8qJPKJ6clJS
+X-RZG-CLASS-ID: mo00
+Subject: Re: mmap, the language go, problems with the linux kernel
+From: Martin Capitanio <m@capitanio.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, golang-dev <golang-dev@googlegroups.com>,
+        Russ Cox <rsc@golang.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Albert Strasheim <fullung@gmail.com>
+In-Reply-To: <AANLkTim7YVg1BTEjyhYShgZNL3oKu+zFywC7+NgFvT3z@mail.gmail.com>
+References: <1297168678.2190.21.camel@marvin>
+	 <AANLkTim7YVg1BTEjyhYShgZNL3oKu+zFywC7+NgFvT3z@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 09 Feb 2011 17:30:19 +0100
+Message-ID: <1297269019.4888.91.camel@marvin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Feb 09, 2011 at 10:51:33AM -0500, Josef Bacik wrote:
-> On Wed, Feb 09, 2011 at 09:12:46AM -0500, Dan Rosenberg wrote:
-> > Commit bf5fc093c5b625e4259203f1cee7ca73488a5620 refactored
-> > btrfs_ioctl_space_info() and introduced several security issues.
-> > 
-> > space_args.space_slots is an unsigned 64-bit type controlled by a
-> > possibly unprivileged caller.  The comparison as a signed int type
-> > allows providing values that are treated as negative and cause the
-> > subsequent allocation size calculation to wrap, or be truncated to 0.
-> > By providing a size that's truncated to 0, kmalloc() will return
-> > ZERO_SIZE_PTR.  It's also possible to provide a value smaller than the
-> > slot count.  The subsequent loop ignores the allocation size when
-> > copying data in, resulting in a heap overflow or write to ZERO_SIZE_PTR.
-> > 
-> > The fix changes the slot count type and comparison typecast to u64,
-> > which prevents truncation or signedness errors, and also ensures that we
-> > don't copy more data than we've allocated in the subsequent loop.  Note
-> > that zero-size allocations are no longer possible since there is already
-> > an explicit check for space_args.space_slots being 0 and truncation of
-> > this value is no longer an issue.
-> > 
-> > Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+On Tue, 2011-02-08 at 08:23 -0800, Linus Torvalds wrote:
+> On Tue, Feb 8, 2011 at 4:37 AM, martin capitanio <m@capitanio.org> wrote:
+> >
+> > There popped up a serious problem by implementing a fast memory
+> > management for the language go. Maybe some experienced kernel hacker
+> > could join the discussion and help to find the best linux solution for
+> > the "mmap fiasco" problem.
+> >
+> > https://groups.google.com/forum/#!msg/golang-dev/EpUlHQXWykg/LN2o9fV6R3wJ
 > 
-> Reviewed-by: Josef Bacik <josef@redhat.com>
+...
+> And quite frankly, I think your "use a big array" in go is a mistake.
+> You may think it's clever and simple, and that "hey, the OS won't
+> allocate pages we don't touch", but it's still a serious mistake. And
+> it's not a mistake because of RLIMIT_AS - that's just a secondary or
+> tertiary symptom of you being lazy and not doing the right thing.
+...
+
+So, I hope I managed now to put all the involved on the cc list. Here
+are the relevant responses I've got from the other ml. I think
+there is still a confusion what the mmap syscall actually should
+do in the case of PROT_NONE (Data cannot be accessed)
+http://pubs.opengroup.org/onlinepubs/009695399/functions/mmap.html
+
+On Wed, 2011-02-09 at 09:57 -0500, Russ Cox wrote:
+Thanks for posting the LKML response.
+> Most of what Linus says is true but probably not
+> crucial enough to avoid laziness for now.  We can
+> always change the strategy later if it becomes a
+> problem.
 > 
+> The comment about large pages would be the most
+> important reason not to do what we're doing but sounds
+> more like a kernel bug than our fault.  We're being
+> very up front with the kernel about which memory we
+> are and are not using: what we're not using has prot==0.
+> If Linux sees a 16 GB prot==0 mapping and decides to
+> dedicate >0 bytes of memory to backing it, then that's
+> not our problem.
+> 
+> Other tools like Native Client use enormous prot==0
+> mappings.  I doubt Linux would ever make the mistake
+> of giving them real amounts of physical memory.
 
-Argh sorry I take it back, this is wrong, we can have multiple raid types per
-space info, so you need to put the slot_count-- in the inner loop farther down
-to count the actual slots we're adding.  Thanks,
+On Tue, 2011-02-08 at 13:26 +0000, Alan Cox wrote:
+...
+> Linux implements virtual address space limits, and enforces them. The go
+> language stuff wants to allocate huge amounts of virtual space so you
+> need to tell the OS you want to allow it to do crazy stuff, which you can
+> do so. But virtual address space is not free - it has to be tracked and
+> if the application suddenely tries to fill all of it what will happen ?
+> 
+> You'll hit problems if the kernel is running with vm overcommit disabled
+> (as well configured servers do),
+> 
+> There are of course ways and means - you can provide your own mmap to
+> override the libc one for example and manage the address space yourself -
+> within limits by allocating addresses and doing the syscall giving an
+> address request.
+> 
+> You'll be ok I suspect on Linux on x86 but there are platforms with very
+> complicated aliasing rules where the OS tries very hard to map certain
+> things at certain addresses to avoid cache aliasing work and big slow
+> downs. There are good reasons why mmap works the way it does.
+...
 
-Signed-off-by: Josef Bacik <josef@redhat.com>
+On Wed, 2011-02-09 at 07:26 -0800, Albert Strasheim wrote:
+> I'm a bit concerned about Alan Cox's comment:
+> 
+> "You'll hit problems if the kernel is running with vm overcommit
+> disabled (as well configured servers do)."
+> 
+> We are planning to do exactly that, on a server that will be running
+> many, many Go processes.
+> 
+> But maybe virtual memory with prot==0 doesn't factor into the
+> overcommit accounting?
+...
 
-diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
-index b72520b..89bfd41 100644
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -2203,7 +2203,7 @@ long btrfs_ioctl_space_info(struct btrfs_root *root, void __user *arg)
- 	int num_types = 4;
- 	int alloc_size;
- 	int ret = 0;
--	int slot_count = 0;
-+	u64 slot_count = 0;
- 	int i, c;
- 
- 	if (copy_from_user(&space_args,
-@@ -2242,7 +2242,7 @@ long btrfs_ioctl_space_info(struct btrfs_root *root, void __user *arg)
- 		goto out;
- 	}
- 
--	slot_count = min_t(int, space_args.space_slots, slot_count);
-+	slot_count = min_t(u64, space_args.space_slots, slot_count);
- 
- 	alloc_size = sizeof(*dest) * slot_count;
- 
-@@ -2262,6 +2262,9 @@ long btrfs_ioctl_space_info(struct btrfs_root *root, void __user *arg)
- 	for (i = 0; i < num_types; i++) {
- 		struct btrfs_space_info *tmp;
- 
-+		if (!slot_count)
-+			break;
-+
- 		info = NULL;
- 		rcu_read_lock();
- 		list_for_each_entry_rcu(tmp, &root->fs_info->space_info,
-@@ -2283,7 +2286,10 @@ long btrfs_ioctl_space_info(struct btrfs_root *root, void __user *arg)
- 				memcpy(dest, &space, sizeof(space));
- 				dest++;
- 				space_args.total_spaces++;
-+				slot_count--;
- 			}
-+			if (!slot_count)
-+				break;
- 		}
- 		up_read(&info->groups_sem);
- 	}
+
