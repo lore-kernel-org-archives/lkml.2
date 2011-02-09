@@ -1,94 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903Ab1BII1K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 03:27:10 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:64438 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752824Ab1BII1I convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 03:27:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=Q/KMB51AIDmZRLpinB4NZa7f3xrqy7VUWizSIu2otViKkcH78uUvvKd4SFDJd8O1pf
-         A/UrXBdxbcUe7MgPh4NvSKtpTUZ78JsrOtzfzZc0vgKc3mhZMoqdwQ+uktI75cQvQ4sP
-         tp3vW7KkDJ93jg/IjRGZYKSRy55lFvzEgh47U=
-MIME-Version: 1.0
-In-Reply-To: <20110208163531.GO4384@bicker>
-References: <1296042555-29145-1-git-send-email-marek.belisko@open-nandra.com>
-	<1296042555-29145-4-git-send-email-marek.belisko@open-nandra.com>
-	<20110126130718.GN2721@bicker>
-	<20110126143045.GP2721@bicker>
-	<AANLkTi=ygn3Go7kCYe1fAo6OrKQaVVGaV_=xMgxM=u5s@mail.gmail.com>
-	<20110208163531.GO4384@bicker>
-Date: Wed, 9 Feb 2011 09:27:07 +0100
-Message-ID: <AANLkTikbbawxi01-jK8iQmG0MZwZasHnF1hKZwMZ502Y@mail.gmail.com>
-Subject: Re: [PATCH 4/5] staging: ft1000: Fix coding style in write_blk_fifo() function.
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Dan Carpenter <error27@gmail.com>, Belisko Marek <marek.belisko@gmail.com>,
-        Marek Belisko <marek.belisko@open-nandra.com>, gregkh@suse.de,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1752876Ab1BIIaz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 03:30:55 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:36829 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752555Ab1BIIay convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:5:1>);
+	Wed, 9 Feb 2011 03:30:54 -0500
+Message-Id: <4D525EF00200007800030F0F@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Wed, 09 Feb 2011 08:31:28 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <akpm@linux-foundation.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>
+Cc: "Tim Deegan" <Tim.Deegan@citrix.com>,
+        "Jeremy Fitzhardinge" <jeremy@goop.org>, "Jiri Slaby" <jslaby@suse.cz>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] fix jiffy calculations in calibrate_delay_direct to
+	 handle overflow
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 8, 2011 at 5:35 PM, Dan Carpenter <error27@gmail.com> wrote:
-> On Tue, Feb 08, 2011 at 02:40:49PM +0100, Belisko Marek wrote:
->> On Wed, Jan 26, 2011 at 3:30 PM, Dan Carpenter <error27@gmail.com> wrote:
->> > Also when it does:
->> >        memcpy(ft1000dev->tx_buf, *pUcFile, byte_length);
->> >
->> > That should probably be:
->> >        memcpy(ft1000dev->tx_buf, *pUcFile, word_length * 4);
->> No this shouldn't because before you have additional check:
->> if (byte_length && ((byte_length % 64) == 0))
->>         byte_length += 4;
->>
->> if (byte_length < 64)
->>         byte_length = 68;
->> So in my opinion byte_length should stay.
->
-> Yes.  We make byte_length longer than the caller intended.  The caller
-> knows the size of the source buffer.  We have to pad the length of the
-> other buffer, but we should fill up the last part with zeroes instead
-> of reading past the end of the source buffer.
->
-> (I am not very familiar with the code and I haven't looked outside this
-> function, so I may be wrong).
->
-> Also I really bet that the thing where byte_length can't be a multiple
-> of 64 is bogus.  I've never heard of anything with a requirement like
-> that.
-You're right. Today will make test when remove all opaque code.
-Anyway at the end file position is moved in that way:
-*pUsFile = *pUsFile + (word_length << 1);
-*pUcFile = *pUcFile + (word_length << 2);
+Fixes a hang when booting as dom0 under Xen, when jiffies can be
+quite large by the time the kernel init gets this far.
 
-So short pointer multiplied by 2 and char pointer by 4 with
-word_length. So my assume
-all check and byte_length increasing is not correct (will see what test shows).
->
-> regards,
-> dan carpenter
->
->
->
+Signed-off-by: Tim Deegan <Tim.Deegan@citrix.com>
 
-regards,
+!time_after() -> time_before_eq() as per suggestion from Jiri Slaby.
 
-marek
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
 
--- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
+---
+ init/calibrate.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-icq: 290551086
-web: http://open-nandra.com
+--- 2.6.38-rc4/init/calibrate.c
++++ 2.6.38-rc4-calibrate-jiffy-overflow/init/calibrate.c
+@@ -66,7 +66,7 @@ static unsigned long __cpuinit calibrate
+ 		pre_start = 0;
+ 		read_current_timer(&start);
+ 		start_jiffies = jiffies;
+-		while (jiffies <= (start_jiffies + 1)) {
++		while (time_before_eq(jiffies, start_jiffies + 1)) {
+ 			pre_start = start;
+ 			read_current_timer(&start);
+ 		}
+@@ -74,8 +74,8 @@ static unsigned long __cpuinit calibrate
+ 
+ 		pre_end = 0;
+ 		end = post_start;
+-		while (jiffies <=
+-		       (start_jiffies + 1 + DELAY_CALIBRATION_TICKS)) {
++		while (time_before_eq(jiffies, start_jiffies + 1 +
++					       DELAY_CALIBRATION_TICKS)) {
+ 			pre_end = end;
+ 			read_current_timer(&end);
+ 		}
+
+
+
