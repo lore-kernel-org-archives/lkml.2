@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251Ab1BID0i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 22:26:38 -0500
+	id S1756271Ab1BID0n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 22:26:43 -0500
 Received: from mail-pv0-f174.google.com ([74.125.83.174]:47507 "EHLO
 	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756235Ab1BID0d (ORCPT
+	with ESMTP id S1756235Ab1BID0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 22:26:33 -0500
+	Tue, 8 Feb 2011 22:26:40 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=tZ8fmS15uUfROUl/rYDb33clfDO97iC3elWtHa5/uKoc0ox0tAtyILuFkpI/V4SWTl
-         EJiuphKJjkYfjpy3mQtLSZ4nh1tOWUkhljAal8WGGLV0gkHC3kADGe5M1XmSk2hgPV2e
-         tAoT+IPK+wkbOSt/+aeVfC+NT+m/nQ2tvbat8=
+        b=u7qQ5WG1J1uj5mgo7dnjLrLiFr2iop+mNQegli7JijqF3eAVzES81Oy7SVVMaEM8OA
+         6Wse+roSQPQecvNznpuxv2qC1mX26czxMqiT0fFVe0Lm60lR4gKqZc6419oBj7iKNhbL
+         U/bDeyLIHdJRthm7gi+C/Xy+hFsT0jKFA0H6o=
 From: Charles Manning <cdhmanning@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         ryan@bluewatersys.com, akpm@linux-foundation.org
 Cc: Charles Manning <cdhmanning@gmail.com>
-Subject: [PATCH 01/10] Add yaffs2 file system: allocators, bitmap and block handling
-Date: Wed,  9 Feb 2011 16:25:59 +1300
-Message-Id: <1297221968-6747-2-git-send-email-cdhmanning@gmail.com>
+Subject: [PATCH 03/10] Add yaffs2 file system: checkpoint streaming
+Date: Wed,  9 Feb 2011 16:26:01 +1300
+Message-Id: <1297221968-6747-4-git-send-email-cdhmanning@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1297221968-6747-1-git-send-email-cdhmanning@gmail.com>
 References: <1297221968-6747-1-git-send-email-cdhmanning@gmail.com>
@@ -29,24 +29,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Charles Manning <cdhmanning@gmail.com>
 ---
- fs/yaffs2/yaffs_allocator.c    |  357 ++++++++++++++++++++++++++++++++++++++++
- fs/yaffs2/yaffs_allocator.h    |   30 ++++
- fs/yaffs2/yaffs_bitmap.c       |   97 +++++++++++
- fs/yaffs2/yaffs_bitmap.h       |   33 ++++
- fs/yaffs2/yaffs_getblockinfo.h |   35 ++++
- 5 files changed, 552 insertions(+), 0 deletions(-)
- create mode 100644 fs/yaffs2/yaffs_allocator.c
- create mode 100644 fs/yaffs2/yaffs_allocator.h
- create mode 100644 fs/yaffs2/yaffs_bitmap.c
- create mode 100644 fs/yaffs2/yaffs_bitmap.h
- create mode 100644 fs/yaffs2/yaffs_getblockinfo.h
+ fs/yaffs2/yaffs_checkptrw.c |  408 +++++++++++++++++++++++++++++++++++++++++++
+ fs/yaffs2/yaffs_checkptrw.h |   33 ++++
+ 2 files changed, 441 insertions(+), 0 deletions(-)
+ create mode 100644 fs/yaffs2/yaffs_checkptrw.c
+ create mode 100644 fs/yaffs2/yaffs_checkptrw.h
 
-diff --git a/fs/yaffs2/yaffs_allocator.c b/fs/yaffs2/yaffs_allocator.c
+diff --git a/fs/yaffs2/yaffs_checkptrw.c b/fs/yaffs2/yaffs_checkptrw.c
 new file mode 100644
-index 0000000..c8f2861
+index 0000000..997a618
 --- /dev/null
-+++ b/fs/yaffs2/yaffs_allocator.c
-@@ -0,0 +1,357 @@
++++ b/fs/yaffs2/yaffs_checkptrw.c
+@@ -0,0 +1,408 @@
 +/*
 + * YAFFS: Yet Another Flash File System. A NAND-flash specific file system.
 + *
@@ -60,494 +54,406 @@ index 0000000..c8f2861
 + * published by the Free Software Foundation.
 + */
 +
-+#include "yaffs_allocator.h"
-+#include "yaffs_guts.h"
-+#include "yaffs_trace.h"
-+#include "yportenv.h"
++#include "yaffs_checkptrw.h"
++#include "yaffs_getblockinfo.h"
 +
-+/*
-+ * Each entry in yaffs_tnode_list and yaffs_obj_list hold blocks
-+ * of approx 100 objects that are themn allocated singly.
-+ * This is basically a simplified slab allocator.
-+ *
-+ * We don't use the Linux slab allocator because slab does not allow
-+ * us to dump all the objects in one hit when we do a umount and tear
-+ * down  all the tnodes and objects. slab requires that we first free
-+ * the individual objects.
-+ *
-+ * Once yaffs has been mainlined I shall try to motivate for a change
-+ * to slab to provide the extra features we need here.
-+ */
-+
-+struct yaffs_tnode_list {
-+	struct yaffs_tnode_list *next;
-+	struct yaffs_tnode *tnodes;
-+};
-+
-+struct yaffs_obj_list {
-+	struct yaffs_obj_list *next;
-+	struct yaffs_obj *objects;
-+};
-+
-+struct yaffs_allocator {
-+	int n_tnodes_created;
-+	struct yaffs_tnode *free_tnodes;
-+	int n_free_tnodes;
-+	struct yaffs_tnode_list *alloc_tnode_list;
-+
-+	int n_obj_created;
-+	struct list_head free_objs;
-+	int n_free_objects;
-+
-+	struct yaffs_obj_list *allocated_obj_list;
-+};
-+
-+static void yaffs_deinit_raw_tnodes(struct yaffs_dev *dev)
++static int yaffs2_checkpt_space_ok(struct yaffs_dev *dev)
 +{
-+	struct yaffs_allocator *allocator =
-+	    (struct yaffs_allocator *)dev->allocator;
-+	struct yaffs_tnode_list *tmp;
++	int blocks_avail = dev->n_erased_blocks - dev->param.n_reserved_blocks;
 +
-+	if (!allocator) {
-+		BUG();
-+		return;
-+	}
++	yaffs_trace(YAFFS_TRACE_CHECKPOINT,
++		"checkpt blocks_avail = %d", blocks_avail);
 +
-+	while (allocator->alloc_tnode_list) {
-+		tmp = allocator->alloc_tnode_list->next;
-+
-+		kfree(allocator->alloc_tnode_list->tnodes);
-+		kfree(allocator->alloc_tnode_list);
-+		allocator->alloc_tnode_list = tmp;
-+	}
-+
-+	allocator->free_tnodes = NULL;
-+	allocator->n_free_tnodes = 0;
-+	allocator->n_tnodes_created = 0;
++	return (blocks_avail <= 0) ? 0 : 1;
 +}
 +
-+static void yaffs_init_raw_tnodes(struct yaffs_dev *dev)
++static int yaffs_checkpt_erase(struct yaffs_dev *dev)
 +{
-+	struct yaffs_allocator *allocator = dev->allocator;
-+
-+	if (!allocator) {
-+		BUG();
-+		return;
-+	}
-+
-+	allocator->alloc_tnode_list = NULL;
-+	allocator->free_tnodes = NULL;
-+	allocator->n_free_tnodes = 0;
-+	allocator->n_tnodes_created = 0;
-+}
-+
-+static int yaffs_create_tnodes(struct yaffs_dev *dev, int n_tnodes)
-+{
-+	struct yaffs_allocator *allocator =
-+	    (struct yaffs_allocator *)dev->allocator;
 +	int i;
-+	struct yaffs_tnode *new_tnodes;
-+	u8 *mem;
-+	struct yaffs_tnode *curr;
-+	struct yaffs_tnode *next;
-+	struct yaffs_tnode_list *tnl;
 +
-+	if (!allocator) {
-+		BUG();
-+		return YAFFS_FAIL;
++	if (!dev->param.erase_fn)
++		return 0;
++	yaffs_trace(YAFFS_TRACE_CHECKPOINT,
++		"checking blocks %d to %d",
++		dev->internal_start_block, dev->internal_end_block);
++
++	for (i = dev->internal_start_block; i <= dev->internal_end_block; i++) {
++		struct yaffs_block_info *bi = yaffs_get_block_info(dev, i);
++		if (bi->block_state == YAFFS_BLOCK_STATE_CHECKPOINT) {
++			yaffs_trace(YAFFS_TRACE_CHECKPOINT,
++			"erasing checkpt block %d", i);
++
++			dev->n_erasures++;
++
++			if (dev->param.
++			    erase_fn(dev,
++				     i - dev->block_offset /* realign */)) {
++				bi->block_state = YAFFS_BLOCK_STATE_EMPTY;
++				dev->n_erased_blocks++;
++				dev->n_free_chunks +=
++				    dev->param.chunks_per_block;
++			} else {
++				dev->param.bad_block_fn(dev, i);
++				bi->block_state = YAFFS_BLOCK_STATE_DEAD;
++			}
++		}
 +	}
 +
-+	if (n_tnodes < 1)
-+		return YAFFS_OK;
++	dev->blocks_in_checkpt = 0;
 +
-+	/* make these things */
-+	new_tnodes = kmalloc(n_tnodes * dev->tnode_size, GFP_NOFS);
-+	mem = (u8 *) new_tnodes;
++	return 1;
++}
 +
-+	if (!new_tnodes) {
-+		yaffs_trace(YAFFS_TRACE_ERROR,
-+			"yaffs: Could not allocate Tnodes");
-+		return YAFFS_FAIL;
++static void yaffs2_checkpt_find_erased_block(struct yaffs_dev *dev)
++{
++	int i;
++	int blocks_avail = dev->n_erased_blocks - dev->param.n_reserved_blocks;
++
++	yaffs_trace(YAFFS_TRACE_CHECKPOINT,
++		"allocating checkpt block: erased %d reserved %d avail %d next %d ",
++		dev->n_erased_blocks, dev->param.n_reserved_blocks,
++		blocks_avail, dev->checkpt_next_block);
++
++	if (dev->checkpt_next_block >= 0 &&
++	    dev->checkpt_next_block <= dev->internal_end_block &&
++	    blocks_avail > 0) {
++
++		for (i = dev->checkpt_next_block; i <= dev->internal_end_block;
++		     i++) {
++			struct yaffs_block_info *bi =
++			    yaffs_get_block_info(dev, i);
++			if (bi->block_state == YAFFS_BLOCK_STATE_EMPTY) {
++				dev->checkpt_next_block = i + 1;
++				dev->checkpt_cur_block = i;
++				yaffs_trace(YAFFS_TRACE_CHECKPOINT,
++					"allocating checkpt block %d", i);
++				return;
++			}
++		}
++	}
++	yaffs_trace(YAFFS_TRACE_CHECKPOINT, "out of checkpt blocks");
++
++	dev->checkpt_next_block = -1;
++	dev->checkpt_cur_block = -1;
++}
++
++static void yaffs2_checkpt_find_block(struct yaffs_dev *dev)
++{
++	int i;
++	struct yaffs_ext_tags tags;
++
++	yaffs_trace(YAFFS_TRACE_CHECKPOINT,
++		"find next checkpt block: start:  blocks %d next %d",
++		dev->blocks_in_checkpt, dev->checkpt_next_block);
++
++	if (dev->blocks_in_checkpt < dev->checkpt_max_blocks)
++		for (i = dev->checkpt_next_block; i <= dev->internal_end_block;
++		     i++) {
++			int chunk = i * dev->param.chunks_per_block;
++			int realigned_chunk = chunk - dev->chunk_offset;
++
++			dev->param.read_chunk_tags_fn(dev, realigned_chunk,
++						      NULL, &tags);
++			yaffs_trace(YAFFS_TRACE_CHECKPOINT,
++				"find next checkpt block: search: block %d oid %d seq %d eccr %d",
++				i, tags.obj_id, tags.seq_number,
++				tags.ecc_result);
++
++			if (tags.seq_number == YAFFS_SEQUENCE_CHECKPOINT_DATA) {
++				/* Right kind of block */
++				dev->checkpt_next_block = tags.obj_id;
++				dev->checkpt_cur_block = i;
++				dev->checkpt_block_list[dev->
++							blocks_in_checkpt] = i;
++				dev->blocks_in_checkpt++;
++				yaffs_trace(YAFFS_TRACE_CHECKPOINT,
++					"found checkpt block %d", i);
++				return;
++			}
++		}
++
++	yaffs_trace(YAFFS_TRACE_CHECKPOINT, "found no more checkpt blocks");
++
++	dev->checkpt_next_block = -1;
++	dev->checkpt_cur_block = -1;
++}
++
++int yaffs2_checkpt_open(struct yaffs_dev *dev, int writing)
++{
++	int i;
++
++	dev->checkpt_open_write = writing;
++
++	/* Got the functions we need? */
++	if (!dev->param.write_chunk_tags_fn ||
++	    !dev->param.read_chunk_tags_fn ||
++	    !dev->param.erase_fn || !dev->param.bad_block_fn)
++		return 0;
++
++	if (writing && !yaffs2_checkpt_space_ok(dev))
++		return 0;
++
++	if (!dev->checkpt_buffer)
++		dev->checkpt_buffer =
++		    kmalloc(dev->param.total_bytes_per_chunk, GFP_NOFS);
++	if (!dev->checkpt_buffer)
++		return 0;
++
++	dev->checkpt_page_seq = 0;
++	dev->checkpt_byte_count = 0;
++	dev->checkpt_sum = 0;
++	dev->checkpt_xor = 0;
++	dev->checkpt_cur_block = -1;
++	dev->checkpt_cur_chunk = -1;
++	dev->checkpt_next_block = dev->internal_start_block;
++
++	/* Erase all the blocks in the checkpoint area */
++	if (writing) {
++		memset(dev->checkpt_buffer, 0, dev->data_bytes_per_chunk);
++		dev->checkpt_byte_offs = 0;
++		return yaffs_checkpt_erase(dev);
 +	}
 +
-+	/* New hookup for wide tnodes */
-+	for (i = 0; i < n_tnodes - 1; i++) {
-+		curr = (struct yaffs_tnode *)&mem[i * dev->tnode_size];
-+		next = (struct yaffs_tnode *)&mem[(i + 1) * dev->tnode_size];
-+		curr->internal[0] = next;
++	/* Set to a value that will kick off a read */
++	dev->checkpt_byte_offs = dev->data_bytes_per_chunk;
++	/* A checkpoint block list of 1 checkpoint block per 16 block is
++	 * (hopefully) going to be way more than we need */
++	dev->blocks_in_checkpt = 0;
++	dev->checkpt_max_blocks =
++	    (dev->internal_end_block - dev->internal_start_block) / 16 + 2;
++	dev->checkpt_block_list =
++	    kmalloc(sizeof(int) * dev->checkpt_max_blocks, GFP_NOFS);
++
++	if (!dev->checkpt_block_list)
++		return 0;
++
++	for (i = 0; i < dev->checkpt_max_blocks; i++)
++		dev->checkpt_block_list[i] = -1;
++
++	return 1;
++}
++
++int yaffs2_get_checkpt_sum(struct yaffs_dev *dev, u32 * sum)
++{
++	u32 composite_sum;
++
++	composite_sum = (dev->checkpt_sum << 8) | (dev->checkpt_xor & 0xff);
++	*sum = composite_sum;
++	return 1;
++}
++
++static int yaffs2_checkpt_flush_buffer(struct yaffs_dev *dev)
++{
++	int chunk;
++	int realigned_chunk;
++	struct yaffs_ext_tags tags;
++
++	if (dev->checkpt_cur_block < 0) {
++		yaffs2_checkpt_find_erased_block(dev);
++		dev->checkpt_cur_chunk = 0;
 +	}
 +
-+	curr = (struct yaffs_tnode *)&mem[(n_tnodes - 1) * dev->tnode_size];
-+	curr->internal[0] = allocator->free_tnodes;
-+	allocator->free_tnodes = (struct yaffs_tnode *)mem;
++	if (dev->checkpt_cur_block < 0)
++		return 0;
 +
-+	allocator->n_free_tnodes += n_tnodes;
-+	allocator->n_tnodes_created += n_tnodes;
++	tags.is_deleted = 0;
++	tags.obj_id = dev->checkpt_next_block;	/* Hint to next place to look */
++	tags.chunk_id = dev->checkpt_page_seq + 1;
++	tags.seq_number = YAFFS_SEQUENCE_CHECKPOINT_DATA;
++	tags.n_bytes = dev->data_bytes_per_chunk;
++	if (dev->checkpt_cur_chunk == 0) {
++		/* First chunk we write for the block? Set block state to
++		   checkpoint */
++		struct yaffs_block_info *bi =
++		    yaffs_get_block_info(dev, dev->checkpt_cur_block);
++		bi->block_state = YAFFS_BLOCK_STATE_CHECKPOINT;
++		dev->blocks_in_checkpt++;
++	}
 +
-+	/* Now add this bunch of tnodes to a list for freeing up.
-+	 * NB If we can't add this to the management list it isn't fatal
-+	 * but it just means we can't free this bunch of tnodes later.
-+	 */
-+	tnl = kmalloc(sizeof(struct yaffs_tnode_list), GFP_NOFS);
-+	if (!tnl) {
-+		yaffs_trace(YAFFS_TRACE_ERROR,
-+			"Could not add tnodes to management list");
-+		return YAFFS_FAIL;
++	chunk =
++	    dev->checkpt_cur_block * dev->param.chunks_per_block +
++	    dev->checkpt_cur_chunk;
++
++	yaffs_trace(YAFFS_TRACE_CHECKPOINT,
++		"checkpoint wite buffer nand %d(%d:%d) objid %d chId %d",
++		chunk, dev->checkpt_cur_block, dev->checkpt_cur_chunk,
++		tags.obj_id, tags.chunk_id);
++
++	realigned_chunk = chunk - dev->chunk_offset;
++
++	dev->n_page_writes++;
++
++	dev->param.write_chunk_tags_fn(dev, realigned_chunk,
++				       dev->checkpt_buffer, &tags);
++	dev->checkpt_byte_offs = 0;
++	dev->checkpt_page_seq++;
++	dev->checkpt_cur_chunk++;
++	if (dev->checkpt_cur_chunk >= dev->param.chunks_per_block) {
++		dev->checkpt_cur_chunk = 0;
++		dev->checkpt_cur_block = -1;
++	}
++	memset(dev->checkpt_buffer, 0, dev->data_bytes_per_chunk);
++
++	return 1;
++}
++
++int yaffs2_checkpt_wr(struct yaffs_dev *dev, const void *data, int n_bytes)
++{
++	int i = 0;
++	int ok = 1;
++	u8 *data_bytes = (u8 *) data;
++
++	if (!dev->checkpt_buffer)
++		return 0;
++
++	if (!dev->checkpt_open_write)
++		return -1;
++
++	while (i < n_bytes && ok) {
++		dev->checkpt_buffer[dev->checkpt_byte_offs] = *data_bytes;
++		dev->checkpt_sum += *data_bytes;
++		dev->checkpt_xor ^= *data_bytes;
++
++		dev->checkpt_byte_offs++;
++		i++;
++		data_bytes++;
++		dev->checkpt_byte_count++;
++
++		if (dev->checkpt_byte_offs < 0 ||
++		    dev->checkpt_byte_offs >= dev->data_bytes_per_chunk)
++			ok = yaffs2_checkpt_flush_buffer(dev);
++	}
++
++	return i;
++}
++
++int yaffs2_checkpt_rd(struct yaffs_dev *dev, void *data, int n_bytes)
++{
++	int i = 0;
++	int ok = 1;
++	struct yaffs_ext_tags tags;
++	int chunk;
++	int realigned_chunk;
++	u8 *data_bytes = (u8 *) data;
++
++	if (!dev->checkpt_buffer)
++		return 0;
++
++	if (dev->checkpt_open_write)
++		return -1;
++
++	while (i < n_bytes && ok) {
++
++		if (dev->checkpt_byte_offs < 0 ||
++		    dev->checkpt_byte_offs >= dev->data_bytes_per_chunk) {
++
++			if (dev->checkpt_cur_block < 0) {
++				yaffs2_checkpt_find_block(dev);
++				dev->checkpt_cur_chunk = 0;
++			}
++
++			if (dev->checkpt_cur_block < 0) {
++				ok = 0;
++				break;
++			}
++
++			chunk = dev->checkpt_cur_block *
++			    dev->param.chunks_per_block +
++			    dev->checkpt_cur_chunk;
++
++			realigned_chunk = chunk - dev->chunk_offset;
++			dev->n_page_reads++;
++
++			/* read in the next chunk */
++			dev->param.read_chunk_tags_fn(dev,
++						realigned_chunk,
++						dev->checkpt_buffer,
++						&tags);
++
++			if (tags.chunk_id != (dev->checkpt_page_seq + 1) ||
++			    tags.ecc_result > YAFFS_ECC_RESULT_FIXED ||
++			    tags.seq_number != YAFFS_SEQUENCE_CHECKPOINT_DATA) {
++				ok = 0;
++				break;
++			}
++
++			dev->checkpt_byte_offs = 0;
++			dev->checkpt_page_seq++;
++			dev->checkpt_cur_chunk++;
++
++			if (dev->checkpt_cur_chunk >=
++					dev->param.chunks_per_block)
++				dev->checkpt_cur_block = -1;
++		}
++
++		*data_bytes = dev->checkpt_buffer[dev->checkpt_byte_offs];
++		dev->checkpt_sum += *data_bytes;
++		dev->checkpt_xor ^= *data_bytes;
++		dev->checkpt_byte_offs++;
++		i++;
++		data_bytes++;
++		dev->checkpt_byte_count++;
++	}
++
++	return i;
++}
++
++int yaffs_checkpt_close(struct yaffs_dev *dev)
++{
++	int i;
++
++	if (dev->checkpt_open_write) {
++		if (dev->checkpt_byte_offs != 0)
++			yaffs2_checkpt_flush_buffer(dev);
++	} else if (dev->checkpt_block_list) {
++		for (i = 0;
++		     i < dev->blocks_in_checkpt &&
++		     dev->checkpt_block_list[i] >= 0; i++) {
++			int blk = dev->checkpt_block_list[i];
++			struct yaffs_block_info *bi = NULL;
++
++			if (dev->internal_start_block <= blk &&
++			    blk <= dev->internal_end_block)
++				bi = yaffs_get_block_info(dev, blk);
++			if (bi && bi->block_state == YAFFS_BLOCK_STATE_EMPTY)
++				bi->block_state = YAFFS_BLOCK_STATE_CHECKPOINT;
++		}
++		kfree(dev->checkpt_block_list);
++		dev->checkpt_block_list = NULL;
++	}
++
++	dev->n_free_chunks -=
++		dev->blocks_in_checkpt * dev->param.chunks_per_block;
++	dev->n_erased_blocks -= dev->blocks_in_checkpt;
++
++	yaffs_trace(YAFFS_TRACE_CHECKPOINT, "checkpoint byte count %d",
++		dev->checkpt_byte_count);
++
++	if (dev->checkpt_buffer) {
++		/* free the buffer */
++		kfree(dev->checkpt_buffer);
++		dev->checkpt_buffer = NULL;
++		return 1;
 +	} else {
-+		tnl->tnodes = new_tnodes;
-+		tnl->next = allocator->alloc_tnode_list;
-+		allocator->alloc_tnode_list = tnl;
++		return 0;
 +	}
-+
-+	yaffs_trace(YAFFS_TRACE_ALLOCATE, "Tnodes added");
-+
-+	return YAFFS_OK;
 +}
 +
-+struct yaffs_tnode *yaffs_alloc_raw_tnode(struct yaffs_dev *dev)
++int yaffs2_checkpt_invalidate_stream(struct yaffs_dev *dev)
 +{
-+	struct yaffs_allocator *allocator =
-+	    (struct yaffs_allocator *)dev->allocator;
-+	struct yaffs_tnode *tn = NULL;
++	/* Erase the checkpoint data */
 +
-+	if (!allocator) {
-+		BUG();
-+		return NULL;
-+	}
++	yaffs_trace(YAFFS_TRACE_CHECKPOINT,
++		"checkpoint invalidate of %d blocks",
++		dev->blocks_in_checkpt);
 +
-+	/* If there are none left make more */
-+	if (!allocator->free_tnodes)
-+		yaffs_create_tnodes(dev, YAFFS_ALLOCATION_NTNODES);
-+
-+	if (allocator->free_tnodes) {
-+		tn = allocator->free_tnodes;
-+		allocator->free_tnodes = allocator->free_tnodes->internal[0];
-+		allocator->n_free_tnodes--;
-+	}
-+
-+	return tn;
++	return yaffs_checkpt_erase(dev);
 +}
-+
-+/* FreeTnode frees up a tnode and puts it back on the free list */
-+void yaffs_free_raw_tnode(struct yaffs_dev *dev, struct yaffs_tnode *tn)
-+{
-+	struct yaffs_allocator *allocator = dev->allocator;
-+
-+	if (!allocator) {
-+		BUG();
-+		return;
-+	}
-+
-+	if (tn) {
-+		tn->internal[0] = allocator->free_tnodes;
-+		allocator->free_tnodes = tn;
-+		allocator->n_free_tnodes++;
-+	}
-+	dev->checkpoint_blocks_required = 0;	/* force recalculation */
-+}
-+
-+/*--------------- yaffs_obj alloaction ------------------------
-+ *
-+ * Free yaffs_objs are stored in a list using obj->siblings.
-+ * The blocks of allocated objects are stored in a linked list.
-+ */
-+
-+static void yaffs_init_raw_objs(struct yaffs_dev *dev)
-+{
-+	struct yaffs_allocator *allocator = dev->allocator;
-+
-+	if (!allocator) {
-+		BUG();
-+		return;
-+	}
-+
-+	allocator->allocated_obj_list = NULL;
-+	INIT_LIST_HEAD(&allocator->free_objs);
-+	allocator->n_free_objects = 0;
-+}
-+
-+static void yaffs_deinit_raw_objs(struct yaffs_dev *dev)
-+{
-+	struct yaffs_allocator *allocator = dev->allocator;
-+	struct yaffs_obj_list *tmp;
-+
-+	if (!allocator) {
-+		BUG();
-+		return;
-+	}
-+
-+	while (allocator->allocated_obj_list) {
-+		tmp = allocator->allocated_obj_list->next;
-+		kfree(allocator->allocated_obj_list->objects);
-+		kfree(allocator->allocated_obj_list);
-+		allocator->allocated_obj_list = tmp;
-+	}
-+
-+	INIT_LIST_HEAD(&allocator->free_objs);
-+	allocator->n_free_objects = 0;
-+	allocator->n_obj_created = 0;
-+}
-+
-+static int yaffs_create_free_objs(struct yaffs_dev *dev, int n_obj)
-+{
-+	struct yaffs_allocator *allocator = dev->allocator;
-+	int i;
-+	struct yaffs_obj *new_objs;
-+	struct yaffs_obj_list *list;
-+
-+	if (!allocator) {
-+		BUG();
-+		return YAFFS_FAIL;
-+	}
-+
-+	if (n_obj < 1)
-+		return YAFFS_OK;
-+
-+	/* make these things */
-+	new_objs = kmalloc(n_obj * sizeof(struct yaffs_obj), GFP_NOFS);
-+	list = kmalloc(sizeof(struct yaffs_obj_list), GFP_NOFS);
-+
-+	if (!new_objs || !list) {
-+		kfree(new_objs);
-+		new_objs = NULL;
-+		kfree(list);
-+		list = NULL;
-+		yaffs_trace(YAFFS_TRACE_ALLOCATE,
-+			"Could not allocate more objects");
-+		return YAFFS_FAIL;
-+	}
-+
-+	/* Hook them into the free list */
-+	for (i = 0; i < n_obj; i++)
-+		list_add(&new_objs[i].siblings, &allocator->free_objs);
-+
-+	allocator->n_free_objects += n_obj;
-+	allocator->n_obj_created += n_obj;
-+
-+	/* Now add this bunch of Objects to a list for freeing up. */
-+
-+	list->objects = new_objs;
-+	list->next = allocator->allocated_obj_list;
-+	allocator->allocated_obj_list = list;
-+
-+	return YAFFS_OK;
-+}
-+
-+struct yaffs_obj *yaffs_alloc_raw_obj(struct yaffs_dev *dev)
-+{
-+	struct yaffs_obj *obj = NULL;
-+	struct list_head *lh;
-+	struct yaffs_allocator *allocator = dev->allocator;
-+
-+	if (!allocator) {
-+		BUG();
-+		return obj;
-+	}
-+
-+	/* If there are none left make more */
-+	if (list_empty(&allocator->free_objs))
-+		yaffs_create_free_objs(dev, YAFFS_ALLOCATION_NOBJECTS);
-+
-+	if (!list_empty(&allocator->free_objs)) {
-+		lh = allocator->free_objs.next;
-+		obj = list_entry(lh, struct yaffs_obj, siblings);
-+		list_del_init(lh);
-+		allocator->n_free_objects--;
-+	}
-+
-+	return obj;
-+}
-+
-+void yaffs_free_raw_obj(struct yaffs_dev *dev, struct yaffs_obj *obj)
-+{
-+
-+	struct yaffs_allocator *allocator = dev->allocator;
-+
-+	if (!allocator) {
-+		BUG();
-+		return;
-+	}
-+
-+	/* Link into the free list. */
-+	list_add(&obj->siblings, &allocator->free_objs);
-+	allocator->n_free_objects++;
-+}
-+
-+void yaffs_deinit_raw_tnodes_and_objs(struct yaffs_dev *dev)
-+{
-+
-+	if (!dev->allocator) {
-+		BUG();
-+		return;
-+	}
-+
-+	yaffs_deinit_raw_tnodes(dev);
-+	yaffs_deinit_raw_objs(dev);
-+	kfree(dev->allocator);
-+	dev->allocator = NULL;
-+}
-+
-+void yaffs_init_raw_tnodes_and_objs(struct yaffs_dev *dev)
-+{
-+	struct yaffs_allocator *allocator;
-+
-+	if (dev->allocator) {
-+		BUG();
-+		return;
-+	}
-+
-+	allocator = kmalloc(sizeof(struct yaffs_allocator), GFP_NOFS);
-+	if (allocator) {
-+		dev->allocator = allocator;
-+		yaffs_init_raw_tnodes(dev);
-+		yaffs_init_raw_objs(dev);
-+	}
-+}
-+
-diff --git a/fs/yaffs2/yaffs_allocator.h b/fs/yaffs2/yaffs_allocator.h
+diff --git a/fs/yaffs2/yaffs_checkptrw.h b/fs/yaffs2/yaffs_checkptrw.h
 new file mode 100644
-index 0000000..a8cc322
+index 0000000..cdbaba7
 --- /dev/null
-+++ b/fs/yaffs2/yaffs_allocator.h
-@@ -0,0 +1,30 @@
-+/*
-+ * YAFFS: Yet another Flash File System . A NAND-flash specific file system.
-+ *
-+ * Copyright (C) 2002-2011 Aleph One Ltd.
-+ *   for Toby Churchill Ltd and Brightstar Engineering
-+ *
-+ * Created by Charles Manning <charles@aleph1.co.uk>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU Lesser General Public License version 2.1 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Note: Only YAFFS headers are LGPL, YAFFS C code is covered by GPL.
-+ */
-+
-+#ifndef __YAFFS_ALLOCATOR_H__
-+#define __YAFFS_ALLOCATOR_H__
-+
-+#include "yaffs_guts.h"
-+
-+void yaffs_init_raw_tnodes_and_objs(struct yaffs_dev *dev);
-+void yaffs_deinit_raw_tnodes_and_objs(struct yaffs_dev *dev);
-+
-+struct yaffs_tnode *yaffs_alloc_raw_tnode(struct yaffs_dev *dev);
-+void yaffs_free_raw_tnode(struct yaffs_dev *dev, struct yaffs_tnode *tn);
-+
-+struct yaffs_obj *yaffs_alloc_raw_obj(struct yaffs_dev *dev);
-+void yaffs_free_raw_obj(struct yaffs_dev *dev, struct yaffs_obj *obj);
-+
-+#endif
-diff --git a/fs/yaffs2/yaffs_bitmap.c b/fs/yaffs2/yaffs_bitmap.c
-new file mode 100644
-index 0000000..4440e93
---- /dev/null
-+++ b/fs/yaffs2/yaffs_bitmap.c
-@@ -0,0 +1,97 @@
-+/*
-+ * YAFFS: Yet Another Flash File System. A NAND-flash specific file system.
-+ *
-+ * Copyright (C) 2002-2011 Aleph One Ltd.
-+ *   for Toby Churchill Ltd and Brightstar Engineering
-+ *
-+ * Created by Charles Manning <charles@aleph1.co.uk>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include "yaffs_bitmap.h"
-+#include "yaffs_trace.h"
-+/*
-+ * Chunk bitmap manipulations
-+ */
-+
-+static inline u8 *yaffs_block_bits(struct yaffs_dev *dev, int blk)
-+{
-+	if (blk < dev->internal_start_block || blk > dev->internal_end_block) {
-+		yaffs_trace(YAFFS_TRACE_ERROR,
-+			"BlockBits block %d is not valid",
-+			blk);
-+		BUG();
-+	}
-+	return dev->chunk_bits +
-+	    (dev->chunk_bit_stride * (blk - dev->internal_start_block));
-+}
-+
-+void yaffs_verify_chunk_bit_id(struct yaffs_dev *dev, int blk, int chunk)
-+{
-+	if (blk < dev->internal_start_block || blk > dev->internal_end_block ||
-+	    chunk < 0 || chunk >= dev->param.chunks_per_block) {
-+		yaffs_trace(YAFFS_TRACE_ERROR,
-+			"Chunk Id (%d:%d) invalid",
-+			blk, chunk);
-+		BUG();
-+	}
-+}
-+
-+void yaffs_clear_chunk_bits(struct yaffs_dev *dev, int blk)
-+{
-+	u8 *blk_bits = yaffs_block_bits(dev, blk);
-+
-+	memset(blk_bits, 0, dev->chunk_bit_stride);
-+}
-+
-+void yaffs_clear_chunk_bit(struct yaffs_dev *dev, int blk, int chunk)
-+{
-+	u8 *blk_bits = yaffs_block_bits(dev, blk);
-+
-+	yaffs_verify_chunk_bit_id(dev, blk, chunk);
-+	blk_bits[chunk / 8] &= ~(1 << (chunk & 7));
-+}
-+
-+void yaffs_set_chunk_bit(struct yaffs_dev *dev, int blk, int chunk)
-+{
-+	u8 *blk_bits = yaffs_block_bits(dev, blk);
-+
-+	yaffs_verify_chunk_bit_id(dev, blk, chunk);
-+	blk_bits[chunk / 8] |= (1 << (chunk & 7));
-+}
-+
-+int yaffs_check_chunk_bit(struct yaffs_dev *dev, int blk, int chunk)
-+{
-+	u8 *blk_bits = yaffs_block_bits(dev, blk);
-+
-+	yaffs_verify_chunk_bit_id(dev, blk, chunk);
-+	return (blk_bits[chunk / 8] & (1 << (chunk & 7))) ? 1 : 0;
-+}
-+
-+int yaffs_still_some_chunks(struct yaffs_dev *dev, int blk)
-+{
-+	u8 *blk_bits = yaffs_block_bits(dev, blk);
-+	int i;
-+
-+	for (i = 0; i < dev->chunk_bit_stride; i++) {
-+		if (*blk_bits)
-+			return 1;
-+		blk_bits++;
-+	}
-+	return 0;
-+}
-+
-+int yaffs_count_chunk_bits(struct yaffs_dev *dev, int blk)
-+{
-+	u8 *blk_bits = yaffs_block_bits(dev, blk);
-+	int i;
-+	int n = 0;
-+
-+	for (i = 0; i < dev->chunk_bit_stride; i++, blk_bits++)
-+		n += hweight8(*blk_bits);
-+
-+	return n;
-+}
-diff --git a/fs/yaffs2/yaffs_bitmap.h b/fs/yaffs2/yaffs_bitmap.h
-new file mode 100644
-index 0000000..e26b37d
---- /dev/null
-+++ b/fs/yaffs2/yaffs_bitmap.h
++++ b/fs/yaffs2/yaffs_checkptrw.h
 @@ -0,0 +1,33 @@
 +/*
 + * YAFFS: Yet another Flash File System . A NAND-flash specific file system.
@@ -564,63 +470,22 @@ index 0000000..e26b37d
 + * Note: Only YAFFS headers are LGPL, YAFFS C code is covered by GPL.
 + */
 +
-+/*
-+ * Chunk bitmap manipulations
-+ */
-+
-+#ifndef __YAFFS_BITMAP_H__
-+#define __YAFFS_BITMAP_H__
++#ifndef __YAFFS_CHECKPTRW_H__
++#define __YAFFS_CHECKPTRW_H__
 +
 +#include "yaffs_guts.h"
 +
-+void yaffs_verify_chunk_bit_id(struct yaffs_dev *dev, int blk, int chunk);
-+void yaffs_clear_chunk_bits(struct yaffs_dev *dev, int blk);
-+void yaffs_clear_chunk_bit(struct yaffs_dev *dev, int blk, int chunk);
-+void yaffs_set_chunk_bit(struct yaffs_dev *dev, int blk, int chunk);
-+int yaffs_check_chunk_bit(struct yaffs_dev *dev, int blk, int chunk);
-+int yaffs_still_some_chunks(struct yaffs_dev *dev, int blk);
-+int yaffs_count_chunk_bits(struct yaffs_dev *dev, int blk);
++int yaffs2_checkpt_open(struct yaffs_dev *dev, int writing);
 +
-+#endif
-diff --git a/fs/yaffs2/yaffs_getblockinfo.h b/fs/yaffs2/yaffs_getblockinfo.h
-new file mode 100644
-index 0000000..8fd0802
---- /dev/null
-+++ b/fs/yaffs2/yaffs_getblockinfo.h
-@@ -0,0 +1,35 @@
-+/*
-+ * YAFFS: Yet another Flash File System . A NAND-flash specific file system.
-+ *
-+ * Copyright (C) 2002-2011 Aleph One Ltd.
-+ *   for Toby Churchill Ltd and Brightstar Engineering
-+ *
-+ * Created by Charles Manning <charles@aleph1.co.uk>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU Lesser General Public License version 2.1 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Note: Only YAFFS headers are LGPL, YAFFS C code is covered by GPL.
-+ */
++int yaffs2_checkpt_wr(struct yaffs_dev *dev, const void *data, int n_bytes);
 +
-+#ifndef __YAFFS_GETBLOCKINFO_H__
-+#define __YAFFS_GETBLOCKINFO_H__
++int yaffs2_checkpt_rd(struct yaffs_dev *dev, void *data, int n_bytes);
 +
-+#include "yaffs_guts.h"
-+#include "yaffs_trace.h"
++int yaffs2_get_checkpt_sum(struct yaffs_dev *dev, u32 * sum);
 +
-+/* Function to manipulate block info */
-+static inline struct yaffs_block_info *yaffs_get_block_info(struct yaffs_dev
-+							      *dev, int blk)
-+{
-+	if (blk < dev->internal_start_block || blk > dev->internal_end_block) {
-+		yaffs_trace(YAFFS_TRACE_ERROR,
-+			"**>> yaffs: get_block_info block %d is not valid",
-+			blk);
-+		BUG();
-+	}
-+	return &dev->block_info[blk - dev->internal_start_block];
-+}
++int yaffs_checkpt_close(struct yaffs_dev *dev);
++
++int yaffs2_checkpt_invalidate_stream(struct yaffs_dev *dev);
 +
 +#endif
 -- 
