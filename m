@@ -1,77 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495Ab1BISQe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 13:16:34 -0500
-Received: from mga09.intel.com ([134.134.136.24]:65440 "EHLO mga09.intel.com"
+	id S1755539Ab1BISRz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 13:17:55 -0500
+Received: from imr4.ericy.com ([198.24.6.8]:52494 "EHLO imr4.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755044Ab1BISQd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 13:16:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.60,446,1291622400"; 
-   d="scan'208";a="601031212"
-Date: Wed, 9 Feb 2011 10:16:31 -0800
-From: jacob pan <jacob.jun.pan@linux.intel.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Matt Helsley <matthltc@us.ibm.com>,
-        container cgroup <containers@lists.linux-foundation.org>,
-        Paul Menage <menage@google.com>, akpm@linux-foundation.org,
-        rdunlap@xenotime.net, Cedric Le Goater <clg@fr.ibm.com>
-Subject: Re: [PATCH 1/1, v6] cgroup/freezer: add per freezer duty ratio
- control
-Message-ID: <20110209101631.5f265687@jacob-laptop>
-In-Reply-To: <4D52050F.3060907@cn.fujitsu.com>
-References: <1297213541-18156-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<4D52050F.3060907@cn.fujitsu.com>
-Organization: OTC
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755044Ab1BISRy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 13:17:54 -0500
+Date: Wed, 9 Feb 2011 10:17:02 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Dirk Eibach <eibach@gdsys.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [PATCH v2] hwmon: Consider LM64 temperature offset
+Message-ID: <20110209181702.GA19998@ericsson.com>
+References: <20110208152815.GA13436@ericsson.com>
+ <1297245094-13681-1-git-send-email-eibach@gdsys.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1297245094-13681-1-git-send-email-eibach@gdsys.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 09 Feb 2011 11:07:59 +0800
-Li Zefan <lizf@cn.fujitsu.com> wrote:
+Hi Dirk,
 
-> jacob.jun.pan@linux.intel.com wrote:
-> > From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> > 
-> > Freezer subsystem is used to manage batch jobs which can start
-> > stop at the same time. However, sometime it is desirable to let
-> > the kernel manage the freezer state automatically with a given
-> > duty ratio.
-> > For example, if we want to reduce the time that backgroup apps
-> > are allowed to run we can put them into a freezer subsystem and
-> > set the kernel to turn them THAWED/FROZEN at given duty ratio.
-> > 
-> > This patch introduces two file nodes under cgroup
-> > freezer.duty_ratio_pct and freezer.period_sec
-> > 
-> > Usage example: set period to be 5 seconds and frozen duty ratio 90%
-> > [root@localhost aoa]# echo 90 > freezer.duty_ratio_pct
-> > [root@localhost aoa]# echo 5000 > freezer.period_ms
-> > 
-> 
-> So after:
-> 
-> # echo FROZEN > freezer.state
-> # echo 90 > freezer.duty_ratio_pct
-> # echo 5000 > freezer.period_ms
-> ...
-> # echo 0 > freezer.duty_ratio_pct
-> 
-> All the tasks in this cgroup are in THAWED state, but the cgroup is
-> in FROZEN state. This should be fixed.
-I don't know how could this ever happen. Is it based on your testing?
-Whenever tasks in a cgroup are thawed/frozen, its freezer state would
-change accordingly.
-After your example, freezer.state should have THAWED. It matches
-user's intention, i.e. if a user do
-echo 0 > freezer.duty_ratio_pct
-It must want 0% to be frozen, which is THAWED.
+On Wed, Feb 09, 2011 at 04:51:34AM -0500, Dirk Eibach wrote:
+[ ... ]
+> +/* temp2_crit can only be set once which should be job of the bootloader */
+> +static SENSOR_DEVICE_ATTR(temp2_crit, S_IRUGO, show_remote_temp8,
+> +	NULL, 2);
 
-Am I missing anything?
+That only applies to lm63, though. It can be rewritten anytime on LM64.
+That would be a separate patch, though, to not mix improvements with bug fixes.
+
+Otherwise, looks good, so I'll apply it with an added remark that the restriction
+only applies to lm63.
+
+Thanks,
+Guenter
