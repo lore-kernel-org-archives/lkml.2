@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751954Ab1BIG67 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 01:58:59 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52643 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906Ab1BIG66 (ORCPT
+	id S1751821Ab1BIHDa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 02:03:30 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:53630
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750898Ab1BIHD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 01:58:58 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 9 Feb 2011 15:52:46 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Subject: Re: [mmotm] BUG: Bad page state in process khugepaged ?
-Message-Id: <20110209155246.69a7f3a1.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110209155001.0e369475.nishimura@mxp.nes.nec.co.jp>
-References: <20110209151036.f24a36a6.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110209155001.0e369475.nishimura@mxp.nes.nec.co.jp>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	Wed, 9 Feb 2011 02:03:29 -0500
+Date: Tue, 08 Feb 2011 23:04:04 -0800 (PST)
+Message-Id: <20110208.230404.189683472.davem@davemloft.net>
+To: toshiharu-linux@dsn.okisemi.com
+Cc: netdev@vger.kernel.org, tomoya-linux@dsn.okisemi.com, qi.wang@intel.com,
+        yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pch_gbe: Fix the issue which a driver locks when rx
+ offload is set by ethtool
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110208.225702.104076116.davem@davemloft.net>
+References: <20110208.164030.242137610.davem@davemloft.net>
+	<3F7E1C17407A45E3834BF70553CB294C@hacdom.okisemi.com>
+	<20110208.225702.104076116.davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Feb 2011 15:50:01 +0900
-Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+From: David Miller <davem@davemloft.net>
+Date: Tue, 08 Feb 2011 22:57:02 -0800 (PST)
 
-> > 
-> > In hex, pc->flags was 7A00000000004 and this means PCG_USED bit is set.
-> > This implies page_remove_rmap() may not be called but ->mapping is NULL. Hmm?
-> > (7A is encoding of section number.)
-> > 
-> Sigh.. it seems another freed-but-not-uncharged problem..
+> From: "Toshiharu Okada" <toshiharu-linux@dsn.okisemi.com>
+> Date: Wed, 9 Feb 2011 11:04:11 +0900
 > 
+>> From: David Miller <davem@davemloft.net>
+>> Date: Tue, 08 Feb 2011 16:40:30 -0800 (PST)
+>> 
+>>>> @@ -531,12 +533,8 @@ void pch_gbe_reinit_locked(struct pch_gbe_adapter 
+>>>> *adapter)
+>>>>  {
+>>>>  struct net_device *netdev = adapter->netdev;
+>>>>
+>>>> - rtnl_lock();
+>>>> - if (netif_running(netdev)) {
+>>>> - pch_gbe_down(adapter);
+>>>> - pch_gbe_up(adapter);
+>>>> - }
+>>>> - rtnl_unlock();
+>>>> + pch_gbe_down(adapter);
+>>>> + pch_gbe_up(adapter);
+>>>
+>>>Are you sure you can just blindly delete the netif_running() check here?
+>> 
+>> Yes, sure.
+>> pch_gbe_reinit_locked() is called after confirming of netif_running() except 
+>> for pch_gbe_reset_task() function.
+>> This netif_running() was redundant.
+> 
+> Thanks for explaining, applied, thank you.
 
-Ah, ok, this is maybe caused by this. I'm sorry that I missed this.
-==
-static inline int free_pages_check(struct page *page)
-{
-        if (unlikely(page_mapcount(page) |
-                (page->mapping != NULL)  |
-                (atomic_read(&page->_count) != 0) |
-                (page->flags & PAGE_FLAGS_CHECK_AT_FREE) |
-                (mem_cgroup_bad_page_check(page)))) {    <==========(*)
-                bad_page(page);
-                return 1;
-==
+Actually, I had to revert, this patch introduces an obvious compiler warning:
 
-Then, ok, this is a memcgroup and hugepage issue.
+drivers/net/pch_gbe/pch_gbe_main.c: In function 'pch_gbe_reinit_locked':
+drivers/net/pch_gbe/pch_gbe_main.c:533:21: warning: unused variable 'netdev'
 
-I'll look into.
-
-Thanks,
--Kame
-
+Sloppy build issues like this reflects very poorly upon the patch
+submitter.
