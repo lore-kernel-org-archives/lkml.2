@@ -1,96 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758Ab1BIUKg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 15:10:36 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:47005 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753560Ab1BIUKd (ORCPT
+	id S1754615Ab1BIUM3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 15:12:29 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:48514 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720Ab1BIUM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 15:10:33 -0500
-X-Authority-Analysis: v=1.1 cv=3uSaImBeuprzHBlOOPjkqgu+7PcxSRW0m2Aphm9Zmck= c=1 sm=0 a=3ZO_lGxKx-wA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=WfulkdPnAAAA:8 a=meVymXHHAAAA:8 a=2pOhCIMU1Zli-UKOOJUA:9 a=G53jnfjMq-ErjomeCkljEYkzZUAA:4 a=jEp0ucaQiEUA:10 a=l29vjEC0CZ8A:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Message-Id: <20110209201029.772571775@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Wed, 09 Feb 2011 15:02:51 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Michal Marek <mmarek@suse.cz>
-Subject: [RFC][PATCH 2/4] ftrace: Add -mfentry to Makefile on function tracer
-References: <20110209200249.111932716@goodmis.org>
-Content-Disposition: inline; filename=0002-ftrace-Add-mfentry-to-Makefile-on-function-tracer.patch
+	Wed, 9 Feb 2011 15:12:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=rIWSek4YJvmDnqZRIVvVkZiTqPobdTFUW5/lKIgI9VNkLM0/ZTaqeHGA/idPxh9e0H
+         F2bL9wotowHzedn9jLoJvBrwgxbq5vFYItz0qiAAoE1FsXRbGDsLA1PrTv4erMN6nTxC
+         nNNsc4b1lYCIiuZiimH5Fd+AmdfQ6wDGqUq5c=
+Message-ID: <4D52F526.5060101@gmail.com>
+Date: Wed, 09 Feb 2011 13:12:22 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc13 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: perf on 2.6.38-rc4 wedges my box
+References: <x49k4h9az25.fsf@segfault.boston.devel.redhat.com>	<4D52D31E.5010801@gmail.com> <x49fwrxax02.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x49fwrxax02.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
-
-Thanks to Andi Kleen, gcc 4.6.0 now supports -mfentry for x86
-(and hopefully soon for other archs). What this does is to have
-the function profiler start at the beginning of the function
-instead of after the stack is set up. As plain -pg (mcount) is
-called after the stack is set up, and in some cases can have issues
-with the function graph tracer. It also requires frame pointers to
-be enabled.
-
-The -mfentry now calls __fentry__ at the beginning of the function.
-This allows for compiling without frame pointers and even has the
-ability to access parameters if needed.
-
-If the architecture and the compiler both support -mfentry then
-use that instead.
-
-TODO: Allow for FUNCTION_TRACER to be set without FRAME_POINTERS
-
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- Makefile             |    6 +++++-
- kernel/trace/Kconfig |    5 +++++
- 2 files changed, 10 insertions(+), 1 deletions(-)
-
-diff --git a/Makefile b/Makefile
-index c9c8c8f..915bf47 100644
---- a/Makefile
-+++ b/Makefile
-@@ -578,7 +578,11 @@ KBUILD_CFLAGS 	+= $(call cc-option, -femit-struct-debug-baseonly)
- endif
- 
- ifdef CONFIG_FUNCTION_TRACER
--KBUILD_CFLAGS	+= -pg
-+ifdef CONFIG_HAVE_FENTRY
-+CC_HAS_FENTRY	:= $(call cc-option, -mfentry -DCC_HAS_FENTRY)
-+endif
-+KBUILD_CFLAGS	+= -pg $(CC_HAS_FENTRY)
-+KBUILD_AFLAGS	+= $(CC_HAS_FENTRY)
- ifdef CONFIG_DYNAMIC_FTRACE
- 	ifdef CONFIG_HAVE_C_RECORDMCOUNT
- 		BUILD_C_RECORDMCOUNT := y
-diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-index 14674dc..7ed3f17 100644
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@ -49,6 +49,11 @@ config HAVE_SYSCALL_TRACEPOINTS
- 	help
- 	  See Documentation/trace/ftrace-design.txt
- 
-+config HAVE_FENTRY
-+	bool
-+	help
-+	  Arch supports the gcc options -pg with -mfentry
-+
- config HAVE_C_RECORDMCOUNT
- 	bool
- 	help
--- 
-1.7.2.3
 
 
+On 02/09/11 11:22, Jeff Moyer wrote:
+> David Ahern <dsahern@gmail.com> writes:
+> 
+>> Have you tried '-e cpu-clock' for S/W based profiling vs the default H/W
+>> profiling? Add -v to see if the fallback to S/W is happening now.
+> 
+> Thanks for the suggestion, David.  I tried:
+> 
+> # perf record -v ls
+>   Warning:  ... trying to fall back to cpu-clock-ticks
+> 
+> couldn't open /proc/-1/status
+> couldn't open /proc/-1/maps
+> [ls output]
+> [ perf record: Woken up 1 times to write data ]
+> [ perf record: Captured and wrote 0.008 MB perf.data (~363 samples) ]
+> 
+> If I explicitly set '-e cpu-clock', then the output is the same,
+> except that the warning is gone.  What's up with the /proc/-1/*?
+
+target_{pid,tid} are initialized to -1 in builtin-record.c I believe the
+tid version is making its way through the event__synthesize_xxx code
+(event__synthesize_thread -> __event__synthesize_thread ->
+event__synthesize_comm and event__synthesize_mmap_events).
+
+> 
+> Now, when running perf record -e cpu-clock on the aio-stress run,
+> unsurprisingly, I get the same result:
+> 
+> # perf record -e cpu-clock -v -- ./aio-stress -O -o 0 -r 4 -d 32 -b 16 /dev/sds
+> couldn't open /proc/-1/status
+> couldn't open /proc/-1/maps
+> adding stage write
+> starting with write
+> file size 1024MB, record size 4KB, depth 32, ios per iteration 8
+> max io_submit 16, buffer alignment set to 4KB
+> threads 1 files 1 contexts 1 context offset 2MB verification off
+> adding file /dev/sds thread 0
+> 
+> and there it sits.  In this case, however, I did not see the NOHZ
+> warnings on the console, and this time the machine is still responding
+> to ping, but nothing else.
+
+cpu-clock is handled through hrtimers if that helps understand the lockup.
+
+David
+
+> 
+> Cheers,
+> Jeff
