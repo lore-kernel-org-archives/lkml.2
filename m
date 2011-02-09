@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202Ab1BICbU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 21:31:20 -0500
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:8834 "EHLO
-	TX2EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755507Ab1BICbS convert rfc822-to-8bit (ORCPT
+	id S932082Ab1BICbp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 21:31:45 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:64446 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756022Ab1BICbn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 21:31:18 -0500
-X-SpamScore: -18
-X-BigFish: VPS-18(zz542N1432N9371Pzz1202hzz1497iz32i668h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LGBWBU-02-4NY-02
-X-M-MSG: 
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
+	Tue, 8 Feb 2011 21:31:43 -0500
+Message-ID: <4D51FCB0.9040101@vflare.org>
+Date: Tue, 08 Feb 2011 21:32:16 -0500
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: linux-next: manual merge of the usb tree with Linus' tree
-Date: Wed, 9 Feb 2011 10:31:02 +0800
-Message-ID: <2DEEA3AB13739D45A22ADDB5086AEA0BF085DD@sshaexmb1.amd.com>
-In-Reply-To: <20110207150802.4869bd47.sfr@canb.auug.org.au>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: linux-next: manual merge of the usb tree with Linus' tree
-Thread-Index: AcvGfKY3QEvQ3wLSQ8ygr9GxX6xg3QBhJSPw
-References: <20110207150802.4869bd47.sfr@canb.auug.org.au>
-From: "Xu, Andiry" <Andiry.Xu@amd.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>
-CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "He, Alex" <Alex.He@amd.com>, Alan Stern <stern@rowland.harvard.edu>
-X-OriginalArrivalTime: 09 Feb 2011 02:31:06.0051 (UTC) FILETIME=[671A9930:01CBC801]
-X-OriginatorOrg: amd.com
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: gregkh@suse.de, Chris Mason <chris.mason@oracle.com>,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        matthew@wil.cx, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        jeremy@goop.org, Kurt Hackel <kurt.hackel@oracle.com>,
+        npiggin@kernel.dk, riel@redhat.com,
+        Konrad Wilk <konrad.wilk@oracle.com>, mel@csn.ul.ie,
+        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
+        sfr@canb.auug.org.au, wfg@mail.ustc.edu.cn, tytso@mit.edu,
+        viro@ZenIV.linux.org.uk, hughd@google.com, hannes@cmpxchg.org,
+        Matt <jackdachef@gmail.com>
+Subject: Re: [PATCH V2 0/3] drivers/staging: zcache: dynamic page cache/swap
+ compression
+References: <20110207032407.GA27404@ca-server1.us.oracle.com> <1ddd01a8-591a-42bc-8bb3-561843b31acb@default>
+In-Reply-To: <1ddd01a8-591a-42bc-8bb3-561843b31acb@default>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 02/08/2011 08:03 PM, Dan Magenheimer wrote:
+>> (Historical note: This "new" zcache patchset supercedes both the
+>> kztmem patchset and the "old" zcache patchset as described in:
+>> http://lkml.org/lkml/2011/2/5/148)
+>
+> (In order to move discussion from the old kztmem patchset to
+> the new zcache patchset, I am replying here to Matt's email
+> sent at: https://lkml.org/lkml/2011/2/4/199 )
+>
+>> From: Matt [mailto:jackdachef@gmail.com]
+>
+<snip>
 
-I'll resend the PLL quirk moving patchset based on the latest linux-next
-tree. 
+>
+>> • Coming back to usage of compcache - how about the problem of 60%
+>> memory fragmentation (according to compcache/zcache wiki,
+>> http://code.google.com/p/compcache/wiki/Fragmentation) ?
+>> Could the situation be improved with in-kernel "memory compaction" ?
+>> I'm not a developer so I don't know exactly how lumpy reclaim/memory
+>> compaction and xvmalloc would interact with each other
+>
+> Nitin is the expert on compcache and xvmalloc, so I will leave
+> this question unanswered for now.
+>
 
-Thanks & Best regards,
-Andiry
- 
-> -----Original Message-----
-> From: Stephen Rothwell [mailto:sfr@canb.auug.org.au]
-> Sent: Monday, February 07, 2011 12:08 PM
-> To: Greg KH
-> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Xu,
-Andiry;
-> He, Alex
-> Subject: linux-next: manual merge of the usb tree with Linus' tree
-> 
-> Hi Greg,
-> 
-> Today's linux-next merge of the usb tree got a conflict in
-> drivers/usb/host/ehci-pci.c between commit
-> baab93afc2844b68d57b0dcca5e1d34c5d7cf411 ("USB: EHCI: ASPM quirk of
-ISOC
-> on AMD Hudson") from Linus' tree and commit
-> b7d5b439b7a40dd0a0202fe1c118615a3fcc3b25 ("USB host: Move AMD PLL
-quirk
-> to pci-quirks.c") from the usb tree.
-> 
-> I just use the version from the usb tree, but this may need fixing up
-in
-> pci-quirks.c.
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> http://www.canb.auug.org.au/~sfr/
 
+I'm currently in the process of designing a new allocator that gives 
+predictable memory fragmentation guarantees (at the expense of extra CPU 
+cycles). I've not yet posted details anywhere but many of the ideas are 
+from the "Compact Fit" allocator: 
+http://www.usenix.org/event/usenix08/tech/full_papers/craciunas/craciunas_html/
+
+I'm not sure how much time it will take since I'm not yet done with some 
+of the design details, and then userspace implementation, testing, 
+profiling and finally kernel port. Add to that extra concurrency issues 
+when integrating with zcache!
+
+Thanks,
+Nitin
