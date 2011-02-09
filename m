@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082Ab1BITT4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 14:19:56 -0500
-Received: from mail-out.m-online.net ([212.18.0.9]:45703 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750955Ab1BITTz (ORCPT
+	id S1752318Ab1BITZK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 14:25:10 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33364 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751126Ab1BITZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 14:19:55 -0500
-X-Auth-Info: HzGxAG/tpVFyQ7CwDRMvdhWUIupHeNhisQvyGUcA0Hw=
-Message-ID: <4D52E94D.8030400@grandegger.com>
-Date: Wed, 09 Feb 2011 20:21:49 +0100
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	Wed, 9 Feb 2011 14:25:08 -0500
+Date: Wed, 9 Feb 2011 19:25:06 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: frank.rowand@am.sony.com, Frank Rowand <frank.rowand@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Len Brown <len.brown@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-embedded@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] Remove CONFIG_PM altogether, enable power management
+ all the time
+Message-ID: <20110209192506.GC23747@opensource.wolfsonmicro.com>
+References: <4D51D341.3040209@am.sony.com>
+ <20110209114137.GA10163@opensource.wolfsonmicro.com>
+ <201102091807.03094.rjw@sisk.pl>
+ <4D52DD81.7050401@am.sony.com>
+ <20110209184010.GB23747@opensource.wolfsonmicro.com>
+ <4D52E441.2000805@am.sony.com>
 MIME-Version: 1.0
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-CC: socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, andrew.chih.howe.khor@intel.com,
-        qi.wang@intel.com, yong.y.wang@intel.com,
-        toshiharu-linux@dsn.okisemi.com, kok.howg.ewe@intel.com,
-        joel.clark@intel.com
-Subject: Re: [PATCH 1/3] pch_can: fix 800k comms issue
-References: <1297157343-3213-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-In-Reply-To: <1297157343-3213-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4D52E441.2000805@am.sony.com>
+X-Cookie: You dialed 5483.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomoya,
+On Wed, Feb 09, 2011 at 11:00:17AM -0800, Frank Rowand wrote:
 
-On 02/08/2011 10:29 AM, Tomoya MORINAGA wrote:
-> Currently, 800k comms fails since prop_seg set zero.
-> (EG20T PCH CAN register of prop_seg must be set more than 1)
-> To prevent prop_seg set to zero, change tseg2_min 1 to 2.
-> 
-> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-> ---
->  drivers/net/can/pch_can.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-> index c42e972..9b171d1 100644
-> --- a/drivers/net/can/pch_can.c
-> +++ b/drivers/net/can/pch_can.c
-> @@ -187,7 +187,7 @@ static struct can_bittiming_const pch_can_bittiming_const = {
->  	.name = KBUILD_MODNAME,
->  	.tseg1_min = 1,
->  	.tseg1_max = 16,
-> -	.tseg2_min = 1,
-> +	.tseg2_min = 2,
->  	.tseg2_max = 8,
->  	.sjw_max = 4,
->  	.brp_min = 1,
+> and my understanding of this proposal was a goal to remove the ability
+> to have CONFIG_PM disabled, which results in increased memory usage
+> for some configurations.
 
-I just realized that this fix is wrong. You wanted to set tseg1_min to 2
-(and not tseg2_min). Could you please send a patch?
+Not really, the goal was to simplify the PM config options to ones that
+are actually useful and cut down on the number of silly combinations
+that the randconfigs turn up.  CONFIG_PM is there mostly for historical
+reasons, it doesn't really mean much by itself except as a gate to other
+options.
 
-Thanks,
-
-Wolfgang.
+This comes from the fact that the options exposed and the use of them
+doesn't really reflect the kernel power management infrastructure any
+more.  The PM options at Kconfig level are really SUSPEND, HIBERNATION
+and PM_RUNTIME but for historical reasons the idoms are all based on the
+root PM option.  This gets fiddly and confusing as you move over build
+coverage.
