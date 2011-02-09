@@ -1,38 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754519Ab1BIRA6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 12:00:58 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:17073
-	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753039Ab1BIRA4 (ORCPT
+	id S1754717Ab1BIRBF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 12:01:05 -0500
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:50798
+	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753761Ab1BIRA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 12:00:56 -0500
-X-SpamScore: -1
-X-BigFish: VPS-1(zz1fa4Lc8kzz1202hzz8275bh8275dhz2dh95h668h62h)
-X-Spam-TCS-SCL: 1:0
+	Wed, 9 Feb 2011 12:00:58 -0500
+X-SpamScore: 3
+X-BigFish: VPS3(zzc8kzz1202hzz8275bhz2dh95h668h)
 X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
 From: John Linn <john.linn@xilinx.com>
 To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <linux@arm.linux.org.uk>, <catalin.marinas@arm.com>,
         <glikely@secretlab.ca>
 CC: John Linn <john.linn@xilinx.com>
-Subject: [PATCH V2 3/4] ARM: Xilinx: base header files and assembly macros
-Date: Wed, 9 Feb 2011 10:00:44 -0700
+Subject: [PATCH V2 1/4] ARM: Xilinx: Adding Xilinx board support
+Date: Wed, 9 Feb 2011 10:00:42 -0700
 X-Mailer: git-send-email 1.5.6.6
-In-Reply-To: <1297270845-18802-3-git-send-email-john.linn@xilinx.com>
+In-Reply-To: <1297270845-18802-1-git-send-email-john.linn@xilinx.com>
 References: <1297270845-18802-1-git-send-email-john.linn@xilinx.com>
- <1297270845-18802-2-git-send-email-john.linn@xilinx.com>
- <1297270845-18802-3-git-send-email-john.linn@xilinx.com>
 X-RCIS-Action: ALLOW
 MIME-Version: 1.0
 Content-Type: text/plain
-Message-ID: <e19bc079-5f8a-4622-b7cd-668cede3cb97@VA3EHSMHS032.ehs.local>
+Message-ID: <0e8b21c6-60ff-4f82-a8e6-5c2a0fe80372@VA3EHSMHS005.ehs.local>
 X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are the minimum needed to build the kernel for the new platform.
+The 1st board support is minimal to get a system up and running
+on the Xilinx platform.
 
 Signed-off-by: John Linn <john.linn@xilinx.com>
 ---
@@ -40,90 +38,166 @@ Signed-off-by: John Linn <john.linn@xilinx.com>
 V2 Changes
 
 Updates based on Russell King's comments	
-	moved to using entry-macro-gic.S
-	moved stuff from hardware.h to xilinx_soc.h 
-	added IOMEM() in io.h to help with typing
-	Minor updates to IO_SPACE_LIMIT and __io()
-	Updated addresses to be clear with seperate virtual
-		and physical addresses
+	minor cleanups
+	cleaned up physical/virtual addresses in early i/o table		
 
+Updated based on Jamie Iles's comment
+	added clk_get_rate() function
+	now using platform_add_devices() from platform code
 
- arch/arm/mach-xilinx/include/mach/clkdev.h      |   33 ++++++++++++++++
- arch/arm/mach-xilinx/include/mach/debug-macro.S |   36 ++++++++++++++++++
- arch/arm/mach-xilinx/include/mach/entry-macro.S |   29 ++++++++++++++
- arch/arm/mach-xilinx/include/mach/hardware.h    |   18 +++++++++
- arch/arm/mach-xilinx/include/mach/io.h          |   33 ++++++++++++++++
- arch/arm/mach-xilinx/include/mach/irqs.h        |   28 ++++++++++++++
- arch/arm/mach-xilinx/include/mach/memory.h      |   23 +++++++++++
- arch/arm/mach-xilinx/include/mach/system.h      |   28 ++++++++++++++
- arch/arm/mach-xilinx/include/mach/timex.h       |   24 ++++++++++++
- arch/arm/mach-xilinx/include/mach/uart.h        |   30 +++++++++++++++
- arch/arm/mach-xilinx/include/mach/uncompress.h  |   46 +++++++++++++++++++++++
- arch/arm/mach-xilinx/include/mach/vmalloc.h     |   20 ++++++++++
- arch/arm/mach-xilinx/include/mach/xilinx_soc.h  |   46 +++++++++++++++++++++++
- 13 files changed, 394 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-xilinx/include/mach/clkdev.h
- create mode 100644 arch/arm/mach-xilinx/include/mach/debug-macro.S
- create mode 100644 arch/arm/mach-xilinx/include/mach/entry-macro.S
- create mode 100644 arch/arm/mach-xilinx/include/mach/hardware.h
- create mode 100644 arch/arm/mach-xilinx/include/mach/io.h
- create mode 100644 arch/arm/mach-xilinx/include/mach/irqs.h
- create mode 100644 arch/arm/mach-xilinx/include/mach/memory.h
- create mode 100644 arch/arm/mach-xilinx/include/mach/system.h
- create mode 100644 arch/arm/mach-xilinx/include/mach/timex.h
- create mode 100644 arch/arm/mach-xilinx/include/mach/uart.h
- create mode 100644 arch/arm/mach-xilinx/include/mach/uncompress.h
- create mode 100644 arch/arm/mach-xilinx/include/mach/vmalloc.h
- create mode 100644 arch/arm/mach-xilinx/include/mach/xilinx_soc.h
+ arch/arm/mach-xilinx/Kconfig       |   14 +++++
+ arch/arm/mach-xilinx/Makefile      |    6 ++
+ arch/arm/mach-xilinx/Makefile.boot |    3 +
+ arch/arm/mach-xilinx/board_ep107.c |   82 ++++++++++++++++++++++++++
+ arch/arm/mach-xilinx/common.c      |  113 ++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-xilinx/common.h      |   30 ++++++++++
+ 6 files changed, 248 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-xilinx/Kconfig
+ create mode 100644 arch/arm/mach-xilinx/Makefile
+ create mode 100644 arch/arm/mach-xilinx/Makefile.boot
+ create mode 100644 arch/arm/mach-xilinx/board_ep107.c
+ create mode 100644 arch/arm/mach-xilinx/common.c
+ create mode 100644 arch/arm/mach-xilinx/common.h
 
-diff --git a/arch/arm/mach-xilinx/include/mach/clkdev.h b/arch/arm/mach-xilinx/include/mach/clkdev.h
+diff --git a/arch/arm/mach-xilinx/Kconfig b/arch/arm/mach-xilinx/Kconfig
 new file mode 100644
-index 0000000..5dd1453
+index 0000000..11f9e65
 --- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/clkdev.h
-@@ -0,0 +1,33 @@
-+/*
-+ * arch/arm/mach-xilinx/include/mach/clkdev.h
++++ b/arch/arm/mach-xilinx/Kconfig
+@@ -0,0 +1,14 @@
++if ARCH_XILINX
++
++choice
++        prompt "Board Selection"
++	default XILINX_EP107
++
++config XILINX_EP107
++	bool "Xilinx EP107 Board"
++	help
++	  Select if you are using a Xilinx EP107 board.
++
++endchoice
++
++endif
+diff --git a/arch/arm/mach-xilinx/Makefile b/arch/arm/mach-xilinx/Makefile
+new file mode 100644
+index 0000000..783343b
+--- /dev/null
++++ b/arch/arm/mach-xilinx/Makefile
+@@ -0,0 +1,6 @@
++#
++# Makefile for the linux kernel.
++#
++
++# Common support
++obj-y := common.o board_ep107.o
+diff --git a/arch/arm/mach-xilinx/Makefile.boot b/arch/arm/mach-xilinx/Makefile.boot
+new file mode 100644
+index 0000000..67039c3
+--- /dev/null
++++ b/arch/arm/mach-xilinx/Makefile.boot
+@@ -0,0 +1,3 @@
++   zreladdr-y	:= 0x00008000
++params_phys-y	:= 0x00000100
++initrd_phys-y	:= 0x00800000
+diff --git a/arch/arm/mach-xilinx/board_ep107.c b/arch/arm/mach-xilinx/board_ep107.c
+new file mode 100644
+index 0000000..769358c
+--- /dev/null
++++ b/arch/arm/mach-xilinx/board_ep107.c
+@@ -0,0 +1,82 @@
++/* arch/arm/mach-xilinx/board_ep107.c
 + *
-+ *  Copyright (C) 2011 Xilinx, Inc.
++ * This file contains code specific to the Xilinx EP107 board.
 + *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
++ *  Copyright (C) 2011 Xilinx
 + *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
++ * based on /arch/arm/mach-realview/core.c
 + *
++ *  Copyright (C) 1999 - 2003 ARM Limited
++ *  Copyright (C) 2000 Deep Blue Solutions Ltd
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 + */
 +
-+#ifndef __MACH_CLKDEV_H__
-+#define __MACH_CLKDEV_H__
++#include <linux/platform_device.h>
++#include <asm/mach-types.h>
++#include <asm/mach/arch.h>
++#include <mach/xilinx_soc.h>
++#include <mach/irqs.h>
++#include <linux/clkdev.h>
++#include "common.h"
 +
-+struct clk {
-+	unsigned long rate;
++/*
++ * Fixed clocks for now
++ */
++
++static struct clk ref50_clk = {
++	.rate	= 50000000,
 +};
 +
-+static inline int __clk_get(struct clk *clk)
-+{
-+	return 1;
-+}
++/* Create all the platform devices for the board */
 +
-+static inline void __clk_put(struct clk *clk)
-+{
-+}
++static struct resource uart0[] = {
++	{
++		.start = UART0_PHYS,
++		.end = UART0_PHYS + 0xFFF,
++		.flags = IORESOURCE_MEM,
++	}, {
++		.start = IRQ_UART0,
++		.end = IRQ_UART0,
++		.flags = IORESOURCE_IRQ,
++	},
++};
 +
-+#endif
-diff --git a/arch/arm/mach-xilinx/include/mach/debug-macro.S b/arch/arm/mach-xilinx/include/mach/debug-macro.S
-new file mode 100644
-index 0000000..1aa227f
---- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/debug-macro.S
-@@ -0,0 +1,36 @@
-+/* arch/arm/mach-xilinx/include/mach/debug-macro.S
++static struct platform_device uart_device0 = {
++	.name = "xuartpss",
++	.id = 0,
++	.dev = {
++		.platform_data = &ref50_clk.rate,
++	},
++	.resource = uart0,
++	.num_resources = ARRAY_SIZE(uart0),
++};
++
++static struct platform_device *xilinx_pdevices[] __initdata = {
++	&uart_device0,
++};
++
++/**
++ * board_ep107_init - Board specific initialization for the Xilinx EP107 board.
 + *
-+ * Debugging macro include header
++ **/
++static void __init board_ep107_init(void)
++{
++	system_init();
++	platform_add_devices(&xilinx_pdevices[0], ARRAY_SIZE(xilinx_pdevices));
++}
++
++MACHINE_START(XILINX_EP107, "Xilinx EP107")
++	.boot_params    = PHYS_OFFSET + 0x00000100,
++	.map_io         = map_io,
++	.init_irq       = irq_init,
++	.init_machine   = board_ep107_init,
++	.timer          = &xttcpss_sys_timer,
++MACHINE_END
+diff --git a/arch/arm/mach-xilinx/common.c b/arch/arm/mach-xilinx/common.c
+new file mode 100644
+index 0000000..cbe1eb6
+--- /dev/null
++++ b/arch/arm/mach-xilinx/common.c
+@@ -0,0 +1,113 @@
++/* arch/arm/mach-xilinx/common.c
++ *
++ * This file contains common code that is intended to be used across
++ * boards so that it's not replicated.
 + *
 + *  Copyright (C) 2011 Xilinx
 + *
@@ -136,347 +210,113 @@ index 0000000..1aa227f
 + * along with this program; if not, write to the Free Software
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 + */
++
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/cpumask.h>
++#include <linux/platform_device.h>
++#include <linux/clk.h>
++
++#include <asm/mach/map.h>
++#include <asm/page.h>
++#include <asm/hardware/gic.h>
++#include <asm/hardware/cache-l2x0.h>
 +
 +#include <mach/xilinx_soc.h>
-+#include <mach/uart.h>
-+
-+		.macro	addruart, rp, rv
-+		ldr	\rp, =LL_UART_PADDR	@ physical
-+		ldr	\rv, =LL_UART_VADDR	@ virtual
-+		.endm
-+
-+		.macro	senduart,rd,rx
-+		str	\rd, [\rx, #UART_FIFO_OFFSET]	@ TXDATA
-+		.endm
-+
-+		.macro	waituart,rd,rx
-+		.endm
-+
-+		.macro	busyuart,rd,rx
-+1002:		ldr	\rd, [\rx, #UART_SR_OFFSET]	@ get status register
-+		tst	\rd, #UART_SR_TXFULL		@
-+		bne	1002b			@ wait if FIFO is full
-+		.endm
-diff --git a/arch/arm/mach-xilinx/include/mach/entry-macro.S b/arch/arm/mach-xilinx/include/mach/entry-macro.S
-new file mode 100644
-index 0000000..325bc3f
---- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/entry-macro.S
-@@ -0,0 +1,29 @@
-+/*
-+ * arch/arm/mach-xilinx/include/mach/entry-macro.S
-+ *
-+ * Low-level IRQ helper macros
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * based on arch/plat-mxc/include/mach/entry-macro.S
-+ *
-+ *  Copyright (C) 2007 Lennert Buytenhek <buytenh@wantstofly.org>
-+ *  Copyright 2004-2007 Freescale Semiconductor, Inc. All Rights Reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+#include <mach/hardware.h>
-+#include <asm/hardware/entry-macro-gic.S>
-+
-+                .macro  disable_fiq
-+                .endm
-+
-+                .macro  arch_ret_to_user, tmp1, tmp2
-+                .endm
-diff --git a/arch/arm/mach-xilinx/include/mach/hardware.h b/arch/arm/mach-xilinx/include/mach/hardware.h
-new file mode 100644
-index 0000000..195dd2c
---- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/hardware.h
-@@ -0,0 +1,18 @@
-+/* arch/arm/mach-xilinx/include/mach/hardware.h
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#ifndef __MACH_HARDWARE_H__
-+#define __MACH_HARDWARE_H__
-+
-+#endif
-diff --git a/arch/arm/mach-xilinx/include/mach/io.h b/arch/arm/mach-xilinx/include/mach/io.h
-new file mode 100644
-index 0000000..bc90a55
---- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/io.h
-@@ -0,0 +1,33 @@
-+/* arch/arm/mach-xilinx/include/mach/io.h
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#ifndef __MACH_IO_H__
-+#define __MACH_IO_H__
-+
-+/* Allow IO space to be anywhere in the memory */
-+
-+#define IO_SPACE_LIMIT 0xffff
-+
-+/* IO address mapping macros, nothing special at this time but required */
-+
-+#ifdef __ASSEMBLER__
-+#define IOMEM(x)		(x)
-+#else
-+#define IOMEM(x)		((void __force __iomem *)(x))
-+#endif
-+
-+#define __io(a)			__typesafe_io(a)
-+#define __mem_pci(a)		(a)
-+
-+#endif
-diff --git a/arch/arm/mach-xilinx/include/mach/irqs.h b/arch/arm/mach-xilinx/include/mach/irqs.h
-new file mode 100644
-index 0000000..da2fadc
---- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/irqs.h
-@@ -0,0 +1,28 @@
-+/* arch/arm/mach-xilinx/include/mach/irqs.h
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+#ifndef __MACH_IRQS_H
-+#define __MACH_IRQS_H
-+
-+#define ARCH_NR_GPIOS	118
-+#define NR_IRQS		(128 + ARCH_NR_GPIOS)
++#include <mach/clkdev.h>
 +
 +/*
-+ * GIC Interrupts
++ * Clock function infrastructure.
 + */
-+
-+#define IRQ_GIC_SPI_START	32
-+#define IRQ_TIMERCOUNTER0	42
-+#define IRQ_UART0		59
-+
-+#endif
-diff --git a/arch/arm/mach-xilinx/include/mach/memory.h b/arch/arm/mach-xilinx/include/mach/memory.h
-new file mode 100644
-index 0000000..2b6d1eb
---- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/memory.h
-@@ -0,0 +1,23 @@
-+/* arch/arm/mach-xilinx/include/mach/memory.h
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#ifndef __MACH_MEMORY_H__
-+#define __MACH_MEMORY_H__
-+
-+#include <mach/hardware.h>
-+
-+#define PHYS_OFFSET             0x0
-+#define MEM_SIZE		SZ_256M
-+
-+#endif
-diff --git a/arch/arm/mach-xilinx/include/mach/system.h b/arch/arm/mach-xilinx/include/mach/system.h
-new file mode 100644
-index 0000000..a5f1f0f
---- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/system.h
-@@ -0,0 +1,28 @@
-+/* arch/arm/mach-xilinx/include/mach/system.h
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#ifndef __MACH_SYSTEM_H__
-+#define __MACH_SYSTEM_H__
-+
-+static inline void arch_idle(void)
++int clk_enable(struct clk *clk)
 +{
-+	cpu_do_idle();
++	return 0;
 +}
 +
-+static inline void arch_reset(char mode, const char *cmd)
++void clk_disable(struct clk *clk)
 +{
-+	/* Add architecture specific reset processing here */
 +}
 +
++unsigned long clk_get_rate(struct clk *clk)
++{
++	return clk->rate;
++}
++
++/**
++ * system_init - System specific initialization, intended to be called from
++ *			board specific initialization.
++ *
++ **/
++void __init system_init(void)
++{
++#ifdef CONFIG_CACHE_L2X0
++	/*
++	 * 64KB way size, 8-way associativity, parity disabled
++	 */
++	l2x0_init(PL310_L2CC_BASE, 0x02060000, 0xF0F0FFFF);
 +#endif
-diff --git a/arch/arm/mach-xilinx/include/mach/timex.h b/arch/arm/mach-xilinx/include/mach/timex.h
-new file mode 100644
-index 0000000..2946c35
---- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/timex.h
-@@ -0,0 +1,24 @@
-+/* arch/arm/mach-xilinx/include/mach/timex.h
++}
++
++/**
++ * irq_init - Interrupt controller initialization for the GIC.
 + *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ **/
++void __init irq_init(void)
++{
++	gic_init(0, 29, SCU_GIC_DIST_BASE, SCU_GIC_CPU_BASE);
++}
++
++/* The minimum devices needed to be mapped before the VM system is up and
++ * running include the GIC, UART and Timer Counter.
 + */
 +
-+#ifndef __MACH_TIMEX_H__
-+#define __MACH_TIMEX_H__
++static struct map_desc io_desc[] __initdata = {
++	{
++		.virtual	= TTC0_VIRT,
++		.pfn		= __phys_to_pfn(TTC0_PHYS),
++		.length		= SZ_4K,
++		.type		= MT_DEVICE,
++	}, {
++		.virtual	= SCU_PERIPH_VIRT,
++		.pfn		= __phys_to_pfn(SCU_PERIPH_PHYS),
++		.length		= SZ_8K,
++		.type		= MT_DEVICE,
++	}, {
++		.virtual	= PL310_L2CC_VIRT,
++		.pfn		= __phys_to_pfn(PL310_L2CC_PHYS),
++		.length		= SZ_4K,
++		.type		= MT_DEVICE,
++	},
 +
-+#include <mach/hardware.h>
-+
-+#define PERIPHERAL_CLOCK_RATE	2500000
-+
-+#define CLOCK_TICK_RATE	(PERIPHERAL_CLOCK_RATE / 32)
-+
++#ifdef CONFIG_DEBUG_LL
++	{
++		.virtual	= UART0_VIRT,
++		.pfn		= __phys_to_pfn(UART0_PHYS),
++		.length		= SZ_4K,
++		.type		= MT_DEVICE,
++	},
 +#endif
-diff --git a/arch/arm/mach-xilinx/include/mach/uart.h b/arch/arm/mach-xilinx/include/mach/uart.h
++
++};
++
++/**
++ * map_io - Create memory mappings needed for early I/O.
++ *
++ **/
++void __init map_io(void)
++{
++	iotable_init(io_desc, ARRAY_SIZE(io_desc));
++}
+diff --git a/arch/arm/mach-xilinx/common.h b/arch/arm/mach-xilinx/common.h
 new file mode 100644
-index 0000000..2601143
+index 0000000..54a1810
 --- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/uart.h
++++ b/arch/arm/mach-xilinx/common.h
 @@ -0,0 +1,30 @@
-+/* arch/arm/mach-xilinx/include/mach/uart.h
++/* arch/arm/mach-xilinx/common.h
 + *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+#ifndef __MACH_UART_H__
-+#define __MACH_UART_H__
-+
-+#define UART_CR_OFFSET          0x00  /* Control Register [8:0] */
-+#define UART_SR_OFFSET          0x2C  /* Channel Status [11:0] */
-+#define UART_FIFO_OFFSET        0x30  /* FIFO [15:0] or [7:0] */
-+
-+#define UART_SR_TXFULL		0x00000010	/* TX FIFO full */
-+#define UART_SR_TXEMPTY		0x00000008	/* TX FIFO empty */
-+
-+#define UART_FIFO_WRITE(base, value) \
-+	(*(volatile unsigned int *)((base) + UART_FIFO_OFFSET) = (value))
-+
-+#define UART_STATUS(base) \
-+	(*(volatile unsigned int *)((base) + UART_SR_OFFSET))
-+
-+#endif
-diff --git a/arch/arm/mach-xilinx/include/mach/uncompress.h b/arch/arm/mach-xilinx/include/mach/uncompress.h
-new file mode 100644
-index 0000000..7b9f4c3
---- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/uncompress.h
-@@ -0,0 +1,46 @@
-+/* arch/arm/mach-xilinx/include/mach/uncompress.h
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+#ifndef __MACH_UNCOMPRESS_H__
-+#define __MACH_UNCOMPRESS_H__
-+
-+#include <mach/xilinx_soc.h>
-+#include <mach/uart.h>
-+
-+void arch_decomp_setup(void)
-+{
-+}
-+
-+static inline void flush(void)
-+{
-+	/*
-+	 * Wait while the FIFO is not empty
-+	 */
-+	while (!(UART_STATUS(LL_UART_PADDR) & UART_SR_TXEMPTY))
-+		;
-+}
-+
-+#define arch_decomp_wdog()
-+
-+static void putc(char ch)
-+{
-+	/*
-+	 * Wait for room in the FIFO, then write the char into the FIFO
-+	 */
-+	while (UART_STATUS(LL_UART_PADDR) & UART_SR_TXFULL)
-+		;
-+
-+	UART_FIFO_WRITE(LL_UART_PADDR, ch);
-+}
-+
-+#endif
-diff --git a/arch/arm/mach-xilinx/include/mach/vmalloc.h b/arch/arm/mach-xilinx/include/mach/vmalloc.h
-new file mode 100644
-index 0000000..62e2408
---- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/vmalloc.h
-@@ -0,0 +1,20 @@
-+/* arch/arm/mach-xilinx/include/mach/vmalloc.h
++ * This file contains common function prototypes to avoid externs
++ * in the c files.
 + *
 + *  Copyright (C) 2011 Xilinx
 + *
@@ -490,62 +330,17 @@ index 0000000..62e2408
 + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 + */
 +
-+#ifndef __MACH_VMALLOC_H__
-+#define __MACH_VMALLOC_H__
++#ifndef __MACH_XILINX_COMMON_H__
++#define __MACH_XILINX_COMMON_H__
 +
-+#define VMALLOC_END       0xE0000000
++#include <linux/init.h>
++#include <linux/platform_device.h>
 +
-+#endif
-diff --git a/arch/arm/mach-xilinx/include/mach/xilinx_soc.h b/arch/arm/mach-xilinx/include/mach/xilinx_soc.h
-new file mode 100644
-index 0000000..aa7cab5
---- /dev/null
-+++ b/arch/arm/mach-xilinx/include/mach/xilinx_soc.h
-@@ -0,0 +1,46 @@
-+/* arch/arm/mach-xilinx/include/mach/xilinx_soc.h
-+ *
-+ *  Copyright (C) 2011 Xilinx
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
++void __init system_init(void);
++void __init irq_init(void);
++void __init map_io(void);
 +
-+#ifndef __MACH_XILINX_SOC_H__
-+#define __MACH_XILINX_SOC_H__
-+
-+/* For now, all mappings are flat (physical = virtual)
-+ */
-+#define UART0_PHYS			0xE0000000
-+#define UART0_VIRT			UART0_PHYS
-+
-+#define TTC0_PHYS			0xF8001000
-+#define TTC0_VIRT			TTC0_PHYS
-+
-+#define PL310_L2CC_PHYS			0xF8F02000
-+#define PL310_L2CC_VIRT			PL310_L2CC_PHYS
-+
-+#define SCU_PERIPH_PHYS			0xF8F00000
-+#define SCU_PERIPH_VIRT			SCU_PERIPH_PHYS
-+
-+/* The following are intended for the devices that are mapped early */
-+
-+#define TTC0_BASE			IOMEM(TTC0_VIRT)
-+#define SCU_PERIPH_BASE			IOMEM(SCU_PERIPH_VIRT)
-+#define SCU_GIC_CPU_BASE		(SCU_PERIPH_BASE + 0x100)
-+#define SCU_GIC_DIST_BASE		(SCU_PERIPH_BASE + 0x1000)
-+#define PL310_L2CC_BASE			IOMEM(PL310_L2CC_VIRT)
-+
-+/*
-+ * Mandatory for CONFIG_LL_DEBUG, UART is mapped virtual = physical
-+ */
-+#define LL_UART_PADDR	UART0_PHYS
-+#define LL_UART_VADDR	UART0_VIRT
++extern struct sys_timer xttcpss_sys_timer;
 +
 +#endif
 -- 
