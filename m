@@ -1,66 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756187Ab1BIX4q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 18:56:46 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55450 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755986Ab1BIX4p (ORCPT
+	id S1756210Ab1BIX5Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 18:57:16 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34413
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755986Ab1BIX5P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 18:56:45 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 10 Feb 2011 08:50:34 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 0/4] memcg: operate on page quantities internally
-Message-Id: <20110210085034.a6c5d703.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1297249313-23746-1-git-send-email-hannes@cmpxchg.org>
-References: <1297249313-23746-1-git-send-email-hannes@cmpxchg.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	Wed, 9 Feb 2011 18:57:15 -0500
+Date: Wed, 09 Feb 2011 15:57:50 -0800 (PST)
+Message-Id: <20110209.155750.48510069.davem@davemloft.net>
+To: tomoya-linux@dsn.okisemi.com
+Cc: wg@grandegger.com, socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        andrew.chih.howe.khor@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com
+Subject: Re: [PATCH 1/3 v2] pch_can: fix 800k comms issue
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1297295776-3735-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+References: <1297295776-3735-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  9 Feb 2011 12:01:49 +0100
-Johannes Weiner <hannes@cmpxchg.org> wrote:
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Date: Thu, 10 Feb 2011 08:56:16 +0900
 
-> Hi,
-> 
-> this patch set converts the memcg charge and uncharge paths to operate
-> on multiples of pages instead of bytes.  It already was a good idea
-> before, but with the merge of THP we made a real mess by specifying
-> huge pages alternatingly in bytes or in number of regular pages.
-> 
-> If I did not miss anything, this should leave only res_counter and
-> user-visible stuff in bytes.  The ABI probably won't change, so next
-> up is converting res_counter to operate on page quantities.
-> 
+> Previous patch "[PATCH 1/3] pch_can: fix 800k comms issue" is wrong.
+> I should have modified tseg1_min not tseg2_min.
+> Please discard previous patch and use this patch.
 
-Hmm, I think this should be done but think this should be postphoned, too.
-Because, IIUC, some guys will try to discuss charging against kernel objects
-in the next mm-summit. IMHO, it will be done against PAGE not against
-Object even if we do kernel object accouting. So this patch is okay for me.
-But I think it's better to go ahead after we confirm the way we go.
-How do you think ?
+I can't "discard" the previous patch as it's already pushed upstream
+into my GIT tree and therefore cannot be reverted.
 
-Anyway, I welcome this patch.
-
-Thanks,
--Kame
-
-
-
-> 	Hannes
-> 
->  include/linux/sched.h |    4 +-
->  mm/memcontrol.c       |  157 ++++++++++++++++++++++++-------------------------
->  2 files changed, 78 insertions(+), 83 deletions(-)
-> 
-
+You need to send a relative fix-up patch.
