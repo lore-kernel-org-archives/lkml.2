@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab1BIJ4D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 04:56:03 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51418 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753502Ab1BIJ4B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 04:56:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=nLHY9Oc2fAccDJNImA6+x7tmeoDI7Ir5hjdMJllx2VD16HubOOUpkclUZ2DiX42pnB
-         Xku/+HRcsnRRN6r0YEfzhKNUS5hW4pkiCkx6/C2/o/wbVVfTurS0ZzvtinR4pXV0ix4V
-         PwXI08siPS6Y9WwTh7qzVAsvpFqZOHu8P+vLU=
-Date: Wed, 9 Feb 2011 10:55:56 +0100
-From: Tejun Heo <tj@kernel.org>
-To: Chris Clayton <chris2553@googlemail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, simon@fire.lp0.eu,
-        kay.sievers@vrfy.org, Jens Axboe <axboe@kernel.dk>
-Subject: Re: 2.6.38-rc2+ - regresiion copying DVD's
-Message-ID: <20110209095556.GD3770@htj.dyndns.org>
-References: <201101301550.59272.chris2553@googlemail.com>
- <201101311929.05290.chris2553@googlemail.com>
- <201102062312.14919.chris2553@googlemail.com>
+	id S1753968Ab1BIJ4d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 04:56:33 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:30507 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753764Ab1BIJ4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Feb 2011 04:56:32 -0500
+X-IronPort-AV: E=Sophos;i="4.60,446,1291611600"; 
+   d="scan'208";a="12447420"
+Subject: Re: [patch 0/4] XEN: Interrupt cleanups
+From: Ian Campbell <Ian.Campbell@eu.citrix.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <alpine.LFD.2.00.1102091041450.31804@localhost6.localdomain6>
+References: <20110205200108.921707839@linutronix.de>
+	 <4D50641B.2090006@goop.org>
+	 <alpine.LFD.2.00.1102072231220.31804@localhost6.localdomain6>
+	 <4D506AE6.6080900@goop.org>
+	 <1297173811.9388.95.camel@zakaz.uk.xensource.com>
+	 <alpine.LFD.2.00.1102081544290.31804@localhost6.localdomain6>
+	 <1297177506.9388.135.camel@zakaz.uk.xensource.com>
+	 <alpine.LFD.2.00.1102081619410.31804@localhost6.localdomain6>
+	 <20110208162045.GB4606@dumpdata.com>
+	 <1297243631.9388.258.camel@zakaz.uk.xensource.com>
+	 <alpine.LFD.2.00.1102091041450.31804@localhost6.localdomain6>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Wed, 9 Feb 2011 09:56:28 +0000
+Message-ID: <1297245388.9388.289.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201102062312.14919.chris2553@googlemail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Feb 06, 2011 at 11:12:14PM +0000, Chris Clayton wrote:
-> Hi again,
+On Wed, 2011-02-09 at 09:46 +0000, Thomas Gleixner wrote:
+> B1;2401;0cOn Wed, 9 Feb 2011, Ian Campbell wrote:
 > 
-> On Monday 31 January 2011, Chris Clayton wrote:
-> > On Sunday 30 January 2011, Chris Clayton wrote:
-> > > Hi,
-> > >
-> > > Firstly, I'm not subscribed, so please cc me on any reply.
-> > >
-> > > I'm trying to copy the3 contents of a video DVD from one disc to another,
-> > > but it fails. There are no messages in the kernel log file, but K3B
-> > > reports the following:
-> >
-> > <snip>
-> >
-> > Simon's patch at http://marc.info/?l=linux-kernel&m=129649842110692&w=4
-> > fixes this problem, so feel free to add
-> >
-> > Tested-by: Chris Clayton <chris2553@googlemail.com>
-> >
-> I note that Simon's patch hasn't made it through to Linus yet. Which tree is ot 
-> going through, please?
+> > On Tue, 2011-02-08 at 16:20 +0000, Konrad Rzeszutek Wilk wrote:
+> > 
+> > > This is what I've in the stable/irq.rework [...] Please tell me if I messed up.
+> > 
+> > I tested v2.6.38-rc4:
+> > += git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip irq/for-xen
+> > += git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen stable/irq.rework
+> > 
+> > and all seems fine.
+> 
+> stable/irq.rework still has the resume hackery inside.
 
-Block tree.  Jens?
+ACK, yes I missed that. Konrad -- looks looks you didn't pick up Thomas'
+patch 4/4?
 
--- 
-tejun
+I added that one patch to the above set of merges and tested again --
+all fine.
+
+Ian.
+
