@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754407Ab1BIRHH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 12:07:07 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:56618 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754200Ab1BIRHE convert rfc822-to-8bit (ORCPT
+	id S1754695Ab1BIRHZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 12:07:25 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:48203 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754581Ab1BIRHU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 12:07:04 -0500
+	Wed, 9 Feb 2011 12:07:20 -0500
 From: ebiederm@xmission.com (Eric W. Biederman)
 To: Seiji Aguchi <seiji.aguchi@hds.com>
 Cc: "hpa\@zytor.com" <hpa@zytor.com>,
@@ -22,17 +22,17 @@ Cc: "hpa\@zytor.com" <hpa@zytor.com>,
 	<dle-develop@lists.sourceforge.net>,
         "amwang\@redhat.com" <amwang@redhat.com>,
         Satoru Moriya <satoru.moriya@hds.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C1494DBE0@USINDEVS01.corp.hds.com>
-Date: Wed, 09 Feb 2011 09:06:50 -0800
 In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C1494DBE0@USINDEVS01.corp.hds.com>
 	(Seiji Aguchi's message of "Wed, 9 Feb 2011 11:35:43 -0500")
-Message-ID: <m1d3n12l3p.fsf@fess.ebiederm.org>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C1494DBE0@USINDEVS01.corp.hds.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+Date: Wed, 09 Feb 2011 09:07:14 -0800
+Message-ID: <m1bp2l2l31.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
 X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18VzDaTYIy2SkXP3IMKt6J9gdPpbl55ino=
+X-XM-AID: U2FsdGVkX1++dESMnEi5c+EztIqJoa3oys50IXhOacI=
 X-SA-Exim-Connect-IP: 98.207.157.188
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
@@ -41,10 +41,10 @@ X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
 	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
 	*      [score: 0.0000]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*      [sa02 1397; Body=2 Fuz1=2 Fuz2=2]
 	*  0.5 XM_Body_Dirty_Words Contains a dirty word
 	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-DCC: XMission; sa02 1397; Body=2 Fuz1=2 Fuz2=2 
 X-Spam-Combo: ;Seiji Aguchi <seiji.aguchi@hds.com>
 X-Spam-Relay-Country: 
 Subject: Re: [RFC][PATCH v2] Controlling kexec behaviour when hardware error happened.
