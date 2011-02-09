@@ -1,27 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754477Ab1BILbL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 06:31:11 -0500
-Received: from host-196.219.235.226-static.tedata.net ([196.219.235.226]:48123
-	"EHLO WIN-SPU01L09RF8" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751238Ab1BILbK (ORCPT
+	id S1754593Ab1BILk4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 06:40:56 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56367 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071Ab1BILkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 06:31:10 -0500
-X-Greylist: delayed 3505 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Feb 2011 06:31:09 EST
+	Wed, 9 Feb 2011 06:40:55 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=fRu+XGeYq3gna2z0bQgtHxchdmoVqPJoDD+6v7PLN9DStqFmU6Tu8nBp2YlJDqtto/
+         l3OaaS+fdpsWJS06YXRJcMD0O+4g1S65eVNuh5hmJbxGjkhBTQF1u2X41IKrjKKx1LeE
+         rsTKpVbUXnMEijmdoFdhW11J7F5jTqGoPbpSw=
 MIME-Version: 1.0
-From: webmaster@eastlaws.com
-To: linux-kernel@vger.kernel.org
-X-Priority: 1
-Importance: high
-Date: 9 Feb 2011 12:07:52 +0200
-Subject: =?utf-8?B?2KfZhNiz2YTYp9mFINi52YTZitmD2YUg?=
-Content-Type: text/plain; charset=utf-8
-Message-ID: <WIN-SPU01L09RF8js5F000033ad@WIN-SPU01L09RF8>
-X-OriginalArrivalTime: 09 Feb 2011 10:07:52.0731 (UTC) FILETIME=[36C216B0:01CBC841]
+In-Reply-To: <20110208181204.GF4476@core.coreip.homeip.net>
+References: <1297157786-2004-1-git-send-email-kverlin@gmail.com>
+	<20110208103923.GA2009@polaris.bitmath.org>
+	<20110208181204.GF4476@core.coreip.homeip.net>
+Date: Wed, 9 Feb 2011 14:40:53 +0300
+Message-ID: <AANLkTi=C=3-VrM7L2bdCqY6WpiCLHS_uv-9R5gvPjBSD@mail.gmail.com>
+Subject: Re: [PATCH] HID: added new driver for Panasonic Elite Panaboard
+ UB-T780 and UB-T880
+From: Anton Chikin <kverlin@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>, jkosina@suse.cz,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anton Chikin <anton.chikin@dataart.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p19BWIxl019803
 
-<p>Ø§Ù„Ø³Ù„Ø§Ù… Ø¹Ù„ÙŠÙƒÙ…</p>ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Dmitry,
+
+Thank you for pointing me on tslib. Could you please provide some
+documentation sources or examples for it?
+As for custom parsing - as far as I remember - Jiri mentioned this
+scenario in the discussion of hid subsystem
+on input mailing list.
+
+On Tue, Feb 8, 2011 at 9:12 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Tue, Feb 08, 2011 at 11:39:23AM +0100, Henrik Rydberg wrote:
+>>
+>> > +int xold = 0, yold = 0;
+>>
+>> static
+>>
+>
+> Not even that. This is an USB device, not a platform one, so it shoudl
+> be opssible to connect more than one to a box. All state should go into
+> per-device structure.
+>
+> This is also does not appear to be a HID driver, really - it does not
+> use HID infrastucture but does custom parsing.
+>
+> Calibration - normally we offload this task to userspace (tslib
+> or other library/driver).
+>
+> Thanks.
+>
+> --
+> Dmitry
+>
