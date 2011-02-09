@@ -1,106 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755770Ab1BIV1s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Feb 2011 16:27:48 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31653 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755528Ab1BIV1q convert rfc822-to-8bit (ORCPT
+	id S1755821Ab1BIV26 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Feb 2011 16:28:58 -0500
+Received: from brother.balabit.com ([195.70.62.219]:42514 "EHLO
+	lists.balabit.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755653Ab1BIV25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Feb 2011 16:27:46 -0500
-Date: Wed, 9 Feb 2011 13:25:29 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: netdev <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Karsten Keil <isdn@linux-pingi.de>
-Subject: Re: Linux 2.6.38-rc4 (hysdn: BUG)
-Message-Id: <20110209132529.76927f5f.randy.dunlap@oracle.com>
-In-Reply-To: <AANLkTimUg8Dm9mZotubcgPHz8_at=_hnbeWUo-LfSALp@mail.gmail.com>
-References: <AANLkTimmb26UiBSukdNnVdxLJpCGd=QqpCw8vQoHALh-@mail.gmail.com>
-	<20110209092419.2b335697.randy.dunlap@oracle.com>
-	<AANLkTimUg8Dm9mZotubcgPHz8_at=_hnbeWUo-LfSALp@mail.gmail.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Wed, 9 Feb 2011 16:28:57 -0500
+Subject: Re: CAP_SYSLOG, 2.6.38 and user space
+From: Gergely Nagy <algernon@balabit.hu>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: david@lang.hm, James Morris <jmorris@namei.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110209212329.GA24777@mail.hallyn.com>
+References: <1296733177.14846.26.camel@moria>
+	 <20110203153252.GA24153@mail.hallyn.com>
+	 <20110204160513.GB17396@mail.hallyn.com> <1296837186.24742.15.camel@moria>
+	 <20110204171502.GA24226@mail.hallyn.com>
+	 <alpine.DEB.2.00.1102042301420.8162@asgard.lang.hm>
+	 <20110206011831.GB15805@mail.hallyn.com>
+	 <20110209212329.GA24777@mail.hallyn.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: BalaBit
+Date: Wed, 09 Feb 2011 22:28:54 +0100
+Message-ID: <1297286934.13055.57.camel@luthien.mhp>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4D5306AC.00F0:SCFMA4539814,ss=1,fgs=0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Feb 2011 11:44:00 -0800 Linus Torvalds wrote:
+On Wed, 2011-02-09 at 21:23 +0000, Serge E. Hallyn wrote: 
+> So if that's how we're leaning, then the following patch is much more
+> concise.  I'll send this to Linus and any appropriate -stable tomorrow
+>  if noone objects.
+> 
+> From 5166e114d6a7c508addbadd763322089eb0b02f5 Mon Sep 17 00:00:00 2001
+> From: Serge Hallyn <serge@hallyn.com>
+> Date: Thu, 3 Feb 2011 09:26:15 -0600
+> Subject: [PATCH 1/1] cap_syslog: don't refuse cap_sys_admin for now (v2)
+> 
+> It'd be nice to do that later, but it's not strictly necessary,
+> and it'll be hard to do without breaking somebody's userspace.
+> 
+> Signed-off-by: Serge Hallyn <serge@hallyn.com>
+> ---
+>  kernel/printk.c |   14 ++++----------
+>  1 files changed, 4 insertions(+), 10 deletions(-)
 
-> On Wed, Feb 9, 2011 at 9:24 AM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> >
-> > on x86_64.  no HYSDN hardware found (correct).
-> > Nearly allmodconfig.
-> >
-> >
-> > [   65.397577] HYSDN: module Rev: 1.6.6.6 loaded
-> > [   65.397584] HYSDN: network interface Rev: 1.8.6.4
-> > [   65.398057] HYSDN: 0 card(s) found.
-> > [   65.398121] BUG: unable to handle kernel paging request at ffffffffa06c99f0
-> > [   65.398269] IP: [<ffffffffa06c68ba>] hysdn_getrev+0x2e/0x50 [hysdn]
-> > [   65.398379] PGD 1a14067 PUD 1a18063 PMD 6f6c1067 PTE 800000006ce8c161
-> > [   65.398613] Oops: 0003 [#1] SMP DEBUG_PAGEALLOC
-> > [   65.400030]
-> > [   65.400030] Pid: 2497, comm: modprobe Not tainted 2.6.38-rc4 #1 0TY565/OptiPlex 745
-> > [   65.400030] RIP: 0010:[<ffffffffa06c68ba>]  [<ffffffffa06c68ba>] hysdn_getrev+0x2e/0x50 [hysdn]
-> > [   65.400030] RSP: 0018:ffff88006eec1e68  EFLAGS: 00010206
-> > [   65.400030] RAX: ffffffffa06c99f1 RBX: ffffffffa06c99e9 RCX: ffff88007c4159a0
-> 
-> The instruction sequence decodes to
-> 
->   1e:	be 24 00 00 00       	mov    $0x24,%esi
->   23:	48 89 df             	mov    %rbx,%rdi
->   26:	e8 5b 39 c0 e0       	callq  0xffffffffe0c03986
->   2b:*	c6 40 ff 00          	movb   $0x0,-0x1(%rax)     <-- trapping instruction
-> 
-> which seems to be this
-> 
->                 p = strchr(rev, '$');
->                 *--p = 0;
-> 
-> code. And yes, it's total crap, because while "p" and "rev" are "char
-> *", the string that is passed in is actually of type "const char *",
-> so that function is seriously broken. It's also seriously broken to
-> not test that "p" is non-NULL - the function would just break if there
-> is a colon in the string but not a '$'.
-> 
-> And hysdn_procconf_init() passes in a constant string to the thing:
-> 
->     static char *hysdn_procconf_revision = "$Revision: 1.8.6.4 $";
-> 
-> What happens is that it breaks when we mark the constant section as
-> read-only, because you have CONFIG_DEBUG_RODATA enabled.
-> 
-> So the fix seems to be to
->  - fix the prototype for hysdn_getrev() to not have "const".
->  - fix hysdn_procconf_init() to not pass in a constant string to it
-> 
-> The minimal patch would appear to be something like the appended. UNTESTED!
+Personally, I'd prefer the sysctl idea in the long run, because
+userspace can easily and automatically adapt to the running kernel then.
+Ie, this patch is fine for 2.6.38, but later on, a sysctl could be
+introduced, that when set (but defaulting to unset, as to not break
+userspace), would make CAP_SYS_ADMIN return -EPERM. That way, syslogds
+could look at the setting, and act accordingly. This would mean that old
+userspace wouldn't break, and upgraded userspace could work on both old
+and new kernels, depending on the setting. Distros or admins could then
+enable the sysctl once they made sure that all neccessary applications
+have been upgraded.
 
-for your patch:
+But this works too, for now. My immediate concern is making sure 2.6.38
+doesn't break capability-using syslogds.
 
-Tested-and-acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+-- 
+|8]
 
-> Btw, all of this code seems to go back to before the git history even
-> started, so it doesn't seem to be new. I assume you haven't tried
-> booting these all-module kernels before? Or is it just the
-> DEBUG_RODATA thing that is new for you?
 
-Neither is new.  I tested and reported many-modules on 2.6.37-rc1 and
-reported these 2 bugs:
 
-https://bugzilla.kernel.org/show_bug.cgi?id=22912
-https://bugzilla.kernel.org/show_bug.cgi?id=22882
-
-and that was with CONFIG_DEBUG_RODATA=y.
-I don't know how hysdn was missed at that time.
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
