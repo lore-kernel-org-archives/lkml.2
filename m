@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082Ab1BICbp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Feb 2011 21:31:45 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:64446 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756022Ab1BICbn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Feb 2011 21:31:43 -0500
-Message-ID: <4D51FCB0.9040101@vflare.org>
-Date: Tue, 08 Feb 2011 21:32:16 -0500
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101209 Fedora/3.1.7-0.35.b3pre.fc14 Thunderbird/3.1.7
+	id S1756212Ab1BICmO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Feb 2011 21:42:14 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:48114 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755930Ab1BICmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Feb 2011 21:42:12 -0500
+Date: Wed, 9 Feb 2011 03:41:44 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Tim Bird <tbird20d@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Len Brown <len.brown@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-embedded@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] Remove CONFIG_PM altogether, enable power management all
+ the time
+Message-ID: <20110209024144.GA32102@elte.hu>
+References: <1297081335-13631-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <201102072046.48763.rjw@sisk.pl>
+ <20110207201803.GU10564@opensource.wolfsonmicro.com>
+ <201102072215.59921.rjw@sisk.pl>
+ <20110208122159.GA8284@elte.hu>
+ <AANLkTimWnT8f=PyLgOOrZOaMx0pdv+yNtPw2T7=kO2G-@mail.gmail.com>
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: gregkh@suse.de, Chris Mason <chris.mason@oracle.com>,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        matthew@wil.cx, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        jeremy@goop.org, Kurt Hackel <kurt.hackel@oracle.com>,
-        npiggin@kernel.dk, riel@redhat.com,
-        Konrad Wilk <konrad.wilk@oracle.com>, mel@csn.ul.ie,
-        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        sfr@canb.auug.org.au, wfg@mail.ustc.edu.cn, tytso@mit.edu,
-        viro@ZenIV.linux.org.uk, hughd@google.com, hannes@cmpxchg.org,
-        Matt <jackdachef@gmail.com>
-Subject: Re: [PATCH V2 0/3] drivers/staging: zcache: dynamic page cache/swap
- compression
-References: <20110207032407.GA27404@ca-server1.us.oracle.com> <1ddd01a8-591a-42bc-8bb3-561843b31acb@default>
-In-Reply-To: <1ddd01a8-591a-42bc-8bb3-561843b31acb@default>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimWnT8f=PyLgOOrZOaMx0pdv+yNtPw2T7=kO2G-@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/2011 08:03 PM, Dan Magenheimer wrote:
->> (Historical note: This "new" zcache patchset supercedes both the
->> kztmem patchset and the "old" zcache patchset as described in:
->> http://lkml.org/lkml/2011/2/5/148)
->
-> (In order to move discussion from the old kztmem patchset to
-> the new zcache patchset, I am replying here to Matt's email
-> sent at: https://lkml.org/lkml/2011/2/4/199 )
->
->> From: Matt [mailto:jackdachef@gmail.com]
->
-<snip>
 
->
->> • Coming back to usage of compcache - how about the problem of 60%
->> memory fragmentation (according to compcache/zcache wiki,
->> http://code.google.com/p/compcache/wiki/Fragmentation) ?
->> Could the situation be improved with in-kernel "memory compaction" ?
->> I'm not a developer so I don't know exactly how lumpy reclaim/memory
->> compaction and xvmalloc would interact with each other
->
-> Nitin is the expert on compcache and xvmalloc, so I will leave
-> this question unanswered for now.
->
+* Tim Bird <tbird20d@gmail.com> wrote:
 
+> On Tue, Feb 8, 2011 at 4:21 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> > Rafael, could you do a defconfig-ish x86 build with and without CONFIG_PM, and 
+> > post the 'size vmlinux' comparison - so that we can see the size difference? We 
+> > make some things CONFIG_EXPERT configurable just to enable folks who *really* 
+> > want to cut down on kernel size to configure it out.
+> 
+> I'm one of those people who *really* wants to cut down the kernel size. I've 
+> recently worked on a product where the kernel RAM budget is ~1M.
 
-I'm currently in the process of designing a new allocator that gives 
-predictable memory fragmentation guarantees (at the expense of extra CPU 
-cycles). I've not yet posted details anywhere but many of the ideas are 
-from the "Compact Fit" allocator: 
-http://www.usenix.org/event/usenix08/tech/full_papers/craciunas/craciunas_html/
+Did that kernel have CONFIG_PM disabled?
 
-I'm not sure how much time it will take since I'm not yet done with some 
-of the design details, and then userspace implementation, testing, 
-profiling and finally kernel port. Add to that extra concurrency issues 
-when integrating with zcache!
+> > Note that those usecases, even if they want a super-small kernel, might not care 
+> > about PM at all while they care about size: small boot kernels in ROMs, or 
+> > simple devices where CPU-idling implies deep low power mode, etc.
+>
+> So the vmlinux size comparisons would be needed really. If it's 5k nobody will 
+> care. I care about 5K.  (But honestly, I don't actively hunt stuff less than 10K 
+> in size, because there's too many of them to chase, currently).
+
+The numbers that Frank Rowand sent show 40K+:
+
+|
+| For 2.6.38-rc4, x86_64, CONFIG_NR_CPUS=4:
+|
+| size vmlinux
+|    text     data       bss       dec      hex  filename
+|
+| 6553910  3555020   9994240  20103170  132c002  vmlinux    with    CONFIG_PM
+| 6512652  3553116   9994240  20060008  1321768  vmlinux    without CONFIG_PM
+|
+|   41258     1904         0     43162                      delta
+|
 
 Thanks,
-Nitin
+
+	Ingo
